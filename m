@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905AbaLSOGv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:06:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46008 "EHLO
+	id S1752920AbaLSOG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:06:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46013 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888AbaLSOGs (ORCPT
+	with ESMTP id S1752743AbaLSOGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:06:48 -0500
-Date: Fri, 19 Dec 2014 06:05:28 -0800
+	Fri, 19 Dec 2014 09:06:55 -0500
+Date: Fri, 19 Dec 2014 06:05:47 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-e89900c9ad75a1b80e1f1f46ce9c9bb0e7ea1d96@git.kernel.org>
-Cc: tglx@linutronix.de, yinghai@kernel.org, gregkh@linuxfoundation.org,
-        bhelgaas@google.com, pavel@ucw.cz, bp@alien8.de, mingo@kernel.org,
-        grant.likely@linaro.org, tony.luck@intel.com, hpa@zytor.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org, prarit@redhat.com,
-        jiang.liu@linux.intel.com, konrad.wilk@oracle.com,
-        rdunlap@infradead.org, joro@8bytes.org, len.brown@intel.com,
-        benh@kernel.crashing.org
-Reply-To: gregkh@linuxfoundation.org, bhelgaas@google.com, yinghai@kernel.org,
-        tglx@linutronix.de, bp@alien8.de, pavel@ucw.cz,
-        grant.likely@linaro.org, mingo@kernel.org, rjw@rjwysocki.net,
-        hpa@zytor.com, tony.luck@intel.com, konrad.wilk@oracle.com,
-        jiang.liu@linux.intel.com, prarit@redhat.com,
-        linux-kernel@vger.kernel.org, rdunlap@infradead.org,
-        benh@kernel.crashing.org, len.brown@intel.com, joro@8bytes.org
-In-Reply-To: <1414387308-27148-18-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-18-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-cd68f6bd53cf89d1d5ed889b8af65e9c3574a079@git.kernel.org>
+Cc: tglx@linutronix.de, gregkh@linuxfoundation.org, rjw@rjwysocki.net,
+        bhelgaas@google.com, len.brown@intel.com, konrad.wilk@oracle.com,
+        hpa@zytor.com, rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        joro@8bytes.org, yinghai@kernel.org, tony.luck@intel.com,
+        mingo@kernel.org, bp@alien8.de, pavel@ucw.cz,
+        jiang.liu@linux.intel.com, benh@kernel.crashing.org
+Reply-To: yinghai@kernel.org, joro@8bytes.org, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, rdunlap@infradead.org, pavel@ucw.cz,
+        bp@alien8.de, benh@kernel.crashing.org, jiang.liu@linux.intel.com,
+        mingo@kernel.org, rjw@rjwysocki.net, gregkh@linuxfoundation.org,
+        tglx@linutronix.de, konrad.wilk@oracle.com, len.brown@intel.com,
+        hpa@zytor.com, bhelgaas@google.com
+In-Reply-To: <1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq:
-  Introduce helper to check whether an IOAPIC has been registered
-Git-Commit-ID: e89900c9ad75a1b80e1f1f46ce9c9bb0e7ea1d96
+Subject: [tip:x86/apic] x86, irq, acpi:
+  Get rid of special handling of GSI for ACPI SCI
+Git-Commit-ID: cd68f6bd53cf89d1d5ed889b8af65e9c3574a079
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -42,20 +40,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e89900c9ad75a1b80e1f1f46ce9c9bb0e7ea1d96
-Gitweb:     http://git.kernel.org/tip/e89900c9ad75a1b80e1f1f46ce9c9bb0e7ea1d96
+Commit-ID:  cd68f6bd53cf89d1d5ed889b8af65e9c3574a079
+Gitweb:     http://git.kernel.org/tip/cd68f6bd53cf89d1d5ed889b8af65e9c3574a079
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 13:21:47 +0800
+AuthorDate: Mon, 27 Oct 2014 16:11:52 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 16 Dec 2014 14:08:15 +0100
+CommitDate: Tue, 16 Dec 2014 14:08:16 +0100
 
-x86, irq: Introduce helper to check whether an IOAPIC has been registered
+x86, irq, acpi: Get rid of special handling of GSI for ACPI SCI
 
-Introduce acpi_ioapic_registered() to check whether an IOAPIC has already
-been registered, it will be used when enabling IOAPIC hotplug.
+The IOAPIC has logic to track IOAPIC pin status, so there's no need for
+special treatment for GSI used by ACPI SCI in function mp_register_gsi()
+and mp_unregister_gsi().
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Acked-by: Pavel Machek <pavel@ucw.cz>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>
@@ -67,94 +65,46 @@ Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Len Brown <len.brown@intel.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1414387308-27148-18-git-send-email-jiang.liu@linux.intel.com
+Cc: Pavel Machek <pavel@ucw.cz>
+Link: http://lkml.kernel.org/r/1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/include/asm/io_apic.h |  1 +
- arch/x86/kernel/acpi/boot.c    | 22 ++++++++++++++++++++++
- arch/x86/kernel/apic/io_apic.c | 11 +++++++++++
- include/linux/acpi.h           |  1 +
- 4 files changed, 35 insertions(+)
+ arch/x86/kernel/acpi/boot.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index ce63cf3..0db2b70 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -191,6 +191,7 @@ extern void mp_unmap_irq(int irq);
- extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
- 			      struct ioapic_domain_cfg *cfg);
- extern int mp_unregister_ioapic(u32 gsi_base);
-+extern int mp_ioapic_registered(u32 gsi_base);
- extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 			    irq_hw_number_t hwirq);
- extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 5427d9b..ddddaed 100644
+index ddddaed..4433a4b 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
-@@ -826,6 +826,28 @@ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
- }
- EXPORT_SYMBOL(acpi_unregister_ioapic);
+@@ -408,10 +408,6 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+ 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+ 		return gsi;
  
-+/**
-+ * acpi_ioapic_registered - Check whether IOAPIC assoicatied with @gsi_base
-+ *			    has been registered
-+ * @handle:	ACPI handle of the IOAPIC deivce
-+ * @gsi_base:	GSI base associated with the IOAPIC
-+ *
-+ * Assume caller holds some type of lock to serialize acpi_ioapic_registered()
-+ * with acpi_register_ioapic()/acpi_unregister_ioapic().
-+ */
-+int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base)
-+{
-+	int ret = 0;
-+
-+#ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
-+	mutex_lock(&acpi_ioapic_lock);
-+	ret  = mp_ioapic_registered(gsi_base);
-+	mutex_unlock(&acpi_ioapic_lock);
-+#endif
-+
-+	return ret;
-+}
-+
- static int __init acpi_parse_sbf(struct acpi_table_header *table)
- {
- 	struct acpi_table_boot *sb;
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 06a0a6c..1cedf41 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -4026,6 +4026,17 @@ int mp_unregister_ioapic(u32 gsi_base)
- 	return 0;
- }
+-	/* Don't set up the ACPI SCI because it's already set up */
+-	if (acpi_gbl_FADT.sci_interrupt == gsi)
+-		return mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
+-
+ 	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
+ 	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
+ 	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
+@@ -424,7 +420,8 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
+ 	if (irq < 0)
+ 		return irq;
  
-+int mp_ioapic_registered(u32 gsi_base)
-+{
-+	int ioapic;
-+
-+	for_each_ioapic(ioapic)
-+		if (ioapics[ioapic].gsi_config.gsi_base == gsi_base)
-+			return 1;
-+
-+	return 0;
-+}
-+
- int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 		     irq_hw_number_t hwirq)
- {
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 407a12f..a81dd43 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -148,6 +148,7 @@ int acpi_unmap_lsapic(int cpu);
+-	if (enable_update_mptable)
++	/* Don't set up the ACPI SCI because it's already set up */
++	if (enable_update_mptable && acpi_gbl_FADT.sci_interrupt != gsi)
+ 		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
  
- int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base);
- int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base);
-+int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base);
- void acpi_irq_stats_init(void);
- extern u32 acpi_irq_handled;
- extern u32 acpi_irq_not_handled;
+ 	return irq;
+@@ -437,9 +434,6 @@ static void mp_unregister_gsi(u32 gsi)
+ 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+ 		return;
+ 
+-	if (acpi_gbl_FADT.sci_interrupt == gsi)
+-		return;
+-
+ 	irq = mp_map_gsi_to_irq(gsi, 0);
+ 	if (irq > 0)
+ 		mp_unmap_irq(irq);
