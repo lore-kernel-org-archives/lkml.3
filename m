@@ -1,128 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196AbaLSJRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:17:39 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51984 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaLSJRh (ORCPT
+	id S1752283AbaLSJTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:19:41 -0500
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:43168 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaLSJTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:17:37 -0500
-Date: Fri, 19 Dec 2014 09:17:42 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH] arm64: psci: Support generic pm suspend withtout CPUIDLE
- subsystem's help.
-Message-ID: <20141219091742.GB13641@red-moon>
-References: <1418967174-23943-1-git-send-email-jonghwa3.lee@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418967174-23943-1-git-send-email-jonghwa3.lee@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Dec 2014 04:19:39 -0500
+From: Sage Vaillancourt <sagev9000@gmail.com>
+To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org, chase.southwood@gmail.com,
+        ebru.akagunduz@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Sage Vaillancourt <sagev9000@gmail.com>
+Subject: [PATCH 544/544] Staging: comedi: fix spacing style issues in ni_stc.h This is a patch to the ni_stc.h file that removes spaces before tabs, and adds blank lines after declarations. 
+Date: Fri, 19 Dec 2014 04:19:31 -0500
+Message-Id: <1418980771-17690-1-git-send-email-sagev9000@gmail.com>
+X-Mailer: git-send-email 2.2.0
+Signed-off-by: Sage Vaillancourt <sagev9000@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 05:32:54AM +0000, Jonghwa Lee wrote:
-> Current psci's cpu_suspend callback can be used only when common cpu idle
-> configuration is enabled. However, it's also needed for system which only
-> uses generic pm suspend not cpu idle. This patch modifies psci driver to
-> support both of cases.
-> 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+---
+ drivers/staging/comedi/drivers/ni_stc.h | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-NAK. Apart from:
+diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
+index bd69c3f..a79fd07 100644
+--- a/drivers/staging/comedi/drivers/ni_stc.h
++++ b/drivers/staging/comedi/drivers/ni_stc.h
+@@ -166,7 +166,7 @@ enum Interrupt_B_Ack_Bits {
+ #define AI_SCAN_IN_PROG_Pulse			_bit4
+ #define AI_EXTMUX_CLK_Pulse			_bit3
+ #define AI_LOCALMUX_CLK_Pulse			_bit2
+-#define AI_SC_TC_Pulse			 	_bit1
++#define AI_SC_TC_Pulse				_bit1
+ #define AI_CONVERT_Pulse			_bit0
+ 
+ #define AO_Command_1_Register		9
+@@ -326,6 +326,7 @@ static inline unsigned RTSI_Output_Bit(unsigned channel, int is_mseries)
+ {
+ 	unsigned max_channel;
+ 	unsigned base_bit_shift;
++
+ 	if (is_mseries) {
+ 		base_bit_shift = 8;
+ 		max_channel = 7;
+@@ -642,7 +643,7 @@ static unsigned AO_UPDATE_Output_Select(enum ao_update_output_selection
+ #define G_Load_Source_Select		_bit7
+ #define G_Reload_Source_Switching	_bit15
+ #define G_Loading_On_Gate		_bit14
+-#define G_Gate_Polarity 		_bit13
++#define G_Gate_Polarity			_bit13
+ 
+ #define G_Counting_Once(a)		(((a)&0x03)<<10)
+ #define G_Stop_Mode(a)			(((a)&0x03)<<5)
+@@ -1142,6 +1143,7 @@ static inline unsigned MSeries_AI_Config_Bank_Bits(enum ni_reg_type reg_type,
+ 						   unsigned channel)
+ {
+ 	unsigned bits = channel & 0x30;
++
+ 	if (reg_type == ni_reg_622x) {
+ 		if (channel & 0x40)
+ 			bits |= 0x400;
+@@ -1191,6 +1193,7 @@ enum MSeries_PLL_Control_Bits {
+ static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
+ {
+ 	static const unsigned max_divisor = 0x10;
++
+ 	if (divisor < 1 || divisor > max_divisor) {
+ 		pr_err("%s: bug, invalid divisor=%i\n", __func__, divisor);
+ 		return 0;
+@@ -1201,6 +1204,7 @@ static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
+ static inline unsigned MSeries_PLL_Multiplier_Bits(unsigned multiplier)
+ {
+ 	static const unsigned max_multiplier = 0x100;
++
+ 	if (multiplier < 1 || multiplier > max_multiplier) {
+ 		pr_err("%s: bug, invalid multiplier=%i\n", __func__,
+ 		       multiplier);
+-- 
+2.2.0
 
-1) being buggy (how can you use your code when both SUSPEND and CPUidle
-   are on)
-2) not providing a patch to show how you use the API
-
-that's not how I planned to implement system suspend, bear with me for
-a couple of days and I will post an RFC publicly beginning of January.
-
-Amit already posted a different solution and I've already replied to him:
-http://www.spinics.net/lists/arm-kernel/msg373447.html
-
-Lorenzo
-
-> ---
->  arch/arm64/kernel/psci.c |   41 +++++++++++++++++++++++++++++------------
->  1 file changed, 29 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
-> index f1dbca7..06d5527 100644
-> --- a/arch/arm64/kernel/psci.c
-> +++ b/arch/arm64/kernel/psci.c
-> @@ -35,6 +35,13 @@
->  #define PSCI_POWER_STATE_TYPE_STANDBY		0
->  #define PSCI_POWER_STATE_TYPE_POWER_DOWN	1
->  
-> +enum psci_affinity_level {
-> +	PSCI_AFFINITY_LEVEL_0,
-> +	PSCI_AFFINITY_LEVEL_1,
-> +	PSCI_AFFINITY_LEVEL_2,
-> +	PSCI_AFFINITY_LEVEL_3,
-> +};
-> +
->  struct psci_power_state {
->  	u16	id;
->  	u8	type;
-> @@ -513,27 +520,37 @@ static int psci_suspend_finisher(unsigned long index)
->  {
->  	struct psci_power_state *state = __this_cpu_read(psci_power_state);
->  
-> +	/* Generic PM suspend without CPUIDLE functionality */
-> +	if (!state) {
-> +		struct psci_power_state s = {
-> +			.affinity_level = PSCI_AFFINITY_LEVEL_3,
-> +			.type = PSCI_POWER_STATE_TYPE_POWER_DOWN,
-> +		};
-> +		return psci_ops.cpu_suspend(s, virt_to_phys(cpu_resume));
-> +	}
-> +
->  	return psci_ops.cpu_suspend(state[index - 1],
->  				    virt_to_phys(cpu_resume));
->  }
->  
->  static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
->  {
-> -	int ret;
->  	struct psci_power_state *state = __this_cpu_read(psci_power_state);
-> -	/*
-> -	 * idle state index 0 corresponds to wfi, should never be called
-> -	 * from the cpu_suspend operations
-> -	 */
-> -	if (WARN_ON_ONCE(!index))
-> -		return -EINVAL;
->  
-> -	if (state[index - 1].type == PSCI_POWER_STATE_TYPE_STANDBY)
-> -		ret = psci_ops.cpu_suspend(state[index - 1], 0);
-> -	else
-> -		ret = __cpu_suspend(index, psci_suspend_finisher);
-> +	if (state) {
-> +		if (WARN_ON_ONCE(!index))
-> +			return -EINVAL;
-> +
-> +		/*
-> +		 * If idle state initialization is successfully done,
-> +		 * idle state index 0 corresponds to wfi, should never be
-> +		 * called from the cpu_suspend operations
-> +		 */
-> +		if (state[index - 1].type == PSCI_POWER_STATE_TYPE_STANDBY)
-> +			return psci_ops.cpu_suspend(state[index - 1], 0);
-> +	}
->  
-> -	return ret;
-> +	return __cpu_suspend(index, psci_suspend_finisher);
->  }
->  
->  const struct cpu_operations cpu_psci_ops = {
-> -- 
-> 1.7.9.5
-> 
-> 
