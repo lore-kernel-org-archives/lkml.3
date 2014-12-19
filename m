@@ -1,80 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaLSONR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:13:17 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:65319 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565AbaLSONP (ORCPT
+	id S1753325AbaLSONu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:13:50 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:47350 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750AbaLSONr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:13:15 -0500
-Date: Fri, 19 Dec 2014 06:13:10 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Aapo Vienamo <aapo.vienamo@iki.fi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: fix redundant parens in return in
- amplc_dio200_common.c
-Message-ID: <20141219141310.GA31535@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Aapo Vienamo <aapo.vienamo@iki.fi>, linux-kernel@vger.kernel.org
-References: <1418916772-24778-1-git-send-email-aapo.vienamo@iki.fi>
- <20141218224501.GC6742@hudson.localdomain>
- <20141219103716.GA14738@straylight.lan>
+	Fri, 19 Dec 2014 09:13:47 -0500
+Date: Fri, 19 Dec 2014 15:13:37 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: "Michael S. Tsirkin" <mst@redhat.com>
+cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-sh@vger.kernel.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH RFC 2/5] s390: add pci_iomap_range
+In-Reply-To: <1418679168-1011-3-git-send-email-mst@redhat.com>
+Message-ID: <alpine.LFD.2.11.1412191456480.1794@denkbrett>
+References: <1418679168-1011-1-git-send-email-mst@redhat.com> <1418679168-1011-3-git-send-email-mst@redhat.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141219103716.GA14738@straylight.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121914-0005-0000-0000-00000285D0A2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aapo,
-
-On Fri, Dec 19, 2014 at 12:37:16PM +0200, Aapo Vienamo wrote:
-> On Thu, Dec 18, 2014 at 02:45:01PM -0800, Jeremiah Mahler wrote:
-> > Aapo,
-> > 
-> > On Thu, Dec 18, 2014 at 05:32:52PM +0200, Aapo Vienamo wrote:
-> > > This patch fixes a coding style issue found by the checkpatch.pl tool in
-> > > amplc_dio200_common.c by removing the unnecessary parentheses around the
-> > > expression in a return statement.
-> > > 
-> > > Signed-off-by: Aapo Vienamo <aapo.vienamo@iki.fi>
-> > > ---
-> > >  drivers/staging/comedi/drivers/amplc_dio200_common.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/staging/comedi/drivers/amplc_dio200_common.c b/drivers/staging/comedi/drivers/amplc_dio200_common.c
-> > > index 26aad70..6eadbbe 100644
-> > > --- a/drivers/staging/comedi/drivers/amplc_dio200_common.c
-> > > +++ b/drivers/staging/comedi/drivers/amplc_dio200_common.c
-> > > @@ -340,7 +340,7 @@ static int dio200_handle_read_intr(struct comedi_device *dev,
-> > >  
-> > >  	comedi_handle_events(dev, s);
-> > >  
-> > > -	return (triggered != 0);
-> > > +	return triggered != 0;
-> > >  }
-> > >  
-> > [...]
-> > 
-> > When I run checkpatch.pl it doesn't find any errors and the parenthesis
-> > haven't been removed.  How are you running checkpatch.pl?  Are you using
-> > any extra options?
+On Mon, 15 Dec 2014, Michael S. Tsirkin wrote:
+> From: Michael S Tsirkin <mst@redhat.com>
 > 
-> It looks like that I accidentally ran the file trough an older version
-> of checkpatch.pl. The error for this case was quieted in commit 
-> 5b9553a (checkpatch: make "return is not a function" test quieter).
+> Virtio drivers should map the part of the range they need, not
+> necessarily all of it.
+> To this end, support mapping ranges within BAR on s390.
+> Since multiple ranges can now be mapped within a BAR, we keep track of
+> the number of mappings created, and only clear out the mapping for a BAR
+> when this number reaches 0.
 > 
-> Sorry for the noise.
+
+I can't say much about the users of this interface but in principle I'm
+OK with such a change.
+
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/s390/include/asm/pci_io.h |  1 +
+>  arch/s390/pci/pci.c            | 34 +++++++++++++++++++++++++++-------
+>  2 files changed, 28 insertions(+), 7 deletions(-)
 > 
-> - Aapo Vienamo
+> diff --git a/arch/s390/include/asm/pci_io.h b/arch/s390/include/asm/pci_io.h
+> index d194d54..25228b3 100644
+> --- a/arch/s390/include/asm/pci_io.h
+> +++ b/arch/s390/include/asm/pci_io.h
+> @@ -16,6 +16,7 @@
+>  struct zpci_iomap_entry {
+>  	u32 fh;
+>  	u8 bar;
+> +	u16 count;
+>  };
+> 
+>  extern struct zpci_iomap_entry *zpci_iomap_start;
+> diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+> index 2fa7b14..51cb653 100644
+> --- a/arch/s390/pci/pci.c
+> +++ b/arch/s390/pci/pci.c
+> @@ -259,7 +259,10 @@ void __iowrite64_copy(void __iomem *to, const void *from, size_t count)
+>  }
+> 
+>  /* Create a virtual mapping cookie for a PCI BAR */
+> -void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
+> +void __iomem *pci_iomap_range(struct pci_dev *pdev,
+> +			      int bar,
+> +			      unsigned long offset,
+> +			      unsigned long max)
+>  {
+>  	struct zpci_dev *zdev =	get_zdev(pdev);
+>  	u64 addr;
+> @@ -270,14 +273,27 @@ void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
+> 
+>  	idx = zdev->bars[bar].map_idx;
+>  	spin_lock(&zpci_iomap_lock);
+> -	zpci_iomap_start[idx].fh = zdev->fh;
+> -	zpci_iomap_start[idx].bar = bar;
+> +	if (zpci_iomap_start[idx].count++) {
+> +		BUG_ON(zpci_iomap_start[idx].fh != zdev->fh ||
+> +		       zpci_iomap_start[idx].bar != bar);
+> +	} else {
+> +		zpci_iomap_start[idx].fh = zdev->fh;
+> +		zpci_iomap_start[idx].bar = bar;
+> +	}
+> +	/* Detect overrun */
+> +	BUG_ON(!zpci_iomap_start[idx].count);
+>  	spin_unlock(&zpci_iomap_lock);
+> 
+>  	addr = ZPCI_IOMAP_ADDR_BASE | ((u64) idx << 48);
+> -	return (void __iomem *) addr;
+> +	return (void __iomem *) addr + offset;
+>  }
+> -EXPORT_SYMBOL_GPL(pci_iomap);
+> +EXPORT_SYMBOL_GPL(pci_iomap_range);
+> +
+> +void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
+> +{
+> +	return pci_iomap_range(dev, bar, 0, maxlen);
+> +}
+> +EXPORT_SYMBOL(pci_iomap);
 
-If you are looking for something easy to fix have a look in
+This was EXPORT_SYMBOL_GPL. I guess, for this patch, it should stay that
+way. ...Hm, everyone else has this stuff as EXPORT_SYMBOL looks like we
+should use that too.
 
-  drivers/staging/rtl8192u/
+Regards,
+Sebastian
 
-There are lots of checkpatch errors to fix in there.
+> 
+>  void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
+>  {
+> @@ -285,8 +301,12 @@ void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
+> 
+>  	idx = (((__force u64) addr) & ~ZPCI_IOMAP_ADDR_BASE) >> 48;
+>  	spin_lock(&zpci_iomap_lock);
+> -	zpci_iomap_start[idx].fh = 0;
+> -	zpci_iomap_start[idx].bar = 0;
+> +	/* Detect underrun */
+> +	BUG_ON(!zpci_iomap_start[idx].count);
+> +	if (!--zpci_iomap_start[idx].count) {
+> +		zpci_iomap_start[idx].fh = 0;
+> +		zpci_iomap_start[idx].bar = 0;
+> +	}
+>  	spin_unlock(&zpci_iomap_lock);
+>  }
+>  EXPORT_SYMBOL_GPL(pci_iounmap);
+> -- 
+> MST
+> 
+> 
 
--- 
-- Jeremiah Mahler
