@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaLSVV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 16:21:27 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:54130 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaLSVVZ (ORCPT
+	id S1752671AbaLSVVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 16:21:33 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41751 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471AbaLSVVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 16:21:25 -0500
+	Fri, 19 Dec 2014 16:21:31 -0500
 From: Antonios Motakis <a.motakis@virtualopensystems.com>
 To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
         alex.williamson@redhat.com
 Cc: tech@virtualopensystems.com, christoffer.dall@linaro.org,
         eric.auger@linaro.org,
         Antonios Motakis <a.motakis@virtualopensystems.com>,
-        linux-kernel@vger.kernel.org (open list),
         kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-api@vger.kernel.org (open list:ABI/API)
-Subject: [RFC PATCH v3 1/3] vfio: platform: add device properties skeleton and user API
-Date: Fri, 19 Dec 2014 22:20:29 +0100
-Message-Id: <1419024032-1269-2-git-send-email-a.motakis@virtualopensystems.com>
+        linux-kernel@vger.kernel.org (open list)
+Subject: [RFC PATCH v3 2/3] vfio: platform: access device property as a list of strings
+Date: Fri, 19 Dec 2014 22:20:30 +0100
+Message-Id: <1419024032-1269-3-git-send-email-a.motakis@virtualopensystems.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419024032-1269-1-git-send-email-a.motakis@virtualopensystems.com>
 References: <1419024032-1269-1-git-send-email-a.motakis@virtualopensystems.com>
@@ -26,230 +25,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduced the API to return device properties about
-a PLATFORM device (if described by a device tree or ACPI) and the
-skeleton of the implementation for VFIO_PLATFORM. Information about any
-device node bound by VFIO_PLATFORM should be queried via the introduced
-ioctl VFIO_DEVICE_GET_DEV_PROPERTY.
-
-The user needs to know the name and the data type of the property he is
-accessing.
+Certain device properties (e.g. the device node name, the compatible
+string), are available as a list of strings (separated by the null
+terminating character). Let the VFIO user query this type of properties.
 
 Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/vfio/platform/Makefile                |  3 +-
- drivers/vfio/platform/properties.c            | 61 +++++++++++++++++++++++++++
- drivers/vfio/platform/vfio_platform_common.c  | 35 +++++++++++++++
- drivers/vfio/platform/vfio_platform_private.h |  7 +++
- include/uapi/linux/vfio.h                     | 26 ++++++++++++
- 5 files changed, 131 insertions(+), 1 deletion(-)
- create mode 100644 drivers/vfio/platform/properties.c
+ drivers/vfio/platform/properties.c | 43 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
-index 81de144..99f3ba1 100644
---- a/drivers/vfio/platform/Makefile
-+++ b/drivers/vfio/platform/Makefile
-@@ -1,5 +1,6 @@
- 
--vfio-platform-y := vfio_platform.o vfio_platform_common.o vfio_platform_irq.o
-+vfio-platform-y := vfio_platform.o vfio_platform_common.o vfio_platform_irq.o \
-+		   devtree.o
- 
- obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
- 
 diff --git a/drivers/vfio/platform/properties.c b/drivers/vfio/platform/properties.c
-new file mode 100644
-index 0000000..8b90465
---- /dev/null
+index 8b90465..39c6342 100644
+--- a/drivers/vfio/platform/properties.c
 +++ b/drivers/vfio/platform/properties.c
-@@ -0,0 +1,61 @@
-+#include <linux/slab.h>
-+#include <linux/vfio.h>
-+#include <linux/property.h>
-+#include "vfio_platform_private.h"
+@@ -7,7 +7,48 @@ static int dev_property_get_strings(struct device *dev,
+ 				    char *name, unsigned *lenp,
+ 				    void __user *datap, unsigned long datasz)
+ {
+-	return -EINVAL;
++	const char **val;
++	int n, i, ret;
 +
-+static int dev_property_get_strings(struct device *dev,
-+				    char *name, unsigned *lenp,
-+				    void __user *datap, unsigned long datasz)
-+{
-+	return -EINVAL;
-+}
++	*lenp = 0;
 +
-+static int dev_property_get_uint(struct device *dev, char *name,
-+				 uint32_t type, unsigned *lenp,
-+				 void __user *datap, unsigned long datasz)
-+{
-+	return -EINVAL;
-+}
++	n = device_property_read_string_array(dev, name, NULL, 0);
++	if (n < 0)
++		return n;
 +
-+int vfio_platform_dev_properties(struct device *dev,
-+				 uint32_t type, unsigned *lenp,
-+				 void __user *datap, unsigned long datasz)
-+{
-+	char *name;
-+	long namesz;
-+	int ret;
-+
-+	namesz = strnlen_user(datap, datasz);
-+	if (!namesz)
-+		return -EFAULT;
-+	if (namesz > datasz)
-+		return -EINVAL;
-+
-+	name = kzalloc(namesz, GFP_KERNEL);
-+	if (!name)
++	val = kcalloc(n, sizeof(char*), GFP_KERNEL);
++	if (!val)
 +		return -ENOMEM;
-+	if (strncpy_from_user(name, datap, namesz) <= 0) {
-+		kfree(name);
-+		return -EFAULT;
-+	}
 +
-+	switch (type) {
-+	case VFIO_DEV_PROPERTY_TYPE_STRINGS:
-+		ret = dev_property_get_strings(dev, name, lenp, datap, datasz);
-+		break;
++	ret = device_property_read_string_array(dev, name, val, n);
++	if (ret < 0)
++		goto out;
 +
-+	case VFIO_DEV_PROPERTY_TYPE_U64:
-+	case VFIO_DEV_PROPERTY_TYPE_U32:
-+	case VFIO_DEV_PROPERTY_TYPE_U16:
-+	case VFIO_DEV_PROPERTY_TYPE_U8:
-+		ret = dev_property_get_uint(dev, name, type, lenp,
-+					    datap, datasz);
-+		break;
++	ret = 0;
 +
-+	default:
-+		ret = -EINVAL;
-+	}
++	for (i = 0; i < n; i++) {
++		size_t len = strlen(val[i]) + 1;
 +
-+	kfree(name);
-+	return ret;
-+}
-diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
-index a532a25..83ad4b74 100644
---- a/drivers/vfio/platform/vfio_platform_common.c
-+++ b/drivers/vfio/platform/vfio_platform_common.c
-@@ -19,6 +19,7 @@
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/vfio.h>
-+#include <linux/property.h>
- 
- #include "vfio_platform_private.h"
- 
-@@ -251,6 +252,34 @@ static long vfio_platform_ioctl(void *device_data,
- 
- 		return ret;
- 
-+	} else if (cmd == VFIO_DEVICE_GET_DEV_PROPERTY) {
-+		struct vfio_dev_property info;
-+		void __user *datap;
-+		unsigned long datasz;
-+		int ret;
++		if (datasz < len) {
++			ret = -EOVERFLOW;
++			while (i < n)
++				*lenp += strlen(val[i++]) + 1;
++			goto out;
++		}
 +
-+		if (!vdev->dev)
-+			return -EINVAL;
-+
-+		minsz = offsetofend(struct vfio_dev_property, length);
-+
-+		if (copy_from_user(&info, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (info.argsz < minsz)
-+			return -EINVAL;
-+
-+		datap = (void __user *) arg + minsz;
-+		datasz = info.argsz - minsz;
-+
-+		ret = vfio_platform_dev_properties(vdev->dev, info.type,
-+						   &info.length, datap, datasz);
-+
-+		if (copy_to_user((void __user *)arg, &info, minsz))
++		if (copy_to_user(datap, val[i], len)) {
 +			ret = -EFAULT;
++			goto out;
++		}
 +
-+		return ret;
-+
- 	} else if (cmd == VFIO_DEVICE_RESET)
- 		return -EINVAL;
- 
-@@ -501,6 +530,12 @@ int vfio_platform_probe_common(struct vfio_platform_device *vdev,
- 		return ret;
- 	}
- 
-+	/* add device properties flag */
-+	if (device_property_present(dev, "name")) {
-+		vdev->dev = dev;
-+		vdev->flags |= VFIO_DEVICE_FLAGS_DEV_PROPERTIES;
++		*lenp += len;
++		datap += len;
++		datasz -= len;
 +	}
 +
- 	mutex_init(&vdev->igate);
++out:
++	kfree(val);
++	return ret;
+ }
  
- 	return 0;
-diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
-index c3d5b4b..fc6b1fb 100644
---- a/drivers/vfio/platform/vfio_platform_private.h
-+++ b/drivers/vfio/platform/vfio_platform_private.h
-@@ -53,6 +53,7 @@ struct vfio_platform_device {
- 	u32				num_irqs;
- 	int				refcnt;
- 	struct mutex			igate;
-+	struct device			*dev;
- 
- 	/*
- 	 * These fields should be filled by the bus specific binder
-@@ -79,4 +80,10 @@ extern int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
- 					unsigned start, unsigned count,
- 					void *data);
- 
-+/* device properties support in devtree.c */
-+extern int vfio_platform_dev_properties(struct device *dev,
-+					uint32_t type, unsigned *lenp,
-+					void __user *datap,
-+					unsigned long datasz);
-+
- #endif /* VFIO_PLATFORM_PRIVATE_H */
-diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-index 544d3d8..ac50ab3f 100644
---- a/include/uapi/linux/vfio.h
-+++ b/include/uapi/linux/vfio.h
-@@ -161,12 +161,38 @@ struct vfio_device_info {
- #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
- #define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)	/* vfio-platform device */
- #define VFIO_DEVICE_FLAGS_AMBA  (1 << 3)	/* vfio-amba device */
-+#define VFIO_DEVICE_FLAGS_DEV_PROPERTIES (1 << 4) /* Device properties */
- 	__u32	num_regions;	/* Max region index + 1 */
- 	__u32	num_irqs;	/* Max IRQ index + 1 */
- };
- #define VFIO_DEVICE_GET_INFO		_IO(VFIO_TYPE, VFIO_BASE + 7)
- 
- /**
-+ * VFIO_DEVICE_GET_DEV_PROPERTY - _IOR(VFIO_TYPE, VFIO_BASE + 16,
-+ *						struct vfio_devtree_info)
-+ *
-+ * Retrive a device property, e.g. from a device tree if available.
-+ * Caller will initialize data[] with a single string with the requested
-+ * devicetree property name, and type depending on whether a array of strings
-+ * or an array of u32 values is expected. On success, data[] will be extended
-+ * with the requested information, either as an array of u32, or with a list
-+ * of strings sepparated by the NULL terminating character.
-+ * Return: 0 on success, -errno on failure.
-+ */
-+struct vfio_dev_property {
-+	__u32	argsz;
-+	__u32	type;
-+#define VFIO_DEV_PROPERTY_TYPE_STRINGS	0
-+#define VFIO_DEV_PROPERTY_TYPE_U8	1
-+#define VFIO_DEV_PROPERTY_TYPE_U16	2
-+#define VFIO_DEV_PROPERTY_TYPE_U32	3
-+#define VFIO_DEV_PROPERTY_TYPE_U64	4
-+	__u32	length;
-+	__u8	data[];
-+};
-+#define VFIO_DEVICE_GET_DEV_PROPERTY	_IO(VFIO_TYPE, VFIO_BASE + 17)
-+
-+/**
-  * VFIO_DEVICE_GET_REGION_INFO - _IOWR(VFIO_TYPE, VFIO_BASE + 8,
-  *				       struct vfio_region_info)
-  *
+ static int dev_property_get_uint(struct device *dev, char *name,
 -- 
 2.1.3
 
