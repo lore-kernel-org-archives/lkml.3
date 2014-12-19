@@ -1,51 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbaLSKEB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 05:04:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56207 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907AbaLSKD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 05:03:59 -0500
-Date: Fri, 19 Dec 2014 11:03:57 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: Peter Wu <peter@lekensteyn.nl>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] HID: logitech-hidpp: detect HID++ 2.0 errors too
-In-Reply-To: <20141217153039.GB16047@mail.corp.redhat.com>
-Message-ID: <alpine.LNX.2.00.1412191102570.1680@pobox.suse.cz>
-References: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl> <1418691016-30681-2-git-send-email-peter@lekensteyn.nl> <20141217153039.GB16047@mail.corp.redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752247AbaLSKGj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 05:06:39 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:55482 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243AbaLSKGh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 05:06:37 -0500
+Message-ID: <1418983594.29647.150.camel@haakon3.risingtidesystems.com>
+Subject: [GIT PULL] target updates for v3.19-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Date: Fri, 19 Dec 2014 02:06:34 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Dec 2014, Benjamin Tissoires wrote:
+Hello Linus,
 
-> > Devices speaking HID++ 2.0 report a different error code (0xff). Detect
-> > these errors too to avoid 5 second delays when the device reports an
-> > error. Caught by... well, a bug in the QEMU emulation of this receiver.
-> > 
-> > Renamed fap to rap for HID++ 1.0 errors because it is more logical,
-> > it has no functional difference.
-> > 
-> > Signed-off-by: Peter Wu <peter@lekensteyn.nl>
-> > ---
-> 
-> Jiri, it looks like this one fall off from your radar.
-> 
-> It's not a problem per-se, I'd like to have some feedbacks from Logitech
-> first, but still, there is a bug and Peter fixed it :)
+Here are the target-pending updates for v3.19-rc1 code.  Please go ahead
+and pull from:
 
-It's actually still on my radar, but that was exactly the reason I have it 
-on hold, because my understanding was that you are waiting for Logitech to 
-review it.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-Nestor ... ?
+The highlights this merge window include:
 
--- 
-Jiri Kosina
-SUSE Labs
+  - Allow target fabric drivers to function as built-in. (Roland)
+  - Fix tcm_loop multi-TPG endpoint nexus bug. (Hannes)
+  - Move per device config_item_type into se_subsystem_api, allowing
+    configfs attributes to be defined at module_init time. (Jerome + nab)
+  - Convert existing IBLOCK/FILEIO/RAMDISK/PSCSI/TCMU drivers to use
+    external configfs attributes. (nab)
+  - A number of iser-target fixes related to active session + network portal
+    shutdown stability during extended stress testing. (Sagi + Slava)
+  - Dynamic allocation of T10-PI contexts for iser-target, fixing a potentially
+    bogus iscsi_np->tpg_np pointer reference in >= v3.14 code. (Sagi)
+  - iser-target performance + scalability improvements.  (Sagi) 
+  - Fixes for SPC-4 Persistent Reservation AllRegistrants spec compliance.
+    (Ilias + James + nab)
+  - Avoid potential short kern_sendmsg() in iscsi-target for now until Al's
+    conversion to use msghdr iteration is merged post -rc1. (Viro)
+
+Also, Sagi has requested a number of iser-target patches (9) that
+address stability issues he's encountered during extended stress testing
+be considered for v3.10.y + v3.14.y code.  Given the amount of LOC
+involved, it will certainly require extra backporting effort.
+
+Apologies in advance to Greg-KH & Co on this.  Sagi and I will be
+working post-merge to ensure they each get applied correctly.
+
+Thank you,
+
+--nab
+
+Hannes Reinecke (1):
+  tcm_loop: Fix wrong I_T nexus association
+
+Julia Lawall (1):
+  target: remove unneeded array
+
+Kyle McMartin (1):
+  uapi/linux/target_core_user.h: fix headers_install.sh badness
+
+Lino Sanfilippo (1):
+  iscsi-target: fix error path in iscsi_target_init_module()
+
+Markus Elfring (1):
+  target: Deletion of unnecessary checks before the function call
+    "module_put"
+
+Nicholas Bellinger (22):
+  target: Move dev_cit to struct se_subsystem_api
+  target: Move dev_attrib_cit to struct se_subsystem_api
+  target: Move dev_pr_cit to struct se_subsystem_api
+  target: Move dev_wwn_cit to struct se_subsystem_api
+  target: Move dev_alua_tg_pt_gps_cit to struct se_subsystem_api
+  target: Move dev_stat_cit to struct se_subsystem_api
+  target: Add target_core_backend_configfs.h helper macros
+  target: Add EXPORT_SYMBOL for existing se_dev_set_*
+  target: Add DEF_TB_DEFAULT_ATTRIBS macro for virtual device attrs
+  target/iblock: Convert to external iblock_backend_dev_attrs
+  target/file: Convert to external fileio_backend_dev_attrs
+  target/rd: Convert to external rd_mcp_backend_dev_attrs
+  target/user: Convert to external tcmu_backend_dev_attrs
+  target/pscsi: Convert to external pscsi_backend_dev_attrs
+  target: Drop left-over internal dev attribute code
+  target: Drop left-over PHBA_PDEV set attr checks
+  iser-target: Fix wc->wr_id cast warning
+  iscsi-target: Drop left-over bogus iscsi_np->tpg_np
+  target: Fix R_HOLDER bit usage for AllRegistrants
+  target: Avoid dropping AllRegistrants reservation during unregister
+  iscsi-target: Fail connection on short sendmsg writes
+  target: Allow AllRegistrants to re-RESERVE existing reservation
+
+Roland Dreier (1):
+  target: Fix target_core_register_fabric() for built-in fabric modules
+
+Sagi Grimberg (25):
+  iscsi,iser-target: Initiate termination only once
+  iser-target: Fix flush + disconnect completion handling
+  iser-target: Parallelize CM connection establishment
+  iser-target: Fix connected_handler + teardown flow race
+  iser-target: Handle ADDR_CHANGE event for listener cm_id
+  iser-target: Fix implicit termination of connections
+  iser-target: Allocate PI contexts dynamically
+  iser-target: Fix NULL dereference in SW mode DIF
+  iscsi,iser-target: Expose supported protection ops according to t10_pi
+  iser-target: Work-around live target stack shutdown resource cleanup
+  iser-target: Remove interrupt coalescing
+  iser-target: Unite error completion handler for RX and TX
+  iser-target: Cast wr_id with uintptr_t instead of unsinged long
+  iser-target: Centralize completion elements to a context
+  iser-target: Use single CQ for TX and RX
+  iser-target: Remove redundant call to isert_conn_terminate
+  iser-target: Remove an atomic operation from the IO path
+  iser-target: Introduce isert_poll_budget
+  iser-target: Reduce CQ lock contention by batch polling
+  iser-target: Don't wait for session commands from completion context
+  iser-target: Fix logout sequence
+  iser-target: Use debug_level parameter to control logging level
+  iser-target: Adjust log levels and prettify some prints
+  iser-target: Remove code duplication
+  iscsi-target: nullify session in failed login sequence
+
+ drivers/infiniband/ulp/isert/ib_isert.c       | 1599 +++++++++++++------------
+ drivers/infiniband/ulp/isert/ib_isert.h       |   80 +-
+ drivers/target/iscsi/iscsi_target.c           |    1 +
+ drivers/target/iscsi/iscsi_target_core.h      |    1 -
+ drivers/target/iscsi/iscsi_target_login.c     |   11 +-
+ drivers/target/iscsi/iscsi_target_tpg.c       |    1 -
+ drivers/target/iscsi/iscsi_target_transport.c |    3 +-
+ drivers/target/iscsi/iscsi_target_util.c      |   26 +-
+ drivers/target/loopback/tcm_loop.c            |   66 +-
+ drivers/target/loopback/tcm_loop.h            |    7 +-
+ drivers/target/target_core_configfs.c         |  344 ++----
+ drivers/target/target_core_device.c           |   90 +-
+ drivers/target/target_core_file.c             |   42 +
+ drivers/target/target_core_hba.c              |    7 +-
+ drivers/target/target_core_iblock.c           |   42 +
+ drivers/target/target_core_internal.h         |   28 -
+ drivers/target/target_core_pr.c               |  125 +-
+ drivers/target/target_core_pscsi.c            |   26 +
+ drivers/target/target_core_rd.c               |   41 +
+ drivers/target/target_core_user.c             |   42 +
+ include/target/target_core_backend.h          |   43 +
+ include/target/target_core_backend_configfs.h |  120 ++
+ include/uapi/linux/target_core_user.h         |    4 -
+ 23 files changed, 1511 insertions(+), 1238 deletions(-)
+ create mode 100644 include/target/target_core_backend_configfs.h 
+
