@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaLSCCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 21:02:13 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62700 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaLSCCK (ORCPT
+	id S1752170AbaLSCBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 21:01:46 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46968 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099AbaLSCBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 21:02:10 -0500
-Message-ID: <5493871F.6090404@gmail.com>
-Date: Thu, 18 Dec 2014 19:02:07 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: acme@kernel.org, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCHv v3] tools lib traceevent: Add support for IP address
- formats
-References: <1418953390-28891-1-git-send-email-dsahern@gmail.com> <29144.1418954405@turing-police.cc.vt.edu>
-In-Reply-To: <29144.1418954405@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Dec 2014 21:01:13 -0500
+From: Steve Longerbeam <slongerbeam@gmail.com>
+X-Google-Original-From: Steve Longerbeam <steve_longerbeam@mentor.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
+        Jiada Wang <jiada_wang@mentor.com>,
+        Steve Longerbeam <steve_longerbeam@mentor.com>
+Subject: [PATCH v2 7/7] gpu: ipu-di: Switch to DIV_ROUND_CLOSEST for DI clock divider calc
+Date: Thu, 18 Dec 2014 18:00:26 -0800
+Message-Id: <1418954426-21909-8-git-send-email-steve_longerbeam@mentor.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
+References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14 7:00 PM, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 18 Dec 2014 18:43:10 -0700, David Ahern said:
->> Adds helper for following kernel formats:
->>    %pi4 print an IPv4 address with leading zeros
->>    %pI4 print an IPv4 address without leading zeros
->>    %pi6 print an IPv6 address without colons
->>    %pI6 print an IPv6 address with colons
->>    %pI6c print an IPv6 address with colons
->
-> %pI6c print an IPv6 address *in compressed form* with colons.
->
+We can use the DIV_ROUND_CLOSEST() macro when calculating the DI
+clock divider, rounded to nearest int.
 
-damn it. I misunderstood your comment before. Thanks for the follow up.
+Suggested-by: Philipp Zabel <p.zabel@pengutronix.de>
+Signed-off-by: Steve Longerbeam <steve_longerbeam@mentor.com>
+---
+ drivers/gpu/ipu-v3/ipu-di.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-David
+diff --git a/drivers/gpu/ipu-v3/ipu-di.c b/drivers/gpu/ipu-v3/ipu-di.c
+index d95fbd0..b61d6be 100644
+--- a/drivers/gpu/ipu-v3/ipu-di.c
++++ b/drivers/gpu/ipu-v3/ipu-di.c
+@@ -440,8 +440,7 @@ static void ipu_di_config_clock(struct ipu_di *di,
+ 			clk_set_rate(clk, sig->mode.pixelclock);
+ 
+ 			in_rate = clk_get_rate(clk);
+-			div = (in_rate + sig->mode.pixelclock / 2) /
+-				sig->mode.pixelclock;
++			div = DIV_ROUND_CLOSEST(in_rate, sig->mode.pixelclock);
+ 			if (div == 0)
+ 				div = 1;
+ 
+@@ -459,8 +458,7 @@ static void ipu_di_config_clock(struct ipu_di *di,
+ 		unsigned div, error;
+ 
+ 		clkrate = clk_get_rate(di->clk_ipu);
+-		div = (clkrate + sig->mode.pixelclock / 2) /
+-			sig->mode.pixelclock;
++		div = DIV_ROUND_CLOSEST(clkrate, sig->mode.pixelclock);
+ 		rate = clkrate / div;
+ 
+ 		error = rate / (sig->mode.pixelclock / 1000);
+@@ -482,8 +480,7 @@ static void ipu_di_config_clock(struct ipu_di *di,
+ 			clk_set_rate(clk, sig->mode.pixelclock);
+ 
+ 			in_rate = clk_get_rate(clk);
+-			div = (in_rate + sig->mode.pixelclock / 2) /
+-				sig->mode.pixelclock;
++			div = DIV_ROUND_CLOSEST(in_rate, sig->mode.pixelclock);
+ 			if (div == 0)
+ 				div = 1;
+ 
+-- 
+1.7.9.5
+
