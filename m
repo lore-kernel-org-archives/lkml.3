@@ -1,83 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309AbaLSJah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:30:37 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:64318 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaLSJ3j (ORCPT
+	id S1752176AbaLSJfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:35:13 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55292 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaLSJfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:29:39 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-cf-5493f0012bc9
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/2] mfd: max77693: Remove unused structures
-Date: Fri, 19 Dec 2014 10:29:19 +0100
-Message-id: <1418981359-16457-3-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1418981359-16457-1-git-send-email-k.kozlowski@samsung.com>
-References: <1418981359-16457-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xq7qMHyaHGJx5xW8x9eETNovXLwwt
-	7n89ymjx7UoHk8XlXXPYLE53szqweeycdZfdY9OqTjaPO9f2sHnMOxno0bdlFaPH501yAWxR
-	XDYpqTmZZalF+nYJXBmfVv5nLljAVXH532rmBsYDHF2MnBwSAiYSPSsPsELYYhIX7q1n62Lk
-	4hASWMoose37IhYIp49JovXFD0aQKjYBY4nNy5eAVYkIbGKU6Hi8GCzBLGAo8fPdH3YQW1jA
-	RuJKQxuYzSKgKnHr6FU2EJtXwF1i2ZwNjBDr5CROHpsMtppTwEPizY6JYDVCQDV7999lmsDI
-	u4CRYRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSEh93cG49JjVIUYBDkYlHt4PjZNDhFgT
-	y4orcw8xSnAwK4nwOh4HCvGmJFZWpRblxxeV5qQWH2Jk4uCUamCsm+Jg+N/jxUelH55317ou
-	SAxe7FmbcPlahY1Krto1eeucfVFVXzY9vbCfIejyzudRJX/WWB2z4W1OaK6bqbNGZeZvpv5k
-	72SBD3G5v0/aPfoWL7D20n/z+EmH/4l++20tlZAZu4FXYeFShhnZrzX+RjH5bk8/Hvdhm3Ta
-	CieJyV/9r3bOfpWjxFKckWioxVxUnAgAZnFKoAcCAAA=
+	Fri, 19 Dec 2014 04:35:08 -0500
+Date: Fri, 19 Dec 2014 10:35:05 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: B Viswanath <marichika4@gmail.com>
+Cc: Roopa Prabhu <roopa@cumulusnetworks.com>,
+        "Samudrala, Sridhar" <sridhar.samudrala@intel.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "Varlese, Marco" <marco.varlese@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Thomas Graf <tgraf@suug.ch>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141219093505.GG1848@nanopsycho.orion>
+References: <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com>
+ <54931969.7040209@cumulusnetworks.com>
+ <5493293A.2000802@intel.com>
+ <54935E28.8050602@cumulusnetworks.com>
+ <549362A5.3000808@intel.com>
+ <549367CC.2080307@cumulusnetworks.com>
+ <CAN+pFwJyfg1+=+tXUpon0Kket56HJ=9BR3XohPhZnaX7hfPgpg@mail.gmail.com>
+ <20141219082754.GE1848@nanopsycho.orion>
+ <CAN+pFwJAJ71-+MZjJXPbfu5mzMp6AWNxtYR81Lx6siy3D3HfJg@mail.gmail.com>
+ <CAN+pFwLsSTo2DN=6A=Pxa3tjBnNcc9J7JTEKNnxk_-m4Ha9EMQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+pFwLsSTo2DN=6A=Pxa3tjBnNcc9J7JTEKNnxk_-m4Ha9EMQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max77693 regulator driver no longer supports board files. Remove the
-left-overs. Additionally fix name of device in comment.
+Fri, Dec 19, 2014 at 10:22:24AM CET, marichika4@gmail.com wrote:
+>On 19 December 2014 at 14:31, B Viswanath <marichika4@gmail.com> wrote:
+>> On 19 December 2014 at 13:57, Jiri Pirko <jiri@resnulli.us> wrote:
+>>> Fri, Dec 19, 2014 at 06:14:57AM CET, marichika4@gmail.com wrote:
+>>>>On 19 December 2014 at 05:18, Roopa Prabhu <roopa@cumulusnetworks.com> wrote:
+>>>>> On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
+>> <snipped for ease of reading>
+>>>>>>
+>>>>>>
+>>>>>> We also need an interface to set per-switch attributes. Can this work?
+>>>>>>     bridge link set dev sw0 sw_attr bcast_flooding 1 master
+>>>>>> where sw0 is a bridge representing the hardware switch.
+>>>>>
+>>>>>
+>>>>> Not today. We discussed this @ LPC, and one way to do this would be to have
+>>>>> a device
+>>>>> representing the switch asic. This is in the works.
+>>>>
+>>>>
+>>>>Can I assume that on  platforms which house more than one asic (say
+>>>>two 24 port asics, interconnected via a 10G link or equivalent, to get
+>>>>a 48 port 'switch') , the 'rocker' driver (or similar) should expose
+>>>>them as a single set of ports, and not as two 'switch ports' ?
+>>>
+>>> Well that really depends on particular implementation and drivers. If you
+>>> have 2 pci-e devices, I think you should expose them as 2 entities. For
+>>> sure, you can have the driver to do the masking for you. I don't believe
+>>> that is correct though.
+>>>
+>>
+>> In a platform that houses two asic chips, IMO, the user is still
+>> expected to manage the router as a single entity. The configuration
+>> being applied on both asic devices need to be matching if not
+>> identical, and may not be conflicting. The FDB is to be synchronized
+>> so that (offloaded) switching can happen across the asics. Some of
+>> this stuff is asic specific anyway. Another example is that of the
+>> learning. The (hardware) learning can't be enabled on one asic, while
+>> being disabled on another one. The general use cases I have seen are
+>> all involving managing the 'router' as a single entity.  That the
+>> 'router' is implemented with two asics instead of a single asic (with
+>> more ports) is to be treated as an implementation detail.  This is the
+>> usual router management method that exists today.
+>>
+>> I hope I make sense.
+>>
+>> So I am trying to figure out what this single entity that will be used
+>> from a user perspective. It can be a bridge, but our bridges are more
+>> 802.1q bridges. We can use the 'self' mode, but then it means that it
+>> should reflect the entire port count, and not just an asic.
+>>
+>> So I was trying to deduce that in our switchdevice model, the best bet
+>> would be to leave the unification to the driver (i.e., to project the
+>> multiple physical asics as a single virtual switch device). This
+>> allows any 'switch' level configurations to the bridge in 'self' mode.
+>>
+>> And  then we would need to consider stacking. Stacking differs from
+>> this multi-asic scenario since  there would be multiple CPU involved.
+>>
+>> Thanks
+>> Vissu
+>>
+>
+>Another example i can provide is that of mirroring. Imagine user
+>wanted to mirror all traffic from port 1 of asic 1 to port 2 of asic
+>2. This can be offloaded to hardware. However, user would be able to
+>enter such a command only if he/she can look at a single management
+>entity.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- include/linux/mfd/max77693.h | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+I understand your use case. I think this could be handled by higher
+entity. In this sase tome userspace agent which would be aware (by
+configuration) of all asics and how they are interconnected. Just a
+thought. Seem much nice than to do custom masking in drivers.
 
-diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
-index f0b6585cd874..09a4dedaeea8 100644
---- a/include/linux/mfd/max77693.h
-+++ b/include/linux/mfd/max77693.h
-@@ -30,7 +30,7 @@
- #ifndef __LINUX_MFD_MAX77693_H
- #define __LINUX_MFD_MAX77693_H
- 
--/* MAX77686 regulator IDs */
-+/* MAX77693 regulator IDs */
- enum max77693_regulators {
- 	MAX77693_ESAFEOUT1 = 0,
- 	MAX77693_ESAFEOUT2,
-@@ -38,12 +38,6 @@ enum max77693_regulators {
- 	MAX77693_REG_MAX,
- };
- 
--struct max77693_regulator_data {
--	int id;
--	struct regulator_init_data *initdata;
--	struct device_node *of_node;
--};
--
- struct max77693_reg_data {
- 	u8 addr;
- 	u8 data;
-@@ -103,10 +97,6 @@ struct max77693_led_platform_data {
- /* MAX77693 */
- 
- struct max77693_platform_data {
--	/* regulator data */
--	struct max77693_regulator_data *regulators;
--	int num_regulators;
--
- 	/* muic data */
- 	struct max77693_muic_platform_data *muic_data;
- 	struct max77693_led_platform_data *led_data;
--- 
-1.9.1
-
+>
+>Thanks
+>Vissu
+>
+>>>>
+>>>>>
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
