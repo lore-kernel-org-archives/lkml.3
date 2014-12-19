@@ -1,127 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaLSPHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:07:45 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41830 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaLSPHo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:07:44 -0500
-Date: Fri, 19 Dec 2014 16:07:14 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: atull@opensource.altera.com, gregkh@linuxfoundation.org,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
-        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
-        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v6 4/4] staging: fpga manager: add driver for socfpga
- fpga manager
-Message-ID: <20141219150714.GG13070@pengutronix.de>
-References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
- <1418941748-16111-5-git-send-email-atull@opensource.altera.com>
- <20141219085516.GF13070@pengutronix.de>
- <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
+	id S1751584AbaLSPNW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:13:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39675 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968AbaLSPNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 10:13:20 -0500
+Date: Fri, 19 Dec 2014 10:12:10 -0500
+From: Dave Jones <davej@redhat.com>
+To: Chris Mason <clm@fb.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141219151210.GD13404@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+	Peter Anvin <hpa@linux.intel.com>
+References: <20141215055707.GA26225@redhat.com>
+ <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
+ <CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
+ <20141218051327.GA31988@redhat.com>
+ <1418918059.17358.6@mail.thefacebook.com>
+ <20141218161230.GA6042@redhat.com>
+ <20141219024549.GB1671@redhat.com>
+ <CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+ <20141219035859.GA20022@redhat.com>
+ <1418999437.13012.1@mail.thefacebook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:03:20 up 65 days,  2:17, 75 users,  load average: 0,02, 0,28,
- 0,23
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1418999437.13012.1@mail.thefacebook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 03:05:50PM +0100, Michal Simek wrote:
-> On 12/19/2014 09:55 AM, Steffen Trumtrar wrote:
-> > Hi!
-> > 
-> > Just a minor nitpick, but...
-> > 
-> > On Thu, Dec 18, 2014 at 04:29:08PM -0600, atull@opensource.altera.com wrote:
-> >> From: Alan Tull <atull@opensource.altera.com>
-> >>
-> >> Add driver to fpga manager framework to allow configuration
-> >> of FPGA in Altera SoCFPGA parts.
-> >>
-> >> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> >> Acked-by: Michal Simek <michal.simek@xilinx.com>
-> >> ---
-> >> v2: fpga_manager struct now contains struct device
-> >>     fpga_manager_register parameters now take device
-> >>
-> >> v3: skip a version to align versions
-> >>
-> >> v4: move to drivers/staging
-> >>
-> >> v5: fix array_size.cocci warnings
-> >>     fix platform_no_drv_owner.cocci warnings
-> >>     Remove .owner = THIS_MODULE
-> >>     include asm/irq.h
-> >>     clean up list of includes
-> >>     use altera_fpga_reset for ops
-> >>     use enum fpga_mgr_states or u32 as needed
-> >>     use devm_request_irq
-> >>     check irq <= 0 instead of == NO_IRQ
-> >>     Use ARRAY_SIZE
-> >>     rename altera -> socfpga
-> >>     static const socfpga_fpga_ops
-> >>     header moved to linux/fpga/ folder
-> >>     remove ifdef'ed code
-> >>     use platform_get_resource and platform_get_irq
-> >>     move .probe and .remove lines adjacent
-> >>     use module_platform_driver
-> >>     use __maybe_unused
-> >>     only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
-> >>     fix "unsigned 'mode' is never < 0"
-> >>
-> >> v6: return error for (unused) default of case statement
-> >> ---
-> >   ^^^
-> > 
-> > ...if you remove these, than that changelog will not land in the final
-> > commit which I would prefer. Nobody cares for the changelog of a
-> > patch once it is in its final state. And this is a rather noisy one.
-> > When someone in the future looks at this, he will see two lines of
-> > information and 10 times that of uninteresting noise.
-> > 
-> > Not a dealbreaker, but just something to consider for future patches.
-> 
-> 
-> When you run git-am you will see that changelog is not there.
-> 
+On Fri, Dec 19, 2014 at 09:30:37AM -0500, Chris Mason wrote:
 
-Ah, great. It seems like git-am does indeed know now how to handle this.
-There are some commits in mainline that have this changelog added,
-because there where two '---' lines in the patch.
+ > > in more recent builds. I've been running kitchen-sink debug kernels
+ > > for my trinity runs for the last three years, and it's only this
+ > > last few months that this has got to be enough of a problem that I'm
+ > > not seeing the more interesting bugs. (Or perhaps we're just getting
+ > > better at fixing them in -next now, so my runs are lasting longer..)
+ > 
+ > I think we're also adding more and more debugging.  It's definitely a 
+ > good thing, but I think a lot of them are expected to stay off until 
+ > you're trying to track down a specific problem.  I do always run with 
+ > CONFIG_DEBUG_PAGEALLOC here and lock debugging/lockdep, and aside from 
+ > being slow haven't hit trouble.
 
-Then go on kind sirs with whatever you where doing and don't pay any
-attention to my comment... :-)
+I think in the new year I'll hack up something I run on each kernel
+build that picks a random subset of the debug options.  It's been on
+my whiteboard for a while anyway, to try and get more 'real world'
+looking kernel testing.  If I can get enough machines to test on,
+it should still mean we get enough testing that we'll catch stuff early on.
 
-Regards,
-Steffen
+It does seem like things have gotten so 'heavy' that a lot of what I've
+been seeing have been ghosts. That said, there's also been several
+real problems that have been shaken out during this thread over the last
+two months, so I don't feel like we've wasted our time entirely.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+ > I know it's 3.16 instead of 3.17, but 16K stacks are probably 
+ > increasing the pressure on everything in these runs.  It's my favorite 
+ > kernel feature this year, but it's likely to make trinity hurt more on 
+ > memory constrained boxes.
+
+That's actually a good point. Even just the forking/exiting overhead
+is now much higher when we're starting & tearing down hundreds of child
+processes every few seconds. Couple that with some children 'stuck'
+in VM functions, and I could see the kernel struggling to find order
+2 pages for a while. (Though never to the point where it fails).
+
+ > I know you have traces with a ton more output, but I'm still 
+ > wondering if usb-serial and printk from NMI really get along well.  I'd 
+ > try with debugging back on and serial consoles off.  We carry patches 
+ > to make oom print less, just because the time spent on our slow 
+ > emulated serial console is enough to back the box up into a death 
+ > spiral.
+
+So I'm running out of time on this, and will realistically only
+have this machine over the weekend.  I can give that a try, hopefully
+if it fails, it'll fail early so we can try something else.
+
+	Dave
+
