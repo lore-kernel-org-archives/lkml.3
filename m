@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596AbaLSUha (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 15:37:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752422AbaLSUh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 15:37:29 -0500
-Date: Fri, 19 Dec 2014 15:36:45 -0500
-From: Dave Jones <davej@redhat.com>
-To: Chris Mason <clm@fb.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141219203645.GA17130@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-	Peter Anvin <hpa@linux.intel.com>
-References: <1418918059.17358.6@mail.thefacebook.com>
- <20141218161230.GA6042@redhat.com>
- <20141219024549.GB1671@redhat.com>
- <CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
- <20141219035859.GA20022@redhat.com>
- <20141219040308.GB20022@redhat.com>
- <CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
- <20141219145528.GC13404@redhat.com>
- <CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
- <20141219203135.GA1200@ret.masoncoding.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141219203135.GA1200@ret.masoncoding.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751952AbaLSUoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 15:44:08 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:59822 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaLSUoF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 15:44:05 -0500
+Date: Fri, 19 Dec 2014 15:44:02 -0500 (EST)
+Message-Id: <20141219.154402.54691026682141762.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] r8152: check the status before submitting
+ rx
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-109-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-107-Taiwan-albertk@realtek.com>
+	<1394712342-15778-109-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 19 Dec 2014 12:44:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 03:31:36PM -0500, Chris Mason wrote:
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Fri, 19 Dec 2014 16:56:00 +0800
 
- > > So it's not stuck *inside* read_hpet(), and it's almost certainly not
- > > the loop over the sequence counter in ktime_get() either (it's not
- > > increasing *that* quickly). But some basically infinite __run_hrtimer
- > > thing or something?
- > 
- > Really interesting.
- > 
- > So, we're calling __run_hrtimer in a loop:
- > 
- >                 while ((node = timerqueue_getnext(&base->active))) {
- > 				...
- > 				__run_hrtimer(timer, &basenow);
- > 				...
- > 		}
- > 
- > The easy question is how often does trinity call nanosleep?
+> Don't submit the rx if the device is unplugged, linking down,
+> or stopped.
+ ...
+> @@ -1789,6 +1789,11 @@ int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags)
+>  {
+>  	int ret;
+>  
+> +	/* The rx would be stopped, so skip submitting */
+> +	if (test_bit(RTL8152_UNPLUG, &tp->flags) ||
+> +	    !test_bit(WORK_ENABLE, &tp->flags) || !(tp->speed & LINK_STATUS))
+> +		return 0;
+> +
 
-It shouldn't call it directly. (syscalls/nanosleep.c)
-
-/*
- * SYSCALL_DEFINE2(nanosleep, struct timespec __user *, rqtp, struct timespec __user *, rmtp)
- */
-#include "sanitise.h"
-
-struct syscallentry syscall_nanosleep = {
-	.name = "nanosleep",
-	.num_args = 2,
-	.arg1name = "rqtp",
-	.arg1type = ARG_ADDRESS,
-	.arg2name = "rmtp",
-	.arg2type = ARG_ADDRESS,
-	.flags = AVOID_SYSCALL, // Boring.  Can cause long sleeps.
-};
-
-
-That last line being the key one.  We used to do it, but it's well.. boring.
-We could do something smarter, but given it's never triggered anything
-interesting in the past, focussing runtime on the more interesting
-syscalls seems to have been more fruitful.
-
-	Dave
-
+I think netif_carrier_off() should always be true in all three of those
+situations, and would be a much simpler test than what you've coded
+here.
