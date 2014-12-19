@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaLSP4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:56:46 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:58321 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaLSP4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:56:45 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH RESEND] power: reset: augment versatile driver for integrator
-Date: Fri, 19 Dec 2014 16:56:27 +0100
-Message-Id: <1419004587-7580-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1751950AbaLSP5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:57:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42957 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156AbaLSP5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 10:57:50 -0500
+Date: Fri, 19 Dec 2014 16:57:47 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm, vmscan: prevent kswapd livelock due to
+ pfmemalloc-throttled process being killed
+Message-ID: <20141219155747.GA31756@dhcp22.suse.cz>
+References: <1418994116-23665-1-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418994116-23665-1-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Augment the Versatile reset driver to also handle the core
-module reset sequence used on the Integrator/AP and
-Integrator/CP.
+On Fri 19-12-14 14:01:55, Vlastimil Babka wrote:
+> Charles Shirron and Paul Cassella from Cray Inc have reported kswapd stuck
+> in a busy loop with nothing left to balance, but kswapd_try_to_sleep() failing
+> to sleep. Their analysis found the cause to be a combination of several
+> factors:
+> 
+> 1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
+> 
+> 2. The process has been killed (by OOM in this case), but has not yet been
+>    scheduled to remove itself from the waitqueue and die.
 
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Sebastian Reichel <sre@kernel.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/power/reset/arm-versatile-reboot.c | 32 +++++++++++++++++++++++++++---
- 1 file changed, 29 insertions(+), 3 deletions(-)
+pfmemalloc_wait is used as wait_event and that one uses
+autoremove_wake_function for wake ups so the task shouldn't stay on the
+queue if it was woken up. Moreover pfmemalloc_wait sleeps are killable
+by the OOM killer AFAICS.
 
-diff --git a/drivers/power/reset/arm-versatile-reboot.c b/drivers/power/reset/arm-versatile-reboot.c
-index 5b08bffcf1a8..adea9d0c38e0 100644
---- a/drivers/power/reset/arm-versatile-reboot.c
-+++ b/drivers/power/reset/arm-versatile-reboot.c
-@@ -15,14 +15,21 @@
- #include <linux/of.h>
- #include <asm/system_misc.h>
- 
-+#define INTEGRATOR_HDR_CTRL_OFFSET	0x0C
-+#define INTEGRATOR_HDR_LOCK_OFFSET	0x14
-+#define INTEGRATOR_CM_CTRL_RESET	(1 << 3)
-+
- #define REALVIEW_SYS_LOCK_OFFSET	0x20
--#define REALVIEW_SYS_LOCK_VAL		0xA05F
- #define REALVIEW_SYS_RESETCTL_OFFSET	0x40
- 
-+/* Magic unlocking token used on all Versatile boards */
-+#define VERSATILE_LOCK_VAL		0xA05F
-+
- /*
-  * We detect the different syscon types from the compatible strings.
-  */
- enum versatile_reboot {
-+	INTEGRATOR_REBOOT_CM,
- 	REALVIEW_REBOOT_EB,
- 	REALVIEW_REBOOT_PB1176,
- 	REALVIEW_REBOOT_PB11MP,
-@@ -36,6 +43,10 @@ static enum versatile_reboot versatile_reboot_type;
- 
- static const struct of_device_id versatile_reboot_of_match[] = {
- 	{
-+		.compatible = "arm,core-module-integrator",
-+		.data = (void *)INTEGRATOR_REBOOT_CM
-+	},
-+	{
- 		.compatible = "arm,realview-eb-syscon",
- 		.data = (void *)REALVIEW_REBOOT_EB,
- 	},
-@@ -55,31 +66,46 @@ static const struct of_device_id versatile_reboot_of_match[] = {
- 		.compatible = "arm,realview-pbx-syscon",
- 		.data = (void *)REALVIEW_REBOOT_PBX,
- 	},
-+	{},
- };
- 
- static void versatile_reboot(enum reboot_mode mode, const char *cmd)
- {
- 	/* Unlock the reset register */
--	regmap_write(syscon_regmap, REALVIEW_SYS_LOCK_OFFSET,
--		     REALVIEW_SYS_LOCK_VAL);
- 	/* Then hit reset on the different machines */
- 	switch (versatile_reboot_type) {
-+	case INTEGRATOR_REBOOT_CM:
-+		regmap_write(syscon_regmap, INTEGRATOR_HDR_LOCK_OFFSET,
-+			     VERSATILE_LOCK_VAL);
-+		regmap_update_bits(syscon_regmap,
-+				   INTEGRATOR_HDR_CTRL_OFFSET,
-+				   INTEGRATOR_CM_CTRL_RESET,
-+				   INTEGRATOR_CM_CTRL_RESET);
-+		break;
- 	case REALVIEW_REBOOT_EB:
-+		regmap_write(syscon_regmap, REALVIEW_SYS_LOCK_OFFSET,
-+			     VERSATILE_LOCK_VAL);
- 		regmap_write(syscon_regmap,
- 			     REALVIEW_SYS_RESETCTL_OFFSET, 0x0008);
- 		break;
- 	case REALVIEW_REBOOT_PB1176:
-+		regmap_write(syscon_regmap, REALVIEW_SYS_LOCK_OFFSET,
-+			     VERSATILE_LOCK_VAL);
- 		regmap_write(syscon_regmap,
- 			     REALVIEW_SYS_RESETCTL_OFFSET, 0x0100);
- 		break;
- 	case REALVIEW_REBOOT_PB11MP:
- 	case REALVIEW_REBOOT_PBA8:
-+		regmap_write(syscon_regmap, REALVIEW_SYS_LOCK_OFFSET,
-+			     VERSATILE_LOCK_VAL);
- 		regmap_write(syscon_regmap, REALVIEW_SYS_RESETCTL_OFFSET,
- 			     0x0000);
- 		regmap_write(syscon_regmap, REALVIEW_SYS_RESETCTL_OFFSET,
- 			     0x0004);
- 		break;
- 	case REALVIEW_REBOOT_PBX:
-+		regmap_write(syscon_regmap, REALVIEW_SYS_LOCK_OFFSET,
-+			     VERSATILE_LOCK_VAL);
- 		regmap_write(syscon_regmap, REALVIEW_SYS_RESETCTL_OFFSET,
- 			     0x00f0);
- 		regmap_write(syscon_regmap, REALVIEW_SYS_RESETCTL_OFFSET,
+$ git grep "wait_event.*pfmemalloc_wait"
+mm/vmscan.c:
+wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
+mm/vmscan.c:    wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,))
+
+So OOM killer would wake it up already and kswapd shouldn't see this
+task on the waitqueue anymore.
 -- 
-1.9.3
-
+Michal Hocko
+SUSE Labs
