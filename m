@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaLSP5v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:57:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42957 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaLSP5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:57:50 -0500
-Date: Fri, 19 Dec 2014 16:57:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm, vmscan: prevent kswapd livelock due to
- pfmemalloc-throttled process being killed
-Message-ID: <20141219155747.GA31756@dhcp22.suse.cz>
-References: <1418994116-23665-1-git-send-email-vbabka@suse.cz>
+	id S1751568AbaLSQFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:05:50 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:55806 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaLSQFs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 11:05:48 -0500
+Date: Fri, 19 Dec 2014 08:02:37 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH 2/9] hwmon: dts: Doc: Add DTS doc to explain how to use
+ PWM FAN as a cooling device
+Message-ID: <20141219160237.GA2199@roeck-us.net>
+References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
+ <1418897591-18332-3-git-send-email-l.majewski@samsung.com>
+ <1418899337.23532.9.camel@collabora.co.uk>
+ <20141219163224.34796e5d@amdc2363>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418994116-23665-1-git-send-email-vbabka@suse.cz>
+In-Reply-To: <20141219163224.34796e5d@amdc2363>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54944CDB.0521,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 12
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 19-12-14 14:01:55, Vlastimil Babka wrote:
-> Charles Shirron and Paul Cassella from Cray Inc have reported kswapd stuck
-> in a busy loop with nothing left to balance, but kswapd_try_to_sleep() failing
-> to sleep. Their analysis found the cause to be a combination of several
-> factors:
+On Fri, Dec 19, 2014 at 04:32:24PM +0100, Lukasz Majewski wrote:
+> Hi Sjoerd,
 > 
-> 1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
+> Thanks for your feedback and sorry for a late reply.
 > 
-> 2. The process has been killed (by OOM in this case), but has not yet been
->    scheduled to remove itself from the waitqueue and die.
+> > On Thu, 2014-12-18 at 11:13 +0100, Lukasz Majewski wrote:
+> > > Several new properties to allow PWM fan working as a cooling device
+> > > have been combined into this single commit.
+> > > 
+> > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > > ---
+> > >  .../devicetree/bindings/hwmon/pwm-fan.txt          | 28
+> > > ++++++++++++++++++++++ 1 file changed, 28 insertions(+)
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
+> > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt index
+> > > 610757c..3877810 100644 ---
+> > > a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt +++
+> > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt @@ -3,10
+> > > +3,38 @@ Bindings for a fan connected to the PWM lines Required
+> > > properties:
+> > >  - compatible	: "pwm-fan"
+> > >  - pwms		: the PWM that is used to control the PWM fan
+> > > +- cooling-pwm-values      : PWM duty cycle values relative to
+> > > +			    cooling-max-pwm-value correspondig to
+> > > +			    proper cooling states
+> > > +- default-pulse-width     : Property specifying default pulse
+> > > width for FAN
+> > > +			    at system boot (zero to disable FAN on
+> > > boot).
+> > > +			    Allowed range is 0 to 255
+> > 
+> > The 0..255 range seems somewhat random. Would be nicer to either use
+> > the approach of pwm-backlight (iotw, have the range go from the first
+> > to the last entry of cooling-pwm-values) 
+> 
+> I'm OK to change the default-pulse-width to be similar to
+> "default-brightness-level" (as it is in
+> Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt)
+> 
+> > or simply have be the duty
+> > lenght in NS as entries instead of the current indirection.
+> 
+> I'd prefer to keep the indirection - as it is utilized in the current
+> pwm-fan.c driver.
+> 
+FWIW, devicetree information is supposed to be implementation independent.
+So this is a poor argument.
 
-pfmemalloc_wait is used as wait_event and that one uses
-autoremove_wake_function for wake ups so the task shouldn't stay on the
-queue if it was woken up. Moreover pfmemalloc_wait sleeps are killable
-by the OOM killer AFAICS.
+> 
+> Enabling pan to full RPM was the default behaviour in the current
+> pwm-fan.c file.
+> 
+> To be honest, there is no need to enable fan to full RPM speed in this
+> board for following reasons:
+> 1. In Odroid the FAN is optional (stacked on top of a heat sink) - very
+> often it is just enough to only have the heat sink.
+> 
+> 2. Odroid has thermal enabled by default and IMHO it would be more
+> feasible to allow thermal to control fan from the very beginning.
+> 
+> However, I can also understand if the policy for hwmon implies a rule
+> to enable by default all fans to full RPM speed.
+> 
+Why and how does that all suggest that the current default behavior
+should be changed ?
 
-$ git grep "wait_event.*pfmemalloc_wait"
-mm/vmscan.c:
-wait_event_interruptible_timeout(pgdat->pfmemalloc_wait,
-mm/vmscan.c:    wait_event_killable(zone->zone_pgdat->pfmemalloc_wait,))
-
-So OOM killer would wake it up already and kswapd shouldn't see this
-task on the waitqueue anymore.
--- 
-Michal Hocko
-SUSE Labs
+Guenter
