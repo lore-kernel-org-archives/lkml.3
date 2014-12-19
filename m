@@ -1,62 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaLSEs0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 23:48:26 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:49126 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaLSEsZ (ORCPT
+	id S1752292AbaLSEuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 23:50:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:16225 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188AbaLSEuD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 23:48:25 -0500
+	Thu, 18 Dec 2014 23:50:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
+   d="scan'208";a="640114117"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Topic: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Index: AQHQGqESVjGwCGGcx0GfXydnqyBdC5yVc2HggADGJ7CAAAKSQIAAFxZwgAAD1tCAAAHl0A==
+Date: Fri, 19 Dec 2014 04:49:57 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00230AE04@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-26-git-send-email-feng.wu@intel.com>
+	<5491C0A2.7040503@redhat.com>
+	<E959C4978C3B6342920538CF579893F002307C4A@SHSMSX104.ccr.corp.intel.com>
+	<5492926E.8070207@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04938@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ABEB@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04FED@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ADA0@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC05059@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC05059@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20141219040308.GB20022@redhat.com>
-References: <CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>
-	<20141215055707.GA26225@redhat.com>
-	<CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
-	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
-	<20141218051327.GA31988@redhat.com>
-	<1418918059.17358.6@mail.thefacebook.com>
-	<20141218161230.GA6042@redhat.com>
-	<20141219024549.GB1671@redhat.com>
-	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
-	<20141219035859.GA20022@redhat.com>
-	<20141219040308.GB20022@redhat.com>
-Date: Thu, 18 Dec 2014 20:48:24 -0800
-X-Google-Sender-Auth: sz6XF3CSZmVXbCshiHedG3xvN24
-Message-ID: <CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 8:03 PM, Dave Jones <davej@redhat.com> wrote:
->
-> So the only thing that was on that could cause spinlock overhead
-> was DEBUG_SPINLOCK (and LOCK_STAT, though iirc that's not huge either)
 
-So DEBUG_SPINLOCK does have one big downside if I recall correctly -
-the debugging spinlocks are very much not fair. So they don't work
-like the real ticket spinlocks. That might have serious effects on the
-contention case, with some thread not making any progress due to just
-the implementation of the debug spinlocks.
 
-Peter, Ingo, maybe I'm full of crap on the debug spinlock thing., but
-a quick look tells me thay are all built on top of the "trylock"
-primitive that does indeed not queue anything, and is thus not fair.
+> -----Original Message-----
+> From: Zhang, Yang Z
+> Sent: Friday, December 19, 2014 12:44 PM
+> To: Wu, Feng; Paolo Bonzini; kvm@vger.kernel.org
+> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
+> kvm@vger.kernel.org
+> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+> 
+> Wu, Feng wrote on 2014-12-19:
+> >
+> >
+> > Zhang, Yang Z wrote on 2014-12-19:
+> >> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is
+> >> set
+> >>
+> >> Wu, Feng wrote on 2014-12-19:
+> >>>
+> >>>
+> >>> iommu-bounces@lists.linux-foundation.org wrote on
+> >> mailto:iommu-bounces@lists.linux-foundation.org] On Behalf Of:
+> >>>> Cc: iommu@lists.linux-foundation.org;
+> >>>> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+> >>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+> >>>> is set
+> >>>>
+> >>>> Paolo Bonzini wrote on 2014-12-18:
+> >>>>>
+> >>>>>
+> >>>>> On 18/12/2014 04:14, Wu, Feng wrote:
+> >>>>>>
+> >>>>>>
+> >>>>>> linux-kernel-owner@vger.kernel.org wrote on
+> >>>> mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo:
+> >>>>>>> x86@kernel.org; Gleb Natapov; Paolo Bonzini;
+> dwmw2@infradead.org;
+> >>>>>>> joro-zLv9SwRftAIdnm+yROfE0A@public.gmane.org; Alex Williamson;
+> >>>>>>> joro-zLv9SwRftAIdnm+Jiang Liu Cc:
+> >>>>>>> iommu@lists.linux-foundation.org;
+> >>>>>>> linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; KVM
+> list;
+> >>>>>>> Eric Auger Subject: Re: [v3 25/26] KVM: Suppress posted-interrupt
+> >>>>>>> when 'SN' is set
+> >>>>>>>
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> On 12/12/2014 16:14, Feng Wu wrote:
+> >>>>>>>> Currently, we don't support urgent interrupt, all interrupts
+> >>>>>>>> are recognized as non-urgent interrupt, so we cannot send
+> >>>>>>>> posted-interrupt when 'SN' is set.
+> >>>>>>>
+> >>>>>>> Can this happen?  If the vcpu is in guest mode, it cannot have
+> >>>>>>> been scheduled out, and that's the only case when SN is set.
+> >>>>>>>
+> >>>>>>> Paolo
+> >>>>>>
+> >>>>>> Currently, the only place where SN is set is vCPU is preempted
+> >>>>>> and
+> >>>>
+> >>>> If the vCPU is preempted, shouldn't the subsequent be ignored?
+> >>>> What happens if a PI is occurs when vCPU is preempted?
+> >>>
+> >>> If a vCPU is preempted, the 'SN' bit is set, the subsequent
+> >>> interrupts are suppressed for posting.
+> >>
+> >> I mean what happens if we don't set SN bit. From my point, if
+> >> preempter already disabled the interrupt, it is ok to leave SN bit
+> >> as zero. But if preempter enabled the interrupt, doesn't this mean
+> >> he allow interrupt to happen? BTW, since there already has ON bit,
+> >> so this means there only have one interrupt arrived at most and it
+> >> doesn't hurt performance. Do we really need to set SN bit?
+> >
+> >
+> > See this scenario:
+> > vCPU0 is running on pCPU0
+> > --> vCPU0 is preempted by vCPU1
+> > --> Then vCPU1 is running on pCPU0 and vCPU0 is waiting for schedule
+> > --> in runqueue
+> >
+> > If the we don't set SN for vCPU0, then all subsequent interrupts for
+> > vCPU0 is posted to vCPU1, this will consume hardware and software
+> 
+> The PI vector for vCPU1 is notification vector, but the PI vector for vCPU0
+> should be wakeup vector. Why vCPU1 will consume this PI event?
 
-I'm not sure why the debug spinlocks couldn't just be ticket locks
-instead. But there you are - once more, the debug infrastructure is
-actually much weaker and inferior to the "real" code.
+Wakeup vector is only used for blocking case, when vCPU is preempted
+and waiting in the runqueue, the NV is the notification vector.
 
-                   Linus
+Thanks,
+Feng
+
+> 
+> > efforts and in fact it is not needed at all. If SN is set for vCPU0,
+> > VT-d hardware will not issue Notification Event for vCPU0 when an
+> > interrupt is for it, but just setting the related PIR bit.
+> >
+> > Thanks,
+> > Feng
+> >
+> >>
+> >>>
+> >>> Thanks,
+> >>> Feng
+> >>>
+> >>>>
+> >>>>>> waiting for the next scheduling in the runqueue. But I am not
+> >>>>>> sure whether we need to set SN for other purpose in future.
+> >>>>>> Adding SN checking here is just to follow the Spec. non-urgent
+> >>>>>> interrupts are suppressed
+> >>>>> when SN is set.
+> >>>>>
+> >>>>> I would change that to a WARN_ON_ONCE then.
+> >>>>
+> >>>>
+> >>>> Best regards,
+> >>>> Yang
+> >>>>
+> >>>>
+> >>>> _______________________________________________
+> >>>> iommu mailing list
+> >>>> iommu@lists.linux-foundation.org
+> >>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+> >>
+> >>
+> >> Best regards,
+> >> Yang
+> >>
+> 
+> 
+> Best regards,
+> Yang
+> 
+
