@@ -1,350 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaLSFtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 00:49:10 -0500
-Received: from mail-by2on0108.outbound.protection.outlook.com ([207.46.100.108]:62368
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751871AbaLSFtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 00:49:08 -0500
-Message-ID: <5493BD52.8070804@freescale.com>
-Date: Fri, 19 Dec 2014 13:53:22 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751899AbaLSF7c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 00:59:32 -0500
+Received: from mga11.intel.com ([192.55.52.93]:13852 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaLSF7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 00:59:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,605,1413270000"; 
+   d="scan'208";a="640132567"
+From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+To: "Wu, Fengguang" <fengguang.wu@intel.com>
+CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lkp@01.org" <lkp@01.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
+Subject: Re: [iwlwifi] BUG: unable to handle kernel
+Thread-Topic: [iwlwifi] BUG: unable to handle kernel
+Thread-Index: AQHQGuXudvNnW6sn802PXiC20dEG+pyVniKAgAAXsYCAAJS8gA==
+Date: Fri, 19 Dec 2014 05:59:25 +0000
+Message-ID: <1418968765.11138.0.camel@egrumbacBox>
+References: <20141218171309.GD9298@wfg-t540p.sh.intel.com>
+	 <1418931737.4679.1.camel@egrumbacBox>
+	 <20141218210705.GA26694@wfg-t540p.sh.intel.com>
+In-Reply-To: <20141218210705.GA26694@wfg-t540p.sh.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.195.167]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E0214B4CBF8C654CA39A8E41A44DD1FF@intel.com>
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: <dri-devel@lists.freedesktop.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <kernel@pengutronix.de>, <thierry.reding@gmail.com>,
-        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v2 08/14] drm: imx: Add MIPI DSI host controller driver
-References: <1418886696-11636-1-git-send-email-Ying.Liu@freescale.com>
-	 <1418886696-11636-9-git-send-email-Ying.Liu@freescale.com>
- <1418902740.4212.46.camel@pengutronix.de>
-In-Reply-To: <1418902740.4212.46.camel@pengutronix.de>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(479174004)(24454002)(189002)(51704005)(199003)(377454003)(57704003)(97736003)(31966008)(59896002)(120916001)(107046002)(81156004)(105606002)(106466001)(77096005)(2950100001)(68736005)(54356999)(50986999)(76176999)(65816999)(62966003)(77156002)(86362001)(21056001)(36756003)(33656002)(99396003)(92566001)(19580405001)(19580395003)(6806004)(80316001)(83506001)(69596002)(84676001)(64126003)(64706001)(87936001)(20776003)(47776003)(65806001)(85426001)(46102003)(4396001)(110136001)(104016003)(50466002)(23676002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0631;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0631;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0631;
-X-Forefront-PRVS: 0430FA5CB7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0631;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 19 Dec 2014 05:49:04.8619
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0631
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBJ5xolV020408
 
-On 12/18/2014 07:39 PM, Philipp Zabel wrote:
-> Am Donnerstag, den 18.12.2014, 15:11 +0800 schrieb Liu Ying:
->> This patch adds i.MX MIPI DSI host controller driver support.
->> Currently, the driver supports the burst with sync pulses mode only.
->>
->> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> ---
->> v1->v2:
->>   * Address almost all comments from Thierry Reding and Russell.
->>   * Update the DT documentation to remove the display-timings node in the panel node.
->>   * Update the DT documentation to state that the nodes which represent the possible
->>     DRM CRTCs the controller may connect with should be placed in the node "ports".
->>   * Remove the flag 'enabled' from the struct imx_mipi_dsi.
->>   * Move the format_to_bpp() function in v1 to the common DRM MIPI DSI driver.
->>   * Improve the way we wait for check status for DPHY and command packet transfer.
->>   * Improve the DPMS support for the encoder.
->>   * Split the functions of ->host_attach() and ->mode_valid() clearly as suggested by
->>     Thierry Reding.
->>   * Improve the logics in imx_mipi_dsi_dcs_long_write().
->>   * Enable/disable the pllref_clk and pllref_gate_clk at the component binding/unbinding
->>     stages to help remove the flag 'enabled'.
->>   * Update the module license to be "GPL".
->>   * Other minor changes, such as coding style issues and macro naming issues.
->>
->>   .../devicetree/bindings/drm/imx/mipi_dsi.txt       |   78 ++
->>   drivers/gpu/drm/imx/Kconfig                        |    6 +
->>   drivers/gpu/drm/imx/Makefile                       |    1 +
->>   drivers/gpu/drm/imx/imx-mipi-dsi.c                 | 1056 ++++++++++++++++++++
->>   4 files changed, 1141 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
->>   create mode 100644 drivers/gpu/drm/imx/imx-mipi-dsi.c
->>
->> diff --git a/Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt b/Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
->> new file mode 100644
->> index 0000000..892ed62
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
->> @@ -0,0 +1,78 @@
->> +Device-Tree bindings for MIPI DSI host controller
->> +
->> +MIPI DSI host controller
->> +========================
->> +
->> +The MIPI DSI host controller is a Synopsys DesignWare IP.
->> +It is a digital core that implements all protocol functions defined
->> +in the MIPI DSI specification, providing an interface between the
->> +system and the MIPI DPHY, and allowing communication with a MIPI DSI
->> +compliant display.
->> +
->> +Required properties:
->> + - #address-cells: Should be <1>.
->> + - #size-cells: Should be <0>.
->> + - compatible: Should be "fsl,imx6q-mipi-dsi" for i.MX6q/sdl SoCs.
->
-> If this is a Synopsys DesignWare IP core as the HDMI TX, I think the
-> compatible should reflect that. How about a second compatible
-> "snps,dw-mipi-dsi"?
+On Thu, 2014-12-18 at 13:07 -0800, Fengguang Wu wrote:
+> On Fri, Dec 19, 2014 at 03:42:17AM +0800, Grumbach, Emmanuel wrote:
+> > On Thu, 2014-12-18 at 09:13 -0800, Fengguang Wu wrote:
+> > > Hi All,
+> > > 
+> > > I don't see any relationship between the BUG and this bisected commit.
+> > > Anyway, it's better to report it to the lists than to ignore.
+> > 
+> > Right - but I have to say that I have no clue how this comment can cause
+> > the bug you are seeing...
+> 
+> s?comment?commit?
+> 
 
-Ok, I'll add this second compatible string.
+Yes :)
 
->
->> + - reg: Physical base address of the controller and length of memory
->> +         mapped region.
->> + - interrupts: The controller's interrupt number to the CPU(s).
->> + - gpr: Should be <&gpr>.
->> +         The phandle points to the iomuxc-gpr region containing the
->> +         multiplexer control register for the controller.
->> + - clocks, clock-names: Phandles to the controller pllref, pllref_gate
->> +           and core_cfg clocks, as described in [1] and [2].
->> +
->> +Required sub-nodes:
->> + - ports: This node may contain up to four port nodes with endpoint
->> +   definitions as defined in [3], corresponding to the four inputs to
->> +   the controller multiplexer.
->> + - A node to represent a DSI peripheral as described in [4].
->> +
->> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
->> +[2] Documentation/devicetree/bindings/clock/imx6q-clock.txt
->> +[3] Documentation/devicetree/bindings/media/video-interfaces.txt
->> +[4] Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt
->> +
->> +example:
->> +	gpr: iomuxc-gpr@020e0000 {
->> +		/* ... */
->> +	};
->> +
->> +	mipi_dsi: mipi@021e0000 {
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +		compatible = "fsl,imx6q-mipi-dsi";
->> +		reg = <0x021e0000 0x4000>;
->> +		interrupts = <0 102 IRQ_TYPE_LEVEL_HIGH>;
->> +		gpr = <&gpr>;
->> +		clocks = <&clks IMX6QDL_CLK_VIDEO_27M>,
->> +			 <&clks IMX6QDL_CLK_HSI_TX>,
->> +			 <&clks IMX6QDL_CLK_HSI_TX>;
->> +		clock-names = "pllref", "pllref_gate", "core_cfg";
->
-> Not sure about this. Are those names from the Synopsys documentation?
+> > Do you even have an Intel Wireless device the VM could access?
+> 
+> Nope. It's simple QEMU virtual machine boot test.
+> 
 
-No, I don't think it's from there.
+In that case - this just can't be right... Don't know what to say...
 
->
-> According to Table 41-1 in the i.MX6Q Reference Manual, this module has
-> 6 clock inputs:
->   - ac_clk_125m (from ahb_clk_root)
->   - pixel_clk (from axi_clk_root)
->   - cfg_clk and pll_refclk (from video_27m)
->   - ips_clk and ipg_clk_s (from ipg_clk_root)
-> The CCM chapter says that of these, "ac_clk_125m", "cfg_clk", ips_clk",
-> and "pll_refclk" are gated by a single bit called
-> "mipi_core_cfg_clk_enable", that is clk[CLK_HSI_TX].
-> If that is correct, I see no reason for the "pllref_gate" clock.
-> I suppose two clocks "pllref" and "cfg" should suffice.
+> Thanks,
+> Fengguang
+> 
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-fixes.git master
+> > > 
+> > > commit 03d6c3b0fa4f5f0379cede079ec828a6c999fe43
+> > > Author:     Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> > > AuthorDate: Wed Dec 3 10:39:07 2014 +0200
+> > > Commit:     Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> > > CommitDate: Sun Dec 14 10:20:29 2014 +0200
+> > > 
+> > >     iwlwifi: pcie: re-ACK all interrupts after device reset
+> > >     
+> > >     When we reset the device, the CSR_INT gets cleared as well
+> > >     as CSR_INT_MASK. Meaning that we shouldn't get any interrupt
+> > >     but, due to a hardware bug, recent devices will keep sending
+> > >     interrupts. This leads to an interrupt storm while stopping
+> > >     the device.
+> > >     The way to fix this is to ACK all the interrupts after the
+> > >     device is reset so that the value of CSR_INT will stay
+> > >     0xffffffff.
+> > >     
+> > >     Fixes: 522713c81e4e ("iwlwifi: pcie: properly reset the device")
+> > >     Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> > > 
+> > > +------------------------------------------+------------+------------+------------+
+> > > |                                          | 0a79a0c011 | 03d6c3b0fa | iwlwifi-fi |
+> > > +------------------------------------------+------------+------------+------------+
+> > > | boot_successes                           | 60         | 19         | 3          |
+> > > | boot_failures                            | 0          | 1          | 9          |
+> > > | BUG:unable_to_handle_kernel              | 0          | 1          | 9          |
+> > > | Oops                                     | 0          | 1          | 9          |
+> > > | RIP:strcmp                               | 0          | 1          | 9          |
+> > > | Kernel_panic-not_syncing:Fatal_exception | 0          | 1          | 9          |
+> > > | backtrace:led_trigger_register_simple    | 0          | 1          | 9          |
+> > > | backtrace:ledtrig_usb_init               | 0          | 1          | 9          |
+> > > | backtrace:kernel_init_freeable           | 0          | 1          | 9          |
+> > > +------------------------------------------+------------+------------+------------+
+> > > 
+> > > [    5.345018] g_serial gadget: Gadget Serial v2.4
+> > > [    5.345927] g_serial gadget: g_serial ready
+> > > [    5.345927] g_serial gadget: g_serial ready
+> > > [    5.346777] BUG: unable to handle kernel 
+> > > [    5.346777] BUG: unable to handle kernel paging requestpaging request at ffff88000004e5f0
+> > >  at ffff88000004e5f0
+> > > [    5.348183] IP:
+> > > [    5.348183] IP: [<ffffffff81446a68>] strcmp+0x6/0x20
+> > >  [<ffffffff81446a68>] strcmp+0x6/0x20
+> > > [    5.349183] PGD 37f1067 
+> > > [    5.349183] PGD 37f1067 PUD 37f2067 PUD 37f2067 PMD 37f3067 PMD 37f3067 PTE 800000000004e060PTE 800000000004e060
+> > > 
+> > > [    5.350498] Oops: 0000 [#1] 
+> > > [    5.350498] Oops: 0000 [#1] DEBUG_PAGEALLOCDEBUG_PAGEALLOC
+> > > 
+> > > [    5.351360] CPU: 0 PID: 1 Comm: swapper Not tainted 3.18.0-g03d6c3b #1
+> > > [    5.351360] CPU: 0 PID: 1 Comm: swapper Not tainted 3.18.0-g03d6c3b #1
+> > > [    5.352660] task: ffff880012060000 ti: ffff88001204c000 task.ti: ffff88001204c000
+> > > [    5.352660] task: ffff880012060000 ti: ffff88001204c000 task.ti: ffff88001204c000
+> > > [    5.354143] RIP: 0010:[<ffffffff81446a68>] 
+> > > [    5.354143] RIP: 0010:[<ffffffff81446a68>]  [<ffffffff81446a68>] strcmp+0x6/0x20
+> > >  [<ffffffff81446a68>] strcmp+0x6/0x20
+> > > [    5.354451] RSP: 0000:ffff88001204fe28  EFLAGS: 00010246
+> > > [    5.354451] RSP: 0000:ffff88001204fe28  EFLAGS: 00010246
+> > > [    5.354451] RAX: 0000000000000000 RBX: ffff88000c08fe00 RCX: ffffffff81d35310
+> > > [    5.354451] RAX: 0000000000000000 RBX: ffff88000c08fe00 RCX: ffffffff81d35310
+> > > [    5.354451] RDX: ffff88000c08fe68 RSI: ffffffff826d05be RDI: ffff88000004e5f0
+> > > [    5.354451] RDX: ffff88000c08fe68 RSI: ffffffff826d05be RDI: ffff88000004e5f0
+> > > [    5.354451] RBP: ffff88001204fe28 R08: 0000000000000001 R09: 000000000000033a
+> > > [    5.354451] RBP: ffff88001204fe28 R08: 0000000000000001 R09: 000000000000033a
+> > > [    5.354451] R10: 0000000000000000 R11: ffffffff82531cd1 R12: ffff88000c19fa00
+> > > [    5.354451] R10: 0000000000000000 R11: ffffffff82531cd1 R12: ffff88000c19fa00
+> > > [    5.354451] R13: 0000000000000000 R14: ffffffff837958b8 R15: 0000000000000000
+> > > [    5.354451] R13: 0000000000000000 R14: ffffffff837958b8 R15: 0000000000000000
+> > > [    5.354451] FS:  0000000000000000(0000) GS:ffffffff82789000(0000) knlGS:0000000000000000
+> > > [    5.354451] FS:  0000000000000000(0000) GS:ffffffff82789000(0000) knlGS:0000000000000000
+> > > [    5.354451] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > > [    5.354451] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > > [    5.354451] CR2: ffff88000004e5f0 CR3: 0000000002776000 CR4: 00000000000006b0
+> > > [    5.354451] CR2: ffff88000004e5f0 CR3: 0000000002776000 CR4: 00000000000006b0
+> > > [    5.354451] Stack:
+> > > [    5.354451] Stack:
+> > > [    5.354451]  ffff88001204fe58
+> > > [    5.354451]  ffff88001204fe58 ffffffff81d35334 ffffffff81d35334 0000000000000000 0000000000000000 ffff88000c19fa00 ffff88000c19fa00
+> > > 
+> > > [    5.354451]  ffffffff826d05be
+> > > [    5.354451]  ffffffff826d05be 0000000000000000 0000000000000000 ffff88001204fe88 ffff88001204fe88 ffffffff81d35648 ffffffff81d35648
+> > > 
+> > > [    5.354451]  ffff88000e3bbcc0
+> > > [    5.354451]  ffff88000e3bbcc0 ffffffff82b3fe61 ffffffff82b3fe61 0000000000000000 0000000000000000 ffffffff82b98910 ffffffff82b98910
+> > > 
+> > > [    5.354451] Call Trace:
+> > > [    5.354451] Call Trace:
+> > > [    5.354451]  [<ffffffff81d35334>] led_trigger_register+0x63/0x129
+> > > [    5.354451]  [<ffffffff81d35334>] led_trigger_register+0x63/0x129
+> > > [    5.354451]  [<ffffffff81d35648>] led_trigger_register_simple+0x35/0x79
+> > > [    5.354451]  [<ffffffff81d35648>] led_trigger_register_simple+0x35/0x79
+> > > [    5.354451]  [<ffffffff82b3fe61>] ? gs_bind+0xea/0xea
+> > > [    5.354451]  [<ffffffff82b3fe61>] ? gs_bind+0xea/0xea
+> > > [    5.354451]  [<ffffffff82b3fe78>] ledtrig_usb_init+0x17/0x2e
+> > > [    5.354451]  [<ffffffff82b3fe78>] ledtrig_usb_init+0x17/0x2e
+> > > [    5.354451]  [<ffffffff82b00044>] do_one_initcall+0xe6/0x171
+> > > [    5.354451]  [<ffffffff82b00044>] do_one_initcall+0xe6/0x171
+> > > [    5.354451]  [<ffffffff82b001c7>] kernel_init_freeable+0xf8/0x180
+> > > [    5.354451]  [<ffffffff82b001c7>] kernel_init_freeable+0xf8/0x180
+> > > [    5.354451]  [<ffffffff82060791>] ? rest_init+0xbd/0xbd
+> > > [    5.354451]  [<ffffffff82060791>] ? rest_init+0xbd/0xbd
+> > > [    5.354451]  [<ffffffff8206079a>] kernel_init+0x9/0xd0
+> > > [    5.354451]  [<ffffffff8206079a>] kernel_init+0x9/0xd0
+> > > [    5.354451]  [<ffffffff8207d2ba>] ret_from_fork+0x7a/0xb0
+> > > [    5.354451]  [<ffffffff8207d2ba>] ret_from_fork+0x7a/0xb0
+> > > [    5.354451]  [<ffffffff82060791>] ? rest_init+0xbd/0xbd
+> > > [    5.354451]  [<ffffffff82060791>] ? rest_init+0xbd/0xbd
+> > > [    5.354451] Code: 
+> > > [    5.354451] Code: c0 c0 eb eb f5 f5 31 31 c9 c9 40 40 8a 8a 3c 3c 0e 0e 4d 4d 8d 8d 0c 0c 08 08 40 40 84 84 ff ff 41 41 88 88 3c 3c 08 08 74 74 0d 0d 48 48 ff ff c1 c1 48 48 39 39 ca ca 75 75 e7 e7 41 41 c6 c6 41 41 01 01 00 00 5d 5d c3 c3 55 55 31 31 c0 c0 48 48 89 89 e5 e5 <8a> <8a> 14 14 07 07 3a 3a 14 14 06 06 74 74 07 07 19 19 c0 c0 83 83 c8 c8 01 01 eb eb 09 09 48 48 ff ff c0 c0 84 84 d2 d2 75 75 
+> > > 
+> > > [    5.354451] RIP 
+> > > [    5.354451] RIP  [<ffffffff81446a68>] strcmp+0x6/0x20
+> > >  [<ffffffff81446a68>] strcmp+0x6/0x20
+> > > [    5.354451]  RSP <ffff88001204fe28>
+> > > [    5.354451]  RSP <ffff88001204fe28>
+> > > [    5.354451] CR2: ffff88000004e5f0
+> > > [    5.354451] CR2: ffff88000004e5f0
+> > > [    5.354451] ---[ end trace 8f9377b34c860a0c ]---
+> > > [    5.354451] ---[ end trace 8f9377b34c860a0c ]---
+> > > 
+> > > git bisect start baa21e834941ee5fbe4bd421c871f7c0c5f9a086 70e71ca0af244f48a5dcf56dc435243792e3a495 --
+> > > git bisect  bad 03d6c3b0fa4f5f0379cede079ec828a6c999fe43  # 16:23      0-      1  iwlwifi: pcie: re-ACK all interrupts after device reset
+> > > git bisect good 0a79a0c011cb291675e3b80760a452fcba5c59d9  # 16:28     20+      0  iwlwifi: mvm: clear IN_HW_RESTART flag on stop()
+> > > # first bad commit: [03d6c3b0fa4f5f0379cede079ec828a6c999fe43] iwlwifi: pcie: re-ACK all interrupts after device reset
+> > > git bisect good 0a79a0c011cb291675e3b80760a452fcba5c59d9  # 16:30     60+      0  iwlwifi: mvm: clear IN_HW_RESTART flag on stop()
+> > > # extra tests on HEAD of iwlwifi-fixes/master
+> > > git bisect  bad baa21e834941ee5fbe4bd421c871f7c0c5f9a086  # 16:30      0-      9  iwlwifi: pcie: limit fw chunk sizes given to fh
+> > > # extra tests on tree/branch iwlwifi-fixes/master
+> > > git bisect  bad baa21e834941ee5fbe4bd421c871f7c0c5f9a086  # 16:30      0-      9  iwlwifi: pcie: limit fw chunk sizes given to fh
+> > > # extra tests on tree/branch linus/master
+> > > git bisect good 44e8967d591686463e84a88b46b03beba3ab49fb  # 16:32     60+      0  Ceph: remove left-over reject file
+> > > # extra tests on tree/branch next/master
+> > > git bisect good cfaa3a95dd2b402599b1d8122dc3107478db8717  # 16:35     60+      1  Add linux-next specific files for 20141218
+> > > 
+> > > 
+> > > This script may reproduce the error.
+> > > 
+> > > ----------------------------------------------------------------------------
+> > > #!/bin/bash
+> > > 
+> > > kernel=$1
+> > > initrd=quantal-core-x86_64.cgz
+> > > 
+> > > wget --no-clobber https://github.com/fengguang/reproduce-kernel-bug/raw/master/initrd/$initrd
+> > > 
+> > > kvm=(
+> > > 	qemu-system-x86_64
+> > > 	-cpu kvm64
+> > > 	-enable-kvm
+> > > 	-kernel $kernel
+> > > 	-initrd $initrd
+> > > 	-m 320
+> > > 	-smp 2
+> > > 	-net nic,vlan=1,model=e1000
+> > > 	-net user,vlan=1
+> > > 	-boot order=nc
+> > > 	-no-reboot
+> > > 	-watchdog i6300esb
+> > > 	-rtc base=localtime
+> > > 	-serial stdio
+> > > 	-display none
+> > > 	-monitor null 
+> > > )
+> > > 
+> > > append=(
+> > > 	hung_task_panic=1
+> > > 	earlyprintk=ttyS0,115200
+> > > 	debug
+> > > 	apic=debug
+> > > 	sysrq_always_enabled
+> > > 	rcupdate.rcu_cpu_stall_timeout=100
+> > > 	panic=-1
+> > > 	softlockup_panic=1
+> > > 	nmi_watchdog=panic
+> > > 	oops=panic
+> > > 	load_ramdisk=2
+> > > 	prompt_ramdisk=0
+> > > 	console=ttyS0,115200
+> > > 	console=tty0
+> > > 	vga=normal
+> > > 	root=/dev/ram0
+> > > 	rw
+> > > 	drbd.minor_count=8
+> > > )
+> > > 
+> > > "${kvm[@]}" --append "${append[*]}"
+> > > ----------------------------------------------------------------------------
+> > > 
+> > > Thanks,
+> > > Fengguang
+> > > _______________________________________________
+> > > LKP mailing list
+> > > LKP@linux.intel.com
+> > 
 
-Using the two clocks makes the code look like this, perhaps:
-
-       clocks = <&clks IMX6QDL_CLK_VIDEO_27M>,
-                <&clks IMX6QDL_CLK_HSI_TX>;
-       clock-names = "pllref", "core_cfg";
-
-Then, it seems that I have no way to disable the pllref clock if
-using the clock tree after applying this patch set?
-
-
-Or, perhaps, this one?
-
-       clocks = <&clks IMX6QDL_CLK_HSI_TX>,
-                <&clks IMX6QDL_CLK_HSI_TX>;
-       clock-names = "pllref", "core_cfg";
-
-This only uses the gate clock hsi_tx.  The current clock tree states
-that it comes from:
-
-      pll3_120m ->
-                  | -> hsi_tx_sel -> hsi_tx_podf -> hsi_tx
-pll2_pfd2_396m ->
-
-So, I can not get the correct pllref clock frequency with this tree.
-The pllref clock should be derived from the video_27m clock.
-
-
-The way I decided to use the three clocks is:
-1) PLL related
-* pllref clock only cares about the pll reference rate(the frequency).
-   And, the frequency does matter as it has an impact on the lane clock
-   frequency.
-* pllref_gate is a gate clock and it only cares about the gate.
-
-2) register configuration related
-* core_cfg is a gate clock and it only cares about the gate.
-Usually, the register configuration clock frequency is not so important
-and the gate is what we really need.
-
-I am currently not strong on the way I used.  I am open to any better
-solution.
-
->
-> Maybe HSI_TX should be split up into multiple shared gate clocks that
-> all set the mipi_core_cfg clock bits (see below).
-
-Yes, maybe.
-If that's the case, do we need to add two gate clocks in the DT node to
-represent cfg_gate and pllref_gate respectively?
-
->
->> diff --git a/drivers/gpu/drm/imx/Kconfig b/drivers/gpu/drm/imx/Kconfig
->> index 82fb758..03f04fb 100644
->> --- a/drivers/gpu/drm/imx/Kconfig
->> +++ b/drivers/gpu/drm/imx/Kconfig
->> @@ -51,3 +51,9 @@ config DRM_IMX_HDMI
->>   	depends on DRM_IMX
->>   	help
->>   	  Choose this if you want to use HDMI on i.MX6.
->> +
->> +config DRM_IMX_MIPI_DSI
->> +	tristate "Freescale i.MX DRM MIPI DSI"
->> +	depends on DRM_IMX && MFD_SYSCON
->> +	help
->> +	  Choose this if you want to use MIPI DSI on i.MX6.
->> diff --git a/drivers/gpu/drm/imx/Makefile b/drivers/gpu/drm/imx/Makefile
->> index 582c438..4571d52 100644
->> --- a/drivers/gpu/drm/imx/Makefile
->> +++ b/drivers/gpu/drm/imx/Makefile
->> @@ -10,3 +10,4 @@ obj-$(CONFIG_DRM_IMX_LDB) += imx-ldb.o
->>   imx-ipuv3-crtc-objs  := ipuv3-crtc.o ipuv3-plane.o
->>   obj-$(CONFIG_DRM_IMX_IPUV3)	+= imx-ipuv3-crtc.o
->>   obj-$(CONFIG_DRM_IMX_HDMI) += imx-hdmi.o
->> +obj-$(CONFIG_DRM_IMX_MIPI_DSI) += imx-mipi-dsi.o
->> diff --git a/drivers/gpu/drm/imx/imx-mipi-dsi.c b/drivers/gpu/drm/imx/imx-mipi-dsi.c
->> new file mode 100644
->> index 0000000..1cb4328
->> --- /dev/null
->> +++ b/drivers/gpu/drm/imx/imx-mipi-dsi.c
-> [...]
->> +static int imx_mipi_dsi_bind(struct device *dev, struct device *master, void *data)
->> +{
->> +	struct platform_device *pdev = to_platform_device(dev);
->> +	struct drm_device *drm = data;
->> +	struct device_node *np = dev->of_node;
->> +	struct imx_mipi_dsi *dsi;
->> +	struct resource *res;
->> +	u32 val;
->> +	int ret;
->> +
->> +	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
->> +	if (!dsi)
->> +		return -ENOMEM;
->> +
->> +	dsi->dev = dev;
->> +	dsi->dsi_host.ops = &imx_mipi_dsi_host_ops;
->> +	dsi->dsi_host.dev = dev;
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	dsi->base = devm_ioremap_resource(dev, res);
->> +	if (IS_ERR(dsi->base))
->> +		return PTR_ERR(dsi->base);
->> +
->> +	dsi->regmap = syscon_regmap_lookup_by_phandle(np, "gpr");
->> +	if (IS_ERR(dsi->regmap))
->> +		return PTR_ERR(dsi->regmap);
->> +
->> +	dsi->pllref_clk = devm_clk_get(dev, "pllref");
->> +	if (IS_ERR(dsi->pllref_clk)) {
->> +		ret = PTR_ERR(dsi->pllref_clk);
->> +		dev_err(dev, "Unable to get pll reference clock: %d\n", ret);
->> +		return ret;
->> +	}
->> +	clk_prepare_enable(dsi->pllref_clk);
->> +
->> +	dsi->pllref_gate_clk = devm_clk_get(dev, "pllref_gate");
->> +	if (IS_ERR(dsi->pllref_gate_clk)) {
->> +		ret = PTR_ERR(dsi->pllref_gate_clk);
->> +		dev_err(dev, "Unable to get pll reference gate clock: %d\n", ret);
->> +		return ret;
->> +	}
->> +	clk_prepare_enable(dsi->pllref_gate_clk);
->
-> As said above, I don't think this clock is needed, or is it?
-
-Perhaps, we need it.
-
->
-> If enabling pllref_clk doesn't actually enable the 27m clock input to
-> the mipi dsi core because it is still gated by hsi_tx, maybe the clock
-> tree should be fixed and hsi_tx turned into multiple
-> imx_clk_gate2_shared clocks.
-
-According to the CCM chapter, the video_27m clock is gated by the hsi_tx
-clock.  You mentioned this above, as well.
-
->
->> +
->> +	dsi->cfg_clk = devm_clk_get(dev, "core_cfg");
->> +	if (IS_ERR(dsi->cfg_clk)) {
->> +		ret = PTR_ERR(dsi->cfg_clk);
->> +		dev_err(dev, "Unable to get configuration clock: %d\n", ret);
->
-> And leave pllref enabled?
-
-As I mentioned in the v1-> v2 change log, I enable/disable the 
-pllref_clk and pllref_gate_clk at the component binding/unbinding stages 
-to help remove the flag 'enabled' introduced in v1.
-
-I referred to the i.MX HDMI driver which enables/disables the isfr clock 
-and the iahb clock at the component binding/unbinding stages.
-
-I may try to handle the clock enablement/disablement more decently and
-avoid using the flag 'enable'.
-
->
->> +		return ret;
->> +	}
->> +
->> +	clk_prepare_enable(dsi->cfg_clk);
->> +	val = dsi_read(dsi, DSI_VERSION);
->> +	clk_disable_unprepare(dsi->cfg_clk);
->> +
->> +	dev_info(dev, "version number is 0x%08x\n", val);
->> +
->> +	ret = imx_mipi_dsi_register(drm, dsi);
->> +	if (ret)
->
-> Same here.
-
-You meant that the pllref_gate clock is left enabled above, right?
-
-Regards,
-Liu Ying
-
->
->> +		return ret;
->> +
->> +	dev_set_drvdata(dev, dsi);
->> +
->> +	return mipi_dsi_host_register(&dsi->dsi_host);
->> +}
-> [...]
->
-> regards
-> Philipp
->
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
