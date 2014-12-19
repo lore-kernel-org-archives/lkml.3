@@ -1,101 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaLSPNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:13:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39675 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968AbaLSPNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:13:20 -0500
-Date: Fri, 19 Dec 2014 10:12:10 -0500
-From: Dave Jones <davej@redhat.com>
-To: Chris Mason <clm@fb.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141219151210.GD13404@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-	Peter Anvin <hpa@linux.intel.com>
-References: <20141215055707.GA26225@redhat.com>
- <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
- <CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
- <20141218051327.GA31988@redhat.com>
- <1418918059.17358.6@mail.thefacebook.com>
- <20141218161230.GA6042@redhat.com>
- <20141219024549.GB1671@redhat.com>
- <CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
- <20141219035859.GA20022@redhat.com>
- <1418999437.13012.1@mail.thefacebook.com>
+	id S1751927AbaLSPNl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:13:41 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:46908 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaLSPNj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 10:13:39 -0500
+Date: Fri, 19 Dec 2014 16:13:29 +0100 (CET)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: "Michael S. Tsirkin" <mst@redhat.com>
+cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-sh@vger.kernel.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        linux-s390@vger.kernel.org
+Subject: Re: [PATCH RFC 2/5] s390: add pci_iomap_range
+In-Reply-To: <20141219142829.GA13440@redhat.com>
+Message-ID: <alpine.LFD.2.11.1412191549510.1794@denkbrett>
+References: <1418679168-1011-1-git-send-email-mst@redhat.com> <1418679168-1011-3-git-send-email-mst@redhat.com> <alpine.LFD.2.11.1412191456480.1794@denkbrett> <20141219142829.GA13440@redhat.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418999437.13012.1@mail.thefacebook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121915-0041-0000-0000-000002894166
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 09:30:37AM -0500, Chris Mason wrote:
+On Fri, 19 Dec 2014, Michael S. Tsirkin wrote:
+> On Fri, Dec 19, 2014 at 03:13:37PM +0100, Sebastian Ott wrote:
+> > On Mon, 15 Dec 2014, Michael S. Tsirkin wrote:
+> > > From: Michael S Tsirkin <mst@redhat.com>
+> > > 
+> > > Virtio drivers should map the part of the range they need, not
+> > > necessarily all of it.
+> > > To this end, support mapping ranges within BAR on s390.
+> > > Since multiple ranges can now be mapped within a BAR, we keep track of
+> > > the number of mappings created, and only clear out the mapping for a BAR
+> > > when this number reaches 0.
+> > > 
+> > 
+> > I can't say much about the users of this interface but in principle I'm
+> > OK with such a change.
+> 
+> I don't have an s390 system with pci for testing - could you help me out
+> by testing this and confirming it doesn't break things?
 
- > > in more recent builds. I've been running kitchen-sink debug kernels
- > > for my trinity runs for the last three years, and it's only this
- > > last few months that this has got to be enough of a problem that I'm
- > > not seeing the more interesting bugs. (Or perhaps we're just getting
- > > better at fixing them in -next now, so my runs are lasting longer..)
- > 
- > I think we're also adding more and more debugging.  It's definitely a 
- > good thing, but I think a lot of them are expected to stay off until 
- > you're trying to track down a specific problem.  I do always run with 
- > CONFIG_DEBUG_PAGEALLOC here and lock debugging/lockdep, and aside from 
- > being slow haven't hit trouble.
+I did some minor tests and nothing broke...
 
-I think in the new year I'll hack up something I run on each kernel
-build that picks a random subset of the debug options.  It's been on
-my whiteboard for a while anyway, to try and get more 'real world'
-looking kernel testing.  If I can get enough machines to test on,
-it should still mean we get enough testing that we'll catch stuff early on.
+> 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  arch/s390/include/asm/pci_io.h |  1 +
+> > >  arch/s390/pci/pci.c            | 34 +++++++++++++++++++++++++++-------
+> > >  2 files changed, 28 insertions(+), 7 deletions(-)
+> > > 
+> > > diff --git a/arch/s390/include/asm/pci_io.h b/arch/s390/include/asm/pci_io.h
+> > > index d194d54..25228b3 100644
+> > > --- a/arch/s390/include/asm/pci_io.h
+> > > +++ b/arch/s390/include/asm/pci_io.h
+> > > @@ -16,6 +16,7 @@
+> > >  struct zpci_iomap_entry {
+> > >  	u32 fh;
+> > >  	u8 bar;
+> > > +	u16 count;
+> > >  };
+> > > 
+> > >  extern struct zpci_iomap_entry *zpci_iomap_start;
+> > > diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+> > > index 2fa7b14..51cb653 100644
+> > > --- a/arch/s390/pci/pci.c
+> > > +++ b/arch/s390/pci/pci.c
+> > > @@ -259,7 +259,10 @@ void __iowrite64_copy(void __iomem *to, const void *from, size_t count)
+> > >  }
+> > > 
+> > >  /* Create a virtual mapping cookie for a PCI BAR */
+> > > -void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
+> > > +void __iomem *pci_iomap_range(struct pci_dev *pdev,
+> > > +			      int bar,
+> > > +			      unsigned long offset,
+> > > +			      unsigned long max)
+> > >  {
+> > >  	struct zpci_dev *zdev =	get_zdev(pdev);
+> > >  	u64 addr;
+> > > @@ -270,14 +273,27 @@ void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
+> > > 
+> > >  	idx = zdev->bars[bar].map_idx;
+> > >  	spin_lock(&zpci_iomap_lock);
+> > > -	zpci_iomap_start[idx].fh = zdev->fh;
+> > > -	zpci_iomap_start[idx].bar = bar;
+> > > +	if (zpci_iomap_start[idx].count++) {
+> > > +		BUG_ON(zpci_iomap_start[idx].fh != zdev->fh ||
+> > > +		       zpci_iomap_start[idx].bar != bar);
+> > > +	} else {
+> > > +		zpci_iomap_start[idx].fh = zdev->fh;
+> > > +		zpci_iomap_start[idx].bar = bar;
+> > > +	}
+> > > +	/* Detect overrun */
+> > > +	BUG_ON(!zpci_iomap_start[idx].count);
+> > >  	spin_unlock(&zpci_iomap_lock);
+> > > 
+> > >  	addr = ZPCI_IOMAP_ADDR_BASE | ((u64) idx << 48);
+> > > -	return (void __iomem *) addr;
+> > > +	return (void __iomem *) addr + offset;
+> > >  }
+> > > -EXPORT_SYMBOL_GPL(pci_iomap);
+> > > +EXPORT_SYMBOL_GPL(pci_iomap_range);
+> > > +
+> > > +void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
+> > > +{
+> > > +	return pci_iomap_range(dev, bar, 0, maxlen);
+> > > +}
+> > > +EXPORT_SYMBOL(pci_iomap);
+> > 
+> > This was EXPORT_SYMBOL_GPL. I guess, for this patch, it should stay that
+> > way. ...Hm, everyone else has this stuff as EXPORT_SYMBOL looks like we
+> > should use that too.
+> > 
+> > Regards,
+> > Sebastian
+> 
+> OK, so you want two patches: one with new functionality,
+> one switching to EXPORT_SYMBOL?
 
-It does seem like things have gotten so 'heavy' that a lot of what I've
-been seeing have been ghosts. That said, there's also been several
-real problems that have been shaken out during this thread over the last
-two months, so I don't feel like we've wasted our time entirely.
+Either that or at least add a note in the patch description.
 
- > I know it's 3.16 instead of 3.17, but 16K stacks are probably 
- > increasing the pressure on everything in these runs.  It's my favorite 
- > kernel feature this year, but it's likely to make trinity hurt more on 
- > memory constrained boxes.
+Regards,
+Sebastian
 
-That's actually a good point. Even just the forking/exiting overhead
-is now much higher when we're starting & tearing down hundreds of child
-processes every few seconds. Couple that with some children 'stuck'
-in VM functions, and I could see the kernel struggling to find order
-2 pages for a while. (Though never to the point where it fails).
-
- > I know you have traces with a ton more output, but I'm still 
- > wondering if usb-serial and printk from NMI really get along well.  I'd 
- > try with debugging back on and serial consoles off.  We carry patches 
- > to make oom print less, just because the time spent on our slow 
- > emulated serial console is enough to back the box up into a death 
- > spiral.
-
-So I'm running out of time on this, and will realistically only
-have this machine over the weekend.  I can give that a try, hopefully
-if it fails, it'll fail early so we can try something else.
-
-	Dave
+> 
+> 
+> > > 
+> > >  void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
+> > >  {
+> > > @@ -285,8 +301,12 @@ void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
+> > > 
+> > >  	idx = (((__force u64) addr) & ~ZPCI_IOMAP_ADDR_BASE) >> 48;
+> > >  	spin_lock(&zpci_iomap_lock);
+> > > -	zpci_iomap_start[idx].fh = 0;
+> > > -	zpci_iomap_start[idx].bar = 0;
+> > > +	/* Detect underrun */
+> > > +	BUG_ON(!zpci_iomap_start[idx].count);
+> > > +	if (!--zpci_iomap_start[idx].count) {
+> > > +		zpci_iomap_start[idx].fh = 0;
+> > > +		zpci_iomap_start[idx].bar = 0;
+> > > +	}
+> > >  	spin_unlock(&zpci_iomap_lock);
+> > >  }
+> > >  EXPORT_SYMBOL_GPL(pci_iounmap);
+> > > -- 
+> > > MST
+> > > 
+> > > 
+> 
+> 
 
