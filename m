@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494AbaLSWEG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 17:04:06 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63388 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751355AbaLSWEE (ORCPT
+	id S1752647AbaLSWFX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 17:05:23 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61824 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaLSWFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 17:04:04 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Kukjin Kim <kgene@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "lin ux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 4/4] PM: Eliminate CONFIG_PM_RUNTIME
-Date: Fri, 19 Dec 2014 23:25:51 +0100
-Message-ID: <1504884.AVoVpOfIGf@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <7h1tnv2tu9.fsf@deeprootsystems.com>
-References: <472992175.g1ArEYGFPo@vostro.rjw.lan> <9470157.PyHoGoSGz1@vostro.rjw.lan> <7h1tnv2tu9.fsf@deeprootsystems.com>
+	Fri, 19 Dec 2014 17:05:22 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20141219205435.GA24499@redhat.com>
+References: <20141218161230.GA6042@redhat.com>
+	<20141219024549.GB1671@redhat.com>
+	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+	<20141219035859.GA20022@redhat.com>
+	<20141219040308.GB20022@redhat.com>
+	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
+	<20141219145528.GC13404@redhat.com>
+	<CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
+	<CA+55aFyb6N47N2Jg75EmRxDTjFF2y_oy4dHNDeW_dyM4PUTDrA@mail.gmail.com>
+	<CA+55aFzt_4Zrnek6381JFzm+3iV9d=JAeyx+=E9F8BeiWFb56g@mail.gmail.com>
+	<20141219205435.GA24499@redhat.com>
+Date: Fri, 19 Dec 2014 14:05:20 -0800
+X-Google-Sender-Auth: R6VdNRbFBcVVTOzklaWSvwlP4vM
+Message-ID: <CA+55aFyafdtY9ZxNHx2LNRyD2Krn9jgfhOji-8P5vebAzEbNiw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 19, 2014 01:49:34 PM Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
-> 
-> [...]
-> 
-> > Fixed up patch is appended, thanks!
-> >
-> >
-> > ---
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Subject: PM: Eliminate CONFIG_PM_RUNTIME
-> >
-> > Having switched over all of the users of CONFIG_PM_RUNTIME to use
-> > CONFIG_PM directly, turn the latter into a user-selectable option
-> > and drop the former entirely from the tree.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-> 
-> Acked-by: Kevin Hilman <khilman@linaro.org>
-> 
-> I assume you're planning to get this in early in the v3.19-rc cycle,
-> correct?  That way we can hopefully avoid conflicts with the various
-> defconfig changes we're taking through the arm-soc tree.
+On Fri, Dec 19, 2014 at 12:54 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> Right now I'm doing Chris' idea of "turn debugging back on,
+> and try without serial console".  Shall I try your suggestion
+> on top of that ?
 
-I'm going to send a pull request with these changes tomorrow.
+Might as well. I doubt it really will make any difference, but I also
+don't think it will interact badly in any way, so..
 
-> Also, thanks for taking care of all the tree-wide changes.  This is a
-> great change.
-
-Thanks!
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+                      Linus
