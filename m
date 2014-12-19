@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaLSSVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 13:21:32 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:60716 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134AbaLSSVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 13:21:21 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 3/3] microblaze: intc: Reformat output
-Date: Fri, 19 Dec 2014 10:21:06 -0800
-Message-Id: <1419013266-20568-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.2.0.1.g9ee0458
-In-Reply-To: <1419013266-20568-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1419013266-20568-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752563AbaLSSWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 13:22:09 -0500
+Received: from mail-by2on0102.outbound.protection.outlook.com ([207.46.100.102]:44384
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752557AbaLSSWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 13:22:07 -0500
+X-WSS-ID: 0NGUDOJ-08-FV1-02
+X-M-MSG: 
+Message-ID: <54946CBB.4050108@amd.com>
+Date: Fri, 19 Dec 2014 12:21:47 -0600
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, <linaro-acpi@lists.linaro.org>
+CC: <rjw@rjwysocki.net>, <lenb@kernel.org>, <hdegoede@redhat.com>,
+        <tj@kernel.org>, <mjg59@srcf.ucam.org>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>
+Subject: Re: [Linaro-acpi] [RFC PATCH 2/2] ata: ahci_platform: Add ACPI _CLS
+ matching
+References: <1418858195-22857-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <1418858195-22857-3-git-send-email-suravee.suthikulpanit@amd.com>
+ <3408260.hhf4YMy6F6@wuerfel>
+In-Reply-To: <3408260.hhf4YMy6F6@wuerfel>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(377454003)(199003)(164054003)(189002)(24454002)(479174004)(51704005)(33656002)(92566001)(97736003)(87936001)(23746002)(54356999)(76176999)(77156002)(99396003)(101416001)(80316001)(65816999)(36756003)(46102003)(50986999)(87266999)(86362001)(99136001)(65806001)(106466001)(64706001)(21056001)(105586002)(83506001)(68736005)(77096005)(65956001)(84676001)(2950100001)(107046002)(120886001)(64126003)(120916001)(4396001)(62966003)(47776003)(20776003)(59896002)(50466002)(31966008)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB203;
+X-Forefront-PRVS: 0430FA5CB7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A message was using pr_info level output for a message including "ERROR"
-which is not really a fatal error.
-Remove the 'ERROR' from that message, use pr_warn loglevel and add the
-function name to the output to give users a chance to find the culprit
-in case the warning triggers.
+On 12/18/2014 3:17 AM, Arnd Bergmann wrote:
+> On Wednesday 17 December 2014 17:16:35 Suravee Suthikulpanit wrote:
+>> +#ifdef CONFIG_ATA_ACPI
+>> +#include <linux/acpi.h>
+>> +#endif
+>>   #include "ahci.h"
+>>
+>>   static const struct ata_port_info ahci_port_info = {
+>> @@ -71,6 +74,10 @@ static const struct of_device_id ahci_of_match[] = {
+>>   };
+>>   MODULE_DEVICE_TABLE(of, ahci_of_match);
+>>
+>> +#ifdef CONFIG_ATA_ACPI
+>> +static const struct acpi_device_cls ahci_cls = {0x01, 0x06, 0x01};
+>> +#endif
+>> +
+>>   static struct platform_driver ahci_driver = {
+>>          .probe = ahci_probe,
+>>          .remove = ata_platform_remove_one,
+>> @@ -78,6 +85,9 @@ static struct platform_driver ahci_driver = {
+>>                  .name = "ahci",
+>>                  .owner = THIS_MODULE,
+>>                  .of_match_table = ahci_of_match,
+>> +#ifdef CONFIG_ATA_ACPI
+>> +               .acpi_cls = &ahci_cls,
+>> +#endif
+>>                  .pm = &ahci_pm_ops,
+>>
+>
+> It would be better to leave out the various #ifdef here, in particular the
+> one around the header file inclusion.
+>
+> 	Arnd
+>
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- arch/microblaze/kernel/intc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Right. I'll get rid of them. Also, I noticed that I should have declared 
+acpi_match_device_cls() in include/linux/acpi.h as "inline" for when 
+building w/o ACPI to avoid warning messages.
 
-diff --git a/arch/microblaze/kernel/intc.c b/arch/microblaze/kernel/intc.c
-index 8965fd379570..719feee1e043 100644
---- a/arch/microblaze/kernel/intc.c
-+++ b/arch/microblaze/kernel/intc.c
-@@ -158,7 +158,7 @@ static int __init xilinx_intc_of_init(struct device_node *intc,
- 	}
- 
- 	if (intr_mask >> nr_irq)
--		pr_info(" ERROR: Mismatch in kind-of-intr param\n");
-+		pr_warn("%s: mismatch in kind-of-intr param\n", __func__);
- 
- 	pr_info("%s: num_irq=%d, edge=0x%x\n",
- 		intc->full_name, nr_irq, intr_mask);
--- 
-2.2.0.1.g9ee0458
+Thanks,
+
+Suravee
 
