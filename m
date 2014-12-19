@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaLSBmE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 20:42:04 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:50687 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaLSBmC (ORCPT
+	id S1752094AbaLSBmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:42:23 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:52563 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751695AbaLSBmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 20:42:02 -0500
-Message-ID: <54938266.9090007@gmail.com>
-Date: Thu, 18 Dec 2014 18:41:58 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 20:42:19 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>, Mark Brown <broonie@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>, linux-spi@vger.kernel.org
+Subject: [PATCH 1/4] spi: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+Date: Fri, 19 Dec 2014 02:49:26 +0100
+Message-ID: <6486956.sOFTSHEqBe@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <472992175.g1ArEYGFPo@vostro.rjw.lan>
+References: <472992175.g1ArEYGFPo@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: acme@kernel.org, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] tools lib traceevent: Add support for IP address formats
-References: <1418915443-45707-1-git-send-email-dsahern@gmail.com> <17321.1418939104@turing-police.cc.vt.edu> <549351A7.9040408@gmail.com>
-In-Reply-To: <549351A7.9040408@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14 3:13 PM, David Ahern wrote:
-> Are you seeing something different?
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I put a tracepoint in the ipv4/ipv6 add/del address code. The IPv4 one 
-prints the address using pi4 and pI4 and the IPv6 using pi6, pI6 and pI6c.
+A couple of new CONFIG_PM_RUNTIME users have been added recently
+in the SPI subsystem.
 
-Using ifconfig eth1 1.2.3.4/24
+However, after commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+PM_SLEEP is selected) PM_RUNTIME is always set if PM is set, so
+#ifdef blocks depending on CONFIG_PM_RUNTIME may now be changed to
+depend on CONFIG_PM.
 
-I get this for trace_pipe which uses the in-kernel printf code:
+Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+drivers/spi/ (again).
 
-root@localhost:/sys/kernel/debug/tracing/events# cat ../trace_pipe
-         ifconfig-601   [000] ....   710.660611: ipv4_del_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
-         ifconfig-602   [000] ....   720.833559: ipv4_add_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
-         ifconfig-602   [000] .Ns.   720.833966: ipv6_add_addr: 
-pi6=fe80000000000000000202fffe020211 
-pI6=fe80:0000:0000:0000:0002:02ff:fe02:0211 pI6c=fe80::2:2ff:fe02:211
-         ifconfig-602   [000] ....   720.835413: ipv4_del_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
-         ifconfig-602   [000] .N..   720.835451: ipv4_add_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
+Please let me know if there are any objections against pushing this through
+the linux-pm tree.
 
-And this using perf:
-root@localhost:~# perf record -a -e  ipv4:* -e ipv6:* --no-buffering | 
-perf --no-pager script
+---
+ drivers/spi/spi-img-spfi.c    |    4 ++--
+ drivers/spi/spi-meson-spifc.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-        ifconfig   601 [000]   710.912862: ipv4:ipv4_del_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
-         ifconfig   602 [000]   721.090776: ipv4:ipv4_add_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
-         ifconfig   602 [000]   721.091177: ipv6:ipv6_add_addr: 
-pi6=fe80000000000000000202fffe020211 
-pI6=fe80:0000:0000:0000:0002:02ff:fe02:0211 pI6c=fe80::2:2ff:fe02:211
-         ifconfig   602 [000]   721.092626: ipv4:ipv4_del_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
-         ifconfig   602 [000]   721.092648: ipv4:ipv4_add_addr: 
-pI4=1.2.3.4 pi4=001.002.003.004
-
-(Don't be fooled by the differing timestamps; data collected from both 
-using the same exact command. timestamp differences are perf vs tracing.)
-
-which suggest with the patch perf output matches tracing.
-
-David
+Index: linux-pm/drivers/spi/spi-meson-spifc.c
+===================================================================
+--- linux-pm.orig/drivers/spi/spi-meson-spifc.c
++++ linux-pm/drivers/spi/spi-meson-spifc.c
+@@ -413,7 +413,7 @@ static int meson_spifc_resume(struct dev
+ }
+ #endif /* CONFIG_PM_SLEEP */
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int meson_spifc_runtime_suspend(struct device *dev)
+ {
+ 	struct spi_master *master = dev_get_drvdata(dev);
+@@ -431,7 +431,7 @@ static int meson_spifc_runtime_resume(st
+ 
+ 	return clk_prepare_enable(spifc->clk);
+ }
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ static const struct dev_pm_ops meson_spifc_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(meson_spifc_suspend, meson_spifc_resume)
+Index: linux-pm/drivers/spi/spi-img-spfi.c
+===================================================================
+--- linux-pm.orig/drivers/spi/spi-img-spfi.c
++++ linux-pm/drivers/spi/spi-img-spfi.c
+@@ -663,7 +663,7 @@ static int img_spfi_remove(struct platfo
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM_RUNTIME
++#ifdef CONFIG_PM
+ static int img_spfi_runtime_suspend(struct device *dev)
+ {
+ 	struct spi_master *master = dev_get_drvdata(dev);
+@@ -692,7 +692,7 @@ static int img_spfi_runtime_resume(struc
+ 
+ 	return 0;
+ }
+-#endif /* CONFIG_PM_RUNTIME */
++#endif /* CONFIG_PM */
+ 
+ #ifdef CONFIG_PM_SLEEP
+ static int img_spfi_suspend(struct device *dev)
 
