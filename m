@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaLRXsf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 18:48:35 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:59750 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaLRXsd (ORCPT
+	id S1751324AbaLRXxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 18:53:55 -0500
+Received: from mailout.micron.com ([137.201.242.129]:33933 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaLRXxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 18:48:33 -0500
-Message-ID: <549367CC.2080307@cumulusnetworks.com>
-Date: Thu, 18 Dec 2014 15:48:28 -0800
-From: Roopa Prabhu <roopa@cumulusnetworks.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 18 Dec 2014 18:53:54 -0500
+Message-ID: <54936D1E.3020700@micron.com>
+Date: Thu, 18 Dec 2014 16:11:10 -0800
+From: Sam Bradshaw <sbradshaw@micron.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: "Samudrala, Sridhar" <sridhar.samudrala@intel.com>
-CC: John Fastabend <john.r.fastabend@intel.com>,
-        "Varlese, Marco" <marco.varlese@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com> <5492E85C.6010802@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com> <5492EFC3.8030102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com> <549313B8.6050102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com> <54931969.7040209@cumulusnetworks.com> <5493293A.2000802@intel.com> <54935E28.8050602@cumulusnetworks.com> <549362A5.3000808@intel.com>
-In-Reply-To: <549362A5.3000808@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>
+CC: <martin.k.petersen@oracle.com>
+Subject: [PATCH] block: pass correct seed to integrity metadata generation
+ function
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21186.003
+X-TM-AS-Result: No--3.410700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
->
-> On 12/18/2014 3:07 PM, Roopa Prabhu wrote:
->> On 12/18/14, 11:21 AM, John Fastabend wrote:
->>> On 12/18/2014 10:14 AM, Roopa Prabhu wrote:
->>>> On 12/18/14, 10:02 AM, Varlese, Marco wrote:
->>>>> Removed unnecessary content for ease of reading...
->>>>>
->>>>>>>>>>> +/* Switch Port Attributes section */
->>>>>>>>>>> +
->>>>>>>>>>> +enum {
->>>>>>>>>>> +    IFLA_ATTR_UNSPEC,
->>>>>>>>>>> +    IFLA_ATTR_LEARNING,
->>>>>>>>>> Any reason you want learning here ?. This is covered as part  of
->>>>>>>>>> the bridge setlink attributes.
->>>>>>>>>>
->>>>>>>>> Yes, because the user may _not_ want to go through a bridge
->>>>>>>>> interface
->>>>>>>> necessarily.
->>>>>>>> But, the bridge setlink/getlink interface was changed to 
->>>>>>>> accommodate
->>>>>> 'self'
->>>>>>>> for exactly such cases.
->>>>>>>> I kind of understand your case for the other attributes (these are
->>>>>>>> per port settings that switch asics provide).
->>>>>>>>
->>>>>>>> However, i don't understand the reason to pull in bridge 
->>>>>>>> attributes here.
->>>>>>>>
->>>>>>> Maybe, I am missing something so you might help. The learning 
->>>>>>> attribute -
->>>>>> in my case - it is like all other attributes: a port attribute 
->>>>>> (as you said, port
->>>>>> settings that the switch provides per port).
->>>>>>> So, what I was saying is "why the user shall go through a bridge 
->>>>>>> to configure
->>>>>> the learning attribute"? From my perspective, it is as any other 
->>>>>> attribute and
->>>>>> as such configurable on the port.
->>>>>>
->>>>>> Thinking about this some more, i don't see why any of these 
->>>>>> attributes
->>>>>> (except loopback. I dont understand the loopback attribute) cant 
->>>>>> be part of
->>>>>> the birdge port attributes.
->>>>>>
->>>>>> With this we will end up adding l2 attributes in two places: the 
->>>>>> general link
->>>>>> attributes and bridge attributes.
->>>>>>
->>>>>> And since we have gone down the path of using 
->>>>>> ndo_bridge_setlink/getlink
->>>>>> with 'self'....we should stick to that for all l2 attributes.
->>>>>>
->>>>>> The idea of overloading ndo_bridge_set/getlink, was to have the 
->>>>>> same set of
->>>>>> attributes but support both cases where the user wants to go 
->>>>>> through the
->>>>>> bridge driver or directly to the switch port driver. So, you are 
->>>>>> not really going
->>>>>> through the bridge driver if you use 'self' and 
->>>>>> ndo_bridge_setlink/getlink.
->>>>>>
->>>>> Roopa, one of the comments I got from Thomas Graf on my v1 patch
->>>>> was that your patch and mine were supplementary ("I think Roopa's
->>>>> patches are supplementary. Not all switchdev users will be backed
->>>>> with a Linux Bridge. I therefore welcome your patches very
->>>>> much")... I also understood by others that the patch made sense for
->>>>> the same reason. I simply do not understand why these attributes
->>>>> (and maybe others in the future) could not be configured directly
->>>>> on a standard port but have to go through a bridge.
->>>>>
->>>> ok, i am very confused in that case. The whole moving of bridge
->>>> attributes from the bridge driver to rtnetlink.c was to make the
->>>> bridge attributes accessible to any driver who wants to set l2/bridge
->>>> attributes on their switch ports. So, its unclear to me why we are
->>>> doing this parallel thing again. This move to rtnetlink.c was done
->>>> during the recent rocker support. so, maybe scott/jiri can elaborate
->>>> more.
->>>
->>> Not sure if this will add to the confusion or help. But you do not
->>> need to have the bridge.ko loaded or netdev's attached to a bridge
->>> to use the setlink/getlink ndo ops and netlink messages.
->>>
->>> This was intentionally done. Its already used with NIC devices to
->>> configure embedded bridge settings such as VEB/VEPA.
->>
->> that helps my case, thanks.
->
-> So the user interface to set/get the per-port attributes will be via 
-> 'bridge', not 'ip'
->
->     bridge link set dev sw0p1 port_attr bcast_flooding 1 self
->     bridge link get dev sw0p1 port_attr bcast_flooding self
+The seed value passed to the blk integrity metadata generation function 
+was wrong depending on the device block size (interval) and how many 
+blocks comprised the bvec.  This patch converts the seed to 'interval' 
+units and increments it correctly for each iteration.  Tested against a
+4k+8 (w/ type1 PI) sector size.
 
-yes, l2 attributes.
->
-> We also need an interface to set per-switch attributes. Can this work?
->     bridge link set dev sw0 sw_attr bcast_flooding 1 master
-> where sw0 is a bridge representing the hardware switch.
-
-Not today. We discussed this @ LPC, and one way to do this would be to 
-have a device
-representing the switch asic. This is in the works.
-
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+Signed-off-by: Selvan Mani <smani@micron.com>
+---
+diff --git a/block/bio-integrity.c b/block/bio-integrity.c
+index 5cbd5d9..7114040 100644
+--- a/block/bio-integrity.c
++++ b/block/bio-integrity.c
+@@ -219,20 +219,22 @@ static int bio_integrity_process(struct bio *bio,
+ 	struct bvec_iter bviter;
+ 	struct bio_vec bv;
+ 	struct bio_integrity_payload *bip = bio_integrity(bio);
+-	unsigned int ret = 0;
++	unsigned int len = 0, ret = 0;
+ 	void *prot_buf = page_address(bip->bip_vec->bv_page) +
+ 		bip->bip_vec->bv_offset;
++	sector_t seed, start = bio_integrity_intervals(bi, bip_get_seed(bip));
+ 
+ 	iter.disk_name = bio->bi_bdev->bd_disk->disk_name;
+ 	iter.interval = bi->interval;
+-	iter.seed = bip_get_seed(bip);
+-	iter.prot_buf = prot_buf;
++	seed = start;
+ 
+ 	bio_for_each_segment(bv, bio, bviter) {
+ 		void *kaddr = kmap_atomic(bv.bv_page);
+ 
+ 		iter.data_buf = kaddr + bv.bv_offset;
+ 		iter.data_size = bv.bv_len;
++		iter.seed = seed;
++		iter.prot_buf = prot_buf;
+ 
+ 		ret = proc_fn(&iter);
+ 		if (ret) {
+@@ -241,6 +243,9 @@ static int bio_integrity_process(struct bio *bio,
+ 		}
+ 
+ 		kunmap_atomic(kaddr);
++		len += bv.bv_len;
++		seed = start + (len / bi->interval);
++		prot_buf += bi->tuple_size;
+ 	}
+ 	return ret;
+ }
