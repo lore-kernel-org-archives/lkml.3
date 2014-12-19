@@ -1,112 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaLSJuI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:50:08 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59974 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaLSJuE (ORCPT
+	id S1752050AbaLSJzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:55:19 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46552 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaLSJzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:50:04 -0500
-Date: Fri, 19 Dec 2014 10:50:00 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: bluetooth: Add hci_h4p driver
-Message-ID: <20141219095000.GA24703@amd>
-References: <20141213223727.GA13894@amd>
- <97C706D6-765B-446A-8180-600F5FB6C68B@holtmann.org>
+	Fri, 19 Dec 2014 04:55:15 -0500
+Date: Fri, 19 Dec 2014 10:55:12 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: B Viswanath <marichika4@gmail.com>
+Cc: Roopa Prabhu <roopa@cumulusnetworks.com>,
+        "Samudrala, Sridhar" <sridhar.samudrala@intel.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "Varlese, Marco" <marco.varlese@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Thomas Graf <tgraf@suug.ch>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141219095512.GH1848@nanopsycho.orion>
+References: <54931969.7040209@cumulusnetworks.com>
+ <5493293A.2000802@intel.com>
+ <54935E28.8050602@cumulusnetworks.com>
+ <549362A5.3000808@intel.com>
+ <549367CC.2080307@cumulusnetworks.com>
+ <CAN+pFwJyfg1+=+tXUpon0Kket56HJ=9BR3XohPhZnaX7hfPgpg@mail.gmail.com>
+ <20141219082754.GE1848@nanopsycho.orion>
+ <CAN+pFwJAJ71-+MZjJXPbfu5mzMp6AWNxtYR81Lx6siy3D3HfJg@mail.gmail.com>
+ <20141219092308.GF1848@nanopsycho.orion>
+ <CAN+pFwJr7TvJEW4x_HYPgTEvYGfi+YHgp=5vek2YiU1GLiH6_g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <97C706D6-765B-446A-8180-600F5FB6C68B@holtmann.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAN+pFwJr7TvJEW4x_HYPgTEvYGfi+YHgp=5vek2YiU1GLiH6_g@mail.gmail.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> And you want to set the QUIRK_INVALID_BADDR. At least you want to do that in the final submission.
-> 
-
-Ok, I found out that I can do it and result works, provided that I do
-hciconfig hci0 up/down first.
-
-I have trouble understanding... h4p_hci_open() seems to be called as
-soon as I insmod the driver. Who does that? Is it some kind of udev
-magic?
-
-...
-> > +#include "hci_h4p.h"
-> > +
-> > +#define BT_DBG(a...) do {} while(0)
-> 
-> Why is this needed? BT_DBG is hooked up with dynamic debug.
-...
-
-I did all the changes as requested. Thanks. I did't see harm in
-include guards, but I removed them; it is not important.
-
-> > +	if (info->rx_count == 0) {
-> > +		/* H4+ devices should always send word aligned packets */
-> > +		if (!(info->rx_skb->len % 2))
-> > +			info->garbage_bytes++;
-> > +		h4p_recv_frame(info, info->rx_skb);
-> 
-> The h4p_recv_frame should maybe done inline here since it only handles 2 exception packets. Also to make it easy, just leave the function if (info->rx_count).
-> 
-> This packet processing feels like a bit of spaghetti code. I think that is better handled in a proper function that goes through it and not with many tiny sub functions.
+Fri, Dec 19, 2014 at 10:35:27AM CET, marichika4@gmail.com wrote:
+>On 19 December 2014 at 14:53, Jiri Pirko <jiri@resnulli.us> wrote:
+>> Fri, Dec 19, 2014 at 10:01:46AM CET, marichika4@gmail.com wrote:
+>>>On 19 December 2014 at 13:57, Jiri Pirko <jiri@resnulli.us> wrote:
+>>>> Fri, Dec 19, 2014 at 06:14:57AM CET, marichika4@gmail.com wrote:
+>>>>>On 19 December 2014 at 05:18, Roopa Prabhu <roopa@cumulusnetworks.com> wrote:
+>>>>>> On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
+>>><snipped for ease of reading>
+>>>>>>>
+>>>>>>>
+>>>>>>> We also need an interface to set per-switch attributes. Can this work?
+>>>>>>>     bridge link set dev sw0 sw_attr bcast_flooding 1 master
+>>>>>>> where sw0 is a bridge representing the hardware switch.
+>>>>>>
+>>>>>>
+>>>>>> Not today. We discussed this @ LPC, and one way to do this would be to have
+>>>>>> a device
+>>>>>> representing the switch asic. This is in the works.
+>>>>>
+>>>>>
+>>>>>Can I assume that on  platforms which house more than one asic (say
+>>>>>two 24 port asics, interconnected via a 10G link or equivalent, to get
+>>>>>a 48 port 'switch') , the 'rocker' driver (or similar) should expose
+>>>>>them as a single set of ports, and not as two 'switch ports' ?
+>>>>
+>>>> Well that really depends on particular implementation and drivers. If you
+>>>> have 2 pci-e devices, I think you should expose them as 2 entities. For
+>>>> sure, you can have the driver to do the masking for you. I don't believe
+>>>> that is correct though.
+>>>>
+>>>
+>>>In a platform that houses two asic chips, IMO, the user is still
+>>>expected to manage the router as a single entity. The configuration
+>>>being applied on both asic devices need to be matching if not
+>>>identical, and may not be conflicting. The FDB is to be synchronized
+>>>so that (offloaded) switching can happen across the asics. Some of
+>>>this stuff is asic specific anyway. Another example is that of the
+>>>learning. The (hardware) learning can't be enabled on one asic, while
+>>>being disabled on another one. The general use cases I have seen are
+>>>all involving managing the 'router' as a single entity.  That the
+>>>'router' is implemented with two asics instead of a single asic (with
+>>>more ports) is to be treated as an implementation detail.  This is the
+>>>usual router management method that exists today.
+>>>
+>>>I hope I make sense.
+>>>
+>>>So I am trying to figure out what this single entity that will be used
+>>>from a user perspective. It can be a bridge, but our bridges are more
+>>>802.1q bridges. We can use the 'self' mode, but then it means that it
+>>>should reflect the entire port count, and not just an asic.
+>>>
+>>>So I was trying to deduce that in our switchdevice model, the best bet
+>>>would be to leave the unification to the driver (i.e., to project the
+>>>multiple physical asics as a single virtual switch device). Thist
+>>
+>> Is it possible to have the asic as just single one? Or is it possible to
+>> connect asics being multiple chips maybe from multiple vendors together?
 >
+>I didn't understand the first question. Some times, it is possible to
 
-Well, CodingStyle says something about functions that should be kept
-short... And when manually inlined, the inner function would have to
-be made less readable, as it uses return to shortcut processing. 
+I ment that there is a design with just a single asic of this type,
+instead of a pair.
+
+>have a single asic replace two, but its a cost factor, and others that
+>are involved.
+>
+>AFAIK, the answer to the second question is a No. Two asics from
+>different vendors may not be connected together. The interconnect
+>tends to be proprietary.
+
+Okay. In that case, it might make sense to mask it on driver level.
 
 
-To use __hci_cmd_sync()
+>
+>> I believe that answer is "yes" in both cases. Making two separate asics
+>> to appear as one for user is not correct in my opinion. Driver should
+>> not do such masking. It is unclean, unextendable.
+>>
+>
+>I am only looking for a single management entity. I am not thinking it
+>needs to be at driver level. I am not sure of  any other option apart
+>from creating a 'switchdev' that Roopa was mentioning.
 
-> > +
-> > +	SET_HCIDEV_DEV(hdev, info->dev);
-> > +
-> > +	if (hci_register_dev(hdev) >= 0)
-> > +		return 0;
-> > +
-> > +	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
-> > +	hci_free_dev(info->hdev);
-> > +	return -ENODEV;
-> > +}
-> 
-> And normally this is folded into the probe handling and not in a
-> separate function.
+Well the thing is there is a common desire to make the offloading as
+transparent as possible. For example, have 4 ports of same switch and
+put them into br0. Just like that, without need to do anything else
+than you would do when bridging ordinary NICs. Introducing some
+"management entity" would break this approach.
 
-The probe function is too long, already...
 
-> > +#include <linux/delay.h>
-> > +#include <linux/clk.h>
-> > +
-> > +#include <linux/io.h>
-> > +
-> > +#include "hci_h4p.h"
-> 
-> Why is this a separate file? And if so, why not all UART specific details are in this file. Including bunch of the defines you have in the header.
-> 
-
-Well, you wanted less global functions, so I moved some as inlines to
-headers. I guess I can merge nokia_core and nokia_uart if really wanted.
-
-I did rest of requested changes.
-
-Thanks,
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>
+>>
+>>>allows any 'switch' level configurations to the bridge in 'self' mode.
+>>>
+>>>And  then we would need to consider stacking. Stacking differs from
+>>>this multi-asic scenario since  there would be multiple CPU involved.
+>>>
+>>>Thanks
+>>>Vissu
+>>>
+>>>>>
+>>>>>>
+>>>>>>
+>>>>>> --
+>>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
