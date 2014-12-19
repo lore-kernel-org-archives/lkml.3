@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaLSHwL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 02:52:11 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:62479 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaLSHwJ (ORCPT
+	id S1752110AbaLSHzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 02:55:05 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:59312 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaLSHzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 02:52:09 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-f6-5493d92473f2
-Date: Fri, 19 Dec 2014 07:52:04 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH RESEND v2 03/10] power: charger-manager: Remove deprecated
- function, cm_notify_event().
-To: =?utf-8?Q?=EC=9D=B4=EC=A2=85=ED=99=94?= <jonghwa3.lee@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "sre@kernel.org" <sre@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "anton@enomsg.org" <anton@enomsg.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20141219075128971@myungjoo.ham
-Msgkey: 20141219075128971@myungjoo.ham
-X-EPLocale: ko_KR.utf-8
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-MLAttribute: 
-X-RootMTR: 20141219075128971@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-X-ConfirmMail: N,general
-Content-type: text/plain; charset=utf-8
-MIME-version: 1.0
-Message-id: <1255984171.39711418975524329.JavaMail.weblogic@epmlwas08d>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsWyRsSkWFfl5uQQg0WvFSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAldG/yOegklcFe/bOtkbGN9wdjFycggJqEssWnKSDcSWEDCRODa/
-	ixXCFpO4cG89G0TNUkaJi5+rYGpO/n4AFOcCis9hlDj3ewZYA4uAqsS1xh1ACQ4ONgE9iZmf
-	k0FMYYFsiZYr/CDlIgKdjBIX1jSxgjjMAmeZJG63/GGBWKAksWbfKzCbV0BQ4uTMJywQy1Ql
-	Tr3+xQwyiFdATeLATg2IsLjEhbmX2CFsXokZ7U+hyuUkpn1dwwxhS0ucn7WBEeaXxd8fQ8X5
-	JY7d3sEEYQtITD1zEKpGS6J9zVaomXwSaxa+ZYGp33VqOTPMrvtb5kL1SkhsbXkC9jqzgKLE
-	lO6H7CBnMgtoSqzfpY/uE14Bd4njn56xgLwuITCRQ2Jm9w3GCYxKs5DUzUIyahbCKGQlCxhZ
-	VjGKphYkFxQnpRcZ6RUn5haX5qXrJefnbmIEpoTT/5717WC8ecD6EKMAB6MSD29H4eQQIdbE
-	suLK3EOMpsBImsgsJZqcD0w8eSXxhsZmRhamJqbGRuaWZkrivAlSP4OFBNITS1KzU1MLUovi
-	i0pzUosPMTJxcEo1MObXv7z130iFI3naLQX14xtu8jw1M5A3m/f+Qqbse2l1j7CgRd+fa5zo
-	srjrnad0xMX229qPWwXP1H334i/l3vqQ79dPgdrIlYn7jtQtPVZ0We9Z5YrokxxzVsXtOKC7
-	4s3U4zE2wrvvr2qRi0ubEXAzLETM7W3i2RoJw0zfgl8/rTmmhtlWr1BiKc5INNRiLipOBABt
-	4BNvBAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMKsWRmVeSWpSXmKPExsVy+t/tfl2Vm5NDDL48lbS4vGsOmwOjx+dN
-	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRn9
-	j3gKJnFVvG/rZG9gfMPZxcjJISSgLrFoyUk2EFtCwETi5O8HULaYxIV764FsLqCaOYwS537P
-	YAVJsAioSlxr3AGU4OBgE9CTmPk5GcQUFsiWaLnCD1IuItDJKHFhTRMriMMscJZJ4nbLHxaI
-	ZUoSa/a9ArN5BQQlTs58wgKxTFXi1OtfzCCDeAXUJA7s1IAIi0tcmHuJHcLmlZjR/hSqXE5i
-	2tc1zBC2tMT5WRsYYW5e/P0xVJxf4tjtHUwQtoDE1DMHoWq0JNrXbIWaySexZuFbFpj6XaeW
-	M8Psur9lLlSvhMTWlidgrzMLKEpM6X7IDnIms4CmxPpd+ug+4RVwlzj+6RnLBEbZWUhSs5B0
-	z0LoRlaygJFlFaNoakFyQXFSeoWRXnFibnFpXrpecn7uJkZwAnq2aAfjv/PWhxgFOBiVeHg7
-	CieHCLEmlhVX5h5ilOBgVhLhdTwOFOJNSaysSi3Kjy8qzUktPsRoCoyyicxSosn5wOSYVxJv
-	aGxsYmZiamliYWBqriTO+/9cboiQQHpiSWp2ampBahFMHxMHp1QDY9NDk4Sgb17OLusuxl9w
-	+bUgTH6j5+HNfm/eH3r0/KRz79rKTzfb58VvPV68a3/AioA7y7cuOxt4lOtEwO0dCreC5te3
-	BohE+jKYV1QuVc1eGbH5ltScVU++q7keD5QUremcdbRiSmTUjVWv86VXl+m1OXVWZ8/5cCT3
-	m/0akQYht6QzhSxGPUosxRmJhlrMRcWJAGa9njhWAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Fri, 19 Dec 2014 02:55:03 -0500
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <5493D9CE.5040001@lge.com>
+Date: Fri, 19 Dec 2014 16:54:54 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org,
+        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>,
+        Minchan Kim <minchan@kernel.org>,
+        =?EUC-KR?B?J7Howdg=?= =?EUC-KR?B?vPYn?= <iamjoonsoo.kim@lge.com>
+Subject: [RFC] background zero-set page for device
+Content-Type: text/plain; charset=euc-kr
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBJ7qV6u020698
 
->   
->  cm_notify_event() is introduced to get event associated with battery status
-> externally, but no one had been used. Moreover it makes charger manager
-> driver more complicated. This patch tries to drop the function and all data
-> related to simplify the driver.
-> 
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 
-You are not just removing cm_notify_event() and its related.
+There was some discussion to create zero-set pages in background like this:
+https://lkml.org/lkml/2004/10/30/73
 
-You are hereby removing the much of software charger control
-and suspend-related operations. Could you please be more specific
-on why? (many of such features are to comply with operators' requirements)
+I'm understand that it is not good for performance.
 
-(Or we may meet next Monday for some discussions :) )
+But I think it can help for a device in my platform.
+I'm sorry I can't tell what it is.
+But the device needs many zero-set pages, up to several MB,
+so that device driver has a loop to calls alloc_page, memset(p, 0, PAGE_SIZE) and cache flush&invalidate.
+And the device uses the pages and returns it to kernel. Kernel reads data in the page.
 
-> ---
->  .../bindings/power_supply/charger-manager.txt      |    1 -
->  drivers/power/charger-manager.c                    |  196 +-------------------
->  include/linux/power/charger-manager.h              |   19 +-
->  3 files changed, 8 insertions(+), 208 deletions(-)
-> 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+In this case, memset(0) must be done.
+I think, if memset(0) is done at idle time, it can remove memset calling of ddk.
+
+Is there any device that needs many zero-set pages?
+Can backgound zero-setting page be good for the device?
+
+-- 
+Thanks,
+Gioh Kim
