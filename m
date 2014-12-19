@@ -1,130 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaLSFdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 00:33:00 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:43949 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaLSFc7 (ORCPT
+	id S1751988AbaLSFhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 00:37:51 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:17477 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaLSFhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 00:32:59 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-f5-5493b888c3fc
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: catalin.marinas@arm.com, will.deacon@arm.com, lorenzo.pieralisi@arm.com,
-        mark.rutland@arm.com, Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH] arm64: psci: Support generic pm suspend withtout CPUIDLE
- subsystem's help.
-Date: Fri, 19 Dec 2014 14:32:54 +0900
-Message-id: <1418967174-23943-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsWyRsSkULdzx+QQgwldLBbvl/UwWnSefcJs
-	senxNVaLy7vmsFm8+f2C3WLp9YtMFi8/nmBxYPdYM28No8fmJfUefVtWMXp83iQXwBLFZZOS
-	mpNZllqkb5fAlfHpL0vBDOGK5h1LWRoYr/J3MXJySAiYSGybuIIZwhaTuHBvPVsXIxeHkMBS
-	RomFK5eywRRtedYOlZjOKLGm/yqU08YkcXHlFEaQKjYBHYn/+26yg9giAm4S/9YdAitiFuhm
-	lPj5exrYKGGBWIlpWz+xgNgsAqoSq57cA2vmFfCQaN52GsjmAFqnIDFnkg1Ir4TAZzaJfd9u
-	M0PUC0h8m3yIBaJGVmLTAaizJSUOrrjBMoFRcAEjwypG0dSC5ILipPQiE73ixNzi0rx0veT8
-	3E2MwFA9/e/ZhB2M9w5YH2IU4GBU4uF9UDw5RIg1say4MvcQoynQhonMUqLJ+cCIyCuJNzQ2
-	M7IwNTE1NjK3NFMS530t9TNYSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PXJHN/hn29HaeP
-	d25wWqkr8HGv5qKJ5QvPbok+a8TbNF34cEmPUYSOx74ZuzeZdWy18l557+peYa2pu46mZiys
-	mH5f1sVUobSnMftYgVqs7eK7zFJt3Ar+yw8c2LkrddHu3s2nNlS+abbNWvakUn3pJlXzwNLU
-	3g/+AuVNARrsCnVfdU8wz1BiKc5INNRiLipOBAAOhp+DUAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+xoG7HjskhBnM/Wli8X9bDaNF59gmz
-	xabH11gtLu+aw2bx5vcLdoul1y8yWbz8eILFgd1jzbw1jB6bl9R79G1ZxejxeZNcAEtUA6NN
-	RmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAFSgpliTml
-	QKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMT39ZCmYIVzTvWMrSwHiVv4uRk0NC
-	wERiy7N2NghbTOLCvfVANheHkMB0Rok1/VehnDYmiYsrpzCCVLEJ6Ej833eTHcQWEXCT+Lfu
-	EFgRs0A3o8TP39PARgkLxEpM2/qJBcRmEVCVWPXkHlgzr4CHRPO200A2B9A6BYk5k2wmMHIv
-	YGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcCc+kdzCuarA4xCjAwajEw9tRODlEiDWx
-	rLgy9xCjBAezkgiveSZQiDclsbIqtSg/vqg0J7X4EKMp0PKJzFKiyfnAKM0riTc0NjEzsjQy
-	N7QwMjZXEudVsm8LERJITyxJzU5NLUgtgulj4uCUamD03ubX7vajf/EfGZdKzq16YnMOlzHw
-	pJhK+vROTNhb0H1Rl+WK5oxS//k8J16928czf2GJ9+czOvXKVaFS/nplu689SM0oPVVYxKha
-	HtU98erWf2EnlDZmmcps0Q451a3lt+6DqeqzIzKbD7l7OfT2BrYE1Csvv1JTOMOCf/OVFvtF
-	e12+zFRiKc5INNRiLipOBACuqeZYmgIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
+	Fri, 19 Dec 2014 00:37:50 -0500
+Message-ID: <5493B997.6060606@huawei.com>
+Date: Fri, 19 Dec 2014 13:37:27 +0800
+From: Li Bin <huawei.libin@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        "Steven Rostedt" <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>
+CC: <kpatch@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Christoph Hellwig <hch@infradead.org>, <live-patching@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>,
+        zhangdianfang <zhangdianfang@huawei.com>,
+        Hanjun Guo <guohanjun@huawei.com>, xiexiuqi <xiexiuqi@huawei.com>
+Subject: [kpatch] [PATCH] livepatch v7: move x86 specific ftrace handler code
+ to arch/x86
+References: <1418752700-14649-1-git-send-email-sjenning@redhat.com> <1418752700-14649-3-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1418752700-14649-3-git-send-email-sjenning@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.181]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current psci's cpu_suspend callback can be used only when common cpu idle
-configuration is enabled. However, it's also needed for system which only
-uses generic pm suspend not cpu idle. This patch modifies psci driver to
-support both of cases.
+The execution flow redirection related implemention in the livepatch
+ftrace handler is depended on the specific architecture. This patch
+introduces klp_arch_set_pc(like kgdb_arch_set_pc) interface to change
+the pt_regs.
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Signed-off-by: Li Bin <huawei.libin@huawei.com>
 ---
- arch/arm64/kernel/psci.c |   41 +++++++++++++++++++++++++++++------------
- 1 file changed, 29 insertions(+), 12 deletions(-)
+ arch/x86/include/asm/livepatch.h |    5 +++++
+ kernel/livepatch/core.c          |    2 +-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
-index f1dbca7..06d5527 100644
---- a/arch/arm64/kernel/psci.c
-+++ b/arch/arm64/kernel/psci.c
-@@ -35,6 +35,13 @@
- #define PSCI_POWER_STATE_TYPE_STANDBY		0
- #define PSCI_POWER_STATE_TYPE_POWER_DOWN	1
- 
-+enum psci_affinity_level {
-+	PSCI_AFFINITY_LEVEL_0,
-+	PSCI_AFFINITY_LEVEL_1,
-+	PSCI_AFFINITY_LEVEL_2,
-+	PSCI_AFFINITY_LEVEL_3,
-+};
-+
- struct psci_power_state {
- 	u16	id;
- 	u8	type;
-@@ -513,27 +520,37 @@ static int psci_suspend_finisher(unsigned long index)
+diff --git a/arch/x86/include/asm/livepatch.h b/arch/x86/include/asm/livepatch.h
+index c2ae592..4cdec4e 100644
+--- a/arch/x86/include/asm/livepatch.h
++++ b/arch/x86/include/asm/livepatch.h
+@@ -21,6 +21,7 @@
+ #define _ASM_X86_LIVEPATCH_H
+
+ #include <linux/module.h>
++#include <linux/ftrace.h>
+
+ #ifdef CONFIG_LIVE_PATCHING
+ #ifndef CC_USING_FENTRY
+@@ -29,6 +30,10 @@
+ extern int klp_write_module_reloc(struct module *mod, unsigned long type,
+                  unsigned long loc, unsigned long value);
+
++static inline void klp_arch_set_pc(struct pt_regs *regs, unsigned long ip)
++{
++   regs->ip = ip;
++}
+ #else
+ #error Live patching support is disabled; check CONFIG_LIVE_PATCHING
+ #endif
+diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+index 0004a71..c4c04fd 100644
+--- a/kernel/livepatch/core.c
++++ b/kernel/livepatch/core.c
+@@ -271,7 +271,7 @@ static void notrace klp_ftrace_handler(unsigned long ip,
  {
- 	struct psci_power_state *state = __this_cpu_read(psci_power_state);
- 
-+	/* Generic PM suspend without CPUIDLE functionality */
-+	if (!state) {
-+		struct psci_power_state s = {
-+			.affinity_level = PSCI_AFFINITY_LEVEL_3,
-+			.type = PSCI_POWER_STATE_TYPE_POWER_DOWN,
-+		};
-+		return psci_ops.cpu_suspend(s, virt_to_phys(cpu_resume));
-+	}
-+
- 	return psci_ops.cpu_suspend(state[index - 1],
- 				    virt_to_phys(cpu_resume));
+    struct klp_func *func = ops->private;
+
+-   regs->ip = (unsigned long)func->new_func;
++   klp_arch_set_pc(regs, (unsigned long)func->new_func);
  }
- 
- static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
- {
--	int ret;
- 	struct psci_power_state *state = __this_cpu_read(psci_power_state);
--	/*
--	 * idle state index 0 corresponds to wfi, should never be called
--	 * from the cpu_suspend operations
--	 */
--	if (WARN_ON_ONCE(!index))
--		return -EINVAL;
- 
--	if (state[index - 1].type == PSCI_POWER_STATE_TYPE_STANDBY)
--		ret = psci_ops.cpu_suspend(state[index - 1], 0);
--	else
--		ret = __cpu_suspend(index, psci_suspend_finisher);
-+	if (state) {
-+		if (WARN_ON_ONCE(!index))
-+			return -EINVAL;
-+
-+		/*
-+		 * If idle state initialization is successfully done,
-+		 * idle state index 0 corresponds to wfi, should never be
-+		 * called from the cpu_suspend operations
-+		 */
-+		if (state[index - 1].type == PSCI_POWER_STATE_TYPE_STANDBY)
-+			return psci_ops.cpu_suspend(state[index - 1], 0);
-+	}
- 
--	return ret;
-+	return __cpu_suspend(index, psci_suspend_finisher);
- }
- 
- const struct cpu_operations cpu_psci_ops = {
+
+ static int klp_disable_func(struct klp_func *func)
 -- 
-1.7.9.5
+1.7.1
+
 
