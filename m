@@ -1,118 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaLSU2m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 15:28:42 -0500
-Received: from mail-bn1bon0117.outbound.protection.outlook.com ([157.56.111.117]:44384
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751281AbaLSU2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 15:28:39 -0500
-X-Greylist: delayed 162703 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Dec 2014 15:28:39 EST
-X-WSS-ID: 0NGUIUG-07-ZFI-02
-X-M-MSG: 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-To: <rjw@rjwysocki.net>, <lenb@kernel.org>, <hdegoede@redhat.com>,
-        <tj@kernel.org>, <arnd@arndb.de>, <mjg59@srcf.ucam.org>
-CC: <hanjun.guo@linaro.org>, <al.stone@linaro.org>,
-        <graeme.gregory@linaro.org>, <leo.duran@amd.com>,
-        <linux-ide@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-acpi@lists.linaro.org>,
-        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>
-Subject: [PATCH 2/2] ata: ahci_platform: Add ACPI _CLS matching
-Date: Fri, 19 Dec 2014 14:13:08 -0600
-Message-ID: <1419019988-4398-3-git-send-email-Suravee.Suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1419019988-4398-1-git-send-email-Suravee.Suthikulpanit@amd.com>
-References: <1419019988-4398-1-git-send-email-Suravee.Suthikulpanit@amd.com>
+	id S1752528AbaLSUcQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 15:32:16 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:1069 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751488AbaLSUcP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 15:32:15 -0500
+Date: Fri, 19 Dec 2014 15:31:36 -0500
+From: Chris Mason <clm@fb.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Dave Jones <davej@redhat.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141219203135.GA1200@ret.masoncoding.com>
+Mail-Followup-To: Chris Mason <clm@fb.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Dave Jones <davej@redhat.com>,
+	Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+	Peter Anvin <hpa@linux.intel.com>
+References: <20141218051327.GA31988@redhat.com>
+ <1418918059.17358.6@mail.thefacebook.com>
+ <20141218161230.GA6042@redhat.com>
+ <20141219024549.GB1671@redhat.com>
+ <CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+ <20141219035859.GA20022@redhat.com>
+ <20141219040308.GB20022@redhat.com>
+ <CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
+ <20141219145528.GC13404@redhat.com>
+ <CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(20776003)(76176999)(48376002)(77156002)(229853001)(68736005)(84676001)(50986999)(62966003)(2201001)(92566001)(87936001)(64706001)(50466002)(86362001)(19580405001)(19580395003)(50226001)(53416004)(4396001)(2950100001)(77096005)(21056001)(97736003)(107046002)(46102003)(106466001)(120916001)(105586002)(101416001)(99396003)(36756003)(89996001)(31966008);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR02MB198;
-X-Forefront-PRVS: 0430FA5CB7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB198;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 19 Dec 2014 20:13:31.1580
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR02MB198
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-19_05:2014-12-19,2014-12-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=172.485279719936
+ compositescore=0.12498974524102 urlsuspect_oldscore=0.12498974524102
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.12498974524102 spamscore=0
+ recipient_to_sender_domain_totalscore=8 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412190200
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ACPI supports for AHCI platform driver, which uses _CLS
-method to match the device.
+On Fri, Dec 19, 2014 at 11:15:21AM -0800, Linus Torvalds wrote:
+> Here's another pattern. In your latest thing, every single time that
+> CPU1 is waiting for some other CPU to pick up the IPI, we have CPU0
+> doing this:
+> 
+> [24998.060963] NMI backtrace for cpu 0
+> [24998.061989] CPU: 0 PID: 2940 Comm: trinity-c150 Not tainted 3.18.0+ #108
+> [24998.064073] task: ffff8801bf3536b0 ti: ffff880197e0c000 task.ti:
+> ffff880197e0c000
+> [24998.065137] RIP: 0010:[<ffffffff8103e006>]  [<ffffffff8103e006>]
+> read_hpet+0x16/0x20
+> [24998.083577]  [<ffffffff810e0d3e>] ktime_get+0x3e/0xa0
+> [24998.084450]  [<ffffffff810e9cd3>] tick_sched_timer+0x23/0x160
+> [24998.085315]  [<ffffffff810daf96>] __run_hrtimer+0x76/0x1f0
+> [24998.086173]  [<ffffffff810e9cb0>] ? tick_init_highres+0x20/0x20
+> [24998.087025]  [<ffffffff810db2e7>] hrtimer_interrupt+0x107/0x260
+> [24998.087877]  [<ffffffff81031a4b>] local_apic_timer_interrupt+0x3b/0x70
+> [24998.088732]  [<ffffffff8179bca5>] smp_apic_timer_interrupt+0x45/0x60
+> [24998.089583]  [<ffffffff8179a0df>] apic_timer_interrupt+0x6f/0x80
+> [24998.090435]  <EOI>
+> [24998.091279]  [<ffffffff810da66e>] ? __remove_hrtimer+0x4e/0xa0
+> [24998.092118]  [<ffffffff812c7c7a>] ? ipcget+0x8a/0x1e0
+> [24998.092951]  [<ffffffff812c7c6c>] ? ipcget+0x7c/0x1e0
+> [24998.093779]  [<ffffffff812c8d6d>] SyS_msgget+0x4d/0x70
+> 
+> and I think that's the smoking gun. The reason CPU0 isn't picking up
+> any IPI's is because it is in some endless loop around read_hpet().
+> 
+> There is even time information in the register dump:
+> 
+>  RAX: 0000000061fece8a RBX: 0000000000510792 RCX: 0000000000000000
+>  RAX: 0000000079e588fc RBX: 0000000000511d6e RCX: 0000000000000000
+>  RAX: 0000000091ca7f65 RBX: 0000000000513346 RCX: 0000000000000000
+>  RAX: 00000000a9afbd0d RBX: 000000000051491e RCX: 0000000000000000
+>  RAX: 00000000cbd1340c RBX: 000000000051684a RCX: 0000000000000000
+>  RAX: 00000000fb9d303f RBX: 00000000005193fc RCX: 0000000000000000
+>  RAX: 000000002b67efe4 RBX: 000000000051c224 RCX: 0000000000000004
+> 
+> That RAX value is the value we just read from the HPET, and RBX seems
+> to be monotonically increasing too, so it's likely the sequence
+> counter in ktime_get().
+> 
+> So it's not stuck *inside* read_hpet(), and it's almost certainly not
+> the loop over the sequence counter in ktime_get() either (it's not
+> increasing *that* quickly). But some basically infinite __run_hrtimer
+> thing or something?
 
-The following is an example of ASL structure in DSDT for a SATA controller,
-which contains _CLS package to be matched by the ahci_platform driver:
+Really interesting.
 
-  Device (AHC0) // AHCI Controller
-  {
-    Name(_HID, "AMDI0600")
-    Name (_CCA, 1)
-    Name (_CLS, Package (3)
-    {
-      0x01, // Base Class: Mass Storage
-      0x06, // Sub-Class: serial ATA
-      0x01, // Interface: AHCI
-    })
-    Name (_CRS, ResourceTemplate ()
-    {
-      Memory32Fixed (ReadWrite, 0xE0300000, 0x00010000)
-      Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive,,,) { 387 }
-    })
-  }
+So, we're calling __run_hrtimer in a loop:
 
-Also, since ATA driver should not require PCI support for ATA_ACPI,
-this patch removes dependency in the driver/ata/Kconfig.
+                while ((node = timerqueue_getnext(&base->active))) {
+				...
+				__run_hrtimer(timer, &basenow);
+				...
+		}
 
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
----
- drivers/ata/Kconfig         | 2 +-
- drivers/ata/ahci_platform.c | 3 +++
- 2 files changed, 4 insertions(+), 1 deletion(-)
+The easy question is how often does trinity call nanosleep?
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index cd4cccb..edb00c6 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -48,7 +48,7 @@ config ATA_VERBOSE_ERROR
- 
- config ATA_ACPI
- 	bool "ATA ACPI Support"
--	depends on ACPI && PCI
-+	depends on ACPI
- 	default y
- 	help
- 	  This option adds support for ATA-related ACPI objects.
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 06f1d59..4879f9b 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -71,6 +71,8 @@ static const struct of_device_id ahci_of_match[] = {
- };
- MODULE_DEVICE_TABLE(of, ahci_of_match);
- 
-+static const struct acpi_device_cls ahci_cls = {0x01, 0x06, 0x01};
-+
- static struct platform_driver ahci_driver = {
- 	.probe = ahci_probe,
- 	.remove = ata_platform_remove_one,
-@@ -78,6 +80,7 @@ static struct platform_driver ahci_driver = {
- 		.name = "ahci",
- 		.owner = THIS_MODULE,
- 		.of_match_table = ahci_of_match,
-+		.acpi_cls = &ahci_cls,
- 		.pm = &ahci_pm_ops,
- 	},
- };
--- 
-1.9.3
+Looking at __run_hrtimer(), it drops the lock and runs the function and then
+takes the lock again, maybe enqueueing us again right away.
 
+timer->state is supposed to protect us from other CPUs jumping in and doing
+something else with the timer, but it feels racey wrt remove_hrtimer().
+Something like this, but I'm not sure how often __hrtimer_start_range_ns gets
+called
+
+CPU 0						CPU 1
+__run_hrtimer()
+    timer->state = HRTIMER_STATE_CALLBACK
+    removed from list
+    unlock cpu_base->lock
+    restrt = fn(timer)
+    						__hrtimer_start_range_ns()
+						base = lock_hrtimer_base()
+						ret = remove_hrtimer()
+						    finds timer->state = HRTIMER_STATE_CALLBACK
+						    does nothing
+						new_base = switch_hrtimer_base()
+						    now we're on a different base, different lock
+    lock(cpu_base->lock)
+    enqueue the timer
+    						enqueue the timer
