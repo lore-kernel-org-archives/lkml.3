@@ -1,126 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaLST2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 14:28:24 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:54311 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaLST2T (ORCPT
+	id S1752491AbaLST2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 14:28:50 -0500
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:33680 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaLST2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 14:28:19 -0500
-Date: Fri, 19 Dec 2014 11:28:08 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>
-Subject: Re: [PATCH v2 1/2] i8k: Autodetect maximal fan speed and fan RPM
- multiplier
-Message-ID: <20141219192808.GA8493@roeck-us.net>
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com>
- <1419012268-20805-1-git-send-email-pali.rohar@gmail.com>
- <20141219183237.GA6767@roeck-us.net>
- <201412191951.25562@pali>
+	Fri, 19 Dec 2014 14:28:48 -0500
+Message-ID: <54947C64.4030206@linux.vnet.ibm.com>
+Date: Fri, 19 Dec 2014 17:28:36 -0200
+From: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412191951.25562@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54947C52.028C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
+        Paul.Clothier@imgtec.com, davem@davemloft.net, peterz@infradead.org,
+        palves@redhat.com, shuahkh@osg.samsung.com, oleg@redhat.com,
+        dhowells@redhat.com, kirjanov@gmail.com, davej@redhat.com,
+        tglx@linutronix.de, sukadev@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, sam.bobroff@au1.ibm.com,
+        Ulrich Weigand <uweigand@de.ibm.com>
+Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
+References: <20141203052204.9DA8F1400DD@ozlabs.org> <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com>
+In-Reply-To: <548578A8.5020901@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121919-1524-0000-0000-0000015F435E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 07:51:25PM +0100, Pali Rohár wrote:
-> On Friday 19 December 2014 19:32:37 Guenter Roeck wrote:
-> > > -static int i8k_fan_mult;
-> > > -static int i8k_pwm_mult;
-> > > -static int i8k_fan_max = I8K_FAN_HIGH;
-> > > +static int i8k_fan_mult[2];
-> > > +static int i8k_pwm_mult[2];
-> > > +static int i8k_fan_max[2];
-> > 
-> > The rationale for this change is not explained in the commit
-> > log.
-> > 
-> > Do you have any indication that those values would ever be
-> > different for the two fans, ie that you actually need arrays
-> > here ?
-> > 
+On 12/08/2014 08:08 AM, Anshuman Khandual wrote:
+> On 12/03/2014 12:18 PM, Anshuman Khandual wrote:
+>> On 12/03/2014 10:52 AM, Michael Ellerman wrote:
+>>> On Tue, 2014-02-12 at 07:56:45 UTC, Anshuman Khandual wrote:
+>>>> This patch adds four new ELF core note sections for powerpc
+>>>> transactional memory and one new ELF core note section for
+>>>> powerpc general miscellaneous debug registers. These addition
+>>>> of new ELF core note sections extends the existing ELF ABI
+>>>> without affecting it in any manner.
+>>>>
+>>>> Acked-by: Andrew Morton <akpm@linux-foundation.org>
+>>>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+>>>> ---
+>>>>  include/uapi/linux/elf.h | 5 +++++
+>>>>  1 file changed, 5 insertions(+)
+>>>>
+>>>> diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
+>>>> index ea9bf25..2260fc0 100644
+>>>> --- a/include/uapi/linux/elf.h
+>>>> +++ b/include/uapi/linux/elf.h
+>>>> @@ -379,6 +379,11 @@ typedef struct elf64_shdr {
+>>>>  #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
+>>>>  #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
+>>>>  #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
+>>>> +#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
+>>>> +#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
+>>>> +#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
+>>>> +#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
+>>>> +#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
+>>>
+>>> This is a really terrible name, "MISC".
+>>>
+>>> Having said that, I guess it's accurate. We have a whole bunch of regs that
+>>> have accrued over recent years that aren't accessible via ptrace.
+>>>
+>>> It seems to me if we're adding a misc regset we should be adding everything we
+>>> might want to it that is currenty architected.
+>>
+>> But I believe they also need to be part of the thread_struct structure to be
+>> accessible from ptrace.
 > 
-> I do not know... But if we decide to use only single value for 
-> multiplier and max value which fan to use for autodetection?
+> Currently we dont context save/restore the PMC count registers (PMC1-PMC6)
+> during the process context switch. So the values of PMC1..PMC6 are not
+> thread specific in the structure. To be able to access them in ptrace
+> when the tracee has stopped, we need to context save these counters
+> in the thread struct. Shall we do that ? Then we can add them to the
+> MISC regset bucket irrespective of whats the value we get in there when
+> we probe through ptrace.
 > 
-That does not answer my question. That you can not decide which
-fan to use for auto-detection does not mean that the result of
-that auto-detection would be different for different fans.
-
-> > > @@ -271,8 +274,25 @@ static int i8k_get_fan_speed(int fan)
-> > > 
-> > >  {
-> > >  
-> > >  	struct smm_regs regs = { .eax = I8K_SMM_GET_SPEED, };
-> > > 
-> > > +	if (fan < 0 || fan >= ARRAY_SIZE(i8k_fan_mult))
-> > > +		return -EINVAL;
-> > > +
-> > 
-> > This range check (and probably others) is still unnecessary.
-> > 
-> > Guenter
-> > 
+> The same goes for MMCRA, CFAR registers as well.
 > 
-> No, it is necessary. Function i8k_get_fan_speed is called from 
-> ioctl callback with value which comes from userspace. If 
-> userspace specify fan out of that array we can get kernel panic.
+>>  
+>>>
+>>> But currently you only include the PPR, TAR & DSCR.
+>>
+>> Yeah, thats what we started with.
+>>
+>>>
+>>> Looking at Power ISA v2.07, I see the following that could be included:
+>>>
+>>>   MMCR2
+>>>   MMCRA
+>>>   PMC1
+>>>   PMC2
+>>>   PMC3
+>>>   PMC4
+>>>   PMC5
+>>>   PMC6
+>>>   MMCR0
+>>>   EBBHR
+>>>   EBBRR
+>>>   BESCR
+>>>   SIAR
+>>>   SDAR
+>>>   CFAR?
+>>
+>> MMCRA, PMC[1..6], EBBHR, BESCR, EBBRR, CFAR are not part of the thread struct.
 > 
-Yes, but just because you introduced an array for various variables,
-and you still have the unnecessary check for other callers.
-
-If you want to return -EINVAL for bad ioctl parameters, add a range
-check check there. But that would be a separate patch.
-
-Guenter
-
-> > >  	regs.ebx = fan & 0xff;
-> > > 
-> > > -	return i8k_smm(&regs) ? : (regs.eax & 0xffff) *
-> > > i8k_fan_mult; +	return i8k_smm(&regs) ? : (regs.eax &
-> > > 0xffff) * i8k_fan_mult[fan]; +}
+> Sorry. EBBRR, EBBHR, BESCR registers are part of the thread struct.
 > 
-> -- 
-> Pali Rohár
-> pali.rohar@gmail.com
+>>
+>>>
+>>> Those are all new in 2.07 except for CFAR.
+>>>
+>>> There might be more I missed, that was just a quick scan.
+>>>
+>>> Some are only accessible when EBB is in use, maybe those could be a separate
+>>> regset.
+>>
+>> Yeah we can have one more regset for EBB specific registers.
+> 
+> Should the new EBB specific regset include only EBBRR, EBBHR, BESCR registers
+> or should it also include SIAR, SDAR, SIER, MMCR0, MMCR2 registers as well. I
+> was thinking about putting these five registers into the MISC bucket instead.
+> But from the perf code, it looks like these five registers are also related to
+> the EBB context as well.
+> 
+> Some clarity on these points would really help.
 
+Hi,
+
+from the provided testcase using ptrace interface, reviewing with the help
+of Ulrich, it looks OK from GDB perspective, with the exception of a few
+concerns:
+
+The patchset seems to change the "original" ptrace requests (i.e.
+PTRACE_GETREGS/GETFPREGS/GETVRREGS...) to return the "transactional" state, and
+adds new register sets to return the "checkpointed" state. Considering that
+whenever you get a debugger interception inside a transactional block, the
+transaction will abort, we're wondering if it wouldn't make more sense to
+display the 'checkpointed' state as the normal registers since this is where the
+execution will continue from.
+
+Also, we've noticed that the 'misc' regset contains registers from different ISA
+versions (dscr and ppr appear in ISA 2.05, tar is from 2.07). I'm not sure if
+there is a way to detect presence/validity of such registers, but perhaps it
+might be a good idea to separate registers from different ISAs in different
+regsets.
+
+Regarding the inclusion of other registers along with the EBB-related ones, I'm
+sorry but I'm not familiar with them.
+
+Thanks and regards,
+--
+Edjunior
 
