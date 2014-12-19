@@ -1,220 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423AbaLSAxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 19:53:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:8886 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751118AbaLSAxX convert rfc822-to-8bit (ORCPT
+	id S1751691AbaLSBBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:01:47 -0500
+Received: from message.langara.bc.ca ([209.87.29.115]:40860 "EHLO
+	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaLSBBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 19:53:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
-   d="scan'208";a="640027725"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
-CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v3 21/26] x86, irq: Define a global vector for VT-d
- Posted-Interrupts
-Thread-Topic: [v3 21/26] x86, irq: Define a global vector for VT-d
- Posted-Interrupts
-Thread-Index: AQHQFiBjmG+fiWL9RUSaRPekCidPsJyVeE9QgACm0HA=
-Date: Fri, 19 Dec 2014 00:52:12 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F00230A53F@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-22-git-send-email-feng.wu@intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC048BF@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC048BF@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 18 Dec 2014 20:01:46 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+Content-type: text/plain; charset=us-ascii
+From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
+To: linux-kernel@vger.kernel.org
+Message-id: <fb6dd1a5bb7e.549378f9@langara.bc.ca>
+Date: Fri, 19 Dec 2014 01:01:45 +0000 (GMT)
+X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
+ 32bit)
+Content-language: en
+Subject: When should I not use CLONE_IO?
+X-Accept-Language: en
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+Currently GLibc does not use CLONE_IO and does not expose a way to use CLONE_IO
+(for threads which are where it'd be most useful I assume). The documentation is
+unclear though and leaves me in the dark about a lot. For example, I don't see
+why GLibc shouldn't use CLONE_IO with every thread by default. Also, it seems to
+me that if threads share I/O contexts they should also have to share I/O
+schedulers right? Does this mean that if threads share I/O contexts with
+CLONE_IO that sched_setscheduler either severs the I/O context sharing or sets
+the same scheduler for both of them? Even if the threads sharing the same I/O
+context must use the same scheduler can they have different priorities?
 
-> -----Original Message-----
-> From: Zhang, Yang Z
-> Sent: Thursday, December 18, 2014 10:55 PM
-> To: Wu, Feng; tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com;
-> x86@kernel.org; gleb@kernel.org; pbonzini@redhat.com;
-> dwmw2@infradead.org; joro@8bytes.org; alex.williamson@redhat.com;
-> jiang.liu@linux.intel.com
-> Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
-> iommu@lists.linux-foundation.org; kvm@vger.kernel.org; Wu, Feng
-> Subject: RE: [v3 21/26] x86, irq: Define a global vector for VT-d
-> Posted-Interrupts
-> 
-> Feng Wu wrote on 2014-12-12:
-> > Currently, we use a global vector as the Posted-Interrupts
-> > Notification Event for all the vCPUs in the system. We need to
-> > introduce another global vector for VT-d Posted-Interrtups, which will
-> > be used to wakeup the sleep vCPU when an external interrupt from a
-> direct-assigned device happens for that vCPU.
-> >
-> 
-> Hi Feng,
-> 
-> Since the idea of two global vectors mechanism is from me, please add me to
-> the comments.
-
-No problem, Yang, I will add a "suggested-by Yang Zhang <yang.z.zhang@intel.com>"
-in this patch. Thanks a lot!
-
-Thanks,
-Feng
-
-> 
-> > Signed-off-by: Feng Wu <feng.wu@intel.com>
-> > ---
-> >  arch/x86/include/asm/entry_arch.h  |  2 ++
-> >  arch/x86/include/asm/hardirq.h     |  1 +
-> >  arch/x86/include/asm/hw_irq.h      |  2 ++
-> >  arch/x86/include/asm/irq_vectors.h |  1 +
-> >  arch/x86/kernel/entry_64.S         |  2 ++
-> >  arch/x86/kernel/irq.c              | 27
-> +++++++++++++++++++++++++++
-> >  arch/x86/kernel/irqinit.c          |  2 ++
-> >  7 files changed, 37 insertions(+)
-> > diff --git a/arch/x86/include/asm/entry_arch.h
-> > b/arch/x86/include/asm/entry_arch.h index dc5fa66..27ca0af 100644 ---
-> > a/arch/x86/include/asm/entry_arch.h +++
-> > b/arch/x86/include/asm/entry_arch.h @@ -23,6 +23,8 @@
-> > BUILD_INTERRUPT(x86_platform_ipi, X86_PLATFORM_IPI_VECTOR)  #ifdef
-> > CONFIG_HAVE_KVM BUILD_INTERRUPT3(kvm_posted_intr_ipi,
-> POSTED_INTR_VECTOR,
-> >  		 smp_kvm_posted_intr_ipi)
-> > +BUILD_INTERRUPT3(kvm_posted_intr_wakeup_ipi,
-> POSTED_INTR_WAKEUP_VECTOR,
-> > +		 smp_kvm_posted_intr_wakeup_ipi)
-> >  #endif
-> >
-> >  /*
-> > diff --git a/arch/x86/include/asm/hardirq.h
-> > b/arch/x86/include/asm/hardirq.h index 0f5fb6b..9866065 100644
-> > --- a/arch/x86/include/asm/hardirq.h
-> > +++ b/arch/x86/include/asm/hardirq.h
-> > @@ -14,6 +14,7 @@ typedef struct {
-> >  #endif #ifdef CONFIG_HAVE_KVM 	unsigned int kvm_posted_intr_ipis;
-> >  +	unsigned int kvm_posted_intr_wakeup_ipis; #endif 	unsigned int
-> >  x86_platform_ipis;	/* arch dependent */ 	unsigned int apic_perf_irqs;
-> > diff --git a/arch/x86/include/asm/hw_irq.h
-> > b/arch/x86/include/asm/hw_irq.h index e7ae6eb..38fac9b 100644
-> > --- a/arch/x86/include/asm/hw_irq.h
-> > +++ b/arch/x86/include/asm/hw_irq.h
-> > @@ -29,6 +29,7 @@
-> >  extern asmlinkage void apic_timer_interrupt(void);  extern asmlinkage
-> > void x86_platform_ipi(void);  extern asmlinkage void
-> > kvm_posted_intr_ipi(void); +extern asmlinkage void
-> > kvm_posted_intr_wakeup_ipi(void);
-> >  extern asmlinkage void error_interrupt(void);  extern asmlinkage void
-> > irq_work_interrupt(void);
-> >
-> > @@ -92,6 +93,7 @@ extern void
-> > trace_call_function_single_interrupt(void);
-> >  #define trace_irq_move_cleanup_interrupt  irq_move_cleanup_interrupt
-> > #define trace_reboot_interrupt  reboot_interrupt  #define
-> > trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
-> > +#define trace_kvm_posted_intr_wakeup_ipi kvm_posted_intr_wakeup_ipi
-> >  #endif /* CONFIG_TRACING */
-> >
-> >  struct irq_domain;
-> > diff --git a/arch/x86/include/asm/irq_vectors.h
-> > b/arch/x86/include/asm/irq_vectors.h index b26cb12..dca94f2 100644 ---
-> > a/arch/x86/include/asm/irq_vectors.h +++
-> > b/arch/x86/include/asm/irq_vectors.h @@ -105,6 +105,7 @@
-> >  /* Vector for KVM to deliver posted interrupt IPI */  #ifdef
-> >  CONFIG_HAVE_KVM #define POSTED_INTR_VECTOR		0xf2 +#define
-> >  POSTED_INTR_WAKEUP_VECTOR	0xf1 #endif
-> >
-> >  /*
-> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> > index e61c14a..a598447 100644 --- a/arch/x86/kernel/entry_64.S +++
-> > b/arch/x86/kernel/entry_64.S @@ -960,6 +960,8 @@ apicinterrupt
-> > X86_PLATFORM_IPI_VECTOR \  #ifdef CONFIG_HAVE_KVM
-> >  apicinterrupt3 POSTED_INTR_VECTOR \
-> >  	kvm_posted_intr_ipi smp_kvm_posted_intr_ipi
-> > +apicinterrupt3 POSTED_INTR_WAKEUP_VECTOR \
-> > +	kvm_posted_intr_wakeup_ipi smp_kvm_posted_intr_wakeup_ipi
-> >  #endif
-> >
-> >  #ifdef CONFIG_X86_MCE_THRESHOLD
-> > diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c index
-> > 922d285..47408c3 100644
-> > --- a/arch/x86/kernel/irq.c
-> > +++ b/arch/x86/kernel/irq.c
-> > @@ -237,6 +237,9 @@ __visible void smp_x86_platform_ipi(struct pt_regs
-> > *regs)  }
-> >
-> >  #ifdef CONFIG_HAVE_KVM
-> > +void (*wakeup_handler_callback)(void) = NULL;
-> > +EXPORT_SYMBOL_GPL(wakeup_handler_callback); +
-> >  /*
-> >   * Handler for POSTED_INTERRUPT_VECTOR.
-> >   */
-> > @@ -256,6 +259,30 @@ __visible void smp_kvm_posted_intr_ipi(struct
-> > pt_regs *regs)
-> >
-> >  	set_irq_regs(old_regs);
-> >  }
-> > +
-> > +/*
-> > + * Handler for POSTED_INTERRUPT_WAKEUP_VECTOR.
-> > + */
-> > +__visible void smp_kvm_posted_intr_wakeup_ipi(struct pt_regs *regs) {
-> > +	struct pt_regs *old_regs = set_irq_regs(regs);
-> > +
-> > +	ack_APIC_irq();
-> > +
-> > +	irq_enter();
-> > +
-> > +	exit_idle();
-> > +
-> > +	inc_irq_stat(kvm_posted_intr_wakeup_ipis);
-> > +
-> > +	if (wakeup_handler_callback)
-> > +		wakeup_handler_callback();
-> > +
-> > +	irq_exit();
-> > +
-> > +	set_irq_regs(old_regs);
-> > +}
-> > +
-> >  #endif
-> >
-> >  __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs) diff
-> > --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c index
-> > 70e181e..844673c 100644 --- a/arch/x86/kernel/irqinit.c +++
-> > b/arch/x86/kernel/irqinit.c @@ -144,6 +144,8 @@ static void __init
-> > apic_intr_init(void)  #ifdef CONFIG_HAVE_KVM
-> >  	/* IPI for KVM to deliver posted interrupt */
-> >  	alloc_intr_gate(POSTED_INTR_VECTOR, kvm_posted_intr_ipi);
-> > +	/* IPI for KVM to deliver interrupt to wake up tasks */
-> > +	alloc_intr_gate(POSTED_INTR_WAKEUP_VECTOR,
-> > +kvm_posted_intr_wakeup_ipi);
-> >  #endif
-> >
-> >  	/* IPI vectors for APIC spurious and error interrupts */
-> 
-> 
-> Best regards,
-> Yang
-> 
-
+Thank you,
+Steven Stewart-Gallus
