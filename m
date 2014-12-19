@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaLSUFU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 15:05:20 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:34590 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaLSUFS (ORCPT
+	id S1752555AbaLSUIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 15:08:09 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53378 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336AbaLSUIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 15:05:18 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/IPUAh9UnIVl/telwcorUu
-Date: Fri, 19 Dec 2014 12:02:30 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: sfr@canb.auug.org.au, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: add the omap-pending tree
-Message-ID: <20141219200230.GJ23854@atomide.com>
-References: <alpine.DEB.2.02.1412191715230.3102@utopia.booyaka.com>
+	Fri, 19 Dec 2014 15:08:07 -0500
+From: Benoit Parrot <bparrot@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Alexandre Courbot <gnurou@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Benoit Parrot <bparrot@ti.com>
+Subject: [Patch v5 0/2] gpio: add GPIO hogging mechanism
+Date: Fri, 19 Dec 2014 14:07:49 -0600
+Message-ID: <1419019671-25377-1-git-send-email-bparrot@ti.com>
+X-Mailer: git-send-email 1.8.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1412191715230.3102@utopia.booyaka.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [141219 11:30]:
-> 
-> Hi Stephen,
-> 
-> Might you be willing to include this branch in your linux-next builds?
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/pjw/omap-pending.git#for-next
-> 
-> It will include OMAP clock, bus architecture, and low-level power 
-> management patches that are planned to be included in pull requests to the 
-> OMAP upstream maintainer, Tony Lindgren.  He in turn will submit pull 
-> requests to the arm-soc tree.  The objective in including this branch is 
-> to get these patches integration-tested earlier than they would be 
-> otherwise.
+This patch set re-introduces the gpio hogging concept first 
+presented by Boris Brezillion.
+This patch set provides a way to initially configure specific GPIO
+when the GPIO controller is probed.
 
-Makes sense to me. The delay in getting omap stuff into Linux next
-via arm-soc for-next is just too long because of the large number
-of pending pull requests for various ARM SoCs.
+The actual DT scanning to collect the GPIO specific data is performed
+as part of of_gpiochip_add().
 
-While at it, can you please also (re-)add omap for-next too:
+The purpose of this is to allow specific GPIOs to be configured
+without any driver specific code.
+This is particularly useful because board design are getting
+increasingly complex and given SoC pins can now have more
+than 10 mux values a lot of connections are now dependent on
+external IO muxes to switch various modes.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git#for-next
+Specific drivers should not necessarily need to be aware of
+what accounts to a specific board implementation. This board level
+"description" should be best kept as part of the dts file.
 
-Regards,
+Changes since v4:
+ * Addressed review comments from Alexandre Courbot
 
-Tony
+Changes since v3:
+ * Relocated the non-DT "hog" function to gpiolib.c.
+ * Rename some of the function to be clearer and remove _ prefixes.
+ * Replace the gpiod_request/gpiod_put usage with
+   gpiochip_request_own_desc/free_own_desc version instead.
+ * Refactor some of the logic to better handle error condition/reporting
+ * Renamed the "direction" DT properties to "state".
+
+Changes since v2:
+ * Refactor the gpio-hog mechanism to split the DT related action
+   from the actual "hogging" operation.
+ * This allows non-DT providers to implement hogs as well.
+ * Added FLAG_IS_HOGGED to mark hogged gpio and make gpiochip removal
+   able to release hogged gpio.
+ * Similarly to the hogging, the cleanup is performed as part of
+   of_gpiochip_remove
+
+Changes since v1:
+ * Split the devicetree bindings documentation in its own patch.
+ * Refactor the gpio-hog mechanism as private functions meant to
+   be to invoked from of_gpiochip_add().
+
+Benoit Parrot (2):
+  gpio: add GPIO hogging mechanism
+  gpio: Document GPIO hogging mechanism
+
+ Documentation/devicetree/bindings/gpio/gpio.txt |  23 +++++
+ drivers/gpio/gpiolib-of.c                       | 118 ++++++++++++++++++++++
+ drivers/gpio/gpiolib.c                          | 128 ++++++++++++++++++++----
+ drivers/gpio/gpiolib.h                          |   3 +
+ 4 files changed, 252 insertions(+), 20 deletions(-)
+
+-- 
+1.8.5.1
+
