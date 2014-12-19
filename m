@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaLSOFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:05:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45909 "EHLO
+	id S1752823AbaLSOFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:05:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45929 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098AbaLSOFT (ORCPT
+	with ESMTP id S1752098AbaLSOFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:05:19 -0500
-Date: Fri, 19 Dec 2014 06:04:20 -0800
+	Fri, 19 Dec 2014 09:05:42 -0500
+Date: Fri, 19 Dec 2014 06:04:37 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-35ef9c941c93f72bb49fe01396fc963ab80105bd@git.kernel.org>
-Cc: yinghai@kernel.org, bhelgaas@google.com, prarit@redhat.com,
-        joro@8bytes.org, benh@kernel.crashing.org, mingo@kernel.org,
-        grant.likely@linaro.org, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        jiang.liu@linux.intel.com, bp@alien8.de, tglx@linutronix.de,
-        hpa@zytor.com, rjw@rjwysocki.net, tony.luck@intel.com,
-        konrad.wilk@oracle.com
-Reply-To: linux-kernel@vger.kernel.org, jiang.liu@linux.intel.com,
-        gregkh@linuxfoundation.org, bp@alien8.de, tglx@linutronix.de,
-        hpa@zytor.com, rjw@rjwysocki.net, konrad.wilk@oracle.com,
-        tony.luck@intel.com, yinghai@kernel.org, bhelgaas@google.com,
-        prarit@redhat.com, joro@8bytes.org, mingo@kernel.org,
-        benh@kernel.crashing.org, grant.likely@linaro.org,
-        rdunlap@infradead.org
-In-Reply-To: <1414387308-27148-14-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-14-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-5da2fd26193433006255d534b3a01eae37e58428@git.kernel.org>
+Cc: konrad.wilk@oracle.com, mingo@kernel.org, bp@alien8.de,
+        tony.luck@intel.com, len.brown@intel.com, jiang.liu@linux.intel.com,
+        joro@8bytes.org, yinghai@kernel.org, pavel@ucw.cz,
+        benh@kernel.crashing.org, hpa@zytor.com, tglx@linutronix.de,
+        bhelgaas@google.com, linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
+        rdunlap@infradead.org, gregkh@linuxfoundation.org
+Reply-To: tony.luck@intel.com, mingo@kernel.org, konrad.wilk@oracle.com,
+        bp@alien8.de, benh@kernel.crashing.org, pavel@ucw.cz,
+        len.brown@intel.com, yinghai@kernel.org, joro@8bytes.org,
+        jiang.liu@linux.intel.com, tglx@linutronix.de, bhelgaas@google.com,
+        hpa@zytor.com, rjw@rjwysocki.net, rdunlap@infradead.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1414908273-7552-15-git-send-email-jiang.liu@linux.intel.com>
+References: <1414908273-7552-15-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq: Refine mp_register_ioapic()
-  to prepare for IOAPIC hotplug
-Git-Commit-ID: 35ef9c941c93f72bb49fe01396fc963ab80105bd
+Subject: [tip:x86/apic] x86, irq, ACPI:
+  Introduce a mutex to protect IOAPIC operations from hotplug
+Git-Commit-ID: 5da2fd26193433006255d534b3a01eae37e58428
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -42,20 +40,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  35ef9c941c93f72bb49fe01396fc963ab80105bd
-Gitweb:     http://git.kernel.org/tip/35ef9c941c93f72bb49fe01396fc963ab80105bd
+Commit-ID:  5da2fd26193433006255d534b3a01eae37e58428
+Gitweb:     http://git.kernel.org/tip/5da2fd26193433006255d534b3a01eae37e58428
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 13:21:43 +0800
+AuthorDate: Sun, 2 Nov 2014 14:04:29 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 16 Dec 2014 14:08:15 +0100
 
-x86, irq: Refine mp_register_ioapic() to prepare for IOAPIC hotplug
+x86, irq, ACPI: Introduce a mutex to protect IOAPIC operations from hotplug
 
-Refine mp_register_ioapic() to prepare for IOAPIC hotplug by:
-1) change return value from void to int.
-2) check for gsi range conflicts
-3) check for IOAPIC physical address conflicts
-4) enhance the way to allocate IOAPIC index
+We are going to support ACPI based IOAPIC hotplug, so introduce a mutex
+to protect IOAPIC data structures from IOAPIC hotplug. We choose to
+serialize in ACPI instead of in the IOAPIC core because:
+
+1) currently we only plan to support ACPI based IOAPIC hotplug
+2) it's much more cleaner and easier
+3) It does't affect IOAPIC discovered by devicetree, SFI and mpparse.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -68,164 +68,77 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1414387308-27148-14-git-send-email-jiang.liu@linux.intel.com
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Link: http://lkml.kernel.org/r/1414908273-7552-15-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/include/asm/io_apic.h |  4 +-
- arch/x86/kernel/apic/io_apic.c | 87 +++++++++++++++++++++++++++---------------
- 2 files changed, 58 insertions(+), 33 deletions(-)
+ arch/x86/kernel/acpi/boot.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 0b31aeb..94d05bd 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -188,8 +188,8 @@ extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
- extern u32 mp_pin_to_gsi(int ioapic, int pin);
- extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
- extern void mp_unmap_irq(int irq);
--extern void mp_register_ioapic(int id, u32 address, u32 gsi_base,
--			       struct ioapic_domain_cfg *cfg);
-+extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
-+			      struct ioapic_domain_cfg *cfg);
- extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
- 			    irq_hw_number_t hwirq);
- extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 60f25e88..4333a75 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3840,20 +3840,6 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
- 	return gsi - gsi_cfg->gsi_base;
- }
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 6ddeba31..2d76f02 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -76,6 +76,19 @@ int acpi_fix_pin2_polarity __initdata;
+ static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
+ #endif
  
--static int bad_ioapic(unsigned long address)
--{
--	if (nr_ioapics >= MAX_IO_APICS) {
--		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
--			MAX_IO_APICS, nr_ioapics);
--		return 1;
--	}
--	if (!address) {
--		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
--		return 1;
--	}
--	return 0;
--}
--
- static int bad_ioapic_register(int idx)
- {
- 	union IO_APIC_reg_00 reg_00;
-@@ -3873,29 +3859,51 @@ static int bad_ioapic_register(int idx)
- 	return 0;
- }
- 
--void mp_register_ioapic(int id, u32 address, u32 gsi_base,
--			struct ioapic_domain_cfg *cfg)
-+static int find_free_ioapic_entry(void)
-+{
-+	return nr_ioapics;
-+}
-+
-+/**
-+ * mp_register_ioapic - Register an IOAPIC device
-+ * @id:		hardware IOAPIC ID
-+ * @address:	physical address of IOAPIC register area
-+ * @gsi_base:	base of GSI associated with the IOAPIC
-+ * @cfg:	configuration information for the IOAPIC
++/*
++ * Locks related to IOAPIC hotplug
++ * Hotplug side:
++ *	->device_hotplug_lock
++ *		->acpi_ioapic_lock
++ *			->ioapic_lock
++ * Interrupt mapping side:
++ *	->acpi_ioapic_lock
++ *		->ioapic_mutex
++ *			->ioapic_lock
 + */
-+int mp_register_ioapic(int id, u32 address, u32 gsi_base,
-+		       struct ioapic_domain_cfg *cfg)
- {
--	int idx = 0;
--	int entries;
- 	struct mp_ioapic_gsi *gsi_cfg;
-+	int idx, ioapic, entries;
-+	u32 gsi_end;
- 
--	if (bad_ioapic(address))
--		return;
-+	if (!address) {
-+		pr_warn("Bogus (zero) I/O APIC address found, skipping!\n");
-+		return -EINVAL;
-+	}
-+	for_each_ioapic(ioapic)
-+		if (ioapics[ioapic].mp_config.apicaddr == address) {
-+			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
-+				address, ioapic);
-+			return -EEXIST;
-+		}
- 
--	idx = nr_ioapics;
-+	idx = find_free_ioapic_entry();
-+	if (idx >= MAX_IO_APICS) {
-+		pr_warn("Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
-+			MAX_IO_APICS, idx);
-+		return -ENOSPC;
-+	}
- 
- 	ioapics[idx].mp_config.type = MP_IOAPIC;
- 	ioapics[idx].mp_config.flags = MPC_APIC_USABLE;
- 	ioapics[idx].mp_config.apicaddr = address;
--	ioapics[idx].irqdomain = NULL;
--	ioapics[idx].irqdomain_cfg = *cfg;
- 
- 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
--
- 	if (bad_ioapic_register(idx)) {
- 		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
--		return;
-+		return -ENODEV;
- 	}
- 
- 	ioapics[idx].mp_config.apicid = io_apic_unique_id(idx, id);
-@@ -3906,24 +3914,41 @@ void mp_register_ioapic(int id, u32 address, u32 gsi_base,
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
- 	 */
- 	entries = io_apic_get_redir_entries(idx);
-+	gsi_end = gsi_base + entries - 1;
-+	for_each_ioapic(ioapic) {
-+		gsi_cfg = mp_ioapic_gsi_routing(ioapic);
-+		if ((gsi_base >= gsi_cfg->gsi_base &&
-+		     gsi_base <= gsi_cfg->gsi_end) ||
-+		    (gsi_end >= gsi_cfg->gsi_base &&
-+		     gsi_end <= gsi_cfg->gsi_end)) {
-+			pr_warn("GSI range [%u-%u] for new IOAPIC conflicts with GSI[%u-%u]\n",
-+				gsi_base, gsi_end,
-+				gsi_cfg->gsi_base, gsi_cfg->gsi_end);
-+			clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
-+			return -ENOSPC;
-+		}
-+	}
- 	gsi_cfg = mp_ioapic_gsi_routing(idx);
- 	gsi_cfg->gsi_base = gsi_base;
--	gsi_cfg->gsi_end = gsi_base + entries - 1;
-+	gsi_cfg->gsi_end = gsi_end;
- 
--	/*
--	 * The number of IO-APIC IRQ registers (== #pins):
--	 */
--	ioapics[idx].nr_registers = entries;
-+	ioapics[idx].irqdomain = NULL;
-+	ioapics[idx].irqdomain_cfg = *cfg;
- 
- 	if (gsi_cfg->gsi_end >= gsi_top)
- 		gsi_top = gsi_cfg->gsi_end + 1;
-+	if (nr_ioapics <= idx)
-+		nr_ioapics = idx + 1;
++static DEFINE_MUTEX(acpi_ioapic_lock);
 +
-+	/* Set nr_registers to mark entry present */
-+	ioapics[idx].nr_registers = entries;
+ /* --------------------------------------------------------------------------
+                               Boot-time Configuration
+    -------------------------------------------------------------------------- */
+@@ -609,8 +622,10 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
+ 	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
+ 		*irqp = gsi;
+ 	} else {
++		mutex_lock(&acpi_ioapic_lock);
+ 		irq = mp_map_gsi_to_irq(gsi,
+ 					IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
++		mutex_unlock(&acpi_ioapic_lock);
+ 		if (irq < 0)
+ 			return -1;
+ 		*irqp = irq;
+@@ -650,7 +665,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ 	int irq = gsi;
  
- 	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
- 		idx, mpc_ioapic_id(idx),
- 		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
- 		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
+ #ifdef CONFIG_X86_IO_APIC
++	mutex_lock(&acpi_ioapic_lock);
+ 	irq = mp_register_gsi(dev, gsi, trigger, polarity);
++	mutex_unlock(&acpi_ioapic_lock);
+ #endif
  
--	nr_ioapics++;
-+	return 0;
+ 	return irq;
+@@ -659,7 +676,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+ static void acpi_unregister_gsi_ioapic(u32 gsi)
+ {
+ #ifdef CONFIG_X86_IO_APIC
++	mutex_lock(&acpi_ioapic_lock);
+ 	mp_unregister_gsi(gsi);
++	mutex_unlock(&acpi_ioapic_lock);
+ #endif
  }
  
- int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+@@ -1187,7 +1206,9 @@ static void __init acpi_process_madt(void)
+ 			/*
+ 			 * Parse MADT IO-APIC entries
+ 			 */
++			mutex_lock(&acpi_ioapic_lock);
+ 			error = acpi_parse_madt_ioapic_entries();
++			mutex_unlock(&acpi_ioapic_lock);
+ 			if (!error) {
+ 				acpi_set_irq_model_ioapic();
+ 
