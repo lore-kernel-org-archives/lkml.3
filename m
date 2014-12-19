@@ -1,266 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaLSOUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:20:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46442 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279AbaLSOUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:20:07 -0500
-Date: Fri, 19 Dec 2014 06:02:10 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-5db66334a7e83cda70fb6193dcaa2590da3a1b7d@git.kernel.org>
-Cc: rdunlap@infradead.org, joro@8bytes.org, bhelgaas@google.com,
-        tony.luck@intel.com, yinghai@kernel.org, gregkh@linuxfoundation.org,
-        rjw@rjwysocki.net, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com, bp@alien8.de,
-        jiang.liu@linux.intel.com, tglx@linutronix.de, mingo@kernel.org,
-        hpa@zytor.com
-Reply-To: joro@8bytes.org, rdunlap@infradead.org, bhelgaas@google.com,
-        yinghai@kernel.org, gregkh@linuxfoundation.org, tony.luck@intel.com,
-        rjw@rjwysocki.net, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
-        bp@alien8.de, mingo@kernel.org, tglx@linutronix.de,
-        jiang.liu@linux.intel.com
-In-Reply-To: <1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] PCI: Remove PCI ioapic driver
-Git-Commit-ID: 5db66334a7e83cda70fb6193dcaa2590da3a1b7d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752775AbaLSOVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:21:24 -0500
+Received: from mail-bn1bon0059.outbound.protection.outlook.com ([157.56.111.59]:45925
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752077AbaLSOVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 09:21:23 -0500
+Date: Fri, 19 Dec 2014 15:20:59 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: <atull@opensource.altera.com>, <gregkh@linuxfoundation.org>,
+        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
+        <michal.simek@xilinx.com>, <rdunlap@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v6 0/4] FPGA Manager Framework
+References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+In-Reply-To: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21186.006
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <5901b1791e1c4b09b72cb22c5eca68ca@BL2FFO11FD047.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(479174004)(377454003)(199003)(51704005)(189002)(164054003)(24454002)(92726002)(50986999)(64706001)(54356999)(77096005)(108616004)(46102003)(31966008)(76176999)(20776003)(107046002)(62966003)(2950100001)(106466001)(77156002)(47776003)(64126003)(50466002)(65956001)(65806001)(74316001)(6806004)(19580405001)(87936001)(19580395003)(4396001)(120916001)(99396003)(86362001)(104016003)(2201001)(83506001)(23746002)(92566001)(21056001)(65826006)(107986001)(24736002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB018;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB018;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB018;
+X-Forefront-PRVS: 0430FA5CB7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB018;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5db66334a7e83cda70fb6193dcaa2590da3a1b7d
-Gitweb:     http://git.kernel.org/tip/5db66334a7e83cda70fb6193dcaa2590da3a1b7d
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 13:21:38 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 16 Dec 2014 14:08:14 +0100
+Hi Greg,
 
-PCI: Remove PCI ioapic driver
+On 12/18/2014 11:29 PM, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Dropping the changes to socfpga DTS and defconfig from this
+> patch set.
+> 
+> Kernel doc fixes and other minor fixes as listed in the patches.
+> 
+> Alan
+> 
+> Alan Tull (4):
+>   doc: add bindings document for altera fpga manager
+>   fpga manager: add sysfs interface document
+>   staging: fpga manager: framework core
+>   staging: fpga manager: add driver for socfpga fpga manager
+> 
+>  drivers/staging/Kconfig                            |    2 +
+>  drivers/staging/Makefile                           |    1 +
+>  .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
+>  .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +
+>  drivers/staging/fpga/Kconfig                       |   29 +
+>  drivers/staging/fpga/Makefile                      |    9 +
+>  drivers/staging/fpga/fpga-mgr.c                    |  551 ++++++++++++++++
+>  drivers/staging/fpga/socfpga.c                     |  694 ++++++++++++++++++++
+>  include/linux/fpga/fpga-mgr.h                      |  124 ++++
+>  9 files changed, 1465 insertions(+)
+>  create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
+>  create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
+>  create mode 100644 drivers/staging/fpga/Kconfig
+>  create mode 100644 drivers/staging/fpga/Makefile
+>  create mode 100644 drivers/staging/fpga/fpga-mgr.c
+>  create mode 100644 drivers/staging/fpga/socfpga.c
+>  create mode 100644 include/linux/fpga/fpga-mgr.h
+> 
 
-To support IOAPIC hotplug on x86 and IA64 platforms, OS needs to figure
-out global interrupt source number(GSI) and IOAPIC enumeration ID
-through ACPI interfaces. So BIOS must implement an ACPI IOAPIC device
-with _GSB/_UID or _MAT method to support IOAPIC hotplug. OS also needs
-to figure out base physical address to access IOAPIC registers. OS may
-get the base physical address through PCI BARs if IOAPIC device is
-visible in PCI domain, otherwise OS may get the address by ACPI _CRS
-method if IOAPIC device is hidden from PCI domain by BIOS.
+I think we have reasonable number of patches which can go to the staging
+and we can work on it and extend it. I have xilinx zynq driver in my repository too.
+Also I would try to integrate staging/gs_fpgaboot/ because they do just the same
+thing. Also char/xilinx_hwicap should be added to this subfolder (and clean a lot).
+I am not aware about any other fpga driver in the tree but I didn't grep it
+(IRC xillybus targets a little bit different thing). Please let me know if you are
+aware about different one.
 
-When adding a PCI subtree, we need to add IOAPIC devices before enabling
-all other PCI devices because other PCI devices may use the IOAPIC to
-allocate PCI interrupts.
+I was talking to Altera guys at ELCE and conclusion was that will be the best to
+maintain future drivers/fpga/ together.
+It means if there is no problem with this series. Do you want me to add these
+patches to any repository at kernel.org and send you pull request?
+Or you just prefer to take these patches directly to staging and we will use
+separate repository later?
+We will also create fragment to MAINTAINERS file to reflect this.
 
-So we plan to reimplement IOAPIC driver as an ACPI instead of PCI driver
-due to:
-1) hot-pluggable IOAPIC devices are always visible in ACPI domain,
-   but may or may not be visible in PCI domain.
-2) we could explicitly control the order between IOAPIC and other PCI
-   devices.
-
-We also have another choice to use a PCI driver to manage IOAPIC device
-if it's visible in PCI domain and use an ACPI driver if it's only
-visible in ACPI domain. But this solution is a little complex.
-
-It shouldn't cause serious backward compatibility issues because:
-1) IOAPIC hotplug is never supported on x86 yet because it hasn't
-   implemented the required acpi_register_ioapic() and
-   acpi_unregister_ioapic().
-2) Currently only ACPI based IOAPIC hotplug is possible on x86 and
-   IA64, we don't know other specifications and interfaces to support
-   IOAPIC hotplug yet.
-3) We will reimplement an ACPI IOAPIC driver to support IOAPIC hotplug.
-
-This change also helps to get rid of the false alarm on all current
-Linux distributions:
-[    6.952497] ioapic: probe of 0000:00:05.4 failed with error -22
-[    6.959542] ioapic: probe of 0000:80:05.4 failed with error -22
-
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1414387308-27148-9-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
----
- drivers/pci/Kconfig  |   7 ---
- drivers/pci/Makefile |   2 -
- drivers/pci/ioapic.c | 121 ---------------------------------------------------
- 3 files changed, 130 deletions(-)
-
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index cced842..91a64d3 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -110,13 +110,6 @@ config PCI_PASID
- 
- 	  If unsure, say N.
- 
--config PCI_IOAPIC
--	bool "PCI IO-APIC hotplug support" if X86
--	depends on PCI
--	depends on ACPI
--	depends on X86_IO_APIC
--	default !X86
--
- config PCI_LABEL
- 	def_bool y if (DMI || ACPI)
- 	select NLS
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index e04fe2d..73e4af4 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -13,8 +13,6 @@ obj-$(CONFIG_PCI_QUIRKS) += quirks.o
- # Build PCI Express stuff if needed
- obj-$(CONFIG_PCIEPORTBUS) += pcie/
- 
--obj-$(CONFIG_PCI_IOAPIC) += ioapic.o
--
- # Build the PCI Hotplug drivers if we were asked to
- obj-$(CONFIG_HOTPLUG_PCI) += hotplug/
- ifdef CONFIG_HOTPLUG_PCI
-diff --git a/drivers/pci/ioapic.c b/drivers/pci/ioapic.c
-deleted file mode 100644
-index f6219d3..0000000
---- a/drivers/pci/ioapic.c
-+++ /dev/null
-@@ -1,121 +0,0 @@
--/*
-- * IOAPIC/IOxAPIC/IOSAPIC driver
-- *
-- * Copyright (C) 2009 Fujitsu Limited.
-- * (c) Copyright 2009 Hewlett-Packard Development Company, L.P.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--/*
-- * This driver manages PCI I/O APICs added by hotplug after boot.  We try to
-- * claim all I/O APIC PCI devices, but those present at boot were registered
-- * when we parsed the ACPI MADT, so we'll fail when we try to re-register
-- * them.
-- */
--
--#include <linux/pci.h>
--#include <linux/module.h>
--#include <linux/acpi.h>
--#include <linux/slab.h>
--
--struct ioapic {
--	acpi_handle	handle;
--	u32		gsi_base;
--};
--
--static int ioapic_probe(struct pci_dev *dev, const struct pci_device_id *ent)
--{
--	acpi_handle handle;
--	acpi_status status;
--	unsigned long long gsb;
--	struct ioapic *ioapic;
--	int ret;
--	char *type;
--	struct resource *res;
--
--	handle = ACPI_HANDLE(&dev->dev);
--	if (!handle)
--		return -EINVAL;
--
--	status = acpi_evaluate_integer(handle, "_GSB", NULL, &gsb);
--	if (ACPI_FAILURE(status))
--		return -EINVAL;
--
--	/*
--	 * The previous code in acpiphp evaluated _MAT if _GSB failed, but
--	 * ACPI spec 4.0 sec 6.2.2 requires _GSB for hot-pluggable I/O APICs.
--	 */
--
--	ioapic = kzalloc(sizeof(*ioapic), GFP_KERNEL);
--	if (!ioapic)
--		return -ENOMEM;
--
--	ioapic->handle = handle;
--	ioapic->gsi_base = (u32) gsb;
--
--	if (dev->class == PCI_CLASS_SYSTEM_PIC_IOAPIC)
--		type = "IOAPIC";
--	else
--		type = "IOxAPIC";
--
--	ret = pci_enable_device(dev);
--	if (ret < 0)
--		goto exit_free;
--
--	pci_set_master(dev);
--
--	if (pci_request_region(dev, 0, type))
--		goto exit_disable;
--
--	res = &dev->resource[0];
--	if (acpi_register_ioapic(ioapic->handle, res->start, ioapic->gsi_base))
--		goto exit_release;
--
--	pci_set_drvdata(dev, ioapic);
--	dev_info(&dev->dev, "%s at %pR, GSI %u\n", type, res, ioapic->gsi_base);
--	return 0;
--
--exit_release:
--	pci_release_region(dev, 0);
--exit_disable:
--	pci_disable_device(dev);
--exit_free:
--	kfree(ioapic);
--	return -ENODEV;
--}
--
--static void ioapic_remove(struct pci_dev *dev)
--{
--	struct ioapic *ioapic = pci_get_drvdata(dev);
--
--	acpi_unregister_ioapic(ioapic->handle, ioapic->gsi_base);
--	pci_release_region(dev, 0);
--	pci_disable_device(dev);
--	kfree(ioapic);
--}
--
--
--static const struct pci_device_id ioapic_devices[] = {
--	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOAPIC, ~0) },
--	{ PCI_DEVICE_CLASS(PCI_CLASS_SYSTEM_PIC_IOXAPIC, ~0) },
--	{ }
--};
--MODULE_DEVICE_TABLE(pci, ioapic_devices);
--
--static struct pci_driver ioapic_driver = {
--	.name		= "ioapic",
--	.id_table	= ioapic_devices,
--	.probe		= ioapic_probe,
--	.remove		= ioapic_remove,
--};
--
--static int __init ioapic_init(void)
--{
--	return pci_register_driver(&ioapic_driver);
--}
--module_init(ioapic_init);
--
--MODULE_LICENSE("GPL");
+Thanks,
+Michal
