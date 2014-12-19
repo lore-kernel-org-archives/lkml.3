@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaLSAMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 19:12:40 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:43490 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaLSAMi (ORCPT
+	id S1751638AbaLSANz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 19:13:55 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:61631 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaLSANx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 19:12:38 -0500
-Date: Fri, 19 Dec 2014 09:12:34 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: shmobile: r8a7740: Instantiate GIC from C board
- code in legacy builds
-Message-ID: <20141219001233.GD29188@verge.net.au>
-References: <1418823642-28154-1-git-send-email-geert+renesas@glider.be>
- <54919119.8030208@arm.com>
- <20141218003312.GE1421@verge.net.au>
- <CAMuHMdXZfY0eiqcMT89EuyYbZoT1rRnNjUL2gEYtLB-gSSHCkQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXZfY0eiqcMT89EuyYbZoT1rRnNjUL2gEYtLB-gSSHCkQ@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 18 Dec 2014 19:13:53 -0500
+From: Dmitry Torokhov <dtor@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: Mike Turquette <mturquette@linaro.org>, dianders@chromium.org,
+        sonnyrao@chromium.org, addy.ke@rock-chips.com, hl@rock-chips.com,
+        kever.yang@rock-chips.com, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] CHROMIUM: clk: rockchip: add clock IDs for the PVTM clocks
+Date: Thu, 18 Dec 2014 16:13:45 -0800
+Message-Id: <1418948026-3463-1-git-send-email-dtor@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 09:14:46AM +0100, Geert Uytterhoeven wrote:
-> Hi Simon,
-> 
-> On Thu, Dec 18, 2014 at 1:33 AM, Simon Horman <horms@verge.net.au> wrote:
-> > On Wed, Dec 17, 2014 at 02:20:09PM +0000, Marc Zyngier wrote:
-> >> On 17/12/14 13:40, Geert Uytterhoeven wrote:
-> >> > As of commit 9a1091ef0017c40a ("irqchip: gic: Support hierarchy irq
-> >> > domain."), armadillo-legacy hangs during boot with:
-> 
-> > can I confirm that you would like me to pick this up - there are a lot of
-> > changes flying around at the moment?  If so would you like it considered as
-> > a fix for v3.19 and stable? If so I will need some information about what
-> > patch introduced the problem in which release. If not can you state why?
-> 
-> The above-mentioned commit will be in v3.19-rc1. So getting it in
-> v3.19 only sounds fine
+From: Huang Lin <hl@rock-chips.com>
 
-Thanks, I will see about making it so.
+Process-Voltage-Temperature Monitor has two clocks, PVTM_CORE and
+PVTM_GPU.
 
-> (unless you want to backport the IRQ domain breakage to 3.14-ltsi ;-)
+Signed-off-by: Huang Lin <hl@rock-chips.com>
+Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+---
 
-Hopefully not :)
+Note that I left a hole at 122 for SCLK_USBPHY480M_SRC which is floating
+around.
 
-> Thanks!
-> 
-> > The reason for requesting such information is so that I can pass it on to
-> > the ARM SoC maintainers so it is clear to them how to handle the patch and
-> > why.
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+ include/dt-bindings/clock/rk3288-cru.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/include/dt-bindings/clock/rk3288-cru.h b/include/dt-bindings/clock/rk3288-cru.h
+index f60ce72..ba4c194 100644
+--- a/include/dt-bindings/clock/rk3288-cru.h
++++ b/include/dt-bindings/clock/rk3288-cru.h
+@@ -81,6 +81,9 @@
+ #define SCLK_SDIO1_SAMPLE	120
+ #define SCLK_EMMC_SAMPLE	121
+ 
++#define SCLK_PVTM_CORE		123
++#define SCLK_PVTM_GPU		124
++
+ #define DCLK_VOP0		190
+ #define DCLK_VOP1		191
+ 
+-- 
+2.2.0.rc0.207.ga3a616c
+
