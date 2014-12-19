@@ -1,37 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaLSOMn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:12:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46789 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752174AbaLSOMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:12:41 -0500
-Message-ID: <54943249.3050300@redhat.com>
-Date: Fri, 19 Dec 2014 15:12:25 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753310AbaLSONR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:13:17 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:65319 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565AbaLSONP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 09:13:15 -0500
+Date: Fri, 19 Dec 2014 06:13:10 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Aapo Vienamo <aapo.vienamo@iki.fi>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: fix redundant parens in return in
+ amplc_dio200_common.c
+Message-ID: <20141219141310.GA31535@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Aapo Vienamo <aapo.vienamo@iki.fi>, linux-kernel@vger.kernel.org
+References: <1418916772-24778-1-git-send-email-aapo.vienamo@iki.fi>
+ <20141218224501.GC6742@hudson.localdomain>
+ <20141219103716.GA14738@straylight.lan>
 MIME-Version: 1.0
-To: nick <xerofoify@gmail.com>, gleb@kernel.org
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Question about hrtimer_restart apic_timer_fn in lapic.c
-References: <549319DD.1020908@gmail.com> <54940BF0.1020104@redhat.com> <5494304F.30802@gmail.com>
-In-Reply-To: <5494304F.30802@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141219103716.GA14738@straylight.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Aapo,
 
+On Fri, Dec 19, 2014 at 12:37:16PM +0200, Aapo Vienamo wrote:
+> On Thu, Dec 18, 2014 at 02:45:01PM -0800, Jeremiah Mahler wrote:
+> > Aapo,
+> > 
+> > On Thu, Dec 18, 2014 at 05:32:52PM +0200, Aapo Vienamo wrote:
+> > > This patch fixes a coding style issue found by the checkpatch.pl tool in
+> > > amplc_dio200_common.c by removing the unnecessary parentheses around the
+> > > expression in a return statement.
+> > > 
+> > > Signed-off-by: Aapo Vienamo <aapo.vienamo@iki.fi>
+> > > ---
+> > >  drivers/staging/comedi/drivers/amplc_dio200_common.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/staging/comedi/drivers/amplc_dio200_common.c b/drivers/staging/comedi/drivers/amplc_dio200_common.c
+> > > index 26aad70..6eadbbe 100644
+> > > --- a/drivers/staging/comedi/drivers/amplc_dio200_common.c
+> > > +++ b/drivers/staging/comedi/drivers/amplc_dio200_common.c
+> > > @@ -340,7 +340,7 @@ static int dio200_handle_read_intr(struct comedi_device *dev,
+> > >  
+> > >  	comedi_handle_events(dev, s);
+> > >  
+> > > -	return (triggered != 0);
+> > > +	return triggered != 0;
+> > >  }
+> > >  
+> > [...]
+> > 
+> > When I run checkpatch.pl it doesn't find any errors and the parenthesis
+> > haven't been removed.  How are you running checkpatch.pl?  Are you using
+> > any extra options?
+> 
+> It looks like that I accidentally ran the file trough an older version
+> of checkpatch.pl. The error for this case was quieted in commit 
+> 5b9553a (checkpatch: make "return is not a function" test quieter).
+> 
+> Sorry for the noise.
+> 
+> - Aapo Vienamo
 
-On 19/12/2014 15:03, nick wrote:
-> Paolo,
-> If that is the case why don't I just move this function over if we don't need it in this file into x86.c.
-> This seems to be the easiest solution from my understanding.
-> Regards,
+If you are looking for something easy to fix have a look in
 
-Only that line would have to be moved to x86.c.  You can send a patch
-for that.
+  drivers/staging/rtl8192u/
 
-Paolo
+There are lots of checkpatch errors to fix in there.
+
+-- 
+- Jeremiah Mahler
