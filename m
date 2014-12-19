@@ -1,230 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626AbaLSOzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:55:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:6793 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751706AbaLSOzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:55:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,607,1413270000"; 
-   d="scan'208,223";a="626595180"
-Message-ID: <54943C44.5080503@linux.intel.com>
-Date: Fri, 19 Dec 2014 22:55:00 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752573AbaLSO5C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:57:02 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47970 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaLSO5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 09:57:00 -0500
+Message-ID: <54943CB5.2030206@linaro.org>
+Date: Fri, 19 Dec 2014 22:56:53 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Sander Eikelenboom <linux@eikelenboom.it>, konrad.wilk@oracle.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: Bisected Linux regression: ACPI powerbutton events don't work
- under Xen since commit b81975eade8c6495f3c4d6746d22bdc95f617777
-References: <1824124380.20141219141645@eikelenboom.it>
-In-Reply-To: <1824124380.20141219141645@eikelenboom.it>
-Content-Type: multipart/mixed;
- boundary="------------070406090201060806040107"
+To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>, rjw@rjwysocki.net,
+        lenb@kernel.org, hdegoede@redhat.com, tj@kernel.org, arnd@arndb.de,
+        mjg59@srcf.ucam.org
+CC: leo.duran@amd.com, graeme.gregory@linaro.org, linux-ide@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [RFC PATCH 1/2] ACPI / scan: Add support for ACPI _CLS device
+ matching
+References: <1418858195-22857-1-git-send-email-suravee.suthikulpanit@amd.com> <1418858195-22857-2-git-send-email-suravee.suthikulpanit@amd.com>
+In-Reply-To: <1418858195-22857-2-git-send-email-suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------070406090201060806040107
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Hi Suravee,
 
-Hi Sander,
-	Could you please help to test attached patch? It works
-on native but I have no Xen environment at hand.
-Thanks!
-Gerry
+On 2014年12月18日 07:16, Suravee Suthikulpanit wrote:
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>
+> Device drivers typically use ACPI _HIDs/_CIDs listed in struct device_driver
+> acpi_match_table to match devices. However, for generic drivers, we do
+> not want to list _HID for all supported devices, and some device classes
+> do not have _CID (e.g. SATA, USB). Instead, we can leverage ACPI _CLS,
+> which specifies PCI-defined class code (i.e. base-class, subclass and
+> programming interface).
+>
+> This patch adds support for matching ACPI devices using the _CLS method.
+>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> ---
+>   drivers/acpi/scan.c             | 73 +++++++++++++++++++++++++++++++++++++++++
+>   include/acpi/acnames.h          |  1 +
+>   include/linux/acpi.h            | 12 ++++++-
+>   include/linux/device.h          |  1 +
+>   include/linux/mod_devicetable.h |  6 ++++
+>   5 files changed, 92 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index d670158..6406648 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -864,6 +864,79 @@ int acpi_match_device_ids(struct acpi_device *device,
+>   }
+>   EXPORT_SYMBOL(acpi_match_device_ids);
+>
+> +/**
+> + * acpi_match_device_cls - Match a struct device against a ACPI _CLS method
+> + * @dev_cls: A pointer to struct acpi_device_cls object to match against.
+> + * @dev: The ACPI device structure to match.
+> + *
+> + * Check if @dev has a valid ACPI and _CLS handle. If there is a
+> + * struct acpi_device_cls object for that handle, use that object to match
+> + * against the given struct acpi_device_cls object.
+> + *
+> + * Return 0 on success or error code on failure.
+> + */
+> +int acpi_match_device_cls(const struct acpi_device_cls *dev_cls,
+> +			  const struct device *dev)
+> +{
+> +	int ret = -EINVAL;
+> +	acpi_status status;
+> +	struct acpi_device *adev;
+> +	union acpi_object *pkg;
+> +	struct acpi_device_cls cls;
+> +	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+> +	struct acpi_buffer format = { sizeof("NNN"), "NNN" };
+> +	struct acpi_buffer state = { 0, NULL };
+> +	acpi_handle handle = ACPI_HANDLE(dev);
 
-On 2014/12/19 21:16, Sander Eikelenboom wrote:
-> Hi,
-> 
-> When running under Xen, ACPI powerbutton events don't work anymore, 
-> there is no reaction when pressing the powerbutton.
-> 
-> On baremetal everything works fine, acpid gets the event and the 
-> machine powers down perfectly. The machine is an Intel NUC.
->  
-> Bisection has lead to:
-> 
-> b81975eade8c6495f3c4d6746d22bdc95f617777 is the first bad commit
-> commit b81975eade8c6495f3c4d6746d22bdc95f617777
-> Author: Jiang Liu <jiang.liu@linux.intel.com>
-> Date:   Mon Jun 9 16:20:11 2014 +0800
-> 
->     x86, irq: Clean up irqdomain transition code
-> 
->     Now we have completely switched to irqdomain, so clean up transition code
->     in IOAPIC drivers.
-> 
->     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->     Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->     Cc: Tony Luck <tony.luck@intel.com>
->     Cc: Joerg Roedel <joro@8bytes.org>
->     Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
->     Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->     Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->     Cc: Grant Likely <grant.likely@linaro.org>
->     Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
->     Cc: Bjorn Helgaas <bhelgaas@google.com>
->     Cc: Randy Dunlap <rdunlap@infradead.org>
->     Cc: Yinghai Lu <yinghai@kernel.org>
->     Link: http://lkml.kernel.org/r/1402302011-23642-43-git-send-email-jiang.liu@linux.intel.com
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> Reverting this specific commit on linux-tip (3.19-mw) gets things working again under Xen.
-> Kernel .config is attached.
-> 
-> --
-> Sander
-> 
+...
 
---------------070406090201060806040107
-Content-Type: text/x-patch;
- name="0001-x86-apic-Fix-xen-failure-caused-by-commit-b81975eade.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-x86-apic-Fix-xen-failure-caused-by-commit-b81975eade.pa";
- filename*1="tch"
+> +	acpi_handle cls_handle;
+> +
+> +	if (!handle || acpi_bus_get_device(handle, &adev))
 
->From a6928b3c93a5119c79b8a7aec953579c87d2a4cc Mon Sep 17 00:00:00 2001
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Date: Fri, 19 Dec 2014 22:33:56 +0800
-Subject: [PATCH] x86/apic: Fix xen failure caused by commit b81975eade8c
+if handle is not NULL, adev will not NULL too :)
+because you get the handle from adev, ACPI_HANDLE() is defined as:
+acpi_device_handle(ACPI_COMPANION(dev)), and adev = ACPI_COMPANION(dev);
 
-Commit b81975eade8c "x86, irq: Clean up irqdomain transition code"
-breaks Xen because xen_smp_prepare_cpus() doesn't call setup_IO_APIC()
-so mp_map_pin_to_irq() fails at the very beginning.
+you may use adev = ACPI_COMPANION(dev) to simplify the code.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/hw_irq.h        |    2 +-
- arch/x86/include/asm/smpboot_hooks.h |    6 +++---
- arch/x86/kernel/apic/apic.c          |    6 +++---
- arch/x86/kernel/apic/io_apic.c       |   32 +++++++++++++++-----------------
- arch/x86/xen/smp.c                   |    3 +++
- 5 files changed, 25 insertions(+), 24 deletions(-)
+> +		return ret;
+> +
+> +	if (!adev->status.present || !dev_cls)
+> +		return ret;
+> +
+> +	status = acpi_get_handle(adev->handle, METHOD_NAME__CLS, &cls_handle);
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 4615906d83df..0c6530dfd817 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -98,7 +98,7 @@ extern void trace_call_function_single_interrupt(void);
- #define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1<<(x)) & io_apic_irqs))
- extern unsigned long io_apic_irqs;
- 
--extern void setup_IO_APIC(void);
-+extern void setup_IO_APIC(bool xen_smp);
- extern void disable_IO_APIC(void);
- 
- struct io_apic_irq_attr {
-diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
-index 0da7409f0bec..76e5731b03cb 100644
---- a/arch/x86/include/asm/smpboot_hooks.h
-+++ b/arch/x86/include/asm/smpboot_hooks.h
-@@ -52,9 +52,9 @@ static inline void __init smpboot_setup_io_apic(void)
- 	 * Here we can be sure that there is an IO-APIC in the system. Let's
- 	 * go and set it up:
- 	 */
--	if (!skip_ioapic_setup && nr_ioapics)
--		setup_IO_APIC();
--	else {
-+	if (!skip_ioapic_setup && nr_ioapics) {
-+		setup_IO_APIC(false);
-+	} else {
- 		nr_ioapics = 0;
- 	}
- #endif
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index ba6cc041edb1..33ba1f97abea 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1912,9 +1912,9 @@ int __init APIC_init_uniprocessor(void)
- 	bsp_end_local_APIC_setup();
- 
- #ifdef CONFIG_X86_IO_APIC
--	if (smp_found_config && !skip_ioapic_setup && nr_ioapics)
--		setup_IO_APIC();
--	else {
-+	if (smp_found_config && !skip_ioapic_setup && nr_ioapics) {
-+		setup_IO_APIC(false);
-+	} else {
- 		nr_ioapics = 0;
- 	}
- #endif
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index a6745e756729..5879ac58c3b6 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2965,31 +2965,29 @@ static int mp_irqdomain_create(int ioapic)
- 	return 0;
- }
- 
--void __init setup_IO_APIC(void)
-+void __init setup_IO_APIC(bool xen_smp)
- {
- 	int ioapic;
- 
--	/*
--	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
--	 */
--	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
-+	if (!xen_smp) {
-+		apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
-+		io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
-+
-+		/* Set up IO-APIC IRQ routing. */
-+		x86_init.mpparse.setup_ioapic_ids();
-+		sync_Arb_IDs();
-+	}
- 
--	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
- 	for_each_ioapic(ioapic)
- 		BUG_ON(mp_irqdomain_create(ioapic));
--
--	/*
--         * Set up IO-APIC IRQ routing.
--         */
--	x86_init.mpparse.setup_ioapic_ids();
--
--	sync_Arb_IDs();
- 	setup_IO_APIC_irqs();
--	init_IO_APIC_traps();
--	if (nr_legacy_irqs())
--		check_timer();
--
- 	ioapic_initialized = 1;
-+
-+	if (!xen_smp) {
-+		init_IO_APIC_traps();
-+		if (nr_legacy_irqs())
-+			check_timer();
-+	}
- }
- 
- /*
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 4c071aeb8417..7eb0283901fa 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -326,7 +326,10 @@ static void __init xen_smp_prepare_cpus(unsigned int max_cpus)
- 
- 		xen_raw_printk(m);
- 		panic(m);
-+	} else {
-+		setup_IO_APIC(true);
- 	}
-+
- 	xen_init_lock_cpu(0);
- 
- 	smp_store_boot_cpu_info();
--- 
-1.7.10.4
+do we need this function called here? _CLS is the method under ACPI
+device object in DSDT/SSDT, and you will get adev->handle == cls_handle
+if I'm not wrong :)
 
+> +	if (ACPI_FAILURE(status))
+> +		return ret;
+> +
+> +	status = acpi_evaluate_object(cls_handle, "_CLS", NULL, &buffer);
+> +	if (ACPI_FAILURE(status)) {
+> +		ACPI_EXCEPTION((AE_INFO, status, "Failed to Evaluat _CLS"));
+> +		return ret;
+> +	}
 
---------------070406090201060806040107--
+I think you can evaluate _CLS directly with handle here.
+
+Thanks
+Hanjun
+
+> +
+> +	/**
+> +	 * Note:
+> +	 * ACPIv5.1 defines the package to contain 3 integers for
+> +	 * Base-Class code, Sub-Class code, and Programming Interface code.
+> +	 */
+> +	pkg = buffer.pointer;
+> +	if (!pkg ||
+> +	    (pkg->type != ACPI_TYPE_PACKAGE) ||
+> +	    (pkg->package.count != 3)) {
+> +		dev_err(&adev->dev, "Invalid _CLS data\n");
+> +		goto out;
+> +	}
+> +
+> +	state.length = sizeof(struct acpi_device_cls);
+> +	state.pointer = &cls;
+> +
+> +	status = acpi_extract_package(pkg, &format, &state);
+> +	if (ACPI_FAILURE(status)) {
+> +		ACPI_EXCEPTION((AE_INFO, status, "Invalid data"));
+> +		goto out;
+> +	}
+> +
+> +	if ((dev_cls->base_class == cls.base_class) &&
+> +	    (dev_cls->sub_class == cls.sub_class) &&
+> +	    (dev_cls->prog_interface == cls.prog_interface))
+> +		ret = 0;
+> +out:
+> +	kfree(buffer.pointer);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_match_device_cls);
+> +
+>   static void acpi_free_power_resources_lists(struct acpi_device *device)
+>   {
+>   	int i;
+> diff --git a/include/acpi/acnames.h b/include/acpi/acnames.h
+> index 7461327..22332a6 100644
+> --- a/include/acpi/acnames.h
+> +++ b/include/acpi/acnames.h
+> @@ -51,6 +51,7 @@
+>   #define METHOD_NAME__BBN        "_BBN"
+>   #define METHOD_NAME__CBA        "_CBA"
+>   #define METHOD_NAME__CID        "_CID"
+> +#define METHOD_NAME__CLS        "_CLS"
+>   #define METHOD_NAME__CRS        "_CRS"
+>   #define METHOD_NAME__DDN        "_DDN"
+>   #define METHOD_NAME__HID        "_HID"
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 5a92d49..8680afa 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -428,10 +428,14 @@ extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
+>   const struct acpi_device_id *acpi_match_device(const struct acpi_device_id *ids,
+>   					       const struct device *dev);
+>
+> +int acpi_match_device_cls(const struct acpi_device_cls *dev_cls,
+> +			  const struct device *dev);
+> +
+>   static inline bool acpi_driver_match_device(struct device *dev,
+>   					    const struct device_driver *drv)
+>   {
+> -	return !!acpi_match_device(drv->acpi_match_table, dev);
+> +	return (!!acpi_match_device(drv->acpi_match_table, dev) ||
+> +		 !acpi_match_device_cls(drv->acpi_cls, dev));
+>   }
+>
+>   int acpi_device_uevent_modalias(struct device *, struct kobj_uevent_env *);
+> @@ -511,6 +515,12 @@ static inline const struct acpi_device_id *acpi_match_device(
+>   	return NULL;
+>   }
+>
+> +static int acpi_match_device_cls(const struct acpi_device_cls *dev_cls,
+> +				 const struct device *dev)
+> +{
+> +	return -EINVAL;
+> +}
+> +
+>   static inline bool acpi_driver_match_device(struct device *dev,
+>   					    const struct device_driver *drv)
+>   {
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index ce1f2160..a469adc 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -237,6 +237,7 @@ struct device_driver {
+>
+>   	const struct of_device_id	*of_match_table;
+>   	const struct acpi_device_id	*acpi_match_table;
+> +	const struct acpi_device_cls	*acpi_cls;
+>
+>   	int (*probe) (struct device *dev);
+>   	int (*remove) (struct device *dev);
+> diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+> index 44eeef0..f2ef3c6 100644
+> --- a/include/linux/mod_devicetable.h
+> +++ b/include/linux/mod_devicetable.h
+> @@ -186,6 +186,12 @@ struct css_device_id {
+>
+>   #define ACPI_ID_LEN	9
+>
+> +struct acpi_device_cls {
+> +	kernel_ulong_t base_class;
+> +	kernel_ulong_t sub_class;
+> +	kernel_ulong_t prog_interface;
+> +};
+> +
+>   struct acpi_device_id {
+>   	__u8 id[ACPI_ID_LEN];
+>   	kernel_ulong_t driver_data;
+>
