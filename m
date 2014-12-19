@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaLSLYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 06:24:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43286 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357AbaLSLYG (ORCPT
+	id S1752634AbaLSLZt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 06:25:49 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:59702 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182AbaLSLZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 06:24:06 -0500
-Date: Fri, 19 Dec 2014 12:23:50 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Shaohua Li <shli@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
-Message-ID: <20141219112350.GJ30905@twins.programming.kicks-ass.net>
-References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
- <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
- <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
- <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
+	Fri, 19 Dec 2014 06:25:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54940807.4000404@xs4all.nl>
+References: <1416315613-24446-1-git-send-email-prabhakar.csengg@gmail.com>
+ <547C4FB0.6030409@xs4all.nl> <54940807.4000404@xs4all.nl>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 19 Dec 2014 16:55:17 +0530
+Message-ID: <CA+V-a8u-sh3=6izfu4_WfRud+qk+t-4JzGp62i1tqW7hnoojjw@mail.gmail.com>
+Subject: Re: [PATCH] media: ti-vpe: Use mem-to-mem ioctl helpers
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 04:22:59PM -0800, Andy Lutomirski wrote:
-> Bad news: this patch is incorrect, I think.  Take a look at
-> update_rq_clock -- it does fancy things involving irq time and
-> paravirt steal time.  So this patch could result in extremely
-> non-monotonic results.
+Hi Hans,
 
-Yeah, I'm not sure how (and if) we could make all that work :/
+On Fri, Dec 19, 2014 at 4:42 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> Hi Prabhakar,
+>
+> I haven't seen any movement with Nikhil's patches, so it is probably better if
+> you just post a new version of this patch based on the latest media_tree.
+>
+I was about to do that, as I was not able to utilize my holidays
+in proper way :D
+
+Thanks,
+--Prabhakar Lad
