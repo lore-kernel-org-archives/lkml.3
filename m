@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477AbaLSA2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 19:28:10 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60769 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaLSA2I (ORCPT
+	id S1751546AbaLSAb0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 19:31:26 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:58483 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751118AbaLSAbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 19:28:08 -0500
-Date: Fri, 19 Dec 2014 01:27:17 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-cc: Peter Zijlstra <peterz@infradead.org>, corbet@lwn.net, mingo@redhat.com,
-        hpa@zytor.com, riel@redhat.com, akpm@linux-foundation.org,
-        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
-        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
-        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
-        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
-        daeseok.youn@gmail.com, keescook@chromium.org,
-        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
-        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH RESEND v4] sched/fair: Add advisory flag for borrowing
- a timeslice
-In-Reply-To: <54936562.5070502@oracle.com>
-Message-ID: <alpine.DEB.2.11.1412190045590.17382@nanos>
-References: <1418928259-6311-1-git-send-email-khalid.aziz@oracle.com> <20141218222846.GH30905@twins.programming.kicks-ass.net> <54935842.5020507@oracle.com> <alpine.DEB.2.11.1412182355020.17382@nanos> <54936562.5070502@oracle.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 18 Dec 2014 19:31:25 -0500
+Date: Thu, 18 Dec 2014 16:30:44 -0800
+From: Shaohua Li <shli@fb.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, <Kernel-team@fb.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
+Message-ID: <20141219003044.GA2804333@devbig257.prn2.facebook.com>
+References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
+ <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
+ <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
+ <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-18_07:2014-12-18,2014-12-18,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=21.5297862717038
+ compositescore=0.928745990228454 urlsuspect_oldscore=0.928745990228454
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.928745990228454 spamscore=0
+ recipient_to_sender_domain_totalscore=46 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412190004
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014, Khalid Aziz wrote:
-> On 12/18/2014 04:02 PM, Thomas Gleixner wrote:
-> > If we can solve it with a proper designed and well thought out
-> > functionality in the kernel based on a futex like mechanism, why cant
-> > java and databases not switch over to that and simply use it?
-> > 
-> > You need to modify user space anyway, so it does not matter whether
-> > you modify it in a sane or in a hacky way.
+On Thu, Dec 18, 2014 at 04:22:59PM -0800, Andy Lutomirski wrote:
+> On Thu, Dec 18, 2014 at 3:30 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > On Wed, Dec 17, 2014 at 3:12 PM, Shaohua Li <shli@fb.com> wrote:
+> >> This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..). We
+> >> use the following method to compute the thread cpu time:
+> >>
+> >>     t0 = process start
+> >>     t1 = most recent context switch time
+> >>     t2 = time at which the vsyscall is invoked
+> >>
+> >>     thread_cpu_time = sum(time slices between t0 to t1) + (t2 - t1)
+> >>                 = current->se.sum_exec_runtime + now - sched_clock()
+> >>
+> >> At context switch time We stash away
+> >>
+> >>     adj_sched_time = sum_exec_runtime - sched_clock()
+> >>
+> >> in a per-cpu struct in the VVAR page and then compute
+> >>
+> >>     thread_cpu_time = adj_sched_time + now
+> >>
+> >> All computations are done in nanosecs on systems where TSC is stable. If
+> >> TSC is unstable, we fallback to a regular syscall.
+> >>     Benchmark data:
+> >>
+> >>     for (i = 0; i < 100000000; i++) {
+> >>             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+> >>             sum += ts.tv_sec * NSECS_PER_SEC + ts.tv_nsec;
+> >>     }
+> >
+> > A bunch of the time spent processing a CLOCK_THREAD_CPUTIME_ID syscall
+> > is spent taking various locks, and I think it could be worth adding a
+> > fast path for the read-my-own-clock case in which we just disable
+> > preemption and read the thing without any locks.
+> >
+> > If we're actually going to go the vdso route, I'd like to make the
+> > scheduler hooks clean.  Peterz and/or John, what's the right way to
+> > get an arch-specific callback with sum_exec_runtime and an up to date
+> > sched_clock value during a context switch?  I'd much rather not add
+> > yet another rdtsc instruction to the scheduler.
 > 
-> Actually userspace does not need to be modified. The code to use this
-> functionality is already present in database code since this same
-> functionality exists on other OSs (the API is a little different but those
-> details can be handled with a simple header file in userspace). Userspace code
-> has already been tested and debugged thoroughly on the OSs that support this
-> functionality and that has significant impact on testing effort. So for
-> userspace it is simply a matter of turning that code on on Linux as well and
-> recompiling. This would be a multi-platform solution for database/java as
-> opposed to a Linux specific solution.
+> Bad news: this patch is incorrect, I think.  Take a look at
+> update_rq_clock -- it does fancy things involving irq time and
+> paravirt steal time.  So this patch could result in extremely
+> non-monotonic results.
 
-Bullshit. If you turn that option on, it's a modification from the QA
-point of view and you need to run a full validation no matter
-what. Anything else is just QA by crystal ball.
-
-Of course you carefully avoided (again) to answer the real question:
-
-> But its simpler to hack crap into the scheduler than coming up with a
-> proper solution to the problem, right?
-
-I can answer it for you: Yes, it is simpler.
-
-But as you might have figured out it's not really popular and therefor
-not simpler to be accepted by the people who actually care about sane
-designs. I can whip you up special purpose hacks for that which will
-give you way more guarantees with way less lines of horrible code, but
-that does not mean that such hacks are an acceptable solution. You can
-carry those hacks in your private tree and ship it to your customers,
-but do not expect that any sane maintainer will care about it.
-
-Now the very same maintainers asked you several times to answer the
-question why this can't be done with proper futex like spin
-mechanisms, which would solve a bunch of related problems as well.
-
- You never even tried to answer that question simply because you never
- tried to think about it for real. Your only answer is that you want A
- because A is already used on other OSs and therefor solution B is not
- an option.
-
- But if solution B would gain 4% performance, then according to your
- previous argumentation it would become suddenly very interesting,
- right?
-
-So unless you even show any sign of thinking about different
-approaches and technically arguing why they cannot deliver the same
-value you wont get anywhere with this and I can tell you why.
-
-You create a new user space ABI
-
- That forces the kernel to support it forever, which in consequence
- imposes restrictions on the kernel scheduler forever.
-
- We have enough restrictions by misdesigned ABIs (e.g. sched_yield())
- already, so we really do not need more of that.
-
-You ignore any request to prove why a proper designed spin futex
-interface would not be a sensible solution for the problem.
-
- Of course you are free to ignore that (as you are free to ignore
- important review comments), but you don't have to be suprised when
- the responsible maintainers ignore any further attempt from you to
- get this merged.
-
-Aside of that, you still fail to provide a proper test case which is
-publically usable for the people involved in this to reproduce your 3%
-gain and analyze the problem at hand properly. The provided:
-
-      enable_hack();
-      while (/*some condition */) {
-      	    /* bla */
-	    /* blub */
-	    /* blurb */
-	    /* yay! */
-      }
-      disable_hack();
-
-is beyond useless.
+Yes, it's not precise. But bear in mind, CONFIG_IRQ_TIME_ACCOUNTING is a
+optional feature. Actually it's added not long time ago. I thought it's
+acceptable the time isn't precise just like what we have before the
+feature is added.
 
 Thanks,
-
-	tglx
+Shaohua
