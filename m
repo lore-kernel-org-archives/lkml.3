@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbaLSQTQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:19:16 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:36554 "EHLO
+	id S1752542AbaLSQTO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:19:14 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:36552 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751365AbaLSQTI (ORCPT
+	by vger.kernel.org with ESMTP id S1752011AbaLSQTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Dec 2014 11:19:08 -0500
 From: Andrew Jackson <andrew.jackson@arm.com>
@@ -16,9 +16,9 @@ Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
         linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/5] ASoC: dwc: Reorder code in preparation for DT support
-Date: Fri, 19 Dec 2014 16:18:07 +0000
-Message-Id: <cc0f212c245beaefa542194cabe5cf5ebfc81fd3.1418826016.git.Andrew.Jackson@arm.com>
+Subject: [PATCH v3 2/5] ASoC: dwc: Iterate over all channels
+Date: Fri, 19 Dec 2014 16:18:06 +0000
+Message-Id: <67cea1f0a74c333ec2048c7796cda37302d45e95.1418826016.git.Andrew.Jackson@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1418826016.git.Andrew.Jackson@arm.com>
 References: <cover.1418826016.git.Andrew.Jackson@arm.com>
@@ -30,120 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrew Jackson <Andrew.Jackson@arm.com>
 
-Move code that configures the DAI and DMA into a separate function.  This
-reduces the size of the dw_i2s_probe function and will make it easier to
-add support for device tree to the driver.
+The Designware core can be configured with up to four stereo channels.
+Each stereo channel is individually configured so, when the driver's
+hw_params call is made, each requested stereo channel has to be
+programmed.
 
 Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
 ---
- sound/soc/dwc/designware_i2s.c |   73 +++++++++++++++++++++------------------
- 1 files changed, 39 insertions(+), 34 deletions(-)
+ sound/soc/dwc/designware_i2s.c |   35 ++++++++++++++++-------------------
+ 1 files changed, 16 insertions(+), 19 deletions(-)
 
 diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
-index 2ba1e2e..06d3a34 100644
+index 5c13303..2ba1e2e 100644
 --- a/sound/soc/dwc/designware_i2s.c
 +++ b/sound/soc/dwc/designware_i2s.c
-@@ -335,13 +335,47 @@ static int dw_i2s_resume(struct snd_soc_dai *dai)
- #define dw_i2s_resume	NULL
- #endif
+@@ -209,16 +209,9 @@ static int dw_i2s_hw_params(struct snd_pcm_substream *substream,
  
-+static void dw_configure_dai_by_pd(struct dw_i2s_dev *dev,
-+				   struct snd_soc_dai_driver *dw_i2s_dai,
-+				   struct resource *res,
-+				   const struct i2s_platform_data *pdata)
-+{
-+	/* Set DMA slaves info */
-+
-+	dev->play_dma_data.data = pdata->play_dma_data;
-+	dev->capture_dma_data.data = pdata->capture_dma_data;
-+	dev->play_dma_data.addr = res->start + I2S_TXDMA;
-+	dev->capture_dma_data.addr = res->start + I2S_RXDMA;
-+	dev->play_dma_data.max_burst = 16;
-+	dev->capture_dma_data.max_burst = 16;
-+	dev->play_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	dev->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	dev->play_dma_data.filter = pdata->filter;
-+	dev->capture_dma_data.filter = pdata->filter;
-+
-+	if (pdata->cap & DWC_I2S_PLAY) {
-+		dev_dbg(dev->dev, " designware: play supported\n");
-+		dw_i2s_dai->playback.channels_min = MIN_CHANNEL_NUM;
-+		dw_i2s_dai->playback.channels_max = pdata->channel;
-+		dw_i2s_dai->playback.formats = pdata->snd_fmts;
-+		dw_i2s_dai->playback.rates = pdata->snd_rates;
-+	}
-+
-+	if (pdata->cap & DWC_I2S_RECORD) {
-+		dev_dbg(dev->dev, "designware: record supported\n");
-+		dw_i2s_dai->capture.channels_min = MIN_CHANNEL_NUM;
-+		dw_i2s_dai->capture.channels_max = pdata->channel;
-+		dw_i2s_dai->capture.formats = pdata->snd_fmts;
-+		dw_i2s_dai->capture.rates = pdata->snd_rates;
-+	}
-+}
-+
- static int dw_i2s_probe(struct platform_device *pdev)
- {
- 	const struct i2s_platform_data *pdata = pdev->dev.platform_data;
- 	struct dw_i2s_dev *dev;
- 	struct resource *res;
- 	int ret;
--	unsigned int cap;
- 	struct snd_soc_dai_driver *dw_i2s_dai;
+ 	switch (config->chan_nr) {
+ 	case EIGHT_CHANNEL_SUPPORT:
+-		ch_reg = 3;
+-		break;
+ 	case SIX_CHANNEL_SUPPORT:
+-		ch_reg = 2;
+-		break;
+ 	case FOUR_CHANNEL_SUPPORT:
+-		ch_reg = 1;
+-		break;
+ 	case TWO_CHANNEL_SUPPORT:
+-		ch_reg = 0;
+ 		break;
+ 	default:
+ 		dev_err(dev->dev, "channel not supported\n");
+@@ -227,18 +220,22 @@ static int dw_i2s_hw_params(struct snd_pcm_substream *substream,
  
- 	if (!pdata) {
-@@ -368,23 +402,11 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 	if (IS_ERR(dev->i2s_base))
- 		return PTR_ERR(dev->i2s_base);
+ 	i2s_disable_channels(dev, substream->stream);
  
--	cap = pdata->cap;
--	dev->capability = cap;
--	dev->i2s_clk_cfg = pdata->i2s_clk_cfg;
--
--	/* Set DMA slaves info */
--
--	dev->play_dma_data.data = pdata->play_dma_data;
--	dev->capture_dma_data.data = pdata->capture_dma_data;
--	dev->play_dma_data.addr = res->start + I2S_TXDMA;
--	dev->capture_dma_data.addr = res->start + I2S_RXDMA;
--	dev->play_dma_data.max_burst = 16;
--	dev->capture_dma_data.max_burst = 16;
--	dev->play_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
--	dev->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
--	dev->play_dma_data.filter = pdata->filter;
--	dev->capture_dma_data.filter = pdata->filter;
-+	dev->dev = &pdev->dev;
-+	dw_configure_dai_by_pd(dev, dw_i2s_dai, res, pdata);
+-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+-		i2s_write_reg(dev->i2s_base, TCR(ch_reg), xfer_resolution);
+-		i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
+-		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+-		i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
+-		i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
+-	} else {
+-		i2s_write_reg(dev->i2s_base, RCR(ch_reg), xfer_resolution);
+-		i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
+-		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+-		i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x03);
+-		i2s_write_reg(dev->i2s_base, RER(ch_reg), 1);
++	for (ch_reg = 0; ch_reg < (config->chan_nr / 2); ch_reg++) {
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++			i2s_write_reg(dev->i2s_base, TCR(ch_reg),
++				      xfer_resolution);
++			i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
++			irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
++			i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
++			i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
++		} else {
++			i2s_write_reg(dev->i2s_base, RCR(ch_reg),
++				      xfer_resolution);
++			i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
++			irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
++			i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x03);
++			i2s_write_reg(dev->i2s_base, RER(ch_reg), 1);
++		}
+ 	}
  
-+	dev->capability = pdata->cap;
-+	dev->i2s_clk_cfg = pdata->i2s_clk_cfg;
- 	dev->clk = clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(dev->clk))
- 		return  PTR_ERR(dev->clk);
-@@ -393,23 +415,6 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 	if (ret < 0)
- 		goto err_clk_put;
- 
--	if (cap & DWC_I2S_PLAY) {
--		dev_dbg(&pdev->dev, " designware: play supported\n");
--		dw_i2s_dai->playback.channels_min = MIN_CHANNEL_NUM;
--		dw_i2s_dai->playback.channels_max = pdata->channel;
--		dw_i2s_dai->playback.formats = pdata->snd_fmts;
--		dw_i2s_dai->playback.rates = pdata->snd_rates;
--	}
--
--	if (cap & DWC_I2S_RECORD) {
--		dev_dbg(&pdev->dev, "designware: record supported\n");
--		dw_i2s_dai->capture.channels_min = MIN_CHANNEL_NUM;
--		dw_i2s_dai->capture.channels_max = pdata->channel;
--		dw_i2s_dai->capture.formats = pdata->snd_fmts;
--		dw_i2s_dai->capture.rates = pdata->snd_rates;
--	}
--
--	dev->dev = &pdev->dev;
- 	dev_set_drvdata(&pdev->dev, dev);
- 	ret = snd_soc_register_component(&pdev->dev, &dw_i2s_component,
- 					 dw_i2s_dai, 1);
+ 	i2s_write_reg(dev->i2s_base, CCR, ccr);
 -- 
 1.7.1
 
