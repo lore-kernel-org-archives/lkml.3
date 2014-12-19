@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaLSJTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:19:41 -0500
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:43168 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaLSJTj (ORCPT
+	id S1752350AbaLSJWM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:22:12 -0500
+Received: from mailrelay1.public.one.com ([91.198.169.124]:40406 "EHLO
+	mailrelay1.public.one.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751681AbaLSJWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:19:39 -0500
-From: Sage Vaillancourt <sagev9000@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, chase.southwood@gmail.com,
-        ebru.akagunduz@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sage Vaillancourt <sagev9000@gmail.com>
-Subject: [PATCH 544/544] Staging: comedi: fix spacing style issues in ni_stc.h This is a patch to the ni_stc.h file that removes spaces before tabs, and adds blank lines after declarations. 
-Date: Fri, 19 Dec 2014 04:19:31 -0500
-Message-Id: <1418980771-17690-1-git-send-email-sagev9000@gmail.com>
-X-Mailer: git-send-email 2.2.0
-Signed-off-by: Sage Vaillancourt <sagev9000@gmail.com>
+	Fri, 19 Dec 2014 04:22:10 -0500
+X-Greylist: delayed 964 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Dec 2014 04:22:10 EST
+X-HalOne-Cookie: db03e8467d50c5ec493bc617531123561856f1fb
+X-HalOne-ID: 412bf987-875e-11e4-ba3a-b8ca3afa9d73
+From: Henrik Rydberg <rydberg@bitmath.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@bitmath.org>
+Subject: [PATCH] MAINTAINERS: Update rydberg's addresses
+Date: Fri, 19 Dec 2014 10:06:07 +0100
+Message-Id: <1418979967-2134-1-git-send-email-rydberg@bitmath.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/comedi/drivers/ni_stc.h | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+My ISP finally gave up on the old mail address, so I am moving things
+over to bitmath.org instead. Also change the status fields to better
+reflect reality.
 
-diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
-index bd69c3f..a79fd07 100644
---- a/drivers/staging/comedi/drivers/ni_stc.h
-+++ b/drivers/staging/comedi/drivers/ni_stc.h
-@@ -166,7 +166,7 @@ enum Interrupt_B_Ack_Bits {
- #define AI_SCAN_IN_PROG_Pulse			_bit4
- #define AI_EXTMUX_CLK_Pulse			_bit3
- #define AI_LOCALMUX_CLK_Pulse			_bit2
--#define AI_SC_TC_Pulse			 	_bit1
-+#define AI_SC_TC_Pulse				_bit1
- #define AI_CONVERT_Pulse			_bit0
+Signed-off-by: Henrik Rydberg <rydberg@bitmath.org>
+---
+ MAINTAINERS | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c721042..62b53e8 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -714,15 +714,15 @@ F:	include/uapi/linux/apm_bios.h
+ F:	drivers/char/apm-emulation.c
  
- #define AO_Command_1_Register		9
-@@ -326,6 +326,7 @@ static inline unsigned RTSI_Output_Bit(unsigned channel, int is_mseries)
- {
- 	unsigned max_channel;
- 	unsigned base_bit_shift;
-+
- 	if (is_mseries) {
- 		base_bit_shift = 8;
- 		max_channel = 7;
-@@ -642,7 +643,7 @@ static unsigned AO_UPDATE_Output_Select(enum ao_update_output_selection
- #define G_Load_Source_Select		_bit7
- #define G_Reload_Source_Switching	_bit15
- #define G_Loading_On_Gate		_bit14
--#define G_Gate_Polarity 		_bit13
-+#define G_Gate_Polarity			_bit13
+ APPLE BCM5974 MULTITOUCH DRIVER
+-M:	Henrik Rydberg <rydberg@euromail.se>
++M:	Henrik Rydberg <rydberg@bitmath.org>
+ L:	linux-input@vger.kernel.org
+-S:	Maintained
++S:	Odd fixes
+ F:	drivers/input/mouse/bcm5974.c
  
- #define G_Counting_Once(a)		(((a)&0x03)<<10)
- #define G_Stop_Mode(a)			(((a)&0x03)<<5)
-@@ -1142,6 +1143,7 @@ static inline unsigned MSeries_AI_Config_Bank_Bits(enum ni_reg_type reg_type,
- 						   unsigned channel)
- {
- 	unsigned bits = channel & 0x30;
-+
- 	if (reg_type == ni_reg_622x) {
- 		if (channel & 0x40)
- 			bits |= 0x400;
-@@ -1191,6 +1193,7 @@ enum MSeries_PLL_Control_Bits {
- static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
- {
- 	static const unsigned max_divisor = 0x10;
-+
- 	if (divisor < 1 || divisor > max_divisor) {
- 		pr_err("%s: bug, invalid divisor=%i\n", __func__, divisor);
- 		return 0;
-@@ -1201,6 +1204,7 @@ static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
- static inline unsigned MSeries_PLL_Multiplier_Bits(unsigned multiplier)
- {
- 	static const unsigned max_multiplier = 0x100;
-+
- 	if (multiplier < 1 || multiplier > max_multiplier) {
- 		pr_err("%s: bug, invalid multiplier=%i\n", __func__,
- 		       multiplier);
+ APPLE SMC DRIVER
+-M:	Henrik Rydberg <rydberg@euromail.se>
++M:	Henrik Rydberg <rydberg@bitmath.org>
+ L:	lm-sensors@lm-sensors.org
+-S:	Maintained
++S:	Odd fixes
+ F:	drivers/hwmon/applesmc.c
+ 
+ APPLETALK NETWORK LAYER
+@@ -4813,10 +4813,10 @@ F:	include/uapi/linux/input.h
+ F:	include/linux/input/
+ 
+ INPUT MULTITOUCH (MT) PROTOCOL
+-M:	Henrik Rydberg <rydberg@euromail.se>
++M:	Henrik Rydberg <rydberg@bitmath.org>
+ L:	linux-input@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/rydberg/input-mt.git
+-S:	Maintained
++S:	Odd fixes
+ F:	Documentation/input/multi-touch-protocol.txt
+ F:	drivers/input/input-mt.c
+ K:	\b(ABS|SYN)_MT_
 -- 
-2.2.0
+2.1.3
 
