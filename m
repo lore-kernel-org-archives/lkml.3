@@ -1,100 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591AbaLSPib (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:38:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39209 "EHLO
+	id S1751891AbaLSPlt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:41:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaLSPi3 (ORCPT
+	with ESMTP id S1750953AbaLSPls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:38:29 -0500
-Date: Fri, 19 Dec 2014 07:38:28 -0800
+	Fri, 19 Dec 2014 10:41:48 -0500
+Date: Fri, 19 Dec 2014 07:41:47 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
-        hpa@zytor.com, monstr@monstr.eu, rdunlap@infradead.org,
-        mark.rutland@arm.com, linux-doc@vger.kernel.org, rubini@gnudd.com,
-        pantelis.antoniou@konsulko.com, s.trumtrar@pengutronix.de,
-        devel@driverdev.osuosl.org, sameo@linux.intel.com, nico@linaro.org,
-        ijc+devicetree@hellion.org.uk, kyle.teske@ni.com,
-        grant.likely@linaro.org, davidb@codeaurora.org,
-        linus.walleij@linaro.org, cesarb@cesarb.net,
-        devicetree@vger.kernel.org, jason@lakedaemon.net, pawel.moll@arm.com,
-        iws@ovro.caltech.edu, broonie@kernel.org, philip@balister.org,
-        dinguyen@opensource.altera.com, pavel@denx.de,
-        yvanderv@opensource.altera.com, linux-kernel@vger.kernel.org,
-        balbi@ti.com, delicious.quinoa@gmail.com, robh+dt@kernel.org,
-        rob@landley.net, galak@codeaurora.org, akpm@linux-foundation.org,
-        davem@davemloft.net, m.chehab@samsung.com
-Subject: Re: [PATCH v6 0/4] FPGA Manager Framework
-Message-ID: <20141219153828.GA19077@kroah.com>
-References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
- <5901b1791e1c4b09b72cb22c5eca68ca@BL2FFO11FD047.protection.gbl>
+To: Eduardo Barretto <edusbarretto@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Staging: wlan-ng: hfa384x_usb: fixed an 'else'
+ statement coding style issue
+Message-ID: <20141219154147.GB19077@kroah.com>
+References: <1418955506-30099-1-git-send-email-edusbarretto@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5901b1791e1c4b09b72cb22c5eca68ca@BL2FFO11FD047.protection.gbl>
+In-Reply-To: <1418955506-30099-1-git-send-email-edusbarretto@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 03:20:59PM +0100, Michal Simek wrote:
-> Hi Greg,
-> 
-> On 12/18/2014 11:29 PM, atull@opensource.altera.com wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
-> > 
-> > Dropping the changes to socfpga DTS and defconfig from this
-> > patch set.
-> > 
-> > Kernel doc fixes and other minor fixes as listed in the patches.
-> > 
-> > Alan
-> > 
-> > Alan Tull (4):
-> >   doc: add bindings document for altera fpga manager
-> >   fpga manager: add sysfs interface document
-> >   staging: fpga manager: framework core
-> >   staging: fpga manager: add driver for socfpga fpga manager
-> > 
-> >  drivers/staging/Kconfig                            |    2 +
-> >  drivers/staging/Makefile                           |    1 +
-> >  .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
-> >  .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +
-> >  drivers/staging/fpga/Kconfig                       |   29 +
-> >  drivers/staging/fpga/Makefile                      |    9 +
-> >  drivers/staging/fpga/fpga-mgr.c                    |  551 ++++++++++++++++
-> >  drivers/staging/fpga/socfpga.c                     |  694 ++++++++++++++++++++
-> >  include/linux/fpga/fpga-mgr.h                      |  124 ++++
-> >  9 files changed, 1465 insertions(+)
-> >  create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
-> >  create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
-> >  create mode 100644 drivers/staging/fpga/Kconfig
-> >  create mode 100644 drivers/staging/fpga/Makefile
-> >  create mode 100644 drivers/staging/fpga/fpga-mgr.c
-> >  create mode 100644 drivers/staging/fpga/socfpga.c
-> >  create mode 100644 include/linux/fpga/fpga-mgr.h
-> > 
-> 
-> I think we have reasonable number of patches which can go to the staging
-> and we can work on it and extend it. I have xilinx zynq driver in my repository too.
-> Also I would try to integrate staging/gs_fpgaboot/ because they do just the same
-> thing. Also char/xilinx_hwicap should be added to this subfolder (and clean a lot).
-> I am not aware about any other fpga driver in the tree but I didn't grep it
-> (IRC xillybus targets a little bit different thing). Please let me know if you are
-> aware about different one.
-> 
-> I was talking to Altera guys at ELCE and conclusion was that will be the best to
-> maintain future drivers/fpga/ together.
-> It means if there is no problem with this series. Do you want me to add these
-> patches to any repository at kernel.org and send you pull request?
-> Or you just prefer to take these patches directly to staging and we will use
-> separate repository later?
+On Fri, Dec 19, 2014 at 12:18:26AM -0200, Eduardo Barretto wrote:
+> Checkpatch was complaining about the else statement because the if statement had a return '1' call. Taking a look at the function which this else statement belongs, you can see that it has an switch case statement.
+> The main idea of the function is to return '1' if you get into any of the cases (including the default case where the "problematic" if/else statement is declared).
+> If any of the cases is not sufficient the function should return '0', so the else statement that checkpath was complaining could be removed, and what was done inside this else statement can be done outside the switch case statement and then we return '0'.
+> This way we have a cleaner code and no checkpatch error complaints.
 
-We don't need a whole new repo just for a single driver or a few new
-files, I'll take these after the new year (can't do anything until
-3.19-rc1 is out, and then it is vacation time.)
+Verbose is good, but please wrap your lines at 72 columns.  And this
+might have been a bit too verbose :)
 
-So I'll just take them from patches, no need for a git tree at all.
+thanks,
 
 greg k-h
