@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaLSUBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 15:01:47 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:49787 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384AbaLSUBq (ORCPT
+	id S1752476AbaLSUFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 15:05:20 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:34590 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384AbaLSUFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 15:01:46 -0500
+	Fri, 19 Dec 2014 15:05:18 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/IPUAh9UnIVl/telwcorUu
+Date: Fri, 19 Dec 2014 12:02:30 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: sfr@canb.auug.org.au, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: add the omap-pending tree
+Message-ID: <20141219200230.GJ23854@atomide.com>
+References: <alpine.DEB.2.02.1412191715230.3102@utopia.booyaka.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFrPC_MphsLHHZ=uFjcF8SsdkVmzez9R=gas7_ihn63Q5A@mail.gmail.com>
-References: <1418412516-10682-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<CAPDyKFrPC_MphsLHHZ=uFjcF8SsdkVmzez9R=gas7_ihn63Q5A@mail.gmail.com>
-Date: Fri, 19 Dec 2014 12:01:44 -0800
-Message-ID: <CAJAp7OhSZ7CZedXAsWPf0XYv8RESQxXe4L1LZjOmVW4nGpFiHw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dt: Add property for broken hs200 quirk
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Anton Vorontsov <anton@enomsg.org>, Chris Ball <chris@printf.net>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:SECURE DIGITAL HO..." <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1412191715230.3102@utopia.booyaka.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 3:38 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 12 December 2014 at 20:28, Bjorn Andersson
-> <bjorn.andersson@sonymobile.com> wrote:
->
-> Some more explanation to why this needed would be good.
->
+* Paul Walmsley <paul@pwsan.com> [141219 11:30]:
+> 
+> Hi Stephen,
+> 
+> Might you be willing to include this branch in your linux-next builds?
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/pjw/omap-pending.git#for-next
+> 
+> It will include OMAP clock, bus architecture, and low-level power 
+> management patches that are planned to be included in pull requests to the 
+> OMAP upstream maintainer, Tony Lindgren.  He in turn will submit pull 
+> requests to the arm-soc tree.  The objective in including this branch is 
+> to get these patches integration-tested earlier than they would be 
+> otherwise.
 
-Because (according to the git log) some of the memories that we
-mounted in Xperia Z1 does not support HS200 even though they advertise
-they are.
+Makes sense to me. The delay in getting omap stuff into Linux next
+via arm-soc for-next is just too long because of the large number
+of pending pull requests for various ARM SoCs.
 
-I thought we needed for the device I'm testing with, but a couple of
-regulator_set_optimum_mode() solved that - so I have to provide a
-patch for that as well...
+While at it, can you please also (re-)add omap for-next too:
 
->> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
->> ---
->>  Documentation/devicetree/bindings/mmc/mmc.txt | 2 ++
->
-> This file lists the generic mmc DT bindings, but you want to add a
-> specific binding for sdhci?
->
-
-Looking in sdhci_get_of_property() it's a mash of device specific
-properties, sdhci specific properties documented in mmc.txt and
-generic sdhci properties documented in device specific bindings.
-
-Would you like me to move it to a generic sdhci.txt binding and update
-the individual sdhci-* to reference that instead of mmc.txt? Or should
-I just add the property in the device specific bindings? Or maybe we
-could keep it as a optional property in mmc.txt?
+git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git#for-next
 
 Regards,
-Bjorn
+
+Tony
