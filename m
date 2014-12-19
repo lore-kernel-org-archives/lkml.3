@@ -1,105 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaLSJBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:01:49 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:55669 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaLSJBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:01:48 -0500
+	id S1752307AbaLSJEL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:04:11 -0500
+Received: from 7of9.schinagl.nl ([88.159.158.68]:59103 "EHLO 7of9.schinagl.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243AbaLSJEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 04:04:06 -0500
+Message-ID: <5493EA03.10004@schinagl.nl>
+Date: Fri, 19 Dec 2014 10:04:03 +0100
+From: Olliver Schinagl <oliver@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20141219082754.GE1848@nanopsycho.orion>
-References: <5492EFC3.8030102@cumulusnetworks.com>
-	<C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com>
-	<549313B8.6050102@cumulusnetworks.com>
-	<C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com>
-	<54931969.7040209@cumulusnetworks.com>
-	<5493293A.2000802@intel.com>
-	<54935E28.8050602@cumulusnetworks.com>
-	<549362A5.3000808@intel.com>
-	<549367CC.2080307@cumulusnetworks.com>
-	<CAN+pFwJyfg1+=+tXUpon0Kket56HJ=9BR3XohPhZnaX7hfPgpg@mail.gmail.com>
-	<20141219082754.GE1848@nanopsycho.orion>
-Date: Fri, 19 Dec 2014 14:31:46 +0530
-Message-ID: <CAN+pFwJAJ71-+MZjJXPbfu5mzMp6AWNxtYR81Lx6siy3D3HfJg@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-From: B Viswanath <marichika4@gmail.com>
-To: Jiri Pirko <jiri@resnulli.us>
-Cc: Roopa Prabhu <roopa@cumulusnetworks.com>,
-        "Samudrala, Sridhar" <sridhar.samudrala@intel.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "Varlese, Marco" <marco.varlese@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Thomas Graf <tgraf@suug.ch>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv9 0/2] Add Allwinner SoCs PWM support
+References: <1415200545-26238-1-git-send-email-alexandre.belloni@free-electrons.com> <546B4DF5.9020100@schinagl.nl> <20141217195836.GD4885@piout.net>
+In-Reply-To: <20141217195836.GD4885@piout.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 December 2014 at 13:57, Jiri Pirko <jiri@resnulli.us> wrote:
-> Fri, Dec 19, 2014 at 06:14:57AM CET, marichika4@gmail.com wrote:
->>On 19 December 2014 at 05:18, Roopa Prabhu <roopa@cumulusnetworks.com> wrote:
->>> On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
-<snipped for ease of reading>
->>>>
->>>>
->>>> We also need an interface to set per-switch attributes. Can this work?
->>>>     bridge link set dev sw0 sw_attr bcast_flooding 1 master
->>>> where sw0 is a bridge representing the hardware switch.
->>>
->>>
->>> Not today. We discussed this @ LPC, and one way to do this would be to have
->>> a device
->>> representing the switch asic. This is in the works.
->>
->>
->>Can I assume that on  platforms which house more than one asic (say
->>two 24 port asics, interconnected via a 10G link or equivalent, to get
->>a 48 port 'switch') , the 'rocker' driver (or similar) should expose
->>them as a single set of ports, and not as two 'switch ports' ?
+Hey Alexandre!
+
+On 17-12-14 20:58, Alexandre Belloni wrote:
+> Hi,
 >
-> Well that really depends on particular implementation and drivers. If you
-> have 2 pci-e devices, I think you should expose them as 2 entities. For
-> sure, you can have the driver to do the masking for you. I don't believe
-> that is correct though.
+> I finally got some time to work on that again.
+awesome :D
+>
+> On 18/11/2014 at 14:47:33 +0100, Olliver Schinagl wrote :
+>> What I get from the datasheet is, that sun4i and sun5i are exactly the same,
+>> with the exception that sun5i only has 1 PWM (~exposed~). I belive that is
+>> easily solved with the bindings by having allwinner-sun4i and allwinner
+>> sun5i bindings if I'm not mistaken.
+>>
+>> As for sun7i compared to the other ones, according to disp_lcd.c sun5i and
+>> sun7i should behave exactly the same. This is contradicting to the
+>> datasheet, where sun4i and sun5i are the same.
+>>
+>> So what are the major differences that I can see between the 3? sun4i
+>> defines the PWM prescaler register value 0b1111 as being undefined, and
+>> sun5i and sun7i as /1? Did you verify this (I haven't I admit, i bumped into
+>> this while looking for your patch ;-) )? I wouldn't be supprised if it where
+>> a typo on allwinners end in the datasheet ... disp_lcd.c stops at 72000 for
+>> the last entry. We should just check sun4i, sun5i and sun7i hardware to see
+>> if it behaves the same with a prescaler of 0b1111, which I would not be
+>> totally surprised if it did.
+>>
+>> The other difference I notice is that sun7i and sun5i use 16bit period
+>> register where sun4i uses a 8bit register. This is probably the only reason
+>> why they put a #ifdef in disp_lcd.c, calculations turn out differently. I
+>> don't recognize this behavior at all in your driver however. I do think they
+>> that there is a difference here, since they did split up the original driver
+>> here because of this difference.
+>>
+> That is something I overlooked and I can't test at all, I only have a
+> cubietruck. Did you have some time to test on a sun4i?
+I have sun4i, sun5i and sun7i to test this on; though my sun5i is a 
+tablet so needs some work to setup as a dev environment (solder uart 
+etc). On sun7i the pwm worked perfectly; I will find some time to test 
+in on sun4i and sun5i in the next few weeks with your v10 patches
+>
+> But, from the only datasheet I have access to [1], page 56:
+> Each channel has a dedicated internal 16-bit up counter. If the counter
+> reaches the value stored in the channel period register, it resets. At
+> the beginning of a count period cycle, the PWMOUT is set to active state
+> and count from 0x0000
+>
+> So I would say that they all have a 16bits period.
+>
+>
+> [1] http://dl.linux-sunxi.org/A10/A10%20Datasheet%20-%20v1.21%20%282012-04-06%29.pdf
+yeah we only have the datasheets available on dl.linux-sunxi.org; but 
+don't only rely on the datasheets, it's a horrid copy/paste mess that 
+may be very wrong due to lazy editing of the pastes :(
+
+The sorucecode helps a bit in this, as pwm0 is always used as a 
+background light driver, so should atleast be somewhat verified to work.
+
+Olliver
 >
 
-In a platform that houses two asic chips, IMO, the user is still
-expected to manage the router as a single entity. The configuration
-being applied on both asic devices need to be matching if not
-identical, and may not be conflicting. The FDB is to be synchronized
-so that (offloaded) switching can happen across the asics. Some of
-this stuff is asic specific anyway. Another example is that of the
-learning. The (hardware) learning can't be enabled on one asic, while
-being disabled on another one. The general use cases I have seen are
-all involving managing the 'router' as a single entity.  That the
-'router' is implemented with two asics instead of a single asic (with
-more ports) is to be treated as an implementation detail.  This is the
-usual router management method that exists today.
-
-I hope I make sense.
-
-So I am trying to figure out what this single entity that will be used
-from a user perspective. It can be a bridge, but our bridges are more
-802.1q bridges. We can use the 'self' mode, but then it means that it
-should reflect the entire port count, and not just an asic.
-
-So I was trying to deduce that in our switchdevice model, the best bet
-would be to leave the unification to the driver (i.e., to project the
-multiple physical asics as a single virtual switch device). This
-allows any 'switch' level configurations to the bridge in 'self' mode.
-
-And  then we would need to consider stacking. Stacking differs from
-this multi-asic scenario since  there would be multiple CPU involved.
-
-Thanks
-Vissu
-
->>
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
