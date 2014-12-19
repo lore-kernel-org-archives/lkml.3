@@ -1,144 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaLSOFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:05:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45929 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098AbaLSOFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:05:42 -0500
-Date: Fri, 19 Dec 2014 06:04:37 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-5da2fd26193433006255d534b3a01eae37e58428@git.kernel.org>
-Cc: konrad.wilk@oracle.com, mingo@kernel.org, bp@alien8.de,
-        tony.luck@intel.com, len.brown@intel.com, jiang.liu@linux.intel.com,
-        joro@8bytes.org, yinghai@kernel.org, pavel@ucw.cz,
-        benh@kernel.crashing.org, hpa@zytor.com, tglx@linutronix.de,
-        bhelgaas@google.com, linux-kernel@vger.kernel.org, rjw@rjwysocki.net,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org
-Reply-To: tony.luck@intel.com, mingo@kernel.org, konrad.wilk@oracle.com,
-        bp@alien8.de, benh@kernel.crashing.org, pavel@ucw.cz,
-        len.brown@intel.com, yinghai@kernel.org, joro@8bytes.org,
-        jiang.liu@linux.intel.com, tglx@linutronix.de, bhelgaas@google.com,
-        hpa@zytor.com, rjw@rjwysocki.net, rdunlap@infradead.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1414908273-7552-15-git-send-email-jiang.liu@linux.intel.com>
-References: <1414908273-7552-15-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq, ACPI:
-  Introduce a mutex to protect IOAPIC operations from hotplug
-Git-Commit-ID: 5da2fd26193433006255d534b3a01eae37e58428
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752839AbaLSOGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:06:12 -0500
+Received: from mail-by2on0066.outbound.protection.outlook.com ([207.46.100.66]:38432
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752098AbaLSOGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 09:06:07 -0500
+Date: Fri, 19 Dec 2014 15:05:50 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        <atull@opensource.altera.com>
+CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <rdunlap@infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
+        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>, <pavel@denx.de>,
+        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v6 4/4] staging: fpga manager: add driver for socfpga
+ fpga manager
+References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+ <1418941748-16111-5-git-send-email-atull@opensource.altera.com>
+ <20141219085516.GF13070@pengutronix.de>
+In-Reply-To: <20141219085516.GF13070@pengutronix.de>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21186.006
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377454003)(51704005)(189002)(479174004)(24454002)(199003)(164054003)(50986999)(74316001)(83506001)(23746002)(92566001)(107046002)(104016003)(50466002)(106466001)(19580395003)(19580405001)(6806004)(86362001)(99396003)(64706001)(120916001)(20776003)(46102003)(65956001)(47776003)(65806001)(108616004)(4396001)(21056001)(64126003)(76176999)(87936001)(92726002)(54356999)(77156002)(62966003)(31966008)(2950100001)(77096005)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB014;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB014;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2FFO11HUB014;
+X-Forefront-PRVS: 0430FA5CB7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB014;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5da2fd26193433006255d534b3a01eae37e58428
-Gitweb:     http://git.kernel.org/tip/5da2fd26193433006255d534b3a01eae37e58428
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Sun, 2 Nov 2014 14:04:29 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 16 Dec 2014 14:08:15 +0100
+On 12/19/2014 09:55 AM, Steffen Trumtrar wrote:
+> Hi!
+> 
+> Just a minor nitpick, but...
+> 
+> On Thu, Dec 18, 2014 at 04:29:08PM -0600, atull@opensource.altera.com wrote:
+>> From: Alan Tull <atull@opensource.altera.com>
+>>
+>> Add driver to fpga manager framework to allow configuration
+>> of FPGA in Altera SoCFPGA parts.
+>>
+>> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+>> Acked-by: Michal Simek <michal.simek@xilinx.com>
+>> ---
+>> v2: fpga_manager struct now contains struct device
+>>     fpga_manager_register parameters now take device
+>>
+>> v3: skip a version to align versions
+>>
+>> v4: move to drivers/staging
+>>
+>> v5: fix array_size.cocci warnings
+>>     fix platform_no_drv_owner.cocci warnings
+>>     Remove .owner = THIS_MODULE
+>>     include asm/irq.h
+>>     clean up list of includes
+>>     use altera_fpga_reset for ops
+>>     use enum fpga_mgr_states or u32 as needed
+>>     use devm_request_irq
+>>     check irq <= 0 instead of == NO_IRQ
+>>     Use ARRAY_SIZE
+>>     rename altera -> socfpga
+>>     static const socfpga_fpga_ops
+>>     header moved to linux/fpga/ folder
+>>     remove ifdef'ed code
+>>     use platform_get_resource and platform_get_irq
+>>     move .probe and .remove lines adjacent
+>>     use module_platform_driver
+>>     use __maybe_unused
+>>     only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
+>>     fix "unsigned 'mode' is never < 0"
+>>
+>> v6: return error for (unused) default of case statement
+>> ---
+>   ^^^
+> 
+> ...if you remove these, than that changelog will not land in the final
+> commit which I would prefer. Nobody cares for the changelog of a
+> patch once it is in its final state. And this is a rather noisy one.
+> When someone in the future looks at this, he will see two lines of
+> information and 10 times that of uninteresting noise.
+> 
+> Not a dealbreaker, but just something to consider for future patches.
 
-x86, irq, ACPI: Introduce a mutex to protect IOAPIC operations from hotplug
 
-We are going to support ACPI based IOAPIC hotplug, so introduce a mutex
-to protect IOAPIC data structures from IOAPIC hotplug. We choose to
-serialize in ACPI instead of in the IOAPIC core because:
+When you run git-am you will see that changelog is not there.
 
-1) currently we only plan to support ACPI based IOAPIC hotplug
-2) it's much more cleaner and easier
-3) It does't affect IOAPIC discovered by devicetree, SFI and mpparse.
+I can't see any problem here. Can you please try it or clear what
+are you referring to here?
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1414908273-7552-15-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Thanks,
+Michal
 
----
- arch/x86/kernel/acpi/boot.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 6ddeba31..2d76f02 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -76,6 +76,19 @@ int acpi_fix_pin2_polarity __initdata;
- static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
- #endif
- 
-+/*
-+ * Locks related to IOAPIC hotplug
-+ * Hotplug side:
-+ *	->device_hotplug_lock
-+ *		->acpi_ioapic_lock
-+ *			->ioapic_lock
-+ * Interrupt mapping side:
-+ *	->acpi_ioapic_lock
-+ *		->ioapic_mutex
-+ *			->ioapic_lock
-+ */
-+static DEFINE_MUTEX(acpi_ioapic_lock);
-+
- /* --------------------------------------------------------------------------
-                               Boot-time Configuration
-    -------------------------------------------------------------------------- */
-@@ -609,8 +622,10 @@ int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
- 	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
- 		*irqp = gsi;
- 	} else {
-+		mutex_lock(&acpi_ioapic_lock);
- 		irq = mp_map_gsi_to_irq(gsi,
- 					IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
-+		mutex_unlock(&acpi_ioapic_lock);
- 		if (irq < 0)
- 			return -1;
- 		*irqp = irq;
-@@ -650,7 +665,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- 	int irq = gsi;
- 
- #ifdef CONFIG_X86_IO_APIC
-+	mutex_lock(&acpi_ioapic_lock);
- 	irq = mp_register_gsi(dev, gsi, trigger, polarity);
-+	mutex_unlock(&acpi_ioapic_lock);
- #endif
- 
- 	return irq;
-@@ -659,7 +676,9 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
- static void acpi_unregister_gsi_ioapic(u32 gsi)
- {
- #ifdef CONFIG_X86_IO_APIC
-+	mutex_lock(&acpi_ioapic_lock);
- 	mp_unregister_gsi(gsi);
-+	mutex_unlock(&acpi_ioapic_lock);
- #endif
- }
- 
-@@ -1187,7 +1206,9 @@ static void __init acpi_process_madt(void)
- 			/*
- 			 * Parse MADT IO-APIC entries
- 			 */
-+			mutex_lock(&acpi_ioapic_lock);
- 			error = acpi_parse_madt_ioapic_entries();
-+			mutex_unlock(&acpi_ioapic_lock);
- 			if (!error) {
- 				acpi_set_irq_model_ioapic();
- 
