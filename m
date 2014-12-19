@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117AbaLSOIh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:08:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46121 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098AbaLSOIf (ORCPT
+	id S1753148AbaLSOI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:08:57 -0500
+Received: from avocado.raritan.com ([24.38.102.198]:39017 "EHLO
+	Avocado.raritan.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124AbaLSOIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:08:35 -0500
-Date: Fri, 19 Dec 2014 06:07:35 -0800
-From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-55a0e2b122c26c7496ea85754bceddc05dba402b@git.kernel.org>
-Cc: grant.likely@linaro.org, rjw@rjwysocki.net, tglx@linutronix.de,
-        tony.luck@intel.com, konrad.wilk@oracle.com, jiang.liu@linux.intel.com,
-        mingo@kernel.org, benh@kernel.crashing.org, yinghai@kernel.org,
-        prarit@redhat.com, joro@8bytes.org, bp@alien8.de,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org, hpa@zytor.com
-Reply-To: gregkh@linuxfoundation.org, hpa@zytor.com, bhelgaas@google.com,
-        rdunlap@infradead.org, bp@alien8.de, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, yinghai@kernel.org, prarit@redhat.com,
-        joro@8bytes.org, mingo@kernel.org, jiang.liu@linux.intel.com,
-        konrad.wilk@oracle.com, tony.luck@intel.com, grant.likely@linaro.org,
-        rjw@rjwysocki.net, tglx@linutronix.de
-In-Reply-To: <1414397531-28254-9-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-9-git-send-email-jiang.liu@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq:
-  Introduce helpers to access struct irq_cfg
-Git-Commit-ID: 55a0e2b122c26c7496ea85754bceddc05dba402b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 19 Dec 2014 09:08:53 -0500
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Dec 2014 09:08:53 EST
+Message-ID: <54942FDC.8030404@raritan.com>
+Date: Fri, 19 Dec 2014 15:02:04 +0100
+From: Ronald Wahl <ronald.wahl@raritan.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Luis Henriques <luis.henriques@canonical.com>, Felipe Balbi <balbi@ti.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        <linux-usb@vger.kernel.org>, <stable@vger.kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RESEND PATCH] usb: gadget: at91_udc: move prepare clk into process
+ context
+References: <1416411447-31112-1-git-send-email-nicolas.ferre@atmel.com> <20141120195049.GF23217@saruman> <20141219135123.GA2620@charon>
+In-Reply-To: <20141219135123.GA2620@charon>
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55a0e2b122c26c7496ea85754bceddc05dba402b
-Gitweb:     http://git.kernel.org/tip/55a0e2b122c26c7496ea85754bceddc05dba402b
-Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:11:59 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 16 Dec 2014 14:08:16 +0100
+On 19.12.2014 14:51, Luis Henriques wrote:
+> Hi Felipe,
+>
+> On Thu, Nov 20, 2014 at 01:50:49PM -0600, Felipe Balbi wrote:
+>> On Wed, Nov 19, 2014 at 04:37:27PM +0100, Nicolas Ferre wrote:
+>>> From: Ronald Wahl <ronald.wahl@raritan.com>
+>>>
+>>> Commit 7628083227b6bc4a7e33d7c381d7a4e558424b6b (usb: gadget: at91_udc:
+>>> prepare clk before calling enable) added clock preparation in interrupt
+>>> context. This is not allowed as it might sleep. Also setting the clock
+>>> rate is unsafe to call from there for the same reason. Move clock
+>>> preparation and setting clock rate into process context (at91udc_probe).
+>>>
+>>> Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
+>>> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>>> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+>>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> Cc: Felipe Balbi <balbi@ti.com>
+>>> Cc: <stable@vger.kernel.org> # v3.17+
+>>> ---
+>>> Hi Felipe,
+>>>
+>>> I forgot to answer you on this patch. So I resend it now with the proper
+>>> "stable" tag. You can also queue it during this -rc phase if you feel it is
+>>> still possible.
+>>
+>> I think it's late for v3.18, so it'll go on v3.19 and get backported to
+>> 3.17 and 3.18. Sorry :-s
+>>
+>
+> Although this commit (b2ba27a5c56f "usb: gadget: at91_udc: move
+> prepare clk into process context") is tagged for stable v3.17+, it
+> seems like it could be applied to earlier kernels.
+>
+> 3.16, 3.13 and 3.12 seem to be affected by the same issue (and they
+> all include commit 7628083227b6 "usb: gadget: at91_udc: prepare clk
+> before calling enable").  Is there any reason for not applying it in
+> these trees?
 
-x86, irq: Introduce helpers to access struct irq_cfg
+Not to forget 3.14 (LTS) which was the branch where I primarily found 
+the issue...
 
-Change irq_cfg() from static to extern, also introduce helper function
-irqd_cfg(). Later we can rewrite these two helpers when enabling
-hierarchy irqdomain.
+- ron
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Link: http://lkml.kernel.org/r/1414397531-28254-9-git-send-email-jiang.liu@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
----
- arch/x86/include/asm/hw_irq.h  | 2 ++
- arch/x86/kernel/apic/io_apic.c | 7 ++++++-
- 2 files changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index e1acbba..454c9e4 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -132,6 +132,8 @@ struct irq_cfg {
- 	};
- };
- 
-+extern struct irq_cfg *irq_cfg(unsigned int irq);
-+extern struct irq_cfg *irqd_cfg(struct irq_data *irq_data);
- extern void setup_vector_irq(int cpu);
- extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
- #ifdef CONFIG_SMP
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ab8ca9327..783468e 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -281,11 +281,16 @@ int __init arch_early_irq_init(void)
- 	return 0;
- }
- 
--static inline struct irq_cfg *irq_cfg(unsigned int irq)
-+struct irq_cfg *irq_cfg(unsigned int irq)
- {
- 	return irq_get_chip_data(irq);
- }
- 
-+struct irq_cfg *irqd_cfg(struct irq_data *irq_data)
-+{
-+	return irq_data->chip_data;
-+}
-+
- static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
- {
- 	struct irq_cfg *cfg;
+-- 
+Ronald Wahl - ronald.wahl@raritan.com - Phone +49 375271349-0 Fax -99
+Raritan Deutschland GmbH, Kornmarkt 7, 08056 Zwickau, Germany
+USt-IdNr. DE813094160, Steuer-Nr. 227/117/01749
+Amtsgericht Chemnitz HRB 23605
+Geschäftsführung: Stuart Hopper, Ralf Ploenes
