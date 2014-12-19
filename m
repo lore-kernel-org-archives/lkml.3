@@ -1,110 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaLSWSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 17:18:13 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:52962 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaLSWSL (ORCPT
+	id S1752770AbaLSWS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 17:18:29 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:7480 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725AbaLSWSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 17:18:11 -0500
+	Fri, 19 Dec 2014 17:18:25 -0500
+X-IronPort-AV: E=Sophos;i="5.07,609,1413270000"; 
+   d="scan'208";a="53509600"
+From: Jonathan Richardson <jonathar@broadcom.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+CC: Ray Jui <rjui@broadcom.com>, Jonathan Richardson <jonathar@broadcom.com>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
+        "Joe Perches" <joe@perches.com>
+Subject: [PATCH v2 2/2] Input: touchscreen-iproc: add device tree bindings
+Date: Fri, 19 Dec 2014 14:17:50 -0800
+Message-ID: <1419027470-7969-3-git-send-email-jonathar@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1419027470-7969-1-git-send-email-jonathar@broadcom.com>
+References: <Jonathan Richardson <jonathar@broadcom.com>
+ <1419027470-7969-1-git-send-email-jonathar@broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQXj-vX8TE-8Es83FmJAKDKD_dMNbQkmsaNPyy_nVEag8w@mail.gmail.com>
-References: <CAErSpo6UvY10MNidAOFf4Fptv+wL-NsX6JMaU8OvSP6ywWEebQ@mail.gmail.com>
- <CAErSpo63uZeo1feoPjjXpdH43nsbcWh63kpBmxCnckPd0t9yrg@mail.gmail.com>
- <CAE9FiQWV-rKdvSeV-ivME-64QtzCX2Te5DfOVtzr0an=6eOCMA@mail.gmail.com>
- <20141204173411.GA5949@google.com> <CAE9FiQVyBmo+XwDgO97wwe+6TN4+q_cvnBLCuhTM8Fu_e_V5RQ@mail.gmail.com>
- <1417777177.4741.69.camel@kernel.crashing.org> <20141208004735.GA15508@shangw>
- <CAErSpo69c6jXOp+nw2sTSU4vgqGufUQNUEGK4_2+6p-qpyE0vQ@mail.gmail.com>
- <1418074683.13358.1.camel@kernel.crashing.org> <CAErSpo7pMAL5i2aPGV3u5F178bHeQTtjASckKs9NaUbEGaxv3Q@mail.gmail.com>
- <20141208233855.GA15713@shangw> <CAE9FiQXj-vX8TE-8Es83FmJAKDKD_dMNbQkmsaNPyy_nVEag8w@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 19 Dec 2014 15:17:50 -0700
-Message-ID: <CAErSpo5OAw6WXRZ3q1JtjMBWk45C-k_s96qm7j+kK0CCNdWToQ@mail.gmail.com>
-Subject: Re: Regression: bug 85491: radeon 0000:01:00.0: Fatal error during
- GPU init
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alexey Voronkov <zermond@gmail.com>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>,
-        Richard Yang <weiyang@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-kernel for visibility]
+Documents the touchscreen device tree binding for Broadcom iProc family
+of SoCs.
 
-For context, this is about a regression caused by 5b28541552ef ("PCI:
-Restrict 64-bit prefetchable bridge windows to 64-bit resources"),
-which appeared in v3.16.  The bugzilla is at
-https://bugzilla.kernel.org/show_bug.cgi?id=85491
+Reviewed-by: Scott Branden <sbranden@broadcom.com>
+Tested-by: Scott Branden <sbranden@broadcom.com>
+Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
+---
+ .../input/touchscreen/brcm,iproc-touchscreen.txt   |   70 ++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt
 
-The problem is that BIOS programmed an invalid Root Port window
-leading to the Radeon device.  The window contains the Radeon device,
-so the configuration actually *works* fine, but the window is invalid
-because it either overlaps system RAM or starts below the upstream
-host bridge window, so Linux discards it:
+diff --git a/Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt b/Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt
+new file mode 100644
+index 0000000..eb28822
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt
+@@ -0,0 +1,70 @@
++* Broadcom's IPROC Touchscreen Controller
++
++Required properties:
++- compatible: must be "brcm,iproc-touchscreen"
++- reg: physical base address of the controller and length of memory mapped
++  region.
++- clocks:  The clock provided by the SOC to driver the tsc
++- clock-name:  name for the clock
++- interrupts: The touchscreen controller's interrupt
++
++Optional properties:
++- scanning_period: Time between scans. Each step is 1024 us.  Valid 1-256.
++- debounce_timeout: Each step is 512 us.  Valid 0-255
++- settling_timeout: The settling duration (in ms) is the amount of time
++                    the tsc waits to allow the voltage to settle after
++                    turning on the drivers in detection mode.
++                    Valid values: 0-11
++                    0 =  0.008 ms
++                    1 =  0.01 ms
++                    2 =  0.02 ms
++                    3 =  0.04 ms
++                    4 =  0.08 ms
++                    5 =  0.16 ms
++                    6 =  0.32 ms
++                    7 =  0.64 ms
++                    8 =  1.28 ms
++                    9 =  2.56 ms
++                   10 =  5.12 ms
++                   11 = 10.24 ms
++- touch_timeout: The continuous number of scan periods in which touch is
++                not detected before the controller returns to idle state.
++                Valid values 0-255.
++- average_data: Number of data samples which are averaged before a final
++                data point is placed into the FIFO
++                Valid values 0-7
++                0 =   1 sample
++                1 =   2 samples
++                2 =   4 samples
++                3 =   8 samples
++                4 =  16 samples
++                5 =  32 samples
++                6 =  64 samples
++                7 = 128 samples
++- fifo_threshold: Interrupt is generated whenever the number of fifo
++                entries exceeds this value
++                Valid values 0-31
++- ts-rotation: Touch screen controller and display panel orientation angle.
++		0 = Tsc x_min y_min placed at LCD x_min y_min. None
++		1 = Tsc x_min y_max placed at LCD x_min y_min. 90 degrees
++		2 = Tsc x_max y_max placed at LCD x_min y_min. 180 degrees
++		3 = Tsc x_max y_min placed at LCD x_min y_min. 270 degrees
++Example:
++
++	touchscreen: tsc@0x180A6000 {
++		compatible = "brcm,iproc-touchscreen";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0x180A6000 0x40>;
++		clocks = <&adc_clk>;
++		clock-names = "tsc_clk";
++		interrupts = <GIC_SPI 164 IRQ_TYPE_LEVEL_HIGH>;
++
++		scanning_period = <5>;
++		debounce_timeout = <40>;
++		settling_timeout = <7>;
++		touch_timeout = <10>;
++		average_data = <5>;
++		fifo_threshold = <1>;
++		ts-rotation = <2>;
++	};
+-- 
+1.7.9.5
 
-Zermond's system:
-  acpi PNP0A08:00: host bridge window [mem 0xc0000000-0xffffffff] (ignored)
-  pci_bus 0000:00: root bus resource [mem 0x00000000-0xfffffffff]
-  pci 0000:00:01.0:   bridge window [mem 0xbdf00000-0xddefffff 64bit
-pref]  # invalid Root Port window
-  pci 0000:00:01.0: can't claim BAR 15 [mem 0xbdf00000-0xddefffff
-64bit pref]: address conflict with System RAM [mem
-0x00100000-0xbff9ffff]
-  pci 0000:01:00.0: can't claim BAR 0 [mem 0xc0000000-0xcfffffff
-pref]: no compatible bridge window  # Radeon
-
-Marek's system:
-  pci_bus 0000:00: root bus resource [mem 0xc0000000-0xffffffff]   (from _CRS)
-  pci 0000:00:01.0:   bridge window [mem 0xbdf00000-0xddefffff 64bit
-pref]  # invalid Root Port window
-  pci 0000:00:01.0: can't claim BAR 15 [mem 0xbdf00000-0xddefffff
-64bit pref]: no compatible bridge window
-  pci 0000:01:00.0: can't claim BAR 0 [mem 0xc0000000-0xcfffffff
-pref]: no compatible bridge window  # Radeon
-
-The Root Port window had the same problem before 5b28541552ef, of
-course, since BIOS set it up.  But before 5b28541552ef, Linux assigned
-a valid window big enough for the Radeon:
-
-  pci 0000:00:01.0:   bridge window [mem 0xc0000000-0xcfffffff pref]
-
-After 5b28541552ef, we won't put a 64-bit window below 4GB, so we
-assign space above 4GB:
-
-  pci 0000:00:01.0:   bridge window [mem 0x140000000-0x1401fffff 64bit pref]
-
-which is not usable by Radeon, since it only has a 32-bit BAR.
-
-On Mon, Dec 8, 2014 at 5:21 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Dec 8, 2014 at 3:38 PM, Gavin Shan <gwshan@linux.vnet.ibm.com> wrote:
->> On Mon, Dec 08, 2014 at 02:46:00PM -0700, Bjorn Helgaas wrote:
->>>Yeah, I didn't word that very clearly.  I meant that after
->>>5b28541552ef, that 64-bit window is wasted unless there's a 64-bit BAR
->>>below it; we can't even place the window below 4GB and use it for
->>>32-bit prefetchable BARs.
->>>
->>
->> Yes, I agree. It's why I suggested to return error from pbus_size_mem()
->> to indicate the case: 64-bits prefetchable window isn't used and it's
->> still available to be used by child 32-bits prefetchable BARs. Please
->> take a look on the attached draft patch, which helps to explain the idea
->> only.
->
-> That would not help. The 00:01.0 on Zermond's system support hotplug. so mem
-> pref will be used for 64bit pref.
-
-I don't think it is an improvement to restrict use of the 64bit pref
-window to a hypothetical future 64-bit capable device.  The
-configuration done by BIOS was optimal for the hardware already in the
-machine -- the prefetchable BAR is in a prefetchable window.  I don't
-think we should change that configuration just because there's a
-possibility of a different device in the future.
-
-Bjorn
