@@ -1,57 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555AbaLSCIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 21:08:40 -0500
-Received: from smtprelay0133.hostedemail.com ([216.40.44.133]:47734 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751158AbaLSCIi (ORCPT
+	id S1751881AbaLSCKC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 21:10:02 -0500
+Received: from mga03.intel.com ([134.134.136.65]:48009 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751602AbaLSCKA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 21:08:38 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3870:3871:3872:3873:3874:4250:4321:5007:6261:7903:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12740:13069:13161:13229:13311:13357:13894:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tramp89_8535f8aa9ea24
-X-Filterd-Recvd-Size: 1714
-Message-ID: <1418954914.25129.1.camel@perches.com>
-Subject: Re: rfc: remove early_printk from a few arches? (blackfin, m68k,
- mips)
-From: Joe Perches <joe@perches.com>
-To: =?ISO-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        Steven Miao <realmz6@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips <linux-mips@linux-mips.org>
-Date: Thu, 18 Dec 2014 18:08:34 -0800
-In-Reply-To: <yw1x388ch0su.fsf@unicorn.mansr.com>
-References: <1418849927.28384.1.camel@perches.com>
-	 <alpine.DEB.2.11.1412190031530.17382@nanos>
-	 <1418951658.28384.20.camel@perches.com>
-	 <yw1x388ch0su.fsf@unicorn.mansr.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Thu, 18 Dec 2014 21:10:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="501291319"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 23/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+ is preempted
+Thread-Topic: [v3 23/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+ is preempted
+Thread-Index: AQHQGp2TX4ce4Iy7jE+LovTGMQc/WJyWLBVQ
+Date: Fri, 19 Dec 2014 02:09:54 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00230A86A@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-24-git-send-email-feng.wu@intel.com>
+	<5491B924.3090200@redhat.com>
+ <E959C4978C3B6342920538CF579893F002307C66@SHSMSX104.ccr.corp.intel.com>
+ <5492911D.3000900@redhat.com>
+In-Reply-To: <5492911D.3000900@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-19 at 01:43 +0000, Måns Rullgård wrote:
-> What exactly are you proposing to remove?
-
-Optionally compile out
-kernel/printk/printk.c:early_printk()
-even if CONFIG_EARLY_PRINTK is enabled.
-
-> I see no unused code related
-> to early printk (in any variant) under arch/mips.
-
-I think there could be yet another CONFIG option
-to specifically enable the early_printk function
-for the arches that use it.
-
-The kernel/printk/early_printk() function seems
-used only by arm/microblaze/tile/x86.
 
 
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo Bonzini
+> Sent: Thursday, December 18, 2014 4:32 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: iommu@lists.linux-foundation.org; kvm@vger.kernel.org;
+> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+> Subject: Re: [v3 23/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+> is preempted
+> 
+> 
+> 
+> On 18/12/2014 04:15, Wu, Feng wrote:
+> > Thanks for your comments, Paolo!
+> >
+> > If we use u64 new_control, we cannot use new.sn any more.
+> > Maybe we can change the struct pi_desc {} like this:
+> >
+> > typedef struct pid_control{
+> >         u64     on      : 1,
+> >         sn      : 1,
+> >         rsvd_1  : 13,
+> >         ndm     : 1,
+> >         nv      : 8,
+> >         rsvd_2  : 8,
+> >         ndst    : 32;
+> > }pid_control_t;
+> >
+> > struct pi_desc {
+> >         u32 pir[8];     /* Posted interrupt requested */
+> > 		pid_control_t control;
+> 
+> Probably something like this to keep the union:
+> 
+> typedef union pid_control {
+> 	u64 full;
+> 	struct {
+> 		u64 on : 1,
+> 		...
+> 	} fields;
+> };
+> 
+> >         u32 rsvd[6];
+> > } __aligned(64);
+> >
+> >
+> > Then we can define pid_control_t new_control, old_control. And use
+> new_control.sn = 0.
+> >
+> > What is your opinon?
+> 
+> Sure.  Alternatively, keep using struct pi_desc new; just
+> do not zero it, nor access any field outide the control word.
+> 
+> Paolo
+
+Yes, this is also a good idea. Thanks!
+
+Thanks,
+Feng
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
