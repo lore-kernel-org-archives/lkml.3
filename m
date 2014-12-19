@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaLSBqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 20:46:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36438 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618AbaLSBqQ convert rfc822-to-8bit (ORCPT
+	id S1752202AbaLSBqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:46:46 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:61453 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751253AbaLSBqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 20:46:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
-   d="scan'208";a="656797077"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: "Wu, Feng" <feng.wu@intel.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
-CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Topic: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Index: AQHQFiFw/2wcwNXVUk6mLzPIG8E78JyVcJswgAC8KvCAAAEAoA==
-Date: Fri, 19 Dec 2014 01:46:06 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-7-git-send-email-feng.wu@intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>
- <E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Dec 2014 20:46:45 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Nishanth Menon <nm@ti.com>, Kevin Hilman <khilman@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: Stop BUGing the system
+Date: Fri, 19 Dec 2014 03:08:32 +0100
+Message-ID: <3146996.LXve8MJFme@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKohponxz0=n5g9uBOt=JqBMdtdi9mnsrh34emxZDO=PJikVaw@mail.gmail.com>
+References: <1418831495-26958-1-git-send-email-nm@ti.com> <20141218144915.GA29004@kahuna> <CAKohponxz0=n5g9uBOt=JqBMdtdi9mnsrh34emxZDO=PJikVaw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu, Feng wrote on 2014-12-19:
+On Friday, December 19, 2014 07:11:19 AM Viresh Kumar wrote:
+> On 18 December 2014 at 20:19, Nishanth Menon <nm@ti.com> wrote:
+> > I can add "could be unstable" -> the point being there can be psuedo
+> > errors reported in the system - example - clock framework bugs. Dont
+> > just stop the boot. example: what if cpufreq was a driver module - it
+> > would not have rescued the system because cpufreq had'nt detected the
+> > logic - if we are going to force this on the system, we should probably
+> > not do this in cpufreq code, instead should be somewhere generic.
+> >
+> > While I do empathise (and had infact advocated in the past) of not
+> > favouring system attempting to continue at an invalid configuration and
+> > our attempt to rescue has failed - given that we cannot provide a
+> > consistent behavior (it is not a core system behavior) and potential of
+> > a false-postive (example clk framework or underlying bug), it should be
+> > good enough to "enhance" WARN to be "severe sounding enough" to
+> > flag it for developer and continue while keeping the system alive as
+> > much as possible.
 > 
+> There is no way out for the kernel to know if its a false positive or a real
+> bug. And in the worst case, it can screw up a platform completely.
 > 
-> Zhang, Yang Z wrote on 2014-12-18:
->> jiang.liu@linux.intel.com
->> Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
->> iommu@lists.linux-foundation.org; kvm@vger.kernel.org; Wu, Feng
->> Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for
->> VT-d Posted-Interrupts
->> 
->> Feng Wu wrote on 2014-12-12:
->>> We don't need to migrate the irqs for VT-d Posted-Interrupts here.
->>> When 'pst' is set in IRTE, the associated irq will be posted to
->>> guests instead of interrupt remapping. The destination of the
->>> interrupt is set in Posted-Interrupts Descriptor, and the
->>> migration happens during vCPU scheduling.
->>> 
->>> However, we still update the cached irte here, which can be used
->>> when changing back to remapping mode.
->>> 
->>> Signed-off-by: Feng Wu <feng.wu@intel.com>
->>> Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
->>> ---
->>>  drivers/iommu/intel_irq_remapping.c | 6 +++++-
->>>  1 file changed, 5 insertions(+), 1 deletion(-) diff --git
->>> a/drivers/iommu/intel_irq_remapping.c
->>> b/drivers/iommu/intel_irq_remapping.c index 48c2051..ab9057a
->>> 100644
->>> --- a/drivers/iommu/intel_irq_remapping.c +++
->>> b/drivers/iommu/intel_irq_remapping.c @@ -977,6 +977,7 @@
->>> intel_ir_set_affinity(struct irq_data *data, const struct cpumask
->>> *mask,  {
->>>  	struct intel_ir_data *ir_data = data->chip_data; 	struct irte *irte =
->>>  &ir_data->irte_entry; +	struct irte_pi *irte_pi = (struct irte_pi
->>>  *)irte; 	struct irq_cfg *cfg = irqd_cfg(data); 	struct irq_data *parent
->>>  = data->parent_data; 	int ret;
->>> @@ -991,7 +992,10 @@ intel_ir_set_affinity(struct irq_data *data,
->>> const struct cpumask *mask,
->>>  	 */
->>>  	irte->vector = cfg->vector;
->>>  	irte->dest_id = IRTE_DEST(cfg->dest_apicid);
->>> -	modify_irte(&ir_data->irq_2_iommu, irte);
->>> +
->>> +	/* We don't need to modify irte if the interrupt is for posting. */
->>> +	if (irte_pi->pst != 1)
->>> +		modify_irte(&ir_data->irq_2_iommu, irte);
->> 
->> What happens if user changes the IRQ affinity manually?
+> I am still not sure if changing it to a WARN would be good idea.
 > 
-> If the IRQ is posted, its affinity is controlled by guest (irq <--->
-> vCPU <----> pCPU), it has no effect when host changes its affinity.
+> @Rafael: Thoughts ?
 
-That's the problem: User is able to changes it in host but it never takes effect since it is actually controlled by guest. I guess it will break the IRQ balance too.
+I'm a bit divided here.  On the one hand I don't like BUG_ON() as a rule and it
+is used in too many places where it doesn't have to be used.
 
-> 
-> Thanks,
-> Feng
-> 
->> 
->>> 
->>>  	/*
->>>  	 * After this point, all the interrupts will start arriving
->> 
->> 
->> Best regards,
->> Yang
->>
+On the other hand, in this particular case, I'm not sure if allowing the system
+to run without cpufreq when it might rely on it for CPU cooling, for one example,
+is a good idea.
 
 
-Best regards,
-Yang
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
