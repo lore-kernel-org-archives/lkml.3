@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaLSXjA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 18:39:00 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:40070 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaLSXi6 convert rfc822-to-8bit (ORCPT
+	id S1752717AbaLSXjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 18:39:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1809 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752673AbaLSXjj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 18:38:58 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH] fs: make generic_block_fiemap sig-tolerant PING2...
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20141219133339.5c8afaa0c47760e9b141df49@linux-foundation.org>
-Date: Fri, 19 Dec 2014 16:38:55 -0700
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>, linux-kernel@vger.kernel.org,
-        ext4 development <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
+	Fri, 19 Dec 2014 18:39:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,610,1413270000"; 
+   d="scan'208";a="657396994"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
+Thread-Topic: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
+Thread-Index: AQHQG4NaL/XOC+t0S0iej0tzGb4XjJyXkpRw
+Date: Fri, 19 Dec 2014 23:39:34 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00230CFC3@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <1418397300-10870-17-git-send-email-feng.wu@intel.com>
+ <5491ACA9.5020507@redhat.com>
+ <E959C4978C3B6342920538CF579893F00230A97C@SHSMSX104.ccr.corp.intel.com>
+ <5494132C.7060204@redhat.com>
+In-Reply-To: <5494132C.7060204@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <6ACCC57E-556A-46A9-9758-EA42282A35E8@dilger.ca>
-References: <1413552269-32203-1-git-send-email-dmonakhov@openvz.org> <871toikt7c.fsf@openvz.org> <87zjavehsx.fsf@openvz.org> <20141218151247.b6ccd73351f40db66818c07e@linux-foundation.org> <87egrwf1dd.fsf@openvz.org> <20141219133339.5c8afaa0c47760e9b141df49@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-X-Mailer: Apple Mail (2.1993)
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 19, 2014, at 2:33 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> On Fri, 19 Dec 2014 12:13:50 +0300 Dmitry Monakhov <dmonakhov@openvz.org> wrote:
-> 
->> --- a/Documentation/filesystems/fiemap.txt
->> +++ b/Documentation/filesystems/fiemap.txt
->> @@ -196,7 +196,8 @@ struct fiemap_extent_info {
->> };
->> 
->> It is intended that the file system should not need to access any of this
->> -structure directly.
->> +structure directly. Filesystem handlers should be tolerant to signals and return
->> +EINTR once fatal signal received.
-> 
-> Thanks.  I was concerned about userspace effects and back-compatibility
-> issues, because I'd misread fatal_signal_pending() as signal_pending().
-> 
-> Because it uses fatal_signal_pending(), the effects of this change
-> should be indiscernible to userspace, yes?
-> 
-> I'm now wondering if the above doc update is unneeded and incorrect. 
-> Is it likely that the fs handler (fiemap_fill_next_extent) will ever
-> consume a large amount of time?  If not then we can leave the logic in
-> __generic_block_fiemap() and not bother callees.
-> 
-> 
-> 
-> The fix only addresses filesystems which use generic_block_fiemap(). 
-> Presumably ocfs2, btrfs, nilfs2, lustre and xfs remain vulnerable to
-> the problem you identified?
-
-I don't think they are - those filesystems generate the FIEMAP mapping
-by walking the extent tree directly, while the "compat" code for block
-based filesystems are (or were) essentially walking every possible
-block offset to see if there was anything mapped at that position.
-
-Cheers, Andreas
 
 
+> -----Original Message-----
+> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
+> Bonzini
+> Sent: Friday, December 19, 2014 8:00 PM
+> To: Wu, Feng; linux-kernel@vger.kernel.org
+> Cc: iommu@lists.linux-foundation.org; kvm@vger.kernel.org
+> Subject: Re: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
+> 
+> 
+> 
+> On 19/12/2014 03:19, Wu, Feng wrote:
+> >>> > >
+> >>> > > +#ifdef CONFIG_HAVE_KVM_IRQ_ROUTING
+> >>> > > +
+> >>> > > +struct kvm_irq_routing_table {
+> >>> > > +	int chip[KVM_NR_IRQCHIPS][KVM_IRQCHIP_NUM_PINS];
+> >>> > > +	struct kvm_kernel_irq_routing_entry *rt_entries;
+> >>> > > +	u32 nr_rt_entries;
+> >>> > > +	/*
+> >>> > > +	 * Array indexed by gsi. Each entry contains list of irq chips
+> >>> > > +	 * the gsi is connected to.
+> >>> > > +	 */
+> >>> > > +	struct hlist_head map[0];
+> >>> > > +};
+> >>> > > +
+> >>> > > +#else
+> >>> > > +
+> >>> > > +struct kvm_irq_routing_table {};
+> >> >
+> >> > If possible, just make this "struct kvm_irq_routing_table;" and pull
+> >> > this line to include/linux/kvm_types.h.
+> >> >
+> >> > Paolo
+> > Do you mean move the definition of struct kvm_irq_routing_table
+> > to include/linux/kvm_types.h and add a declaration here?
+> 
+> Move
+> 
+> struct kvm_irq_routing_table;
+> 
+> to include/linux/kvm_types.h.  In kvm_host.h, leave the #ifdef with the
+> full definition but drop the #else.
+> 
+> Paolo
 
 
+Paolo, Thanks for the explanation. I notice that " struct kvm_irq_routing_table;"
+is already in include/linux/kvm_types.h.
 
+Thanks,
+Feng
