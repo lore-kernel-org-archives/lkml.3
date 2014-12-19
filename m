@@ -1,82 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaLSBpn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 20:45:43 -0500
-Received: from mail-bn1bn0101.outbound.protection.outlook.com ([157.56.110.101]:64059
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751284AbaLSBpl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 20:45:41 -0500
-From: Dudley Du <dudl@cypress.com>
-To: Jeremiah Mahler <jmmahler@gmail.com>
-CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "rydberg@euromail.se" <rydberg@euromail.se>,
-        "bleung@google.com" <bleung@google.com>, David Solda <dso@cypress.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v16 00/12] input: cyapa: instruction of cyapa patches
-Thread-Topic: [PATCH v16 00/12] input: cyapa: instruction of cyapa patches
-Thread-Index: AQHQGqmcizaS/V/Z90+9ZdsIRkHnfZyVLzdAgAC7XwCAADq8EA==
-Date: Fri, 19 Dec 2014 01:45:37 +0000
-Message-ID: <BN1PR06MB070E5D41D47CD42C1A75111D16B0@BN1PR06MB070.namprd06.prod.outlook.com>
-References: <1418896856-15766-1-git-send-email-dudl@cypress.com>
- <CO1PR06MB078DB45B606C923F712A57BD16A0@CO1PR06MB078.namprd06.prod.outlook.com>
- <20141218221414.GA6742@hudson.localdomain>
-In-Reply-To: <20141218221414.GA6742@hudson.localdomain>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.95.211.187]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=dudl@cypress.com; 
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0601MB1077;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0601MB1077;
-x-forefront-prvs: 0430FA5CB7
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(51164003)(164054003)(24454002)(13464003)(189002)(199003)(40100003)(122556002)(107046002)(106116001)(101416001)(110136001)(120916001)(102836002)(66066001)(62966003)(99286002)(106356001)(99396003)(77156002)(20776003)(2656002)(86362001)(87936001)(105586002)(19580395003)(1411001)(50986999)(54356999)(68736005)(33656002)(46102003)(64706001)(76576001)(19580405001)(4396001)(2900100001)(74316001)(97736003)(76176999)(21056001)(2950100001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY1PR0601MB1077;H:BN1PR06MB070.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1751934AbaLSBqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:46:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36438 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618AbaLSBqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 20:46:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
+   d="scan'208";a="626325919"
+Message-ID: <54938360.4000804@intel.com>
+Date: Fri, 19 Dec 2014 09:46:08 +0800
+From: Aaron Lu <aaron.lu@intel.com>
 MIME-Version: 1.0
-X-OriginatorOrg: cypress.com
+To: Josh Boyer <jwboyer@fedoraproject.org>,
+        Dmitry Tunin <hanipouspilot@gmail.com>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
+ brightness keys
+References: <5492C5A3.8090700@gmail.com> <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
+In-Reply-To: <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benson, Jeremiah,
+CC Jani, who is working on the patchset to enable 8+ output devices and
+may have some comments on this.
 
-Thank you for the help and confirm.
+Regards,
+Aaron
 
-Dudley
+On 12/18/2014 09:25 PM, Josh Boyer wrote:
+> On Thu, Dec 18, 2014 at 7:16 AM, Dmitry Tunin <hanipouspilot@gmail.com> wrote:
+>> Add "acpi_osi=" quirk for ASUS X200MA
+>> More information can be found in UX302LA bugreport
+>> https://bugzilla.kernel.org/show_bug.cgi?id=70241
+>>
+>> X200MA is affected by th e same bug and the solution has been tested
+>>
+>> I reported it to launchpad too
+>> https://bugs.launchpad.net/ubuntu/bug/1400068
+>>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+>>
+> 
+> The UX301LA models have the same setup, with 16 devices instead of 8.
+> I discussed this with Matthew Garrett a bit and a more ideal approach
+> is to actually enumerate all 16 devices between the firmware and i915
+> driver.  The problem we have is that the intel opregion spec that
+> hasn't been updated since 2008 doesn't cover the additional 8 devices.
+> Anyway, that is being tracked here:
+> 
+> https://bugs.freedesktop.org/show_bug.cgi?id=81762
+> 
+>> ---
+>>  drivers/acpi/blacklist.c | 20 ++++++++++++++++++++
+>>  1 file changed, 20 insertions(+)
+>>
+>> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+>> index 7556e7c..f78ed08 100644
+>> --- a/drivers/acpi/blacklist.c
+>> +++ b/drivers/acpi/blacklist.c
+>> @@ -162,6 +162,17 @@ static int __init dmi_disable_osi_win8(const struct
+>> dmi_system_id *d)
+>>         acpi_osi_setup("!Windows 2012");
+>>         return 0;
+>>  }
+>> +/*
+>> + * Some ASUS models firmware declares 16 devices instead of 8
+>> + * 'acpi_osi=' kernel parameter fixes it
+>> + * Without this parameters brightness keys Fn+F5 and F6 do not work
+>> + */
+>> +static int __init dmi_disable_osi_all(const struct dmi_system_id *d)
+>> +{
+>> +       printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+>> +       acpi_osi_setup("");
+>> +       return 0;
+>> +}
+> 
+> What does this do to the rest of the function keys?  Does everything
+> else still work as expected, including suspend and resume?
+> 
+>>   static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>>         {
+>> @@ -371,6 +382,15 @@ static struct dmi_system_id acpi_osi_dmi_table[]
+>> __initdata = {
+>>                      DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
+>>                 },
+>>         },
+>> +       /* Without this brightness keys do not work */
+>> +       {
+>> +       .callback = dmi_disable_osi_all,
+>> +       .ident = "ASUSTeK COMPUTER INC. X200MA",
+>> +       .matches = {
+>> +                    DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+>> +                    DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
+>> +               },
+>> +       },
+>>         {}
+>>  };
+>>
+>> --
+>> 1.9.1
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe stable" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> -----Original Message-----
-> From: Jeremiah Mahler [mailto:jmmahler@gmail.com]
-> Sent: 2014?12?19? 6:14
-> To: Dudley Du
-> Cc: dmitry.torokhov@gmail.com; rydberg@euromail.se; bleung@google.com;
-> David Solda; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v16 00/12] input: cyapa: instruction of cyapa patches
->
-> Dudley,
->
-> On Thu, Dec 18, 2014 at 11:06:40AM +0000, Dudley Du wrote:
-> > Jeremiah,
-> >
-> > I re-sent the v16 patches through the new internal email server with my emal
-> dudl@cypress.com.
-> > Could you help check if all patches were fine and not broken.
-> >
-> > Thanks,
-> > Dudley
-> >
-> [...]
->
-> These patches apply without any problems.
->
-> I will have a look and review them again.
->
-> --
-> - Jeremiah Mahler
-
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
