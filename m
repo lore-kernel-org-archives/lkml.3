@@ -1,618 +1,404 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaLSBnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 20:43:14 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54621 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751614AbaLSBmT (ORCPT
+	id S1752165AbaLSBnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:43:17 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:42704 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaLSBnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 20:42:19 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PM list <linux-pm@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Kukjin Kim <kgene@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 4/4] PM: Eliminate CONFIG_PM_RUNTIME
-Date: Fri, 19 Dec 2014 03:03:46 +0100
-Message-ID: <2635409.SWsBMlb9s4@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <472992175.g1ArEYGFPo@vostro.rjw.lan>
-References: <472992175.g1ArEYGFPo@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 18 Dec 2014 20:43:14 -0500
+From: David Ahern <dsahern@gmail.com>
+To: acme@kernel.org, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCHv v3] tools lib traceevent: Add support for IP address formats
+Date: Thu, 18 Dec 2014 18:43:10 -0700
+Message-Id: <1418953390-28891-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.9.3 (Apple Git-50)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Adds helper for following kernel formats:
+  %pi4 print an IPv4 address with leading zeros
+  %pI4 print an IPv4 address without leading zeros
+  %pi6 print an IPv6 address without colons
+  %pI6 print an IPv6 address with colons
+  %pI6c print an IPv6 address with colons
+  %pISpc print an IP address from a sockaddr
 
-Having switched over all of the users of CONFIG_PM_RUNTIME to use
-CONFIG_PM directly, turn the latter into a user-selectable option
-and drop the former entirely from the tree.
+Allows these formats to be used in tracepoints.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Quite a bit of this is adapted from code in lib/vsprintf.c.
+
+v3:
+- use of 'c' and 'p' requires 'I'
+
+v2:
+- pass ptr+1 to print_ip_arg per Namhyung's comments
+- added field length checks to sockaddr function
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm/configs/ape6evm_defconfig         |    2 +-
- arch/arm/configs/armadillo800eva_defconfig |    2 +-
- arch/arm/configs/bcm_defconfig             |    2 +-
- arch/arm/configs/bockw_defconfig           |    2 +-
- arch/arm/configs/davinci_all_defconfig     |    2 +-
- arch/arm/configs/exynos_defconfig          |    2 +-
- arch/arm/configs/ezx_defconfig             |    2 +-
- arch/arm/configs/hisi_defconfig            |    2 +-
- arch/arm/configs/imote2_defconfig          |    2 +-
- arch/arm/configs/imx_v6_v7_defconfig       |    2 +-
- arch/arm/configs/keystone_defconfig        |    2 +-
- arch/arm/configs/kzm9g_defconfig           |    2 +-
- arch/arm/configs/lager_defconfig           |    2 +-
- arch/arm/configs/mackerel_defconfig        |    2 +-
- arch/arm/configs/marzen_defconfig          |    2 +-
- arch/arm/configs/omap1_defconfig           |    2 +-
- arch/arm/configs/prima2_defconfig          |    2 +-
- arch/arm/configs/sama5_defconfig           |    2 +-
- arch/arm/configs/shmobile_defconfig        |    2 +-
- arch/arm/configs/sunxi_defconfig           |    2 +-
- arch/arm/configs/tegra_defconfig           |    2 +-
- arch/arm/configs/u8500_defconfig           |    2 +-
- arch/arm/configs/vt8500_v6_v7_defconfig    |    2 +-
- arch/arm/mach-omap2/Kconfig                |    6 +++---
- arch/mips/configs/db1xxx_defconfig         |    2 +-
- arch/mips/configs/lemote2f_defconfig       |    2 +-
- arch/mips/configs/loongson3_defconfig      |    2 +-
- arch/mips/configs/nlm_xlp_defconfig        |    2 +-
- arch/mips/configs/nlm_xlr_defconfig        |    2 +-
- arch/powerpc/configs/ps3_defconfig         |    2 +-
- arch/sh/Kconfig                            |    2 +-
- arch/sh/configs/apsh4ad0a_defconfig        |    2 +-
- arch/sh/configs/sdk7786_defconfig          |    2 +-
- drivers/usb/host/isp1760-hcd.c             |    2 +-
- drivers/usb/host/oxu210hp-hcd.c            |    2 +-
- include/linux/devfreq.h                    |    2 +-
- kernel/power/Kconfig                       |   16 ++++++----------
- 37 files changed, 44 insertions(+), 48 deletions(-)
+ tools/lib/traceevent/event-parse.c | 328 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 328 insertions(+)
 
-Index: linux-pm/arch/arm/configs/ape6evm_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/ape6evm_defconfig
-+++ linux-pm/arch/arm/configs/ape6evm_defconfig
-@@ -33,7 +33,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_BINFMT_MISC=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/armadillo800eva_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/armadillo800eva_defconfig
-+++ linux-pm/arch/arm/configs/armadillo800eva_defconfig
-@@ -43,7 +43,7 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/bcm_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/bcm_defconfig
-+++ linux-pm/arch/arm/configs/bcm_defconfig
-@@ -39,7 +39,7 @@ CONFIG_CPU_IDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_PACKET_DIAG=y
-Index: linux-pm/arch/arm/configs/bockw_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/bockw_defconfig
-+++ linux-pm/arch/arm/configs/bockw_defconfig
-@@ -29,7 +29,7 @@ CONFIG_ZBOOT_ROM_BSS=0x0
- CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/davinci_all_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/davinci_all_defconfig
-+++ linux-pm/arch/arm/configs/davinci_all_defconfig
-@@ -49,7 +49,7 @@ CONFIG_CPU_FREQ_GOV_PERFORMANCE=m
- CONFIG_CPU_FREQ_GOV_POWERSAVE=m
- CONFIG_CPU_FREQ_GOV_ONDEMAND=m
- CONFIG_CPU_IDLE=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/exynos_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/exynos_defconfig
-+++ linux-pm/arch/arm/configs/exynos_defconfig
-@@ -27,7 +27,7 @@ CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M console=ttySAC1,115200 init=/linuxrc mem=256M"
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/ezx_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/ezx_defconfig
-+++ linux-pm/arch/arm/configs/ezx_defconfig
-@@ -39,7 +39,7 @@ CONFIG_BINFMT_AOUT=m
- CONFIG_BINFMT_MISC=m
- CONFIG_PM=y
- CONFIG_APM_EMULATION=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/hisi_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/hisi_defconfig
-+++ linux-pm/arch/arm/configs/hisi_defconfig
-@@ -18,7 +18,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_NEON=y
- CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/imote2_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/imote2_defconfig
-+++ linux-pm/arch/arm/configs/imote2_defconfig
-@@ -31,7 +31,7 @@ CONFIG_BINFMT_AOUT=m
- CONFIG_BINFMT_MISC=m
- CONFIG_PM=y
- CONFIG_APM_EMULATION=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/imx_v6_v7_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/imx_v6_v7_defconfig
-+++ linux-pm/arch/arm/configs/imx_v6_v7_defconfig
-@@ -54,7 +54,7 @@ CONFIG_ARM_IMX6Q_CPUFREQ=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_BINFMT_MISC=m
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_PM_TEST_SUSPEND=y
- CONFIG_NET=y
-Index: linux-pm/arch/arm/configs/keystone_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/keystone_defconfig
-+++ linux-pm/arch/arm/configs/keystone_defconfig
-@@ -30,7 +30,7 @@ CONFIG_HIGHMEM=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_SUSPEND is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/kzm9g_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/kzm9g_defconfig
-+++ linux-pm/arch/arm/configs/kzm9g_defconfig
-@@ -43,7 +43,7 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/lager_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/lager_defconfig
-+++ linux-pm/arch/arm/configs/lager_defconfig
-@@ -37,7 +37,7 @@ CONFIG_AUTO_ZRELADDR=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/mackerel_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/mackerel_defconfig
-+++ linux-pm/arch/arm/configs/mackerel_defconfig
-@@ -28,7 +28,7 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
- CONFIG_PM=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/marzen_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/marzen_defconfig
-+++ linux-pm/arch/arm/configs/marzen_defconfig
-@@ -33,7 +33,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_KEXEC=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/omap1_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/omap1_defconfig
-+++ linux-pm/arch/arm/configs/omap1_defconfig
-@@ -63,7 +63,7 @@ CONFIG_FPE_NWFPE=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- # CONFIG_SUSPEND is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/prima2_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/prima2_defconfig
-+++ linux-pm/arch/arm/configs/prima2_defconfig
-@@ -18,7 +18,7 @@ CONFIG_PREEMPT=y
- CONFIG_AEABI=y
- CONFIG_KEXEC=y
- CONFIG_BINFMT_MISC=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_RAM=y
-Index: linux-pm/arch/arm/configs/sama5_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/sama5_defconfig
-+++ linux-pm/arch/arm/configs/sama5_defconfig
-@@ -32,7 +32,7 @@ CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_KERNEL_MODE_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_PM_ADVANCED_DEBUG=y
- CONFIG_NET=y
-Index: linux-pm/arch/arm/configs/shmobile_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/shmobile_defconfig
-+++ linux-pm/arch/arm/configs/shmobile_defconfig
-@@ -39,7 +39,7 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/sunxi_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/sunxi_defconfig
-+++ linux-pm/arch/arm/configs/sunxi_defconfig
-@@ -11,7 +11,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/tegra_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/tegra_defconfig
-+++ linux-pm/arch/arm/configs/tegra_defconfig
-@@ -46,7 +46,7 @@ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
- CONFIG_CPU_IDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/u8500_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/u8500_defconfig
-+++ linux-pm/arch/arm/configs/u8500_defconfig
-@@ -25,7 +25,7 @@ CONFIG_CPU_IDLE=y
- CONFIG_ARM_U8500_CPUIDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/vt8500_v6_v7_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/vt8500_v6_v7_defconfig
-+++ linux-pm/arch/arm/configs/vt8500_v6_v7_defconfig
-@@ -16,7 +16,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_UNIX=y
- CONFIG_INET=y
-Index: linux-pm/arch/mips/configs/db1xxx_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/db1xxx_defconfig
-+++ linux-pm/arch/mips/configs/db1xxx_defconfig
-@@ -36,7 +36,7 @@ CONFIG_PCI=y
- CONFIG_PCI_REALLOC_ENABLE_AUTO=y
- CONFIG_PCCARD=y
- CONFIG_PCMCIA_ALCHEMY_DEVBOARD=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_PACKET_DIAG=y
-Index: linux-pm/arch/mips/configs/lemote2f_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/lemote2f_defconfig
-+++ linux-pm/arch/mips/configs/lemote2f_defconfig
-@@ -37,7 +37,7 @@ CONFIG_MIPS32_N32=y
- CONFIG_PM=y
- CONFIG_HIBERNATION=y
- CONFIG_PM_STD_PARTITION="/dev/hda3"
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_CPU_FREQ=y
- CONFIG_CPU_FREQ_DEBUG=y
- CONFIG_CPU_FREQ_STAT=m
-Index: linux-pm/arch/mips/configs/loongson3_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/loongson3_defconfig
-+++ linux-pm/arch/mips/configs/loongson3_defconfig
-@@ -58,7 +58,7 @@ CONFIG_BINFMT_MISC=m
- CONFIG_MIPS32_COMPAT=y
- CONFIG_MIPS32_O32=y
- CONFIG_MIPS32_N32=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/mips/configs/nlm_xlp_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/nlm_xlp_defconfig
-+++ linux-pm/arch/mips/configs/nlm_xlp_defconfig
-@@ -61,7 +61,7 @@ CONFIG_BINFMT_MISC=y
- CONFIG_MIPS32_COMPAT=y
- CONFIG_MIPS32_O32=y
- CONFIG_MIPS32_N32=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/mips/configs/nlm_xlr_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/nlm_xlr_defconfig
-+++ linux-pm/arch/mips/configs/nlm_xlr_defconfig
-@@ -41,7 +41,7 @@ CONFIG_PCI=y
- CONFIG_PCI_MSI=y
- CONFIG_PCI_DEBUG=y
- CONFIG_BINFMT_MISC=m
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/powerpc/configs/ps3_defconfig
-===================================================================
---- linux-pm.orig/arch/powerpc/configs/ps3_defconfig
-+++ linux-pm/arch/powerpc/configs/ps3_defconfig
-@@ -36,7 +36,7 @@ CONFIG_KEXEC=y
- CONFIG_SCHED_SMT=y
- CONFIG_CMDLINE_BOOL=y
- CONFIG_CMDLINE=""
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- # CONFIG_SECCOMP is not set
- # CONFIG_PCI is not set
-Index: linux-pm/arch/sh/configs/apsh4ad0a_defconfig
-===================================================================
---- linux-pm.orig/arch/sh/configs/apsh4ad0a_defconfig
-+++ linux-pm/arch/sh/configs/apsh4ad0a_defconfig
-@@ -47,7 +47,7 @@ CONFIG_PREEMPT=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- CONFIG_PM_DEBUG=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_CPU_IDLE=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/sh/configs/sdk7786_defconfig
-===================================================================
---- linux-pm.orig/arch/sh/configs/sdk7786_defconfig
-+++ linux-pm/arch/sh/configs/sdk7786_defconfig
-@@ -82,7 +82,7 @@ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- CONFIG_PM_DEBUG=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_CPU_IDLE=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/arm/mach-omap2/Kconfig
-===================================================================
---- linux-pm.orig/arch/arm/mach-omap2/Kconfig
-+++ linux-pm/arch/arm/mach-omap2/Kconfig
-@@ -15,7 +15,7 @@ config ARCH_OMAP3
- 	select ARM_CPU_SUSPEND if PM
- 	select OMAP_INTERCONNECT
- 	select PM_OPP if PM
--	select PM_RUNTIME if CPU_IDLE
-+	select PM if CPU_IDLE
- 	select SOC_HAS_OMAP2_SDRC
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index cf3a44bf1ec3..afe20ed9fac8 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -32,6 +32,7 @@
+ #include <stdint.h>
+ #include <limits.h>
  
- config ARCH_OMAP4
-@@ -32,7 +32,7 @@ config ARCH_OMAP4
- 	select PL310_ERRATA_588369 if CACHE_L2X0
- 	select PL310_ERRATA_727915 if CACHE_L2X0
- 	select PM_OPP if PM
--	select PM_RUNTIME if CPU_IDLE
-+	select PM if CPU_IDLE
- 	select ARM_ERRATA_754322
- 	select ARM_ERRATA_775420
++#include <netinet/ip6.h>
+ #include "event-parse.h"
+ #include "event-utils.h"
  
-@@ -103,7 +103,7 @@ config ARCH_OMAP2PLUS_TYPICAL
- 	select I2C_OMAP
- 	select MENELAUS if ARCH_OMAP2
- 	select NEON if CPU_V7
--	select PM_RUNTIME
-+	select PM
- 	select REGULATOR
- 	select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
- 	select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
-Index: linux-pm/arch/sh/Kconfig
-===================================================================
---- linux-pm.orig/arch/sh/Kconfig
-+++ linux-pm/arch/sh/Kconfig
-@@ -223,7 +223,7 @@ config CPU_SHX3
- config ARCH_SHMOBILE
- 	bool
- 	select ARCH_SUSPEND_POSSIBLE
--	select PM_RUNTIME
-+	select PM
+@@ -4149,6 +4150,324 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
+ 	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+ }
  
- config CPU_HAS_PMU
-        depends on CPU_SH4 || CPU_SH4A
-Index: linux-pm/drivers/usb/host/isp1760-hcd.c
-===================================================================
---- linux-pm.orig/drivers/usb/host/isp1760-hcd.c
-+++ linux-pm/drivers/usb/host/isp1760-hcd.c
-@@ -1739,7 +1739,7 @@ static int isp1760_hub_status_data(struc
- 	int retval = 1;
- 	unsigned long flags;
++static void print_ip4_addr(struct trace_seq *s, char i, unsigned char *buf)
++{
++	const char *fmt;
++
++	if (i == 'i')
++		fmt = "%03d.%03d.%03d.%03d";
++	else
++		fmt = "%d.%d.%d.%d";
++
++	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3]);
++}
++
++static inline bool ipv6_addr_v4mapped(const struct in6_addr *a)
++{
++	return ((unsigned long)(a->s6_addr32[0] | a->s6_addr32[1]) |
++		(unsigned long)(a->s6_addr32[2] ^ htonl(0x0000ffff))) == 0UL;
++}
++
++static inline bool ipv6_addr_is_isatap(const struct in6_addr *addr)
++{
++	return (addr->s6_addr32[2] | htonl(0x02000000)) == htonl(0x02005EFE);
++}
++
++static void print_ip6c_addr(struct trace_seq *s, unsigned char *addr)
++{
++	int i, j, range;
++	unsigned char zerolength[8];
++	int longest = 1;
++	int colonpos = -1;
++	uint16_t word;
++	uint8_t hi, lo;
++	bool needcolon = false;
++	bool useIPv4;
++	struct in6_addr in6;
++
++	memcpy(&in6, addr, sizeof(struct in6_addr));
++
++	useIPv4 = ipv6_addr_v4mapped(&in6) || ipv6_addr_is_isatap(&in6);
++
++	memset(zerolength, 0, sizeof(zerolength));
++
++	if (useIPv4)
++		range = 6;
++	else
++		range = 8;
++
++	/* find position of longest 0 run */
++	for (i = 0; i < range; i++) {
++		for (j = i; j < range; j++) {
++			if (in6.s6_addr16[j] != 0)
++				break;
++			zerolength[i]++;
++		}
++	}
++	for (i = 0; i < range; i++) {
++		if (zerolength[i] > longest) {
++			longest = zerolength[i];
++			colonpos = i;
++		}
++	}
++	if (longest == 1)		/* don't compress a single 0 */
++		colonpos = -1;
++
++	/* emit address */
++	for (i = 0; i < range; i++) {
++		if (i == colonpos) {
++			if (needcolon || i == 0)
++				trace_seq_printf(s, ":");
++			trace_seq_printf(s, ":");
++			needcolon = false;
++			i += longest - 1;
++			continue;
++		}
++		if (needcolon) {
++			trace_seq_printf(s, ":");
++			needcolon = false;
++		}
++		/* hex u16 without leading 0s */
++		word = ntohs(in6.s6_addr16[i]);
++		hi = word >> 8;
++		lo = word & 0xff;
++		if (hi)
++			trace_seq_printf(s, "%x%02x", hi, lo);
++		else
++			trace_seq_printf(s, "%x", lo);
++
++		needcolon = true;
++	}
++
++	if (useIPv4) {
++		if (needcolon)
++			trace_seq_printf(s, ":");
++		print_ip4_addr(s, 'I', &in6.s6_addr[12]);
++	}
++
++	return;
++}
++
++static void print_ip6_addr(struct trace_seq *s, char i, unsigned char *buf)
++{
++	int j;
++
++	for (j = 0; j < 16; j += 2) {
++		trace_seq_printf(s, "%02x%02x", buf[j], buf[j+1]);
++		if (i == 'I' && j < 14)
++			trace_seq_printf(s, ":");
++	}
++}
++
++/*
++ * %pi4   print an IPv4 address with leading zeros
++ * %pI4   print an IPv4 address without leading zeros
++ * %pi6   print an IPv6 address without colons
++ * %pI6   print an IPv6 address with colons
++ * %pI6c  print an IPv6 address in compressed form with colons
++ * %pISpc print an IP address based on sockaddr; p adds port.
++ */
++static int print_ipv4_arg(struct trace_seq *s, const char *ptr, char i,
++			  void *data, int size, struct event_format *event,
++			  struct print_arg *arg)
++{
++	unsigned char *buf;
++
++	if (arg->type == PRINT_FUNC) {
++		process_defined_func(s, data, size, event, arg);
++		return 0;
++	}
++
++	if (arg->type != PRINT_FIELD) {
++		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
++		return 0;
++	}
++
++	if (!arg->field.field) {
++		arg->field.field =
++			pevent_find_any_field(event, arg->field.name);
++		if (!arg->field.field) {
++			do_warning("%s: field %s not found",
++				   __func__, arg->field.name);
++			return 0;
++		}
++	}
++
++	buf = data + arg->field.field->offset;
++
++	if (arg->field.field->size != 4) {
++		trace_seq_printf(s, "INVALIDIPv4");
++		return 0;
++	}
++	print_ip4_addr(s, i, buf);
++
++	return 0;
++}
++
++static int print_ipv6_arg(struct trace_seq *s, const char *ptr, char i,
++			  void *data, int size, struct event_format *event,
++			  struct print_arg *arg)
++{
++	char have_c = 0;
++	unsigned char *buf;
++	int rc = 0;
++
++	/* pI6c */
++	if (i == 'I' && *ptr == 'c') {
++		have_c = 1;
++		ptr++;
++		rc++;
++	}
++
++	if (arg->type == PRINT_FUNC) {
++		process_defined_func(s, data, size, event, arg);
++		return rc;
++	}
++
++	if (arg->type != PRINT_FIELD) {
++		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
++		return rc;
++	}
++
++	if (!arg->field.field) {
++		arg->field.field =
++			pevent_find_any_field(event, arg->field.name);
++		if (!arg->field.field) {
++			do_warning("%s: field %s not found",
++				   __func__, arg->field.name);
++			return rc;
++		}
++	}
++
++	buf = data + arg->field.field->offset;
++
++	if (arg->field.field->size != 16) {
++		trace_seq_printf(s, "INVALIDIPv6");
++		return rc;
++	}
++
++	if (have_c)
++		print_ip6c_addr(s, buf);
++	else
++		print_ip6_addr(s, i, buf);
++
++	return rc;
++}
++
++static int print_ipsa_arg(struct trace_seq *s, const char *ptr, char i,
++			  void *data, int size, struct event_format *event,
++			  struct print_arg *arg)
++{
++	char have_c = 0, have_p = 0;
++	unsigned char *buf;
++	struct sockaddr_storage *sa;
++	int rc = 0;
++
++	/* pISpc */
++	if (i == 'I') {
++		if (*ptr == 'p') {
++			have_p = 1;
++			ptr++;
++			rc++;
++		}
++		if (*ptr == 'c') {
++			have_c = 1;
++			ptr++;
++			rc++;
++		}
++	}
++
++	if (arg->type == PRINT_FUNC) {
++		process_defined_func(s, data, size, event, arg);
++		return rc;
++	}
++
++	if (arg->type != PRINT_FIELD) {
++		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
++		return rc;
++	}
++
++	if (!arg->field.field) {
++		arg->field.field =
++			pevent_find_any_field(event, arg->field.name);
++		if (!arg->field.field) {
++			do_warning("%s: field %s not found",
++				   __func__, arg->field.name);
++			return rc;
++		}
++	}
++
++	sa = (struct sockaddr_storage *) (data + arg->field.field->offset);
++
++	if (sa->ss_family == AF_INET) {
++		struct sockaddr_in *sa4 = (struct sockaddr_in *) sa;
++
++		if (arg->field.field->size < sizeof(struct sockaddr_in)) {
++			trace_seq_printf(s, "INVALIDIPv4");
++			return rc;
++		}
++
++		print_ip4_addr(s, i, (unsigned char *) &sa4->sin_addr);
++		if (have_p)
++			trace_seq_printf(s, ":%d", ntohs(sa4->sin_port));
++
++
++	} else if (sa->ss_family == AF_INET6) {
++		struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) sa;
++
++		if (arg->field.field->size < sizeof(struct sockaddr_in6)) {
++			trace_seq_printf(s, "INVALIDIPv6");
++			return rc;
++		}
++
++		if (have_p)
++			trace_seq_printf(s, "[");
++
++		buf = (unsigned char *) &sa6->sin6_addr;
++		if (have_c)
++			print_ip6c_addr(s, buf);
++		else
++			print_ip6_addr(s, i, buf);
++
++		if (have_p)
++			trace_seq_printf(s, "]:%d", ntohs(sa6->sin6_port));
++	}
++
++	return rc;
++}
++
++static int print_ip_arg(struct trace_seq *s, const char *ptr,
++			void *data, int size, struct event_format *event,
++			struct print_arg *arg)
++{
++	char i = *ptr;  /* 'i' or 'I' */
++	char ver;
++	int rc = 0;
++
++	ptr++;
++	rc++;
++
++	ver = *ptr;
++	ptr++;
++	rc++;
++
++	switch (ver) {
++	case '4':
++		rc += print_ipv4_arg(s, ptr, i, data, size, event, arg);
++		break;
++	case '6':
++		rc += print_ipv6_arg(s, ptr, i, data, size, event, arg);
++		break;
++	case 'S':
++		rc += print_ipsa_arg(s, ptr, i, data, size, event, arg);
++		break;
++	default:
++		return 0;
++	}
++
++	return rc;
++}
++
+ static int is_printable_array(char *p, unsigned int len)
+ {
+ 	unsigned int i;
+@@ -4337,6 +4656,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 					ptr++;
+ 					arg = arg->next;
+ 					break;
++				} else if (*(ptr+1) == 'I' || *(ptr+1) == 'i') {
++					int n;
++
++					n = print_ip_arg(s, ptr+1, data, size, event, arg);
++					if (n > 0) {
++						ptr += n;
++						arg = arg->next;
++						break;
++					}
+ 				}
  
--	/* if !PM_RUNTIME, root hub timers won't get shut down ... */
-+	/* if !PM, root hub timers won't get shut down ... */
- 	if (!HC_IS_RUNNING(hcd->state))
- 		return 0;
- 
-Index: linux-pm/drivers/usb/host/oxu210hp-hcd.c
-===================================================================
---- linux-pm.orig/drivers/usb/host/oxu210hp-hcd.c
-+++ linux-pm/drivers/usb/host/oxu210hp-hcd.c
-@@ -3087,7 +3087,7 @@ static int oxu_hub_status_data(struct us
- 	int ports, i, retval = 1;
- 	unsigned long flags;
- 
--	/* if !PM_RUNTIME, root hub timers won't get shut down ... */
-+	/* if !PM, root hub timers won't get shut down ... */
- 	if (!HC_IS_RUNNING(hcd->state))
- 		return 0;
- 
-Index: linux-pm/include/linux/devfreq.h
-===================================================================
---- linux-pm.orig/include/linux/devfreq.h
-+++ linux-pm/include/linux/devfreq.h
-@@ -188,7 +188,7 @@ extern struct devfreq *devm_devfreq_add_
- extern void devm_devfreq_remove_device(struct device *dev,
- 				  struct devfreq *devfreq);
- 
--/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
-+/* Supposed to be called by PM callbacks */
- extern int devfreq_suspend_device(struct devfreq *devfreq);
- extern int devfreq_resume_device(struct devfreq *devfreq);
- 
-Index: linux-pm/kernel/power/Kconfig
-===================================================================
---- linux-pm.orig/kernel/power/Kconfig
-+++ linux-pm/kernel/power/Kconfig
-@@ -94,7 +94,7 @@ config PM_STD_PARTITION
- config PM_SLEEP
- 	def_bool y
- 	depends on SUSPEND || HIBERNATE_CALLBACKS
--	select PM_RUNTIME
-+	select PM
- 
- config PM_SLEEP_SMP
- 	def_bool y
-@@ -130,23 +130,19 @@ config PM_WAKELOCKS_GC
- 	depends on PM_WAKELOCKS
- 	default y
- 
--config PM_RUNTIME
--	bool "Run-time PM core functionality"
-+config PM
-+	bool "Device power management core functionality"
- 	---help---
- 	  Enable functionality allowing I/O devices to be put into energy-saving
--	  (low power) states at run time (or autosuspended) after a specified
--	  period of inactivity and woken up in response to a hardware-generated
-+	  (low power) states, for example after a specified period of inactivity
-+	  (autosuspended), and woken up in response to a hardware-generated
- 	  wake-up event or a driver's request.
- 
- 	  Hardware support is generally required for this functionality to work
- 	  and the bus type drivers of the buses the devices are on are
--	  responsible for the actual handling of the autosuspend requests and
-+	  responsible for the actual handling of device suspend requests and
- 	  wake-up events.
- 
--config PM
--	def_bool y
--	depends on PM_SLEEP || PM_RUNTIME
--
- config PM_DEBUG
- 	bool "Power Management Debug Support"
- 	depends on PM
+ 				/* fall through */
+-- 
+1.9.3 (Apple Git-50)
 
