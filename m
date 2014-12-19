@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaLST4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 14:56:54 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:42436 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaLST4w (ORCPT
+	id S1752195AbaLSUBr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 15:01:47 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:49787 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384AbaLSUBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 14:56:52 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jonathan Richardson <jonathar@broadcom.com>
-Cc: Joe Perches <joe@perches.com>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Ray Jui <rjui@broadcom.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: touchscreen-iproc: Add Broadcom iProc touchscreen driver
-Date: Fri, 19 Dec 2014 11:56:48 -0800
-Message-ID: <3710249.R7buLtFklK@dtor-glaptop>
-User-Agent: KMail/4.13.3 (Linux/3.13.0-43-generic; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <549481C5.7050802@broadcom.com>
-References: <549481C5.7050802@broadcom.com>
+	Fri, 19 Dec 2014 15:01:46 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAPDyKFrPC_MphsLHHZ=uFjcF8SsdkVmzez9R=gas7_ihn63Q5A@mail.gmail.com>
+References: <1418412516-10682-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<CAPDyKFrPC_MphsLHHZ=uFjcF8SsdkVmzez9R=gas7_ihn63Q5A@mail.gmail.com>
+Date: Fri, 19 Dec 2014 12:01:44 -0800
+Message-ID: <CAJAp7OhSZ7CZedXAsWPf0XYv8RESQxXe4L1LZjOmVW4nGpFiHw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dt: Add property for broken hs200 quirk
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Anton Vorontsov <anton@enomsg.org>, Chris Ball <chris@printf.net>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:SECURE DIGITAL HO..." <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 19, 2014 11:51:33 AM Jonathan Richardson wrote:
-> Thanks Joe. I'll send out a new patch set with your suggestions/fixes
-> shortly.
+On Fri, Dec 19, 2014 at 3:38 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 12 December 2014 at 20:28, Bjorn Andersson
+> <bjorn.andersson@sonymobile.com> wrote:
+>
+> Some more explanation to why this needed would be good.
+>
 
-You can also drop the remove() code since we clear drvdata automatically and 
-input device is managed so does not need to be unregistered explicitly.
+Because (according to the git log) some of the memories that we
+mounted in Xperia Z1 does not support HS200 even though they advertise
+they are.
 
-Thanks.
+I thought we needed for the device I'm testing with, but a couple of
+regulator_set_optimum_mode() solved that - so I have to provide a
+patch for that as well...
 
--- 
-Dmitry
+>> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+>> ---
+>>  Documentation/devicetree/bindings/mmc/mmc.txt | 2 ++
+>
+> This file lists the generic mmc DT bindings, but you want to add a
+> specific binding for sdhci?
+>
+
+Looking in sdhci_get_of_property() it's a mash of device specific
+properties, sdhci specific properties documented in mmc.txt and
+generic sdhci properties documented in device specific bindings.
+
+Would you like me to move it to a generic sdhci.txt binding and update
+the individual sdhci-* to reference that instead of mmc.txt? Or should
+I just add the property in the device specific bindings? Or maybe we
+could keep it as a optional property in mmc.txt?
+
+Regards,
+Bjorn
