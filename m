@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaLSBsD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 20:48:03 -0500
-Received: from mga02.intel.com ([134.134.136.20]:53880 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751158AbaLSBsA convert rfc822-to-8bit (ORCPT
+	id S1751759AbaLSBzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:55:47 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:58586 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751211AbaLSBzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 20:48:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
-   d="scan'208";a="656798588"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "Sankaran, Rajesh" <rajesh.sankaran@intel.com>
-CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-Thread-Topic: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu()
- for VT-d PI
-Thread-Index: AQHQFiCrJgBr1evklkuo8VNfnV0dX5yWHx3ggAAMspA=
-Date: Fri, 19 Dec 2014 01:47:54 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC04E94@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-14-git-send-email-feng.wu@intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>
- <549307A5.3060305@redhat.com>
- <E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Dec 2014 20:55:46 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Kevin Hilman <khilman@kernel.org>,
+        amit daniel kachhap <amit.daniel@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v3 1/2] PM / Domains: Extend API pm_genpd_dev_need_restore to use restore types
+Date: Fri, 19 Dec 2014 03:17:32 +0100
+Message-ID: <4455852.nsjCIYrEMg@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5492A6DE.5020704@samsung.com>
+References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com> <5418986.E58ik2Q1Hm@vostro.rjw.lan> <5492A6DE.5020704@samsung.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu, Feng wrote on 2014-12-19:
+On Thursday, December 18, 2014 11:05:18 AM Sylwester Nawrocki wrote:
+> On 18/12/14 01:58, Rafael J. Wysocki wrote:
+> >>>> What's needed to solve this problem is a generalized way to have runtime
+> >>>> > >> PM dependencies between devices.  Runtime PM already automatically
+> >>>> > >> handles parent devices as one type of dependent device (e.g. a parent
+> >>>> > >> device needs to be runtime PM resumed before its child.)  So what's
+> >>>> > >> needed is a generic way to other PM dependencies with the runtime PM
+> >>>> > >> core (not the genpd core.)
+> >>> > >
+> >>> > > Considering the example above with three devices, device D1 and D2 are
+> >>> > > passive components in this power domain. These devices only need to
+> >>> > > know the state changes of the power domains but would not control the
+> >>> > > power domain themselves nor put forth constraints in the power domain
+> >>> > > state changes. So I did not clearly understand as to how this example
+> >>> > > could be solved by introducing changes in runtime PM core.
+> >> > 
+> >> > Your solution only solves the problems for devices managed by genpd.
+> >> > 
+> >> > If I understood your example correctly, what you really want to solve
+> >> > this problem more generically is to be able to tell the runtime PM core
+> >> > that D3 has a dependency on D1 and D2.  Then, whenver the runtime PM
+> >> > core is doing get/put operations for D3, it needs to also do them for D1
+> >> > and D2.
+> 
+> Indeed, I think it would solve most of the problems if we were able to
+> model the PM dependencies between devices which would then be handled
+> in the PM core.  I recall something like this has been proposed a while
+> ago [1].
+
+Exactly.
+
+And I'm going to revive it in a slightly simplified form.
+
+> >> > This will accomplish the same as your proposed approach, but work for
+> >> > any devices in any PM domains.
+> >
+> > Plus, it is not limited to runtime PM, really.  It affects system suspend
+> > too.
+> 
+> [1] https://lkml.org/lkml/2009/8/26/485
 > 
 > 
-> Paolo Bonzini wrote on 2014-12-19:
->> jiang.liu@linux.intel.com
->> Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
->> iommu@lists.linux-foundation.org; kvm@vger.kernel.org
->> Subject: Re: [v3 13/26] KVM: Define a new interface
->> kvm_find_dest_vcpu() for VT-d PI
->> 
->> 
->> 
->> On 18/12/2014 15:49, Zhang, Yang Z wrote:
->>>>> Here, we introduce a similar way with 'apic_arb_prio' to handle
->>>>> guest lowest priority interrtups when VT-d PI is used. Here is
->>>>> the
->>>>> ideas: - Each vCPU has a counter 'round_robin_counter'. - When
->>>>> guests sets an interrupts to lowest priority, we choose the vCPU
->>>>> with smallest 'round_robin_counter' as the destination, then
->>>>> increase it.
->>> 
->>> How this can work well? All subsequent interrupts are delivered to
->>> one vCPU? It shouldn't be the best solution, need more consideration.
->> 
->> Well, it's a hardware limitation.  The alternative (which is easy to
->> implement) is to only do PI for single-CPU interrupts.  This should
->> work well for multiqueue NICs (and of course for UP guests :)), so
->> perhaps it's a good idea to only support that as a first attempt.
->> 
->> Paolo
-> 
-> Paolo, what do you mean by "single-CPU interrupts"? Do you mean we
 
-It should be same idea as I mentioned on another thread: deliver the interrupt to a single CPU(maybe the first matched VCPU?)
-
-> don't support lowest priority interrupts for PI? But Linux OS uses
-> lowest priority for most of the case? If so, we can hardly get benefit
-> from this feature for Linux guest OS.
-> 
-> Thanks,
-> Feng
-> 
->> 
->>> Also, I think you should take the apic_arb_prio into consider
->>> since the priority is for the whole vCPU not for one interrupt.
-
-
-Best regards,
-Yang
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
