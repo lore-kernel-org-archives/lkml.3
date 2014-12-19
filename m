@@ -1,75 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaLSINd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 03:13:33 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:60394 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaLSINb (ORCPT
+	id S1752199AbaLSIOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 03:14:32 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:39823 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaLSIOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 03:13:31 -0500
+	Fri, 19 Dec 2014 03:14:31 -0500
+Date: Fri, 19 Dec 2014 09:14:28 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: "Arad, Ronen" <ronen.arad@intel.com>
+Cc: "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Roopa Prabhu <roopa@cumulusnetworks.com>,
+        "Varlese, Marco" <marco.varlese@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Thomas Graf <tgraf@suug.ch>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141219081428.GC1848@nanopsycho.orion>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
+ <5492E85C.6010802@cumulusnetworks.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
+ <5492EFC3.8030102@cumulusnetworks.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com>
+ <549313B8.6050102@cumulusnetworks.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com>
+ <54931969.7040209@cumulusnetworks.com>
+ <5493293A.2000802@intel.com>
+ <E4CD12F19ABA0C4D8729E087A761DC3505DC9956@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <2635409.SWsBMlb9s4@vostro.rjw.lan>
-References: <472992175.g1ArEYGFPo@vostro.rjw.lan>
-	<2635409.SWsBMlb9s4@vostro.rjw.lan>
-Date: Fri, 19 Dec 2014 09:13:29 +0100
-X-Google-Sender-Auth: NegosbHWJgJKZ1PRDwtFvunBHwI
-Message-ID: <CAMuHMdUn3KSTdh4nFL=G54SM7NWpQsmeg1GYYRz=+uXH9rbEGg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] PM: Eliminate CONFIG_PM_RUNTIME
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Kukjin Kim <kgene@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E4CD12F19ABA0C4D8729E087A761DC3505DC9956@ORSMSX101.amr.corp.intel.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 3:03 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> --- linux-pm.orig/arch/mips/configs/lemote2f_defconfig
-> +++ linux-pm/arch/mips/configs/lemote2f_defconfig
-> @@ -37,7 +37,7 @@ CONFIG_MIPS32_N32=y
->  CONFIG_PM=y
-  ^^^^^^^^^^^
->  CONFIG_HIBERNATION=y
->  CONFIG_PM_STD_PARTITION="/dev/hda3"
-> -CONFIG_PM_RUNTIME=y
-> +CONFIG_PM=y
-   ^^^^^^^^^^^
-Now we have two of them
+Thu, Dec 18, 2014 at 11:43:06PM CET, ronen.arad@intel.com wrote:
+>
+>
+>>-----Original Message-----
+>>From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On
+>>Behalf Of John Fastabend
+>>Sent: Thursday, December 18, 2014 9:21 PM
+>>To: Roopa Prabhu; Varlese, Marco
+>>Cc: netdev@vger.kernel.org; Thomas Graf; Jiri Pirko; sfeldma@gmail.com; linux-
+>>kernel@vger.kernel.org
+>>Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
+>>configuration
+>>
+>>On 12/18/2014 10:14 AM, Roopa Prabhu wrote:
+>>> On 12/18/14, 10:02 AM, Varlese, Marco wrote:
+>>>> Removed unnecessary content for ease of reading...
+>>>>
+>>>>>>>>>> +/* Switch Port Attributes section */
+>>>>>>>>>> +
+>>>>>>>>>> +enum {
+>>>>>>>>>> +    IFLA_ATTR_UNSPEC,
+>>>>>>>>>> +    IFLA_ATTR_LEARNING,
+>>>>>>>>> Any reason you want learning here ?. This is covered as part  of
+>>>>>>>>> the bridge setlink attributes.
+>>>>>>>>>
+>>>>>>>> Yes, because the user may _not_ want to go through a bridge
+>>>>>>>> interface
+>>>>>>> necessarily.
+>>>>>>> But, the bridge setlink/getlink interface was changed to accommodate
+>>>>> 'self'
+>>>>>>> for exactly such cases.
+>>>>>>> I kind of understand your case for the other attributes (these are
+>>>>>>> per port settings that switch asics provide).
+>>>>>>>
+>>>>>>> However, i don't understand the reason to pull in bridge attributes
+>>here.
+>>>>>>>
+>>>>>> Maybe, I am missing something so you might help. The learning attribute -
+>>>>> in my case - it is like all other attributes: a port attribute (as you
+>>said, port
+>>>>> settings that the switch provides per port).
+>>>>>> So, what I was saying is "why the user shall go through a bridge to
+>>configure
+>>>>> the learning attribute"? From my perspective, it is as any other attribute
+>>and
+>>>>> as such configurable on the port.
+>>>>>
+>>>>> Thinking about this some more, i don't see why any of these attributes
+>>>>> (except loopback. I dont understand the loopback attribute) cant be part
+>>of
+>>>>> the birdge port attributes.
+>>>>>
+>>>>> With this we will end up adding l2 attributes in two places: the general
+>>link
+>>>>> attributes and bridge attributes.
+>>>>>
+>>>>> And since we have gone down the path of using ndo_bridge_setlink/getlink
+>>>>> with 'self'....we should stick to that for all l2 attributes.
+>>>>>
+>>>>> The idea of overloading ndo_bridge_set/getlink, was to have the same set
+>>of
+>>>>> attributes but support both cases where the user wants to go through the
+>>>>> bridge driver or directly to the switch port driver. So, you are not
+>>really going
+>>>>> through the bridge driver if you use 'self' and
+>>ndo_bridge_setlink/getlink.
+>>>>>
+>>
+>>>> Roopa, one of the comments I got from Thomas Graf on my v1 patch
+>>>> was that your patch and mine were supplementary ("I think Roopa's
+>>>> patches are supplementary. Not all switchdev users will be backed
+>>>> with a Linux Bridge. I therefore welcome your patches very
+>>>> much")... I also understood by others that the patch made sense for
+>>>> the same reason. I simply do not understand why these attributes
+>>>> (and maybe others in the future) could not be configured directly
+>>>> on a standard port but have to go through a bridge.
+>>>>
+>>> ok, i am very confused in that case. The whole moving of bridge
+>>> attributes from the bridge driver to rtnetlink.c was to make the
+>>> bridge attributes accessible to any driver who wants to set l2/bridge
+>>> attributes on their switch ports. So, its unclear to me why we are
+>>> doing this parallel thing again. This move to rtnetlink.c was done
+>>> during the recent rocker support. so, maybe scott/jiri can elaborate
+>>> more.
+>>
+>>
+>>Not sure if this will add to the confusion or help. But you do not
+>>need to have the bridge.ko loaded or netdev's attached to a bridge
+>>to use the setlink/getlink ndo ops and netlink messages.
+>
+>No you don't need bridge.ko to implement ndo_bridge_setlink/getlink. Rtnetlink invokes those ndos from code which does not depend on CONFIG_BRIDGE or the presence of bridge.ko.
+>Calling some bridge exported functions such as br_fdb_external_learn_add/del requires the presence of bridge.ko and it only makes sense when the switch port device is enslaved to a bridge.
 
->  CONFIG_CPU_FREQ=y
->  CONFIG_CPU_FREQ_DEBUG=y
->  CONFIG_CPU_FREQ_STAT=m
+Note I plan to change br_fdb_external_learn_add/del to (semi-)generic
+notifier very soon.
 
-Other defconfig files may be affected, too.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+>
+>>
+>>This was intentionally done. Its already used with NIC devices to
+>>configure embedded bridge settings such as VEB/VEPA.
+>>
+>>I think I'm just repeating Roopa though.
+>>
+>>--
+>>To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>the body of a message to majordomo@vger.kernel.org
+>>More majordomo info at  http://vger.kernel.org/majordomo-info.html
