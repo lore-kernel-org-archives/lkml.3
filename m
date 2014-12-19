@@ -1,170 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbaLSPck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:32:40 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:61211 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463AbaLSPch (ORCPT
+	id S1751591AbaLSPib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:38:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39209 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaLSPi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:32:37 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-8b-5494451284fb
-Date: Fri, 19 Dec 2014 16:32:24 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Cc: Eduardo Valentin <edubezval@gmail.com>,
-        Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH 2/9] hwmon: dts: Doc: Add DTS doc to explain how to use PWM
- FAN as a cooling device
-Message-id: <20141219163224.34796e5d@amdc2363>
-In-reply-to: <1418899337.23532.9.camel@collabora.co.uk>
-References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
- <1418897591-18332-3-git-send-email-l.majewski@samsung.com>
- <1418899337.23532.9.camel@collabora.co.uk>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jAV1h1ykhBn/2s1rMP3IOSFy5xmqx
-	9O4nNosfry+wWfQuuMpm8eYRt8XlXXPYLD73HmG0mHF+H5PFk4VnmCzuTNvLZnH4TTurxfTj
-	b1kdeD3+Pr/O4rFz1l12jwcTd7N5rJv2ltlj5/cGdo++LasYPTafrvb4vEkugCOKyyYlNSez
-	LLVI3y6BK+P9+0eMBeflK260fmRrYNws0cXIySEhYCKx4OF0RghbTOLCvfVsXYxcHEICixgl
-	ur9dYoVwfjFKvNrwjw2kikVAVeLko0ssIDabgJ7E57tPmUBsEQFDiR9zvjCCNDALPGaWuHqp
-	ASjBwSEskCnxuJkfpIYXqH5D5x2wbZwC5hLfp+4EmyMksIFRYnsPB4jNLyAp0f7vBzPERXYS
-	5z5tYIfoFZT4MfkeWD2zgJbE5m1NrBC2vMTmNW+ZJzAKzkJSNgtJ2SwkZQsYmVcxiqYWJBcU
-	J6XnGukVJ+YWl+al6yXn525iBEfVM+kdjKsaLA4xCnAwKvHwdhRODhFiTSwrrsw9xCjBwawk
-	wmtuPSVEiDclsbIqtSg/vqg0J7X4EKM0B4uSOK+SfVuIkEB6YklqdmpqQWoRTJaJg1OqgbF6
-	w3Ertdd9sQdXhr6Wj1mldTU5f+/rek22icdtF0SEMbEJLpIRe7fX5uWDN8l8r/5eCfPh7eVe
-	uYnzBLdhzbxPm1ouSWcwfnv3+dlLzWe7f4ae2BO11E/tPze/xLUXchH/C+fzTtrrwKRt1J+l
-	+fX1bw01N5FqLo7cK5HTyiW3MMjem/4qfb8SS3FGoqEWc1FxIgCiWjC3pgIAAA==
+	Fri, 19 Dec 2014 10:38:29 -0500
+Date: Fri, 19 Dec 2014 07:38:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
+        hpa@zytor.com, monstr@monstr.eu, rdunlap@infradead.org,
+        mark.rutland@arm.com, linux-doc@vger.kernel.org, rubini@gnudd.com,
+        pantelis.antoniou@konsulko.com, s.trumtrar@pengutronix.de,
+        devel@driverdev.osuosl.org, sameo@linux.intel.com, nico@linaro.org,
+        ijc+devicetree@hellion.org.uk, kyle.teske@ni.com,
+        grant.likely@linaro.org, davidb@codeaurora.org,
+        linus.walleij@linaro.org, cesarb@cesarb.net,
+        devicetree@vger.kernel.org, jason@lakedaemon.net, pawel.moll@arm.com,
+        iws@ovro.caltech.edu, broonie@kernel.org, philip@balister.org,
+        dinguyen@opensource.altera.com, pavel@denx.de,
+        yvanderv@opensource.altera.com, linux-kernel@vger.kernel.org,
+        balbi@ti.com, delicious.quinoa@gmail.com, robh+dt@kernel.org,
+        rob@landley.net, galak@codeaurora.org, akpm@linux-foundation.org,
+        davem@davemloft.net, m.chehab@samsung.com
+Subject: Re: [PATCH v6 0/4] FPGA Manager Framework
+Message-ID: <20141219153828.GA19077@kroah.com>
+References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+ <5901b1791e1c4b09b72cb22c5eca68ca@BL2FFO11FD047.protection.gbl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5901b1791e1c4b09b72cb22c5eca68ca@BL2FFO11FD047.protection.gbl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjoerd,
-
-Thanks for your feedback and sorry for a late reply.
-
-> On Thu, 2014-12-18 at 11:13 +0100, Lukasz Majewski wrote:
-> > Several new properties to allow PWM fan working as a cooling device
-> > have been combined into this single commit.
+On Fri, Dec 19, 2014 at 03:20:59PM +0100, Michal Simek wrote:
+> Hi Greg,
+> 
+> On 12/18/2014 11:29 PM, atull@opensource.altera.com wrote:
+> > From: Alan Tull <atull@opensource.altera.com>
 > > 
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > ---
-> >  .../devicetree/bindings/hwmon/pwm-fan.txt          | 28
-> > ++++++++++++++++++++++ 1 file changed, 28 insertions(+)
+> > Dropping the changes to socfpga DTS and defconfig from this
+> > patch set.
 > > 
-> > diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt index
-> > 610757c..3877810 100644 ---
-> > a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt +++
-> > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt @@ -3,10
-> > +3,38 @@ Bindings for a fan connected to the PWM lines Required
-> > properties:
-> >  - compatible	: "pwm-fan"
-> >  - pwms		: the PWM that is used to control the PWM fan
-> > +- cooling-pwm-values      : PWM duty cycle values relative to
-> > +			    cooling-max-pwm-value correspondig to
-> > +			    proper cooling states
-> > +- default-pulse-width     : Property specifying default pulse
-> > width for FAN
-> > +			    at system boot (zero to disable FAN on
-> > boot).
-> > +			    Allowed range is 0 to 255
+> > Kernel doc fixes and other minor fixes as listed in the patches.
+> > 
+> > Alan
+> > 
+> > Alan Tull (4):
+> >   doc: add bindings document for altera fpga manager
+> >   fpga manager: add sysfs interface document
+> >   staging: fpga manager: framework core
+> >   staging: fpga manager: add driver for socfpga fpga manager
+> > 
+> >  drivers/staging/Kconfig                            |    2 +
+> >  drivers/staging/Makefile                           |    1 +
+> >  .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
+> >  .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +
+> >  drivers/staging/fpga/Kconfig                       |   29 +
+> >  drivers/staging/fpga/Makefile                      |    9 +
+> >  drivers/staging/fpga/fpga-mgr.c                    |  551 ++++++++++++++++
+> >  drivers/staging/fpga/socfpga.c                     |  694 ++++++++++++++++++++
+> >  include/linux/fpga/fpga-mgr.h                      |  124 ++++
+> >  9 files changed, 1465 insertions(+)
+> >  create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
+> >  create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
+> >  create mode 100644 drivers/staging/fpga/Kconfig
+> >  create mode 100644 drivers/staging/fpga/Makefile
+> >  create mode 100644 drivers/staging/fpga/fpga-mgr.c
+> >  create mode 100644 drivers/staging/fpga/socfpga.c
+> >  create mode 100644 include/linux/fpga/fpga-mgr.h
+> > 
 > 
-> The 0..255 range seems somewhat random. Would be nicer to either use
-> the approach of pwm-backlight (iotw, have the range go from the first
-> to the last entry of cooling-pwm-values) 
-
-I'm OK to change the default-pulse-width to be similar to
-"default-brightness-level" (as it is in
-Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt)
-
-> or simply have be the duty
-> lenght in NS as entries instead of the current indirection.
-
-I'd prefer to keep the indirection - as it is utilized in the current
-pwm-fan.c driver.
-
+> I think we have reasonable number of patches which can go to the staging
+> and we can work on it and extend it. I have xilinx zynq driver in my repository too.
+> Also I would try to integrate staging/gs_fpgaboot/ because they do just the same
+> thing. Also char/xilinx_hwicap should be added to this subfolder (and clean a lot).
+> I am not aware about any other fpga driver in the tree but I didn't grep it
+> (IRC xillybus targets a little bit different thing). Please let me know if you are
+> aware about different one.
 > 
-> I assumed your cooling-pwm-values are a [0..255] range as well instead
-> of nanoseconds (would be good to make that more clear)?
+> I was talking to Altera guys at ELCE and conclusion was that will be the best to
+> maintain future drivers/fpga/ together.
+> It means if there is no problem with this series. Do you want me to add these
+> patches to any repository at kernel.org and send you pull request?
+> Or you just prefer to take these patches directly to staging and we will use
+> separate repository later?
 
-Your assumption is correct. cooling-pwm-values are indeed in the
-[0..255] range. I will add this information in v2.
+We don't need a whole new repo just for a single driver or a few new
+files, I'll take these after the new year (can't do anything until
+3.19-rc1 is out, and then it is vacation time.)
 
-> 
-> Also having more consistent names would be nice.. To take
-> pwm-backlight as inspiration, cooling-levels and
-> default-cooling-level would make it more clear the second property
-> picks a default setting from the first one.
+So I'll just take them from patches, no need for a git tree at all.
 
-I agree.
-
-> 
-> One thing i do wonder, is having an explicit default setting useful?
-> Should it not default to maximum cooling unless otherwise configured
-> by either the thermal framework or sysfs ?
-
-Enabling pan to full RPM was the default behaviour in the current
-pwm-fan.c file.
-
-To be honest, there is no need to enable fan to full RPM speed in this
-board for following reasons:
-1. In Odroid the FAN is optional (stacked on top of a heat sink) - very
-often it is just enough to only have the heat sink.
-
-2. Odroid has thermal enabled by default and IMHO it would be more
-feasible to allow thermal to control fan from the very beginning.
-
-However, I can also understand if the policy for hwmon implies a rule
-to enable by default all fans to full RPM speed.
-
-> 
-> 
-> > +Thorough description of the following bindings:
-> > +		cooling-min-state = <0>;
-> > +		cooling-max-state = <3>;
-> > +		#cooling-cells = <2>;
-> > +		thermal-zone {
-> > +			cpu_thermal: cpu-thermal {
-> > +			cooling-maps {
-> > +				map0 {
-> > +				     trip = <&cpu_alert1>;
-> > +				     cooling-device = <&fan0 0 1>;
-> > +				};
-> > +			};
-> > +		};
-> > +
-> > +for PWM FAN used as cooling device can be found at:
-> > +./Documentation/devicetree/bindings/thermal/thermal.txt
-> >  
-> >  Example:
-> >  	pwm-fan {
-> >  		compatible = "pwm-fan";
-> >  		status = "okay";
-> >  		pwms = <&pwm 0 10000 0>;
-> > +		cooling-min-state = <0>;
-> > +		cooling-max-state = <3>;
-> > +		#cooling-cells = <2>;
-> > +		cooling-pwm-values = <0 102 170 255>;
-> > +		default-pulse-width = <0>;
-> >  	};
-> 
-> 
-
-
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+greg k-h
