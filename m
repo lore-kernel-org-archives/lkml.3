@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbaLSIPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 03:15:20 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:58579 "EHLO extserv.mm-sol.com"
+	id S1752273AbaLSISc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 03:18:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:59672 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751821AbaLSIPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 03:15:18 -0500
-Message-ID: <1418976929.27549.5.camel@mm-sol.com>
-Subject: Re: [PATCH 2/2] leds: add Qualcomm PM8941 WLED driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Bjorn <bjorn@sonymobile.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonymobile.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Fri, 19 Dec 2014 10:15:29 +0200
-In-Reply-To: <20141218234352.GE19036@sonymobile.com>
-References: <1418084551-28946-1-git-send-email-bjorn.andersson@sonymobile.com>
-	 <1418084551-28946-2-git-send-email-bjorn.andersson@sonymobile.com>
-	 <CAK5ve-LujSrARfyi6nvO1EDLyz_cqso93H2irUf9NPbke1XPdQ@mail.gmail.com>
-	 <20141218234352.GE19036@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1.2~trusty 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751843AbaLSISa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 03:18:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,605,1413270000"; 
+   d="scan'208";a="626449255"
+Date: Fri, 19 Dec 2014 16:17:56 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: kbuild-all@01.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [vireshk:cpufreq/stats/cleanups 12/14]
+ drivers/cpufreq/cpufreq_stats.c:19:1: sparse: symbol 'cpufreq_stats_lock'
+ was not declared. Should it be static?
+Message-ID: <201412191646.uhe36Ci6%fengguang.wu@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 2014-12-18 at 15:43 -0800, Bjorn wrote:
-> On Tue 16 Dec 16:54 PST 2014, Bryan Wu wrote:
-> 
-> > On Mon, Dec 8, 2014 at 4:22 PM, Bjorn Andersson
-> 
-> [..]
-> 
-> > > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> 
-> [..]
-> 
-> > > +config LEDS_PM8941_WLED
-> > > +       tristate "LED support for the Qualcomm PM8941 WLED block"
-> > > +       depends on LEDS_CLASS
-> > > +       depends on REGMAP
-> > Here should be "select REGMAP"
-> > 
-> 
-> Thanks
-> > > 
+tree:   https://git.linaro.org/people/vireshk/linux cpufreq/stats/cleanups
+head:   f6439741b76da59257758838e8b24472831e850c
+commit: 2194c3c381af6cbfe8ab4fda481e07a004446e30 [12/14] cpufreq: stats: replace spinlock with mutex
+reproduce:
+  # apt-get install sparse
+  git checkout 2194c3c381af6cbfe8ab4fda481e07a004446e30
+  make ARCH=x86_64 allmodconfig
+  make C=1 CF=-D__CHECK_ENDIAN__
 
 
-If not mistaken the correct way was:
+sparse warnings: (new ones prefixed by >>)
 
-        depends on SPMI
-        select REGMAP_SPMI
+>> drivers/cpufreq/cpufreq_stats.c:19:1: sparse: symbol 'cpufreq_stats_lock' was not declared. Should it be static?
 
-or
-        depends on MFD_SPMI_PMIC
+Please review and possibly fold the followup patch.
 
-Regards,
-Ivan
-
-https://patchwork.kernel.org/patch/4566591/
-
+---
+0-DAY kernel test infrastructure                Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
