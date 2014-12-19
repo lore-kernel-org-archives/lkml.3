@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaLSPUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:20:38 -0500
-Received: from mga01.intel.com ([192.55.52.88]:40434 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751382AbaLSPUh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:20:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,607,1413270000"; 
-   d="scan'208";a="640326030"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: linux-kbuild@vger.kernel.org, yann.morin.1998@free.fr
-Cc: alexander.shishkin@linux.intel.com, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] kconfig: improve handling EOF
-Date: Fri, 19 Dec 2014 17:20:30 +0200
-Message-Id: <1419002430-164635-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
+	id S1752355AbaLSPZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:25:34 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:42648 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751414AbaLSPZc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 10:25:32 -0500
+Date: Fri, 19 Dec 2014 10:25:31 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Du, Changbin" <changbin.du@intel.com>
+cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wu, Hao" <hao.wu@intel.com>
+Subject: RE: [DISCUSSION] USB device remote wakeup is not working for S3 case
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A01C42A57@SHSMSX103.ccr.corp.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1412191020320.1599-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch fixes two EOF-related issues in kconfig lexer:
+On Fri, 19 Dec 2014, Du, Changbin wrote:
 
-1. End of file is not valid end of string token. Currently we happily
-   accept something like
+> > There's a simple solution: Call device_set_wakeup_enable() for the device!
+> > You can do this from the command line by:
+> > 
+> > 	echo auto >/sys/bus/usb/devices/.../power/control
+> > 
+> > where the "..." is the pathname for your device.
+> > 
+> Yes, this can enable auto-suspend for usb device like a mouse. And remote wakeup
+> does work for RPM because rpm suspend refers to the needs_remote_wakeup flag.
+> But this doesn't impact system level suspend. The correct thing is:
+> 	
+> 	echo enabled >/sys/bus/usb/devices/.../power/wakeup
 
-	config FOO
-		bool "Bar
+Yes, I'm sorry, you're right.  It's easy to mix up autosuspend and 
+wakeup.
 
-   If there's EOF just after '"Bar' without newline.
+> This will call device_set_wakeup_enable() for the device and should work. But 
+> unfortunately it seems didn't work even the wakeup file shows "enabled" which 
+> means the device is wakeup enabled(Tried on 3.16 & 3.18 kernel). This is a different
+> issue, I will check.
 
-2. Kconfig produces obscure error message if we miss newline at the end
-   of file. Testcase:
+You have to make sure that wakeup is also enabled for the host 
+controller the device is attached to.  For some host controllers, it 
+may also be necessary to enable wakeup for the root hub.
 
-	% echo -n 'if FOO\nendif' >> drivers/Kconfig
-	% make allmodconfig
-	...
-	drivers/Kconfig:191: 'endif' in different file than 'if'
-	drivers/Kconfig:191: location of the 'if'
-	scripts/kconfig/Makefile:80: recipe for target 'allmodconfig' failed
-	make[1]: *** [allmodconfig] Error 1
-	Makefile:558: recipe for target 'allmodconfig' failed
-	make: *** [allmodconfig] Error 2
+> Could we also enable wakeup for usb mouse? Or is there any concern to enable it?
+> Per my opinion, most people may expect clicking mouse can awake system.
 
-   We can fix it if forbid EOF form <PARAM> context.
+It doesn't matter to me, but you should ask the people on the 
+linux-input mailing list.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- kernel/Kconfig.preempt  | 2 +-
- scripts/kconfig/zconf.l | 8 ++++++--
- 2 files changed, 7 insertions(+), 3 deletions(-)
+Also, what about wakeup for a non-USB mouse?  Shouldn't that be enabled 
+as well?
 
-diff --git a/kernel/Kconfig.preempt b/kernel/Kconfig.preempt
-index 3f9c97419f02..037284c5f723 100644
---- a/kernel/Kconfig.preempt
-+++ b/kernel/Kconfig.preempt
-@@ -55,4 +55,4 @@ config PREEMPT
- endchoice
- 
- config PREEMPT_COUNT
--       bool
-\ No newline at end of file
-+       bool
-diff --git a/scripts/kconfig/zconf.l b/scripts/kconfig/zconf.l
-index 6c62d93b4ffb..001abe8df6ce 100644
---- a/scripts/kconfig/zconf.l
-+++ b/scripts/kconfig/zconf.l
-@@ -143,7 +143,9 @@ n	[A-Za-z0-9_]
- 	\\\n	current_file->lineno++;
- 	.
- 	<<EOF>> {
--		BEGIN(INITIAL);
-+		printf("%s:%d: no newline at end of file\n",
-+				zconf_curname(), zconf_lineno());
-+		exit(1);
- 	}
- }
- 
-@@ -179,7 +181,9 @@ n	[A-Za-z0-9_]
- 		return T_EOL;
- 	}
- 	<<EOF>>	{
--		BEGIN(INITIAL);
-+		printf("%s:%d: unexpected end of file\n",
-+				zconf_curname(), zconf_lineno());
-+		exit(1);
- 	}
- }
- 
--- 
-2.1.3
+Alan Stern
 
