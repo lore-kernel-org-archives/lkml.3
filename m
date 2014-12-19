@@ -1,26 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaLSOBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:01:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45706 "EHLO
+	id S1752678AbaLSOB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:01:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45707 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113AbaLSOBs (ORCPT
+	with ESMTP id S1752460AbaLSOBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:01:48 -0500
-Date: Fri, 19 Dec 2014 06:01:32 -0800
-From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-e10679825924580845c4825deaaddf5331ff627c@git.kernel.org>
-Cc: tglx@linutronix.de, mingo@kernel.org, JBeulich@suse.com,
-        linux-kernel@vger.kernel.org, jbeulich@suse.com,
-        jiang.liu@linux.intel.com, hpa@zytor.com
-Reply-To: jiang.liu@linux.intel.com, jbeulich@suse.com, hpa@zytor.com,
-        tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        JBeulich@suse.com
-In-Reply-To: <545747BE020000780004436E@mail.emea.novell.com>
-References: <545747BE020000780004436E@mail.emea.novell.com>
+	Fri, 19 Dec 2014 09:01:52 -0500
+Date: Fri, 19 Dec 2014 06:00:52 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-e32c67e0cbb3921bffe1cc306628c0074d2f43bc@git.kernel.org>
+Cc: tglx@linutronix.de, rdunlap@infradead.org, rjw@rjwysocki.net,
+        mingo@kernel.org, yinghai@kernel.org, bp@alien8.de,
+        tony.luck@intel.com, hpa@zytor.com, gregkh@linuxfoundation.org,
+        joro@8bytes.org, konrad.wilk@oracle.com, bhelgaas@google.com,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        jiang.liu@linux.intel.com
+Reply-To: bp@alien8.de, yinghai@kernel.org, hpa@zytor.com,
+        gregkh@linuxfoundation.org, tony.luck@intel.com, tglx@linutronix.de,
+        rdunlap@infradead.org, mingo@kernel.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        jiang.liu@linux.intel.com, joro@8bytes.org, bhelgaas@google.com,
+        konrad.wilk@oracle.com
+In-Reply-To: <1414397531-28254-21-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-21-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86: irq: Fix placement of mp_should_keep_irq()
-Git-Commit-ID: e10679825924580845c4825deaaddf5331ff627c
+Subject: [tip:x86/apic] x86, irq: Provide empty send_cleanup_vector()
+  stub for UP builds
+Git-Commit-ID: e32c67e0cbb3921bffe1cc306628c0074d2f43bc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,111 +40,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e10679825924580845c4825deaaddf5331ff627c
-Gitweb:     http://git.kernel.org/tip/e10679825924580845c4825deaaddf5331ff627c
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Mon, 3 Nov 2014 08:15:42 +0000
+Commit-ID:  e32c67e0cbb3921bffe1cc306628c0074d2f43bc
+Gitweb:     http://git.kernel.org/tip/e32c67e0cbb3921bffe1cc306628c0074d2f43bc
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:12:11 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 16 Dec 2014 14:08:14 +0100
 
-x86: irq: Fix placement of mp_should_keep_irq()
+x86, irq: Provide empty send_cleanup_vector() stub for UP builds
 
-While f3761db164 ("x86, irq: Fix build error caused by
-9eabc99a635a77cbf09") addressed the original build problem,
-declaration, inline stub, and definition still seem misplaced: It isn't
-really IO-APIC related, and it's being used solely in arch/x86/pci/.
-This also means stubbing it out when !CONFIG_X86_IO_APIC was at least
-questionable.
+Define an empty send_cleanup_vector() for UP kernel to fix link error
+of undefined reference, which is used by uv_irq and irq_remapping.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>
-Link: http://lkml.kernel.org/r/545747BE020000780004436E@mail.emea.novell.com
+[ tglx: Made it an inline stub and moved it ahead of the file split
+  	changes ]
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1414397531-28254-21-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/include/asm/io_apic.h |  3 ---
- arch/x86/include/asm/pci_x86.h |  2 ++
- arch/x86/kernel/apic/io_apic.c | 12 ------------
- arch/x86/pci/irq.c             | 12 ++++++++++++
- 4 files changed, 14 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/hw_irq.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 1733ab4..0aeed5c 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -227,8 +227,6 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 4615906..fa5d1e7 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -153,7 +153,11 @@ struct irq_cfg {
+ };
  
- extern void io_apic_eoi(unsigned int apic, unsigned int vector);
- 
--extern bool mp_should_keep_irq(struct device *dev);
--
- #else  /* !CONFIG_X86_IO_APIC */
- 
- #define io_apic_assign_pci_irqs 0
-@@ -239,7 +237,6 @@ static inline int mp_find_ioapic(u32 gsi) { return 0; }
- static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
- static inline int mp_map_gsi_to_irq(u32 gsi, unsigned int flags) { return gsi; }
- static inline void mp_unmap_irq(int irq) { }
--static inline bool mp_should_keep_irq(struct device *dev) { return 1; }
- 
- static inline int save_ioapic_entries(void)
- {
-diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
-index fa1195d..164e3f8 100644
---- a/arch/x86/include/asm/pci_x86.h
-+++ b/arch/x86/include/asm/pci_x86.h
-@@ -93,6 +93,8 @@ extern raw_spinlock_t pci_config_lock;
- extern int (*pcibios_enable_irq)(struct pci_dev *dev);
- extern void (*pcibios_disable_irq)(struct pci_dev *dev);
- 
-+extern bool mp_should_keep_irq(struct device *dev);
-+
- struct pci_raw_ops {
- 	int (*read)(unsigned int domain, unsigned int bus, unsigned int devfn,
- 						int reg, int len, u32 *val);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 7ffe0a2..a157b66 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3964,18 +3964,6 @@ int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node)
- 	return ret;
- }
- 
--bool mp_should_keep_irq(struct device *dev)
--{
--	if (dev->power.is_prepared)
--		return true;
--#ifdef	CONFIG_PM_RUNTIME
--	if (dev->power.runtime_status == RPM_SUSPENDING)
--		return true;
--#endif
--
--	return false;
--}
--
- /* Enable IOAPIC early just for system timer */
- void __init pre_init_apic_IRQ0(void)
- {
-diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
-index eb500c2..cb50e28 100644
---- a/arch/x86/pci/irq.c
-+++ b/arch/x86/pci/irq.c
-@@ -1254,6 +1254,18 @@ static int pirq_enable_irq(struct pci_dev *dev)
- 	return 0;
- }
- 
-+bool mp_should_keep_irq(struct device *dev)
-+{
-+	if (dev->power.is_prepared)
-+		return true;
-+#ifdef CONFIG_PM_RUNTIME
-+	if (dev->power.runtime_status == RPM_SUSPENDING)
-+		return true;
+ extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
++#ifdef CONFIG_SMP
+ extern void send_cleanup_vector(struct irq_cfg *);
++#else
++static inline void send_cleanup_vector(struct irq_cfg *c) { }
 +#endif
-+
-+	return false;
-+}
-+
- static void pirq_disable_irq(struct pci_dev *dev)
- {
- 	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
+ 
+ struct irq_data;
+ int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
