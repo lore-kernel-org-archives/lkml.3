@@ -1,157 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaLSQnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:43:42 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:36841 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaLSQnl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 11:43:41 -0500
-Message-ID: <54945631.4040303@oracle.com>
-Date: Fri, 19 Dec 2014 11:45:37 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751675AbaLSQqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:46:03 -0500
+Received: from mail-by2on0063.outbound.protection.outlook.com ([207.46.100.63]:64000
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750953AbaLSQqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 11:46:01 -0500
+From: <atull@opensource.altera.com>
+To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <rdunlap@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH v7 0/4] FPGA Manager Framework
+Date: Fri, 19 Dec 2014 10:45:47 -0600
+Message-ID: <1419007551-10040-1-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel <xen-devel@lists.xenproject.org>, linux-kernel@vger.kernel.org
-Subject: Re: xen/x86: properly retrieve NMI reason
-References: <54945D760200007800051157@mail.emea.novell.com>
-In-Reply-To: <54945D760200007800051157@mail.emea.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY2PR06CA030.namprd06.prod.outlook.com (10.141.250.148) To
+ DM2PR0301MB1247.namprd03.prod.outlook.com (25.160.219.24)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=atull@opensource.altera.com; 
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1247;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB1247;
+X-Forefront-PRVS: 0430FA5CB7
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(164054003)(189002)(69596002)(122386002)(19580405001)(47776003)(19580395003)(86152002)(50466002)(53416004)(42186005)(120916001)(2201001)(20776003)(64706001)(107046002)(81156004)(31966008)(66066001)(48376002)(33646002)(50226001)(105586002)(87976001)(4396001)(97736003)(21056001)(229853001)(86362001)(50986999)(62966003)(46102003)(77156002)(92566001)(99396003)(101416001)(68736005)(40100003)(106356001)(89996001)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1247;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1247;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0894;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2014 11:16 AM, Jan Beulich wrote:
-> Using the native code here can't work properly, as the hypervisor would
-> normally have cleared the two reason bits by the time Dom0 gets to see
-> the NMI (if passed to it at all). There's a shared info field for this,
-> and there's an existing hook to use - just fit the two together. Note
-> that the hook can (and should) be used irrespective of whether being in
-> Dom0, as accessing port 0x61 in a DomU would be even worse, while the
-> shared info field would just hold zero all the time.
+From: Alan Tull <atull@opensource.altera.com>
 
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+For after 3.19-rc1 is out.
 
->
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> ---
->   arch/x86/xen/enlighten.c    |   22 +++++++++++++++++-
->   include/xen/interface/nmi.h |   52 ++++++++++++++++++++++++++++++++++++++++++++
->   2 files changed, 73 insertions(+), 1 deletion(-)
->
-> --- 3.18/arch/x86/xen/enlighten.c
-> +++ 3.18-xen-x86-NMI-reason/arch/x86/xen/enlighten.c
-> @@ -40,6 +40,7 @@
->   #include <xen/interface/physdev.h>
->   #include <xen/interface/vcpu.h>
->   #include <xen/interface/memory.h>
-> +#include <xen/interface/nmi.h>
->   #include <xen/interface/xen-mca.h>
->   #include <xen/features.h>
->   #include <xen/page.h>
-> @@ -66,6 +67,7 @@
->   #include <asm/reboot.h>
->   #include <asm/stackprotector.h>
->   #include <asm/hypervisor.h>
-> +#include <asm/mach_traps.h>
->   #include <asm/mwait.h>
->   #include <asm/pci_x86.h>
->   #include <asm/pat.h>
-> @@ -1357,6 +1359,21 @@ static const struct machine_ops xen_mach
->   	.emergency_restart = xen_emergency_restart,
->   };
->   
-> +static unsigned char xen_get_nmi_reason(void)
-> +{
-> +	unsigned char reason = 0;
-> +
-> +	/* Construct a value which looks like it came from port 0x61. */
-> +	if (test_bit(_XEN_NMIREASON_io_error,
-> +		     &HYPERVISOR_shared_info->arch.nmi_reason))
-> +		reason |= NMI_REASON_IOCHK;
-> +	if (test_bit(_XEN_NMIREASON_pci_serr,
-> +		     &HYPERVISOR_shared_info->arch.nmi_reason))
-> +		reason |= NMI_REASON_SERR;
-> +
-> +	return reason;
-> +}
-> +
->   static void __init xen_boot_params_init_edd(void)
->   {
->   #if IS_ENABLED(CONFIG_EDD)
-> @@ -1541,9 +1558,12 @@ asmlinkage __visible void __init xen_sta
->   	pv_info = xen_info;
->   	pv_init_ops = xen_init_ops;
->   	pv_apic_ops = xen_apic_ops;
-> -	if (!xen_pvh_domain())
-> +	if (!xen_pvh_domain()) {
->   		pv_cpu_ops = xen_cpu_ops;
->   
-> +		x86_platform.get_nmi_reason = xen_get_nmi_reason;
-> +	}
-> +
->   	if (xen_feature(XENFEAT_auto_translated_physmap))
->   		x86_init.resources.memory_setup = xen_auto_xlated_memory_setup;
->   	else
-> --- /usr/local/src/linux-3.18/include/xen/interface/nmi.h	1970-01-01 01:00:00.000000000 +0100
-> +++ 3.18-xen-x86-NMI-reason/include/xen/interface/nmi.h
-> @@ -0,0 +1,52 @@
-> +/******************************************************************************
-> + * nmi.h
-> + *
-> + * NMI callback registration and reason codes.
-> + *
-> + * Copyright (c) 2005, Keir Fraser <keir@xensource.com>
-> + */
-> +
-> +#ifndef __XEN_PUBLIC_NMI_H__
-> +#define __XEN_PUBLIC_NMI_H__
-> +
-> +#include <xen/interface/xen.h>
-> +
-> +/*
-> + * NMI reason codes:
-> + * Currently these are x86-specific, stored in arch_shared_info.nmi_reason.
-> + */
-> + /* I/O-check error reported via ISA port 0x61, bit 6. */
-> +#define _XEN_NMIREASON_io_error     0
-> +#define XEN_NMIREASON_io_error      (1UL << _XEN_NMIREASON_io_error)
-> + /* PCI SERR reported via ISA port 0x61, bit 7. */
-> +#define _XEN_NMIREASON_pci_serr     1
-> +#define XEN_NMIREASON_pci_serr      (1UL << _XEN_NMIREASON_pci_serr)
-> + /* Unknown hardware-generated NMI. */
-> +#define _XEN_NMIREASON_unknown      2
-> +#define XEN_NMIREASON_unknown       (1UL << _XEN_NMIREASON_unknown)
-> +
-> +/*
-> + * long nmi_op(unsigned int cmd, void *arg)
-> + * NB. All ops return zero on success, else a negative error code.
-> + */
-> +
-> +/*
-> + * Register NMI callback for this (calling) VCPU. Currently this only makes
-> + * sense for domain 0, vcpu 0. All other callers will be returned EINVAL.
-> + * arg == pointer to xennmi_callback structure.
-> + */
-> +#define XENNMI_register_callback   0
-> +struct xennmi_callback {
-> +    unsigned long handler_address;
-> +    unsigned long pad;
-> +};
-> +typedef struct xennmi_callback xennmi_callback_t;
-> +DEFINE_XEN_GUEST_HANDLE(xennmi_callback_t);
-> +
-> +/*
-> + * Deregister NMI callback for this (calling) VCPU.
-> + * arg == NULL.
-> + */
-> +#define XENNMI_unregister_callback 1
-> +
-> +#endif /* __XEN_PUBLIC_NMI_H__ */
->
->
+v7 adds a one line fix from the kbuild test robot and
+Michal Simek's signoff.  
+
+Thanks,
+Alan
+
+Alan Tull (4):
+  doc: add bindings document for altera fpga manager
+  fpga manager: add sysfs interface document
+  staging: fpga manager: framework core
+  staging: fpga manager: add driver for socfpga fpga manager
+
+ drivers/staging/Kconfig                            |    2 +
+ drivers/staging/Makefile                           |    1 +
+ .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
+ .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +
+ drivers/staging/fpga/Kconfig                       |   29 +
+ drivers/staging/fpga/Makefile                      |    9 +
+ drivers/staging/fpga/fpga-mgr.c                    |  551 ++++++++++++++++
+ drivers/staging/fpga/socfpga.c                     |  694 ++++++++++++++++++++
+ include/linux/fpga/fpga-mgr.h                      |  124 ++++
+ 9 files changed, 1465 insertions(+)
+ create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
+ create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
+ create mode 100644 drivers/staging/fpga/Kconfig
+ create mode 100644 drivers/staging/fpga/Makefile
+ create mode 100644 drivers/staging/fpga/fpga-mgr.c
+ create mode 100644 drivers/staging/fpga/socfpga.c
+ create mode 100644 include/linux/fpga/fpga-mgr.h
+
+-- 
+1.7.9.5
 
