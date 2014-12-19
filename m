@@ -1,116 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934AbaLSBqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 20:46:15 -0500
+	id S1752185AbaLSBqT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:46:19 -0500
 Received: from mga09.intel.com ([134.134.136.24]:36438 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618AbaLSBqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 20:46:13 -0500
+	id S1751618AbaLSBqQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 20:46:16 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
-   d="scan'208";a="626325919"
-Message-ID: <54938360.4000804@intel.com>
-Date: Fri, 19 Dec 2014 09:46:08 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+   d="scan'208";a="656797077"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
+CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
+ Posted-Interrupts
+Thread-Topic: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
+ Posted-Interrupts
+Thread-Index: AQHQFiFw/2wcwNXVUk6mLzPIG8E78JyVcJswgAC8KvCAAAEAoA==
+Date: Fri, 19 Dec 2014 01:46:06 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <1418397300-10870-7-git-send-email-feng.wu@intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@fedoraproject.org>,
-        Dmitry Tunin <hanipouspilot@gmail.com>
-CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
- brightness keys
-References: <5492C5A3.8090700@gmail.com> <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC Jani, who is working on the patchset to enable 8+ output devices and
-may have some comments on this.
+Wu, Feng wrote on 2014-12-19:
+> 
+> 
+> Zhang, Yang Z wrote on 2014-12-18:
+>> jiang.liu@linux.intel.com
+>> Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
+>> iommu@lists.linux-foundation.org; kvm@vger.kernel.org; Wu, Feng
+>> Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for
+>> VT-d Posted-Interrupts
+>> 
+>> Feng Wu wrote on 2014-12-12:
+>>> We don't need to migrate the irqs for VT-d Posted-Interrupts here.
+>>> When 'pst' is set in IRTE, the associated irq will be posted to
+>>> guests instead of interrupt remapping. The destination of the
+>>> interrupt is set in Posted-Interrupts Descriptor, and the
+>>> migration happens during vCPU scheduling.
+>>> 
+>>> However, we still update the cached irte here, which can be used
+>>> when changing back to remapping mode.
+>>> 
+>>> Signed-off-by: Feng Wu <feng.wu@intel.com>
+>>> Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
+>>> ---
+>>>  drivers/iommu/intel_irq_remapping.c | 6 +++++-
+>>>  1 file changed, 5 insertions(+), 1 deletion(-) diff --git
+>>> a/drivers/iommu/intel_irq_remapping.c
+>>> b/drivers/iommu/intel_irq_remapping.c index 48c2051..ab9057a
+>>> 100644
+>>> --- a/drivers/iommu/intel_irq_remapping.c +++
+>>> b/drivers/iommu/intel_irq_remapping.c @@ -977,6 +977,7 @@
+>>> intel_ir_set_affinity(struct irq_data *data, const struct cpumask
+>>> *mask,  {
+>>>  	struct intel_ir_data *ir_data = data->chip_data; 	struct irte *irte =
+>>>  &ir_data->irte_entry; +	struct irte_pi *irte_pi = (struct irte_pi
+>>>  *)irte; 	struct irq_cfg *cfg = irqd_cfg(data); 	struct irq_data *parent
+>>>  = data->parent_data; 	int ret;
+>>> @@ -991,7 +992,10 @@ intel_ir_set_affinity(struct irq_data *data,
+>>> const struct cpumask *mask,
+>>>  	 */
+>>>  	irte->vector = cfg->vector;
+>>>  	irte->dest_id = IRTE_DEST(cfg->dest_apicid);
+>>> -	modify_irte(&ir_data->irq_2_iommu, irte);
+>>> +
+>>> +	/* We don't need to modify irte if the interrupt is for posting. */
+>>> +	if (irte_pi->pst != 1)
+>>> +		modify_irte(&ir_data->irq_2_iommu, irte);
+>> 
+>> What happens if user changes the IRQ affinity manually?
+> 
+> If the IRQ is posted, its affinity is controlled by guest (irq <--->
+> vCPU <----> pCPU), it has no effect when host changes its affinity.
 
-Regards,
-Aaron
+That's the problem: User is able to changes it in host but it never takes effect since it is actually controlled by guest. I guess it will break the IRQ balance too.
 
-On 12/18/2014 09:25 PM, Josh Boyer wrote:
-> On Thu, Dec 18, 2014 at 7:16 AM, Dmitry Tunin <hanipouspilot@gmail.com> wrote:
->> Add "acpi_osi=" quirk for ASUS X200MA
->> More information can be found in UX302LA bugreport
->> https://bugzilla.kernel.org/show_bug.cgi?id=70241
->>
->> X200MA is affected by th e same bug and the solution has been tested
->>
->> I reported it to launchpad too
->> https://bugs.launchpad.net/ubuntu/bug/1400068
->>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
->>
 > 
-> The UX301LA models have the same setup, with 16 devices instead of 8.
-> I discussed this with Matthew Garrett a bit and a more ideal approach
-> is to actually enumerate all 16 devices between the firmware and i915
-> driver.  The problem we have is that the intel opregion spec that
-> hasn't been updated since 2008 doesn't cover the additional 8 devices.
-> Anyway, that is being tracked here:
+> Thanks,
+> Feng
 > 
-> https://bugs.freedesktop.org/show_bug.cgi?id=81762
-> 
->> ---
->>  drivers/acpi/blacklist.c | 20 ++++++++++++++++++++
->>  1 file changed, 20 insertions(+)
+>> 
+>>> 
+>>>  	/*
+>>>  	 * After this point, all the interrupts will start arriving
+>> 
+>> 
+>> Best regards,
+>> Yang
 >>
->> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
->> index 7556e7c..f78ed08 100644
->> --- a/drivers/acpi/blacklist.c
->> +++ b/drivers/acpi/blacklist.c
->> @@ -162,6 +162,17 @@ static int __init dmi_disable_osi_win8(const struct
->> dmi_system_id *d)
->>         acpi_osi_setup("!Windows 2012");
->>         return 0;
->>  }
->> +/*
->> + * Some ASUS models firmware declares 16 devices instead of 8
->> + * 'acpi_osi=' kernel parameter fixes it
->> + * Without this parameters brightness keys Fn+F5 and F6 do not work
->> + */
->> +static int __init dmi_disable_osi_all(const struct dmi_system_id *d)
->> +{
->> +       printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
->> +       acpi_osi_setup("");
->> +       return 0;
->> +}
-> 
-> What does this do to the rest of the function keys?  Does everything
-> else still work as expected, including suspend and resume?
-> 
->>   static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->>         {
->> @@ -371,6 +382,15 @@ static struct dmi_system_id acpi_osi_dmi_table[]
->> __initdata = {
->>                      DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
->>                 },
->>         },
->> +       /* Without this brightness keys do not work */
->> +       {
->> +       .callback = dmi_disable_osi_all,
->> +       .ident = "ASUSTeK COMPUTER INC. X200MA",
->> +       .matches = {
->> +                    DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
->> +                    DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
->> +               },
->> +       },
->>         {}
->>  };
->>
->> --
->> 1.9.1
->> --
->> To unsubscribe from this list: send the line "unsubscribe stable" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+Best regards,
+Yang
+
 
