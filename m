@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaLSVVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 16:21:39 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55218 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaLSVVg (ORCPT
+	id S1752422AbaLSVdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 16:33:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42903 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaLSVdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 16:21:36 -0500
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        alex.williamson@redhat.com
-Cc: tech@virtualopensystems.com, christoffer.dall@linaro.org,
-        eric.auger@linaro.org,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [RFC PATCH v3 3/3] vfio: platform: return device properties as arrays of unsigned integers
-Date: Fri, 19 Dec 2014 22:20:31 +0100
-Message-Id: <1419024032-1269-4-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419024032-1269-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1419024032-1269-1-git-send-email-a.motakis@virtualopensystems.com>
+	Fri, 19 Dec 2014 16:33:40 -0500
+Date: Fri, 19 Dec 2014 13:33:39 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: linux-kernel@vger.kernel.org,
+        ext4 development <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] fs: make generic_block_fiemap sig-tolerant PING2...
+Message-Id: <20141219133339.5c8afaa0c47760e9b141df49@linux-foundation.org>
+In-Reply-To: <87egrwf1dd.fsf@openvz.org>
+References: <1413552269-32203-1-git-send-email-dmonakhov@openvz.org>
+	<871toikt7c.fsf@openvz.org>
+	<87zjavehsx.fsf@openvz.org>
+	<20141218151247.b6ccd73351f40db66818c07e@linux-foundation.org>
+	<87egrwf1dd.fsf@openvz.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Certain properties of a device are accessible as an array of unsigned
-integers, either u64, u32, u16, or u8. Let the VFIO user query this
-type of device properties.
+On Fri, 19 Dec 2014 12:13:50 +0300 Dmitry Monakhov <dmonakhov@openvz.org> wrote:
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
----
- drivers/vfio/platform/properties.c | 62 +++++++++++++++++++++++++++++++++++++-
- 1 file changed, 61 insertions(+), 1 deletion(-)
+> --- a/Documentation/filesystems/fiemap.txt
+> +++ b/Documentation/filesystems/fiemap.txt
+> @@ -196,7 +196,8 @@ struct fiemap_extent_info {
+>  };
+>  
+>  It is intended that the file system should not need to access any of this
+> -structure directly.
+> +structure directly. Filesystem handlers should be tolerant to signals and return
+> +EINTR once fatal signal received.
 
-diff --git a/drivers/vfio/platform/properties.c b/drivers/vfio/platform/properties.c
-index 39c6342..645f6e5c 100644
---- a/drivers/vfio/platform/properties.c
-+++ b/drivers/vfio/platform/properties.c
-@@ -55,7 +55,67 @@ static int dev_property_get_uint(struct device *dev, char *name,
- 				 uint32_t type, unsigned *lenp,
- 				 void __user *datap, unsigned long datasz)
- {
--	return -EINVAL;
-+	int ret, n;
-+	u8 *out;
-+	size_t sz;
-+	int (*func)(const struct device *, const char *, void *, size_t)
-+		= NULL;
-+
-+	switch (type) {
-+	case VFIO_DEV_PROPERTY_TYPE_U64:
-+		sz = sizeof(u64);
-+		func = (int (*)(const struct device *,
-+				const char *, void *, size_t))
-+			device_property_read_u64_array;
-+		break;
-+	case VFIO_DEV_PROPERTY_TYPE_U32:
-+		sz = sizeof(u32);
-+		func = (int (*)(const struct device *,
-+				const char *, void *, size_t))
-+			device_property_read_u32_array;
-+		break;
-+	case VFIO_DEV_PROPERTY_TYPE_U16:
-+		sz = sizeof(u16);
-+		func = (int (*)(const struct device *,
-+				const char *, void *, size_t))
-+			device_property_read_u16_array;
-+		break;
-+	case VFIO_DEV_PROPERTY_TYPE_U8:
-+		sz = sizeof(u8);
-+		func = (int (*)(const struct device *,
-+				const char *, void *, size_t))
-+			device_property_read_u8_array;
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* get size of array */
-+	n = func(dev, name, NULL, 0);
-+	if (n < 0)
-+		return n;
-+
-+	if (lenp)
-+		*lenp = n * sz;
-+
-+	if (n * sz > datasz)
-+		return -EOVERFLOW;
-+
-+	out = kcalloc(n, sz, GFP_KERNEL);
-+	if (!out)
-+		return -EFAULT;
-+
-+	ret = func(dev, name, out, n);
-+	if (ret)
-+		goto out;
-+
-+	if (copy_to_user(datap, out, n * sz))
-+		ret = -EFAULT;
-+
-+out:
-+	kfree(out);
-+	return ret;
- }
- 
- int vfio_platform_dev_properties(struct device *dev,
--- 
-2.1.3
+Thanks.  I was concerned about userspace effects and back-compatibility
+issues, because I'd misread fatal_signal_pending() as signal_pending().
+
+Because it uses fatal_signal_pending(), the effects of this change
+should be indiscernible to userspace, yes?
+
+I'm now wondering if the above doc update is unneeded and incorrect. 
+Is it likely that the fs handler (fiemap_fill_next_extent) will ever
+consume a large amount of time?  If not then we can leave the logic in
+__generic_block_fiemap() and not bother callees.
+
+
+
+The fix only addresses filesystems which use generic_block_fiemap(). 
+Presumably ocfs2, btrfs, nilfs2, lustre and xfs remain vulnerable to
+the problem you identified?
 
