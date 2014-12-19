@@ -1,645 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaLSVUM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 16:20:12 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:54253 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751414AbaLSVUJ (ORCPT
+	id S1752632AbaLSVV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 16:21:27 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:54130 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaLSVVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 16:20:09 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Kevin Hilman <khilman@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Kukjin Kim <kgene@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 4/4] PM: Eliminate CONFIG_PM_RUNTIME
-Date: Fri, 19 Dec 2014 22:41:54 +0100
-Message-ID: <9470157.PyHoGoSGz1@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdUn3KSTdh4nFL=G54SM7NWpQsmeg1GYYRz=+uXH9rbEGg@mail.gmail.com>
-References: <472992175.g1ArEYGFPo@vostro.rjw.lan> <2635409.SWsBMlb9s4@vostro.rjw.lan> <CAMuHMdUn3KSTdh4nFL=G54SM7NWpQsmeg1GYYRz=+uXH9rbEGg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Fri, 19 Dec 2014 16:21:25 -0500
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        alex.williamson@redhat.com
+Cc: tech@virtualopensystems.com, christoffer.dall@linaro.org,
+        eric.auger@linaro.org,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        linux-kernel@vger.kernel.org (open list),
+        kvm@vger.kernel.org (open list:VFIO DRIVER),
+        linux-api@vger.kernel.org (open list:ABI/API)
+Subject: [RFC PATCH v3 1/3] vfio: platform: add device properties skeleton and user API
+Date: Fri, 19 Dec 2014 22:20:29 +0100
+Message-Id: <1419024032-1269-2-git-send-email-a.motakis@virtualopensystems.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1419024032-1269-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1419024032-1269-1-git-send-email-a.motakis@virtualopensystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 19, 2014 09:13:29 AM Geert Uytterhoeven wrote:
-> On Fri, Dec 19, 2014 at 3:03 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > --- linux-pm.orig/arch/mips/configs/lemote2f_defconfig
-> > +++ linux-pm/arch/mips/configs/lemote2f_defconfig
-> > @@ -37,7 +37,7 @@ CONFIG_MIPS32_N32=y
-> >  CONFIG_PM=y
->   ^^^^^^^^^^^
-> >  CONFIG_HIBERNATION=y
-> >  CONFIG_PM_STD_PARTITION="/dev/hda3"
-> > -CONFIG_PM_RUNTIME=y
-> > +CONFIG_PM=y
->    ^^^^^^^^^^^
-> Now we have two of them
-> 
-> >  CONFIG_CPU_FREQ=y
-> >  CONFIG_CPU_FREQ_DEBUG=y
-> >  CONFIG_CPU_FREQ_STAT=m
-> 
-> Other defconfig files may be affected, too.
+This patch introduced the API to return device properties about
+a PLATFORM device (if described by a device tree or ACPI) and the
+skeleton of the implementation for VFIO_PLATFORM. Information about any
+device node bound by VFIO_PLATFORM should be queried via the introduced
+ioctl VFIO_DEVICE_GET_DEV_PROPERTY.
 
-Good catch, I felt I might have forgotten about something ...
+The user needs to know the name and the data type of the property he is
+accessing.
 
-Fixed up patch is appended, thanks!
-
-
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: PM: Eliminate CONFIG_PM_RUNTIME
+ drivers/vfio/platform/Makefile                |  3 +-
+ drivers/vfio/platform/properties.c            | 61 +++++++++++++++++++++++++++
+ drivers/vfio/platform/vfio_platform_common.c  | 35 +++++++++++++++
+ drivers/vfio/platform/vfio_platform_private.h |  7 +++
+ include/uapi/linux/vfio.h                     | 26 ++++++++++++
+ 5 files changed, 131 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/vfio/platform/properties.c
 
-Having switched over all of the users of CONFIG_PM_RUNTIME to use
-CONFIG_PM directly, turn the latter into a user-selectable option
-and drop the former entirely from the tree.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
----
- arch/arm/configs/ape6evm_defconfig         |    2 +-
- arch/arm/configs/armadillo800eva_defconfig |    2 +-
- arch/arm/configs/bcm_defconfig             |    2 +-
- arch/arm/configs/bockw_defconfig           |    2 +-
- arch/arm/configs/davinci_all_defconfig     |    2 +-
- arch/arm/configs/exynos_defconfig          |    2 +-
- arch/arm/configs/ezx_defconfig             |    1 -
- arch/arm/configs/hisi_defconfig            |    2 +-
- arch/arm/configs/imote2_defconfig          |    1 -
- arch/arm/configs/imx_v6_v7_defconfig       |    2 +-
- arch/arm/configs/keystone_defconfig        |    2 +-
- arch/arm/configs/kzm9g_defconfig           |    2 +-
- arch/arm/configs/lager_defconfig           |    2 +-
- arch/arm/configs/mackerel_defconfig        |    1 -
- arch/arm/configs/marzen_defconfig          |    2 +-
- arch/arm/configs/omap1_defconfig           |    1 -
- arch/arm/configs/prima2_defconfig          |    2 +-
- arch/arm/configs/sama5_defconfig           |    2 +-
- arch/arm/configs/shmobile_defconfig        |    2 +-
- arch/arm/configs/sunxi_defconfig           |    2 +-
- arch/arm/configs/tegra_defconfig           |    2 +-
- arch/arm/configs/u8500_defconfig           |    2 +-
- arch/arm/configs/vt8500_v6_v7_defconfig    |    2 +-
- arch/arm/mach-omap2/Kconfig                |    6 +++---
- arch/mips/configs/db1xxx_defconfig         |    2 +-
- arch/mips/configs/lemote2f_defconfig       |    1 -
- arch/mips/configs/loongson3_defconfig      |    2 +-
- arch/mips/configs/nlm_xlp_defconfig        |    2 +-
- arch/mips/configs/nlm_xlr_defconfig        |    2 +-
- arch/powerpc/configs/ps3_defconfig         |    2 +-
- arch/sh/Kconfig                            |    2 +-
- arch/sh/configs/apsh4ad0a_defconfig        |    2 +-
- arch/sh/configs/sdk7786_defconfig          |    2 +-
- drivers/usb/host/isp1760-hcd.c             |    2 +-
- drivers/usb/host/oxu210hp-hcd.c            |    2 +-
- include/linux/devfreq.h                    |    2 +-
- kernel/power/Kconfig                       |   16 ++++++----------
- 37 files changed, 39 insertions(+), 48 deletions(-)
-
-Index: linux-pm/arch/arm/configs/ape6evm_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/ape6evm_defconfig
-+++ linux-pm/arch/arm/configs/ape6evm_defconfig
-@@ -33,7 +33,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_BINFMT_MISC=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/armadillo800eva_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/armadillo800eva_defconfig
-+++ linux-pm/arch/arm/configs/armadillo800eva_defconfig
-@@ -43,7 +43,7 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/bcm_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/bcm_defconfig
-+++ linux-pm/arch/arm/configs/bcm_defconfig
-@@ -39,7 +39,7 @@ CONFIG_CPU_IDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_PACKET_DIAG=y
-Index: linux-pm/arch/arm/configs/bockw_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/bockw_defconfig
-+++ linux-pm/arch/arm/configs/bockw_defconfig
-@@ -29,7 +29,7 @@ CONFIG_ZBOOT_ROM_BSS=0x0
- CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/davinci_all_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/davinci_all_defconfig
-+++ linux-pm/arch/arm/configs/davinci_all_defconfig
-@@ -49,7 +49,7 @@ CONFIG_CPU_FREQ_GOV_PERFORMANCE=m
- CONFIG_CPU_FREQ_GOV_POWERSAVE=m
- CONFIG_CPU_FREQ_GOV_ONDEMAND=m
- CONFIG_CPU_IDLE=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/exynos_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/exynos_defconfig
-+++ linux-pm/arch/arm/configs/exynos_defconfig
-@@ -27,7 +27,7 @@ CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M console=ttySAC1,115200 init=/linuxrc mem=256M"
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/ezx_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/ezx_defconfig
-+++ linux-pm/arch/arm/configs/ezx_defconfig
-@@ -39,7 +39,6 @@ CONFIG_BINFMT_AOUT=m
- CONFIG_BINFMT_MISC=m
- CONFIG_PM=y
- CONFIG_APM_EMULATION=y
--CONFIG_PM_RUNTIME=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/hisi_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/hisi_defconfig
-+++ linux-pm/arch/arm/configs/hisi_defconfig
-@@ -18,7 +18,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_NEON=y
- CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/imote2_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/imote2_defconfig
-+++ linux-pm/arch/arm/configs/imote2_defconfig
-@@ -31,7 +31,6 @@ CONFIG_BINFMT_AOUT=m
- CONFIG_BINFMT_MISC=m
- CONFIG_PM=y
- CONFIG_APM_EMULATION=y
--CONFIG_PM_RUNTIME=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/imx_v6_v7_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/imx_v6_v7_defconfig
-+++ linux-pm/arch/arm/configs/imx_v6_v7_defconfig
-@@ -54,7 +54,7 @@ CONFIG_ARM_IMX6Q_CPUFREQ=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_BINFMT_MISC=m
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_PM_TEST_SUSPEND=y
- CONFIG_NET=y
-Index: linux-pm/arch/arm/configs/keystone_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/keystone_defconfig
-+++ linux-pm/arch/arm/configs/keystone_defconfig
-@@ -30,7 +30,7 @@ CONFIG_HIGHMEM=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_SUSPEND is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/kzm9g_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/kzm9g_defconfig
-+++ linux-pm/arch/arm/configs/kzm9g_defconfig
-@@ -43,7 +43,7 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/lager_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/lager_defconfig
-+++ linux-pm/arch/arm/configs/lager_defconfig
-@@ -37,7 +37,7 @@ CONFIG_AUTO_ZRELADDR=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/mackerel_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/mackerel_defconfig
-+++ linux-pm/arch/arm/configs/mackerel_defconfig
-@@ -28,7 +28,6 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
- CONFIG_PM=y
--CONFIG_PM_RUNTIME=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/marzen_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/marzen_defconfig
-+++ linux-pm/arch/arm/configs/marzen_defconfig
-@@ -33,7 +33,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_KEXEC=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/omap1_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/omap1_defconfig
-+++ linux-pm/arch/arm/configs/omap1_defconfig
-@@ -63,7 +63,6 @@ CONFIG_FPE_NWFPE=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- # CONFIG_SUSPEND is not set
--CONFIG_PM_RUNTIME=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/prima2_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/prima2_defconfig
-+++ linux-pm/arch/arm/configs/prima2_defconfig
-@@ -18,7 +18,7 @@ CONFIG_PREEMPT=y
- CONFIG_AEABI=y
- CONFIG_KEXEC=y
- CONFIG_BINFMT_MISC=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_RAM=y
-Index: linux-pm/arch/arm/configs/sama5_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/sama5_defconfig
-+++ linux-pm/arch/arm/configs/sama5_defconfig
-@@ -32,7 +32,7 @@ CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_KERNEL_MODE_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_PM_ADVANCED_DEBUG=y
- CONFIG_NET=y
-Index: linux-pm/arch/arm/configs/shmobile_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/shmobile_defconfig
-+++ linux-pm/arch/arm/configs/shmobile_defconfig
-@@ -39,7 +39,7 @@ CONFIG_KEXEC=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/sunxi_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/sunxi_defconfig
-+++ linux-pm/arch/arm/configs/sunxi_defconfig
-@@ -11,7 +11,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/tegra_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/tegra_defconfig
-+++ linux-pm/arch/arm/configs/tegra_defconfig
-@@ -46,7 +46,7 @@ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
- CONFIG_CPU_IDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/u8500_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/u8500_defconfig
-+++ linux-pm/arch/arm/configs/u8500_defconfig
-@@ -25,7 +25,7 @@ CONFIG_CPU_IDLE=y
- CONFIG_ARM_U8500_CPUIDLE=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/arm/configs/vt8500_v6_v7_defconfig
-===================================================================
---- linux-pm.orig/arch/arm/configs/vt8500_v6_v7_defconfig
-+++ linux-pm/arch/arm/configs/vt8500_v6_v7_defconfig
-@@ -16,7 +16,7 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_ARM_ATAG_DTB_COMPAT=y
- CONFIG_VFP=y
- CONFIG_NEON=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_UNIX=y
- CONFIG_INET=y
-Index: linux-pm/arch/mips/configs/db1xxx_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/db1xxx_defconfig
-+++ linux-pm/arch/mips/configs/db1xxx_defconfig
-@@ -36,7 +36,7 @@ CONFIG_PCI=y
- CONFIG_PCI_REALLOC_ENABLE_AUTO=y
- CONFIG_PCCARD=y
- CONFIG_PCMCIA_ALCHEMY_DEVBOARD=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_PACKET_DIAG=y
-Index: linux-pm/arch/mips/configs/lemote2f_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/lemote2f_defconfig
-+++ linux-pm/arch/mips/configs/lemote2f_defconfig
-@@ -37,7 +37,6 @@ CONFIG_MIPS32_N32=y
- CONFIG_PM=y
- CONFIG_HIBERNATION=y
- CONFIG_PM_STD_PARTITION="/dev/hda3"
--CONFIG_PM_RUNTIME=y
- CONFIG_CPU_FREQ=y
- CONFIG_CPU_FREQ_DEBUG=y
- CONFIG_CPU_FREQ_STAT=m
-Index: linux-pm/arch/mips/configs/loongson3_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/loongson3_defconfig
-+++ linux-pm/arch/mips/configs/loongson3_defconfig
-@@ -58,7 +58,7 @@ CONFIG_BINFMT_MISC=m
- CONFIG_MIPS32_COMPAT=y
- CONFIG_MIPS32_O32=y
- CONFIG_MIPS32_N32=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_NET=y
- CONFIG_PACKET=y
- CONFIG_UNIX=y
-Index: linux-pm/arch/mips/configs/nlm_xlp_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/nlm_xlp_defconfig
-+++ linux-pm/arch/mips/configs/nlm_xlp_defconfig
-@@ -61,7 +61,7 @@ CONFIG_BINFMT_MISC=y
- CONFIG_MIPS32_COMPAT=y
- CONFIG_MIPS32_O32=y
- CONFIG_MIPS32_N32=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/mips/configs/nlm_xlr_defconfig
-===================================================================
---- linux-pm.orig/arch/mips/configs/nlm_xlr_defconfig
-+++ linux-pm/arch/mips/configs/nlm_xlr_defconfig
-@@ -41,7 +41,7 @@ CONFIG_PCI=y
- CONFIG_PCI_MSI=y
- CONFIG_PCI_DEBUG=y
- CONFIG_BINFMT_MISC=m
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/powerpc/configs/ps3_defconfig
-===================================================================
---- linux-pm.orig/arch/powerpc/configs/ps3_defconfig
-+++ linux-pm/arch/powerpc/configs/ps3_defconfig
-@@ -36,7 +36,7 @@ CONFIG_KEXEC=y
- CONFIG_SCHED_SMT=y
- CONFIG_CMDLINE_BOOL=y
- CONFIG_CMDLINE=""
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_PM_DEBUG=y
- # CONFIG_SECCOMP is not set
- # CONFIG_PCI is not set
-Index: linux-pm/arch/sh/configs/apsh4ad0a_defconfig
-===================================================================
---- linux-pm.orig/arch/sh/configs/apsh4ad0a_defconfig
-+++ linux-pm/arch/sh/configs/apsh4ad0a_defconfig
-@@ -47,7 +47,7 @@ CONFIG_PREEMPT=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- CONFIG_PM_DEBUG=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_CPU_IDLE=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/sh/configs/sdk7786_defconfig
-===================================================================
---- linux-pm.orig/arch/sh/configs/sdk7786_defconfig
-+++ linux-pm/arch/sh/configs/sdk7786_defconfig
-@@ -82,7 +82,7 @@ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
- CONFIG_BINFMT_MISC=y
- CONFIG_PM=y
- CONFIG_PM_DEBUG=y
--CONFIG_PM_RUNTIME=y
-+CONFIG_PM=y
- CONFIG_CPU_IDLE=y
- CONFIG_NET=y
- CONFIG_PACKET=y
-Index: linux-pm/arch/arm/mach-omap2/Kconfig
-===================================================================
---- linux-pm.orig/arch/arm/mach-omap2/Kconfig
-+++ linux-pm/arch/arm/mach-omap2/Kconfig
-@@ -15,7 +15,7 @@ config ARCH_OMAP3
- 	select ARM_CPU_SUSPEND if PM
- 	select OMAP_INTERCONNECT
- 	select PM_OPP if PM
--	select PM_RUNTIME if CPU_IDLE
-+	select PM if CPU_IDLE
- 	select SOC_HAS_OMAP2_SDRC
+diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
+index 81de144..99f3ba1 100644
+--- a/drivers/vfio/platform/Makefile
++++ b/drivers/vfio/platform/Makefile
+@@ -1,5 +1,6 @@
  
- config ARCH_OMAP4
-@@ -32,7 +32,7 @@ config ARCH_OMAP4
- 	select PL310_ERRATA_588369 if CACHE_L2X0
- 	select PL310_ERRATA_727915 if CACHE_L2X0
- 	select PM_OPP if PM
--	select PM_RUNTIME if CPU_IDLE
-+	select PM if CPU_IDLE
- 	select ARM_ERRATA_754322
- 	select ARM_ERRATA_775420
+-vfio-platform-y := vfio_platform.o vfio_platform_common.o vfio_platform_irq.o
++vfio-platform-y := vfio_platform.o vfio_platform_common.o vfio_platform_irq.o \
++		   devtree.o
  
-@@ -103,7 +103,7 @@ config ARCH_OMAP2PLUS_TYPICAL
- 	select I2C_OMAP
- 	select MENELAUS if ARCH_OMAP2
- 	select NEON if CPU_V7
--	select PM_RUNTIME
-+	select PM
- 	select REGULATOR
- 	select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
- 	select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
-Index: linux-pm/arch/sh/Kconfig
-===================================================================
---- linux-pm.orig/arch/sh/Kconfig
-+++ linux-pm/arch/sh/Kconfig
-@@ -223,7 +223,7 @@ config CPU_SHX3
- config ARCH_SHMOBILE
- 	bool
- 	select ARCH_SUSPEND_POSSIBLE
--	select PM_RUNTIME
-+	select PM
+ obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
  
- config CPU_HAS_PMU
-        depends on CPU_SH4 || CPU_SH4A
-Index: linux-pm/drivers/usb/host/isp1760-hcd.c
-===================================================================
---- linux-pm.orig/drivers/usb/host/isp1760-hcd.c
-+++ linux-pm/drivers/usb/host/isp1760-hcd.c
-@@ -1739,7 +1739,7 @@ static int isp1760_hub_status_data(struc
- 	int retval = 1;
- 	unsigned long flags;
+diff --git a/drivers/vfio/platform/properties.c b/drivers/vfio/platform/properties.c
+new file mode 100644
+index 0000000..8b90465
+--- /dev/null
++++ b/drivers/vfio/platform/properties.c
+@@ -0,0 +1,61 @@
++#include <linux/slab.h>
++#include <linux/vfio.h>
++#include <linux/property.h>
++#include "vfio_platform_private.h"
++
++static int dev_property_get_strings(struct device *dev,
++				    char *name, unsigned *lenp,
++				    void __user *datap, unsigned long datasz)
++{
++	return -EINVAL;
++}
++
++static int dev_property_get_uint(struct device *dev, char *name,
++				 uint32_t type, unsigned *lenp,
++				 void __user *datap, unsigned long datasz)
++{
++	return -EINVAL;
++}
++
++int vfio_platform_dev_properties(struct device *dev,
++				 uint32_t type, unsigned *lenp,
++				 void __user *datap, unsigned long datasz)
++{
++	char *name;
++	long namesz;
++	int ret;
++
++	namesz = strnlen_user(datap, datasz);
++	if (!namesz)
++		return -EFAULT;
++	if (namesz > datasz)
++		return -EINVAL;
++
++	name = kzalloc(namesz, GFP_KERNEL);
++	if (!name)
++		return -ENOMEM;
++	if (strncpy_from_user(name, datap, namesz) <= 0) {
++		kfree(name);
++		return -EFAULT;
++	}
++
++	switch (type) {
++	case VFIO_DEV_PROPERTY_TYPE_STRINGS:
++		ret = dev_property_get_strings(dev, name, lenp, datap, datasz);
++		break;
++
++	case VFIO_DEV_PROPERTY_TYPE_U64:
++	case VFIO_DEV_PROPERTY_TYPE_U32:
++	case VFIO_DEV_PROPERTY_TYPE_U16:
++	case VFIO_DEV_PROPERTY_TYPE_U8:
++		ret = dev_property_get_uint(dev, name, type, lenp,
++					    datap, datasz);
++		break;
++
++	default:
++		ret = -EINVAL;
++	}
++
++	kfree(name);
++	return ret;
++}
+diff --git a/drivers/vfio/platform/vfio_platform_common.c b/drivers/vfio/platform/vfio_platform_common.c
+index a532a25..83ad4b74 100644
+--- a/drivers/vfio/platform/vfio_platform_common.c
++++ b/drivers/vfio/platform/vfio_platform_common.c
+@@ -19,6 +19,7 @@
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/vfio.h>
++#include <linux/property.h>
  
--	/* if !PM_RUNTIME, root hub timers won't get shut down ... */
-+	/* if !PM, root hub timers won't get shut down ... */
- 	if (!HC_IS_RUNNING(hcd->state))
- 		return 0;
+ #include "vfio_platform_private.h"
  
-Index: linux-pm/drivers/usb/host/oxu210hp-hcd.c
-===================================================================
---- linux-pm.orig/drivers/usb/host/oxu210hp-hcd.c
-+++ linux-pm/drivers/usb/host/oxu210hp-hcd.c
-@@ -3087,7 +3087,7 @@ static int oxu_hub_status_data(struct us
- 	int ports, i, retval = 1;
- 	unsigned long flags;
+@@ -251,6 +252,34 @@ static long vfio_platform_ioctl(void *device_data,
  
--	/* if !PM_RUNTIME, root hub timers won't get shut down ... */
-+	/* if !PM, root hub timers won't get shut down ... */
- 	if (!HC_IS_RUNNING(hcd->state))
- 		return 0;
+ 		return ret;
  
-Index: linux-pm/include/linux/devfreq.h
-===================================================================
---- linux-pm.orig/include/linux/devfreq.h
-+++ linux-pm/include/linux/devfreq.h
-@@ -188,7 +188,7 @@ extern struct devfreq *devm_devfreq_add_
- extern void devm_devfreq_remove_device(struct device *dev,
- 				  struct devfreq *devfreq);
++	} else if (cmd == VFIO_DEVICE_GET_DEV_PROPERTY) {
++		struct vfio_dev_property info;
++		void __user *datap;
++		unsigned long datasz;
++		int ret;
++
++		if (!vdev->dev)
++			return -EINVAL;
++
++		minsz = offsetofend(struct vfio_dev_property, length);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz)
++			return -EINVAL;
++
++		datap = (void __user *) arg + minsz;
++		datasz = info.argsz - minsz;
++
++		ret = vfio_platform_dev_properties(vdev->dev, info.type,
++						   &info.length, datap, datasz);
++
++		if (copy_to_user((void __user *)arg, &info, minsz))
++			ret = -EFAULT;
++
++		return ret;
++
+ 	} else if (cmd == VFIO_DEVICE_RESET)
+ 		return -EINVAL;
  
--/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
-+/* Supposed to be called by PM callbacks */
- extern int devfreq_suspend_device(struct devfreq *devfreq);
- extern int devfreq_resume_device(struct devfreq *devfreq);
+@@ -501,6 +530,12 @@ int vfio_platform_probe_common(struct vfio_platform_device *vdev,
+ 		return ret;
+ 	}
  
-Index: linux-pm/kernel/power/Kconfig
-===================================================================
---- linux-pm.orig/kernel/power/Kconfig
-+++ linux-pm/kernel/power/Kconfig
-@@ -94,7 +94,7 @@ config PM_STD_PARTITION
- config PM_SLEEP
- 	def_bool y
- 	depends on SUSPEND || HIBERNATE_CALLBACKS
--	select PM_RUNTIME
-+	select PM
++	/* add device properties flag */
++	if (device_property_present(dev, "name")) {
++		vdev->dev = dev;
++		vdev->flags |= VFIO_DEVICE_FLAGS_DEV_PROPERTIES;
++	}
++
+ 	mutex_init(&vdev->igate);
  
- config PM_SLEEP_SMP
- 	def_bool y
-@@ -130,23 +130,19 @@ config PM_WAKELOCKS_GC
- 	depends on PM_WAKELOCKS
- 	default y
+ 	return 0;
+diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+index c3d5b4b..fc6b1fb 100644
+--- a/drivers/vfio/platform/vfio_platform_private.h
++++ b/drivers/vfio/platform/vfio_platform_private.h
+@@ -53,6 +53,7 @@ struct vfio_platform_device {
+ 	u32				num_irqs;
+ 	int				refcnt;
+ 	struct mutex			igate;
++	struct device			*dev;
  
--config PM_RUNTIME
--	bool "Run-time PM core functionality"
-+config PM
-+	bool "Device power management core functionality"
- 	---help---
- 	  Enable functionality allowing I/O devices to be put into energy-saving
--	  (low power) states at run time (or autosuspended) after a specified
--	  period of inactivity and woken up in response to a hardware-generated
-+	  (low power) states, for example after a specified period of inactivity
-+	  (autosuspended), and woken up in response to a hardware-generated
- 	  wake-up event or a driver's request.
+ 	/*
+ 	 * These fields should be filled by the bus specific binder
+@@ -79,4 +80,10 @@ extern int vfio_platform_set_irqs_ioctl(struct vfio_platform_device *vdev,
+ 					unsigned start, unsigned count,
+ 					void *data);
  
- 	  Hardware support is generally required for this functionality to work
- 	  and the bus type drivers of the buses the devices are on are
--	  responsible for the actual handling of the autosuspend requests and
-+	  responsible for the actual handling of device suspend requests and
- 	  wake-up events.
++/* device properties support in devtree.c */
++extern int vfio_platform_dev_properties(struct device *dev,
++					uint32_t type, unsigned *lenp,
++					void __user *datap,
++					unsigned long datasz);
++
+ #endif /* VFIO_PLATFORM_PRIVATE_H */
+diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+index 544d3d8..ac50ab3f 100644
+--- a/include/uapi/linux/vfio.h
++++ b/include/uapi/linux/vfio.h
+@@ -161,12 +161,38 @@ struct vfio_device_info {
+ #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
+ #define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2)	/* vfio-platform device */
+ #define VFIO_DEVICE_FLAGS_AMBA  (1 << 3)	/* vfio-amba device */
++#define VFIO_DEVICE_FLAGS_DEV_PROPERTIES (1 << 4) /* Device properties */
+ 	__u32	num_regions;	/* Max region index + 1 */
+ 	__u32	num_irqs;	/* Max IRQ index + 1 */
+ };
+ #define VFIO_DEVICE_GET_INFO		_IO(VFIO_TYPE, VFIO_BASE + 7)
  
--config PM
--	def_bool y
--	depends on PM_SLEEP || PM_RUNTIME
--
- config PM_DEBUG
- 	bool "Power Management Debug Support"
- 	depends on PM
+ /**
++ * VFIO_DEVICE_GET_DEV_PROPERTY - _IOR(VFIO_TYPE, VFIO_BASE + 16,
++ *						struct vfio_devtree_info)
++ *
++ * Retrive a device property, e.g. from a device tree if available.
++ * Caller will initialize data[] with a single string with the requested
++ * devicetree property name, and type depending on whether a array of strings
++ * or an array of u32 values is expected. On success, data[] will be extended
++ * with the requested information, either as an array of u32, or with a list
++ * of strings sepparated by the NULL terminating character.
++ * Return: 0 on success, -errno on failure.
++ */
++struct vfio_dev_property {
++	__u32	argsz;
++	__u32	type;
++#define VFIO_DEV_PROPERTY_TYPE_STRINGS	0
++#define VFIO_DEV_PROPERTY_TYPE_U8	1
++#define VFIO_DEV_PROPERTY_TYPE_U16	2
++#define VFIO_DEV_PROPERTY_TYPE_U32	3
++#define VFIO_DEV_PROPERTY_TYPE_U64	4
++	__u32	length;
++	__u8	data[];
++};
++#define VFIO_DEVICE_GET_DEV_PROPERTY	_IO(VFIO_TYPE, VFIO_BASE + 17)
++
++/**
+  * VFIO_DEVICE_GET_REGION_INFO - _IOWR(VFIO_TYPE, VFIO_BASE + 8,
+  *				       struct vfio_region_info)
+  *
+-- 
+2.1.3
 
