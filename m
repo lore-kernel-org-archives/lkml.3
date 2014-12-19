@@ -1,86 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaLSWa1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 17:30:27 -0500
-Received: from mga14.intel.com ([192.55.52.115]:21661 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752719AbaLSWaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 17:30:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,609,1413270000"; 
-   d="scan'208";a="650701997"
-From: Irina Tirdea <irina.tirdea@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vlad Dogaru <vlad.dogaru@intel.com>,
-        Daniel Baluta <daniel.baluta@intel.com>,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 5/8] iio: core: Introduce IIO_CHAN_INFO_CALIBGENDER
-Date: Sat, 20 Dec 2014 00:57:56 +0200
-Message-Id: <1419029879-12024-6-git-send-email-irina.tirdea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1419029879-12024-1-git-send-email-irina.tirdea@intel.com>
-References: <1419029879-12024-1-git-send-email-irina.tirdea@intel.com>
+	id S1752950AbaLSWcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 17:32:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43248 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbaLSWcq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 17:32:46 -0500
+Date: Fri, 19 Dec 2014 14:32:44 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: minchan@kernel.org, ngupta@vflare.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
+Message-Id: <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
+In-Reply-To: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
+References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices need the gender of the user to compute various
-parameters. One of this devices is Freescale's MMA9553L
-(http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf)
-that needs the gender of the user to compute distance, speed and activity type.
+On Fri, 19 Dec 2014 20:55:19 +0800 Ganesh Mahendran <opensource.ganesh@gmail.com> wrote:
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
- Documentation/ABI/testing/sysfs-bus-iio |    8 ++++++++
- drivers/iio/industrialio-core.c         |    1 +
- include/linux/iio/iio.h                 |    1 +
- 3 files changed, 10 insertions(+)
+> Keeping fragmentation of zsmalloc in a low level is our target. But now
+> we still need to add the debug code in zsmalloc to get the quantitative data.
+> 
+> This patch adds a new configuration CONFIG_ZSMALLOC_STAT to enable the
+> statistics collection for developers. Currently only the objects statatitics
+> in each class are collected. User can get the information via debugfs.
+>      cat /sys/kernel/debug/zsmalloc/pool-1/...
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index e480175..3b68c2d 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -343,6 +343,14 @@ Description:
- 		production inaccuracies).  If shared across all channels,
- 		<type>_calibscale is used.
- 
-+What:		/sys/bus/iio/devices/iio:deviceX/in_steps_calibgender
-+KernelVersion:	3.19
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Gender of the user: 0 for female and 1 for male. It is needed
-+		by some pedometers to compute the stride length, distance,
-+		speed and activity type.
-+
- What:		/sys/bus/iio/devices/iio:deviceX/in_steps_calibheight
- KernelVersion:	3.19
- Contact:	linux-iio@vger.kernel.org
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index 4c435c8..93a39f9 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -125,6 +125,7 @@ static const char * const iio_chan_info_postfix[] = {
- 	[IIO_CHAN_INFO_ENABLE] = "en",
- 	[IIO_CHAN_INFO_CALIBHEIGHT] = "calibheight",
- 	[IIO_CHAN_INFO_CALIBWEIGHT] = "calibweight",
-+	[IIO_CHAN_INFO_CALIBGENDER] = "calibgender",
- };
- 
- /**
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index 752a929..63dac0f 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -41,6 +41,7 @@ enum iio_chan_info_enum {
- 	IIO_CHAN_INFO_ENABLE,
- 	IIO_CHAN_INFO_CALIBHEIGHT,
- 	IIO_CHAN_INFO_CALIBWEIGHT,
-+	IIO_CHAN_INFO_CALIBGENDER,
- };
- 
- enum iio_shared_by {
--- 
-1.7.9.5
+Is everyone OK with this now?
+
+> --- a/include/linux/zsmalloc.h
+> +++ b/include/linux/zsmalloc.h
+> @@ -48,4 +48,13 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+>  
+>  unsigned long zs_get_total_pages(struct zs_pool *pool);
+>  
+> +#ifdef CONFIG_ZSMALLOC_STAT
+> +int get_zs_pool_index(struct zs_pool *pool);
+
+The name is inconsistent with the rest of zsmalloc and with preferred
+kernel naming conventions.  Should be "zs_get_pool_index".
+
+> +#else
+> +static inline int get_zs_pool_index(struct zs_pool *pool)
+> +{
+> +	return -1;
+> +}
+> +#endif
+> +
+>  #endif
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 1d1ae6b..95c5728 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+>
+> ...
+>
+> +static int zs_stats_size_show(struct seq_file *s, void *v)
+> +{
+> +	int i;
+> +	struct zs_pool *pool = (struct zs_pool *)s->private;
+
+The typecast is unneeded and undesirable (it defeats typechecking).
+
+> +	struct size_class *class;
+> +	int objs_per_zspage;
+> +	unsigned long obj_allocated, obj_used, pages_used;
+> +	unsigned long total_objs = 0, total_used_objs = 0, total_pages = 0;
+> +
+> +	seq_printf(s, " %5s %5s %13s %10s %10s\n", "class", "size",
+> +				"obj_allocated", "obj_used", "pages_used");
+> +
+> +	for (i = 0; i < zs_size_classes; i++) {
+> +		class = pool->size_class[i];
+> +
+> +		if (class->index != i)
+> +			continue;
+> +
+> +		spin_lock(&class->lock);
+> +		obj_allocated = zs_stat_get(class, OBJ_ALLOCATED);
+> +		obj_used = zs_stat_get(class, OBJ_USED);
+> +		spin_unlock(&class->lock);
+> +
+> +		objs_per_zspage = get_maxobj_per_zspage(class->size,
+> +				class->pages_per_zspage);
+> +		pages_used = obj_allocated / objs_per_zspage *
+> +				class->pages_per_zspage;
+> +
+> +		seq_printf(s, " %5u %5u    %10lu %10lu %10lu\n", i,
+> +			class->size, obj_allocated, obj_used, pages_used);
+> +
+> +		total_objs += obj_allocated;
+> +		total_used_objs += obj_used;
+> +		total_pages += pages_used;
+> +	}
+> +
+> +	seq_puts(s, "\n");
+> +	seq_printf(s, " %5s %5s    %10lu %10lu %10lu\n", "Total", "",
+> +			total_objs, total_used_objs, total_pages);
+> +
+> +	return 0;
+> +}
+>
+> ...
+>
+> +static int zs_pool_stat_create(struct zs_pool *pool)
+> +{
+> +	char name[10];
+
+This is not good.  If the kernel creates and then destroys a pool 10000
+times, zs_pool_index==10000 and we overrun the buffer.  Could use
+kasprintf() in here to fix this.
+
+zs_pool_index isn't a very good name - it doesn't index anything. 
+zs_pool_id would be better.
+
+> +	struct dentry *entry;
+> +
+> +	if (!zs_stat_root)
+> +		return -ENODEV;
+> +
+> +	pool->index = atomic_inc_return(&zs_pool_index);
+> +	snprintf(name, sizeof(name), "pool-%d", pool->index);
+> +	entry = debugfs_create_dir(name, zs_stat_root);
+> +	if (!entry) {
+> +		pr_warn("pool %d, debugfs dir <%s> creation failed\n",
+> +				pool->index, name);
+> +		return -ENOMEM;
+
+Sigh.  The debugfs interface does suck.  Doesn't matter much.
+
+> +	}
+> +	pool->stat_dentry = entry;
+> +
+> +	entry = debugfs_create_file("obj_in_classes", S_IFREG | S_IRUGO,
+> +			pool->stat_dentry, pool, &zs_stat_size_ops);
+> +	if (!entry) {
+> +		pr_warn("pool %d, debugfs file entry <%s> creation failed\n",
+> +				pool->index, "obj_in_classes");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+> +}
+>
+> ...
+>
 
