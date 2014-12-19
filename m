@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294AbaLSJ4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:56:00 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:48810 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242AbaLSJz5 (ORCPT
+	id S1752338AbaLSJ4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:56:07 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:37551 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaLSJ4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:55:57 -0500
+	Fri, 19 Dec 2014 04:56:03 -0500
 From: Sanchayan Maity <maitysanchayan@gmail.com>
 To: Peter.Chen@freescale.com
 Cc: stefan@agner.ch, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Sanchayan Maity <maitysanchayan@gmail.com>
-Subject: [PATCH 2/3] usb: chipidea: Add chipidea revision information
-Date: Fri, 19 Dec 2014 15:25:28 +0530
-Message-Id: <1da552d2284380f8606bd16d1d3c0cf51caa60ff.1418981438.git.maitysanchayan@gmail.com>
+Subject: [PATCH 3/3] usb: chipidea: Add errata for revision 2.40a
+Date: Fri, 19 Dec 2014 15:25:29 +0530
+Message-Id: <2777af66ca21ac4eb3d534a21ec227eea693245c.1418981438.git.maitysanchayan@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1418981438.git.maitysanchayan@gmail.com>
 References: <cover.1418981438.git.maitysanchayan@gmail.com>
@@ -24,80 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define ci_get_revision API to know the controller revision
-information according to chipidea 1.1a, 2.0a, 2.4 and 2.5a
-spec. Besides, add one entry in struct ci_hdrc to indicate
-revision information. This can be used for adding different
-code for revisions, implementing erratas.
+At chipidea revision 2.40a, there is a below errata:
+
+9000531823  B2-Medium  Adding a dTD to a Primed Endpoint May Not Get Recognized
+
+Title: Adding a dTD to a Primed Endpoint May Not Get Recognized
+
+Impacted Configuration: All device mode configurations.
+
+Description:
+There is an issue with the add dTD tripwire semaphore (ATDTW bit in USBCMD register)
+that can cause the controller to ignore a dTD that is added to a primed endpoint.
+When this happens, the software can read the tripwire bit and the status bit at '1'
+even though the endpoint is unprimed.
+
+After executing a dTD, the device controller endpoint state machine executes a final
+read of the dTD terminate bit to check if the application added a dTD to the linked
+list at the last moment. This read is done in the finpkt_read_latest_next_td (44) state.
+After the read is performed, if the terminate bit is still set, the state machine moves
+to unprime the endpoint. The decision to unprime the endpoint is done in the
+checkqh_decision (59) state, based on the value of the terminate bit.
+Before reaching the checkqh_decision state, the state machine traverses the
+writeqhtd_status (57), writeqh_status (56), and release_prime_mask (42) states.
+As shown in the waveform, the ep_addtd_tripwire_clr signal is not set to clear
+the tripwire bit in these states.
+
+Workaround:
+The software must implement a periodic poll cycle, and check for each dTD
+pending on execution (Active = 1), if the enpoint is primed. It can do this by reading
+the corresponding bits in the ENDPTPRIME and ENDPTSTAT registers. If these bits are
+read at 0, the software needs to re-prime the endpoint by writing 1 to the corresponding
+bit in the ENDPTPRIME register. This can be done for every microframe, every frame or
+with a larger interval, depending on the urgency of transfer execution for the application.
 
 Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
 ---
- drivers/usb/chipidea/bits.h |   10 ++++++++++
- drivers/usb/chipidea/core.c |   23 +++++++++++++++++++++--
- 2 files changed, 31 insertions(+), 2 deletions(-)
+ drivers/usb/chipidea/udc.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/drivers/usb/chipidea/bits.h b/drivers/usb/chipidea/bits.h
-index ca57e3d..e935ccc 100644
---- a/drivers/usb/chipidea/bits.h
-+++ b/drivers/usb/chipidea/bits.h
-@@ -15,6 +15,16 @@
- 
- #include <linux/usb/ehci_def.h>
- 
-+/*
-+ * ID
-+ * For 1.x revision, bit24 - bit31 are reserved
-+ * For 2.x revision, bit25 - bit28 are 0x2
-+ */
-+#define TAG			(0x1F << 16)
-+#define REVISION		(0xF << 21)
-+#define VERSION			(0xF << 25)
-+#define CIVERSION		(0x7 << 29)
-+
- /* HCCPARAMS */
- #define HCCPARAMS_LEN         BIT(17)
- 
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index 9bdc6bd..33a8c4a 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -136,6 +136,22 @@ static int hw_alloc_regmap(struct ci_hdrc *ci, bool is_lpm)
- 	return 0;
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index 0444d3f..551ab37 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -522,6 +522,20 @@ static void free_pending_td(struct ci_hw_ep *hwep)
+ 	kfree(pending);
  }
  
-+static enum CI_REVISION ci_get_revision(struct ci_hdrc *ci)
++static int reprime_dtd(struct ci_hdrc *ci, struct ci_hw_ep *hwep,
++					   struct td_node *node)
 +{
-+	int ver = hw_read_id_reg(ci, ID_ID, VERSION) >> __ffs(VERSION);
-+	enum CI_REVISION rev = CI_REVISION_UNKNOWN;
++	hwep->qh.ptr->td.next = node->dma;
++	hwep->qh.ptr->td.token &=
++		cpu_to_le32(~(TD_STATUS_HALTED | TD_STATUS_ACTIVE));
 +
-+	if (ver == 0x2) {
-+		int rev_reg = hw_read_id_reg
-+			(ci, ID_ID, REVISION) >> __ffs(REVISION);
-+		rev = rev_reg + CI_REVISION_20;
-+	} else if (ver == 0x0) {
-+		rev = CI_REVISION_1X;
-+	}
++	/* Synchronize before ep prime */
++	wmb();
 +
-+	return rev;
++	return hw_ep_prime(ci, hwep->num, hwep->dir,
++				hwep->type == USB_ENDPOINT_XFER_CONTROL);
 +}
 +
  /**
-  * hw_read_intr_enable: returns interrupt enable register
-  *
-@@ -245,8 +261,11 @@ static int hw_device_init(struct ci_hdrc *ci, void __iomem *base)
- 	/* Clear all interrupts status bits*/
- 	hw_write(ci, OP_USBSTS, 0xffffffff, 0xffffffff);
+  * _hardware_dequeue: handles a request at hardware level
+  * @gadget: gadget
+@@ -535,6 +549,7 @@ static int _hardware_dequeue(struct ci_hw_ep *hwep, struct ci_hw_req *hwreq)
+ 	struct td_node *node, *tmpnode;
+ 	unsigned remaining_length;
+ 	unsigned actual = hwreq->req.length;
++	struct ci_hdrc *ci = hwep->ci;
  
--	dev_dbg(ci->dev, "ChipIdea HDRC found, lpm: %d; cap: %p op: %p\n",
--		ci->hw_bank.lpm, ci->hw_bank.cap, ci->hw_bank.op);
-+	ci->rev = ci_get_revision(ci);
+ 	if (hwreq->req.status != -EALREADY)
+ 		return -EINVAL;
+@@ -544,6 +559,11 @@ static int _hardware_dequeue(struct ci_hw_ep *hwep, struct ci_hw_req *hwreq)
+ 	list_for_each_entry_safe(node, tmpnode, &hwreq->tds, td) {
+ 		tmptoken = le32_to_cpu(node->ptr->token);
+ 		if ((TD_STATUS_ACTIVE & tmptoken) != 0) {
++			int n = hw_ep_bit(hwep->num, hwep->dir);
 +
-+	dev_dbg(ci->dev,
-+		"ChipIdea HDRC found, revision: %d, lpm: %d; cap: %p op: %p\n",
-+		ci->rev, ci->hw_bank.lpm, ci->hw_bank.cap, ci->hw_bank.op);
- 
- 	/* setup lock mode ? */
- 
++			if (ci->rev == CI_REVISION_24)
++				if (!hw_read(ci, OP_ENDPTSTAT, BIT(n)))
++					reprime_dtd(ci, hwep, node);
+ 			hwreq->req.status = -EALREADY;
+ 			return -EBUSY;
+ 		}
 -- 
 1.7.9.5
 
