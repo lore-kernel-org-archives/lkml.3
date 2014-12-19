@@ -1,187 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaLSF0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 00:26:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51899 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003AbaLSF0I convert rfc822-to-8bit (ORCPT
+	id S1752016AbaLSF0n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 00:26:43 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:59125 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbaLSF0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 00:26:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
-   d="scan'208";a="640124534"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
-Thread-Topic: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
-Thread-Index: AQHQGqESVjGwCGGcx0GfXydnqyBdC5yVc2HggADGJ7CAAAKSQIAAFxZwgAAD1tCAAAHl0IAAAhPw
-Date: Fri, 19 Dec 2014 05:25:44 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC050B1@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
-	<1418397300-10870-26-git-send-email-feng.wu@intel.com>
-	<5491C0A2.7040503@redhat.com>
-	<E959C4978C3B6342920538CF579893F002307C4A@SHSMSX104.ccr.corp.intel.com>
-	<5492926E.8070207@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC04938@SHSMSX104.ccr.corp.intel.com>
- <E959C4978C3B6342920538CF579893F00230ABEB@SHSMSX104.ccr.corp.intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC04FED@SHSMSX104.ccr.corp.intel.com>
- <E959C4978C3B6342920538CF579893F00230ADA0@SHSMSX104.ccr.corp.intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC05059@SHSMSX104.ccr.corp.intel.com>
- <E959C4978C3B6342920538CF579893F00230AE04@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <E959C4978C3B6342920538CF579893F00230AE04@SHSMSX104.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Dec 2014 00:26:41 -0500
 MIME-Version: 1.0
+In-Reply-To: <1418964455.26403.21.camel@intel.com>
+References: <1418964455.26403.21.camel@intel.com>
+Date: Fri, 19 Dec 2014 10:56:40 +0530
+X-Google-Sender-Auth: tZEBgHpn5UbbSOfu0jo9lywPBTk
+Message-ID: <CAOh2x=mJoFhZj==YCD4dhhUaSDeRBZFP7ntQR7epTRWZ6D4Pxg@mail.gmail.com>
+Subject: Re: [LKP] [cpufreq] BUG: sleeping function called from invalid
+ context at mm/slub.c:1241
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Huang Ying <ying.huang@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu, Feng wrote on 2014-12-19:
-> 
-> 
-> Zhang, Yang Z wrote on 2014-12-19:
->> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is
->> set
->> 
->> Wu, Feng wrote on 2014-12-19:
->>> 
->>> 
->>> Zhang, Yang Z wrote on 2014-12-19:
->>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
->>>> is set
->>>> 
->>>> Wu, Feng wrote on 2014-12-19:
->>>>> 
->>>>> 
->>>>> iommu-bounces@lists.linux-foundation.org wrote on
->>>> mailto:iommu-bounces@lists.linux-foundation.org] On Behalf Of:
->>>>>> Cc: iommu@lists.linux-foundation.org;
->>>>>> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
->>>>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
->>>>>> is set
->>>>>> 
->>>>>> Paolo Bonzini wrote on 2014-12-18:
->>>>>>> 
->>>>>>> 
->>>>>>> On 18/12/2014 04:14, Wu, Feng wrote:
->>>>>>>> 
->>>>>>>> 
->>>>>>>> linux-kernel-owner@vger.kernel.org wrote on
->>>>>> mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo:
->>>>>>>>> x86@kernel.org; Gleb Natapov; Paolo Bonzini;
->>>>>>>>> dwmw2@infradead.org;
->>>>>>>>> joro-zLv9SwRftAIdnm+yROfE0A@public.gmane.org; Alex Williamson;
->>>>>>>>> joro-zLv9SwRftAIdnm+Jiang Liu Cc:
->>>>>>>>> iommu@lists.linux-foundation.org;
->>>>>>>>> linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; KVM list;
->>>>>>>>> Eric Auger Subject: Re: [v3 25/26] KVM: Suppress
->>>>>>>>> posted-interrupt when 'SN' is set
->>>>>>>>> 
->>>>>>>>> 
->>>>>>>>> 
->>>>>>>>> On 12/12/2014 16:14, Feng Wu wrote:
->>>>>>>>>> Currently, we don't support urgent interrupt, all
->>>>>>>>>> interrupts are recognized as non-urgent interrupt, so we
->>>>>>>>>> cannot send posted-interrupt when 'SN' is set.
->>>>>>>>> 
->>>>>>>>> Can this happen?  If the vcpu is in guest mode, it cannot
->>>>>>>>> have been scheduled out, and that's the only case when SN is set.
->>>>>>>>> 
->>>>>>>>> Paolo
->>>>>>>> 
->>>>>>>> Currently, the only place where SN is set is vCPU is
->>>>>>>> preempted and
->>>>>> 
->>>>>> If the vCPU is preempted, shouldn't the subsequent be ignored?
->>>>>> What happens if a PI is occurs when vCPU is preempted?
->>>>> 
->>>>> If a vCPU is preempted, the 'SN' bit is set, the subsequent
->>>>> interrupts are suppressed for posting.
->>>> 
->>>> I mean what happens if we don't set SN bit. From my point, if
->>>> preempter already disabled the interrupt, it is ok to leave SN
->>>> bit as zero. But if preempter enabled the interrupt, doesn't this
->>>> mean he allow interrupt to happen? BTW, since there already has
->>>> ON bit, so this means there only have one interrupt arrived at
->>>> most and it doesn't hurt performance. Do we really need to set SN bit?
->>> 
->>> 
->>> See this scenario:
->>> vCPU0 is running on pCPU0
->>> --> vCPU0 is preempted by vCPU1
->>> --> Then vCPU1 is running on pCPU0 and vCPU0 is waiting for
->>> --> schedule in runqueue
->>> 
->>> If the we don't set SN for vCPU0, then all subsequent interrupts
->>> for
->>> vCPU0 is posted to vCPU1, this will consume hardware and software
->> 
->> The PI vector for vCPU1 is notification vector, but the PI vector
->> for
->> vCPU0 should be wakeup vector. Why vCPU1 will consume this PI event?
-> 
-> Wakeup vector is only used for blocking case, when vCPU is preempted
-> and waiting in the runqueue, the NV is the notification vector.
+On Fri, Dec 19, 2014 at 10:17 AM, Huang Ying <ying.huang@intel.com> wrote:
+> FYI, we noticed the below changes on
+>
+> https://git.linaro.org/people/vireshk/linux cpufreq/stats/cleanups
+> commit 2136fa84639adcc0727e968f99ad222c8146810c ("cpufreq: stats: Fix locking")
+>
+>
+> +----------------------+------------+------------+
+> |                      | 0063f8602b | 2136fa8463 |
+> +----------------------+------------+------------+
+> | boot_successes       | 9          | 9          |
+> | boot_failures        | 1          | 1          |
+> | BUG:kernel_boot_hang | 1          | 1          |
+> +----------------------+------------+------------+
+>
+>
+> [   24.295182] Freeing unused kernel memory: 1972K (ffff880001a13000 - ffff880001c00000)
+> [   24.304471] Freeing unused kernel memory: 1780K (ffff880002043000 - ffff880002200000)
+> [   24.704332] acpi-cpufreq: overriding BIOS provided _PSD data
+> [   24.716589] BUG: sleeping function called from invalid context at mm/slub.c:1241
+> [   24.726087] in_atomic(): 1, irqs_disabled(): 0, pid: 2393, name: modprobe
+> [   24.726092] CPU: 21 PID: 2393 Comm: modprobe Not tainted 3.18.0-g0a0a28c #1
+> [   24.726093] Hardware name: Supermicro H8DGU/H8DGU, BIOS 2.0        09/08/11
+> [   24.726097]  00000000000004d9 ffff8810071a3ae8 ffffffff81a02d59 000000000f340f34
+> [   24.726099]  ffffffff81effec4 ffff8810071a3af8 ffffffff8110adca ffff8810071a3b28
+> [   24.726101]  ffffffff8110ae7d 0000000000000000 00000000000080d0 ffff88040f803b00
+> [   24.726102] Call Trace:
+> [   24.726111]  [<ffffffff81a02d59>] dump_stack+0x4c/0x65
+> [   24.726117]  [<ffffffff8110adca>] ___might_sleep+0x10e/0x110
+> [   24.726119]  [<ffffffff8110ae7d>] __might_sleep+0xb1/0xb9
+> [   24.726123]  [<ffffffff811ea2af>] kmem_cache_alloc_trace+0x48/0x1e6
+> [   24.726128]  [<ffffffff818a25df>] ? __cpufreq_stats_create_table+0x68/0x194
+> [   24.726131]  [<ffffffff818a25df>] __cpufreq_stats_create_table+0x68/0x194
+> [   24.726138]  [<ffffffff818a27b6>] cpufreq_stat_notifier_policy+0x1b/0x32
+> [   24.726141]  [<ffffffff81105a7d>] notifier_call_chain+0x6d/0x95
+> [   24.726143]  [<ffffffff81105d20>] __blocking_notifier_call_chain+0x4a/0x63
+> [   24.726145]  [<ffffffff81105d4d>] blocking_notifier_call_chain+0x14/0x16
+> [   24.726148]  [<ffffffff818a181e>] __cpufreq_add_dev+0x71d/0x8ce
+> [   24.726150]  [<ffffffff818a1a3c>] cpufreq_add_dev+0xe/0x10
+> [   24.726154]  [<ffffffff8155dd93>] subsys_interface_register+0xb8/0xdf
+> [   24.726157]  [<ffffffff818a0792>] cpufreq_register_driver+0x156/0x268
+> [   24.726159]  [<ffffffffa009f000>] ? 0xffffffffa009f000
+> [   24.726163]  [<ffffffffa009f220>] acpi_cpufreq_init+0x220/0x1000 [acpi_cpufreq]
+> [   24.726165]  [<ffffffffa009f000>] ? 0xffffffffa009f000
+> [   24.726168]  [<ffffffff8100032a>] do_one_initcall+0xfd/0x18f
+> [   24.726172]  [<ffffffff811d4383>] ? __vunmap+0xac/0xb7
+> [   24.726176]  [<ffffffff81150cd3>] load_module+0x1a35/0x1ff7
+> [   24.726179]  [<ffffffff81205653>] ? kernel_read+0x48/0x5f
+> [   24.726183]  [<ffffffff811513ef>] SyS_finit_module+0x85/0x92
+> [   24.726187]  [<ffffffff81a0a1e9>] system_call_fastpath+0x12/0x17
+> [   25.539283] microcode: CPU0: patch_level=0x06000613
+> [   25.544884] microcode: CPU1: patch_level=0x06000613
+> [   25.550137] microcode: CPU2: patch_level=0x06000613
 
-I see your point. But from performance point, if we can schedule the vCPU to another PCPU to handle the interrupt, it would helpful. But I remember current KVM will not schedule the vCPU in run queue (even though it got preempted) to another pCPU to run(Am I right?). So it may hard to do it.
+Okay, thanks Huang..
 
-> 
-> Thanks,
-> Feng
-> 
->> 
->>> efforts and in fact it is not needed at all. If SN is set for
->>> vCPU0, VT-d hardware will not issue Notification Event for vCPU0
->>> when an interrupt is for it, but just setting the related PIR bit.
->>> 
->>> Thanks,
->>> Feng
->>> 
->>>> 
->>>>> 
->>>>> Thanks,
->>>>> Feng
->>>>> 
->>>>>> 
->>>>>>>> waiting for the next scheduling in the runqueue. But I am not
->>>>>>>> sure whether we need to set SN for other purpose in future.
->>>>>>>> Adding SN checking here is just to follow the Spec.
->>>>>>>> non-urgent interrupts are suppressed
->>>>>>> when SN is set.
->>>>>>> 
->>>>>>> I would change that to a WARN_ON_ONCE then.
->>>>>> 
->>>>>> 
->>>>>> Best regards,
->>>>>> Yang
->>>>>> 
->>>>>> 
->>>>>> _______________________________________________
->>>>>> iommu mailing list
->>>>>> iommu@lists.linux-foundation.org
->>>>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
->>>> 
->>>> 
->>>> Best regards,
->>>> Yang
->>>> 
->> 
->> 
->> Best regards,
->> Yang
->>
+The problem is that we are trying to allocate memory from within spinlock's
+critical region..
 
-
-Best regards,
-Yang
-
-
+Fixed by replacing spinlock with a mutex. Pushed my branch again.
