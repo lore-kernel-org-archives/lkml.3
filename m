@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaLSNCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 08:02:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59525 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013AbaLSNCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 08:02:16 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Rik van Riel <riel@redhat.com>, <stable@vger.kernel.org>
-Subject: [PATCH 2/2] mm, vmscan: wake up all pfmemalloc-throttled processes at once
-Date: Fri, 19 Dec 2014 14:01:56 +0100
-Message-Id: <1418994116-23665-2-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1418994116-23665-1-git-send-email-vbabka@suse.cz>
-References: <1418994116-23665-1-git-send-email-vbabka@suse.cz>
+	id S1752371AbaLSNFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 08:05:00 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:45642 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118AbaLSNE6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 08:04:58 -0500
+Message-ID: <5494226A.4040006@linaro.org>
+Date: Fri, 19 Dec 2014 21:04:42 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+CC: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Charles.Garcia-Tobin@arm.com" <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        "vanDoorn, Leendert" <Leendert.vanDoorn@amd.com>,
+        "Hurwitz, Sherry" <sherry.hurwitz@amd.com>,
+        "Duran, Leo" <leo.duran@amd.com>,
+        "Gorishek, Frank" <Frank.Gorishek@amd.com>, Jeff.Underhill@arm.com
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org> <54933299.9030902@amd.com>
+In-Reply-To: <54933299.9030902@amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kswapd in balance_pgdate() currently uses wake_up() on processes waiting in
-throttle_direct_reclaim(), which only wakes up a single process. This might
-leave processes waiting for longer than necessary, until the check is reached
-in the next loop iteration. Processes might also be left waiting if zone was
-fully balanced in single iteration. Note that the comment in balance_pgdat()
-also says "Wake them", so waking up a single process does not seem intentional.
+On 2014年12月19日 04:01, Suravee Suthikulanit wrote:
+> On 10/17/2014 8:37 AM, Hanjun Guo wrote:
+>
+>> From: Graeme Gregory <graeme.gregory@linaro.org>
+>>
+>> Add documentation for the guidelines of how to use ACPI
+>> on ARM64.
+>>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>   Documentation/arm64/arm-acpi.txt |  323
+>> ++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 323 insertions(+)
+>>   create mode 100644 Documentation/arm64/arm-acpi.txt
+>> [...]
+>
+> AMD has reviewed this document, and currently implements ACPI table in
+> the firmware for AMD Seattle platform based on the documentation
+> published here:
+>
+> http://amd-dev.wpengine.netdna-cdn.com/wordpress/media/2012/10/Seattle_ACPI_Guide.pdf
+>
+>
+> Reviewed-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 
-Thus, replace wake_up() with wake_up_all().
+Thank you very much, Suravee.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 162c3f8..60b999c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3178,7 +3178,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 		 */
- 		if (waitqueue_active(&pgdat->pfmemalloc_wait) &&
- 				pfmemalloc_watermark_ok(pgdat))
--			wake_up(&pgdat->pfmemalloc_wait);
-+			wake_up_all(&pgdat->pfmemalloc_wait);
- 
- 		/*
- 		 * Fragmentation may mean that the system cannot be rebalanced
--- 
-2.1.2
-
+Hanjun
