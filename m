@@ -1,231 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaLSNP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 08:15:29 -0500
-Received: from www.linutronix.de ([62.245.132.108]:34247 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaLSNP2 (ORCPT
+	id S1752529AbaLSNPg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 08:15:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45332 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288AbaLSNPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 08:15:28 -0500
-Date: Fri, 19 Dec 2014 14:15:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] irq core updates for 3.19
-Message-ID: <alpine.DEB.2.11.1412191413410.17382@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 19 Dec 2014 08:15:34 -0500
+Date: Fri, 19 Dec 2014 04:13:23 -0800
+From: tip-bot for Wang Nan <tipbot@zytor.com>
+Message-ID: <tip-ac931f87a647ca156f65a4c00e7297165e4fa2d8@git.kernel.org>
+Cc: mingo@kernel.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, paulus@samba.org, a.p.zijlstra@chello.nl,
+        namhyung@kernel.org, wangnan0@huawei.com, acme@kernel.org,
+        lizefan@huawei.com, hpa@zytor.com
+Reply-To: paulus@samba.org, a.p.zijlstra@chello.nl, namhyung@kernel.org,
+        mingo@kernel.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, lizefan@huawei.com,
+        wangnan0@huawei.com, acme@kernel.org
+In-Reply-To: <1418710746-35943-1-git-send-email-wangnan0@huawei.com>
+References: <1418710746-35943-1-git-send-email-wangnan0@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Fix building warning on ARM 32
+Git-Commit-ID: ac931f87a647ca156f65a4c00e7297165e4fa2d8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Commit-ID:  ac931f87a647ca156f65a4c00e7297165e4fa2d8
+Gitweb:     http://git.kernel.org/tip/ac931f87a647ca156f65a4c00e7297165e4fa2d8
+Author:     Wang Nan <wangnan0@huawei.com>
+AuthorDate: Tue, 16 Dec 2014 14:19:06 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 19 Dec 2014 13:09:43 +0100
 
-please pull the latest irq-urgent-for-linus git tree from:
+perf: Fix building warning on ARM 32
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+Commit 85c116a6cb91 ("perf callchain: Make get_srcline fall back to sym+offset")
+introduces asprintf() call and matches '%ld' to a u64 argument, which is
+incorrect on ARM:
 
-A single fix plugging a long standing race between proc/stat and
-proc/interrupts access and freeing of interrupt descriptors.
+   CC       /home/wn/util/srcline.o
+ util/srcline.c: In function 'get_srcline':
+ util/srcline.c:297:6: error: format '%ld' expects argument of type 'long int', but argument 4 has type 'u64' [-Werror=format]
+ cc1: all warnings being treated as errors
+ make[1]: *** [/home/wn/util/srcline.o] Error 1
 
-Thanks,
+In addition, all users of get_srcline() use u64 addr, and libbfd
+also use 64 bit bfd_vma as address. This patch also fix
+prototype of get_srcline() and addr2line() to use u64 addr
+instead of unsigned long.
 
-	tglx
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: <lizefan@huawei.com>
+Cc: <a.p.zijlstra@chello.nl>
+Cc: <paulus@samba.org>
+Cc: <acme@kernel.org>
+Cc: <ak@linux.intel.com>
+Link: http://lkml.kernel.org/r/1418710746-35943-1-git-send-email-wangnan0@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/util/srcline.c | 12 ++++++------
+ tools/perf/util/util.h    |  2 +-
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
------------------->
-Thomas Gleixner (1):
-      genirq: Prevent proc race against freeing of irq descriptors
-
-
- fs/proc/stat.c              |  2 +-
- include/linux/kernel_stat.h |  1 +
- kernel/irq/internals.h      |  4 ++++
- kernel/irq/irqdesc.c        | 52 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/irq/proc.c           | 22 ++++++++++++++++++-
- 5 files changed, 79 insertions(+), 2 deletions(-)
-
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index bf2d03f8fd3e..510413eb25b8 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -159,7 +159,7 @@ static int show_stat(struct seq_file *p, void *v)
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index e73b6a5..c93fb0c 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -20,7 +20,7 @@
  
- 	/* sum again ? it could be updated? */
- 	for_each_irq_nr(j)
--		seq_put_decimal_ull(p, ' ', kstat_irqs(j));
-+		seq_put_decimal_ull(p, ' ', kstat_irqs_usr(j));
+ struct a2l_data {
+ 	const char 	*input;
+-	unsigned long 	addr;
++	u64	 	addr;
  
- 	seq_printf(p,
- 		"\nctxt %llu\n"
-diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
-index b9376cd5a187..25a822f6f000 100644
---- a/include/linux/kernel_stat.h
-+++ b/include/linux/kernel_stat.h
-@@ -68,6 +68,7 @@ static inline unsigned int kstat_softirqs_cpu(unsigned int irq, int cpu)
-  * Number of interrupts per specific IRQ source, since bootup
+ 	bool 		found;
+ 	const char 	*filename;
+@@ -147,7 +147,7 @@ static void addr2line_cleanup(struct a2l_data *a2l)
+ 	free(a2l);
+ }
+ 
+-static int addr2line(const char *dso_name, unsigned long addr,
++static int addr2line(const char *dso_name, u64 addr,
+ 		     char **file, unsigned int *line, struct dso *dso)
+ {
+ 	int ret = 0;
+@@ -193,7 +193,7 @@ void dso__free_a2l(struct dso *dso)
+ 
+ #else /* HAVE_LIBBFD_SUPPORT */
+ 
+-static int addr2line(const char *dso_name, unsigned long addr,
++static int addr2line(const char *dso_name, u64 addr,
+ 		     char **file, unsigned int *line_nr,
+ 		     struct dso *dso __maybe_unused)
+ {
+@@ -252,7 +252,7 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
   */
- extern unsigned int kstat_irqs(unsigned int irq);
-+extern unsigned int kstat_irqs_usr(unsigned int irq);
+ #define A2L_FAIL_LIMIT 123
  
- /*
-  * Number of interrupts per cpu, since bootup
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index 4332d766619d..df553b0af936 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -78,8 +78,12 @@ extern void unmask_threaded_irq(struct irq_desc *desc);
- 
- #ifdef CONFIG_SPARSE_IRQ
- static inline void irq_mark_irq(unsigned int irq) { }
-+extern void irq_lock_sparse(void);
-+extern void irq_unlock_sparse(void);
- #else
- extern void irq_mark_irq(unsigned int irq);
-+static inline void irq_lock_sparse(void) { }
-+static inline void irq_unlock_sparse(void) { }
- #endif
- 
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index a1782f88f0af..99793b9b6d23 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -132,6 +132,16 @@ static void free_masks(struct irq_desc *desc)
- static inline void free_masks(struct irq_desc *desc) { }
- #endif
- 
-+void irq_lock_sparse(void)
-+{
-+	mutex_lock(&sparse_irq_lock);
-+}
-+
-+void irq_unlock_sparse(void)
-+{
-+	mutex_unlock(&sparse_irq_lock);
-+}
-+
- static struct irq_desc *alloc_desc(int irq, int node, struct module *owner)
+-char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
++char *get_srcline(struct dso *dso, u64 addr, struct symbol *sym,
+ 		  bool show_sym)
  {
- 	struct irq_desc *desc;
-@@ -168,6 +178,12 @@ static void free_desc(unsigned int irq)
- 
- 	unregister_irq_proc(irq, desc);
- 
-+	/*
-+	 * sparse_irq_lock protects also show_interrupts() and
-+	 * kstat_irq_usr(). Once we deleted the descriptor from the
-+	 * sparse tree we can free it. Access in proc will fail to
-+	 * lookup the descriptor.
-+	 */
- 	mutex_lock(&sparse_irq_lock);
- 	delete_irq_desc(irq);
- 	mutex_unlock(&sparse_irq_lock);
-@@ -574,6 +590,15 @@ void kstat_incr_irq_this_cpu(unsigned int irq)
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- }
- 
-+/**
-+ * kstat_irqs_cpu - Get the statistics for an interrupt on a cpu
-+ * @irq:	The interrupt number
-+ * @cpu:	The cpu number
-+ *
-+ * Returns the sum of interrupt counts on @cpu since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -582,6 +607,14 @@ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
- 			*per_cpu_ptr(desc->kstat_irqs, cpu) : 0;
- }
- 
-+/**
-+ * kstat_irqs - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. The caller must ensure that the interrupt is not removed
-+ * concurrently.
-+ */
- unsigned int kstat_irqs(unsigned int irq)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-@@ -594,3 +627,22 @@ unsigned int kstat_irqs(unsigned int irq)
- 		sum += *per_cpu_ptr(desc->kstat_irqs, cpu);
- 	return sum;
- }
-+
-+/**
-+ * kstat_irqs_usr - Get the statistics for an interrupt
-+ * @irq:	The interrupt number
-+ *
-+ * Returns the sum of interrupt counts on all cpus since boot for
-+ * @irq. Contrary to kstat_irqs() this can be called from any
-+ * preemptible context. It's protected against concurrent removal of
-+ * an interrupt descriptor when sparse irqs are enabled.
-+ */
-+unsigned int kstat_irqs_usr(unsigned int irq)
-+{
-+	int sum;
-+
-+	irq_lock_sparse();
-+	sum = kstat_irqs(irq);
-+	irq_unlock_sparse();
-+	return sum;
-+}
-diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
-index ac1ba2f11032..9dc9bfd8a678 100644
---- a/kernel/irq/proc.c
-+++ b/kernel/irq/proc.c
-@@ -15,6 +15,23 @@
- 
- #include "internals.h"
- 
-+/*
-+ * Access rules:
-+ *
-+ * procfs protects read/write of /proc/irq/N/ files against a
-+ * concurrent free of the interrupt descriptor. remove_proc_entry()
-+ * immediately prevents new read/writes to happen and waits for
-+ * already running read/write functions to complete.
-+ *
-+ * We remove the proc entries first and then delete the interrupt
-+ * descriptor from the radix tree and free it. So it is guaranteed
-+ * that irq_to_desc(N) is valid as long as the read/writes are
-+ * permitted by procfs.
-+ *
-+ * The read from /proc/interrupts is a different problem because there
-+ * is no protection. So the lookup and the access to irqdesc
-+ * information must be protected by sparse_irq_lock.
-+ */
- static struct proc_dir_entry *root_irq_dir;
- 
- #ifdef CONFIG_SMP
-@@ -437,9 +454,10 @@ int show_interrupts(struct seq_file *p, void *v)
- 		seq_putc(p, '\n');
+ 	char *file = NULL;
+@@ -293,10 +293,10 @@ out:
+ 		dso__free_a2l(dso);
  	}
- 
-+	irq_lock_sparse();
- 	desc = irq_to_desc(i);
- 	if (!desc)
--		return 0;
-+		goto outsparse;
- 
- 	raw_spin_lock_irqsave(&desc->lock, flags);
- 	for_each_online_cpu(j)
-@@ -479,6 +497,8 @@ int show_interrupts(struct seq_file *p, void *v)
- 	seq_putc(p, '\n');
- out:
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+outsparse:
-+	irq_unlock_sparse();
- 	return 0;
+ 	if (sym) {
+-		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
++		if (asprintf(&srcline, "%s+%" PRIu64, show_sym ? sym->name : "",
+ 					addr - sym->start) < 0)
+ 			return SRCLINE_UNKNOWN;
+-	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
++	} else if (asprintf(&srcline, "%s[%" PRIx64 "]", dso->short_name, addr) < 0)
+ 		return SRCLINE_UNKNOWN;
+ 	return srcline;
  }
- #endif
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index be198ac..027a515 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -310,7 +310,7 @@ static inline int path__join3(char *bf, size_t size,
+ struct dso;
+ struct symbol;
+ 
+-char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
++char *get_srcline(struct dso *dso, u64 addr, struct symbol *sym,
+ 		  bool show_sym);
+ void free_srcline(char *srcline);
+ 
