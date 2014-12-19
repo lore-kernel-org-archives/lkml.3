@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaLSQWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:22:48 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:49660 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaLSQWq (ORCPT
+	id S1752441AbaLSQYN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:24:13 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36784 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbaLSQYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 11:22:46 -0500
-Message-ID: <549450D0.8030805@cumulusnetworks.com>
-Date: Fri, 19 Dec 2014 08:22:40 -0800
-From: Roopa Prabhu <roopa@cumulusnetworks.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 19 Dec 2014 11:24:12 -0500
+Date: Fri, 19 Dec 2014 16:23:43 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Tim Harvey <tharvey@gateworks.com>
+Cc: Fabio Estevam <festevam@gmail.com>, Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Silvio F <silvio.fricke@gmail.com>, Christian Hemp <c.hemp@phytec.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Iain Paton <ipaton0@gmail.com>, Anson.Huang@freescale.com,
+        Shawn Guo <shawn.guo@linaro.org>
+Message-ID: <20141219162343.GF11764@sirena.org.uk>
+References: <1414729631-11005-1-git-send-email-tharvey@gateworks.com>
+ <1414729631-11005-5-git-send-email-tharvey@gateworks.com>
+ <CAOMZO5DzEe91pTv+UkCbj0DzgVDOb9hjuakt9NmpTJnEk-j8UA@mail.gmail.com>
+ <CAJ+vNU3PQYCE4tABUiqU+vGkGqBEqdVKz25W88-ByOQZxunVLw@mail.gmail.com>
+ <20141218142205.GZ11764@sirena.org.uk>
+ <CAJ+vNU1YQWGFaEm8w8wtaFvUy1jig26jW3+3teMFHLB_oFyn8Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Jiri Pirko <jiri@resnulli.us>
-CC: B Viswanath <marichika4@gmail.com>,
-        "Samudrala, Sridhar" <sridhar.samudrala@intel.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "Varlese, Marco" <marco.varlese@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Thomas Graf <tgraf@suug.ch>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-References: <54931969.7040209@cumulusnetworks.com> <5493293A.2000802@intel.com> <54935E28.8050602@cumulusnetworks.com> <549362A5.3000808@intel.com> <549367CC.2080307@cumulusnetworks.com> <CAN+pFwJyfg1+=+tXUpon0Kket56HJ=9BR3XohPhZnaX7hfPgpg@mail.gmail.com> <20141219082754.GE1848@nanopsycho.orion> <CAN+pFwJAJ71-+MZjJXPbfu5mzMp6AWNxtYR81Lx6siy3D3HfJg@mail.gmail.com> <20141219092308.GF1848@nanopsycho.orion> <CAN+pFwJr7TvJEW4x_HYPgTEvYGfi+YHgp=5vek2YiU1GLiH6_g@mail.gmail.com> <20141219095512.GH1848@nanopsycho.orion>
-In-Reply-To: <20141219095512.GH1848@nanopsycho.orion>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="99MdDuYC93zIKUQv"
+Content-Disposition: inline
+In-Reply-To: <CAJ+vNU1YQWGFaEm8w8wtaFvUy1jig26jW3+3teMFHLB_oFyn8Q@mail.gmail.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/5] cpufreq: imx6q: add ldo-bypass support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/14, 1:55 AM, Jiri Pirko wrote:
-> Fri, Dec 19, 2014 at 10:35:27AM CET, marichika4@gmail.com wrote:
->> On 19 December 2014 at 14:53, Jiri Pirko <jiri@resnulli.us> wrote:
->>> Fri, Dec 19, 2014 at 10:01:46AM CET, marichika4@gmail.com wrote:
->>>> On 19 December 2014 at 13:57, Jiri Pirko <jiri@resnulli.us> wrote:
->>>>> Fri, Dec 19, 2014 at 06:14:57AM CET, marichika4@gmail.com wrote:
->>>>>> On 19 December 2014 at 05:18, Roopa Prabhu <roopa@cumulusnetworks.com> wrote:
->>>>>>> On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
->>>> <snipped for ease of reading>
->>>>>>>>
->>>>>>>> We also need an interface to set per-switch attributes. Can this work?
->>>>>>>>      bridge link set dev sw0 sw_attr bcast_flooding 1 master
->>>>>>>> where sw0 is a bridge representing the hardware switch.
->>>>>>>
->>>>>>> Not today. We discussed this @ LPC, and one way to do this would be to have
->>>>>>> a device
->>>>>>> representing the switch asic. This is in the works.
->>>>>>
->>>>>> Can I assume that on  platforms which house more than one asic (say
->>>>>> two 24 port asics, interconnected via a 10G link or equivalent, to get
->>>>>> a 48 port 'switch') , the 'rocker' driver (or similar) should expose
->>>>>> them as a single set of ports, and not as two 'switch ports' ?
->>>>> Well that really depends on particular implementation and drivers. If you
->>>>> have 2 pci-e devices, I think you should expose them as 2 entities. For
->>>>> sure, you can have the driver to do the masking for you. I don't believe
->>>>> that is correct though.
->>>>>
->>>> In a platform that houses two asic chips, IMO, the user is still
->>>> expected to manage the router as a single entity. The configuration
->>>> being applied on both asic devices need to be matching if not
->>>> identical, and may not be conflicting. The FDB is to be synchronized
->>>> so that (offloaded) switching can happen across the asics. Some of
->>>> this stuff is asic specific anyway. Another example is that of the
->>>> learning. The (hardware) learning can't be enabled on one asic, while
->>>> being disabled on another one. The general use cases I have seen are
->>>> all involving managing the 'router' as a single entity.  That the
->>>> 'router' is implemented with two asics instead of a single asic (with
->>>> more ports) is to be treated as an implementation detail.  This is the
->>>> usual router management method that exists today.
->>>>
->>>> I hope I make sense.
->>>>
->>>> So I am trying to figure out what this single entity that will be used
->>> >from a user perspective. It can be a bridge, but our bridges are more
->>>> 802.1q bridges. We can use the 'self' mode, but then it means that it
->>>> should reflect the entire port count, and not just an asic.
->>>>
->>>> So I was trying to deduce that in our switchdevice model, the best bet
->>>> would be to leave the unification to the driver (i.e., to project the
->>>> multiple physical asics as a single virtual switch device). Thist
->>> Is it possible to have the asic as just single one? Or is it possible to
->>> connect asics being multiple chips maybe from multiple vendors together?
->> I didn't understand the first question. Some times, it is possible to
-> I ment that there is a design with just a single asic of this type,
-> instead of a pair.
->
->> have a single asic replace two, but its a cost factor, and others that
->> are involved.
->>
->> AFAIK, the answer to the second question is a No. Two asics from
->> different vendors may not be connected together. The interconnect
->> tends to be proprietary.
-> Okay. In that case, it might make sense to mask it on driver level.
->
->
->>> I believe that answer is "yes" in both cases. Making two separate asics
->>> to appear as one for user is not correct in my opinion. Driver should
->>> not do such masking. It is unclean, unextendable.
->>>
->> I am only looking for a single management entity. I am not thinking it
->> needs to be at driver level. I am not sure of  any other option apart
-> >from creating a 'switchdev' that Roopa was mentioning.
->
-> Well the thing is there is a common desire to make the offloading as
-> transparent as possible. For example, have 4 ports of same switch and
-> put them into br0. Just like that, without need to do anything else
-> than you would do when bridging ordinary NICs. Introducing some
-> "management entity" would break this approach.
->
-I don't think having a switchdevice breaks this approach. A software 
-bridge is not a 1-1 mapping with the asic in all cases.
-When its a vlan filtering bridge, yes, it is (In which case all switch 
-global l2 non-port specific attributes can be applied to the bridge).
 
-The switch asic can do l2 and l3 too. For a bridge, the switch asic is 
-just accelerating l2.
-And a switch asic is also capable of l3, acls. A switch device (whether 
-accessible to userspace or not)
-may become necessary (as discussed in other threads) where you cannot 
-resolve a kernel object to a switch port (Global acl rules, unresolved 
-route nexthops etc).
+--99MdDuYC93zIKUQv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Fri, Dec 19, 2014 at 08:17:41AM -0800, Tim Harvey wrote:
+
+> frequency setpoint. If however you have an external PMIC that is
+> capable of adjusting the VDD_ARM and VDD_SOC to the IMX6 and an
+> appropriate regulator driver is capable of doing so, you must
+> configure the cpu nodes vddarm and vddsoc regulators to those provided
+> by your PMIC and 'bypass' the internal LDO's by setting their scaling
+
+You're describing the implementation again, not the system.  Describe
+the system then if you want to describe the solution you've come up with
+for modelling it do so separately.
+
+Please also try to use paragraphs to break up what you're saying a bit.
+
+--99MdDuYC93zIKUQv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUlFEOAAoJECTWi3JdVIfQH4IH/0xCoOywtl8di5u1aN+LaqGl
+u+Cb1TWAYi7JUKodpu1di6tqXmH3wJ5KOGVMK+DRavLO2HcKpNH+U0XVwLmshpCI
+ymyBKs5z0aglba6HLWK6ksW6QSCtaqiOYQnVJVh1DzIPEbMzv9RPeNiNoO00cvgC
+/N0OrkgBsKOXW/+TmcPddydExFZqBRi0/WkiTctLsqnDzEralYqclOUGtwSXajwD
+R23WSiWNcbtkpxRo6Pp+Ual5NdKFNW3KgMuiYYdLUn77fxfKcj4rjG/w7iGjnyvm
+8MeJUfVpQlO3Y5CdROODDtU4u+0G2TSYnvwNf0wuPwT9G4o+O98vORjDXC9SBCE=
+=P0NG
+-----END PGP SIGNATURE-----
+
+--99MdDuYC93zIKUQv--
