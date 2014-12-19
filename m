@@ -1,105 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaLSRxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 12:53:48 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:46908 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaLSRxr (ORCPT
+	id S1751545AbaLSSGH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 13:06:07 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:40899 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaLSSGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 12:53:47 -0500
+	Fri, 19 Dec 2014 13:06:04 -0500
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH v2 1/2] i8k: Autodetect maximal fan speed and fan RPM multiplier
+Date: Fri, 19 Dec 2014 19:04:27 +0100
+Message-Id: <1419012268-20805-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com>
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1419010969.13012.7@mail.thefacebook.com>
-References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
- <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
- <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
- <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
- <20141219112350.GJ30905@twins.programming.kicks-ass.net> <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com>
- <1419010969.13012.7@mail.thefacebook.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 19 Dec 2014 09:53:24 -0800
-Message-ID: <CALCETrUaYkVtbxOHwsAe35L_Mfr3YLMnwX_FbR4D+EjNiuHwaQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
-To: Chris Mason <clm@fb.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Shaohua Li <shli@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 9:42 AM, Chris Mason <clm@fb.com> wrote:
->
->
-> On Fri, Dec 19, 2014 at 11:48 AM, Andy Lutomirski <luto@amacapital.net>
-> wrote:
->>
->> On Fri, Dec 19, 2014 at 3:23 AM, Peter Zijlstra <peterz@infradead.org>
->> wrote:
->>>
->>>  On Thu, Dec 18, 2014 at 04:22:59PM -0800, Andy Lutomirski wrote:
->>>>
->>>>  Bad news: this patch is incorrect, I think.  Take a look at
->>>>  update_rq_clock -- it does fancy things involving irq time and
->>>>  paravirt steal time.  So this patch could result in extremely
->>>>  non-monotonic results.
->>>
->>>
->>>  Yeah, I'm not sure how (and if) we could make all that work :/
->>
->>
->> I obviously can't comment on what Facebook needs, but if I were
->> rigging something up to profile my own code*, I'd want a count of
->> elapsed time, including user, system, and probably interrupt as well.
->> I would probably not want to count time during which I'm not
->> scheduled, and I would also probably not want to count steal time.
->> The latter makes any implementation kind of nasty.
->>
->> The API presumably doesn't need to be any particular clock id for
->> clock_gettime, and it may not even need to be clock_gettime at all.
->>
->> Is perf self-monitoring good enough for this?  If not, can we make it
->> good enough?
->>
->> * I do this today using CLOCK_MONOTONIC
->
->
-> The clock_gettime calls are used for a wide variety of things, but usually
-> they are trying to instrument how much CPU the application is using.  So for
-> example with the HHVM interpreter they have a ratio of the number of hhvm
-> instructions they were able to execute in N seconds of cputime.  This gets
-> used to optimize the HHVM implementation and can be used as a push blocking
-> counter (code can't go in if it makes it slower).
->
-> Wall time isn't a great representation of this because it includes factors
-> that might be outside a given HHVM patch, but it sounds like we're saying
-> almost the same thing.
->
-> I'm not familiar with the perf self monitoring?
+This patch adds new function i8k_get_fan_nominal_speed() for doing SMM call
+which will return nominal fan RPM for specified fan speed. It returns nominal
+RPM value at which fan operate when speed (0, 1, 2, 3) is set. It looks like
+RPM value is not accurate, but still provides very useful information.
 
-You can call perf_event_open and mmap the result.  Then you can read
-the docs^Wheader file.
+First it can be used to validate if certain fan speed could be accepted by SMM
+for setting fan speed and we can use this routine to detect maximal fan speed.
 
-On the god side, it's an explicit mmap, so all the nasty preemption
-issues are entirely moot.  And you can count cache misses and such if
-you want to be fancy.
+Second it returns RPM value, so we can check if value looks correct with
+multiplier 30 or multiplier 1 (until now only these two multiplier were used).
+If RPM value with multiplier 30 is too high, then multiplier 1 is used.
 
-On the bad side, the docs are a bit weak, and the added context switch
-overhead might be higher.
+In case when SMM reports that new function is not supported we will fallback
+to old hardcoded values. Maximal fan speed would be 2 and RPM multiplier 30.
 
---Andy
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Tested-By: Pali Rohár <pali.rohar@gmail.com>
+Tested-By: Steven Honeyman <stevenhoneyman@gmail.com>
+Tested-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+---
+ drivers/char/i8k.c |  126 +++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 105 insertions(+), 21 deletions(-)
 
->
-> -chris
->
->
->
->
-
-
-
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index 48d701c..094a6b8 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -6,6 +6,7 @@
+  * Hwmon integration:
+  * Copyright (C) 2011  Jean Delvare <jdelvare@suse.de>
+  * Copyright (C) 2013, 2014  Guenter Roeck <linux@roeck-us.net>
++ * Copyright (C) 2014  Pali Rohár <pali.rohar@gmail.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
+@@ -42,12 +43,14 @@
+ #define I8K_SMM_SET_FAN		0x01a3
+ #define I8K_SMM_GET_FAN		0x00a3
+ #define I8K_SMM_GET_SPEED	0x02a3
++#define I8K_SMM_GET_NOM_SPEED	0x04a3
+ #define I8K_SMM_GET_TEMP	0x10a3
+ #define I8K_SMM_GET_TEMP_TYPE	0x11a3
+ #define I8K_SMM_GET_DELL_SIG1	0xfea3
+ #define I8K_SMM_GET_DELL_SIG2	0xffa3
+ 
+-#define I8K_FAN_MULT		30
++#define I8K_FAN_DEFAULT_MULT	30
++#define I8K_FAN_MAX_RPM		30000
+ #define I8K_MAX_TEMP		127
+ 
+ #define I8K_FN_NONE		0x00
+@@ -64,9 +67,9 @@ static DEFINE_MUTEX(i8k_mutex);
+ static char bios_version[4];
+ static struct device *i8k_hwmon_dev;
+ static u32 i8k_hwmon_flags;
+-static int i8k_fan_mult;
+-static int i8k_pwm_mult;
+-static int i8k_fan_max = I8K_FAN_HIGH;
++static int i8k_fan_mult[2];
++static int i8k_pwm_mult[2];
++static int i8k_fan_max[2];
+ 
+ #define I8K_HWMON_HAVE_TEMP1	(1 << 0)
+ #define I8K_HWMON_HAVE_TEMP2	(1 << 1)
+@@ -95,13 +98,13 @@ static bool power_status;
+ module_param(power_status, bool, 0600);
+ MODULE_PARM_DESC(power_status, "Report power status in /proc/i8k");
+ 
+-static int fan_mult = I8K_FAN_MULT;
++static int fan_mult;
+ module_param(fan_mult, int, 0);
+-MODULE_PARM_DESC(fan_mult, "Factor to multiply fan speed with");
++MODULE_PARM_DESC(fan_mult, "Factor to multiply fan speed with (default: autodetect)");
+ 
+-static int fan_max = I8K_FAN_HIGH;
++static int fan_max;
+ module_param(fan_max, int, 0);
+-MODULE_PARM_DESC(fan_max, "Maximum configurable fan speed");
++MODULE_PARM_DESC(fan_max, "Maximum configurable fan speed (default: autodetect)");
+ 
+ static int i8k_open_fs(struct inode *inode, struct file *file);
+ static long i8k_ioctl(struct file *, unsigned int, unsigned long);
+@@ -271,8 +274,25 @@ static int i8k_get_fan_speed(int fan)
+ {
+ 	struct smm_regs regs = { .eax = I8K_SMM_GET_SPEED, };
+ 
++	if (fan < 0 || fan >= ARRAY_SIZE(i8k_fan_mult))
++		return -EINVAL;
++
+ 	regs.ebx = fan & 0xff;
+-	return i8k_smm(&regs) ? : (regs.eax & 0xffff) * i8k_fan_mult;
++	return i8k_smm(&regs) ? : (regs.eax & 0xffff) * i8k_fan_mult[fan];
++}
++
++/*
++ * Read the fan nominal rpm for specific fan speed.
++ */
++static int i8k_get_fan_nominal_speed(int fan, int speed)
++{
++	struct smm_regs regs = { .eax = I8K_SMM_GET_NOM_SPEED, };
++
++	if (fan < 0 || fan >= ARRAY_SIZE(i8k_fan_mult))
++		return -EINVAL;
++
++	regs.ebx = (fan & 0xff) | (speed << 8);
++	return i8k_smm(&regs) ? : (regs.eax & 0xffff) * i8k_fan_mult[fan];
+ }
+ 
+ /*
+@@ -282,9 +302,12 @@ static int i8k_set_fan(int fan, int speed)
+ {
+ 	struct smm_regs regs = { .eax = I8K_SMM_SET_FAN, };
+ 
+-	speed = (speed < 0) ? 0 : ((speed > i8k_fan_max) ? i8k_fan_max : speed);
+-	regs.ebx = (fan & 0xff) | (speed << 8);
++	if (speed < 0)
++		speed = 0;
++	if (fan >= 0 && fan < ARRAY_SIZE(i8k_fan_max) && speed > i8k_fan_max[fan])
++		speed = i8k_fan_max[fan];
+ 
++	regs.ebx = (fan & 0xff) | (speed << 8);
+ 	return i8k_smm(&regs) ? : i8k_get_fan_status(fan);
+ }
+ 
+@@ -562,7 +585,8 @@ static ssize_t i8k_hwmon_show_pwm(struct device *dev,
+ 	status = i8k_get_fan_status(index);
+ 	if (status < 0)
+ 		return -EIO;
+-	return sprintf(buf, "%d\n", clamp_val(status * i8k_pwm_mult, 0, 255));
++	return sprintf(buf, "%d\n", clamp_val(status * i8k_pwm_mult[index],
++					      0, 255));
+ }
+ 
+ static ssize_t i8k_hwmon_set_pwm(struct device *dev,
+@@ -576,7 +600,8 @@ static ssize_t i8k_hwmon_set_pwm(struct device *dev,
+ 	err = kstrtoul(buf, 10, &val);
+ 	if (err)
+ 		return err;
+-	val = clamp_val(DIV_ROUND_CLOSEST(val, i8k_pwm_mult), 0, i8k_fan_max);
++	val = clamp_val(DIV_ROUND_CLOSEST(val, i8k_pwm_mult[index]), 0,
++			i8k_fan_max[index]);
+ 
+ 	mutex_lock(&i8k_mutex);
+ 	err = i8k_set_fan(index, val);
+@@ -854,7 +879,9 @@ MODULE_DEVICE_TABLE(dmi, i8k_dmi_table);
+  */
+ static int __init i8k_probe(void)
+ {
++	const struct i8k_config_data *conf;
+ 	const struct dmi_system_id *id;
++	int fan, val, ret;
+ 
+ 	/*
+ 	 * Get DMI information
+@@ -883,18 +910,75 @@ static int __init i8k_probe(void)
+ 			return -ENODEV;
+ 	}
+ 
+-	i8k_fan_mult = fan_mult;
+-	i8k_fan_max = fan_max ? : I8K_FAN_HIGH;	/* Must not be 0 */
++	/*
++	 * Autodetect fan multiplier and maximal fan speed from dmi config
++	 * Values specified in module parameters override values from dmi
++	 */
+ 	id = dmi_first_match(i8k_dmi_table);
+ 	if (id && id->driver_data) {
+-		const struct i8k_config_data *conf = id->driver_data;
++		conf = id->driver_data;
++		if (fan_mult <= 0 && conf->fan_mult > 0)
++			fan_mult = conf->fan_mult;
++		if (fan_max <= 0 && conf->fan_max > 0)
++			fan_max = conf->fan_max;
++	}
++
++	if (fan_mult <= 0) {
++		/*
++		 * Autodetect fan multiplier for each fan based on nominal rpm
++		 * First set default fan multiplier for each fan
++		 * And if it reports rpm value too high then set multiplier to 1
++		 *
++		 * Try also setting multiplier from current rpm, but this will
++		 * work only in case when fan is not turned off. It is better
++		 * then nothing for machines which does not support nominal rpm
++		 * SMM function.
++		 */
++		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_mult); ++fan) {
++			i8k_fan_mult[fan] = I8K_FAN_DEFAULT_MULT;
++			if (i8k_get_fan_speed(fan) > I8K_FAN_MAX_RPM) {
++				i8k_fan_mult[fan] = 1;
++				continue;
++			}
++			for (val = 0; val < 256; ++val) {
++				ret = i8k_get_fan_nominal_speed(fan, val);
++				if (ret > I8K_FAN_MAX_RPM) {
++					i8k_fan_mult[fan] = 1;
++					break;
++				} else if (ret < 0) {
++					break;
++				}
++			}
++		}
++	} else {
++		/* Fan multiplier was specified in module param or in dmi */
++		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_mult); ++fan)
++			i8k_fan_mult[fan] = fan_mult;
++	}
+ 
+-		if (fan_mult == I8K_FAN_MULT && conf->fan_mult)
+-			i8k_fan_mult = conf->fan_mult;
+-		if (fan_max == I8K_FAN_HIGH && conf->fan_max)
+-			i8k_fan_max = conf->fan_max;
++	if (fan_max <= 0) {
++		/*
++		 * Autodetect maximal fan speed value for each fan
++		 * Speed value is valid if i8k_get_fan_nominal_speed() not fail
++		 */
++		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_max); ++fan) {
++			for (val = 0; val < 256; ++val) {
++				if (i8k_get_fan_nominal_speed(fan, val) < 0)
++					break;
++			}
++			--val; /* set last value which not failed */
++			if (val <= 0) /* Must not be 0 (and non negative) */
++				val = I8K_FAN_HIGH;
++			i8k_fan_max[fan] = val;
++		}
++	} else {
++		/* Maximal fan speed was specified in module param or in dmi */
++		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_max); ++fan)
++			i8k_fan_max[fan] = fan_max;
+ 	}
+-	i8k_pwm_mult = DIV_ROUND_UP(255, i8k_fan_max);
++
++	for (fan = 0; fan < ARRAY_SIZE(i8k_pwm_mult); ++fan)
++		i8k_pwm_mult[fan] = DIV_ROUND_UP(255, i8k_fan_max[fan]);
+ 
+ 	return 0;
+ }
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.7.9.5
+
