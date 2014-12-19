@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaLSPPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:15:15 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:42769 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751281AbaLSPPN (ORCPT
+	id S1751672AbaLSPUS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:20:18 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41998 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312AbaLSPUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:15:13 -0500
-Date: Fri, 19 Dec 2014 10:14:29 -0500
-From: Chris Mason <clm@fb.com>
-Subject: Re: frequent lockups in 3.18rc4
-To: Dave Jones <davej@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Message-ID: <1419002069.13012.4@mail.thefacebook.com>
-In-Reply-To: <20141219145528.GC13404@redhat.com>
-References: <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
-	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
-	<20141218051327.GA31988@redhat.com>
-	<1418918059.17358.6@mail.thefacebook.com>
-	<20141218161230.GA6042@redhat.com> <20141219024549.GB1671@redhat.com>
-	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
-	<20141219035859.GA20022@redhat.com> <20141219040308.GB20022@redhat.com>
-	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
-	<20141219145528.GC13404@redhat.com>
-X-Mailer: geary/0.8.2
+	Fri, 19 Dec 2014 10:20:17 -0500
+Date: Fri, 19 Dec 2014 07:20:13 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mtd: ssfdc: Fix space before ( coding style
+Message-ID: <20141219152013.GA2046@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Mohammad Jamal <md.jamalmohiuddin@gmail.com>, dwmw2@infradead.org,
+	computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
+	linux-kernel@vger.kernel.org
+References: <1418999413-29428-1-git-send-email-md.jamalmohiuddin@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-19_04:2014-12-19,2014-12-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=5 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=145.191669734525
- compositescore=0.160988131301636 urlsuspect_oldscore=0.160988131301636
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.160988131301636 spamscore=5
- recipient_to_sender_domain_totalscore=7 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412190151
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418999413-29428-1-git-send-email-md.jamalmohiuddin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mohammad,
 
-
-On Fri, Dec 19, 2014 at 9:55 AM, Dave Jones <davej@redhat.com> wrote:
-> On Thu, Dec 18, 2014 at 08:48:24PM -0800, Linus Torvalds wrote:
->  > On Thu, Dec 18, 2014 at 8:03 PM, Dave Jones <davej@redhat.com> 
-> wrote:
->  > >
->  > > So the only thing that was on that could cause spinlock overhead
->  > > was DEBUG_SPINLOCK (and LOCK_STAT, though iirc that's not huge 
-> either)
->  >
->  > So DEBUG_SPINLOCK does have one big downside if I recall correctly 
-> -
->  > the debugging spinlocks are very much not fair. So they don't work
->  > like the real ticket spinlocks. That might have serious effects on 
-> the
->  > contention case, with some thread not making any progress due to 
-> just
->  > the implementation of the debug spinlocks.
+On Fri, Dec 19, 2014 at 08:00:13PM +0530, Mohammad Jamal wrote:
+> Patch solves the space before ( coding style issue of ssfdc.c
 > 
-> Wish DEBUG_SPINLOCK disabled, I see the same behaviour.
-> Lots of traces spewed, but it seems to run and run (at least so far).
+> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+> ---
+>  drivers/mtd/ssfdc.c |   18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/mtd/ssfdc.c b/drivers/mtd/ssfdc.c
+> index daf82ba..d4a922c 100644
+> --- a/drivers/mtd/ssfdc.c
+> +++ b/drivers/mtd/ssfdc.c
+> @@ -42,8 +42,8 @@ struct ssfdcr_record {
+>  #define MAX_LOGIC_BLK_PER_ZONE	1000
+>  #define MAX_PHYS_BLK_PER_ZONE	1024
+>  
+> -#define KiB(x)	( (x) * 1024L )
+> -#define MiB(x)	( KiB(x) * 1024L )
+> +#define KiB(x)	((x) * 1024L)
+> +#define MiB(x)	(KiB(x) * 1024L)
+This looks better than before.
 
-Not quite the same, the spinlocks are gone.
+>  
+>  /** CHS Table
+>  		1MiB	2MiB	4MiB	8MiB	16MiB	32MiB	64MiB	128MiB
+> @@ -63,13 +63,13 @@ typedef struct {
+>  
+>  /* Must be ordered by size */
+>  static const chs_entry_t chs_table[] = {
+> -	{ MiB(  1), 125,  4,  4 },
+> -	{ MiB(  2), 125,  4,  8 },
+> -	{ MiB(  4), 250,  4,  8 },
+> -	{ MiB(  8), 250,  4, 16 },
+> -	{ MiB( 16), 500,  4, 16 },
+> -	{ MiB( 32), 500,  8, 16 },
+> -	{ MiB( 64), 500,  8, 32 },
+> +	{ MiB(1), 125,  4,  4 },
+> +	{ MiB(2), 125,  4,  8 },
+> +	{ MiB(4), 250,  4,  8 },
+> +	{ MiB(8), 250,  4, 16 },
+> +	{ MiB(16), 500,  4, 16 },
+> +	{ MiB(32), 500,  8, 16 },
+> +	{ MiB(64), 500,  8, 32 },
+>  	{ MiB(128), 500, 16, 32 },
+>  	{ 0 },
+>  };
+I like the original version better here.  The columns were lined up
+nicely and it was easier to read.
 
--chris
-
-
-
+-- 
+- Jeremiah Mahler
