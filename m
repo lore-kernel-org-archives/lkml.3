@@ -1,94 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbaLSXjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 18:39:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1809 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673AbaLSXjj convert rfc822-to-8bit (ORCPT
+	id S1752755AbaLSXjs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 18:39:48 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:48308 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673AbaLSXjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 18:39:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,610,1413270000"; 
-   d="scan'208";a="657396994"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
-Thread-Topic: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
-Thread-Index: AQHQG4NaL/XOC+t0S0iej0tzGb4XjJyXkpRw
-Date: Fri, 19 Dec 2014 23:39:34 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F00230CFC3@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-17-git-send-email-feng.wu@intel.com>
- <5491ACA9.5020507@redhat.com>
- <E959C4978C3B6342920538CF579893F00230A97C@SHSMSX104.ccr.corp.intel.com>
- <5494132C.7060204@redhat.com>
-In-Reply-To: <5494132C.7060204@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Dec 2014 18:39:47 -0500
+Date: Sat, 20 Dec 2014 08:39:37 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ganesh Mahendran <opensource.ganesh@gmail.com>, ngupta@vflare.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
+Message-ID: <20141219233937.GA11975@blaptop>
+References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 19, 2014 at 02:32:44PM -0800, Andrew Morton wrote:
+> On Fri, 19 Dec 2014 20:55:19 +0800 Ganesh Mahendran <opensource.ganesh@gmail.com> wrote:
+> 
+> > Keeping fragmentation of zsmalloc in a low level is our target. But now
+> > we still need to add the debug code in zsmalloc to get the quantitative data.
+> > 
+> > This patch adds a new configuration CONFIG_ZSMALLOC_STAT to enable the
+> > statistics collection for developers. Currently only the objects statatitics
+> > in each class are collected. User can get the information via debugfs.
+> >      cat /sys/kernel/debug/zsmalloc/pool-1/...
+> 
+> Is everyone OK with this now?
 
+Hmm, how about passing straightforward name from the user(ex, zram) when
+it creates zsmalloc? (ex, ex, zs_create_pool(gfp, zram0)).
+Then, we should fix debugfs_create_dir can return errno to propagate the error
+to end user who can know it was failed ENOMEM or EEXIST.
 
-> -----Original Message-----
-> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
-> Bonzini
-> Sent: Friday, December 19, 2014 8:00 PM
-> To: Wu, Feng; linux-kernel@vger.kernel.org
-> Cc: iommu@lists.linux-foundation.org; kvm@vger.kernel.org
-> Subject: Re: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
 > 
+> > --- a/include/linux/zsmalloc.h
+> > +++ b/include/linux/zsmalloc.h
+> > @@ -48,4 +48,13 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+> >  
+> >  unsigned long zs_get_total_pages(struct zs_pool *pool);
+> >  
+> > +#ifdef CONFIG_ZSMALLOC_STAT
+> > +int get_zs_pool_index(struct zs_pool *pool);
 > 
+> The name is inconsistent with the rest of zsmalloc and with preferred
+> kernel naming conventions.  Should be "zs_get_pool_index".
 > 
-> On 19/12/2014 03:19, Wu, Feng wrote:
-> >>> > >
-> >>> > > +#ifdef CONFIG_HAVE_KVM_IRQ_ROUTING
-> >>> > > +
-> >>> > > +struct kvm_irq_routing_table {
-> >>> > > +	int chip[KVM_NR_IRQCHIPS][KVM_IRQCHIP_NUM_PINS];
-> >>> > > +	struct kvm_kernel_irq_routing_entry *rt_entries;
-> >>> > > +	u32 nr_rt_entries;
-> >>> > > +	/*
-> >>> > > +	 * Array indexed by gsi. Each entry contains list of irq chips
-> >>> > > +	 * the gsi is connected to.
-> >>> > > +	 */
-> >>> > > +	struct hlist_head map[0];
-> >>> > > +};
-> >>> > > +
-> >>> > > +#else
-> >>> > > +
-> >>> > > +struct kvm_irq_routing_table {};
-> >> >
-> >> > If possible, just make this "struct kvm_irq_routing_table;" and pull
-> >> > this line to include/linux/kvm_types.h.
-> >> >
-> >> > Paolo
-> > Do you mean move the definition of struct kvm_irq_routing_table
-> > to include/linux/kvm_types.h and add a declaration here?
+> > +#else
+> > +static inline int get_zs_pool_index(struct zs_pool *pool)
+> > +{
+> > +	return -1;
+> > +}
+> > +#endif
+> > +
+> >  #endif
+> > diff --git a/mm/Kconfig b/mm/Kconfig
+> > index 1d1ae6b..95c5728 100644
+> > --- a/mm/Kconfig
+> > +++ b/mm/Kconfig
+> >
+> > ...
+> >
+> > +static int zs_stats_size_show(struct seq_file *s, void *v)
+> > +{
+> > +	int i;
+> > +	struct zs_pool *pool = (struct zs_pool *)s->private;
 > 
-> Move
+> The typecast is unneeded and undesirable (it defeats typechecking).
 > 
-> struct kvm_irq_routing_table;
+> > +	struct size_class *class;
+> > +	int objs_per_zspage;
+> > +	unsigned long obj_allocated, obj_used, pages_used;
+> > +	unsigned long total_objs = 0, total_used_objs = 0, total_pages = 0;
+> > +
+> > +	seq_printf(s, " %5s %5s %13s %10s %10s\n", "class", "size",
+> > +				"obj_allocated", "obj_used", "pages_used");
+> > +
+> > +	for (i = 0; i < zs_size_classes; i++) {
+> > +		class = pool->size_class[i];
+> > +
+> > +		if (class->index != i)
+> > +			continue;
+> > +
+> > +		spin_lock(&class->lock);
+> > +		obj_allocated = zs_stat_get(class, OBJ_ALLOCATED);
+> > +		obj_used = zs_stat_get(class, OBJ_USED);
+> > +		spin_unlock(&class->lock);
+> > +
+> > +		objs_per_zspage = get_maxobj_per_zspage(class->size,
+> > +				class->pages_per_zspage);
+> > +		pages_used = obj_allocated / objs_per_zspage *
+> > +				class->pages_per_zspage;
+> > +
+> > +		seq_printf(s, " %5u %5u    %10lu %10lu %10lu\n", i,
+> > +			class->size, obj_allocated, obj_used, pages_used);
+> > +
+> > +		total_objs += obj_allocated;
+> > +		total_used_objs += obj_used;
+> > +		total_pages += pages_used;
+> > +	}
+> > +
+> > +	seq_puts(s, "\n");
+> > +	seq_printf(s, " %5s %5s    %10lu %10lu %10lu\n", "Total", "",
+> > +			total_objs, total_used_objs, total_pages);
+> > +
+> > +	return 0;
+> > +}
+> >
+> > ...
+> >
+> > +static int zs_pool_stat_create(struct zs_pool *pool)
+> > +{
+> > +	char name[10];
 > 
-> to include/linux/kvm_types.h.  In kvm_host.h, leave the #ifdef with the
-> full definition but drop the #else.
+> This is not good.  If the kernel creates and then destroys a pool 10000
+> times, zs_pool_index==10000 and we overrun the buffer.  Could use
+> kasprintf() in here to fix this.
 > 
-> Paolo
-
-
-Paolo, Thanks for the explanation. I notice that " struct kvm_irq_routing_table;"
-is already in include/linux/kvm_types.h.
-
-Thanks,
-Feng
+> zs_pool_index isn't a very good name - it doesn't index anything. 
+> zs_pool_id would be better.
+> 
+> > +	struct dentry *entry;
+> > +
+> > +	if (!zs_stat_root)
+> > +		return -ENODEV;
+> > +
+> > +	pool->index = atomic_inc_return(&zs_pool_index);
+> > +	snprintf(name, sizeof(name), "pool-%d", pool->index);
+> > +	entry = debugfs_create_dir(name, zs_stat_root);
+> > +	if (!entry) {
+> > +		pr_warn("pool %d, debugfs dir <%s> creation failed\n",
+> > +				pool->index, name);
+> > +		return -ENOMEM;
+> 
+> Sigh.  The debugfs interface does suck.  Doesn't matter much.
+> 
+> > +	}
+> > +	pool->stat_dentry = entry;
+> > +
+> > +	entry = debugfs_create_file("obj_in_classes", S_IFREG | S_IRUGO,
+> > +			pool->stat_dentry, pool, &zs_stat_size_ops);
+> > +	if (!entry) {
+> > +		pr_warn("pool %d, debugfs file entry <%s> creation failed\n",
+> > +				pool->index, "obj_in_classes");
+> > +		return -ENOMEM;
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> >
+> > ...
+> >
+> 
