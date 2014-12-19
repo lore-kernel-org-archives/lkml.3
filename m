@@ -1,171 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaLSQ0L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:26:11 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:19333 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279AbaLSQ0J (ORCPT
+	id S1751399AbaLSQnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:43:42 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36841 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaLSQnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 11:26:09 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-fe-5494519d9d74
-Date: Fri, 19 Dec 2014 17:25:58 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Eduardo Valentin <edubezval@gmail.com>,
-        Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH 2/9] hwmon: dts: Doc: Add DTS doc to explain how to use PWM
- FAN as a cooling device
-Message-id: <20141219172558.6216c1cd@amdc2363>
-In-reply-to: <5492E46C.3080100@roeck-us.net>
-References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
- <1418897591-18332-3-git-send-email-l.majewski@samsung.com>
- <5492E46C.3080100@roeck-us.net>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+xoO7cwCkhBv//G1nMP3KO1WL+lWus
-	FkvvfmKz+PH6AptF74KrbBZvHnFbXN41h83ic+8RRosZ5/cxWTxZeIbJ4s60vWwWh9+0szrw
-	eOycdZfd48HE3Wwe66a9ZfbY+b2B3aNvyypGj82nqz0+b5ILYI/isklJzcksSy3St0vgyjg0
-	5yh7wTe5iqUN19kbGO+KdzFyckgImEhcf/ucHcIWk7hwbz0biC0kMJ1RYsYa7i5GLiD7F6PE
-	ot37wIpYBFQlfj1cxAxiswnoSXy++5QJxBYRUJNoPtXCBtLALLCXWeLezrtADgeHsECmxONm
-	fpAaXqD6x2f6GEFsTgEdiVdXzzNDLFjKKPH98jGwzfwCkhLt/34wQ1xkJ3Hu0wZ2iGZBiR+T
-	77GA2MwCWhKbtzWxQtjyEpvXvGWewCg4C0nZLCRls5CULWBkXsUomlqQXFCclJ5rpFecmFtc
-	mpeul5yfu4kRHEHPpHcwrmqwOMQowMGoxMPbUTg5RIg1say4MvcQowQHs5IIr6H7lBAh3pTE
-	yqrUovz4otKc1OJDjNIcLErivEr2bSFCAumJJanZqakFqUUwWSYOTqkGxv748CKLur7oxKbf
-	OtsNPRK11X7yqTz7c/VRG0dCw8mcySxClz9ff8tSbRL1zvD2YWn+vW9E2959Mb0UL1zPFlbi
-	Z1lz8Wuu2v4tO/5rm27jjYv+fGa/glPpZtkzZcrLQ8v0vnBOXr2G66vpnIUXRQSPT+cPkXZ5
-	xDV5855JCu5M5XdKtd7FKrEUZyQaajEXFScCAC31GLycAgAA
+	Fri, 19 Dec 2014 11:43:41 -0500
+Message-ID: <54945631.4040303@oracle.com>
+Date: Fri, 19 Dec 2014 11:45:37 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel <xen-devel@lists.xenproject.org>, linux-kernel@vger.kernel.org
+Subject: Re: xen/x86: properly retrieve NMI reason
+References: <54945D760200007800051157@mail.emea.novell.com>
+In-Reply-To: <54945D760200007800051157@mail.emea.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On 12/19/2014 11:16 AM, Jan Beulich wrote:
+> Using the native code here can't work properly, as the hypervisor would
+> normally have cleared the two reason bits by the time Dom0 gets to see
+> the NMI (if passed to it at all). There's a shared info field for this,
+> and there's an existing hook to use - just fit the two together. Note
+> that the hook can (and should) be used irrespective of whether being in
+> Dom0, as accessing port 0x61 in a DomU would be even worse, while the
+> shared info field would just hold zero all the time.
 
-> On 12/18/2014 02:13 AM, Lukasz Majewski wrote:
-> > Several new properties to allow PWM fan working as a cooling device
-> > have been combined into this single commit.
-> >
-> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > ---
-> >   .../devicetree/bindings/hwmon/pwm-fan.txt          | 28
-> > ++++++++++++++++++++++ 1 file changed, 28 insertions(+)
-> >
-> > diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt index
-> > 610757c..3877810 100644 ---
-> > a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt +++
-> > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt @@ -3,10
-> > +3,38 @@ Bindings for a fan connected to the PWM lines Required
-> > properties:
-> >   - compatible	: "pwm-fan"
-> >   - pwms		: the PWM that is used to control the PWM
-> > fan +- cooling-pwm-values      : PWM duty cycle values relative to
-> > +			    cooling-max-pwm-value correspondig to
-> > +			    proper cooling states
-> 
-> I don't understand what you mean with "relative to". Please elaborate.
-> Do you mean "associated with" ?
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-I meant that cooling-pwm-values is no greater than
-cooling-max-pwm-value (which was present in some earlier version of
-this patch and had value of 255).
+>
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> ---
+>   arch/x86/xen/enlighten.c    |   22 +++++++++++++++++-
+>   include/xen/interface/nmi.h |   52 ++++++++++++++++++++++++++++++++++++++++++++
+>   2 files changed, 73 insertions(+), 1 deletion(-)
+>
+> --- 3.18/arch/x86/xen/enlighten.c
+> +++ 3.18-xen-x86-NMI-reason/arch/x86/xen/enlighten.c
+> @@ -40,6 +40,7 @@
+>   #include <xen/interface/physdev.h>
+>   #include <xen/interface/vcpu.h>
+>   #include <xen/interface/memory.h>
+> +#include <xen/interface/nmi.h>
+>   #include <xen/interface/xen-mca.h>
+>   #include <xen/features.h>
+>   #include <xen/page.h>
+> @@ -66,6 +67,7 @@
+>   #include <asm/reboot.h>
+>   #include <asm/stackprotector.h>
+>   #include <asm/hypervisor.h>
+> +#include <asm/mach_traps.h>
+>   #include <asm/mwait.h>
+>   #include <asm/pci_x86.h>
+>   #include <asm/pat.h>
+> @@ -1357,6 +1359,21 @@ static const struct machine_ops xen_mach
+>   	.emergency_restart = xen_emergency_restart,
+>   };
+>   
+> +static unsigned char xen_get_nmi_reason(void)
+> +{
+> +	unsigned char reason = 0;
+> +
+> +	/* Construct a value which looks like it came from port 0x61. */
+> +	if (test_bit(_XEN_NMIREASON_io_error,
+> +		     &HYPERVISOR_shared_info->arch.nmi_reason))
+> +		reason |= NMI_REASON_IOCHK;
+> +	if (test_bit(_XEN_NMIREASON_pci_serr,
+> +		     &HYPERVISOR_shared_info->arch.nmi_reason))
+> +		reason |= NMI_REASON_SERR;
+> +
+> +	return reason;
+> +}
+> +
+>   static void __init xen_boot_params_init_edd(void)
+>   {
+>   #if IS_ENABLED(CONFIG_EDD)
+> @@ -1541,9 +1558,12 @@ asmlinkage __visible void __init xen_sta
+>   	pv_info = xen_info;
+>   	pv_init_ops = xen_init_ops;
+>   	pv_apic_ops = xen_apic_ops;
+> -	if (!xen_pvh_domain())
+> +	if (!xen_pvh_domain()) {
+>   		pv_cpu_ops = xen_cpu_ops;
+>   
+> +		x86_platform.get_nmi_reason = xen_get_nmi_reason;
+> +	}
+> +
+>   	if (xen_feature(XENFEAT_auto_translated_physmap))
+>   		x86_init.resources.memory_setup = xen_auto_xlated_memory_setup;
+>   	else
+> --- /usr/local/src/linux-3.18/include/xen/interface/nmi.h	1970-01-01 01:00:00.000000000 +0100
+> +++ 3.18-xen-x86-NMI-reason/include/xen/interface/nmi.h
+> @@ -0,0 +1,52 @@
+> +/******************************************************************************
+> + * nmi.h
+> + *
+> + * NMI callback registration and reason codes.
+> + *
+> + * Copyright (c) 2005, Keir Fraser <keir@xensource.com>
+> + */
+> +
+> +#ifndef __XEN_PUBLIC_NMI_H__
+> +#define __XEN_PUBLIC_NMI_H__
+> +
+> +#include <xen/interface/xen.h>
+> +
+> +/*
+> + * NMI reason codes:
+> + * Currently these are x86-specific, stored in arch_shared_info.nmi_reason.
+> + */
+> + /* I/O-check error reported via ISA port 0x61, bit 6. */
+> +#define _XEN_NMIREASON_io_error     0
+> +#define XEN_NMIREASON_io_error      (1UL << _XEN_NMIREASON_io_error)
+> + /* PCI SERR reported via ISA port 0x61, bit 7. */
+> +#define _XEN_NMIREASON_pci_serr     1
+> +#define XEN_NMIREASON_pci_serr      (1UL << _XEN_NMIREASON_pci_serr)
+> + /* Unknown hardware-generated NMI. */
+> +#define _XEN_NMIREASON_unknown      2
+> +#define XEN_NMIREASON_unknown       (1UL << _XEN_NMIREASON_unknown)
+> +
+> +/*
+> + * long nmi_op(unsigned int cmd, void *arg)
+> + * NB. All ops return zero on success, else a negative error code.
+> + */
+> +
+> +/*
+> + * Register NMI callback for this (calling) VCPU. Currently this only makes
+> + * sense for domain 0, vcpu 0. All other callers will be returned EINVAL.
+> + * arg == pointer to xennmi_callback structure.
+> + */
+> +#define XENNMI_register_callback   0
+> +struct xennmi_callback {
+> +    unsigned long handler_address;
+> +    unsigned long pad;
+> +};
+> +typedef struct xennmi_callback xennmi_callback_t;
+> +DEFINE_XEN_GUEST_HANDLE(xennmi_callback_t);
+> +
+> +/*
+> + * Deregister NMI callback for this (calling) VCPU.
+> + * arg == NULL.
+> + */
+> +#define XENNMI_unregister_callback 1
+> +
+> +#endif /* __XEN_PUBLIC_NMI_H__ */
+>
+>
 
-This description is wrong and will be reworded.
-
-> 
-> Where is "cooling-max-pwm-value" defined, 
-
-It was present in some early version of this patch.
-
-> and how is this all expected
-> to relate to the maximum duty cycle value provided by the pwm device ?
-> 
-> > +- default-pulse-width     : Property specifying default pulse
-> > width for FAN
-> > +			    at system boot (zero to disable FAN on
-> > boot).
-> > +			    Allowed range is 0 to 255
-> 
-> You'll need dt maintainer approval for the new properties.
-
-I'm wondering how this patch series will get merged. It touches three
-different subsystems (thermal, hwmon and device tree for Exynos). 
-
-For me it would be best to use thermal tree (hence Odroid U3 fan is
-supposed to work as a cooling device) with ACKs from other subsystems
-maintainers.
-
-> 
-> One thing I wonder about though is why you use "default-pulse-width"
-> and not "default-pwm". Seems to be arbitrary. I don't see
-> "pulse-width" used anywhere in the upstream kernel.
-
-Believe or not I've also considered the default-pwm name.
-
-> 
-> I am somewhat concerned that you define the new properties as
-> mandatory. That means existing configurations will fail, which does
-> not seem to be a good idea. It would be more appropriate to not
-> configure the thermal device if the new properties are not provided.
-
-Very good point. I will do that for v2.
-
-> 
-> The newly introduced semantics also conflicts with the current
-> semantics, which sets the initial duty cycle initially to the maximum
-> allowed duty cycle as reported by the pwm device itself.
-
-Ok. I will stick to above policy and then the "default-pulse-width"
-property can be removed.
-
-> 
-> Guenter
-> 
-> > +
-> > +Thorough description of the following bindings:
-> > +		cooling-min-state = <0>;
-> > +		cooling-max-state = <3>;
-> > +		#cooling-cells = <2>;
-> > +		thermal-zone {
-> > +			cpu_thermal: cpu-thermal {
-> > +			cooling-maps {
-> > +				map0 {
-> > +				     trip = <&cpu_alert1>;
-> > +				     cooling-device = <&fan0 0 1>;
-> > +				};
-> > +			};
-> > +		};
-> > +
-> > +for PWM FAN used as cooling device can be found at:
-> > +./Documentation/devicetree/bindings/thermal/thermal.txt
-> >
-> >   Example:
-> >   	pwm-fan {
-> >   		compatible = "pwm-fan";
-> >   		status = "okay";
-> >   		pwms = <&pwm 0 10000 0>;
-> > +		cooling-min-state = <0>;
-> > +		cooling-max-state = <3>;
-> > +		#cooling-cells = <2>;
-> > +		cooling-pwm-values = <0 102 170 255>;
-> > +		default-pulse-width = <0>;
-> >   	};
-> >
-> 
-
-
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
