@@ -1,28 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaLSOCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:02:16 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45731 "EHLO
+	id S1752660AbaLSOBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:01:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45708 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689AbaLSOCO (ORCPT
+	with ESMTP id S1752639AbaLSOBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:02:14 -0500
-Date: Fri, 19 Dec 2014 06:01:52 -0800
-From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-2414e021ac8d588f1b09f64891f69a3e26feadf1@git.kernel.org>
-Cc: JBeulich@suse.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, dan.carpenter@oracle.com, jbeulich@suse.com,
-        mingo@kernel.org, ak@linux.intel.com, rusty@rustcorp.com.au
-Reply-To: mingo@kernel.org, jbeulich@suse.com, ak@linux.intel.com,
-        rusty@rustcorp.com.au, JBeulich@suse.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        dan.carpenter@oracle.com
-In-Reply-To: <20141115185718.GB6530@mwanda>
-References: <54574D5F0200007800044389@mail.emea.novell.com>
-	<20141115185718.GB6530@mwanda>
+	Fri, 19 Dec 2014 09:01:52 -0500
+Date: Fri, 19 Dec 2014 06:00:33 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-6658c739431cfa1bdf15737774ed1cac432b5c35@git.kernel.org>
+Cc: hpa@zytor.com, tony.luck@intel.com, bp@alien8.de, lenb@kernel.org,
+        joro@8bytes.org, benh@kernel.crashing.org, yinghai@kernel.org,
+        gregkh@linuxfoundation.org, tglx@linutronix.de, rjw@rjwysocki.net,
+        jiang.liu@linux.intel.com, rdunlap@infradead.org, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com, mingo@kernel.org
+Reply-To: tglx@linutronix.de, gregkh@linuxfoundation.org, yinghai@kernel.org,
+        joro@8bytes.org, benh@kernel.crashing.org, lenb@kernel.org,
+        bp@alien8.de, tony.luck@intel.com, hpa@zytor.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
+        bhelgaas@google.com, jiang.liu@linux.intel.com, rdunlap@infradead.org,
+        rjw@rjwysocki.net
+In-Reply-To: <1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86: Avoid building unused IRQ entry stubs
-Git-Commit-ID: 2414e021ac8d588f1b09f64891f69a3e26feadf1
+Subject: [tip:x86/apic] ACPI:
+  Correct return value of acpi_dev_resource_address_space()
+Git-Commit-ID: 6658c739431cfa1bdf15737774ed1cac432b5c35
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,239 +39,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2414e021ac8d588f1b09f64891f69a3e26feadf1
-Gitweb:     http://git.kernel.org/tip/2414e021ac8d588f1b09f64891f69a3e26feadf1
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Mon, 3 Nov 2014 08:39:43 +0000
+Commit-ID:  6658c739431cfa1bdf15737774ed1cac432b5c35
+Gitweb:     http://git.kernel.org/tip/6658c739431cfa1bdf15737774ed1cac432b5c35
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 13:21:35 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 16 Dec 2014 14:08:14 +0100
 
-x86: Avoid building unused IRQ entry stubs
+ACPI: Correct return value of acpi_dev_resource_address_space()
 
-When X86_LOCAL_APIC (i.e. unconditionally on x86-64),
-first_system_vector will never end up being higher than
-LOCAL_TIMER_VECTOR (0xef), and hence building stubs for vectors
-0xef...0xff is pointlessly reducing code density. Deal with this at
-build time already.
+Change acpi_dev_resource_address_space() to return failure if the
+acpi_resource structure can't be converted to an ACPI address64
+structure, so caller could correctly detect failure.
 
-Taking into consideration that X86_64 implies X86_LOCAL_APIC, also
-simplify (and hence make easier to read and more consistent with the
-change done here) some #if-s in arch/x86/kernel/irqinit.c.
-
-While we could further improve the packing of the IRQ entry stubs (the
-four ones now left in the last set could be fit into the four padding
-bytes each of the final four sets have) this doesn't seem to provide
-any real benefit: Both irq_entries_start and common_interrupt getting
-cache line aligned, eliminating the 30th set would just produce 32
-bytes of padding between the 29th and common_interrupt.
-
-[ tglx: Folded lguest fix from Dan Carpenter ]
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: lguest@lists.ozlabs.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Link: http://lkml.kernel.org/r/54574D5F0200007800044389@mail.emea.novell.com
-Link: http://lkml.kernel.org/r/20141115185718.GB6530@mwanda
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Len Brown <lenb@kernel.org>
+Link: http://lkml.kernel.org/r/1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/include/asm/hw_irq.h      |  3 ++-
- arch/x86/include/asm/irq_vectors.h |  6 ++++++
- arch/x86/kernel/apic/apic.c        | 22 ++++++++++++----------
- arch/x86/kernel/entry_32.S         |  4 ++--
- arch/x86/kernel/entry_64.S         |  4 ++--
- arch/x86/kernel/irqinit.c          | 13 +++++++++----
- arch/x86/lguest/boot.c             |  2 +-
- 7 files changed, 34 insertions(+), 20 deletions(-)
+ drivers/acpi/resource.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index fa5d1e7..8dbe237 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -189,7 +189,8 @@ extern __visible void smp_call_function_single_interrupt(struct pt_regs *);
- extern __visible void smp_invalidate_interrupt(struct pt_regs *);
- #endif
+diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+index 2ba8f02..782a0d1 100644
+--- a/drivers/acpi/resource.c
++++ b/drivers/acpi/resource.c
+@@ -200,7 +200,7 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
  
--extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
-+extern void (*__initconst interrupt[FIRST_SYSTEM_VECTOR
-+				    - FIRST_EXTERNAL_VECTOR])(void);
- #ifdef CONFIG_TRACING
- #define trace_interrupt interrupt
- #endif
-diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index 5702d7e..666c89e 100644
---- a/arch/x86/include/asm/irq_vectors.h
-+++ b/arch/x86/include/asm/irq_vectors.h
-@@ -126,6 +126,12 @@
+ 	status = acpi_resource_to_address64(ares, &addr);
+ 	if (ACPI_FAILURE(status))
+-		return true;
++		return false;
  
- #define NR_VECTORS			 256
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
-+#define FIRST_SYSTEM_VECTOR		LOCAL_TIMER_VECTOR
-+#else
-+#define FIRST_SYSTEM_VECTOR		NR_VECTORS
-+#endif
-+
- #define FPU_IRQ				  13
- 
- #define	FIRST_VM86_IRQ			   3
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index ba6cc04..29b5b18 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -196,7 +196,7 @@ static int disable_apic_timer __initdata;
- int local_apic_timer_c2_ok;
- EXPORT_SYMBOL_GPL(local_apic_timer_c2_ok);
- 
--int first_system_vector = 0xfe;
-+int first_system_vector = FIRST_SYSTEM_VECTOR;
- 
- /*
-  * Debug level, exported for io_apic.c
-@@ -1930,7 +1930,7 @@ int __init APIC_init_uniprocessor(void)
- /*
-  * This interrupt should _never_ happen with our APIC/SMP architecture
-  */
--static inline void __smp_spurious_interrupt(void)
-+static inline void __smp_spurious_interrupt(u8 vector)
- {
- 	u32 v;
- 
-@@ -1939,30 +1939,32 @@ static inline void __smp_spurious_interrupt(void)
- 	 * if it is a vectored one.  Just in case...
- 	 * Spurious interrupts should not be ACKed.
- 	 */
--	v = apic_read(APIC_ISR + ((SPURIOUS_APIC_VECTOR & ~0x1f) >> 1));
--	if (v & (1 << (SPURIOUS_APIC_VECTOR & 0x1f)))
-+	v = apic_read(APIC_ISR + ((vector & ~0x1f) >> 1));
-+	if (v & (1 << (vector & 0x1f)))
- 		ack_APIC_irq();
- 
- 	inc_irq_stat(irq_spurious_count);
- 
- 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
--	pr_info("spurious APIC interrupt on CPU#%d, "
--		"should never happen.\n", smp_processor_id());
-+	pr_info("spurious APIC interrupt through vector %02x on CPU#%d, "
-+		"should never happen.\n", vector, smp_processor_id());
- }
- 
- __visible void smp_spurious_interrupt(struct pt_regs *regs)
- {
- 	entering_irq();
--	__smp_spurious_interrupt();
-+	__smp_spurious_interrupt(~regs->orig_ax);
- 	exiting_irq();
- }
- 
- __visible void smp_trace_spurious_interrupt(struct pt_regs *regs)
- {
-+	u8 vector = ~regs->orig_ax;
-+
- 	entering_irq();
--	trace_spurious_apic_entry(SPURIOUS_APIC_VECTOR);
--	__smp_spurious_interrupt();
--	trace_spurious_apic_exit(SPURIOUS_APIC_VECTOR);
-+	trace_spurious_apic_entry(vector);
-+	__smp_spurious_interrupt(vector);
-+	trace_spurious_apic_exit(vector);
- 	exiting_irq();
- }
- 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 344b63f..1ea4488 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -732,10 +732,10 @@ ENTRY(interrupt)
- ENTRY(irq_entries_start)
- 	RING0_INT_FRAME
- vector=FIRST_EXTERNAL_VECTOR
--.rept (NR_VECTORS-FIRST_EXTERNAL_VECTOR+6)/7
-+.rept (FIRST_SYSTEM_VECTOR-FIRST_EXTERNAL_VECTOR+6)/7
- 	.balign 32
-   .rept	7
--    .if vector < NR_VECTORS
-+    .if vector < FIRST_SYSTEM_VECTOR
-       .if vector <> FIRST_EXTERNAL_VECTOR
- 	CFI_ADJUST_CFA_OFFSET -4
-       .endif
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index c0226ab..e61c14a 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -712,10 +712,10 @@ ENTRY(interrupt)
- ENTRY(irq_entries_start)
- 	INTR_FRAME
- vector=FIRST_EXTERNAL_VECTOR
--.rept (NR_VECTORS-FIRST_EXTERNAL_VECTOR+6)/7
-+.rept (FIRST_SYSTEM_VECTOR-FIRST_EXTERNAL_VECTOR+6)/7
- 	.balign 32
-   .rept	7
--    .if vector < NR_VECTORS
-+    .if vector < FIRST_SYSTEM_VECTOR
-       .if vector <> FIRST_EXTERNAL_VECTOR
- 	CFI_ADJUST_CFA_OFFSET -8
-       .endif
-diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
-index 4de73ee..fa89308 100644
---- a/arch/x86/kernel/irqinit.c
-+++ b/arch/x86/kernel/irqinit.c
-@@ -124,7 +124,6 @@ void setup_vector_irq(int cpu)
- static void __init smp_intr_init(void)
- {
- #ifdef CONFIG_SMP
--#if defined(CONFIG_X86_64) || defined(CONFIG_X86_LOCAL_APIC)
- 	/*
- 	 * The reschedule interrupt is a CPU-to-CPU reschedule-helper
- 	 * IPI, driven by wakeup.
-@@ -144,7 +143,6 @@ static void __init smp_intr_init(void)
- 
- 	/* IPI used for rebooting/stopping */
- 	alloc_intr_gate(REBOOT_VECTOR, reboot_interrupt);
--#endif
- #endif /* CONFIG_SMP */
- }
- 
-@@ -159,7 +157,7 @@ static void __init apic_intr_init(void)
- 	alloc_intr_gate(THRESHOLD_APIC_VECTOR, threshold_interrupt);
- #endif
- 
--#if defined(CONFIG_X86_64) || defined(CONFIG_X86_LOCAL_APIC)
-+#ifdef CONFIG_X86_LOCAL_APIC
- 	/* self generated IPI for local APIC timer */
- 	alloc_intr_gate(LOCAL_TIMER_VECTOR, apic_timer_interrupt);
- 
-@@ -197,10 +195,17 @@ void __init native_init_IRQ(void)
- 	 * 'special' SMP interrupts)
- 	 */
- 	i = FIRST_EXTERNAL_VECTOR;
--	for_each_clear_bit_from(i, used_vectors, NR_VECTORS) {
-+#ifndef CONFIG_X86_LOCAL_APIC
-+#define first_system_vector NR_VECTORS
-+#endif
-+	for_each_clear_bit_from(i, used_vectors, first_system_vector) {
- 		/* IA32_SYSCALL_VECTOR could be used in trap_init already. */
- 		set_intr_gate(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
- 	}
-+#ifdef CONFIG_X86_LOCAL_APIC
-+	for_each_clear_bit_from(i, used_vectors, NR_VECTORS)
-+		set_intr_gate(i, spurious_interrupt);
-+#endif
- 
- 	if (!acpi_ioapic && !of_ioapic && nr_legacy_irqs())
- 		setup_irq(2, &irq2);
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index aae9413..c1c1544 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -841,7 +841,7 @@ static void __init lguest_init_IRQ(void)
- {
- 	unsigned int i;
- 
--	for (i = FIRST_EXTERNAL_VECTOR; i < NR_VECTORS; i++) {
-+	for (i = FIRST_EXTERNAL_VECTOR; i < FIRST_SYSTEM_VECTOR; i++) {
- 		/* Some systems map "vectors" to interrupts weirdly.  Not us! */
- 		__this_cpu_write(vector_irq[i], i - FIRST_EXTERNAL_VECTOR);
- 		if (i != SYSCALL_VECTOR)
+ 	res->start = addr.minimum;
+ 	res->end = addr.maximum;
