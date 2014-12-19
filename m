@@ -1,356 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaLSQU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:20:27 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:36565 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751992AbaLSQTI (ORCPT
+	id S1752547AbaLSQWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:22:48 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:49660 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaLSQWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 11:19:08 -0500
-From: Andrew Jackson <andrew.jackson@arm.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 4/5] ASoC: dwc: Add devicetree support for Designware I2S
-Date: Fri, 19 Dec 2014 16:18:08 +0000
-Message-Id: <9699e11a566938b8d1821f9be3df3276d57cd979.1418826016.git.Andrew.Jackson@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1418826016.git.Andrew.Jackson@arm.com>
-References: <cover.1418826016.git.Andrew.Jackson@arm.com>
-In-Reply-To: <cover.1418826016.git.Andrew.Jackson@arm.com>
-References: <cover.1418826016.git.Andrew.Jackson@arm.com>
+	Fri, 19 Dec 2014 11:22:46 -0500
+Message-ID: <549450D0.8030805@cumulusnetworks.com>
+Date: Fri, 19 Dec 2014 08:22:40 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jiri Pirko <jiri@resnulli.us>
+CC: B Viswanath <marichika4@gmail.com>,
+        "Samudrala, Sridhar" <sridhar.samudrala@intel.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "Varlese, Marco" <marco.varlese@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Thomas Graf <tgraf@suug.ch>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
+References: <54931969.7040209@cumulusnetworks.com> <5493293A.2000802@intel.com> <54935E28.8050602@cumulusnetworks.com> <549362A5.3000808@intel.com> <549367CC.2080307@cumulusnetworks.com> <CAN+pFwJyfg1+=+tXUpon0Kket56HJ=9BR3XohPhZnaX7hfPgpg@mail.gmail.com> <20141219082754.GE1848@nanopsycho.orion> <CAN+pFwJAJ71-+MZjJXPbfu5mzMp6AWNxtYR81Lx6siy3D3HfJg@mail.gmail.com> <20141219092308.GF1848@nanopsycho.orion> <CAN+pFwJr7TvJEW4x_HYPgTEvYGfi+YHgp=5vek2YiU1GLiH6_g@mail.gmail.com> <20141219095512.GH1848@nanopsycho.orion>
+In-Reply-To: <20141219095512.GH1848@nanopsycho.orion>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Jackson <Andrew.Jackson@arm.com>
+On 12/19/14, 1:55 AM, Jiri Pirko wrote:
+> Fri, Dec 19, 2014 at 10:35:27AM CET, marichika4@gmail.com wrote:
+>> On 19 December 2014 at 14:53, Jiri Pirko <jiri@resnulli.us> wrote:
+>>> Fri, Dec 19, 2014 at 10:01:46AM CET, marichika4@gmail.com wrote:
+>>>> On 19 December 2014 at 13:57, Jiri Pirko <jiri@resnulli.us> wrote:
+>>>>> Fri, Dec 19, 2014 at 06:14:57AM CET, marichika4@gmail.com wrote:
+>>>>>> On 19 December 2014 at 05:18, Roopa Prabhu <roopa@cumulusnetworks.com> wrote:
+>>>>>>> On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
+>>>> <snipped for ease of reading>
+>>>>>>>>
+>>>>>>>> We also need an interface to set per-switch attributes. Can this work?
+>>>>>>>>      bridge link set dev sw0 sw_attr bcast_flooding 1 master
+>>>>>>>> where sw0 is a bridge representing the hardware switch.
+>>>>>>>
+>>>>>>> Not today. We discussed this @ LPC, and one way to do this would be to have
+>>>>>>> a device
+>>>>>>> representing the switch asic. This is in the works.
+>>>>>>
+>>>>>> Can I assume that on  platforms which house more than one asic (say
+>>>>>> two 24 port asics, interconnected via a 10G link or equivalent, to get
+>>>>>> a 48 port 'switch') , the 'rocker' driver (or similar) should expose
+>>>>>> them as a single set of ports, and not as two 'switch ports' ?
+>>>>> Well that really depends on particular implementation and drivers. If you
+>>>>> have 2 pci-e devices, I think you should expose them as 2 entities. For
+>>>>> sure, you can have the driver to do the masking for you. I don't believe
+>>>>> that is correct though.
+>>>>>
+>>>> In a platform that houses two asic chips, IMO, the user is still
+>>>> expected to manage the router as a single entity. The configuration
+>>>> being applied on both asic devices need to be matching if not
+>>>> identical, and may not be conflicting. The FDB is to be synchronized
+>>>> so that (offloaded) switching can happen across the asics. Some of
+>>>> this stuff is asic specific anyway. Another example is that of the
+>>>> learning. The (hardware) learning can't be enabled on one asic, while
+>>>> being disabled on another one. The general use cases I have seen are
+>>>> all involving managing the 'router' as a single entity.  That the
+>>>> 'router' is implemented with two asics instead of a single asic (with
+>>>> more ports) is to be treated as an implementation detail.  This is the
+>>>> usual router management method that exists today.
+>>>>
+>>>> I hope I make sense.
+>>>>
+>>>> So I am trying to figure out what this single entity that will be used
+>>> >from a user perspective. It can be a bridge, but our bridges are more
+>>>> 802.1q bridges. We can use the 'self' mode, but then it means that it
+>>>> should reflect the entire port count, and not just an asic.
+>>>>
+>>>> So I was trying to deduce that in our switchdevice model, the best bet
+>>>> would be to leave the unification to the driver (i.e., to project the
+>>>> multiple physical asics as a single virtual switch device). Thist
+>>> Is it possible to have the asic as just single one? Or is it possible to
+>>> connect asics being multiple chips maybe from multiple vendors together?
+>> I didn't understand the first question. Some times, it is possible to
+> I ment that there is a design with just a single asic of this type,
+> instead of a pair.
+>
+>> have a single asic replace two, but its a cost factor, and others that
+>> are involved.
+>>
+>> AFAIK, the answer to the second question is a No. Two asics from
+>> different vendors may not be connected together. The interconnect
+>> tends to be proprietary.
+> Okay. In that case, it might make sense to mask it on driver level.
+>
+>
+>>> I believe that answer is "yes" in both cases. Making two separate asics
+>>> to appear as one for user is not correct in my opinion. Driver should
+>>> not do such masking. It is unclean, unextendable.
+>>>
+>> I am only looking for a single management entity. I am not thinking it
+>> needs to be at driver level. I am not sure of  any other option apart
+> >from creating a 'switchdev' that Roopa was mentioning.
+>
+> Well the thing is there is a common desire to make the offloading as
+> transparent as possible. For example, have 4 ports of same switch and
+> put them into br0. Just like that, without need to do anything else
+> than you would do when bridging ordinary NICs. Introducing some
+> "management entity" would break this approach.
+>
+I don't think having a switchdevice breaks this approach. A software 
+bridge is not a 1-1 mapping with the asic in all cases.
+When its a vlan filtering bridge, yes, it is (In which case all switch 
+global l2 non-port specific attributes can be applied to the bridge).
 
-Allow the driver to be configured through a device tree rather than platform
-data.  When using device-tree, read the I2S block's configuration from the
-relevant registers: this reduces the amount of information required in
-the device tree.
-
-Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
----
- sound/soc/dwc/Kconfig          |    1 +
- sound/soc/dwc/designware_i2s.c |  199 ++++++++++++++++++++++++++++++++++------
- 2 files changed, 171 insertions(+), 29 deletions(-)
-
-diff --git a/sound/soc/dwc/Kconfig b/sound/soc/dwc/Kconfig
-index e334900..d50e085 100644
---- a/sound/soc/dwc/Kconfig
-+++ b/sound/soc/dwc/Kconfig
-@@ -1,6 +1,7 @@
- config SND_DESIGNWARE_I2S
- 	tristate "Synopsys I2S Device Driver"
- 	depends on CLKDEV_LOOKUP
-+	select SND_SOC_GENERIC_DMAENGINE_PCM
- 	help
- 	 Say Y or M if you want to add support for I2S driver for
- 	 Synopsys desigwnware I2S device. The device supports upto
-diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
-index 06d3a34..7905c52 100644
---- a/sound/soc/dwc/designware_i2s.c
-+++ b/sound/soc/dwc/designware_i2s.c
-@@ -22,6 +22,7 @@
- #include <sound/pcm.h>
- #include <sound/pcm_params.h>
- #include <sound/soc.h>
-+#include <sound/dmaengine_pcm.h>
- 
- /* common register for all channel */
- #define IER		0x000
-@@ -54,9 +55,35 @@
- #define I2S_COMP_VERSION	0x01F8
- #define I2S_COMP_TYPE		0x01FC
- 
-+/*
-+ * Component parameter register fields - define the I2S block's
-+ * configuration.
-+ */
-+#define	COMP1_TX_WORDSIZE_3(r)	(((r) & GENMASK(27, 25)) >> 25)
-+#define	COMP1_TX_WORDSIZE_2(r)	(((r) & GENMASK(24, 22)) >> 22)
-+#define	COMP1_TX_WORDSIZE_1(r)	(((r) & GENMASK(21, 19)) >> 19)
-+#define	COMP1_TX_WORDSIZE_0(r)	(((r) & GENMASK(18, 16)) >> 16)
-+#define	COMP1_TX_CHANNELS(r)	(((r) & GENMASK(10, 9)) >> 9)
-+#define	COMP1_RX_CHANNELS(r)	(((r) & GENMASK(8, 7)) >> 7)
-+#define	COMP1_RX_ENABLED(r)	(((r) & BIT(6)) >> 6)
-+#define	COMP1_TX_ENABLED(r)	(((r) & BIT(5)) >> 5)
-+#define	COMP1_MODE_EN(r)	(((r) & BIT(4)) >> 4)
-+#define	COMP1_FIFO_DEPTH_GLOBAL(r)	(((r) & GENMASK(3, 2)) >> 2)
-+#define	COMP1_APB_DATA_WIDTH(r)	(((r) & GENMASK(1, 0)) >> 0)
-+
-+#define	COMP2_RX_WORDSIZE_3(r)	(((r) & GENMASK(12, 10)) >> 10)
-+#define	COMP2_RX_WORDSIZE_2(r)	(((r) & GENMASK(9, 7)) >> 7)
-+#define	COMP2_RX_WORDSIZE_1(r)	(((r) & GENMASK(5, 3)) >> 3)
-+#define	COMP2_RX_WORDSIZE_0(r)	(((r) & GENMASK(2, 0)) >> 0)
-+
- #define MAX_CHANNEL_NUM		8
- #define MIN_CHANNEL_NUM		2
- 
-+union snd_dma_data {
-+	struct i2s_dma_data pd;
-+	struct snd_dmaengine_dai_dma_data dt;
-+};
-+
- struct dw_i2s_dev {
- 	void __iomem *i2s_base;
- 	struct clk *clk;
-@@ -65,8 +92,8 @@ struct dw_i2s_dev {
- 	struct device *dev;
- 
- 	/* data related to DMA transfers b/w i2s and DMAC */
--	struct i2s_dma_data play_dma_data;
--	struct i2s_dma_data capture_dma_data;
-+	union snd_dma_data play_dma_data;
-+	union snd_dma_data capture_dma_data;
- 	struct i2s_clk_config_data config;
- 	int (*i2s_clk_cfg)(struct i2s_clk_config_data *config);
- };
-@@ -153,7 +180,7 @@ static int dw_i2s_startup(struct snd_pcm_substream *substream,
- 		struct snd_soc_dai *cpu_dai)
- {
- 	struct dw_i2s_dev *dev = snd_soc_dai_get_drvdata(cpu_dai);
--	struct i2s_dma_data *dma_data = NULL;
-+	union snd_dma_data *dma_data = NULL;
- 
- 	if (!(dev->capability & DWC_I2S_RECORD) &&
- 			(substream->stream == SNDRV_PCM_STREAM_CAPTURE))
-@@ -242,13 +269,18 @@ static int dw_i2s_hw_params(struct snd_pcm_substream *substream,
- 
- 	config->sample_rate = params_rate(params);
- 
--	if (!dev->i2s_clk_cfg)
--		return -EINVAL;
-+	if (dev->i2s_clk_cfg) {
-+		ret = dev->i2s_clk_cfg(config);
-+		if (ret < 0) {
-+			dev_err(dev->dev, "runtime audio clk config fail\n");
-+			return ret;
-+		}
-+	} else {
-+		u32	bitclk;
- 
--	ret = dev->i2s_clk_cfg(config);
--	if (ret < 0) {
--		dev_err(dev->dev, "runtime audio clk config fail\n");
--		return ret;
-+		/* TODO: Validate sample rate against permissible set */
-+		bitclk = config->sample_rate * config->data_width * 2;
-+		clk_set_rate(dev->clk, bitclk);
- 	}
- 
- 	return 0;
-@@ -335,6 +367,31 @@ static int dw_i2s_resume(struct snd_soc_dai *dai)
- #define dw_i2s_resume	NULL
- #endif
- 
-+/* Maximum resolution of a channel - not uniformly spaced */
-+static const u32 fifo_width[] = {
-+	12, 16, 20, 24, 32, 0, 0, 0
-+};
-+
-+/* Width of (DMA) bus */
-+static const u32 bus_widths[] = {
-+	DMA_SLAVE_BUSWIDTH_1_BYTE,
-+	DMA_SLAVE_BUSWIDTH_2_BYTES,
-+	DMA_SLAVE_BUSWIDTH_4_BYTES,
-+	DMA_SLAVE_BUSWIDTH_UNDEFINED
-+};
-+
-+/* PCM format to support channel resolution */
-+static const u32 formats[] = {
-+	SNDRV_PCM_FMTBIT_S16_LE,
-+	SNDRV_PCM_FMTBIT_S16_LE,
-+	SNDRV_PCM_FMTBIT_S24_LE,
-+	SNDRV_PCM_FMTBIT_S24_LE,
-+	SNDRV_PCM_FMTBIT_S32_LE,
-+	0,
-+	0,
-+	0
-+};
-+
- static void dw_configure_dai_by_pd(struct dw_i2s_dev *dev,
- 				   struct snd_soc_dai_driver *dw_i2s_dai,
- 				   struct resource *res,
-@@ -342,16 +399,16 @@ static void dw_configure_dai_by_pd(struct dw_i2s_dev *dev,
- {
- 	/* Set DMA slaves info */
- 
--	dev->play_dma_data.data = pdata->play_dma_data;
--	dev->capture_dma_data.data = pdata->capture_dma_data;
--	dev->play_dma_data.addr = res->start + I2S_TXDMA;
--	dev->capture_dma_data.addr = res->start + I2S_RXDMA;
--	dev->play_dma_data.max_burst = 16;
--	dev->capture_dma_data.max_burst = 16;
--	dev->play_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
--	dev->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
--	dev->play_dma_data.filter = pdata->filter;
--	dev->capture_dma_data.filter = pdata->filter;
-+	dev->play_dma_data.pd.data = pdata->play_dma_data;
-+	dev->capture_dma_data.pd.data = pdata->capture_dma_data;
-+	dev->play_dma_data.pd.addr = res->start + I2S_TXDMA;
-+	dev->capture_dma_data.pd.addr = res->start + I2S_RXDMA;
-+	dev->play_dma_data.pd.max_burst = 16;
-+	dev->capture_dma_data.pd.max_burst = 16;
-+	dev->play_dma_data.pd.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	dev->capture_dma_data.pd.addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	dev->play_dma_data.pd.filter = pdata->filter;
-+	dev->capture_dma_data.pd.filter = pdata->filter;
- 
- 	if (pdata->cap & DWC_I2S_PLAY) {
- 		dev_dbg(dev->dev, " designware: play supported\n");
-@@ -370,6 +427,59 @@ static void dw_configure_dai_by_pd(struct dw_i2s_dev *dev,
- 	}
- }
- 
-+static void dw_configure_dai_by_dt(struct dw_i2s_dev *dev,
-+				   struct snd_soc_dai_driver *dw_i2s_dai,
-+				   struct resource *res)
-+{
-+	/*
-+	 * Read component parameter registers to extract
-+	 * the I2S block's configuration.
-+	 */
-+	u32 comp1 = i2s_read_reg(dev->i2s_base, I2S_COMP_PARAM_1);
-+	u32 comp2 = i2s_read_reg(dev->i2s_base, I2S_COMP_PARAM_2);
-+	u32 bus_width = bus_widths[COMP1_APB_DATA_WIDTH(comp1)];
-+	u32 fifo_depth = 1 << (1 + COMP1_FIFO_DEPTH_GLOBAL(comp1));
-+	u32 max_size;
-+
-+	/*
-+	 * All channels' hardware configuration assumed to be the same.
-+	 */
-+	if (COMP1_TX_ENABLED(comp1)) {
-+		dev_dbg(dev->dev, "playback capable\n");
-+
-+		dev->capability |= DWC_I2S_PLAY;
-+		max_size = COMP1_TX_WORDSIZE_0(comp1);
-+		dev->play_dma_data.dt.addr = res->start + I2S_TXDMA;
-+		dev->play_dma_data.dt.addr_width = bus_width;
-+		dev->play_dma_data.dt.chan_name = "TX";
-+		dev->play_dma_data.dt.fifo_size = fifo_depth *
-+			(fifo_width[max_size]) >> 8;
-+		dev->play_dma_data.dt.maxburst = 16;
-+		dw_i2s_dai->playback.channels_min = MIN_CHANNEL_NUM;
-+		dw_i2s_dai->playback.channels_max =
-+				1 << (COMP1_TX_CHANNELS(comp1) + 1);
-+		dw_i2s_dai->playback.formats = formats[max_size];
-+		dw_i2s_dai->playback.rates = SNDRV_PCM_RATE_8000_192000;
-+	}
-+	if (COMP1_RX_ENABLED(comp1)) {
-+		dev_dbg(dev->dev, "record capable\n");
-+
-+		dev->capability |= DWC_I2S_RECORD;
-+		max_size = COMP2_RX_WORDSIZE_0(comp2);
-+		dev->capture_dma_data.dt.addr = res->start + I2S_RXDMA;
-+		dev->capture_dma_data.dt.addr_width = bus_width;
-+		dev->capture_dma_data.dt.chan_name = "RX";
-+		dev->capture_dma_data.dt.fifo_size = fifo_depth *
-+			(fifo_width[max_size] >> 8);
-+		dev->capture_dma_data.dt.maxburst = 16;
-+		dw_i2s_dai->capture.channels_min = MIN_CHANNEL_NUM;
-+		dw_i2s_dai->capture.channels_max =
-+				1 << (COMP1_RX_CHANNELS(comp1) + 1);
-+		dw_i2s_dai->capture.formats = formats[max_size];
-+		dw_i2s_dai->capture.rates = SNDRV_PCM_RATE_8000_192000;
-+	}
-+}
-+
- static int dw_i2s_probe(struct platform_device *pdev)
- {
- 	const struct i2s_platform_data *pdata = pdev->dev.platform_data;
-@@ -378,11 +488,6 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 	int ret;
- 	struct snd_soc_dai_driver *dw_i2s_dai;
- 
--	if (!pdata) {
--		dev_err(&pdev->dev, "Invalid platform data\n");
--		return -EINVAL;
--	}
--
- 	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
- 	if (!dev) {
- 		dev_warn(&pdev->dev, "kzalloc fail\n");
-@@ -403,13 +508,28 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 		return PTR_ERR(dev->i2s_base);
- 
- 	dev->dev = &pdev->dev;
--	dw_configure_dai_by_pd(dev, dw_i2s_dai, res, pdata);
-+	if (pdata) {
-+		dw_configure_dai_by_pd(dev, dw_i2s_dai, res, pdata);
-+
-+		dev->capability = pdata->cap;
-+		dev->i2s_clk_cfg = pdata->i2s_clk_cfg;
-+		if (!dev->i2s_clk_cfg) {
-+			dev_err(&pdev->dev, "no clock configure method\n");
-+			return -ENODEV;
-+		}
- 
--	dev->capability = pdata->cap;
--	dev->i2s_clk_cfg = pdata->i2s_clk_cfg;
--	dev->clk = clk_get(&pdev->dev, NULL);
-+		dev->clk = clk_get(&pdev->dev, NULL);
-+	} else {
-+		dw_configure_dai_by_dt(dev, dw_i2s_dai, res);
-+
-+		dev->clk = devm_clk_get(&pdev->dev, "i2sclk");
-+	}
- 	if (IS_ERR(dev->clk))
--		return  PTR_ERR(dev->clk);
-+		return PTR_ERR(dev->clk);
-+
-+	ret = clk_prepare(dev->clk);
-+	if (ret < 0)
-+		goto err_clk_put;
- 
- 	ret = clk_enable(dev->clk);
- 	if (ret < 0)
-@@ -423,6 +543,15 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 		goto err_clk_disable;
- 	}
- 
-+	if (!pdata) {
-+		ret = devm_snd_dmaengine_pcm_register(&pdev->dev, NULL, 0);
-+		if (ret) {
-+			dev_err(&pdev->dev,
-+				"Could not register PCM: %d\n", ret);
-+			return ret;
-+		}
-+	}
-+
- 	return 0;
- 
- err_clk_disable:
-@@ -443,11 +572,23 @@ static int dw_i2s_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id dw_i2s_of_match[] = {
-+	{ .compatible = "snps,designware-i2s",	 },
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(of, dw_i2s_of_match);
-+#endif
-+
- static struct platform_driver dw_i2s_driver = {
- 	.probe		= dw_i2s_probe,
- 	.remove		= dw_i2s_remove,
- 	.driver		= {
- 		.name	= "designware-i2s",
-+#ifdef CONFIG_OF
-+		.of_match_table = dw_i2s_of_match,
-+#endif
- 	},
- };
- 
--- 
-1.7.1
+The switch asic can do l2 and l3 too. For a bridge, the switch asic is 
+just accelerating l2.
+And a switch asic is also capable of l3, acls. A switch device (whether 
+accessible to userspace or not)
+may become necessary (as discussed in other threads) where you cannot 
+resolve a kernel object to a switch port (Global acl rules, unresolved 
+route nexthops etc).
 
