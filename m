@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaLSIct (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 03:32:49 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:15452 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821AbaLSIcr (ORCPT
+	id S1752239AbaLSIeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 03:34:37 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:59144 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaLSIef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 03:32:47 -0500
+	Fri, 19 Dec 2014 03:34:35 -0500
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-f791c6d000004834-7f-5493e2aa5f58
+X-AuditID: cbfee68e-f79b46d000002b74-73-5493e318f433
 Content-transfer-encoding: 8BIT
-Message-id: <5493E2A9.6050407@samsung.com>
-Date: Fri, 19 Dec 2014 17:32:41 +0900
+Message-id: <5493E318.1000608@samsung.com>
+Date: Fri, 19 Dec 2014 17:34:32 +0900
 From: jonghwa3.lee@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
  Thunderbird/11.0.1
-To: myungjoo.ham@samsung.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "sre@kernel.org" <sre@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "anton@enomsg.org" <anton@enomsg.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Subject: Re: [PATCH RESEND v2 03/10] power: charger-manager: Remove deprecated
- function, cm_notify_event().
-References: <1255984171.39711418975524329.JavaMail.weblogic@epmlwas08d>
-In-reply-to: <1255984171.39711418975524329.JavaMail.weblogic@epmlwas08d>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsWyRsSkQHfVo8khBkeniFoc3Kppcf3Lc1aL
-	SU/eM1tMXDmZ2eLyrjlsFp97jzBa3G5cwWZx99RRNovTu0scOD0m9H9i9Ng56y67x+YVWh6b
-	VnWyefRtWcXosWL1d3aPz5vkAtijuGxSUnMyy1KL9O0SuDIevvnBVNDOU3G3I6+B8QBnFyMn
-	h4SAicTOqf1sELaYxIV768FsIYGljBKNV7xhalpmHmLuYuQCik9nlHi6YgEzSIJXQFDix+R7
-	LF2MHBzMAvISRy5lg4SZBdQlJs1bxAwx5zWjxPSlBhDlWhKP/jxhBSlnEVCVWHDJAyTMJiAn
-	8bbpGyOILSoQJnF1wnEWEFtEQEbi6sbtLCBrmQV+M0n8mjUNLCEskCtx/uhsqDvdJXbsf80K
-	YnMKeEhMeNMH1iAh8JZd4uvaeWBHsAgISHybfAjsTgkBWYlNB5gh/pKUOLjiBssERrFZSL6Z
-	hfDNLCTfLGBkXsUomlqQXFCclF5krFecmFtcmpeul5yfu4kRGJGn/z3r38F494D1IUYBDkYl
-	Ht4HxZNDhFgTy4orcw8xmgIdMZFZSjQ5Hxj3eSXxhsZmRhamJqbGRuaWZkrivAulfgYLCaQn
-	lqRmp6YWpBbFF5XmpBYfYmTi4JRqYKzcYz/L3TKx2mVV8Jr1rQsZo1c4vlil1OZ507roxV7W
-	hZV15sYLdP5s2bxs9mufiJtnD9uEeyeqKU1XUFvzdGrwHIu+aSuYTbLjlsuvcdovfKZUfF5R
-	lcGyVSHLq3aLK+7sO1m/6cCJtM67zjcXZxwsZ2ONrlTfty6j0ziaT3bpVSGt5Ic9c5RYijMS
-	DbWYi4oTAQNZiWjDAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jQd1VjyaHGBzYx2txcKumxfUvz1kt
-	Jj15z2wxceVkZovLu+awWXzuPcJocbtxBZvF3VNH2SxO7y5x4PSY0P+J0WPnrLvsHptXaHls
-	WtXJ5tG3ZRWjx4rV39k9Pm+SC2CPamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0
-	MFdSyEvMTbVVcvEJ0HXLzAE6TEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpI
-	WMOY8fDND6aCdp6Kux15DYwHOLsYOTkkBEwkWmYeYoawxSQu3FvP1sXIxSEkMJ1R4umKBWAJ
-	XgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxFYiZDAa0aJ6UsNIMq1JB79ecIKUs4ioCqx
-	4JIHSJhNQE7ibdM3RhBbVCBM4uqE4ywgtoiAjMTVjdtZQNYyC/xmkvg1axpYQlggV+L80dls
-	EPPdJXbsf80KYnMKeEhMeNPHMoFRYBaS62YhXDcLyXULGJlXMYqmFiQXFCel5xrqFSfmFpfm
-	pesl5+duYgRH/DOpHYwrGywOMQpwMCrx8HYUTg4RYk0sK67MPcQowcGsJMLreBwoxJuSWFmV
-	WpQfX1Sak1p8iNEU6LmJzFKiyfnAZJRXEm9obGJmZGlkbmhhZGyuJM6rZN8WIiSQnliSmp2a
-	WpBaBNPHxMEp1cC458k04YPbTd0eRCyZ7iC/U0Jb8Zhim4V5l2hoxAfvrMn9n+yt/b+tbv54
-	4iTHUsEnf6x33Zv24HOTtf6OlNgD/w5+KdnEwh5+IPGMt/KkeRKfdqx31qjcKbjfqa5dbvaG
-	1Z2yEp4i8pV3ewU/9z8V5Ng3c/OyjQZTGX+ePFqrrLf8pdWmf9emKrEUZyQaajEXFScCAKFZ
-	nAQOAwAA
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, anton@enomsg.org,
+        pavel@ucw.cz, myungjoo.ham@samsung.com, cw00.choi@samsung.com
+Subject: Re: [PATCH RESEND V2 0/10] Improve charger manager driver for
+ optimized operation.
+References: <1418957250-6542-1-git-send-email-jonghwa3.lee@samsung.com>
+In-reply-to: <1418957250-6542-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkSFfy8eQQgzv3mSwObtW0uP7lOavF
+	pCfvmS0mrpzMbNF59gmzxeVdc9gsPvceYbS43biCzeLuqaNsFqd3lzhweUzo/8TosXPWXXaP
+	zSu0PDat6mTz6NuyitFjxerv7B6fN8kFsEdx2aSk5mSWpRbp2yVwZcyev4y9YBZ/xawngg2M
+	F7m7GDk5JARMJF5+/cAOYYtJXLi3nq2LkYtDSGApo0TPtdXsMEXzlx5hgkgsYpSYf+44E0iC
+	V0BQ4sfkeyxdjBwczALyEkcuZYOEmQXUJSbNW8QMUf+aUeL4hcNQ9VoSX0/3sIHYLAKqEida
+	NoDF2QTkJN42fWMEsUUFwiSuTjjOAmKLANVfe/yOEWLoKUaJS6vBrhYWiJW4vPA52HFCAu4S
+	J769BavnFPCQeHqpCewDCYGP7BJ3bhxlhFgmIPFt8iGwQyUEZCU2HWCGeExS4uCKGywTGMVm
+	IXlnFsI7s5C8s4CReRWjaGpBckFxUnqRkV5xYm5xaV66XnJ+7iZGYHye/vesbwfjzQPWhxgF
+	OBiVeHg7CieHCLEmlhVX5h5iNAU6YiKzlGhyPjAJ5JXEGxqbGVmYmpgaG5lbmimJ8yZI/QwW
+	EkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwLi6+HydX1rE6oqPU9fe3pmcs4dh0ZeDycJqT19U
+	tJ45v1Bni9+Mus7XcXN7lxaEMFg5Wv/3WVu7xDBiYdHuJuNJKfqR907FLkk4pnL0fqXU85zK
+	J+ffze3LfjuV56xha81zycn3PSady3b+F/x6TQfrj5WXO/mea06/su2PUNIHuwXrS6svi55V
+	YinOSDTUYi4qTgQAkZ2ux8oCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xgK7E48khBi9mmlkc3Kppcf3Lc1aL
+	SU/eM1tMXDmZ2aLz7BNmi8u75rBZfO49wmhxu3EFm8XdU0fZLE7vLnHg8pjQ/4nRY+esu+we
+	m1doeWxa1cnm0bdlFaPHitXf2T0+b5ILYI9qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUz
+	MNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpOSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBc
+	j5EBGkhYw5gxe/4y9oJZ/BWzngg2MF7k7mLk5JAQMJGYv/QIE4QtJnHh3nq2LkYuDiGBRYwS
+	888dB0vwCghK/Jh8j6WLkYODWUBe4silbJAws4C6xKR5i5gh6l8zShy/cBiqXkvi6+keNhCb
+	RUBV4kTLBrA4m4CcxNumb4wgtqhAmMTVCcdZQGwRoPprj98xQgw9xShxaTXYccICsRKXFz5n
+	B7GFBNwlTnx7C1bPKeAh8fRSE9sERoFZSM6bhXDeLCTnLWBkXsUomlqQXFCclJ5rqFecmFtc
+	mpeul5yfu4kRHP3PpHYwrmywOMQowMGoxMPbUTg5RIg1say4MvcQowQHs5IIr+NxoBBvSmJl
+	VWpRfnxRaU5q8SFGU6DnJjJLiSbnAxNTXkm8obGJmZGlkbmhhZGxuZI4r5J9W4iQQHpiSWp2
+	ampBahFMHxMHp1QD4+l3rnu+pdc8T3zx7facVwvyjJcaO3e8nnH0uPXG1Vf/2M9+s/zGESfv
+	2qhTjDk8cxOcSzvr2OrvSer+VjreJeR7bXZCybm82yF6FkaTRCfsuvZq5++rRs6HaspO9Nlv
+	lW3iPV/epn/b/3Diz1W6k7YIz/h2bdHpskvxK/1n/+zJFNsZtfaOyFklluKMREMt5qLiRABF
+	QcudFAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,44 +58,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014년 12월 19일 16:52, MyungJoo Ham wrote:
+On 2014년 12월 19일 11:47, Jonghwa Lee wrote:
 
->>   
->>  cm_notify_event() is introduced to get event associated with battery status
->> externally, but no one had been used. Moreover it makes charger manager
->> driver more complicated. This patch tries to drop the function and all data
->> related to simplify the driver.
->>
->> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> After charger manager's initially introduced, it has kept its codes without any
+> big change. However, the charger manager working operation isn't optimized and
+> it also has unused codes and non-generic interface. This series tries to make
+> charger manager more generic and maintainable with some fixes.
 > 
-> You are not just removing cm_notify_event() and its related.
+> [Changes in V2]
+> - Rebase patch series on latest of battery-2.6.git.
+> - Seperate 'power: charger-manager: Rearrange data and monitor ~' patch into
+>   several patches depends on its purpose.
+> - Add 2 patches related with polling mode.
 > 
-> You are hereby removing the much of software charger control
-> and suspend-related operations. Could you please be more specific
-> on why? (many of such features are to comply with operators' requirements)
+> Jonghwa Lee (10):
+>   power: charger-manager: Use thermal subsystem interface only to get
+>     temperature.
+>   power: charger-manager: Use power_supply_changed() not private
+>     uevent.
+>   power: charger-manager: Remove deprecated function,
+>     cm_notify_event().
+>   power: charger-manager: Fix to use CHARGE_NOW/FULL property
+>     correctly.
+>   power: charger-manager: Concentrate scattered power_supply_changed()
+>     calls.
+>   power: charger-manager: Get external power souce information only
+>     from EXTCON.
+>   power: charger-manager: Make chraging decision focusing on battery
+>     status.
+>   power: charger-manager: Not to start charging directly in cable
+>     nofitication.
+>   power: charger-manager: Support different polling mode for sleep
+>     state.
+>   power: charger-manager: Support to change polling rate in runtime.
 > 
+>  .../bindings/power_supply/charger-manager.txt      |    1 -
+>  drivers/power/Kconfig                              |    1 +
+>  drivers/power/charger-manager.c                    |  758 ++++++--------------
+>  include/linux/power/charger-manager.h              |   34 +-
+>  4 files changed, 219 insertions(+), 575 deletions(-)
 
 
-Unfortunately, all those codes are only for cm_notify_event(). Currently, and
-since charger-manager has been introduced then, there's no one to use it. And
-the works of cm_notify_event() are is just notifying the event to user space or
-reset the polling work. We may need passive method to get event related with
-battery status externally, if so we can use power_supply class notification
-method, power_supply_notifier.
 
-I decided to remove it to make driver simple and clean.
+Oops, I omitted a patch from series,
+I'll resend it again.
+
+Sorry for noise.
 
 Thanks,
 Jonghwa
 
-
-> (Or we may meet next Monday for some discussions :) )
 > 
->> ---
->>  .../bindings/power_supply/charger-manager.txt      |    1 -
->>  drivers/power/charger-manager.c                    |  196 +-------------------
->>  include/linux/power/charger-manager.h              |   19 +-
->>  3 files changed, 8 insertions(+), 208 deletions(-)
->>
 
 
