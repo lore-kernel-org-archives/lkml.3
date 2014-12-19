@@ -1,624 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaLSWR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 17:17:56 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:5470 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaLSWRx (ORCPT
+	id S1752723AbaLSWSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 17:18:13 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:52962 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaLSWSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 17:17:53 -0500
-X-IronPort-AV: E=Sophos;i="5.07,609,1413270000"; 
-   d="scan'208";a="53669487"
-From: Jonathan Richardson <jonathar@broadcom.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Ray Jui <rjui@broadcom.com>, Jonathan Richardson <jonathar@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
-        "Joe Perches" <joe@perches.com>
-Subject: [PATCH v2 1/2] Input: touchscreen-iproc: Add Broadcom iProc touchscreen driver
-Date: Fri, 19 Dec 2014 14:17:49 -0800
-Message-ID: <1419027470-7969-2-git-send-email-jonathar@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1419027470-7969-1-git-send-email-jonathar@broadcom.com>
-References: <Jonathan Richardson <jonathar@broadcom.com>
- <1419027470-7969-1-git-send-email-jonathar@broadcom.com>
+	Fri, 19 Dec 2014 17:18:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAE9FiQXj-vX8TE-8Es83FmJAKDKD_dMNbQkmsaNPyy_nVEag8w@mail.gmail.com>
+References: <CAErSpo6UvY10MNidAOFf4Fptv+wL-NsX6JMaU8OvSP6ywWEebQ@mail.gmail.com>
+ <CAErSpo63uZeo1feoPjjXpdH43nsbcWh63kpBmxCnckPd0t9yrg@mail.gmail.com>
+ <CAE9FiQWV-rKdvSeV-ivME-64QtzCX2Te5DfOVtzr0an=6eOCMA@mail.gmail.com>
+ <20141204173411.GA5949@google.com> <CAE9FiQVyBmo+XwDgO97wwe+6TN4+q_cvnBLCuhTM8Fu_e_V5RQ@mail.gmail.com>
+ <1417777177.4741.69.camel@kernel.crashing.org> <20141208004735.GA15508@shangw>
+ <CAErSpo69c6jXOp+nw2sTSU4vgqGufUQNUEGK4_2+6p-qpyE0vQ@mail.gmail.com>
+ <1418074683.13358.1.camel@kernel.crashing.org> <CAErSpo7pMAL5i2aPGV3u5F178bHeQTtjASckKs9NaUbEGaxv3Q@mail.gmail.com>
+ <20141208233855.GA15713@shangw> <CAE9FiQXj-vX8TE-8Es83FmJAKDKD_dMNbQkmsaNPyy_nVEag8w@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 19 Dec 2014 15:17:50 -0700
+Message-ID: <CAErSpo5OAw6WXRZ3q1JtjMBWk45C-k_s96qm7j+kK0CCNdWToQ@mail.gmail.com>
+Subject: Re: Regression: bug 85491: radeon 0000:01:00.0: Fatal error during
+ GPU init
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alexey Voronkov <zermond@gmail.com>, David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        =?UTF-8?Q?Marek_Kord=C3=ADk?= <kordikmarek@gmail.com>,
+        Richard Yang <weiyang@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add initial version of the Broadcom touchscreen driver.
+[+cc linux-kernel for visibility]
 
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
-Tested-by: Scott Branden <sbranden@broadcom.com>
-Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
----
- drivers/input/touchscreen/Kconfig         |   11 +
- drivers/input/touchscreen/Makefile        |    1 +
- drivers/input/touchscreen/bcm_iproc_tsc.c |  535 +++++++++++++++++++++++++++++
- 3 files changed, 547 insertions(+)
- create mode 100644 drivers/input/touchscreen/bcm_iproc_tsc.c
+For context, this is about a regression caused by 5b28541552ef ("PCI:
+Restrict 64-bit prefetchable bridge windows to 64-bit resources"),
+which appeared in v3.16.  The bugzilla is at
+https://bugzilla.kernel.org/show_bug.cgi?id=85491
 
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index e1d8003..77ff531 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -310,6 +310,17 @@ config TOUCHSCREEN_ILI210X
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called ili210x.
- 
-+config TOUCHSCREEN_IPROC
-+	tristate "IPROC touch panel driver support"
-+	help
-+	  Say Y here if you want to add support for the IPROC touch
-+	  controller to your system.
-+
-+	  If unsure, say N.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called iproc-ts.
-+
- config TOUCHSCREEN_S3C2410
- 	tristate "Samsung S3C2410/generic touchscreen input driver"
- 	depends on ARCH_S3C24XX || SAMSUNG_DEV_TS
-diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-index 090e61c..f7e6de9 100644
---- a/drivers/input/touchscreen/Makefile
-+++ b/drivers/input/touchscreen/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_TOUCHSCREEN_FUJITSU)	+= fujitsu_ts.o
- obj-$(CONFIG_TOUCHSCREEN_ILI210X)	+= ili210x.o
- obj-$(CONFIG_TOUCHSCREEN_INEXIO)	+= inexio.o
- obj-$(CONFIG_TOUCHSCREEN_INTEL_MID)	+= intel-mid-touch.o
-+obj-$(CONFIG_TOUCHSCREEN_IPROC)		+= bcm_iproc_tsc.o
- obj-$(CONFIG_TOUCHSCREEN_LPC32XX)	+= lpc32xx_ts.o
- obj-$(CONFIG_TOUCHSCREEN_MAX11801)	+= max11801_ts.o
- obj-$(CONFIG_TOUCHSCREEN_MC13783)	+= mc13783_ts.o
-diff --git a/drivers/input/touchscreen/bcm_iproc_tsc.c b/drivers/input/touchscreen/bcm_iproc_tsc.c
-new file mode 100644
-index 0000000..bf6eb7f
---- /dev/null
-+++ b/drivers/input/touchscreen/bcm_iproc_tsc.c
-@@ -0,0 +1,535 @@
-+/*
-+* Copyright (C) 2014 Broadcom Corporation
-+*
-+* This program is free software; you can redistribute it and/or
-+* modify it under the terms of the GNU General Public License as
-+* published by the Free Software Foundation version 2.
-+*
-+* This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+* kind, whether express or implied; without even the implied warranty
-+* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+* GNU General Public License for more details.
-+*/
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/input.h>
-+#include <linux/delay.h>
-+#include <linux/interrupt.h>
-+#include <linux/keyboard.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/of.h>
-+#include <asm/irq.h>
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/serio.h>
-+
-+#define IPROC_TS_NAME "iproc-ts"
-+
-+#define PEN_DOWN_STATUS     1
-+#define PEN_UP_STATUS       0
-+
-+#define X_MIN               0
-+#define Y_MIN               0
-+#define X_MAX               0xFFF
-+#define Y_MAX               0xFFF
-+
-+/* Value given by controller for invalid coordinate. */
-+#define INVALID_COORD       0xFFFFFFFF
-+
-+/* Register offsets */
-+#define REGCTL1             0x00
-+#define REGCTL2             0x04
-+#define INTERRUPT_THRES     0x08
-+#define INTERRUPT_MASK      0x0c
-+
-+#define INTERRUPT_STATUS    0x10
-+#define CONTROLLER_STATUS   0x14
-+#define FIFO_DATA           0x18
-+#define FIFO_DATA_X_Y_MASK  0xFFFF
-+#define ANALOG_CONTROL      0x1c
-+
-+#define AUX_DATA            0x20
-+#define DEBOUNCE_CNTR_STAT  0x24
-+#define SCAN_CNTR_STAT      0x28
-+#define REM_CNTR_STAT       0x2c
-+
-+#define SETTLING_TIMER_STAT 0x30
-+#define SPARE_REG           0x34
-+#define SOFT_BYPASS_CONTROL 0x38
-+#define SOFT_BYPASS_DATA    0x3c
-+
-+
-+/* Bit values for INTERRUPT_MASK and INTERRUPT_STATUS regs */
-+#define TS_PEN_INTR_MASK        BIT(0)
-+#define TS_FIFO_INTR_MASK       BIT(2)
-+
-+/* Bit values for CONTROLLER_STATUS reg1 */
-+#define TS_PEN_DOWN             BIT(0)
-+
-+/* Shift values for control reg1 */
-+#define SCANNING_PERIOD_SHIFT   24
-+#define DEBOUNCE_TIMEOUT_SHIFT  16
-+#define SETTLING_TIMEOUT_SHIFT  8
-+#define TOUCH_TIMEOUT_SHIFT     0
-+
-+/* Shift values for coordinates from fifo */
-+#define X_COORD_SHIFT  0
-+#define Y_COORD_SHIFT  16
-+
-+/* Bit values for REGCTL2 */
-+#define TS_CONTROLLER_EN_BIT    BIT(16)
-+#define TS_CONTROLLER_AVGDATA_SHIFT 8
-+#define TS_CONTROLLER_AVGDATA_MASK (0x7 << TS_CONTROLLER_AVGDATA_SHIFT)
-+#define TS_CONTROLLER_PWR_LDO   BIT(5)
-+#define TS_CONTROLLER_PWR_ADC   BIT(4)
-+#define TS_CONTROLLER_PWR_BGP   BIT(3)
-+#define TS_CONTROLLER_PWR_TS    BIT(2)
-+#define TS_WIRE_MODE_BIT        BIT(1)
-+
-+/*
-+ * Touch screen mount angles w.r.t LCD panel left side top corner
-+ * TS (x_min,y_min) placed at LCD (x_min,y_min) rotation angle is 0
-+ * TS (x_min,y_max) placed at LCD (x_min,y_min) rotation angle is 90
-+ * TS (x_max,y_max) placed at LCD (x_min,y_min) rotation angle is 180
-+ * TS (x_max,y_min) placed at LCD (x_min,y_min) rotation angle is 270
-+ */
-+enum ts_rotation_angles {
-+	TS_ROTATION_0,
-+	TS_ROTATION_90,
-+	TS_ROTATION_180,
-+	TS_ROTATION_270,
-+};
-+
-+struct tsc_param {
-+	/* Each step is 1024 us.  Valid 1-256 */
-+	u32 scanning_period;
-+
-+	/*  Each step is 512 us.  Valid 0-255 */
-+	u32 debounce_timeout;
-+
-+	/*
-+	 * The settling duration (in ms) is the amount of time the tsc
-+	 * waits to allow the voltage to settle after turning on the
-+	 * drivers in detection mode. Valid values: 0-11
-+	 *   0 =  0.008 ms
-+	 *   1 =  0.01 ms
-+	 *   2 =  0.02 ms
-+	 *   3 =  0.04 ms
-+	 *   4 =  0.08 ms
-+	 *   5 =  0.16 ms
-+	 *   6 =  0.32 ms
-+	 *   7 =  0.64 ms
-+	 *   8 =  1.28 ms
-+	 *   9 =  2.56 ms
-+	 *   10 = 5.12 ms
-+	 *   11 = 10.24 ms
-+	 */
-+	u32 settling_timeout;
-+
-+	/* touch timeout in sample counts */
-+	u32 touch_timeout;
-+
-+	/*
-+	 * Number of data samples which are averaged before a final data point
-+	 * is placed into the FIFO
-+	 */
-+	u32 average_data;
-+
-+	/* FIFO threshold */
-+	u32 fifo_threshold;
-+};
-+
-+struct iproc_ts_priv {
-+	struct platform_device *pdev;
-+	struct input_dev *idev;
-+
-+	void __iomem *regs;
-+	struct clk *tsc_clk;
-+
-+	int  pen_status;
-+	int  ts_rotation;
-+	struct tsc_param cfg_params;
-+};
-+
-+/*
-+ * Set default values the same as hardware reset values
-+ * except for fifo_threshold with is set to 1.
-+ */
-+static struct tsc_param default_config = {
-+	.scanning_period  = 0x5,  /* 1 to 256 */
-+	.debounce_timeout = 0x28, /* 0 to 255 */
-+	.settling_timeout = 0x7,  /* 0 to 11 */
-+	.touch_timeout    = 0xa,  /* 0 to 255 */
-+	.average_data     = 5,    /* entry 5 = 32 pts */
-+	.fifo_threshold   = 1,    /* 0 to 31 */
-+};
-+
-+static void ts_reg_dump(struct iproc_ts_priv *priv)
-+{
-+	struct device *dev = &priv->pdev->dev;
-+
-+	dev_dbg(dev, "regCtl1             = 0x%08x\n",
-+				readl(priv->regs + REGCTL1));
-+	dev_dbg(dev, "regCtl2             = 0x%08x\n",
-+				readl(priv->regs + REGCTL2));
-+	dev_dbg(dev, "interrupt_Thres     = 0x%08x\n",
-+				readl(priv->regs + INTERRUPT_THRES));
-+	dev_dbg(dev, "interrupt_Mask      = 0x%08x\n",
-+				readl(priv->regs + INTERRUPT_MASK));
-+	dev_dbg(dev, "interrupt_Status    = 0x%08x\n",
-+				readl(priv->regs + INTERRUPT_STATUS));
-+	dev_dbg(dev, "controller_Status   = 0x%08x\n",
-+				readl(priv->regs + CONTROLLER_STATUS));
-+	dev_dbg(dev, "FIFO_Data           = 0x%08x\n",
-+				readl(priv->regs + FIFO_DATA));
-+	dev_dbg(dev, "analog_Control      = 0x%08x\n",
-+				readl(priv->regs + ANALOG_CONTROL));
-+	dev_dbg(dev, "aux_Data            = 0x%08x\n",
-+				readl(priv->regs + AUX_DATA));
-+	dev_dbg(dev, "debounce_Cntr_Stat  = 0x%08x\n",
-+				readl(priv->regs + DEBOUNCE_CNTR_STAT));
-+	dev_dbg(dev, "scan_Cntr_Stat      = 0x%08x\n",
-+				readl(priv->regs + SCAN_CNTR_STAT));
-+	dev_dbg(dev, "rem_Cntr_Stat       = 0x%08x\n",
-+				readl(priv->regs + REM_CNTR_STAT));
-+	dev_dbg(dev, "settling_Timer_Stat = 0x%08x\n",
-+				readl(priv->regs + SETTLING_TIMER_STAT));
-+	dev_dbg(dev, "spare_Reg           = 0x%08x\n",
-+				readl(priv->regs + SPARE_REG));
-+	dev_dbg(dev, "soft_Bypass_Control = 0x%08x\n",
-+				readl(priv->regs + SOFT_BYPASS_CONTROL));
-+	dev_dbg(dev, "soft_Bypass_Data    = 0x%08x\n",
-+				readl(priv->regs + SOFT_BYPASS_DATA));
-+}
-+
-+static irqreturn_t iproc_touchscreen_interrupt(int irq, void *data)
-+{
-+	struct platform_device *pdev = (struct platform_device *)data;
-+	struct iproc_ts_priv *priv;
-+	u32 intr_status = 0;
-+	u32 raw_coordinate = 0;
-+	u16 x = 0;
-+	u16 y = 0;
-+	int i;
-+
-+	priv = (struct iproc_ts_priv *)platform_get_drvdata(pdev);
-+
-+	intr_status = readl(priv->regs + INTERRUPT_STATUS);
-+	intr_status &= (TS_PEN_INTR_MASK | TS_FIFO_INTR_MASK);
-+	if (intr_status == 0)
-+		return IRQ_NONE;
-+
-+	/* Clear all interrupt status bits, write-1-clear */
-+	writel(intr_status, priv->regs + INTERRUPT_STATUS);
-+
-+	/* Pen up/down */
-+	if (intr_status & TS_PEN_INTR_MASK) {
-+		if (readl(priv->regs + CONTROLLER_STATUS) & TS_PEN_DOWN) {
-+			priv->pen_status = PEN_DOWN_STATUS;
-+			input_report_key(priv->idev, BTN_TOUCH,
-+				priv->pen_status);
-+		} else {
-+			priv->pen_status = PEN_UP_STATUS;
-+			input_report_key(priv->idev, BTN_TOUCH,
-+				priv->pen_status);
-+			input_sync(priv->idev);
-+		}
-+
-+		dev_dbg(&priv->pdev->dev,
-+			"pen up-down (%d)\n", priv->pen_status);
-+	}
-+
-+	/* coordinates in FIFO exceed the theshold */
-+	if (intr_status & TS_FIFO_INTR_MASK) {
-+		for (i = 0; i < priv->cfg_params.fifo_threshold; i++) {
-+			raw_coordinate = readl(priv->regs + FIFO_DATA);
-+			if (raw_coordinate == INVALID_COORD)
-+				continue;
-+
-+			/*
-+			 * The x and y coordinate are 16 bits each
-+			 * with the x in the lower 16 bits and y in the
-+			 * upper 16 bits.
-+			 */
-+			x = (raw_coordinate >> X_COORD_SHIFT) &
-+				FIFO_DATA_X_Y_MASK;
-+			y = (raw_coordinate >> Y_COORD_SHIFT) &
-+				FIFO_DATA_X_Y_MASK;
-+
-+			/* We only want to retain the 12 msb of the 16 */
-+			x = (x >> 4) & 0x0FFF;
-+			y = (y >> 4) & 0x0FFF;
-+
-+			/* adjust x y according to lcd tsc mount angle */
-+			if (priv->ts_rotation == TS_ROTATION_90) {
-+				y = Y_MAX - y;
-+			} else if (priv->ts_rotation == TS_ROTATION_180) {
-+				x = X_MAX - x;
-+				y = Y_MAX - y;
-+			} else if (priv->ts_rotation == TS_ROTATION_270) {
-+				x = X_MAX - x;
-+			}
-+
-+			input_report_abs(priv->idev, ABS_X, x);
-+			input_report_abs(priv->idev, ABS_Y, y);
-+			input_sync(priv->idev);
-+
-+			dev_dbg(&priv->pdev->dev, "xy (0x%x 0x%x)\n", x, y);
-+		}
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int iproc_ts_start(struct input_dev *idev)
-+{
-+	u32 val;
-+	int ret;
-+	struct iproc_ts_priv *priv;
-+
-+	priv = input_get_drvdata(idev);
-+	if (priv == NULL)
-+		return -ENODEV;
-+
-+	/* Enable clock */
-+	ret = clk_prepare_enable(priv->tsc_clk);
-+	if (ret) {
-+		dev_err(&priv->pdev->dev, "%s clk_prepare_enable failed %d\n",
-+			__func__, ret);
-+		return ret;
-+	}
-+
-+	/*
-+	 * Interrupt is generated when:
-+	 *  FIFO reaches the int_th value, and pen event(up/down)
-+	 */
-+	val = TS_PEN_INTR_MASK | TS_FIFO_INTR_MASK;
-+	writel(val, priv->regs + INTERRUPT_MASK);
-+
-+	writel(priv->cfg_params.fifo_threshold, priv->regs + INTERRUPT_THRES);
-+
-+	/* Initialize control reg1 */
-+	val = 0;
-+	val |= (priv->cfg_params.scanning_period << SCANNING_PERIOD_SHIFT);
-+	val |= (priv->cfg_params.debounce_timeout << DEBOUNCE_TIMEOUT_SHIFT);
-+	val |= (priv->cfg_params.settling_timeout << SETTLING_TIMEOUT_SHIFT);
-+	val |= (priv->cfg_params.touch_timeout << TOUCH_TIMEOUT_SHIFT);
-+	writel(val, priv->regs + REGCTL1);
-+
-+	/* Try to clear all interrupt status */
-+	val = readl(priv->regs + INTERRUPT_STATUS);
-+	val |= (TS_FIFO_INTR_MASK | TS_PEN_INTR_MASK);
-+	writel(val, priv->regs + INTERRUPT_STATUS);
-+
-+	/* Initialize control reg2 */
-+	val = readl(priv->regs + REGCTL2);
-+	val |= (TS_CONTROLLER_EN_BIT | TS_WIRE_MODE_BIT);
-+
-+	val &= ~(TS_CONTROLLER_AVGDATA_MASK);
-+	val |= (priv->cfg_params.average_data << TS_CONTROLLER_AVGDATA_SHIFT);
-+
-+	val &= ~(TS_CONTROLLER_PWR_LDO |	/* PWR up LDO */
-+		   TS_CONTROLLER_PWR_ADC |	/* PWR up ADC */
-+		   TS_CONTROLLER_PWR_BGP |	/* PWR up BGP */
-+		   TS_CONTROLLER_PWR_TS);	/* PWR up TS */
-+
-+	writel(val, priv->regs + REGCTL2);
-+
-+	ts_reg_dump(priv);
-+
-+	return 0;
-+}
-+
-+static void iproc_ts_stop(struct input_dev *dev)
-+{
-+	u32 val;
-+	struct iproc_ts_priv *priv;
-+
-+	priv = input_get_drvdata(dev);
-+	if (priv == NULL)
-+		return;
-+
-+	writel(0, priv->regs + INTERRUPT_MASK); /* Disable all interrupts */
-+
-+	/* Only power down touch screen controller */
-+	val = readl(priv->regs + REGCTL2);
-+	val |= TS_CONTROLLER_PWR_TS;
-+	writel(val, priv->regs + REGCTL2);
-+
-+	clk_disable(priv->tsc_clk);
-+}
-+
-+static int get_tsc_config(struct device_node *np, struct iproc_ts_priv *priv)
-+{
-+	u32 val;
-+	struct device *dev = &priv->pdev->dev;
-+
-+	priv->cfg_params = default_config;
-+
-+	if (of_property_read_u32(np, "scanning_period", &val) >= 0) {
-+		if (val < 1 || val > 256) {
-+			dev_err(dev, "scanning_period must be [1-256]\n");
-+			return -EINVAL;
-+		}
-+		priv->cfg_params.scanning_period = val;
-+	}
-+
-+	if (of_property_read_u32(np, "debounce_timeout", &val) >= 0) {
-+		if (val < 0 || val > 255) {
-+			dev_err(dev, "debounce_timeout must be [0-255]\n");
-+			return -EINVAL;
-+		}
-+		priv->cfg_params.debounce_timeout = val;
-+	}
-+
-+	if (of_property_read_u32(np, "settling_timeout", &val) >= 0) {
-+		if (val < 0 || val > 11) {
-+			dev_err(dev, "settling_timeout must be [0-11]\n");
-+			return -EINVAL;
-+		}
-+		priv->cfg_params.settling_timeout = val;
-+	}
-+
-+	if (of_property_read_u32(np, "touch_timeout", &val) >= 0) {
-+		if (val < 0 || val > 255) {
-+			dev_err(dev, "touch_timeout must be [0-255]\n");
-+			return -EINVAL;
-+		}
-+		priv->cfg_params.touch_timeout = val;
-+	}
-+
-+	if (of_property_read_u32(np, "average_data", &val) >= 0) {
-+		if (val < 0 || val > 8) {
-+			dev_err(dev, "average_data must be [0-8]\n");
-+			return -EINVAL;
-+		}
-+		priv->cfg_params.average_data = val;
-+	}
-+
-+	if (of_property_read_u32(np, "fifo_threshold", &val) >= 0) {
-+		if (val < 0 || val > 31) {
-+			dev_err(dev, "fifo_threshold must be [0-31]\n");
-+			return -EINVAL;
-+		}
-+		priv->cfg_params.fifo_threshold = val;
-+	}
-+
-+	priv->ts_rotation = TS_ROTATION_0;
-+	if (of_property_read_u32(np, "ts-rotation", &val) >= 0) {
-+		priv->ts_rotation = val;
-+		dev_dbg(dev, "ts rotation [%d] degrees\n",
-+			90 * priv->ts_rotation);
-+	}
-+
-+	return 0;
-+}
-+
-+static int iproc_ts_probe(struct platform_device *pdev)
-+{
-+	struct iproc_ts_priv *priv;
-+	struct input_dev *idev;
-+	struct resource *res;
-+	int ret;
-+	int irq;
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	/* touchscreen controller memory mapped regs */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	priv->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->regs)) {
-+		dev_err(&pdev->dev, "unable to map I/O memory\n");
-+		return PTR_ERR(priv->regs);
-+	}
-+
-+	priv->tsc_clk = devm_clk_get(&pdev->dev, "tsc_clk");
-+	if (IS_ERR(priv->tsc_clk)) {
-+		dev_err(&pdev->dev,
-+			"%s Failed getting clock tsc_clk\n", __func__);
-+		return PTR_ERR(priv->tsc_clk);
-+	}
-+
-+	ret = get_tsc_config(pdev->dev.of_node, priv);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev, "%s get_tsc_config failed\n", __func__);
-+		return ret;
-+	}
-+
-+	idev = devm_input_allocate_device(&pdev->dev);
-+	if (!idev) {
-+		dev_err(&pdev->dev,
-+			"%s Allocate input device failed\n", __func__);
-+		return -ENOMEM;
-+	}
-+
-+	priv->idev = idev;
-+	priv->pdev = pdev;
-+
-+	priv->pen_status = PEN_UP_STATUS;
-+
-+	/* Set input device info  */
-+	idev->name = IPROC_TS_NAME;
-+	idev->dev.parent = &pdev->dev;
-+
-+	idev->id.bustype = BUS_HOST;
-+	idev->id.vendor = SERIO_UNKNOWN;
-+	idev->id.product = 0;
-+	idev->id.version = 0;
-+
-+	idev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
-+	set_bit(BTN_TOUCH, idev->keybit);
-+
-+	input_set_abs_params(idev, ABS_X, X_MIN, X_MAX, 0, 0);
-+	input_set_abs_params(idev, ABS_Y, Y_MIN, Y_MAX, 0, 0);
-+
-+	idev->open = iproc_ts_start;
-+	idev->close = iproc_ts_stop;
-+
-+	input_set_drvdata(idev, priv);
-+	platform_set_drvdata(pdev, priv);
-+
-+	/* get interrupt */
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "%s platform_get_irq failed\n", __func__);
-+		return irq;
-+	}
-+
-+	ret = devm_request_irq(&pdev->dev, irq,
-+		iproc_touchscreen_interrupt,
-+		IRQF_SHARED, IPROC_TS_NAME, pdev);
-+	if (ret)
-+		return ret;
-+
-+	ret = input_register_device(priv->idev);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"%s register input device failed %d\n", __func__, ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id iproc_ts_of_match[] = {
-+	{.compatible = "brcm,iproc-touchscreen", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, iproc_ts_of_match);
-+
-+static struct platform_driver iproc_ts_driver = {
-+	.probe = iproc_ts_probe,
-+	.driver = {
-+		.name	= IPROC_TS_NAME,
-+		.of_match_table = of_match_ptr(iproc_ts_of_match),
-+	},
-+};
-+
-+module_platform_driver(iproc_ts_driver);
-+
-+MODULE_DESCRIPTION("IPROC Touchscreen driver");
-+MODULE_AUTHOR("Broadcom");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+The problem is that BIOS programmed an invalid Root Port window
+leading to the Radeon device.  The window contains the Radeon device,
+so the configuration actually *works* fine, but the window is invalid
+because it either overlaps system RAM or starts below the upstream
+host bridge window, so Linux discards it:
 
+Zermond's system:
+  acpi PNP0A08:00: host bridge window [mem 0xc0000000-0xffffffff] (ignored)
+  pci_bus 0000:00: root bus resource [mem 0x00000000-0xfffffffff]
+  pci 0000:00:01.0:   bridge window [mem 0xbdf00000-0xddefffff 64bit
+pref]  # invalid Root Port window
+  pci 0000:00:01.0: can't claim BAR 15 [mem 0xbdf00000-0xddefffff
+64bit pref]: address conflict with System RAM [mem
+0x00100000-0xbff9ffff]
+  pci 0000:01:00.0: can't claim BAR 0 [mem 0xc0000000-0xcfffffff
+pref]: no compatible bridge window  # Radeon
+
+Marek's system:
+  pci_bus 0000:00: root bus resource [mem 0xc0000000-0xffffffff]   (from _CRS)
+  pci 0000:00:01.0:   bridge window [mem 0xbdf00000-0xddefffff 64bit
+pref]  # invalid Root Port window
+  pci 0000:00:01.0: can't claim BAR 15 [mem 0xbdf00000-0xddefffff
+64bit pref]: no compatible bridge window
+  pci 0000:01:00.0: can't claim BAR 0 [mem 0xc0000000-0xcfffffff
+pref]: no compatible bridge window  # Radeon
+
+The Root Port window had the same problem before 5b28541552ef, of
+course, since BIOS set it up.  But before 5b28541552ef, Linux assigned
+a valid window big enough for the Radeon:
+
+  pci 0000:00:01.0:   bridge window [mem 0xc0000000-0xcfffffff pref]
+
+After 5b28541552ef, we won't put a 64-bit window below 4GB, so we
+assign space above 4GB:
+
+  pci 0000:00:01.0:   bridge window [mem 0x140000000-0x1401fffff 64bit pref]
+
+which is not usable by Radeon, since it only has a 32-bit BAR.
+
+On Mon, Dec 8, 2014 at 5:21 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Dec 8, 2014 at 3:38 PM, Gavin Shan <gwshan@linux.vnet.ibm.com> wrote:
+>> On Mon, Dec 08, 2014 at 02:46:00PM -0700, Bjorn Helgaas wrote:
+>>>Yeah, I didn't word that very clearly.  I meant that after
+>>>5b28541552ef, that 64-bit window is wasted unless there's a 64-bit BAR
+>>>below it; we can't even place the window below 4GB and use it for
+>>>32-bit prefetchable BARs.
+>>>
+>>
+>> Yes, I agree. It's why I suggested to return error from pbus_size_mem()
+>> to indicate the case: 64-bits prefetchable window isn't used and it's
+>> still available to be used by child 32-bits prefetchable BARs. Please
+>> take a look on the attached draft patch, which helps to explain the idea
+>> only.
+>
+> That would not help. The 00:01.0 on Zermond's system support hotplug. so mem
+> pref will be used for 64bit pref.
+
+I don't think it is an improvement to restrict use of the 64bit pref
+window to a hypothetical future 64-bit capable device.  The
+configuration done by BIOS was optimal for the hardware already in the
+machine -- the prefetchable BAR is in a prefetchable window.  I don't
+think we should change that configuration just because there's a
+possibility of a different device in the future.
+
+Bjorn
