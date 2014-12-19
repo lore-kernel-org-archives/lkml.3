@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaLSMQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 07:16:42 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:45543 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaLSMQl (ORCPT
+	id S1752456AbaLSMXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 07:23:14 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36132 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177AbaLSMXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 07:16:41 -0500
-Date: Fri, 19 Dec 2014 13:16:34 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [GIT PULL] x86 fix
-Message-ID: <20141219121634.GA19164@gmail.com>
+	Fri, 19 Dec 2014 07:23:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+From: Divya Vyas <edivya.vyas@gmail.com>
+Date: Fri, 19 Dec 2014 17:52:52 +0530
+Message-ID: <CAGfiMvCLgdaACWuUJAWecaLP9cSZRLFzzWgNGoiZTidT9m60cg@mail.gmail.com>
+Subject: Merge ftrace data of host and guest
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi,
 
-Please pull the latest x86-urgent-for-linus git tree from:
+I am adding trace data of host and guest using trace-merge script .
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+https://15351300108708232970.googlegroups.com/attach/66533d7b41eed0b/trace-merge.pl?part=0.1&view=1&vt=ANaJVrHKDEwmNeLGDINH0B5Ud4OIUrfQ2_2w2jo08nJujH7Oc9facKD3ckT2RbCiHkRAfnYxmZnBF7qi0SeMZr2IMsPBDNjgrYkblCRkmgSk2PryLVsGe5g
 
-   # HEAD: 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0 x86/tls: Don't validate lm in set_thread_area() after all
+guest data
 
-This tree contains a single TLS ABI validation fix from Andy 
-Lutomirski.
+qemu-kvm-2687  [003] d...50550079203669: kvm_exit: [detail]
+qemu-kvm-2687  [003] d...50550079206816: kvm_entry: [detail]
+qemu-kvm-2687  [003] d...50550079240656: kvm_exit: [detail]
+qemu-kvm-2687  [003] d...50550079243467: kvm_entry: [detail]
+qemu-kvm-2687  [003] d...50550079256103: kvm_exit: [detail]
+qemu-kvm-2687  [003] d...50550079268391: kvm_entry: [detail]
+qemu-kvm-2687  [003] d...50550079280829: kvm_exit: [detail]
+qemu-kvm-2687  [003] d...50550079286028: kvm_entry: [detail]
 
- Thanks,
+host data
 
-	Ingo
-
------------------->
-Andy Lutomirski (1):
-      x86/tls: Don't validate lm in set_thread_area() after all
+comm-3826  [000] d...49836825726903: sched_wakeup: [detail]
+comm-3826  [000] d...49836832225344: sched_switch: [detail]
+~
 
 
- arch/x86/include/uapi/asm/ldt.h | 7 +++++++
- arch/x86/kernel/tls.c           | 6 ------
- 2 files changed, 7 insertions(+), 6 deletions(-)
+Data after merging :
 
-diff --git a/arch/x86/include/uapi/asm/ldt.h b/arch/x86/include/uapi/asm/ldt.h
-index 46727eb37bfe..6e1aaf73852a 100644
---- a/arch/x86/include/uapi/asm/ldt.h
-+++ b/arch/x86/include/uapi/asm/ldt.h
-@@ -28,6 +28,13 @@ struct user_desc {
- 	unsigned int  seg_not_present:1;
- 	unsigned int  useable:1;
- #ifdef __x86_64__
-+	/*
-+	 * Because this bit is not present in 32-bit user code, user
-+	 * programs can pass uninitialized values here.  Therefore, in
-+	 * any context in which a user_desc comes from a 32-bit program,
-+	 * the kernel must act as though lm == 0, regardless of the
-+	 * actual value.
-+	 */
- 	unsigned int  lm:1;
- #endif
- };
-diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
-index 3e551eee87b9..4e942f31b1a7 100644
---- a/arch/x86/kernel/tls.c
-+++ b/arch/x86/kernel/tls.c
-@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct user_desc *info)
- 	if (info->seg_not_present)
- 		return false;
- 
--#ifdef CONFIG_X86_64
--	/* The L bit makes no sense for data. */
--	if (info->lm)
--		return false;
--#endif
--
- 	return true;
- }
- 
+/opt/trace-merge/trace-merge 18446739773557710924 host.data guest.data
+
+hcomm-3826  [000] d...49836825726903: sched_wakeup: [detail]
+hcomm-3826  [000] d...49836832225344: sched_switch: [detail]
+gqemu-kvm-2687  [003] d...54850231044361: kvm_exit: [detail]
+gqemu-kvm-2687  [003] d...54850231047508: kvm_entry: [detail]
+gqemu-kvm-2687  [003] d...54850231081348: kvm_exit: [detail]
+gqemu-kvm-2687  [003] d...54850231084159: kvm_entry: [detail]
+gqemu-kvm-2687  [003] d...54850231096795: kvm_exit: [detail]
+gqemu-kvm-2687  [003] d...54850231109083: kvm_entry: [detail]
+gqemu-kvm-2687  [003] d...54850231121521: kvm_exit: [detail]
+gqemu-kvm-2687  [003] d...54850231126720: kvm_entry: [detail]
+
+I think it is not desired output . Ths script is written for diffrent
+format .ftrace format is ( trace-cmd report command generates) :
+
+version = 6
+CPU 0 is empty
+cpus=2
+          <idle>-0     [001]  4401.096833: netif_receive_skb:
+dev=eth0 skbaddr=0xffff88001ed8fc00 len=84
+          <idle>-0     [001]  4401.096899: net_dev_queue:
+dev=eth0 skbaddr=0xffff88001a9fe000 len=98
+          <idle>-0     [001]  4401.096935: net_dev_xmit:
+dev=eth0 skbaddr=0xffff88001a9fe000 len=98 rc=0
+          <idle>-0     [001]  4401.097277: netif_receive_skb:
+dev=eth0 skbaddr=0xffff88001a9fe800 len=84
+          <idle>-0     [001]  4401.097309: net_dev_queue:
+dev=eth0 skbaddr=0xffff88001a9fea00 len=98
+          <idle>-0     [001]  4401.097325: net_dev_xmit:
+dev=eth0 skbaddr=0xffff88001a9fea00 len=98 rc=0
+          <idle>-0     [001]  4401.097570: netif_receive_skb:
+dev=eth0 skbaddr=0xffff88001a9fe800 len=84
+          <idle>-0     [001]  4401.097592: net_dev_queue:
+dev=eth0 skbaddr=0xffff88001a9fe000 len=98
+          <idle>-0     [001]  4401.097607: net_dev_xmit:
+dev=eth0 skbaddr=0xffff88001a9fe000 len=98 rc=0
+          <idle>-0     [001]  4401.097830: netif_receive_skb:
+dev=eth0 skbaddr=0xffff88001a9fe800 len=84
+          <idle>-0     [001]  4401.097843: net_dev_queue:
+dev=eth0 skbaddr=0xffff88001a9fea00 len=98
+
+
+Can you let me know I there is any other method to merge the traces or
+any further changes in the script
