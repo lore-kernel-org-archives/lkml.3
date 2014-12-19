@@ -1,90 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaLSRn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 12:43:28 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:8421 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751588AbaLSRn0 (ORCPT
+	id S1751909AbaLSRpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 12:45:24 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:55148 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaLSRpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 12:43:26 -0500
-Date: Fri, 19 Dec 2014 12:42:49 -0500
-From: Chris Mason <clm@fb.com>
-Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to
- vDSO
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Peter Zijlstra <peterz@infradead.org>, Shaohua Li <shli@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, <Kernel-team@fb.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Message-ID: <1419010969.13012.7@mail.thefacebook.com>
-In-Reply-To: <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com>
-References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
-	<95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
-	<CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
-	<CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
-	<20141219112350.GJ30905@twins.programming.kicks-ass.net>
-	<CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com>
-X-Mailer: geary/0.8.2
+	Fri, 19 Dec 2014 12:45:23 -0500
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH] i8k: Add support for fan labels
+Date: Fri, 19 Dec 2014 18:44:53 +0100
+Message-Id: <1419011093-20530-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-19_05:2014-12-19,2014-12-19,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412190170
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds labels support for fans if SMM function with EAX register
+0x03a3 reports it. This information was taken from DOS binary NBSVC.MDM.
 
+Additionally this patch change detection of fan presece. Instead reading fan
+status now detection is based on new label SMM function. Dell DOS binary
+NBSVC.MDM is doing similar checks, so we should do that too.
 
-On Fri, Dec 19, 2014 at 11:48 AM, Andy Lutomirski <luto@amacapital.net> 
-wrote:
-> On Fri, Dec 19, 2014 at 3:23 AM, Peter Zijlstra 
-> <peterz@infradead.org> wrote:
->>  On Thu, Dec 18, 2014 at 04:22:59PM -0800, Andy Lutomirski wrote:
->>>  Bad news: this patch is incorrect, I think.  Take a look at
->>>  update_rq_clock -- it does fancy things involving irq time and
->>>  paravirt steal time.  So this patch could result in extremely
->>>  non-monotonic results.
->> 
->>  Yeah, I'm not sure how (and if) we could make all that work :/
-> 
-> I obviously can't comment on what Facebook needs, but if I were
-> rigging something up to profile my own code*, I'd want a count of
-> elapsed time, including user, system, and probably interrupt as well.
-> I would probably not want to count time during which I'm not
-> scheduled, and I would also probably not want to count steal time.
-> The latter makes any implementation kind of nasty.
-> 
-> The API presumably doesn't need to be any particular clock id for
-> clock_gettime, and it may not even need to be clock_gettime at all.
-> 
-> Is perf self-monitoring good enough for this?  If not, can we make it
-> good enough?
-> 
-> * I do this today using CLOCK_MONOTONIC
+This patch also remove I8K_FAN_LEFT and I8K_FAN_RIGHT usage from hwmon driver
+part because that names does not make sense anymore. So numeric constants are
+used instead. Original /proc/i8k ioctl part was not changed for compatibility
+reasons.
 
-The clock_gettime calls are used for a wide variety of things, but 
-usually they are trying to instrument how much CPU the application is 
-using.  So for example with the HHVM interpreter they have a ratio of 
-the number of hhvm instructions they were able to execute in N seconds 
-of cputime.  This gets used to optimize the HHVM implementation and can 
-be used as a push blocking counter (code can't go in if it makes it 
-slower).
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Tested-by: Pali Rohár <pali.rohar@gmail.com>
+---
+One thing is what is implemented in old DOS binary NBSVC.MDM and another thing
+what works on new Dell laptops. I tested this patch on Dell Latitude E6440 and
+it reports Processor Fan. Before sending this patch to upstream, some tests
+on other Dell machines should be done.
+---
+ drivers/char/i8k.c |   76 ++++++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 62 insertions(+), 14 deletions(-)
 
-Wall time isn't a great representation of this because it includes 
-factors that might be outside a given HHVM patch, but it sounds like 
-we're saying almost the same thing.
-
-I'm not familiar with the perf self monitoring?
-
--chris
-
-
-
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index 9075bbf..b48d4c3 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -43,6 +43,7 @@
+ #define I8K_SMM_SET_FAN		0x01a3
+ #define I8K_SMM_GET_FAN		0x00a3
+ #define I8K_SMM_GET_SPEED	0x02a3
++#define I8K_SMM_GET_FAN_TYPE	0x03a3
+ #define I8K_SMM_GET_NOM_SPEED	0x04a3
+ #define I8K_SMM_GET_TEMP	0x10a3
+ #define I8K_SMM_GET_TEMP_TYPE	0x11a3
+@@ -282,6 +283,17 @@ static int i8k_get_fan_speed(int fan)
+ }
+ 
+ /*
++ * Read the fan type.
++ */
++static int i8k_get_fan_type(int fan)
++{
++	struct smm_regs regs = { .eax = I8K_SMM_GET_FAN_TYPE, };
++
++	regs.ebx = fan & 0xff;
++	return i8k_smm(&regs) ? : regs.eax & 0xff;
++}
++
++/*
+  * Read the fan nominal rpm for specific fan speed.
+  */
+ static int i8k_get_fan_nominal_speed(int fan, int speed)
+@@ -562,6 +574,37 @@ static ssize_t i8k_hwmon_show_temp(struct device *dev,
+ 	return sprintf(buf, "%d\n", temp * 1000);
+ }
+ 
++static ssize_t i8k_hwmon_show_fan_label(struct device *dev,
++					struct device_attribute *devattr,
++					char *buf)
++{
++	static const char * const labels[] = {
++		"Processor Fan",
++		"Motherboard Fan",
++		"Video Fan",
++		"Power Supply Fan",
++		"Chipset Fan",
++		"Other Fan",
++	};
++	int index = to_sensor_dev_attr(devattr)->index;
++	bool dock = false;
++	int type;
++
++	type = i8k_get_fan_type(index);
++	if (type < 0)
++		return type;
++
++	if (type & 0x10) {
++		dock = true;
++		type &= 0x0F;
++	}
++
++	if (type >= ARRAY_SIZE(labels))
++		type = (ARRAY_SIZE(labels) - 1);
++
++	return sprintf(buf, "%s%s\n", (dock ? "Docking " : ""), labels[type]);
++}
++
+ static ssize_t i8k_hwmon_show_fan(struct device *dev,
+ 				  struct device_attribute *devattr,
+ 				  char *buf)
+@@ -622,14 +665,17 @@ static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL,
+ static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 3);
+ static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL,
+ 			  3);
+-static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, i8k_hwmon_show_fan, NULL,
+-			  I8K_FAN_LEFT);
++static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, i8k_hwmon_show_fan, NULL, 0);
++static SENSOR_DEVICE_ATTR(fan1_label, S_IRUGO, i8k_hwmon_show_fan_label, NULL,
++			  0);
+ static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
+-			  i8k_hwmon_set_pwm, I8K_FAN_LEFT);
++			  i8k_hwmon_set_pwm, 0);
+ static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, i8k_hwmon_show_fan, NULL,
+-			  I8K_FAN_RIGHT);
++			  1);
++static SENSOR_DEVICE_ATTR(fan2_label, S_IRUGO, i8k_hwmon_show_fan_label, NULL,
++			  1);
+ static SENSOR_DEVICE_ATTR(pwm2, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
+-			  i8k_hwmon_set_pwm, I8K_FAN_RIGHT);
++			  i8k_hwmon_set_pwm, 1);
+ 
+ static struct attribute *i8k_attrs[] = {
+ 	&sensor_dev_attr_temp1_input.dev_attr.attr,	/* 0 */
+@@ -641,9 +687,11 @@ static struct attribute *i8k_attrs[] = {
+ 	&sensor_dev_attr_temp4_input.dev_attr.attr,	/* 6 */
+ 	&sensor_dev_attr_temp4_label.dev_attr.attr,	/* 7 */
+ 	&sensor_dev_attr_fan1_input.dev_attr.attr,	/* 8 */
+-	&sensor_dev_attr_pwm1.dev_attr.attr,		/* 9 */
+-	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 10 */
+-	&sensor_dev_attr_pwm2.dev_attr.attr,		/* 11 */
++	&sensor_dev_attr_fan1_label.dev_attr.attr,	/* 9 */
++	&sensor_dev_attr_pwm1.dev_attr.attr,		/* 10 */
++	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 11 */
++	&sensor_dev_attr_fan2_label.dev_attr.attr,	/* 12 */
++	&sensor_dev_attr_pwm2.dev_attr.attr,		/* 13 */
+ 	NULL
+ };
+ 
+@@ -662,10 +710,10 @@ static umode_t i8k_is_visible(struct kobject *kobj, struct attribute *attr,
+ 	if (index >= 6 && index <= 7 &&
+ 	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP4))
+ 		return 0;
+-	if (index >= 8 && index <= 9 &&
++	if (index >= 8 && index <= 10 &&
+ 	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN1))
+ 		return 0;
+-	if (index >= 10 && index <= 11 &&
++	if (index >= 11 && index <= 13 &&
+ 	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN2))
+ 		return 0;
+ 
+@@ -699,13 +747,13 @@ static int __init i8k_init_hwmon(void)
+ 	if (err >= 0)
+ 		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP4;
+ 
+-	/* Left fan attributes, if left fan is present */
+-	err = i8k_get_fan_status(I8K_FAN_LEFT);
++	/* First fan attributes, if fan type is OK */
++	err = i8k_get_fan_type(0);
+ 	if (err >= 0)
+ 		i8k_hwmon_flags |= I8K_HWMON_HAVE_FAN1;
+ 
+-	/* Right fan attributes, if right fan is present */
+-	err = i8k_get_fan_status(I8K_FAN_RIGHT);
++	/* Second fan attributes, if fan type is OK */
++	err = i8k_get_fan_type(1);
+ 	if (err >= 0)
+ 		i8k_hwmon_flags |= I8K_HWMON_HAVE_FAN2;
+ 
+-- 
+1.7.9.5
 
