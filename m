@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaLSApt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 19:45:49 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39298 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353AbaLSAps (ORCPT
+	id S1751790AbaLSAqg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 19:46:36 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:51605 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbaLSAqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 19:45:48 -0500
-Date: Fri, 19 Dec 2014 00:45:45 +0000
-From: Thomas Graf <tgraf@suug.ch>
-To: "Varlese, Marco" <marco.varlese@intel.com>
-Cc: Roopa Prabhu <roopa@cumulusnetworks.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Jiri Pirko <jiri@resnulli.us>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
- configuration
-Message-ID: <20141219004545.GD16239@casper.infradead.org>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
- <5492E85C.6010802@cumulusnetworks.com>
- <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
- <5492EFC3.8030102@cumulusnetworks.com>
- <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com>
- <549313B8.6050102@cumulusnetworks.com>
- <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com>
+	Thu, 18 Dec 2014 19:46:35 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
+Date: Fri, 19 Dec 2014 02:46:37 +0200
+Message-ID: <2833437.mUHC45LYXV@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <CANqRtoQbtp_vgmcooiWpUvBMP7txGeYVGT-oLkRfMiM6Y51BQg@mail.gmail.com>
+References: <20141216094854.22639.69181.sendpatchset@w520> <2855304.l47b4KVhTf@avalon> <CANqRtoQbtp_vgmcooiWpUvBMP7txGeYVGT-oLkRfMiM6Y51BQg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14 at 06:02pm, Varlese, Marco wrote:
-> Roopa, one of the comments I got from Thomas Graf on my v1 patch was that your patch and mine were supplementary ("I think Roopa's patches are supplementary. Not all switchdev users will be backed with a Linux Bridge. I therefore welcome your patches very much")... I also understood by others that the patch made sense for the same reason. I simply do not understand why these attributes (and maybe others in the future) could not be configured directly on a standard port but have to go through a bridge.
+Hi Magnus,
 
-Apologies for this confusion. I take that back. I was under the
-impression netdev_switch_port_bridge_setlink(), based on the "bridge"
-in the function name, would derive the attributes based on capabilities
-and assumption of the bridge module.
+On Friday 19 December 2014 09:03:00 Magnus Damm wrote:
+> On Wed, Dec 17, 2014 at 11:08 AM, Laurent Pinchart wrote:
+> > Magnus, you have told me that you've performed tests on Marzen with
+> > CONFIG_PREEMPT_NONE and with both TWD enabled and disabled. If you could
+> > perform the same tests with CONFIG_PREEMPT instead without noticing any
+> > regression I think we can merge your patch. Whatever breakage it has
+> > caused in the past is likely hidden somewhere beyond eyesight.
+> 
+> I've now successfully boot tested the different PREEMPT settings on
+> r8a7779 Marzen multiplatform. Everything seems to work as expected.
+> 
+> Compared to before I've been a bit more lazy, so I've kept the timer
+> config to default which means TWD and TMU enabled.
 
-This is not the case in the latest patchset proposed so it could
-indeed serve as the Netlink API for both the bridge and non bridge
-case.
+If your test setup is still around could you quickly test PREEMPT + TMU 
+without TWD ?
+
+> The kernel tree is renesas-devel-20141218-v3.18 which is v3.18 plus local
+> integration stuff including TWD DT. I've applied this patch too.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
