@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaLSCAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 21:00:18 -0500
-Received: from omr2.cc.vt.edu ([198.82.141.100]:38241 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247AbaLSCAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 21:00:17 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@kernel.org, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCHv v3] tools lib traceevent: Add support for IP address formats
-In-Reply-To: Your message of "Thu, 18 Dec 2014 18:43:10 -0700."
-             <1418953390-28891-1-git-send-email-dsahern@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1418953390-28891-1-git-send-email-dsahern@gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1418954405_1952P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Dec 2014 21:00:05 -0500
-Message-ID: <29144.1418954405@turing-police.cc.vt.edu>
+	id S1752064AbaLSCBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 21:01:06 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:34060 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaLSCBE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 21:01:04 -0500
+From: Steve Longerbeam <slongerbeam@gmail.com>
+X-Google-Original-From: Steve Longerbeam <steve_longerbeam@mentor.com>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
+        Jiada Wang <jiada_wang@mentor.com>,
+        Steve Longerbeam <steve_longerbeam@mentor.com>
+Subject: [PATCH v2 0/7] imx-drm: ipuv3-crtc: Implement mode_fixup
+Date: Thu, 18 Dec 2014 18:00:19 -0800
+Message-Id: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1418954405_1952P
-Content-Type: text/plain; charset=us-ascii
+This patchset implements ->mode_fixup() in the imx ipuv3-crtc driver,
+using a new support function ipu_di_adjust_videomode(). This new
+function needs to be subsystem independent, so it accepts a video
+mode as a 'struct videomode'. Hence ipu-crtc ->mode_fixup() needs
+another support function to convert a drm_display_mode to a videomode
+before passing the mode to ipu_di_adjust_videomode() for fixup.
 
-On Thu, 18 Dec 2014 18:43:10 -0700, David Ahern said:
-> Adds helper for following kernel formats:
->   %pi4 print an IPv4 address with leading zeros
->   %pI4 print an IPv4 address without leading zeros
->   %pi6 print an IPv6 address without colons
->   %pI6 print an IPv6 address with colons
->   %pI6c print an IPv6 address with colons
-
-%pI6c print an IPv6 address *in compressed form* with colons.
+Also some related code cleanup: 'struct ipu_di_signal_cfg' should
+use 'struct videomode' for mode timings.
 
 
---==_Exmh_1418954405_1952P
-Content-Type: application/pgp-signature
+Jiada Wang (1):
+  gpu: ipu-di: Add ipu_di_adjust_videomode()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+Steve Longerbeam (6):
+  gpu: ipu-di: remove some non-functional code
+  drm_modes: add videomode_from_drm_display_mode
+  imx-drm: ipuv3-crtc: Implement mode_fixup
+  imx-drm: encoder prepare/mode_set must use adjusted mode
+  gpu: ipu-v3: Use videomode in struct ipu_di_signal_cfg
+  gpu: ipu-di: Switch to DIV_ROUND_CLOSEST for DI clock divider calc
 
-iQIVAwUBVJOGpQdmEQWDXROgAQJaew//bM6yRzibPoJMWfIpZUm/sIpcbbv3Mbrb
-Uo44rjjeqpGPCuNAER0V5zto7tjupyBZgW0BM7eg2KcZCyYpsfHMwvfUqO6zm7pY
-7kdPtX5ca77aN8w0U0fv4uhHwjlVLZ8uIUSYB/N8PJUPwnknxPRH/GJ0Mc3zgzwp
-bGCu9LETY4/oi5Eqrkmk7efBLs6tMeB5BoOnRkVT0hKohsaoCgBHyL1YOQIqGrJb
-+5FYo2Brv/7MfhYCjNMXy19K16K79SKNY4zySZJTUbmIwIyhWqev87e9Vmw2Jl6w
-Oa5rqTvYHKi7RRZmsUZ5t6THAkD6OjXkY3E+chSqp72rL8NUddTWWCaQrvbBGBhV
-s/P23gpc3/FRvXM04Eh5+dkQB04zjSchOpemNurB9yC+RGVnT+kxDP8Ip083dt0X
-iH/CzkakzjzIWB/OPrhUUFlJ/BTEO8gwdGhYuhf60ijMxm59CH7iwymh+IxXcbXQ
-fthV8t0bn78+nsvxzWUbPpyRh7xlcgL04MdQG+mBUhMPUgvlrW7sOjIAFuFm2bFM
-diwCNNqxpwd1kdc4xBNup+gMZeb1UVsyG1ciPIt4P7rZCHTeX9N1N+86gCf3NyG5
-xAtzEs/rT88uqRaeIk63kedCgh8qOPkeFRAuEhSy80mkMqpqOhqo9Gcm8g21oC5/
-cZt4bXhQAvY=
-=4I5W
------END PGP SIGNATURE-----
+ drivers/gpu/drm/drm_modes.c            |   40 +++++++++++
+ drivers/gpu/drm/imx/imx-hdmi.c         |    4 +-
+ drivers/gpu/drm/imx/imx-ldb.c          |    6 +-
+ drivers/gpu/drm/imx/imx-tve.c          |    4 +-
+ drivers/gpu/drm/imx/ipuv3-crtc.c       |   38 +++++-----
+ drivers/gpu/drm/imx/parallel-display.c |    4 +-
+ drivers/gpu/ipu-v3/ipu-di.c            |  121 +++++++++++++++++++-------------
+ include/drm/drm_modes.h                |    2 +
+ include/video/imx-ipu-v3.h             |   21 ++----
+ 9 files changed, 147 insertions(+), 93 deletions(-)
 
---==_Exmh_1418954405_1952P--
+-- 
+1.7.9.5
+
