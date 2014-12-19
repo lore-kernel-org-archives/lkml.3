@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaLSAfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 19:35:07 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60789 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaLSAfF (ORCPT
+	id S1751905AbaLSAfS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 19:35:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39254 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaLSAfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 19:35:05 -0500
-Date: Fri, 19 Dec 2014 01:34:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Shaohua Li <shli@fb.com>
-cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to
- vDSO
-In-Reply-To: <20141219003044.GA2804333@devbig257.prn2.facebook.com>
-Message-ID: <alpine.DEB.2.11.1412190131500.17382@nanos>
-References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com> <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com> <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com> <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
- <20141219003044.GA2804333@devbig257.prn2.facebook.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 18 Dec 2014 19:35:14 -0500
+Date: Fri, 19 Dec 2014 00:35:10 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: John Fastabend <john.fastabend@gmail.com>
+Cc: "Varlese, Marco" <marco.varlese@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v3 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141219003510.GC16239@casper.infradead.org>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
+ <5492FAD4.7070308@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5492FAD4.7070308@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014, Shaohua Li wrote:
-> On Thu, Dec 18, 2014 at 04:22:59PM -0800, Andy Lutomirski wrote:
-> > Bad news: this patch is incorrect, I think.  Take a look at
-> > update_rq_clock -- it does fancy things involving irq time and
-> > paravirt steal time.  So this patch could result in extremely
-> > non-monotonic results.
+On 12/18/14 at 08:03am, John Fastabend wrote:
+> On 12/18/2014 07:30 AM, Varlese, Marco wrote:
+> Could you also document the attributes. I think they are mostly
+> clear but what is IFLA_SW_LOOPBACK. It will help later when we
+> try to read the code in 6months and implement drivers.
 > 
-> Yes, it's not precise. But bear in mind, CONFIG_IRQ_TIME_ACCOUNTING is a
-> optional feature. Actually it's added not long time ago. I thought it's
-> acceptable the time isn't precise just like what we have before the
-> feature is added.
+> I am thinking something like
+> 
+> /* Switch Port Attributes section
+>  * IFLA_SW_LEARNING - turns learning on in the bridge
+>  * IFLA_SW_LOOPBACK - does something interesting
+> 
+>  [...]
+>  */
 
-Wrong thought, really.
++1. I would even ask for more than that. While clear in the bridge
+context, "learning" for this API targetting multi layer switches
+is ambigious. The expectation towards the driver must be crystical
+clear.
 
-If the vdso can give you observable inconsistent representation
-vs. real syscalls then it does not matter at all how long ago the
-feature was added. It's simply wrong no matter what.
+> >+
+> >+enum {
+> >+	IFLA_SW_UNSPEC,
+> >+	IFLA_SW_LEARNING,
+> 
+> Can you address Roopa's feedback. I'm also a bit confused by the
+> duplication.
 
-Thanks,
+Agreed. Can we decide on the ndo first and then build the APIs on
+top of that? While I agree that we should have a non-bridge based
+Netlink API, the underlying ndo should be the same.
 
-	tglx
+> >+static const struct nla_policy ifla_sw_attr_policy[IFLA_SW_ATTR_MAX+1] = {
+> >+	[IFLA_SW_LEARNING]	= { .type = NLA_U64 },
+> >+	[IFLA_SW_LOOPBACK]	= { .type = NLA_U64 },
+> >+	[IFLA_SW_BCAST_FLOODING] = { .type = NLA_U64 },
+> >+	[IFLA_SW_UCAST_FLOODING] = { .type = NLA_U64 },
+> >+	[IFLA_SW_MCAST_FLOODING] = { .type = NLA_U64 },
+> >+};
+> 
+> Why U64 values? What would we pass in these? Are these just boolean
+> bits? Maybe the annotation above will help me understand this.
+
+I think the intent is to keep the ndo API as simple as possible
+but I agree that this is wasteful. I gave this feedback on v2 already.
