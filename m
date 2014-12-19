@@ -1,122 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaLSDXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 22:23:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:21321 "EHLO mga01.intel.com"
+	id S1751637AbaLSDc5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 22:32:57 -0500
+Received: from mga09.intel.com ([134.134.136.24]:49667 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaLSDXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 22:23:33 -0500
+	id S1751163AbaLSDc4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 22:32:56 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="431025943"
-Message-ID: <54939A30.2020601@intel.com>
-Date: Fri, 19 Dec 2014 11:23:28 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="501327080"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Topic: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Index: AQHQGqESVjGwCGGcx0GfXydnqyBdC5yVc2HggADGJ7CAAAKSQA==
+Date: Fri, 19 Dec 2014 03:32:51 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC04FED@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-26-git-send-email-feng.wu@intel.com>
+	<5491C0A2.7040503@redhat.com>
+	<E959C4978C3B6342920538CF579893F002307C4A@SHSMSX104.ccr.corp.intel.com>
+	<5492926E.8070207@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04938@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ABEB@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F00230ABEB@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@fedoraproject.org>,
-        Dmitry Tunin <hanipouspilot@gmail.com>
-CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
- brightness keys
-References: <5492C5A3.8090700@gmail.com> <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com> <54938360.4000804@intel.com>
-In-Reply-To: <54938360.4000804@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2014 09:46 AM, Aaron Lu wrote:
-> CC Jani, who is working on the patchset to enable 8+ output devices and
-> may have some comments on this.
+Wu, Feng wrote on 2014-12-19:
+> 
+> 
+> iommu-bounces@lists.linux-foundation.org wrote on mailto:iommu-bounces@lists.linux-foundation.org] On Behalf Of:
+>> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
+>> kvm@vger.kernel.org
+>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is
+>> set
+>> 
+>> Paolo Bonzini wrote on 2014-12-18:
+>>> 
+>>> 
+>>> On 18/12/2014 04:14, Wu, Feng wrote:
+>>>> 
+>>>> 
+>>>> linux-kernel-owner@vger.kernel.org wrote on
+>> mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo:
+>>>>> x86@kernel.org; Gleb Natapov; Paolo Bonzini;
+>>>>> dwmw2@infradead.org;
+>>>>> joro-zLv9SwRftAIdnm+yROfE0A@public.gmane.org; Alex Williamson;
+>>>>> joro-zLv9SwRftAIdnm+Jiang
+>>>>> Liu
+>>>>> Cc: iommu@lists.linux-foundation.org;
+>>>>> linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; KVM list;
+>>>>> Eric Auger
+>>>>> Subject: Re: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+>>>>> is set
+>>>>> 
+>>>>> 
+>>>>> 
+>>>>> On 12/12/2014 16:14, Feng Wu wrote:
+>>>>>> Currently, we don't support urgent interrupt, all interrupts
+>>>>>> are recognized as non-urgent interrupt, so we cannot send
+>>>>>> posted-interrupt when 'SN' is set.
+>>>>> 
+>>>>> Can this happen?  If the vcpu is in guest mode, it cannot have
+>>>>> been scheduled out, and that's the only case when SN is set.
+>>>>> 
+>>>>> Paolo
+>>>> 
+>>>> Currently, the only place where SN is set is vCPU is preempted
+>>>> and
+>> 
+>> If the vCPU is preempted, shouldn't the subsequent be ignored? What
+>> happens if a PI is occurs when vCPU is preempted?
+> 
+> If a vCPU is preempted, the 'SN' bit is set, the subsequent interrupts
+> are suppressed for posting.
 
-Change Jani's email address, I got a warning from the mailer about his other
-email address.
+I mean what happens if we don't set SN bit. From my point, if preempter already disabled the interrupt, it is ok to leave SN bit as zero. But if preempter enabled the interrupt, doesn't this mean he allow interrupt to happen? BTW, since there already has ON bit, so this means there only have one interrupt arrived at most and it doesn't hurt performance. Do we really need to set SN bit?
 
 > 
-> Regards,
-> Aaron
+> Thanks,
+> Feng
 > 
-> On 12/18/2014 09:25 PM, Josh Boyer wrote:
->> On Thu, Dec 18, 2014 at 7:16 AM, Dmitry Tunin <hanipouspilot@gmail.com> wrote:
->>> Add "acpi_osi=" quirk for ASUS X200MA
->>> More information can be found in UX302LA bugreport
->>> https://bugzilla.kernel.org/show_bug.cgi?id=70241
->>>
->>> X200MA is affected by th e same bug and the solution has been tested
->>>
->>> I reported it to launchpad too
->>> https://bugs.launchpad.net/ubuntu/bug/1400068
->>>
->>> Cc: stable@vger.kernel.org
->>> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
->>>
->>
->> The UX301LA models have the same setup, with 16 devices instead of 8.
->> I discussed this with Matthew Garrett a bit and a more ideal approach
->> is to actually enumerate all 16 devices between the firmware and i915
->> driver.  The problem we have is that the intel opregion spec that
->> hasn't been updated since 2008 doesn't cover the additional 8 devices.
->> Anyway, that is being tracked here:
->>
->> https://bugs.freedesktop.org/show_bug.cgi?id=81762
->>
->>> ---
->>>  drivers/acpi/blacklist.c | 20 ++++++++++++++++++++
->>>  1 file changed, 20 insertions(+)
->>>
->>> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
->>> index 7556e7c..f78ed08 100644
->>> --- a/drivers/acpi/blacklist.c
->>> +++ b/drivers/acpi/blacklist.c
->>> @@ -162,6 +162,17 @@ static int __init dmi_disable_osi_win8(const struct
->>> dmi_system_id *d)
->>>         acpi_osi_setup("!Windows 2012");
->>>         return 0;
->>>  }
->>> +/*
->>> + * Some ASUS models firmware declares 16 devices instead of 8
->>> + * 'acpi_osi=' kernel parameter fixes it
->>> + * Without this parameters brightness keys Fn+F5 and F6 do not work
->>> + */
->>> +static int __init dmi_disable_osi_all(const struct dmi_system_id *d)
->>> +{
->>> +       printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
->>> +       acpi_osi_setup("");
->>> +       return 0;
->>> +}
->>
->> What does this do to the rest of the function keys?  Does everything
->> else still work as expected, including suspend and resume?
->>
->>>   static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->>>         {
->>> @@ -371,6 +382,15 @@ static struct dmi_system_id acpi_osi_dmi_table[]
->>> __initdata = {
->>>                      DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
->>>                 },
->>>         },
->>> +       /* Without this brightness keys do not work */
->>> +       {
->>> +       .callback = dmi_disable_osi_all,
->>> +       .ident = "ASUSTeK COMPUTER INC. X200MA",
->>> +       .matches = {
->>> +                    DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
->>> +                    DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
->>> +               },
->>> +       },
->>>         {}
->>>  };
->>>
->>> --
->>> 1.9.1
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe stable" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>> 
+>>>> waiting for the next scheduling in the runqueue. But I am not
+>>>> sure whether we need to set SN for other purpose in future.
+>>>> Adding SN checking here is just to follow the Spec. non-urgent
+>>>> interrupts are suppressed
+>>> when SN is set.
+>>> 
+>>> I would change that to a WARN_ON_ONCE then.
+>> 
+>> 
+>> Best regards,
+>> Yang
+>> 
+>> 
+>> _______________________________________________
+>> iommu mailing list
+>> iommu@lists.linux-foundation.org
+>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+
+
+Best regards,
+Yang
+
 
