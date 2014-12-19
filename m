@@ -1,204 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaLSXqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 18:46:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48788 "EHLO mx2.suse.de"
+	id S1752681AbaLSXtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 18:49:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:5047 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778AbaLSXqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 18:46:04 -0500
-From: NeilBrown <neilb@suse.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
-Date: Sat, 20 Dec 2014 10:07:38 +1100
-Subject: [PATCH 2b/3] mmc: omap_hsmmc: use slot-gpio library for gpio support.
-Cc: GTA04 owners <gta04-owner@goldelico.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
+	id S1751316AbaLSXtE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 18:49:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="431392508"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jiang Liu <jiang.liu-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Message-ID: <20141219230738.7511.63649.stgit@notabene.brown>
-In-Reply-To: <20141219230732.7511.28103.stgit@notabene.brown>
-References: <20141219230732.7511.28103.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
+ VT-d PI
+Thread-Topic: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu()
+ for VT-d PI
+Thread-Index: AQHQG4NHB9IPTEr8TE6SOwjUA8VGXpyXlELg
+Date: Fri, 19 Dec 2014 23:48:50 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00230D036@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-14-git-send-email-feng.wu@intel.com>
+	<A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>
+	<549307A5.3060305@redhat.com>
+ <E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>
+ <5494131E.9030505@redhat.com>
+In-Reply-To: <5494131E.9030505@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the common code removes some code duplication, and
-makes it easier to switch to using mmc_of_parse() which
-will remove more duplication.
 
-This uses the new mmc_gpio_request_cd_isr to provide a non-standard
-interrupt service routine for card-detect interrupts.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- drivers/mmc/host/omap_hsmmc.c |   67 +++++++++--------------------------------
- 1 file changed, 14 insertions(+), 53 deletions(-)
+> -----Original Message-----
+> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
+> Bonzini
+> Sent: Friday, December 19, 2014 7:59 PM
+> To: Wu, Feng; Paolo Bonzini; Zhang, Yang Z; Thomas Gleixner; Ingo Molnar; H.
+> Peter Anvin; x86@kernel.org; Gleb Natapov; dwmw2@infradead.org;
+> joro@8bytes.org; Alex Williamson; Jiang Liu
+> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org; KVM list;
+> Eric Auger
+> Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
+> VT-d PI
+> 
+> 
+> 
+> On 19/12/2014 02:30, Wu, Feng wrote:
+> >>> How this can work well? All subsequent interrupts are delivered to
+> >>> one vCPU? It shouldn't be the best solution, need more consideration.
+> >>
+> >> Well, it's a hardware limitation.  The alternative (which is easy to
+> >> implement) is to only do PI for single-CPU interrupts.  This should work
+> >> well for multiqueue NICs (and of course for UP guests :)), so perhaps
+> >> it's a good idea to only support that as a first attempt.
+> >>
+> >> Paolo
+> >
+> > Paolo, what do you mean by "single-CPU interrupts"? Do you mean we don't
+> > support lowest priority interrupts for PI? But Linux OS uses lowest priority
+> > for most of the case? If so, we can hardly get benefit from this feature for
+> > Linux guest OS.
+> 
+> You can post lowest priority interrupts if they are delivered to a
+> single CPU, in which case they are effectively fixed priority.
+> 
+> If they are broadcast to multiple CPUs, do not post them.
+> 
+> Paolo
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 537cba8f1de1..32514b648e3c 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -36,6 +36,7 @@
- #include <linux/mmc/host.h>
- #include <linux/mmc/core.h>
- #include <linux/mmc/mmc.h>
-+#include <linux/mmc/slot-gpio.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
-@@ -251,28 +252,22 @@ static void omap_hsmmc_start_dma_transfer(struct omap_hsmmc_host *host);
- static int omap_hsmmc_card_detect(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes card detect signal is active-low */
--	return !gpio_get_value_cansleep(mmc->switch_pin);
-+	return mmc_gpio_get_cd(host->mmc);
- }
- 
- static int omap_hsmmc_get_wp(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes write protect signal is active-high */
--	return gpio_get_value_cansleep(mmc->gpio_wp);
-+	return mmc_gpio_get_ro(host->mmc);
- }
- 
- static int omap_hsmmc_get_cover_state(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes card detect signal is active-low */
--	return !gpio_get_value_cansleep(mmc->switch_pin);
-+	return mmc_gpio_get_cd(host->mmc);
- }
- 
- #ifdef CONFIG_REGULATOR
-@@ -439,7 +434,10 @@ static inline int omap_hsmmc_have_reg(void)
- 
- #endif
- 
--static int omap_hsmmc_gpio_init(struct omap_hsmmc_host *host,
-+static irqreturn_t omap_hsmmc_detect(int irq, void *dev_id);
-+
-+static int omap_hsmmc_gpio_init(struct mmc_host *mmc,
-+				struct omap_hsmmc_host *host,
- 				struct omap_hsmmc_platform_data *pdata)
- {
- 	int ret;
-@@ -452,46 +450,26 @@ static int omap_hsmmc_gpio_init(struct omap_hsmmc_host *host,
- 			host->card_detect = omap_hsmmc_card_detect;
- 		host->card_detect_irq =
- 				gpio_to_irq(pdata->switch_pin);
--		ret = gpio_request(pdata->switch_pin, "mmc_cd");
-+		ret = mmc_gpio_request_cd_isr(mmc, omap_hsmmc_detect);
- 		if (ret)
- 			return ret;
--		ret = gpio_direction_input(pdata->switch_pin);
-+		ret = mmc_gpio_request_cd(mmc, pdata->switch_pin, 0);
- 		if (ret)
--			goto err_free_sp;
-+			return ret;
- 	} else {
- 		pdata->switch_pin = -EINVAL;
- 	}
- 
- 	if (gpio_is_valid(pdata->gpio_wp)) {
- 		host->get_ro = omap_hsmmc_get_wp;
--		ret = gpio_request(pdata->gpio_wp, "mmc_wp");
--		if (ret)
--			goto err_free_cd;
--		ret = gpio_direction_input(pdata->gpio_wp);
-+		ret = mmc_gpio_request_ro(mmc, pdata->gpio_wp);
- 		if (ret)
--			goto err_free_wp;
-+			return ret;
- 	} else {
- 		pdata->gpio_wp = -EINVAL;
- 	}
- 
- 	return 0;
--
--err_free_wp:
--	gpio_free(pdata->gpio_wp);
--err_free_cd:
--	if (gpio_is_valid(pdata->switch_pin))
--err_free_sp:
--		gpio_free(pdata->switch_pin);
--	return ret;
--}
--
--static void omap_hsmmc_gpio_free(struct omap_hsmmc_host *host,
--				 struct omap_hsmmc_platform_data *pdata)
--{
--	if (gpio_is_valid(pdata->gpio_wp))
--		gpio_free(pdata->gpio_wp);
--	if (gpio_is_valid(pdata->switch_pin))
--		gpio_free(pdata->switch_pin);
- }
- 
- /*
-@@ -2066,7 +2044,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	host->next_data.cookie = 1;
- 	host->pbias_enabled = 0;
- 
--	ret = omap_hsmmc_gpio_init(host, pdata);
-+	ret = omap_hsmmc_gpio_init(mmc, host, pdata);
- 	if (ret)
- 		goto err_gpio;
- 
-@@ -2197,20 +2175,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- 	mmc->ocr_avail = mmc_pdata(host)->ocr_mask;
- 
--	/* Request IRQ for card detect */
--	if (host->card_detect_irq) {
--		ret = devm_request_threaded_irq(&pdev->dev,
--						host->card_detect_irq,
--						NULL, omap_hsmmc_detect,
--					   IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
--					   mmc_hostname(mmc), host);
--		if (ret) {
--			dev_err(mmc_dev(host->mmc),
--				"Unable to grab MMC CD IRQ\n");
--			goto err_irq_cd;
--		}
--	}
--
- 	omap_hsmmc_disable_irq(host);
- 
- 	/*
-@@ -2249,7 +2213,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- err_slot_name:
- 	mmc_remove_host(mmc);
--err_irq_cd:
- 	if (host->use_reg)
- 		omap_hsmmc_reg_put(host);
- err_irq:
-@@ -2262,7 +2225,6 @@ err_irq:
- 	if (host->dbclk)
- 		clk_disable_unprepare(host->dbclk);
- err1:
--	omap_hsmmc_gpio_free(host, pdata);
- err_gpio:
- 	mmc_free_host(mmc);
- err:
-@@ -2288,7 +2250,6 @@ static int omap_hsmmc_remove(struct platform_device *pdev)
- 	if (host->dbclk)
- 		clk_disable_unprepare(host->dbclk);
- 
--	omap_hsmmc_gpio_free(host, host->pdata);
- 	mmc_free_host(host->mmc);
- 
- 	return 0;
+In my understanding, lowest priority interrupts are always delivered to a
+Single CPU, we need to find the right destination CPU from the cpumask.
+This is what I do in this patch. Did I misunderstanding something in your
+Comments? Thanks a lot!
 
+Actually, we don't support posting broadcast/multicast interrupts, because
+the interrupt is associated with one Posted-interrupts descriptor, then one
+vCPU.
+
+Thanks,
+Feng
 
