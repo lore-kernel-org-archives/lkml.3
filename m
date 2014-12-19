@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaLSOG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:06:57 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46013 "EHLO
+	id S1752943AbaLSOHY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:07:24 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46046 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743AbaLSOGz (ORCPT
+	with ESMTP id S1752720AbaLSOHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:06:55 -0500
-Date: Fri, 19 Dec 2014 06:05:47 -0800
+	Fri, 19 Dec 2014 09:07:20 -0500
+Date: Fri, 19 Dec 2014 06:06:06 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-cd68f6bd53cf89d1d5ed889b8af65e9c3574a079@git.kernel.org>
-Cc: tglx@linutronix.de, gregkh@linuxfoundation.org, rjw@rjwysocki.net,
-        bhelgaas@google.com, len.brown@intel.com, konrad.wilk@oracle.com,
-        hpa@zytor.com, rdunlap@infradead.org, linux-kernel@vger.kernel.org,
-        joro@8bytes.org, yinghai@kernel.org, tony.luck@intel.com,
-        mingo@kernel.org, bp@alien8.de, pavel@ucw.cz,
-        jiang.liu@linux.intel.com, benh@kernel.crashing.org
-Reply-To: yinghai@kernel.org, joro@8bytes.org, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, rdunlap@infradead.org, pavel@ucw.cz,
-        bp@alien8.de, benh@kernel.crashing.org, jiang.liu@linux.intel.com,
-        mingo@kernel.org, rjw@rjwysocki.net, gregkh@linuxfoundation.org,
-        tglx@linutronix.de, konrad.wilk@oracle.com, len.brown@intel.com,
-        hpa@zytor.com, bhelgaas@google.com
-In-Reply-To: <1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-25d0d35ed7d4ded4ba90e6311c80f2eca65d12f0@git.kernel.org>
+Cc: rdunlap@infradead.org, bp@alien8.de, ryan@desfo.org,
+        konrad.wilk@oracle.com, yinghai@kernel.org, bhelgaas@google.com,
+        lambert.quentin@gmail.com, benh@kernel.crashing.org, prarit@redhat.com,
+        gregkh@linuxfoundation.org, hpa@zytor.com, jiang.liu@linux.intel.com,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net, tglx@linutronix.de,
+        joro@8bytes.org, mingo@kernel.org, tony.luck@intel.com,
+        grant.likely@linaro.org, rafael.j.wysocki@intel.com
+Reply-To: jiang.liu@linux.intel.com, hpa@zytor.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, rjw@rjwysocki.net, tglx@linutronix.de,
+        mingo@kernel.org, tony.luck@intel.com, grant.likely@linaro.org,
+        joro@8bytes.org, rafael.j.wysocki@intel.com, bp@alien8.de,
+        rdunlap@infradead.org, yinghai@kernel.org, konrad.wilk@oracle.com,
+        ryan@desfo.org, benh@kernel.crashing.org, lambert.quentin@gmail.com,
+        bhelgaas@google.com, prarit@redhat.com
+In-Reply-To: <1414397531-28254-4-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-4-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86, irq, acpi:
-  Get rid of special handling of GSI for ACPI SCI
-Git-Commit-ID: cd68f6bd53cf89d1d5ed889b8af65e9c3574a079
+Subject: [tip:x86/apic] x86, irq: Kill useless parameter 'irq_attr'
+  of IO_APIC_get_PCI_irq_vector()
+Git-Commit-ID: 25d0d35ed7d4ded4ba90e6311c80f2eca65d12f0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,18 +42,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cd68f6bd53cf89d1d5ed889b8af65e9c3574a079
-Gitweb:     http://git.kernel.org/tip/cd68f6bd53cf89d1d5ed889b8af65e9c3574a079
+Commit-ID:  25d0d35ed7d4ded4ba90e6311c80f2eca65d12f0
+Gitweb:     http://git.kernel.org/tip/25d0d35ed7d4ded4ba90e6311c80f2eca65d12f0
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:11:52 +0800
+AuthorDate: Mon, 27 Oct 2014 16:11:54 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 16 Dec 2014 14:08:16 +0100
 
-x86, irq, acpi: Get rid of special handling of GSI for ACPI SCI
+x86, irq: Kill useless parameter 'irq_attr' of IO_APIC_get_PCI_irq_vector()
 
-The IOAPIC has logic to track IOAPIC pin status, so there's no need for
-special treatment for GSI used by ACPI SCI in function mp_register_gsi()
-and mp_unregister_gsi().
+None of the callers requires irq_attr to be filled
+in. IO_APIC_get_PCI_irq_vector() does not do anything useful with it
+either.
+
+Remove the parameter and fixup the call sites.
+
+[ tglx: Massaged changelog ]
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -64,47 +70,110 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Link: http://lkml.kernel.org/r/1414397531-28254-2-git-send-email-jiang.liu@linux.intel.com
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Ryan Desfosses <ryan@desfo.org>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Link: http://lkml.kernel.org/r/1414397531-28254-4-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/kernel/acpi/boot.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/hw_irq.h     |  2 +-
+ arch/x86/kernel/apic/io_apic.c    | 13 +++----------
+ arch/x86/pci/irq.c                |  6 ++----
+ drivers/pci/hotplug/ibmphp_core.c |  5 +----
+ 4 files changed, 7 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index ddddaed..4433a4b 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -408,10 +408,6 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
- 		return gsi;
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 8dbe237..b12c45c 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -162,7 +162,7 @@ static inline void send_cleanup_vector(struct irq_cfg *c) { }
+ struct irq_data;
+ int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+ 			  unsigned int *dest_id);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin, struct io_apic_irq_attr *irq_attr);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+ extern void setup_ioapic_dest(void);
  
--	/* Don't set up the ACPI SCI because it's already set up */
--	if (acpi_gbl_FADT.sci_interrupt == gsi)
--		return mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC);
+ extern void enable_IO_APIC(void);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 1cedf41..447186a 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1179,8 +1179,7 @@ void mp_unmap_irq(int irq)
+  * Find a specific PCI IRQ entry.
+  * Not an __init, possibly needed by modules
+  */
+-int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+-				struct io_apic_irq_attr *irq_attr)
++int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin)
+ {
+ 	int irq, i, best_ioapic = -1, best_idx = -1;
+ 
+@@ -1234,14 +1233,8 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 		return -1;
+ 
+ out:
+-	irq = pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
+-			IOAPIC_MAP_ALLOC);
+-	if (irq > 0)
+-		set_io_apic_irq_attr(irq_attr, best_ioapic,
+-				     mp_irqs[best_idx].dstirq,
+-				     irq_trigger(best_idx),
+-				     irq_polarity(best_idx));
+-	return irq;
++	return pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
++			 IOAPIC_MAP_ALLOC);
+ }
+ EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index 9988458..77148ec 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1200,14 +1200,12 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ #ifdef CONFIG_X86_IO_APIC
+ 			struct pci_dev *temp_dev;
+ 			int irq;
+-			struct io_apic_irq_attr irq_attr;
+ 
+ 			if (dev->irq_managed && dev->irq > 0)
+ 				return 0;
+ 
+ 			irq = IO_APIC_get_PCI_irq_vector(dev->bus->number,
+-						PCI_SLOT(dev->devfn),
+-						pin - 1, &irq_attr);
++						PCI_SLOT(dev->devfn), pin - 1);
+ 			/*
+ 			 * Busses behind bridges are typically not listed in the MP-table.
+ 			 * In this case we have to look up the IRQ based on the parent bus,
+@@ -1221,7 +1219,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 				pin = pci_swizzle_interrupt_pin(dev, pin);
+ 				irq = IO_APIC_get_PCI_irq_vector(bridge->bus->number,
+ 						PCI_SLOT(bridge->devfn),
+-						pin - 1, &irq_attr);
++						pin - 1);
+ 				if (irq >= 0)
+ 					dev_warn(&dev->dev, "using bridge %s "
+ 						 "INT %c to get IRQ %d\n",
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index 3efaf4c..d261e62 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -155,13 +155,10 @@ int ibmphp_init_devno(struct slot **cur_slot)
+ 	for (loop = 0; loop < len; loop++) {
+ 		if ((*cur_slot)->number == rtable->slots[loop].slot &&
+ 		    (*cur_slot)->bus == rtable->slots[loop].bus) {
+-			struct io_apic_irq_attr irq_attr;
 -
- 	trigger = trigger == ACPI_EDGE_SENSITIVE ? 0 : 1;
- 	polarity = polarity == ACPI_ACTIVE_HIGH ? 0 : 1;
- 	node = dev ? dev_to_node(dev) : NUMA_NO_NODE;
-@@ -424,7 +420,8 @@ static int mp_register_gsi(struct device *dev, u32 gsi, int trigger,
- 	if (irq < 0)
- 		return irq;
+ 			(*cur_slot)->device = PCI_SLOT(rtable->slots[loop].devfn);
+ 			for (i = 0; i < 4; i++)
+ 				(*cur_slot)->irq[i] = IO_APIC_get_PCI_irq_vector((int) (*cur_slot)->bus,
+-						(int) (*cur_slot)->device, i,
+-						&irq_attr);
++						(int) (*cur_slot)->device, i);
  
--	if (enable_update_mptable)
-+	/* Don't set up the ACPI SCI because it's already set up */
-+	if (enable_update_mptable && acpi_gbl_FADT.sci_interrupt != gsi)
- 		mp_config_acpi_gsi(dev, gsi, trigger, polarity);
- 
- 	return irq;
-@@ -437,9 +434,6 @@ static void mp_unregister_gsi(u32 gsi)
- 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
- 		return;
- 
--	if (acpi_gbl_FADT.sci_interrupt == gsi)
--		return;
--
- 	irq = mp_map_gsi_to_irq(gsi, 0);
- 	if (irq > 0)
- 		mp_unmap_irq(irq);
+ 			debug("(*cur_slot)->irq[0] = %x\n",
+ 					(*cur_slot)->irq[0]);
