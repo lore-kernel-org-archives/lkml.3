@@ -1,151 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832AbaLTA32 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 19:29:28 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:48359 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808AbaLTA30 (ORCPT
+	id S1752846AbaLTAaD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 19:30:03 -0500
+Received: from bastet.se.axis.com ([195.60.68.11]:57111 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668AbaLTAaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 19:29:26 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>, stable@vger.kernel.org
-Subject: [PATCH] x86_64, vdso: Fix the vdso address randomization algorithm
-Date: Fri, 19 Dec 2014 16:29:15 -0800
-Message-Id: <ad42f6d17cbcaef5ff7c9d5741669ab64603c29c.1419035095.git.luto@amacapital.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
-References: <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
+	Fri, 19 Dec 2014 19:30:00 -0500
+Date: Sat, 20 Dec 2014 01:29:53 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: [GIT PULL] CRIS changes for 3.19
+Message-ID: <20141220002953.GR26817@axis.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The theory behind vdso randomization is that it's mapped at a random
-offset above the top of the stack.  To avoid wasting a page of
-memory for an extra page table, the vdso isn't supposed to extend
-past the lowest PMD into which it can fit.  Other than that, the
-address should be a uniformly distributed address that meets all of
-the alignment requirements.
+Hi Linus,
 
-The current algorithm is buggy: the vdso has about a 50% probability
-of being at the very end of a PMD.  The current algorithm also has a
-decent chance of failing outright due to incorrect handling of the
-case where the top of the stack is near the top of its PMD.
+Please pull the below branch for CRIS changes for 3.19,
+mostly cleanup and build fixes for CRISv32 allmodconfig.
 
-This fixes the implementation.  The paxtest estimate of vdso
-"randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
-don't know what the paxtest code is actually calculating.)
+God Jul och Gott Nytt år!
 
-It's worth noting that this algorithm is inherently biased: the vdso
-is more likely to end up near the end of its PMD than near the
-beginning.  Ideally we would either nix the PMD sharing requirement
-or jointly randomize the vdso and the stack to eliminate the bias.
+The following changes since commit e589c9e13aeb0c5539bf1314b3a78442ea8fc0c2:
 
-In the mean time, this is a considerable improvement with basically
-no risk of incompatibility issues, since the allowed outputs of the
-algorithm are unchanged.
+  Merge branch 'x86-apic-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2014-12-19 14:02:02 -0800)
 
-As an easy test, doing this:
+are available in the git repository at:
 
-for i in `seq 10000`
-  do grep -P vdso /proc/self/maps |cut -d- -f1
-done |sort |uniq -d
 
-used to produce lots of output (1445 lines on my most recent run).
-A tiny subset looks like this:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jesper/cris.git tags/cris-changes-for-3.19
 
-7fffdfffe000
-7fffe01fe000
-7fffe05fe000
-7fffe07fe000
-7fffe09fe000
-7fffe0bfe000
-7fffe0dfe000
+for you to fetch changes up to 8bcabff0589c1ef8fec9f98d525943217ae10971:
 
-Note the suspicious fe000 endings.  With the fix, I get a much more
-palatable 76 repeated addresses.
+  CRISv32: Remove last remnants of ETRAX_SPI_MMC_BOARD (2014-12-20 00:06:13 +0100)
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
+----------------------------------------------------------------
+CRIS port changes for 3.19
 
-No particular rush here.  This should probably go in some time after -rc1,
-unless someone feels that it's more urgent than that.
+----------------------------------------------------------------
+Jesper Nilsson (13):
+      CRISv32: Drop obsolete file for SPI driver
+      CRISv32: Add missing include for mm.h
+      CRIS: Export ioremap_nocache
+      CRIS: Export missing function symbols
+      CRISv32: Better handling of watchdog bite
+      CRIS: Update init memory handling
+      CRISv32: Rewrite of synchronous serial port driver
+      CRISv32: Fix declaration mismatch
+      CRIS: Use KALLSYMs if available in call stack dump
+      CRISv32: Implement early console
+      CRISv32: Select MTDRAM for axisflashmap
+      CRISv32: ETRAXFS: Fix recursive spinlock
+      CRISv32: Remove last remnants of ETRAX_SPI_MMC_BOARD
 
-arch/x86/vdso/vma.c | 47 +++++++++++++++++++++++++++++++----------------
- 1 file changed, 31 insertions(+), 16 deletions(-)
+Sam Ravnborg (1):
+      CRIS: Fix headers_install
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 009495b9ab4b..62be12eb3f16 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -41,12 +41,17 @@ void __init init_vdso_image(const struct vdso_image *image)
- 
- struct linux_binprm;
- 
--/* Put the vdso above the (randomized) stack with another randomized offset.
--   This way there is no hole in the middle of address space.
--   To save memory make sure it is still in the same PTE as the stack top.
--   This doesn't give that many random bits.
--
--   Only used for the 64-bit and x32 vdsos. */
-+/*
-+ * Put the vdso above the (randomized) stack with another randomized
-+ * offset.  This way there is no hole in the middle of address space.
-+ * To save memory make sure it is still in the same PTE as the stack
-+ * top.  This doesn't give that many random bits.
-+ *
-+ * Note that this algorithm is imperfect: the distribution of the vdso
-+ * start address within a PMD is biased toward the end.
-+ *
-+ * Only used for the 64-bit and x32 vdsos.
-+ */
- static unsigned long vdso_addr(unsigned long start, unsigned len)
- {
- #ifdef CONFIG_X86_32
-@@ -54,22 +59,32 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
- #else
- 	unsigned long addr, end;
- 	unsigned offset;
--	end = (start + PMD_SIZE - 1) & PMD_MASK;
-+
-+	/*
-+	 * Round up the start address.  It can start out unaligned as a result
-+	 * of stack start randomization.
-+	 */
-+	start = PAGE_ALIGN(start);
-+
-+	/* Round the lowest possible end address up to a PMD boundary. */
-+	end = (start + len + PMD_SIZE - 1) & PMD_MASK;
- 	if (end >= TASK_SIZE_MAX)
- 		end = TASK_SIZE_MAX;
- 	end -= len;
--	/* This loses some more bits than a modulo, but is cheaper */
--	offset = get_random_int() & (PTRS_PER_PTE - 1);
--	addr = start + (offset << PAGE_SHIFT);
--	if (addr >= end)
--		addr = end;
-+
-+	if (end > start) {
-+		offset = get_random_int() % ((end - start) >> PAGE_SHIFT);
-+		addr = start + (offset << PAGE_SHIFT);
-+		if (WARN_ON_ONCE(addr > end))
-+			addr = end;
-+	} else {
-+		addr = start;
-+	}
- 
- 	/*
--	 * page-align it here so that get_unmapped_area doesn't
--	 * align it wrongfully again to the next page. addr can come in 4K
--	 * unaligned here as a result of stack start randomization.
-+	 * Forcibly align the final address in case we have a hardware
-+	 * issue that requires alignment for performance reasons.
- 	 */
--	addr = PAGE_ALIGN(addr);
- 	addr = align_vdso_addr(addr);
- 
- 	return addr;
+ arch/cris/arch-v10/lib/usercopy.c                |   14 +-
+ arch/cris/arch-v32/drivers/Kconfig               |    8 +-
+ arch/cris/arch-v32/drivers/Makefile              |    1 -
+ arch/cris/arch-v32/drivers/i2c.h                 |    1 -
+ arch/cris/arch-v32/drivers/sync_serial.c         | 1430 ++++++++++++----------
+ arch/cris/arch-v32/kernel/debugport.c            |   82 +-
+ arch/cris/arch-v32/kernel/time.c                 |   29 +-
+ arch/cris/arch-v32/lib/usercopy.c                |   15 +-
+ arch/cris/arch-v32/mach-fs/pinmux.c              |  152 +--
+ arch/cris/include/arch-v32/mach-fs/mach/pinmux.h |    2 -
+ arch/cris/include/asm/Kbuild                     |    4 -
+ arch/cris/include/uapi/asm/Kbuild                |    4 +-
+ arch/cris/kernel/crisksyms.c                     |    9 +-
+ arch/cris/kernel/traps.c                         |   61 +-
+ arch/cris/mm/init.c                              |   38 +-
+ arch/cris/mm/ioremap.c                           |    3 +-
+ scripts/headers.sh                               |    2 -
+ 17 files changed, 1039 insertions(+), 816 deletions(-)
+
+/^JN - Jesper Nilsson
 -- 
-2.1.0
-
+               Jesper Nilsson -- jesper.nilsson@axis.com
