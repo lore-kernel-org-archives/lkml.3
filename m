@@ -1,170 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaLTB5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 20:57:09 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:46294 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaLTB5H (ORCPT
+	id S1752557AbaLTCQZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 21:16:25 -0500
+Received: from sonata.ens-lyon.org ([140.77.166.138]:36759 "EHLO
+	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaLTCQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 20:57:07 -0500
+	Fri, 19 Dec 2014 21:16:24 -0500
+Date: Sat, 20 Dec 2014 03:16:18 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCHv4] INPUT: Route keyboard LEDs through the generic LEDs
+ layer.
+Message-ID: <20141220021617.GE3049@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+References: <20141210010214.GZ3074@type.youpi.perso.aquilenet.fr>
+ <20141219144641.3a549feb1ee5f2b9400f62cb@linux-foundation.org>
+ <20141219225933.GD3049@type.youpi.perso.aquilenet.fr>
+ <20141219230253.GA31928@amd>
+ <20141219230721.GA31631@dtor-glaptop>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1412200100130.17382@nanos>
-References: <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
-	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
-	<20141218051327.GA31988@redhat.com>
-	<1418918059.17358.6@mail.thefacebook.com>
-	<20141218161230.GA6042@redhat.com>
-	<20141219024549.GB1671@redhat.com>
-	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
-	<20141219035859.GA20022@redhat.com>
-	<20141219040308.GB20022@redhat.com>
-	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
-	<20141219145528.GC13404@redhat.com>
-	<CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
-	<alpine.DEB.2.11.1412192201520.17382@nanos>
-	<CA+55aFx4zjAVHN5DrSCh1_MJjqf4fxoAVT3RmC+1QGP6bq7b0Q@mail.gmail.com>
-	<alpine.DEB.2.11.1412200100130.17382@nanos>
-Date: Fri, 19 Dec 2014 17:57:05 -0800
-X-Google-Sender-Auth: oXTy4vR4PshdhPzbUAjKvRyv4ro
-Message-ID: <CA+55aFxY5hCuGaK0JvTwHFsQKFGeh3_82ukKrU9ss4x4uHMY3Q@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141219230721.GA31631@dtor-glaptop>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 5:00 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> The watchdog timer runs on a fully periodic schedule. It's self
-> rearming via
->
->          hrtimer_forward_now(hrtimer, ns_to_ktime(sample_period));
->
-> So if that aligns with the equally periodic tick interrupt on the
-> other CPU then you might get into that situation due to the fully
-> synchronizing and serializing nature of HPET reads.
+Dmitry Torokhov, le Fri 19 Dec 2014 15:07:21 -0800, a écrit :
+> On Sat, Dec 20, 2014 at 12:02:53AM +0100, Pavel Machek wrote:
+> > On Fri 2014-12-19 23:59:33, Samuel Thibault wrote:
+> > > Andrew Morton, le Fri 19 Dec 2014 14:46:41 -0800, a écrit :
+> > > > > Changed in this version:
+> > > > > - Use kcalloc instead of kzalloc
+> > > > > - to avoid any mutex order violation, defer LED update into a work callback.
+> > > > 
+> > > > Confused.  This patch is identical to the one that's presently in -mm.
+> > > 
+> > > Well, yes: I'm submitting the latest version of this patch to Dmitry,
+> > > i.e. including the fixes that happened in the -mm tree.
+> > 
+> > Andrew, do you think you could send the patch to Dmitry? He has been
+> > ignoring it for way too long... and it should be slightly harder for
+> > him to ignore patch from you...
+> 
+> I'll keep ignoring the patch until someone will figure out how to make new way
+> of handling LEDs play well with the current way (via writing to evdev). That
+> means not treating access to evdev as "raw" and ignoring LED trigger remapping
+> done in LED layer. So far I just heard that it is not a problem and nobody uses
+> evdev interface...
 
-No. Really. No.
+?! There must have been a misunderstanding, and the absence of response
+to my last mail (April 17th) didn't help to understand what you were
+expecting.  I'm sorry, but things can't work if there are not efforts to
+discuss on both sides.
 
-There is no way in hell that a modern system ends up being that
-synchronized. Not to the point that the interrupt also happens at the
-*exact* same point.
+I never said that nobody uses the evdev interface.
 
-Thomas, you're in denial. It's not just the exact same instruction in
-the timer interrupt handler ("timer interrupts and NMI's are in
-sync"), the call chain *past* the timer interrupt is the exact same
-thing too.  The stack has the same contents. So not only must the two
-CPU's be perfectly in sync so that the NMI always triggers on exactly
-the same instruction, the CPU that takes the timer interrupt (in your
-schenario, over and over again) must be magically filling the stack
-with the exact same thing every time.
+I just said that I wasn't sure to understand the scenario you were
+proposing.  I was asking for details, not barring discussion...  I'm
+fine with reworking my patch yet again, but I can't do that if I don't
+understand precisely the use-case you are expecting.
 
-That CPU isn't making progress that just happens to be "synchronized".
+So, to recap what we apparently want:
 
-Admit it, you've not seen a busy system that is *so* synchronized that
-you get timer interrupts and NMI's that hit on the same instruction
-over a sequence of minutes.
+(1) console-setup wants to be able to change which keyboard modifier is
+shown on the capslock LED
+(2) embedded people want to be able to plug the keyboard LED state to misc
+LEDs
+- people will quickly want to be able to repurpose their keyboard LEDs,
+for instance:
+  (3) make the numlock LED show disk activity
+  (4) exchange capslock and numlock LEDs for some reason.
 
-> So lets assume there is that hrtimer_remove race (I'm certainly going
-> to stare at that tomorrow with fully awake brain. It's past beer
-> o'clock here). How do you explain that:
->
-> 1) the watchdog always triggers on CPU1?
->
-> 2) the race only ever happens on CPU0?
+And the question is: how all of that should be mixed?
 
-I'm claiming that the race happened *once*. And it then corrupted some
-data structure or similar sufficiently that CPU0 keeps looping.
+ATM, we have this:
 
-Perhaps something keeps re-adding itself to the head of the timerqueue
-due to the race.
+kbd state -> kbd led -> input led
+  ^^            ^^          ^^
+KDSKBLED     KDSETLED     EV_LED
 
-The watchdog doesn't trigger on CPU0, because this is the software
-watchdog, and interrupts are disabled on CPU0, and CPU0 isn't making
-any progress. Because it's looping in a fairly tight loop.
+What I had proposed and implemented in my current patch is the following
+pipeline:
 
-The watchdog triggers on CPU1 (over and over again) because CPU1 is
-waiting for the TLB shootdown to complete. And it doesn't, because
-interrupts are disabled on CPU0 that it's trying to shoot down the TLB
-on.
+kbd state -> kbd led -> kbd trigger -> vt led -> vt trigger -> input led
+  ^^           ^^                   ^^                      ^^        ^^
+KDSKBLED   KDSETLED   vt::capsl/trigger   input*::capsl/trigger   EV_LED
 
-That theory at least fits the data. So CPU1 isn't doing anything odd at all.
+Which leaves the evdev users keeping raw control, unmodified.  In
+your mail from April 12th, you seemed to want that (4) have effect on
+evdev, I asked for confirmation, but never got an answer.  Your above
+paragraph seems to clearly show that you want evdev users to get at
+least the (4) remapping.  That wasn't obvious to me, because I had
+always considered evdev as a way to drive physical hardware, without any
+software abstraction.  But OK, let's go with that.
 
-In a way that "magic happens so that everything is so synchronized
-that you cross-syncornize two CPU's making real progress over many
-minutes". THAT sounds like just a fairy tale to me.
+AIUI, what you would be OK with is the following:
 
-Your argument "it has a question mark in front of it" objection is
-bogus. We got an *interrupt* in the middle of the call chain. Of
-*course* the call chain is unreliable. It doesn't matter. What matters
-is that the stack under the interrupt DOES NOT CHANGE. It doesn't even
-matter if it's a real honest-to-god callchain or not, what matters is
-that the kernel stack under the interrupt is unchanged. No way does
-that happen if it's making progress at the same time.
+kbd state -> kbd trigger -> kbd led -> input led -> input rawled
+   ^^                    ^^   ^^         ^^      ^^
+KDSKBLED  vt::capsl/trigger  KDSETLED  EV_LED  input*::capsl/trigger
 
-> 3) the hrtimer interrupt took too long message never appears?
+Which, instead of introducing a "VT led", separates the input led into
+the part exposed to other systems (kbd, evdev) and the lowlevel part.  I
+have here also fixed the behavior of KDSETLED: in my patch proposal it
+would get redirected by console-setup, which I believe we don't want.
 
-At a guess, it's looping (for a long long time) on
-timerqueue_getnext() in hrtimer_interrupt(), and then returns. Never
-gets to the retry or the "interrupt took %llu" messages.
+So for (1) console-setup would use vt::capsl/trigger to make it use
+another modifier, and this would only have effect for actual capslock
+keypresses and KDSKBLED ioctls, which I believe is what we want
+(again, correct me if I'm wrong, but please detail, otherwise I can't
+know how I'm wrong); for (2) people would use input*::capsl/trigger*,
+which would now indeed have the nice effect of making e.g. Xorg
+getting the good behavior along the way; for (3) people would also use
+input*::capsl/trigger*, and that would now indeed prevent spurious
+changes from e.g. Xorg.
 
-And we know what timer entry it is looping on:  tick_sched_timer.
-Which does a HRTIMER_RESTART, so the re-enqueueing isn't exactly
-unlikely.
+Now, there is (4).  I don't know why people would want that, but well,
+you mentioned it in some mail, so why not.  Ideally it would go through
+input*::capsl/trigger*, but what to put there?  In my earlier proposal,
+that would have been vt-capsl, but you want the exchange to work on
+evdev access too.  A possibility would be to introduce a LED trigger for
+each input LED, like this:
 
-All it needs is that the re-enqueueing has gotten confused enough that
-it re-enqueues it on the same queue over and over again.  Which would
-run tick_sched_timer over and over again. No? Until the re-enqueuing
-magically stops (and we do actually have a HPET counter overflow
-there. Just look at the RAX values:
+kbd state -> kbd trigger -> kbd led -> input led -> input led trigger -> input rawled
+   ^^                    ^^   ^^          ^^                          ^^        
+KDSKBLED  vt::capsl/trigger  KDSETLED   EV_LED              input*::capsl/trigger
 
- RAX: 00000000fb9d303f
- RAX: 000000002b67efe4
+Which seems quite hairy: for each input LED we'd create both a trigger
+(gathering both the kbd led events and the evdev led events) and a LED
+(the actual physical LED), but why not.
 
-that 00000000fb9d303f is the last time we see that particular
-callchain. The next time we see hpet_read(), it's that
-000000002b67efe4 thing.
+To exchange capsl and numl, one would then have to do something like
+this:
 
-So my "maybe it has something to do with HPET overflow" wasn't just a
-random throw-away comment. We actually have real data saying that the
-HPET *did* overflow, and it in fact happened somewhere around the time
-when the lockup went away.
+for i in input*
+do
+	echo $i-numl > /sys/class/leds/$i::capsl/trigger
+	echo $i-capsl > /sys/class/leds/$i::numl/trigger
+done
 
-Are they related? Maybe not. But dammit, there's a lot of
-"coincidences" here. Not just the "oh, it always takes the NMI on the
-exact same instruction".
+That also opens the possibility of odd things like this:
 
-> 4) the RT throttler hit?
-> 5) that the system makes progress afterwards?
+echo input0-numl > /sys/class/leds/input1::capsl/trigger
 
-.. something eventually clears the problem, maybe because of the HPET
-overflow. I dunno. I'm just saying that your arguments to ignore CPU0
-are pretty damn weak.
+i.e. all evdev numl events on input0 will actually also drive input1's
+capsl.  Why not.
 
-So I think the CPU1 behavior is 100% consistent with CPU0 just having
-interrupts disabled.
+Is it looking more like what you want?
 
-So I think CPU1 is _trivial_ to explain if you accept that CPU0 is
-doing something weird.
-
-Which is why I think your "look at CPU1" sounds so strange. I don't
-think CPU1 is all that interesting. I can *trivially* explain it with
-a single sentence, and did exactly that above.
-
-Can you trivially explain CPU0? Without the "it's just a big
-coincidence that we take  the NMI on the same instruction for several
-minutes, and the stack under the timer interrupt hasn't changed at all
-in that same time".
-
-                     Linus
+Samuel
