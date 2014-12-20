@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaLTJMV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 04:12:21 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:40993 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927AbaLTJMN (ORCPT
+	id S1753033AbaLTJOz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 04:14:55 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:53665 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaLTJOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 04:12:13 -0500
+	Sat, 20 Dec 2014 04:14:49 -0500
+Date: Sat, 20 Dec 2014 01:14:45 -0800
 From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH v2 2/2] usb: serial: handle -ENODEV quietly in generic_submit_read_urb
-Date: Sat, 20 Dec 2014 01:11:38 -0800
-Message-Id: <1419066698-2684-3-git-send-email-jmmahler@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419066698-2684-1-git-send-email-jmmahler@gmail.com>
-References: <1418340594-30469-1-git-send-email-jmmahler@gmail.com>
- <1419066698-2684-1-git-send-email-jmmahler@gmail.com>
+To: Gangadhar <gangs.freelancer@gmail.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8188eu : rtw_ap.c : Fixed a space coding
+ style issue.
+Message-ID: <20141220091445.GB2513@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Gangadhar <gangs.freelancer@gmail.com>, gregkh@linuxfoundation.org,
+	linux-kernel@vger.kernel.org
+References: <1419065708-10045-1-git-send-email-gangs.freelancer@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419065708-10045-1-git-send-email-gangs.freelancer@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a USB serial device (e.g. /dev/ttyUSB0) with an active program is
-unplugged, an -ENODEV (19) error will be produced after it gives up
-trying to resubmit a read.
+Gangadhar,
 
-  usb_serial_generic_submit_read_urb - usb_submit_urb failed: -19
+On Sat, Dec 20, 2014 at 02:25:08PM +0530, Gangadhar wrote:
+> From: gangadharv <gangs.freelancer@gmail.com>
+> 
+> Fixed a Coding style issue.
 
-Add -ENODEV as one of the permanent errors along with -EPERM that
-usb_serial_generic_submit_read_urb() handles quietly without an error.
+The description needs to be more specific?  What type of issue did you
+fix?  How did you find this issue?
 
-Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
----
- drivers/usb/serial/generic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+[...]
 
-diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
-index 2d7207b..ccf1df7 100644
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -286,7 +286,7 @@ static int usb_serial_generic_submit_read_urb(struct usb_serial_port *port,
- 
- 	res = usb_submit_urb(port->read_urbs[index], mem_flags);
- 	if (res) {
--		if (res != -EPERM) {
-+		if (res != -EPERM && res != -ENODEV) {
- 			dev_err(&port->dev,
- 					"%s - usb_submit_urb failed: %d\n",
- 					__func__, res);
 -- 
-2.1.3
-
+- Jeremiah Mahler
