@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaLTM1P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 07:27:15 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:38428 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaLTM1N (ORCPT
+	id S1752977AbaLTM31 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 07:29:27 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:44268 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835AbaLTM3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 07:27:13 -0500
+	Sat, 20 Dec 2014 07:29:24 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+To: Paul Moore <paul@paul-moore.com>, Stephen Smalley <sds@tycho.nsa.gov>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: wireless: ipw2x00: ipw2200.c:  Remove unused function
-Date: Sat, 20 Dec 2014 13:29:59 +0100
-Message-Id: <1419078599-31118-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Eric Paris <eparis@parisplace.org>,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] security: selinux: avc.c:  Remove unused function
+Date: Sat, 20 Dec 2014 13:32:10 +0100
+Message-Id: <1419078730-31316-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function ipw_alive() that is not used anywhere.
+Remove the function avc_sidcmp() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/net/wireless/ipw2x00/ipw2200.c |   14 --------------
- 1 file changed, 14 deletions(-)
+ security/selinux/avc.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
-index edc3443..2f830ca 100644
---- a/drivers/net/wireless/ipw2x00/ipw2200.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2200.c
-@@ -3021,20 +3021,6 @@ static void ipw_remove_current_network(struct ipw_priv *priv)
- 	spin_unlock_irqrestore(&priv->ieee->lock, flags);
+diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+index a18f1fa..afcc0ae 100644
+--- a/security/selinux/avc.c
++++ b/security/selinux/avc.c
+@@ -517,11 +517,6 @@ out:
+ 	return rc;
  }
  
--/**
-- * Check that card is still alive.
-- * Reads debug register from domain0.
-- * If card is present, pre-defined value should
-- * be found there.
-- *
-- * @param priv
-- * @return 1 if card is present, 0 otherwise
-- */
--static inline int ipw_alive(struct ipw_priv *priv)
+-static inline int avc_sidcmp(u32 x, u32 y)
 -{
--	return ipw_read32(priv, 0x90) == 0xd55555d5;
+-	return (x == y || x == SECSID_WILD || y == SECSID_WILD);
 -}
 -
- /* timeout in msec, attempted in 10-msec quanta */
- static int ipw_poll_bit(struct ipw_priv *priv, u32 addr, u32 mask,
- 			       int timeout)
+ /**
+  * avc_update_node Update an AVC entry
+  * @event : Updating event
 -- 
 1.7.10.4
 
