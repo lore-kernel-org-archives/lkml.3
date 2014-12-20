@@ -1,48 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaLTQlL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:41:11 -0500
-Received: from mga03.intel.com ([134.134.136.65]:45894 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027AbaLTQlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:41:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,613,1413270000"; 
-   d="scan'208";a="657722784"
-Message-ID: <5495A698.4050707@linux.intel.com>
-Date: Sat, 20 Dec 2014 08:40:56 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org
-CC: akpm@linux-foundation.org, oleg@redhat.com, rientjes@google.com,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] proc: task_mmu: show page size in /proc/<pid>/numa_maps
-References: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com>
-In-Reply-To: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+	id S1753337AbaLTQl1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:41:27 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44907 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753027AbaLTQlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 11:41:21 -0500
+Message-ID: <1419093679.2184.1.camel@HansenPartnership.com>
+Subject: [GIT PULL] Final round of SCSI updates for the 3.18+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 20 Dec 2014 08:41:19 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2014 05:54 AM, Rafael Aquini wrote:
-> This patch introduces 'pagesize' line element to /proc/<pid>/numa_maps
-> report file in order to help disambiguating the size of pages that are
-> backing memory areas mapped by a task. When the VMA backing page size
-> is observed different from kernel's default PAGE_SIZE, the new element 
-> is printed out to complement report output. This is specially useful to
-> help differentiating between HUGE and GIGANTIC page VMAs.
+This is a much shorter set of patches that were on the go but didn't
+make it in to the early pull request for the merge window.  It's really
+a set of bug fixes plus some final cleanup work on the new tag queue
+API.
 
-Heh, I completely forgot about this.  Thanks for picking it back up.
+The patch is available here:
 
-I sometimes wonder what 'numa_maps' purpose is any if we should have
-_some_ kind of policy about what goes in there vs. smaps.  numa_maps
-seems to be turning in to smaps, minus the \n. :)
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-for-linus
 
-But that isn't the case for this patch.  The "anon=50 dirty=50 N0=50"
-output of numa_maps is wholly *useless* without either this patch or
-some other mechanism to find out of hugetbfs memory is present.  I think
-that needs to make it in to the description.
+The short changelog is:
 
-I'm fine with the code, though.  Feel free to add my acked-by.
+Boris Bodemann (1):
+      esas2r: Correct typos of "validate" in a comment
+
+Brian King (2):
+      ipr: set scsi_level correctly for disk arrays
+      ipr: add support for async scanning to speed up boot
+
+Christoph Hellwig (7):
+      fc: FCP_PTA_SIMPLE is 0
+      ibmvfc: remove unused tag variable
+      scsi: remove MSG_*_TAG defines
+      scsi: remove scsi_set_tag_type
+      scsi: remove scsi_get_tag_type
+      scsi: never drop to untagged mode during queue ramp down
+      scsi: remove ->change_queue_type method
+
+Douglas Gilbert (2):
+      scsi_debug: improve driver description in Kconfig
+      scsi_debug: fix compare and write errors
+
+Ewan D. Milne (2):
+      scsi_debug: fix missing "break;" in SDEBUG_UA_CAPACITY_CHANGED case
+      scsi_debug: take sdebug_host_list_lock when changing capacity
+
+Laurence Oberman (1):
+      qla2xxx: fix race in handling rport deletion during recovery causes panic
+
+Long Li (1):
+      storvsc: ring buffer failures may result in I/O freeze
+
+Martin K. Petersen (1):
+      scsi: blacklist RSOC for Microsoft iSCSI target devices
+
+Sreekanth Reddy (2):
+      Revert " mpt3sas: Remove phys on topology change"
+      Revert " mpt2sas: Remove phys on topology change."
+
+Tony Battersby (1):
+      scsi: fix random memory corruption with scsi-mq + T10 PI
+
+And the diffstat:
+
+ drivers/infiniband/ulp/srp/ib_srp.c        |   1 -
+ drivers/infiniband/ulp/srpt/ib_srpt.c      |  10 +--
+ drivers/scsi/53c700.c                      |  41 +---------
+ drivers/scsi/Kconfig                       |  17 ++---
+ drivers/scsi/advansys.c                    |   8 +-
+ drivers/scsi/aic94xx/aic94xx_init.c        |   1 -
+ drivers/scsi/bnx2fc/bnx2fc_fcoe.c          |   1 -
+ drivers/scsi/bnx2fc/bnx2fc_io.c            |   6 +-
+ drivers/scsi/csiostor/csio_scsi.c          |   5 +-
+ drivers/scsi/esas2r/esas2r_flash.c         |   4 +-
+ drivers/scsi/esas2r/esas2r_main.c          |   1 -
+ drivers/scsi/fcoe/fcoe.c                   |   1 -
+ drivers/scsi/fnic/fnic_main.c              |   1 -
+ drivers/scsi/ibmvscsi/ibmvfc.c             |   2 -
+ drivers/scsi/ipr.c                         | 116 +++++++++++------------------
+ drivers/scsi/ipr.h                         |   4 +-
+ drivers/scsi/isci/init.c                   |   1 -
+ drivers/scsi/libsas/sas_scsi_host.c        |   8 --
+ drivers/scsi/lpfc/lpfc_scsi.c              |   2 -
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c       |   1 -
+ drivers/scsi/mpt2sas/mpt2sas_transport.c   |   5 +-
+ drivers/scsi/mpt3sas/mpt3sas_scsih.c       |   1 -
+ drivers/scsi/mpt3sas/mpt3sas_transport.c   |   5 +-
+ drivers/scsi/mvsas/mv_init.c               |   1 -
+ drivers/scsi/pm8001/pm8001_init.c          |   1 -
+ drivers/scsi/pmcraid.c                     |   1 -
+ drivers/scsi/qla2xxx/qla_init.c            |   2 -
+ drivers/scsi/qla2xxx/qla_os.c              |   1 -
+ drivers/scsi/qla2xxx/qla_target.c          |  12 +--
+ drivers/scsi/scsi.c                        |  22 ------
+ drivers/scsi/scsi_debug.c                  |  62 +++++----------
+ drivers/scsi/scsi_devinfo.c                |   1 +
+ drivers/scsi/scsi_lib.c                    |   4 +-
+ drivers/scsi/scsi_sysfs.c                  |  30 +-------
+ drivers/scsi/scsi_transport_spi.c          |   2 +-
+ drivers/scsi/storvsc_drv.c                 |   7 +-
+ drivers/target/iscsi/iscsi_target.c        |  14 ++--
+ drivers/target/loopback/tcm_loop.c         |   5 +-
+ drivers/target/sbp/sbp_target.c            |   2 +-
+ drivers/target/target_core_pscsi.c         |   2 +-
+ drivers/target/target_core_sbc.c           |   2 +-
+ drivers/target/target_core_spc.c           |   4 +-
+ drivers/target/target_core_transport.c     |  16 ++--
+ drivers/target/tcm_fc/tfc_cmd.c            |   8 +-
+ drivers/usb/gadget/legacy/tcm_usb_gadget.c |  10 +--
+ drivers/xen/xen-scsiback.c                 |   2 +-
+ include/scsi/libsas.h                      |   1 -
+ include/scsi/scsi_host.h                   |  13 ----
+ include/scsi/scsi_tcq.h                    |  36 ---------
+ include/target/target_core_base.h          |   6 ++
+ include/trace/events/target.h              |   8 +-
+ 51 files changed, 151 insertions(+), 366 deletions(-)
+
+James
+
+
