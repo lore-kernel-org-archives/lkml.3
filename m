@@ -1,672 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaLTALQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 19:11:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49102 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880AbaLTALL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 19:11:11 -0500
-From: NeilBrown <neilb@suse.de>
-To: Mark Rutland <mark.rutland@arm.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Peter Hurley <peter@hurleysoftware.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, Jiri Slaby <jslaby@suse.cz>
-Date: Sat, 20 Dec 2014 11:09:21 +1100
-Subject: [PATCH 2/2] misc: add a driver to power on/off UART attached
- devices.
-Cc: NeilBrown <neil@brown.name>, devicetree@vger.kernel.org,
-        GTA04 owners <gta04-owner@goldelico.com>, linux-kernel@vger.kernel.org
-Message-ID: <20141220000920.13943.50943.stgit@notabene.brown>
-In-Reply-To: <20141219235827.13943.45713.stgit@notabene.brown>
-References: <20141219235827.13943.45713.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
+	id S1752790AbaLTANm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 19:13:42 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:15466 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751414AbaLTANk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 19:13:40 -0500
+Date: Fri, 19 Dec 2014 19:12:49 -0500
+From: Chris Mason <clm@fb.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Message-ID: <1419034369.13012.8@mail.thefacebook.com>
+In-Reply-To: <alpine.DEB.2.11.1412200019210.17382@nanos>
+References: <20141218051327.GA31988@redhat.com>
+	<1418918059.17358.6@mail.thefacebook.com>
+	<20141218161230.GA6042@redhat.com> <20141219024549.GB1671@redhat.com>
+	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+	<20141219035859.GA20022@redhat.com> <20141219040308.GB20022@redhat.com>
+	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
+	<20141219145528.GC13404@redhat.com>
+	<CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
+	<20141219203135.GA1200@ret.masoncoding.com>
+	<alpine.DEB.2.11.1412200019210.17382@nanos>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-19_05:2014-12-19,2014-12-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=92.9824445108128
+ compositescore=0.12498974524102 urlsuspect_oldscore=0.12498974524102
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.12498974524102 spamscore=0
+ recipient_to_sender_domain_totalscore=8 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412200001
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a platform has a particular device permanently attached to a UART,
-there may be out-of-band signaling necessary to power the device
-on and off.
 
-This drive controls that signalling for a number of different devices.
-It can
- - enable/disable a regulator
- - toggle a GPIO
- - register an 'rfkill' which can for the device to be off.
 
-When the rfkill is absent of unblocked, the device will be on when the
-associated tty device is open, and closed otherwise.
+On Fri, Dec 19, 2014 at 6:22 PM, Thomas Gleixner <tglx@linutronix.de> 
+wrote:
+> On Fri, 19 Dec 2014, Chris Mason wrote:
+>>  On Fri, Dec 19, 2014 at 11:15:21AM -0800, Linus Torvalds wrote:
+>>  > Here's another pattern. In your latest thing, every single time 
+>> that
+>>  > CPU1 is waiting for some other CPU to pick up the IPI, we have 
+>> CPU0
+>>  > doing this:
+>>  >
+>>  > [24998.060963] NMI backtrace for cpu 0
+>>  > [24998.061989] CPU: 0 PID: 2940 Comm: trinity-c150 Not tainted 
+>> 3.18.0+ #108
+>>  > [24998.064073] task: ffff8801bf3536b0 ti: ffff880197e0c000 
+>> task.ti:
+>>  > ffff880197e0c000
+>>  > [24998.065137] RIP: 0010:[<ffffffff8103e006>]  
+>> [<ffffffff8103e006>]
+>>  > read_hpet+0x16/0x20
+>>  > [24998.083577]  [<ffffffff810e0d3e>] ktime_get+0x3e/0xa0
+>>  > [24998.084450]  [<ffffffff810e9cd3>] tick_sched_timer+0x23/0x160
+>>  > [24998.085315]  [<ffffffff810daf96>] __run_hrtimer+0x76/0x1f0
+>>  > [24998.086173]  [<ffffffff810e9cb0>] ? tick_init_highres+0x20/0x20
+>>  > [24998.087025]  [<ffffffff810db2e7>] hrtimer_interrupt+0x107/0x260
+>>  > [24998.087877]  [<ffffffff81031a4b>] 
+>> local_apic_timer_interrupt+0x3b/0x70
+>>  > [24998.088732]  [<ffffffff8179bca5>] 
+>> smp_apic_timer_interrupt+0x45/0x60
+>>  > [24998.089583]  [<ffffffff8179a0df>] 
+>> apic_timer_interrupt+0x6f/0x80
+>>  > [24998.090435]  <EOI>
+>>  > [24998.091279]  [<ffffffff810da66e>] ? __remove_hrtimer+0x4e/0xa0
+>>  > [24998.092118]  [<ffffffff812c7c7a>] ? ipcget+0x8a/0x1e0
+>>  > [24998.092951]  [<ffffffff812c7c6c>] ? ipcget+0x7c/0x1e0
+>>  > [24998.093779]  [<ffffffff812c8d6d>] SyS_msgget+0x4d/0x70
+>>  >
+>>  > and I think that's the smoking gun. The reason CPU0 isn't picking 
+>> up
+>>  > any IPI's is because it is in some endless loop around 
+>> read_hpet().
+>>  >
+>>  > There is even time information in the register dump:
+>>  >
+>>  >  RAX: 0000000061fece8a RBX: 0000000000510792 RCX: 0000000000000000
+>>  >  RAX: 0000000079e588fc RBX: 0000000000511d6e RCX: 0000000000000000
+>>  >  RAX: 0000000091ca7f65 RBX: 0000000000513346 RCX: 0000000000000000
+>>  >  RAX: 00000000a9afbd0d RBX: 000000000051491e RCX: 0000000000000000
+>>  >  RAX: 00000000cbd1340c RBX: 000000000051684a RCX: 0000000000000000
+>>  >  RAX: 00000000fb9d303f RBX: 00000000005193fc RCX: 0000000000000000
+>>  >  RAX: 000000002b67efe4 RBX: 000000000051c224 RCX: 0000000000000004
+>>  >
+>>  > That RAX value is the value we just read from the HPET, and RBX 
+>> seems
+>>  > to be monotonically increasing too, so it's likely the sequence
+>>  > counter in ktime_get().
+>>  >
+>>  > So it's not stuck *inside* read_hpet(), and it's almost certainly 
+>> not
+>>  > the loop over the sequence counter in ktime_get() either (it's not
+>>  > increasing *that* quickly). But some basically infinite 
+>> __run_hrtimer
+>>  > thing or something?
+>> 
+>>  Really interesting.
+>> 
+>>  So, we're calling __run_hrtimer in a loop:
+>> 
+>>                  while ((node = timerqueue_getnext(&base->active))) {
+>>  				...
+>>  				__run_hrtimer(timer, &basenow);
+>>  				...
+>>  		}
+>> 
+>>  The easy question is how often does trinity call nanosleep?
+>> 
+>>  Looking at __run_hrtimer(), it drops the lock and runs the function 
+>> and then
+>>  takes the lock again, maybe enqueueing us again right away.
+>> 
+>>  timer->state is supposed to protect us from other CPUs jumping in 
+>> and doing
+>>  something else with the timer, but it feels racey wrt 
+>> remove_hrtimer().
+>>  Something like this, but I'm not sure how often 
+>> __hrtimer_start_range_ns gets
+>>  called
+>> 
+>>  CPU 0						CPU 1
+>>  __run_hrtimer()
+>>      timer->state = HRTIMER_STATE_CALLBACK
+>>      removed from list
+>>      unlock cpu_base->lock
+>>      restrt = fn(timer)
+>>      						__hrtimer_start_range_ns()
+>>  						base = lock_hrtimer_base()
+>>  						ret = remove_hrtimer()
+>>  						    finds timer->state = HRTIMER_STATE_CALLBACK
+>>  						    does nothing
+>>  						new_base = switch_hrtimer_base()
+>>  						    now we're on a different base, different lock
+>>      lock(cpu_base->lock)
+>>      enqueue the timer
+>>      						enqueue the timer
+> 
+> But at the very end this would be detected by the runtime check of the
+> hrtimer interrupt, which does not trigger. And it would trigger at
+> some point as ALL cpus including CPU0 in that trace dump make
+> progress.
 
-Signed-off-by: NeilBrown <neil@brown.name>
----
- .../devicetree/bindings/misc/wi2wi,w2cbw003.txt    |   19 +
- .../devicetree/bindings/misc/wi2wi,w2sg0004.txt    |   37 +
- .../devicetree/bindings/vendor-prefixes.txt        |    1 
- drivers/misc/Kconfig                               |   12 
- drivers/misc/Makefile                              |    1 
- drivers/misc/serial-power-manager.c                |  494 ++++++++++++++++++++
- 6 files changed, 564 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/misc/wi2wi,w2cbw003.txt
- create mode 100644 Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
- create mode 100644 drivers/misc/serial-power-manager.c
+I'll admit that at some point we should be hitting one of the WARN or 
+BUG_ON, but it's possible to thread that needle and corrupt the timer 
+list, without hitting a warning (CPU 1 in my example has to enqueue 
+last).  Once the rbtree is hosed, it can go forever.  Probably not the 
+bug we're looking for, but still suspect in general.
 
-diff --git a/Documentation/devicetree/bindings/misc/wi2wi,w2cbw003.txt b/Documentation/devicetree/bindings/misc/wi2wi,w2cbw003.txt
-new file mode 100644
-index 000000000000..0001ea74a0b1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/wi2wi,w2cbw003.txt
-@@ -0,0 +1,19 @@
-+wi2wi bluetooth module
-+
-+This is access via a serial port and is largely controlled via that
-+link.  Extra configuration is needed to enable power on/off
-+
-+Required properties:
-+- compatible: "wi2wi,w2cbw003"
-+- vdd-supply: regulator used to power the device.
-+
-+The node for this device must be the child of a UART.
-+
-+Example:
-+
-+&uart1 {
-+       bluetooth {
-+               compatible = "wi2wi,w2cbw003";
-+               vdd-supply = <&vaux4>;
-+       };
-+};
-diff --git a/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt b/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
-new file mode 100644
-index 000000000000..933bd4ac1ce8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
-@@ -0,0 +1,37 @@
-+wi2wi GPS device
-+
-+This is access via a serial port and is largely controlled via that
-+link.  Extra configuration is needed to enable power on/off
-+
-+Required properties:
-+- compatible: "wi2wi,w2sg0004"
-+- gpios: gpios used to toggle 'on/off' pin
-+- interrupts: interrupt generated by RX pin when device
-+      should be off
-+
-+Optional properties:
-+- vdd-supply: regulator used to power antenna
-+- pinctrl: "default", "off"
-+      if "off" setting is provided it is imposed when device should
-+      be off.  This can route the RX pin to a GPIO interrupt.
-+
-+The w2sg0004 uses a pin-toggle both to power-on and to
-+power-off, so the driver needs to detect what state it is in.
-+It does this by detecting characters on the RX line.
-+When it should be off, these can optionally be detected by a GPIO.
-+
-+The node for this device must be the child of a UART.
-+
-+Example:
-+&uart2 {
-+       gps {
-+               compatible = "wi2iw,w2sg0004";
-+               vdd-supply = <&vsim>;
-+               gpios = <&gpio5 17 0>; /* GPIO_145 */
-+               interrupts-extended = <&gpio5 19 0>; /* GPIO_147 */
-+               /* When off, switch RX to be an interrupt */
-+               pinctrl-names = "default", "off";
-+               pinctrl-0 = <&uart2_pins>;
-+               pinctrl-1 = <&uart2_pins_rx_gpio>;
-+       };
-+};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index a344ec2713a5..7e24c0049bf4 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -160,6 +160,7 @@ v3	V3 Semiconductor
- variscite	Variscite Ltd.
- via	VIA Technologies, Inc.
- voipac	Voipac Technologies s.r.o.
-+wi2wi	wi2wi Inc.  http://www.wi2wi.com/
- winbond Winbond Electronics corp.
- wlf	Wolfson Microelectronics
- wm	Wondermedia Technologies, Inc.
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index bbeb4516facf..bef98dc83f96 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -515,6 +515,18 @@ config VEXPRESS_SYSCFG
- 	  bus. System Configuration interface is one of the possible means
- 	  of generating transactions on this bus.
- 
-+config SERIAL_POWER_MANAGER
-+	tristate "Power Management controller for serial-attached devices"
-+	depends on TTY && OF
-+	default n
-+	help
-+	  Some devices permanently attached via a UART can benefit from
-+	  being power-managed when the tty device is openned or closed.
-+	  This driver can support several such devices with simple
-+	  power requirements such as enabling a regulator.
-+
-+	  If in doubt, say 'N'
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 7d5c4cd118c4..d20450356eef 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -55,4 +55,5 @@ obj-y				+= mic/
- obj-$(CONFIG_GENWQE)		+= genwqe/
- obj-$(CONFIG_ECHO)		+= echo/
- obj-$(CONFIG_VEXPRESS_SYSCFG)	+= vexpress-syscfg.o
-+obj-$(CONFIG_SERIAL_POWER_MANAGER) += serial-power-manager.o
- obj-$(CONFIG_CXL_BASE)		+= cxl/
-diff --git a/drivers/misc/serial-power-manager.c b/drivers/misc/serial-power-manager.c
-new file mode 100644
-index 000000000000..a5abf9d65539
---- /dev/null
-+++ b/drivers/misc/serial-power-manager.c
-@@ -0,0 +1,494 @@
-+/*
-+ * Serial-power-manager
-+ * Register for  open/close events on a tty, and turn power
-+ * on/off for the device which is connected.
-+ *
-+ * Currently supported devices:
-+ *  wi2wi,w2sg0004 - GPS with on/off toggle on a GPIO
-+ *  wi2wi,w2cbw003 - bluetooth port; powered by regulator.
-+ *
-+ * When appropriate, an RFKILL will be registered which
-+ * can power-down the device even when it is open.
-+ *
-+ * Device can be turned on either by
-+ *  - enabling a regulator.  Disable to turn off
-+ *  - toggling a GPIO.  Toggle again to turn off.  This requires
-+ *     that we know the current state.  It is assumed to be 'off'
-+ *     at boot, however if an interrupt can be generated when on,
-+ *     such as by connecting RX to a GPIO, that can be used to detect
-+ *     if the device is on when it should be off.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/platform_device.h>
-+#include <linux/of_device.h>
-+#include <linux/tty.h>
-+#include <linux/gpio.h>
-+#include <linux/of_gpio.h>
-+#include <linux/interrupt.h>
-+#include <linux/delay.h>
-+#include <linux/rfkill.h>
-+
-+
-+/* This is used for testing. Setting this module parameter
-+ * will simulate booting with the device "on"
-+ */
-+static bool toggle_on_probe = false;
-+module_param(toggle_on_probe, bool, 0);
-+MODULE_PARM_DESC(toggle_on_probe, "simulate power-on with devices active");
-+
-+struct spm_config {
-+	int	rfkill_type;		/* type of rfkill to register */
-+	int	toggle_time;		/* msec to pulse GPIO for on/off */
-+	int	toggle_gap;		/* min msecs between toggles */
-+	bool	off_in_suspend;
-+}
-+	simple_config = {
-+		.off_in_suspend = true,
-+	},
-+	w2sg_config = {
-+		.rfkill_type = RFKILL_TYPE_GPS,
-+		.toggle_time = 10,
-+		.toggle_gap = 500,
-+		.off_in_suspend = true,
-+	};
-+
-+const static struct of_device_id spm_dt_ids[] = {
-+       { .compatible = "wi2wi,w2sg0004", .data = &w2sg_config},
-+       { .compatible = "wi2wi,w2cbw003", .data = &simple_config},
-+       {}
-+};
-+
-+struct spm_data {
-+	const struct spm_config *config;
-+	struct gpio_desc *gpiod;
-+	int		irq;	/* irq line from RX pin when pinctrl
-+				 * set to 'idle' */
-+	struct regulator *reg;
-+
-+	unsigned long	toggle_time;
-+	unsigned long	toggle_gap;
-+	unsigned long	last_toggle;	/* jiffies when last toggle completed. */
-+	unsigned long	backoff;	/* jiffies since last_toggle when
-+					 * we try again
-+					 */
-+	enum {Idle, Down, Up} state;	/* state-machine state. */
-+
-+	bool		is_open;
-+	bool		requested, is_on;
-+	bool		suspended;
-+	bool		reg_enabled;
-+
-+	struct pinctrl	*pins;
-+	struct pinctrl_state *pins_off;
-+
-+	struct delayed_work work;
-+	spinlock_t	lock;
-+	struct device	*dev;
-+
-+	struct rfkill	*rfkill;
-+};
-+
-+/* When a device is powered on/off by toggling a GPIO we perform
-+ * all the toggling via a workqueue to ensure only one toggle happens
-+ * at a time and to allow easy timing.
-+ * This is managed as a state machine which transitions
-+ *  Idle -> Down -> Up -> Idle
-+ * The GPIO is held down for toggle_time and then up for toggle_time,
-+ * and then we assume the device has changed state.
-+ * We never toggle until at least toggle_gap has passed since the
-+ * last toggle.
-+ */
-+static void toggle_work(struct work_struct *work)
-+{
-+	struct spm_data *data = container_of(
-+		work, struct spm_data, work.work);
-+
-+	if (data->gpiod == NULL)
-+		return;
-+
-+	spin_lock_irq(&data->lock);
-+	switch (data->state) {
-+	case Up:
-+		data->state = Idle;
-+		if (data->requested == data->is_on)
-+			break;
-+		if (!data->requested)
-+			/* Assume it is off unless activity is detected */
-+			break;
-+		/* Try again in a while unless we get some activity */
-+		dev_dbg(data->dev, "Wait %dusec until retry\n",
-+			jiffies_to_msecs(data->backoff));
-+		schedule_delayed_work(&data->work, data->backoff);
-+		break;
-+	case Idle:
-+		if (data->requested == data->is_on)
-+			break;
-+
-+		/* Time to toggle */
-+		dev_dbg(data->dev, "Starting toggle to turn %s\n",
-+			data->requested ? "on" : "off");
-+		data->state = Down;
-+		spin_unlock_irq(&data->lock);
-+		gpiod_set_value_cansleep(data->gpiod, 1);
-+		schedule_delayed_work(&data->work, data->toggle_time);
-+
-+		return;
-+
-+	case Down:
-+		data->state = Up;
-+		data->last_toggle = jiffies;
-+		dev_dbg(data->dev, "Toggle completed, should be %s now.\n",
-+			data->is_on ? "off" : "on");
-+		data->is_on = ! data->is_on;
-+		spin_unlock_irq(&data->lock);
-+
-+		gpiod_set_value_cansleep(data->gpiod, 0);
-+		schedule_delayed_work(&data->work, data->toggle_time);
-+
-+		return;
-+	}
-+	spin_unlock_irq(&data->lock);
-+}
-+
-+static irqreturn_t spm_isr(int irq, void *dev_id)
-+{
-+	struct spm_data *data = dev_id;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	if (!data->requested && !data->is_on && data->state == Idle &&
-+	    time_after(jiffies, data->last_toggle + data->backoff)) {
-+		data->is_on = 1;
-+		data->backoff *= 2;
-+		dev_dbg(data->dev, "Received data, must be on. Try to turn off\n");
-+		if (!data->suspended)
-+			schedule_delayed_work(&data->work, 0);
-+	}
-+	spin_unlock_irqrestore(&data->lock, flags);
-+	return IRQ_HANDLED;
-+}
-+
-+static void spm_open(struct device *slave, struct tty_struct *tty)
-+{
-+	struct spm_data *data = dev_get_drvdata(slave);
-+	unsigned long flags;
-+
-+	data->is_open = true;
-+
-+	if (data->rfkill && rfkill_blocked(data->rfkill))
-+		return;
-+
-+	if (!data->reg_enabled &&
-+	    data->reg &&
-+	    regulator_enable(data->reg) == 0)
-+		data->reg_enabled = true;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	if (!data->requested) {
-+		dev_dbg(data->dev, "TTY open - turn device on\n");
-+		data->requested = true;
-+		data->backoff = data->toggle_gap;
-+		if (data->irq > 0) {
-+			disable_irq(data->irq);
-+			pinctrl_pm_select_default_state(slave);
-+		}
-+		if (!data->suspended && data->state == Idle)
-+			schedule_delayed_work(&data->work, 0);
-+	}
-+	spin_unlock_irqrestore(&data->lock, flags);
-+}
-+
-+static void spm_off(struct spm_data *data)
-+{
-+	unsigned long flags;
-+
-+	if (data->reg && data->reg_enabled)
-+		if (regulator_disable(data->reg) == 0)
-+			data->reg_enabled = false;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	if (data->requested) {
-+		data->requested = false;
-+		data->backoff = data->toggle_gap;
-+		if (data->pins_off) {
-+			pinctrl_select_state(data->pins,
-+					     data->pins_off);
-+			enable_irq(data->irq);
-+		}
-+		if (!data->suspended && data->state == Idle)
-+			schedule_delayed_work(&data->work, 0);
-+	}
-+	spin_unlock_irqrestore(&data->lock, flags);
-+}
-+
-+static void spm_release(struct device *slave, struct tty_struct *tty)
-+{
-+	struct spm_data *data = dev_get_drvdata(slave);
-+
-+	data->is_open = false;
-+	dev_dbg(data->dev, "TTY closed - turn device off\n");
-+	spm_off(data);
-+}
-+
-+static int spm_rfkill_set_block(void *vdata, bool blocked)
-+{
-+	struct spm_data *data = vdata;
-+
-+	dev_dbg(data->dev, "rfkill_set_blocked %d\n", blocked);
-+	if (blocked)
-+		spm_off(data);
-+
-+	if (!blocked &&
-+	    data->is_open)
-+		spm_open(data->dev, NULL);
-+
-+	return 0;
-+}
-+
-+static struct rfkill_ops spm_rfkill_ops = {
-+	.set_block = spm_rfkill_set_block,
-+};
-+
-+static int spm_suspend(struct device *dev)
-+{
-+	/* Ignore incoming data and just turn device off.
-+	 * we cannot really wait for a separate thread to
-+	 * do things, so we disable that and do it all
-+	 * here
-+	 */
-+	struct spm_data *data = dev_get_drvdata(dev);
-+
-+	spin_lock_irq(&data->lock);
-+	data->suspended = true;
-+	spin_unlock_irq(&data->lock);
-+	if (!data->config->off_in_suspend)
-+		return 0;
-+
-+	if (data->gpiod) {
-+
-+		cancel_delayed_work_sync(&data->work);
-+		if (data->state == Down) {
-+			dev_dbg(data->dev, "Suspending while GPIO down - raising\n");
-+			msleep(data->config->toggle_time);
-+			gpiod_set_value_cansleep(data->gpiod, 0);
-+			data->last_toggle = jiffies;
-+			data->is_on = !data->is_on;
-+			data->state = Up;
-+		}
-+		if (data->state == Up) {
-+			msleep(data->config->toggle_time);
-+			data->state = Idle;
-+		}
-+		if (data->is_on) {
-+			dev_dbg(data->dev, "Suspending while device on: toggling\n");
-+			gpiod_set_value_cansleep(data->gpiod, 1);
-+			msleep(data->config->toggle_time);
-+			gpiod_set_value_cansleep(data->gpiod, 0);
-+			data->is_on = 0;
-+		}
-+	}
-+
-+	if (data->reg && data->reg_enabled)
-+		if (regulator_disable(data->reg) == 0)
-+			data->reg_enabled = false;
-+
-+	return 0;
-+}
-+
-+static int spm_resume(struct device *dev)
-+{
-+	struct spm_data *data = dev_get_drvdata(dev);
-+
-+	spin_lock_irq(&data->lock);
-+	data->suspended = false;
-+	spin_unlock_irq(&data->lock);
-+	schedule_delayed_work(&data->work, 0);
-+
-+	if (data->is_open &&
-+	    (!data->rfkill || !rfkill_blocked(data->rfkill))) {
-+		if (!data->reg_enabled &&
-+		    data->reg &&
-+		    regulator_enable(data->reg) == 0)
-+			data->reg_enabled = true;
-+	}
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops spm_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(spm_suspend, spm_resume)
-+};
-+
-+static struct tty_slave_operations spm_ops = {
-+	.open	=	spm_open,
-+	.release=	spm_release,
-+};
-+
-+static int spm_probe(struct platform_device *pdev)
-+{
-+	struct spm_data *data;
-+	struct regulator *reg;
-+	int err;
-+	const struct of_device_id *id;
-+	const char *name;
-+
-+	if (pdev->dev.parent == NULL)
-+		return -ENODEV;
-+
-+	id = of_match_device(spm_dt_ids, &pdev->dev);
-+	if (!id)
-+		return -ENODEV;
-+
-+	if (pdev->dev.of_node && pdev->dev.of_node->name)
-+		name = pdev->dev.of_node->name;
-+	else
-+		name = "serial-power-manager";
-+
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->config = id->data;
-+	data->toggle_time = msecs_to_jiffies(data->config->toggle_time) + 1;
-+	data->toggle_gap = msecs_to_jiffies(data->config->toggle_gap) + 1;
-+	data->last_toggle = jiffies;
-+	data->backoff = data->toggle_gap;
-+	data->state = Idle;
-+	spin_lock_init(&data->lock);
-+	INIT_DELAYED_WORK(&data->work, toggle_work);
-+
-+	/* If a regulator is provided, it is enabled on 'open'
-+	 * and disabled on 'release'
-+	 */
-+	reg = devm_regulator_get(&pdev->dev, "vdd");
-+	if (IS_ERR(reg)) {
-+		err = PTR_ERR(reg);
-+		if (err != -ENODEV)
-+			goto out;
-+	} else
-+		data->reg = reg;
-+
-+	/* If an irq is provided, any transitions are taken as
-+	 * indication that the device is currently "on"
-+	 */
-+	data->irq = platform_get_irq(pdev, 0);
-+	if (data->irq < 0) {
-+		err = data->irq;
-+		if (err != -ENXIO)
-+			goto out;
-+	} else {
-+		dev_dbg(&pdev->dev, "IRQ configured: %d\n", data->irq);
-+
-+		irq_set_status_flags(data->irq, IRQ_NOAUTOEN);
-+		err = devm_request_irq(&pdev->dev, data->irq, spm_isr,
-+				       IRQF_TRIGGER_FALLING,
-+				       name, data);
-+
-+		if (err)
-+			goto out;
-+
-+	}
-+
-+	/* If a gpio is provided, then it is used to turn the device
-+	 * on/off.
-+	 * If toggle_time is zero, then the GPIO directly controls
-+	 * the device.  If non-zero, then the GPIO must be toggled to
-+	 * change the state of the device.
-+	 */
-+	data->gpiod = devm_gpiod_get(&pdev->dev, NULL, GPIOD_OUT_LOW);
-+	if (IS_ERR(data->gpiod)) {
-+		err = PTR_ERR(data->gpiod);
-+		if (err != -ENOENT)
-+			goto out;
-+		data->gpiod = NULL;
-+	} else
-+		dev_dbg(&pdev->dev, "GPIO configured: %d\n",
-+			desc_to_gpio(data->gpiod));
-+
-+	/* If an 'off' pinctrl state is defined, we apply that
-+	 * when the device is assumed to be off.  This is expected to
-+	 * route the 'rx' line to the 'irq' interrupt.
-+	 */
-+	data->pins = devm_pinctrl_get(&pdev->dev);
-+	if (data->pins && data->irq > 0) {
-+		data->pins_off = pinctrl_lookup_state(data->pins, "off");
-+		if (IS_ERR(data->pins_off))
-+			data->pins_off = NULL;
-+	}
-+
-+	if (data->config->rfkill_type) {
-+		data->rfkill = rfkill_alloc(name, &pdev->dev,
-+					    data->config->rfkill_type,
-+					    &spm_rfkill_ops, data);
-+		if (!data->rfkill) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
-+		err = rfkill_register(data->rfkill);
-+		if (err) {
-+			dev_err(&pdev->dev, "Cannot register rfkill device");
-+			rfkill_destroy(data->rfkill);
-+			goto out;
-+		}
-+	}
-+	platform_set_drvdata(pdev, data);
-+	data->dev = &pdev->dev;
-+	tty_set_slave(pdev->dev.parent, &pdev->dev, &spm_ops);
-+
-+	if (data->pins_off)
-+		pinctrl_select_state(data->pins, data->pins_off);
-+	if (data->irq > 0)
-+		enable_irq(data->irq);
-+
-+	if (toggle_on_probe && data->gpiod) {
-+		dev_dbg(data->dev, "Performing initial toggle\n");
-+		gpiod_set_value_cansleep(data->gpiod, 1);
-+		msleep(data->config->toggle_time);
-+		gpiod_set_value_cansleep(data->gpiod, 0);
-+		msleep(data->config->toggle_time);
-+	}
-+	err = 0;
-+out:
-+	dev_dbg(data->dev, "Probed: err=%d\n", err);
-+	return err;
-+}
-+
-+static int spm_remove(struct platform_device *pdev)
-+{
-+       struct spm_data *data = dev_get_drvdata(&pdev->dev);
-+
-+       tty_clear_slave(pdev->dev.parent, &pdev->dev);
-+       if (data->rfkill) {
-+               rfkill_unregister(data->rfkill);
-+               rfkill_destroy(data->rfkill);
-+       }
-+       return 0;
-+}
-+
-+static struct platform_driver spm_driver = {
-+       .driver.name		= "serial-power-manager",
-+       .driver.owner		= THIS_MODULE,
-+       .driver.of_match_table	= spm_dt_ids,
-+       .probe			= spm_probe,
-+       .remove			= spm_remove,
-+};
-+
-+static int __init spm_init(void)
-+{
-+       return platform_driver_register(&spm_driver);
-+}
-+module_init(spm_init);
-+
-+static void __exit spm_exit(void)
-+{
-+       platform_driver_unregister(&spm_driver);
-+}
-+module_exit(spm_exit);
-+
-+MODULE_AUTHOR("NeilBrown <neil@brown.name>");
-+MODULE_DEVICE_TABLE(of, spm_dt_ids);
-+MODULE_DESCRIPTION("Power management for Serial-attached device.");
-+MODULE_LICENSE("GPL v2");
+-chris
+
 
 
