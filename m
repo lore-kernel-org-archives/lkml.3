@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaLTDv6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 22:51:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51840 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383AbaLTDv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 22:51:57 -0500
-Date: Fri, 19 Dec 2014 22:51:48 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, sgrubb@redhat.com, eparis@parisplace.org,
-        pmoore@redhat.com
-Subject: Re: [PATCH] audit: use supplied gfp_mask from audit_buffer in
- kauditd_send_multicast_skb
-Message-ID: <20141220035148.GA512@madcap2.tricolour.ca>
-References: <d261c547d8018a18f2092e1907b06e190162b088.1418947557.git.rgb@redhat.com>
- <74385.1419036779@turing-police.cc.vt.edu>
+	id S1751144AbaLTFKN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 00:10:13 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:31623 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750750AbaLTFKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 00:10:11 -0500
+Date: Sat, 20 Dec 2014 00:10:08 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Divya Vyas <edivya.vyas@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: Merge ftrace data of host and guest
+Message-ID: <20141220051008.GE5474@home.goodmis.org>
+References: <CAGfiMvCLgdaACWuUJAWecaLP9cSZRLFzzWgNGoiZTidT9m60cg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <74385.1419036779@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGfiMvCLgdaACWuUJAWecaLP9cSZRLFzzWgNGoiZTidT9m60cg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/12/19, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 18 Dec 2014 23:09:27 -0500, Richard Guy Briggs said:
-> > Eric Paris explains: Since kauditd_send_multicast_skb() gets called in
-> > audit_log_end(), which can come from any context (aka even a sleeping context)
-> > GFP_KERNEL can't be used.  Since the audit_buffer knows what context it should
-> > use, pass that down and use that.
-> >
-> > See: https://lkml.org/lkml/2014/12/16/542
-> 
-> > Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > ---
-> >  kernel/audit.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/kernel/audit.c b/kernel/audit.c
-> > index 7b83c55..ce484fb 100644
-> 
-> I was reliably triggering 3-4 BUGs an hour, and with this patch applied I've
-> gone 9 hours without seeing one.
-> 
-> So feel free to add a Tested-By:  when it goes out.
+On Fri, Dec 19, 2014 at 05:52:52PM +0530, Divya Vyas wrote:
+> Hi,
 
-Good stuff.  Thanks for testing this Valdis!
+Hi, it would be  helpful if you Cc'd me. I would have responded quicker. Luckily,
+someone noticed this email and told me about it.
 
-- RGB
+> 
+> I think it is not desired output . Ths script is written for diffrent
+> format .ftrace format is ( trace-cmd report command generates) :
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+I'm actually working on trace-cmd this week and hopefully I'll be able to release
+2.5 by x-mas.
+
+I believe that Masami is going to start continuing work on the virt guest
+tracer for trace-cmd.
+
+Also, for now, for a crud way of merging, if both the gettimeofday clocks
+of the host and guest are synced, you could do:
+
+guest> trace-cmd record -o guest.dat --date  ...
+
+host> trace-cmd record -o host.dat --date ...
+
+and then run:
+
+trace-cmd report -i guest.dat -i host.dat
+
+and trace-cmd will merge the two. The --date will add a way to sync the trace
+timestamps to a wall clock and that will be used to try to interleave the
+events of both the data files.
+
+-- Steve
+
