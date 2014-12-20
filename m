@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaLTDSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 22:18:44 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:60575 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaLTDSl (ORCPT
+	id S1752804AbaLTDSv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 22:18:51 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:61684 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738AbaLTDSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 22:18:41 -0500
+	Fri, 19 Dec 2014 22:18:46 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,47 +14,77 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v2 0/5] clean up and generalize swap-over-NFS
-Date: Fri, 19 Dec 2014 19:18:24 -0800
-Message-Id: <cover.1419044605.git.osandov@osandov.com>
+Cc: Omar Sandoval <osandov@osandov.com>, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH v2 2/5] direct-io: don't dirty ITER_BVEC pages on read
+Date: Fri, 19 Dec 2014 19:18:26 -0800
+Message-Id: <f9b69250ba0598807d96857e9b736d57e6841ba3.1419044605.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.2.1
+In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
+References: <cover.1419044605.git.osandov@osandov.com>
+In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
+References: <cover.1419044605.git.osandov@osandov.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Reads through the iov_iter infrastructure for kernel pages shouldn't be
+dirtied by the direct I/O code.
 
-This patch series (based on ecb5ec0 in Linus' tree) contains all of the
-non-BTRFS work that I've done to implement swapfiles on BTRFS. The BTRFS
-portion is still undergoing development and is now outweighed by the
-non-BTRFS changes, so I want to get these in separately.
+This is based on Dave Kleikamp's and Ming Lei's previously posted
+patches.
 
-Version 2 changes the generic swapfile interface to use ->read_iter and
-->write_iter instead of using ->direct_IO directly in response to
-discussion on the previous submission. It also adds the iov_iter_is_bvec
-helper to factor out some common checks.
+Cc: Ming Lei <ming.lei@canonical.com>
+Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
+---
+ fs/direct-io.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-Version 1 can be found here: https://lkml.org/lkml/2014/12/15/7
-
-Omar Sandoval (5):
-  iov_iter: add ITER_BVEC helpers
-  direct-io: don't dirty ITER_BVEC pages on read
-  nfs: don't dirty ITER_BVEC pages read through direct I/O
-  swapfile: use ->read_iter and ->write_iter
-  vfs: update swap_{,de}activate documentation
-
- Documentation/filesystems/Locking |  7 ++++---
- Documentation/filesystems/vfs.txt |  7 ++++---
- fs/direct-io.c                    |  8 ++++---
- fs/nfs/direct.c                   |  5 ++++-
- fs/splice.c                       |  7 ++-----
- include/linux/uio.h               |  7 +++++++
- mm/iov_iter.c                     | 12 +++++++++++
- mm/page_io.c                      | 44 +++++++++++++++++++++++++--------------
- mm/swapfile.c                     | 11 +++++++++-
- 9 files changed, 76 insertions(+), 32 deletions(-)
-
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index e181b6b..c71387b 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -120,6 +120,7 @@ struct dio {
+ 	spinlock_t bio_lock;		/* protects BIO fields below */
+ 	int page_errors;		/* errno from get_user_pages() */
+ 	int is_async;			/* is IO async ? */
++	int should_dirty;		/* should we mark read pages dirty? */
+ 	bool defer_completion;		/* defer AIO completion to workqueue? */
+ 	int io_error;			/* IO error in completion path */
+ 	unsigned long refcount;		/* direct_io_worker() and bios */
+@@ -392,7 +393,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
+ 	dio->refcount++;
+ 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+ 
+-	if (dio->is_async && dio->rw == READ)
++	if (dio->is_async && dio->rw == READ && dio->should_dirty)
+ 		bio_set_pages_dirty(bio);
+ 
+ 	if (sdio->submit_io)
+@@ -463,13 +464,13 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+ 	if (!uptodate)
+ 		dio->io_error = -EIO;
+ 
+-	if (dio->is_async && dio->rw == READ) {
++	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
+ 		bio_check_pages_dirty(bio);	/* transfers ownership */
+ 	} else {
+ 		bio_for_each_segment_all(bvec, bio, i) {
+ 			struct page *page = bvec->bv_page;
+ 
+-			if (dio->rw == READ && !PageCompound(page))
++			if (dio->rw == READ && !PageCompound(page) && dio->should_dirty)
+ 				set_page_dirty_lock(page);
+ 			page_cache_release(page);
+ 		}
+@@ -1177,6 +1178,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 
+ 	dio->inode = inode;
+ 	dio->rw = rw;
++	dio->should_dirty = !iov_iter_is_bvec(iter);
+ 
+ 	/*
+ 	 * For AIO O_(D)SYNC writes we need to defer completions to a workqueue
 -- 
 2.2.1
 
