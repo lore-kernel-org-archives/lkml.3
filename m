@@ -1,131 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbaLTRES (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 12:04:18 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:63022 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaLTREQ (ORCPT
+	id S1753351AbaLTRHd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 12:07:33 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:37579 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062AbaLTRH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 12:04:16 -0500
+	Sat, 20 Dec 2014 12:07:27 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: ia64: kernel: irq_ia64.c:  Remove unused function
-Date: Sat, 20 Dec 2014 18:07:02 +0100
-Message-Id: <1419095222-9942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8723au: core: rtw_cmd.c:  Remove some unused functions
+Date: Sat, 20 Dec 2014 18:10:13 +0100
+Message-Id: <1419095413-10163-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function ia64_handle_irq() that is not used anywhere.
+Removes some functions that are not used anywhere:
+rtw_set_ch_cmd23a() rtw_cmd_clr_isr23a()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/ia64/kernel/irq_ia64.c |   83 -------------------------------------------
- 1 file changed, 83 deletions(-)
+ drivers/staging/rtl8723au/core/rtw_cmd.c    |   61 ---------------------------
+ drivers/staging/rtl8723au/include/rtw_cmd.h |    2 -
+ 2 files changed, 63 deletions(-)
 
-diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
-index 698d8fe..1b64f10 100644
---- a/arch/ia64/kernel/irq_ia64.c
-+++ b/arch/ia64/kernel/irq_ia64.c
-@@ -432,89 +432,6 @@ void destroy_irq(unsigned int irq)
- #	define IS_RESCHEDULE(vec)	(0)
- #	define IS_LOCAL_TLB_FLUSH(vec)	(0)
- #endif
--/*
-- * That's where the IVT branches when we get an external
-- * interrupt. This branches to the correct hardware IRQ handler via
-- * function ptr.
-- */
--void
--ia64_handle_irq (ia64_vector vector, struct pt_regs *regs)
--{
--	struct pt_regs *old_regs = set_irq_regs(regs);
--	unsigned long saved_tpr;
--
--#if IRQ_DEBUG
--	{
--		unsigned long bsp, sp;
--
--		/*
--		 * Note: if the interrupt happened while executing in
--		 * the context switch routine (ia64_switch_to), we may
--		 * get a spurious stack overflow here.  This is
--		 * because the register and the memory stack are not
--		 * switched atomically.
--		 */
--		bsp = ia64_getreg(_IA64_REG_AR_BSP);
--		sp = ia64_getreg(_IA64_REG_SP);
--
--		if ((sp - bsp) < 1024) {
--			static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ, 5);
--
--			if (__ratelimit(&ratelimit)) {
--				printk("ia64_handle_irq: DANGER: less than "
--				       "1KB of free stack space!!\n"
--				       "(bsp=0x%lx, sp=%lx)\n", bsp, sp);
--			}
--		}
--	}
--#endif /* IRQ_DEBUG */
--
--	/*
--	 * Always set TPR to limit maximum interrupt nesting depth to
--	 * 16 (without this, it would be ~240, which could easily lead
--	 * to kernel stack overflows).
--	 */
--	irq_enter();
--	saved_tpr = ia64_getreg(_IA64_REG_CR_TPR);
--	ia64_srlz_d();
--	while (vector != IA64_SPURIOUS_INT_VECTOR) {
--		int irq = local_vector_to_irq(vector);
--
--		if (unlikely(IS_LOCAL_TLB_FLUSH(vector))) {
--			smp_local_flush_tlb();
--			kstat_incr_irq_this_cpu(irq);
--		} else if (unlikely(IS_RESCHEDULE(vector))) {
--			scheduler_ipi();
--			kstat_incr_irq_this_cpu(irq);
--		} else {
--			ia64_setreg(_IA64_REG_CR_TPR, vector);
--			ia64_srlz_d();
--
--			if (unlikely(irq < 0)) {
--				printk(KERN_ERR "%s: Unexpected interrupt "
--				       "vector %d on CPU %d is not mapped "
--				       "to any IRQ!\n", __func__, vector,
--				       smp_processor_id());
--			} else
--				generic_handle_irq(irq);
--
--			/*
--			 * Disable interrupts and send EOI:
--			 */
--			local_irq_disable();
--			ia64_setreg(_IA64_REG_CR_TPR, saved_tpr);
--		}
--		ia64_eoi();
--		vector = ia64_get_ivr();
--	}
--	/*
--	 * This must be done *after* the ia64_eoi().  For example, the keyboard softirq
--	 * handler needs to be able to wait for further keyboard interrupts, which can't
--	 * come through until ia64_eoi() has been done.
--	 */
--	irq_exit();
--	set_irq_regs(old_regs);
--}
+diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
+index 4eaa502..a69e9bd 100644
+--- a/drivers/staging/rtl8723au/core/rtw_cmd.c
++++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
+@@ -245,11 +245,6 @@ exit:
+ 	return res;
+ }
  
- #ifdef CONFIG_HOTPLUG_CPU
- /*
+-void rtw_cmd_clr_isr23a(struct	cmd_priv *pcmdpriv)
+-{
+-	pcmdpriv->cmd_done_cnt++;
+-}
+-
+ void rtw_free_cmd_obj23a(struct cmd_obj *pcmd)
+ {
+ 
+@@ -855,62 +850,6 @@ exit:
+ 	return res;
+ }
+ 
+-/*
+- * This is only ever called from on_action_spct23a_ch_switch () which isn't
+- * called from anywhere itself
+- */
+-int rtw_set_ch_cmd23a(struct rtw_adapter*padapter, u8 ch, u8 bw, u8 ch_offset,
+-		      u8 enqueue)
+-{
+-	struct cmd_obj *pcmdobj;
+-	struct set_ch_parm *set_ch_parm;
+-	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+-	int res = _SUCCESS;
+-
+-	DBG_8723A("%s(%s): ch:%u, bw:%u, ch_offset:%u\n", __func__,
+-		  padapter->pnetdev->name, ch, bw, ch_offset);
+-
+-	/* check input parameter */
+-
+-	/* prepare cmd parameter */
+-	set_ch_parm = kzalloc(sizeof(*set_ch_parm), GFP_KERNEL);
+-	if (!set_ch_parm) {
+-		res = _FAIL;
+-		goto exit;
+-	}
+-	set_ch_parm->ch = ch;
+-	set_ch_parm->bw = bw;
+-	set_ch_parm->ch_offset = ch_offset;
+-
+-	if (enqueue) {
+-		/* need enqueue, prepare cmd_obj and enqueue */
+-		pcmdobj = kzalloc(sizeof(struct cmd_obj), GFP_KERNEL);
+-		if (!pcmdobj) {
+-			kfree(set_ch_parm);
+-			res = _FAIL;
+-			goto exit;
+-		}
+-
+-		init_h2fwcmd_w_parm_no_rsp(pcmdobj, set_ch_parm,
+-					   GEN_CMD_CODE(_SetChannel));
+-		res = rtw_enqueue_cmd23a(pcmdpriv, pcmdobj);
+-	} else {
+-		/* no need to enqueue, do the cmd hdl directly and
+-		   free cmd parameter */
+-		if (H2C_SUCCESS != set_ch_hdl23a(padapter, (u8 *)set_ch_parm))
+-			res = _FAIL;
+-
+-		kfree(set_ch_parm);
+-	}
+-
+-	/* do something based on res... */
+-exit:
+-
+-	DBG_8723A("%s(%s): res:%u\n", __func__, padapter->pnetdev->name, res);
+-
+-	return res;
+-}
+-
+ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+ {
+ 	u8 bEnterPS;
+diff --git a/drivers/staging/rtl8723au/include/rtw_cmd.h b/drivers/staging/rtl8723au/include/rtw_cmd.h
+index ef67068..2322b27 100644
+--- a/drivers/staging/rtl8723au/include/rtw_cmd.h
++++ b/drivers/staging/rtl8723au/include/rtw_cmd.h
+@@ -100,7 +100,6 @@ int rtw_init_cmd_priv23a(struct cmd_priv *pcmdpriv);
+ 
+ u32 rtw_init_evt_priv23a (struct evt_priv *pevtpriv);
+ void rtw_free_evt_priv23a (struct evt_priv *pevtpriv);
+-void rtw_cmd_clr_isr23a(struct cmd_priv *pcmdpriv);
+ void rtw_evt_notify_isr(struct evt_priv *pevtpriv);
+ 
+ enum rtw_drvextra_cmd_id
+@@ -715,7 +714,6 @@ int rtw_ps_cmd23a(struct rtw_adapter*padapter);
+ int rtw_chk_hi_queue_cmd23a(struct rtw_adapter*padapter);
+ #endif
+ 
+-int rtw_set_ch_cmd23a(struct rtw_adapter*padapter, u8 ch, u8 bw, u8 ch_offset, u8 enqueue);
+ int rtw_set_chplan_cmd(struct rtw_adapter*padapter, u8 chplan, u8 enqueue);
+ int rtw_led_blink_cmd(struct rtw_adapter*padapter, struct led_8723a *pLed);
+ int rtw_set_csa_cmd(struct rtw_adapter*padapter, u8 new_ch_no);
 -- 
 1.7.10.4
 
