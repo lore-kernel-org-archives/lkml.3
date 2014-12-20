@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114AbaLTOpm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 09:45:42 -0500
-Received: from mout.web.de ([212.227.17.12]:52206 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803AbaLTOpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 09:45:38 -0500
-Message-ID: <54958B8C.7010105@users.sourceforge.net>
-Date: Sat, 20 Dec 2014 15:45:32 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
-References: <548B1E44.6050005@users.sourceforge.net>	<20141212.115922.687789059853236747.davem@davemloft.net>	<54930D7C.3000901@users.sourceforge.net> <20141218.122556.2148647081075440879.davem@davemloft.net>
-In-Reply-To: <20141218.122556.2148647081075440879.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:Iih6xBiP1APYgGOhopBWByOtU9FHNYH2/WbC+CxE3w8WqXdiKjv
- 43Pq/LNxknD411czwhiOTuOQExPq3Lpbm8/PB7nPe0yo3fYbTDUXJWV6wGplLKiRYFEge0A
- 09OY7bXoulCnmaRvHTPW0aYNW9g6O3HnxitDTTtRe850lurDwh7FoxEyzqu5MWzSiUj5wNW
- 7bAN56iwoE0RrQUT1q6fQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753177AbaLTOrP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 09:47:15 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:59166 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844AbaLTOrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 09:47:14 -0500
+From: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org
+Cc: Larry.Finger@lwfinger.net, navin.patidar@gmail.com,
+        ebru.akagunduz@gmail.com, paulmck@linux.vnet.ibm.com,
+        heenasirwani@gmail.com, cengelma@gmx.at, standby24x7@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Gangadhar Vukkesala <gangs.freelancer@gmail.com>
+Subject: [PATCH v3] Staging:rtl8188eu:Fixed a space coding style issue.
+Date: Sat, 20 Dec 2014 20:17:02 +0530
+Message-Id: <1419086822-3045-1-git-send-email-gangs.freelancer@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm saying to leave the code alone.
+Fixed a Space Coding style issue which was found when running checkpatch.pl
+script on rtw_ap.c.
 
-Do I need to try another interpretation out for your feedback?
+Signed-off-by: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_ap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_ap.c b/drivers/staging/rtl8188eu/core/rtw_ap.c
+index d61842e..da19145 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_ap.c
++++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
+@@ -509,7 +509,7 @@ void add_RATid(struct adapter *padapter, struct sta_info *psta, u8 rssi_level)
+ 		tx_ra_bitmap |= ((raid<<28)&0xf0000000);
+ 
+ 		DBG_88E("%s => mac_id:%d , raid:%d , bitmap = 0x%x, arg = 0x%x\n",
+-			__func__ , psta->mac_id, raid , tx_ra_bitmap, arg);
++			__func__, psta->mac_id, raid, tx_ra_bitmap, arg);
+ 
+ 		/* bitmap[0:27] = tx_rate_bitmap */
+ 		/* bitmap[28:31]= Rate Adaptive id */
+-- 
+Gangadhar V
 
-> If it goes:
-> 
-> 	var = foo_that_returns_ptr_err()
-> 	if (IS_ERR(var))
-> 		return PTR_ERR(var);
-> 
-> 	p->bar = var;
-> 
-> or whatever, simply keep it that way!
-
-Do you want to express here that a data structure member should
-only be set after a previous function call succeeded?
-
-
-
-> I'm not engaging in this conversation any further, you have
-> already consumed way too much of my limited time on this
-> incredibly trivial matter.
-
-I hope that you will find a bit time and patience again
-to clarify affected implementation details in a safer and
-unambiguous way.
-
-Regards,
-Markus
