@@ -1,131 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002AbaLTOhr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 09:37:47 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:50615 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaLTOhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 09:37:45 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH] lib: flex_proportions.c:  Remove some unused functions
-Date: Sat, 20 Dec 2014 15:40:31 +0100
-Message-Id: <1419086431-3474-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753114AbaLTOpm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 09:45:42 -0500
+Received: from mout.web.de ([212.227.17.12]:52206 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803AbaLTOpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 09:45:38 -0500
+Message-ID: <54958B8C.7010105@users.sourceforge.net>
+Date: Sat, 20 Dec 2014 15:45:32 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
+References: <548B1E44.6050005@users.sourceforge.net>	<20141212.115922.687789059853236747.davem@davemloft.net>	<54930D7C.3000901@users.sourceforge.net> <20141218.122556.2148647081075440879.davem@davemloft.net>
+In-Reply-To: <20141218.122556.2148647081075440879.davem@davemloft.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:Iih6xBiP1APYgGOhopBWByOtU9FHNYH2/WbC+CxE3w8WqXdiKjv
+ 43Pq/LNxknD411czwhiOTuOQExPq3Lpbm8/PB7nPe0yo3fYbTDUXJWV6wGplLKiRYFEge0A
+ 09OY7bXoulCnmaRvHTPW0aYNW9g6O3HnxitDTTtRe850lurDwh7FoxEyzqu5MWzSiUj5wNW
+ 7bAN56iwoE0RrQUT1q6fQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-prop_fraction_single() prop_local_destroy_single() prop_local_init_single() fprop_global_destroy()
+> I'm saying to leave the code alone.
 
-This was partially found by using a static code analysis program called cppcheck.
+Do I need to try another interpretation out for your feedback?
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- include/linux/flex_proportions.h |    6 -----
- lib/flex_proportions.c           |   46 --------------------------------------
- 2 files changed, 52 deletions(-)
 
-diff --git a/include/linux/flex_proportions.h b/include/linux/flex_proportions.h
-index 0d348e0..27ea6a1 100644
---- a/include/linux/flex_proportions.h
-+++ b/include/linux/flex_proportions.h
-@@ -34,7 +34,6 @@ struct fprop_global {
- };
- 
- int fprop_global_init(struct fprop_global *p, gfp_t gfp);
--void fprop_global_destroy(struct fprop_global *p);
- bool fprop_new_period(struct fprop_global *p, int periods);
- 
- /*
-@@ -52,12 +51,7 @@ struct fprop_local_single {
- {	.lock = __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
- }
- 
--int fprop_local_init_single(struct fprop_local_single *pl);
--void fprop_local_destroy_single(struct fprop_local_single *pl);
- void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl);
--void fprop_fraction_single(struct fprop_global *p,
--	struct fprop_local_single *pl, unsigned long *numerator,
--	unsigned long *denominator);
- 
- static inline
- void fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
-diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
-index 8f25652..575f9e1 100644
---- a/lib/flex_proportions.c
-+++ b/lib/flex_proportions.c
-@@ -47,11 +47,6 @@ int fprop_global_init(struct fprop_global *p, gfp_t gfp)
- 	return 0;
- }
- 
--void fprop_global_destroy(struct fprop_global *p)
--{
--	percpu_counter_destroy(&p->events);
--}
--
- /*
-  * Declare @periods new periods. It is upto the caller to make sure period
-  * transitions cannot happen in parallel.
-@@ -90,18 +85,6 @@ bool fprop_new_period(struct fprop_global *p, int periods)
-  * ---- SINGLE ----
-  */
- 
--int fprop_local_init_single(struct fprop_local_single *pl)
--{
--	pl->events = 0;
--	pl->period = 0;
--	raw_spin_lock_init(&pl->lock);
--	return 0;
--}
--
--void fprop_local_destroy_single(struct fprop_local_single *pl)
--{
--}
--
- static void fprop_reflect_period_single(struct fprop_global *p,
- 					struct fprop_local_single *pl)
- {
-@@ -134,35 +117,6 @@ void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
- 	percpu_counter_add(&p->events, 1);
- }
- 
--/* Return fraction of events of type pl */
--void fprop_fraction_single(struct fprop_global *p,
--			   struct fprop_local_single *pl,
--			   unsigned long *numerator, unsigned long *denominator)
--{
--	unsigned int seq;
--	s64 num, den;
--
--	do {
--		seq = read_seqcount_begin(&p->sequence);
--		fprop_reflect_period_single(p, pl);
--		num = pl->events;
--		den = percpu_counter_read_positive(&p->events);
--	} while (read_seqcount_retry(&p->sequence, seq));
--
--	/*
--	 * Make fraction <= 1 and denominator > 0 even in presence of percpu
--	 * counter errors
--	 */
--	if (den <= num) {
--		if (num)
--			den = num;
--		else
--			den = 1;
--	}
--	*denominator = den;
--	*numerator = num;
--}
--
- /*
-  * ---- PERCPU ----
-  */
--- 
-1.7.10.4
+> If it goes:
+> 
+> 	var = foo_that_returns_ptr_err()
+> 	if (IS_ERR(var))
+> 		return PTR_ERR(var);
+> 
+> 	p->bar = var;
+> 
+> or whatever, simply keep it that way!
 
+Do you want to express here that a data structure member should
+only be set after a previous function call succeeded?
+
+
+
+> I'm not engaging in this conversation any further, you have
+> already consumed way too much of my limited time on this
+> incredibly trivial matter.
+
+I hope that you will find a bit time and patience again
+to clarify affected implementation details in a safer and
+unambiguous way.
+
+Regards,
+Markus
