@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbaLTQQT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:16:19 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:46805 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752890AbaLTQQQ (ORCPT
+	id S1753281AbaLTQRB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:17:01 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:50152 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaLTQQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:16:16 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Mike Marciniszyn <infinipath@intel.com>, Roland Dreier <roland@kernel.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] infiniband: hw: ipath: ipath_wc_ppc64.c:  Remove unused function
-Date: Sat, 20 Dec 2014 17:19:02 +0100
-Message-Id: <1419092342-7120-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 20 Dec 2014 11:16:59 -0500
+Date: Sat, 20 Dec 2014 08:16:54 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>, mjg59@srcf.ucam.org,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] dell-wmi: Don't send unneeded keypresses
+Message-ID: <20141220161654.GA16404@vmdeb7>
+References: <1417648583-9336-1-git-send-email-gabriele.mzt@gmail.com>
+ <201412052207.35676@pali>
+ <20141203180329.GB20370@vmdeb7>
+ <201412201010.18151@pali>
+ <20141220151108.GA11752@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141220151108.GA11752@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function ipath_unordered_wc() that is not used anywhere.
+On Sat, Dec 20, 2014 at 04:11:08PM +0100, Pavel Machek wrote:
+> Hi!
+> 
+> > > > Ok, I agree that it is subjective how serious it is...
+> > > > Just to remind that patch fixing problem described in
+> > > > 
+> > > > http://www.spinics.net/lists/platform-driver-x86/msg05922.ht
+> > > > ml
+> > > > http://www.spinics.net/lists/platform-driver-x86/msg05924.h
+> > > > tml
+> > > 
+> > > I don't have any objection to sending this back to stable.
+> > > Stable is for fixing REAL bugs, as opposed to theorhetical
+> > > races, etc. This is a "real" bug.
+> > > 
+> > > As to not chaning behavior, if it's OK for mainline, it's OK
+> > > for stable. At least that is my understanding of it. Folks
+> > > are free to verify with Greg if they disagree.
+> > 
+> > Darren, so how you decided? Now when patches are in linus tree, 
+> > are you going to send them to stable tree?
+> 
+> Please don't. -stable is for serious mainline bugs people are actually
+> hitting. Null pointer dereference counts, if people actually hit
+> it. This is more behaviour change, and yes, the new behaviour is
+> better, but it is really different class.
 
-This was partially found by using a static code analysis program called cppcheck.
+In this case I agree with Pavel. While the patches are small enough, fix one
+thing each, etc, it isn't clear from the description exactly how these patches
+affect users.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/infiniband/hw/ipath/ipath_kernel.h    |    3 ---
- drivers/infiniband/hw/ipath/ipath_wc_ppc64.c  |   13 -------------
- drivers/infiniband/hw/ipath/ipath_wc_x86_64.c |   15 ---------------
- 3 files changed, 31 deletions(-)
+If you can articulate how they are "real bugs that bother people" (see
+stable_kernel_rules.txt) we can reconsider. I should have pushed for better
+commit messages on these it appears as this should be obvious from those, but it
+isn't - at least not to me at 8:15am ;-)
 
-diff --git a/drivers/infiniband/hw/ipath/ipath_kernel.h b/drivers/infiniband/hw/ipath/ipath_kernel.h
-index 6559af6..e08db70 100644
---- a/drivers/infiniband/hw/ipath/ipath_kernel.h
-+++ b/drivers/infiniband/hw/ipath/ipath_kernel.h
-@@ -908,9 +908,6 @@ void ipath_chip_cleanup(struct ipath_devdata *);
- /* clean up any chip type-specific stuff */
- void ipath_chip_done(void);
- 
--/* check to see if we have to force ordering for write combining */
--int ipath_unordered_wc(void);
--
- void ipath_disarm_piobufs(struct ipath_devdata *, unsigned first,
- 			  unsigned cnt);
- void ipath_cancel_sends(struct ipath_devdata *, int);
-diff --git a/drivers/infiniband/hw/ipath/ipath_wc_ppc64.c b/drivers/infiniband/hw/ipath/ipath_wc_ppc64.c
-index 1d7bd82..1a7e20a 100644
---- a/drivers/infiniband/hw/ipath/ipath_wc_ppc64.c
-+++ b/drivers/infiniband/hw/ipath/ipath_wc_ppc64.c
-@@ -47,16 +47,3 @@ int ipath_enable_wc(struct ipath_devdata *dd)
- {
- 	return 0;
- }
--
--/**
-- * ipath_unordered_wc - indicate whether write combining is unordered
-- *
-- * Because our performance depends on our ability to do write
-- * combining mmio writes in the most efficient way, we need to
-- * know if we are on a processor that may reorder stores when
-- * write combining.
-- */
--int ipath_unordered_wc(void)
--{
--	return 1;
--}
-diff --git a/drivers/infiniband/hw/ipath/ipath_wc_x86_64.c b/drivers/infiniband/hw/ipath/ipath_wc_x86_64.c
-index 3428acb..4ad0b93 100644
---- a/drivers/infiniband/hw/ipath/ipath_wc_x86_64.c
-+++ b/drivers/infiniband/hw/ipath/ipath_wc_x86_64.c
-@@ -167,18 +167,3 @@ void ipath_disable_wc(struct ipath_devdata *dd)
- 		dd->ipath_wc_cookie = 0; /* even on failure */
- 	}
- }
--
--/**
-- * ipath_unordered_wc - indicate whether write combining is ordered
-- *
-- * Because our performance depends on our ability to do write combining mmio
-- * writes in the most efficient way, we need to know if we are on an Intel
-- * or AMD x86_64 processor.  AMD x86_64 processors flush WC buffers out in
-- * the order completed, and so no special flushing is required to get
-- * correct ordering.  Intel processors, however, will flush write buffers
-- * out in "random" orders, and so explicit ordering is needed at times.
-- */
--int ipath_unordered_wc(void)
--{
--	return boot_cpu_data.x86_vendor != X86_VENDOR_AMD;
--}
 -- 
-1.7.10.4
-
+Darren Hart
+Intel Open Source Technology Center
