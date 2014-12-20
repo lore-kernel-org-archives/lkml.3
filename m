@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781AbaLTAXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 19:23:13 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54892 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaLTAXL (ORCPT
+	id S1752793AbaLTAYp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 19:24:45 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46100 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbaLTAYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 19:23:11 -0500
-Date: Sat, 20 Dec 2014 09:23:03 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ganesh Mahendran <opensource.ganesh@gmail.com>, ngupta@vflare.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
-Message-ID: <20141220002303.GD11975@blaptop>
-References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
- <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
- <20141219233937.GA11975@blaptop>
- <20141219154548.3aa4cc02b3322f926aa4c1d6@linux-foundation.org>
- <20141219235852.GB11975@blaptop>
- <20141219160648.5cea8a6b0c764caa6100a585@linux-foundation.org>
- <20141220001043.GC11975@blaptop>
- <20141219161756.bcf7421acb4bc7a286c1afa3@linux-foundation.org>
+	Fri, 19 Dec 2014 19:24:43 -0500
+Date: Sat, 20 Dec 2014 01:24:40 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, anton@enomsg.org,
+        myungjoo.ham@samsung.com, cw00.choi@samsung.com
+Subject: Re: [PATCH V3 08/11] power: charger-manager: Make chraging decision
+ focusing on battery status.
+Message-ID: <20141220002440.GC1694@amd>
+References: <1418979323-7188-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1418979323-7188-9-git-send-email-jonghwa3.lee@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141219161756.bcf7421acb4bc7a286c1afa3@linux-foundation.org>
+In-Reply-To: <1418979323-7188-9-git-send-email-jonghwa3.lee@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 04:17:56PM -0800, Andrew Morton wrote:
-> On Sat, 20 Dec 2014 09:10:43 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > > It involves rehashing a lengthy argument with Greg.
-> > 
-> > Okay. Then, Ganesh,
-> > please add warn message about duplicaed name possibility althoug
-> > it's unlikely as it is.
-> 
-> Oh, getting EEXIST is easy with this patch.  Just create and destroy a
-> pool 2^32 times and the counter wraps ;) It's hardly a serious issue
-> for a debugging patch.
+Subject: charging.
 
-I meant that I wanted to change from index to name passed from caller like this
 
-zram:
-	zs_create_pool(GFP_NOIO | __GFP_HIGHMEM, zram->disk->first_minor);
+> In cm_monitor() where charging management starts, it checks various charging
+> condition sequentially to decide next charging operation. However, as it
 
-So, duplication should be rare. :)
+conditions.
+
+> follows sequential process, cascaded IF statements, it does some duplicated
+> jobs which is already done in previous stage. It results delay in decision
+
+which are. It results in delay in the decision....?
+
+> Both of problems mentioned above becomes clean if it manages battery charging
+
+"become clear".
+
+
+> @@ -249,6 +249,19 @@ static bool is_full_charged(struct charger_manager *cm)
+>  	if (!fuel_gauge)
+>  		return false;
+>  
+> +	/* Full, if it's over the fullbatt voltage */
+> +	if (desc->fullbatt_uV > 0) {
+> +		ret = get_batt_uV(cm, &uV);
+> +		if (!ret) {
+> +			/* Battery is already full, checks voltage drop. */
+
+"check"
+
+> --- a/include/linux/power/charger-manager.h
+> +++ b/include/linux/power/charger-manager.h
+> @@ -220,6 +220,7 @@ struct charger_desc {
+>   *	saved status of battery before entering suspend-to-RAM
+>   * @charging_start_time: saved start time of enabling charging
+>   * @charging_end_time: saved end time of disabling charging
+> + * @battery_status: Current battery status
+
+"current" for consistency.
+
+>   */
+>  struct charger_manager {
+>  	struct list_head entry;
+> @@ -237,6 +238,8 @@ struct charger_manager {
+>  
+>  	u64 charging_start_time;
+>  	u64 charging_end_time;
+> +
+> +	int battery_status;
+>  };
+
+Should battery_status be some kind of enum?
+									Pavel
+--						
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
