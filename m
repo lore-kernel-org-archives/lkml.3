@@ -1,150 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaLTMpS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 07:45:18 -0500
-Received: from arrakis.dune.hu ([78.24.191.176]:57213 "EHLO arrakis.dune.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752807AbaLTMpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 07:45:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJiQ=7AZdwCX6bmLD1B4TzfmKriE3HVEEa5zP3WRnENZjGS-hA@mail.gmail.com>
-References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
- <1418422034-17099-14-git-send-email-cernekee@gmail.com> <CAOiHx=nX9jJEFZmkA-1fWj47whq85wj-ZgUxnZBwpAYDUfAO4w@mail.gmail.com>
- <CAJiQ=7AZdwCX6bmLD1B4TzfmKriE3HVEEa5zP3WRnENZjGS-hA@mail.gmail.com>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Sat, 20 Dec 2014 13:44:41 +0100
-Message-ID: <CAOiHx=m9RzU5n2fjJcph6u=avUAEZJYw0-mBCSMRzDJvSD5CFA@mail.gmail.com>
-Subject: Re: [PATCH V5 13/23] MIPS: BMIPS: Flush the readahead cache after DMA
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Brian Norris <computersforpeace@gmail.com>,
-        MIPS Mailing List <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753131AbaLTMpe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 07:45:34 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44803 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082AbaLTMp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 07:45:28 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Joe Perches <joe@perches.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: wireless: rtlwifi: rtl8192ee: trx.c:  Remove unused function
+Date: Sat, 20 Dec 2014 13:48:14 +0100
+Message-Id: <1419079694-32476-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 2:39 AM, Kevin Cernekee <cernekee@gmail.com> wrote:
-> On Mon, Dec 15, 2014 at 1:43 AM, Jonas Gorski <jogo@openwrt.org> wrote:
->> On Fri, Dec 12, 2014 at 11:07 PM, Kevin Cernekee <cernekee@gmail.com> wrote:
->>> BMIPS 3300/435x/438x CPUs have a readahead cache that is separate from
->>> the L1/L2.  During a DMA operation, accesses adjacent to a DMA buffer
->>> may cause parts of the DMA buffer to be prefetched into the RAC.  To
->>> avoid possible coherency problems, flush the RAC upon DMA completion.
->>
->> According to what I have, any cpu [d-]cache invalidate operation
->> should already flush the full RAC unless explicitly disabled in the
->> RAC configuration - is this intended as an optimization/shortcut?
->
-> Correct - performing a RAC flush instead of blasting the entire range
-> again via CACHE instructions should be considerably faster in most
-> cases.  CACHE instructions are not pipelined on BMIPS3300/43xx.
->
-> There may be a couple of old CPU versions (possibly 130nm) that don't
-> automatically perform the RAC flush on each CACHE instruction.  Also,
-> a fun bit of trivia: MVA based cache flushes on B15 do flush the RAC,
-> but index based instructions do not.
+Remove the function rtl92ee_get_available_desc() that is not used anywhere.
 
-Because I'm laz^W^Wstill need to do some christmas shopping, I'll ask
-a few dumb questions:
+This was partially found by using a static code analysis program called cppcheck.
 
-Since a RAC flush won't flush the I/D-caches themselves, I assume
-there is no cache invalidate needed for BMIPS? Also is it still needed
-if the RAC is setup to only prefetch instructions (which it seems to
-be on bcm963xx)?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/net/wireless/rtlwifi/rtl8192ee/trx.c |   21 ---------------------
+ drivers/net/wireless/rtlwifi/rtl8192ee/trx.h |    1 -
+ 2 files changed, 22 deletions(-)
 
-I also fail to find any RAC flushing on either bcm963xx or bcm947xx
-SDK kernels, that's why I'm a bit wondering whether they really need
-it. But maybe they always do explicit syncs, haven't checked that.
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ee/trx.c b/drivers/net/wireless/rtlwifi/rtl8192ee/trx.c
+index 2fcbef1..8186ed2 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ee/trx.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192ee/trx.c
+@@ -710,27 +710,6 @@ static u16 get_desc_addr_fr_q_idx(u16 queue_index)
+ 	return desc_address;
+ }
+ 
+-void rtl92ee_get_available_desc(struct ieee80211_hw *hw, u8 q_idx)
+-{
+-	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+-	struct rtl_priv *rtlpriv = rtl_priv(hw);
+-	u16 point_diff = 0;
+-	u16 current_tx_read_point = 0, current_tx_write_point = 0;
+-	u32 tmp_4byte;
+-
+-	tmp_4byte = rtl_read_dword(rtlpriv,
+-				   get_desc_addr_fr_q_idx(q_idx));
+-	current_tx_read_point = (u16)((tmp_4byte >> 16) & 0x0fff);
+-	current_tx_write_point = (u16)((tmp_4byte) & 0x0fff);
+-
+-	point_diff = ((current_tx_read_point > current_tx_write_point) ?
+-		      (current_tx_read_point - current_tx_write_point) :
+-		      (TX_DESC_NUM_92E - current_tx_write_point +
+-		       current_tx_read_point));
+-
+-	rtlpci->tx_ring[q_idx].avl_desc = point_diff;
+-}
+-
+ void rtl92ee_pre_fill_tx_bd_desc(struct ieee80211_hw *hw,
+ 				 u8 *tx_bd_desc, u8 *desc, u8 queue_index,
+ 				 struct sk_buff *skb, dma_addr_t addr)
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192ee/trx.h b/drivers/net/wireless/rtlwifi/rtl8192ee/trx.h
+index 6f9be1c..4426c49 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192ee/trx.h
++++ b/drivers/net/wireless/rtlwifi/rtl8192ee/trx.h
+@@ -829,7 +829,6 @@ void rtl92ee_rx_check_dma_ok(struct ieee80211_hw *hw, u8 *header_desc,
+ 			     u8 queue_index);
+ u16	rtl92ee_rx_desc_buff_remained_cnt(struct ieee80211_hw *hw,
+ 					  u8 queue_index);
+-void rtl92ee_get_available_desc(struct ieee80211_hw *hw, u8 queue_index);
+ void rtl92ee_pre_fill_tx_bd_desc(struct ieee80211_hw *hw,
+ 				 u8 *tx_bd_desc, u8 *desc, u8 queue_index,
+ 				 struct sk_buff *skb, dma_addr_t addr);
+-- 
+1.7.10.4
 
-Furthermore, I see code to enable data prefetching in setup on
-bcm963xx, so I wonder if it wouldn't make sense to add the RAC as an
-extra node in DT / register/enable/configure it from bmips setup code
-(because then we can also properly setup the address range in case the
-bootloader didn't).
-
->>>  static inline int cpu_needs_post_dma_flush(struct device *dev)
->>>  {
->>
->> The place for it seems a bit misplaced; I would not expect
->> cpu_needs_post_dma_flush() to have any side effects.
->
-> Maybe we should rename the function?  To just cpu_post_dma_flush()?
-
-Hm, not sure. Add a feature flag for that, or a callback. It is
-essentially a second level cache I guess.
-
-Also while reading dma-default.c, I wonder why dma_unmap_page checks
-if cpu needs to flush, but dma_unmap_sg doesn't (disclamer: I don't
-know anything about sg).
-
->
-> (Or call a separate function from each site - but that seems unnecessary.)
->
->>> +       if (boot_cpu_type() == CPU_BMIPS3300 ||
->>> +           boot_cpu_type() == CPU_BMIPS4350 ||
->>> +           boot_cpu_type() == CPU_BMIPS4380) {
->>> +               void __iomem *cbr = BMIPS_GET_CBR();
->>> +
->>> +               /* Flush stale data out of the readahead cache */
->>> +               __raw_writel(0x100, cbr + BMIPS_RAC_CONFIG);
->>
->> Hm, according to what I have, bits [6:0] of RAC_CONFIG are R/W
->> configuration bits, and this will overwrite them:
->>
->> CFE> dm 0xff400000 4
->> ff400000: 02a07015                                        ..p.
->> CFE> sm 0xff400000 0x100 4
->> ff400000: 02a00000                                        ....
->>
->> (As far as I can tell, RAC was previously enabled for instruction
->> cache misses , and now isn't any more for anything, so effectively
->> disabled?)
->>
->> Also for BMIPS4350 (and I guess 4380) there seems to be a second
->> RAC_CONFIG register at 0x8, I guess for the second thread? Does it
->> need flushing, too?
->
-> I'll defer to Florian for the final word since he has access to the
-> documentation, but going from memory:
->
-> RAC_CONFIG should probably be a read/modify/write.  I'm pretty sure
-> there are important RW configuration bits in there.  I may have
-> incorrectly translated the "set bit 8" code from here:
->
-> https://github.com/Broadcom/stblinux-3.3/blob/master/linux/arch/mips/mm/c-brcmstb.c#L374
->
-> There is only one RAC for all CPUs, and we've never had to flush
-> anything via CBR+0x08.
-
-
-What I see in recent bcm963xx SDKs is this:
-
-void __init plat_mem_setup(void)
-{
-...
-        volatile unsigned long *cr;
-        uint32 mipsBaseAddr = MIPS_BASE;
-
-        cr = (void *)(mipsBaseAddr + MIPS_RAC_CR0);
-        *cr = *cr | RAC_D | RAC_PF_D;
-
-#if defined(MIPS_RAC_CR1)
-        cr = (void *)(mipsBaseAddr + MIPS_RAC_CR1);
-        *cr = *cr | RAC_D | RAC_PF_D;
-#endif
-}
-
-RAC_CR1 seems to be defined for BMIPS4350 based SoCs, while BMIPS3300
-ones don't (well, 6318 doesn't. The older SDKs named the address range
-register RAC_CR1, so for them this check is quite wrong :P)
-
-But no references to RAC_FLH anywhere.
-
-
-Jonas
