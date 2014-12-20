@@ -1,163 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaLTVN2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 16:13:28 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:39041 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169AbaLTVNY (ORCPT
+	id S1752221AbaLTVQb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 16:16:31 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:56885 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaLTVQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 16:13:24 -0500
+	Sat, 20 Dec 2014 16:16:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <0c0d14ed78e78312ee1e41a65ddc901a73902a26.1419096718.git.luto@amacapital.net>
-References: <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
-	<0c0d14ed78e78312ee1e41a65ddc901a73902a26.1419096718.git.luto@amacapital.net>
-Date: Sat, 20 Dec 2014 13:13:22 -0800
-X-Google-Sender-Auth: iTIQUFciGunj_YeL1fGwOCVfxLY
-Message-ID: <CAGXu5jLKg5pg7ZviKA7P6z5Wik4E8cqhRwFNAxQ6ZYoMftvUfw@mail.gmail.com>
-Subject: Re: [PATCH v2] x86_64, vdso: Fix the vdso address randomization algorithm
-From: Kees Cook <keescook@chromium.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "# 3.4.x" <stable@vger.kernel.org>
+In-Reply-To: <CA+55aFzj_2tYJ1b=_7eKSz7UMuUL+qZX39r0xq5vOZkB4JmHMA@mail.gmail.com>
+References: <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
+	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
+	<20141218051327.GA31988@redhat.com>
+	<1418918059.17358.6@mail.thefacebook.com>
+	<20141218161230.GA6042@redhat.com>
+	<20141219024549.GB1671@redhat.com>
+	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+	<20141219035859.GA20022@redhat.com>
+	<20141219040308.GB20022@redhat.com>
+	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
+	<20141219145528.GC13404@redhat.com>
+	<CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
+	<alpine.DEB.2.11.1412192201520.17382@nanos>
+	<CA+55aFx4zjAVHN5DrSCh1_MJjqf4fxoAVT3RmC+1QGP6bq7b0Q@mail.gmail.com>
+	<alpine.DEB.2.11.1412200100130.17382@nanos>
+	<CA+55aFxY5hCuGaK0JvTwHFsQKFGeh3_82ukKrU9ss4x4uHMY3Q@mail.gmail.com>
+	<CA+55aFzj_2tYJ1b=_7eKSz7UMuUL+qZX39r0xq5vOZkB4JmHMA@mail.gmail.com>
+Date: Sat, 20 Dec 2014 13:16:29 -0800
+X-Google-Sender-Auth: OfthiEW1RH-YX4BS3-EjgtnxDA8
+Message-ID: <CA+55aFyQzpQgT91sqpEhXho8KoVRkA1MeRjk+fXO7w2dJkY_Gg@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 9:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> The theory behind vdso randomization is that it's mapped at a random
-> offset above the top of the stack.  To avoid wasting a page of
-> memory for an extra page table, the vdso isn't supposed to extend
-> past the lowest PMD into which it can fit.  Other than that, the
-> address should be a uniformly distributed address that meets all of
-> the alignment requirements.
+On Sat, Dec 20, 2014 at 10:25 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> The current algorithm is buggy: the vdso has about a 50% probability
-> of being at the very end of a PMD.  The current algorithm also has a
-> decent chance of failing outright due to incorrect handling of the
-> case where the top of the stack is near the top of its PMD.
->
-> This fixes the implementation.  The paxtest estimate of vdso
-> "randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
-> don't know what the paxtest code is actually calculating.)
->
-> It's worth noting that this algorithm is inherently biased: the vdso
-> is more likely to end up near the end of its PMD than near the
-> beginning.  Ideally we would either nix the PMD sharing requirement
-> or jointly randomize the vdso and the stack to reduce the bias.
->
-> In the mean time, this is a considerable improvement with basically
-> no risk of compatibility issues, since the allowed outputs of the
-> algorithm are unchanged.
->
-> As an easy test, doing this:
->
-> for i in `seq 10000`
->   do grep -P vdso /proc/self/maps |cut -d- -f1
-> done |sort |uniq -d
->
-> used to produce lots of output (1445 lines on my most recent run).
-> A tiny subset looks like this:
->
-> 7fffdfffe000
-> 7fffe01fe000
-> 7fffe05fe000
-> 7fffe07fe000
-> 7fffe09fe000
-> 7fffe0bfe000
-> 7fffe0dfe000
->
-> Note the suspicious fe000 endings.  With the fix, I get a much more
-> palatable 76 repeated addresses.
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> How/where is the HPET overflow case handled? I don't know the code enough.
 
-Thanks for fixing this! :)
+Hmm, ok, I've re-acquainted myself with it. And I have to admit that I
+can't see anything wrong. The whole "update_wall_clock" and the shadow
+timekeeping state is confusing as hell, but seems fine. We'd have to
+avoid update_wall_clock for a *long* time for overflows to occur.
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
+And the overflow in 32 bits isn't that special, since the only thing
+that really matters is the overflow of "cycle_now - tkr->cycle_last"
+within the mask.
 
--Kees
+So I'm not seeing anything even halfway suspicious.
 
-> ---
->  arch/x86/vdso/vma.c | 45 +++++++++++++++++++++++++++++----------------
->  1 file changed, 29 insertions(+), 16 deletions(-)
->
-> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-> index 009495b9ab4b..1c9f750c3859 100644
-> --- a/arch/x86/vdso/vma.c
-> +++ b/arch/x86/vdso/vma.c
-> @@ -41,12 +41,17 @@ void __init init_vdso_image(const struct vdso_image *image)
->
->  struct linux_binprm;
->
-> -/* Put the vdso above the (randomized) stack with another randomized offset.
-> -   This way there is no hole in the middle of address space.
-> -   To save memory make sure it is still in the same PTE as the stack top.
-> -   This doesn't give that many random bits.
-> -
-> -   Only used for the 64-bit and x32 vdsos. */
-> +/*
-> + * Put the vdso above the (randomized) stack with another randomized
-> + * offset.  This way there is no hole in the middle of address space.
-> + * To save memory make sure it is still in the same PTE as the stack
-> + * top.  This doesn't give that many random bits.
-> + *
-> + * Note that this algorithm is imperfect: the distribution of the vdso
-> + * start address within a PMD is biased toward the end.
-> + *
-> + * Only used for the 64-bit and x32 vdsos.
-> + */
->  static unsigned long vdso_addr(unsigned long start, unsigned len)
->  {
->  #ifdef CONFIG_X86_32
-> @@ -54,22 +59,30 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
->  #else
->         unsigned long addr, end;
->         unsigned offset;
-> -       end = (start + PMD_SIZE - 1) & PMD_MASK;
-> +
-> +       /*
-> +        * Round up the start address.  It can start out unaligned as a result
-> +        * of stack start randomization.
-> +        */
-> +       start = PAGE_ALIGN(start);
-> +
-> +       /* Round the lowest possible end address up to a PMD boundary. */
-> +       end = (start + len + PMD_SIZE - 1) & PMD_MASK;
->         if (end >= TASK_SIZE_MAX)
->                 end = TASK_SIZE_MAX;
->         end -= len;
-> -       /* This loses some more bits than a modulo, but is cheaper */
-> -       offset = get_random_int() & (PTRS_PER_PTE - 1);
-> -       addr = start + (offset << PAGE_SHIFT);
-> -       if (addr >= end)
-> -               addr = end;
-> +
-> +       if (end > start) {
-> +               offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
-> +               addr = start + (offset << PAGE_SHIFT);
-> +       } else {
-> +               addr = start;
-> +       }
->
->         /*
-> -        * page-align it here so that get_unmapped_area doesn't
-> -        * align it wrongfully again to the next page. addr can come in 4K
-> -        * unaligned here as a result of stack start randomization.
-> +        * Forcibly align the final address in case we have a hardware
-> +        * issue that requires alignment for performance reasons.
->          */
-> -       addr = PAGE_ALIGN(addr);
->         addr = align_vdso_addr(addr);
->
->         return addr;
-> --
-> 2.1.0
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+                  Linus
