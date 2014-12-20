@@ -1,166 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827AbaLTIxp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 03:53:45 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:35478 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaLTIxm (ORCPT
+	id S1752851AbaLTIzw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 03:55:52 -0500
+Received: from mail-pa0-f66.google.com ([209.85.220.66]:61964 "EHLO
+	mail-pa0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaLTIzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 03:53:42 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 1/7] input: alps: Set correct name of psmouse device in alps_init()
-Date: Sat, 20 Dec 2014 09:53:38 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.2; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>, Vadim Klishko <vadim@cirque.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com> <20141216050234.GA35408@dtor-ws> <201412161258.20925@pali>
-In-Reply-To: <201412161258.20925@pali>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1561681.8FBzYjSUbP";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412200953.38259@pali>
+	Sat, 20 Dec 2014 03:55:51 -0500
+From: Gangadhar <gangs.freelancer@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, gangadharv <gangs.freelancer@gmail.com>
+Subject: [PATCH] Staging: rtl8188eu : rtw_ap.c : Fixed a space coding style issue.
+Date: Sat, 20 Dec 2014 14:25:08 +0530
+Message-Id: <1419065708-10045-1-git-send-email-gangs.freelancer@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1561681.8FBzYjSUbP
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+From: gangadharv <gangs.freelancer@gmail.com>
 
-On Tuesday 16 December 2014 12:58:20 Pali Roh=C3=A1r wrote:
-> On Tuesday 16 December 2014 06:02:34 Dmitry Torokhov wrote:
-> > Hi Pali,
-> >=20
-> > On Fri, Nov 14, 2014 at 08:38:20PM +0100, Pali Roh=C3=A1r wrote:
-> > > On some laptops after starting them from off state (not
-> > > after reboot), function alps_probe_trackstick_v3() (called
-> > > from function alps_identify()) does not detect trackstick.
-> > > To fix this problem we need to reset device. But function
-> > > alps_identify() is called also from alps_detect() and we
-> > > do not want to reset device in detect function because it
-> > > will slow down initialization of all other non alps
-> > > devices.
-> > >=20
-> > > This patch moves code for setting correct device name &
-> > > protocol from function alps_detect() to alps_init() which
-> > > already doing full device reset.
-> > >=20
-> > > So this patch removes need to do trackstick detection in
-> > > alps_detect() function.
-> > >=20
-> > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > > ---
-> > >=20
-> > >  drivers/input/mouse/alps.c |   17 ++++++++++++++---
-> > >  1 file changed, 14 insertions(+), 3 deletions(-)
-> > >=20
-> > > diff --git a/drivers/input/mouse/alps.c
-> > > b/drivers/input/mouse/alps.c index 8d85c79..9ffa98d 100644
-> > > --- a/drivers/input/mouse/alps.c
-> > > +++ b/drivers/input/mouse/alps.c
-> > > @@ -2392,6 +2392,10 @@ int alps_init(struct psmouse
-> > > *psmouse)
-> > >=20
-> > >  	if (input_register_device(priv->dev2))
-> > >  =09
-> > >  		goto init_fail;
-> > >=20
-> > > +	if (!(priv->flags & ALPS_DUALPOINT))
-> > > +		psmouse->name =3D "GlidePoint TouchPad";
-> > > +	psmouse->model =3D priv->proto_version;
-> > > +
-> > >=20
-> > >  	psmouse->protocol_handler =3D alps_process_byte;
-> > >  	psmouse->poll =3D alps_poll;
-> > >  	psmouse->disconnect =3D alps_disconnect;
-> > >=20
-> > > @@ -2422,11 +2426,18 @@ int alps_detect(struct psmouse
-> > > *psmouse, bool set_properties)
-> > >=20
-> > >  		return -1;
-> > >  =09
-> > >  	if (set_properties) {
-> > >=20
-> > > +		/*
-> > > +		 * NOTE: To detect model and trackstick presence we
->=20
-> need
->=20
-> > > to do +		 *       full device reset. To speed up
->=20
-> detection
->=20
-> > > and prevent +		 *       calling duplicate=20
-initialization
-> > > sequence (both in +		 *       alps_detect() and
-> > > alps_init()) we set model/protocol +		 *       version=20
-and
-> > > correct name in alps_init() (which will +		 *       do
->=20
-> full
->=20
-> > > device reset). For now set name to DualPoint. +		 */
-> > >=20
-> > >  		psmouse->vendor =3D "ALPS";
-> > >=20
-> > > -		psmouse->name =3D dummy.flags & ALPS_DUALPOINT ?
-> > > -				"DualPoint TouchPad" : "GlidePoint";
-> > > -		psmouse->model =3D dummy.proto_version << 8;
-> > > +		psmouse->name =3D "DualPoint TouchPad";
-> > >=20
-> > >  	}
-> > >=20
-> > > +
-> >=20
-> > I do not quite like the way we change the device description
-> > back and forth. Do you think we could allocate the "real"
-> > priv structure in alps_detect() and have alps_init() expect
-> > to find it (and free it if set_properties is false). This
-> > way we'd go through initialization once in detect, it will
-> > be authoritative, and we would set the name of the device
-> > properly from the beginning.
-> >=20
-> > Thanks.
->=20
-> No without introducing another psmouse_reset call. I want to
-> reduce time of loading driver, so I think this is better.
+Fixed a Coding style issue.
 
-Also psmouse-base.c call psmouse_reset between alps_detect() and=20
-alps_init(). We must do trackstick detection after psmouse_reset,=20
-but intorducing another psmouse_reset in alps_detect() will slow=20
-down initialization for ALPS devices. Also do not remember that=20
-psmouse_reset will lock both keyboard & mouse for one second=20
-(sometimes for two) on my laptop. I played with this and I think=20
-my patch is good approach how to do trackstick detection without=20
-slowdown or other side effects.
+Signed-off-by: Gangadhar V <gangs.freelancer@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_ap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Also we do not need to know if ALPS touchpad has trackstick=20
-device in alps_detect() phase. In alps_detect() we just need to=20
-know if PS/2 device is ALPS or not. From psmouse/serio point of=20
-view there is only one ALPS device on PS/2/i8042 bus. Just=20
-alps.ko driver parse PS/2 packets and detect which packet has=20
-touchpad header and which trackpoint. So we really do not need to=20
-know if trackstick is there or not in alps_detect() function.
+diff --git a/drivers/staging/rtl8188eu/core/rtw_ap.c b/drivers/staging/rtl8188eu/core/rtw_ap.c
+index d61842e..da19145 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_ap.c
++++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
+@@ -509,7 +509,7 @@ void add_RATid(struct adapter *padapter, struct sta_info *psta, u8 rssi_level)
+ 		tx_ra_bitmap |= ((raid<<28)&0xf0000000);
+ 
+ 		DBG_88E("%s => mac_id:%d , raid:%d , bitmap = 0x%x, arg = 0x%x\n",
+-			__func__ , psta->mac_id, raid , tx_ra_bitmap, arg);
++			__func__, psta->mac_id, raid, tx_ra_bitmap, arg);
+ 
+ 		/* bitmap[0:27] = tx_rate_bitmap */
+ 		/* bitmap[28:31]= Rate Adaptive id */
+-- 
+1.7.9.5
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1561681.8FBzYjSUbP
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSVORIACgkQi/DJPQPkQ1JRbwCfcFjo+nahvMFkiQRiC9oFpIgb
-swIAn26KjIRFCeNJlfBYBaSWMFmK7WJY
-=CQG5
------END PGP SIGNATURE-----
-
---nextPart1561681.8FBzYjSUbP--
