@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaLTAR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 19:17:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44342 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaLTAR6 (ORCPT
+	id S1752724AbaLTAVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 19:21:35 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45805 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaLTAVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 19:17:58 -0500
-Date: Fri, 19 Dec 2014 16:17:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Ganesh Mahendran <opensource.ganesh@gmail.com>, ngupta@vflare.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
-Message-Id: <20141219161756.bcf7421acb4bc7a286c1afa3@linux-foundation.org>
-In-Reply-To: <20141220001043.GC11975@blaptop>
-References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
-	<20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
-	<20141219233937.GA11975@blaptop>
-	<20141219154548.3aa4cc02b3322f926aa4c1d6@linux-foundation.org>
-	<20141219235852.GB11975@blaptop>
-	<20141219160648.5cea8a6b0c764caa6100a585@linux-foundation.org>
-	<20141220001043.GC11975@blaptop>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Dec 2014 19:21:33 -0500
+Date: Sat, 20 Dec 2014 01:21:30 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, anton@enomsg.org,
+        myungjoo.ham@samsung.com, cw00.choi@samsung.com
+Subject: Re: [PATCH V3 01/11] power: charger-manager: Use alarmtimer for
+ battery monitoring in suspend.
+Message-ID: <20141220002129.GB1694@amd>
+References: <1418979323-7188-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1418979323-7188-2-git-send-email-jonghwa3.lee@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418979323-7188-2-git-send-email-jonghwa3.lee@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Dec 2014 09:10:43 +0900 Minchan Kim <minchan@kernel.org> wrote:
+On Fri 2014-12-19 17:55:13, Jonghwa Lee wrote:
+> To guerantee proper charing and managing batteries even in suspend,
+> charger-manager has used rtc device with rtc framework interface.
+> However, it is better to use alarmtimer for cleaner and more appropriate
+> operation.
+> This patch makes driver to use alamtimer for polling work in suspend and
 
-> > It involves rehashing a lengthy argument with Greg.
-> 
-> Okay. Then, Ganesh,
-> please add warn message about duplicaed name possibility althoug
-> it's unlikely as it is.
+alarmtimer.
 
-Oh, getting EEXIST is easy with this patch.  Just create and destroy a
-pool 2^32 times and the counter wraps ;) It's hardly a serious issue
-for a debugging patch.
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
