@@ -1,88 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182AbaLTOSl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 09:18:41 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:36193 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaLTOSi (ORCPT
+	id S1753002AbaLTOhr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 09:37:47 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:50615 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923AbaLTOhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 09:18:38 -0500
-Date: Sat, 20 Dec 2014 17:18:24 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, <stable@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm, vmscan: prevent kswapd livelock due to
- pfmemalloc-throttled process being killed
-Message-ID: <20141220141824.GM18274@esperanza>
-References: <1418994116-23665-1-git-send-email-vbabka@suse.cz>
- <20141219155747.GA31756@dhcp22.suse.cz>
- <20141219182815.GK18274@esperanza>
- <20141220104746.GB6306@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141220104746.GB6306@dhcp22.suse.cz>
-X-Originating-IP: [81.5.99.36]
+	Sat, 20 Dec 2014 09:37:45 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH] lib: flex_proportions.c:  Remove some unused functions
+Date: Sat, 20 Dec 2014 15:40:31 +0100
+Message-Id: <1419086431-3474-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 11:47:46AM +0100, Michal Hocko wrote:
-> On Fri 19-12-14 21:28:15, Vladimir Davydov wrote:
-> > So AFAIU the problem does exist. However, I think it could be fixed by
-> > simply waking up all processes waiting on pfmemalloc_wait before putting
-> > kswapd to sleep:
-> 
-> I think that a simple cond_resched() in kswapd_try_to_sleep should be
-> sufficient and less risky fix, so basically what Vlastimil was proposing
-> in the beginning.
+Removes some functions that are not used anywhere:
+prop_fraction_single() prop_local_destroy_single() prop_local_init_single() fprop_global_destroy()
 
-With such a solution we implicitly rely upon the scheduler
-implementation, which AFAIU is wrong. E.g. suppose processes are
-governed by FIFO and kswapd happens to have a higher prio than the
-process killed by OOM. Then after cond_resched kswapd will be picked for
-execution again, and the killing process won't have a chance to remove
-itself from the wait queue.
+This was partially found by using a static code analysis program called cppcheck.
 
-> 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 744e2b491527..2a123634c220 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2984,6 +2984,9 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
-> >  	if (remaining)
-> >  		return false;
-> >  
-> > +	if (!pgdat_balanced(pgdat, order, classzone_idx))
-> > +		return false;
-> > +
-> 
-> What would be consequences of not waking up pfmemalloc waiters while the
-> node is not balanced?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ include/linux/flex_proportions.h |    6 -----
+ lib/flex_proportions.c           |   46 --------------------------------------
+ 2 files changed, 52 deletions(-)
 
-They will get woken up a bit later in balanced_pgdat. This might result
-in latency spikes though. In order not to change the original behaviour
-we could always wake all pfmemalloc waiters no matter if we are going to
-sleep or not:
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 744e2b491527..a21e0bd563c3 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2993,10 +2993,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 	 * so wake them now if necessary. If necessary, processes will wake
- 	 * kswapd and get throttled again
- 	 */
--	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
--		wake_up(&pgdat->pfmemalloc_wait);
--		return false;
--	}
-+	wake_up_all(&pgdat->pfmemalloc_wait);
+diff --git a/include/linux/flex_proportions.h b/include/linux/flex_proportions.h
+index 0d348e0..27ea6a1 100644
+--- a/include/linux/flex_proportions.h
++++ b/include/linux/flex_proportions.h
+@@ -34,7 +34,6 @@ struct fprop_global {
+ };
  
- 	return pgdat_balanced(pgdat, order, classzone_idx);
+ int fprop_global_init(struct fprop_global *p, gfp_t gfp);
+-void fprop_global_destroy(struct fprop_global *p);
+ bool fprop_new_period(struct fprop_global *p, int periods);
+ 
+ /*
+@@ -52,12 +51,7 @@ struct fprop_local_single {
+ {	.lock = __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
  }
+ 
+-int fprop_local_init_single(struct fprop_local_single *pl);
+-void fprop_local_destroy_single(struct fprop_local_single *pl);
+ void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl);
+-void fprop_fraction_single(struct fprop_global *p,
+-	struct fprop_local_single *pl, unsigned long *numerator,
+-	unsigned long *denominator);
+ 
+ static inline
+ void fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
+diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
+index 8f25652..575f9e1 100644
+--- a/lib/flex_proportions.c
++++ b/lib/flex_proportions.c
+@@ -47,11 +47,6 @@ int fprop_global_init(struct fprop_global *p, gfp_t gfp)
+ 	return 0;
+ }
+ 
+-void fprop_global_destroy(struct fprop_global *p)
+-{
+-	percpu_counter_destroy(&p->events);
+-}
+-
+ /*
+  * Declare @periods new periods. It is upto the caller to make sure period
+  * transitions cannot happen in parallel.
+@@ -90,18 +85,6 @@ bool fprop_new_period(struct fprop_global *p, int periods)
+  * ---- SINGLE ----
+  */
+ 
+-int fprop_local_init_single(struct fprop_local_single *pl)
+-{
+-	pl->events = 0;
+-	pl->period = 0;
+-	raw_spin_lock_init(&pl->lock);
+-	return 0;
+-}
+-
+-void fprop_local_destroy_single(struct fprop_local_single *pl)
+-{
+-}
+-
+ static void fprop_reflect_period_single(struct fprop_global *p,
+ 					struct fprop_local_single *pl)
+ {
+@@ -134,35 +117,6 @@ void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
+ 	percpu_counter_add(&p->events, 1);
+ }
+ 
+-/* Return fraction of events of type pl */
+-void fprop_fraction_single(struct fprop_global *p,
+-			   struct fprop_local_single *pl,
+-			   unsigned long *numerator, unsigned long *denominator)
+-{
+-	unsigned int seq;
+-	s64 num, den;
+-
+-	do {
+-		seq = read_seqcount_begin(&p->sequence);
+-		fprop_reflect_period_single(p, pl);
+-		num = pl->events;
+-		den = percpu_counter_read_positive(&p->events);
+-	} while (read_seqcount_retry(&p->sequence, seq));
+-
+-	/*
+-	 * Make fraction <= 1 and denominator > 0 even in presence of percpu
+-	 * counter errors
+-	 */
+-	if (den <= num) {
+-		if (num)
+-			den = num;
+-		else
+-			den = 1;
+-	}
+-	*denominator = den;
+-	*numerator = num;
+-}
+-
+ /*
+  * ---- PERCPU ----
+  */
+-- 
+1.7.10.4
+
