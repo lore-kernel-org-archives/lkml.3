@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871AbaLTDTD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 22:19:03 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:43188 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaLTDSw (ORCPT
+	id S1752808AbaLTDTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 22:19:01 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:32778 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaLTDSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 22:18:52 -0500
+	Fri, 19 Dec 2014 22:18:49 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,10 +14,10 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v2 5/5] vfs: update swap_{,de}activate documentation
-Date: Fri, 19 Dec 2014 19:18:29 -0800
-Message-Id: <5bb833720e5f14f077e824c19d1213dd57a282c6.1419044605.git.osandov@osandov.com>
+Cc: Omar Sandoval <osandov@osandov.com>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH v2 4/5] swapfile: use ->read_iter and ->write_iter
+Date: Fri, 19 Dec 2014 19:18:28 -0800
+Message-Id: <d8819b57849221b3db7c479f070067808912f0d5.1419044605.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
 References: <cover.1419044605.git.osandov@osandov.com>
@@ -27,68 +27,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parameters were added to swap_activate in the same patch series that
-introduced it without updating the documentation. Additionally, the
-documentation claims that non-existent address space operations
-->swap_{in,out} are used for swap I/O, but now we use
-->{read,write}_iter.
+Using ->direct_IO and ->readpage for the generic swap file
+infrastructure requires all sorts of nasty workarounds. ->readpage
+implementations don't play nicely with swap cache pages, and ->direct_IO
+implementations have different locking conventions for every filesystem.
+Instead, use ->read_iter/->write_iter with an ITER_BVEC and let the
+filesystem take care of it. This will also allow us to easily transition
+to kernel AIO if that gets merged in the future.
 
+Cc: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- Documentation/filesystems/Locking | 7 ++++---
- Documentation/filesystems/vfs.txt | 7 ++++---
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ mm/page_io.c  | 30 +++++++++++++++++++++++-------
+ mm/swapfile.c | 11 ++++++++++-
+ 2 files changed, 33 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index b30753c..e72b4c3 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -205,7 +205,8 @@ prototypes:
- 	int (*launder_page)(struct page *);
- 	int (*is_partially_uptodate)(struct page *, unsigned long, unsigned long);
- 	int (*error_remove_page)(struct address_space *, struct page *);
--	int (*swap_activate)(struct file *);
-+	int (*swap_activate)(struct swap_info_struct *, struct file *,
-+			     sector_t *);
- 	int (*swap_deactivate)(struct file *);
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 532a39b..61165b0 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -263,7 +263,6 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
+ 	if (sis->flags & SWP_FILE) {
+ 		struct kiocb kiocb;
+ 		struct file *swap_file = sis->swap_file;
+-		struct address_space *mapping = swap_file->f_mapping;
+ 		struct iov_iter from;
+ 		struct bio_vec bv = {
+ 			.bv_page = page,
+@@ -279,9 +278,7 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
  
- locking rules:
-@@ -230,8 +231,8 @@ migratepage:		yes (both)
- launder_page:		yes
- is_partially_uptodate:	yes
- error_remove_page:	yes
--swap_activate:		no
--swap_deactivate:	no
-+swap_activate:					yes
-+swap_deactivate:				no
+ 		set_page_writeback(page);
+ 		unlock_page(page);
+-		ret = mapping->a_ops->direct_IO(ITER_BVEC | WRITE,
+-						&kiocb, &from,
+-						kiocb.ki_pos);
++		ret = swap_file->f_op->write_iter(&kiocb, &from);
+ 		if (ret == PAGE_SIZE) {
+ 			count_vm_event(PSWPOUT);
+ 			ret = 0;
+@@ -344,12 +341,31 @@ int swap_readpage(struct page *page)
+ 	}
  
- 	->write_begin(), ->write_end(), ->sync_page() and ->readpage()
- may be called from the request handler (/dev/loop).
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 43ce050..9c793a7 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -600,8 +600,9 @@ struct address_space_operations {
- 					unsigned long);
- 	void (*is_dirty_writeback) (struct page *, bool *, bool *);
- 	int (*error_remove_page) (struct mapping *mapping, struct page *page);
--	int (*swap_activate)(struct file *);
--	int (*swap_deactivate)(struct file *);
-+	int (*swap_activate)(struct swap_info_struct *, struct file *,
-+			     sector_t *);
-+	void (*swap_deactivate)(struct file *);
- };
+ 	if (sis->flags & SWP_FILE) {
++		struct kiocb kiocb;
+ 		struct file *swap_file = sis->swap_file;
+-		struct address_space *mapping = swap_file->f_mapping;
++		struct iov_iter to;
++		struct bio_vec bv = {
++			.bv_page = page,
++			.bv_len = PAGE_SIZE,
++			.bv_offset = 0,
++		};
++
++		iov_iter_bvec(&to, ITER_BVEC | READ, &bv, 1, PAGE_SIZE);
++
++		init_sync_kiocb(&kiocb, swap_file);
++		kiocb.ki_pos = page_file_offset(page);
++		kiocb.ki_nbytes = PAGE_SIZE;
  
-   writepage: called by the VM to write a dirty page to backing store.
-@@ -788,7 +789,7 @@ struct address_space_operations {
- 	memory. A return value of zero indicates success,
- 	in which case this file can be used to back swapspace. The
- 	swapspace operations will be proxied to this address space's
--	->swap_{out,in} methods.
-+	->{read,write}_iter methods with O_DIRECT.
+-		ret = mapping->a_ops->readpage(swap_file, page);
+-		if (!ret)
++		ret = swap_file->f_op->read_iter(&kiocb, &to);
++		if (ret == PAGE_SIZE) {
++			SetPageUptodate(page);
+ 			count_vm_event(PSWPIN);
++			ret = 0;
++		} else {
++			ClearPageUptodate(page);
++			SetPageError(page);
++		}
++		unlock_page(page);
+ 		return ret;
+ 	}
  
-   swap_deactivate: Called during swapoff on files where swap_activate
- 	was successful.
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 63f55cc..4e14122 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2379,7 +2379,16 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 		name = NULL;
+ 		goto bad_swap;
+ 	}
+-	swap_file = file_open_name(name, O_RDWR|O_LARGEFILE, 0);
++	swap_file = file_open_name(name, O_RDWR | O_LARGEFILE | O_DIRECT, 0);
++	if (swap_file == ERR_PTR(-EINVAL)) {
++		/*
++		 * XXX: there are several filesystems that implement ->bmap but
++		 * not ->direct_IO. It's unlikely that anyone is using a
++		 * swapfile on, e.g., the MINIX fs, but this kludge will keep us
++		 * from getting a complaint from the one person who does.
++		 */
++		swap_file = file_open_name(name, O_RDWR | O_LARGEFILE, 0);
++	}
+ 	if (IS_ERR(swap_file)) {
+ 		error = PTR_ERR(swap_file);
+ 		swap_file = NULL;
 -- 
 2.2.1
 
