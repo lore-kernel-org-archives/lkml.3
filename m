@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaLTKsa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 05:48:30 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:60345 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888AbaLTKsU (ORCPT
+	id S1753014AbaLTKsi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 05:48:38 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39767 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbaLTKsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 05:48:20 -0500
+	Sat, 20 Dec 2014 05:48:32 -0500
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>,
         Scott Jiang <scott.jiang.linux@gmail.com>
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         adi-buildroot-devel@lists.sourceforge.net,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 04/15] media: blackfin: bfin_capture: improve buf_prepare() callback
-Date: Sat, 20 Dec 2014 16:17:31 +0530
-Message-Id: <1419072462-3168-5-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH 07/15] media: blackfin: bfin_capture: use v4l2_fh_open and vb2_fop_release
+Date: Sat, 20 Dec 2014 16:17:34 +0530
+Message-Id: <1419072462-3168-8-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -24,38 +24,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch improves the buf_prepare() callback.
+this patch adds support to use v4l2_fh_open() and vb2_fop_release,
+which allows to drop driver specific struct bcap_fh, as this is handled
+by core.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/blackfin/bfin_capture.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/media/platform/blackfin/bfin_capture.c | 79 +-------------------------
+ 1 file changed, 2 insertions(+), 77 deletions(-)
 
 diff --git a/drivers/media/platform/blackfin/bfin_capture.c b/drivers/media/platform/blackfin/bfin_capture.c
-index a997eac..8bd94a1 100644
+index df4a6b4..30f1fe0 100644
 --- a/drivers/media/platform/blackfin/bfin_capture.c
 +++ b/drivers/media/platform/blackfin/bfin_capture.c
-@@ -305,16 +305,12 @@ static int bcap_queue_setup(struct vb2_queue *vq,
- static int bcap_buffer_prepare(struct vb2_buffer *vb)
- {
- 	struct bcap_device *bcap_dev = vb2_get_drv_priv(vb->vb2_queue);
--	struct bcap_buffer *buf = to_bcap_vb(vb);
--	unsigned long size;
+@@ -105,12 +105,6 @@ struct bcap_device {
+ 	bool stop;
+ };
  
--	size = bcap_dev->fmt.sizeimage;
--	if (vb2_plane_size(vb, 0) < size) {
--		v4l2_err(&bcap_dev->v4l2_dev, "buffer too small (%lu < %lu)\n",
--				vb2_plane_size(vb, 0), size);
-+	vb2_set_plane_payload(vb, 0, bcap_dev->fmt.sizeimage);
-+	if (vb2_get_plane_payload(vb, 0) > vb2_plane_size(vb, 0))
- 		return -EINVAL;
--	}
--	vb2_set_plane_payload(&buf->vb, 0, size);
-+
-+	vb->v4l2_buf.field = bcap_dev->fmt.field;
- 
- 	return 0;
+-struct bcap_fh {
+-	struct v4l2_fh fh;
+-	/* indicates whether this file handle is doing IO */
+-	bool io_allowed;
+-};
+-
+ static const struct bcap_format bcap_formats[] = {
+ 	{
+ 		.desc        = "YCbCr 4:2:2 Interleaved UYVY",
+@@ -200,50 +194,6 @@ static void bcap_free_sensor_formats(struct bcap_device *bcap_dev)
+ 	bcap_dev->sensor_formats = NULL;
  }
+ 
+-static int bcap_open(struct file *file)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct video_device *vfd = bcap_dev->video_dev;
+-	struct bcap_fh *bcap_fh;
+-
+-	if (!bcap_dev->sd) {
+-		v4l2_err(&bcap_dev->v4l2_dev, "No sub device registered\n");
+-		return -ENODEV;
+-	}
+-
+-	bcap_fh = kzalloc(sizeof(*bcap_fh), GFP_KERNEL);
+-	if (!bcap_fh) {
+-		v4l2_err(&bcap_dev->v4l2_dev,
+-			 "unable to allocate memory for file handle object\n");
+-		return -ENOMEM;
+-	}
+-
+-	v4l2_fh_init(&bcap_fh->fh, vfd);
+-
+-	/* store pointer to v4l2_fh in private_data member of file */
+-	file->private_data = &bcap_fh->fh;
+-	v4l2_fh_add(&bcap_fh->fh);
+-	bcap_fh->io_allowed = false;
+-	return 0;
+-}
+-
+-static int bcap_release(struct file *file)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct v4l2_fh *fh = file->private_data;
+-	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
+-
+-	/* if this instance is doing IO */
+-	if (bcap_fh->io_allowed)
+-		vb2_queue_release(&bcap_dev->buffer_queue);
+-
+-	file->private_data = NULL;
+-	v4l2_fh_del(&bcap_fh->fh);
+-	v4l2_fh_exit(&bcap_fh->fh);
+-	kfree(bcap_fh);
+-	return 0;
+-}
+-
+ #ifndef CONFIG_MMU
+ static unsigned long bcap_get_unmapped_area(struct file *file,
+ 					    unsigned long addr,
+@@ -432,13 +382,6 @@ static int bcap_reqbufs(struct file *file, void *priv,
+ {
+ 	struct bcap_device *bcap_dev = video_drvdata(file);
+ 	struct vb2_queue *vq = &bcap_dev->buffer_queue;
+-	struct v4l2_fh *fh = file->private_data;
+-	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
+-
+-	if (vb2_is_busy(vq))
+-		return -EBUSY;
+-
+-	bcap_fh->io_allowed = true;
+ 
+ 	return vb2_reqbufs(vq, req_buf);
+ }
+@@ -455,11 +398,6 @@ static int bcap_qbuf(struct file *file, void *priv,
+ 			struct v4l2_buffer *buf)
+ {
+ 	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct v4l2_fh *fh = file->private_data;
+-	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
+-
+-	if (!bcap_fh->io_allowed)
+-		return -EBUSY;
+ 
+ 	return vb2_qbuf(&bcap_dev->buffer_queue, buf);
+ }
+@@ -468,11 +406,6 @@ static int bcap_dqbuf(struct file *file, void *priv,
+ 			struct v4l2_buffer *buf)
+ {
+ 	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct v4l2_fh *fh = file->private_data;
+-	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
+-
+-	if (!bcap_fh->io_allowed)
+-		return -EBUSY;
+ 
+ 	return vb2_dqbuf(&bcap_dev->buffer_queue,
+ 				buf, file->f_flags & O_NONBLOCK);
+@@ -523,14 +456,10 @@ static int bcap_streamon(struct file *file, void *priv,
+ 				enum v4l2_buf_type buf_type)
+ {
+ 	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct bcap_fh *fh = file->private_data;
+ 	struct ppi_if *ppi = bcap_dev->ppi;
+ 	dma_addr_t addr;
+ 	int ret;
+ 
+-	if (!fh->io_allowed)
+-		return -EBUSY;
+-
+ 	/* call streamon to start streaming in videobuf */
+ 	ret = vb2_streamon(&bcap_dev->buffer_queue, buf_type);
+ 	if (ret)
+@@ -564,10 +493,6 @@ static int bcap_streamoff(struct file *file, void *priv,
+ 				enum v4l2_buf_type buf_type)
+ {
+ 	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct bcap_fh *fh = file->private_data;
+-
+-	if (!fh->io_allowed)
+-		return -EBUSY;
+ 
+ 	return vb2_streamoff(&bcap_dev->buffer_queue, buf_type);
+ }
+@@ -870,8 +795,8 @@ static const struct v4l2_ioctl_ops bcap_ioctl_ops = {
+ 
+ static struct v4l2_file_operations bcap_fops = {
+ 	.owner = THIS_MODULE,
+-	.open = bcap_open,
+-	.release = bcap_release,
++	.open = v4l2_fh_open,
++	.release = vb2_fop_release,
+ 	.unlocked_ioctl = video_ioctl2,
+ 	.mmap = vb2_fop_mmap,
+ #ifndef CONFIG_MMU
 -- 
 1.9.1
 
