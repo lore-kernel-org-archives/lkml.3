@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaLTDSv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 22:18:51 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61684 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbaLTDSq (ORCPT
+	id S1752871AbaLTDTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 22:19:03 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:43188 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812AbaLTDSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 22:18:46 -0500
+	Fri, 19 Dec 2014 22:18:52 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,10 +14,10 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v2 2/5] direct-io: don't dirty ITER_BVEC pages on read
-Date: Fri, 19 Dec 2014 19:18:26 -0800
-Message-Id: <f9b69250ba0598807d96857e9b736d57e6841ba3.1419044605.git.osandov@osandov.com>
+Cc: Omar Sandoval <osandov@osandov.com>
+Subject: [PATCH v2 5/5] vfs: update swap_{,de}activate documentation
+Date: Fri, 19 Dec 2014 19:18:29 -0800
+Message-Id: <5bb833720e5f14f077e824c19d1213dd57a282c6.1419044605.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
 References: <cover.1419044605.git.osandov@osandov.com>
@@ -27,64 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reads through the iov_iter infrastructure for kernel pages shouldn't be
-dirtied by the direct I/O code.
+Parameters were added to swap_activate in the same patch series that
+introduced it without updating the documentation. Additionally, the
+documentation claims that non-existent address space operations
+->swap_{in,out} are used for swap I/O, but now we use
+->{read,write}_iter.
 
-This is based on Dave Kleikamp's and Ming Lei's previously posted
-patches.
-
-Cc: Ming Lei <ming.lei@canonical.com>
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- fs/direct-io.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ Documentation/filesystems/Locking | 7 ++++---
+ Documentation/filesystems/vfs.txt | 7 ++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index e181b6b..c71387b 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -120,6 +120,7 @@ struct dio {
- 	spinlock_t bio_lock;		/* protects BIO fields below */
- 	int page_errors;		/* errno from get_user_pages() */
- 	int is_async;			/* is IO async ? */
-+	int should_dirty;		/* should we mark read pages dirty? */
- 	bool defer_completion;		/* defer AIO completion to workqueue? */
- 	int io_error;			/* IO error in completion path */
- 	unsigned long refcount;		/* direct_io_worker() and bios */
-@@ -392,7 +393,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
- 	dio->refcount++;
- 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index b30753c..e72b4c3 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -205,7 +205,8 @@ prototypes:
+ 	int (*launder_page)(struct page *);
+ 	int (*is_partially_uptodate)(struct page *, unsigned long, unsigned long);
+ 	int (*error_remove_page)(struct address_space *, struct page *);
+-	int (*swap_activate)(struct file *);
++	int (*swap_activate)(struct swap_info_struct *, struct file *,
++			     sector_t *);
+ 	int (*swap_deactivate)(struct file *);
  
--	if (dio->is_async && dio->rw == READ)
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty)
- 		bio_set_pages_dirty(bio);
+ locking rules:
+@@ -230,8 +231,8 @@ migratepage:		yes (both)
+ launder_page:		yes
+ is_partially_uptodate:	yes
+ error_remove_page:	yes
+-swap_activate:		no
+-swap_deactivate:	no
++swap_activate:					yes
++swap_deactivate:				no
  
- 	if (sdio->submit_io)
-@@ -463,13 +464,13 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
- 	if (!uptodate)
- 		dio->io_error = -EIO;
+ 	->write_begin(), ->write_end(), ->sync_page() and ->readpage()
+ may be called from the request handler (/dev/loop).
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index 43ce050..9c793a7 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -600,8 +600,9 @@ struct address_space_operations {
+ 					unsigned long);
+ 	void (*is_dirty_writeback) (struct page *, bool *, bool *);
+ 	int (*error_remove_page) (struct mapping *mapping, struct page *page);
+-	int (*swap_activate)(struct file *);
+-	int (*swap_deactivate)(struct file *);
++	int (*swap_activate)(struct swap_info_struct *, struct file *,
++			     sector_t *);
++	void (*swap_deactivate)(struct file *);
+ };
  
--	if (dio->is_async && dio->rw == READ) {
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
- 		bio_check_pages_dirty(bio);	/* transfers ownership */
- 	} else {
- 		bio_for_each_segment_all(bvec, bio, i) {
- 			struct page *page = bvec->bv_page;
+   writepage: called by the VM to write a dirty page to backing store.
+@@ -788,7 +789,7 @@ struct address_space_operations {
+ 	memory. A return value of zero indicates success,
+ 	in which case this file can be used to back swapspace. The
+ 	swapspace operations will be proxied to this address space's
+-	->swap_{out,in} methods.
++	->{read,write}_iter methods with O_DIRECT.
  
--			if (dio->rw == READ && !PageCompound(page))
-+			if (dio->rw == READ && !PageCompound(page) && dio->should_dirty)
- 				set_page_dirty_lock(page);
- 			page_cache_release(page);
- 		}
-@@ -1177,6 +1178,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 
- 	dio->inode = inode;
- 	dio->rw = rw;
-+	dio->should_dirty = !iov_iter_is_bvec(iter);
- 
- 	/*
- 	 * For AIO O_(D)SYNC writes we need to defer completions to a workqueue
+   swap_deactivate: Called during swapoff on files where swap_activate
+ 	was successful.
 -- 
 2.2.1
 
