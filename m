@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaLTW1a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 17:27:30 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43338 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaLTW10 (ORCPT
+	id S1752702AbaLTW2f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 17:28:35 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:64246 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaLTW2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 17:27:26 -0500
+	Sat, 20 Dec 2014 17:28:33 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Robert Baldyga <r.baldyga@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, Michal Sojka <sojka@merica.cz>,
-        Vasily Khoruzhick <anarsoul@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: gadget: udc: s3c2410_udc.c:  Remove some unused functions
-Date: Sat, 20 Dec 2014 23:30:11 +0100
-Message-Id: <1419114611-11608-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sound: pci: hda: patch_analog.c:  Remove unused function
+Date: Sat, 20 Dec 2014 23:31:19 +0100
+Message-Id: <1419114679-11752-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-s3c2410_udc_clear_ep_state() s3c2410_udc_set_ep0_sse_out()
+Remove the function ad198x_ch_mode_get() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/usb/gadget/udc/s3c2410_udc.c |   20 --------------------
- 1 file changed, 20 deletions(-)
+ sound/pci/hda/patch_analog.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/drivers/usb/gadget/udc/s3c2410_udc.c b/drivers/usb/gadget/udc/s3c2410_udc.c
-index ff423d1..41b60cd 100644
---- a/drivers/usb/gadget/udc/s3c2410_udc.c
-+++ b/drivers/usb/gadget/udc/s3c2410_udc.c
-@@ -238,14 +238,6 @@ static inline void s3c2410_udc_set_ep0_de_out(void __iomem *base)
- 			S3C2410_UDC_EP0_CSR_REG);
+diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
+index 06275f8..9d5257b 100644
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -707,15 +707,6 @@ static int ad198x_ch_mode_info(struct snd_kcontrol *kcontrol,
+ 				    spec->num_channel_mode);
  }
  
--static inline void s3c2410_udc_set_ep0_sse_out(void __iomem *base)
+-static int ad198x_ch_mode_get(struct snd_kcontrol *kcontrol,
+-			      struct snd_ctl_elem_value *ucontrol)
 -{
--	udc_writeb(base, S3C2410_UDC_INDEX_EP0, S3C2410_UDC_INDEX_REG);
--	udc_writeb(base, (S3C2410_UDC_EP0_CSR_SOPKTRDY
--				| S3C2410_UDC_EP0_CSR_SSE),
--			S3C2410_UDC_EP0_CSR_REG);
+-	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+-	struct ad198x_spec *spec = codec->spec;
+-	return snd_hda_ch_mode_get(codec, ucontrol, spec->channel_mode,
+-				   spec->num_channel_mode, spec->multiout.max_channels);
 -}
 -
- static inline void s3c2410_udc_set_ep0_de_in(void __iomem *base)
+ static int ad198x_ch_mode_put(struct snd_kcontrol *kcontrol,
+ 			      struct snd_ctl_elem_value *ucontrol)
  {
- 	udc_writeb(base, S3C2410_UDC_INDEX_EP0, S3C2410_UDC_INDEX_REG);
-@@ -291,18 +283,6 @@ static void s3c2410_udc_nuke(struct s3c2410_udc *udc,
- 	}
- }
- 
--static inline void s3c2410_udc_clear_ep_state(struct s3c2410_udc *dev)
--{
--	unsigned i;
--
--	/* hardware SET_{CONFIGURATION,INTERFACE} automagic resets endpoint
--	 * fifos, and pending transactions mustn't be continued in any case.
--	 */
--
--	for (i = 1; i < S3C2410_ENDPOINTS; i++)
--		s3c2410_udc_nuke(dev, &dev->ep[i], -ECONNABORTED);
--}
--
- static inline int s3c2410_udc_fifo_count_out(void)
- {
- 	int tmp;
 -- 
 1.7.10.4
 
