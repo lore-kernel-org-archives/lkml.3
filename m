@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaLTAKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 19:10:53 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:41421 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaLTAKv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 19:10:51 -0500
-Date: Sat, 20 Dec 2014 09:10:43 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ganesh Mahendran <opensource.ganesh@gmail.com>, ngupta@vflare.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
-Message-ID: <20141220001043.GC11975@blaptop>
-References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
- <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
- <20141219233937.GA11975@blaptop>
- <20141219154548.3aa4cc02b3322f926aa4c1d6@linux-foundation.org>
- <20141219235852.GB11975@blaptop>
- <20141219160648.5cea8a6b0c764caa6100a585@linux-foundation.org>
+	id S1752715AbaLTAK6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 19:10:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49074 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880AbaLTAKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 19:10:54 -0500
+From: NeilBrown <neilb@suse.de>
+To: Mark Rutland <mark.rutland@arm.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Peter Hurley <peter@hurleysoftware.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, Jiri Slaby <jslaby@suse.cz>
+Date: Sat, 20 Dec 2014 11:09:20 +1100
+Subject: [PATCH 0/2] tty slave devices support - version 2
+Cc: GTA04 owners <gta04-owner@goldelico.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141219235827.13943.45713.stgit@notabene.brown>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141219160648.5cea8a6b0c764caa6100a585@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 04:06:48PM -0800, Andrew Morton wrote:
-> On Sat, 20 Dec 2014 08:58:52 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > On Fri, Dec 19, 2014 at 03:45:48PM -0800, Andrew Morton wrote:
-> > > On Sat, 20 Dec 2014 08:39:37 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> > > 
-> > > > Then, we should fix debugfs_create_dir can return errno to propagate the error
-> > > > to end user who can know it was failed ENOMEM or EEXIST.
-> > > 
-> > > Impractical.  Every caller of every debugfs interface will need to be
-> > > changed!
-> > 
-> > If you don't like changing of all of current caller, maybe, we can define
-> > debugfs_create_dir_error and use it.
-> > 
-> > struct dentry *debugfs_create_dir_err(const char *name, struct dentry *parent, int *err)
-> > and tweak debugfs_create_dir.
-> > struct dentry *debugfs_create_dir(const char *name, struct dentry *parent, int *err)
+Thanks for all the great feedback.  I have incorporated a lot of it,
+though not all ... partly because there was not yet unanimity on some
+issues.
 
-typo.
+Big changes:
+ - children of a uart are no longer automatically managed.
+   The driver for the child device must register with the tty
+   after which it will be told when the tty is opened or closed.
+   The driver can then do whatever it likes, which may involve
+   powering the device on.
 
-I meant this
+ - I am now only providing a single drivers: serial-power-manager.
+   It can be used for devices which only want power management.
+   Currently it can provide this using a regulator and/or a
+   toggle GPIO.  This one driver supports both of my devices.
 
-static struct dentry *__create_file(const char *name, umode_t mode,
-                                    struct dentry *parent, void *data,
-                                    const struct file_operations *fops,
-				    int *err)
+non-changes:
+ - The interface functionality is still provided by the 'tty'
+   layer, not the 'serial' layer.  I have no strong feelings on
+   this and doubt that I would have until some other user
+   appeared for this functionality.  That would help show
+   if the current arrangement was helpful or inconvenient.
 
-> > {
-> > 	..
-> > 	..
-> > 	if (error) {
-> > 		*err = error;
-> > 		dentry = NULL;
-> > 	}
-> > }
-> > 
-> > Why not?
-> 
-> It involves rehashing a lengthy argument with Greg.
+ - We still treat any child node of a tty device which has a
+   'compatible' field gets allocated a device.  If there is no
+   platform driver which supports that 'compatible' value, then
+   the device will be inactive.  Specific action will only be
+   taken if there is a child node with a 'compatible' field for which
+   there is a supporting driver.
 
-Okay. Then, Ganesh,
-please add warn message about duplicaed name possibility althoug
-it's unlikely as it is.
+small changes:
+ - proper 'compatible' names are used
+ - switch to use 'gpiod' instead of 'gpio'
+ - no longer misuse the 'tty_' prefix.
 
-Thanks.
 
-> 
-> > > 
-> > > It's really irritating and dumb.  What we're supposed to do is to
-> > > optionally report the failure, then ignore it.  This patch appears to
-> > > be OK in that respect.
-> > 
-> > At least, we should notify to the user why it was failed so he can fix
-> > the name if it was duplicated. So if you don't want debugfs, at least
-> > I want to warn all of reasons it can fail(at least, duplicated name)
-> > to the user.
-> 
-> Sure.  The debugfs interface design is mistaken.
+Comments and suggestions always welcome,
+Thanks,
+NeilBrown
+
+---
+
+NeilBrown (2):
+      TTY: add support for "tty slave" devices.
+      misc: add a driver to power on/off UART attached devices.
+
+
+ .../devicetree/bindings/misc/wi2wi,w2cbw003.txt    |   19 +
+ .../devicetree/bindings/misc/wi2wi,w2sg0004.txt    |   37 +
+ .../devicetree/bindings/serial/of-serial.txt       |    4 
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 
+ drivers/misc/Kconfig                               |   12 
+ drivers/misc/Makefile                              |    1 
+ drivers/misc/serial-power-manager.c                |  494 ++++++++++++++++++++
+ drivers/tty/tty_io.c                               |   73 +++
+ include/linux/tty.h                                |   16 +
+ 9 files changed, 654 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/misc/wi2wi,w2cbw003.txt
+ create mode 100644 Documentation/devicetree/bindings/misc/wi2wi,w2sg0004.txt
+ create mode 100644 drivers/misc/serial-power-manager.c
+
+--
+Signature
+
