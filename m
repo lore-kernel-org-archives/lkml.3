@@ -1,171 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaLTBfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 20:35:38 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:34120 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472AbaLTBfh (ORCPT
+	id S1752674AbaLTBjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 20:39:33 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:37895 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaLTBjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 20:35:37 -0500
+	Fri, 19 Dec 2014 20:39:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
-References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
-	<20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
-Date: Sat, 20 Dec 2014 09:35:36 +0800
-Message-ID: <CADAEsF-HjopyKyqGLZHWQaw1aRj+W4EirYGQTujvvjwELofN-Q@mail.gmail.com>
-Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
-From: Ganesh Mahendran <opensource.ganesh@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAOiHx=nX9jJEFZmkA-1fWj47whq85wj-ZgUxnZBwpAYDUfAO4w@mail.gmail.com>
+References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+ <1418422034-17099-14-git-send-email-cernekee@gmail.com> <CAOiHx=nX9jJEFZmkA-1fWj47whq85wj-ZgUxnZBwpAYDUfAO4w@mail.gmail.com>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Fri, 19 Dec 2014 17:39:09 -0800
+Message-ID: <CAJiQ=7AZdwCX6bmLD1B4TzfmKriE3HVEEa5zP3WRnENZjGS-hA@mail.gmail.com>
+Subject: Re: [PATCH V5 13/23] MIPS: BMIPS: Flush the readahead cache after DMA
+To: Jonas Gorski <jogo@openwrt.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Brian Norris <computersforpeace@gmail.com>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On Mon, Dec 15, 2014 at 1:43 AM, Jonas Gorski <jogo@openwrt.org> wrote:
+> On Fri, Dec 12, 2014 at 11:07 PM, Kevin Cernekee <cernekee@gmail.com> wrote:
+>> BMIPS 3300/435x/438x CPUs have a readahead cache that is separate from
+>> the L1/L2.  During a DMA operation, accesses adjacent to a DMA buffer
+>> may cause parts of the DMA buffer to be prefetched into the RAC.  To
+>> avoid possible coherency problems, flush the RAC upon DMA completion.
+>
+> According to what I have, any cpu [d-]cache invalidate operation
+> should already flush the full RAC unless explicitly disabled in the
+> RAC configuration - is this intended as an optimization/shortcut?
 
-Thanks for your review.
+Correct - performing a RAC flush instead of blasting the entire range
+again via CACHE instructions should be considerably faster in most
+cases.  CACHE instructions are not pipelined on BMIPS3300/43xx.
 
-2014-12-20 6:32 GMT+08:00 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri, 19 Dec 2014 20:55:19 +0800 Ganesh Mahendran <opensource.ganesh@gmail.com> wrote:
->
->> Keeping fragmentation of zsmalloc in a low level is our target. But now
->> we still need to add the debug code in zsmalloc to get the quantitative data.
->>
->> This patch adds a new configuration CONFIG_ZSMALLOC_STAT to enable the
->> statistics collection for developers. Currently only the objects statatitics
->> in each class are collected. User can get the information via debugfs.
->>      cat /sys/kernel/debug/zsmalloc/pool-1/...
->
-> Is everyone OK with this now?
->
->> --- a/include/linux/zsmalloc.h
->> +++ b/include/linux/zsmalloc.h
->> @@ -48,4 +48,13 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
->>
->>  unsigned long zs_get_total_pages(struct zs_pool *pool);
->>
->> +#ifdef CONFIG_ZSMALLOC_STAT
->> +int get_zs_pool_index(struct zs_pool *pool);
->
-> The name is inconsistent with the rest of zsmalloc and with preferred
-> kernel naming conventions.  Should be "zs_get_pool_index".
+There may be a couple of old CPU versions (possibly 130nm) that don't
+automatically perform the RAC flush on each CACHE instruction.  Also,
+a fun bit of trivia: MVA based cache flushes on B15 do flush the RAC,
+but index based instructions do not.
 
-Okay, I will modify it.
+>>  static inline int cpu_needs_post_dma_flush(struct device *dev)
+>>  {
+>
+> The place for it seems a bit misplaced; I would not expect
+> cpu_needs_post_dma_flush() to have any side effects.
 
->
->> +#else
->> +static inline int get_zs_pool_index(struct zs_pool *pool)
->> +{
->> +     return -1;
->> +}
->> +#endif
->> +
->>  #endif
->> diff --git a/mm/Kconfig b/mm/Kconfig
->> index 1d1ae6b..95c5728 100644
->> --- a/mm/Kconfig
->> +++ b/mm/Kconfig
->>
->> ...
->>
->> +static int zs_stats_size_show(struct seq_file *s, void *v)
->> +{
->> +     int i;
->> +     struct zs_pool *pool = (struct zs_pool *)s->private;
->
-> The typecast is unneeded and undesirable (it defeats typechecking).
->
->> +     struct size_class *class;
->> +     int objs_per_zspage;
->> +     unsigned long obj_allocated, obj_used, pages_used;
->> +     unsigned long total_objs = 0, total_used_objs = 0, total_pages = 0;
->> +
->> +     seq_printf(s, " %5s %5s %13s %10s %10s\n", "class", "size",
->> +                             "obj_allocated", "obj_used", "pages_used");
->> +
->> +     for (i = 0; i < zs_size_classes; i++) {
->> +             class = pool->size_class[i];
->> +
->> +             if (class->index != i)
->> +                     continue;
->> +
->> +             spin_lock(&class->lock);
->> +             obj_allocated = zs_stat_get(class, OBJ_ALLOCATED);
->> +             obj_used = zs_stat_get(class, OBJ_USED);
->> +             spin_unlock(&class->lock);
->> +
->> +             objs_per_zspage = get_maxobj_per_zspage(class->size,
->> +                             class->pages_per_zspage);
->> +             pages_used = obj_allocated / objs_per_zspage *
->> +                             class->pages_per_zspage;
->> +
->> +             seq_printf(s, " %5u %5u    %10lu %10lu %10lu\n", i,
->> +                     class->size, obj_allocated, obj_used, pages_used);
->> +
->> +             total_objs += obj_allocated;
->> +             total_used_objs += obj_used;
->> +             total_pages += pages_used;
->> +     }
->> +
->> +     seq_puts(s, "\n");
->> +     seq_printf(s, " %5s %5s    %10lu %10lu %10lu\n", "Total", "",
->> +                     total_objs, total_used_objs, total_pages);
->> +
->> +     return 0;
->> +}
->>
->> ...
->>
->> +static int zs_pool_stat_create(struct zs_pool *pool)
->> +{
->> +     char name[10];
->
-> This is not good.  If the kernel creates and then destroys a pool 10000
-> times, zs_pool_index==10000 and we overrun the buffer.  Could use
-> kasprintf() in here to fix this.
+Maybe we should rename the function?  To just cpu_post_dma_flush()?
 
-Yes, kasprintf() is better. Although I used snprintf().
-I will change it.
+(Or call a separate function from each site - but that seems unnecessary.)
 
+>> +       if (boot_cpu_type() == CPU_BMIPS3300 ||
+>> +           boot_cpu_type() == CPU_BMIPS4350 ||
+>> +           boot_cpu_type() == CPU_BMIPS4380) {
+>> +               void __iomem *cbr = BMIPS_GET_CBR();
+>> +
+>> +               /* Flush stale data out of the readahead cache */
+>> +               __raw_writel(0x100, cbr + BMIPS_RAC_CONFIG);
 >
-> zs_pool_index isn't a very good name - it doesn't index anything.
-> zs_pool_id would be better.
+> Hm, according to what I have, bits [6:0] of RAC_CONFIG are R/W
+> configuration bits, and this will overwrite them:
+>
+> CFE> dm 0xff400000 4
+> ff400000: 02a07015                                        ..p.
+> CFE> sm 0xff400000 0x100 4
+> ff400000: 02a00000                                        ....
+>
+> (As far as I can tell, RAC was previously enabled for instruction
+> cache misses , and now isn't any more for anything, so effectively
+> disabled?)
+>
+> Also for BMIPS4350 (and I guess 4380) there seems to be a second
+> RAC_CONFIG register at 0x8, I guess for the second thread? Does it
+> need flushing, too?
 
-Okay.
+I'll defer to Florian for the final word since he has access to the
+documentation, but going from memory:
 
->
->> +     struct dentry *entry;
->> +
->> +     if (!zs_stat_root)
->> +             return -ENODEV;
->> +
->> +     pool->index = atomic_inc_return(&zs_pool_index);
->> +     snprintf(name, sizeof(name), "pool-%d", pool->index);
->> +     entry = debugfs_create_dir(name, zs_stat_root);
->> +     if (!entry) {
->> +             pr_warn("pool %d, debugfs dir <%s> creation failed\n",
->> +                             pool->index, name);
->> +             return -ENOMEM;
->
-> Sigh.  The debugfs interface does suck.  Doesn't matter much.
->
->> +     }
->> +     pool->stat_dentry = entry;
->> +
->> +     entry = debugfs_create_file("obj_in_classes", S_IFREG | S_IRUGO,
->> +                     pool->stat_dentry, pool, &zs_stat_size_ops);
->> +     if (!entry) {
->> +             pr_warn("pool %d, debugfs file entry <%s> creation failed\n",
->> +                             pool->index, "obj_in_classes");
->> +             return -ENOMEM;
->> +     }
->> +
->> +     return 0;
->> +}
->>
->> ...
->>
->
+RAC_CONFIG should probably be a read/modify/write.  I'm pretty sure
+there are important RW configuration bits in there.  I may have
+incorrectly translated the "set bit 8" code from here:
+
+https://github.com/Broadcom/stblinux-3.3/blob/master/linux/arch/mips/mm/c-brcmstb.c#L374
+
+There is only one RAC for all CPUs, and we've never had to flush
+anything via CBR+0x08.
+
+BCM7038 had a different flush register, located out in the regular
+system bus (GISB) space, and it didn't require a R/M/W.  That might
+have been what I was thinking of.
+
+Thanks for catching that.
