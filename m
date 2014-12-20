@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaLTDS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 22:18:58 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:50864 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745AbaLTDSr (ORCPT
+	id S1752900AbaLTDUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 22:20:13 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:36691 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383AbaLTDSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 22:18:47 -0500
+	Fri, 19 Dec 2014 22:18:43 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -15,9 +15,9 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v2 3/5] nfs: don't dirty ITER_BVEC pages read through direct I/O
-Date: Fri, 19 Dec 2014 19:18:27 -0800
-Message-Id: <b42b9a61d22260ee44b312d0119f1856e8f5840d.1419044605.git.osandov@osandov.com>
+Subject: [PATCH v2 1/5] iov_iter: add ITER_BVEC helpers
+Date: Fri, 19 Dec 2014 19:18:25 -0800
+Message-Id: <9523f2373dd40ac35760f3fb926a81a321fa4139.1419044605.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
 References: <cover.1419044605.git.osandov@osandov.com>
@@ -27,44 +27,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As with the generic blockdev code, kernel pages shouldn't be dirtied by
-the direct I/O path.
+Add iov_iter_is_bvec and iov_iter_bvec and convert callers.
 
 Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- fs/nfs/direct.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/splice.c         |  7 ++-----
+ include/linux/uio.h |  7 +++++++
+ mm/iov_iter.c       | 12 ++++++++++++
+ mm/page_io.c        | 14 +++++---------
+ 4 files changed, 26 insertions(+), 14 deletions(-)
 
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 10bf072..b6ca65c 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -88,6 +88,7 @@ struct nfs_direct_req {
- 	struct pnfs_ds_commit_info ds_cinfo;	/* Storage for cinfo */
- 	struct work_struct	work;
- 	int			flags;
-+	int			should_dirty;	/* should we mark read pages dirty? */
- #define NFS_ODIRECT_DO_COMMIT		(1)	/* an unstable reply was received */
- #define NFS_ODIRECT_RESCHED_WRITES	(2)	/* write verification failed */
- 	struct nfs_writeverf	verf;		/* unstable write verifier */
-@@ -370,7 +371,8 @@ static void nfs_direct_read_completion(struct nfs_pgio_header *hdr)
- 		struct nfs_page *req = nfs_list_entry(hdr->pages.next);
- 		struct page *page = req->wb_page;
+diff --git a/fs/splice.c b/fs/splice.c
+index 75c6058..7c7176f 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -1006,11 +1006,8 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+ 		}
  
--		if (!PageCompound(page) && bytes < hdr->good_bytes)
-+		if (!PageCompound(page) && bytes < hdr->good_bytes &&
-+		    dreq->should_dirty)
- 			set_page_dirty(page);
- 		bytes += req->wb_bytes;
- 		nfs_list_remove_request(req);
-@@ -542,6 +544,7 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, struct iov_iter *iter,
- 	dreq->inode = inode;
- 	dreq->bytes_left = count;
- 	dreq->ctx = get_nfs_open_context(nfs_file_open_context(iocb->ki_filp));
-+	dreq->should_dirty = !iov_iter_is_bvec(iter);
- 	l_ctx = nfs_get_lock_context(dreq->ctx);
- 	if (IS_ERR(l_ctx)) {
- 		result = PTR_ERR(l_ctx);
+ 		/* ... iov_iter */
+-		from.type = ITER_BVEC | WRITE;
+-		from.bvec = array;
+-		from.nr_segs = n;
+-		from.count = sd.total_len - left;
+-		from.iov_offset = 0;
++		iov_iter_bvec(&from, ITER_BVEC | WRITE, array, n,
++			      sd.total_len - left);
+ 
+ 		/* ... and iocb */
+ 		init_sync_kiocb(&kiocb, out);
+diff --git a/include/linux/uio.h b/include/linux/uio.h
+index 1c5e453..23bb5e4 100644
+--- a/include/linux/uio.h
++++ b/include/linux/uio.h
+@@ -63,6 +63,11 @@ static inline struct iovec iov_iter_iovec(const struct iov_iter *iter)
+ 	};
+ }
+ 
++static inline int iov_iter_is_bvec(const struct iov_iter *iter)
++{
++	return (iter->type & ITER_BVEC) != 0;
++}
++
+ #define iov_for_each(iov, iter, start)				\
+ 	if (!((start).type & ITER_BVEC))			\
+ 	for (iter = (start);					\
+@@ -90,6 +95,8 @@ void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
+ 			unsigned long nr_segs, size_t count);
+ void iov_iter_kvec(struct iov_iter *i, int direction, const struct kvec *iov,
+ 			unsigned long nr_segs, size_t count);
++void iov_iter_bvec(struct iov_iter *i, int direction, const struct bio_vec *bv,
++		   unsigned long nr_segs, size_t count);
+ ssize_t iov_iter_get_pages(struct iov_iter *i, struct page **pages,
+ 			size_t maxsize, unsigned maxpages, size_t *start);
+ ssize_t iov_iter_get_pages_alloc(struct iov_iter *i, struct page ***pages,
+diff --git a/mm/iov_iter.c b/mm/iov_iter.c
+index a1599ca..c975bc4 100644
+--- a/mm/iov_iter.c
++++ b/mm/iov_iter.c
+@@ -513,6 +513,18 @@ void iov_iter_kvec(struct iov_iter *i, int direction,
+ }
+ EXPORT_SYMBOL(iov_iter_kvec);
+ 
++void iov_iter_bvec(struct iov_iter *i, int direction, const struct bio_vec *bv,
++		   unsigned long nr_segs, size_t count)
++{
++	BUG_ON(!(direction & ITER_BVEC));
++	i->type = direction;
++	i->bvec = bv;
++	i->nr_segs = nr_segs;
++	i->iov_offset = 0;
++	i->count = count;
++}
++EXPORT_SYMBOL(iov_iter_bvec);
++
+ unsigned long iov_iter_alignment(const struct iov_iter *i)
+ {
+ 	unsigned long res = 0;
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 955db8b..532a39b 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -264,18 +264,14 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
+ 		struct kiocb kiocb;
+ 		struct file *swap_file = sis->swap_file;
+ 		struct address_space *mapping = swap_file->f_mapping;
++		struct iov_iter from;
+ 		struct bio_vec bv = {
+ 			.bv_page = page,
+-			.bv_len  = PAGE_SIZE,
+-			.bv_offset = 0
++			.bv_len = PAGE_SIZE,
++			.bv_offset = 0,
+ 		};
+-		struct iov_iter from = {
+-			.type = ITER_BVEC | WRITE,
+-			.count = PAGE_SIZE,
+-			.iov_offset = 0,
+-			.nr_segs = 1,
+-		};
+-		from.bvec = &bv;	/* older gcc versions are broken */
++
++		iov_iter_bvec(&from, ITER_BVEC | WRITE, &bv, 1, PAGE_SIZE);
+ 
+ 		init_sync_kiocb(&kiocb, swap_file);
+ 		kiocb.ki_pos = page_file_offset(page);
 -- 
 2.2.1
 
