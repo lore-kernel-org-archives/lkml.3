@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaLTQnR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:43:17 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:40771 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaLTQnQ (ORCPT
+	id S1753373AbaLTQoK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:44:10 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:41289 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140AbaLTQoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:43:16 -0500
+	Sat, 20 Dec 2014 11:44:07 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+To: Solomon Peachy <pizza@shaftnet.org>,
+        "John W. Linville" <linville@tuxdriver.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: ice1712: wm8776.c:  Remove some unused functions
-Date: Sat, 20 Dec 2014 17:46:02 +0100
-Message-Id: <1419093962-8789-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net: wireless: cw1200: queue.c:  Remove unused function
+Date: Sat, 20 Dec 2014 17:46:54 +0100
+Message-Id: <1419094014-8945-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-snd_wm8776_set_master_mode() snd_wm8776_set_adc_if() snd_wm8776_set_dac_if()
+Remove the function cw1200_queue_requeue_all() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- sound/pci/ice1712/wm8776.c |   15 ---------------
- sound/pci/ice1712/wm8776.h |    3 ---
- 2 files changed, 18 deletions(-)
+ drivers/net/wireless/cw1200/queue.c |   27 ---------------------------
+ drivers/net/wireless/cw1200/queue.h |    1 -
+ 2 files changed, 28 deletions(-)
 
-diff --git a/sound/pci/ice1712/wm8776.c b/sound/pci/ice1712/wm8776.c
-index e66c0da..ebd2fe4 100644
---- a/sound/pci/ice1712/wm8776.c
-+++ b/sound/pci/ice1712/wm8776.c
-@@ -452,21 +452,6 @@ void snd_wm8776_resume(struct snd_wm8776 *wm)
- 		snd_wm8776_write(wm, i, wm->regs[i]);
+diff --git a/drivers/net/wireless/cw1200/queue.c b/drivers/net/wireless/cw1200/queue.c
+index 9c3925f..0aaa0b4 100644
+--- a/drivers/net/wireless/cw1200/queue.c
++++ b/drivers/net/wireless/cw1200/queue.c
+@@ -415,33 +415,6 @@ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packet_id)
+ 	return ret;
  }
  
--void snd_wm8776_set_dac_if(struct snd_wm8776 *wm, u16 dac)
+-int cw1200_queue_requeue_all(struct cw1200_queue *queue)
 -{
--	snd_wm8776_write(wm, WM8776_REG_DACIFCTRL, dac);
+-	struct cw1200_queue_item *item, *tmp;
+-	struct cw1200_queue_stats *stats = queue->stats;
+-	spin_lock_bh(&queue->lock);
+-
+-	list_for_each_entry_safe_reverse(item, tmp, &queue->pending, head) {
+-		--queue->num_pending;
+-		++queue->link_map_cache[item->txpriv.link_id];
+-
+-		spin_lock_bh(&stats->lock);
+-		++stats->num_queued;
+-		++stats->link_map_cache[item->txpriv.link_id];
+-		spin_unlock_bh(&stats->lock);
+-
+-		++item->generation;
+-		item->packet_id = cw1200_queue_mk_packet_id(queue->generation,
+-							    queue->queue_id,
+-							    item->generation,
+-							    item - queue->pool);
+-		list_move(&item->head, &queue->queue);
+-	}
+-	spin_unlock_bh(&queue->lock);
+-
+-	return 0;
 -}
 -
--void snd_wm8776_set_adc_if(struct snd_wm8776 *wm, u16 adc)
--{
--	snd_wm8776_write(wm, WM8776_REG_ADCIFCTRL, adc);
--}
--
--void snd_wm8776_set_master_mode(struct snd_wm8776 *wm, u16 mode)
--{
--	snd_wm8776_write(wm, WM8776_REG_MSTRCTRL, mode);
--}
--
- void snd_wm8776_set_power(struct snd_wm8776 *wm, u16 power)
+ int cw1200_queue_remove(struct cw1200_queue *queue, u32 packet_id)
  {
- 	snd_wm8776_write(wm, WM8776_REG_PWRDOWN, power);
-diff --git a/sound/pci/ice1712/wm8776.h b/sound/pci/ice1712/wm8776.h
-index 93a2d69..42acef0 100644
---- a/sound/pci/ice1712/wm8776.h
-+++ b/sound/pci/ice1712/wm8776.h
-@@ -216,9 +216,6 @@ struct snd_wm8776 {
- 
- void snd_wm8776_init(struct snd_wm8776 *wm);
- void snd_wm8776_resume(struct snd_wm8776 *wm);
--void snd_wm8776_set_dac_if(struct snd_wm8776 *wm, u16 dac);
--void snd_wm8776_set_adc_if(struct snd_wm8776 *wm, u16 adc);
--void snd_wm8776_set_master_mode(struct snd_wm8776 *wm, u16 mode);
- void snd_wm8776_set_power(struct snd_wm8776 *wm, u16 power);
- void snd_wm8776_volume_restore(struct snd_wm8776 *wm);
- int snd_wm8776_build_controls(struct snd_wm8776 *wm);
+ 	int ret = 0;
+diff --git a/drivers/net/wireless/cw1200/queue.h b/drivers/net/wireless/cw1200/queue.h
+index 119f9c7..45802ea 100644
+--- a/drivers/net/wireless/cw1200/queue.h
++++ b/drivers/net/wireless/cw1200/queue.h
+@@ -88,7 +88,6 @@ int cw1200_queue_get(struct cw1200_queue *queue,
+ 		     struct ieee80211_tx_info **tx_info,
+ 		     const struct cw1200_txpriv **txpriv);
+ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packet_id);
+-int cw1200_queue_requeue_all(struct cw1200_queue *queue);
+ int cw1200_queue_remove(struct cw1200_queue *queue,
+ 			u32 packet_id);
+ int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packet_id,
 -- 
 1.7.10.4
 
