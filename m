@@ -1,247 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaLTBm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 20:42:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792AbaLTBm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 20:42:56 -0500
-Date: Fri, 19 Dec 2014 20:42:44 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Andrew Duggan <aduggan@synaptics.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/3] HID: rmi: Support non rmi devices by passing events
- to hid-input
-Message-ID: <20141220014244.GC32189@mail.corp.redhat.com>
-References: <1419029143-20484-1-git-send-email-aduggan@synaptics.com>
+	id S1752802AbaLTBng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 20:43:36 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:60369 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaLTBnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 20:43:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1419029143-20484-1-git-send-email-aduggan@synaptics.com>
+In-Reply-To: <20141220002303.GD11975@blaptop>
+References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
+	<20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
+	<20141219233937.GA11975@blaptop>
+	<20141219154548.3aa4cc02b3322f926aa4c1d6@linux-foundation.org>
+	<20141219235852.GB11975@blaptop>
+	<20141219160648.5cea8a6b0c764caa6100a585@linux-foundation.org>
+	<20141220001043.GC11975@blaptop>
+	<20141219161756.bcf7421acb4bc7a286c1afa3@linux-foundation.org>
+	<20141220002303.GD11975@blaptop>
+Date: Sat, 20 Dec 2014 09:43:34 +0800
+Message-ID: <CADAEsF-=RwwR2D_LzhVYKhfmfPCsQE73bJYyH=tjn4BtHVrdew@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 19 2014 or thereabouts, Andrew Duggan wrote:
-> Allowing hid-rmi to bind to non rmi devices allows us to support composite USB
-> devices which contain several HID devices one of which is a HID touchpad.
-> Since all of the devices have the same VID and PID we can add the device
-> to the hid_have_special_driver list and have hid-rmi handle all of the devices.
-> Then hid-rmi's probe can look for the rmi specific HID report IDs and decide if
-> it should handle the device as a rmi device or simply report that the events
-> needs additional processing.
-> 
-> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
-> ---
-> This patch series is my second attempt at getting the hid-rmi driver working on
-> the Razer Blade 14 based on Benjamin's comments. I decided to break it up into
-> three separate patches. This one allows hid-rmi to bind to all of the devices.
-> Instead of adding a quirk I just look at the report IDs to see if it should
-> do rmi or not.
+2014-12-20 8:23 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> On Fri, Dec 19, 2014 at 04:17:56PM -0800, Andrew Morton wrote:
+>> On Sat, 20 Dec 2014 09:10:43 +0900 Minchan Kim <minchan@kernel.org> wrote:
+>>
+>> > > It involves rehashing a lengthy argument with Greg.
+>> >
+>> > Okay. Then, Ganesh,
+>> > please add warn message about duplicaed name possibility althoug
+>> > it's unlikely as it is.
+>>
+>> Oh, getting EEXIST is easy with this patch.  Just create and destroy a
+>> pool 2^32 times and the counter wraps ;) It's hardly a serious issue
+>> for a debugging patch.
+>
+> I meant that I wanted to change from index to name passed from caller like this
+>
+> zram:
+>         zs_create_pool(GFP_NOIO | __GFP_HIGHMEM, zram->disk->first_minor);
+>
+> So, duplication should be rare. :)
 
-Hi Andrew,
+We still can not know whether the name is duplicated if we do not
+change the debugfs API.
+The API does not return the errno to us.
 
-That's a good job on this series. I like it better than the previous one.
+How about just zsmalloc decides the name of the pool-id, like pool-x.
+When the pool-id reaches
+0xffff.ffff, we print warn message about duplicated name, and stop
+creating the debugfs entry
+for the user.
 
-I have a concern in 2/3 and a nitpick in 3/3.
-
-But this one (1/3) is
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-
-> 
->  drivers/hid/hid-rmi.c | 93 +++++++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 76 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-> index b51200f..018f80f 100644
-> --- a/drivers/hid/hid-rmi.c
-> +++ b/drivers/hid/hid-rmi.c
-> @@ -33,6 +33,9 @@
->  #define RMI_READ_DATA_PENDING		BIT(1)
->  #define RMI_STARTED			BIT(2)
->  
-> +/* device flags */
-> +#define RMI_DEVICE			BIT(0)
-> +
->  enum rmi_mode_type {
->  	RMI_MODE_OFF			= 0,
->  	RMI_MODE_ATTN_REPORTS		= 1,
-> @@ -118,6 +121,8 @@ struct rmi_data {
->  
->  	struct work_struct reset_work;
->  	struct hid_device *hdev;
-> +
-> +	unsigned long device_flags;
->  };
->  
->  #define RMI_PAGE(addr) (((addr) >> 8) & 0xff)
-> @@ -452,9 +457,23 @@ static int rmi_raw_event(struct hid_device *hdev,
->  		return rmi_read_data_event(hdev, data, size);
->  	case RMI_ATTN_REPORT_ID:
->  		return rmi_input_event(hdev, data, size);
-> -	case RMI_MOUSE_REPORT_ID:
-> +	default:
-> +		return 1;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int rmi_event(struct hid_device *hdev, struct hid_field *field,
-> +			struct hid_usage *usage, __s32 value)
-> +{
-> +	struct rmi_data *data = hid_get_drvdata(hdev);
-> +
-> +	if ((data->device_flags & RMI_DEVICE) &&
-> +	    (field->application == HID_GD_POINTER ||
-> +	    field->application == HID_GD_MOUSE)) {
->  		rmi_schedule_reset(hdev);
-> -		break;
-> +		return 1;
->  	}
->  
->  	return 0;
-> @@ -856,6 +875,9 @@ static void rmi_input_configured(struct hid_device *hdev, struct hid_input *hi)
->  	if (ret)
->  		return;
->  
-> +	if (!(data->device_flags & RMI_DEVICE))
-> +		return;
-> +
->  	/* Allow incoming hid reports */
->  	hid_device_io_start(hdev);
->  
-> @@ -914,8 +936,33 @@ static int rmi_input_mapping(struct hid_device *hdev,
->  		struct hid_input *hi, struct hid_field *field,
->  		struct hid_usage *usage, unsigned long **bit, int *max)
->  {
-> -	/* we want to make HID ignore the advertised HID collection */
-> -	return -1;
-> +	struct rmi_data *data = hid_get_drvdata(hdev);
-> +
-> +	/*
-> +	 * we want to make HID ignore the advertised HID collection
-> +	 * for RMI deivces
-> +	 */
-> +	if (data->device_flags & RMI_DEVICE)
-> +		return -1;
-> +
-> +	return 0;
-> +}
-> +
-> +static int rmi_check_valid_report_id(struct hid_device *hdev, unsigned type,
-> +		unsigned id, struct hid_report **report)
-> +{
-> +	int i;
-> +
-> +	*report = hdev->report_enum[type].report_id_hash[id];
-> +	if (*report) {
-> +		for (i = 0; i < (*report)->maxfield; i++) {
-> +			unsigned app = (*report)->field[i]->application;
-> +			if ((app & HID_USAGE_PAGE) >= HID_UP_MSVENDOR)
-> +				return 1;
-> +		}
-> +	}
-> +
-> +	return 0;
->  }
->  
->  static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
-> @@ -925,6 +972,7 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  	size_t alloc_size;
->  	struct hid_report *input_report;
->  	struct hid_report *output_report;
-> +	struct hid_report *feature_report;
->  
->  	data = devm_kzalloc(&hdev->dev, sizeof(struct rmi_data), GFP_KERNEL);
->  	if (!data)
-> @@ -943,27 +991,35 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  		return ret;
->  	}
->  
-> -	input_report = hdev->report_enum[HID_INPUT_REPORT]
-> -			.report_id_hash[RMI_ATTN_REPORT_ID];
-> -	if (!input_report) {
-> -		hid_err(hdev, "device does not have expected input report\n");
-> -		ret = -ENODEV;
-> -		return ret;
-> +	/*
-> +	 * Check for the RMI specific report ids. If they are misisng
-> +	 * simply return and let the events be processed by hid-input
-> +	 */
-> +	if (!rmi_check_valid_report_id(hdev, HID_FEATURE_REPORT,
-> +	    RMI_SET_RMI_MODE_REPORT_ID, &feature_report)) {
-> +		hid_dbg(hdev, "device does not have set mode feature report\n");
-> +		goto start;
-> +	}
-> +
-> +	if (!rmi_check_valid_report_id(hdev, HID_INPUT_REPORT,
-> +	    RMI_ATTN_REPORT_ID, &input_report)) {
-> +		hid_dbg(hdev, "device does not have attention input report\n");
-> +		goto start;
->  	}
->  
->  	data->input_report_size = (input_report->size >> 3) + 1 /* report id */;
-
-While you are at sending patches to fix hid-rmi, could you also try to
-use hid_report_len() instead of manually computing the size (in a
-separate patch if possible)?
-I think the result should be the same, but I'd prefer you  to double
-check.
-
->  
-> -	output_report = hdev->report_enum[HID_OUTPUT_REPORT]
-> -			.report_id_hash[RMI_WRITE_REPORT_ID];
-> -	if (!output_report) {
-> -		hid_err(hdev, "device does not have expected output report\n");
-> -		ret = -ENODEV;
-> -		return ret;
-> +	if (!rmi_check_valid_report_id(hdev, HID_OUTPUT_REPORT,
-> +	    RMI_WRITE_REPORT_ID, &output_report)) {
-> +		hid_dbg(hdev,
-> +			"device does not have rmi write output report\n");
-> +		goto start;
->  	}
->  
->  	data->output_report_size = (output_report->size >> 3)
->  					+ 1 /* report id */;
->  
-
-ditto. hid_report_len() would be a nice cleaning.
-
-> +	data->device_flags |= RMI_DEVICE;
->  	alloc_size = data->output_report_size + data->input_report_size;
->  
->  	data->writeReport = devm_kzalloc(&hdev->dev, alloc_size, GFP_KERNEL);
-> @@ -978,13 +1034,15 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  
->  	mutex_init(&data->page_mutex);
->  
-> +start:
->  	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
->  	if (ret) {
->  		hid_err(hdev, "hw start failed\n");
->  		return ret;
->  	}
->  
-> -	if (!test_bit(RMI_STARTED, &data->flags))
-> +	if ((data->device_flags & RMI_DEVICE) &&
-> +	    !test_bit(RMI_STARTED, &data->flags))
->  		/*
->  		 * The device maybe in the bootloader if rmi_input_configured
->  		 * failed to find F11 in the PDT. Print an error, but don't
-> @@ -1017,6 +1075,7 @@ static struct hid_driver rmi_driver = {
->  	.id_table		= rmi_id,
->  	.probe			= rmi_probe,
->  	.remove			= rmi_remove,
-> +	.event			= rmi_event,
->  	.raw_event		= rmi_raw_event,
->  	.input_mapping		= rmi_input_mapping,
->  	.input_configured	= rmi_input_configured,
-> -- 
-> 2.1.0
-> 
-
-Cheers,
-Benjamin
+Thanks.
