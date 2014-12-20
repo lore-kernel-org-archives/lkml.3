@@ -1,94 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaLTTF7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 14:05:59 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:36514 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaLTTF5 convert rfc822-to-8bit (ORCPT
+	id S1751602AbaLTTax (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 14:30:53 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:41915 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaLTTav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 14:05:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <1419095850-10436-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419095850-10436-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Sat, 20 Dec 2014 20:05:55 +0100
-Message-ID: <CA+M3ks7W0TudwMeesX-Vw7EZKPt4ZLYjf7ZyBeomSdYCrgxx0g@mail.gmail.com>
-Subject: Re: [PATCH] gpu: drm: sti: sti_drm_crtc.c: Remove unused function
-From: Benjamin Gaignard <benjamin.gaignard@linaro.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: David Airlie <airlied@linux.ie>, Rob Clark <robdclark@gmail.com>,
-        Dave Airlie <airlied@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 20 Dec 2014 14:30:51 -0500
+Date: Sat, 20 Dec 2014 14:30:48 -0500 (EST)
+Message-Id: <20141220.143048.1792314440308107898.davem@davemloft.net>
+To: elfring@users.sourceforge.net
+Cc: sergei.shtylyov@cogentembedded.com, paulus@samba.org,
+        linux-ppp@vger.kernel.org, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <54958B8C.7010105@users.sourceforge.net>
+References: <54930D7C.3000901@users.sourceforge.net>
+	<20141218.122556.2148647081075440879.davem@davemloft.net>
+	<54958B8C.7010105@users.sourceforge.net>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 20 Dec 2014 11:30:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Date: Sat, 20 Dec 2014 15:45:32 +0100
 
-Please do not apply this patch, this function is use in the next I have submit:
-http://lists.freedesktop.org/archives/dri-devel/2014-December/074073.html
+> I hope that you will find a bit time and patience again
+> to clarify affected implementation details in a safer and
+> unambiguous way.
 
-Regards,
-Benjamin
-
-
-2014-12-20 18:17 GMT+01:00 Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se>:
-> Remove the function sti_drm_crtc_is_main() that is not used anywhere.
->
-> This was partially found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/gpu/drm/sti/sti_drm_crtc.c |   10 ----------
->  drivers/gpu/drm/sti/sti_drm_crtc.h |    1 -
->  2 files changed, 11 deletions(-)
->
-> diff --git a/drivers/gpu/drm/sti/sti_drm_crtc.c b/drivers/gpu/drm/sti/sti_drm_crtc.c
-> index d2ae0c0..be53e35 100644
-> --- a/drivers/gpu/drm/sti/sti_drm_crtc.c
-> +++ b/drivers/gpu/drm/sti/sti_drm_crtc.c
-> @@ -389,16 +389,6 @@ static struct drm_crtc_funcs sti_crtc_funcs = {
->         .set_property = sti_drm_crtc_set_property,
->  };
->
-> -bool sti_drm_crtc_is_main(struct drm_crtc *crtc)
-> -{
-> -       struct sti_mixer *mixer = to_sti_mixer(crtc);
-> -
-> -       if (mixer->id == STI_MIXER_MAIN)
-> -               return true;
-> -
-> -       return false;
-> -}
-> -
->  int sti_drm_crtc_init(struct drm_device *drm_dev, struct sti_mixer *mixer,
->                 struct drm_plane *primary, struct drm_plane *cursor)
->  {
-> diff --git a/drivers/gpu/drm/sti/sti_drm_crtc.h b/drivers/gpu/drm/sti/sti_drm_crtc.h
-> index caca8b1..ddae8fe 100644
-> --- a/drivers/gpu/drm/sti/sti_drm_crtc.h
-> +++ b/drivers/gpu/drm/sti/sti_drm_crtc.h
-> @@ -17,6 +17,5 @@ int sti_drm_crtc_enable_vblank(struct drm_device *dev, int crtc);
->  void sti_drm_crtc_disable_vblank(struct drm_device *dev, int crtc);
->  int sti_drm_crtc_vblank_cb(struct notifier_block *nb,
->                 unsigned long event, void *data);
-> -bool sti_drm_crtc_is_main(struct drm_crtc *drm_crtc);
->
->  #endif
-> --
-> 1.7.10.4
->
-
-
-
--- 
-Benjamin Gaignard
-
-Graphic Working Group
-
-Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro: Facebook | Twitter | Blog
+Sorry, another developer will have to hold your hand, as I
+said I already invested too much time into this.
