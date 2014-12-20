@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaLTQut (ORCPT <rfc822;w@1wt.eu>);
+	id S1753420AbaLTQux (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:50:53 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50236 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402AbaLTQut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 20 Dec 2014 11:50:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56305 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753104AbaLTQuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:50:46 -0500
-Date: Sat, 20 Dec 2014 11:49:55 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141220164955.GA6315@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-	Peter Anvin <hpa@linux.intel.com>
-References: <CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
- <20141219035859.GA20022@redhat.com>
- <20141219040308.GB20022@redhat.com>
- <CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
- <20141219145528.GC13404@redhat.com>
- <CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
- <CA+55aFyb6N47N2Jg75EmRxDTjFF2y_oy4dHNDeW_dyM4PUTDrA@mail.gmail.com>
- <CA+55aFzt_4Zrnek6381JFzm+3iV9d=JAeyx+=E9F8BeiWFb56g@mail.gmail.com>
- <20141219205435.GA24499@redhat.com>
- <CA+55aFyafdtY9ZxNHx2LNRyD2Krn9jgfhOji-8P5vebAzEbNiw@mail.gmail.com>
+Date: Sat, 20 Dec 2014 08:50:45 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Finn Thain <fthain@telegraphics.com.au>,
+        Michael Schmitz <schmitzmic@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scsi: arm: cumana_1.c:  Remove unused function
+Message-ID: <20141220165045.GA5013@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+	Finn Thain <fthain@telegraphics.com.au>,
+	Michael Schmitz <schmitzmic@gmail.com>,
+	Russell King <linux@arm.linux.org.uk>,
+	"James E.J. Bottomley" <JBottomley@parallels.com>,
+	linux-scsi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	linux-kernel@vger.kernel.org
+References: <1419093375-8016-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyafdtY9ZxNHx2LNRyD2Krn9jgfhOji-8P5vebAzEbNiw@mail.gmail.com>
+In-Reply-To: <1419093375-8016-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 02:05:20PM -0800, Linus Torvalds wrote:
- > > Right now I'm doing Chris' idea of "turn debugging back on,
- > > and try without serial console".  Shall I try your suggestion
- > > on top of that ?
- > 
- > Might as well. I doubt it really will make any difference, but I also
- > don't think it will interact badly in any way, so..
+On Sat, Dec 20, 2014 at 05:36:15PM +0100, Rickard Strandqvist wrote:
+> Remove the function cumanascsi_setup() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/scsi/arm/cumana_1.c |    4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/drivers/scsi/arm/cumana_1.c b/drivers/scsi/arm/cumana_1.c
+> index 8ef810a..7c90d9c 100644
+> --- a/drivers/scsi/arm/cumana_1.c
+> +++ b/drivers/scsi/arm/cumana_1.c
+> @@ -38,10 +38,6 @@
+>  
+>  #include "../NCR5380.h"
+>  
+> -void cumanascsi_setup(char *str, int *ints)
+> -{
+> -}
+> -
+>  const char *cumanascsi_info(struct Scsi_Host *spnt)
+>  {
+>  	return "";
+[...]
 
-It locked up. It's not even responding to icmp.
-It might be Monday before I can see what's on the console.
+You can blame Linus for this one :-)
 
-	Dave
+~/linux-next$ git blame -L 38,40 drivers/scsi/arm/cumana_1.c 
+^1da177e (Linus Torvalds 2005-04-16 15:20:36 -0700 38) void
+cumanascsi_setup(char *str, int *ints)
+^1da177e (Linus Torvalds 2005-04-16 15:20:36 -0700 39) {
+^1da177e (Linus Torvalds 2005-04-16 15:20:36 -0700 40) }
+~/linux-next$
 
-
+-- 
+- Jeremiah Mahler
