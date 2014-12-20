@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200AbaLTPxQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 10:53:16 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42362 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752448AbaLTPxM (ORCPT
+	id S1753143AbaLTQAS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:00:18 -0500
+Received: from mail-pa0-f65.google.com ([209.85.220.65]:60424 "EHLO
+	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412AbaLTQAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 10:53:12 -0500
-Date: Sat, 20 Dec 2014 15:52:54 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Steve Longerbeam <slongerbeam@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
-        Jiada Wang <jiada_wang@mentor.com>,
-        Steve Longerbeam <steve_longerbeam@mentor.com>
-Subject: Re: [PATCH v2 4/7] imx-drm: ipuv3-crtc: Implement mode_fixup
-Message-ID: <20141220155254.GJ11285@n2100.arm.linux.org.uk>
-References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
- <1418954426-21909-5-git-send-email-steve_longerbeam@mentor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418954426-21909-5-git-send-email-steve_longerbeam@mentor.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 20 Dec 2014 11:00:15 -0500
+From: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, jmmahler@gmail.com
+Cc: Larry.Finger@lwfinger.net, navin.patidar@gmail.com,
+        ebru.akagunduz@gmail.com, paulmck@linux.vnet.ibm.com,
+        heenasirwani@gmail.com, cengelma@gmx.at, standby24x7@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Gangadhar Vukkesala <gangs.freelancer@gmail.com>
+Subject: [PATCH v4] staging: rtl8188eu: Fixed a space coding style issue.
+Date: Sat, 20 Dec 2014 21:29:47 +0530
+Message-Id: <1419091187-2775-1-git-send-email-gangs.freelancer@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 06:00:23PM -0800, Steve Longerbeam wrote:
-> Ask the IPU display interface, via ipu_di_adjust_videomode(), to
-> adjust a video mode to meet any DI restrictions. The function takes
-> a subsystem independent videomode, so the drm_display_mode must be
-> converted to videomode first, and then the adjusted mode converted
-> back to a drm_display_mode.
+Fixed a space coding style issue which was found when running checkpatch.pl
+script on rtw_ap.c.
 
-What is the reason to use videomode (apart from it being subsystem
-independent)?  Do we forsee implementation of other output subsystems
-for the IPU?
+Signed-off-by: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_ap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/staging/rtl8188eu/core/rtw_ap.c b/drivers/staging/rtl8188eu/core/rtw_ap.c
+index d61842e..da19145 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_ap.c
++++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
+@@ -509,7 +509,7 @@ void add_RATid(struct adapter *padapter, struct sta_info *psta, u8 rssi_level)
+ 		tx_ra_bitmap |= ((raid<<28)&0xf0000000);
+ 
+ 		DBG_88E("%s => mac_id:%d , raid:%d , bitmap = 0x%x, arg = 0x%x\n",
+-			__func__ , psta->mac_id, raid , tx_ra_bitmap, arg);
++			__func__, psta->mac_id, raid, tx_ra_bitmap, arg);
+ 
+ 		/* bitmap[0:27] = tx_rate_bitmap */
+ 		/* bitmap[28:31]= Rate Adaptive id */
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Gangadhar V
+
