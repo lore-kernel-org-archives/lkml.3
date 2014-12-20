@@ -1,35 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610AbaLTCZD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 21:25:03 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:47735 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaLTCZB (ORCPT
+	id S1752764AbaLTC0I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 21:26:08 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:65453 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaLTC0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 21:25:01 -0500
+	Fri, 19 Dec 2014 21:26:07 -0500
+Date: Sat, 20 Dec 2014 11:25:57 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
+Message-ID: <20141220022557.GA19822@blaptop>
+References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
+ <20141219233937.GA11975@blaptop>
+ <20141219154548.3aa4cc02b3322f926aa4c1d6@linux-foundation.org>
+ <20141219235852.GB11975@blaptop>
+ <20141219160648.5cea8a6b0c764caa6100a585@linux-foundation.org>
+ <20141220001043.GC11975@blaptop>
+ <20141219161756.bcf7421acb4bc7a286c1afa3@linux-foundation.org>
+ <20141220002303.GD11975@blaptop>
+ <CADAEsF-=RwwR2D_LzhVYKhfmfPCsQE73bJYyH=tjn4BtHVrdew@mail.gmail.com>
 MIME-Version: 1.0
-Date: Fri, 19 Dec 2014 18:25:00 -0800
-X-Google-Sender-Auth: y2a19pv7lfzi8IGUtmcdXE--ers
-Message-ID: <CA+55aFzktMNKX=9y3iGpf9a7JOH255cfZkxVbmDgUPmABxbxCA@mail.gmail.com>
-Subject: Merge window closing..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADAEsF-=RwwR2D_LzhVYKhfmfPCsQE73bJYyH=tjn4BtHVrdew@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just FYI - I've got three more pull requests pending (two kbuild ones,
-and the READ_ONCE() split-up), and I'll probably delay them until
-tomorrow because I have a nasty headache, but I'm planning on closing
-the merge window after that.
+Hey Ganesh,
 
-In other words - if any of you were planning on sending some
-last-minute pull requests on the weekend before xmas, you had either
-have some seriously good excuses, or you can just say "yeah, they
-weren't that critical, I'll do it in a timely manner _next_ merge
-window instead".
+On Sat, Dec 20, 2014 at 09:43:34AM +0800, Ganesh Mahendran wrote:
+> 2014-12-20 8:23 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> > On Fri, Dec 19, 2014 at 04:17:56PM -0800, Andrew Morton wrote:
+> >> On Sat, 20 Dec 2014 09:10:43 +0900 Minchan Kim <minchan@kernel.org> wrote:
+> >>
+> >> > > It involves rehashing a lengthy argument with Greg.
+> >> >
+> >> > Okay. Then, Ganesh,
+> >> > please add warn message about duplicaed name possibility althoug
+> >> > it's unlikely as it is.
+> >>
+> >> Oh, getting EEXIST is easy with this patch.  Just create and destroy a
+> >> pool 2^32 times and the counter wraps ;) It's hardly a serious issue
+> >> for a debugging patch.
+> >
+> > I meant that I wanted to change from index to name passed from caller like this
+> >
+> > zram:
+> >         zs_create_pool(GFP_NOIO | __GFP_HIGHMEM, zram->disk->first_minor);
+> >
+> > So, duplication should be rare. :)
+> 
+> We still can not know whether the name is duplicated if we do not
+> change the debugfs API.
+> The API does not return the errno to us.
+> 
+> How about just zsmalloc decides the name of the pool-id, like pool-x.
+> When the pool-id reaches
+> 0xffff.ffff, we print warn message about duplicated name, and stop
+> creating the debugfs entry
+> for the user.
 
-Just a heads up. You've been warned.
+The idea is from the developer point of view to implement thing easy
+but my point is we should take care of user(ie, admin) rather than
+developer(ie, we).
 
-                       Linus
+For user, /sys/kernel/debug/zsmalloc/zram0 would be more
+straightforward and even it doesn't need zram to export
+/sys/block/zram0/pool-id.
+
+Thanks.
+
+> 
+> Thanks.
