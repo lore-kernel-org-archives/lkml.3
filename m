@@ -1,88 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342AbaLTVBx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 16:01:53 -0500
-Received: from mail-bn1bbn0101.outbound.protection.outlook.com ([157.56.111.101]:62537
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752011AbaLTVBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 16:01:51 -0500
-X-WSS-ID: 0NGWF1K-07-758-02
-X-M-MSG: 
-From: Oded Gabbay <oded.gabbay@amd.com>
-To: <dri-devel@lists.freedesktop.org>
-CC: David Airlie <airlied@linux.ie>, Jerome Glisse <j.glisse@gmail.com>,
-        Joerg Roedel <joro@8bytes.org>, <linux-kernel@vger.kernel.org>,
-        "John Bridgman" <John.Bridgman@amd.com>, <Alexander.Deucher@amd.com>
-Subject: [PATCH 1/3] amdkfd: Don't clear *kfd2kgd on kfd_module_init
-Date: Sat, 20 Dec 2014 22:46:12 +0200
-Message-ID: <1419108374-7020-2-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com>
-References: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com>
+	id S1752085AbaLTVN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 16:13:28 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:39041 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaLTVNY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 16:13:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(21056001)(46102003)(97736003)(76176999)(50986999)(99396003)(89996001)(48376002)(77156002)(62966003)(50466002)(87936001)(101416001)(20776003)(64706001)(120916001)(2950100001)(4396001)(50226001)(53416004)(68736005)(77096005)(84676001)(31966008)(19580405001)(47776003)(106466001)(92566001)(110136001)(105586002)(107046002)(229853001)(19580395003)(36756003)(86362001)(33646002)(2351001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB197;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR02MB197;
-X-Forefront-PRVS: 0431F981D8
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Dec 2014 20:46:35.1091
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR02MB197
+In-Reply-To: <0c0d14ed78e78312ee1e41a65ddc901a73902a26.1419096718.git.luto@amacapital.net>
+References: <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
+	<0c0d14ed78e78312ee1e41a65ddc901a73902a26.1419096718.git.luto@amacapital.net>
+Date: Sat, 20 Dec 2014 13:13:22 -0800
+X-Google-Sender-Auth: iTIQUFciGunj_YeL1fGwOCVfxLY
+Message-ID: <CAGXu5jLKg5pg7ZviKA7P6z5Wik4E8cqhRwFNAxQ6ZYoMftvUfw@mail.gmail.com>
+Subject: Re: [PATCH v2] x86_64, vdso: Fix the vdso address randomization algorithm
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "# 3.4.x" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When amdkfd and radeon are compiled inside the kernel image (not as modules),
-radeon will load before amdkfd and will set *kfd2kgd to its interface
-structure. Therefore, we must not set *kfd2kgd to NULL when amdkfd is loaded
-because it will override radeon's initialization and cause kernel BUG.
+On Sat, Dec 20, 2014 at 9:40 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> The theory behind vdso randomization is that it's mapped at a random
+> offset above the top of the stack.  To avoid wasting a page of
+> memory for an extra page table, the vdso isn't supposed to extend
+> past the lowest PMD into which it can fit.  Other than that, the
+> address should be a uniformly distributed address that meets all of
+> the alignment requirements.
+>
+> The current algorithm is buggy: the vdso has about a 50% probability
+> of being at the very end of a PMD.  The current algorithm also has a
+> decent chance of failing outright due to incorrect handling of the
+> case where the top of the stack is near the top of its PMD.
+>
+> This fixes the implementation.  The paxtest estimate of vdso
+> "randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
+> don't know what the paxtest code is actually calculating.)
+>
+> It's worth noting that this algorithm is inherently biased: the vdso
+> is more likely to end up near the end of its PMD than near the
+> beginning.  Ideally we would either nix the PMD sharing requirement
+> or jointly randomize the vdso and the stack to reduce the bias.
+>
+> In the mean time, this is a considerable improvement with basically
+> no risk of compatibility issues, since the allowed outputs of the
+> algorithm are unchanged.
+>
+> As an easy test, doing this:
+>
+> for i in `seq 10000`
+>   do grep -P vdso /proc/self/maps |cut -d- -f1
+> done |sort |uniq -d
+>
+> used to produce lots of output (1445 lines on my most recent run).
+> A tiny subset looks like this:
+>
+> 7fffdfffe000
+> 7fffe01fe000
+> 7fffe05fe000
+> 7fffe07fe000
+> 7fffe09fe000
+> 7fffe0bfe000
+> 7fffe0dfe000
+>
+> Note the suspicious fe000 endings.  With the fix, I get a much more
+> palatable 76 repeated addresses.
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
----
- drivers/gpu/drm/amd/amdkfd/kfd_module.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Thanks for fixing this! :)
 
-diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_module.c b/drivers/gpu/drm/amd/amdkfd/kfd_module.c
-index 95d5af1..236562f 100644
---- a/drivers/gpu/drm/amd/amdkfd/kfd_module.c
-+++ b/drivers/gpu/drm/amd/amdkfd/kfd_module.c
-@@ -34,7 +34,7 @@
- #define KFD_DRIVER_MINOR	7
- #define KFD_DRIVER_PATCHLEVEL	0
- 
--const struct kfd2kgd_calls *kfd2kgd;
-+const struct kfd2kgd_calls *kfd2kgd = NULL;
- static const struct kgd2kfd_calls kgd2kfd = {
- 	.exit		= kgd2kfd_exit,
- 	.probe		= kgd2kfd_probe,
-@@ -84,14 +84,13 @@ EXPORT_SYMBOL(kgd2kfd_init);
- 
- void kgd2kfd_exit(void)
- {
-+	kfd2kgd = NULL;
- }
- 
- static int __init kfd_module_init(void)
- {
- 	int err;
- 
--	kfd2kgd = NULL;
--
- 	/* Verify module parameters */
- 	if ((sched_policy < KFD_SCHED_POLICY_HWS) ||
- 		(sched_policy > KFD_SCHED_POLICY_NO_HWS)) {
+Reviewed-by: Kees Cook <keescook@chromium.org>
+
+-Kees
+
+> ---
+>  arch/x86/vdso/vma.c | 45 +++++++++++++++++++++++++++++----------------
+>  1 file changed, 29 insertions(+), 16 deletions(-)
+>
+> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+> index 009495b9ab4b..1c9f750c3859 100644
+> --- a/arch/x86/vdso/vma.c
+> +++ b/arch/x86/vdso/vma.c
+> @@ -41,12 +41,17 @@ void __init init_vdso_image(const struct vdso_image *image)
+>
+>  struct linux_binprm;
+>
+> -/* Put the vdso above the (randomized) stack with another randomized offset.
+> -   This way there is no hole in the middle of address space.
+> -   To save memory make sure it is still in the same PTE as the stack top.
+> -   This doesn't give that many random bits.
+> -
+> -   Only used for the 64-bit and x32 vdsos. */
+> +/*
+> + * Put the vdso above the (randomized) stack with another randomized
+> + * offset.  This way there is no hole in the middle of address space.
+> + * To save memory make sure it is still in the same PTE as the stack
+> + * top.  This doesn't give that many random bits.
+> + *
+> + * Note that this algorithm is imperfect: the distribution of the vdso
+> + * start address within a PMD is biased toward the end.
+> + *
+> + * Only used for the 64-bit and x32 vdsos.
+> + */
+>  static unsigned long vdso_addr(unsigned long start, unsigned len)
+>  {
+>  #ifdef CONFIG_X86_32
+> @@ -54,22 +59,30 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
+>  #else
+>         unsigned long addr, end;
+>         unsigned offset;
+> -       end = (start + PMD_SIZE - 1) & PMD_MASK;
+> +
+> +       /*
+> +        * Round up the start address.  It can start out unaligned as a result
+> +        * of stack start randomization.
+> +        */
+> +       start = PAGE_ALIGN(start);
+> +
+> +       /* Round the lowest possible end address up to a PMD boundary. */
+> +       end = (start + len + PMD_SIZE - 1) & PMD_MASK;
+>         if (end >= TASK_SIZE_MAX)
+>                 end = TASK_SIZE_MAX;
+>         end -= len;
+> -       /* This loses some more bits than a modulo, but is cheaper */
+> -       offset = get_random_int() & (PTRS_PER_PTE - 1);
+> -       addr = start + (offset << PAGE_SHIFT);
+> -       if (addr >= end)
+> -               addr = end;
+> +
+> +       if (end > start) {
+> +               offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
+> +               addr = start + (offset << PAGE_SHIFT);
+> +       } else {
+> +               addr = start;
+> +       }
+>
+>         /*
+> -        * page-align it here so that get_unmapped_area doesn't
+> -        * align it wrongfully again to the next page. addr can come in 4K
+> -        * unaligned here as a result of stack start randomization.
+> +        * Forcibly align the final address in case we have a hardware
+> +        * issue that requires alignment for performance reasons.
+>          */
+> -       addr = PAGE_ALIGN(addr);
+>         addr = align_vdso_addr(addr);
+>
+>         return addr;
+> --
+> 2.1.0
+>
+
+
+
 -- 
-2.1.0
-
+Kees Cook
+Chrome OS Security
