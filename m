@@ -1,112 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaLTB40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 20:56:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60130 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762AbaLTB4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 20:56:25 -0500
-Date: Fri, 19 Dec 2014 20:56:19 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Andrew Duggan <aduggan@synaptics.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 3/3] HID: rmi: Add support for the touchpad in the Razer
- Blade 14 laptop
-Message-ID: <20141220015619.GE32189@mail.corp.redhat.com>
-References: <1419029143-20484-1-git-send-email-aduggan@synaptics.com>
- <1419029143-20484-3-git-send-email-aduggan@synaptics.com>
+	id S1752767AbaLTB5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 20:57:09 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:46294 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762AbaLTB5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 20:57:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1419029143-20484-3-git-send-email-aduggan@synaptics.com>
+In-Reply-To: <alpine.DEB.2.11.1412200100130.17382@nanos>
+References: <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
+	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
+	<20141218051327.GA31988@redhat.com>
+	<1418918059.17358.6@mail.thefacebook.com>
+	<20141218161230.GA6042@redhat.com>
+	<20141219024549.GB1671@redhat.com>
+	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+	<20141219035859.GA20022@redhat.com>
+	<20141219040308.GB20022@redhat.com>
+	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
+	<20141219145528.GC13404@redhat.com>
+	<CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
+	<alpine.DEB.2.11.1412192201520.17382@nanos>
+	<CA+55aFx4zjAVHN5DrSCh1_MJjqf4fxoAVT3RmC+1QGP6bq7b0Q@mail.gmail.com>
+	<alpine.DEB.2.11.1412200100130.17382@nanos>
+Date: Fri, 19 Dec 2014 17:57:05 -0800
+X-Google-Sender-Auth: oXTy4vR4PshdhPzbUAjKvRyv4ro
+Message-ID: <CA+55aFxY5hCuGaK0JvTwHFsQKFGeh3_82ukKrU9ss4x4uHMY3Q@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 19 2014 or thereabouts, Andrew Duggan wrote:
-> Have hid-rmi handle all of the Razer Blade HID devices that are part of the
-> composite USB device. This will allow hid-rmi to operate the touchpad in rmi
-> mode while passing events from the other devices to hid-input.
-> 
-> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
-> ---
->  drivers/hid/hid-core.c |  1 +
->  drivers/hid/hid-ids.h  |  3 +++
->  drivers/hid/hid-rmi.c  | 15 +++++++++++++++
->  3 files changed, 19 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 81665b4..ef718f9 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1982,6 +1982,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT) },
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE2) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_RAZER, USB_DEVICE_ID_RAZER_BLADE_14) },
->  	{ }
->  };
->  
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 7460f34..7d0912d 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -767,6 +767,9 @@
->  #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001		0x3001
->  #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008		0x3008
->  
-> +#define USB_VENDOR_ID_RAZER            0x1532
-> +#define USB_DEVICE_ID_RAZER_BLADE_14   0x011D
-> +
->  #define USB_VENDOR_ID_REALTEK		0x0bda
->  #define USB_DEVICE_ID_REALTEK_READER	0x0152
->  
-> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-> index cdfe165..849b35a 100644
-> --- a/drivers/hid/hid-rmi.c
-> +++ b/drivers/hid/hid-rmi.c
-> @@ -1038,6 +1038,20 @@ static int rmi_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  
->  	data->readReport = data->writeReport + data->output_report_size;
->  
-> +	/*
-> +	 * Unfortunately there is no way to query the touchpad in the
-> +	 * Razer system to determine that it has pass through buttons
-> +	 * so the only solution is to set phys buttons flag based on the
-> +	 * vid and pid. In the future we should be able to query devices
-> +	 * to find out. However, we need to know if the touchpad has
-> +	 * physical buttons before the input_mapping gets called which
-> +	 * is before we query the device. So we may have to resort to creating
-> +	 * a list of devices based on product id.
-> +	 */
-> +	if (hdev->vendor == USB_VENDOR_ID_RAZER &&
-> +	    hdev->product == USB_DEVICE_ID_RAZER_BLADE_14)
-> +		data->device_flags |= RMI_DEVICE_HAS_PHYS_BUTTONS;
+On Fri, Dec 19, 2014 at 5:00 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> The watchdog timer runs on a fully periodic schedule. It's self
+> rearming via
+>
+>          hrtimer_forward_now(hrtimer, ns_to_ktime(sample_period));
+>
+> So if that aligns with the equally periodic tick interrupt on the
+> other CPU then you might get into that situation due to the fully
+> synchronizing and serializing nature of HPET reads.
 
-This whole test can be replace by a field in rmi_id (.driver_data) as
-mentioned in 2/3.
+No. Really. No.
 
-> +
->  	init_waitqueue_head(&data->wait);
->  
->  	mutex_init(&data->page_mutex);
-> @@ -1074,6 +1088,7 @@ static void rmi_remove(struct hid_device *hdev)
->  
->  static const struct hid_device_id rmi_id[] = {
->  	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_RMI, HID_ANY_ID, HID_ANY_ID) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_RAZER, USB_DEVICE_ID_RAZER_BLADE_14) },
+There is no way in hell that a modern system ends up being that
+synchronized. Not to the point that the interrupt also happens at the
+*exact* same point.
 
-Nitpicking, I'd prefer having the most generic one at the end. In case
-you need to specify other flags to some specific devices, they will have
-to be inserted before the catchall rule, so let's start now :).
+Thomas, you're in denial. It's not just the exact same instruction in
+the timer interrupt handler ("timer interrupts and NMI's are in
+sync"), the call chain *past* the timer interrupt is the exact same
+thing too.  The stack has the same contents. So not only must the two
+CPU's be perfectly in sync so that the NMI always triggers on exactly
+the same instruction, the CPU that takes the timer interrupt (in your
+schenario, over and over again) must be magically filling the stack
+with the exact same thing every time.
 
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(hid, rmi_id);
-> -- 
-> 2.1.0
-> 
+That CPU isn't making progress that just happens to be "synchronized".
 
-Cheers,
-Benjamin
+Admit it, you've not seen a busy system that is *so* synchronized that
+you get timer interrupts and NMI's that hit on the same instruction
+over a sequence of minutes.
+
+> So lets assume there is that hrtimer_remove race (I'm certainly going
+> to stare at that tomorrow with fully awake brain. It's past beer
+> o'clock here). How do you explain that:
+>
+> 1) the watchdog always triggers on CPU1?
+>
+> 2) the race only ever happens on CPU0?
+
+I'm claiming that the race happened *once*. And it then corrupted some
+data structure or similar sufficiently that CPU0 keeps looping.
+
+Perhaps something keeps re-adding itself to the head of the timerqueue
+due to the race.
+
+The watchdog doesn't trigger on CPU0, because this is the software
+watchdog, and interrupts are disabled on CPU0, and CPU0 isn't making
+any progress. Because it's looping in a fairly tight loop.
+
+The watchdog triggers on CPU1 (over and over again) because CPU1 is
+waiting for the TLB shootdown to complete. And it doesn't, because
+interrupts are disabled on CPU0 that it's trying to shoot down the TLB
+on.
+
+That theory at least fits the data. So CPU1 isn't doing anything odd at all.
+
+In a way that "magic happens so that everything is so synchronized
+that you cross-syncornize two CPU's making real progress over many
+minutes". THAT sounds like just a fairy tale to me.
+
+Your argument "it has a question mark in front of it" objection is
+bogus. We got an *interrupt* in the middle of the call chain. Of
+*course* the call chain is unreliable. It doesn't matter. What matters
+is that the stack under the interrupt DOES NOT CHANGE. It doesn't even
+matter if it's a real honest-to-god callchain or not, what matters is
+that the kernel stack under the interrupt is unchanged. No way does
+that happen if it's making progress at the same time.
+
+> 3) the hrtimer interrupt took too long message never appears?
+
+At a guess, it's looping (for a long long time) on
+timerqueue_getnext() in hrtimer_interrupt(), and then returns. Never
+gets to the retry or the "interrupt took %llu" messages.
+
+And we know what timer entry it is looping on:  tick_sched_timer.
+Which does a HRTIMER_RESTART, so the re-enqueueing isn't exactly
+unlikely.
+
+All it needs is that the re-enqueueing has gotten confused enough that
+it re-enqueues it on the same queue over and over again.  Which would
+run tick_sched_timer over and over again. No? Until the re-enqueuing
+magically stops (and we do actually have a HPET counter overflow
+there. Just look at the RAX values:
+
+ RAX: 00000000fb9d303f
+ RAX: 000000002b67efe4
+
+that 00000000fb9d303f is the last time we see that particular
+callchain. The next time we see hpet_read(), it's that
+000000002b67efe4 thing.
+
+So my "maybe it has something to do with HPET overflow" wasn't just a
+random throw-away comment. We actually have real data saying that the
+HPET *did* overflow, and it in fact happened somewhere around the time
+when the lockup went away.
+
+Are they related? Maybe not. But dammit, there's a lot of
+"coincidences" here. Not just the "oh, it always takes the NMI on the
+exact same instruction".
+
+> 4) the RT throttler hit?
+> 5) that the system makes progress afterwards?
+
+.. something eventually clears the problem, maybe because of the HPET
+overflow. I dunno. I'm just saying that your arguments to ignore CPU0
+are pretty damn weak.
+
+So I think the CPU1 behavior is 100% consistent with CPU0 just having
+interrupts disabled.
+
+So I think CPU1 is _trivial_ to explain if you accept that CPU0 is
+doing something weird.
+
+Which is why I think your "look at CPU1" sounds so strange. I don't
+think CPU1 is all that interesting. I can *trivially* explain it with
+a single sentence, and did exactly that above.
+
+Can you trivially explain CPU0? Without the "it's just a big
+coincidence that we take  the NMI on the same instruction for several
+minutes, and the stack under the timer interrupt hasn't changed at all
+in that same time".
+
+                     Linus
