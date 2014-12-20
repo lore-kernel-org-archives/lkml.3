@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaLTXHH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 18:07:07 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:38774 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaLTXHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 18:07:03 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Achim Leubner <achim_leubner@adaptec.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: gdth_proc.c:  Remove unused function
-Date: Sun, 21 Dec 2014 00:09:48 +0100
-Message-Id: <1419116988-13467-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752898AbaLTXOO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 18:14:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104AbaLTXOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 18:14:10 -0500
+Date: Sun, 21 Dec 2014 01:14:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Subject: [PATCH] vhost: relax used address alignment
+Message-ID: <1419117201-24590-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function gdth_ioctl_check_bin() that is not used anywhere.
+virtio 1.0 only requires used address to be 4 byte aligned,
+vhost required 8 bytes (size of vring_used_elem).
+Fix up vhost to match that.
 
-This was partially found by using a static code analysis program called cppcheck.
+Additionally, while vhost correctly requires 8 byte
+alignment for log, it's unconnected to used ring:
+it's a consequence that log has u64 entries.
+Tweak code to make that clearer.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/scsi/gdth_proc.c |   18 ------------------
- 1 file changed, 18 deletions(-)
+ drivers/vhost/vhost.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/gdth_proc.c b/drivers/scsi/gdth_proc.c
-index 9fb6326..efb9df5 100644
---- a/drivers/scsi/gdth_proc.c
-+++ b/drivers/scsi/gdth_proc.c
-@@ -598,24 +598,6 @@ static void gdth_ioctl_free(gdth_ha_str *ha, int size, char *buf, u64 paddr)
-     }
- }
- 
--#ifdef GDTH_IOCTL_PROC
--static int gdth_ioctl_check_bin(gdth_ha_str *ha, u16 size)
--{
--    unsigned long flags;
--    int ret_val;
--
--    spin_lock_irqsave(&ha->smp_lock, flags);
--
--    ret_val = FALSE;
--    if (ha->scratch_busy) {
--        if (((gdth_iord_str *)ha->pscratch)->size == (u32)size)
--            ret_val = TRUE;
--    }
--    spin_unlock_irqrestore(&ha->smp_lock, flags);
--    return ret_val;
--}
--#endif
--
- static void gdth_wait_completion(gdth_ha_str *ha, int busnum, int id)
- {
-     unsigned long flags;
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index ed71b53..97996fc 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -713,9 +713,12 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
+ 			r = -EFAULT;
+ 			break;
+ 		}
+-		if ((a.avail_user_addr & (sizeof *vq->avail->ring - 1)) ||
+-		    (a.used_user_addr & (sizeof *vq->used->ring - 1)) ||
+-		    (a.log_guest_addr & (sizeof *vq->used->ring - 1))) {
++
++		BUILD_BUG_ON(__alignof__ *vq->avail != 2);
++		BUILD_BUG_ON(__alignof__ *vq->used != 4);
++		if ((a.avail_user_addr & (__alignof__ *vq->avail - 1)) ||
++		    (a.used_user_addr & (__alignof__ *vq->used - 1)) ||
++		    (a.log_guest_addr & (sizeof(u64) - 1))) {
+ 			r = -EINVAL;
+ 			break;
+ 		}
 -- 
-1.7.10.4
-
+MST
