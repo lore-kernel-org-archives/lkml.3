@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaLTWad (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 17:30:33 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:33368 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaLTWac (ORCPT
+	id S1753023AbaLTWce (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 17:32:34 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:64804 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbaLTWcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 17:30:32 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov, sgrubb@redhat.com,
-        eparis@parisplace.org
-Subject: Re: [PATCH] audit: use supplied gfp_mask from audit_buffer in kauditd_send_multicast_skb
-Date: Sat, 20 Dec 2014 17:30:29 -0500
-Message-ID: <1707208.eM92rXqJdO@sifl>
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <74385.1419036779@turing-police.cc.vt.edu>
-References: <d261c547d8018a18f2092e1907b06e190162b088.1418947557.git.rgb@redhat.com> <74385.1419036779@turing-police.cc.vt.edu>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sat, 20 Dec 2014 17:32:31 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] media: pci: cx18: cx18-alsa-mixer.c:  Remove some unused functions
+Date: Sat, 20 Dec 2014 23:35:17 +0100
+Message-Id: <1419114917-12029-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 19, 2014 07:52:59 PM Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 18 Dec 2014 23:09:27 -0500, Richard Guy Briggs said:
-> > Eric Paris explains: Since kauditd_send_multicast_skb() gets called in
-> > audit_log_end(), which can come from any context (aka even a sleeping
-> > context) GFP_KERNEL can't be used.  Since the audit_buffer knows what
-> > context it should use, pass that down and use that.
-> > 
-> > See: https://lkml.org/lkml/2014/12/16/542
-> > 
-> > Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > ---
-> > 
-> >  kernel/audit.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/audit.c b/kernel/audit.c
-> > index 7b83c55..ce484fb 100644
-> 
-> I was reliably triggering 3-4 BUGs an hour, and with this patch applied I've
-> gone 9 hours without seeing one.
-> 
-> So feel free to add a Tested-By:  when it goes out.
+Removes some functions that are not used anywhere:
+snd_cx18_mixer_tv_vol_get() snd_cx18_mixer_tv_vol_info() snd_cx18_mixer_tv_vol_put()
 
-Added, thanks for your help.
+This was partially found by using a static code analysis program called cppcheck.
 
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/media/pci/cx18/cx18-alsa-mixer.c |   62 ------------------------------
+ 1 file changed, 62 deletions(-)
+
+diff --git a/drivers/media/pci/cx18/cx18-alsa-mixer.c b/drivers/media/pci/cx18/cx18-alsa-mixer.c
+index 341bddc..e7b0a1f 100644
+--- a/drivers/media/pci/cx18/cx18-alsa-mixer.c
++++ b/drivers/media/pci/cx18/cx18-alsa-mixer.c
+@@ -69,68 +69,6 @@ static inline int cx18_av_vol_to_dB(int v)
+ 	return (v >> 9) - 119;
+ }
+ 
+-static int snd_cx18_mixer_tv_vol_info(struct snd_kcontrol *kcontrol,
+-				      struct snd_ctl_elem_info *uinfo)
+-{
+-	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+-	uinfo->count = 1;
+-	/* We're already translating values, just keep this control in dB */
+-	uinfo->value.integer.min  = -96;
+-	uinfo->value.integer.max  =   8;
+-	uinfo->value.integer.step =   1;
+-	return 0;
+-}
+-
+-static int snd_cx18_mixer_tv_vol_get(struct snd_kcontrol *kctl,
+-				     struct snd_ctl_elem_value *uctl)
+-{
+-	struct snd_cx18_card *cxsc = snd_kcontrol_chip(kctl);
+-	struct cx18 *cx = to_cx18(cxsc->v4l2_dev);
+-	struct v4l2_control vctrl;
+-	int ret;
+-
+-	vctrl.id = V4L2_CID_AUDIO_VOLUME;
+-	vctrl.value = dB_to_cx18_av_vol(uctl->value.integer.value[0]);
+-
+-	snd_cx18_lock(cxsc);
+-	ret = v4l2_subdev_call(cx->sd_av, core, g_ctrl, &vctrl);
+-	snd_cx18_unlock(cxsc);
+-
+-	if (!ret)
+-		uctl->value.integer.value[0] = cx18_av_vol_to_dB(vctrl.value);
+-	return ret;
+-}
+-
+-static int snd_cx18_mixer_tv_vol_put(struct snd_kcontrol *kctl,
+-				     struct snd_ctl_elem_value *uctl)
+-{
+-	struct snd_cx18_card *cxsc = snd_kcontrol_chip(kctl);
+-	struct cx18 *cx = to_cx18(cxsc->v4l2_dev);
+-	struct v4l2_control vctrl;
+-	int ret;
+-
+-	vctrl.id = V4L2_CID_AUDIO_VOLUME;
+-	vctrl.value = dB_to_cx18_av_vol(uctl->value.integer.value[0]);
+-
+-	snd_cx18_lock(cxsc);
+-
+-	/* Fetch current state */
+-	ret = v4l2_subdev_call(cx->sd_av, core, g_ctrl, &vctrl);
+-
+-	if (ret ||
+-	    (cx18_av_vol_to_dB(vctrl.value) != uctl->value.integer.value[0])) {
+-
+-		/* Set, if needed */
+-		vctrl.value = dB_to_cx18_av_vol(uctl->value.integer.value[0]);
+-		ret = v4l2_subdev_call(cx->sd_av, core, s_ctrl, &vctrl);
+-		if (!ret)
+-			ret = 1; /* Indicate control was changed w/o error */
+-	}
+-	snd_cx18_unlock(cxsc);
+-
+-	return ret;
+-}
+-
+ 
+ /* This is a bit of overkill, the slider is already in dB internally */
+ static DECLARE_TLV_DB_SCALE(snd_cx18_mixer_tv_vol_db_scale, -9600, 100, 0);
 -- 
-paul moore
-security @ redhat
+1.7.10.4
+
