@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaLTOzr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 09:55:47 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:37039 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaLTOzq (ORCPT
+	id S1753234AbaLTO5Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 09:57:16 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:40715 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903AbaLTO5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 09:55:46 -0500
+	Sat, 20 Dec 2014 09:57:15 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>
+To: Geoff Levand <geoff@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8712: recv_linux.c:  Remove unused function
-Date: Sat, 20 Dec 2014 15:58:32 +0100
-Message-Id: <1419087512-4715-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: powerpc: platforms: ps3: repository.c:  Remove unused function
+Date: Sat, 20 Dec 2014 16:00:01 +0100
+Message-Id: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function r8712_os_read_port() that is not used anywhere.
+Remove the function ps3_repository_write_highmem_info() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/rtl8712/recv_linux.c |   14 --------------
- drivers/staging/rtl8712/recv_osdep.h |    1 -
- 2 files changed, 15 deletions(-)
+ arch/powerpc/platforms/ps3/platform.h   |    2 --
+ arch/powerpc/platforms/ps3/repository.c |   10 ----------
+ 2 files changed, 12 deletions(-)
 
-diff --git a/drivers/staging/rtl8712/recv_linux.c b/drivers/staging/rtl8712/recv_linux.c
-index 495ee12..409c8c8 100644
---- a/drivers/staging/rtl8712/recv_linux.c
-+++ b/drivers/staging/rtl8712/recv_linux.c
-@@ -137,20 +137,6 @@ _recv_indicatepkt_drop:
- 	 precvpriv->rx_drop++;
+diff --git a/arch/powerpc/platforms/ps3/platform.h b/arch/powerpc/platforms/ps3/platform.h
+index d71329a..f15507c 100644
+--- a/arch/powerpc/platforms/ps3/platform.h
++++ b/arch/powerpc/platforms/ps3/platform.h
+@@ -201,8 +201,6 @@ int ps3_repository_write_highmem_base(unsigned int region_index,
+ 	u64 highmem_base);
+ int ps3_repository_write_highmem_size(unsigned int region_index,
+ 	u64 highmem_size);
+-int ps3_repository_write_highmem_info(unsigned int region_index,
+-	u64 highmem_base, u64 highmem_size);
+ int ps3_repository_delete_highmem_info(unsigned int region_index);
+ 
+ /* repository pme info */
+diff --git a/arch/powerpc/platforms/ps3/repository.c b/arch/powerpc/platforms/ps3/repository.c
+index bfccdc7..2d5e56a 100644
+--- a/arch/powerpc/platforms/ps3/repository.c
++++ b/arch/powerpc/platforms/ps3/repository.c
+@@ -1160,16 +1160,6 @@ int ps3_repository_write_highmem_size(unsigned int region_index,
+ 		highmem_size, 0);
  }
  
--void r8712_os_read_port(struct _adapter *padapter, struct recv_buf *precvbuf)
+-int ps3_repository_write_highmem_info(unsigned int region_index,
+-	u64 highmem_base, u64 highmem_size)
 -{
--	struct recv_priv *precvpriv = &padapter->recvpriv;
+-	int result;
 -
--	precvbuf->ref_cnt--;
--	/*free skb in recv_buf*/
--	dev_kfree_skb_any(precvbuf->pskb);
--	precvbuf->pskb = NULL;
--	precvbuf->reuse = false;
--	if (precvbuf->irp_pending == false)
--		r8712_read_port(padapter, precvpriv->ff_hwaddr, 0,
--			 (unsigned char *)precvbuf);
+-	result = ps3_repository_write_highmem_base(region_index, highmem_base);
+-	return result ? result
+-		: ps3_repository_write_highmem_size(region_index, highmem_size);
 -}
 -
- static void _r8712_reordering_ctrl_timeout_handler (void *FunctionContext)
+ static int ps3_repository_delete_highmem_base(unsigned int region_index)
  {
- 	struct recv_reorder_ctrl *preorder_ctrl =
-diff --git a/drivers/staging/rtl8712/recv_osdep.h b/drivers/staging/rtl8712/recv_osdep.h
-index f4384ef..1f4986e 100644
---- a/drivers/staging/rtl8712/recv_osdep.h
-+++ b/drivers/staging/rtl8712/recv_osdep.h
-@@ -46,7 +46,6 @@ int r8712_os_recvbuf_resource_alloc(struct _adapter *padapter,
- 				    struct recv_buf *precvbuf);
- int r8712_os_recvbuf_resource_free(struct _adapter *padapter,
- 				   struct recv_buf *precvbuf);
--void r8712_os_read_port(struct _adapter *padapter, struct recv_buf *precvbuf);
- void r8712_init_recv_timer(struct recv_reorder_ctrl *preorder_ctrl);
- 
- #endif
+ 	return delete_node(
 -- 
 1.7.10.4
 
