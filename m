@@ -1,136 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaLTDUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 22:20:13 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:36691 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383AbaLTDSn (ORCPT
+	id S1752817AbaLTDYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 22:24:47 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:52505 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762AbaLTDYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 22:18:43 -0500
-From: Omar Sandoval <osandov@osandov.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v2 1/5] iov_iter: add ITER_BVEC helpers
-Date: Fri, 19 Dec 2014 19:18:25 -0800
-Message-Id: <9523f2373dd40ac35760f3fb926a81a321fa4139.1419044605.git.osandov@osandov.com>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
-References: <cover.1419044605.git.osandov@osandov.com>
-In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
-References: <cover.1419044605.git.osandov@osandov.com>
+	Fri, 19 Dec 2014 22:24:45 -0500
+Message-ID: <5494EBAB.5080205@roeck-us.net>
+Date: Fri, 19 Dec 2014 19:23:23 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH v7 0/5] hwmon: ina2xx: implement chip reinitialization
+ and add new attributes
+References: <1418488041-7433-1-git-send-email-bgolaszewski@baylibre.com>
+In-Reply-To: <1418488041-7433-1-git-send-email-bgolaszewski@baylibre.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.5494EBFC.0053,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add iov_iter_is_bvec and iov_iter_bvec and convert callers.
+On 12/13/2014 08:27 AM, Bartosz Golaszewski wrote:
+> This series implements a mechanism to detect if the chip is in its POR state
+> and reinitialize it if needed. It also extends the sysfs interface to make the
+> driver configurable at run-time.
+>
+> The shunt_resistor attribute allows to change the shunt resistance value
+> at run-time in cases where ina2xx used to do the measurement isn't integrated
+> with the shunt.
+>
+> The avg_rate attribute allows to increase/decrease noise reduction.
+>
+> v7:
+> - implemented a retry counter for the reinitialization procedure
+> - using msleep() (since the sleep is > 20ms) instead of mdelay()
+>    when waiting for the chip update
+>
+> v6:
+> https://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg787390.html
+>
+> Bartosz Golaszewski (5):
+>    hwmon: ina2xx: reinitialize the chip in case it's been reset
+>    hwmon: ina2xx: remove a stray new line
+>    hwmon: ina2xx: don't accept shunt values greater than the calibration factor
+>    hwmon: ina2xx: make shunt resistance configurable at run-time
+>    hwmon: ina2xx: allow to change the averaging rate at run-time
+>
+>   Documentation/hwmon/ina2xx |   8 +-
+>   drivers/hwmon/ina2xx.c     | 304 +++++++++++++++++++++++++++++++++++++++------
+>   2 files changed, 269 insertions(+), 43 deletions(-)
+>
 
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
----
- fs/splice.c         |  7 ++-----
- include/linux/uio.h |  7 +++++++
- mm/iov_iter.c       | 12 ++++++++++++
- mm/page_io.c        | 14 +++++---------
- 4 files changed, 26 insertions(+), 14 deletions(-)
+I didn't forget those patches; I have been busy in the last couple of weeks.
+Also, I'll be out for the next two weeks. I'll look into the patches after
+I am back.
 
-diff --git a/fs/splice.c b/fs/splice.c
-index 75c6058..7c7176f 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -1006,11 +1006,8 @@ iter_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
- 		}
- 
- 		/* ... iov_iter */
--		from.type = ITER_BVEC | WRITE;
--		from.bvec = array;
--		from.nr_segs = n;
--		from.count = sd.total_len - left;
--		from.iov_offset = 0;
-+		iov_iter_bvec(&from, ITER_BVEC | WRITE, array, n,
-+			      sd.total_len - left);
- 
- 		/* ... and iocb */
- 		init_sync_kiocb(&kiocb, out);
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index 1c5e453..23bb5e4 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -63,6 +63,11 @@ static inline struct iovec iov_iter_iovec(const struct iov_iter *iter)
- 	};
- }
- 
-+static inline int iov_iter_is_bvec(const struct iov_iter *iter)
-+{
-+	return (iter->type & ITER_BVEC) != 0;
-+}
-+
- #define iov_for_each(iov, iter, start)				\
- 	if (!((start).type & ITER_BVEC))			\
- 	for (iter = (start);					\
-@@ -90,6 +95,8 @@ void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
- 			unsigned long nr_segs, size_t count);
- void iov_iter_kvec(struct iov_iter *i, int direction, const struct kvec *iov,
- 			unsigned long nr_segs, size_t count);
-+void iov_iter_bvec(struct iov_iter *i, int direction, const struct bio_vec *bv,
-+		   unsigned long nr_segs, size_t count);
- ssize_t iov_iter_get_pages(struct iov_iter *i, struct page **pages,
- 			size_t maxsize, unsigned maxpages, size_t *start);
- ssize_t iov_iter_get_pages_alloc(struct iov_iter *i, struct page ***pages,
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index a1599ca..c975bc4 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -513,6 +513,18 @@ void iov_iter_kvec(struct iov_iter *i, int direction,
- }
- EXPORT_SYMBOL(iov_iter_kvec);
- 
-+void iov_iter_bvec(struct iov_iter *i, int direction, const struct bio_vec *bv,
-+		   unsigned long nr_segs, size_t count)
-+{
-+	BUG_ON(!(direction & ITER_BVEC));
-+	i->type = direction;
-+	i->bvec = bv;
-+	i->nr_segs = nr_segs;
-+	i->iov_offset = 0;
-+	i->count = count;
-+}
-+EXPORT_SYMBOL(iov_iter_bvec);
-+
- unsigned long iov_iter_alignment(const struct iov_iter *i)
- {
- 	unsigned long res = 0;
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 955db8b..532a39b 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -264,18 +264,14 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
- 		struct kiocb kiocb;
- 		struct file *swap_file = sis->swap_file;
- 		struct address_space *mapping = swap_file->f_mapping;
-+		struct iov_iter from;
- 		struct bio_vec bv = {
- 			.bv_page = page,
--			.bv_len  = PAGE_SIZE,
--			.bv_offset = 0
-+			.bv_len = PAGE_SIZE,
-+			.bv_offset = 0,
- 		};
--		struct iov_iter from = {
--			.type = ITER_BVEC | WRITE,
--			.count = PAGE_SIZE,
--			.iov_offset = 0,
--			.nr_segs = 1,
--		};
--		from.bvec = &bv;	/* older gcc versions are broken */
-+
-+		iov_iter_bvec(&from, ITER_BVEC | WRITE, &bv, 1, PAGE_SIZE);
- 
- 		init_sync_kiocb(&kiocb, swap_file);
- 		kiocb.ki_pos = page_file_offset(page);
--- 
-2.2.1
+Guenter
 
