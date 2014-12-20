@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaLTKwN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 05:52:13 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:47570 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768AbaLTKsI (ORCPT
+	id S1752826AbaLTMEt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 07:04:49 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:35871 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739AbaLTMEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 05:48:08 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        Scott Jiang <scott.jiang.linux@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 01/15] media: blackfin: bfin_capture: drop buf_init() callback
-Date: Sat, 20 Dec 2014 16:17:28 +0530
-Message-Id: <1419072462-3168-2-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
+	Sat, 20 Dec 2014 07:04:47 -0500
+Message-ID: <549565B3.5070504@roeck-us.net>
+Date: Sat, 20 Dec 2014 04:04:03 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>
+Subject: Re: [PATCH v2 1/2] i8k: Autodetect maximal fan speed and fan RPM
+ multiplier
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <201412191951.25562@pali> <20141219192808.GA8493@roeck-us.net> <201412200957.38638@pali>
+In-Reply-To: <201412200957.38638@pali>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.549565DF.0073,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch drops the buf_init() callback as init
-of buf list is not required.
+On 12/20/2014 12:57 AM, Pali Rohár wrote:
+> On Friday 19 December 2014 20:28:08 Guenter Roeck wrote:
+>> On Fri, Dec 19, 2014 at 07:51:25PM +0100, Pali Rohár wrote:
+>>> On Friday 19 December 2014 19:32:37 Guenter Roeck wrote:
+>>>>> -static int i8k_fan_mult;
+>>>>> -static int i8k_pwm_mult;
+>>>>> -static int i8k_fan_max = I8K_FAN_HIGH;
+>>>>> +static int i8k_fan_mult[2];
+>>>>> +static int i8k_pwm_mult[2];
+>>>>> +static int i8k_fan_max[2];
+>>>>
+>>>> The rationale for this change is not explained in the
+>>>> commit log.
+>>>>
+>>>> Do you have any indication that those values would ever be
+>>>> different for the two fans, ie that you actually need
+>>>> arrays here ?
+>>>
+>>> I do not know... But if we decide to use only single value
+>>> for multiplier and max value which fan to use for
+>>> autodetection?
+>>
+>> That does not answer my question. That you can not decide
+>> which fan to use for auto-detection does not mean that the
+>> result of that auto-detection would be different for
+>> different fans.
+>>
+>
+> Really I do not know if some dell products which have more fans
+> (some Precision models have 2) and each fan is using different
+> multiplier or has different max speed value.
+>
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/blackfin/bfin_capture.c | 9 ---------
- 1 file changed, 9 deletions(-)
+"I do not know" is not a reason for introducing such code.
 
-diff --git a/drivers/media/platform/blackfin/bfin_capture.c b/drivers/media/platform/blackfin/bfin_capture.c
-index 3112844..d4eeae9 100644
---- a/drivers/media/platform/blackfin/bfin_capture.c
-+++ b/drivers/media/platform/blackfin/bfin_capture.c
-@@ -302,14 +302,6 @@ static int bcap_queue_setup(struct vb2_queue *vq,
- 	return 0;
- }
- 
--static int bcap_buffer_init(struct vb2_buffer *vb)
--{
--	struct bcap_buffer *buf = to_bcap_vb(vb);
--
--	INIT_LIST_HEAD(&buf->list);
--	return 0;
--}
--
- static int bcap_buffer_prepare(struct vb2_buffer *vb)
- {
- 	struct bcap_device *bcap_dev = vb2_get_drv_priv(vb->vb2_queue);
-@@ -441,7 +433,6 @@ static void bcap_stop_streaming(struct vb2_queue *vq)
- 
- static struct vb2_ops bcap_video_qops = {
- 	.queue_setup            = bcap_queue_setup,
--	.buf_init               = bcap_buffer_init,
- 	.buf_prepare            = bcap_buffer_prepare,
- 	.buf_cleanup            = bcap_buffer_cleanup,
- 	.buf_queue              = bcap_buffer_queue,
--- 
-1.9.1
+Guenter
 
