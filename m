@@ -1,128 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaLTQrG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:47:06 -0500
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:60870 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaLTQrC (ORCPT
+	id S1753383AbaLTQrw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:47:52 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:43685 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123AbaLTQrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:47:02 -0500
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Anton Blanchard <anton@samba.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] powerpc: Wire up sys_execveat() syscall
-Date: Sat, 20 Dec 2014 11:47:18 -0500
-Message-Id: <1419094041-14536-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 20 Dec 2014 11:47:49 -0500
+From: Yannis Damigos <giannis.damigos@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>, linux-wireless@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Yannis Damigos <giannis.damigos@gmail.com>
+Subject: [PATCHv2 1/1] staging: rtl8723au: Fix sparse invalid assignment warnings
+Date: Sat, 20 Dec 2014 18:47:27 +0200
+Message-Id: <1419094047-16107-1-git-send-email-giannis.damigos@gmail.com>
+X-Mailer: git-send-email 2.2.1
+In-Reply-To: <1418567365-18168-1-git-send-email-giannis.damigos@gmail.com>
+References: <1418567365-18168-1-git-send-email-giannis.damigos@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wire up sys_execveat(). This passes the selftests for the system call.
+This is a patch to the hal/rtl8723au_xmit.c file that fixes the
+following warnings found by sparse tool:
 
-Check success of execveat(3, '../execveat', 0)... [OK]
-Check success of execveat(5, 'execveat', 0)... [OK]
-Check success of execveat(6, 'execveat', 0)... [OK]
-Check success of execveat(-100, '/home/pranith/linux/...ftests/exec/execveat', 0)... [OK]
-Check success of execveat(99, '/home/pranith/linux/...ftests/exec/execveat', 0)... [OK]
-Check success of execveat(8, '', 4096)... [OK]
-Check success of execveat(17, '', 4096)... [OK]
-Check success of execveat(9, '', 4096)... [OK]
-Check success of execveat(14, '', 4096)... [OK]
-Check success of execveat(14, '', 4096)... [OK]
-Check success of execveat(15, '', 4096)... [OK]
-Check failure of execveat(8, '', 0) with ENOENT... [OK]
-Check failure of execveat(8, '(null)', 4096) with EFAULT... [OK]
-Check success of execveat(5, 'execveat.symlink', 0)... [OK]
-Check success of execveat(6, 'execveat.symlink', 0)... [OK]
-Check success of execveat(-100, '/home/pranith/linux/...xec/execveat.symlink', 0)... [OK]
-Check success of execveat(10, '', 4096)... [OK]
-Check success of execveat(10, '', 4352)... [OK]
-Check failure of execveat(5, 'execveat.symlink', 256) with ELOOP... [OK]
-Check failure of execveat(6, 'execveat.symlink', 256) with ELOOP... [OK]
-Check failure of execveat(-100, '/home/pranith/linux/tools/testing/selftests/exec/execveat.symlink', 256) with ELOOP... [OK]
-Check success of execveat(3, '../script', 0)... [OK]
-Check success of execveat(5, 'script', 0)... [OK]
-Check success of execveat(6, 'script', 0)... [OK]
-Check success of execveat(-100, '/home/pranith/linux/...elftests/exec/script', 0)... [OK]
-Check success of execveat(13, '', 4096)... [OK]
-Check success of execveat(13, '', 4352)... [OK]
-Check failure of execveat(18, '', 4096) with ENOENT... [OK]
-Check failure of execveat(7, 'script', 0) with ENOENT... [OK]
-Check success of execveat(16, '', 4096)... [OK]
-Check success of execveat(16, '', 4096)... [OK]
-Check success of execveat(4, '../script', 0)... [OK]
-Check success of execveat(4, 'script', 0)... [OK]
-Check success of execveat(4, '../script', 0)... [OK]
-Check failure of execveat(4, 'script', 0) with ENOENT... [OK]
-Check failure of execveat(5, 'execveat', 65535) with EINVAL... [OK]
-Check failure of execveat(5, 'no-such-file', 0) with ENOENT... [OK]
-Check failure of execveat(6, 'no-such-file', 0) with ENOENT... [OK]
-Check failure of execveat(-100, 'no-such-file', 0) with ENOENT... [OK]
-Check failure of execveat(5, '', 4096) with EACCES... [OK]
-Check failure of execveat(5, 'Makefile', 0) with EACCES... [OK]
-Check failure of execveat(11, '', 4096) with EACCES... [OK]
-Check failure of execveat(12, '', 4096) with EACCES... [OK]
-Check failure of execveat(99, '', 4096) with EBADF... [OK]
-Check failure of execveat(99, 'execveat', 0) with EBADF... [OK]
-Check failure of execveat(8, 'execveat', 0) with ENOTDIR... [OK]
-Invoke copy of 'execveat' via filename of length 4093:
-Check success of execveat(19, '', 4096)... [OK]
-Check success of execveat(5, 'xxxxxxxxxxxxxxxxxxxx...yyyyyyyyyyyyyyyyyyyy', 0)... [OK]
-Invoke copy of 'script' via filename of length 4093:
-Check success of execveat(20, '', 4096)... [OK]
-/bin/sh: 0: Can't open /dev/fd/5/xxxxxxx(... a long line of x's and y's, 0)... [OK]
-Check success of execveat(5, 'xxxxxxxxxxxxxxxxxxxx...yyyyyyyyyyyyyyyyyyyy', 0)... [OK]
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:88:22: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:88:22:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:88:22:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:91:22: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:91:22:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:91:22:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:99:22: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:99:22:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:99:22:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:103:30: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:103:30:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:103:30:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:106:38: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:106:38:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:106:38:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:108:38: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:108:38:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:108:38:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:112:38: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:112:38:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:112:38:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:120:22: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:120:22:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:120:22:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:123:30: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:123:30:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:123:30:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:125:30: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:125:30:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:125:30:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:129:30: warning: invalid assignment: |=
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:129:30:    left side has type unsigned int
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:129:30:    right side has type restricted __le32
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:184:51: warning: incorrect type in argument 2 (different base types)
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:184:51:    expected unsigned int [usertype] *pdw
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:184:51:    got restricted __le32 *<noident>
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:185:51: warning: incorrect type in argument 2 (different base types)
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:185:51:    expected unsigned int [usertype] *pdw
+drivers/staging/rtl8723au//hal/rtl8723au_xmit.c:185:51:    got restricted __le32 *<noident>
 
-Tested on a 32-bit powerpc system.
-
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Signed-off-by: Yannis Damigos <giannis.damigos@gmail.com>
 ---
- arch/powerpc/include/asm/systbl.h      | 1 +
- arch/powerpc/include/asm/unistd.h      | 2 +-
- arch/powerpc/include/uapi/asm/unistd.h | 1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/staging/rtl8723au/hal/rtl8723au_xmit.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index ce9577d..778844a 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -366,3 +366,4 @@ SYSCALL_SPU(seccomp)
- SYSCALL_SPU(getrandom)
- SYSCALL_SPU(memfd_create)
- SYSCALL_SPU(bpf)
-+SYSCALL_SPU(execveat)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index e0da021..36b79c3 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -12,7 +12,7 @@
- #include <uapi/asm/unistd.h>
+diff --git a/drivers/staging/rtl8723au/hal/rtl8723au_xmit.c b/drivers/staging/rtl8723au/hal/rtl8723au_xmit.c
+index 6070510..1759487 100644
+--- a/drivers/staging/rtl8723au/hal/rtl8723au_xmit.c
++++ b/drivers/staging/rtl8723au/hal/rtl8723au_xmit.c
+@@ -79,7 +79,7 @@ static void fill_txdesc_sectype(struct pkt_attrib *pattrib, struct tx_desc *ptxd
+ 	}
+ }
  
+-static void fill_txdesc_vcs(struct pkt_attrib *pattrib, u32 *pdw)
++static void fill_txdesc_vcs(struct pkt_attrib *pattrib, __le32 *pdw)
+ {
+ 	/* DBG_8723A("cvs_mode =%d\n", pattrib->vcs_mode); */
  
--#define __NR_syscalls		362
-+#define __NR_syscalls		363
+@@ -114,7 +114,7 @@ static void fill_txdesc_vcs(struct pkt_attrib *pattrib, u32 *pdw)
+ 	}
+ }
  
- #define __NR__exit __NR_exit
- #define NR_syscalls	__NR_syscalls
-diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
-index f55351f..ef5b5b1 100644
---- a/arch/powerpc/include/uapi/asm/unistd.h
-+++ b/arch/powerpc/include/uapi/asm/unistd.h
-@@ -384,5 +384,6 @@
- #define __NR_getrandom		359
- #define __NR_memfd_create	360
- #define __NR_bpf		361
-+#define __NR_execveat		362
- 
- #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
+-static void fill_txdesc_phy(struct pkt_attrib *pattrib, u32 *pdw)
++static void fill_txdesc_phy(struct pkt_attrib *pattrib, __le32 *pdw)
+ {
+ 	if (pattrib->ht_en) {
+ 		*pdw |= (pattrib->bwmode&HT_CHANNEL_WIDTH_40) ? cpu_to_le32(BIT(25)) : 0;
 -- 
-2.1.3
+2.2.1
 
