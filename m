@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaLTRM0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 12:12:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49552 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaLTRMX (ORCPT
+	id S1753297AbaLTROq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 12:14:46 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56318 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbaLTROp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 12:12:23 -0500
-Date: Sat, 20 Dec 2014 09:12:16 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Robert N <robert.nachlinger@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Robert Nachlinger <robert.nachlinger@googlemail.com>
-Subject: Re: [PATCH] Staging: gdm724x: fix space before comma coding style
- issue in gdm_mux.c
-Message-ID: <20141220171216.GA24340@kroah.com>
-References: <1418921189-31372-1-git-send-email-robert.nachlinger@googlemail.com>
- <20141219225832.GA24045@kroah.com>
- <CABdSh179apawgBKm9=2vBaxVBPTemz4SPhDcgf_2kwk7rsn2oA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABdSh179apawgBKm9=2vBaxVBPTemz4SPhDcgf_2kwk7rsn2oA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 20 Dec 2014 12:14:45 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: David Airlie <airlied@linux.ie>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Rob Clark <robdclark@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpu: drm: sti: sti_drm_crtc.c:  Remove unused function
+Date: Sat, 20 Dec 2014 18:17:30 +0100
+Message-Id: <1419095850-10436-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 12:51:00PM +0100, Robert N wrote:
-> I already sent you the patch line-wrapped at column 69, so it says:
-> 
-> > This is a patch to the gdm_mux.c file that fixes a space before comma
-> > coding style issue found by the checkpatch.pl tool.
-> 
-> Do i have to wrap it exactly at column 72? That would break a word:
-> 
-> > This is a patch to the gdm_mux.c file that fixes a space before comma co
-> > ding style issue found by the checkpatch.pl tool.
+Remove the function sti_drm_crtc_is_main() that is not used anywhere.
 
-Of course not, use a "sane" editor that wraps at a word boundry please.
+This was partially found by using a static code analysis program called cppcheck.
 
-thanks,
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/gpu/drm/sti/sti_drm_crtc.c |   10 ----------
+ drivers/gpu/drm/sti/sti_drm_crtc.h |    1 -
+ 2 files changed, 11 deletions(-)
 
-greg k-h
+diff --git a/drivers/gpu/drm/sti/sti_drm_crtc.c b/drivers/gpu/drm/sti/sti_drm_crtc.c
+index d2ae0c0..be53e35 100644
+--- a/drivers/gpu/drm/sti/sti_drm_crtc.c
++++ b/drivers/gpu/drm/sti/sti_drm_crtc.c
+@@ -389,16 +389,6 @@ static struct drm_crtc_funcs sti_crtc_funcs = {
+ 	.set_property = sti_drm_crtc_set_property,
+ };
+ 
+-bool sti_drm_crtc_is_main(struct drm_crtc *crtc)
+-{
+-	struct sti_mixer *mixer = to_sti_mixer(crtc);
+-
+-	if (mixer->id == STI_MIXER_MAIN)
+-		return true;
+-
+-	return false;
+-}
+-
+ int sti_drm_crtc_init(struct drm_device *drm_dev, struct sti_mixer *mixer,
+ 		struct drm_plane *primary, struct drm_plane *cursor)
+ {
+diff --git a/drivers/gpu/drm/sti/sti_drm_crtc.h b/drivers/gpu/drm/sti/sti_drm_crtc.h
+index caca8b1..ddae8fe 100644
+--- a/drivers/gpu/drm/sti/sti_drm_crtc.h
++++ b/drivers/gpu/drm/sti/sti_drm_crtc.h
+@@ -17,6 +17,5 @@ int sti_drm_crtc_enable_vblank(struct drm_device *dev, int crtc);
+ void sti_drm_crtc_disable_vblank(struct drm_device *dev, int crtc);
+ int sti_drm_crtc_vblank_cb(struct notifier_block *nb,
+ 		unsigned long event, void *data);
+-bool sti_drm_crtc_is_main(struct drm_crtc *drm_crtc);
+ 
+ #endif
+-- 
+1.7.10.4
+
