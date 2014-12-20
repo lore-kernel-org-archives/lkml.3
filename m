@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630AbaLTUnS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 15:43:18 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54891 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752449AbaLTUnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 15:43:15 -0500
-Message-ID: <1419108192.27548.7.camel@x220>
-Subject: Re: [PATCH]  bluetooth: Add hci_h4p driver
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
-        linux-bluetooth@vger.kernel.org, marcel@holtmann.org
-Date: Sat, 20 Dec 2014 21:43:12 +0100
-In-Reply-To: <20141220202314.GA8484@amd>
-References: <20141213223727.GA13894@amd> <20141220202314.GA8484@amd>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Dec 2014 20:43:13.0137 (UTC) FILETIME=[92BDEE10:01D01C95]
-X-RcptDomain: vger.kernel.org
+	id S1752116AbaLTUqb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 15:46:31 -0500
+Received: from mail-bn1on0143.outbound.protection.outlook.com ([157.56.110.143]:29894
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751248AbaLTUqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 15:46:30 -0500
+X-WSS-ID: 0NGWF1C-08-D73-02
+X-M-MSG: 
+From: Oded Gabbay <oded.gabbay@amd.com>
+To: <dri-devel@lists.freedesktop.org>
+CC: David Airlie <airlied@linux.ie>, Jerome Glisse <j.glisse@gmail.com>,
+        Joerg Roedel <joro@8bytes.org>, <linux-kernel@vger.kernel.org>,
+        "John Bridgman" <John.Bridgman@amd.com>, <Alexander.Deucher@amd.com>
+Subject: [PATCH 0/3] Use workqueue for device init in amdkfd
+Date: Sat, 20 Dec 2014 22:46:11 +0200
+Message-ID: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(50986999)(62966003)(15188555004)(77156002)(15975445007)(68736005)(106466001)(107046002)(2351001)(97736003)(229853001)(105586002)(110136001)(120916001)(92566001)(53416004)(86362001)(99396003)(33646002)(36756003)(89996001)(87936001)(50226001)(20776003)(4396001)(64706001)(19580395003)(21056001)(84676001)(31966008)(50466002)(46102003)(47776003)(77096005)(48376002)(101416001)(129583001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB194;
+X-Forefront-PRVS: 0431F981D8
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Dec 2014 20:46:26.8618
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel,
+This small patch-set, together with amd_iommu_v2 patch at 
+http://lists.linuxfoundation.org/pipermail/iommu/2014-December/011435.html 
+was created to solve the bug described at 
+https://bugzilla.kernel.org/show_bug.cgi?id=89661 (Kernel panic when 
+trying use amdkfd driver on Kaveri).
 
-On Sat, 2014-12-20 at 21:23 +0100, Pavel Machek wrote:
-> --- a/drivers/bluetooth/Kconfig
-> +++ b/drivers/bluetooth/Kconfig
-> @@ -243,4 +243,13 @@ config BT_WILINK
->  	  Say Y here to compile support for Texas Instrument's WiLink7 driver
->  	  into the kernel or say M to compile it as module (btwilink).
->  
-> +config BT_NOKIA_H4P
-> +	tristate "HCI driver with H4 Nokia extensions"
-> +	help
-> +	  Bluetooth HCI driver with H4 extensions.  This driver provides
-> +	  support for H4+ Bluetooth chip with vendor-specific H4 extensions.
-> +
-> +	  Say Y here to compile support for h4 extended devices into the kernel
-> +	  or say M to compile it as module (btnokia_h4p).
+That bug appears only when radeon, amdkfd and amd_iommu_v2 are compiled 
+inside the kernel (not as modules). In that case, the correct loading 
+order, as determined by the exported symbol used by each driver, is 
+not enforced anymore and the kernel loads them based on who was linked 
+first. That makes radeon load first, amdkfd second and amd_iommu_v2 
+third.
 
-Will this module be called btnokia_h4p or ...
+Because the initialization of a device in amdkfd is initiated by radeon, 
+and can only be completed if amdkfd and amd_iommu_v2 were loaded and 
+initialized, then in the case mentioned above, this initalization fails 
+and there is a kernel panic as some pointers are not initialized but 
+used nontheless.
 
-> +
->  endmenu
-> diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
-> index 9fe8a87..624ef3fc 100644
-> --- a/drivers/bluetooth/Makefile
-> +++ b/drivers/bluetooth/Makefile
-> @@ -31,4 +31,7 @@ hci_uart-$(CONFIG_BT_HCIUART_ATH3K)	+= hci_ath.o
->  hci_uart-$(CONFIG_BT_HCIUART_3WIRE)	+= hci_h5.o
->  hci_uart-objs				:= $(hci_uart-y)
->  
-> +obj-$(CONFIG_BT_NOKIA_H4P)      += nokia_h4p.o
+To solve this problem, amdkfd now checks if both it and amd_iommu_v2 
+were loaded before trying to initalize the device. If not, it enqueue 
+the work using a workqueue, which allows radeon to continue its device 
+initialization (because radeon calls amdkfd to initalize the device).
+The work function schedules itself as long as amdkfd and amd_iommu_v2 
+were not initialized.
 
-... nokia_h4p?
+Detection of when the modules finished their initialization is done by 
+a simple variable that is initialized to 1 when the module_init function 
+is completed successfully. Other methods for detection were checked, 
+e.g. module_is_live() and MODULE_SOFTDEP(), but they were proved not 
+to work when all modules are compiled in the kernel image (which is 
+the problematic scenario to begin with).
 
-> +nokia_h4p-objs := nokia_core.o nokia_fw.o nokia_uart.o
-> +
->  ccflags-y += -D__CHECK_ENDIAN__
+	Oded
 
-Or did I miss some make magic here?
+Oded Gabbay (3):
+  amdkfd: Don't clear *kfd2kgd on kfd_module_init
+  amdkfd: Track when amdkfd init is complete
+  amdkfd: Use workqueue for GPU init
 
-Thanks,
+ drivers/gpu/drm/amd/amdkfd/kfd_device.c | 72 +++++++++++++++++++++++++++++++--
+ drivers/gpu/drm/amd/amdkfd/kfd_module.c | 14 +++++--
+ drivers/gpu/drm/amd/amdkfd/kfd_priv.h   |  4 ++
+ 3 files changed, 83 insertions(+), 7 deletions(-)
 
-
-Paul Bolle
+-- 
+2.1.0
 
