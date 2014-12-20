@@ -1,116 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaLTUMv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 15:12:51 -0500
-Received: from mail-by2on0102.outbound.protection.outlook.com ([207.46.100.102]:52832
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750957AbaLTUMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 15:12:48 -0500
-X-WSS-ID: 0NGWDH6-07-6OY-02
-X-M-MSG: 
-From: Oded Gabbay <oded.gabbay@amd.com>
-To: Joerg Roedel <joro@8bytes.org>, <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, John Bridgman <John.Bridgman@amd.com>
-Subject: [PATCH] iommu/amd: Track when amd_iommu_v2 init is complete
-Date: Sat, 20 Dec 2014 22:12:32 +0200
-Message-ID: <1419106352-6486-1-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 2.1.0
+	id S1752156AbaLTUSI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 15:18:08 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:55495 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaLTUSG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 15:18:06 -0500
+Date: Sat, 20 Dec 2014 12:18:01 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        mjg59@srcf.ucam.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] dell-wmi: Don't send unneeded keypresses
+Message-ID: <20141220201801.GB16404@vmdeb7>
+References: <1417648583-9336-1-git-send-email-gabriele.mzt@gmail.com>
+ <20141220151108.GA11752@amd>
+ <20141220161654.GA16404@vmdeb7>
+ <12450702.GivQvxRsLB@xps13>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(77156002)(107046002)(62966003)(89996001)(99396003)(50986999)(33646002)(87936001)(68736005)(105586002)(106466001)(31966008)(46102003)(86362001)(77096005)(101416001)(21056001)(229853001)(92566001)(53416004)(47776003)(20776003)(64706001)(4396001)(50226001)(97736003)(84676001)(19580405001)(50466002)(48376002)(36756003)(19580395003)(120916001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0201MB0995;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0201MB0995;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0201MB0995;
-X-Forefront-PRVS: 0431F981D8
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0201MB0995;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Dec 2014 20:12:45.1012
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0201MB0995
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <12450702.GivQvxRsLB@xps13>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new exported function to amd_iommu_v2, which returns 1 if the
-amd_iommu_v2 initialization function has completed, and 0 otherwise.
+On Sat, Dec 20, 2014 at 06:03:54PM +0100, Gabriele Mazzotta wrote:
+> On Saturday 20 December 2014 08:16:54 Darren Hart wrote:
+> > On Sat, Dec 20, 2014 at 04:11:08PM +0100, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > > > Ok, I agree that it is subjective how serious it is...
+> > > > > > Just to remind that patch fixing problem described in
+> > > > > > 
+> > > > > > http://www.spinics.net/lists/platform-driver-x86/msg05922.ht
+> > > > > > ml
+> > > > > > http://www.spinics.net/lists/platform-driver-x86/msg05924.h
+> > > > > > tml
+> > > > > 
+> > > > > I don't have any objection to sending this back to stable.
+> > > > > Stable is for fixing REAL bugs, as opposed to theorhetical
+> > > > > races, etc. This is a "real" bug.
+> > > > > 
+> > > > > As to not chaning behavior, if it's OK for mainline, it's OK
+> > > > > for stable. At least that is my understanding of it. Folks
+> > > > > are free to verify with Greg if they disagree.
+> > > > 
+> > > > Darren, so how you decided? Now when patches are in linus tree, 
+> > > > are you going to send them to stable tree?
+> > > 
+> > > Please don't. -stable is for serious mainline bugs people are actually
+> > > hitting. Null pointer dereference counts, if people actually hit
+> > > it. This is more behaviour change, and yes, the new behaviour is
+> > > better, but it is really different class.
+> > 
+> > In this case I agree with Pavel. While the patches are small enough, fix one
+> > thing each, etc, it isn't clear from the description exactly how these patches
+> > affect users.
+> > 
+> > If you can articulate how they are "real bugs that bother people" (see
+> > stable_kernel_rules.txt) we can reconsider. I should have pushed for better
+> > commit messages on these it appears as this should be obvious from those, but it
+> > isn't - at least not to me at 8:15am ;-)
+> 
+> The problem is that userspace programs responds to those keypresses when
+> they shouldn't.
+> 
+> In case of KEY_KBDILLUMTOGGLE, the illumination level is changed by the
+> BIOS, so if the keypress is reported, userspace programs will try to
+> toggle the keyboard illumination after the BIOS changed the level.
+> This is even more problematic if you consider that there could be
+> multiple illumination levels that are not taken into account if a
+> KEY_KBDILLUMTOGGLE is sent. Userspace will simply turn ON/OFF the
+> illumination, interfering with the BIOS.
+> This is shouldn't be a major problem since dell-laptop can control the
+> keyboard illumination only now and I can't see what userspace
+> application can misbehave without this change.
 
-This is necessary for the case when amd_iommu_v2 is compiled inside the kernel
-image (not as module) and another module (e.g. amdkfd), which is also compiled
-inside the kernel image, is dependent on amd_iommu_v2 functionality.
+Agreed, this one should not go back to stable.
 
-In that case, there is no mechanism in the kernel that enforces the order of
-loading between the two modules. Therefore, If the amd_iommu_v2 is loaded
-_after_ the other module, and the other module calls one of
-amd_iommu_v2 exported functions _before_ amd_iommu_v2 is loaded, than that
-function will fail, and as a result, the calling module may fail as well.
+> 
+> In the case of KEY_WLAN/KEY_RFKILL, the BIOS already takes care of
+> everything when the key is pressed, so sending keypresses as if
+> userspace programs have to do something is wrong. If for instance the
+> WiFi rfkill is soft blocked and I press the Fn key twice, I want it
+> to be soft blocked at the end. However, this is not the case.
 
-Note that when the two modules are compiled as modules, this situation can't
-occur as the kernel enforces the order of loading.
+These sound like good candidates, real bugs that bother people. I would support
+sending them back to stable.
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
----
- drivers/iommu/amd_iommu_v2.c | 11 +++++++++++
- include/linux/amd-iommu.h    |  2 ++
- 2 files changed, 13 insertions(+)
+Since we didn't have this discussion before they went mainline, sorry it's been
+a bad month for me :-/, these need to be sent manually. Pali, Gabriele, please
+have a look at stable_kernel_rules, determine how far back these should go, and
+submit the patches to the stable list.
 
-diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
-index 1e6360e..2456f18 100644
---- a/drivers/iommu/amd_iommu_v2.c
-+++ b/drivers/iommu/amd_iommu_v2.c
-@@ -895,6 +895,14 @@ out_unlock:
- }
- EXPORT_SYMBOL(amd_iommu_set_invalidate_ctx_cb);
- 
-+static int iommu_v2_init_completed;
-+
-+int amd_iommu_v2_is_init_completed(void)
-+{
-+	return iommu_v2_init_completed;
-+}
-+EXPORT_SYMBOL(amd_iommu_v2_is_init_completed);
-+
- static int __init amd_iommu_v2_init(void)
- {
- 	int ret;
-@@ -903,6 +911,7 @@ static int __init amd_iommu_v2_init(void)
- 
- 	if (!amd_iommu_v2_supported()) {
- 		pr_info("AMD IOMMUv2 functionality not available on this system\n");
-+		iommu_v2_init_completed = 1;
- 		/*
- 		 * Load anyway to provide the symbols to other modules
- 		 * which may use AMD IOMMUv2 optionally.
-@@ -919,6 +928,8 @@ static int __init amd_iommu_v2_init(void)
- 
- 	amd_iommu_register_ppr_notifier(&ppr_nb);
- 
-+	iommu_v2_init_completed = 1;
-+
- 	return 0;
- 
- out:
-diff --git a/include/linux/amd-iommu.h b/include/linux/amd-iommu.h
-index 2b08e79..115c03a 100644
---- a/include/linux/amd-iommu.h
-+++ b/include/linux/amd-iommu.h
-@@ -169,6 +169,8 @@ typedef void (*amd_iommu_invalidate_ctx)(struct pci_dev *pdev, int pasid);
- extern int amd_iommu_set_invalidate_ctx_cb(struct pci_dev *pdev,
- 					   amd_iommu_invalidate_ctx cb);
- 
-+extern int amd_iommu_v2_is_init_completed(void);
-+
- #else
- 
- static inline int amd_iommu_detect(void) { return -ENODEV; }
+> Sorry for the brief commit messages.
+> 
+
+They didn't bother me at the time as I saw the improvement, but they weren't
+enough to make the stable decision and I need to watch out for that in the
+future. Lesson learned :-)
+
+Thanks everyone,
+
 -- 
-2.1.0
-
+Darren Hart
+Intel Open Source Technology Center
