@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaLTMcs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 07:32:48 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:51034 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961AbaLTMcp (ORCPT
+	id S1752921AbaLTMfw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 07:35:52 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:39218 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaLTMft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 07:32:45 -0500
-Message-ID: <54956C6A.4060703@cogentembedded.com>
-Date: Sat, 20 Dec 2014 15:32:42 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Jeremiah Mahler <jmmahler@gmail.com>, Johan Hovold <johan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] usb: serial: handle -EPROTO quietly in generic_read_bulk
-References: <1418340594-30469-1-git-send-email-jmmahler@gmail.com> <1419066698-2684-1-git-send-email-jmmahler@gmail.com> <1419066698-2684-2-git-send-email-jmmahler@gmail.com>
-In-Reply-To: <1419066698-2684-2-git-send-email-jmmahler@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 20 Dec 2014 07:35:49 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: arm: plat-samsung: setup-camif.c:  Remove some unused functions
+Date: Sat, 20 Dec 2014 13:38:36 +0100
+Message-Id: <1419079116-31868-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Removes some functions that are not used anywhere:
+s3c_camif_gpio_put() s3c_camif_gpio_get()
 
-On 12/20/2014 12:11 PM, Jeremiah Mahler wrote:
+This was partially found by using a static code analysis program called cppcheck.
 
-> If a USB serial device driver, which is built using the generic serial
-> driver, is unplugged while there is an active program using the device,
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/arm/plat-samsung/setup-camif.c |   41 -----------------------------------
+ include/media/s3c_camif.h           |    4 ----
+ 2 files changed, 45 deletions(-)
 
-    Driver is unplugged? :-)
-
-> it will spam the logs with -EPROTO (71) messages as it attempts to
-> retry.
-
-> Most serial usb drivers (metro-usb, pl2303, mos7840, ...) only output
-> these messages for debugging.  The generic driver treats these as
-> errors.
-
-> Change the default output for the generic serial driver from error to
-> debug.
-
-> Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-
-[...]
-
-WBR, Sergei
+diff --git a/arch/arm/plat-samsung/setup-camif.c b/arch/arm/plat-samsung/setup-camif.c
+index 72d8edb..3a56ee3 100644
+--- a/arch/arm/plat-samsung/setup-camif.c
++++ b/arch/arm/plat-samsung/setup-camif.c
+@@ -28,44 +28,3 @@ static void camif_get_gpios(int *gpio_start, int *gpio_reset)
+ 	*gpio_reset = S3C64XX_GPF(3);
+ #endif
+ }
+-
+-int s3c_camif_gpio_get(void)
+-{
+-	int gpio_start, gpio_reset;
+-	int ret, i;
+-
+-	camif_get_gpios(&gpio_start, &gpio_reset);
+-
+-	for (i = 0; i < S3C_CAMIF_NUM_GPIOS; i++) {
+-		int gpio = gpio_start + i;
+-
+-		if (gpio == gpio_reset)
+-			continue;
+-
+-		ret = gpio_request(gpio, "camif");
+-		if (!ret)
+-			ret = s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(2));
+-		if (ret) {
+-			pr_err("failed to configure GPIO %d\n", gpio);
+-			for (--i; i >= 0; i--)
+-				gpio_free(gpio--);
+-			return ret;
+-		}
+-		s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
+-	}
+-
+-	return 0;
+-}
+-
+-void s3c_camif_gpio_put(void)
+-{
+-	int i, gpio_start, gpio_reset;
+-
+-	camif_get_gpios(&gpio_start, &gpio_reset);
+-
+-	for (i = 0; i < S3C_CAMIF_NUM_GPIOS; i++) {
+-		int gpio = gpio_start + i;
+-		if (gpio != gpio_reset)
+-			gpio_free(gpio);
+-	}
+-}
+diff --git a/include/media/s3c_camif.h b/include/media/s3c_camif.h
+index df96c2c..aa2f851 100644
+--- a/include/media/s3c_camif.h
++++ b/include/media/s3c_camif.h
+@@ -38,8 +38,4 @@ struct s3c_camif_plat_data {
+ 	int (*gpio_put)(void);
+ };
+ 
+-/* Platform default helper functions */
+-int s3c_camif_gpio_get(void);
+-int s3c_camif_gpio_put(void);
+-
+ #endif /* MEDIA_S3C_CAMIF_ */
+-- 
+1.7.10.4
 
