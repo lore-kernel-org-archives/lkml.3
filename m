@@ -1,86 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373AbaLTQoK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:44:10 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:41289 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140AbaLTQoH (ORCPT
+	id S1753309AbaLTQrG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:47:06 -0500
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:60870 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084AbaLTQrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:44:07 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Solomon Peachy <pizza@shaftnet.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: wireless: cw1200: queue.c:  Remove unused function
-Date: Sat, 20 Dec 2014 17:46:54 +0100
-Message-Id: <1419094014-8945-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 20 Dec 2014 11:47:02 -0500
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Anton Blanchard <anton@samba.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] powerpc: Wire up sys_execveat() syscall
+Date: Sat, 20 Dec 2014 11:47:18 -0500
+Message-Id: <1419094041-14536-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function cw1200_queue_requeue_all() that is not used anywhere.
+Wire up sys_execveat(). This passes the selftests for the system call.
 
-This was partially found by using a static code analysis program called cppcheck.
+Check success of execveat(3, '../execveat', 0)... [OK]
+Check success of execveat(5, 'execveat', 0)... [OK]
+Check success of execveat(6, 'execveat', 0)... [OK]
+Check success of execveat(-100, '/home/pranith/linux/...ftests/exec/execveat', 0)... [OK]
+Check success of execveat(99, '/home/pranith/linux/...ftests/exec/execveat', 0)... [OK]
+Check success of execveat(8, '', 4096)... [OK]
+Check success of execveat(17, '', 4096)... [OK]
+Check success of execveat(9, '', 4096)... [OK]
+Check success of execveat(14, '', 4096)... [OK]
+Check success of execveat(14, '', 4096)... [OK]
+Check success of execveat(15, '', 4096)... [OK]
+Check failure of execveat(8, '', 0) with ENOENT... [OK]
+Check failure of execveat(8, '(null)', 4096) with EFAULT... [OK]
+Check success of execveat(5, 'execveat.symlink', 0)... [OK]
+Check success of execveat(6, 'execveat.symlink', 0)... [OK]
+Check success of execveat(-100, '/home/pranith/linux/...xec/execveat.symlink', 0)... [OK]
+Check success of execveat(10, '', 4096)... [OK]
+Check success of execveat(10, '', 4352)... [OK]
+Check failure of execveat(5, 'execveat.symlink', 256) with ELOOP... [OK]
+Check failure of execveat(6, 'execveat.symlink', 256) with ELOOP... [OK]
+Check failure of execveat(-100, '/home/pranith/linux/tools/testing/selftests/exec/execveat.symlink', 256) with ELOOP... [OK]
+Check success of execveat(3, '../script', 0)... [OK]
+Check success of execveat(5, 'script', 0)... [OK]
+Check success of execveat(6, 'script', 0)... [OK]
+Check success of execveat(-100, '/home/pranith/linux/...elftests/exec/script', 0)... [OK]
+Check success of execveat(13, '', 4096)... [OK]
+Check success of execveat(13, '', 4352)... [OK]
+Check failure of execveat(18, '', 4096) with ENOENT... [OK]
+Check failure of execveat(7, 'script', 0) with ENOENT... [OK]
+Check success of execveat(16, '', 4096)... [OK]
+Check success of execveat(16, '', 4096)... [OK]
+Check success of execveat(4, '../script', 0)... [OK]
+Check success of execveat(4, 'script', 0)... [OK]
+Check success of execveat(4, '../script', 0)... [OK]
+Check failure of execveat(4, 'script', 0) with ENOENT... [OK]
+Check failure of execveat(5, 'execveat', 65535) with EINVAL... [OK]
+Check failure of execveat(5, 'no-such-file', 0) with ENOENT... [OK]
+Check failure of execveat(6, 'no-such-file', 0) with ENOENT... [OK]
+Check failure of execveat(-100, 'no-such-file', 0) with ENOENT... [OK]
+Check failure of execveat(5, '', 4096) with EACCES... [OK]
+Check failure of execveat(5, 'Makefile', 0) with EACCES... [OK]
+Check failure of execveat(11, '', 4096) with EACCES... [OK]
+Check failure of execveat(12, '', 4096) with EACCES... [OK]
+Check failure of execveat(99, '', 4096) with EBADF... [OK]
+Check failure of execveat(99, 'execveat', 0) with EBADF... [OK]
+Check failure of execveat(8, 'execveat', 0) with ENOTDIR... [OK]
+Invoke copy of 'execveat' via filename of length 4093:
+Check success of execveat(19, '', 4096)... [OK]
+Check success of execveat(5, 'xxxxxxxxxxxxxxxxxxxx...yyyyyyyyyyyyyyyyyyyy', 0)... [OK]
+Invoke copy of 'script' via filename of length 4093:
+Check success of execveat(20, '', 4096)... [OK]
+/bin/sh: 0: Can't open /dev/fd/5/xxxxxxx(... a long line of x's and y's, 0)... [OK]
+Check success of execveat(5, 'xxxxxxxxxxxxxxxxxxxx...yyyyyyyyyyyyyyyyyyyy', 0)... [OK]
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Tested on a 32-bit powerpc system.
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- drivers/net/wireless/cw1200/queue.c |   27 ---------------------------
- drivers/net/wireless/cw1200/queue.h |    1 -
- 2 files changed, 28 deletions(-)
+ arch/powerpc/include/asm/systbl.h      | 1 +
+ arch/powerpc/include/asm/unistd.h      | 2 +-
+ arch/powerpc/include/uapi/asm/unistd.h | 1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/cw1200/queue.c b/drivers/net/wireless/cw1200/queue.c
-index 9c3925f..0aaa0b4 100644
---- a/drivers/net/wireless/cw1200/queue.c
-+++ b/drivers/net/wireless/cw1200/queue.c
-@@ -415,33 +415,6 @@ int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packet_id)
- 	return ret;
- }
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index ce9577d..778844a 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -366,3 +366,4 @@ SYSCALL_SPU(seccomp)
+ SYSCALL_SPU(getrandom)
+ SYSCALL_SPU(memfd_create)
+ SYSCALL_SPU(bpf)
++SYSCALL_SPU(execveat)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index e0da021..36b79c3 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -12,7 +12,7 @@
+ #include <uapi/asm/unistd.h>
  
--int cw1200_queue_requeue_all(struct cw1200_queue *queue)
--{
--	struct cw1200_queue_item *item, *tmp;
--	struct cw1200_queue_stats *stats = queue->stats;
--	spin_lock_bh(&queue->lock);
--
--	list_for_each_entry_safe_reverse(item, tmp, &queue->pending, head) {
--		--queue->num_pending;
--		++queue->link_map_cache[item->txpriv.link_id];
--
--		spin_lock_bh(&stats->lock);
--		++stats->num_queued;
--		++stats->link_map_cache[item->txpriv.link_id];
--		spin_unlock_bh(&stats->lock);
--
--		++item->generation;
--		item->packet_id = cw1200_queue_mk_packet_id(queue->generation,
--							    queue->queue_id,
--							    item->generation,
--							    item - queue->pool);
--		list_move(&item->head, &queue->queue);
--	}
--	spin_unlock_bh(&queue->lock);
--
--	return 0;
--}
--
- int cw1200_queue_remove(struct cw1200_queue *queue, u32 packet_id)
- {
- 	int ret = 0;
-diff --git a/drivers/net/wireless/cw1200/queue.h b/drivers/net/wireless/cw1200/queue.h
-index 119f9c7..45802ea 100644
---- a/drivers/net/wireless/cw1200/queue.h
-+++ b/drivers/net/wireless/cw1200/queue.h
-@@ -88,7 +88,6 @@ int cw1200_queue_get(struct cw1200_queue *queue,
- 		     struct ieee80211_tx_info **tx_info,
- 		     const struct cw1200_txpriv **txpriv);
- int cw1200_queue_requeue(struct cw1200_queue *queue, u32 packet_id);
--int cw1200_queue_requeue_all(struct cw1200_queue *queue);
- int cw1200_queue_remove(struct cw1200_queue *queue,
- 			u32 packet_id);
- int cw1200_queue_get_skb(struct cw1200_queue *queue, u32 packet_id,
+ 
+-#define __NR_syscalls		362
++#define __NR_syscalls		363
+ 
+ #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
+diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
+index f55351f..ef5b5b1 100644
+--- a/arch/powerpc/include/uapi/asm/unistd.h
++++ b/arch/powerpc/include/uapi/asm/unistd.h
+@@ -384,5 +384,6 @@
+ #define __NR_getrandom		359
+ #define __NR_memfd_create	360
+ #define __NR_bpf		361
++#define __NR_execveat		362
+ 
+ #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
 -- 
-1.7.10.4
+2.1.3
 
