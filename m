@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaLTPoV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 10:44:21 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:49197 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaLTPoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 10:44:17 -0500
-Date: Sat, 20 Dec 2014 07:44:13 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        Larry.Finger@lwfinger.net, navin.patidar@gmail.com,
-        ebru.akagunduz@gmail.com, paulmck@linux.vnet.ibm.com,
-        heenasirwani@gmail.com, cengelma@gmx.at, standby24x7@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Staging:rtl8188eu:Fixed a space coding style issue.
-Message-ID: <20141220154413.GA31570@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Gangadhar Vukkesala <gangs.freelancer@gmail.com>,
-	gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-	Larry.Finger@lwfinger.net, navin.patidar@gmail.com,
-	ebru.akagunduz@gmail.com, paulmck@linux.vnet.ibm.com,
-	heenasirwani@gmail.com, cengelma@gmx.at, standby24x7@gmail.com,
-	linux-kernel@vger.kernel.org
-References: <1419086822-3045-1-git-send-email-gangs.freelancer@gmail.com>
+	id S1753221AbaLTPsT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 10:48:19 -0500
+Received: from mout.gmx.net ([212.227.15.19]:62794 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752448AbaLTPsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 10:48:16 -0500
+Message-ID: <54959A3A.4030104@gmx.de>
+Date: Sat, 20 Dec 2014 16:48:10 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419086822-3045-1-git-send-email-gangs.freelancer@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+CC: David Miller <davem@davemloft.net>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
+References: <548B1E44.6050005@users.sourceforge.net>	<20141212.115922.687789059853236747.davem@davemloft.net>	<54930D7C.3000901@users.sourceforge.net> <20141218.122556.2148647081075440879.davem@davemloft.net> <54958B8C.7010105@users.sourceforge.net>
+In-Reply-To: <54958B8C.7010105@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:31bjLUje8u5/oxNtd3XhP9nUE86SMqmO01B/RL8U5pBGrWH83G8
+ KvoBM7KtEsZOe2dF2OVTQIf/8dEZv5HaX/iDln1NEX4E3dtmMk+rHkU5Wi0q6Sh5udqhOLC
+ b/2US+OhTnZlZD1OQanDm2j8Y4j+KSt3ieaRht5mz8bjy0pMhRHYlwGzCcmIbw9R0MtFo7o
+ 6K4rZe8OL/5rVqEw/7WIQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gangadhar,
+Hi Markus,
 
-It is looking much better.  Just a few more nit picks though :)
-
-In the subject line, tags usually have ':' next to the tag with a
-space between.  Also, I usually keep them lowercase.
-
-  staging: rtl8188eu: (then your description)
-
-On Sat, Dec 20, 2014 at 08:17:02PM +0530, Gangadhar Vukkesala wrote:
-> Fixed a Space Coding style issue which was found when running checkpatch.pl
-
-"Space Coding" is not a noun so it does not need to be capitalized.
-
-> script on rtw_ap.c.
+On 20.12.2014 15:45, SF Markus Elfring wrote:
+>> I'm saying to leave the code alone.
 > 
-> Signed-off-by: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
-Name looks good.
-
-> ---
->  drivers/staging/rtl8188eu/core/rtw_ap.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Do I need to try another interpretation out for your feedback?
 > 
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_ap.c b/drivers/staging/rtl8188eu/core/rtw_ap.c
-> index d61842e..da19145 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_ap.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_ap.c
-> @@ -509,7 +509,7 @@ void add_RATid(struct adapter *padapter, struct sta_info *psta, u8 rssi_level)
->  		tx_ra_bitmap |= ((raid<<28)&0xf0000000);
->  
->  		DBG_88E("%s => mac_id:%d , raid:%d , bitmap = 0x%x, arg = 0x%x\n",
-> -			__func__ , psta->mac_id, raid , tx_ra_bitmap, arg);
-> +			__func__, psta->mac_id, raid, tx_ra_bitmap, arg);
->  
->  		/* bitmap[0:27] = tx_rate_bitmap */
->  		/* bitmap[28:31]= Rate Adaptive id */
-> -- 
-> Gangadhar V
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> If it goes:
+>> 
+>> 	var = foo_that_returns_ptr_err()
+>> 	if (IS_ERR(var))
+>> 		return PTR_ERR(var);
+>> 
+>> 	p->bar = var;
+>> 
+>> or whatever, simply keep it that way!
+> 
+> Do you want to express here that a data structure member should
+> only be set after a previous function call succeeded?
+> 
 
-If you fix those few things there is nothing else that I would have a
-complaint about.
+I think what David said was pretty clear: If you see code like the above
+there is no need to refactor it. That does not mean that this is the
+_preferred_ way of error handling. Its just good enough to be left alone.
 
--- 
-- Jeremiah Mahler
+Regards,
+Lino
