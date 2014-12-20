@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaLTQtW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:49:22 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:64407 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaLTQtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:49:20 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        ceph-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: ceph: crypto.c:  Remove some unused functions
-Date: Sat, 20 Dec 2014 17:52:06 +0100
-Message-Id: <1419094326-9218-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753401AbaLTQut (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:50:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56305 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104AbaLTQuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 11:50:46 -0500
+Date: Sat, 20 Dec 2014 11:49:55 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141220164955.GA6315@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+	Peter Anvin <hpa@linux.intel.com>
+References: <CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+ <20141219035859.GA20022@redhat.com>
+ <20141219040308.GB20022@redhat.com>
+ <CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
+ <20141219145528.GC13404@redhat.com>
+ <CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
+ <CA+55aFyb6N47N2Jg75EmRxDTjFF2y_oy4dHNDeW_dyM4PUTDrA@mail.gmail.com>
+ <CA+55aFzt_4Zrnek6381JFzm+3iV9d=JAeyx+=E9F8BeiWFb56g@mail.gmail.com>
+ <20141219205435.GA24499@redhat.com>
+ <CA+55aFyafdtY9ZxNHx2LNRyD2Krn9jgfhOji-8P5vebAzEbNiw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyafdtY9ZxNHx2LNRyD2Krn9jgfhOji-8P5vebAzEbNiw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-ceph_encrypt() ceph_decrypt() ceph_crypto_key_encode()
+On Fri, Dec 19, 2014 at 02:05:20PM -0800, Linus Torvalds wrote:
+ > > Right now I'm doing Chris' idea of "turn debugging back on,
+ > > and try without serial console".  Shall I try your suggestion
+ > > on top of that ?
+ > 
+ > Might as well. I doubt it really will make any difference, but I also
+ > don't think it will interact badly in any way, so..
 
-This was partially found by using a static code analysis program called cppcheck.
+It locked up. It's not even responding to icmp.
+It might be Monday before I can see what's on the console.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- net/ceph/crypto.c |   52 ----------------------------------------------------
- net/ceph/crypto.h |    7 -------
- 2 files changed, 59 deletions(-)
+	Dave
 
-diff --git a/net/ceph/crypto.c b/net/ceph/crypto.c
-index 62fc5e7..5a82890 100644
---- a/net/ceph/crypto.c
-+++ b/net/ceph/crypto.c
-@@ -22,18 +22,6 @@ int ceph_crypto_key_clone(struct ceph_crypto_key *dst,
- 	return 0;
- }
- 
--int ceph_crypto_key_encode(struct ceph_crypto_key *key, void **p, void *end)
--{
--	if (*p + sizeof(u16) + sizeof(key->created) +
--	    sizeof(u16) + key->len > end)
--		return -ERANGE;
--	ceph_encode_16(p, key->type);
--	ceph_encode_copy(p, &key->created, sizeof(key->created));
--	ceph_encode_16(p, key->len);
--	ceph_encode_copy(p, key->key, key->len);
--	return 0;
--}
--
- int ceph_crypto_key_decode(struct ceph_crypto_key *key, void **p, void *end)
- {
- 	ceph_decode_need(p, end, 2*sizeof(u16) + sizeof(key->created), bad);
-@@ -329,26 +317,6 @@ static int ceph_aes_decrypt2(const void *key, int key_len,
- }
- 
- 
--int ceph_decrypt(struct ceph_crypto_key *secret, void *dst, size_t *dst_len,
--		 const void *src, size_t src_len)
--{
--	switch (secret->type) {
--	case CEPH_CRYPTO_NONE:
--		if (*dst_len < src_len)
--			return -ERANGE;
--		memcpy(dst, src, src_len);
--		*dst_len = src_len;
--		return 0;
--
--	case CEPH_CRYPTO_AES:
--		return ceph_aes_decrypt(secret->key, secret->len, dst,
--					dst_len, src, src_len);
--
--	default:
--		return -EINVAL;
--	}
--}
--
- int ceph_decrypt2(struct ceph_crypto_key *secret,
- 			void *dst1, size_t *dst1_len,
- 			void *dst2, size_t *dst2_len,
-@@ -382,26 +350,6 @@ int ceph_decrypt2(struct ceph_crypto_key *secret,
- 	}
- }
- 
--int ceph_encrypt(struct ceph_crypto_key *secret, void *dst, size_t *dst_len,
--		 const void *src, size_t src_len)
--{
--	switch (secret->type) {
--	case CEPH_CRYPTO_NONE:
--		if (*dst_len < src_len)
--			return -ERANGE;
--		memcpy(dst, src, src_len);
--		*dst_len = src_len;
--		return 0;
--
--	case CEPH_CRYPTO_AES:
--		return ceph_aes_encrypt(secret->key, secret->len, dst,
--					dst_len, src, src_len);
--
--	default:
--		return -EINVAL;
--	}
--}
--
- int ceph_encrypt2(struct ceph_crypto_key *secret, void *dst, size_t *dst_len,
- 		  const void *src1, size_t src1_len,
- 		  const void *src2, size_t src2_len)
-diff --git a/net/ceph/crypto.h b/net/ceph/crypto.h
-index d149822..36082d5 100644
---- a/net/ceph/crypto.h
-+++ b/net/ceph/crypto.h
-@@ -22,17 +22,10 @@ static inline void ceph_crypto_key_destroy(struct ceph_crypto_key *key)
- 
- int ceph_crypto_key_clone(struct ceph_crypto_key *dst,
- 			  const struct ceph_crypto_key *src);
--int ceph_crypto_key_encode(struct ceph_crypto_key *key, void **p, void *end);
- int ceph_crypto_key_decode(struct ceph_crypto_key *key, void **p, void *end);
- int ceph_crypto_key_unarmor(struct ceph_crypto_key *key, const char *in);
- 
- /* crypto.c */
--int ceph_decrypt(struct ceph_crypto_key *secret,
--		 void *dst, size_t *dst_len,
--		 const void *src, size_t src_len);
--int ceph_encrypt(struct ceph_crypto_key *secret,
--		 void *dst, size_t *dst_len,
--		 const void *src, size_t src_len);
- int ceph_decrypt2(struct ceph_crypto_key *secret,
- 		  void *dst1, size_t *dst1_len,
- 		  void *dst2, size_t *dst2_len,
--- 
-1.7.10.4
 
