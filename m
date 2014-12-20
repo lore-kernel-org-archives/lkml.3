@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156AbaLTUSI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 15:18:08 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:55495 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaLTUSG (ORCPT
+	id S1752288AbaLTUTb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 15:19:31 -0500
+Received: from smtprelay0214.hostedemail.com ([216.40.44.214]:35094 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751000AbaLTUTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 15:18:06 -0500
-Date: Sat, 20 Dec 2014 12:18:01 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        mjg59@srcf.ucam.org, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] dell-wmi: Don't send unneeded keypresses
-Message-ID: <20141220201801.GB16404@vmdeb7>
-References: <1417648583-9336-1-git-send-email-gabriele.mzt@gmail.com>
- <20141220151108.GA11752@amd>
- <20141220161654.GA16404@vmdeb7>
- <12450702.GivQvxRsLB@xps13>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <12450702.GivQvxRsLB@xps13>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 20 Dec 2014 15:19:30 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3867:3870:5007:6261:8607:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13095:13311:13357:14096:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: coat63_6fe5e236b6d17
+X-Filterd-Recvd-Size: 2220
+Message-ID: <1419106766.25129.29.camel@perches.com>
+Subject: [PATCH] printk: Correct timeout comment, neaten MODULE_PARM_DESC
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 20 Dec 2014 12:19:26 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 06:03:54PM +0100, Gabriele Mazzotta wrote:
-> On Saturday 20 December 2014 08:16:54 Darren Hart wrote:
-> > On Sat, Dec 20, 2014 at 04:11:08PM +0100, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > > > Ok, I agree that it is subjective how serious it is...
-> > > > > > Just to remind that patch fixing problem described in
-> > > > > > 
-> > > > > > http://www.spinics.net/lists/platform-driver-x86/msg05922.ht
-> > > > > > ml
-> > > > > > http://www.spinics.net/lists/platform-driver-x86/msg05924.h
-> > > > > > tml
-> > > > > 
-> > > > > I don't have any objection to sending this back to stable.
-> > > > > Stable is for fixing REAL bugs, as opposed to theorhetical
-> > > > > races, etc. This is a "real" bug.
-> > > > > 
-> > > > > As to not chaning behavior, if it's OK for mainline, it's OK
-> > > > > for stable. At least that is my understanding of it. Folks
-> > > > > are free to verify with Greg if they disagree.
-> > > > 
-> > > > Darren, so how you decided? Now when patches are in linus tree, 
-> > > > are you going to send them to stable tree?
-> > > 
-> > > Please don't. -stable is for serious mainline bugs people are actually
-> > > hitting. Null pointer dereference counts, if people actually hit
-> > > it. This is more behaviour change, and yes, the new behaviour is
-> > > better, but it is really different class.
-> > 
-> > In this case I agree with Pavel. While the patches are small enough, fix one
-> > thing each, etc, it isn't clear from the description exactly how these patches
-> > affect users.
-> > 
-> > If you can articulate how they are "real bugs that bother people" (see
-> > stable_kernel_rules.txt) we can reconsider. I should have pushed for better
-> > commit messages on these it appears as this should be obvious from those, but it
-> > isn't - at least not to me at 8:15am ;-)
-> 
-> The problem is that userspace programs responds to those keypresses when
-> they shouldn't.
-> 
-> In case of KEY_KBDILLUMTOGGLE, the illumination level is changed by the
-> BIOS, so if the keypress is reported, userspace programs will try to
-> toggle the keyboard illumination after the BIOS changed the level.
-> This is even more problematic if you consider that there could be
-> multiple illumination levels that are not taken into account if a
-> KEY_KBDILLUMTOGGLE is sent. Userspace will simply turn ON/OFF the
-> illumination, interfering with the BIOS.
-> This is shouldn't be a major problem since dell-laptop can control the
-> keyboard illumination only now and I can't see what userspace
-> application can misbehave without this change.
+Neaten the MODULE_PARAM_DESC message.
+Use 30 seconds in the comment for the zap console locks timeout.
 
-Agreed, this one should not go back to stable.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ kernel/printk/printk.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-> 
-> In the case of KEY_WLAN/KEY_RFKILL, the BIOS already takes care of
-> everything when the key is pressed, so sending keypresses as if
-> userspace programs have to do something is wrong. If for instance the
-> WiFi rfkill is soft blocked and I press the Fn key twice, I want it
-> to be soft blocked at the end. However, this is not the case.
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 02d6b6d..c06df7d 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -935,8 +935,8 @@ static int __init ignore_loglevel_setup(char *str)
+ 
+ early_param("ignore_loglevel", ignore_loglevel_setup);
+ module_param(ignore_loglevel, bool, S_IRUGO | S_IWUSR);
+-MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
+-	"print all kernel messages to the console.");
++MODULE_PARM_DESC(ignore_loglevel,
++		 "ignore loglevel setting (prints all kernel messages to the console)");
+ 
+ #ifdef CONFIG_BOOT_PRINTK_DELAY
+ 
+@@ -1419,16 +1419,16 @@ static void call_console_drivers(int level, const char *text, size_t len)
+ }
+ 
+ /*
+- * Zap console related locks when oopsing. Only zap at most once
+- * every 10 seconds, to leave time for slow consoles to print a
+- * full oops.
++ * Zap console related locks when oopsing.
++ * To leave time for slow consoles to print a full oops,
++ * only zap at most once every 30 seconds.
+  */
+ static void zap_locks(void)
+ {
+ 	static unsigned long oops_timestamp;
+ 
+ 	if (time_after_eq(jiffies, oops_timestamp) &&
+-			!time_after(jiffies, oops_timestamp + 30 * HZ))
++	    !time_after(jiffies, oops_timestamp + 30 * HZ))
+ 		return;
+ 
+ 	oops_timestamp = jiffies;
 
-These sound like good candidates, real bugs that bother people. I would support
-sending them back to stable.
 
-Since we didn't have this discussion before they went mainline, sorry it's been
-a bad month for me :-/, these need to be sent manually. Pali, Gabriele, please
-have a look at stable_kernel_rules, determine how far back these should go, and
-submit the patches to the stable list.
-
-> Sorry for the brief commit messages.
-> 
-
-They didn't bother me at the time as I saw the improvement, but they weren't
-enough to make the stable decision and I need to watch out for that in the
-future. Lesson learned :-)
-
-Thanks everyone,
-
--- 
-Darren Hart
-Intel Open Source Technology Center
