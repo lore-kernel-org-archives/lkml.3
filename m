@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaLTAaD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 19:30:03 -0500
-Received: from bastet.se.axis.com ([195.60.68.11]:57111 "EHLO
-	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668AbaLTAaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 19:30:00 -0500
-Date: Sat, 20 Dec 2014 01:29:53 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: [GIT PULL] CRIS changes for 3.19
-Message-ID: <20141220002953.GR26817@axis.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752143AbaLTAxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 19:53:11 -0500
+Received: from omr2.cc.vt.edu ([198.82.141.100]:59876 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaLTAxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 19:53:10 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, sgrubb@redhat.com, eparis@parisplace.org,
+        pmoore@redhat.com
+Subject: Re: [PATCH] audit: use supplied gfp_mask from audit_buffer in kauditd_send_multicast_skb
+In-Reply-To: Your message of "Thu, 18 Dec 2014 23:09:27 -0500."
+             <d261c547d8018a18f2092e1907b06e190162b088.1418947557.git.rgb@redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <d261c547d8018a18f2092e1907b06e190162b088.1418947557.git.rgb@redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1419036779_71557P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Fri, 19 Dec 2014 19:52:59 -0500
+Message-ID: <74385.1419036779@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--==_Exmh_1419036779_71557P
+Content-Type: text/plain; charset=us-ascii
 
-Please pull the below branch for CRIS changes for 3.19,
-mostly cleanup and build fixes for CRISv32 allmodconfig.
+On Thu, 18 Dec 2014 23:09:27 -0500, Richard Guy Briggs said:
+> Eric Paris explains: Since kauditd_send_multicast_skb() gets called in
+> audit_log_end(), which can come from any context (aka even a sleeping context)
+> GFP_KERNEL can't be used.  Since the audit_buffer knows what context it should
+> use, pass that down and use that.
+>
+> See: https://lkml.org/lkml/2014/12/16/542
 
-God Jul och Gott Nytt år!
+> Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  kernel/audit.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 7b83c55..ce484fb 100644
 
-The following changes since commit e589c9e13aeb0c5539bf1314b3a78442ea8fc0c2:
+I was reliably triggering 3-4 BUGs an hour, and with this patch applied I've
+gone 9 hours without seeing one.
 
-  Merge branch 'x86-apic-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2014-12-19 14:02:02 -0800)
+So feel free to add a Tested-By:  when it goes out.
 
-are available in the git repository at:
+--==_Exmh_1419036779_71557P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jesper/cris.git tags/cris-changes-for-3.19
+iQIVAwUBVJTIawdmEQWDXROgAQIDJA/+Pv0vIe0ZSKyOPJQunXcryqefTBW5K/HB
+nS21Vo73VxO2h5Kg7JI9JUQJz0FvFDvKX9sgAlpTnjTSciiUQ9U2aqI/mCGDXHuO
+6+CVRf+cvqPkU68caW8h8pq230R/z0rm+oaozvh8RWQpX/+p2IhVHAXVW1grNB4O
+Uv5JvOmj2fY03o0Z3k3NV+5FMuTXjDJiZE3n6ZF3NboZaeTZ20F+jfcma6+wzTaL
+KSNTOa7BfcCUb/PgtXuYYDrTru1uFSfBffKfHthxSOP7/nYwxZcicSCyxY22Z7h0
+gZoWUX8WTwE/SF+IEbjGMjzXCV1eJYFIP2qreSdeiCLv2nmsgNzuGlaLo96TtuO1
+SkXTWU7DGf2/u87eQqi/xq9YasEudwkzhOOHfEjBH41lbBqv/w7DvDnG98hJVdEg
+HcuewU+dfhyG81lRTR5ojClxlg8PbudtbzvEx24emdtPeu/qTdXf9BGncJ9A3CBt
+UINxjLLH70qrqUHW6ZMS8uOvtci9ahKh/C2PK3ph1jPbO010pwdvfm1Y+KPx/k/z
+JA5nunkwjTWxolUU17GKG5qN/FhM/NM9SSoI3WRvMTBhD+755F8YckvrL4NvwI6v
+q7Q2kh1wDqZ5JGAY87w/1up0ObLMOkc3UeVTgppRcuWYUSnNSUBUEYKeHZx9FCMX
+Of6pTdG9h6M=
+=CK1Y
+-----END PGP SIGNATURE-----
 
-for you to fetch changes up to 8bcabff0589c1ef8fec9f98d525943217ae10971:
-
-  CRISv32: Remove last remnants of ETRAX_SPI_MMC_BOARD (2014-12-20 00:06:13 +0100)
-
-----------------------------------------------------------------
-CRIS port changes for 3.19
-
-----------------------------------------------------------------
-Jesper Nilsson (13):
-      CRISv32: Drop obsolete file for SPI driver
-      CRISv32: Add missing include for mm.h
-      CRIS: Export ioremap_nocache
-      CRIS: Export missing function symbols
-      CRISv32: Better handling of watchdog bite
-      CRIS: Update init memory handling
-      CRISv32: Rewrite of synchronous serial port driver
-      CRISv32: Fix declaration mismatch
-      CRIS: Use KALLSYMs if available in call stack dump
-      CRISv32: Implement early console
-      CRISv32: Select MTDRAM for axisflashmap
-      CRISv32: ETRAXFS: Fix recursive spinlock
-      CRISv32: Remove last remnants of ETRAX_SPI_MMC_BOARD
-
-Sam Ravnborg (1):
-      CRIS: Fix headers_install
-
- arch/cris/arch-v10/lib/usercopy.c                |   14 +-
- arch/cris/arch-v32/drivers/Kconfig               |    8 +-
- arch/cris/arch-v32/drivers/Makefile              |    1 -
- arch/cris/arch-v32/drivers/i2c.h                 |    1 -
- arch/cris/arch-v32/drivers/sync_serial.c         | 1430 ++++++++++++----------
- arch/cris/arch-v32/kernel/debugport.c            |   82 +-
- arch/cris/arch-v32/kernel/time.c                 |   29 +-
- arch/cris/arch-v32/lib/usercopy.c                |   15 +-
- arch/cris/arch-v32/mach-fs/pinmux.c              |  152 +--
- arch/cris/include/arch-v32/mach-fs/mach/pinmux.h |    2 -
- arch/cris/include/asm/Kbuild                     |    4 -
- arch/cris/include/uapi/asm/Kbuild                |    4 +-
- arch/cris/kernel/crisksyms.c                     |    9 +-
- arch/cris/kernel/traps.c                         |   61 +-
- arch/cris/mm/init.c                              |   38 +-
- arch/cris/mm/ioremap.c                           |    3 +-
- scripts/headers.sh                               |    2 -
- 17 files changed, 1039 insertions(+), 816 deletions(-)
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+--==_Exmh_1419036779_71557P--
