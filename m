@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaLTW2f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 17:28:35 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:64246 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaLTW2d (ORCPT
+	id S1752857AbaLTW3H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 17:29:07 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:45009 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713AbaLTW3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 17:28:33 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: hda: patch_analog.c:  Remove unused function
-Date: Sat, 20 Dec 2014 23:31:19 +0100
-Message-Id: <1419114679-11752-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 20 Dec 2014 17:29:04 -0500
+Date: Sat, 20 Dec 2014 14:29:01 -0800 (PST)
+X-Google-Original-Date: Sat, 20 Dec 2014 17:29 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, Eric Paris <eparis@parisplace.org>,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] security: selinux: avc.c:  Remove unused function
+Message-ID: <8453909.Gh4Uivx2Wx@sifl>
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1419078730-31316-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1419078730-31316-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function ad198x_ch_mode_get() that is not used anywhere.
+On Saturday, December 20, 2014 01:32:10 PM Rickard Strandqvist wrote:
+> Remove the function avc_sidcmp() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called
+> cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  security/selinux/avc.c |    5 -----
+>  1 file changed, 5 deletions(-)
 
-This was partially found by using a static code analysis program called cppcheck.
+Thanks, applied to the SELinux next branch with some minor changes to the 
+patch's subject line.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- sound/pci/hda/patch_analog.c |    9 ---------
- 1 file changed, 9 deletions(-)
+> diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+> index a18f1fa..afcc0ae 100644
+> --- a/security/selinux/avc.c
+> +++ b/security/selinux/avc.c
+> @@ -517,11 +517,6 @@ out:
+>  	return rc;
+>  }
+> 
+> -static inline int avc_sidcmp(u32 x, u32 y)
+> -{
+> -	return (x == y || x == SECSID_WILD || y == SECSID_WILD);
+> -}
+> -
+>  /**
+>   * avc_update_node Update an AVC entry
+>   * @event : Updating event
 
-diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index 06275f8..9d5257b 100644
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -707,15 +707,6 @@ static int ad198x_ch_mode_info(struct snd_kcontrol *kcontrol,
- 				    spec->num_channel_mode);
- }
- 
--static int ad198x_ch_mode_get(struct snd_kcontrol *kcontrol,
--			      struct snd_ctl_elem_value *ucontrol)
--{
--	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
--	struct ad198x_spec *spec = codec->spec;
--	return snd_hda_ch_mode_get(codec, ucontrol, spec->channel_mode,
--				   spec->num_channel_mode, spec->multiout.max_channels);
--}
--
- static int ad198x_ch_mode_put(struct snd_kcontrol *kcontrol,
- 			      struct snd_ctl_elem_value *ucontrol)
- {
 -- 
-1.7.10.4
+paul moore
+www.paul-moore.com
 
