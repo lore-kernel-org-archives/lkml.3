@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaLTQRv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:17:51 -0500
-Received: from mout.web.de ([212.227.17.12]:65250 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004AbaLTQRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:17:47 -0500
-Message-ID: <5495A118.8030802@users.sourceforge.net>
-Date: Sat, 20 Dec 2014 17:17:28 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-CC: David Miller <davem@davemloft.net>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
-References: <548B1E44.6050005@users.sourceforge.net>	<20141212.115922.687789059853236747.davem@davemloft.net>	<54930D7C.3000901@users.sourceforge.net> <20141218.122556.2148647081075440879.davem@davemloft.net> <54958B8C.7010105@users.sourceforge.net> <54959A3A.4030104@gmx.de>
-In-Reply-To: <54959A3A.4030104@gmx.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:DAl5HvM2s1Zaj7qBl/oGmaNEYG/bTXA11xVFDhCJPEKPVt8LPxt
- I21LTH/W5agGUnuQuXJPek1pDcQ8E776BDLkTVvEXYylcA1hOxQ6wKBHo7v+QHY5m2QSHd7
- jYNYeL2rNtiNWO82kkDSCRmhis5ncUQ7a8wtVwYViV0t2IlJpZZbn3G8iEZZYQWWxCjQ+QO
- rmCgc0KikMbAbD3C5Mbzw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753324AbaLTQSF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:18:05 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:44455 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753040AbaLTQR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 11:17:59 -0500
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Jeremiah Mahler <jmmahler@gmail.com>
+Subject: [PATCH v2b 1/2] usb: serial: handle -EPROTO quietly in generic_read_bulk
+Date: Sat, 20 Dec 2014 08:17:35 -0800
+Message-Id: <1419092255-497-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141220125952.GA1424@newt.localdomain>
+References: <20141220125952.GA1424@newt.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think what David said was pretty clear: If you see code like the above
-> there is no need to refactor it.
+If a USB serial device is unplugged while there is an active program
+using the device it will spam the logs with -EPROTO (71) messages as it
+attempts to retry.
 
-I can understand this view in principle.
+Most serial usb drivers (metro-usb, pl2303, mos7840, ...) only output
+these messages for debugging.  The generic driver treats these as
+errors.
 
+Change the default output for the generic serial driver from error to
+debug.
 
-> That does not mean that this is the _preferred_ way of error handling.
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+---
 
-Can your feedback help in the clarification of suggestions around
-my update steps one to six for this Linux software module?
+Notes:
+    Minor change just fixes the wording in the log message.
 
-Regards,
-Markus
+ drivers/usb/serial/generic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
+index 1bd1922..2d7207b 100644
+--- a/drivers/usb/serial/generic.c
++++ b/drivers/usb/serial/generic.c
+@@ -373,7 +373,7 @@ void usb_serial_generic_read_bulk_callback(struct urb *urb)
+ 							__func__, urb->status);
+ 		return;
+ 	default:
+-		dev_err(&port->dev, "%s - nonzero urb status: %d\n",
++		dev_dbg(&port->dev, "%s - nonzero urb status: %d\n",
+ 							__func__, urb->status);
+ 		goto resubmit;
+ 	}
+-- 
+2.1.3
+
