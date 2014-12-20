@@ -1,146 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430AbaLTRkQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 12:40:16 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:42135 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402AbaLTRkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 12:40:11 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, keescook@chromium.org,
-        Andy Lutomirski <luto@amacapital.net>, stable@vger.kernel.org
-Subject: [PATCH v2] x86_64, vdso: Fix the vdso address randomization algorithm
-Date: Sat, 20 Dec 2014 09:40:04 -0800
-Message-Id: <0c0d14ed78e78312ee1e41a65ddc901a73902a26.1419096718.git.luto@amacapital.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
-References: <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
+	id S1751214AbaLTSCr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 13:02:47 -0500
+Received: from fieldses.org ([174.143.236.118]:55864 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785AbaLTSCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 13:02:44 -0500
+Date: Sat, 20 Dec 2014 13:02:43 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
+	<holger.hoffstaette@googlemail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.18.1: broken directory with one file too many
+Message-ID: <20141220180243.GA10273@fieldses.org>
+References: <20141217212159.GA11517@fieldses.org>
+ <5492C710.20104@googlemail.com>
+ <20141218144856.GA18179@fieldses.org>
+ <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
+ <20141218151914.GB18179@fieldses.org>
+ <pan.2014.12.18.15.42.53@googlemail.com>
+ <20141218163254.GF18179@fieldses.org>
+ <549303FC.9090604@googlemail.com>
+ <20141218170653.GG18179@fieldses.org>
+ <54932EA5.9090803@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54932EA5.9090803@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The theory behind vdso randomization is that it's mapped at a random
-offset above the top of the stack.  To avoid wasting a page of
-memory for an extra page table, the vdso isn't supposed to extend
-past the lowest PMD into which it can fit.  Other than that, the
-address should be a uniformly distributed address that meets all of
-the alignment requirements.
+On Thu, Dec 18, 2014 at 08:44:37PM +0100, Holger Hoffstätte wrote:
+> On 12/18/14 18:06, J. Bruce Fields wrote:
+> > Whoops, now I see, the server-side trace has the same problem, I
+> > just overlooked it the first time.
+> 
+> Excellent, so we know it's the server's fault. Really would have been odd to not have it in the server trace.
+> 
+> >> ..in order to rule out a mistake on my part with the two separate
+> >> runs (which prevents correlated analysis) I was just about to boot
+> >> the server back into 3.18.1 and re-run both client- and server-side
+> >> traces simultaneously. However I have to head out for a bit first;
+> >> will post that later today.
+> > 
+> > So this might still be interesting, but it's not a high priority.
+> 
+> Then I guess I'll better keep my feet still and don't muddle the waters further, looks like you found what you need. If you still need it just holler.
+> 
+> Let me know if there's anything I can do to help/patch/test!
 
-The current algorithm is buggy: the vdso has about a 50% probability
-of being at the very end of a PMD.  The current algorithm also has a
-decent chance of failing outright due to incorrect handling of the
-case where the top of the stack is near the top of its PMD.
+Gah.  Does this fix it?
 
-This fixes the implementation.  The paxtest estimate of vdso
-"randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
-don't know what the paxtest code is actually calculating.)
+A struct xdr_stream at a page boundary might point to the end of one
+page or the beginning of the next, and I'm guessing xdr_truncate_encode
+wasn't prepared to handle the former.
 
-It's worth noting that this algorithm is inherently biased: the vdso
-is more likely to end up near the end of its PMD than near the
-beginning.  Ideally we would either nix the PMD sharing requirement
-or jointly randomize the vdso and the stack to reduce the bias.
+This happens if the readdir entry that would have exceeded the client's
+dircount/maxcount limit would have ended exactly on a 4k page boundary,
+and inspection of the trace shows you're hitting exactly that case.
 
-In the mean time, this is a considerable improvement with basically
-no risk of compatibility issues, since the allowed outputs of the
-algorithm are unchanged.
+If this does the job then I'll go figure out how to make this logic less
+ugly....
 
-As an easy test, doing this:
+--b.
 
-for i in `seq 10000`
-  do grep -P vdso /proc/self/maps |cut -d- -f1
-done |sort |uniq -d
-
-used to produce lots of output (1445 lines on my most recent run).
-A tiny subset looks like this:
-
-7fffdfffe000
-7fffe01fe000
-7fffe05fe000
-7fffe07fe000
-7fffe09fe000
-7fffe0bfe000
-7fffe0dfe000
-
-Note the suspicious fe000 endings.  With the fix, I get a much more
-palatable 76 repeated addresses.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/vma.c | 45 +++++++++++++++++++++++++++++----------------
- 1 file changed, 29 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 009495b9ab4b..1c9f750c3859 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -41,12 +41,17 @@ void __init init_vdso_image(const struct vdso_image *image)
+diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
+index 1cb61242e55e..32910b91d17c 100644
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -630,6 +630,9 @@ void xdr_truncate_encode(struct xdr_stream *xdr, size_t len)
  
- struct linux_binprm;
+ 	new = buf->page_base + buf->page_len;
+ 	old = new + fraglen;
++	/* XXX: HACK: */
++	if (xdr->p == page_address(*xdr->page_ptr) + PAGE_SIZE)
++		xdr->page_ptr++;
+ 	xdr->page_ptr -= (old >> PAGE_SHIFT) - (new >> PAGE_SHIFT);
  
--/* Put the vdso above the (randomized) stack with another randomized offset.
--   This way there is no hole in the middle of address space.
--   To save memory make sure it is still in the same PTE as the stack top.
--   This doesn't give that many random bits.
--
--   Only used for the 64-bit and x32 vdsos. */
-+/*
-+ * Put the vdso above the (randomized) stack with another randomized
-+ * offset.  This way there is no hole in the middle of address space.
-+ * To save memory make sure it is still in the same PTE as the stack
-+ * top.  This doesn't give that many random bits.
-+ *
-+ * Note that this algorithm is imperfect: the distribution of the vdso
-+ * start address within a PMD is biased toward the end.
-+ *
-+ * Only used for the 64-bit and x32 vdsos.
-+ */
- static unsigned long vdso_addr(unsigned long start, unsigned len)
- {
- #ifdef CONFIG_X86_32
-@@ -54,22 +59,30 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
- #else
- 	unsigned long addr, end;
- 	unsigned offset;
--	end = (start + PMD_SIZE - 1) & PMD_MASK;
-+
-+	/*
-+	 * Round up the start address.  It can start out unaligned as a result
-+	 * of stack start randomization.
-+	 */
-+	start = PAGE_ALIGN(start);
-+
-+	/* Round the lowest possible end address up to a PMD boundary. */
-+	end = (start + len + PMD_SIZE - 1) & PMD_MASK;
- 	if (end >= TASK_SIZE_MAX)
- 		end = TASK_SIZE_MAX;
- 	end -= len;
--	/* This loses some more bits than a modulo, but is cheaper */
--	offset = get_random_int() & (PTRS_PER_PTE - 1);
--	addr = start + (offset << PAGE_SHIFT);
--	if (addr >= end)
--		addr = end;
-+
-+	if (end > start) {
-+		offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
-+		addr = start + (offset << PAGE_SHIFT);
-+	} else {
-+		addr = start;
-+	}
- 
- 	/*
--	 * page-align it here so that get_unmapped_area doesn't
--	 * align it wrongfully again to the next page. addr can come in 4K
--	 * unaligned here as a result of stack start randomization.
-+	 * Forcibly align the final address in case we have a hardware
-+	 * issue that requires alignment for performance reasons.
- 	 */
--	addr = PAGE_ALIGN(addr);
- 	addr = align_vdso_addr(addr);
- 
- 	return addr;
--- 
-2.1.0
-
+ 	if (buf->page_len) {
