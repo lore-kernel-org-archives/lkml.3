@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaLTS3m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 13:29:42 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:62398 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaLTS3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 13:29:38 -0500
-From: robert.ward114@googlemail.com
-To: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Cc: Rob Ward <robert.ward114@googlemail.com>
-Subject: [PATCH 2/2] drivers: char: mem: Fix Missing blank line issues
-Date: Sat, 20 Dec 2014 18:28:36 +0000
-Message-Id: <1419100116-29819-3-git-send-email-robert.ward114@googlemail.com>
-X-Mailer: git-send-email 2.2.0
-In-Reply-To: <1419100116-29819-1-git-send-email-robert.ward114@googlemail.com>
-References: <1419100116-29819-1-git-send-email-robert.ward114@googlemail.com>
+	id S1751245AbaLTSgV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 13:36:21 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:55237 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750973AbaLTSgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Dec 2014 13:36:20 -0500
+Date: Sat, 20 Dec 2014 13:36:13 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, oleg@redhat.com,
+        dave.hansen@linux.intel.com, rientjes@google.com, linux-mm@kvack.org
+Subject: Re: [PATCH] proc: task_mmu: show page size in /proc/<pid>/numa_maps
+Message-ID: <20141220183613.GA19229@phnom.home.cmpxchg.org>
+References: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Ward <robert.ward114@googlemail.com>
+On Sat, Dec 20, 2014 at 08:54:45AM -0500, Rafael Aquini wrote:
+> This patch introduces 'pagesize' line element to /proc/<pid>/numa_maps
+> report file in order to help disambiguating the size of pages that are
+> backing memory areas mapped by a task. When the VMA backing page size
+> is observed different from kernel's default PAGE_SIZE, the new element 
+> is printed out to complement report output. This is specially useful to
+> help differentiating between HUGE and GIGANTIC page VMAs.
+> 
+> This patch is based on Dave Hansen's proposal and reviewer's follow ups 
+> taken from this dicussion: https://lkml.org/lkml/2011/9/21/454
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> ---
+>  fs/proc/task_mmu.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 246eae8..9f2e2c8 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -1479,6 +1479,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+>  	struct mm_struct *mm = vma->vm_mm;
+>  	struct mm_walk walk = {};
+>  	struct mempolicy *pol;
+> +	unsigned long page_size;
+>  	char buffer[64];
+>  	int nid;
+>  
+> @@ -1533,6 +1534,10 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
+>  	if (!md->pages)
+>  		goto out;
+>  
+> +	page_size = vma_kernel_pagesize(vma);
+> +	if (page_size != PAGE_SIZE)
+> +		seq_printf(m, " pagesize=%lu", page_size);
 
-Fixes "Missing a blank line after declarations" reported by
-checkpatch.
-
-This patch introduces no functional changes.
-
-Signed-off-by: Rob Ward <robert.ward114@googlemail.com>
----
- drivers/char/mem.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index a04ce78..6029d1f 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -575,6 +575,7 @@ static ssize_t write_port(struct file *file, const char __user *buf,
- 		return -EFAULT;
- 	while (count-- > 0 && i < 65536) {
- 		char c;
-+
- 		if (__get_user(c, tmp)) {
- 			if (tmp > buf)
- 				break;
-@@ -631,6 +632,7 @@ static ssize_t read_iter_zero(struct kiocb *iocb, struct iov_iter *iter)
- 
- 	while (iov_iter_count(iter)) {
- 		size_t chunk = iov_iter_count(iter), n;
-+
- 		if (chunk > PAGE_SIZE)
- 			chunk = PAGE_SIZE;	/* Just for latency reasons */
- 		n = iov_iter_zero(chunk, iter);
--- 
-2.0.2
-
+It would be simpler to include this unconditionally.  Otherwise you
+are forcing everybody parsing the file and trying to run calculations
+of it to check for its presence, and then have them fall back and get
+the value from somewhere else if not.
