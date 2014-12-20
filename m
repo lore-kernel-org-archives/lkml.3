@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaLTQux (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 11:50:53 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:50236 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402AbaLTQut (ORCPT
+	id S1753434AbaLTQvb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 11:51:31 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55559 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062AbaLTQva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 11:50:49 -0500
-Date: Sat, 20 Dec 2014 08:50:45 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Finn Thain <fthain@telegraphics.com.au>,
-        Michael Schmitz <schmitzmic@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	Sat, 20 Dec 2014 11:51:30 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Ilia Mirkin <imirkin@alum.mit.edu>, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi: arm: cumana_1.c:  Remove unused function
-Message-ID: <20141220165045.GA5013@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-	Finn Thain <fthain@telegraphics.com.au>,
-	Michael Schmitz <schmitzmic@gmail.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	"James E.J. Bottomley" <JBottomley@parallels.com>,
-	linux-scsi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-	linux-kernel@vger.kernel.org
-References: <1419093375-8016-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419093375-8016-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Subject: [PATCH] gpu: drm: nouveau: core: subdev: clock: base.c:  Remove unused function
+Date: Sat, 20 Dec 2014 17:54:16 +0100
+Message-Id: <1419094456-9446-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 05:36:15PM +0100, Rickard Strandqvist wrote:
-> Remove the function cumanascsi_setup() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/scsi/arm/cumana_1.c |    4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/drivers/scsi/arm/cumana_1.c b/drivers/scsi/arm/cumana_1.c
-> index 8ef810a..7c90d9c 100644
-> --- a/drivers/scsi/arm/cumana_1.c
-> +++ b/drivers/scsi/arm/cumana_1.c
-> @@ -38,10 +38,6 @@
->  
->  #include "../NCR5380.h"
->  
-> -void cumanascsi_setup(char *str, int *ints)
-> -{
-> -}
-> -
->  const char *cumanascsi_info(struct Scsi_Host *spnt)
->  {
->  	return "";
-[...]
+Remove the function nouveau_clock_astate() that is not used anywhere.
 
-You can blame Linus for this one :-)
+This was partially found by using a static code analysis program called cppcheck.
 
-~/linux-next$ git blame -L 38,40 drivers/scsi/arm/cumana_1.c 
-^1da177e (Linus Torvalds 2005-04-16 15:20:36 -0700 38) void
-cumanascsi_setup(char *str, int *ints)
-^1da177e (Linus Torvalds 2005-04-16 15:20:36 -0700 39) {
-^1da177e (Linus Torvalds 2005-04-16 15:20:36 -0700 40) }
-~/linux-next$
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/gpu/drm/nouveau/core/include/subdev/clock.h |    1 -
+ drivers/gpu/drm/nouveau/core/subdev/clock/base.c    |   10 ----------
+ 2 files changed, 11 deletions(-)
 
+diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/clock.h b/drivers/gpu/drm/nouveau/core/include/subdev/clock.h
+index 36ed035..8577945 100644
+--- a/drivers/gpu/drm/nouveau/core/include/subdev/clock.h
++++ b/drivers/gpu/drm/nouveau/core/include/subdev/clock.h
+@@ -159,7 +159,6 @@ int nva3_clock_pll_calc(struct nouveau_clock *, struct nvbios_pll *,
+ 			int clk, struct nouveau_pll_vals *);
+ 
+ int nouveau_clock_ustate(struct nouveau_clock *, int req, int pwr);
+-int nouveau_clock_astate(struct nouveau_clock *, int req, int rel);
+ int nouveau_clock_dstate(struct nouveau_clock *, int req, int rel);
+ int nouveau_clock_tstate(struct nouveau_clock *, int req, int rel);
+ 
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/clock/base.c b/drivers/gpu/drm/nouveau/core/subdev/clock/base.c
+index e51b72d..b2c852a 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/clock/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/clock/base.c
+@@ -430,16 +430,6 @@ nouveau_clock_ustate(struct nouveau_clock *clk, int req, int pwr)
+ }
+ 
+ int
+-nouveau_clock_astate(struct nouveau_clock *clk, int req, int rel)
+-{
+-	if (!rel) clk->astate  = req;
+-	if ( rel) clk->astate += rel;
+-	clk->astate = min(clk->astate, clk->state_nr - 1);
+-	clk->astate = max(clk->astate, 0);
+-	return nouveau_pstate_calc(clk, true);
+-}
+-
+-int
+ nouveau_clock_tstate(struct nouveau_clock *clk, int req, int rel)
+ {
+ 	if (!rel) clk->tstate  = req;
 -- 
-- Jeremiah Mahler
+1.7.10.4
+
