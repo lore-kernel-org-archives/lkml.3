@@ -1,45 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaLUKpA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 05:45:00 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:59578 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaLUKo6 (ORCPT
+	id S1753452AbaLUKxN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 05:53:13 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:54532 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbaLUKxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 05:44:58 -0500
-From: Robert Nachlinger <robert.nachlinger@googlemail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Robert Nachlinger <robert.nachlinger@googlemail.com>
-Subject: [PATCH] Staging: gdm724x: fix space before comma coding style issue in gdm_mux.c
-Date: Sun, 21 Dec 2014 11:44:43 +0100
-Message-Id: <1419158683-6113-1-git-send-email-robert.nachlinger@googlemail.com>
-X-Mailer: git-send-email 2.2.0
+	Sun, 21 Dec 2014 05:53:11 -0500
+Message-ID: <5496A689.3010803@ahsoftware.de>
+Date: Sun, 21 Dec 2014 11:52:57 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] CodingStyle: remove what nowadays might be considered
+ polemic
+References: <1418996188-2908-1-git-send-email-holler@ahsoftware.de> <54969F9A.80301@ahsoftware.de>
+In-Reply-To: <54969F9A.80301@ahsoftware.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the gdm_mux.c file that fixes a space before comma
-coding style issue found by the checkpatch.pl tool.
+Am 21.12.2014 um 11:23 schrieb Alexander Holler:
+> Uups, there is maximum of 8 levels of intendation (not 9, the first tab
 
-Signed-off-by: Robert Nachlinger <robert.nachlinger@googlemail.com>
----
- drivers/staging/gdm724x/gdm_mux.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+And, please, no words about my broken english. Turn on your human fuzzy 
+and do s/intendation/indentation/ ;)
 
-diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
-index b5b063a..d1ab996 100644
---- a/drivers/staging/gdm724x/gdm_mux.c
-+++ b/drivers/staging/gdm724x/gdm_mux.c
-@@ -220,7 +220,7 @@ static int up_to_host(struct mux_rx *r)
- static void do_rx(struct work_struct *work)
- {
- 	struct mux_dev *mux_dev =
--		container_of(work, struct mux_dev , work_rx.work);
-+		container_of(work, struct mux_dev, work_rx.work);
- 	struct mux_rx *r;
- 	struct rx_cxt *rx = (struct rx_cxt *)&mux_dev->rx;
- 	unsigned long flags;
--- 
-2.2.0
+Regards,
 
+Alexander Holler
