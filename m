@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaLUT5c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 14:57:32 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:58154 "EHLO
+	id S1753858AbaLUT5s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 14:57:48 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:48233 "EHLO
 	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129AbaLUTza (ORCPT
+	with ESMTP id S1753140AbaLUTz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 14:55:30 -0500
+	Sun, 21 Dec 2014 14:55:28 -0500
 From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
 To: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10] MAINTAINERS: Fix up entry for Dell laptop SMM driver
-Date: Sun, 21 Dec 2014 20:54:37 +0100
-Message-Id: <1419191683-31435-5-git-send-email-pali.rohar@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH 03/10] i8k: Return -ENODATA for invalid temperature
+Date: Sun, 21 Dec 2014 20:54:36 +0100
+Message-Id: <1419191683-31435-4-git-send-email-pali.rohar@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1419191683-31435-1-git-send-email-pali.rohar@gmail.com>
 References: <1419191683-31435-1-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
+Guenter Roeck suggested to return -ENODATA instead -ERANGE or -EINVAL when BIOS
+reports invalid temperature value.
 
-Mark driver as maintained.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
 ---
- MAINTAINERS |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/i8k.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c444907..2c15f7a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2918,6 +2918,7 @@ F:	drivers/platform/x86/dell-laptop.c
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index afcc9fe..1854fab 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -331,7 +331,7 @@ static int i8k_get_temp(int sensor)
+ 		prev[sensor] = temp;
+ 	}
+ 	if (temp > I8K_MAX_TEMP)
+-		return -ERANGE;
++		return -ENODATA;
+ #endif
  
- DELL LAPTOP SMM DRIVER
- M:	Guenter Roeck <linux@roeck-us.net>
-+S:	Maintained
- F:	drivers/char/i8k.c
- F:	include/uapi/linux/i8k.h
+ 	return temp;
+@@ -533,8 +533,6 @@ static ssize_t i8k_hwmon_show_temp(struct device *dev,
+ 	int temp;
  
+ 	temp = i8k_get_temp(index);
+-	if (temp == -ERANGE)
+-		return -EINVAL;
+ 	if (temp < 0)
+ 		return temp;
+ 	return sprintf(buf, "%d\n", temp * 1000);
 -- 
 1.7.9.5
 
