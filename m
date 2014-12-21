@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753736AbaLUVPn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 16:15:43 -0500
-Received: from sauhun.de ([89.238.76.85]:52877 "EHLO pokefinder.org"
+	id S1754039AbaLUVTa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 16:19:30 -0500
+Received: from sauhun.de ([89.238.76.85]:52928 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753368AbaLUVPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 16:15:24 -0500
+	id S1753295AbaLUVPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 16:15:43 -0500
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org
-Subject: [PATCH 06/28] dma: drop owner assignment from platform_drivers
-Date: Sun, 21 Dec 2014 22:14:27 +0100
-Message-Id: <1419196495-9626-7-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Heiko Stuebner <heiko@sntech.de>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org
+Subject: [PATCH 18/28] thermal: drop owner assignment from platform_drivers
+Date: Sun, 21 Dec 2014 22:14:39 +0100
+Message-Id: <1419196495-9626-19-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
 References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
@@ -32,21 +32,21 @@ Generated with coccinelle. SmPL file is in the introductory msg. The big
 cleanup was pulled in this merge window. This series catches the bits fallen
 through. The patches shall go in via the subsystem trees.
 
- drivers/dma/at_xdmac.c | 1 -
+ drivers/thermal/rockchip_thermal.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/dma/at_xdmac.c b/drivers/dma/at_xdmac.c
-index b60d77a22df6..1c4c96b7e2bf 100644
---- a/drivers/dma/at_xdmac.c
-+++ b/drivers/dma/at_xdmac.c
-@@ -1507,7 +1507,6 @@ static struct platform_driver at_xdmac_driver = {
- 	.remove		= at_xdmac_remove,
+diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
+index 1bcddfc60e91..9c6ce548e363 100644
+--- a/drivers/thermal/rockchip_thermal.c
++++ b/drivers/thermal/rockchip_thermal.c
+@@ -677,7 +677,6 @@ static SIMPLE_DEV_PM_OPS(rockchip_thermal_pm_ops,
+ static struct platform_driver rockchip_thermal_driver = {
  	.driver = {
- 		.name		= "at_xdmac",
--		.owner		= THIS_MODULE,
- 		.of_match_table	= of_match_ptr(atmel_xdmac_dt_ids),
- 		.pm		= &atmel_xdmac_dev_pm_ops,
- 	}
+ 		.name = "rockchip-thermal",
+-		.owner = THIS_MODULE,
+ 		.pm = &rockchip_thermal_pm_ops,
+ 		.of_match_table = of_rockchip_thermal_match,
+ 	},
 -- 
 2.1.3
 
