@@ -1,56 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaLUUzn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 15:55:43 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:36375 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaLUUyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 15:54:18 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, linux-crypto@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: [PATCH 5/5] crypto: enable OCTEON MD5 module selection
-Date: Sun, 21 Dec 2014 22:54:02 +0200
-Message-Id: <1419195242-546-6-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 2.2.0
-In-Reply-To: <1419195242-546-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1419195242-546-1-git-send-email-aaro.koskinen@iki.fi>
+	id S1753229AbaLUVA1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 16:00:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751391AbaLUVA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 16:00:26 -0500
+Date: Sun, 21 Dec 2014 23:00:21 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.19-rc1 - merge window closed
+Message-ID: <20141221210021.GA767@redhat.com>
+References: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable user to select OCTEON MD5 module.
+On Sat, Dec 20, 2014 at 05:43:22PM -0800, Linus Torvalds wrote:
+> Michael S Tsirkin (1):
+>   virtio fixes
+> 
+> Michael Tsirkin (1):
+>   virtio updates
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- crypto/Kconfig | 9 +++++++++
- 1 file changed, 9 insertions(+)
+I wonder why did it come out like this, and not simply
+Michael S. Tsirkin (2).
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 87bbc9c..1618468 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -427,6 +427,15 @@ config CRYPTO_MD5
- 	help
- 	  MD5 message digest algorithm (RFC1321).
- 
-+config CRYPTO_MD5_OCTEON
-+	tristate "MD5 digest algorithm (OCTEON)"
-+	depends on CPU_CAVIUM_OCTEON
-+	select CRYPTO_MD5
-+	select CRYPTO_HASH
-+	help
-+	  MD5 message digest algorithm (RFC1321) implemented
-+	  using OCTEON crypto instructions, when available.
-+
- config CRYPTO_MD5_SPARC64
- 	tristate "MD5 digest algorithm (SPARC64)"
- 	depends on SPARC64
 -- 
-2.2.0
-
+MST
