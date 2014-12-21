@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181AbaLUSCw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 13:02:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63354 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752041AbaLUSCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 13:02:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="502305545"
-Message-ID: <54970B49.3070104@linux.intel.com>
-Date: Sun, 21 Dec 2014 10:02:49 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753335AbaLUSHe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 13:07:34 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:46367 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370AbaLUSHc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 13:07:32 -0500
 MIME-Version: 1.0
-To: Rafael Aquini <aquini@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, oleg@redhat.com,
-        rientjes@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH] proc: task_mmu: show page size in /proc/<pid>/numa_maps
-References: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com> <20141220183613.GA19229@phnom.home.cmpxchg.org> <20141220194457.GA3166@x61.redhat.com>
-In-Reply-To: <20141220194457.GA3166@x61.redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141218001123.GA6548@kroah.com>
+References: <1418853900-6887-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141218001123.GA6548@kroah.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Sun, 21 Dec 2014 19:07:11 +0100
+Message-ID: <CAFo99gb=fkupq7N=EMuk0RJCpCY2r21u1w+B05YjoqZ_s1ruXA@mail.gmail.com>
+Subject: Re: [PATCH] staging: lustre: lustre: obdclass: lprocfs_status.c:
+ Removed an unnecessary NULL check
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>, devel@driverdev.osuosl.org,
+        HPDD-discuss@ml01.01.org, Greg Donald <gdonald@gmail.com>,
+        James Simmons <uja.ornl@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fabian Frederick <fabf@skynet.be>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        "John L. Hammond" <john.hammond@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2014 11:44 AM, Rafael Aquini wrote:
->> > 
->> > It would be simpler to include this unconditionally.  Otherwise you
->> > are forcing everybody parsing the file and trying to run calculations
->> > of it to check for its presence, and then have them fall back and get
->> > the value from somewhere else if not.
-> I'm fine either way, it makes the change even simpler. Also, if we
-> decide to get rid of page_size != PAGE_SIZE condition I believe we can 
-> also get rid of that "huge" hint being conditionally printed out too.
+2014-12-18 1:11 GMT+01:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+> On Wed, Dec 17, 2014 at 11:05:00PM +0100, Rickard Strandqvist wrote:
+>> Removed an unnecessary NULL check. And clarified a switch statement.
+>
+> That's two different things, please only do one thing in a patch, so
+> this would be 2 different patches.
+>
+> please fix up and resend as a series of patches.
+>
+> thanks,
+>
+> greg k-h
 
-That would break existing users of the "huge" flag.  That makes it out
-of the question, right?
 
+
+Ok, sorry new path on the way!
+
+Kind regards
+Rickard Strandqvist
