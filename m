@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570AbaLUMc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 07:32:28 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41798 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394AbaLUMc1 (ORCPT
+	id S1753596AbaLUMfq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 07:35:46 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:60935 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763AbaLUMfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 07:32:27 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: pci: hda: patch_analog.c:  Remove some unused functions
-Date: Sun, 21 Dec 2014 13:35:12 +0100
-Message-Id: <1419165312-28886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 21 Dec 2014 07:35:43 -0500
+From: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+To: lars@metafoo.de
+Cc: Michael.Hennerich@analog.com, jic23@kernel.org, knaack.h@gmx.de,
+        pmeerw@pmeerw.net, gregkh@linuxfoundation.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+Subject: [PATCH] staging: iio: adc: ad7192: fix space before , coding style issue
+Date: Sun, 21 Dec 2014 18:05:31 +0530
+Message-Id: <1419165331-29356-1-git-send-email-md.jamalmohiuddin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-ad198x_ch_mode_get() ad198x_ch_mode_info() ad198x_ch_mode_info()
+This patch solves the space before , error of the checkpatch.pl
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
 ---
- sound/pci/hda/patch_analog.c |   33 ---------------------------------
- 1 file changed, 33 deletions(-)
+ drivers/staging/iio/adc/ad7192.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index 06275f8..0e76dcc 100644
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -697,39 +697,6 @@ static int patch_ad1981(struct hda_codec *codec)
-  *      E/F quad mic array
-  */
+diff --git a/drivers/staging/iio/adc/ad7192.c b/drivers/staging/iio/adc/ad7192.c
+index f6526aa..6f8ce6c 100644
+--- a/drivers/staging/iio/adc/ad7192.c
++++ b/drivers/staging/iio/adc/ad7192.c
+@@ -612,7 +612,7 @@ static int ad7192_probe(struct spi_device *spi)
+ 	const struct ad7192_platform_data *pdata = spi->dev.platform_data;
+ 	struct ad7192_state *st;
+ 	struct iio_dev *indio_dev;
+-	int ret , voltage_uv = 0;
++	int ret, voltage_uv = 0;
  
--#ifdef ENABLE_AD_STATIC_QUIRKS
--static int ad198x_ch_mode_info(struct snd_kcontrol *kcontrol,
--			       struct snd_ctl_elem_info *uinfo)
--{
--	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
--	struct ad198x_spec *spec = codec->spec;
--	return snd_hda_ch_mode_info(codec, uinfo, spec->channel_mode,
--				    spec->num_channel_mode);
--}
--
--static int ad198x_ch_mode_get(struct snd_kcontrol *kcontrol,
--			      struct snd_ctl_elem_value *ucontrol)
--{
--	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
--	struct ad198x_spec *spec = codec->spec;
--	return snd_hda_ch_mode_get(codec, ucontrol, spec->channel_mode,
--				   spec->num_channel_mode, spec->multiout.max_channels);
--}
--
--static int ad198x_ch_mode_put(struct snd_kcontrol *kcontrol,
--			      struct snd_ctl_elem_value *ucontrol)
--{
--	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
--	struct ad198x_spec *spec = codec->spec;
--	int err = snd_hda_ch_mode_put(codec, ucontrol, spec->channel_mode,
--				      spec->num_channel_mode,
--				      &spec->multiout.max_channels);
--	if (err >= 0 && spec->need_dac_fix)
--		spec->multiout.num_dacs = spec->multiout.max_channels / 2;
--	return err;
--}
--#endif /* ENABLE_AD_STATIC_QUIRKS */
--
- static int ad1988_auto_smux_enum_info(struct snd_kcontrol *kcontrol,
- 				      struct snd_ctl_elem_info *uinfo)
- {
+ 	if (!pdata) {
+ 		dev_err(&spi->dev, "no platform data?\n");
 -- 
-1.7.10.4
+1.7.9.5
 
