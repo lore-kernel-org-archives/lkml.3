@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaLUCyk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 21:54:40 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:46964 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812AbaLUCyj (ORCPT
+	id S1753260AbaLUDZE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 22:25:04 -0500
+Received: from resqmta-po-07v.sys.comcast.net ([96.114.154.166]:37185 "EHLO
+	resqmta-po-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752812AbaLUDY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 21:54:39 -0500
-From: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org,
-        Gangadhar Vukkesala <gangs.freelancer@gmail.com>
-Subject: [PATCH] staging: rtl8192e: fixed a space coding style issue
-Date: Sun, 21 Dec 2014 08:23:59 +0530
-Message-Id: <1419130439-4248-1-git-send-email-gangs.freelancer@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 20 Dec 2014 22:24:59 -0500
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: m.chehab@samsung.com, hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
+        laurent.pinchart@ideasonboard.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH] media: fix au0828_analog_register() to not free au0828_dev
+Date: Sat, 20 Dec 2014 20:24:48 -0700
+Message-Id: <1419132288-4529-1-git-send-email-shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a space coding style issue in 3-dimensional array initialization
-which was found when running checkpatch.pl script on rtl819x_HTProc.c.
+au0828_analog_register() frees au0828_dev when it fails to
+locate isoc endpoint. au0828_usb_probe() continues with dvb
+and rc probe and registration assuming dev is still valid.
+When au0828_analog_register() fails to locate isoc endpoint,
+it should return without free'ing au0828_dev. Otherwise, the
+probe will fail as dev is null when au0828_dvb_register() is
+called.
 
-Signed-off-by: Gangadhar Vukkesala <gangs.freelancer@gmail.com>
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- drivers/staging/rtl8192e/rtl819x_HTProc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/rtl8192e/rtl819x_HTProc.c b/drivers/staging/rtl8192e/rtl819x_HTProc.c
-index c7f4508..1ea426b 100644
---- a/drivers/staging/rtl8192e/rtl819x_HTProc.c
-+++ b/drivers/staging/rtl8192e/rtl819x_HTProc.c
-@@ -34,13 +34,13 @@ u16 MCS_DATA_RATE[2][2][77] = {
- 	 468, 520, 0, 78, 104, 130, 117, 156, 195, 104, 130, 130, 156, 182,
- 	 182, 208, 156, 195, 195, 234, 273, 273, 312, 130, 156, 181, 156,
- 	 181, 208, 234, 208, 234, 260, 260, 286, 195, 234, 273, 234, 273,
--	 312, 351, 312, 351, 390, 390, 429} ,
-+	 312, 351, 312, 351, 390, 390, 429},
- 	{14, 29, 43, 58, 87, 116, 130, 144, 29, 58, 87, 116, 173, 231, 260, 289,
- 	 43, 87, 130, 173, 260, 347, 390, 433, 58, 116, 173, 231, 347, 462, 520,
- 	 578, 0, 87, 116, 144, 130, 173, 217, 116, 144, 144, 173, 202, 202, 231,
- 	 173, 217, 217, 260, 303, 303, 347, 144, 173, 202, 173, 202, 231, 260,
- 	 231, 260, 289, 289, 318, 217, 260, 303, 260, 303, 347, 390, 347, 390,
--	 433, 433, 477} } ,
-+	 433, 433, 477} },
- 	{{27, 54, 81, 108, 162, 216, 243, 270, 54, 108, 162, 216, 324, 432, 486,
- 	 540, 81, 162, 243, 324, 486, 648, 729, 810, 108, 216, 324, 432, 648,
- 	 864, 972, 1080, 12, 162, 216, 270, 243, 324, 405, 216, 270, 270, 324,
+Resending as the first one had malformed changelog
+
+ drivers/media/usb/au0828/au0828-video.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
+index 3bdf132..94b65b8 100644
+--- a/drivers/media/usb/au0828/au0828-video.c
++++ b/drivers/media/usb/au0828/au0828-video.c
+@@ -1713,7 +1713,6 @@ int au0828_analog_register(struct au0828_dev *dev,
+ 	}
+ 	if (!(dev->isoc_in_endpointaddr)) {
+ 		pr_info("Could not locate isoc endpoint\n");
+-		kfree(dev);
+ 		return -ENODEV;
+ 	}
+ 
 -- 
-Gangadhar Vukkesala
+2.1.0
 
