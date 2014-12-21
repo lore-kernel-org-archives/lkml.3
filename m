@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145AbaLURiy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 12:38:54 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:64201 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaLURiw (ORCPT
+	id S1753320AbaLURj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 12:39:57 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:51376 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370AbaLURj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 12:38:52 -0500
+	Sun, 21 Dec 2014 12:39:56 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "David S. Miller" <davem@davemloft.net>,
-        dingtianhong <dingtianhong@huawei.com>
+To: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Benoit Taine <benoit.taine@lip6.fr>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Joe Perches <joe@perches.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: ethernet: micrel: ksz884x.c:  Remove unused function
-Date: Sun, 21 Dec 2014 18:41:38 +0100
-Message-Id: <1419183698-10495-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] gpu: drm: radeon: radeon_device.c:  Remove unused function
+Date: Sun, 21 Dec 2014 18:42:42 +0100
+Message-Id: <1419183762-10640-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function port_cfg_dis_learn() that is not used anywhere.
+Remove the function radeon_doorbell_free() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/net/ethernet/micrel/ksz884x.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h        |    1 -
+ drivers/gpu/drm/radeon/radeon_device.c |   14 --------------
+ 2 files changed, 15 deletions(-)
 
-diff --git a/drivers/net/ethernet/micrel/ksz884x.c b/drivers/net/ethernet/micrel/ksz884x.c
-index f1ebed6c..2fa6ae0 100644
---- a/drivers/net/ethernet/micrel/ksz884x.c
-+++ b/drivers/net/ethernet/micrel/ksz884x.c
-@@ -2303,12 +2303,6 @@ static inline int port_chk_force_flow_ctrl(struct ksz_hw *hw, int p)
+diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+index a9717b3..93e7cfc 100644
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -700,7 +700,6 @@ struct radeon_doorbell {
+ };
  
- /* Spanning Tree */
+ int radeon_doorbell_get(struct radeon_device *rdev, u32 *page);
+-void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell);
  
--static inline void port_cfg_dis_learn(struct ksz_hw *hw, int p, int set)
+ /*
+  * IRQS.
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index ea26769..16a9999 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -363,20 +363,6 @@ int radeon_doorbell_get(struct radeon_device *rdev, u32 *doorbell)
+ 	}
+ }
+ 
+-/**
+- * radeon_doorbell_free - Free a doorbell entry
+- *
+- * @rdev: radeon_device pointer
+- * @doorbell: doorbell index
+- *
+- * Free a doorbell allocated for use by the driver (all asics)
+- */
+-void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell)
 -{
--	port_cfg(hw, p,
--		KS8842_PORT_CTRL_2_OFFSET, PORT_LEARN_DISABLE, set);
+-	if (doorbell < rdev->doorbell.num_doorbells)
+-		__clear_bit(doorbell, rdev->doorbell.used);
 -}
 -
- static inline void port_cfg_rx(struct ksz_hw *hw, int p, int set)
- {
- 	port_cfg(hw, p,
+ /*
+  * radeon_wb_*()
+  * Writeback is the the method by which the the GPU updates special pages
 -- 
 1.7.10.4
 
