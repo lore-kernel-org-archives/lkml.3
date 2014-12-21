@@ -1,94 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbaLUR4D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 12:56:03 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:41533 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767AbaLUR4B (ORCPT
+	id S1753273AbaLUSAT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 13:00:19 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:36409 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831AbaLUSAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 12:56:01 -0500
+	Sun, 21 Dec 2014 13:00:18 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ismael Luceno <ismael.luceno@corp.bluecherry.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Forest Bond <forest@alittletooquiet.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] media: pci: solo6x10: solo6x10-enc.c:  Remove unused function
-Date: Sun, 21 Dec 2014 18:58:47 +0100
-Message-Id: <1419184727-11224-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Guillaume Clement <gclement@baobob.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: vt6655: srom.c:  Remove some unused functions
+Date: Sun, 21 Dec 2014 19:03:03 +0100
+Message-Id: <1419184983-11386-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function solo_s_jpeg_qp() that is not used anywhere.
+Removes some functions that are not used anywhere:
+SROMbAutoLoad() SROMvReadSubSysVenId() SROMvWriteEtherAddress()
+SROMvWriteAllContents() SROMbIsRegBitsOff() SROMbIsRegBitsOn()
+SROMvRegBitsOff() SROMvRegBitsOn()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/media/pci/solo6x10/solo6x10-enc.c |   35 -----------------------------
- drivers/media/pci/solo6x10/solo6x10.h     |    2 --
- 2 files changed, 37 deletions(-)
+ drivers/staging/vt6655/srom.c |  206 -----------------------------------------
+ drivers/staging/vt6655/srom.h |   11 ---
+ 2 files changed, 217 deletions(-)
 
-diff --git a/drivers/media/pci/solo6x10/solo6x10-enc.c b/drivers/media/pci/solo6x10/solo6x10-enc.c
-index d19c0ae..6b589b8 100644
---- a/drivers/media/pci/solo6x10/solo6x10-enc.c
-+++ b/drivers/media/pci/solo6x10/solo6x10-enc.c
-@@ -175,41 +175,6 @@ out:
- 	return 0;
+diff --git a/drivers/staging/vt6655/srom.c b/drivers/staging/vt6655/srom.c
+index 5396e58..ba2a2d4 100644
+--- a/drivers/staging/vt6655/srom.c
++++ b/drivers/staging/vt6655/srom.c
+@@ -27,16 +27,8 @@
+  * Functions:
+  *      SROMbyReadEmbedded - Embedded read eeprom via MAC
+  *      SROMbWriteEmbedded - Embedded write eeprom via MAC
+- *      SROMvRegBitsOn - Set Bits On in eeprom
+- *      SROMvRegBitsOff - Clear Bits Off in eeprom
+- *      SROMbIsRegBitsOn - Test if Bits On in eeprom
+- *      SROMbIsRegBitsOff - Test if Bits Off in eeprom
+  *      SROMvReadAllContents - Read all contents in eeprom
+- *      SROMvWriteAllContents - Write all contents in eeprom
+  *      SROMvReadEtherAddress - Read Ethernet Address in eeprom
+- *      SROMvWriteEtherAddress - Write Ethernet Address in eeprom
+- *      SROMvReadSubSysVenId - Read Sub_VID and Sub_SysId in eeprom
+- *      SROMbAutoLoad - Auto Load eeprom to MAC register
+  *
+  * Revision History:
+  *
+@@ -160,92 +152,6 @@ bool SROMbWriteEmbedded(void __iomem *dwIoBase, unsigned char byContntOffset, un
  }
  
--/**
-- * Set channel Quality Profile (0-3).
+ /*
+- * Description: Turn bits on in eeprom
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *      byContntOffset  - address of EEPROM
+- *      byBits          - bits to turn on
+- *  Out:
+- *      none
+- *
+- * Return Value: none
+- *
 - */
--void solo_s_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch,
--		    unsigned int qp)
+-void SROMvRegBitsOn(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byBits)
 -{
--	unsigned long flags;
--	unsigned int idx, reg;
+-	unsigned char byOrgData;
 -
--	if ((ch > 31) || (qp > 3))
--		return;
--
--	if (solo_dev->type == SOLO_DEV_6010)
--		return;
--
--	if (ch < 16) {
--		idx = 0;
--		reg = SOLO_VE_JPEG_QP_CH_L;
--	} else {
--		ch -= 16;
--		idx = 1;
--		reg = SOLO_VE_JPEG_QP_CH_H;
--	}
--	ch *= 2;
--
--	spin_lock_irqsave(&solo_dev->jpeg_qp_lock, flags);
--
--	solo_dev->jpeg_qp[idx] &= ~(3 << ch);
--	solo_dev->jpeg_qp[idx] |= (qp & 3) << ch;
--
--	solo_reg_write(solo_dev, reg, solo_dev->jpeg_qp[idx]);
--
--	spin_unlock_irqrestore(&solo_dev->jpeg_qp_lock, flags);
+-	byOrgData = SROMbyReadEmbedded(dwIoBase, byContntOffset);
+-	SROMbWriteEmbedded(dwIoBase, byContntOffset, (unsigned char)(byOrgData | byBits));
 -}
 -
- int solo_g_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch)
- {
- 	int idx;
-diff --git a/drivers/media/pci/solo6x10/solo6x10.h b/drivers/media/pci/solo6x10/solo6x10.h
-index 72017b7..ad5afc6 100644
---- a/drivers/media/pci/solo6x10/solo6x10.h
-+++ b/drivers/media/pci/solo6x10/solo6x10.h
-@@ -399,8 +399,6 @@ int solo_eeprom_write(struct solo_dev *solo_dev, int loc,
- 		      __be16 data);
+-/*
+- * Description: Turn bits off in eeprom
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *      byContntOffset  - address of EEPROM
+- *      byBits          - bits to turn off
+- *  Out:
+- *      none
+- *
+- */
+-void SROMvRegBitsOff(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byBits)
+-{
+-	unsigned char byOrgData;
+-
+-	byOrgData = SROMbyReadEmbedded(dwIoBase, byContntOffset);
+-	SROMbWriteEmbedded(dwIoBase, byContntOffset, (unsigned char)(byOrgData & (~byBits)));
+-}
+-
+-/*
+- * Description: Test if bits on in eeprom
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *      byContntOffset  - address of EEPROM
+- *      byTestBits      - bits to test
+- *  Out:
+- *      none
+- *
+- * Return Value: true if all test bits on; otherwise false
+- *
+- */
+-bool SROMbIsRegBitsOn(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byTestBits)
+-{
+-	unsigned char byOrgData;
+-
+-	byOrgData = SROMbyReadEmbedded(dwIoBase, byContntOffset);
+-	return (byOrgData & byTestBits) == byTestBits;
+-}
+-
+-/*
+- * Description: Test if bits off in eeprom
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *      byContntOffset  - address of EEPROM
+- *      byTestBits      - bits to test
+- *  Out:
+- *      none
+- *
+- * Return Value: true if all test bits off; otherwise false
+- *
+- */
+-bool SROMbIsRegBitsOff(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byTestBits)
+-{
+-	unsigned char byOrgData;
+-
+-	byOrgData = SROMbyReadEmbedded(dwIoBase, byContntOffset);
+-	return !(byOrgData & byTestBits);
+-}
+-
+-/*
+  * Description: Read all contents of eeprom to buffer
+  *
+  * Parameters:
+@@ -269,30 +175,6 @@ void SROMvReadAllContents(void __iomem *dwIoBase, unsigned char *pbyEepromRegs)
+ }
  
- /* JPEG Qp functions */
--void solo_s_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch,
--		    unsigned int qp);
- int solo_g_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch);
+ /*
+- * Description: Write all contents of buffer to eeprom
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *      pbyEepromRegs   - EEPROM content Buffer
+- *  Out:
+- *      none
+- *
+- * Return Value: none
+- *
+- */
+-void SROMvWriteAllContents(void __iomem *dwIoBase, unsigned char *pbyEepromRegs)
+-{
+-	int     ii;
+-
+-	/* ii = Rom Address */
+-	for (ii = 0; ii < EEP_MAX_CONTEXT_SIZE; ii++) {
+-		SROMbWriteEmbedded(dwIoBase, (unsigned char)ii, *pbyEepromRegs);
+-		pbyEepromRegs++;
+-	}
+-}
+-
+-/*
+  * Description: Read Ethernet Address from eeprom to buffer
+  *
+  * Parameters:
+@@ -315,91 +197,3 @@ void SROMvReadEtherAddress(void __iomem *dwIoBase, unsigned char *pbyEtherAddres
+ 	}
+ }
  
- #define CHK_FLAGS(v, flags) (((v) & (flags)) == (flags))
+-/*
+- * Description: Write Ethernet Address from buffer to eeprom
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *      pbyEtherAddress - Ethernet Address buffer
+- *  Out:
+- *      none
+- *
+- * Return Value: none
+- *
+- */
+-void SROMvWriteEtherAddress(void __iomem *dwIoBase, unsigned char *pbyEtherAddress)
+-{
+-	unsigned char ii;
+-
+-	/* ii = Rom Address */
+-	for (ii = 0; ii < ETH_ALEN; ii++) {
+-		SROMbWriteEmbedded(dwIoBase, ii, *pbyEtherAddress);
+-		pbyEtherAddress++;
+-	}
+-}
+-
+-/*
+- * Description: Read Sub_VID and Sub_SysId from eeprom to buffer
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *  Out:
+- *      pdwSubSysVenId  - Sub_VID and Sub_SysId read
+- *
+- * Return Value: none
+- *
+- */
+-void SROMvReadSubSysVenId(void __iomem *dwIoBase, unsigned long *pdwSubSysVenId)
+-{
+-	unsigned char *pbyData;
+-
+-	pbyData = (unsigned char *)pdwSubSysVenId;
+-	/* sub vendor */
+-	*pbyData = SROMbyReadEmbedded(dwIoBase, 6);
+-	*(pbyData+1) = SROMbyReadEmbedded(dwIoBase, 7);
+-	/* sub system */
+-	*(pbyData+2) = SROMbyReadEmbedded(dwIoBase, 8);
+-	*(pbyData+3) = SROMbyReadEmbedded(dwIoBase, 9);
+-}
+-
+-/*
+- * Description: Auto Load EEPROM to MAC register
+- *
+- * Parameters:
+- *  In:
+- *      dwIoBase        - I/O base address
+- *  Out:
+- *      none
+- *
+- * Return Value: true if success; otherwise false
+- *
+- */
+-bool SROMbAutoLoad(void __iomem *dwIoBase)
+-{
+-	unsigned char byWait;
+-	int     ii;
+-
+-	unsigned char byOrg;
+-
+-	VNSvInPortB(dwIoBase + MAC_REG_I2MCFG, &byOrg);
+-	/* turn on hardware retry */
+-	VNSvOutPortB(dwIoBase + MAC_REG_I2MCFG, (byOrg | I2MCFG_NORETRY));
+-
+-	MACvRegBitsOn(dwIoBase, MAC_REG_I2MCSR, I2MCSR_AUTOLD);
+-
+-	/* ii = Rom Address */
+-	for (ii = 0; ii < EEP_MAX_CONTEXT_SIZE; ii++) {
+-		MACvTimer0MicroSDelay(dwIoBase, CB_EEPROM_READBYTE_WAIT);
+-		VNSvInPortB(dwIoBase + MAC_REG_I2MCSR, &byWait);
+-		if (!(byWait & I2MCSR_AUTOLD))
+-			break;
+-	}
+-
+-	VNSvOutPortB(dwIoBase + MAC_REG_I2MCFG, byOrg);
+-
+-	if (ii == EEP_MAX_CONTEXT_SIZE)
+-		return false;
+-	return true;
+-}
+diff --git a/drivers/staging/vt6655/srom.h b/drivers/staging/vt6655/srom.h
+index 3128e53..8851cc9 100644
+--- a/drivers/staging/vt6655/srom.h
++++ b/drivers/staging/vt6655/srom.h
+@@ -136,20 +136,9 @@ typedef struct tagSSromReg {
+ unsigned char SROMbyReadEmbedded(void __iomem *dwIoBase, unsigned char byContntOffset);
+ bool SROMbWriteEmbedded(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byData);
+ 
+-void SROMvRegBitsOn(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byBits);
+-void SROMvRegBitsOff(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byBits);
+-
+-bool SROMbIsRegBitsOn(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byTestBits);
+-bool SROMbIsRegBitsOff(void __iomem *dwIoBase, unsigned char byContntOffset, unsigned char byTestBits);
+-
+ void SROMvReadAllContents(void __iomem *dwIoBase, unsigned char *pbyEepromRegs);
+-void SROMvWriteAllContents(void __iomem *dwIoBase, unsigned char *pbyEepromRegs);
+ 
+ void SROMvReadEtherAddress(void __iomem *dwIoBase, unsigned char *pbyEtherAddress);
+-void SROMvWriteEtherAddress(void __iomem *dwIoBase, unsigned char *pbyEtherAddress);
+-
+-void SROMvReadSubSysVenId(void __iomem *dwIoBase, unsigned long *pdwSubSysVenId);
+ 
+-bool SROMbAutoLoad(void __iomem *dwIoBase);
+ 
+ #endif // __EEPROM_H__
 -- 
 1.7.10.4
 
