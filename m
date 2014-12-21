@@ -1,123 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaLUMUW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 07:20:22 -0500
-Received: from pegasos-out.vodafone.de ([80.84.1.38]:43182 "EHLO
-	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298AbaLUMUV (ORCPT
+	id S1753584AbaLUMYA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 07:24:00 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:46278 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375AbaLUMX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 07:20:21 -0500
-X-Spam-Flag: NO
-X-Spam-Score: 0.157
-Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=softfail
-	(invalid, public key: DNS query timeout for
-	mail._domainkey.vodafone.de) header.i=@vodafone.de
-X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 8BAC2670D2
-Message-ID: <5496BAE0.5090901@vodafone.de>
-Date: Sun, 21 Dec 2014 13:19:44 +0100
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+	Sun, 21 Dec 2014 07:23:59 -0500
+Message-ID: <5496BBC4.90705@roeck-us.net>
+Date: Sun, 21 Dec 2014 04:23:32 -0800
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Oded Gabbay <oded.gabbay@amd.com>, dri-devel@lists.freedesktop.org
-CC: linux-kernel@vger.kernel.org, Alexander.Deucher@amd.com
-Subject: Re: [PATCH 1/3] amdkfd: Don't clear *kfd2kgd on kfd_module_init
-References: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com> <1419108374-7020-2-git-send-email-oded.gabbay@amd.com> <5496AEAD.3090003@vodafone.de> <5496B04C.50502@amd.com>
-In-Reply-To: <5496B04C.50502@amd.com>
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>
+Subject: Re: [PATCH v3] i8k: Autodetect maximal fan speed and fan RPM multiplier
+References: <1419012268-20805-1-git-send-email-pali.rohar@gmail.com> <1419153618-6930-1-git-send-email-pali.rohar@gmail.com> <5496B594.6050205@roeck-us.net> <201412211309.41077@pali>
+In-Reply-To: <201412211309.41077@pali>
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.5496BBDE.0112,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.12.2014 um 12:34 schrieb Oded Gabbay:
->
->
-> On 12/21/2014 01:27 PM, Christian König wrote:
->> Am 20.12.2014 um 21:46 schrieb Oded Gabbay:
->>> When amdkfd and radeon are compiled inside the kernel image (not as 
->>> modules),
->>> radeon will load before amdkfd and will set *kfd2kgd to its interface
->>> structure. Therefore, we must not set *kfd2kgd to NULL when amdkfd 
->>> is loaded
->>> because it will override radeon's initialization and cause kernel BUG.
+On 12/21/2014 04:09 AM, Pali Rohár wrote:
+> On Sunday 21 December 2014 12:57:08 Guenter Roeck wrote:
+>>> -#define I8K_FAN_MULT		30
+>>> +#define I8K_FAN_MAX_RPM		30000
 >>>
->>> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
->>
->> You should probably rather fix the dependency between the two modules 
->> to get an
->> determined load order instead of doing such nasty workarounds.
->>
->> Christian.
->
-> The problem is that when modules are compiled inside the kernel, there 
-> is NO determined load order and there is no mechanism to enforce that. 
-> If there is/was such a mechanism, I would of course prefer to use it.
-
-There should be an determined order based on the symbol use, otherwise 
-initializing most of the kernel modules wouldn't work as expected. For 
-example radeon depends on the drm module must be loaded before radeon is 
-loaded.
-
->
-> Actually, I don't understand why the kernel doesn't enforce the order 
-> according to the use of exported symbols, like it does with modules.
-
-Yeah, that's indeed rather strange. There must be something in the 
-amdkfd code which broke that somehow.
-
-As far as I understand you the desired init order is radeon and 
-amd_iommu_v2 first and then amdkfd, right? So what happens when you boot 
-with radeon, amd_iommu_v2 and amdkfd blacklisted for automatically load 
-and only load amdkfd manually?
-
-> There will always be dependencies between kgd (radeon) and amdkfd and 
-> between amdkfd and amd_iommu_v2. I don't think I can eliminate those 
-> dependencies, not without a very complex solution. And the fact that 
-> this complex solution occurs only in a very specific use case (all 
-> modules compiled in), makes me less inclined to do that.
->
-> So I don't see it as a "nasty workaround". I would call it just a 
-> "workaround" for a specific use case, which should be solved by a 
-> generic solution to the kernel enforcing load orders.
-
-The normal kernel module handling already should provide the correct 
-init order, so I would still call this a rather nasty workaround because 
-we couldn't find the underlying problem.
-
-Christian.
-
->
->     Oded
->>
->>> ---
->>>   drivers/gpu/drm/amd/amdkfd/kfd_module.c | 5 ++---
->>>   1 file changed, 2 insertions(+), 3 deletions(-)
+>>>    #define I8K_MAX_TEMP		127
 >>>
->>> diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_module.c
->>> b/drivers/gpu/drm/amd/amdkfd/kfd_module.c
->>> index 95d5af1..236562f 100644
->>> --- a/drivers/gpu/drm/amd/amdkfd/kfd_module.c
->>> +++ b/drivers/gpu/drm/amd/amdkfd/kfd_module.c
->>> @@ -34,7 +34,7 @@
->>>   #define KFD_DRIVER_MINOR    7
->>>   #define KFD_DRIVER_PATCHLEVEL    0
->>> -const struct kfd2kgd_calls *kfd2kgd;
->>> +const struct kfd2kgd_calls *kfd2kgd = NULL;
->>>   static const struct kgd2kfd_calls kgd2kfd = {
->>>       .exit        = kgd2kfd_exit,
->>>       .probe        = kgd2kfd_probe,
->>> @@ -84,14 +84,13 @@ EXPORT_SYMBOL(kgd2kfd_init);
->>>   void kgd2kfd_exit(void)
->>>   {
->>> +    kfd2kgd = NULL;
->>>   }
->>>   static int __init kfd_module_init(void)
->>>   {
->>>       int err;
->>> -    kfd2kgd = NULL;
->>> -
->>>       /* Verify module parameters */
->>>       if ((sched_policy < KFD_SCHED_POLICY_HWS) ||
->>>           (sched_policy > KFD_SCHED_POLICY_NO_HWS)) {
+>>>    #define I8K_FN_NONE		0x00
+>>>
+>>> @@ -64,7 +66,7 @@ static DEFINE_MUTEX(i8k_mutex);
+>>>
+>>>    static char bios_version[4];
+>>>    static struct device *i8k_hwmon_dev;
+>>>    static u32 i8k_hwmon_flags;
+>>>
+>>> -static int i8k_fan_mult;
+>>> +static int i8k_fan_mult = 30;
 >>
+>> Why did you drop I8K_FAN_MULT ?
+>>
+>
+> Because I think it is not needed anymore... It is used only in
+> one place (there ^). But if you want I can revert it back.
+>
+That is not a reason to drop a define.
+
+>>>    static int __init i8k_probe(void)
+>>>    {
+>>>
+>>> +	const struct i8k_config_data *conf;
+>>
+>> Why did you move this variable declaration ?
+>>
+>
+> Comes from previous version of patches where I moved all
+> variables to start of function. I will revert this change.
+>
+>>>
+>>> -		const struct i8k_config_data *conf = id->driver_data;
+>>> +		conf = id->driver_data;
+>>> +		if (fan_mult <= 0 && conf->fan_mult > 0)
+>>
+>> I still don't see the value in accepting fan_mult < 0
+>> (compeared to == 0).
+>>
+>
+> Ok. What kernel driver should do if user load it with negative
+> parameter? We should not propagate negative value to functions.
+>
+You have multiple options: Ignore it (bad idea ;-), abort loading
+the module with -EINVAL, or make the module parameter an unsigned.
+
+I would prefer the latter. Either case, that should be a separate patch
+(different logical change).
+
+Thanks,
+Guenter
 
