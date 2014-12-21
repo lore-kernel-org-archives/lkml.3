@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086AbaLUFJL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 00:09:11 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49889 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaLUFJJ (ORCPT
+	id S1751371AbaLUF2N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 00:28:13 -0500
+Received: from gproxy7-pub.mail.unifiedlayer.com ([70.40.196.235]:37810 "HELO
+	gproxy7-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750830AbaLUF2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 00:09:09 -0500
-Date: Sat, 20 Dec 2014 21:08:54 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.19-rc1 - merge window closed
-Message-ID: <20141221050854.GA23583@roeck-us.net>
-References: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>
+	Sun, 21 Dec 2014 00:28:10 -0500
+X-Authority-Analysis: v=2.1 cv=Lo0BlBtc c=1 sm=1 tr=0
+ a=PkLafpyMt2xwRD+PMJrZ3Q==:117 a=PkLafpyMt2xwRD+PMJrZ3Q==:17 a=cNaOj0WVAAAA:8
+ a=f5113yIGAAAA:8 a=J0QyKEt1u0cA:10 a=kj9zAlcOel0A:10 a=ptNznvi-AAAA:8
+ a=fztpppUj2ZoA:10 a=Xwexni91U_8A:10 a=A92cGCtB03wA:10
+ a=ZeoGcfYvvQOuYjqKaXEA:9 a=CjuIK1q_8ugA:10
+Date: Sat, 20 Dec 2014 22:27:55 -0700
+From: Eddie Kovsky <ewk@edkovsky.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: vt6655: fix sparse warning: argument type
+Message-ID: <20141221052755.GA3984@athena>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.549655FD.006F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Identified-User: {1650:box492.bluehost.com:edkovsky:edkovsky.org} {sentby:smtp auth 65.102.196.57 authed with ewk+edkovsky.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 05:43:22PM -0800, Linus Torvalds wrote:
-> So it's been a day less than two weeks, and the merge window is closed.
-> 
-> Considering how much came in fairly late, I find it hard to care about
-> anybody who had decided to cut it even closer than some people already
-> did.   That said, maybe there aren't any real stragglers - and judging
-> by the size of rc1, there really can't have been much. Not only do I
-> think there are more commits than there were in linux-next, this is
-> one of the bigger rc1's (at least by commits) historically. We've had
-> bigger ones (3.10 and 3.15 both had large merge windows leading up to
-> them), but this was definitely not a small merge window.
-> 
-> Anyway, we've got changes all over the place, including a new
-> architecture (nios2). My "short mergelog" is appended, and as usual I
-> want to point out that that credits the people sending me the changes,
-> which is generally not necessarily at all the same thing as the people
-> actually writing the code, even if there is obviously overlap.
-> 
-> In the "big picture", this looks like a fairly normal release. About
-> two thirds driver updates, with about half of the rest being
-> architecture updates (and no, the new nios2 patches are not at all
-> dominant, it's about half ARM, with  the new nios2 support being less
-> than 10% of the arch updates by lines overall). The remaining one
-> sixth is "misc": networking, header updates, documentation,
-> filesystems, tooling, and core kernel (in pretty much that order).
-> 
-> Obviously, with the holidays coming up, I'd expect that the next few
-> weeks are pretty quiet, but we'll see. I do hope that people will have
-> time to test this all in between all the eggnog,
-> 
+Fixes following warning generated by sparse:
 
-There are at least the never-resting auto-testers, which for mine report:
+drivers/staging/vt6655/baseband.c:2180:45: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/vt6655/baseband.c:2180:45:    expected struct vnt_private *priv
+drivers/staging/vt6655/baseband.c:2180:45:    got void [noderef] <asn:2>*dwIoBase
 
-Build tests:
-	total: 133 pass: 133 fail: 0
+Compile tested on next-20141219.
 
-Qemu tests:
-	total: 30 pass: 30 fail: 0
+Signed-off-by: Eddie Kovsky <ewk@edkovsky.org>
+---
+ drivers/staging/vt6655/baseband.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Details at http://server.roeck-us.net:8010/builders.
+diff --git a/drivers/staging/vt6655/baseband.c b/drivers/staging/vt6655/baseband.c
+index 86c72ba0a0cd..f8c5fc371c4c 100644
+--- a/drivers/staging/vt6655/baseband.c
++++ b/drivers/staging/vt6655/baseband.c
+@@ -2177,7 +2177,7 @@ bool BBbVT3253Init(struct vnt_private *priv)
+ 		/* Init ANT B select,RX Config CR10 = 0x28->0x2A, 0x2A->0x28(VC1/VC2 define, make the ANT_A, ANT_B inverted) */
+ 		/*bResult &= BBbWriteEmbedded(dwIoBase,0x0a,0x28);*/
+ 		/* Select VC1/VC2, CR215 = 0x02->0x06 */
+-		bResult &= BBbWriteEmbedded(dwIoBase, 0xd7, 0x06);
++		bResult &= BBbWriteEmbedded(priv, 0xd7, 0x06);
+ 		/* }} */
+ 
+ 		for (ii = 0; ii < CB_VT3253B0_AGC; ii++)
+-- 
+2.1.0
 
-This is an absolute first; since I started testing, we never had an
--rc1 with no build or qemu failures. Excellent job everyone!
-
-Guenter
