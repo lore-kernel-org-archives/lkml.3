@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451AbaLUSrb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 13:47:31 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:37650 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaLUSrT (ORCPT
+	id S1753327AbaLUSr2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 13:47:28 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55420 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734AbaLUSrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 13:47:19 -0500
+	Sun, 21 Dec 2014 13:47:17 -0500
 From: Richard Cochran <richardcochran@gmail.com>
 To: <netdev@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Amir Vadai <amirv@mellanox.com>,
@@ -21,9 +21,9 @@ Cc: <linux-kernel@vger.kernel.org>, Amir Vadai <amirv@mellanox.com>,
         Or Gerlitz <ogerlitz@mellanox.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tom Lendacky <thomas.lendacky@amd.com>
-Subject: [PATCH net-next 04/11] net: bnx2x: convert to timecounter adjtime.
-Date: Sun, 21 Dec 2014 19:46:59 +0100
-Message-Id: <976abf89c833c376c2666def2c60a7de0f020026.1418504889.git.richardcochran@gmail.com>
+Subject: [PATCH net-next 03/11] net: xgbe: convert to timecounter adjtime.
+Date: Sun, 21 Dec 2014 19:46:58 +0100
+Message-Id: <0297818b43ed776c92832369b37783beb58ed3d1.1418504889.git.richardcochran@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1418504883.git.richardcochran@gmail.com>
 References: <cover.1418504883.git.richardcochran@gmail.com>
@@ -38,29 +38,30 @@ Compile tested only.
 
 Signed-off-by: Richard Cochran <richardcochran@gmail.com>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/net/ethernet/amd/xgbe/xgbe-ptp.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-index 691f0bf..7b2cc40 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -13265,14 +13265,10 @@ static int bnx2x_ptp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
- static int bnx2x_ptp_adjtime(struct ptp_clock_info *ptp, s64 delta)
- {
- 	struct bnx2x *bp = container_of(ptp, struct bnx2x, ptp_clock_info);
--	u64 now;
+diff --git a/drivers/net/ethernet/amd/xgbe/xgbe-ptp.c b/drivers/net/ethernet/amd/xgbe/xgbe-ptp.c
+index a1bf9d1c..f5acf4c 100644
+--- a/drivers/net/ethernet/amd/xgbe/xgbe-ptp.c
++++ b/drivers/net/ethernet/amd/xgbe/xgbe-ptp.c
+@@ -171,15 +171,9 @@ static int xgbe_adjtime(struct ptp_clock_info *info, s64 delta)
+ 						   struct xgbe_prv_data,
+ 						   ptp_clock_info);
+ 	unsigned long flags;
+-	u64 nsec;
  
- 	DP(BNX2X_MSG_PTP, "PTP adjtime called, delta = %llx\n", delta);
- 
--	now = timecounter_read(&bp->timecounter);
--	now += delta;
--	/* Re-init the timecounter */
--	timecounter_init(&bp->timecounter, &bp->cyclecounter, now);
-+	timecounter_adjtime(&bp->timecounter, delta);
+ 	spin_lock_irqsave(&pdata->tstamp_lock, flags);
+-
+-	nsec = timecounter_read(&pdata->tstamp_tc);
+-
+-	nsec += delta;
+-	timecounter_init(&pdata->tstamp_tc, &pdata->tstamp_cc, nsec);
+-
++	timecounter_adjtime(&pdata->tstamp_tc, delta);
+ 	spin_unlock_irqrestore(&pdata->tstamp_lock, flags);
  
  	return 0;
- }
 -- 
 1.7.10.4
 
