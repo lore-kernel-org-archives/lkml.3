@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978AbaLURux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 12:50:53 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49768 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaLURuw (ORCPT
+	id S1753037AbaLUR4D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 12:56:03 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41533 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767AbaLUR4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 12:50:52 -0500
+	Sun, 21 Dec 2014 12:56:01 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mahati Chamarthy <mahati.chamarthy@gmail.com>
+To: Ismael Luceno <ismael.luceno@corp.bluecherry.net>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Matthew Casey <mdcasey@chabloom.com>, James Cameron <quozl@laptop.org>,
-        Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Emil Goode <emilgoode@gmail.com>,
-        Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8192e: rtllib_rx.c:  Remove some unused functions
-Date: Sun, 21 Dec 2014 18:53:37 +0100
-Message-Id: <1419184417-10979-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] media: pci: solo6x10: solo6x10-enc.c:  Remove unused function
+Date: Sun, 21 Dec 2014 18:58:47 +0100
+Message-Id: <1419184727-11224-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-update_ibss_network() rtllib_SignalStrengthTranslate()
+Remove the function solo_s_jpeg_qp() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/staging/rtl8192e/rtllib_rx.c |   35 ----------------------------------
- 1 file changed, 35 deletions(-)
+ drivers/media/pci/solo6x10/solo6x10-enc.c |   35 -----------------------------
+ drivers/media/pci/solo6x10/solo6x10.h     |    2 --
+ 2 files changed, 37 deletions(-)
 
-diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
-index 1c2014f..418ef13 100644
---- a/drivers/staging/rtl8192e/rtllib_rx.c
-+++ b/drivers/staging/rtl8192e/rtllib_rx.c
-@@ -2211,34 +2211,6 @@ int rtllib_parse_info_param(struct rtllib_device *ieee,
+diff --git a/drivers/media/pci/solo6x10/solo6x10-enc.c b/drivers/media/pci/solo6x10/solo6x10-enc.c
+index d19c0ae..6b589b8 100644
+--- a/drivers/media/pci/solo6x10/solo6x10-enc.c
++++ b/drivers/media/pci/solo6x10/solo6x10-enc.c
+@@ -175,41 +175,6 @@ out:
  	return 0;
  }
  
--static inline u8 rtllib_SignalStrengthTranslate(u8  CurrSS)
+-/**
+- * Set channel Quality Profile (0-3).
+- */
+-void solo_s_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch,
+-		    unsigned int qp)
 -{
--	u8 RetSS;
+-	unsigned long flags;
+-	unsigned int idx, reg;
 -
--	if (CurrSS >= 71 && CurrSS <= 100)
--		RetSS = 90 + ((CurrSS - 70) / 3);
--	else if (CurrSS >= 41 && CurrSS <= 70)
--		RetSS = 78 + ((CurrSS - 40) / 3);
--	else if (CurrSS >= 31 && CurrSS <= 40)
--		RetSS = 66 + (CurrSS - 30);
--	else if (CurrSS >= 21 && CurrSS <= 30)
--		RetSS = 54 + (CurrSS - 20);
--	else if (CurrSS >= 5 && CurrSS <= 20)
--		RetSS = 42 + (((CurrSS - 5) * 2) / 3);
--	else if (CurrSS == 4)
--		RetSS = 36;
--	else if (CurrSS == 3)
--		RetSS = 27;
--	else if (CurrSS == 2)
--		RetSS = 18;
--	else if (CurrSS == 1)
--		RetSS = 9;
--	else
--		RetSS = CurrSS;
+-	if ((ch > 31) || (qp > 3))
+-		return;
 -
--	return RetSS;
+-	if (solo_dev->type == SOLO_DEV_6010)
+-		return;
+-
+-	if (ch < 16) {
+-		idx = 0;
+-		reg = SOLO_VE_JPEG_QP_CH_L;
+-	} else {
+-		ch -= 16;
+-		idx = 1;
+-		reg = SOLO_VE_JPEG_QP_CH_H;
+-	}
+-	ch *= 2;
+-
+-	spin_lock_irqsave(&solo_dev->jpeg_qp_lock, flags);
+-
+-	solo_dev->jpeg_qp[idx] &= ~(3 << ch);
+-	solo_dev->jpeg_qp[idx] |= (qp & 3) << ch;
+-
+-	solo_reg_write(solo_dev, reg, solo_dev->jpeg_qp[idx]);
+-
+-	spin_unlock_irqrestore(&solo_dev->jpeg_qp_lock, flags);
 -}
 -
- static long rtllib_translate_todbm(u8 signal_strength_index)
+ int solo_g_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch)
  {
- 	long	signal_power;
-@@ -2367,13 +2339,6 @@ static inline int is_same_network(struct rtllib_network *src,
- 		(dst->capability & WLAN_CAPABILITY_ESS)));
- }
+ 	int idx;
+diff --git a/drivers/media/pci/solo6x10/solo6x10.h b/drivers/media/pci/solo6x10/solo6x10.h
+index 72017b7..ad5afc6 100644
+--- a/drivers/media/pci/solo6x10/solo6x10.h
++++ b/drivers/media/pci/solo6x10/solo6x10.h
+@@ -399,8 +399,6 @@ int solo_eeprom_write(struct solo_dev *solo_dev, int loc,
+ 		      __be16 data);
  
--static inline void update_ibss_network(struct rtllib_network *dst,
--				  struct rtllib_network *src)
--{
--	memcpy(&dst->stats, &src->stats, sizeof(struct rtllib_rx_stats));
--	dst->last_scanned = jiffies;
--}
--
+ /* JPEG Qp functions */
+-void solo_s_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch,
+-		    unsigned int qp);
+ int solo_g_jpeg_qp(struct solo_dev *solo_dev, unsigned int ch);
  
- static inline void update_network(struct rtllib_network *dst,
- 				  struct rtllib_network *src)
+ #define CHK_FLAGS(v, flags) (((v) & (flags)) == (flags))
 -- 
 1.7.10.4
 
