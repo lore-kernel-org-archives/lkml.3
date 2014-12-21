@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989AbaLURPj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 12:15:39 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:55755 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbaLURPg (ORCPT
+	id S1752514AbaLURVr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 12:21:47 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37555 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250AbaLURVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 12:15:36 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] dma: imx-dma.c:  Remove unused function
-Date: Sun, 21 Dec 2014 18:18:22 +0100
-Message-Id: <1419182302-9672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 21 Dec 2014 12:21:46 -0500
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH] i8k: Make fan module parameters an unsigned
+Date: Sun, 21 Dec 2014 18:21:28 +0100
+Message-Id: <1419182488-20157-1-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function is_imx21_dma() that is not used anywhere.
+Setting negative fan multiplier or maximal fan speed does make any sense and
+can cause problems. So ensure that negative values will not be accepted.
 
-This was partially found by using a static code analysis program called cppcheck.
-
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 ---
- drivers/dma/imx-dma.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/char/i8k.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 9d2c9e7..af1e643 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -230,11 +230,6 @@ static inline int is_imx1_dma(struct imxdma_engine *imxdma)
- 	return imxdma->devtype == IMX1_DMA;
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index 48d701c..175bb9f 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -64,9 +64,9 @@ static DEFINE_MUTEX(i8k_mutex);
+ static char bios_version[4];
+ static struct device *i8k_hwmon_dev;
+ static u32 i8k_hwmon_flags;
+-static int i8k_fan_mult;
+-static int i8k_pwm_mult;
+-static int i8k_fan_max = I8K_FAN_HIGH;
++static uint i8k_fan_mult;
++static uint i8k_pwm_mult;
++static uint i8k_fan_max = I8K_FAN_HIGH;
+ 
+ #define I8K_HWMON_HAVE_TEMP1	(1 << 0)
+ #define I8K_HWMON_HAVE_TEMP2	(1 << 1)
+@@ -95,12 +95,12 @@ static bool power_status;
+ module_param(power_status, bool, 0600);
+ MODULE_PARM_DESC(power_status, "Report power status in /proc/i8k");
+ 
+-static int fan_mult = I8K_FAN_MULT;
+-module_param(fan_mult, int, 0);
++static uint fan_mult = I8K_FAN_MULT;
++module_param(fan_mult, uint, 0);
+ MODULE_PARM_DESC(fan_mult, "Factor to multiply fan speed with");
+ 
+-static int fan_max = I8K_FAN_HIGH;
+-module_param(fan_max, int, 0);
++static uint fan_max = I8K_FAN_HIGH;
++module_param(fan_max, uint, 0);
+ MODULE_PARM_DESC(fan_max, "Maximum configurable fan speed");
+ 
+ static int i8k_open_fs(struct inode *inode, struct file *file);
+@@ -696,8 +696,8 @@ static int __init i8k_init_hwmon(void)
  }
  
--static inline int is_imx21_dma(struct imxdma_engine *imxdma)
--{
--	return imxdma->devtype == IMX21_DMA;
--}
--
- static inline int is_imx27_dma(struct imxdma_engine *imxdma)
- {
- 	return imxdma->devtype == IMX27_DMA;
+ struct i8k_config_data {
+-	int fan_mult;
+-	int fan_max;
++	uint fan_mult;
++	uint fan_max;
+ };
+ 
+ enum i8k_configs {
 -- 
-1.7.10.4
+1.7.9.5
 
