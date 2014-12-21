@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaLUTvn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 14:51:43 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51393 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959AbaLUTvl (ORCPT
+	id S1753498AbaLUTza (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 14:55:30 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:40223 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581AbaLUTz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 14:51:41 -0500
-Message-ID: <549724B2.4050209@roeck-us.net>
-Date: Sun, 21 Dec 2014 11:51:14 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	Sun, 21 Dec 2014 14:55:27 -0500
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>
-Subject: Re: [PATCH v4] i8k: Autodetect maximal fan speed and fan RPM multiplier
-References: <1419153618-6930-1-git-send-email-pali.rohar@gmail.com> <1419182630-20211-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1419182630-20211-1-git-send-email-pali.rohar@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH 02/10] i8k: Register only temperature sensors which have labels
+Date: Sun, 21 Dec 2014 20:54:35 +0100
+Message-Id: <1419191683-31435-3-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1419191683-31435-1-git-send-email-pali.rohar@gmail.com>
+References: <1419191683-31435-1-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.549724D7.010C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2014 09:23 AM, Pali Rohár wrote:
-> This patch adds new function i8k_get_fan_nominal_speed() for doing SMM call
-> which will return nominal fan RPM for specified fan speed. It returns nominal
-> RPM value at which fan operate when speed (0, 1, 2, 3) is set. It looks like
-> RPM value is not accurate, but still provides very useful information.
->
-> First it can be used to validate if certain fan speed could be accepted by SMM
-> for setting fan speed and we can use this routine to detect maximal fan speed.
->
-> Second it returns RPM value, so we can check if value looks correct with
-> multiplier 30 or multiplier 1 (until now only these two multiplier were used).
-> If RPM value with multiplier 30 is too high, then multiplier 1 is used.
->
-> In case when SMM reports that new function is not supported we will fallback
-> to old hardcoded values. Maximal fan speed would be 2 and RPM multiplier 30.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Tested-by: Pali Rohár <pali.rohar@gmail.com>
+Detect presense of sensor by calling type function instead trying to read
+temperature value. Type function is working also for sensors which are temporary
+turned off (e.g on GPU which is turned off). Dell DOS binary NBSVC.MDM is doing
+similar checks, so we should do that too.
 
-Auto-detection of both multiplier and maximum speed tested working on M140
-(after removing its configuration entry).
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/char/i8k.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-On Studio 1555, multiplier auto-detection works, but fan_max auto-detection fails.
-A speed value of '3' is accepted, but it does not set the fan speed to its maximum.
-Also, after setting the speed value to '3', reading it back returns to old value.
-No idea what it does or is expected to do. Reading the nominal speed
-does return a valid value.
-
-Given that, I think we should not try to auto-detect fan_max, but keep the current
-code (meaning either use 2 or 3 depending on the configuration data, with 2 as default
-if nothing else is known).
-
-Thanks,
-Guenter
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index 663868b..afcc9fe 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -660,19 +660,19 @@ static int __init i8k_init_hwmon(void)
+ 
+ 	i8k_hwmon_flags = 0;
+ 
+-	/* CPU temperature attributes, if temperature reading is OK */
+-	err = i8k_get_temp(0);
+-	if (err >= 0 || err == -ERANGE)
++	/* CPU temperature attributes, if temperature type is OK */
++	err = i8k_get_temp_type(0);
++	if (err >= 0)
+ 		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP1;
+ 	/* check for additional temperature sensors */
+-	err = i8k_get_temp(1);
+-	if (err >= 0 || err == -ERANGE)
++	err = i8k_get_temp_type(1);
++	if (err >= 0)
+ 		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP2;
+-	err = i8k_get_temp(2);
+-	if (err >= 0 || err == -ERANGE)
++	err = i8k_get_temp_type(2);
++	if (err >= 0)
+ 		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP3;
+-	err = i8k_get_temp(3);
+-	if (err >= 0 || err == -ERANGE)
++	err = i8k_get_temp_type(3);
++	if (err >= 0)
+ 		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP4;
+ 
+ 	/* Left fan attributes, if left fan is present */
+-- 
+1.7.9.5
 
