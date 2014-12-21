@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864AbaLUMzd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 07:55:33 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:40000 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaLUMzc (ORCPT
+	id S1752915AbaLUM4z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 07:56:55 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:38805 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaLUM4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 07:55:32 -0500
+	Sun, 21 Dec 2014 07:56:53 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: x86: kernel: apb_timer.c:  Remove unused function
-Date: Sun, 21 Dec 2014 13:58:18 +0100
-Message-Id: <1419166698-2470-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8723au: hal: rtl8723au_led.c:  Remove some unused functions
+Date: Sun, 21 Dec 2014 13:59:39 +0100
+Message-Id: <1419166779-2619-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function is_apbt_capable() that is not used anywhere.
+Removes some functions that are not used anywhere:
+rtl8723au_DeInitSwLeds() rtl8723au_InitSwLeds()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/x86/kernel/apb_timer.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/staging/rtl8723au/hal/rtl8723au_led.c    |   23 ----------------------
+ drivers/staging/rtl8723au/include/rtl8723a_led.h |    2 --
+ 2 files changed, 25 deletions(-)
 
-diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-index b708738..6a7c23f 100644
---- a/arch/x86/kernel/apb_timer.c
-+++ b/arch/x86/kernel/apb_timer.c
-@@ -135,14 +135,6 @@ static inline void apbt_clear_mapping(void)
- 	apbt_virt_address = NULL;
- }
+diff --git a/drivers/staging/rtl8723au/hal/rtl8723au_led.c b/drivers/staging/rtl8723au/hal/rtl8723au_led.c
+index b946636..99d627a7 100644
+--- a/drivers/staging/rtl8723au/hal/rtl8723au_led.c
++++ b/drivers/staging/rtl8723au/hal/rtl8723au_led.c
+@@ -99,26 +99,3 @@ exit:
  
--/*
-- * APBT timer interrupt enable / disable
-- */
--static inline int is_apbt_capable(void)
+ /*  Interface to manipulate LED objects. */
+ 
+-/*	Description: */
+-/*		Initialize all LED_871x objects. */
+-void
+-rtl8723au_InitSwLeds(struct rtw_adapter	*padapter)
 -{
--	return apbt_virt_address ? 1 : 0;
+-	struct led_priv *pledpriv = &padapter->ledpriv;
+-
+-	pledpriv->LedControlHandler = LedControl871x23a;
+-	/* 8723as-vau wifi used led2 */
+-	InitLed871x23a(padapter, &pledpriv->SwLed0, LED_PIN_LED2);
+-
+-/*	InitLed871x23a(padapter,&pledpriv->SwLed1, LED_PIN_LED2); */
 -}
 -
- static int __init apbt_clockevent_register(void)
- {
- 	struct sfi_timer_table_entry *mtmr;
+-/*	Description: */
+-/*		DeInitialize all LED_819xUsb objects. */
+-void
+-rtl8723au_DeInitSwLeds(struct rtw_adapter *padapter)
+-{
+-	struct led_priv	*ledpriv = &padapter->ledpriv;
+-
+-	DeInitLed871x23a(&ledpriv->SwLed0);
+-}
+diff --git a/drivers/staging/rtl8723au/include/rtl8723a_led.h b/drivers/staging/rtl8723au/include/rtl8723a_led.h
+index 1623d18..c83efe6 100644
+--- a/drivers/staging/rtl8723au/include/rtl8723a_led.h
++++ b/drivers/staging/rtl8723au/include/rtl8723a_led.h
+@@ -22,8 +22,6 @@
+ /*  */
+ /*  Interface to manipulate LED objects. */
+ /*  */
+-void rtl8723au_InitSwLeds(struct rtw_adapter *padapter);
+-void rtl8723au_DeInitSwLeds(struct rtw_adapter *padapter);
+ void SwLedOn23a(struct rtw_adapter *padapter, struct led_8723a * pLed);
+ void SwLedOff23a(struct rtw_adapter *padapter, struct led_8723a * pLed);
+ 
 -- 
 1.7.10.4
 
