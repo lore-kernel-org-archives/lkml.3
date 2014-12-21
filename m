@@ -1,219 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636AbaLUXBy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 18:01:54 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47088 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886AbaLUXBx (ORCPT
+	id S1753705AbaLUXCH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 18:02:07 -0500
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:43590 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386AbaLUXCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 18:01:53 -0500
-Message-ID: <5497515D.9060106@roeck-us.net>
-Date: Sun, 21 Dec 2014 15:01:49 -0800
-From: Guenter Roeck <linux@roeck-us.net>
+	Sun, 21 Dec 2014 18:02:04 -0500
+Message-ID: <5497516A.2020400@lwfinger.net>
+Date: Sun, 21 Dec 2014 17:02:02 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/10] i8k: Add support for fan labels
-References: <1419191683-31435-1-git-send-email-pali.rohar@gmail.com> <1419191683-31435-11-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1419191683-31435-11-git-send-email-pali.rohar@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54975161.010B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 9
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Eric Biggers <ebiggers3@gmail.com>, linux-wireless@vger.kernel.org
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] rtl8192se: panic accessing unmapped memory in skb
+References: <20141221172516.GA12784@zzz>
+In-Reply-To: <20141221172516.GA12784@zzz>
+Content-Type: multipart/mixed;
+ boundary="------------080701040609070407000102"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2014 11:54 AM, Pali Rohár wrote:
-> This patch adds labels support for fans if SMM function with EAX register
-> 0x03a3 reports it. This information was taken from DOS binary NBSVC.MDM.
->
-> Additionally this patch change detection of fan presece. Instead reading fan
-> status now detection is based on new label SMM function. Dell DOS binary
-> NBSVC.MDM is doing similar checks, so we should do that too.
->
-> This patch also remove I8K_FAN_LEFT and I8K_FAN_RIGHT usage from hwmon driver
-> part because that names does not make sense anymore. So numeric constants are
-> used instead. Original /proc/i8k ioctl part was not changed for compatibility
-> reasons.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->   drivers/char/i8k.c |   76 ++++++++++++++++++++++++++++++++++++++++++----------
->   1 file changed, 62 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> index 9288edb..ca4203c 100644
-> --- a/drivers/char/i8k.c
-> +++ b/drivers/char/i8k.c
-> @@ -43,6 +43,7 @@
->   #define I8K_SMM_SET_FAN		0x01a3
->   #define I8K_SMM_GET_FAN		0x00a3
->   #define I8K_SMM_GET_SPEED	0x02a3
-> +#define I8K_SMM_GET_FAN_TYPE	0x03a3
->   #define I8K_SMM_GET_NOM_SPEED	0x04a3
->   #define I8K_SMM_GET_TEMP	0x10a3
->   #define I8K_SMM_GET_TEMP_TYPE	0x11a3
-> @@ -279,6 +280,17 @@ static int i8k_get_fan_speed(int fan)
->   }
->
->   /*
-> + * Read the fan type.
-> + */
-> +static int i8k_get_fan_type(int fan)
-> +{
-> +	struct smm_regs regs = { .eax = I8K_SMM_GET_FAN_TYPE, };
-> +
-> +	regs.ebx = fan & 0xff;
-> +	return i8k_smm(&regs) ? : regs.eax & 0xff;
-> +}
-> +
-> +/*
->    * Read the fan nominal rpm for specific fan speed.
->    */
->   static int i8k_get_fan_nominal_speed(int fan, int speed)
-> @@ -553,6 +565,37 @@ static ssize_t i8k_hwmon_show_temp(struct device *dev,
->   	return sprintf(buf, "%d\n", temp * 1000);
->   }
->
-> +static ssize_t i8k_hwmon_show_fan_label(struct device *dev,
-> +					struct device_attribute *devattr,
-> +					char *buf)
-> +{
-> +	static const char * const labels[] = {
-> +		"Processor Fan",
-> +		"Motherboard Fan",
-> +		"Video Fan",
-> +		"Power Supply Fan",
-> +		"Chipset Fan",
-> +		"Other Fan",
-> +	};
-> +	int index = to_sensor_dev_attr(devattr)->index;
-> +	bool dock = false;
-> +	int type;
-> +
-> +	type = i8k_get_fan_type(index);
-> +	if (type < 0)
-> +		return type;
-> +
-> +	if (type & 0x10) {
-> +		dock = true;
-> +		type &= 0x0F;
-> +	}
-> +
-What if bit 5..7 is set ? This would result in a result of "other fan",
-which given the above does not seem to be correct. Given that, I wonder
-why the type mask is only applied if bit 4 is set and not unconditionally.
+This is a multi-part message in MIME format.
+--------------080701040609070407000102
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Thanks,
-Guenter
+On 12/21/2014 11:25 AM, Eric Biggers wrote:
+> Hi,
+>
+> I have a RTL8192SE wireless card, attached via PCI.  Usually it works with no
+> issues, but I recently had a kernel panic occur in the rtl8192se driver.  The
+> kernel version is 3.18.  Based on my analysis of the panic dump, the panic was
+> caused by a memory access violation in this block of code in
+> rtl92se_rx_query_desc():
+>
+>          if (stats->decrypted) {
+>                  hdr = (struct ieee80211_hdr *)(skb->data +
+>                         stats->rx_drvinfo_size + stats->rx_bufshift);
+>
+>                  if ((_ieee80211_is_robust_mgmt_frame(hdr)) &&
+>                          (ieee80211_has_protected(hdr->frame_control)))
+>                          rx_status->flag &= ~RX_FLAG_DECRYPTED;
+>                  else
+>                          rx_status->flag |= RX_FLAG_DECRYPTED;
+>          }
+>
+> Specifically, the violation occurred the first time hdr->frame_control was
+> accessed, as part of _ieee80211_is_robust_mgmt_frame().
+>
+> The panic occurred when the system was under heavy filesystem load but seemingly
+> is not easily reproducible.
+>
+> There was recently a NULL check that was removed from this exact place in the
+> code, but it was certainly useless.  Instead, what's much more suspect to me is
+> that inside _rtl_pci_rx_interrupt(), there is no error checking of the return
+> value of _rtl_pci_init_one_rxdesc(), which might fail if the skb couldn't be
+> allocated.  I am wondering if this could be causing the problem.
 
-> +	if (type >= ARRAY_SIZE(labels))
-> +		type = (ARRAY_SIZE(labels) - 1);
-> +
-> +	return sprintf(buf, "%s%s\n", (dock ? "Docking " : ""), labels[type]);
-> +}
-> +
->   static ssize_t i8k_hwmon_show_fan(struct device *dev,
->   				  struct device_attribute *devattr,
->   				  char *buf)
-> @@ -611,14 +654,17 @@ static SENSOR_DEVICE_ATTR(temp3_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL,
->   static SENSOR_DEVICE_ATTR(temp4_input, S_IRUGO, i8k_hwmon_show_temp, NULL, 3);
->   static SENSOR_DEVICE_ATTR(temp4_label, S_IRUGO, i8k_hwmon_show_temp_label, NULL,
->   			  3);
-> -static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, i8k_hwmon_show_fan, NULL,
-> -			  I8K_FAN_LEFT);
-> +static SENSOR_DEVICE_ATTR(fan1_input, S_IRUGO, i8k_hwmon_show_fan, NULL, 0);
-> +static SENSOR_DEVICE_ATTR(fan1_label, S_IRUGO, i8k_hwmon_show_fan_label, NULL,
-> +			  0);
->   static SENSOR_DEVICE_ATTR(pwm1, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
-> -			  i8k_hwmon_set_pwm, I8K_FAN_LEFT);
-> +			  i8k_hwmon_set_pwm, 0);
->   static SENSOR_DEVICE_ATTR(fan2_input, S_IRUGO, i8k_hwmon_show_fan, NULL,
-> -			  I8K_FAN_RIGHT);
-> +			  1);
-> +static SENSOR_DEVICE_ATTR(fan2_label, S_IRUGO, i8k_hwmon_show_fan_label, NULL,
-> +			  1);
->   static SENSOR_DEVICE_ATTR(pwm2, S_IRUGO | S_IWUSR, i8k_hwmon_show_pwm,
-> -			  i8k_hwmon_set_pwm, I8K_FAN_RIGHT);
-> +			  i8k_hwmon_set_pwm, 1);
->
->   static struct attribute *i8k_attrs[] = {
->   	&sensor_dev_attr_temp1_input.dev_attr.attr,	/* 0 */
-> @@ -630,9 +676,11 @@ static struct attribute *i8k_attrs[] = {
->   	&sensor_dev_attr_temp4_input.dev_attr.attr,	/* 6 */
->   	&sensor_dev_attr_temp4_label.dev_attr.attr,	/* 7 */
->   	&sensor_dev_attr_fan1_input.dev_attr.attr,	/* 8 */
-> -	&sensor_dev_attr_pwm1.dev_attr.attr,		/* 9 */
-> -	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 10 */
-> -	&sensor_dev_attr_pwm2.dev_attr.attr,		/* 11 */
-> +	&sensor_dev_attr_fan1_label.dev_attr.attr,	/* 9 */
-> +	&sensor_dev_attr_pwm1.dev_attr.attr,		/* 10 */
-> +	&sensor_dev_attr_fan2_input.dev_attr.attr,	/* 11 */
-> +	&sensor_dev_attr_fan2_label.dev_attr.attr,	/* 12 */
-> +	&sensor_dev_attr_pwm2.dev_attr.attr,		/* 13 */
->   	NULL
->   };
->
-> @@ -651,10 +699,10 @@ static umode_t i8k_is_visible(struct kobject *kobj, struct attribute *attr,
->   	if (index >= 6 && index <= 7 &&
->   	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_TEMP4))
->   		return 0;
-> -	if (index >= 8 && index <= 9 &&
-> +	if (index >= 8 && index <= 10 &&
->   	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN1))
->   		return 0;
-> -	if (index >= 10 && index <= 11 &&
-> +	if (index >= 11 && index <= 13 &&
->   	    !(i8k_hwmon_flags & I8K_HWMON_HAVE_FAN2))
->   		return 0;
->
-> @@ -688,13 +736,13 @@ static int __init i8k_init_hwmon(void)
->   	if (err >= 0)
->   		i8k_hwmon_flags |= I8K_HWMON_HAVE_TEMP4;
->
-> -	/* Left fan attributes, if left fan is present */
-> -	err = i8k_get_fan_status(I8K_FAN_LEFT);
-> +	/* First fan attributes, if fan type is OK */
-> +	err = i8k_get_fan_type(0);
->   	if (err >= 0)
->   		i8k_hwmon_flags |= I8K_HWMON_HAVE_FAN1;
->
-> -	/* Right fan attributes, if right fan is present */
-> -	err = i8k_get_fan_status(I8K_FAN_RIGHT);
-> +	/* Second fan attributes, if fan type is OK */
-> +	err = i8k_get_fan_type(1);
->   	if (err >= 0)
->   		i8k_hwmon_flags |= I8K_HWMON_HAVE_FAN2;
->
->
+Your analysis is probably correct; however, I'm not sure what to do if the 
+allocate of an skb fails. As the name says, this routine is entered through an 
+interrupt, and I'm not sure what to do other than to exit.
 
+The attached patch will implement the exit after logging an error. Please patch 
+your system and report back.
+
+How much RAM does your system have? That info might be useful in trying to 
+reproduce the problem, which might indeed be difficult. Although pci.c was 
+extensively reworked in the 3.17 => 3.18 transition, most of the changes were 
+added to implement the changed descriptor structure for the RTL8192EE, and I do 
+not remember any changes that would affect any of the other drivers. As a 
+result, the current structure has been in place for some time, and this problem 
+has not been reported before.
+
+Larry
+
+
+--------------080701040609070407000102
+Content-Type: text/plain; charset=UTF-8;
+ name="rtlwifi_report_add_new_rxdesc_failure"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="rtlwifi_report_add_new_rxdesc_failure"
+
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 846a2e6..c576c71 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -676,7 +676,7 @@ static int _rtl_pci_init_one_rxdesc(struct ieee80211_hw *hw,
+ 
+ 	skb = dev_alloc_skb(rtlpci->rxbuffersize);
+ 	if (!skb)
+-		return 0;
++		return -ENOMEM;;
+ 	rtlpci->rx_ring[rxring_idx].rx_buf[desc_idx] = skb;
+ 
+ 	/* just set skb->cb to mapping addr for pci_unmap_single use */
+@@ -685,7 +685,7 @@ static int _rtl_pci_init_one_rxdesc(struct ieee80211_hw *hw,
+ 			       rtlpci->rxbuffersize, PCI_DMA_FROMDEVICE);
+ 	bufferaddress = *((dma_addr_t *)skb->cb);
+ 	if (pci_dma_mapping_error(rtlpci->pdev, bufferaddress))
+-		return 0;
++		return -EFAULT;
+ 	if (rtlpriv->use_new_trx_flow) {
+ 		rtlpriv->cfg->ops->set_desc(hw, (u8 *)entry, false,
+ 					    HW_DESC_RX_PREPARE,
+@@ -701,7 +701,7 @@ static int _rtl_pci_init_one_rxdesc(struct ieee80211_hw *hw,
+ 					    HW_DESC_RXOWN,
+ 					    (u8 *)&tmp_one);
+ 	}
+-	return 1;
++	return 0;
+ }
+ 
+ /* inorder to receive 8K AMSDU we have set skb to
+@@ -768,6 +768,7 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
+ 		.signal = 0,
+ 		.rate = 0,
+ 	};
++	int err;
+ 
+ 	/*RX NORMAL PKT */
+ 	while (count--) {
+@@ -912,13 +913,21 @@ static void _rtl_pci_rx_interrupt(struct ieee80211_hw *hw)
+ 		}
+ end:
+ 		if (rtlpriv->use_new_trx_flow) {
+-			_rtl_pci_init_one_rxdesc(hw, (u8 *)buffer_desc,
+-						 rxring_idx,
+-					       rtlpci->rx_ring[rxring_idx].idx);
++			err = _rtl_pci_init_one_rxdesc(hw, (u8 *)buffer_desc,
++						       rxring_idx,
++						       rtlpci->rx_ring[rxring_idx].idx);
++			if (err) {
++				pr_err("%s Failed to init RX descriptor\n");
++				return;
++			}
+ 		} else {
+-			_rtl_pci_init_one_rxdesc(hw, (u8 *)pdesc, rxring_idx,
+-						 rtlpci->rx_ring[rxring_idx].idx);
+-
++			err = _rtl_pci_init_one_rxdesc(hw, (u8 *)pdesc,
++						       rxring_idx,
++						       rtlpci->rx_ring[rxring_idx].idx);
++			if (err) {
++				pr_err("%s Failed to init RX descriptor\n");
++				return;
++			}
+ 			if (rtlpci->rx_ring[rxring_idx].idx ==
+ 			    rtlpci->rxringcount - 1)
+ 				rtlpriv->cfg->ops->set_desc(hw, (u8 *)pdesc,
+
+
+--------------080701040609070407000102--
