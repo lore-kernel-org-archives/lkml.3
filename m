@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996AbaLUREy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 12:04:54 -0500
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:53017 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819AbaLUREs (ORCPT
+	id S1752936AbaLUREx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 12:04:53 -0500
+Received: from mail-yk0-f182.google.com ([209.85.160.182]:32921 "EHLO
+	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816AbaLUREn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 12:04:48 -0500
+	Sun, 21 Dec 2014 12:04:43 -0500
 From: Chris Rorvick <chris@rorvick.com>
 To: Oleg Drokin <oleg.drokin@intel.com>,
         Andreas Dilger <andreas.dilger@intel.com>,
@@ -19,9 +19,9 @@ Cc: Chris Rorvick <chris@rorvick.com>,
         Fabian Frederick <fabf@skynet.be>, James Simmons <uja.ornl@gmail.com>,
         HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] drivers: staging: lustre: Track sign separately
-Date: Sun, 21 Dec 2014 11:04:05 -0600
-Message-Id: <1419181445-15031-3-git-send-email-chris@rorvick.com>
+Subject: [PATCH v3 1/2] drivers: staging: lustre: Use mult if units not specified
+Date: Sun, 21 Dec 2014 11:04:04 -0600
+Message-Id: <1419181445-15031-2-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419181445-15031-1-git-send-email-chris@rorvick.com>
 References: <1419181445-15031-1-git-send-email-chris@rorvick.com>
@@ -29,59 +29,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The `mult' parameter is negated if the user data begins with a '-' so
-that the final value has the appropriate sign.  But `mult' is only used
-if the user data does not include a "units" suffix.  In this case,
-`mult' is overridden with the numeric scale conveyed by the units suffix,
-but retains the sign of the original value.
-
-Having `mult' serving double-duty works but is confusing.  Use a new
-local variable to store the sign of the user data instead.  This also
-fixes a pitfall of passing 0 to `mult', expecting it to be ignored when
-a units suffix is specified, but having the effect of taking the
-absolute value of the user-provided data.
+Units can be passed to lprocfs_write_frac_u64_helper() via a suffix
+(e.g., "...K", "...M", etc.) tacked onto the value.  A comment states
+that "specified units override the multiplier," though the multiplier is
+overridden regardless.  Update the conditional logic so that it only
+applies when units are specified.
 
 Signed-off-by: Chris Rorvick <chris@rorvick.com>
 Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/obdclass/lprocfs_status.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/obdclass/lprocfs_status.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-index a7b270e..22e13f0 100644
+index 3b7dfc3..a7b270e 100644
 --- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
 +++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-@@ -1862,6 +1862,7 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
- 	char kernbuf[22], *end, *pbuf;
- 	__u64 whole, frac = 0, units;
- 	unsigned frac_d = 1;
-+	int sign = 1;
- 
- 	if (count > (sizeof(kernbuf) - 1))
- 		return -EINVAL;
-@@ -1872,7 +1873,7 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
- 	kernbuf[count] = '\0';
- 	pbuf = kernbuf;
- 	if (*pbuf == '-') {
--		mult = -mult;
-+		sign = -1;
- 		pbuf++;
- 	}
- 
-@@ -1909,11 +1910,11 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
+@@ -1908,7 +1908,7 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
+ 		units <<= 10;
  	}
  	/* Specified units override the multiplier */
- 	if (units > 1)
--		mult = mult < 0 ? -units : units;
-+		mult = units;
+-	if (units)
++	if (units > 1)
+ 		mult = mult < 0 ? -units : units;
  
  	frac *= mult;
- 	do_div(frac, frac_d);
--	*val = whole * mult + frac;
-+	*val = sign * (whole * mult + frac);
- 	return 0;
- }
- EXPORT_SYMBOL(lprocfs_write_frac_u64_helper);
 -- 
 2.1.0
 
