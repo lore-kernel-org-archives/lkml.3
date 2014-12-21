@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaLUCC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 21:02:28 -0500
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:39034 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaLUCC0 (ORCPT
+	id S1753043AbaLUCeQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 21:34:16 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:65233 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805AbaLUCeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 21:02:26 -0500
-From: Sage Vaillancourt <sagev9000@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, chase.southwood@gmail.com,
-        ebru.akagunduz@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sage Vaillancourt <sagev9000@gmail.com>
-Subject: [PATCH] Staging: comedi: fix spacing issues in ni_stc.h
-Date: Sat, 20 Dec 2014 21:01:54 -0500
-Message-Id: <1419127314-5743-1-git-send-email-sagev9000@gmail.com>
-X-Mailer: git-send-email 2.2.0
+	Sat, 20 Dec 2014 21:34:11 -0500
+From: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: soren.brinkmann@xilinx.com, laurent.pinchart@ideasonboard.com,
+        md.jamalmohiuddin@gmail.com, devendra.aaru@gmail.com,
+        athirasnamby@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: clocking-wizard: Added a blank line after declaration
+Date: Sun, 21 Dec 2014 08:03:48 +0530
+Message-Id: <1419129228-5333-1-git-send-email-md.jamalmohiuddin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch to the ni_stc.h file that removes spaces before tabs, and adds blank lines
-	after declarations.
-Signed-off-by: Sage Vaillancourt <sagev9000@gmail.com>
----
- drivers/staging/comedi/drivers/ni_stc.h | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Fix the coding style issue by adding blank line after declaration
 
-diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
-index bd69c3f..3b8b3c5 100644
---- a/drivers/staging/comedi/drivers/ni_stc.h
-+++ b/drivers/staging/comedi/drivers/ni_stc.h
-@@ -166,7 +166,7 @@ enum Interrupt_B_Ack_Bits {
- #define AI_SCAN_IN_PROG_Pulse			_bit4
- #define AI_EXTMUX_CLK_Pulse			_bit3
- #define AI_LOCALMUX_CLK_Pulse			_bit2
--#define AI_SC_TC_Pulse			 	_bit1
-+#define AI_SC_TC_Pulse				_bit1
- #define AI_CONVERT_Pulse			_bit0
- 
- #define AO_Command_1_Register		9
-@@ -326,6 +326,7 @@ static inline unsigned RTSI_Output_Bit(unsigned channel, int is_mseries)
- {
- 	unsigned max_channel;
- 	unsigned base_bit_shift;
+Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+---
+ .../clocking-wizard/clk-xlnx-clock-wizard.c        |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+index 471d087..ea8d561 100644
+--- a/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
++++ b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+@@ -239,6 +239,7 @@ static int clk_wzrd_probe(struct platform_device *pdev)
+ 	/* register div per output */
+ 	for (i = WZRD_NUM_OUTPUTS - 1; i >= 0 ; i--) {
+ 		const char *clkout_name;
 +
- 	if (is_mseries) {
- 		base_bit_shift = 8;
- 		max_channel = 7;
-@@ -642,7 +643,7 @@ static unsigned AO_UPDATE_Output_Select(enum ao_update_output_selection
- #define G_Load_Source_Select		_bit7
- #define G_Reload_Source_Switching	_bit15
- #define G_Loading_On_Gate		_bit14
--#define G_Gate_Polarity 		_bit13
-+#define G_Gate_Polarity			_bit13
- 
- #define G_Counting_Once(a)		(((a)&0x03)<<10)
- #define G_Stop_Mode(a)			(((a)&0x03)<<5)
-@@ -1142,6 +1143,7 @@ static inline unsigned MSeries_AI_Config_Bank_Bits(enum ni_reg_type reg_type,
- 						   unsigned channel)
- {
- 	unsigned bits = channel & 0x30;
-+
- 	if (reg_type == ni_reg_622x) {
- 		if (channel & 0x40)
- 			bits |= 0x400;
-@@ -1191,6 +1193,7 @@ enum MSeries_PLL_Control_Bits {
- static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
- {
- 	static const unsigned max_divisor = 0x10;
-+
- 	if (divisor < 1 || divisor > max_divisor) {
- 		pr_err("%s: bug, invalid divisor=%i\n", __func__, divisor);
- 		return 0;
-@@ -1201,6 +1204,7 @@ static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
- static inline unsigned MSeries_PLL_Multiplier_Bits(unsigned multiplier)
- {
- 	static const unsigned max_multiplier = 0x100;
-+
- 	if (multiplier < 1 || multiplier > max_multiplier) {
- 		pr_err("%s: bug, invalid multiplier=%i\n", __func__,
- 		       multiplier);
+ 		if (of_property_read_string_index(np, "clock-output-names", i,
+ 						  &clkout_name)) {
+ 			dev_err(&pdev->dev,
 -- 
-2.2.0
+1.7.9.5
 
