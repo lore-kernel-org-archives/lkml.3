@@ -1,59 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbaLULSO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 06:18:14 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:56984 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753393AbaLULSM (ORCPT
+	id S1753547AbaLULTl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 06:19:41 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:36986 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748AbaLULTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 06:18:12 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, Alexander Stein <alexanders83@web.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        alexandre.belloni@free-electrons.com, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2] ALSA: atmel: fix building the ac97 driver for at91-multiplatform
-Date: Sun, 21 Dec 2014 12:18:09 +0100
-Message-Id: <1419160689-20447-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
+	Sun, 21 Dec 2014 06:19:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <1419115000-12178-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1419115000-12178-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Sun, 21 Dec 2014 14:19:36 +0300
+Message-ID: <CALFYKtC_mbeUPtJtLak+8KibDXB-M0VdOoFQxQ=ifpAeSNvhdw@mail.gmail.com>
+Subject: Re: [PATCH] net: ceph: armor.c: Remove unused function
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>,
+        Ceph Development <ceph-devel@vger.kernel.org>, netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Sun, Dec 21, 2014 at 1:36 AM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Remove the function ceph_armor() that is not used anywhere.
+>
+> This was partially found by using a static code analysis program called cppcheck.
 
-at91 will no longer export the mach/cpu.h and mach/hardware.h header files
-in the future, which would break building the atmel ac97c driver.
+It's ceph_unarmor()'s counterpart - so same as for "[PATCH] net: ceph:
+crypto.c: Remove some unused functions".
 
-Since the cpu_is_* check is only used to find out whether we are running
-on avr32 or arm/at91, we can hardcode that check in the ARM case.
+Thanks,
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Link: http://www.spinics.net/lists/arm-kernel/msg382068.html
----
- sound/atmel/ac97c.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
-index b59427d5a697..83975f8d5947 100644
---- a/sound/atmel/ac97c.c
-+++ b/sound/atmel/ac97c.c
-@@ -34,10 +34,10 @@
- #include <linux/platform_data/dma-dw.h>
- #include <linux/dma/dw.h>
- 
-+#ifdef CONFIG_AVR32
- #include <mach/cpu.h>
--
--#ifdef CONFIG_ARCH_AT91
--#include <mach/hardware.h>
-+#else
-+#define cpu_is_at32ap7000() 0
- #endif
- 
- #include "ac97c.h"
--- 
-2.1.0
-
+                Ilya
