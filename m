@@ -1,77 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336AbaLUO7Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 09:59:25 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:60346 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaLUO7Y (ORCPT
+	id S1751639AbaLUP6R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 10:58:17 -0500
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:59551 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaLUP6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 09:59:24 -0500
-Message-ID: <5496E040.5060408@gmail.com>
-Date: Sun, 21 Dec 2014 14:59:12 +0000
-From: Malcolm Priestley <tvboxspy@gmail.com>
+	Sun, 21 Dec 2014 10:58:16 -0500
+X-Spam-Flag: NO
+X-Spam-Score: 0.157
+Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=softfail
+	(invalid, public key: DNS query timeout for
+	mail._domainkey.vodafone.de) header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 6B4D1674CF
+Message-ID: <5496EDF1.7080106@vodafone.de>
+Date: Sun, 21 Dec 2014 16:57:37 +0100
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Mike Krinkin <krinkin.m.u@gmail.com>, gregkh@linuxfoundation.org,
-        forest@alittletooquiet.net, gclement@baobob.org
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6655: fix sparse warnings: incorrect argument
- type
-References: <1419170207-2585-1-git-send-email-krinkin.m.u@gmail.com>
-In-Reply-To: <1419170207-2585-1-git-send-email-krinkin.m.u@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Oded Gabbay <oded.gabbay@amd.com>, dri-devel@lists.freedesktop.org
+CC: Alexander.Deucher@amd.com, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH 1/3] amdkfd: Don't clear *kfd2kgd on kfd_module_init
+References: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com> <1419108374-7020-2-git-send-email-oded.gabbay@amd.com> <5496AEAD.3090003@vodafone.de> <5496B04C.50502@amd.com> <5496BAE0.5090901@vodafone.de> <5496C5EA.7050200@amd.com> <5496CA0F.8000800@amd.com>
+In-Reply-To: <5496CA0F.8000800@amd.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> There should be, but when the modules are compiled in, they are loaded 
+> based on
+> link order only, if they are in the same group, and the groups are 
+> loaded by a
+> pre-defined order. 
+Is that really still up to date? I've seen effort to change that 
+something like 10+ years ago when Rusty reworked the module system. And 
+it is comming up on the lists again from time to time.
 
+> I don't want to move iommu before gpu, so I don't have a solution for 
+> the order between amdkfd and amd_iommu_v2. 
+Why not? That's still better than creating a kernel workqueue, 
+scheduling one work item on it, rescheduling the task until everything 
+is completed and you can continue.
 
-On 21/12/14 13:56, Mike Krinkin wrote:
-> this patch fixes following sparse warnings:
->
-> drivers/staging/vt6655/device_main.c:1503:25: warning: incorrect type in argument 1 (different address spaces)
-> drivers/staging/vt6655/device_main.c:1503:25:    expected void [noderef] <asn:2>*<noident>
-> drivers/staging/vt6655/device_main.c:1503:25:    got struct vnt_private *
-> drivers/staging/vt6655/device_main.c:1503:25: warning: incorrect type in argument 2 (different address spaces)
-> drivers/staging/vt6655/device_main.c:1503:25:    expected void [noderef] <asn:2>*<noident>
-> drivers/staging/vt6655/device_main.c:1503:25:    got struct vnt_private *
-> drivers/staging/vt6655/device_main.c:1505:25: warning: incorrect type in argument 1 (different address spaces)
-> drivers/staging/vt6655/device_main.c:1505:25:    expected void [noderef] <asn:2>*<noident>
-> drivers/staging/vt6655/device_main.c:1505:25:    got struct vnt_private *
-> drivers/staging/vt6655/device_main.c:1505:25: warning: incorrect type in argument 2 (different address spaces)
-> drivers/staging/vt6655/device_main.c:1505:25:    expected void [noderef] <asn:2>*<noident>
-> drivers/staging/vt6655/device_main.c:1505:25:    got struct vnt_private *
-Good catch
+Christian.
 
-also needed for 3.19
-
-Thanks
-
-Malcolm
-
->
-> Signed-off-by: Mike Krinkin <krinkin.m.u@gmail.com>
-> ---
->   drivers/staging/vt6655/device_main.c | 6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-> index 83e4162..ce616f9 100644
-> --- a/drivers/staging/vt6655/device_main.c
-> +++ b/drivers/staging/vt6655/device_main.c
-> @@ -1500,9 +1500,11 @@ static void vnt_bss_info_changed(struct ieee80211_hw *hw,
->   		if (conf->enable_beacon) {
->   			vnt_beacon_enable(priv, vif, conf);
->
-> -			MACvRegBitsOn(priv, MAC_REG_TCR, TCR_AUTOBCNTX);
-> +			MACvRegBitsOn(priv->PortOffset, MAC_REG_TCR,
-> +				      TCR_AUTOBCNTX);
->   		} else {
-> -			MACvRegBitsOff(priv, MAC_REG_TCR, TCR_AUTOBCNTX);
-> +			MACvRegBitsOff(priv->PortOffset, MAC_REG_TCR,
-> +				       TCR_AUTOBCNTX);
->   		}
->   	}
+Am 21.12.2014 um 14:24 schrieb Oded Gabbay:
 >
 >
+> On 12/21/2014 03:06 PM, Oded Gabbay wrote:
+>>
+>>
+>> On 12/21/2014 02:19 PM, Christian König wrote:
+>>> Am 21.12.2014 um 12:34 schrieb Oded Gabbay:
+>>>>
+>>>>
+>>>> On 12/21/2014 01:27 PM, Christian König wrote:
+>>>>> Am 20.12.2014 um 21:46 schrieb Oded Gabbay:
+>>>>>> When amdkfd and radeon are compiled inside the kernel image (not 
+>>>>>> as modules),
+>>>>>> radeon will load before amdkfd and will set *kfd2kgd to its 
+>>>>>> interface
+>>>>>> structure. Therefore, we must not set *kfd2kgd to NULL when 
+>>>>>> amdkfd is loaded
+>>>>>> because it will override radeon's initialization and cause kernel 
+>>>>>> BUG.
+>>>>>>
+>>>>>> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+>>>>>
+>>>>> You should probably rather fix the dependency between the two 
+>>>>> modules to get an
+>>>>> determined load order instead of doing such nasty workarounds.
+>>>>>
+>>>>> Christian.
+>>>>
+>>>> The problem is that when modules are compiled inside the kernel, 
+>>>> there is NO
+>>>> determined load order and there is no mechanism to enforce that. If 
+>>>> there
+>>>> is/was such a mechanism, I would of course prefer to use it.
+>>>
+>>> There should be an determined order based on the symbol use, otherwise
+>>> initializing most of the kernel modules wouldn't work as expected. 
+>>> For example
+>>> radeon depends on the drm module must be loaded before radeon is 
+>>> loaded.
+>> There should be, but when the modules are compiled in, they are 
+>> loaded based on
+>> link order only, if they are in the same group, and the groups are 
+>> loaded by a
+>> pre-defined order.
+>> The groups are: pure, core, postcore, arch, subsys, fs, device (which 
+>> represents
+>> all the modules) and late. See init.h
+>>
+>> So radeon, amdkfd and amd_iommu_v2 are all in device group, and in 
+>> the group
+>> they are ordered by their link order.
+>>
+>> Yes, radeon loads after drm, because drm*.o are before radeon*.o in the
+>> Makefile. See
+>> http://stackoverflow.com/questions/5669647/linux-order-of-statically-linked-module-loading 
+>>
+>>
+>
+> So I tried moving amdkfd inside the Makefile before radeon, and that 
+> made amdkfd load before radeon did. This solves my first problem - 
+> order between amdkfd and radeon. However, amd_iommu_v2 doesn't belong 
+> to the drm Makefile, and I don't want to move iommu before gpu, so I 
+> don't have a solution for the order between amdkfd and amd_iommu_v2.
+>
+>     Oded
+>>
+>>
+>>>
+>>>>
+>>>> Actually, I don't understand why the kernel doesn't enforce the order
+>>>> according to the use of exported symbols, like it does with modules.
+>>>
+>>> Yeah, that's indeed rather strange. There must be something in the 
+>>> amdkfd code
+>>> which broke that somehow.
+>> IMO, that's a far-fetched guess. Could you point to something more 
+>> specific ?
+>>
+>>>
+>>> As far as I understand you the desired init order is radeon and 
+>>> amd_iommu_v2
+>>> first and then amdkfd, right?
+>> Actually no. The preferred order is amd_iommu_v2, amdkfd and radeon 
+>> last. This
+>> is the order that happens when all three are built as modules. More 
+>> accurately,
+>> radeon inits, but its init triggers amdkfd init, which triggers 
+>> amd_iommu_v2
+>> init. So before radeon reaches its probe stage, all the modules were 
+>> initialized.
+>>
+>> So what happens when you boot with radeon,
+>>> amd_iommu_v2 and amdkfd blacklisted for automatically load and only 
+>>> load amdkfd
+>>> manually?
+>> As said above, that's ok.
+>>>
+>>>> There will always be dependencies between kgd (radeon) and amdkfd 
+>>>> and between
+>>>> amdkfd and amd_iommu_v2. I don't think I can eliminate those 
+>>>> dependencies, not
+>>>> without a very complex solution. And the fact that this complex 
+>>>> solution
+>>>> occurs only in a very specific use case (all modules compiled in), 
+>>>> makes me
+>>>> less inclined to do that.
+>>>>
+>>>> So I don't see it as a "nasty workaround". I would call it just a 
+>>>> "workaround"
+>>>> for a specific use case, which should be solved by a generic 
+>>>> solution to the
+>>>> kernel enforcing load orders.
+>>>
+>>> The normal kernel module handling already should provide the correct 
+>>> init order,
+>>> so I would still call this a rather nasty workaround because we 
+>>> couldn't find
+>>> the underlying problem.
+>> Well, the normal kernel module handling doesn't work when all modules 
+>> are
+>> compiled in. I'm not a huge expert on this issue so I had Joerg 
+>> Roedel help me
+>> analyze this (thanks Joerg) and he agreed that there is no 
+>> enforcement of order
+>> in this case.
+>>
+>>>
+>>> Christian.
+>>>
+>>>>
+>>>>     Oded
+>>>>>
+>>>>>> ---
+>>>>>>   drivers/gpu/drm/amd/amdkfd/kfd_module.c | 5 ++---
+>>>>>>   1 file changed, 2 insertions(+), 3 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_module.c
+>>>>>> b/drivers/gpu/drm/amd/amdkfd/kfd_module.c
+>>>>>> index 95d5af1..236562f 100644
+>>>>>> --- a/drivers/gpu/drm/amd/amdkfd/kfd_module.c
+>>>>>> +++ b/drivers/gpu/drm/amd/amdkfd/kfd_module.c
+>>>>>> @@ -34,7 +34,7 @@
+>>>>>>   #define KFD_DRIVER_MINOR    7
+>>>>>>   #define KFD_DRIVER_PATCHLEVEL    0
+>>>>>> -const struct kfd2kgd_calls *kfd2kgd;
+>>>>>> +const struct kfd2kgd_calls *kfd2kgd = NULL;
+>>>>>>   static const struct kgd2kfd_calls kgd2kfd = {
+>>>>>>       .exit        = kgd2kfd_exit,
+>>>>>>       .probe        = kgd2kfd_probe,
+>>>>>> @@ -84,14 +84,13 @@ EXPORT_SYMBOL(kgd2kfd_init);
+>>>>>>   void kgd2kfd_exit(void)
+>>>>>>   {
+>>>>>> +    kfd2kgd = NULL;
+>>>>>>   }
+>>>>>>   static int __init kfd_module_init(void)
+>>>>>>   {
+>>>>>>       int err;
+>>>>>> -    kfd2kgd = NULL;
+>>>>>> -
+>>>>>>       /* Verify module parameters */
+>>>>>>       if ((sched_policy < KFD_SCHED_POLICY_HWS) ||
+>>>>>>           (sched_policy > KFD_SCHED_POLICY_NO_HWS)) {
+>>>>>
+>>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
