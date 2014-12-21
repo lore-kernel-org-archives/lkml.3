@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaLUVTa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 16:19:30 -0500
-Received: from sauhun.de ([89.238.76.85]:52928 "EHLO pokefinder.org"
+	id S1754065AbaLUVTq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 16:19:46 -0500
+Received: from sauhun.de ([89.238.76.85]:52926 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295AbaLUVPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 16:15:43 -0500
+	id S1753692AbaLUVPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 16:15:42 -0500
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Heiko Stuebner <heiko@sntech.de>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org
-Subject: [PATCH 18/28] thermal: drop owner assignment from platform_drivers
-Date: Sun, 21 Dec 2014 22:14:39 +0100
-Message-Id: <1419196495-9626-19-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Finn Thain <fthain@telegraphics.com.au>,
+        Michael Schmitz <schmitzmic@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 17/28] scsi: drop owner assignment from platform_drivers
+Date: Sun, 21 Dec 2014 22:14:38 +0100
+Message-Id: <1419196495-9626-18-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
 References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
@@ -32,21 +31,47 @@ Generated with coccinelle. SmPL file is in the introductory msg. The big
 cleanup was pulled in this merge window. This series catches the bits fallen
 through. The patches shall go in via the subsystem trees.
 
- drivers/thermal/rockchip_thermal.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/scsi/atari_scsi.c | 1 -
+ drivers/scsi/mac_scsi.c   | 1 -
+ drivers/scsi/sun3_scsi.c  | 1 -
+ 3 files changed, 3 deletions(-)
 
-diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
-index 1bcddfc60e91..9c6ce548e363 100644
---- a/drivers/thermal/rockchip_thermal.c
-+++ b/drivers/thermal/rockchip_thermal.c
-@@ -677,7 +677,6 @@ static SIMPLE_DEV_PM_OPS(rockchip_thermal_pm_ops,
- static struct platform_driver rockchip_thermal_driver = {
+diff --git a/drivers/scsi/atari_scsi.c b/drivers/scsi/atari_scsi.c
+index d1c37a386947..5ede3daa93dc 100644
+--- a/drivers/scsi/atari_scsi.c
++++ b/drivers/scsi/atari_scsi.c
+@@ -1014,7 +1014,6 @@ static struct platform_driver atari_scsi_driver = {
+ 	.remove = __exit_p(atari_scsi_remove),
  	.driver = {
- 		.name = "rockchip-thermal",
--		.owner = THIS_MODULE,
- 		.pm = &rockchip_thermal_pm_ops,
- 		.of_match_table = of_rockchip_thermal_match,
+ 		.name	= DRV_MODULE_NAME,
+-		.owner	= THIS_MODULE,
  	},
+ };
+ 
+diff --git a/drivers/scsi/mac_scsi.c b/drivers/scsi/mac_scsi.c
+index 1e85c07e3b62..d64a769b8155 100644
+--- a/drivers/scsi/mac_scsi.c
++++ b/drivers/scsi/mac_scsi.c
+@@ -483,7 +483,6 @@ static struct platform_driver mac_scsi_driver = {
+ 	.remove = __exit_p(mac_scsi_remove),
+ 	.driver = {
+ 		.name	= DRV_MODULE_NAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ };
+ 
+diff --git a/drivers/scsi/sun3_scsi.c b/drivers/scsi/sun3_scsi.c
+index 2a906d1d34ba..22a42836d193 100644
+--- a/drivers/scsi/sun3_scsi.c
++++ b/drivers/scsi/sun3_scsi.c
+@@ -676,7 +676,6 @@ static struct platform_driver sun3_scsi_driver = {
+ 	.remove = __exit_p(sun3_scsi_remove),
+ 	.driver = {
+ 		.name	= DRV_MODULE_NAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ };
+ 
 -- 
 2.1.3
 
