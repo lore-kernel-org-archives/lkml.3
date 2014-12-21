@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaLUSir (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 13:38:47 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:41177 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090AbaLUSip (ORCPT
+	id S1752330AbaLUSj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 13:39:59 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:65203 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaLUSj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 13:38:45 -0500
-Message-ID: <54971397.3050303@roeck-us.net>
-Date: Sun, 21 Dec 2014 10:38:15 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>
-Subject: Re: [PATCH] i8k: Make fan module parameters an unsigned
-References: <1419182488-20157-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1419182488-20157-1-git-send-email-pali.rohar@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.549713B5.0035,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Sun, 21 Dec 2014 13:39:58 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Julia Lawall <Julia.Lawall@lip6.fr>, Greg Donald <gdonald@gmail.com>,
+        "John L. Hammond" <john.hammond@intel.com>,
+        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        Fabian Frederick <fabf@skynet.be>, James Simmons <uja.ornl@gmail.com>,
+        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: lustre: lustre: obdclass: lprocfs_status.c:  Tidied up some code in a case statement
+Date: Sun, 21 Dec 2014 19:42:43 +0100
+Message-Id: <1419187363-11960-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2014 09:21 AM, Pali Rohár wrote:
-> Setting negative fan multiplier or maximal fan speed does make any sense and
-> can cause problems. So ensure that negative values will not be accepted.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Tidied up some code in a case statement after a discussion.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+This was partly found using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/lustre/lustre/obdclass/lprocfs_status.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+index 61e04af..fd98ac0 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
++++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+@@ -45,6 +45,7 @@
+ #include "../include/lprocfs_status.h"
+ #include "../include/lustre/lustre_idl.h"
+ #include <linux/seq_file.h>
++#include <linux/ctype.h>
+ 
+ static const char * const obd_connect_names[] = {
+ 	"read_only",
+@@ -1897,16 +1898,16 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
+ 	}
+ 
+ 	units = 1;
+-	switch (*end) {
+-	case 'p': case 'P':
++	switch (tolower(*end)) {
++	case 'p':
+ 		units <<= 10;
+-	case 't': case 'T':
++	case 't':
+ 		units <<= 10;
+-	case 'g': case 'G':
++	case 'g':
+ 		units <<= 10;
+-	case 'm': case 'M':
++	case 'm':
+ 		units <<= 10;
+-	case 'k': case 'K':
++	case 'k':
+ 		units <<= 10;
+ 	}
+ 	/* Specified units override the multiplier */
+-- 
+1.7.10.4
 
