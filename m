@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330AbaLUSj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 13:39:59 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:65203 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaLUSj6 (ORCPT
+	id S1752645AbaLUSkM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 13:40:12 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50404 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386AbaLUSkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 13:39:58 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Greg Donald <gdonald@gmail.com>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Fabian Frederick <fabf@skynet.be>, James Simmons <uja.ornl@gmail.com>,
-        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: lustre: lustre: obdclass: lprocfs_status.c:  Tidied up some code in a case statement
-Date: Sun, 21 Dec 2014 19:42:43 +0100
-Message-Id: <1419187363-11960-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 21 Dec 2014 13:40:10 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v4] i8k: Autodetect maximal fan speed and fan RPM multiplier
+Date: Sun, 21 Dec 2014 19:40:06 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>
+References: <1419153618-6930-1-git-send-email-pali.rohar@gmail.com> <1419182630-20211-1-git-send-email-pali.rohar@gmail.com> <54971116.8030504@roeck-us.net>
+In-Reply-To: <54971116.8030504@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart4106243.9RsjPEH9Da";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412211940.06980@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tidied up some code in a case statement after a discussion.
+--nextPart4106243.9RsjPEH9Da
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-This was partly found using a static code analysis program called cppcheck.
+On Sunday 21 December 2014 19:27:34 Guenter Roeck wrote:
+> On 12/21/2014 09:23 AM, Pali Roh=C3=A1r wrote:
+> > This patch adds new function i8k_get_fan_nominal_speed() for
+> > doing SMM call which will return nominal fan RPM for
+> > specified fan speed. It returns nominal RPM value at which
+> > fan operate when speed (0, 1, 2, 3) is set. It looks like
+> > RPM value is not accurate, but still provides very useful
+> > information.
+> >=20
+> > First it can be used to validate if certain fan speed could
+> > be accepted by SMM for setting fan speed and we can use
+> > this routine to detect maximal fan speed.
+> >=20
+> > Second it returns RPM value, so we can check if value looks
+> > correct with multiplier 30 or multiplier 1 (until now only
+> > these two multiplier were used). If RPM value with
+> > multiplier 30 is too high, then multiplier 1 is used.
+> >=20
+> > In case when SMM reports that new function is not supported
+> > we will fallback to old hardcoded values. Maximal fan speed
+> > would be 2 and RPM multiplier 30.
+> >=20
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+>=20
+> Tested-by the submitter is kind of implied.
+>=20
+> Anyway, this patch does not apply to 3.19-rc1, nor to 3.18.
+> What is your baseline ? Can you rebase to 3.19-rc1 ?
+> Or do I need to apply some other patch first ?
+>=20
+> Thanks,
+> Guenter
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/lustre/lustre/obdclass/lprocfs_status.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+You need to apply these old patches:
+i8k: Add support for temperature sensor labels
+i8k: Register only temperature sensors which have labels
+i8k: Return -ENODATA for invalid temperature
+i8k: Rework error retries
 
-diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-index 61e04af..fd98ac0 100644
---- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-+++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-@@ -45,6 +45,7 @@
- #include "../include/lprocfs_status.h"
- #include "../include/lustre/lustre_idl.h"
- #include <linux/seq_file.h>
-+#include <linux/ctype.h>
- 
- static const char * const obd_connect_names[] = {
- 	"read_only",
-@@ -1897,16 +1898,16 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
- 	}
- 
- 	units = 1;
--	switch (*end) {
--	case 'p': case 'P':
-+	switch (tolower(*end)) {
-+	case 'p':
- 		units <<= 10;
--	case 't': case 'T':
-+	case 't':
- 		units <<= 10;
--	case 'g': case 'G':
-+	case 'g':
- 		units <<= 10;
--	case 'm': case 'M':
-+	case 'm':
- 		units <<= 10;
--	case 'k': case 'K':
-+	case 'k':
- 		units <<= 10;
- 	}
- 	/* Specified units override the multiplier */
--- 
-1.7.10.4
+(they are not in 3.18/3.19 yet, but you already reviewed them)
 
+And after that you need to apply new pach which I sent hour ago:
+[PATCH] i8k: Make fan module parameters an unsigned
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart4106243.9RsjPEH9Da
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlSXFAYACgkQi/DJPQPkQ1Jg5QCgpBAzJRZhzagxqWfI5iuOSFTL
+kSMAoIULTVwGtIImIqFGzg+3Wfk/p0js
+=DFbD
+-----END PGP SIGNATURE-----
+
+--nextPart4106243.9RsjPEH9Da--
