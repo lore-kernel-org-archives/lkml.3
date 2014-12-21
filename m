@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555AbaLULYu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 06:24:50 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:48902 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506AbaLULYs (ORCPT
+	id S1753485AbaLULaL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 06:30:11 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:34723 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376AbaLULaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 06:24:48 -0500
+	Sun, 21 Dec 2014 06:30:08 -0500
+Message-ID: <5496AF29.3060802@linaro.org>
+Date: Sun, 21 Dec 2014 19:29:45 +0800
+From: zhangfei <zhangfei.gao@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1419078894-31656-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419078894-31656-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Sun, 21 Dec 2014 14:24:47 +0300
-Message-ID: <CALFYKtD7wTNiTzekkWKZqBEb_7egij31Fhe=7J2Ey+arT3M_vA@mail.gmail.com>
-Subject: Re: [PATCH] net: ceph: ceph_strings.c: Remove unused function
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>,
-        Ceph Development <ceph-devel@vger.kernel.org>, netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: kbuild test robot <fengguang.wu@intel.com>
+CC: kbuild-all@01.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "xuwei (O)" <xuwei5@hisilicon.com>
+Subject: Re: [PATCH hisi] Input: i2c_atmel_read() can be static
+References: <201412190926.IzkyYvvl%fengguang.wu@intel.com> <20141219015659.GA49367@snb.sh.intel.com>
+In-Reply-To: <20141219015659.GA49367@snb.sh.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 3:34 PM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
-> Remove the function ceph_pool_op_name() that is not used anywhere.
+
+
+On 12/19/2014 09:56 AM, kbuild test robot wrote:
+> drivers/input/touchscreen/atmel_mXT224E.c:460:5: sparse: symbol 'i2c_atmel_read' was not declared. Should it be static?
+> drivers/input/touchscreen/atmel_mXT224E.c:496:5: sparse: symbol 'i2c_atmel_write' was not declared. Should it be static?
+> drivers/input/touchscreen/atmel_mXT224E.c:532:5: sparse: symbol 'i2c_atmel_write_byte_data' was not declared. Should it be static?
+> drivers/input/touchscreen/atmel_mXT224E.c:538:10: sparse: symbol 'get_object_address' was not declared. Should it be static?
+> drivers/input/touchscreen/atmel_mXT224E.c:547:9: sparse: symbol 'get_object_size' was not declared. Should it be static?
+> drivers/input/touchscreen/atmel_mXT224E.c:557:9: sparse: symbol 'get_object_size_from_address' was not declared. Should it be static?
+> drivers/input/touchscreen/atmel_mXT224E.c:847:32: sparse: symbol 'atmel_ts_get_pdata' was not declared. Should it be static?
 >
-> This was partially found by using a static code analysis program called cppcheck.
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 
-It's part of pool op infrastructure and I'd rather we use it in
-monc_show() than remove it.  I'll make a patch.
+Thanks Fengguang for the patch, will take it.
 
-Thanks,
+However, the file drivers/input/touchscreen/atmel_mXT224E.c is not used 
+for mainline kernel.
 
-                Ilya
+Xuwei will remove git://github.com/hisilicon/linux-hisi 
+integration-hilt-linux-linaro.
+Sorry for the confusion.
+
+Thanks
