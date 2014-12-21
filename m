@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaLUOfM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 09:35:12 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:55429 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050AbaLUOfK (ORCPT
+	id S1751820AbaLUOhp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 09:37:45 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:55415 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaLUOhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 09:35:10 -0500
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCH] zram: clean up zram_meta_alloc()
-Date: Sun, 21 Dec 2014 23:35:41 +0900
-Message-Id: <1419172541-26173-1-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 2.2.1.209.g41e5f3a
+	Sun, 21 Dec 2014 09:37:43 -0500
+X-Auth-Info: eVOWLB/NZrso7o/xXqisVu4HZ57n2oVhpv07fwq5Xqmu5XYUGfvObOJfhctVOJon
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Drysdale <drysdale@google.com>, Shuah Khan <shuahkh@osg.samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-api@vger.kernel.org,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH selftest fails!] m68k: Wire up execveat
+References: <alpine.DEB.2.10.1412211159410.7624@ayla.of.borg>
+X-Yow: Pardon me, but do you know what it means to be TRULY ONE
+ with your BOOTH!
+Date: Sun, 21 Dec 2014 15:37:36 +0100
+In-Reply-To: <alpine.DEB.2.10.1412211159410.7624@ayla.of.borg> (Geert
+	Uytterhoeven's message of "Sun, 21 Dec 2014 12:02:11 +0100 (CET)")
+Message-ID: <874msp3w7j.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-a trivial clean up of zram_meta_alloc() error handling.
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
----
- drivers/block/zram/zram_drv.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+> Check success of execveat(5, 'xxxxxxxxxxxxxxxxxxxx...yyyyyyyyyyyyyyyyyyyy', 0)... [FAIL] (child 792 exited with 126 not 127)
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index bd8bda3..369fe56 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -318,31 +318,29 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
- {
- 	size_t num_pages;
- 	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
-+
- 	if (!meta)
--		goto out;
-+		return NULL;
- 
- 	num_pages = disksize >> PAGE_SHIFT;
- 	meta->table = vzalloc(num_pages * sizeof(*meta->table));
- 	if (!meta->table) {
- 		pr_err("Error allocating zram address table\n");
--		goto free_meta;
-+		goto out_error;
- 	}
- 
- 	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
- 	if (!meta->mem_pool) {
- 		pr_err("Error creating memory pool\n");
--		goto free_table;
-+		goto out_error;
- 	}
- 
- 	return meta;
- 
--free_table:
-+out_error:
- 	vfree(meta->table);
--free_meta:
- 	kfree(meta);
--	meta = NULL;
--out:
--	return meta;
-+	return NULL;
- }
- 
- static void update_position(u32 *index, int *offset, struct bio_vec *bvec)
+POSIX says (http://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_08_02):
+
+    If a command is not found, the exit status shall be 127. If the
+    command name is found, but it is not an executable utility, the exit
+    status shall be 126.
+
+Andreas.
+
 -- 
-2.2.1.209.g41e5f3a
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
