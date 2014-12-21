@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaLUAel (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Dec 2014 19:34:41 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:61342 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaLUAei (ORCPT
+	id S1753267AbaLUAqR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Dec 2014 19:46:17 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:40357 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572AbaLUAqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Dec 2014 19:34:38 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Hante Meuleman <meuleman@broadcom.com>, Kalle Valo <kvalo@adurom.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: wireless: brcm80211: brcmsmac: phy: phy_n.c:  Remove unused function
-Date: Sun, 21 Dec 2014 01:37:24 +0100
-Message-Id: <1419122244-14765-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 20 Dec 2014 19:46:14 -0500
+Message-ID: <54961852.8000403@lwfinger.net>
+Date: Sat, 20 Dec 2014 18:46:10 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+CC: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8723be: phy.c:  Remove unused
+ function
+References: <1419116358-13223-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1419116358-13223-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function wlc_phy_txpwr_idx_get_nphy() that is not used anywhere.
+On 12/20/2014 04:59 PM, Rickard Strandqvist wrote:
+> Remove the function rtl8723be_phy_get_txpower_level() that is not used anywhere.
+>
+> This was partially found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/net/wireless/rtlwifi/rtl8723be/phy.c |   25 -------------------------
+>   drivers/net/wireless/rtlwifi/rtl8723be/phy.h |    2 --
+>   2 files changed, 27 deletions(-)
 
-This was partially found by using a static code analysis program called cppcheck.
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- .../net/wireless/brcm80211/brcmsmac/phy/phy_int.h   |    1 -
- drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c |   19 -------------------
- 2 files changed, 20 deletions(-)
+Larry
 
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_int.h b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_int.h
-index 4960f7d..c3d4f17 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_int.h
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_int.h
-@@ -1104,7 +1104,6 @@ void wlc_phy_txpwrctrl_enable_nphy(struct brcms_phy *pi, u8 ctrl_type);
- void wlc_phy_txpwr_fixpower_nphy(struct brcms_phy *pi);
- void wlc_phy_txpwr_apply_nphy(struct brcms_phy *pi);
- void wlc_phy_txpwr_papd_cal_nphy(struct brcms_phy *pi);
--u16 wlc_phy_txpwr_idx_get_nphy(struct brcms_phy *pi);
- 
- struct nphy_txgains wlc_phy_get_tx_gain_nphy(struct brcms_phy *pi);
- int wlc_phy_cal_txiqlo_nphy(struct brcms_phy *pi,
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c
-index 084f18f..44cb2f0 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_n.c
-@@ -28257,25 +28257,6 @@ static bool wlc_phy_txpwr_ison_nphy(struct brcms_phy *pi)
- 					    (0x1 << 14) | (0x1 << 13));
- }
- 
--u16 wlc_phy_txpwr_idx_get_nphy(struct brcms_phy *pi)
--{
--	u16 tmp;
--	u16 pwr_idx[2];
--
--	if (wlc_phy_txpwr_ison_nphy(pi)) {
--		pwr_idx[0] = wlc_phy_txpwr_idx_cur_get_nphy(pi, PHY_CORE_0);
--		pwr_idx[1] = wlc_phy_txpwr_idx_cur_get_nphy(pi, PHY_CORE_1);
--
--		tmp = (pwr_idx[0] << 8) | pwr_idx[1];
--	} else {
--		tmp = ((pi->nphy_txpwrindex[PHY_CORE_0].index_internal & 0xff)
--			<< 8) |
--			(pi->nphy_txpwrindex[PHY_CORE_1].index_internal & 0xff);
--	}
--
--	return tmp;
--}
--
- void wlc_phy_txpwr_papd_cal_nphy(struct brcms_phy *pi)
- {
- 	if (PHY_IPA(pi)
--- 
-1.7.10.4
+>
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/phy.c b/drivers/net/wireless/rtlwifi/rtl8723be/phy.c
+> index 20dcc25..b7b73cb 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8723be/phy.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8723be/phy.c
+> @@ -874,31 +874,6 @@ void rtl8723be_phy_get_hw_reg_originalvalue(struct ieee80211_hw *hw)
+>   		  ROFDM0_RXDETECTOR3, rtlphy->framesync);
+>   }
+>
+> -void rtl8723be_phy_get_txpower_level(struct ieee80211_hw *hw, long *powerlevel)
+> -{
+> -	struct rtl_priv *rtlpriv = rtl_priv(hw);
+> -	struct rtl_phy *rtlphy = &rtlpriv->phy;
+> -	u8 txpwr_level;
+> -	long txpwr_dbm;
+> -
+> -	txpwr_level = rtlphy->cur_cck_txpwridx;
+> -	txpwr_dbm = rtl8723_phy_txpwr_idx_to_dbm(hw, WIRELESS_MODE_B,
+> -						 txpwr_level);
+> -	txpwr_level = rtlphy->cur_ofdm24g_txpwridx;
+> -	if (rtl8723_phy_txpwr_idx_to_dbm(hw, WIRELESS_MODE_G, txpwr_level) >
+> -	    txpwr_dbm)
+> -		txpwr_dbm =
+> -		    rtl8723_phy_txpwr_idx_to_dbm(hw, WIRELESS_MODE_G,
+> -						 txpwr_level);
+> -	txpwr_level = rtlphy->cur_ofdm24g_txpwridx;
+> -	if (rtl8723_phy_txpwr_idx_to_dbm(hw, WIRELESS_MODE_N_24G,
+> -					 txpwr_level) > txpwr_dbm)
+> -		txpwr_dbm =
+> -		    rtl8723_phy_txpwr_idx_to_dbm(hw, WIRELESS_MODE_N_24G,
+> -						 txpwr_level);
+> -	*powerlevel = txpwr_dbm;
+> -}
+> -
+>   static u8 _rtl8723be_phy_get_ratesection_intxpower_byrate(enum radio_path path,
+>   							  u8 rate)
+>   {
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/phy.h b/drivers/net/wireless/rtlwifi/rtl8723be/phy.h
+> index 6339738..9021d47 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8723be/phy.h
+> +++ b/drivers/net/wireless/rtlwifi/rtl8723be/phy.h
+> @@ -114,8 +114,6 @@ bool rtl8723be_phy_mac_config(struct ieee80211_hw *hw);
+>   bool rtl8723be_phy_bb_config(struct ieee80211_hw *hw);
+>   bool rtl8723be_phy_rf_config(struct ieee80211_hw *hw);
+>   void rtl8723be_phy_get_hw_reg_originalvalue(struct ieee80211_hw *hw);
+> -void rtl8723be_phy_get_txpower_level(struct ieee80211_hw *hw,
+> -				     long *powerlevel);
+>   void rtl8723be_phy_set_txpower_level(struct ieee80211_hw *hw,
+>   				     u8 channel);
+>   void rtl8723be_phy_scan_operation_backup(struct ieee80211_hw *hw,
+>
 
