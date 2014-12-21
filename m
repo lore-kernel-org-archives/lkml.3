@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702AbaLUSsk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 13:48:40 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:46797 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaLUSrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753451AbaLUSrb (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 21 Dec 2014 13:47:31 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37650 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046AbaLUSrT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 13:47:19 -0500
 From: Richard Cochran <richardcochran@gmail.com>
 To: <netdev@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Amir Vadai <amirv@mellanox.com>,
@@ -21,9 +21,9 @@ Cc: <linux-kernel@vger.kernel.org>, Amir Vadai <amirv@mellanox.com>,
         Or Gerlitz <ogerlitz@mellanox.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tom Lendacky <thomas.lendacky@amd.com>
-Subject: [PATCH net-next 10/11] net: cpts: convert to timecounter adjtime.
-Date: Sun, 21 Dec 2014 19:47:05 +0100
-Message-Id: <90dc7fc7d7550d5164474ca9995628f50989dbb2.1418504889.git.richardcochran@gmail.com>
+Subject: [PATCH net-next 04/11] net: bnx2x: convert to timecounter adjtime.
+Date: Sun, 21 Dec 2014 19:46:59 +0100
+Message-Id: <976abf89c833c376c2666def2c60a7de0f020026.1418504889.git.richardcochran@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1418504883.git.richardcochran@gmail.com>
 References: <cover.1418504883.git.richardcochran@gmail.com>
@@ -34,31 +34,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This patch changes the driver to use the new and improved method
 for adjusting the offset of a timecounter.
 
+Compile tested only.
+
 Signed-off-by: Richard Cochran <richardcochran@gmail.com>
 ---
- drivers/net/ethernet/ti/cpts.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/ti/cpts.c b/drivers/net/ethernet/ti/cpts.c
-index 4a4388b..fbe42cb 100644
---- a/drivers/net/ethernet/ti/cpts.c
-+++ b/drivers/net/ethernet/ti/cpts.c
-@@ -157,14 +157,11 @@ static int cpts_ptp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
- 
- static int cpts_ptp_adjtime(struct ptp_clock_info *ptp, s64 delta)
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index 691f0bf..7b2cc40 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -13265,14 +13265,10 @@ static int bnx2x_ptp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
+ static int bnx2x_ptp_adjtime(struct ptp_clock_info *ptp, s64 delta)
  {
--	s64 now;
- 	unsigned long flags;
- 	struct cpts *cpts = container_of(ptp, struct cpts, info);
+ 	struct bnx2x *bp = container_of(ptp, struct bnx2x, ptp_clock_info);
+-	u64 now;
  
- 	spin_lock_irqsave(&cpts->lock, flags);
--	now = timecounter_read(&cpts->tc);
+ 	DP(BNX2X_MSG_PTP, "PTP adjtime called, delta = %llx\n", delta);
+ 
+-	now = timecounter_read(&bp->timecounter);
 -	now += delta;
--	timecounter_init(&cpts->tc, &cpts->cc, now);
-+	timecounter_adjtime(&cpts->tc, delta);
- 	spin_unlock_irqrestore(&cpts->lock, flags);
+-	/* Re-init the timecounter */
+-	timecounter_init(&bp->timecounter, &bp->cyclecounter, now);
++	timecounter_adjtime(&bp->timecounter, delta);
  
  	return 0;
+ }
 -- 
 1.7.10.4
 
