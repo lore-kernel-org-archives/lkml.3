@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405AbaLURk7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 12:40:59 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:54884 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaLURk5 (ORCPT
+	id S1752978AbaLURux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 12:50:53 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:49768 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaLURuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 12:40:57 -0500
+	Sun, 21 Dec 2014 12:50:52 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mahati Chamarthy <mahati.chamarthy@gmail.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] thermal: ti-soc-thermal: ti-bandgap.c:  Remove unused function
-Date: Sun, 21 Dec 2014 18:43:43 +0100
-Message-Id: <1419183823-10787-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Matthew Casey <mdcasey@chabloom.com>, James Cameron <quozl@laptop.org>,
+        Andreas Frembs <andreas.frembs@studium.uni-erlangen.de>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        Emil Goode <emilgoode@gmail.com>,
+        Matthias Schoepe <matthias.schoepe@studium.uni-erlangen.de>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8192e: rtllib_rx.c:  Remove some unused functions
+Date: Sun, 21 Dec 2014 18:53:37 +0100
+Message-Id: <1419184417-10979-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function ti_bandgap_write_thot() that is not used anywhere.
+Removes some functions that are not used anywhere:
+update_ibss_network() rtllib_SignalStrengthTranslate()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/thermal/ti-soc-thermal/ti-bandgap.c |   13 -------------
- drivers/thermal/ti-soc-thermal/ti-bandgap.h |    1 -
- 2 files changed, 14 deletions(-)
+ drivers/staging/rtl8192e/rtllib_rx.c |   35 ----------------------------------
+ 1 file changed, 35 deletions(-)
 
-diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-index 634b6ce..cbb6a5f 100644
---- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-+++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-@@ -611,19 +611,6 @@ int ti_bandgap_read_thot(struct ti_bandgap *bgp, int id, int *thot)
+diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+index 1c2014f..418ef13 100644
+--- a/drivers/staging/rtl8192e/rtllib_rx.c
++++ b/drivers/staging/rtl8192e/rtllib_rx.c
+@@ -2211,34 +2211,6 @@ int rtllib_parse_info_param(struct rtllib_device *ieee,
+ 	return 0;
  }
  
- /**
-- * ti_bandgap_write_thot() - sets sensor current thot
-- * @bgp: pointer to bandgap instance
-- * @id: sensor id
-- * @val: desired thot value
-- *
-- * Return: 0 on success or the proper error code
-- */
--int ti_bandgap_write_thot(struct ti_bandgap *bgp, int id, int val)
+-static inline u8 rtllib_SignalStrengthTranslate(u8  CurrSS)
 -{
--	return _ti_bandgap_write_threshold(bgp, id, val, true);
+-	u8 RetSS;
+-
+-	if (CurrSS >= 71 && CurrSS <= 100)
+-		RetSS = 90 + ((CurrSS - 70) / 3);
+-	else if (CurrSS >= 41 && CurrSS <= 70)
+-		RetSS = 78 + ((CurrSS - 40) / 3);
+-	else if (CurrSS >= 31 && CurrSS <= 40)
+-		RetSS = 66 + (CurrSS - 30);
+-	else if (CurrSS >= 21 && CurrSS <= 30)
+-		RetSS = 54 + (CurrSS - 20);
+-	else if (CurrSS >= 5 && CurrSS <= 20)
+-		RetSS = 42 + (((CurrSS - 5) * 2) / 3);
+-	else if (CurrSS == 4)
+-		RetSS = 36;
+-	else if (CurrSS == 3)
+-		RetSS = 27;
+-	else if (CurrSS == 2)
+-		RetSS = 18;
+-	else if (CurrSS == 1)
+-		RetSS = 9;
+-	else
+-		RetSS = CurrSS;
+-
+-	return RetSS;
 -}
 -
--/**
-  * ti_bandgap_read_tcold() - reads sensor current tcold
-  * @bgp: pointer to bandgap instance
-  * @id: sensor id
-diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.h b/drivers/thermal/ti-soc-thermal/ti-bandgap.h
-index b3adf72..976afc0 100644
---- a/drivers/thermal/ti-soc-thermal/ti-bandgap.h
-+++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.h
-@@ -371,7 +371,6 @@ struct ti_bandgap_data {
- };
+ static long rtllib_translate_todbm(u8 signal_strength_index)
+ {
+ 	long	signal_power;
+@@ -2367,13 +2339,6 @@ static inline int is_same_network(struct rtllib_network *src,
+ 		(dst->capability & WLAN_CAPABILITY_ESS)));
+ }
  
- int ti_bandgap_read_thot(struct ti_bandgap *bgp, int id, int *thot);
--int ti_bandgap_write_thot(struct ti_bandgap *bgp, int id, int val);
- int ti_bandgap_read_tcold(struct ti_bandgap *bgp, int id, int *tcold);
- int ti_bandgap_write_tcold(struct ti_bandgap *bgp, int id, int val);
- int ti_bandgap_read_update_interval(struct ti_bandgap *bgp, int id,
+-static inline void update_ibss_network(struct rtllib_network *dst,
+-				  struct rtllib_network *src)
+-{
+-	memcpy(&dst->stats, &src->stats, sizeof(struct rtllib_rx_stats));
+-	dst->last_scanned = jiffies;
+-}
+-
+ 
+ static inline void update_network(struct rtllib_network *dst,
+ 				  struct rtllib_network *src)
 -- 
 1.7.10.4
 
