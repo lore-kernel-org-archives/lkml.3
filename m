@@ -1,98 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932227AbaLVQxs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:53:48 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.170]:37578 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755496AbaLVQvT (ORCPT
+	id S1755242AbaLVQ50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:57:26 -0500
+Received: from [80.91.193.228] ([80.91.193.228]:40900 "EHLO zimbra.dubensky.ru"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754400AbaLVQ5Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:51:19 -0500
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-15.tower-39.messagelabs.com!1419267073!22788096!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.5; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <01a6a3c7dc0e6832c635957de7f425d9cd11ad1d.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <cover.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
-References: <cover.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Date: Mon, 22 Dec 2014 16:51:09 +0000
-Subject: [PATCH v5 2/7] mfd: da9150: Add DT binding documentation for core
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        <linux-iio@vger.kernel.org>, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-CC: <linux-kernel@vger.kernel.org>, <support.opensource@diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 22 Dec 2014 11:57:25 -0500
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Dec 2014 11:57:25 EST
+Message-Id: <F9piCrrdOIBLV3gnB3wtnYuSA1YUcs0Nci8HjdgYjShR@mynet.com>
+Mime-Version: 1.0
+From: Josephine Kuku <babylove123@mynet.com>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Reply-To: josykuku@yahoo.com
+Subject: Hi dear!!
+Date: Mon, 22 Dec 2014 16:52:03 GMT
+X-Bounce-Tracking-Info: <bGludXgta2VybmVsCQkJbGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZwlIaSBkZWFyISEJMwkJNDE3Nwlib3VuY2UJbm8Jbm8=>
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
----
- Documentation/devicetree/bindings/mfd/da9150.txt | 43 ++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9150.txt
+Hi Dear,
 
-diff --git a/Documentation/devicetree/bindings/mfd/da9150.txt b/Documentation/devicetree/bindings/mfd/da9150.txt
-new file mode 100644
-index 0000000..d0588ea
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/da9150.txt
-@@ -0,0 +1,43 @@
-+Dialog Semiconductor DA9150 Combined Charger/Fuel-Gauge MFD bindings
-+
-+DA9150 consists of a group of sub-devices:
-+
-+Device			 Description
-+------			 -----------
-+da9150-gpadc		: General Purpose ADC
-+da9150-charger		: Battery Charger
-+
-+======
-+
-+Required properties:
-+- compatible : Should be "dlg,da9150"
-+- reg: Specifies the I2C slave address
-+- interrupt-parent: Specifies the phandle of the interrupt controller to which
-+  the IRQs from da9150 are delivered to.
-+- interrupts: IRQ line info for da9150 chip.
-+- interrupt-controller: da9150 has internal IRQs (own IRQ domain).
-+  (See Documentation/devicetree/bindings/interrupt-controller/interrupts.txt for
-+   further information relating to interrupt properties)
-+
-+Sub-devices:
-+- da9150-gpadc: See Documentation/devicetree/bindings/iio/adc/da9150-gpadc.txt
-+- da9150-charger: See Documentation/devicetree/bindings/power/da9150-charger.txt
-+
-+
-+Example:
-+
-+	charger_fg: da9150@58 {
-+		compatible = "dlg,da9150";
-+		reg = <0x58>;
-+		interrupt-parent = <&gpio6>;
-+		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
-+		interrupt-controller;
-+
-+		gpadc: da9150-gpadc {
-+			...
-+		};
-+
-+		da9150-charger {
-+			...
-+		};
-+	};
---
-1.9.3
+May peace be with you. I am Miss Josephine. Actually, We may not known in person but relationship can start like this!. Please, I'm sorry if I am embarrassing you by my gesture.
+
+I really wish to be your friend, learn to know you and to have a place in your heart for an ideal relationship with us. I will be very happy if you contact me for my picture and more about me.
+See you soon?
+Thanks in advance and remain blessed!
+Jossy
 
