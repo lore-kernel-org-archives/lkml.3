@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaLVV03 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 16:26:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37447 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702AbaLVV02 (ORCPT
+	id S1755618AbaLVV32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 16:29:28 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43647 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888AbaLVV31 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 16:26:28 -0500
-Date: Mon, 22 Dec 2014 13:26:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] lib: proportions.c:  Remove some unused functions
-Message-Id: <20141222132626.2697567529c7708804c4061a@linux-foundation.org>
-In-Reply-To: <1419087113-4087-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419087113-4087-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 22 Dec 2014 16:29:27 -0500
+Date: Mon, 22 Dec 2014 16:29:23 -0500 (EST)
+Message-Id: <20141222.162923.1183357932658326852.davem@davemloft.net>
+To: dg@emlix.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] net: s6gmac: remove driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1419190059-16501-1-git-send-email-dg@emlix.com>
+References: <20141111.113007.194586174190893576.davem@davemloft.net>
+	<1419190059-16501-1-git-send-email-dg@emlix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Dec 2014 13:29:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Dec 2014 15:51:53 +0100 Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+From: Daniel Glöckner <dg@emlix.com>
+Date: Sun, 21 Dec 2014 20:27:39 +0100
 
-> Removes some functions that are not used anywhere:
-> prop_change_shift() prop_descriptor_init() prop_fraction_percpu() prop_fraction_single() __prop_inc_percpu_max() prop_local_destroy_percpu() prop_local_destroy_single() prop_local_init_percpu() prop_local_init_single()
+> The s6000 Xtensa support has been removed from the kernel in
+> 4006e565e1500db4. There are no other chips using this driver.
 > 
-> This was partially found by using a static code analysis program called cppcheck.
+> While the Mentor/Alcatel PE-MCXMAC IP core is also used in other
+> designs (Freescale Gianfar/UCC, QLogic NetXen, Solarflare, Agere
+> ET-1310, Netlogic XLR/XLS), none of these use this driver as it
+> heavily depends on the s6000 DMA engine. In fact, there is no
+> code sharing across any of the aforementioned devices.
 > 
-> ---
->  include/linux/proportions.h |   14 ----
->  lib/proportions.c           |  177 -------------------------------------------
->  2 files changed, 191 deletions(-)
+> Signed-off-by: Daniel Glöckner <dg@emlix.com>
 
-Gee, that's a heck of a lot of dead code.
-
-Peter, what was the thinking here?  Was this code once used, or added
-for API completeness or what?
-
-Perhaps we should just ifdef it out, so the code is still sitting there if
-someone wishes to resurrect it.
-
+Applied, thanks.
