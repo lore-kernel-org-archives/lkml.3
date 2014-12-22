@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaLVJQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:16:35 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:36672 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971AbaLVJQc (ORCPT
+	id S1754244AbaLVJQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:16:48 -0500
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:43313 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215AbaLVJQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:16:32 -0500
+	Mon, 22 Dec 2014 04:16:46 -0500
 From: "Li, Zhen-Hua" <zhen-hual@hp.com>
 To: <dwmw2@infradead.org>, <indou.takao@jp.fujitsu.com>, <bhe@redhat.com>,
         <joro@8bytes.org>, <vgoyal@redhat.com>, <dyoung@redhat.com>
@@ -17,129 +17,101 @@ Cc: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
         <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
         <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
         <billsumnerlinux@gmail.com>, <zhen-hual@hp.com>
-Subject: [PATCH 0/10] iommu/vt-d: Fix intel vt-d faults in kdump kernel
-Date: Mon, 22 Dec 2014 17:15:19 +0800
-Message-Id: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
+Subject: [PATCH 03/10] iommu/vt-d: Add domain-id functions
+Date: Mon, 22 Dec 2014 17:15:22 +0800
+Message-Id: <1419239729-26529-4-git-send-email-zhen-hual@hp.com>
 X-Mailer: git-send-email 2.0.0-rc0
+In-Reply-To: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
+References: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is an update of Bill Sumner's patchset, implements a fix for:
-If a kernel boots with intel_iommu=on on a system that supports intel vt-d, 
-when a panic happens, the kdump kernel will boot with these faults:
+Interfaces for when a new domain in the crashdump kernel needs some
+values from the panicked kernel's context entries.
 
-    dmar: DRHD: handling fault status reg 102
-    dmar: DMAR:[DMA Read] Request device [01:00.0] fault addr fff80000
-    DMAR:[fault reason 01] Present bit in root entry is clear
+Signed-off-by: Bill Sumner <billsumnerlinux@gmail.com>
+---
+ drivers/iommu/intel-iommu.c | 62 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
 
-    dmar: DRHD: handling fault status reg 2
-    dmar: INTR-REMAP: Request device [[61:00.0] fault index 42
-    INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
-
-On some system, the interrupt remapping fault will also happen even if the 
-intel_iommu is not set to on, because the interrupt remapping will be enabled 
-when x2apic is needed by the system.
-
-The cause of the DMA fault is described in Bill's original version, and the 
-INTR-Remap fault is caused by a similar reason. In short, the initialization 
-of vt-d drivers causes the in-flight DMA and interrupt requests get wrong 
-response.
-
-To fix this problem, we modifies the behaviors of the intel vt-d in the 
-crashdump kernel:
-
-For DMA Remapping:
-1. To accept the vt-d hardware in an active state,
-2. Do not disable and re-enable the translation, keep it enabled.
-3. Use the old root entry table, do not rewrite the RTA register.
-4. Malloc and use new context entry table and page table, copy data from the 
-   old ones that used by the old kernel.
-5. to use different portions of the iova address ranges for the device drivers
-   in the crashdump kernel than the iova ranges that were in-use at the time
-   of the panic.  
-6. After device driver is loaded, when it issues the first dma_map command, 
-   free the dmar_domain structure for this device, and generate a new one, so 
-   that the device can be assigned a new and empty page table. 
-7. When a new context entry table is generated, we also save its address to 
-   the old root entry table.
-
-For Interrupt Remapping:
-1. To accept the vt-d hardware in an active state,
-2. Do not disable and re-enable the interrupt remapping, keep it enabled.
-3. Use the old interrupt remapping table, do not rewrite the IRTA register.
-4. When ioapic entry is setup, the interrupt remapping table is changed, and 
-   the updated data will be stored to the old interrupt remapping table.
-
-Advantages of this approach:
-1. All manipulation of the IO-device is done by the Linux device-driver
-   for that device.
-2. This approach behaves in a manner very similar to operation without an
-   active iommu.
-3. Any activity between the IO-device and its RMRR areas is handled by the
-   device-driver in the same manner as during a non-kdump boot.
-4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
-   This supports the practice of creating a special kdump kernel without
-   drivers for any devices that are not required for taking a crashdump. 
-5. Minimal code-changes among the existing mainline intel vt-d code.
-
-Summary of changes in this patch set:
-1. Added some useful function for root entry table in code intel-iommu.c
-2. Added new members to struct root_entry and struct irte;
-3. Functions to load old root entry table to iommu->root_entry from the memory 
-   of old kernel.
-4. Functions to malloc new context entry table and page table and copy the data
-   from the old ones to the malloced new ones.
-5. Functions to enable support for DMA remapping in kdump kernel.
-6. Functions to load old irte data from the old kernel to the kdump kernel.
-7. Some code changes that support other behaviours that have been listed.
-8. In the new functions, use physical address as "unsigned long" type, not 
-   pointers.
-
-Original version by Bill Sumner:
-    https://lkml.org/lkml/2014/1/10/518
-    https://lkml.org/lkml/2014/4/15/716
-    https://lkml.org/lkml/2014/4/24/836
-
-Zhenhua's last of Bill's patchset:
-    https://lkml.org/lkml/2014/10/21/134
-    https://lkml.org/lkml/2014/12/15/121
-
-Changed in this version:
-1. Do not disable and re-enable traslation and interrupt remapping. 
-2. Use old root entry table.
-3. Use old interrupt remapping table.
-4. Use "unsigned long" as physical address.
-5. Use intel_unmap to unmap the old dma;
-
-This patchset should be applied with this one together:
-    https://lkml.org/lkml/2014/11/5/43
-    x86/iommu: fix incorrect bit operations in setting values
-
-Bill Sumner (5):
-  iommu/vt-d: Update iommu_attach_domain() and its callers
-  iommu/vt-d: Items required for kdump
-  iommu/vt-d: data types and functions used for kdump
-  iommu/vt-d: Add domain-id functions
-  iommu/vt-d: enable kdump support in iommu module
-
-Li, Zhen-Hua (10):
-  iommu/vt-d: Update iommu_attach_domain() and its callers
-  iommu/vt-d: Items required for kdump
-  iommu/vt-d: Add domain-id functions
-  iommu/vt-d: functions to copy data from old mem
-  iommu/vt-d: Add functions to load and save old re
-  iommu/vt-d: datatypes and functions used for kdump
-  iommu/vt-d: enable kdump support in iommu module
-  iommu/vtd: assign new page table for dma_map
-  iommu/vt-d: Copy functions for irte
-  iommu/vt-d: Use old irte in kdump kernel
-
- drivers/iommu/intel-iommu.c         | 1050 +++++++++++++++++++++++++++++++++--
- drivers/iommu/intel_irq_remapping.c |   99 +++-
- include/linux/intel-iommu.h         |   18 +
- 3 files changed, 1123 insertions(+), 44 deletions(-)
-
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 5ce2850..c0bebd6 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -381,6 +381,13 @@ struct domain_values_entry {
+ 					   2 == 1GiB, 3 == 512GiB, 4 == 1TiB */
+ };
+ 
++static struct domain_values_entry *intel_iommu_did_to_domain_values_entry(
++		int did, struct intel_iommu *iommu);
++
++static int intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu);
++
++static int device_to_domain_id(struct intel_iommu *iommu, u8 bus, u8 devfn);
++
+ #endif /* CONFIG_CRASH_DUMP */
+ 
+ /*
+@@ -4832,3 +4839,58 @@ static void __init check_tylersburg_isoch(void)
+ 	printk(KERN_WARNING "DMAR: Recommended TLB entries for ISOCH unit is 16; your BIOS set %d\n",
+ 	       vtisochctrl);
+ }
++
++#ifdef CONFIG_CRASH_DUMP
++
++/*
++ * Interfaces for when a new domain in the crashdump kernel needs some
++ * values from the panicked kernel's context entries
++ *
++ */
++static struct domain_values_entry *intel_iommu_did_to_domain_values_entry(
++		int did, struct intel_iommu *iommu)
++{
++	struct domain_values_entry *dve;	/* iterator */
++
++	list_for_each_entry(dve, &domain_values_list[iommu->seq_id], link)
++		if (dve->did == did)
++			return dve;
++	return NULL;
++}
++
++/* Mark domain-id's from old kernel as in-use on this iommu so that a new
++ * domain-id is allocated in the case where there is a device in the new kernel
++ * that was not in the old kernel -- and therefore a new domain-id is needed.
++ */
++static int intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu)
++{
++	struct domain_values_entry *dve;	/* iterator */
++
++	pr_info("IOMMU:%d Domain ids from panicked kernel:\n", iommu->seq_id);
++
++	list_for_each_entry(dve, &domain_values_list[iommu->seq_id], link) {
++		set_bit(dve->did, iommu->domain_ids);
++		pr_info("DID did:%d(0x%4.4x)\n", dve->did, dve->did);
++	}
++
++	pr_info("----------------------------------------\n");
++	return 0;
++}
++
++static int device_to_domain_id(struct intel_iommu *iommu, u8 bus, u8 devfn)
++{
++	int did = -1;			/* domain-id returned */
++	struct root_entry *root;
++	struct context_entry *context;
++	unsigned long flags;
++
++	spin_lock_irqsave(&iommu->lock, flags);
++	root = &iommu->root_entry[bus];
++	context = get_context_addr_from_root(root);
++	if (context && context_present(context+devfn))
++		did = context_domain_id(context+devfn);
++	spin_unlock_irqrestore(&iommu->lock, flags);
++	return did;
++}
++
++#endif /* CONFIG_CRASH_DUMP */
 -- 
 2.0.0-rc0
 
