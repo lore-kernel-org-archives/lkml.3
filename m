@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaLVJJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:09:35 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:45763 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980AbaLVJJe (ORCPT
+	id S1754212AbaLVJKr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:10:47 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:49894 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753980AbaLVJKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:09:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <1419218249-5744-1-git-send-email-yamada.m@jp.panasonic.com>
-References: <1419218249-5744-1-git-send-email-yamada.m@jp.panasonic.com>
-Date: Mon, 22 Dec 2014 10:09:32 +0100
-Message-ID: <CAKv+Gu8QSSC32VVwBzSiDL_3t_dd=2Oa+Xp5r8mtDrGBW9E0ow@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: mm: fix size rounding-down of arm_add_memory() function
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+	Mon, 22 Dec 2014 04:10:45 -0500
+Message-ID: <1419239442.30945.5.camel@x220>
+Subject: Re: [PATCH v3 2/8] mm/debug-pagealloc: prepare boottime
+ configurable on/off
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>, Olof Johansson <olof@lixom.net>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>, Dave Hansen <dave@sr71.net>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Jungsoo Son <jungsoo.son@lge.com>, Ingo Molnar <mingo@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Mon, 22 Dec 2014 10:10:42 +0100
+In-Reply-To: <20141128073524.GC11802@js1304-P5Q-DELUXE>
+References: <1416816926-7756-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1416816926-7756-3-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1417091739.29407.95.camel@x220> <20141128073524.GC11802@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Dec 2014 09:10:43.0112 (UTC) FILETIME=[29D2C280:01D01DC7]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 December 2014 at 04:17, Masahiro Yamada <yamada.m@jp.panasonic.com> wrote:
-> The current rounding of "size" is wrong:
->
->  - If "start" is sufficiently near the next page boundary, "size"
->    is decremented by more than enough and the last page is lost.
->
->  - If "size" is sufficiently small, it is wrapped around and gets
->    a bogus value.
->
-> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
-> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Hi Joonsoo,
 
-Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-
-
+On Fri, 2014-11-28 at 16:35 +0900, Joonsoo Kim wrote:
+> Hello, Paul.
+> 
+> Thanks for spotting this.
+> I attach the patch. :)
+> 
+> Andrew,
+> Could you kindly fold this into the patch in your tree?
+> 
+> Thanks.
+> 
+> ------------------->8---------------
+> From a33c480160904cc93333807a448960151ac4c534 Mon Sep 17 00:00:00 2001
+> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Date: Fri, 28 Nov 2014 16:05:32 +0900
+> Subject: [PATCH] mm/debug_pagealloc: remove obsolete Kconfig options
+> 
+> These are obsolete since commit "mm/debug-pagealloc: prepare boottime
+> configurable" is merged. So, remove it.
+> 
+> [pebolle@tiscali.nl: find obsolete Kconfig options]
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 > ---
->
-> Changes in v2:
->  - Avoid wrap around of "size"
->
->  arch/arm/kernel/setup.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-> index f9c8639..d13f185 100644
-> --- a/arch/arm/kernel/setup.c
-> +++ b/arch/arm/kernel/setup.c
-> @@ -657,10 +657,13 @@ int __init arm_add_memory(u64 start, u64 size)
->
->         /*
->          * Ensure that start/size are aligned to a page boundary.
-> -        * Size is appropriately rounded down, start is rounded up.
-> +        * Size is rounded down, start is rounded up.
->          */
-> -       size -= start & ~PAGE_MASK;
->         aligned_start = PAGE_ALIGN(start);
-> +       if (aligned_start > start + size)
-> +               size = 0;
-> +       else
-> +               size -= aligned_start - start;
->
->  #ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
->         if (aligned_start > ULONG_MAX) {
-> --
-> 1.9.1
->
+>  mm/Kconfig.debug |    9 ---------
+>  1 file changed, 9 deletions(-)
+> 
+> diff --git a/mm/Kconfig.debug b/mm/Kconfig.debug
+> index 56badfc..957d3da 100644
+> --- a/mm/Kconfig.debug
+> +++ b/mm/Kconfig.debug
+> @@ -14,7 +14,6 @@ config DEBUG_PAGEALLOC
+>  	depends on !KMEMCHECK
+>  	select PAGE_EXTENSION
+>  	select PAGE_POISONING if !ARCH_SUPPORTS_DEBUG_PAGEALLOC
+> -	select PAGE_GUARD if ARCH_SUPPORTS_DEBUG_PAGEALLOC
+>  	---help---
+>  	  Unmap pages from the kernel linear mapping after free_pages().
+>  	  This results in a large slowdown, but helps to find certain types
+> @@ -27,13 +26,5 @@ config DEBUG_PAGEALLOC
+>  	  that would result in incorrect warnings of memory corruption after
+>  	  a resume because free pages are not saved to the suspend image.
+>  
+> -config WANT_PAGE_DEBUG_FLAGS
+> -	bool
+> -
+>  config PAGE_POISONING
+>  	bool
+> -	select WANT_PAGE_DEBUG_FLAGS
+> -
+> -config PAGE_GUARD
+> -	bool
+> -	select WANT_PAGE_DEBUG_FLAGS
+
+This patch didn't make it into v3.19-rc1. And I think it never entered
+linux-next. Did this fall through the cracks or was there some other
+issue with this patch?
+
+Thanks,
+
+
+Paul Bolle
+
