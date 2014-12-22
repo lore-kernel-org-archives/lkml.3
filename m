@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbaLVPaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:30:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:54044 "EHLO mail.kernel.org"
+	id S1755367AbaLVPbP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:31:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:54060 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842AbaLVPas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:30:48 -0500
+	id S1755328AbaLVPav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:30:51 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/10] perf ui/tui: Print backtrace symbols when segfault occurs
-Date: Mon, 22 Dec 2014 12:30:07 -0300
-Message-Id: <1419262209-9464-9-git-send-email-acme@kernel.org>
+Subject: [PATCH 09/10] perf callchain: Append callchains only when requested
+Date: Mon, 22 Dec 2014 12:30:08 -0300
+Message-Id: <1419262209-9464-10-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1419262209-9464-1-git-send-email-acme@kernel.org>
 References: <1419262209-9464-1-git-send-email-acme@kernel.org>
@@ -26,22 +26,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-The output will look like below.  (I added an error into ui__init() for
-the test).
-
-  $ perf report
-  perf: Segmentation fault
-  -------- backtrace --------
-  perf[0x503781]
-  /usr/lib/libc.so.6(+0x33b20)[0x7f1a14f04b20]
-  perf(ui__init+0xd5)[0x503645]
-  perf(setup_browser+0x97)[0x4ce4e7]
-  perf(cmd_report+0xcea)[0x4392ba]
-  perf[0x428493]
-  perf(main+0x60a)[0x427c0a]
-  /usr/lib/libc.so.6(__libc_start_main+0xf0)[0x7f1a14ef1040]
-  perf[0x427d29]
-  [0x0]
+The perf report --children can be called with callchain disabled so no
+need to append callchains.  Actually the root of callchain tree is not
+initialized properly in this case.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
@@ -50,62 +37,44 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1419223455-4362-4-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1419223455-4362-7-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/tui/setup.c | 26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+ tools/perf/util/hist.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index 2f612562978c..3c38f25b1695 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -1,5 +1,8 @@
- #include <signal.h>
- #include <stdbool.h>
-+#ifdef HAVE_BACKTRACE_SUPPORT
-+#include <execinfo.h>
-+#endif
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index bd4a2cd73236..30ff2cb92884 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -300,7 +300,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template,
+ 	size_t callchain_size = 0;
+ 	struct hist_entry *he;
  
- #include "../../util/cache.h"
- #include "../../util/debug.h"
-@@ -88,6 +91,25 @@ int ui__getch(int delay_secs)
- 	return SLkp_getkey();
+-	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain)
++	if (symbol_conf.use_callchain)
+ 		callchain_size = sizeof(struct callchain_root);
+ 
+ 	he = zalloc(sizeof(*he) + callchain_size);
+@@ -735,7 +735,7 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
+ 	iter->he = he;
+ 	he_cache[iter->curr++] = he;
+ 
+-	callchain_append(he->callchain, &callchain_cursor, sample->period);
++	hist_entry__append_callchain(he, sample);
+ 
+ 	/*
+ 	 * We need to re-initialize the cursor since callchain_append()
+@@ -808,7 +808,8 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
+ 	iter->he = he;
+ 	he_cache[iter->curr++] = he;
+ 
+-	callchain_append(he->callchain, &cursor, sample->period);
++	if (symbol_conf.use_callchain)
++		callchain_append(he->callchain, &cursor, sample->period);
+ 	return 0;
  }
  
-+#ifdef HAVE_BACKTRACE_SUPPORT
-+static void ui__signal_backtrace(int sig)
-+{
-+	void *stackdump[32];
-+	size_t size;
-+
-+	ui__exit(false);
-+	psignal(sig, "perf");
-+
-+	printf("-------- backtrace --------\n");
-+	size = backtrace(stackdump, ARRAY_SIZE(stackdump));
-+	backtrace_symbols_fd(stackdump, size, STDOUT_FILENO);
-+
-+	exit(0);
-+}
-+#else
-+# define ui__signal_backtrace  ui__signal
-+#endif
-+
- static void ui__signal(int sig)
- {
- 	ui__exit(false);
-@@ -122,8 +144,8 @@ int ui__init(void)
- 	ui_browser__init();
- 	tui_progress__init();
- 
--	signal(SIGSEGV, ui__signal);
--	signal(SIGFPE, ui__signal);
-+	signal(SIGSEGV, ui__signal_backtrace);
-+	signal(SIGFPE, ui__signal_backtrace);
- 	signal(SIGINT, ui__signal);
- 	signal(SIGQUIT, ui__signal);
- 	signal(SIGTERM, ui__signal);
 -- 
 1.9.3
 
