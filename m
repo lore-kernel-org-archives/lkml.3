@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618AbaLVV32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 16:29:28 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:43647 "EHLO
+	id S1755688AbaLVVbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 16:31:11 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:43670 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754888AbaLVV31 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755351AbaLVVbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 16:29:27 -0500
-Date: Mon, 22 Dec 2014 16:29:23 -0500 (EST)
-Message-Id: <20141222.162923.1183357932658326852.davem@davemloft.net>
-To: dg@emlix.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] net: s6gmac: remove driver
+	Mon, 22 Dec 2014 16:31:09 -0500
+Date: Mon, 22 Dec 2014 16:31:07 -0500 (EST)
+Message-Id: <20141222.163107.1023158393448021294.davem@davemloft.net>
+To: wsa@the-dreams.de
+Cc: linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 10/28] net: ethernet: stmicro: stmmac: drop owner
+ assignment from platform_drivers
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1419190059-16501-1-git-send-email-dg@emlix.com>
-References: <20141111.113007.194586174190893576.davem@davemloft.net>
-	<1419190059-16501-1-git-send-email-dg@emlix.com>
+In-Reply-To: <1419196495-9626-11-git-send-email-wsa@the-dreams.de>
+References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
+	<1419196495-9626-11-git-send-email-wsa@the-dreams.de>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Dec 2014 13:29:26 -0800 (PST)
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Dec 2014 13:31:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Glöckner <dg@emlix.com>
-Date: Sun, 21 Dec 2014 20:27:39 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+Date: Sun, 21 Dec 2014 22:14:31 +0100
 
-> The s6000 Xtensa support has been removed from the kernel in
-> 4006e565e1500db4. There are no other chips using this driver.
+> This platform_driver does not need to set an owner, it will be populated by the
+> driver core.
 > 
-> While the Mentor/Alcatel PE-MCXMAC IP core is also used in other
-> designs (Freescale Gianfar/UCC, QLogic NetXen, Solarflare, Agere
-> ET-1310, Netlogic XLR/XLS), none of these use this driver as it
-> heavily depends on the s6000 DMA engine. In fact, there is no
-> code sharing across any of the aforementioned devices.
-> 
-> Signed-off-by: Daniel Glöckner <dg@emlix.com>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
 Applied, thanks.
