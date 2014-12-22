@@ -1,157 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437AbaLVTf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:35:26 -0500
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:39917 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385AbaLVTfV (ORCPT
+	id S1755002AbaLVTkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:40:23 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40869 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651AbaLVTkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:35:21 -0500
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sifan Naeem <sifan.naeem@imgtec.com>, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH V2 2/2] spi: img-spfi: Select FIFO based on transfer length
-Date: Mon, 22 Dec 2014 11:35:16 -0800
-Message-Id: <1419276916-28433-2-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1419276916-28433-1-git-send-email-abrestic@chromium.org>
-References: <1419276916-28433-1-git-send-email-abrestic@chromium.org>
+	Mon, 22 Dec 2014 14:40:21 -0500
+Date: Mon, 22 Dec 2014 11:40:11 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: rcu_sched stall detected, but no state dump
+Message-ID: <20141222194011.GV11609@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141210162823.GT25340@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1412111024010.17929@pobox.suse.cz>
+ <20141211165010.GI25340@linux.vnet.ibm.com>
+ <20141211190957.GA28172@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1412121431450.6587@pobox.suse.cz>
+ <20141212165829.GQ25340@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1412151400090.17292@pobox.suse.cz>
+ <alpine.LNX.2.00.1412191154260.14243@pobox.suse.cz>
+ <20141219153220.GR11609@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1412221334060.16432@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1412221334060.16432@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14122219-0033-0000-0000-0000031A458A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the 32-bit FIFO is deeper (64 bytes) than the 8-bit FIFO (16 bytes),
-use the 32-bit FIFO when there are at least 32 bits remaining to be
-transferred in PIO mode or when the transfer length is 32-bit aligned
-in DMA mode.
+On Mon, Dec 22, 2014 at 01:42:14PM +0100, Miroslav Benes wrote:
+> On Fri, 19 Dec 2014, Paul E. McKenney wrote:
+> > On Fri, Dec 19, 2014 at 12:09:48PM +0100, Miroslav Benes wrote:
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/spi/spi-img-spfi.c | 49 ++++++++++++++++++----------------------------
- 1 file changed, 19 insertions(+), 30 deletions(-)
+[ . . . ]
 
-diff --git a/drivers/spi/spi-img-spfi.c b/drivers/spi/spi-img-spfi.c
-index aad6683..c01567d 100644
---- a/drivers/spi/spi-img-spfi.c
-+++ b/drivers/spi/spi-img-spfi.c
-@@ -160,16 +160,16 @@ static unsigned int spfi_pio_write32(struct img_spfi *spfi, const u32 *buf,
- 	unsigned int count = 0;
- 	u32 status;
- 
--	while (count < max) {
-+	while (count < max / 4) {
- 		spfi_writel(spfi, SPFI_INTERRUPT_SDFUL, SPFI_INTERRUPT_CLEAR);
- 		status = spfi_readl(spfi, SPFI_INTERRUPT_STATUS);
- 		if (status & SPFI_INTERRUPT_SDFUL)
- 			break;
--		spfi_writel(spfi, buf[count / 4], SPFI_TX_32BIT_VALID_DATA);
--		count += 4;
-+		spfi_writel(spfi, buf[count], SPFI_TX_32BIT_VALID_DATA);
-+		count++;
- 	}
- 
--	return count;
-+	return count * 4;
- }
- 
- static unsigned int spfi_pio_write8(struct img_spfi *spfi, const u8 *buf,
-@@ -196,17 +196,17 @@ static unsigned int spfi_pio_read32(struct img_spfi *spfi, u32 *buf,
- 	unsigned int count = 0;
- 	u32 status;
- 
--	while (count < max) {
-+	while (count < max / 4) {
- 		spfi_writel(spfi, SPFI_INTERRUPT_GDEX32BIT,
- 			    SPFI_INTERRUPT_CLEAR);
- 		status = spfi_readl(spfi, SPFI_INTERRUPT_STATUS);
- 		if (!(status & SPFI_INTERRUPT_GDEX32BIT))
- 			break;
--		buf[count / 4] = spfi_readl(spfi, SPFI_RX_32BIT_VALID_DATA);
--		count += 4;
-+		buf[count] = spfi_readl(spfi, SPFI_RX_32BIT_VALID_DATA);
-+		count++;
- 	}
- 
--	return count;
-+	return count * 4;
- }
- 
- static unsigned int spfi_pio_read8(struct img_spfi *spfi, u8 *buf,
-@@ -251,17 +251,15 @@ static int img_spfi_start_pio(struct spi_master *master,
- 	       time_before(jiffies, timeout)) {
- 		unsigned int tx_count, rx_count;
- 
--		switch (xfer->bits_per_word) {
--		case 32:
-+		if (tx_bytes >= 4)
- 			tx_count = spfi_pio_write32(spfi, tx_buf, tx_bytes);
--			rx_count = spfi_pio_read32(spfi, rx_buf, rx_bytes);
--			break;
--		case 8:
--		default:
-+		else
- 			tx_count = spfi_pio_write8(spfi, tx_buf, tx_bytes);
-+
-+		if (rx_bytes >= 4)
-+			rx_count = spfi_pio_read32(spfi, rx_buf, rx_bytes);
-+		else
- 			rx_count = spfi_pio_read8(spfi, rx_buf, rx_bytes);
--			break;
--		}
- 
- 		tx_buf += tx_count;
- 		rx_buf += rx_count;
-@@ -331,14 +329,11 @@ static int img_spfi_start_dma(struct spi_master *master,
- 
- 	if (xfer->rx_buf) {
- 		rxconf.direction = DMA_DEV_TO_MEM;
--		switch (xfer->bits_per_word) {
--		case 32:
-+		if (xfer->len % 4 == 0) {
- 			rxconf.src_addr = spfi->phys + SPFI_RX_32BIT_VALID_DATA;
- 			rxconf.src_addr_width = 4;
- 			rxconf.src_maxburst = 4;
--			break;
--		case 8:
--		default:
-+		} else {
- 			rxconf.src_addr = spfi->phys + SPFI_RX_8BIT_VALID_DATA;
- 			rxconf.src_addr_width = 1;
- 			rxconf.src_maxburst = 4;
-@@ -358,18 +353,14 @@ static int img_spfi_start_dma(struct spi_master *master,
- 
- 	if (xfer->tx_buf) {
- 		txconf.direction = DMA_MEM_TO_DEV;
--		switch (xfer->bits_per_word) {
--		case 32:
-+		if (xfer->len % 4 == 0) {
- 			txconf.dst_addr = spfi->phys + SPFI_TX_32BIT_VALID_DATA;
- 			txconf.dst_addr_width = 4;
- 			txconf.dst_maxburst = 4;
--			break;
--		case 8:
--		default:
-+		} else {
- 			txconf.dst_addr = spfi->phys + SPFI_TX_8BIT_VALID_DATA;
- 			txconf.dst_addr_width = 1;
- 			txconf.dst_maxburst = 4;
--			break;
- 		}
- 		dmaengine_slave_config(spfi->tx_ch, &txconf);
- 
-@@ -508,9 +499,7 @@ static void img_spfi_set_cs(struct spi_device *spi, bool enable)
- static bool img_spfi_can_dma(struct spi_master *master, struct spi_device *spi,
- 			     struct spi_transfer *xfer)
- {
--	if (xfer->bits_per_word == 8 && xfer->len > SPFI_8BIT_FIFO_SIZE)
--		return true;
--	if (xfer->bits_per_word == 32 && xfer->len > SPFI_32BIT_FIFO_SIZE)
-+	if (xfer->len > SPFI_32BIT_FIFO_SIZE)
- 		return true;
- 	return false;
- }
--- 
-2.2.0.rc0.207.ga3a616c
+> > But what do you do if your test module happens to start spinning when
+> > there is no callback?
+> > 
+> > One approach is to do a call_rcu() just after starting your loop.
+> > Alternatively, do several just before starting your loop.
+> 
+> Yes, that would be the way if I understand it correctly. Fortunately there 
+> is always some pending RCU callback during my test. I wonder where it 
+> comes from (probably module handling. I'll try to find out just to be 
+> sure.). 
+> 
+> So, is the following patch correct? I tested it and it seems ok. And sorry 
+> for the delay, I took the weekend off. Thank you for your patience.
+
+Good!  I forward ported it to -rcu, merged the two "if" statements,
+queued it, and have started testing.  Thank you!!!
+
+							Thanx, Paul
+
+> Miroslav
+> 
+> -- >8 --
+> >From 0dccc8e322e1a38016422be8f4af110eb7a405fc Mon Sep 17 00:00:00 2001
+> From: Miroslav Benes <mbenes@suse.cz>
+> Date: Mon, 22 Dec 2014 13:24:44 +0100
+> Subject: [PATCH] rcu: Fix RCU CPU stall detection in tiny implementation
+> 
+> The tiny RCU CPU stall detection depends on *rcp->curtail not being
+> NULL. It is however a tail pointer and thus NULL by definition. Instead we
+> should check rcp->rcucblist for the presence of pending callbacks which need to
+> be processed. With this fix INFO about the stall is printed and jiffies_stall
+> (jiffies at next stall) correctly updated.
+> 
+> Note that the check for pending callback is necessary to avoid spurious warnings
+> if there are no pendings callbacks.
+> 
+> Signed-off-by: Miroslav Benes <mbenes@suse.cz>
+> ---
+>  kernel/rcu/tiny_plugin.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
+> index 858c565..868e132 100644
+> --- a/kernel/rcu/tiny_plugin.h
+> +++ b/kernel/rcu/tiny_plugin.h
+> @@ -145,13 +145,13 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
+>  	rcp->ticks_this_gp++;
+>  	j = jiffies;
+>  	js = ACCESS_ONCE(rcp->jiffies_stall);
+> -	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
+> +	if (rcp->rcucblist && ULONG_CMP_GE(j, js)) {
+>  		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
+>  		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
+>  		       jiffies - rcp->gp_start, rcp->qlen);
+>  		dump_stack();
+>  	}
+> -	if (*rcp->curtail && ULONG_CMP_GE(j, js))
+> +	if (rcp->rcucblist && ULONG_CMP_GE(j, js))
+>  		ACCESS_ONCE(rcp->jiffies_stall) = jiffies +
+>  			3 * rcu_jiffies_till_stall_check() + 3;
+>  	else if (ULONG_CMP_GE(j, js))
+> -- 
+> 2.1.2
+> 
 
