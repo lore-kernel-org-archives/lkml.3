@@ -1,104 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbaLVQQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:16:17 -0500
-Received: from box2.japko.eu ([91.121.152.53]:55212 "EHLO box2.japko.eu"
+	id S1755308AbaLVQQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:16:55 -0500
+Received: from sf2.bxl.stone.is ([5.134.1.239]:56786 "EHLO sf2.bxl.stone.is"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754990AbaLVQQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:16:16 -0500
-Date: Mon, 22 Dec 2014 17:15:41 +0100
-From: Krzysztof Adamski <k@japko.eu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6656: Use ether_addr_copy() on vnt_private
- members.
-Message-ID: <20141222161541.GA11764@box2.japko.eu>
+	id S1755060AbaLVQQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 11:16:54 -0500
+X-Greylist: delayed 2902 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Dec 2014 11:16:53 EST
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <54983888.4030109@acm.org>
+Date: Mon, 22 Dec 2014 16:28:08 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sabrina Dubroca <sd@queasysnail.net>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on linux-next
+References: <20141029155620.GA4886@kria> <20141029180734.GQ12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410291918060.5308@nanos> <20141029193603.GS12706@worktop.programming.kicks-ass.net> <20141202163530.GA19420@kria>
+In-Reply-To: <20141202163530.GA19420@kria>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Filter-ID: s0sct1PQhAABKnZB5plbIYrcAt68paBzxGNV4bZScc8DDDH9IcRzs4ldqK5vEMwbuZt+PpRPW1h0
+ yigPev+a+xPfldKzuJPXOtlQy6CerCucKeF7cnfEDaU4uWev4XxITtMxQ0r0fzIlxS2cy8YTUsFr
+ pZdaq+BCu90GH4R8NZlq5nVSHx6HfgQ+mNfWMu0Xb4BcbCUUDkSDryyTxLFNrKWkIvD5dv0Ys3LQ
+ YBKCmf23wL2Y4F0412ezGCyTUPanjX4dmbjHuB9XXavPbeVA0qbDNqfbnqFv/RRVV8+drYe2Z/+T
+ EGTrNArD+yzRk5+QRS1SBS4NdDPZvgM0xf/+y4h3GtCkuzwckktRhAjm5EtxPmhbkLVdA524TTXf
+ HKdzoJmRXV1dP/tOC4B0z0hUqa+Ln89F976wnGIs0GswJSnlgTl6fJxyntEfhZCKje4ZowN3TuKb
+ dxely6NczQbrfOHXgQ9YVFCeKdQbUxRelTE37CgHhlCYKFAFYSG0HH07RdUb66pqYAGPsHnfde2g
+ sQIUFW3nE6W+p6XUHoN9n2IRxcJV+m8q0YzC/hf5MMnnXIz52/8cMid9thISoDAJMOfnPadBpPx3
+ 4iZ7zgupsYUufA8kn04GPwlkALZGivcxme4bPsB8V7MXmgIm96hFx4TQGMbESva0q3Q4fBLCHBUD
+ wx4T7HCAozCuhJa/y4NpS1gDIb/SxS3utuCf6KaitXtwiFqyNzRdU+uiDe6Y+N0suVaOsTohfZcZ
+ Am3ZkGbkxAiP4a+8uTsHXBJe1gmXlWLvAuZiee2RvYPUH2waSBfV4KgKQZIRh6o7S04tDj2m9jih
+ x+Za/cV70jOJzN2r4A==
+X-Report-Abuse-To: spam@sf1.bxl.stone.is
+X-Filter-Fingerprint: IFrWXGses7OKB5S5G8/dJdIz5bb8V0ykx8BnFBnunHBA3cTUQ1R++keuE7RDJ8Kg3RbMLUalw1oC
+ mj99/u+PoqoVy8a3lsStJtAvpObFX0Wok1JBYnOLzfRIhlEHQynLUpndEJ0YoaLytXXo8BMTaX2p
+ Mk7LBarWD9Fj4R3eIu5cOy/3Wm9qfF/CZNvP/2Kowv61T+KDYyYtREgszdyFwv8IxCB3p/oCKvxr
+ eyISh3JGb7OS5oVgiO+kDxZrVPLz3MmEGC2PrUKqLq5WmHK+Nw==
+X-Originating-IP: 87.238.167.34
+X-SpamExperts-Domain: stone.is
+X-SpamExperts-Username: 87.238.167.34
+Authentication-Results: bxl.stone.is; auth=pass smtp.auth=87.238.167.34
+X-SpamExperts-Outgoing-Class: ham
+X-SpamExperts-Outgoing-Evidence: Combined (0.02)
+X-Recommended-Action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes checkpatch.pl warning:
-WARNING: Prefer ether_addr_copy() over memcpy() if the Ethernet
-addresses are __aligned(2)
+On 12/02/14 17:35, Sabrina Dubroca wrote:
+> Hello, sorry for the delay.
+> 
+> 2014-10-29, 20:36:03 +0100, Peter Zijlstra wrote:
+>> On Wed, Oct 29, 2014 at 07:33:00PM +0100, Thomas Gleixner wrote:
+>>> Yuck. No. You are just papering over the problem.
+>>>
+>>> What happens if you add 'threadirqs' to the kernel command line? Or if
+>>> the interrupt line is shared with a real threaded interrupt user?
+>>>
+>>> The proper solution is to have a poll_lock for e1000 which serializes
+>>> the hardware interrupt against netpoll instead of using
+>>> disable/enable_irq().
+>>>
+>>> In fact that's less expensive than the disable/enable_irq() dance and
+>>> the chance of contention is pretty low. If done right it will be a
+>>> NOOP for the CONFIG_NET_POLL_CONTROLLER=n case.
+>>>
+>>
+>> OK a little something like so then I suppose.. But I suspect most all
+>> the network drivers will need this and maybe more, disable_irq() is a
+>> popular little thing and we 'just' changed semantics on them.
+>>
+>> ---
+>>  drivers/net/ethernet/intel/e1000/e1000.h      |  2 ++
+>>  drivers/net/ethernet/intel/e1000/e1000_main.c | 22 +++++++++++++++++-----
+>>  kernel/irq/manage.c                           |  2 +-
+>>  3 files changed, 20 insertions(+), 6 deletions(-)
+> 
+> I've been running with variants of this patch, things seem ok.
+> 
+> As noted earlier, there are a lot of drivers doing this disable_irq +
+> irq_handler + enable_irq sequence.  I found about 60.
+> Many already take a lock in the interrupt handler, and look like we
+> could just remove the call to disable_irq (example: cp_interrupt,
+> drivers/net/ethernet/realtek/8139cp.c).
+> 
+> Here's how I modified your patch.  The locking compiles away if
+> CONFIG_NET_POLL_CONTROLLER=n.
+> 
+> I can work on converting all the drivers from disable_irq to
+> netpoll_irq_lock, if that's okay with you.
+> 
+> In igb there's also a synchronize_irq() called from the netpoll
+> controller (in igb_irq_disable()), I think a similar locking scheme
+> would work.
+> I also saw a few disable_irq_nosync and disable_percpu_irq. These are
+> okay?
+> 
+> [ ... ]
 
-current_net_addr and permanent_net_addr members of vnt_private alignment
-is changed to at last 16 bits so that ether_addr_copy can be safely used
-on them.
+Hello,
 
-buf->data is of type ieee80211_cts which is already properly aligned.
+Earlier today I ran into the bug mentioned at the start of this thread
+with kernel 3.19-rc1 and the e1000e driver. Can anyone tell me what the
+latest status is ?
 
-Signed-off-by: Krzysztof Adamski <k@japko.eu>
----
- drivers/staging/vt6656/device.h   |    4 ++--
- drivers/staging/vt6656/main_usb.c |    3 ++-
- drivers/staging/vt6656/rxtx.c     |    4 ++--
- 3 files changed, 6 insertions(+), 5 deletions(-)
+Thanks,
 
-diff --git a/drivers/staging/vt6656/device.h b/drivers/staging/vt6656/device.h
-index 5a7ca52..4dcc67d 100644
---- a/drivers/staging/vt6656/device.h
-+++ b/drivers/staging/vt6656/device.h
-@@ -307,8 +307,8 @@ struct vnt_private {
- 
- 	struct vnt_cmd_card_init init_command;
- 	struct vnt_rsp_card_init init_response;
--	u8 current_net_addr[ETH_ALEN];
--	u8 permanent_net_addr[ETH_ALEN];
-+	u8 current_net_addr[ETH_ALEN] __aligned(2);
-+	u8 permanent_net_addr[ETH_ALEN] __aligned(2);
- 
- 	u8 exist_sw_net_addr;
- 
-diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
-index b95d5b1..71adc1f 100644
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -34,6 +34,7 @@
-  */
- #undef __NO_VERSION__
- 
-+#include <linux/etherdevice.h>
- #include <linux/file.h>
- #include "device.h"
- #include "card.h"
-@@ -319,7 +320,7 @@ static int vnt_init_registers(struct vnt_private *priv)
- 
- 	/* get permanent network address */
- 	memcpy(priv->permanent_net_addr, init_rsp->net_addr, 6);
--	memcpy(priv->current_net_addr, priv->permanent_net_addr, ETH_ALEN);
-+	ether_addr_copy(priv->current_net_addr, priv->permanent_net_addr);
- 
- 	/* if exist SW network address, use it */
- 	dev_dbg(&priv->usb->dev, "Network address = %pM\n",
-diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-index ea5140a..3eb24b8 100644
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -552,7 +552,7 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
- 		buf->data.frame_control =
- 			cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
- 
--		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
-+		ether_addr_copy(buf->data.ra, priv->current_net_addr);
- 
- 		return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
- 	} else {
-@@ -570,7 +570,7 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
- 		buf->data.frame_control =
- 			cpu_to_le16(IEEE80211_FTYPE_CTL | IEEE80211_STYPE_CTS);
- 
--		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
-+		ether_addr_copy(buf->data.ra, priv->current_net_addr);
- 
- 		return vnt_rxtx_datahead_g(tx_context, &buf->data_head);
- 	}
--- 
-1.7.10.4
-
+Bart.
