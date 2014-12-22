@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626AbaLVUIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 15:08:18 -0500
-Received: from mga03.intel.com ([134.134.136.65]:58546 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557AbaLVUIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 15:08:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,626,1413270000"; 
-   d="scan'208";a="641564569"
-Subject: [PATCH 2/2] x86 mpx: fix potential performance issue on unmaps
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, x86@kernel.org, Dave Hansen <dave@sr71.net>,
-        dave.hansen@linux.intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 22 Dec 2014 12:08:05 -0800
-References: <20141222200803.D316DA2A@viggo.jf.intel.com>
-In-Reply-To: <20141222200803.D316DA2A@viggo.jf.intel.com>
-Message-Id: <20141222200805.13639956@viggo.jf.intel.com>
+	id S1755180AbaLVUNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 15:13:46 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:64678 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858AbaLVUNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 15:13:45 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1412222101530.1680@pobox.suse.cz>
+References: <5489E6D2.2060200@upv.es> <5489FAAD.7000606@upv.es>
+ <20141211221158.GS18807@outflux.net> <548B18AC.9@upv.es> <CALCETrVAaDDvAttVkJ+1ygymE_uEZOCLtGHHN15v_VDf1PVsmA@mail.gmail.com>
+ <5494A0DF.10905@upv.es> <CALCETrWB_T9ui=_JSQRLrtbNDx=sJ22im1XujhxptfZRtedeeg@mail.gmail.com>
+ <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
+ <20141222183615.4193722q3opf4uj3@webmail.upv.es> <CALCETrWUXbzb_MMEugWNzuY-gebkUbzLW6Z=gmCfau7oBRUdJg@mail.gmail.com>
+ <alpine.LNX.2.00.1412222047090.1680@pobox.suse.cz> <CALCETrU0BjPJjG8ohm6-KA-wR+DGjmoFOd4MkNqEQRtXxz6iqw@mail.gmail.com>
+ <alpine.LNX.2.00.1412222101530.1680@pobox.suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 22 Dec 2014 12:13:22 -0800
+Message-ID: <CALCETrWGaB-ftJC+6yZtCfmAq50bx5JnxorLDTNyhkGWNN-8yQ@mail.gmail.com>
+Subject: Re: [PATCH] ASLRv3: randomize_va_space=3 preventing offset2lib attack
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Hector Marco Gisbert <hecmargi@upv.es>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Anton Blanchard <anton@samba.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney.cavm@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arun Chandran <achandran@mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ismael Ripoll <iripoll@disca.upv.es>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?Q?Hanno_B=C3=B6ck?= <hanno@hboeck.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kees Cook <keescook@chromium.org>, Reno Robert <renorobert@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 22, 2014 at 12:03 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 22 Dec 2014, Andy Lutomirski wrote:
+>
+>> It could be worth having a mode that goes all out: randomize every
+>> single allocation independently in, say, a 45 or 46-byte range.  That
+>> would be about as strong ASLR as we could possibly have, it would
+>> result in guard intervals around mmap data allocations (which has real
+>> value), and it would still leave plenty of space for big address space
+>> hogs like the Chromium sandbox.
+>>
+>> The main downside would be lots of memory used for page tables.
+>
+> Plus get_random_int() during every mmap() call.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+If that's actually a problem, then I think we should fix
+get_random_int.  Chacha20 can generate 64 bits in a few cycles.
 
-The 3.19 release window saw some TLB modifications merged which
-caused a performance regression.  They were fixed in commit
-045bbb9fa.
+> Plus the resulting VA
+> space fragmentation.
 
-Once that fix was applied, I also noticed that there was a small
-but intermittent regression still present.  It was not present
-consistently enough to bisect reliably, but I'm fairly confident
-that it came from (my own) MPX patches.  The source was reading
-a relatively unused field in the mm_struct via arch_unmap.
+I think the main cost of fragmentation would be the page tables and
+vmas.  2^45 bytes is a lot of bytes.
 
-I also noted that this code was in the main instruction flow of
-do_munmap() and probably had more icache impact than we want.
+We could tone it down a bit if we dedicated a range to mmapped data
+and tried to pack it reasonably densely.  We could even do a fair
+amount of merging for data-heavy applications if we gave MAP_PRIVATE |
+MAP_ANONYMOUS, PROT_READ | PROT_WRITE mappings a decent chance of
+ending up next to each other.
 
-This patch does two things:
-1. Adds a static (via Kconfig) and dynamic (via cpuid) check
-   for MPX with cpu_feature_enabled().  This keeps us from
-   reading that cacheline in the mm and trades it for a check
-   of the global CPUID variables at least on CPUs without MPX.
-2. Adds an unlikely() to ensure that the MPX call ends up out
-   of the main instruction flow in do_munmap().  I've added
-   a detailed comment about why this was done and why we want
-   it even on systems where MPX is present.
+Anyway, this would be a knob.  The database people would presumably turn it off.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- b/arch/x86/include/asm/mmu_context.h |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
-
-diff -puN arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap arch/x86/include/asm/mmu_context.h
---- a/arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap	2014-12-22 12:06:18.677928330 -0800
-+++ b/arch/x86/include/asm/mmu_context.h	2014-12-22 12:06:18.680928465 -0800
-@@ -130,7 +130,25 @@ static inline void arch_bprm_mm_init(str
- static inline void arch_unmap(struct mm_struct *mm, struct vm_area_struct *vma,
- 			      unsigned long start, unsigned long end)
- {
--	mpx_notify_unmap(mm, vma, start, end);
-+	/*
-+	 * mpx_notify_unmap() goes and reads a rarely-hot
-+	 * cacheline in the mm_struct.  That can be expensive
-+	 * enough to be seen in profiles.
-+	 *
-+	 * The mpx_notify_unmap() call and its contents have been
-+	 * observed to affect munmap() performance on hardware
-+	 * where MPX is not present.
-+	 *
-+	 * The unlikely() optimizes for the fast case: no MPX
-+	 * in the CPU, or no MPX use in the process.  Even if
-+	 * we get this wrong (in the unlikely event that MPX
-+	 * is widely enabled on some system) the overhead of
-+	 * MPX itself (reading bounds tables) is expected to
-+	 * overwhelm the overhead of getting this unlikely()
-+	 * consistently wrong.
-+	 */
-+	if (unlikely(cpu_feature_enabled(X86_FEATURE_MPX)))
-+		mpx_notify_unmap(mm, vma, start, end);
- }
- 
- #endif /* _ASM_X86_MMU_CONTEXT_H */
-_
+--Andy
