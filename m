@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284AbaLVJ27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:28:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55132 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971AbaLVJ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:28:56 -0500
-Message-ID: <5497E41F.50301@redhat.com>
-Date: Mon, 22 Dec 2014 10:27:59 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754178AbaLVJby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:31:54 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:47131 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753763AbaLVJbw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 04:31:52 -0500
+From: Songjun Wu <songjun.wu@atmel.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nicolas.ferre@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Songjun Wu <songjun.wu@atmel.com>
+Subject: [PATCH] USB: gadget: udc: atmel: fix possible oops when unloading module
+Date: Mon, 22 Dec 2014 17:26:14 +0800
+Message-ID: <1419240374-12179-1-git-send-email-songjun.wu@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: "Wu, Feng" <feng.wu@intel.com>, "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jiang Liu <jiang.liu-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
-Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>	<1418397300-10870-14-git-send-email-feng.wu@intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>	<549307A5.3060305@redhat.com>	<E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>	<5494131E.9030505@redhat.com> <E959C4978C3B6342920538CF579893F00230D036@SHSMSX104.ccr.corp.intel.com> <549576C7.4030800@redhat.com> <E959C4978C3B6342920538CF579893F0023103FB@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <E959C4978C3B6342920538CF579893F0023103FB@SHSMSX104.ccr.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When unloading the module, the urb request will be dequeued
+and the completion routine will be excuted.
+If no urb packet, the urb request will not be added to the endpoint queue
+and the completion routine pointer in urb request is NULL.
+Accessing to the NULL function pointer will cause the oops issue.
+Add the code to check the urb request is in the endpoint queue or not.
+If the urb request is not in the endpoint queue, a negative error code
+will be returned.
 
+Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
+---
+ drivers/usb/gadget/udc/atmel_usba_udc.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-On 22/12/2014 05:48, Wu, Feng wrote:
-> Do you mean we don't support Lowest priority interrupts? As I mentioned before,
-> Lowest priority interrupts is widely used in Linux, so I think supporting lowest priority
-> interrupts is very important for Linux guest OS. Do you have any ideas/suggestions about
-> how to support Lowest priority interrupts for PI? Thanks a lot!
+diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
+index ce88237..48629cc 100644
+--- a/drivers/usb/gadget/udc/atmel_usba_udc.c
++++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
+@@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
+ {
+ 	struct usba_ep *ep = to_usba_ep(_ep);
+ 	struct usba_udc *udc = ep->udc;
+-	struct usba_request *req = to_usba_req(_req);
++	struct usba_request *req;
+ 	unsigned long flags;
+ 	u32 status;
+ 
+@@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
+ 
+ 	spin_lock_irqsave(&udc->lock, flags);
+ 
++	list_for_each_entry(req, &ep->queue, queue) {
++		if (&req->req == _req)
++			break;
++	}
++
++	if (&req->req != _req) {
++		spin_unlock_irqrestore(&udc->lock, flags);
++		return -EINVAL;
++	}
++
+ 	if (req->using_dma) {
+ 		/*
+ 		 * If this request is currently being transferred,
+-- 
+1.7.9.5
 
-Can you support them only if the destination is a single CPU?
-
-Paolo
