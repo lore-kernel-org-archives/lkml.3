@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904AbaLVOIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:08:15 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:50088 "EHLO
-	spo001.leaseweb.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754768AbaLVOIO (ORCPT
+	id S1754942AbaLVOJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:09:24 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:47066 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754524AbaLVOJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:08:14 -0500
-Date: Mon, 22 Dec 2014 15:08:12 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 22/28] watchdog: drop owner assignment from platform_drivers
-Message-ID: <20141222140812.GD27760@spo001.leaseweb.nl>
-References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de> <1419196495-9626-23-git-send-email-wsa@the-dreams.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419196495-9626-23-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.4.1i
+	Mon, 22 Dec 2014 09:09:23 -0500
+Message-ID: <549825EC.80505@arm.com>
+Date: Mon, 22 Dec 2014 14:08:44 +0000
+From: Andrew Jackson <Andrew.Jackson@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 2/5] ASoC: dwc: Iterate over all channels
+References: <cover.1418826016.git.Andrew.Jackson@arm.com> <67cea1f0a74c333ec2048c7796cda37302d45e95.1418826016.git.Andrew.Jackson@arm.com> <20141222135301.GQ17800@sirena.org.uk>
+In-Reply-To: <20141222135301.GQ17800@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
-
-> This platform_driver does not need to set an owner, it will be populated by the
-> driver core.
+On 12/22/14 13:53, Mark Brown wrote:
+> On Fri, Dec 19, 2014 at 04:18:06PM +0000, Andrew Jackson wrote:
 > 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+>> The Designware core can be configured with up to four stereo channels.
+>> Each stereo channel is individually configured so, when the driver's
+>> hw_params call is made, each requested stereo channel has to be
+>> programmed.
+> 
+> This is quite unclear to someone who doesn't know the hardware, is this
+> a bug fix or a new feature?  It looks like it's a fix...
+> 
 
-Added to linux-watchdog-next.
+It is a fix.  In the Designware core, each stereo channel is configured
+individually.  So, when hw_params is called to configure N channels, 
+N/2 stereo channels need to be configured in the core.  The existing
+code doesn't do this and will only configure the highest numbered 
+channel.
 
-Kind regards,
-Wim.
+    Andrew
 
