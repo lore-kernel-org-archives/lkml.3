@@ -1,106 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560AbaLVRwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 12:52:36 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:51285 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519AbaLVRwc (ORCPT
+	id S1755582AbaLVRxF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 12:53:05 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:47342 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253AbaLVRxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 12:52:32 -0500
+	Mon, 22 Dec 2014 12:53:03 -0500
+Date: Mon, 22 Dec 2014 18:53:01 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Richard <richjunk@pacbell.net>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Kernel 3.17.x Attaching Keyspan 4-Port Serial to USB Adapter
+ Causes Kernel Panic
+Message-ID: <20141222175301.GF30375@localhost>
+References: <54960F74.1050608@pacbell.net>
 MIME-Version: 1.0
-In-Reply-To: <87oaqvd6ni.fsf@x220.int.ebiederm.org>
-References: <54982C98.9070806@oracle.com>
-	<CAPAsAGzHyx=9oy7ZFdL3dERrKR3or_PiDqm_chbDRvx+c3ZHPg@mail.gmail.com>
-	<87oaqvd6ni.fsf@x220.int.ebiederm.org>
-Date: Mon, 22 Dec 2014 21:52:31 +0400
-Message-ID: <CAPAsAGwRL-fg10cPYREbXmsk09EU4qVz-3AX+OkR-QifmOW2kQ@mail.gmail.com>
-Subject: Re: fs: proc: gpf in find_entry
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "davej @mail.xmission.com>> Dave Jones" <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54960F74.1050608@pacbell.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-22 18:51 GMT+03:00 Eric W. Biederman <ebiederm@xmission.com>:
-> Andrey Ryabinin <ryabinin.a.a@gmail.com> writes:
->
->> 2014-12-22 17:37 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
->>> Hi all,
->>>
->>> While fuzzing with trinity inside a KVM tools guest running the latest -next
->>> kernel, I've stumbled on the following spew:
->>>
->>> [ 2015.960381] general protection fault: 0000 [#1] PREEMPT SMP KASAN
->>
->> Actually this is NULL-ptr dereference. Since you are using kasan with
->> inline instrumentation
->> NULL-ptr deref transforms into GPF.
->>
->>
->>> [ 2015.970534] RAX: 0000000000000000 RBX: ffff88000003a960 RCX: 0000000000000073
->>> [ 2015.970534] RDX: 1ffff10101c8f3c4 RSI: 0000000000000000 RDI: ffff88080e479e20
->>> [ 2015.970534] RBP: ffff88080e477a28 R08: 0000000000000066 R09: 0000000000000073
->>> [ 2015.970534] R10: ffffda0017d55630 R11: dfffe90000000000 R12: ffff88005fc644b8
->>> [ 2015.970534] R13: dfffe90000000000 R14: ffffffff92464884 R15: 0000000000000000
->>
->> [...]
->>
->>> All code
->>> ========
->>>    0:   e8 03 42 80 3c          callq  0x3c804208
->>>    5:   28 00                   sub    %al,(%rax)
->>>    7:   0f 85 ff 01 00 00       jne    0x20c
->>>    d:   4c 8b 7b 18             mov    0x18(%rbx),%r15
->>>   11:   4d 85 ff                test   %r15,%r15
->>>   14:   0f 84 de 01 00 00       je     0x1f8
->>>   1a:   41 f6 c7 07             test   $0x7,%r15b
->>>   1e:   0f 85 d4 01 00 00       jne    0x1f8
->>>   24:   4c 89 f8                mov    %r15,%rax
->>>   27:   48 c1 e8 03             shr    $0x3,%rax
->>>   2b:*  42 80 3c 28 00          cmpb   $0x0,(%rax,%r13,1)               <-- trapping instruction
->>
->> Three commands above are result of KASAN's instrumentation.
->> They check shadow for address in %r15:
->>      if (*((%r15 >> 3) + kasan_shadow_offset)
->>
->>
->>>   30:   0f 85 b5 01 00 00       jne    0x1eb
->>>   36:   4d 8b 37                mov    (%r15),%r14
->>
->> And here is memory access, that KASAN checking.
->
-> Then frankly I suspect this is a KASAN bug.
->
+[+CC: linux-usb ]
 
-Sure it is possible, but I don't see any evidence of kasan bug here.
+On Sat, Dec 20, 2014 at 04:08:20PM -0800, Richard wrote:
+> On a new Gentoo based system with Kernel.org Kernels 3.17.4 to 3.17.7
+> when I physically plug the Keyspan 4-Port Serial to USB adapter into a
+> usb port my system freezes with a "unable to handle kernel NULL pointer
+> deference" message.
+> 
+> My old system (also Gentoo based with Kernel.org 3.17.4) does not have
+> this issue.  Both systems are using the USB_SERIAL_KEYSPAN_USA49W
+> driver module.
 
-> These two instructions:
->>>   11:   4d 85 ff                test   %r15,%r15
->>>   14:   0f 84 de 01 00 00       je     0x1f8
->
-> Should prevent a NULL %r15 value from ever reaching the trapping
-> instruction.
+So the same kernel is used (3.17.4), but only the new system oopses?
 
-If they were executed, then yes. But I think there was jump from somewhere
-to the instructions below those two.
+> I tried booting into single user mode, using modprobe to load
+> USB_SERIAL_KEYSPAN_USA49W.  lsmod shows the driver.  When I pluged the
+> device in I receive the system freeze.  Below is what I copied off the
+> console ...
+> 
+> BUG:  Unable to handle kernel NULL pointer deference at 000...8c
+> IP: [<ffffffffa006fbdd>] usa49_instat_callback+0x4d/0xb0[keyspan]
+> PGD 1037faa067 PUD 1038301067 PMD 0
+> Oops: 0002 [#1] SMP
+> Modules linked in: keyspan ezusb usbserial hid_generic ...
 
->
-> What other horrible things does KASAN do to the machine code?
->
+This driver is a bit of a mess. Could you try the patch below and see if
+it fixes the problem?
 
-kasan insert something like following before any memory access:
-
-s8 *shadow_addr = (add >> 3) + shadow_offset;
-
-if (unlikely(*shadow_addr))
-     if (unlikely(addr & 7 >= *shadow_addr))
-           report_bug(addr);
+Thanks,
+Johan
 
 
-I suspect that Sasha is using kasan along with ubsan.
-In that case generated code much more horrid.
+>From 3e98e15094be174d08dc31daab5c7b7791228515 Mon Sep 17 00:00:00 2001
+From: Johan Hovold <johan@kernel.org>
+Date: Mon, 22 Dec 2014 18:39:39 +0100
+Subject: [PATCH] USB: keyspan: fix null-deref at probe
+
+Fix null-pointer dereference during probe if the interface-status
+completion handler is called before the individual ports have been set
+up.
+
+Reported-by: Richard <richjunk@pacbell.net>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+---
+ drivers/usb/serial/keyspan.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index 077c714f1285..e07b15ed5814 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -410,6 +410,8 @@ static void	usa26_instat_callback(struct urb *urb)
+ 	}
+ 	port = serial->port[msg->port];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -420,7 +422,7 @@ static void	usa26_instat_callback(struct urb *urb)
+ 
+ 	if (old_dcd_state != p_priv->dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -527,6 +529,8 @@ static void	usa28_instat_callback(struct urb *urb)
+ 	}
+ 	port = serial->port[msg->port];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -537,7 +541,7 @@ static void	usa28_instat_callback(struct urb *urb)
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 		/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -607,6 +611,8 @@ static void	usa49_instat_callback(struct urb *urb)
+ 	}
+ 	port = serial->port[msg->portNumber];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -617,7 +623,7 @@ static void	usa49_instat_callback(struct urb *urb)
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -855,6 +861,8 @@ static void	usa90_instat_callback(struct urb *urb)
+ 
+ 	port = serial->port[0];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -865,7 +873,7 @@ static void	usa90_instat_callback(struct urb *urb)
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+@@ -926,6 +934,8 @@ static void	usa67_instat_callback(struct urb *urb)
+ 
+ 	port = serial->port[msg->port];
+ 	p_priv = usb_get_serial_port_data(port);
++	if (!p_priv)
++		goto resubmit;
+ 
+ 	/* Update handshaking pin state information */
+ 	old_dcd_state = p_priv->dcd_state;
+@@ -934,7 +944,7 @@ static void	usa67_instat_callback(struct urb *urb)
+ 
+ 	if (old_dcd_state != p_priv->dcd_state && old_dcd_state)
+ 		tty_port_tty_hangup(&port->port, true);
+-
++resubmit:
+ 	/* Resubmit urb so we continue receiving */
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err != 0)
+-- 
+2.0.5
+
