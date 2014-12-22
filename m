@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaLVB5e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 20:57:34 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:13540 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753647AbaLVB5d (ORCPT
+	id S1753843AbaLVCAl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 21:00:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57995 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583AbaLVCAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 20:57:33 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/0X+6PdBt1uNjcNoVp0DQaPIH12HrlgrQ=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8B3C1636462
-Date: Sun, 21 Dec 2014 20:57:29 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: mathieu.poirier@linaro.org
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: skein: Fixing various coding style problems
-Message-ID: <20141222015729.GE28117@titan.lakedaemon.net>
-References: <1419206988-27331-1-git-send-email-mathieu.poirier@linaro.org>
+	Sun, 21 Dec 2014 21:00:40 -0500
+Date: Sun, 21 Dec 2014 18:00:39 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Simone Weiss <simone.weiss@fau.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
+        lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
+        helene.gsaenger@studium.fau.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] dgnc/dgnc_sysfs.c: checkpatch: Use of pr_err insted
+ of printk
+Message-ID: <20141222020039.GA2489@kroah.com>
+References: <1419211054-3052-1-git-send-email-simone.weiss@fau.de>
+ <1419211054-3052-3-git-send-email-simone.weiss@fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419206988-27331-1-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1419211054-3052-3-git-send-email-simone.weiss@fau.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu,
-
-On Sun, Dec 21, 2014 at 05:09:48PM -0700, mathieu.poirier@linaro.org wrote:
-> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On Mon, Dec 22, 2014 at 02:17:30AM +0100, Simone Weiss wrote:
 > 
-> Fixing errors related to the usage of do {} while (0) loop
-> in single statement macros, trailing semicolon in macros and
-> trailing whitespace.
+> Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+> Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de>
+> ---
+>  drivers/staging/dgnc/dgnc_sysfs.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/dgnc/dgnc_sysfs.c b/drivers/staging/dgnc/dgnc_sysfs.c
+> index 2fd34ca..0fa2388 100644
+> --- a/drivers/staging/dgnc/dgnc_sysfs.c
+> +++ b/drivers/staging/dgnc/dgnc_sysfs.c
+> @@ -91,7 +91,7 @@ void dgnc_create_driver_sysfiles(struct pci_driver *dgnc_driver)
+>  	rc |= driver_create_file(driverfs, &driver_attr_maxboards);
+>  	rc |= driver_create_file(driverfs, &driver_attr_pollrate);
+>  	if (rc)
+> -		printk(KERN_ERR "DGNC: sysfs driver_create_file failed!\n");
+> +		pr_err("DGNC: sysfs driver_create_file failed!\n");
 
-Huh.  iirc, I added those do {} while(0)s to keep checkpatch happy.
-Either it's gotten smarter, or something is off.
+No, use dev_err(), as you have access to a struct device.
 
-At any rate, the whole macro menagerie in here concerns me a bit and I'm
-reluctant to change it until I have some time to refresh my memory on
-what this code is doing.
+thanks,
 
-It would be helpful if you could give scripts/objdiff a try on the
-before and after effects of your patch.  If the object code doesn't
-change, then we can be more confident that the patch is just style
-changes.  Please also check when SKEIN_UNROLL_* is set/unset.
-
-I really should put the patch series together to move this driver out of
-staging.  Then maybe folks will stop running checkpatch against it :-)
-
-thx,
-
-Jason.
+greg k-h
