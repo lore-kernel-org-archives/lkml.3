@@ -1,133 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392AbaLVTRr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:17:47 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:50485 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754948AbaLVTRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:17:45 -0500
-Date: Mon, 22 Dec 2014 21:14:52 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Sasha Levin <sasha.levin@oracle.com>, Davidlohr Bueso <dave@stgolabs.net>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, dave@stgolabs.net,
-        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: mm: NULL ptr deref in unlink_file_vma
-Message-ID: <20141222191452.GA20295@node.dhcp.inet.fi>
-References: <549832E2.8060609@oracle.com>
- <20141222180102.GA8072@node.dhcp.inet.fi>
- <54985D59.5010506@oracle.com>
+	id S932099AbaLVTTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:19:15 -0500
+Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:23168
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754442AbaLVTTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 14:19:13 -0500
+X-WSS-ID: 0NH00BR-07-YWN-02
+X-M-MSG: 
+Message-ID: <54986EA2.106@amd.com>
+Date: Mon, 22 Dec 2014 21:18:58 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54985D59.5010506@oracle.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+To: Andi Kleen <ak@linux.intel.com>, Alex Deucher <alexdeucher@gmail.com>
+CC: <rusty@rustcorp.com.au>, Dana Elifaz <Dana.Elifaz@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
+References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
+ <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com>
+ <20141222184940.GB17192@tassilo.jf.intel.com>
+ <20141222190041.GC17192@tassilo.jf.intel.com>
+In-Reply-To: <20141222190041.GC17192@tassilo.jf.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.224.8.146]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(24454002)(377454003)(189002)(479174004)(199003)(99396003)(50986999)(76176999)(21056001)(87936001)(65806001)(65956001)(19580395003)(19580405001)(36756003)(23746002)(50466002)(64126003)(64706001)(84676001)(83506001)(31966008)(105586002)(120916001)(54356999)(20776003)(77156002)(47776003)(62966003)(65816999)(4396001)(97736003)(93886004)(107046002)(106466001)(46102003)(2950100001)(33656002)(86362001)(68736005)(77096005)(101416001)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB206;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB206;
+X-Forefront-PRVS: 0433DB2766
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 19:19:05.5706
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CO1PR02MB206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 01:05:13PM -0500, Sasha Levin wrote:
-> On 12/22/2014 01:01 PM, Kirill A. Shutemov wrote:
-> > On Mon, Dec 22, 2014 at 10:04:02AM -0500, Sasha Levin wrote:
-> >> > Hi all,
-> >> > 
-> >> > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> >> > kernel, I've stumbled on the following spew:
-> >> > 
-> >> > [  432.376425] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-> >> > [  432.378876] IP: down_write (./arch/x86/include/asm/rwsem.h:105 ./arch/x86/include/asm/rwsem.h:121 kernel/locking/rwsem.c:71)
-> > Looks like vma->vm_file->mapping is NULL. Somebody freed ->vm_file from
-> > under us?
-> > 
-> > I suspect Davidlohr's patchset on i_mmap_lock, but I cannot find any code
-> > path which could lead to the crash.
+
+
+On 12/22/2014 09:00 PM, Andi Kleen wrote:
+> On Mon, Dec 22, 2014 at 10:49:40AM -0800, Andi Kleen wrote:
+>> On Mon, Dec 22, 2014 at 11:58:43AM -0500, Alex Deucher wrote:
+>>> On Mon, Dec 22, 2014 at 6:11 AM, Oded Gabbay <oded.gabbay@amd.com> wrote:
+>>>> amdkfd driver can be compiled only in 64-bit kernel. Therefore, there is no
+>>>> point in trying to initialize amdkfd in 32-bit kernel.
+>>>>
+>>>> In addition, in case of specific configuration of 32-bit kernel, no modules and
+>>>> random kernel base, the symbol_request function doesn't work as expected - It
+>>>> doesn't return NULL if the symbol doesn't exists. That makes the kernel panic.
+>>>> Therefore, the as amdkfd doesn't compile in 32-bit kernel, the best way is just
+>>>> to return false immediately.
+>>>>
+>>>> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+>>>
+>>> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+>>
+>> Sorry but the patch is just bogus. X-bit only code is usually
+>> a very bad sign for the code. This is not windows programing after all.
+Hi Andi,
+
+Strange, I have never programmed for Windows in my life (except maybe in a
+few courses during my degree) :)
+>>
+>> Even if you wanted to do a 64bit only driver -- which
+>> you probably don't -- the standard way would be to exclude
+>> it in Kconfig.
+So amdkfd actually *only* supports 64bit user processes, because AMD's HSA
+stack on Linux supports *only* 64bit user processes. So, yes, I definitely
+want to do a 64bit only driver.
+If you look at kfd_open(), it fails the open of /dev/kfd if the process is
+32bit.
+In addition, in Kconfig of amdkfd, it is written:
+"depends on DRM_RADEON && AMD_IOMMU_V2 && X86_64"
+
+The problem here is that there is code in radeon, which is a driver that can
+compile in 32bit, which tries to load amdkfd. I didn't see a point in trying
+to load a driver which can't be compiled in 32bit.
+
+>>
+>> Please root-cause why symbol_request doesn't work on 32bit
+>> and fix it properly.
+I didn't say it doesn't always work.
+The actual thing that doesn't work is the define symbol_get and only in a
+specific case of 32bit kernel AND CONFIG_MODULES is unset AND
+CONFIG_RANDOMIZE_BASE is set.
+The define in that case is:
+#define symbol_get(x) ({ extern typeof(x) x __attribute__((weak)); &(x); })
+
+Why it doesn't work (doesn't return NULL when symbol doesn't exists) ?
+I don't know, probably because of some elf/makefile/c language magic. I'm
+not that big of an expert on those issues, and I wanted to provide a fix for
+this problem during the -rc stages. If someone can help me solving the root
+cause, I would be more than happy.
+
+	Oded
+>>
+>> +rusty.
 > 
-> I've reported a different issue which that patchset: https://lkml.org/lkml/2014/12/9/741
+> And also with correct email.
 > 
-> I guess it could be related?
-
-Maybe.
-
-Other thing:
-
- unmap_mapping_range()
-   i_mmap_lock_read(mapping);
-   unmap_mapping_range_tree()
-     unmap_mapping_range_vma()
-       zap_page_range_single()
-         unmap_single_vma()
-	   untrack_pfn()
-	     vma->vm_flags &= ~VM_PAT;
-
-It seems we modify ->vm_flags without mmap_sem taken, means we can corrupt
-them.
-
-Sasha could you check if you hit untrack_pfn()?
-
-The problem probably was hidden by exclusive i_mmap_lock on
-unmap_mapping_range(), but it's not exclusive anymore afrer Dave's
-patchset.
-
-Konstantin, you've modified untrack_pfn() back in 2012 to change
-->vm_flags. Any coments?
-
-For now, I would propose to revert the commit and probably re-introduce it
-after v3.19:
-
->From 14392c69fcfeeda34eb9f75d983dad32698cdd5c Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Mon, 22 Dec 2014 21:01:54 +0200
-Subject: [PATCH] Revert "mm/memory.c: share the i_mmap_rwsem"
-
-This reverts commit c8475d144abb1e62958cc5ec281d2a9e161c1946.
-
-There are several[1][2] of bug reports which points to this commit as potential
-cause[3].
-
-Let's revert it until we figure out what's going on.
-
-[1] https://lkml.org/lkml/2014/11/14/342
-[2] https://lkml.org/lkml/2014/12/22/213
-[3] https://lkml.org/lkml/2014/12/9/741
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
----
- mm/memory.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index 649e7d440bd7..ca920d1fd314 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2378,12 +2378,12 @@ void unmap_mapping_range(struct address_space *mapping,
- 		details.last_index = ULONG_MAX;
- 
- 
--	i_mmap_lock_read(mapping);
-+	i_mmap_lock_write(mapping);
- 	if (unlikely(!RB_EMPTY_ROOT(&mapping->i_mmap)))
- 		unmap_mapping_range_tree(&mapping->i_mmap, &details);
- 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
- 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
--	i_mmap_unlock_read(mapping);
-+	i_mmap_unlock_write(mapping);
- }
- EXPORT_SYMBOL(unmap_mapping_range);
- 
--- 
- Kirill A. Shutemov
+> -Andi
+> 
