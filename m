@@ -1,118 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977AbaLVOhT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:37:19 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35636 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768AbaLVOhS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:37:18 -0500
-Message-ID: <54982C98.9070806@oracle.com>
-Date: Mon, 22 Dec 2014 09:37:12 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755044AbaLVOhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:37:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47583 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754596AbaLVOhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 09:37:53 -0500
+Date: Mon, 22 Dec 2014 15:37:10 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
+        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 1/4] tools/perf: support parsing parameterized events
+Message-ID: <20141222143710.GA29096@krava.brq.redhat.com>
+References: <1419234567-22784-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1419234567-22784-2-git-send-email-sukadev@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "davej >> Dave Jones" <davej@redhat.com>
-Subject: fs: proc: gpf in find_entry
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419234567-22784-2-git-send-email-sukadev@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Sun, Dec 21, 2014 at 11:49:24PM -0800, Sukadev Bhattiprolu wrote:
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel, I've stumbled on the following spew:
+SNIP
 
-[ 2015.960381] general protection fault: 0000 [#1] PREEMPT SMP KASAN
-[ 2015.961912] Dumping ftrace buffer:
-[ 2015.962803]    (ftrace buffer empty)
-[ 2015.963370] Modules linked in:
-[ 2015.963895] CPU: 1 PID: 16983 Comm: trinity-c126 Not tainted 3.18.0-next-20141219-sasha-00047-gaab33f6-dirty #1627
-[ 2015.965991] task: ffff88080e478000 ti: ffff88080e474000 task.ti: ffff88080e474000
-[ 2015.968196] RIP: find_entry (fs/proc/proc_sysctl.c:95)
-[ 2015.970534] RSP: 0018:ffff88080e4779d8  EFLAGS: 00010246
-[ 2015.970534] RAX: 0000000000000000 RBX: ffff88000003a960 RCX: 0000000000000073
-[ 2015.970534] RDX: 1ffff10101c8f3c4 RSI: 0000000000000000 RDI: ffff88080e479e20
-[ 2015.970534] RBP: ffff88080e477a28 R08: 0000000000000066 R09: 0000000000000073
-[ 2015.970534] R10: ffffda0017d55630 R11: dfffe90000000000 R12: ffff88005fc644b8
-[ 2015.970534] R13: dfffe90000000000 R14: ffffffff92464884 R15: 0000000000000000
-[ 2015.970534] FS:  00007f9cd6c6f700(0000) GS:ffff8800c2200000(0000) knlGS:0000000000000000
-[ 2015.970534] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 2015.970534] CR2: 00007f9cd0b9c000 CR3: 00000008193fb000 CR4: 00000000000006a0
-[ 2015.970534] DR0: ffffffffff000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 2015.970534] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 2015.970534] Stack:
-[ 2015.970534]  ffff88080e477a28 ffff88080e477a50 00000003beaab0c0 ffff8800beaab0f8
-[ 2015.970534]  0000000000000001 ffff8800beaab0f8 ffff8800beaab0c0 ffff8806079af638
-[ 2015.970534]  0000000000000003 ffff88045f3cc000 ffff88080e477a88 ffffffff81c4e0ef
-[ 2015.970534] Call Trace:
-[ 2015.970534] proc_sys_lookup (fs/proc/proc_sysctl.c:303 fs/proc/proc_sysctl.c:452)
-[ 2015.970534] ? d_alloc (fs/dcache.c:1499)
-[ 2015.970534] lookup_real (fs/namei.c:1371)
-[ 2015.970534] __lookup_hash (fs/namei.c:1390)
-[ 2015.970534] link_path_walk (fs/namei.c:1496 fs/namei.c:1576 fs/namei.c:1830)
-[ 2015.970534] ? preempt_count_sub (kernel/sched/core.c:2620)
-[ 2015.970534] ? get_parent_ip (kernel/sched/core.c:2564)
-[ 2015.970534] ? get_parent_ip (kernel/sched/core.c:2564)
-[ 2015.970534] ? __cmpxchg_double_slab.isra.4 (./arch/x86/include/asm/preempt.h:95 include/linux/bit_spinlock.h:81 mm/slub.c:346 mm/slub.c:386)
-[ 2015.970534] path_init (fs/namei.c:1947)
-[ 2015.970534] ? deactivate_slab (include/linux/spinlock.h:349 mm/slub.c:1945)
-[ 2015.970534] path_lookupat (fs/namei.c:1989)
-[ 2015.970534] ? alloc_debug_processing (mm/slub.c:1044)
-[ 2015.970534] filename_lookup (fs/namei.c:2025)
-[ 2015.970534] kern_path_create (fs/namei.c:3309)
-[ 2015.970534] ? getname_flags (fs/namei.c:159)
-[ 2015.970534] ? vtime_account_user (kernel/sched/cputime.c:701)
-[ 2015.970534] user_path_create (fs/namei.c:3381)
-[ 2015.970534] SyS_mknod (fs/namei.c:3443 fs/namei.c:3431 fs/namei.c:3475 fs/namei.c:3473)
-[ 2015.970534] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
-[ 2015.970534] Code: e8 03 42 80 3c 28 00 0f 85 ff 01 00 00 4c 8b 7b 18 4d 85 ff 0f 84 de 01 00 00 41 f6 c7 07 0f 85 d4 01 00 00 4c 89 f8 48 c1 e8 03 <42> 80 3c 28 00 0f 85 b5 01 00 00 4d 8b 37 4d 85 ff 0f 84 55 02
-All code
-========
-   0:	e8 03 42 80 3c       	callq  0x3c804208
-   5:	28 00                	sub    %al,(%rax)
-   7:	0f 85 ff 01 00 00    	jne    0x20c
-   d:	4c 8b 7b 18          	mov    0x18(%rbx),%r15
-  11:	4d 85 ff             	test   %r15,%r15
-  14:	0f 84 de 01 00 00    	je     0x1f8
-  1a:	41 f6 c7 07          	test   $0x7,%r15b
-  1e:	0f 85 d4 01 00 00    	jne    0x1f8
-  24:	4c 89 f8             	mov    %r15,%rax
-  27:	48 c1 e8 03          	shr    $0x3,%rax
-  2b:*	42 80 3c 28 00       	cmpb   $0x0,(%rax,%r13,1)		<-- trapping instruction
-  30:	0f 85 b5 01 00 00    	jne    0x1eb
-  36:	4d 8b 37             	mov    (%r15),%r14
-  39:	4d 85 ff             	test   %r15,%r15
-  3c:	0f                   	.byte 0xf
-  3d:	84 55 02             	test   %dl,0x2(%rbp)
-	...
+> +	}
+>  
+>  	switch (format->value) {
+>  	case PERF_PMU_FORMAT_VALUE_CONFIG:
+> @@ -592,11 +629,16 @@ static int pmu_config_term(struct list_head *formats,
+>  	}
+>  
+>  	/*
+> -	 * XXX If we ever decide to go with string values for
+> -	 * non-hardcoded terms, here's the place to translate
+> -	 * them into value.
+> +	 * Either directly use a numeric term, or try to translate string terms
+> +	 * using event parameters.
+>  	 */
+> -	pmu_format_value(format->bits, term->val.num, vp, zero);
+> +	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM)
+> +		val = term->val.num;
+> +	else
+> +		if (pmu_resolve_param_term(term, head_terms, &val))
+> +			return -EINVAL;
+> +
 
-Code starting with the faulting instruction
-===========================================
-   0:	42 80 3c 28 00       	cmpb   $0x0,(%rax,%r13,1)
-   5:	0f 85 b5 01 00 00    	jne    0x1c0
-   b:	4d 8b 37             	mov    (%r15),%r14
-   e:	4d 85 ff             	test   %r15,%r15
-  11:	0f                   	.byte 0xf
-  12:	84 55 02             	test   %dl,0x2(%rbp)
-	...
-[ 2015.970534] RIP find_entry (fs/proc/proc_sysctl.c:95)
-[ 2015.970534]  RSP <ffff88080e4779d8>
-[ 2016.028073] ---[ end trace 142d37d0fb80aa87 ]---
-[ 2016.028925] Kernel panic - not syncing: Fatal exception
-[ 2016.030263] Dumping ftrace buffer:
-[ 2016.030847]    (ftrace buffer empty)
-[ 2016.031399] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)
-[ 2016.032890] Rebooting in 1 seconds..
+I'm ok with the change logic, but I'm missing here check for the 'term'
+string value to be '?', so we force subst terms to have '?' as value..
+I believe thats what we decided in the previous set discussion, right?
+
+I guess the it'd be nice to parse it directly in the bison code like
+below (could be done later), but I'd be ok with simple check on this
+place for now.
+
+thanks,
+jirka
 
 
-Thanks,
-Sasha
-
+---
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 93c4c9fbc922..7e021c64d5cc 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -484,6 +484,14 @@ PE_TERM '=' PE_VALUE
+ 	$$ = term;
+ }
+ |
++PE_TERM '=' PE_SUBST
++{
++	struct parse_events_term *term;
++
++	ABORT_ON(parse_events_term__subst(&term, (int)$1, NULL, NULL));
++	$$ = term;
++}
++|
+ PE_TERM
+ {
+ 	struct parse_events_term *term;
