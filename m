@@ -1,113 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915AbaLVNtG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 08:49:06 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:42565 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749AbaLVNtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 08:49:04 -0500
-Date: Mon, 22 Dec 2014 19:18:51 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Helene Gsaenger <helene.gsaenger@studium.fau.de>
-Cc: simone.weiss@fau.de, linux-kernel@i4.cs.fau.de, lars@metafoo.de,
-        Michael.Hennerich@analog.com, jic23@kernel.org, knaack.h@gmx.de,
-        pmeerw@pmeerw.net, gregkh@linuxfoundation.org,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/iio/accel: checkpatch: fixed long lines by
- moving comments
-Message-ID: <20141222134851.GA8347@sudip-PC>
-References: <1419211422-9611-1-git-send-email-helene.gsaenger@studium.fau.de>
+	id S1754932AbaLVNw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 08:52:57 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44760 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754185AbaLVNwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 08:52:55 -0500
+Message-ID: <5498221C.6010701@ti.com>
+Date: Mon, 22 Dec 2014 19:22:28 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419211422-9611-1-git-send-email-helene.gsaenger@studium.fau.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>,
+        devicetree <devicetree@vger.kernel.org>
+CC: <nm@ti.com>, <balbi@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] phy: ti-pipe3: Fix SATA across suspend/resume
+References: <1418990720-3638-1-git-send-email-rogerq@ti.com> <1418990720-3638-3-git-send-email-rogerq@ti.com>
+In-Reply-To: <1418990720-3638-3-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 02:23:42AM +0100, Helene Gsaenger wrote:
-> Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de>
-> Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+Hi Roger,
+
+On Friday 19 December 2014 05:35 PM, Roger Quadros wrote:
+> Failed test case: Boot without SATA drive connected. Suspend/resume
+> the board and then connect SATA drive. It fails to enumerate.
+> 
+> Due to Errata i783 "SATA Lockup After SATA DPLL Unlock/Relock"
+> we can't allow SATA DPLL to be in the unlocked state.
+> The SATA refclk (sata_ref_clk) is the source of the SATA_DPLL.
+> Till now this clock was controlled by the AHCI SATA driver and was being
+> shut off  during system suspend (if the SATA drive was not already attached)
+> causing the SATA DPLL to be unlocked and so causing errata i783.
+> 
+> To prevent sata_ref_clk from being disabled, we move the control of
+> this clock from the SATA AHCI driver to the SATA PHY driver and prevent
+> it from being disabled.
+> 
+> This also fixes the issue of SATA not working on OMAP5/DRA7 when
+> AHCI platform driver is built as a module.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 > ---
->  drivers/staging/iio/accel/adis16203.h | 41 ++++++++++++++++++++++++++---------
->  1 file changed, 31 insertions(+), 10 deletions(-)
+>  arch/arm/boot/dts/dra7.dtsi  |  4 ++--
+>  arch/arm/boot/dts/omap5.dtsi |  4 ++--
+>  drivers/phy/phy-ti-pipe3.c   | 53 +++++++++++++++++++++++++++++++-------------
+>  3 files changed, 41 insertions(+), 20 deletions(-)
 > 
-> diff --git a/drivers/staging/iio/accel/adis16203.h b/drivers/staging/iio/accel/adis16203.h
-> index acc688d..fefe2f9 100644
-> --- a/drivers/staging/iio/accel/adis16203.h
-> +++ b/drivers/staging/iio/accel/adis16203.h
-> @@ -16,26 +16,47 @@
->  #define ADIS16203_ALM_SMPL2      0x26 /* Alarm 2, sample period */
->  #define ADIS16203_ALM_CTRL       0x28 /* Alarm control */
->  #define ADIS16203_AUX_DAC        0x30 /* Auxiliary DAC data */
-> -#define ADIS16203_GPIO_CTRL      0x32 /* General-purpose digital input/output control */
-> +#define ADIS16203_GPIO_CTRL      0x32 /* General-purpose digital input/output
-> +				       * control */
->  #define ADIS16203_MSC_CTRL       0x34 /* Miscellaneous control */
-> -#define ADIS16203_SMPL_PRD       0x36 /* Internal sample period (rate) control */
-> +#define ADIS16203_SMPL_PRD       0x36 /* Internal sample period (rate)
-> +				       * control */
-
-this is not the style for multiline comments. Check in CodingStyle.
-and besides, I think it will be better if you can put the comments in a line of its own.
-
-thanks
-sudip
->  #define ADIS16203_AVG_CNT        0x38 /* Operation, filter configuration */
->  #define ADIS16203_SLP_CNT        0x3A /* Operation, sleep mode control */
->  #define ADIS16203_DIAG_STAT      0x3C /* Diagnostics, system status register */
->  #define ADIS16203_GLOB_CMD       0x3E /* Operation, system command register */
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index 63bf99b..8c35b84 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -1090,8 +1090,8 @@
+>  				      <0x4A096800 0x40>; /* pll_ctrl */
+>  				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+>  				ctrl-module = <&omap_control_sata>;
+> -				clocks = <&sys_clkin1>;
+> -				clock-names = "sysclk";
+> +				clocks = <&sys_clkin1>, <&sata_ref_clk>;
+> +				clock-names = "sysclk", "refclk";
+>  				#phy-cells = <0>;
+>  			};
 >  
->  /* MSC_CTRL */
-> -#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10) /* Self-test at power-on: 1 = disabled, 0 = enabled */
-> -#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)  /* Reverses rotation of both inclination outputs */
-> +#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10) /* Self-test at
-> +							   * power-on:
-> +							   * 1 = disabled,
-> +							   * 0 = enabled */
-> +#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)  /* Reverses rotation
-> +							   * of both
-> +							   * inclination
-> +							   * outputs */
->  #define ADIS16203_MSC_CTRL_SELF_TEST_EN	        (1 << 8)  /* Self-test enable */
-> -#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)  /* Data-ready enable: 1 = enabled, 0 = disabled */
-> -#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)  /* Data-ready polarity: 1 = active high, 0 = active low */
-> -#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)  /* Data-ready line selection: 1 = DIO1, 0 = DIO0 */
-> +#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)  /* Data-ready enable:
-> +							   * 1 = enabled,
-> +							   * 0 = disabled */
-> +#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)  /* Data-ready
-> +							   * polarity:
-> +							   * 1 = active high,
-> +							   * 0 = active low */
-> +#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)  /* Data-ready line
-> +							   * selection:
-> +							   * 1 = DIO1,
-> +							   * 0 = DIO0 */
+> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+> index b321fdf..bb498e7 100644
+> --- a/arch/arm/boot/dts/omap5.dtsi
+> +++ b/arch/arm/boot/dts/omap5.dtsi
+> @@ -929,8 +929,8 @@
+>  				      <0x4A096800 0x40>; /* pll_ctrl */
+>  				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+>  				ctrl-module = <&omap_control_sata>;
+> -				clocks = <&sys_clkin>;
+> -				clock-names = "sysclk";
+> +				clocks = <&sys_clkin>, <&sata_ref_clk>;
+> +				clock-names = "sysclk", "refclk";
+>  				#phy-cells = <0>;
+>  			};
+>  		};
+> diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+> index e60ff14..e08edd9 100644
+> --- a/drivers/phy/phy-ti-pipe3.c
+> +++ b/drivers/phy/phy-ti-pipe3.c
+> @@ -85,6 +85,7 @@ struct ti_pipe3 {
+>  	struct pipe3_dpll_map	*dpll_map;
+>  	u8			id;
+>  	bool enabled;
+> +	bool refclk_enabled;	/* this flag is needed specifically for SATA */
+>  	spinlock_t lock;	/* serialize clock enable/disable */
+>  };
 >  
->  /* DIAG_STAT */
-> -#define ADIS16203_DIAG_STAT_ALARM2        (1<<9) /* Alarm 2 status: 1 = alarm active, 0 = alarm inactive */
-> -#define ADIS16203_DIAG_STAT_ALARM1        (1<<8) /* Alarm 1 status: 1 = alarm active, 0 = alarm inactive */
-> -#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5 /* Self-test diagnostic error flag */
-> +#define ADIS16203_DIAG_STAT_ALARM2        (1<<9) /* Alarm 2 status:
-> +						  * 1 = alarm active,
-> +						  * 0 = alarm inactive */
-> +#define ADIS16203_DIAG_STAT_ALARM1        (1<<8) /* Alarm 1 status:
-> +						  * 1 = alarm active,
-> +						  * 0 = alarm inactive */
-> +#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5 /* Self-test diagnostic error
-> +						 * flag */
->  #define ADIS16203_DIAG_STAT_SPI_FAIL_BIT      3 /* SPI communications failure */
->  #define ADIS16203_DIAG_STAT_FLASH_UPT_BIT     2 /* Flash update failure */
->  #define ADIS16203_DIAG_STAT_POWER_HIGH_BIT    1 /* Power supply above 3.625 V */
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> @@ -333,21 +334,20 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+>  		}
+>  	}
+>  
+> +	phy->refclk = devm_clk_get(phy->dev, "refclk");
+> +	if (IS_ERR(phy->refclk)) {
+> +		dev_err(&pdev->dev, "unable to get refclk\n");
+> +		return PTR_ERR(phy->refclk);
+> +	}
+
+This will break older dtbs. AFAIK, newer kernels should be compatible with
+older dtbs too. cc'ed devicetree@vger.kernel.org for clarification.
+
+Thanks
+Kishon
