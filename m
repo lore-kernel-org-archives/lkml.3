@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaLVRZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 12:25:55 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:34943 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223AbaLVRZy (ORCPT
+	id S1755450AbaLVR0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 12:26:14 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39352 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089AbaLVR0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 12:25:54 -0500
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] module: Remove double spaces in module verification taint message
-Date: Mon, 22 Dec 2014 18:25:44 +0100
-Message-Id: <1419269144-91285-1-git-send-email-marcel@holtmann.org>
-X-Mailer: git-send-email 2.1.0
+	Mon, 22 Dec 2014 12:26:13 -0500
+Message-ID: <1419269161.3786.4.camel@infradead.org>
+Subject: Re: [PATCH] arch: powerpc: platforms: ps3: repository.c:  Remove
+ unused function
+From: Geoff Levand <geoff@infradead.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Andre Heider <a.heider@gmail.com>,
+        Nathan Whitehorn <nwhitehorn@freebsd.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Mon, 22 Dec 2014 09:26:01 -0800
+In-Reply-To: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The warning message when loading modules with a wrong signature has
-two spaces in it:
+On Sat, 2014-12-20 at 16:00 +0100, Rickard Strandqvist wrote:
+> Remove the function ps3_repository_write_highmem_info() that is not used anywhere.
 
-"module verification failed: signature and/or  required key missing"
+NAK
 
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
----
- kernel/module.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ps3_repository_write_highmem_info() is needed by otheros++.  What we
+need is a kernel patch to add the highmem info to the repository once it
+is known.
 
-diff --git a/kernel/module.c b/kernel/module.c
-index e52a8739361a..57f786bae64d 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3242,7 +3242,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 	mod->sig_ok = info->sig_ok;
- 	if (!mod->sig_ok) {
- 		pr_notice_once("%s: module verification failed: signature "
--			       "and/or  required key missing - tainting "
-+			       "and/or required key missing - tainting "
- 			       "kernel\n", mod->name);
- 		add_taint_module(mod, TAINT_UNSIGNED_MODULE, LOCKDEP_STILL_OK);
- 	}
--- 
-2.1.0
+These ps3_repository_write_highmem routines are also the only
+documentation the freeBSD port has as to how the highmem info is (should
+be) saved in the repository.
+
+-Geoff
+
 
