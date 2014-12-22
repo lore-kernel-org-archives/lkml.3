@@ -1,73 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313AbaLVHve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 02:51:34 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41482 "EHLO e7.ny.us.ibm.com"
+	id S1754336AbaLVHvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 02:51:48 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41480 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018AbaLVHte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 02:49:34 -0500
+	id S1754150AbaLVHtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 02:49:33 -0500
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Michael Ellerman <mpe@ellerman.id.au>,
         Paul Mackerras <paulus@samba.org>
 Cc: dev@codyps.com, peterz@infradead.org, hbabu@us.ibm.com,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v6 7/7] powerpc/perf/hv-24x7: Document sysfs event description entries
-Date: Sun, 21 Dec 2014 23:48:52 -0800
-Message-Id: <1419234532-22657-8-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v6 6/7] powerpc/perf/hv-gpci: add the remaining gpci requests
+Date: Sun, 21 Dec 2014 23:48:51 -0800
+Message-Id: <1419234532-22657-7-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1419234532-22657-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1419234532-22657-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14122207-0037-0000-0000-0000002EF765
+x-cbid: 14122207-0037-0000-0000-0000002EF763
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Changelog[v6]
-	[Cody Schafer] Update Contact info to Linux on Power Developer list
+Add the remaining gpci requests that contain counters suitable for use
+by perf. Omit those that don't contain any counters (but note their
+ommision).
 
-CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Changelog[v6]
+
+	[Jiri Olsa, Sukadev Bhattiprolu] Replace 'starting_index' with what
+	it really means for the event. Eg if starting_index refers to a
+	partition_id for an event, allow user to specify a value for
+	partition_id rather than 'starting_index'. Also use a =? to indicate
+	required parameters: eg partition_id=?
+
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- .../testing/sysfs-bus-event_source-devices-hv_24x7 | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/powerpc/perf/hv-gpci-requests.h | 187 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 186 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7 b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
-index 32f3f5f..f893337 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
-@@ -21,3 +21,25 @@ Contact:	Linux on PowerPC Developer List <linuxppc-dev@lists.ozlabs.org>
- Description:
- 		Exposes the "version" field of the 24x7 catalog. This is also
- 		extractable from the provided binary "catalog" sysfs entry.
+diff --git a/arch/powerpc/perf/hv-gpci-requests.h b/arch/powerpc/perf/hv-gpci-requests.h
+index f42d131..1345835 100644
+--- a/arch/powerpc/perf/hv-gpci-requests.h
++++ b/arch/powerpc/perf/hv-gpci-requests.h
+@@ -20,7 +20,9 @@
+  *
+  * - starting_index_kind is one of the following, depending on the event:
+  *
+- *   chip_id: hardware chip id or -1 for current hw chip
++ *   hw_chip_id: hardware chip id or -1 for current hw chip
++ *   partition_id
++ *   sibling_part_id,
+  *   phys_processor_idx:
+  *   0xffffffffffffffff: or -1, which means it is irrelavant for the event
+  *
+@@ -63,6 +65,33 @@ REQUEST(__count(0,	8,	processor_time_in_timebase_cycles)
+ )
+ #include I(REQUEST_END)
+ 
++#define REQUEST_NAME entitled_capped_uncapped_donated_idle_timebase_by_partition
++#define REQUEST_NUM 0x20
++#define REQUEST_IDX_KIND "sibling_part_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	8,	partition_id)
++	__count(0x8,	8,	entitled_cycles)
++	__count(0x10,	8,	consumed_capped_cycles)
++	__count(0x18,	8,	consumed_uncapped_cycles)
++	__count(0x20,	8,	cycles_donated)
++	__count(0x28,	8,	purr_idle_cycles)
++)
++#include I(REQUEST_END)
 +
-+What:		/sys/bus/event_source/devices/hv_24x7/event_descs/<event-name>
-+Date:		February 2014
-+Contact:	Linux on PowerPC Developer List <linuxppc-dev@lists.ozlabs.org>
-+Description:
-+		Provides the description of a particular event as provided by
-+		the firmware. If firmware does not provide a description, no
-+		file will be created.
++/*
++ * Not available for counter_info_version >= 0x8, use
++ * run_instruction_cycles_by_partition(0x100) instead.
++ */
++#define REQUEST_NAME run_instructions_run_cycles_by_partition
++#define REQUEST_NUM 0x30
++#define REQUEST_IDX_KIND "sibling_part_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	8,	partition_id)
++	__count(0x8,	8,	instructions_completed)
++	__count(0x10,	8,	cycles)
++)
++#include I(REQUEST_END)
 +
-+		Note that the event-name lacks the domain suffix appended for
-+		events in the events/ dir.
+ #define REQUEST_NAME system_performance_capabilities
+ #define REQUEST_NUM 0x40
+ #define REQUEST_IDX_KIND "starting_index=0xffffffffffffffff"
+@@ -73,4 +102,160 @@ REQUEST(__field(0,	1,	perf_collect_privileged)
+ )
+ #include I(REQUEST_END)
+ 
++#define REQUEST_NAME processor_bus_utilization_abc_links
++#define REQUEST_NUM 0x50
++#define REQUEST_IDX_KIND "hw_chip_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	total_link_cycles)
++	__count(0x18,	8,	idle_cycles_for_a_link)
++	__count(0x20,	8,	idle_cycles_for_b_link)
++	__count(0x28,	8,	idle_cycles_for_c_link)
++	__array(0x30,	0x20,	reserved2)
++)
++#include I(REQUEST_END)
 +
-+What:		/sys/bus/event_source/devices/hv_24x7/event_long_descs/<event-name>
-+Date:		February 2014
-+Contact:	Linux on PowerPC Developer List <linuxppc-dev@lists.ozlabs.org>
-+Description:
-+		Provides the "long" description of a particular event as
-+		provided by the firmware. If firmware does not provide a
-+		description, no file will be created.
++#define REQUEST_NAME processor_bus_utilization_wxyz_links
++#define REQUEST_NUM 0x60
++#define REQUEST_IDX_KIND "hw_chip_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	total_link_cycles)
++	__count(0x18,	8,	idle_cycles_for_w_link)
++	__count(0x20,	8,	idle_cycles_for_x_link)
++	__count(0x28,	8,	idle_cycles_for_y_link)
++	__count(0x30,	8,	idle_cycles_for_z_link)
++	__array(0x38,	0x28,	reserved2)
++)
++#include I(REQUEST_END)
 +
-+		Note that the event-name lacks the domain suffix appended for
-+		events in the events/ dir.
++#define REQUEST_NAME processor_bus_utilization_gx_links
++#define REQUEST_NUM 0x70
++#define REQUEST_IDX_KIND "hw_chip_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	gx0_in_address_cycles)
++	__count(0x18,	8,	gx0_in_data_cycles)
++	__count(0x20,	8,	gx0_in_retries)
++	__count(0x28,	8,	gx0_in_bus_cycles)
++	__count(0x30,	8,	gx0_in_cycles_total)
++	__count(0x38,	8,	gx0_out_address_cycles)
++	__count(0x40,	8,	gx0_out_data_cycles)
++	__count(0x48,	8,	gx0_out_retries)
++	__count(0x50,	8,	gx0_out_bus_cycles)
++	__count(0x58,	8,	gx0_out_cycles_total)
++	__count(0x60,	8,	gx1_in_address_cycles)
++	__count(0x68,	8,	gx1_in_data_cycles)
++	__count(0x70,	8,	gx1_in_retries)
++	__count(0x78,	8,	gx1_in_bus_cycles)
++	__count(0x80,	8,	gx1_in_cycles_total)
++	__count(0x88,	8,	gx1_out_address_cycles)
++	__count(0x90,	8,	gx1_out_data_cycles)
++	__count(0x98,	8,	gx1_out_retries)
++	__count(0xA0,	8,	gx1_out_bus_cycles)
++	__count(0xA8,	8,	gx1_out_cycles_total)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME processor_bus_utilization_mc_links
++#define REQUEST_NUM 0x80
++#define REQUEST_IDX_KIND "hw_chip_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	mc0_frames)
++	__count(0x18,	8,	mc0_reads)
++	__count(0x20,	8,	mc0_write)
++	__count(0x28,	8,	mc0_total_cycles)
++	__count(0x30,	8,	mc1_frames)
++	__count(0x38,	8,	mc1_reads)
++	__count(0x40,	8,	mc1_writes)
++	__count(0x48,	8,	mc1_total_cycles)
++)
++#include I(REQUEST_END)
++
++/* Processor_config (0x90) skipped, no counters */
++/* Current_processor_frequency (0x91) skipped, no counters */
++
++#define REQUEST_NAME processor_core_utilization
++#define REQUEST_NUM 0x94
++#define REQUEST_IDX_KIND "phys_processor_idx=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	phys_processor_idx)
++	__field(0x4,	4,	hw_processor_id)
++	__count(0x8,	8,	cycles_across_any_thread)
++	__count(0x10,	8,	timebase_at_collection)
++	__count(0x18,	8,	purr_cycles)
++	__count(0x20,	8,	sum_of_cycles_across_all_threads)
++	__count(0x28,	8,	instructions_completed)
++)
++#include I(REQUEST_END)
++
++/* Processor_core_power_mode (0x95) skipped, no counters */
++/* Affinity_domain_information_by_virtual_processor (0xA0) skipped,
++ *	no counters */
++/* Affinity_domain_information_by_domain (0xB0) skipped, no counters */
++/* Affinity_domain_information_by_partition (0xB1) skipped, no counters */
++/* Physical_memory_info (0xC0) skipped, no counters */
++/* Processor_bus_topology (0xD0) skipped, no counters */
++
++#define REQUEST_NAME partition_hypervisor_queuing_times
++#define REQUEST_NUM 0xE0
++#define REQUEST_IDX_KIND "partition_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	2, partition_id)
++	__array(0x2,	6, reserved1)
++	__count(0x8,	8, time_waiting_for_entitlement)
++	__count(0x10,	8, times_waited_for_entitlement)
++	__count(0x18,	8, time_waiting_for_phys_processor)
++	__count(0x20,	8, times_waited_for_phys_processor)
++	__count(0x28,	8, dispatches_on_home_core)
++	__count(0x30,	8, dispatches_on_home_primary_affinity_domain)
++	__count(0x38,	8, dispatches_on_home_secondary_affinity_domain)
++	__count(0x40,	8, dispatches_off_home_secondary_affinity_domain)
++	__count(0x48,	8, dispatches_on_dedicated_processor_donating_cycles)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME system_hypervisor_times
++#define REQUEST_NUM 0xF0
++#define REQUEST_IDX_KIND "starting_index=0xffffffffffffffff"
++#include I(REQUEST_BEGIN)
++REQUEST(__count(0,	8,	time_spent_to_dispatch_virtual_processors)
++	__count(0x8,	8,	time_spent_processing_virtual_processor_timers)
++	__count(0x10,	8,	time_spent_managing_partitions_over_entitlement)
++	__count(0x18,	8,	time_spent_on_system_management)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME system_tlbie_count_and_time
++#define REQUEST_NUM 0xF4
++#define REQUEST_IDX_KIND "starting_index=0xffffffffffffffff"
++#include I(REQUEST_BEGIN)
++REQUEST(__count(0,	8,	tlbie_instructions_issued)
++	/*
++	 * FIXME: The spec says the offset here is 0x10, which I suspect
++	 *	  is wrong.
++	 */
++	__count(0x8,	8,	time_spent_issuing_tlbies)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME partition_instruction_count_and_time
++#define REQUEST_NUM 0x100
++#define REQUEST_IDX_KIND "partition_id=?"
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	2,	partition_id)
++	__array(0x2,	0x6,	reserved1)
++	__count(0x8,	8,	instructions_performed)
++	__count(0x10,	8,	time_collected)
++)
++#include I(REQUEST_END)
++
++/* set_mmcrh (0x80001000) skipped, no counters */
++/* retrieve_hpmcx (0x80002000) skipped, no counters */
++
+ #include "req-gen/_end.h"
 -- 
 1.8.3.1
 
