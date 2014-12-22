@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370AbaLVRZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 12:25:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755022AbaLVRZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 12:25:18 -0500
-Date: Mon, 22 Dec 2014 12:25:00 -0500
-From: Rafael Aquini <aquini@redhat.com>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, oleg@redhat.com, rientjes@google.com,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] proc: task_mmu: show page size in /proc/<pid>/numa_maps
-Message-ID: <20141222172459.GA11396@t510.redhat.com>
-References: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com>
- <20141220183613.GA19229@phnom.home.cmpxchg.org>
- <20141220194457.GA3166@x61.redhat.com>
- <54970B49.3070104@linux.intel.com>
- <20141221222850.GA2038@x61.redhat.com>
- <5498508A.4080108@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5498508A.4080108@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755427AbaLVRZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 12:25:55 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:34943 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755223AbaLVRZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 12:25:54 -0500
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] module: Remove double spaces in module verification taint message
+Date: Mon, 22 Dec 2014 18:25:44 +0100
+Message-Id: <1419269144-91285-1-git-send-email-marcel@holtmann.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 09:10:34AM -0800, Dave Hansen wrote:
-> On 12/21/2014 02:28 PM, Rafael Aquini wrote:
-> >>> > > I'm fine either way, it makes the change even simpler. Also, if we
-> >>> > > decide to get rid of page_size != PAGE_SIZE condition I believe we can 
-> >>> > > also get rid of that "huge" hint being conditionally printed out too.
-> >> > 
-> >> > That would break existing users of the "huge" flag.  That makes it out
-> >> > of the question, right?
-> >> >
-> > Yeah, but it sort of follows the same complaint Johannes did for the 
-> > conditional page size printouts. If we start to print out page size
-> > deliberately for each map regardless their backing pages being PAGE_SIZE 
-> > long or bigger, I don't see much point on keep conditionally printing out 
-> > the 'huge' hint out.
-> 
-> Because existing userspace might be relying on it.  If we take the
-> 'huge' hint out, userspace will break.
-> 
-> > As I said before, I'm fine either way though I think
-> > we can keep the current behaviour, and just disambiguate page sizes !=
-> > PAGE_SIZE as in the current proposal.
-> 
-> Unless we somehow have a (really good) handle on how many apps out there
-> are reading and using 'huge', I think we have to keep the existing behavior.
->
-Right. I definitely don't have anything better than what I already
-presented which seems beaten by your argument, already. 
-Remaining question here is: should we print out 'pagesize' deliberately 
-or conditionally, only to disambiguate cases where page_size != PAGE_SIZE?
+The warning message when loading modules with a wrong signature has
+two spaces in it:
 
-Have a very nice holidays folks!
--- Rafael
+"module verification failed: signature and/or  required key missing"
+
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+---
+ kernel/module.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index e52a8739361a..57f786bae64d 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3242,7 +3242,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
+ 	mod->sig_ok = info->sig_ok;
+ 	if (!mod->sig_ok) {
+ 		pr_notice_once("%s: module verification failed: signature "
+-			       "and/or  required key missing - tainting "
++			       "and/or required key missing - tainting "
+ 			       "kernel\n", mod->name);
+ 		add_taint_module(mod, TAINT_UNSIGNED_MODULE, LOCKDEP_STILL_OK);
+ 	}
+-- 
+2.1.0
+
