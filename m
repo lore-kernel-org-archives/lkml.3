@@ -1,99 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaLVKaZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 05:30:25 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:51017 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027AbaLVKaX (ORCPT
+	id S1754339AbaLVKeo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 05:34:44 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:47158 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754151AbaLVKem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 05:30:23 -0500
+	Mon, 22 Dec 2014 05:34:42 -0500
+Message-ID: <5497F3C0.9000205@gmail.com>
+Date: Mon, 22 Dec 2014 18:34:40 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20141219010452.GC1538@bbox>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
-	<CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
-	<20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
-	<35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
-	<20141208114601.GA28846@node.dhcp.inet.fi>
-	<35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
-	<CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
-	<35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
-	<20141219010452.GC1538@bbox>
-Date: Mon, 22 Dec 2014 14:30:22 +0400
-Message-ID: <CALYGNiPbwCDtYNO+JrNDNJkqXHdwPVduT4fz0tQ_cM0SrXTJ4Q@mail.gmail.com>
-Subject: Re: [RFC] MADV_FREE doesn't work when doesn't have swap partition
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mike Galbraith <bitbucket@online.de>, astx <astx@aws-it.at>
+CC: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        zyjzyj2000@gmail.com
+Subject: Re: OOPS in nf_ct_unlink_expect_report using Polycom RealPresence
+ Mobile
+References: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@aws-it.at> <1391174223.6395.3.camel@marge.simpson.net>
+In-Reply-To: <1391174223.6395.3.camel@marge.simpson.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 4:04 AM, Minchan Kim <minchan@kernel.org> wrote:
-> On Thu, Dec 18, 2014 at 11:50:01AM +0800, Wang, Yalin wrote:
->> I notice this commit:
->> mm: support madvise(MADV_FREE),
->>
->> it can free clean anonymous pages directly,
->> doesn't need pageout to swap partition,
->>
->> but I found it doesn't work on my platform,
->> which don't enable any swap partitions.
->
-> Current implementation, if there is no empty slot in swap, it does
-> instant free instead of delayed free. Look at madvise_vma.
->
->>
->> I make a change for this.
->> Just to explain my issue clearly,
->> Do we need some other checks to still scan anonymous pages even
->> Don't have swap partition but have clean anonymous pages?
->
-> There is a few places we should consider if you want to scan anonymous page
-> withotu swap. Refer 69c854817566 and 74e3f3c3391d.
->
-> However, it's not simple at the moment. If we reenable anonymous scan without swap,
-> it would make much regress of reclaim. So my direction is move normal anonymos pages
-> into unevictable LRU list because they're real unevictable without swap and
-> put delayed freeing pages into anon LRU list and age them.
+Please check the number of iptables rule. Maybe it results from the big 
+number of iptables rules.
 
-This sounds reasonable. In this case swapon must either scan
-unevictable pages and make
-some of them evictable again or just move all unevictable pages into
-active list and postpone
-this job till reclaimer invocation.
+Best Regards!
+Zhu Yanjun
 
+On 01/31/2014 09:17 PM, Mike Galbraith wrote:
+> (CC netdev)
 >
->> ---
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 5e8772b..8258f3a 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -1941,7 +1941,7 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
->>                 force_scan = true;
+> On Fri, 2014-01-31 at 12:05 +0100, astx wrote:
+>> Using Polycom video conferencing software my homebrew linux NAT router
+>> crashes with attached kernel oops message.
+>> This error can be reproduced also using kernel 3.2.54. Kernel 2.6.35
+>> seems to be stable.
 >>
->>         /* If we have no swap space, do not bother scanning anon pages. */
->> -       if (!sc->may_swap || (get_nr_swap_pages() <= 0)) {
->> +       if (!sc->may_swap) {
->>                 scan_balance = SCAN_FILE;
->>                 goto out;
->>         }
+>> Disabling nf_nat_h323 and nf_conntrack_h323 avoids crash - but video
+>> conferencing software is no more usable.
+>>
+>>
+>> ===================================================================================
+>>    BUG: unable to handle kernel paging request at 00100104
+>> IP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
+>> *pdpt = 00000000359aa001 *pde = 0000000000000000
+>> Oops: 0002 [#1] SMP
+>> Modules linked in: nf_conntrack_netlink nfnetlink xt_mac xt_TCPMSS
+>> ipt_MASQUERADE
+>>    xt_pkttype xt_multiport xt_REDIRECT xt_nat iptable_mangle xt_LOG
+>> xt_limit af_packet
+>>    act_mirred cls_u32 sch_ingress sch_hfsc ifb xt_tcpudp ip6t_REJECT ipt_REJECT
+>>    ip6table_raw iptable_raw xt_CT iptable_filter nf_nat_pptp nf_nat_proto_gre
+>>    nf_conntrack_proto_udplite nf_conntrack_proto_dccp ip6table_mangle
+>> iptable_nat
+>>    nf_nat_ipv4 nf_nat_sip nf_nat_irc nf_nat_snmp_basic nf_conntrack_snmp
+>>    nf_conntrack_broadcast nf_nat_h323 nf_nat_tftp nf_nat_ftp nf_nat
+>> nf_conntrack_h323
+>>    nf_conntrack_tftp nf_conntrack_proto_sctp nf_conntrack_sip nf_conntrack_irc
+>>    nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_ftp nf_conntrack_ipv4
+>>    nf_defrag_ipv4 ip_tables xt_conntrack nf_conntrack ip6table_filter ip6_tables
+>>    x_tables padlock_sha padlock_aes e_powersaver freq_table mperf via_cputemp
+>>    hwmon_vid serio_raw pcspkr i2c_viapro ehci_pci fan thermal processor 8139too
+>>    sg thermal_sys button shpchp 8139cp pci_hotplug mii via_agp ext4 crc16 jbd2
+>>    pata_via sata_via libata sd_mod scsi_mod ohci_hcd uhci_hcd ehci_hcd
+>> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.28-9500-smp_m #1
+>> Hardware name:    /CN700-8237, BIOS 6.00 PG 08/30/2007
+>> task: c07ce180 ti: f6408000 task.ti: c07c2000
+>> EIP: 0060:[<f8214f07>] EFLAGS: 00210206 CPU: 0
+>> EIP is at nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
+>> EAX: 00100100 EBX: eb636bc0 ECX: 00000000 EDX: eb461540
+>> ESI: c0804e00 EDI: eb461544 EBP: f6409f08 ESP: f6409eec
+>>    DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+>> CR0: 8005003b CR2: 00100104 CR3: 359d4000 CR4: 000006b0
+>> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+>> DR6: ffff0ff0 DR7: 00000400
+>> Stack:
+>>    00000000 00200286 f6409f08 c0244bd8 eb636bc0 00100100 00000000 f6409f18
+>>    f8215687 f598ede8 c0804e00 f6409f28 f8211c99 f598ede8 f598ee50 f6409f5c
+>>    f8212e5e 00000003 00000000 00000000 00000004 eb461514 f598ede8 00000000
+>> Call Trace:
+>>    [<c0244bd8>] ? del_timer+0x48/0x70
+>>    [<f8215687>] nf_ct_remove_expectations+0x47/0x60 [nf_conntrack]
+>>    [<f8211c99>] nf_ct_delete_from_lists+0x59/0x90 [nf_conntrack]
+>>    [<f8212e5e>] death_by_timeout+0x14e/0x1c0 [nf_conntrack]
+>>    [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
+>>    [<c024442d>] call_timer_fn+0x1d/0x80
+>>    [<c024461e>] run_timer_softirq+0x18e/0x1a0
+>>    [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
+>>    [<c023e6f3>] __do_softirq+0xa3/0x170
+>>    [<c023e650>] ? __local_bh_enable+0x70/0x70
+>>    <IRQ>
+>>    [<c023e587>] ? irq_exit+0x67/0xa0
+>>    [<c0202af6>] ? do_IRQ+0x46/0xb0
+>>    [<c027ad05>] ? clockevents_notify+0x35/0x110
+>>    [<c066ac6c>] ? common_interrupt+0x2c/0x40
+>>    [<c056e3c1>] ? cpuidle_enter_state+0x41/0xf0
+>>    [<c056e6fb>] ? cpuidle_idle_call+0x8b/0x100
+>>    [<c02085f8>] ? arch_cpu_idle+0x8/0x30
+>>    [<c027314b>] ? cpu_idle_loop+0x4b/0x140
+>>    [<c0273258>] ? cpu_startup_entry+0x18/0x20
+>>    [<c066056d>] ? rest_init+0x5d/0x70
+>>    [<c0813ac8>] ? start_kernel+0x2ec/0x2f2
+>>    [<c081364f>] ? repair_env_string+0x5b/0x5b
+>>    [<c0813269>] ? i386_start_kernel+0x33/0x35
+>> Code: 8b 7b 0c 8b b6 98 00 00 00 85 c0 89 07 74 03 89 78 04 c7 43 0c 00
+>>    02 20 00 83 ae ec 05 00 00 01 8b 03 8b 7b 04 85 c0 89 07 74 03 <89> 78
+>>    04 8b 43 7c c7 03 00 01 10 00 c7 43 04 00 02 20 00 80 6c
+>> EIP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
+>> SS:ESP 0068:f6409eec
+>> CR2: 0000000000100104
+>> ---[ end trace 79fe2e6b81f54dee ]---
+>> Kernel panic - not syncing: Fatal exception in interrupt
+>> Rebooting in 300 seconds..
+>> ===================================================================================
+>>
+>>
+>> Polycom Version: 3.1-44477
+>> running on device: Apple iPad Mini
+>> using operating system: iOS Version: 7.0.4
+>>
+>>
+>> Attached also my kernel config. Hopefully someone could help...
+>>
+>> BR, Toni
 >
 > --
-> Kind regards,
-> Minchan Kim
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
