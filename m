@@ -1,136 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaLVKeo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 05:34:44 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:47158 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151AbaLVKem (ORCPT
+	id S1754404AbaLVKg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 05:36:56 -0500
+Received: from regular2.263xmail.com ([211.157.152.4]:39272 "EHLO
+	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123AbaLVKgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 05:34:42 -0500
-Message-ID: <5497F3C0.9000205@gmail.com>
-Date: Mon, 22 Dec 2014 18:34:40 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Mike Galbraith <bitbucket@online.de>, astx <astx@aws-it.at>
-CC: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        zyjzyj2000@gmail.com
-Subject: Re: OOPS in nf_ct_unlink_expect_report using Polycom RealPresence
- Mobile
-References: <20140131120527.Horde.-3YzQu5S8WWBx7vuVVNdBA2@aws-it.at> <1391174223.6395.3.camel@marge.simpson.net>
-In-Reply-To: <1391174223.6395.3.camel@marge.simpson.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Dec 2014 05:36:53 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-ADDR-CHECKED: 0
+X-RL-SENDER: wulf@rock-chips.com
+X-SENDER-IP: 104.167.231.20
+X-LOGIN-NAME: wulf@rock-chips.com
+X-UNIQUE-TAG: <c137333197bd3cb2306a97e014303d4d>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Wu Liang feng <wulf@rock-chips.com>
+To: heiko@sntech.de
+Cc: huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        eddie.cai@rock-chips.com, roy.li@rock-chips.com, zyw@rock-chips.com,
+        jwerner@google.com, dianders@google.com, posciak@google.com,
+        tfiga@google.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Wu Liang feng <wulf@rock-chips.com>
+Subject: [PATCH 2/2] USB: ehci-platform: Support ehci reset after resume quirk
+Date: Mon, 22 Dec 2014 18:36:28 +0800
+Message-Id: <1419244588-5227-3-git-send-email-wulf@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1419244588-5227-1-git-send-email-wulf@rock-chips.com>
+References: <1419244588-5227-1-git-send-email-wulf@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please check the number of iptables rule. Maybe it results from the big 
-number of iptables rules.
+The EHCI controller doesn't properly detect the case when
+a device is removed during suspend. Specifically,when we
+resume from suspend the EHCI controller maintaining the
+USB state (FLAG_CF is 1 Current Connect Status is 1) but
+a USB device (like a USB camera on rk3288) may have been
+disconnected actually.
 
-Best Regards!
-Zhu Yanjun
+Let's add a quirk to force ehci to go into the
+usb_root_hub_lost_power() path and reset after resume.
+This should generally reset the whole controller and all
+ports and initialize everything cleanly again, and bring
+the devices back up.
 
-On 01/31/2014 09:17 PM, Mike Galbraith wrote:
-> (CC netdev)
->
-> On Fri, 2014-01-31 at 12:05 +0100, astx wrote:
->> Using Polycom video conferencing software my homebrew linux NAT router
->> crashes with attached kernel oops message.
->> This error can be reproduced also using kernel 3.2.54. Kernel 2.6.35
->> seems to be stable.
->>
->> Disabling nf_nat_h323 and nf_conntrack_h323 avoids crash - but video
->> conferencing software is no more usable.
->>
->>
->> ===================================================================================
->>    BUG: unable to handle kernel paging request at 00100104
->> IP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
->> *pdpt = 00000000359aa001 *pde = 0000000000000000
->> Oops: 0002 [#1] SMP
->> Modules linked in: nf_conntrack_netlink nfnetlink xt_mac xt_TCPMSS
->> ipt_MASQUERADE
->>    xt_pkttype xt_multiport xt_REDIRECT xt_nat iptable_mangle xt_LOG
->> xt_limit af_packet
->>    act_mirred cls_u32 sch_ingress sch_hfsc ifb xt_tcpudp ip6t_REJECT ipt_REJECT
->>    ip6table_raw iptable_raw xt_CT iptable_filter nf_nat_pptp nf_nat_proto_gre
->>    nf_conntrack_proto_udplite nf_conntrack_proto_dccp ip6table_mangle
->> iptable_nat
->>    nf_nat_ipv4 nf_nat_sip nf_nat_irc nf_nat_snmp_basic nf_conntrack_snmp
->>    nf_conntrack_broadcast nf_nat_h323 nf_nat_tftp nf_nat_ftp nf_nat
->> nf_conntrack_h323
->>    nf_conntrack_tftp nf_conntrack_proto_sctp nf_conntrack_sip nf_conntrack_irc
->>    nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_ftp nf_conntrack_ipv4
->>    nf_defrag_ipv4 ip_tables xt_conntrack nf_conntrack ip6table_filter ip6_tables
->>    x_tables padlock_sha padlock_aes e_powersaver freq_table mperf via_cputemp
->>    hwmon_vid serio_raw pcspkr i2c_viapro ehci_pci fan thermal processor 8139too
->>    sg thermal_sys button shpchp 8139cp pci_hotplug mii via_agp ext4 crc16 jbd2
->>    pata_via sata_via libata sd_mod scsi_mod ohci_hcd uhci_hcd ehci_hcd
->> CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.28-9500-smp_m #1
->> Hardware name:    /CN700-8237, BIOS 6.00 PG 08/30/2007
->> task: c07ce180 ti: f6408000 task.ti: c07c2000
->> EIP: 0060:[<f8214f07>] EFLAGS: 00210206 CPU: 0
->> EIP is at nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
->> EAX: 00100100 EBX: eb636bc0 ECX: 00000000 EDX: eb461540
->> ESI: c0804e00 EDI: eb461544 EBP: f6409f08 ESP: f6409eec
->>    DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
->> CR0: 8005003b CR2: 00100104 CR3: 359d4000 CR4: 000006b0
->> DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
->> DR6: ffff0ff0 DR7: 00000400
->> Stack:
->>    00000000 00200286 f6409f08 c0244bd8 eb636bc0 00100100 00000000 f6409f18
->>    f8215687 f598ede8 c0804e00 f6409f28 f8211c99 f598ede8 f598ee50 f6409f5c
->>    f8212e5e 00000003 00000000 00000000 00000004 eb461514 f598ede8 00000000
->> Call Trace:
->>    [<c0244bd8>] ? del_timer+0x48/0x70
->>    [<f8215687>] nf_ct_remove_expectations+0x47/0x60 [nf_conntrack]
->>    [<f8211c99>] nf_ct_delete_from_lists+0x59/0x90 [nf_conntrack]
->>    [<f8212e5e>] death_by_timeout+0x14e/0x1c0 [nf_conntrack]
->>    [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
->>    [<c024442d>] call_timer_fn+0x1d/0x80
->>    [<c024461e>] run_timer_softirq+0x18e/0x1a0
->>    [<f8212d10>] ? nf_conntrack_set_hashsize+0x190/0x190 [nf_conntrack]
->>    [<c023e6f3>] __do_softirq+0xa3/0x170
->>    [<c023e650>] ? __local_bh_enable+0x70/0x70
->>    <IRQ>
->>    [<c023e587>] ? irq_exit+0x67/0xa0
->>    [<c0202af6>] ? do_IRQ+0x46/0xb0
->>    [<c027ad05>] ? clockevents_notify+0x35/0x110
->>    [<c066ac6c>] ? common_interrupt+0x2c/0x40
->>    [<c056e3c1>] ? cpuidle_enter_state+0x41/0xf0
->>    [<c056e6fb>] ? cpuidle_idle_call+0x8b/0x100
->>    [<c02085f8>] ? arch_cpu_idle+0x8/0x30
->>    [<c027314b>] ? cpu_idle_loop+0x4b/0x140
->>    [<c0273258>] ? cpu_startup_entry+0x18/0x20
->>    [<c066056d>] ? rest_init+0x5d/0x70
->>    [<c0813ac8>] ? start_kernel+0x2ec/0x2f2
->>    [<c081364f>] ? repair_env_string+0x5b/0x5b
->>    [<c0813269>] ? i386_start_kernel+0x33/0x35
->> Code: 8b 7b 0c 8b b6 98 00 00 00 85 c0 89 07 74 03 89 78 04 c7 43 0c 00
->>    02 20 00 83 ae ec 05 00 00 01 8b 03 8b 7b 04 85 c0 89 07 74 03 <89> 78
->>    04 8b 43 7c c7 03 00 01 10 00 c7 43 04 00 02 20 00 80 6c
->> EIP: [<f8214f07>] nf_ct_unlink_expect_report+0x57/0xf0 [nf_conntrack]
->> SS:ESP 0068:f6409eec
->> CR2: 0000000000100104
->> ---[ end trace 79fe2e6b81f54dee ]---
->> Kernel panic - not syncing: Fatal exception in interrupt
->> Rebooting in 300 seconds..
->> ===================================================================================
->>
->>
->> Polycom Version: 3.1-44477
->> running on device: Apple iPad Mini
->> using operating system: iOS Version: 7.0.4
->>
->>
->> Attached also my kernel config. Hopefully someone could help...
->>
->> BR, Toni
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+As part of this, rename the "hibernation" paramter of
+ehci_resume() to force_reset since hibernation is simply
+another case where we can't trust the autodetected status
+and need to force a reset of devices.
+
+Signed-off-by: Wu Liang feng <wulf@rock-chips.com>
+---
+ drivers/usb/host/ehci-hcd.c      | 6 +++---
+ drivers/usb/host/ehci-platform.c | 6 +++++-
+ drivers/usb/host/ehci.h          | 2 +-
+ include/linux/usb/ehci_pdriver.h | 3 +++
+ 4 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 38bfeed..85e56d1 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1110,7 +1110,7 @@ int ehci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+ EXPORT_SYMBOL_GPL(ehci_suspend);
+ 
+ /* Returns 0 if power was preserved, 1 if power was lost */
+-int ehci_resume(struct usb_hcd *hcd, bool hibernated)
++int ehci_resume(struct usb_hcd *hcd, bool force_reset)
+ {
+ 	struct ehci_hcd		*ehci = hcd_to_ehci(hcd);
+ 
+@@ -1124,12 +1124,12 @@ int ehci_resume(struct usb_hcd *hcd, bool hibernated)
+ 		return 0;		/* Controller is dead */
+ 
+ 	/*
+-	 * If CF is still set and we aren't resuming from hibernation
++	 * If CF is still set and reset isn't forced
+ 	 * then we maintained suspend power.
+ 	 * Just undo the effect of ehci_suspend().
+ 	 */
+ 	if (ehci_readl(ehci, &ehci->regs->configured_flag) == FLAG_CF &&
+-			!hibernated) {
++			!force_reset) {
+ 		int	mask = INTR_MASK;
+ 
+ 		ehci_prepare_ports_for_controller_resume(ehci);
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index 8557803..db5c29e 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -185,6 +185,10 @@ static int ehci_platform_probe(struct platform_device *dev)
+ 		if (of_property_read_bool(dev->dev.of_node, "big-endian"))
+ 			ehci->big_endian_mmio = ehci->big_endian_desc = 1;
+ 
++		if (of_property_read_bool(dev->dev.of_node,
++					  "needs-reset-on-resume"))
++			pdata->reset_on_resume = 1;
++
+ 		priv->phy = devm_phy_get(&dev->dev, "usb");
+ 		if (IS_ERR(priv->phy)) {
+ 			err = PTR_ERR(priv->phy);
+@@ -340,7 +344,7 @@ static int ehci_platform_resume(struct device *dev)
+ 			return err;
+ 	}
+ 
+-	ehci_resume(hcd, false);
++	ehci_resume(hcd, pdata->reset_on_resume);
+ 	return 0;
+ }
+ #endif /* CONFIG_PM_SLEEP */
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 6f0577b..52ef084 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -871,7 +871,7 @@ extern int	ehci_handshake(struct ehci_hcd *ehci, void __iomem *ptr,
+ 
+ #ifdef CONFIG_PM
+ extern int	ehci_suspend(struct usb_hcd *hcd, bool do_wakeup);
+-extern int	ehci_resume(struct usb_hcd *hcd, bool hibernated);
++extern int	ehci_resume(struct usb_hcd *hcd, bool force_reset);
+ #endif	/* CONFIG_PM */
+ 
+ extern int	ehci_hub_control(struct usb_hcd	*hcd, u16 typeReq, u16 wValue,
+diff --git a/include/linux/usb/ehci_pdriver.h b/include/linux/usb/ehci_pdriver.h
+index 7eb4dcd..6287b39 100644
+--- a/include/linux/usb/ehci_pdriver.h
++++ b/include/linux/usb/ehci_pdriver.h
+@@ -34,6 +34,8 @@ struct usb_hcd;
+  *			after initialization.
+  * @no_io_watchdog:	set to 1 if the controller does not need the I/O
+  *			watchdog to run.
++ * @reset_on_resume:	set to 1 if the controller needs to be reset after
++ * 			a suspend / resume cycle (but can't detect that itself).
+  *
+  * These are general configuration options for the EHCI controller. All of
+  * these options are activating more or less workarounds for some hardware.
+@@ -45,6 +47,7 @@ struct usb_ehci_pdata {
+ 	unsigned	big_endian_desc:1;
+ 	unsigned	big_endian_mmio:1;
+ 	unsigned	no_io_watchdog:1;
++	unsigned	reset_on_resume:1;
+ 
+ 	/* Turn on all power and clocks */
+ 	int (*power_on)(struct platform_device *pdev);
+-- 
+1.8.3.2
+
 
