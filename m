@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaLVQi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:38:56 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33651 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481AbaLVQiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:38:54 -0500
-Date: Mon, 22 Dec 2014 10:38:13 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Bo Shen <voice.shen@atmel.com>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/2] USB: gadget: udc: atmel: change setting for DMA
-Message-ID: <20141222163813.GI12815@saruman>
-Reply-To: <balbi@ti.com>
-References: <1418807929-31952-1-git-send-email-voice.shen@atmel.com>
- <54930CE7.50008@atmel.com>
+	id S1755289AbaLVQnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:43:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41182 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841AbaLVQnF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 11:43:05 -0500
+Message-ID: <5498498B.90703@oracle.com>
+Date: Mon, 22 Dec 2014 09:40:43 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Rmm1Stw9KgbdL9/H"
-Content-Disposition: inline
-In-Reply-To: <54930CE7.50008@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Peter Zijlstra <peterz@infradead.org>, corbet@lwn.net, mingo@redhat.com,
+        hpa@zytor.com, riel@redhat.com, akpm@linux-foundation.org,
+        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
+        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
+        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
+        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
+        daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH RESEND v4] sched/fair: Add advisory flag for borrowing
+ a timeslice
+References: <1418928259-6311-1-git-send-email-khalid.aziz@oracle.com> <20141218222846.GH30905@twins.programming.kicks-ass.net> <54935842.5020507@oracle.com> <alpine.DEB.2.11.1412182355020.17382@nanos> <54936562.5070502@oracle.com> <alpine.DEB.2.11.1412190045590.17382@nanos> <54949BF0.8030403@oracle.com> <alpine.DEB.2.11.1412200041220.17382@nanos>
+In-Reply-To: <alpine.DEB.2.11.1412200041220.17382@nanos>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Rmm1Stw9KgbdL9/H
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/19/2014 04:57 PM, Thomas Gleixner wrote:
+> On Fri, 19 Dec 2014, Khalid Aziz wrote:
+>> The queuing problem caused by a task taking a contended lock just before its
+>> current timeslice is up which userspace app wouldn't know about, is a real
+>> problem nevertheless.
+>
+> We know that already.
+>
+>> My patch attempts to avoid the contention in the first
+>> place. futex with adaptive spinning is a post-contention solution that tries
+>> to minimize the cost of contention but does nothing to avoid the contention.
+>
+> I never said that adaptive spinning can solve that problem.
+>
+> If you would have carefuly read what I wrote, you might have noticed,
+> that I said:
+>
+>       a proper futex like spin mechanism
+>
+> Can you spot the subtle difference between that phrase and 'futex with
+> adaptive spinning'?
+>
+>> Solving this problem using futex can help only if the userspace lock uses
+>> futex.
+>
+> A really fundamentally new and earth shattering insight.
+>
+> If you would spend your time to actually digest what maintainers are
+> telling you, we might make progress on that matter.
+>
+> But you prefer to spend your time by repeating yourself and providing
+> completely useless information.
+>
+> What you are missing completely here is that neither me nor other
+> maintainers involved care about how you spend your time. But we very
+> much care about the time WE waste with your behaviour.
 
-On Thu, Dec 18, 2014 at 06:20:39PM +0100, Nicolas Ferre wrote:
-> Le 17/12/2014 10:18, Bo Shen a =E9crit :
-> > According to the datasheet, when transfer using DMA, the control
-> > setting for IN packet only need END_BUF_EN, END_BUF_IE, CH_EN,
-> > while for OUT packet, need more two bits END_TR_EN and END_TR_IE
-> > to be configured.
-> >=20
-> > Signed-off-by: Bo Shen <voice.shen@atmel.com>
->=20
-> Seems okay, even if I am not used to these aspects:
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->=20
-> I would also add a "stable" tag to these patches, something like this:
->=20
-> Fixes: 914a3f3b3754 (USB: add atmel_usba_udc driver)
-> Cc: stable@vger.kernel.org # always been there...
->=20
->=20
-> Felipe,
->=20
-> Can you take both of these patches as fixes?
+I am sorry that you feel the need to continue to resort to personal 
+attacks even after I made it clear in my last response that I was not 
+going to pursue this patch. There is no possibility of a productive 
+discussion of a solution at this point. I hope someone else can find a 
+solution you find acceptable.
 
-I'll get back to them... Still other patches to go through.
+Thanks,
+Khalid
 
---=20
-balbi
-
---Rmm1Stw9KgbdL9/H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUmEj1AAoJEIaOsuA1yqRE/e4QAJGni1O6sHI5BtgKRsoDike3
-e6C4LGycV0cHs/rsY6wU46cKKhUGAcQ59XhLtBKKA65fAHHK2+VxtJTdCbf169aP
-kS6113qTelj9bwK/kjVWu8KTlATr+PO369xPen+S43zPE21bgSQ2qNmCmSquMioW
-PEjOdIKf+fBVYRcnKLYlTmvtzWU+mX6jgbnmAK1bmeHf4k69AjVGmOgA+LC7EQ7A
-iqSSQcJyH46zRB9pG+sKPbXw/5KL7J6SH0TXH6eKumth6NtvtVQlgX483O4IPGFL
-It2Im/05MkwBio1x0YEYMbA0NCEH83eAOm7Jhy+PIDnnLPV4rc/wM5ErEay1z4dk
-fM14PTzdkcjWT+NQF9faQzuxuH2AOSVurPT5YLRsLUrNg6hBG9THjZ0G4KU/YmwH
-Cmm/dcYBWVQJ665cuAfwS7tNFwmz3IpeoElujMLsl+yNP62HO+E6O5gxpz506Rjc
-S5/7uISrgpuyAmb1cQV4ZOtk19JlNu/bFBqe8bO7mfhetmKFp5UcvCpcp6zr/wdf
-rFZaemf1w1E7o/yTsJwkKCc4ANgJvrk14uwYY4R8ajXT42O/Z0tlw6KQrB/7pe7D
-IT9VAjQYNiViqphU1I+4QE63yhr5H9oOgXSyAciVfelEGDUc92DafKJpB8UxbJ4t
-OQ47kP2jhxyx89uFTRh2
-=OTUg
------END PGP SIGNATURE-----
-
---Rmm1Stw9KgbdL9/H--
