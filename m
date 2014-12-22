@@ -1,125 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaLVPWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:22:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:29516 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181AbaLVPWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:22:47 -0500
-Message-ID: <54983731.4080101@oracle.com>
-Date: Mon, 22 Dec 2014 09:22:25 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755181AbaLVPZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:25:51 -0500
+Received: from mga11.intel.com ([192.55.52.93]:40383 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754842AbaLVPZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:25:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,624,1413270000"; 
+   d="scan'208";a="651674383"
+Date: Mon, 22 Dec 2014 20:55:17 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Robin Murphy <robin.murphy@arm.com>, Will Deacon <will.deacon@arm.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dan.j.williams@intel.com,
+        lars@metafoo.de, liviu.dudau@arm.com, andrew.jackson@arm.com
+Subject: Re: [PATCH] dma-mapping: tidy up dma_parms default handling
+Message-ID: <20141222152517.GM16827@intel.com>
+References: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
 MIME-Version: 1.0
-To: Dongsu Park <dongsu.park@profitbricks.com>, linux-kernel@vger.kernel.org
-CC: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
-        Ming Lin <mlin@minggr.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC PATCH 15/17] fs: use helper bio_add_page() instead of open
- coding on bi_io_vec
-References: <cover.1419241597.git.dongsu.park@profitbricks.com> <83a9ee8a309f8e08490c5dd715a608ea054f5c33.1419241597.git.dongsu.park@profitbricks.com> <fc859b23b383f6f4c1e81f4210aa62cb1bdc935f.1419241597.git.dongsu.park@profitbricks.com> <0b6ba533a64aec98e8447bfd30c6622d0729d12e.1419241597.git.dongsu.park@profitbricks.com> <d42dae3d2a64fa4c3a0893f1af963151b31869e3.1419241597.git.dongsu.park@profitbricks.com> <4334b90a56b96ad7a11e4ba7eb97c2cf4405950d.1419241597.git.dongsu.park@profitbricks.com> <abe647cf7cf272220227fad4dac9c43641192f01.1419241597.git.dongsu.park@profitbricks.com> <b7767767957ca758ac492e94dfb320bea4f52dd7.1419241597.git.dongsu.park@profitbricks.com> <e35d37b66d621c51f2eb24ff024291bd1d53422e.1419241597.git.dongsu.park@profitbricks.com> <a7118fb6a3353958a19f4d848472da2de76de238.1419241597.git.dongsu.park@profitbricks.com> <a0e8166c0c5455755b0cd2d79e8066636c22aa77.1419241597.git.dongsu.park@profitbricks.com>
-In-Reply-To: <a0e8166c0c5455755b0cd2d79e8066636c22aa77.1419241597.git.dongsu.park@profitbricks.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ffdc5455d698d2525f2d126d0adabf9418fd76b1.1418990609.git.robin.murphy@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2014 05:48 AM, Dongsu Park wrote:
-> From: Kent Overstreet <kmo@daterainc.com>
+On Fri, Dec 19, 2014 at 05:39:09PM +0000, Robin Murphy wrote:
+> Many DMA controllers and other devices set max_segment_size to
+> indicate their scatter-gather capability, but have no interest in
+> segment_boundary_mask. However, the existence of a dma_parms structure
+> precludes the use of any default value, leaving them as zeros (assuming
+> a properly kzalloc'ed structure). If a well-behaved IOMMU (or SWIOTLB)
+> then tries to respect this by ensuring a mapped segment does not cross
+> a zero-byte boundary, hilarity ensues.
 > 
-> Call pre-defined helper bio_add_page() instead of open coding for
-> iterating through bi_io_vec[]. Doing that, it's possible to make some
-> parts in filesystems and mm/page_io.c simpler than before.
+> Since zero is a nonsensical value for either parameter, treat it as an
+> indicator for "default", as might be expected. In the process, clean up
+> a bit by replacing the bare constants with slightly more meaningful
+> macros and removing the superfluous "else" statements.
 > 
-> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-> [dpark: add more description in commit message]
-> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Dave Kleikamp <shaggy@kernel.org>
-
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-
-> Cc: linux-fsdevel@vger.kernel.org
+> Signed-off-by: Robin Murphy <robin.murphy@arm.com>
 > ---
->  fs/buffer.c         |  7 ++-----
->  fs/jfs/jfs_logmgr.c | 14 ++++----------
->  mm/page_io.c        |  8 +++-----
->  3 files changed, 9 insertions(+), 20 deletions(-)
 > 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 20805db..35ac0ec 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -3022,12 +3022,9 @@ int _submit_bh(int rw, struct buffer_head *bh, unsigned long bio_flags)
+> Hi Vinod, dmaengine folks,
+> 
+> This isn't strictly a dmaengine patch, but get_maintainer.pl pointed at you,
+> and there do happen to be more dmaengine drivers potentially affected by this
+> than anything else - the current PL330 driver blows up arm64's SWIOTLB when
+> running dmatest on the Juno platform, which is what brought the underlying
+> problem to light.
+That's due to include/linux/dma*, I will fix that up.
+
+I think arm folks should be able to help review this... Last few commit
+point to Will Decon carrying these
+
+-- 
+~Vinod
+
+> 
+>  include/linux/dma-mapping.h | 17 ++++++++++-------
+>  1 file changed, 10 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index c3007cb..99ba736 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -141,7 +141,9 @@ static inline void arch_teardown_dma_ops(struct device *dev) { }
 >  
->  	bio->bi_iter.bi_sector = bh->b_blocknr * (bh->b_size >> 9);
->  	bio->bi_bdev = bh->b_bdev;
-> -	bio->bi_io_vec[0].bv_page = bh->b_page;
-> -	bio->bi_io_vec[0].bv_len = bh->b_size;
-> -	bio->bi_io_vec[0].bv_offset = bh_offset(bh);
->  
-> -	bio->bi_vcnt = 1;
-> -	bio->bi_iter.bi_size = bh->b_size;
-> +	bio_add_page(bio, bh->b_page, bh->b_size, bh_offset(bh));
-> +	BUG_ON(bio->bi_iter.bi_size != bh->b_size);
->  
->  	bio->bi_end_io = end_bio_bh_io_sync;
->  	bio->bi_private = bh;
-> diff --git a/fs/jfs/jfs_logmgr.c b/fs/jfs/jfs_logmgr.c
-> index bc462dc..46fae06 100644
-> --- a/fs/jfs/jfs_logmgr.c
-> +++ b/fs/jfs/jfs_logmgr.c
-> @@ -1999,12 +1999,9 @@ static int lbmRead(struct jfs_log * log, int pn, struct lbuf ** bpp)
->  
->  	bio->bi_iter.bi_sector = bp->l_blkno << (log->l2bsize - 9);
->  	bio->bi_bdev = log->bdev;
-> -	bio->bi_io_vec[0].bv_page = bp->l_page;
-> -	bio->bi_io_vec[0].bv_len = LOGPSIZE;
-> -	bio->bi_io_vec[0].bv_offset = bp->l_offset;
->  
-> -	bio->bi_vcnt = 1;
-> -	bio->bi_iter.bi_size = LOGPSIZE;
-> +	bio_add_page(bio, bp->l_page, LOGPSIZE, bp->l_offset);
-> +	BUG_ON(bio->bi_iter.bi_size != LOGPSIZE);
->  
->  	bio->bi_end_io = lbmIODone;
->  	bio->bi_private = bp;
-> @@ -2145,12 +2142,9 @@ static void lbmStartIO(struct lbuf * bp)
->  	bio = bio_alloc(GFP_NOFS, 1);
->  	bio->bi_iter.bi_sector = bp->l_blkno << (log->l2bsize - 9);
->  	bio->bi_bdev = log->bdev;
-> -	bio->bi_io_vec[0].bv_page = bp->l_page;
-> -	bio->bi_io_vec[0].bv_len = LOGPSIZE;
-> -	bio->bi_io_vec[0].bv_offset = bp->l_offset;
->  
-> -	bio->bi_vcnt = 1;
-> -	bio->bi_iter.bi_size = LOGPSIZE;
-> +	bio_add_page(bio, bp->l_page, LOGPSIZE, bp->l_offset);
-> +	BUG_ON(bio->bi_iter.bi_size != LOGPSIZE);
->  
->  	bio->bi_end_io = lbmIODone;
->  	bio->bi_private = bp;
-> diff --git a/mm/page_io.c b/mm/page_io.c
-> index 955db8b..8c878c7 100644
-> --- a/mm/page_io.c
-> +++ b/mm/page_io.c
-> @@ -33,12 +33,10 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
->  	if (bio) {
->  		bio->bi_iter.bi_sector = map_swap_page(page, &bio->bi_bdev);
->  		bio->bi_iter.bi_sector <<= PAGE_SHIFT - 9;
-> -		bio->bi_io_vec[0].bv_page = page;
-> -		bio->bi_io_vec[0].bv_len = PAGE_SIZE;
-> -		bio->bi_io_vec[0].bv_offset = 0;
-> -		bio->bi_vcnt = 1;
-> -		bio->bi_iter.bi_size = PAGE_SIZE;
->  		bio->bi_end_io = end_io;
-> +
-> +		bio_add_page(bio, page, PAGE_SIZE, 0);
-> +		BUG_ON(bio->bi_iter.bi_size != PAGE_SIZE);
->  	}
->  	return bio;
+>  static inline unsigned int dma_get_max_seg_size(struct device *dev)
+>  {
+> -	return dev->dma_parms ? dev->dma_parms->max_segment_size : 65536;
+> +	if (dev->dma_parms && dev->dma_parms->max_segment_size)
+> +		return dev->dma_parms->max_segment_size;
+> +	return SZ_64K;
 >  }
+>  
+>  static inline unsigned int dma_set_max_seg_size(struct device *dev,
+> @@ -150,14 +152,15 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
+>  	if (dev->dma_parms) {
+>  		dev->dma_parms->max_segment_size = size;
+>  		return 0;
+> -	} else
+> -		return -EIO;
+> +	}
+> +	return -EIO;
+>  }
+>  
+>  static inline unsigned long dma_get_seg_boundary(struct device *dev)
+>  {
+> -	return dev->dma_parms ?
+> -		dev->dma_parms->segment_boundary_mask : 0xffffffff;
+> +	if (dev->dma_parms && dev->dma_parms->segment_boundary_mask)
+> +		return dev->dma_parms->segment_boundary_mask;
+> +	return DMA_BIT_MASK(32);
+>  }
+>  
+>  static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
+> @@ -165,8 +168,8 @@ static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
+>  	if (dev->dma_parms) {
+>  		dev->dma_parms->segment_boundary_mask = mask;
+>  		return 0;
+> -	} else
+> -		return -EIO;
+> +	}
+> +	return -EIO;
+>  }
+>  
+>  #ifndef dma_max_pfn
+> -- 
+> 1.9.1
 > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
