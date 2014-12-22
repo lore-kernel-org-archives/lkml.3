@@ -1,195 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaLVJ2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:28:53 -0500
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58641 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753971AbaLVJ2w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:28:52 -0500
-Message-ID: <1419240528.30945.12.camel@x220>
-Subject: Re: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Date: Mon, 22 Dec 2014 10:28:48 +0100
-In-Reply-To: <547C92A1.8000902@atmel.com>
-References: <cover.1416392687.git.nicolas.ferre@atmel.com>
-		 <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com>
-	 <1417434775.30245.29.camel@x220> <547C92A1.8000902@atmel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 22 Dec 2014 09:28:49.0230 (UTC) FILETIME=[B13336E0:01D01DC9]
-X-RcptDomain: vger.kernel.org
+	id S1754284AbaLVJ27 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:28:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55132 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753971AbaLVJ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 04:28:56 -0500
+Message-ID: <5497E41F.50301@redhat.com>
+Date: Mon, 22 Dec 2014 10:27:59 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Wu, Feng" <feng.wu@intel.com>, "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jiang Liu <jiang.liu-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
+Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
+ VT-d PI
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>	<1418397300-10870-14-git-send-email-feng.wu@intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>	<549307A5.3060305@redhat.com>	<E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>	<5494131E.9030505@redhat.com> <E959C4978C3B6342920538CF579893F00230D036@SHSMSX104.ccr.corp.intel.com> <549576C7.4030800@redhat.com> <E959C4978C3B6342920538CF579893F0023103FB@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F0023103FB@SHSMSX104.ccr.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-01 at 17:09 +0100, Nicolas Ferre wrote:
-> Le 01/12/2014 12:52, Paul Bolle a écrit :
-> > On Wed, 2014-11-19 at 11:31 +0100, Nicolas Ferre wrote:
-> >> Remove legacy support for at91sam9rl boards.
-> >> This include board files removal plus all legacy code for non DT boards
-> >> support.
-> >> Use the Device Tree for running this board with newer kernels.
-> >>
-> >> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> >> ---
-> > 
-> > There's some further cleanup possible after this patch. I noticed that
-> > when it landed in today's linux-next (ie, next-20141201) as commit
-> > 4403ac46edcd ("ARM: at91: remove at91sam9263 legacy board support").
-> > 
-> >>  arch/arm/configs/at91sam9263_defconfig   |  151 ---
-> >>  arch/arm/mach-at91/Kconfig.non_dt        |   21 -
-> >>  arch/arm/mach-at91/Makefile              |    4 -
-> >>  arch/arm/mach-at91/at91sam9263.c         |  399 --------
-> >>  arch/arm/mach-at91/at91sam9263_devices.c | 1538 ------------------------------
-> >>  arch/arm/mach-at91/board-sam9263ek.c     |  493 ----------
-> >>  6 files changed, 2606 deletions(-)
-> >>  delete mode 100644 arch/arm/configs/at91sam9263_defconfig
-> >>  delete mode 100644 arch/arm/mach-at91/at91sam9263_devices.c
-> >>  delete mode 100644 arch/arm/mach-at91/board-sam9263ek.c
-> >>
-> >> [...]
-> >> diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-> >> deleted file mode 100644
-> >> index cef0e2f57068..000000000000
-> >> --- a/arch/arm/mach-at91/at91sam9263_devices.c
-> >> +++ /dev/null
-> >> [...]
-> >> -/* --------------------------------------------------------------------
-> >> - *  RTT
-> >> - * -------------------------------------------------------------------- */
-> >> -
-> >> -static struct resource rtt0_resources[] = {
-> >> -	{
-> >> -		.start	= AT91SAM9263_BASE_RTT0,
-> >> -		.end	= AT91SAM9263_BASE_RTT0 + SZ_16 - 1,
-> >> -		.flags	= IORESOURCE_MEM,
-> >> -	}, {
-> >> -		.flags	= IORESOURCE_MEM,
-> >> -	}, {
-> >> -		.flags  = IORESOURCE_IRQ,
-> >> -	}
-> >> -};
-> >> -
-> >> -static struct platform_device at91sam9263_rtt0_device = {
-> >> -	.name		= "at91_rtt",
-> >> -	.id		= 0,
-> >> -	.resource	= rtt0_resources,
-> >> -};
-> >> -
-> >> -static struct resource rtt1_resources[] = {
-> >> -	{
-> >> -		.start	= AT91SAM9263_BASE_RTT1,
-> >> -		.end	= AT91SAM9263_BASE_RTT1 + SZ_16 - 1,
-> >> -		.flags	= IORESOURCE_MEM,
-> >> -	}, {
-> >> -		.flags	= IORESOURCE_MEM,
-> >> -	}, {
-> >> -		.flags  = IORESOURCE_IRQ,
-> >> -	}
-> >> -};
-> >> -
-> >> -static struct platform_device at91sam9263_rtt1_device = {
-> >> -	.name		= "at91_rtt",
-> >> -	.id		= 1,
-> >> -	.resource	= rtt1_resources,
-> >> -};
-> >> -
-> >> -#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
-> >> -static void __init at91_add_device_rtt_rtc(void)
-> >> -{
-> >> -	struct platform_device *pdev;
-> >> -	struct resource *r;
-> >> -
-> >> -	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
-> > 
-> > This and...
-> > 
-> >> -	case 0:
-> >> -		/*
-> >> -		 * The second resource is needed only for the chosen RTT:
-> >> -		 * GPBR will serve as the storage for RTC time offset
-> >> -		 */
-> >> -		at91sam9263_rtt0_device.num_resources = 3;
-> >> -		at91sam9263_rtt1_device.num_resources = 1;
-> >> -		pdev = &at91sam9263_rtt0_device;
-> >> -		r = rtt0_resources;
-> >> -		break;
-> >> -	case 1:
-> >> -		at91sam9263_rtt0_device.num_resources = 1;
-> >> -		at91sam9263_rtt1_device.num_resources = 3;
-> >> -		pdev = &at91sam9263_rtt1_device;
-> >> -		r = rtt1_resources;
-> >> -		break;
-> >> -	default:
-> >> -		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
-> >> -		       CONFIG_RTC_DRV_AT91SAM9_RTT);
-> > 
-> > this are the only places were the Kconfig symbol RTC_DRV_AT91SAM9_RTT
-> > was used. It is useless now. That matches its help text, that reads:
-> >     This option is only relevant for legacy board support and
-> >     won't be used when booting a DT board.
-> > 
-> >> -		return;
-> >> -	}
-> >> -
-> >> -	pdev->name = "rtc-at91sam9";
-> >> -	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
-> >> -	r[1].end = r[1].start + 3;
-> >> -	r[2].start = NR_IRQS_LEGACY + AT91_ID_SYS;
-> >> -	r[2].end = NR_IRQS_LEGACY + AT91_ID_SYS;
-> >> -}
-> >> -#else
-> >> -static void __init at91_add_device_rtt_rtc(void)
-> >> -{
-> >> -	/* Only one resource is needed: RTT not used as RTC */
-> >> -	at91sam9263_rtt0_device.num_resources = 1;
-> >> -	at91sam9263_rtt1_device.num_resources = 1;
-> >> -}
-> >> -#endif
-> >> -
-> >> -static void __init at91_add_device_rtt(void)
-> >> -{
-> >> -	at91_add_device_rtt_rtc();
-> >> -	platform_device_register(&at91sam9263_rtt0_device);
-> >> -	platform_device_register(&at91sam9263_rtt1_device);
-> >> -}
-> > 
-> > Is a patch to remove that symbol from drivers/rtc/Kconfig queued
-> > somewhere?
-> 
-> Hi Paul,
-> 
-> In fact these config options are flagged as being useless for !DT. As
-> the modifications of this Kconfig (in a "drivers" branch) and the
-> removal of !DT boards (in a "cleaup" branch) will happen in 3.19, I was
-> planning to come back to these 2 options by removing them later in order
-> to avoid to solve a merge conflict.
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/rtc/Kconfig?id=3969eb48ad7f3f3bef61f5474b7214e601fd2d75
-> 
-> As you can see in the commit above, they have been properly tagged by Boris.
-
-Yes, those two lines were noticed by me (see above). 
-
-> So, I suggest to get rid of them during 3.19-rc phase.
-
-There's still an entry for RTC_DRV_AT91SAM9_RTT in next-20141221 (and
-v3.19-rc1). So this I send this message as a reminder that this cleanup
-is still needed.
-
-Thanks,
 
 
-Paul Bolle
+On 22/12/2014 05:48, Wu, Feng wrote:
+> Do you mean we don't support Lowest priority interrupts? As I mentioned before,
+> Lowest priority interrupts is widely used in Linux, so I think supporting lowest priority
+> interrupts is very important for Linux guest OS. Do you have any ideas/suggestions about
+> how to support Lowest priority interrupts for PI? Thanks a lot!
 
+Can you support them only if the destination is a single CPU?
+
+Paolo
