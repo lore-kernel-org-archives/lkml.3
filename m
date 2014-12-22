@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120AbaLVImW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 03:42:22 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48021 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaLVImU (ORCPT
+	id S1754084AbaLVI6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 03:58:31 -0500
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:40493 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974AbaLVI6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 03:42:20 -0500
+	Mon, 22 Dec 2014 03:58:30 -0500
+X-Spam-Flag: NO
+X-Spam-Score: 0.157
+Authentication-Results: rohrpostix1.prod.vfnet.de (amavisd-new); dkim=softfail
+	(invalid, public key: DNS query timeout for
+	mail._domainkey.vodafone.de) header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de BF8B92602E3
+Message-ID: <5497DD0E.7040400@vodafone.de>
+Date: Mon, 22 Dec 2014 09:57:50 +0100
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1419237118-9712-1-git-send-email-geert@linux-m68k.org>
-References: <1419237118-9712-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 22 Dec 2014 09:42:18 +0100
-X-Google-Sender-Auth: ETE27FZKFm2IfRKVAx___rUHTfs
-Message-ID: <CAMuHMdU0ym7PLkEcdmDnxvDVBn879QWkOm=-zUXFaQMh2FHfrQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.19-rc1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Miao Steven <realmz6@gmail.com>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        Cris <linux-cris-kernel@axis.com>
-Content-Type: text/plain; charset=UTF-8
+To: Oded Gabbay <oded.gabbay@amd.com>, Dave Airlie <airlied@gmail.com>
+CC: dri-devel <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] amdkfd: Don't clear *kfd2kgd on kfd_module_init
+References: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com>	<1419108374-7020-2-git-send-email-oded.gabbay@amd.com>	<5496AEAD.3090003@vodafone.de>	<5496B04C.50502@amd.com>	<5496BAE0.5090901@vodafone.de>	<5496C5EA.7050200@amd.com>	<5496CA0F.8000800@amd.com>	<5496EDF1.7080106@vodafone.de>	<5496EF34.70302@amd.com>	<5496F0DD.40903@vodafone.de>	<5497C98C.2080208@amd.com> <CAPM=9tzpvmu=6X32-jc4VeVTZENW9iQDq6aB1dxo6TkbkKOpkQ@mail.gmail.com> <5497CB91.2080306@amd.com>
+In-Reply-To: <5497CB91.2080306@amd.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 9:31 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> Below is the list of build error/warning regressions/improvements in
-> v3.19-rc1[1] compared to v3.18[2].
+Am 22.12.2014 um 08:43 schrieb Oded Gabbay:
 >
-> Summarized:
->   - build errors: +24/-16
+>
+> On 12/22/2014 09:40 AM, Dave Airlie wrote:
+>>>>>>> There should be, but when the modules are compiled in, they are 
+>>>>>>> loaded
+>>>>>>> based on
+>>>>>>> link order only, if they are in the same group, and the groups are
+>>>>>>> loaded by a
+>>>>>>> pre-defined order.
+>>>>>>
+>>>>>> Is that really still up to date? I've seen effort to change that
+>>>>>> something like
+>>>>>> 10+ years ago when Rusty reworked the module system. And it is 
+>>>>>> comming
+>>>>>> up on the
+>>>>>> lists again from time to time.
+>>>>>
+>>>>>  From what I can see in the Makefile rules, code and google, yes, 
+>>>>> that's
+>>>>> still
+>>>>> the situation. If someone will prove me wrong I will be more than 
+>>>>> happy
+>>>>> to
+>>>>> correct my code.
+>>>>>>
+>>>>>>
+>>>>>>> I don't want to move iommu before gpu, so I don't have a 
+>>>>>>> solution for
+>>>>>>> the
+>>>>>>> order between amdkfd and amd_iommu_v2.
+>>>>>>
+>>>>>> Why not? That's still better than creating a kernel workqueue,
+>>>>>> scheduling one
+>>>>>> work item on it, rescheduling the task until everything is 
+>>>>>> completed and
+>>>>>> you can
+>>>>>> continue.
+>>>>>
+>>>>> Because I don't know the consequences of moving an entire 
+>>>>> subsystem in
+>>>>> front
+>>>>> of another one. In addition, even if everyone agrees, I'm pretty sure
+>>>>> that
+>>>>> Linus won't be happy to do that in -rc stages. So maybe this is 
+>>>>> something
+>>>>> to
+>>>>> consider for 3.20 merge window, but I would still like to provide a
+>>>>> solution
+>>>>> for 3.19.
+>>>>
+>>>>
+>>>> Yeah, true indeed. How about depending on everything being compiled as
+>>>> module
+>>>> for 3.19 then? Still better than having such a hack in the driver 
+>>>> for as a
+>>>> temporary workaround for one release.
+>>>>
+>>> I thought about it, but because this problem was originally reported 
+>>> by a
+>>> user that told us he couldn't use modules because of his setup, I 
+>>> decided
+>>> not to.
+>>> I assume there are other users out there who needs this option 
+>>> (compiled
+>>> everything in the kernel - embedded ?), so I don't want to make 
+>>> their life
+>>> harder.
+>>>
+>>> In addition, saying it is a workaround for one release is true in case
+>>> moving iommu subsystem in front of gpu subsystem is acceptable and 
+>>> doesn't
+>>> cause other problems, unknown at this point.
+>>>
+>>> Bottom line, my personal preference is to help the users _now_ and if a
+>>> better fix is found in the future, change the code accordingly.
+>>
+>> My guess is moving the iommu subsystem in front of the GPU would be 
+>> rational.
+>>
+>> It does seem like it would generally have a depend in that order.
+>>
+>> Dave.
+>>
+> Dave,
+> I agree, but don't you think it is too risky for -rc stages ?
+> If not, I can try it and if it works on KV, I can submit a patch.
+> But if you do think it is risky, what do you recommend for 3.19 ? Do 
+> the fix I suggested or disable build-in compilation option ?
 
-  + /home/kisskb/slave/src/arch/powerpc/xmon/xmon.c: error: unused
-variable 'badaddr' [-Werror=unused-variable]:  => 1185:13
-  + /home/kisskb/slave/src/arch/powerpc/xmon/xmon.c: error: unused
-variable 'mode' [-Werror=unused-variable]:  => 1183:6
+I would say create the patch of changing the order (should be trivial), 
+describe in detail in the commit message what this is supposed to fix 
+and why such an severe change was done in -rc1 and submit it upstream.
 
-powerpc-randconfig
+We can still revert it in -rc2 if it breaks anything.
 
-  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7343/irq.c: error:
-too few arguments to function 'ioread16':  => 44:2
-  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7343/irq.c: error:
-too few arguments to function 'iowrite16':  => 123:2
+Christian.
 
-sh4/se7343_defconfig
+>
+>     Oded
 
-  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7722/irq.c: error:
-too few arguments to function 'ioread16':  => 43:2
-  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7722/irq.c: error:
-too few arguments to function 'iowrite16':  => 116:2
-
-sh4/se7722_defconfig
-
-  + /home/kisskb/slave/src/drivers/usb/musb/blackfin.c: error:
-'bfin_writel' undeclared here (not in a function):  => 476:13
-
-bfin/BF527-EZKIT-V2_defconfig
-
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_BABBLE_CTL' undeclared here (not in a function):  => 67:17
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_CONFIGDATA' undeclared here (not in a function):  => 62:18
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_EPINFO' undeclared here (not in a function):  => 74:14
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_RAMINFO' undeclared here (not in a function):  => 75:15
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_RXFIFOADD' undeclared here (not in a function):  => 71:17
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_RXFIFOSZ' undeclared here (not in a function):  => 69:16
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_TXFIFOADD' undeclared here (not in a function):  => 70:17
-  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
-'MUSB_TXFIFOSZ' undeclared here (not in a function):  => 68:16
-
-bfin/BF527-EZKIT_defconfig
-bfin/BF527-EZKIT-V2_defconfig
-bfin/BF548-EZKIT_defconfig
-bfin/CM-BF548_defconfig
-bfin/CM-BF527_defconfig
-
-  + /home/kisskb/slave/src/include/linux/irq.h: error: conflicting
-types for 'ioread16':  => 856:19
-  + /home/kisskb/slave/src/include/linux/irq.h: error: conflicting
-types for 'iowrite16':  => 847:20
-
-sh4/se7343_defconfig
-sh4/se7722_defconfig
-
-  + error: "csum_partial_copy_nocheck" [net/ipv6/ipv6.ko] undefined!:  => N/A
-
-cris/cris-allmodconfig
-
-  + error: No rule to make target include/config/auto.conf:  => N/A
-
-arm/arm-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/8241/ (262 out of 262 configs)
-> [2] http://kisskb.ellerman.id.au/kisskb/head/8168/ (262 out of 262 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
