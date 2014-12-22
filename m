@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115AbaLVPfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:35:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20649 "EHLO mga09.intel.com"
+	id S932144AbaLVPfm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:35:42 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42765 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755097AbaLVPfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:35:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="432181294"
-Date: Mon, 22 Dec 2014 21:05:17 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH] dma: imx-dma.c:  Remove unused function
-Message-ID: <20141222153517.GO16827@intel.com>
-References: <1419182302-9672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S932118AbaLVPfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:35:39 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <grant.likely@linaro.org>, <robh+dt@kernel.org>,
+        <devicetree@vger.kernel.org>, <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH] dma-mapping: fix debug print to display correct dma_pfn_offset
+Date: Mon, 22 Dec 2014 10:35:09 -0500
+Message-ID: <1419262509-9811-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419182302-9672-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 06:18:22PM +0100, Rickard Strandqvist wrote:
-> Remove the function is_imx21_dma() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-Please ensure you use *right* subsystem name
+fix the dev_dbg to display the offset which is the calculated
+dma_pfn_offset value and set later in the code.
 
-Applied, thanks
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+---
+ drivers/of/platform.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 5b33c6a..a54ec10 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -188,7 +188,7 @@ static void of_dma_configure(struct device *dev)
+ 		size = dev->coherent_dma_mask;
+ 	} else {
+ 		offset = PFN_DOWN(paddr - dma_addr);
+-		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
++		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
+ 	}
+ 	dev->dma_pfn_offset = offset;
+ 
 -- 
-~Vinod
+1.7.9.5
 
