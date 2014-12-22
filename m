@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508AbaLVRBR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 12:01:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33341 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754818AbaLVRBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 12:01:15 -0500
-Date: Mon, 22 Dec 2014 18:01:03 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, acme@kernel.org, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] tools lib traceevent: Add support for IP address formats
-Message-ID: <20141222170103.GG29096@krava.brq.redhat.com>
-References: <1418915443-45707-1-git-send-email-dsahern@gmail.com>
- <17321.1418939104@turing-police.cc.vt.edu>
- <549351A7.9040408@gmail.com>
- <54938266.9090007@gmail.com>
+	id S1755250AbaLVRFl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 12:05:41 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:64837 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868AbaLVRFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 12:05:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54938266.9090007@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <Pine.LNX.4.44L0.1412221101540.23710-100000@netrider.rowland.org>
+References: <1419244588-5227-3-git-send-email-wulf@rock-chips.com>
+	<Pine.LNX.4.44L0.1412221101540.23710-100000@netrider.rowland.org>
+Date: Mon, 22 Dec 2014 09:05:38 -0800
+Message-ID: <CAD=FV=UWOOwr3K6vPbAiHTUuv1DdbVRQ1yKKWWS6KOv6J4B51w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] USB: ehci-platform: Support ehci reset after resume quirk
+From: Doug Anderson <dianders@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Wu Liang feng <wulf@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Tao Huang <huangtao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Eddie Cai <eddie.cai@rock-chips.com>, Roy Li <roy.li@rock-chips.com>,
+        Chris <zyw@rock-chips.com>, Julius Werner <jwerner@google.com>,
+        Pawel Osciak <posciak@google.com>, Tomasz Figa <tfiga@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 06:41:58PM -0700, David Ahern wrote:
-> On 12/18/14 3:13 PM, David Ahern wrote:
-> >Are you seeing something different?
-> 
-> I put a tracepoint in the ipv4/ipv6 add/del address code. The IPv4 one
-> prints the address using pi4 and pI4 and the IPv6 using pi6, pI6 and pI6c.
+Alan,
 
-apart from your tracepoints, is there another tracepoint using this?
-I couldn't find any.. I dont think it's a problem.. just wanted to
-try it ;-)
+On Mon, Dec 22, 2014 at 8:06 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 22 Dec 2014, Wu Liang feng wrote:
+>
+>> The EHCI controller doesn't properly detect the case when
+>
+> "The" EHCI controller?  I don't know what EHCI controller you're
+> talking about, but my controllers don't have any trouble detecting
+> device removal during suspend.
 
-thanks,
-jirka
+This is specifically the EHCI controller on rk3288.  Not sure why Wu
+Liang feng removed that part of the description.
 
-> 
-> Using ifconfig eth1 1.2.3.4/24
-> 
-> I get this for trace_pipe which uses the in-kernel printf code:
-> 
-> root@localhost:/sys/kernel/debug/tracing/events# cat ../trace_pipe
->         ifconfig-601   [000] ....   710.660611: ipv4_del_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
->         ifconfig-602   [000] ....   720.833559: ipv4_add_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
->         ifconfig-602   [000] .Ns.   720.833966: ipv6_add_addr:
-> pi6=fe80000000000000000202fffe020211
-> pI6=fe80:0000:0000:0000:0002:02ff:fe02:0211 pI6c=fe80::2:2ff:fe02:211
->         ifconfig-602   [000] ....   720.835413: ipv4_del_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
->         ifconfig-602   [000] .N..   720.835451: ipv4_add_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
-> 
-> 
-> And this using perf:
-> root@localhost:~# perf record -a -e  ipv4:* -e ipv6:* --no-buffering | perf
-> --no-pager script
-> 
->        ifconfig   601 [000]   710.912862: ipv4:ipv4_del_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
->         ifconfig   602 [000]   721.090776: ipv4:ipv4_add_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
->         ifconfig   602 [000]   721.091177: ipv6:ipv6_add_addr:
-> pi6=fe80000000000000000202fffe020211
-> pI6=fe80:0000:0000:0000:0002:02ff:fe02:0211 pI6c=fe80::2:2ff:fe02:211
->         ifconfig   602 [000]   721.092626: ipv4:ipv4_del_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
->         ifconfig   602 [000]   721.092648: ipv4:ipv4_add_addr: pI4=1.2.3.4
-> pi4=001.002.003.004
-> 
-> (Don't be fooled by the differing timestamps; data collected from both using
-> the same exact command. timestamp differences are perf vs tracing.)
-> 
-> which suggest with the patch perf output matches tracing.
-> 
-> David
-> 
+
+>> a device is removed during suspend. Specifically,when we
+>> resume from suspend the EHCI controller maintaining the
+>> USB state (FLAG_CF is 1 Current Connect Status is 1) but
+>> a USB device (like a USB camera on rk3288) may have been
+>> disconnected actually.
+>>
+>> Let's add a quirk to force ehci to go into the
+>> usb_root_hub_lost_power() path and reset after resume.
+>> This should generally reset the whole controller and all
+>> ports and initialize everything cleanly again, and bring
+>> the devices back up.
+>
+> Isn't this solution too extreme?  What if the device was a flash
+> storage drive and it wasn't unplugged during suspend?  This patch would
+> force it to be removed, messing up any mounted filesystems, when there
+> was no need.
+
+I'm told by Julius (CCed, who knows the USB stack infinitely better
+than I do) that you can work around this using "persist".  I would
+imagine that anyone on a machine using hibernation would run into the
+same problem, right?
+
+
+> Can you find a better way to work around the problem?
+
+We asked a lot about this and you can find a whole set of detailed
+discussion at:
+
+https://chromium-review.googlesource.com/#/c/232077/1/drivers/usb/host/ehci-platform.c
+
+
+Since I don't know the USB subsystem particularly well, my review
+isn't terribly meaningful, but just in case:
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+
+
+On rk3288-pinky I have tested that without this patch the EHCI
+controller flips out when a USB webcam is plugged into the port and is
+power cycled across suspend/resume.  With this patch the controller
+properly unplugs / replugs the webcam.
+
+Tested-by: Doug Anderson <dianders@chromium.org>
+
+
+-Doug
