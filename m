@@ -1,71 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926AbaLVOAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:00:44 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43960 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206AbaLVOAn (ORCPT
+	id S1754904AbaLVOIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:08:15 -0500
+Received: from ns1.pc-advies.be ([83.149.101.17]:50088 "EHLO
+	spo001.leaseweb.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754768AbaLVOIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:00:43 -0500
-Date: Mon, 22 Dec 2014 14:00:15 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andrew Jackson <andrew.jackson@arm.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141222140015.GR17800@sirena.org.uk>
-References: <cover.1418826016.git.Andrew.Jackson@arm.com>
- <cc0f212c245beaefa542194cabe5cf5ebfc81fd3.1418826016.git.Andrew.Jackson@arm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SWsnvgFfkTS2ATo5"
+	Mon, 22 Dec 2014 09:08:14 -0500
+Date: Mon, 22 Dec 2014 15:08:12 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 22/28] watchdog: drop owner assignment from platform_drivers
+Message-ID: <20141222140812.GD27760@spo001.leaseweb.nl>
+References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de> <1419196495-9626-23-git-send-email-wsa@the-dreams.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cc0f212c245beaefa542194cabe5cf5ebfc81fd3.1418826016.git.Andrew.Jackson@arm.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 31.51.36.65
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 3/5] ASoC: dwc: Reorder code in preparation for DT
- support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1419196495-9626-23-git-send-email-wsa@the-dreams.de>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wolfram,
 
---SWsnvgFfkTS2ATo5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This platform_driver does not need to set an owner, it will be populated by the
+> driver core.
+> 
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-On Fri, Dec 19, 2014 at 04:18:07PM +0000, Andrew Jackson wrote:
-> From: Andrew Jackson <Andrew.Jackson@arm.com>
->=20
-> Move code that configures the DAI and DMA into a separate function.  This
-> reduces the size of the dw_i2s_probe function and will make it easier to
-> add support for device tree to the driver.
+Added to linux-watchdog-next.
 
-Applied, thanks.
+Kind regards,
+Wim.
 
---SWsnvgFfkTS2ATo5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUmCPvAAoJECTWi3JdVIfQhqkH/0oiWI5b82TVFq8EIDAonIDa
-8wcbexfQdaT8i9F6xTTMa6TSByYnvUIk7nsTFOF9n2tz7UpLLY4qEax4KR1VoVBD
-LhY2RxbXdIB6ZvfRupw/BFm65zMNExcy+1QG54gF9KkQKRuvQT25FnTDUepL/KfP
-X9LJ20eXOXmOW0O7HZGWmvjyWu8VVLeEztaQCQMC1cvx784JUlmaVGfAk86RGlJu
-UnlOmo9OWkDR2N4La6Qn8fOQejJrt6uHwX68ylIUfspnJGZzkD5uHlplFhk5PF44
-NPk/vomxEGZD72P515FBbifO5Yj+rPpk78pJNT2Pr9wC0o1ofjzZva+9G72SgkA=
-=mVQn
------END PGP SIGNATURE-----
-
---SWsnvgFfkTS2ATo5--
