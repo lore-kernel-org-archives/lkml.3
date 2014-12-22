@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaLVSrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 13:47:39 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:35110 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394AbaLVSrh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 13:47:37 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: Alexandru Stan <amstan@chromium.org>, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] pinctrl: rockchip: Avoid losing interrupts when supporting both edges
-Date: Mon, 22 Dec 2014 10:47:29 -0800
-Message-Id: <1419274049-5069-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	id S1754969AbaLVSuA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 13:50:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:11951 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754250AbaLVSt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 13:49:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,625,1413270000"; 
+   d="scan'208";a="651774960"
+Date: Mon, 22 Dec 2014 10:49:40 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Oded Gabbay <oded.gabbay@amd.com>, Dana Elifaz <Dana.Elifaz@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>,
+        rusty@rustcorp.co.au
+Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit
+ kernel
+Message-ID: <20141222184940.GB17192@tassilo.jf.intel.com>
+References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
+ <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was seeing cases where I was losing interrupts when inserting and
-removing SD cards.  Sometimes the card would get "stuck" in the
-inserted state.
+On Mon, Dec 22, 2014 at 11:58:43AM -0500, Alex Deucher wrote:
+> On Mon, Dec 22, 2014 at 6:11 AM, Oded Gabbay <oded.gabbay@amd.com> wrote:
+> > amdkfd driver can be compiled only in 64-bit kernel. Therefore, there is no
+> > point in trying to initialize amdkfd in 32-bit kernel.
+> >
+> > In addition, in case of specific configuration of 32-bit kernel, no modules and
+> > random kernel base, the symbol_request function doesn't work as expected - It
+> > doesn't return NULL if the symbol doesn't exists. That makes the kernel panic.
+> > Therefore, the as amdkfd doesn't compile in 32-bit kernel, the best way is just
+> > to return false immediately.
+> >
+> > Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> 
+> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 
-I believe that the problem was related to the code to handle the case
-where we needed both rising and falling edges.  This code would
-disable the interrupt as the polarity was switched.  If an interrupt
-came at the wrong time it could be lost.
+Sorry but the patch is just bogus. X-bit only code is usually
+a very bad sign for the code. This is not windows programing after all.
 
-We'll match what the gpio-dwapb.c driver does upstream and change the
-interrupt polarity without disabling things.
+Even if you wanted to do a 64bit only driver -- which
+you probably don't -- the standard way would be to exclude
+it in Kconfig.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/pinctrl/pinctrl-rockchip.c | 45 +++++++++++++++++---------------------
- 1 file changed, 20 insertions(+), 25 deletions(-)
+Please root-cause why symbol_request doesn't work on 32bit
+and fix it properly.
 
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index 3c22dbe..43eacc9 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -1398,10 +1398,7 @@ static void rockchip_irq_demux(unsigned int irq, struct irq_desc *desc)
- {
- 	struct irq_chip *chip = irq_get_chip(irq);
- 	struct rockchip_pin_bank *bank = irq_get_handler_data(irq);
--	u32 polarity = 0, data = 0;
- 	u32 pend;
--	bool edge_changed = false;
--	unsigned long flags;
- 
- 	dev_dbg(bank->drvdata->dev, "got irq for bank %s\n", bank->name);
- 
-@@ -1409,12 +1406,6 @@ static void rockchip_irq_demux(unsigned int irq, struct irq_desc *desc)
- 
- 	pend = readl_relaxed(bank->reg_base + GPIO_INT_STATUS);
- 
--	if (bank->toggle_edge_mode) {
--		polarity = readl_relaxed(bank->reg_base +
--					 GPIO_INT_POLARITY);
--		data = readl_relaxed(bank->reg_base + GPIO_EXT_PORT);
--	}
--
- 	while (pend) {
- 		unsigned int virq;
- 
-@@ -1434,27 +1425,31 @@ static void rockchip_irq_demux(unsigned int irq, struct irq_desc *desc)
- 		 * needs manual intervention.
- 		 */
- 		if (bank->toggle_edge_mode & BIT(irq)) {
--			if (data & BIT(irq))
--				polarity &= ~BIT(irq);
--			else
--				polarity |= BIT(irq);
-+			u32 data, data_old, polarity;
-+			unsigned long flags;
- 
--			edge_changed = true;
--		}
-+			data = readl_relaxed(bank->reg_base + GPIO_EXT_PORT);
-+			do {
-+				spin_lock_irqsave(&bank->slock, flags);
- 
--		generic_handle_irq(virq);
--	}
-+				polarity = readl_relaxed(bank->reg_base +
-+							 GPIO_INT_POLARITY);
-+				if (data & BIT(irq))
-+					polarity &= ~BIT(irq);
-+				else
-+					polarity |= BIT(irq);
-+				writel(polarity,
-+				       bank->reg_base + GPIO_INT_POLARITY);
- 
--	if (bank->toggle_edge_mode && edge_changed) {
--		/* Interrupt params should only be set with ints disabled */
--		spin_lock_irqsave(&bank->slock, flags);
-+				spin_unlock_irqrestore(&bank->slock, flags);
- 
--		data = readl_relaxed(bank->reg_base + GPIO_INTEN);
--		writel_relaxed(0, bank->reg_base + GPIO_INTEN);
--		writel(polarity, bank->reg_base + GPIO_INT_POLARITY);
--		writel(data, bank->reg_base + GPIO_INTEN);
-+				data_old = data;
-+				data = readl_relaxed(bank->reg_base +
-+						     GPIO_EXT_PORT);
-+			} while ((data & BIT(irq)) != (data_old & BIT(irq)));
-+		}
- 
--		spin_unlock_irqrestore(&bank->slock, flags);
-+		generic_handle_irq(virq);
- 	}
- 
- 	chained_irq_exit(chip, desc);
--- 
-2.2.0.rc0.207.ga3a616c
++rusty.
+
+-Andi
 
