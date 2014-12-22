@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127AbaLVWLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 17:11:48 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:49397 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702AbaLVWLr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 17:11:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <54985686.7080609@freebsd.org>
-References: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1419269161.3786.4.camel@infradead.org> <54985686.7080609@freebsd.org>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 22 Dec 2014 23:11:24 +0100
-Message-ID: <CAFo99gZsG5P6FGLqo02vyCueg4iuSpZqRU5a0BvzvtMhcRs0hw@mail.gmail.com>
-Subject: Re: [PATCH] arch: powerpc: platforms: ps3: repository.c: Remove
- unused function
-To: Nathan Whitehorn <nwhitehorn@freebsd.org>
-Cc: Geoff Levand <geoff@infradead.org>, Andre Heider <a.heider@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932172AbaLVWMO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 17:12:14 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:43132 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134AbaLVWMN (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 22 Dec 2014 17:12:13 -0500
+Message-ID: <1419286325.8812.3.camel@stgolabs.net>
+Subject: Re: mm: NULL ptr deref in unlink_file_vma
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 22 Dec 2014 14:12:05 -0800
+In-Reply-To: <20141222191452.GA20295@node.dhcp.inet.fi>
+References: <549832E2.8060609@oracle.com>
+	 <20141222180102.GA8072@node.dhcp.inet.fi> <54985D59.5010506@oracle.com>
+	 <20141222191452.GA20295@node.dhcp.inet.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-22 18:36 GMT+01:00 Nathan Whitehorn <nwhitehorn@freebsd.org>:
->
-> On 12/22/14 09:26, Geoff Levand wrote:
->>
->> On Sat, 2014-12-20 at 16:00 +0100, Rickard Strandqvist wrote:
->>>
->>> Remove the function ps3_repository_write_highmem_info() that is not used
->>> anywhere.
->>
->> NAK
->>
->> ps3_repository_write_highmem_info() is needed by otheros++.  What we
->> need is a kernel patch to add the highmem info to the repository once it
->> is known.
->>
->> These ps3_repository_write_highmem routines are also the only
->> documentation the freeBSD port has as to how the highmem info is (should
->> be) saved in the repository.
->>
->> -Geoff
->>
->>
->
-> Yes, we really need this for FreeBSD since that port uses the repository
-> directly instead of FDT. Thanks for noticing this. We could adapt FreeBSD to
-> use FDT (this is the only non-device-tree PowerPC port), but there hasn't
-> been any reason to do that thus far given the availability of the repository
-> information.
-> -Nathan
+On Mon, 2014-12-22 at 21:14 +0200, Kirill A. Shutemov wrote:
+> Other thing:
+> 
+>  unmap_mapping_range()
+>    i_mmap_lock_read(mapping);
+>    unmap_mapping_range_tree()
+>      unmap_mapping_range_vma()
+>        zap_page_range_single()
+>          unmap_single_vma()
+> 	   untrack_pfn()
+> 	     vma->vm_flags &= ~VM_PAT;
+> 
+> It seems we modify ->vm_flags without mmap_sem taken, means we can corrupt
+> them.
 
+yep. Although one thing that wouldn't match this would be the mlock'd
+bad page when freeing in both of Sasha's previous reports, as we would
+need to have VM_PFNMAP when calling untrack_pfn().
 
+> Sasha could you check if you hit untrack_pfn()?
+> 
+> The problem probably was hidden by exclusive i_mmap_lock on
+> unmap_mapping_range(), but it's not exclusive anymore afrer Dave's
+> patchset.
+> 
+> Konstantin, you've modified untrack_pfn() back in 2012 to change
+> ->vm_flags. Any coments?
+> 
+> For now, I would propose to revert the commit and probably re-introduce it
+> after v3.19:
+> 
+> From 14392c69fcfeeda34eb9f75d983dad32698cdd5c Mon Sep 17 00:00:00 2001
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Date: Mon, 22 Dec 2014 21:01:54 +0200
+> Subject: [PATCH] Revert "mm/memory.c: share the i_mmap_rwsem"
+> 
+> This reverts commit c8475d144abb1e62958cc5ec281d2a9e161c1946.
+> 
+> There are several[1][2] of bug reports which points to this commit as potential
+> cause[3].
+> 
+> Let's revert it until we figure out what's going on.
+> 
+> [1] https://lkml.org/lkml/2014/11/14/342
+> [2] https://lkml.org/lkml/2014/12/22/213
+> [3] https://lkml.org/lkml/2014/12/9/741
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Cc: Davidlohr Bueso <dave@stgolabs.net>
 
-Hi
+I certainly have no problem with this. Furthermore we snuck this one in
+kinda last minute, so:
 
-Too bad that did not have the benefit of the patch, but it looks like
-something good come because of it anyhow.
+Acked-by: Davidlohr Bueso <dave@stgolabs.net>
 
-Kind regards
-Rickard Strandqvist
+Thanks,
+Davidlohr
+
