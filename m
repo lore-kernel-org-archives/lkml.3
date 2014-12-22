@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaLVWMO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 17:12:14 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:43132 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134AbaLVWMN (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Mon, 22 Dec 2014 17:12:13 -0500
-Message-ID: <1419286325.8812.3.camel@stgolabs.net>
-Subject: Re: mm: NULL ptr deref in unlink_file_vma
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 22 Dec 2014 14:12:05 -0800
-In-Reply-To: <20141222191452.GA20295@node.dhcp.inet.fi>
-References: <549832E2.8060609@oracle.com>
-	 <20141222180102.GA8072@node.dhcp.inet.fi> <54985D59.5010506@oracle.com>
-	 <20141222191452.GA20295@node.dhcp.inet.fi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932195AbaLVWM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 17:12:59 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60696 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932134AbaLVWM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 17:12:58 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jakub Sitnicki <jsitnicki@gmail.com>
+Cc: rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PNP: Switch from __check_region() to __request_region()
+Date: Mon, 22 Dec 2014 23:34:48 +0100
+Message-ID: <2588457.Skz2ar9t5B@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <87vbl4lynj.fsf@frog.home>
+References: <1418072517-5413-1-git-send-email-jsitnicki@gmail.com> <878uid5my1.fsf@frog.home> <87vbl4lynj.fsf@frog.home>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-22 at 21:14 +0200, Kirill A. Shutemov wrote:
-> Other thing:
+On Monday, December 22, 2014 12:19:44 PM Jakub Sitnicki wrote:
+> On Fri, Dec 12, 2014 at 08:47 AM CET, Jakub Sitnicki wrote:
+> > Rafael J. Wysocki <rjw@rjwysocki.net> writes:
+> >
+> >> On Monday, December 08, 2014 10:01:57 PM Jakub Sitnicki wrote:
+> >>> diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
+> >>> index 782e822..f980ff7 100644
+> >>> --- a/drivers/pnp/resource.c
+> >>> +++ b/drivers/pnp/resource.c
+> >>> @@ -179,8 +179,9 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
+> >>>  	/* check if the resource is already in use, skip if the
+> >>>  	 * device is active because it itself may be in use */
+> >>>  	if (!dev->active) {
+> >>> -		if (__check_region(&ioport_resource, *port, length(port, end)))
+> >>> +		if (!request_region(*port, length(port, end), "pnp"))
+> >>>  			return 0;
+> >>> +		release_region(*port, length(port, end));
+> >>
+> >> Shouldn't we also release the resource returned by request_region() if it is
+> >> not NULL?
+> >>
+> >
+> > Thanks for taking a look at this. I think we're good here. If you please
+> > bear with me for a moment:
+> >
+> > release_resource() removes an element from the list of resource parent's
+> > children (and makes it an orphan):
+> >
+> > 	p = &old->parent->child;
+> > 	for (;;) {
+> > 		tmp = *p;
+> > 		if (!tmp)
+> > 			break;
+> > 		if (tmp == old) {
+> > 			*p = tmp->sibling;
+> > 			old->parent = NULL;
+> > 			return 0;
+> > 		}
+> > 		p = &tmp->sibling;
+> > 	}
+> >
+> > release_region() does the same but with additional checks, and also
+> > frees the resource:
+> >
+> > 	p = &parent->child;
+> >         /* ... */
+> > 	for (;;) {
+> > 		struct resource *res = *p;
+> >
+> > 		if (!res)
+> > 			break;
+> > 		if (res->start <= start && res->end >= end) {
+> >                         /* ... */
+> > 			*p = res->sibling;
+> >                         /* ... */
+> > 			free_resource(res);
+> > 			return;
+> > 		}
+> > 		p = &res->sibling;
+> > 	}
+> >
+> > When making the change I've based on other code in the kernel which also
+> > make use of request_region().
+> >
+> > To quote one example, drivers/net/ethernet/8390/ne2k-pci.c cleans up its
+> > I/O port region when initialization fails like so:
+> >
+> > static int ne2k_pci_init_one(struct pci_dev *pdev,
+> > 			     const struct pci_device_id *ent)
+> > {
+> >         /* ... */
+> >
+> > 	if (request_region (ioaddr, NE_IO_EXTENT, DRV_NAME) == NULL) {
+> > 		dev_err(&pdev->dev, "I/O resource 0x%x @ 0x%lx busy\n",
+> > 			NE_IO_EXTENT, ioaddr);
+> > 		return -EBUSY;
+> > 	}
+> >
+> >         /* ... */
+> >
+> > 	dev = alloc_ei_netdev();
+> > 	if (!dev) {
+> > 		dev_err(&pdev->dev, "cannot allocate ethernet device\n");
+> > 		goto err_out_free_res;
+> > 	}
+> >
+> >         /* ... */
+> >
+> > err_out_free_res:
+> > 	release_region (ioaddr, NE_IO_EXTENT);
+> > 	return -ENODEV;
+> > }
 > 
->  unmap_mapping_range()
->    i_mmap_lock_read(mapping);
->    unmap_mapping_range_tree()
->      unmap_mapping_range_vma()
->        zap_page_range_single()
->          unmap_single_vma()
-> 	   untrack_pfn()
-> 	     vma->vm_flags &= ~VM_PAT;
-> 
-> It seems we modify ->vm_flags without mmap_sem taken, means we can corrupt
-> them.
+> Just wondering, do you have any further thoughts on this?
 
-yep. Although one thing that wouldn't match this would be the mlock'd
-bad page when freeing in both of Sasha's previous reports, as we would
-need to have VM_PFNMAP when calling untrack_pfn().
+I'll queue it up for 3.20 later in January.
 
-> Sasha could you check if you hit untrack_pfn()?
-> 
-> The problem probably was hidden by exclusive i_mmap_lock on
-> unmap_mapping_range(), but it's not exclusive anymore afrer Dave's
-> patchset.
-> 
-> Konstantin, you've modified untrack_pfn() back in 2012 to change
-> ->vm_flags. Any coments?
-> 
-> For now, I would propose to revert the commit and probably re-introduce it
-> after v3.19:
-> 
-> From 14392c69fcfeeda34eb9f75d983dad32698cdd5c Mon Sep 17 00:00:00 2001
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Date: Mon, 22 Dec 2014 21:01:54 +0200
-> Subject: [PATCH] Revert "mm/memory.c: share the i_mmap_rwsem"
-> 
-> This reverts commit c8475d144abb1e62958cc5ec281d2a9e161c1946.
-> 
-> There are several[1][2] of bug reports which points to this commit as potential
-> cause[3].
-> 
-> Let's revert it until we figure out what's going on.
-> 
-> [1] https://lkml.org/lkml/2014/11/14/342
-> [2] https://lkml.org/lkml/2014/12/22/213
-> [3] https://lkml.org/lkml/2014/12/9/741
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Cc: Davidlohr Bueso <dave@stgolabs.net>
 
-I certainly have no problem with this. Furthermore we snuck this one in
-kinda last minute, so:
-
-Acked-by: Davidlohr Bueso <dave@stgolabs.net>
-
-Thanks,
-Davidlohr
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
