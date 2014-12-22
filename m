@@ -1,93 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaLVAaV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 19:30:21 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:54770 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213AbaLVAaU (ORCPT
+	id S1753694AbaLVAlV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 19:41:21 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:53431 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488AbaLVAlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 19:30:20 -0500
-Date: Mon, 22 Dec 2014 01:30:11 +0100 (CET)
-From: Stefan Wahren <stefan.wahren@i2se.com>
-Reply-To: Stefan Wahren <stefan.wahren@i2se.com>
-To: Marek Vasut <marex@denx.de>
-Cc: linux-kernel@vger.kernel.org, festevam@gmail.com, shawn.guo@linaro.org,
-        mturquette@linaro.org, harald@ccbib.org,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <1033288193.576178.1419208211101.JavaMail.open-xchange@oxbaltgw03.schlund.de>
-In-Reply-To: <201412212250.16007.marex@denx.de>
-References: <1419169599-24791-1-git-send-email-stefan.wahren@i2se.com> <201412212250.16007.marex@denx.de>
-Subject: Re: [PATCH] clk: mxs: Fix invalid 32-bit access to frac registers
+	Sun, 21 Dec 2014 19:41:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.6.0-Rev33
-X-Originating-Client: com.openexchange.ox.gui.dhtml
-X-Provags-ID: V03:K0:FYOxzJ9TFLD6PxyDeTLZ1w8jGJ5LrTVZPCZW5LA/uIOq9S0XEFM
- 5W03XEdkyqkNLFi2ilcHwX71zx+5Tu9fR51i4TPoICN0L62Houc419BoFHvH7g7LhlHDLma
- pH6ruvEkRdjcxO0cfdS/Bg4OSWpNyVhPzytlKj29uJwpF5c4qROJFyi9h0FOyN1LaWh4Lay
- ftUbAicpTzZPL3BRDhBvg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <CA+55aFygv+PRcYScwCjGVQ7-0PA1mHOGYaKGKS4LBhxPm0YBJA@mail.gmail.com>
+References: <20141219145528.GC13404@redhat.com>
+	<CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
+	<alpine.DEB.2.11.1412192201520.17382@nanos>
+	<CA+55aFx4zjAVHN5DrSCh1_MJjqf4fxoAVT3RmC+1QGP6bq7b0Q@mail.gmail.com>
+	<alpine.DEB.2.11.1412200100130.17382@nanos>
+	<CA+55aFxY5hCuGaK0JvTwHFsQKFGeh3_82ukKrU9ss4x4uHMY3Q@mail.gmail.com>
+	<CA+55aFzj_2tYJ1b=_7eKSz7UMuUL+qZX39r0xq5vOZkB4JmHMA@mail.gmail.com>
+	<CA+55aFyQzpQgT91sqpEhXho8KoVRkA1MeRjk+fXO7w2dJkY_Gg@mail.gmail.com>
+	<CA+55aFy8DCMmkPRz0kqNC80pn4VkeQr2Wz2fTRm=32oH2dhfRQ@mail.gmail.com>
+	<CA+55aFwA7uOFgb-Y4dHS099HuoV+oQvxXf+cfZYh9T7H_c0PHA@mail.gmail.com>
+	<20141221223204.GA9618@codemonkey.org.uk>
+	<CA+55aFygv+PRcYScwCjGVQ7-0PA1mHOGYaKGKS4LBhxPm0YBJA@mail.gmail.com>
+Date: Sun, 21 Dec 2014 16:41:18 -0800
+X-Google-Sender-Auth: 2Iu85qRvaZ66GfFxZSQ1PMkMUho
+Message-ID: <CA+55aFwaghUQxp9LJRWH6ANCX5y45c3Fu9T0OnpBaqRdn1=tvw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Content-Type: multipart/mixed; boundary=001a11c29a4418c16b050ac35169
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+--001a11c29a4418c16b050ac35169
+Content-Type: text/plain; charset=UTF-8
 
-> Marek Vasut <marex@denx.de> hat am 21. Dezember 2014 um 22:50 geschrieben:
+On Sun, Dec 21, 2014 at 3:58 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
+> I can do the mmap(/dev/mem) thing and access the HPET by hand, and
+> when I write zero to it I immediately get something like this:
 >
-> On Sunday, December 21, 2014 at 02:46:39 PM, Stefan Wahren wrote:
+>   Clocksource tsc unstable (delta = -284317725450 ns)
+>   Switched to clocksource hpet
 >
-> Hi!
+> just to confirm that yes, a jump in the HPET counter would indeed give
+> those kinds of symptoms:blaming the TSC with a negative delta in the
+> 0-300s range, even though it's the HPET that is broken.
 >
-> [...]
->
-> > diff --git a/drivers/clk/mxs/clk-ref.c b/drivers/clk/mxs/clk-ref.c
-> > index 4adeed6..bdecec1 100644
-> > --- a/drivers/clk/mxs/clk-ref.c
-> > +++ b/drivers/clk/mxs/clk-ref.c
-> > @@ -16,6 +16,8 @@
-> > #include <linux/slab.h>
-> > #include "clk.h"
-> >
-> > +#define BF_CLKGATE BIT(7)
-> > +
-> > /**
-> > * struct clk_ref - mxs reference clock
-> > * @hw: clk_hw for the reference clock
-> > @@ -39,7 +41,7 @@ static int clk_ref_enable(struct clk_hw *hw)
-> > {
-> > struct clk_ref *ref = to_clk_ref(hw);
-> >
-> > - writel_relaxed(1 << ((ref->idx + 1) * 8 - 1), ref->reg + CLR);
-> > + writeb(BF_CLKGATE, ref->reg + ref->idx + CLR);
->
-> Should this be writeb_relaxed() maybe ?
->
-> > return 0;
-> > }
-> > @@ -48,7 +50,7 @@ static void clk_ref_disable(struct clk_hw *hw)
-> > {
-> > struct clk_ref *ref = to_clk_ref(hw);
-> >
-> > - writel_relaxed(1 << ((ref->idx + 1) * 8 - 1), ref->reg + SET);
-> > + writeb(BF_CLKGATE, ref->reg + ref->idx + SET);
->
-> Same here and all around the place ?
+> And if the HPET then occasionally jumps around afterwards, it would
+> show up as ktime_get() occasionally going backwards, which in turn
+> would - as far as I can tell - result in exactly that pseudo-infirnite
+> loop with timers.
 
-okay, i will fix it in V2.
+Ok, so I tried that too.
 
->
-> Other than that, it looks pretty OK :)
+It's actually a pretty easy experiment to do: just mmap(/dev/mem) at
+the HPET offset (the kernel prints it out at boot, it should normally
+be at 0xfed00000). And then just write a zero to offset 0xf0, which is
+the main counter.
 
-Fine
+The first time, you get the "Clocksource tsc unstable".
 
->
-> Best regards,
-> Marek Vasut
+The second time (or third, or fourth - it might not take immediately)
+you get a lockup or similar. Bad things happen.
 
-Best regards
-Stefan
+This is *not* to say that this is the bug you're hitting. But it does show that
+
+ (a) a flaky HPET can do some seriously bad stuff
+ (b) the kernel is very fragile wrt time going backwards.
+
+and maybe we can use this test program to at least try to alleviate problem (b).
+
+Trivial HPET mess-up program attached.
+
+                                Linus
+
+--001a11c29a4418c16b050ac35169
+Content-Type: text/x-csrc; charset=US-ASCII; name="hpet-mess.c"
+Content-Disposition: attachment; filename="hpet-mess.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i3z4bf5f0
+
+I2luY2x1ZGUgPHN5cy90eXBlcy5oPgojaW5jbHVkZSA8c3lzL3N0YXQuaD4KI2luY2x1ZGUgPGZj
+bnRsLmg+CiNpbmNsdWRlIDxzeXMvbW1hbi5oPgojaW5jbHVkZSA8c3RkaW8uaD4KCgppbnQgbWFp
+bihpbnQgYXJnYywgY2hhciAqKmFyZ3YpCnsKCWludCBmZCA9IG9wZW4oIi9kZXYvbWVtIiwgT19S
+RFdSKTsKCXZvaWQgKmJhc2U7CgoJaWYgKGZkIDwgMCkgewoJCWZwdXRzKCJVbmFibGUgdG8gb3Bl
+biAvZGV2L21lbVxuIiwgc3RkZXJyKTsKCQlyZXR1cm4gLTE7Cgl9CgliYXNlID0gbW1hcChOVUxM
+LCA0MDk2ICxQUk9UX1JFQUQgfCBQUk9UX1dSSVRFLCBNQVBfU0hBUkVELCBmZCwgMHhmZWQwMDAw
+MCk7CglpZiAoKGxvbmcpYmFzZSA9PSAtMSkgewoJCWZwdXRzKCJVbmFibGUgdG8gbW1hcCBIUEVU
+XG4iLCBzdGRlcnIpOwoJCXJldHVybiAtMTsKCX0KCSoodW5zaWduZWQgbG9uZyAqKSAoYmFzZSsw
+eGYwKSA9IDA7CglyZXR1cm4gMDsKfQo=
+--001a11c29a4418c16b050ac35169--
