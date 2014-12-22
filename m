@@ -1,248 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaLVJYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:24:05 -0500
-Received: from audible.transient.net ([24.143.126.66]:46513 "HELO
-	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754041AbaLVJYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:24:01 -0500
-Date: Mon, 22 Dec 2014 09:23:58 +0000
-From: Jamie Heilman <jamie@audible.transient.net>
-To: "Chen, Tiejun" <tiejun.chen@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
-Message-ID: <20141222092358.GA3915@cucamonga.audible.transient.net>
-Mail-Followup-To: "Chen, Tiejun" <tiejun.chen@intel.com>,
-	Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20141221124640.GA4059@cucamonga.audible.transient.net>
- <5497C882.4000108@intel.com>
+	id S1754209AbaLVJ0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:26:24 -0500
+Received: from mail-by2on0122.outbound.protection.outlook.com ([207.46.100.122]:33298
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754003AbaLVJ0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 04:26:21 -0500
+X-WSS-ID: 0NGZ8VO-08-95J-02
+X-M-MSG: 
+Message-ID: <5497E3A6.7070600@amd.com>
+Date: Mon, 22 Dec 2014 11:25:58 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5497C882.4000108@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Huang Ying <ying.huang@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [drm/radeon] BUG: unable to handle kernel paging request
+ at 03200000
+References: <1418890668.26403.6.camel@intel.com> <54928E6B.1020501@amd.com>
+ <1418891181.26403.9.camel@intel.com>
+In-Reply-To: <1418891181.26403.9.camel@intel.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.20.0.84]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(69234005)(51704005)(24454002)(377454003)(479174004)(377424004)(164054003)(199003)(189002)(62966003)(77156002)(54356999)(101416001)(76176999)(87266999)(23676002)(64126003)(59896002)(50466002)(68736005)(50986999)(65806001)(65956001)(15975445007)(31966008)(77096005)(575784001)(21056001)(87936001)(99396003)(110136001)(92566001)(2950100001)(86362001)(20776003)(83506001)(107046002)(97736003)(4396001)(46102003)(120916001)(36756003)(47776003)(64706001)(105586002)(106466001)(80316001)(33656002)(19580405001)(84676001)(19580395003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB203;
+X-Forefront-PRVS: 0433DB2766
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 09:26:18.6929
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR02MB203
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen, Tiejun wrote:
-> On 2014/12/21 20:46, Jamie Heilman wrote:
-> >With v3.19-rc1 when I run qemu-system-x86_64 -machine pc,accel=kvm I
-> >get:
-> >
-> >KVM: entry failed, hardware error 0x80000021
-> 
-> Looks some MSR writing issues such a failed entry.
-> 
-> >If you're running a guest on an Intel machine without unrestricted mode
-> >support, the failure can be most likely due to the guest entering an invalid
-> >state for Intel VT. For example, the guest maybe running in big real mode
-> >which is not supported on less recent Intel processors.
-> >
-> >EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
-> >ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
-> >EIP=0000e05b EFL=00010002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
-> >ES =0000 00000000 0000ffff 00009300
-> >CS =f000 000f0000 0000ffff 00009b00
-> >SS =0000 00000000 0000ffff 00009300
-> >DS =0000 00000000 0000ffff 00009300
-> >FS =0000 00000000 0000ffff 00009300
-> >GS =0000 00000000 0000ffff 00009300
-> >LDT=0000 00000000 0000ffff 00008200
-> >TR =0000 00000000 0000ffff 00008b00
-> >GDT=     00000000 0000ffff
-> >IDT=     00000000 0000ffff
-> >CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
-> >DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000
-> >DR6=00000000ffff0ff0 DR7=0000000000000400
-> >EFER=0000000000000000
-> 
-> And I don't see any obvious wrong as well. Any valuable info from dmesg?
-
-With the simple qemu command above, on 3.18.1 I see:
-
-kern.info: kvm: zapping shadow pages for mmio generation wraparound
-
-when I fire up a full guest that's actually useful I get:
-
-kern.info: kvm: zapping shadow pages for mmio generation wraparound
-kern.err: kvm [4073]: vcpu0 disabled perfctr wrmsr: 0xc1 data 0xffff
-
-On 3.18.0-rc3-00042-g34a1cd6 nothing appears in the dmesg, just the
-message I mention above to stderr.  Same thing with a stock
-3.19.0-rc1.  Once I apply your patch the simple test command produces
-the same zapping shadow pages messages as 3.18.1, and a test guest of
-a Debian Jessie image (w/stock distro kernel) produces the same thing
-with disabled perfctr wrmsr message.  However, it doesn't look like
-I'm entirely out of the woods, because one of my other guest VMs with a
-custom kernel that works great under 3.18.1 now fails to run.  Nothing
-in dmesg, but here's the stderr:
-
-KVM internal error. Suberror: 1
-emulation failure
-EAX=000de494 EBX=00000000 ECX=00000000 EDX=00000cfd
-ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fb4
-EIP=000f15c1 EFL=00010016 [----AP-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
-SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-GDT=     000f6be8 00000037
-IDT=     000f6c26 00000000
-CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
-DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
-DR6=00000000ffff0ff0 DR7=0000000000000400
-EFER=0000000000000000
-Code=e8 ae fc ff ff 89 f2 a8 10 89 d8 75 0a b9 41 15 ff ff ff d1 <5b> 5e c3 5b 5e e9 76 ff ff ff b0 11 e6 20 e6 a0 b0 08 e6 21 b0 70 e6 a1 b0 04 e6 21 b0 02
-
-FWIW, I get the same thing with 34a1cd60d17 reverted.  Maybe there are
-two bugs, maybe there's more to this first one.  I can repro this
-error with the command: qemu-system-x86_64 -machine pc,accel=kvm -nodefaults
-
-> >This is with QEMU emulator version 2.1.2 (Debian 1:2.1+dfsg-11),
-> >Copyright (c) 2003-2008 Fabrice Bellard
-> >
-> >The host system is:
-> >
-> >cpu family      : 6
-> >model           : 23
-> >model name      : Intel(R) Core(TM)2 Duo CPU     E8400  @ 3.00GHz
-> >stepping        : 10
-> >microcode       : 0xa0b
-> >...
-> >flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good nopl aperfmperf pni dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 xsave lahf_lm dtherm tpr_shadow vnmi flexpriority
-> >
-> >I bisected this back to:
-> >
-> >commit 34a1cd60d17f62c1f077c1478a6c2ca8c3d17af4
-> >Author: Tiejun Chen <tiejun.chen@intel.com>
-> >Date:   Tue Oct 28 10:14:48 2014 +0800
-> >
-> >     kvm: x86: vmx: move some vmx setting from vmx_init() to hardware_setup()
-> >
-> >     Instead of vmx_init(), actually it would make reasonable sense to do
-> >     anything specific to vmx hardware setting in vmx_x86_ops->hardware_setup().
-> >
-> 
-> This commit just reorders something but some MSR writing depend on previous
-> status.
-> 
-> Could you try this?
-
-I unmangled the expanded tabs, and applied this:
- 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index feb852b..96c84a8 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5840,49 +5840,6 @@ static __init int hardware_setup(void)
- 	memset(vmx_msr_bitmap_legacy, 0xff, PAGE_SIZE);
- 	memset(vmx_msr_bitmap_longmode, 0xff, PAGE_SIZE);
-
--	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
--	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
--	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
--	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_CS, false);
--	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
--	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
--	vmx_disable_intercept_for_msr(MSR_IA32_BNDCFGS, true);
--
--	memcpy(vmx_msr_bitmap_legacy_x2apic,
--			vmx_msr_bitmap_legacy, PAGE_SIZE);
--	memcpy(vmx_msr_bitmap_longmode_x2apic,
--			vmx_msr_bitmap_longmode, PAGE_SIZE);
--
--	if (enable_apicv) {
--		for (msr = 0x800; msr <= 0x8ff; msr++)
--			vmx_disable_intercept_msr_read_x2apic(msr);
--
--		/* According SDM, in x2apic mode, the whole id reg is used.
--		 * But in KVM, it only use the highest eight bits. Need to
--		 * intercept it */
--		vmx_enable_intercept_msr_read_x2apic(0x802);
--		/* TMCCT */
--		vmx_enable_intercept_msr_read_x2apic(0x839);
--		/* TPR */
--		vmx_disable_intercept_msr_write_x2apic(0x808);
--		/* EOI */
--		vmx_disable_intercept_msr_write_x2apic(0x80b);
--		/* SELF-IPI */
--		vmx_disable_intercept_msr_write_x2apic(0x83f);
--	}
--
--	if (enable_ept) {
--		kvm_mmu_set_mask_ptes(0ull,
--			(enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
--			(enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
--			0ull, VMX_EPT_EXECUTABLE_MASK);
--		ept_set_mmio_spte_mask();
--		kvm_enable_tdp();
--	} else
--		kvm_disable_tdp();
--
--	update_ple_window_actual_max();
--
- 	if (setup_vmcs_config(&vmcs_config) < 0) {
- 		r = -EIO;
- 		goto out7;
-@@ -5945,6 +5902,49 @@ static __init int hardware_setup(void)
- 	if (nested)
- 		nested_vmx_setup_ctls_msrs();
-
-+	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
-+	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
-+	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
-+	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_CS, false);
-+	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
-+	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
-+	vmx_disable_intercept_for_msr(MSR_IA32_BNDCFGS, true);
-+
-+	memcpy(vmx_msr_bitmap_legacy_x2apic,
-+			vmx_msr_bitmap_legacy, PAGE_SIZE);
-+	memcpy(vmx_msr_bitmap_longmode_x2apic,
-+			vmx_msr_bitmap_longmode, PAGE_SIZE);
-+
-+	if (enable_apicv) {
-+		for (msr = 0x800; msr <= 0x8ff; msr++)
-+			vmx_disable_intercept_msr_read_x2apic(msr);
-+
-+		/* According SDM, in x2apic mode, the whole id reg is used.
-+		 * But in KVM, it only use the highest eight bits. Need to
-+		 * intercept it */
-+		vmx_enable_intercept_msr_read_x2apic(0x802);
-+		/* TMCCT */
-+		vmx_enable_intercept_msr_read_x2apic(0x839);
-+		/* TPR */
-+		vmx_disable_intercept_msr_write_x2apic(0x808);
-+		/* EOI */
-+		vmx_disable_intercept_msr_write_x2apic(0x80b);
-+		/* SELF-IPI */
-+		vmx_disable_intercept_msr_write_x2apic(0x83f);
-+	}
-+
-+	if (enable_ept) {
-+		kvm_mmu_set_mask_ptes(0ull,
-+			(enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
-+			(enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
-+			0ull, VMX_EPT_EXECUTABLE_MASK);
-+		ept_set_mmio_spte_mask();
-+		kvm_enable_tdp();
-+	} else
-+		kvm_disable_tdp();
-+
-+	update_ple_window_actual_max();
-+
- 	return alloc_kvm_area();
-
-  out7:
 
 
--- 
-Jamie Heilman                     http://audible.transient.net/~jamie/
+On 12/18/2014 10:26 AM, Huang Ying wrote:
+> On Thu, 2014-12-18 at 10:20 +0200, Oded Gabbay wrote:
+>> On 12/18/2014 10:17 AM, Huang Ying wrote:
+>>> FYI, we noticed the below changes on
+>>>
+>>> commit e28740ece34d314002b1ddfa14e8fb7c7b909489 ("drm/radeon: Add radeon <--> amdkfd interface")
+>>>
+>>>
+>>> +------------------------------------------+------------+------------+
+>>> |                                          | 1c0a46255f | e28740ece3 |
+>>> +------------------------------------------+------------+------------+
+>>> | boot_successes                           | 0          | 0          |
+>>> | boot_failures                            | 10         | 13         |
+>>> | BUG:kernel_boot_hang                     | 9          | 9          |
+>>> | INFO:suspicious_RCU_usage                | 1          | 3          |
+>>> | backtrace:do_fork                        | 1          | 3          |
+>>> | BUG:unable_to_handle_kernel              | 0          | 3          |
+>>> | Oops                                     | 0          | 3          |
+>>> | Kernel_panic-not_syncing:Fatal_exception | 0          | 3          |
+>>> | backtrace:radeon_init                    | 0          | 3          |
+>>> | backtrace:kernel_init_freeable           | 0          | 3          |
+>>> | BUG:kernel_boot_crashed                  | 0          | 1          |
+>>> +------------------------------------------+------------+------------+
+>>>
+>>>
+>>> [    5.407193] Linux agpgart interface v0.103
+>>> [    5.428469] [drm] Initialized drm 1.1.0 20060810
+>>> [    5.438456] [drm] radeon kernel modesetting enabled.
+>>> [    5.439741] BUG: unable to handle kernel paging request at 03200000
+>>> [    5.440063] IP: [<03200000>] 0x3200000
+>>> [    5.440063] *pde = 00000000
+>>> [    5.440063] Oops: 0000 [#1] SMP
+>>> [    5.440063] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-g603ba7e #14
+>>> [    5.440063] task: 42e08000 ti: 42e02000 task.ti: 42e02000
+>>> [    5.440063] EIP: 0060:[<03200000>] EFLAGS: 00010246 CPU: 0
+>>> [    5.440063] EIP is at 0x3200000
+>>> [    5.440063] EAX: 00000001 EBX: 00000000 ECX: 4738b460 EDX: 45735a64
+>>> [    5.440063] ESI: 4662d0dd EDI: 401fafa0 EBP: 42e03f20 ESP: 42e03f18
+>>> [    5.440063]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+>>> [    5.440063] CR0: 8005003b CR2: 03200000 CR3: 067f0000 CR4: 00000690
+>>> [    5.440063] Stack:
+>>> [    5.440063]  44bf19b1 00000000 42e03f28 4662d20b 42e03f8c 465b6e5d 00000000 00000000
+>>> [    5.440063]  00000000 00000000 00000000 00000000 000000ea 00000000 00000000 00000101
+>>> [    5.440063]  45f2dfba 00000010 00000012 00000200 47fdcf54 47fdcf54 00000006 00000291
+>>> [    5.440063] Call Trace:
+>>> [    5.440063]  [<44bf19b1>] ? radeon_kfd_init+0x67/0xab
+>>> [    5.440063]  [<4662d20b>] radeon_init+0x12e/0x15c
+>>> [    5.440063]  [<465b6e5d>] do_one_initcall+0x25f/0x41e
+>>> [    5.440063]  [<465b7291>] kernel_init_freeable+0x275/0x423
+>>> [    5.440063]  [<455b4e52>] kernel_init+0x1c/0x293
+>>> [    5.440063]  [<455df181>] ret_from_kernel_thread+0x21/0x30
+>>> [    5.440063]  [<455b4e36>] ? rest_init+0x33e/0x33e
+>>> [    5.440063] Code:  Bad EIP value.
+>>> [    5.440063] EIP: [<03200000>] 0x3200000 SS:ESP 0068:42e03f18
+>>> [    5.440063] CR2: 0000000003200000
+>>> [    5.440063] ---[ end trace 1959b295b01c0c14 ]---
+>>> [    5.440063] Kernel panic - not syncing: Fatal exception
+>>>
+>>>
+>>> Thanks,
+>>> Huang, Ying
+>>>
+>>>
+>>>
+>>>
+>>> _______________________________________________
+>>> LKP mailing list
+>>> LKP@linux.intel.com
+>>>
+>>
+>> Is this a 32-bit kernel ?
+>> Is amdkfd compiled ?
+>
+> The kconfig file is attached in the original email.  From it, it is
+> 32-bit kernel.  I don't find AMDKFD in config file.  Could you help me
+> to check it?
+>
+> Best Regards,
+> Huang, Ying
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+OK, I found the culprit.
+If you define 32-bit kernel, No modules and random kernel base, than the 
+symbol_request function doesn't return NULL if the symbol doesn't exists, which 
+causes the rest of the code to have undefined results.
+
+I prepared a patch to fix it and hopefully it will be in -rc2. I will sent it to 
+dri-devel as usual.
+
+	Oded
