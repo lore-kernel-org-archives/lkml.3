@@ -1,152 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbaLVJ1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:27:12 -0500
-Received: from mail-bn1on0137.outbound.protection.outlook.com ([157.56.110.137]:52976
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754164AbaLVJ1K convert rfc822-to-8bit (ORCPT
+	id S1754194AbaLVJ2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:28:53 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58641 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753971AbaLVJ2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:27:10 -0500
-X-WSS-ID: 0NGZ8X2-08-96Q-02
-X-M-MSG: 
-Message-ID: <5497E3D7.1060405@amd.com>
-Date: Mon, 22 Dec 2014 11:26:47 +0200
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
-        "Dave Airlie" <airlied@gmail.com>
-CC: dri-devel <dri-devel@lists.freedesktop.org>,
-        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        "Elifaz, Dana" <Dana.Elifaz@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] amdkfd: Don't clear *kfd2kgd on kfd_module_init
-References: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com>
-	<1419108374-7020-2-git-send-email-oded.gabbay@amd.com>
-	<5496AEAD.3090003@vodafone.de>	<5496B04C.50502@amd.com>
-	<5496BAE0.5090901@vodafone.de>	<5496C5EA.7050200@amd.com>
-	<5496CA0F.8000800@amd.com>	<5496EDF1.7080106@vodafone.de>
-	<5496EF34.70302@amd.com>	<5496F0DD.40903@vodafone.de>
-	<5497C98C.2080208@amd.com>
- <CAPM=9tzpvmu=6X32-jc4VeVTZENW9iQDq6aB1dxo6TkbkKOpkQ@mail.gmail.com>
- <5497CB91.2080306@amd.com> <5497DD0E.7040400@vodafone.de>
-In-Reply-To: <5497DD0E.7040400@vodafone.de>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [10.20.0.84]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(377454003)(51704005)(24454002)(479174004)(189002)(199003)(31966008)(97736003)(50986999)(87936001)(59896002)(99396003)(101416001)(54356999)(76176999)(21056001)(36756003)(77096005)(2950100001)(4396001)(33656002)(105586002)(86362001)(62966003)(107046002)(77156002)(106466001)(93886004)(120916001)(46102003)(80316001)(64126003)(68736005)(92566001)(84676001)(87266999)(65956001)(65806001)(20776003)(50466002)(23676002)(64706001)(47776003)(83506001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR02MB200;
-X-Forefront-PRVS: 0433DB2766
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 09:27:07.0689
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR02MB200
+	Mon, 22 Dec 2014 04:28:52 -0500
+Message-ID: <1419240528.30945.12.camel@x220>
+Subject: Re: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Date: Mon, 22 Dec 2014 10:28:48 +0100
+In-Reply-To: <547C92A1.8000902@atmel.com>
+References: <cover.1416392687.git.nicolas.ferre@atmel.com>
+		 <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com>
+	 <1417434775.30245.29.camel@x220> <547C92A1.8000902@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 22 Dec 2014 09:28:49.0230 (UTC) FILETIME=[B13336E0:01D01DC9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-12-01 at 17:09 +0100, Nicolas Ferre wrote:
+> Le 01/12/2014 12:52, Paul Bolle a écrit :
+> > On Wed, 2014-11-19 at 11:31 +0100, Nicolas Ferre wrote:
+> >> Remove legacy support for at91sam9rl boards.
+> >> This include board files removal plus all legacy code for non DT boards
+> >> support.
+> >> Use the Device Tree for running this board with newer kernels.
+> >>
+> >> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> >> ---
+> > 
+> > There's some further cleanup possible after this patch. I noticed that
+> > when it landed in today's linux-next (ie, next-20141201) as commit
+> > 4403ac46edcd ("ARM: at91: remove at91sam9263 legacy board support").
+> > 
+> >>  arch/arm/configs/at91sam9263_defconfig   |  151 ---
+> >>  arch/arm/mach-at91/Kconfig.non_dt        |   21 -
+> >>  arch/arm/mach-at91/Makefile              |    4 -
+> >>  arch/arm/mach-at91/at91sam9263.c         |  399 --------
+> >>  arch/arm/mach-at91/at91sam9263_devices.c | 1538 ------------------------------
+> >>  arch/arm/mach-at91/board-sam9263ek.c     |  493 ----------
+> >>  6 files changed, 2606 deletions(-)
+> >>  delete mode 100644 arch/arm/configs/at91sam9263_defconfig
+> >>  delete mode 100644 arch/arm/mach-at91/at91sam9263_devices.c
+> >>  delete mode 100644 arch/arm/mach-at91/board-sam9263ek.c
+> >>
+> >> [...]
+> >> diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+> >> deleted file mode 100644
+> >> index cef0e2f57068..000000000000
+> >> --- a/arch/arm/mach-at91/at91sam9263_devices.c
+> >> +++ /dev/null
+> >> [...]
+> >> -/* --------------------------------------------------------------------
+> >> - *  RTT
+> >> - * -------------------------------------------------------------------- */
+> >> -
+> >> -static struct resource rtt0_resources[] = {
+> >> -	{
+> >> -		.start	= AT91SAM9263_BASE_RTT0,
+> >> -		.end	= AT91SAM9263_BASE_RTT0 + SZ_16 - 1,
+> >> -		.flags	= IORESOURCE_MEM,
+> >> -	}, {
+> >> -		.flags	= IORESOURCE_MEM,
+> >> -	}, {
+> >> -		.flags  = IORESOURCE_IRQ,
+> >> -	}
+> >> -};
+> >> -
+> >> -static struct platform_device at91sam9263_rtt0_device = {
+> >> -	.name		= "at91_rtt",
+> >> -	.id		= 0,
+> >> -	.resource	= rtt0_resources,
+> >> -};
+> >> -
+> >> -static struct resource rtt1_resources[] = {
+> >> -	{
+> >> -		.start	= AT91SAM9263_BASE_RTT1,
+> >> -		.end	= AT91SAM9263_BASE_RTT1 + SZ_16 - 1,
+> >> -		.flags	= IORESOURCE_MEM,
+> >> -	}, {
+> >> -		.flags	= IORESOURCE_MEM,
+> >> -	}, {
+> >> -		.flags  = IORESOURCE_IRQ,
+> >> -	}
+> >> -};
+> >> -
+> >> -static struct platform_device at91sam9263_rtt1_device = {
+> >> -	.name		= "at91_rtt",
+> >> -	.id		= 1,
+> >> -	.resource	= rtt1_resources,
+> >> -};
+> >> -
+> >> -#if IS_ENABLED(CONFIG_RTC_DRV_AT91SAM9)
+> >> -static void __init at91_add_device_rtt_rtc(void)
+> >> -{
+> >> -	struct platform_device *pdev;
+> >> -	struct resource *r;
+> >> -
+> >> -	switch (CONFIG_RTC_DRV_AT91SAM9_RTT) {
+> > 
+> > This and...
+> > 
+> >> -	case 0:
+> >> -		/*
+> >> -		 * The second resource is needed only for the chosen RTT:
+> >> -		 * GPBR will serve as the storage for RTC time offset
+> >> -		 */
+> >> -		at91sam9263_rtt0_device.num_resources = 3;
+> >> -		at91sam9263_rtt1_device.num_resources = 1;
+> >> -		pdev = &at91sam9263_rtt0_device;
+> >> -		r = rtt0_resources;
+> >> -		break;
+> >> -	case 1:
+> >> -		at91sam9263_rtt0_device.num_resources = 1;
+> >> -		at91sam9263_rtt1_device.num_resources = 3;
+> >> -		pdev = &at91sam9263_rtt1_device;
+> >> -		r = rtt1_resources;
+> >> -		break;
+> >> -	default:
+> >> -		pr_err("at91sam9263: only supports 2 RTT (%d)\n",
+> >> -		       CONFIG_RTC_DRV_AT91SAM9_RTT);
+> > 
+> > this are the only places were the Kconfig symbol RTC_DRV_AT91SAM9_RTT
+> > was used. It is useless now. That matches its help text, that reads:
+> >     This option is only relevant for legacy board support and
+> >     won't be used when booting a DT board.
+> > 
+> >> -		return;
+> >> -	}
+> >> -
+> >> -	pdev->name = "rtc-at91sam9";
+> >> -	r[1].start = AT91SAM9263_BASE_GPBR + 4 * CONFIG_RTC_DRV_AT91SAM9_GPBR;
+> >> -	r[1].end = r[1].start + 3;
+> >> -	r[2].start = NR_IRQS_LEGACY + AT91_ID_SYS;
+> >> -	r[2].end = NR_IRQS_LEGACY + AT91_ID_SYS;
+> >> -}
+> >> -#else
+> >> -static void __init at91_add_device_rtt_rtc(void)
+> >> -{
+> >> -	/* Only one resource is needed: RTT not used as RTC */
+> >> -	at91sam9263_rtt0_device.num_resources = 1;
+> >> -	at91sam9263_rtt1_device.num_resources = 1;
+> >> -}
+> >> -#endif
+> >> -
+> >> -static void __init at91_add_device_rtt(void)
+> >> -{
+> >> -	at91_add_device_rtt_rtc();
+> >> -	platform_device_register(&at91sam9263_rtt0_device);
+> >> -	platform_device_register(&at91sam9263_rtt1_device);
+> >> -}
+> > 
+> > Is a patch to remove that symbol from drivers/rtc/Kconfig queued
+> > somewhere?
+> 
+> Hi Paul,
+> 
+> In fact these config options are flagged as being useless for !DT. As
+> the modifications of this Kconfig (in a "drivers" branch) and the
+> removal of !DT boards (in a "cleaup" branch) will happen in 3.19, I was
+> planning to come back to these 2 options by removing them later in order
+> to avoid to solve a merge conflict.
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/rtc/Kconfig?id=3969eb48ad7f3f3bef61f5474b7214e601fd2d75
+> 
+> As you can see in the commit above, they have been properly tagged by Boris.
+
+Yes, those two lines were noticed by me (see above). 
+
+> So, I suggest to get rid of them during 3.19-rc phase.
+
+There's still an entry for RTC_DRV_AT91SAM9_RTT in next-20141221 (and
+v3.19-rc1). So this I send this message as a reminder that this cleanup
+is still needed.
+
+Thanks,
 
 
-On 12/22/2014 10:57 AM, Christian König wrote:
-> Am 22.12.2014 um 08:43 schrieb Oded Gabbay:
->>
->>
->> On 12/22/2014 09:40 AM, Dave Airlie wrote:
->>>>>>>> There should be, but when the modules are compiled in, they are loaded
->>>>>>>> based on
->>>>>>>> link order only, if they are in the same group, and the groups are
->>>>>>>> loaded by a
->>>>>>>> pre-defined order.
->>>>>>>
->>>>>>> Is that really still up to date? I've seen effort to change that
->>>>>>> something like
->>>>>>> 10+ years ago when Rusty reworked the module system. And it is comming
->>>>>>> up on the
->>>>>>> lists again from time to time.
->>>>>>
->>>>>>  From what I can see in the Makefile rules, code and google, yes, that's
->>>>>> still
->>>>>> the situation. If someone will prove me wrong I will be more than happy
->>>>>> to
->>>>>> correct my code.
->>>>>>>
->>>>>>>
->>>>>>>> I don't want to move iommu before gpu, so I don't have a solution for
->>>>>>>> the
->>>>>>>> order between amdkfd and amd_iommu_v2.
->>>>>>>
->>>>>>> Why not? That's still better than creating a kernel workqueue,
->>>>>>> scheduling one
->>>>>>> work item on it, rescheduling the task until everything is completed and
->>>>>>> you can
->>>>>>> continue.
->>>>>>
->>>>>> Because I don't know the consequences of moving an entire subsystem in
->>>>>> front
->>>>>> of another one. In addition, even if everyone agrees, I'm pretty sure
->>>>>> that
->>>>>> Linus won't be happy to do that in -rc stages. So maybe this is something
->>>>>> to
->>>>>> consider for 3.20 merge window, but I would still like to provide a
->>>>>> solution
->>>>>> for 3.19.
->>>>>
->>>>>
->>>>> Yeah, true indeed. How about depending on everything being compiled as
->>>>> module
->>>>> for 3.19 then? Still better than having such a hack in the driver for as a
->>>>> temporary workaround for one release.
->>>>>
->>>> I thought about it, but because this problem was originally reported by a
->>>> user that told us he couldn't use modules because of his setup, I decided
->>>> not to.
->>>> I assume there are other users out there who needs this option (compiled
->>>> everything in the kernel - embedded ?), so I don't want to make their life
->>>> harder.
->>>>
->>>> In addition, saying it is a workaround for one release is true in case
->>>> moving iommu subsystem in front of gpu subsystem is acceptable and doesn't
->>>> cause other problems, unknown at this point.
->>>>
->>>> Bottom line, my personal preference is to help the users _now_ and if a
->>>> better fix is found in the future, change the code accordingly.
->>>
->>> My guess is moving the iommu subsystem in front of the GPU would be rational.
->>>
->>> It does seem like it would generally have a depend in that order.
->>>
->>> Dave.
->>>
->> Dave,
->> I agree, but don't you think it is too risky for -rc stages ?
->> If not, I can try it and if it works on KV, I can submit a patch.
->> But if you do think it is risky, what do you recommend for 3.19 ? Do the fix I
->> suggested or disable build-in compilation option ?
->
-> I would say create the patch of changing the order (should be trivial), describe
-> in detail in the commit message what this is supposed to fix and why such an
-> severe change was done in -rc1 and submit it upstream.
->
-> We can still revert it in -rc2 if it breaks anything.
->
-> Christian.
->
->>
->>     Oded
->
+Paul Bolle
 
-OK, I'll try it on my machine and if it works, I will send the patch to the list.
-
-	Oded
