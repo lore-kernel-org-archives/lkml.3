@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbaLVDz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 22:55:57 -0500
-Received: from ozlabs.org ([103.22.144.67]:59313 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764AbaLVDz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 22:55:56 -0500
-Message-ID: <1419220554.20221.4.camel@ellerman.id.au>
-Subject: Re: [PATCH] misc: cxl: sysfs.c: Remove unused function
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Michael Neuling <mikey@neuling.org>, linuxppc-dev@lists.ozlabs.org,
-        Ian Munsie <imunsie@au1.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 22 Dec 2014 14:55:54 +1100
-In-Reply-To: <CAFo99ga9TYf5hnwOcoRPKsTHhhknoz6_axzP7spe0mvd=YPMLw@mail.gmail.com>
-References: <1419092024-6701-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	 <1419134735.27324.41.camel@neuling.org>
-	 <CAFo99ga9TYf5hnwOcoRPKsTHhhknoz6_axzP7spe0mvd=YPMLw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753954AbaLVEnm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 23:43:42 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:50435 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602AbaLVEnk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 23:43:40 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCHSET 0/7] perf tools: A small random cleanup and fixups
+Date: Mon, 22 Dec 2014 13:44:08 +0900
+Message-Id: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-12-21 at 13:46 +0100, Rickard Strandqvist wrote:
-> 2014-12-21 5:05 GMT+01:00 Michael Neuling <mikey@neuling.org>:
-> >> Remove the function mmio_size_show() that is not used anywhere.
-> >
-> > Did you compile check this patch?
-> >
-> >   drivers/misc/cxl/sysfs.c:291:74: error: ‘mmio_size_show’ undeclared here (not in a function)
-> >
-> > It's used here:
-> >         static struct device_attribute afu_attrs[] = {
-> >                 __ATTR_RO(mmio_size),
-> 
-> Hi
-> 
-> Sorry about that.
-> 
-> Strange because I compile everything as allyesconfig, allmodconfig and
-> allnoconfig.
+Hello,
 
-The allyes should have picked it up, so you must have done something wrong.
+This is a just random collection of small cleanup and fixes that was
+needed (or found) for my work.  I'd like to share it before posting
+the real work as it's independent change and the work can be quite
+large.. ;-)
 
-Please be more careful with these attribute routines, they are not visible with
-grep.
+Thanks,
+Namhyung
 
-cheers
 
+Namhyung Kim (7):
+  perf report: Get rid of report__inc_stat()
+  perf report: Show progress bar for output resorting
+  perf ui/tui: Print backtrace symbols when segfault occurred
+  perf diff: Fix to sort by baseline field by default
+  perf diff: Get rid of hists__compute_resort()
+  perf tools: Append callchains only when requested
+  perf tools: Set attr.task bit for a tracking event
+
+ tools/perf/builtin-annotate.c     |  2 +-
+ tools/perf/builtin-diff.c         | 84 +++++++++++++++++++--------------------
+ tools/perf/builtin-report.c       | 40 ++++++++++++-------
+ tools/perf/builtin-top.c          |  4 +-
+ tools/perf/tests/hists_cumulate.c |  2 +-
+ tools/perf/tests/hists_filter.c   |  2 +-
+ tools/perf/tests/hists_output.c   | 10 ++---
+ tools/perf/ui/tui/setup.c         | 26 +++++++++++-
+ tools/perf/util/evsel.c           |  1 +
+ tools/perf/util/hist.c            | 19 +++++++--
+ tools/perf/util/hist.h            |  2 +-
+ 11 files changed, 116 insertions(+), 76 deletions(-)
+
+-- 
+2.1.3
 
