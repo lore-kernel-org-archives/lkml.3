@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaLVPM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:12:29 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50642 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075AbaLVPLq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:11:46 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        David Airlie <airlied@linux.ie>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v6 2/3] of: Add for_each_endpoint_of_node helper macro
-Date: Mon, 22 Dec 2014 16:11:30 +0100
-Message-Id: <1419261091-29888-3-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419261091-29888-1-git-send-email-p.zabel@pengutronix.de>
-References: <1419261091-29888-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755314AbaLVPN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:13:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:53349 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753184AbaLVPNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:13:25 -0500
+Date: Mon, 22 Dec 2014 12:13:21 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: perf: util: color.c:  Remove some unused functions
+Message-ID: <20141222151321.GG7644@kernel.org>
+References: <1419079865-354-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141222145610.GD29096@krava.brq.redhat.com>
+ <20141222150512.GE7644@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141222150512.GE7644@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that while of_graph_get_next_endpoint decrements the reference count
-of the child node passed to it, of_node_put(child) still has to be called
-manually when breaking out of the loop.
+Em Mon, Dec 22, 2014 at 12:05:12PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Mon, Dec 22, 2014 at 03:56:10PM +0100, Jiri Olsa escreveu:
+> > On Sat, Dec 20, 2014 at 01:51:05PM +0100, Rickard Strandqvist wrote:
+> > > Removes some functions that are not used anywhere:
+> > > color_parse_mem() color_parse()
+> > > 
+> > > This was partially found by using a static code analysis program called cppcheck.
+> > 
+> > and partially removed ;-)
+> > 
+> > [jolsa@krava perf]$ make
+> >   BUILD:   Doing 'make -j4' parallel build
+> >   CC       util/debug.o
+> >   CC       util/color.o
+> >   CC       util/machine.o
+> >   CC       util/map.o
+> > util/color.c:8:12: error: ‘parse_color’ defined but not used [-Werror=unused-function]
+> >  static int parse_color(const char *name, int len)
+> >             ^
+> > util/color.c:28:12: error: ‘parse_attr’ defined but not used [-Werror=unused-function]
+> >  static int parse_attr(const char *name, int len)
+> >             ^
+> > cc1: all warnings being treated as errors
+> > make[1]: *** [util/color.o] Error 1
+> > make[1]: *** Waiting for unfinished jobs....
+> > make: *** [all] Error 2
+> > 
+> > 
+> > any clue why this (color name parsing) is in?
+> 
+> Humm, there is support for changing the TUI colors in ~/.perfconfig, but
+> probably it doesn't uses those functions?
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
- include/linux/of_graph.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+void ui_browser__init(void)
+{
+        int i = 0;
 
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-index befef42..e43442e 100644
---- a/include/linux/of_graph.h
-+++ b/include/linux/of_graph.h
-@@ -26,6 +26,17 @@ struct of_endpoint {
- 	const struct device_node *local_node;
- };
- 
-+/**
-+ * for_each_endpoint_of_node - iterate over every endpoint in a device node
-+ * @parent: parent device node containing ports and endpoints
-+ * @child: loop variable pointing to the current endpoint node
-+ *
-+ * When breaking out of the loop, of_node_put(child) has to be called manually.
-+ */
-+#define for_each_endpoint_of_node(parent, child) \
-+	for (child = of_graph_get_next_endpoint(parent, NULL); child != NULL; \
-+	     child = of_graph_get_next_endpoint(parent, child))
-+
- #ifdef CONFIG_OF
- int of_graph_parse_endpoint(const struct device_node *node,
- 				struct of_endpoint *endpoint);
--- 
-2.1.4
+        perf_config(ui_browser__color_config, NULL);
 
+        while (ui_browser__colorsets[i].name) {
+                struct ui_browser_colorset *c = &ui_browser__colorsets[i++];
+                sltt_set_color(c->colorset, c->name, c->fg, c->bg);
+        }
+
+        annotate_browser__init();
+}
+
+And ui_browser__color_config does really simple parsing, using straight
+away the color strings provided in the config file.
+
+Looking again, we could even use those, after adapting it to what
+libslang expects, not what ncurses do, but I haven't checked, perhaps
+libslang will do that validation for us, in the meantime, I'm applying
+the patch.
+
+- Arnaldo
