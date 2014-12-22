@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaLVLLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 06:11:39 -0500
-Received: from mail-bl2on0122.outbound.protection.outlook.com ([65.55.169.122]:2656
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753978AbaLVLLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 06:11:37 -0500
-X-WSS-ID: 0NGZDR8-07-89W-02
-X-M-MSG: 
-From: Oded Gabbay <oded.gabbay@amd.com>
-To: Alexander Deucher <Alexander.Deucher@amd.com>
-CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
-        "John Bridgman" <John.Bridgman@amd.com>,
-        Dana Elifaz <Dana.Elifaz@amd.com>, "Huang Ying" <ying.huang@intel.com>,
-        LKP ML <lkp@01.org>
-Subject: [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
-Date: Mon, 22 Dec 2014 13:11:13 +0200
-Message-ID: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
-X-Mailer: git-send-email 1.9.1
+	id S1754363AbaLVLRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 06:17:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:6834 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752057AbaLVLRh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 06:17:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="432085994"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jiang Liu <jiang.liu-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
+ VT-d PI
+Thread-Topic: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu()
+ for VT-d PI
+Thread-Index: AQHQHdeEIi/lpOcw+EuisuFJCtkFwpybdYkA
+Date: Mon, 22 Dec 2014 11:17:30 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F002310DAB@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-14-git-send-email-feng.wu@intel.com>
+	<A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>
+	<549307A5.3060305@redhat.com>
+	<E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>
+	<5494131E.9030505@redhat.com>
+ <E959C4978C3B6342920538CF579893F00230D036@SHSMSX104.ccr.corp.intel.com>
+ <549576C7.4030800@redhat.com>
+ <E959C4978C3B6342920538CF579893F0023103FB@SHSMSX104.ccr.corp.intel.com>
+ <5497E41F.50301@redhat.com>
+ <E959C4978C3B6342920538CF579893F002310D51@SHSMSX104.ccr.corp.intel.com>
+ <5497FB50.1080606@redhat.com>
+In-Reply-To: <5497FB50.1080606@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.20.0.84]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(31966008)(36756003)(68736005)(50226001)(106466001)(86362001)(4396001)(19580395003)(19580405001)(50466002)(48376002)(64706001)(21056001)(47776003)(97736003)(107046002)(77096005)(20776003)(92566001)(33646002)(105586002)(46102003)(101416001)(110136001)(50986999)(229853001)(89996001)(87936001)(120916001)(84676001)(99396003)(62966003)(77156002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB193;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB193;
-X-Forefront-PRVS: 0433DB2766
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 11:11:33.9442
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB193
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-amdkfd driver can be compiled only in 64-bit kernel. Therefore, there is no
-point in trying to initialize amdkfd in 32-bit kernel.
 
-In addition, in case of specific configuration of 32-bit kernel, no modules and
-random kernel base, the symbol_request function doesn't work as expected - It
-doesn't return NULL if the symbol doesn't exists. That makes the kernel panic.
-Therefore, the as amdkfd doesn't compile in 32-bit kernel, the best way is just
-to return false immediately.
 
-Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
----
- drivers/gpu/drm/radeon/radeon_kfd.c | 4 ++++
- 1 file changed, 4 insertions(+)
+> -----Original Message-----
+> From: Paolo Bonzini [mailto:pbonzini@redhat.com]
+> Sent: Monday, December 22, 2014 7:07 PM
+> To: Wu, Feng; Zhang, Yang Z; Thomas Gleixner; Ingo Molnar; H. Peter Anvin;
+> x86@kernel.org; Gleb Natapov; dwmw2@infradead.org; joro@8bytes.org;
+> Alex Williamson; Jiang Liu
+> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org; KVM list;
+> Eric Auger
+> Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
+> VT-d PI
+> 
+> 
+> 
+> On 22/12/2014 12:04, Wu, Feng wrote:
+> > > Can you support them only if the destination is a single CPU?
+> >
+> > Sorry, I am not quite understand this. I still don't understand the "single CPU"
+> here.
+> > Lowest priority interrupts always have a cpumask which contains multiple
+> CPU.
+> 
+> Yes, and those need not be accelerated.  But what if you set affinity to
+> a single CPU?
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
-index 242fd8b..cb77e5c 100644
---- a/drivers/gpu/drm/radeon/radeon_kfd.c
-+++ b/drivers/gpu/drm/radeon/radeon_kfd.c
-@@ -101,6 +101,7 @@ static const struct kgd2kfd_calls *kgd2kfd;
- 
- bool radeon_kfd_init(void)
- {
-+#ifdef CONFIG_X86_64
- 	bool (*kgd2kfd_init_p)(unsigned, const struct kfd2kgd_calls*,
- 				const struct kgd2kfd_calls**);
- 
-@@ -117,6 +118,9 @@ bool radeon_kfd_init(void)
- 	}
- 
- 	return true;
-+#else
-+	return false;
-+#endif
- }
- 
- void radeon_kfd_fini(void)
--- 
-1.9.1
+How do I set affinity to a single CPU if guest configure a lowest priority interrupt? Thanks a lot!
 
+Thanks,
+Feng
+
+> 
+> Paolo
