@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaLVHu4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 02:50:56 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41594 "EHLO e7.ny.us.ibm.com"
+	id S1754313AbaLVHve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 02:51:34 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41482 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754188AbaLVHuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 02:50:03 -0500
+	id S1754018AbaLVHte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 02:49:34 -0500
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         Michael Ellerman <mpe@ellerman.id.au>,
         Paul Mackerras <paulus@samba.org>
 Cc: dev@codyps.com, peterz@infradead.org, hbabu@us.ibm.com,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v6 2/4] tools/perf: extend format_alias() to include event parameters
-Date: Sun, 21 Dec 2014 23:49:25 -0800
-Message-Id: <1419234567-22784-3-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v6 7/7] powerpc/perf/hv-24x7: Document sysfs event description entries
+Date: Sun, 21 Dec 2014 23:48:52 -0800
+Message-Id: <1419234532-22657-8-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1419234567-22784-1-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1419234567-22784-1-git-send-email-sukadev@linux.vnet.ibm.com>
+In-Reply-To: <1419234532-22657-1-git-send-email-sukadev@linux.vnet.ibm.com>
+References: <1419234532-22657-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14122207-0037-0000-0000-0000002EF792
+x-cbid: 14122207-0037-0000-0000-0000002EF765
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-This causes `perf list pmu` to show parameters for parameterized events
-like:
-
-  pmu/event_name,param1=?,param2=?/ [Kernel PMU event]
-
-An example:
-
-  hv_24x7/HPM_TLBIE__PHYS_CORE,core=?/ [Kernel PMU event]
-
 Changelog[v6]
-	[Jir Olsa, Sukadev Bhattiprolu] Drop the '$' sign and go back to
-	just printing whatevever sysfs provides (which is '=?') to identify
-	required parameters. sysfs also now uses parameters like 'core'
-	and 'vcpu' rather than 'starting_index'.
+	[Cody Schafer] Update Contact info to Linux on Power Developer list
 
-Changelog[v5]
-	[Jiri Olsa, Peter Zijlstra] Use '$' to prefix parameterized events.
-
-Changelog[v4]
-	[Jiri Olsa] If the parameter for an event in sysfs is 'param=val',
-	have perf-list show the event as 'param=?' rather than 'val=?'.
-
+CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- tools/perf/util/pmu.c | 27 ++++++++++++++++++++++++++-
- 1 file changed, 26 insertions(+), 1 deletion(-)
+ .../testing/sysfs-bus-event_source-devices-hv_24x7 | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index cb516dd..d208fef 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -810,10 +810,35 @@ void perf_pmu__set_format(unsigned long *bits, long from, long to)
- 		set_bit(b, bits);
- }
- 
-+static int sub_non_neg(int a, int b)
-+{
-+	if (b > a)
-+		return 0;
-+	return a - b;
-+}
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7 b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
+index 32f3f5f..f893337 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
+@@ -21,3 +21,25 @@ Contact:	Linux on PowerPC Developer List <linuxppc-dev@lists.ozlabs.org>
+ Description:
+ 		Exposes the "version" field of the 24x7 catalog. This is also
+ 		extractable from the provided binary "catalog" sysfs entry.
 +
- static char *format_alias(char *buf, int len, struct perf_pmu *pmu,
- 			  struct perf_pmu_alias *alias)
- {
--	snprintf(buf, len, "%s/%s/", pmu->name, alias->name);
-+	struct parse_events_term *term;
-+	int used = snprintf(buf, len, "%s/%s", pmu->name, alias->name);
++What:		/sys/bus/event_source/devices/hv_24x7/event_descs/<event-name>
++Date:		February 2014
++Contact:	Linux on PowerPC Developer List <linuxppc-dev@lists.ozlabs.org>
++Description:
++		Provides the description of a particular event as provided by
++		the firmware. If firmware does not provide a description, no
++		file will be created.
 +
-+	list_for_each_entry(term, &alias->terms, list)
-+		if (term->type_val == PARSE_EVENTS__TERM_TYPE_STR)
-+			used += snprintf(buf + used, sub_non_neg(len, used),
-+					",%s=%s", term->config,
-+					term->val.str);
++		Note that the event-name lacks the domain suffix appended for
++		events in the events/ dir.
 +
-+	if (sub_non_neg(len, used) > 0) {
-+		buf[used] = '/';
-+		used++;
-+	}
-+	if (sub_non_neg(len, used) > 0) {
-+		buf[used] = '\0';
-+		used++;
-+	} else
-+		buf[len - 1] = '\0';
++What:		/sys/bus/event_source/devices/hv_24x7/event_long_descs/<event-name>
++Date:		February 2014
++Contact:	Linux on PowerPC Developer List <linuxppc-dev@lists.ozlabs.org>
++Description:
++		Provides the "long" description of a particular event as
++		provided by the firmware. If firmware does not provide a
++		description, no file will be created.
 +
- 	return buf;
- }
- 
++		Note that the event-name lacks the domain suffix appended for
++		events in the events/ dir.
 -- 
 1.8.3.1
 
