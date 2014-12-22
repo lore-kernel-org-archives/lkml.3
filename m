@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592AbaLVUID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 15:08:03 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37563 "EHLO mga01.intel.com"
+	id S1755626AbaLVUIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 15:08:18 -0500
+Received: from mga03.intel.com ([134.134.136.65]:58546 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755243AbaLVUIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 15:08:01 -0500
+	id S1755557AbaLVUIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 15:08:02 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="502792152"
-Subject: [PATCH 1/2] x86, mpx: explicitly disable 32-bit MPX support on 64-bit kernels
+X-IronPort-AV: E=Sophos;i="5.07,626,1413270000"; 
+   d="scan'208";a="641564569"
+Subject: [PATCH 2/2] x86 mpx: fix potential performance issue on unmaps
 To: linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, x86@kernel.org, Dave Hansen <dave@sr71.net>,
-        dave.hansen@linux.intel.com, luto@amacapital.net
+        dave.hansen@linux.intel.com
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 22 Dec 2014 12:08:04 -0800
+Date: Mon, 22 Dec 2014 12:08:05 -0800
 References: <20141222200803.D316DA2A@viggo.jf.intel.com>
 In-Reply-To: <20141222200803.D316DA2A@viggo.jf.intel.com>
-Message-Id: <20141222200804.18A7A803@viggo.jf.intel.com>
+Message-Id: <20141222200805.13639956@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,50 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Hansen <dave.hansen@linux.intel.com>
 
-We had originally planned on submitting MPX support in one patch
-set.  We eventually broke it up in to two pieces for easier
-review.  One of the features that didn't make the first round
-was supporting 32-bit binaries on 64-bit kernels.
+The 3.19 release window saw some TLB modifications merged which
+caused a performance regression.  They were fixed in commit
+045bbb9fa.
 
-Once we split the set up, we never added code to restrict 32-bit
-binaries from _using_ MPX on 64-bit kernels.
+Once that fix was applied, I also noticed that there was a small
+but intermittent regression still present.  It was not present
+consistently enough to bisect reliably, but I'm fairly confident
+that it came from (my own) MPX patches.  The source was reading
+a relatively unused field in the mm_struct via arch_unmap.
 
-The 32-bit bounds tables are a different format than the 64-bit
-ones.  Without this patch, the kernel will try to read a 32-bit
-binary's tables as if they were the 64-bit version.  They will
-likely be noticed as being invalid rather quickly and the app
-will get killed, but that's kinda mean.
+I also noted that this code was in the main instruction flow of
+do_munmap() and probably had more icache impact than we want.
 
-This patch adds an explicit check, and will make a 64-bit kernel
-essentially behave as if it has no MPX support when called from
-a 32-bit binary.
-
-I intend to remove this check once the mixed binary support is
-added.  Those patches are posted if anyone is interested:
-
-	https://lkml.org/lkml/2014/12/12/632
+This patch does two things:
+1. Adds a static (via Kconfig) and dynamic (via cpuid) check
+   for MPX with cpu_feature_enabled().  This keeps us from
+   reading that cacheline in the mm and trades it for a check
+   of the global CPUID variables at least on CPUs without MPX.
+2. Adds an unlikely() to ensure that the MPX call ends up out
+   of the main instruction flow in do_munmap().  I've added
+   a detailed comment about why this was done and why we want
+   it even on systems where MPX is present.
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
 ---
 
- b/arch/x86/mm/mpx.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ b/arch/x86/include/asm/mmu_context.h |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff -puN arch/x86/mm/mpx.c~x86-mpx-explicitly-disable-32-bit-on-64-bit-for-3_19 arch/x86/mm/mpx.c
---- a/arch/x86/mm/mpx.c~x86-mpx-explicitly-disable-32-bit-on-64-bit-for-3_19	2014-12-22 12:06:18.308911687 -0800
-+++ b/arch/x86/mm/mpx.c	2014-12-22 12:06:18.311911822 -0800
-@@ -349,6 +349,12 @@ static __user void *task_get_bounds_dir(
- 		return MPX_INVALID_BOUNDS_DIR;
- 
- 	/*
-+	 * 32-bit binaries on 64-bit kernels are currently
-+	 * unsupported.
-+	 */
-+	if (IS_ENABLED(CONFIG_X86_64) && test_thread_flag(TIF_IA32))
-+		return MPX_INVALID_BOUNDS_DIR;
+diff -puN arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap arch/x86/include/asm/mmu_context.h
+--- a/arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap	2014-12-22 12:06:18.677928330 -0800
++++ b/arch/x86/include/asm/mmu_context.h	2014-12-22 12:06:18.680928465 -0800
+@@ -130,7 +130,25 @@ static inline void arch_bprm_mm_init(str
+ static inline void arch_unmap(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			      unsigned long start, unsigned long end)
+ {
+-	mpx_notify_unmap(mm, vma, start, end);
 +	/*
- 	 * The bounds directory pointer is stored in a register
- 	 * only accessible if we first do an xsave.
- 	 */
++	 * mpx_notify_unmap() goes and reads a rarely-hot
++	 * cacheline in the mm_struct.  That can be expensive
++	 * enough to be seen in profiles.
++	 *
++	 * The mpx_notify_unmap() call and its contents have been
++	 * observed to affect munmap() performance on hardware
++	 * where MPX is not present.
++	 *
++	 * The unlikely() optimizes for the fast case: no MPX
++	 * in the CPU, or no MPX use in the process.  Even if
++	 * we get this wrong (in the unlikely event that MPX
++	 * is widely enabled on some system) the overhead of
++	 * MPX itself (reading bounds tables) is expected to
++	 * overwhelm the overhead of getting this unlikely()
++	 * consistently wrong.
++	 */
++	if (unlikely(cpu_feature_enabled(X86_FEATURE_MPX)))
++		mpx_notify_unmap(mm, vma, start, end);
+ }
+ 
+ #endif /* _ASM_X86_MMU_CONTEXT_H */
 _
