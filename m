@@ -1,45 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaLVKOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 05:14:48 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:24055 "EHLO mailhub1.si.c-s.fr"
+	id S1754357AbaLVKOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 05:14:55 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:24074 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754027AbaLVKOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 05:14:47 -0500
+	id S1754323AbaLVKOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 05:14:52 -0500
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
         Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: [PATCH v3 0/2] powerpc32: handle inverted _PAGE_RW bit outside of TLB handlers
-Message-Id: <20141222101444.3F5DD1A5E15@localhost.localdomain>
-Date: Mon, 22 Dec 2014 11:14:43 +0100 (CET)
+Subject: [PATCH v3 2/2] powerpc/8xx: use _PAGE_RO instead of _PAGE_RW
+Message-Id: <20141222101450.D7DD11A5E15@localhost.localdomain>
+Date: Mon, 22 Dec 2014 11:14:50 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some powerpc like the 8xx don't have a RW bit in PTE bits but a RO (Read Only) bit.
-This patch implements the handling of a _PAGE_RO flag to be used in place of _PAGE_RW
-
-Patchset:
-1) powerpc32: adds handling of _PAGE_RO
-2) powerpc/8xx: use _PAGE_RO instead of _PAGE_RW
-
-All changes have been successfully tested on MPC885
+On powerpc 8xx, in TLB entries, 0x400 bit is set to 1 for read-only pages
+and is set to 0 for RW pages. So we should use _PAGE_RO instead of _PAGE_RW
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-Tested-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
 v2 is a complete rework compared to v1
-v3 takes into account comments from Scott on v2
+v3: fixing pte_update() and comments
 
- arch/powerpc/include/asm/pgtable-ppc32.h | 12 +++++++-----
- arch/powerpc/include/asm/pgtable.h       |  7 +++++--
- arch/powerpc/include/asm/pte-8xx.h       |  9 ++++-----
- arch/powerpc/include/asm/pte-common.h    | 25 +++++++++++++++++--------
- arch/powerpc/kernel/head_8xx.S           |  3 ---
- arch/powerpc/mm/gup.c                    |  2 ++
- arch/powerpc/mm/pgtable_32.c             |  2 +-
- 7 files changed, 36 insertions(+), 24 deletions(-)
+ arch/powerpc/include/asm/pgtable-ppc32.h | 5 +++--
+ arch/powerpc/include/asm/pte-8xx.h       | 9 ++++-----
+ arch/powerpc/kernel/head_8xx.S           | 3 ---
+ 3 files changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
+index caf094a..b4e0c3b 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc32.h
++++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+@@ -178,9 +178,10 @@ static inline unsigned long pte_update(pte_t *p,
+ 	andc	%1,%0,%5\n\
+ 	or	%1,%1,%6\n\
+ 	/* 0x200 == Extended encoding, bit 22 */ \
+-	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
++	/* Bit 22 has to be 1 when _PAGE_USER is unset and _PAGE_RO is set */ \
+ 	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
+-	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
++	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RO */ \
++	xori	%3,%3,0x200\n \
+ 	or	%1,%3,%1\n\
+ 	xori	%1,%1,0x200\n"
+ "	stwcx.	%1,0,%4\n\
+diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
+index daa4616..eb6edb4 100644
+--- a/arch/powerpc/include/asm/pte-8xx.h
++++ b/arch/powerpc/include/asm/pte-8xx.h
+@@ -46,9 +46,9 @@
+  * require a TLB exception handler change.  It is assumed unused bits
+  * are always zero.
+  */
+-#define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
++#define _PAGE_RO	0x0400	/* lsb PP bits */
+ #define _PAGE_USER	0x0800	/* msb PP bits */
+-/* set when neither _PAGE_USER nor _PAGE_RW are set */
++/* set when _PAGE_USER is unset and _PAGE_RO is set */
+ #define _PAGE_KNLRO	0x0200
+ 
+ #define _PMD_PRESENT	0x0001
+@@ -62,9 +62,8 @@
+ #define PTE_ATOMIC_UPDATES	1
+ 
+ /* We need to add _PAGE_SHARED to kernel pages */
+-#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
+-#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
+-#define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
++#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_RO | _PAGE_KNLRO)
++#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_RO | _PAGE_KNLRO)
+ 
+ #endif /* __KERNEL__ */
+ #endif /*  _ASM_POWERPC_PTE_8xx_H */
+diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+index 3d4b8ee..807b0db 100644
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -441,9 +441,6 @@ DataStoreTLBMiss:
+ 	and	r11, r11, r10
+ 	rlwimi	r10, r11, 0, _PAGE_PRESENT
+ #endif
+-	/* invert RW */
+-	xori	r10, r10, _PAGE_RW
+-
+ 	/* The Linux PTE won't go exactly into the MMU TLB.
+ 	 * Software indicator bits 22 and 28 must be clear.
+ 	 * Software indicator bits 24, 25, 26, and 27 must be
+-- 
+2.1.0
+
