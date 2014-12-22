@@ -1,152 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaLVJVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:21:33 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53114 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754513AbaLVJV3 (ORCPT
+	id S1754248AbaLVJYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:24:05 -0500
+Received: from audible.transient.net ([24.143.126.66]:46513 "HELO
+	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754041AbaLVJYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:21:29 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Alex Hung <alex.hung@canonical.com>
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-Date: Mon, 22 Dec 2014 10:21:25 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Darren Hart <dvhart@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <2697957.miSb4Rm7HK@xps13> <CAJ=jqubEggcXs0kvegGUpVh8PNh-GmdcnXkXUjqv4fHD-zXdEA@mail.gmail.com>
-In-Reply-To: <CAJ=jqubEggcXs0kvegGUpVh8PNh-GmdcnXkXUjqv4fHD-zXdEA@mail.gmail.com>
+	Mon, 22 Dec 2014 04:24:01 -0500
+Date: Mon, 22 Dec 2014 09:23:58 +0000
+From: Jamie Heilman <jamie@audible.transient.net>
+To: "Chen, Tiejun" <tiejun.chen@intel.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
+Message-ID: <20141222092358.GA3915@cucamonga.audible.transient.net>
+Mail-Followup-To: "Chen, Tiejun" <tiejun.chen@intel.com>,
+	Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20141221124640.GA4059@cucamonga.audible.transient.net>
+ <5497C882.4000108@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1624474.KblB4eBZ3U";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412221021.26112@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5497C882.4000108@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1624474.KblB4eBZ3U
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Chen, Tiejun wrote:
+> On 2014/12/21 20:46, Jamie Heilman wrote:
+> >With v3.19-rc1 when I run qemu-system-x86_64 -machine pc,accel=kvm I
+> >get:
+> >
+> >KVM: entry failed, hardware error 0x80000021
+> 
+> Looks some MSR writing issues such a failed entry.
+> 
+> >If you're running a guest on an Intel machine without unrestricted mode
+> >support, the failure can be most likely due to the guest entering an invalid
+> >state for Intel VT. For example, the guest maybe running in big real mode
+> >which is not supported on less recent Intel processors.
+> >
+> >EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
+> >ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+> >EIP=0000e05b EFL=00010002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+> >ES =0000 00000000 0000ffff 00009300
+> >CS =f000 000f0000 0000ffff 00009b00
+> >SS =0000 00000000 0000ffff 00009300
+> >DS =0000 00000000 0000ffff 00009300
+> >FS =0000 00000000 0000ffff 00009300
+> >GS =0000 00000000 0000ffff 00009300
+> >LDT=0000 00000000 0000ffff 00008200
+> >TR =0000 00000000 0000ffff 00008b00
+> >GDT=     00000000 0000ffff
+> >IDT=     00000000 0000ffff
+> >CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+> >DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000
+> >DR6=00000000ffff0ff0 DR7=0000000000000400
+> >EFER=0000000000000000
+> 
+> And I don't see any obvious wrong as well. Any valuable info from dmesg?
 
-Hello, thank you very much for testing.
+With the simple qemu command above, on 3.18.1 I see:
 
-On Monday 22 December 2014 08:27:57 Alex Hung wrote:
-> =3D Testing =3D
->=20
-> I tested six Dell systems for two sets of patches for dell
-> radio button - two system with radio slider and four with
-> radio hotkey. There are also two systems with working ARBT
-> method.
->=20
-> =3D=3D Basic Information =3D=3D
-> Based OS: Ubuntu 14.10 (kernel 3.16 [1]) and kernel 3.18 [2]
->=20
-> Patches:
-> 1. dell-wireless v3 =3D original v2 + Gabriele's suggestion [3]
-> 2. dell-rbtn [4]
->=20
-> Method:
-> 1. run "rfkill list" and press hotkey / toggle slider during
-> runtime 2. run "rfkill list" and toggle slider during S3
->=20
+kern.info: kvm: zapping shadow pages for mmio generation wraparound
 
-If there is problem with my patch series which does not reflect=20
-correct state after resume from S3, I can add pm hook which will=20
-try to re-read rfkill state (via GRBT) after system wake up from=20
-S3.
+when I fire up a full guest that's actually useful I get:
 
-> =3D=3D Results =3D=3D
->=20
-> I summarized the tests in Google sheet as below. Please advise
-> if anyone has problem reading it.
->=20
-> https://docs.google.com/spreadsheets/d/1voffS6dNglwAExSGh3UmG_
-> _UAO2qfZ829CkJLPo06aI/edit?usp=3Dsharing
->=20
-> PS. The document will stay as long as possible for future
-> references.
->=20
-> =3D=3D Summary =3D=3D
->=20
-> 1. I did not observed a duplicated event. However, keycode 240
-> (unknown) is generated on many UUT. It is not issued by
-> dell-laptop or del-wmi. I am suspecting it is the other event
-> Pali observes but it can be the result of different distro.
->=20
+kern.info: kvm: zapping shadow pages for mmio generation wraparound
+kern.err: kvm [4073]: vcpu0 disabled perfctr wrmsr: 0xc1 data 0xffff
 
-It comes from i8042 bus via internal AT keyboard (not from WMI).=20
-In userspace you can assign correct keycode (e.g. KEY_WLAN or=20
-KEY_RFKILL) so it does not show as unknown. Its scancode is 136=20
-(0x88) and default keycode 240 (0xF0).
+On 3.18.0-rc3-00042-g34a1cd6 nothing appears in the dmesg, just the
+message I mention above to stderr.  Same thing with a stock
+3.19.0-rc1.  Once I apply your patch the simple test command produces
+the same zapping shadow pages messages as 3.18.1, and a test guest of
+a Debian Jessie image (w/stock distro kernel) produces the same thing
+with disabled perfctr wrmsr message.  However, it doesn't look like
+I'm entirely out of the woods, because one of my other guest VMs with a
+custom kernel that works great under 3.18.1 now fails to run.  Nothing
+in dmesg, but here's the stderr:
 
-Some other distributions or other software automatically map this=20
-unknown 240 keycode to some key, so you will see duplicate event=20
-even in X applications.
+KVM internal error. Suberror: 1
+emulation failure
+EAX=000de494 EBX=00000000 ECX=00000000 EDX=00000cfd
+ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fb4
+EIP=000f15c1 EFL=00010016 [----AP-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
+SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+GDT=     000f6be8 00000037
+IDT=     000f6c26 00000000
+CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+DR6=00000000ffff0ff0 DR7=0000000000000400
+EFER=0000000000000000
+Code=e8 ae fc ff ff 89 f2 a8 10 89 d8 75 0a b9 41 15 ff ff ff d1 <5b> 5e c3 5b 5e e9 76 ff ff ff b0 11 e6 20 e6 a0 b0 08 e6 21 b0 70 e6 a1 b0 04 e6 21 b0 02
 
-> 2. Some system issues scancode "0xe0 0x73 0xe0 0xf3". It can
-> also be used toggle wireless state but this can also be
-> distro-dependent. This scancode does nothing on Ubuntu 14.10.
->=20
+FWIW, I get the same thing with 34a1cd60d17 reverted.  Maybe there are
+two bugs, maybe there's more to this first one.  I can repro this
+error with the command: qemu-system-x86_64 -machine pc,accel=kvm -nodefaults
 
-I would suggest you to use program input-events for reading=20
-pressed keys as it show all key events from kernel and it is=20
-working per input device (so it is possible to check if event=20
-comes from AT keyboard, WMI or other driver). If there is problem=20
-with WMI driver (it reports both key press and BIOS do some=20
-change) we can patch WMI driver to prevent another looping=20
-problem...
+> >This is with QEMU emulator version 2.1.2 (Debian 1:2.1+dfsg-11),
+> >Copyright (c) 2003-2008 Fabrice Bellard
+> >
+> >The host system is:
+> >
+> >cpu family      : 6
+> >model           : 23
+> >model name      : Intel(R) Core(TM)2 Duo CPU     E8400  @ 3.00GHz
+> >stepping        : 10
+> >microcode       : 0xa0b
+> >...
+> >flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good nopl aperfmperf pni dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 xsave lahf_lm dtherm tpr_shadow vnmi flexpriority
+> >
+> >I bisected this back to:
+> >
+> >commit 34a1cd60d17f62c1f077c1478a6c2ca8c3d17af4
+> >Author: Tiejun Chen <tiejun.chen@intel.com>
+> >Date:   Tue Oct 28 10:14:48 2014 +0800
+> >
+> >     kvm: x86: vmx: move some vmx setting from vmx_init() to hardware_setup()
+> >
+> >     Instead of vmx_init(), actually it would make reasonable sense to do
+> >     anything specific to vmx hardware setting in vmx_x86_ops->hardware_setup().
+> >
+> 
+> This commit just reorders something but some MSR writing depend on previous
+> status.
+> 
+> Could you try this?
 
-> 2. There are two systems with working ARBT (XPS 13 9333 and
-> Inspiron 7447). Calling ARBT(1) changes BIOS behaviours, and
-> this matches to Dell's document. We should include it in the
-> patch for maximum capability.
->=20
+I unmangled the expanded tabs, and applied this:
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index feb852b..96c84a8 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5840,49 +5840,6 @@ static __init int hardware_setup(void)
+ 	memset(vmx_msr_bitmap_legacy, 0xff, PAGE_SIZE);
+ 	memset(vmx_msr_bitmap_longmode, 0xff, PAGE_SIZE);
 
-How it change BIOS behaviour?
+-	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
+-	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
+-	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
+-	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_CS, false);
+-	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
+-	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
+-	vmx_disable_intercept_for_msr(MSR_IA32_BNDCFGS, true);
+-
+-	memcpy(vmx_msr_bitmap_legacy_x2apic,
+-			vmx_msr_bitmap_legacy, PAGE_SIZE);
+-	memcpy(vmx_msr_bitmap_longmode_x2apic,
+-			vmx_msr_bitmap_longmode, PAGE_SIZE);
+-
+-	if (enable_apicv) {
+-		for (msr = 0x800; msr <= 0x8ff; msr++)
+-			vmx_disable_intercept_msr_read_x2apic(msr);
+-
+-		/* According SDM, in x2apic mode, the whole id reg is used.
+-		 * But in KVM, it only use the highest eight bits. Need to
+-		 * intercept it */
+-		vmx_enable_intercept_msr_read_x2apic(0x802);
+-		/* TMCCT */
+-		vmx_enable_intercept_msr_read_x2apic(0x839);
+-		/* TPR */
+-		vmx_disable_intercept_msr_write_x2apic(0x808);
+-		/* EOI */
+-		vmx_disable_intercept_msr_write_x2apic(0x80b);
+-		/* SELF-IPI */
+-		vmx_disable_intercept_msr_write_x2apic(0x83f);
+-	}
+-
+-	if (enable_ept) {
+-		kvm_mmu_set_mask_ptes(0ull,
+-			(enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
+-			(enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
+-			0ull, VMX_EPT_EXECUTABLE_MASK);
+-		ept_set_mmio_spte_mask();
+-		kvm_enable_tdp();
+-	} else
+-		kvm_disable_tdp();
+-
+-	update_ple_window_actual_max();
+-
+ 	if (setup_vmcs_config(&vmcs_config) < 0) {
+ 		r = -EIO;
+ 		goto out7;
+@@ -5945,6 +5902,49 @@ static __init int hardware_setup(void)
+ 	if (nested)
+ 		nested_vmx_setup_ctls_msrs();
 
->=20
-> [1] dell-wireless is only tested 3.16.
-> [2] dell-rbtn is tested on 3.16 and 3.18, but no differences
-> are observed. [3]
-> http://people.canonical.com/~alexhung/dell-wireless/ [4]
-> http://people.canonical.com/~alexhung/dell-rbtn/
->=20
++	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
++	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
++	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
++	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_CS, false);
++	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
++	vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
++	vmx_disable_intercept_for_msr(MSR_IA32_BNDCFGS, true);
++
++	memcpy(vmx_msr_bitmap_legacy_x2apic,
++			vmx_msr_bitmap_legacy, PAGE_SIZE);
++	memcpy(vmx_msr_bitmap_longmode_x2apic,
++			vmx_msr_bitmap_longmode, PAGE_SIZE);
++
++	if (enable_apicv) {
++		for (msr = 0x800; msr <= 0x8ff; msr++)
++			vmx_disable_intercept_msr_read_x2apic(msr);
++
++		/* According SDM, in x2apic mode, the whole id reg is used.
++		 * But in KVM, it only use the highest eight bits. Need to
++		 * intercept it */
++		vmx_enable_intercept_msr_read_x2apic(0x802);
++		/* TMCCT */
++		vmx_enable_intercept_msr_read_x2apic(0x839);
++		/* TPR */
++		vmx_disable_intercept_msr_write_x2apic(0x808);
++		/* EOI */
++		vmx_disable_intercept_msr_write_x2apic(0x80b);
++		/* SELF-IPI */
++		vmx_disable_intercept_msr_write_x2apic(0x83f);
++	}
++
++	if (enable_ept) {
++		kvm_mmu_set_mask_ptes(0ull,
++			(enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
++			(enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
++			0ull, VMX_EPT_EXECUTABLE_MASK);
++		ept_set_mmio_spte_mask();
++		kvm_enable_tdp();
++	} else
++		kvm_disable_tdp();
++
++	update_ple_window_actual_max();
++
+ 	return alloc_kvm_area();
 
-Next I would suggest you to test clean system without fanny=20
-software like NetworkManager. Previously we saw that=20
-NetworkManager change state of network devices and rfkill=20
-softstates so it can interact with kernel. I think that new=20
-driver in kernel should work also without NetworkManager and also=20
-there are people who use alternative software (and not=20
-NetworkManager). I know that Ubuntu has installed & enabled=20
-NetworkManager by default, so some results in your table could=20
-have values changed by NetworkManager and not by kernel.
+  out7:
 
-And I have one question: Does Inspirion 5721 have ACPI DELRBTN=20
-device (instead DELLABCE).
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1624474.KblB4eBZ3U
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSX4pYACgkQi/DJPQPkQ1LSzACgpJ32widJg+EtgoML85oxd6MC
-tDEAoJEnMa3eTeqahEcJnowISRPSmd36
-=r8x5
------END PGP SIGNATURE-----
-
---nextPart1624474.KblB4eBZ3U--
+-- 
+Jamie Heilman                     http://audible.transient.net/~jamie/
