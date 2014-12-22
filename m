@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967AbaLVNy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 08:54:56 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:53803 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754544AbaLVNyz (ORCPT
+	id S1754824AbaLVN7n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 08:59:43 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:39850 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184AbaLVN7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 08:54:55 -0500
-Message-ID: <1419256493.30945.53.camel@x220>
-Subject: Re: 3.19.0-rc1 nouvea build failure on GeForce GT 610 only
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Sid Boyce <sboyce@blueyonder.co.uk>
-Cc: Mark Hounschell <markh@compro.net>, linux-kernel@vger.kernel.org,
-        nouveau@lists.freedesktop.org
-Date: Mon, 22 Dec 2014 14:54:53 +0100
-In-Reply-To: <1419255471.30945.47.camel@x220>
-References: <54981647.8010409@blueyonder.co.uk>
-	 <1419255471.30945.47.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 22 Dec 2014 13:54:53.0366 (UTC) FILETIME=[DC910D60:01D01DEE]
-X-RcptDomain: vger.kernel.org
+	Mon, 22 Dec 2014 08:59:42 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: platform-driver-x86@vger.kernel.org
+Cc: mjg59@srcf.ucam.org, linux-kernel@vger.kernel.org
+Subject: System automatically wakes up because of Intel Rapid Start Technology
+Date: Mon, 22 Dec 2014 14:59:38 +0100
+Message-ID: <9927036.n7iZq92iLW@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-22 at 14:37 +0100, Paul Bolle wrote:
-> On Mon, 2014-12-22 at 13:01 +0000, Sid Boyce wrote:
-> >    CHK     kernel/config_data.h
-> >    CC [M]  drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o
-> > drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c: In function 
-> > ‘nvd0_dmaobj_bind’:
-> > drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: error: 
-> > ‘GM204_DISP_CORE_CHANNEL_DMA’ undeclared (first use in this function)
-> >     case GM204_DISP_CORE_CHANNEL_DMA:
-> >          ^
-> > drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: note: each 
-> > undeclared identifier is reported only once for each function it appears in
-> > scripts/Makefile.build:257: recipe for target 
-> > 'drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o' failed
-> > make[4]: *** [drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o] Error 1
-> > scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm/nouveau' 
-> > failed
-> > make[3]: *** [drivers/gpu/drm/nouveau] Error 2
-> > scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm' failed
-> > make[2]: *** [drivers/gpu/drm] Error 2
-> > scripts/Makefile.build:402: recipe for target 'drivers/gpu' failed
-> > make[1]: *** [drivers/gpu] Error 2
-> > Makefile:938: recipe for target 'drivers' failed
-> > make: *** [drivers] Error 2
-> > 
-> > 01:00.0 VGA compatible controller: NVIDIA Corporation GF119 [GeForce GT 
-> > 610] (rev a1)
-> 
-> Why would that controller influence the build?
-> 
-> > No problems on 2 other boxes with GeForce 8600 GT] (rev a1)
-> 
-> I ran into this error twice, while building Fedora 21 kernel rpms for
-> v3.19-rc1 on my outdated ThinkPad X41 (which uses i915, for what it's
-> worth). The error made very little sense to me. Especially since it
-> didn't happen when building in the local git repository.
-> 
-> So I basically, well, scrubbed the rpmbuild environment. And then the
-> the third attempt to build kernels rpm succeeded! I assumed a hardware
-> failure (see outdated above) and made a mental note to investigate that
-> one of these days.
-> 
-> But your report makes me think it's not my hardware. Could there be some
-> _random_ failure with this driver in the build? Very odd...
+Hi,
 
-A theory based on Mark's message in
-https://lkml.org/lkml/2014/12/8/602 :
+I'd like to ask those of you who own a system that supports Intel Rapid 
+Start Technology (IRST) to perform a simple test to determine whether my 
+laptop (XPS13 9333) is the only system affected by a bug related to IRST 
+that I recently found or not.
 
-My two failed builds somehow used previous version of class.h, that
-didn't yet have commit 1f89b4756fb8 ("drm/gm204/disp: initial support")
-applied. It's that commit which added the define for
-GM204_DISP_CORE_CHANNEL_DMA.
+In the past months I noticed random transitions from S3 to S0 with no 
+apparent reason.
+After some recent tests I found a way to trigger those automatic state 
+transitions. It seems that the timer in charge of the resume of the 
+system for the transition to S4 is not re-initialized on resume/suspend. 
+Exactly "wakeup_time" minutes after the transition from S0 to S3, the 
+system will automatically transition from S3 to S0 instead of S4 if
+within that interval it transitioned to S0 at least once.
+Everything works as expected if the system is never resumed or if the 
+system is suspended after "wakeup_time" minutes have passed since the
+first suspension to ram.
 
-Is that even possible? Perhaps rpmbuild has a surprising way to handle
-symlinks? All very puzzling...
+In addition to that, changing the values of wakeup_time and 
+wakeup_events seems to have no effect until the timer has expired.
 
+According to the Implementation Guide [1] there are no special 
+requirements other than the standard S3 ACPI support. Still, IRST works 
+as intended only on Windows. This makes me wonder whether the problem is 
+due to some vendor specific change or not.
 
-Paul Bolle
+To quickly replicate the problem, follow the following steps: set the 
+timer to 1 minute and suspend the system. Immediately after that, resume 
+and suspend the system again. If it automatically wakes up after 1 
+minute has passed since the first suspension, then the system is
+affected by the bug. If this is the case, I'd suggest to default
+wakeup_events to 0 or 2 to prevent issues and add some sort of warning
+somewhere to let users know about this problem.
 
+Regards,
+Gabriele
+
+[1] http://downloadmirror.intel.com/22647/eng/Intel%20Rapid%20Start%20Technology%20Deployment%20Guide%20v1.0.pdf
