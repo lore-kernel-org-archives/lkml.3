@@ -1,108 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbaLVOpN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:45:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33649 "EHLO mx1.redhat.com"
+	id S1755146AbaLVOpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:45:23 -0500
+Received: from mail.kernel.org ([198.145.19.201]:52056 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754806AbaLVOpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:45:11 -0500
-Date: Mon, 22 Dec 2014 15:43:15 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
-        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 4/4] tools/perf: Document parameterized and symbolic
- events
-Message-ID: <20141222144315.GC29096@krava.brq.redhat.com>
-References: <1419234567-22784-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1419234567-22784-5-git-send-email-sukadev@linux.vnet.ibm.com>
+	id S1755128AbaLVOpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 09:45:19 -0500
+Date: Mon, 22 Dec 2014 11:45:13 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 4/7] perf diff: Fix to sort by baseline field by default
+Message-ID: <20141222144513.GB2717@kernel.org>
+References: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
+ <1419223455-4362-5-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419234567-22784-5-git-send-email-sukadev@linux.vnet.ibm.com>
+In-Reply-To: <1419223455-4362-5-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 11:49:27PM -0800, Sukadev Bhattiprolu wrote:
-> From: Cody P Schafer <cody@linux.vnet.ibm.com>
+Em Mon, Dec 22, 2014 at 01:44:12PM +0900, Namhyung Kim escreveu:
+> The currently perf diff didn't add the baseline and delta (or other
+> compute) fields to the sort list so output will be sorted by other
+> fields like alphabetical order of DSO or symbol as below example.
 > 
-> Changelog[v6]:
-> 	- [Sukadev Bhattiprolu]: Update documentation of perf-list and
-> 	  perf-record; Added documentation for perf-stat.
+> Fix it by adding hpp formats for the fields and provides default
+> compare functions.
 > 
-> CC: Haren Myneni <hbabu@us.ibm.com>
-> CC: Cody P Schafer <dev@codyps.com>
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> ---
->  tools/perf/Documentation/perf-list.txt   | 13 +++++++++++++
->  tools/perf/Documentation/perf-record.txt | 12 ++++++++++++
->  tools/perf/Documentation/perf-stat.txt   | 20 ++++++++++++++++----
->  3 files changed, 41 insertions(+), 4 deletions(-)
+> Before:
 > 
-> diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-> index cbb4f74..d8be6fa 100644
-> --- a/tools/perf/Documentation/perf-list.txt
-> +++ b/tools/perf/Documentation/perf-list.txt
-> @@ -89,6 +89,19 @@ raw encoding of 0x1A8 can be used:
->  You should refer to the processor specific documentation for getting these
->  details. Some of them are referenced in the SEE ALSO section below.
->  
-> +PARAMETERIZED EVENTS
-> +--------------------
-> +
-> +Some pmu events listed by 'perf-list' will be displayed with '$x' in them. For
-> +example:
+>   $ perf diff
+>   # Event 'cycles'
+>   #
+>   # Baseline    Delta  Shared Object       Symbol
+>   # ........  .......  ..................  ...............................
+>   #
+>                        [bridge]            [k] ip_sabotage_in
+>                        [btrfs]             [k] __etree_search.constprop.47
+>        0.01%           [btrfs]             [k] btrfs_file_mmap
+>        0.01%   -0.01%  [btrfs]             [k] btrfs_getattr
+>                        [e1000e]            [k] e1000_watchdog
+>        0.00%           [kernel.vmlinux]    [k] PageHuge
+>        0.00%           [kernel.vmlinux]    [k] __acct_update_integrals
+>        0.00%           [kernel.vmlinux]    [k] __activate_page
+>                        [kernel.vmlinux]    [k] __alloc_fd
+>        0.02%   +0.02%  [kernel.vmlinux]    [k] __alloc_pages_nodemask
+>        ...
+> 
+> After:
+> 
+>   # Baseline    Delta  Shared Object       Symbol
+>   # ........  .......  ..................  ................................
+>   #
+>       24.73%   -4.62%  perf                [.] append_chain_children
+>        7.96%   -1.29%  perf                [.] dso__find_symbol
+>        6.97%   -2.07%  libc-2.20.so        [.] vfprintf
+>        4.61%   +0.88%  libc-2.20.so        [.] __fprintf_chk
+>        4.41%   +2.43%  perf                [.] sort__comm_cmp
+>        4.10%   -0.16%  perf                [.] comm__str
+>        4.03%   -0.93%  perf                [.] machine__findnew_thread_time
+>        3.82%   +3.09%  perf                [.] __hists__add_entry
+>        2.95%   -0.18%  perf                [.] sort__dso_cmp
+>        ...
 
-s/$x/?/                                                         ^^^^
+Looks better, here I tried running 'perf record usleep 1'  in quick
+succession to then run 'perf diff'  before and after this patch, got:
 
-> +
-> +  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
-> +
-> +This means that when provided as an event, a value for '?' must
-> +also be supplied. For example:
-> +
-> +  perf stat -C 0 -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
-> +
->  OPTIONS
->  -------
->  
-> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-> index af9a54e..acdcf3b 100644
-> --- a/tools/perf/Documentation/perf-record.txt
-> +++ b/tools/perf/Documentation/perf-record.txt
-> @@ -33,6 +33,18 @@ OPTIONS
->          - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
->  	  hexadecimal event descriptor.
+Before:
 
-SNIP
+[ssdandy ~]$ cat /tmp/before
+# Event 'cycles'
+#
+# Baseline    Delta  Shared Object     Symbol                        
+# ........  .......  ................  ..............................
+#
+            +36.29%  [kernel.vmlinux]  [k] __split_vma.isra.31       
+    34.55%           [kernel.vmlinux]  [k] copy_user_generic_unrolled
+             +2.45%  [kernel.vmlinux]  [k] local_clock               
+     0.11%   +0.02%  [kernel.vmlinux]  [k] native_write_msr_safe     
+     2.12%           [kernel.vmlinux]  [k] perf_event_comm_output    
+            +61.13%  [kernel.vmlinux]  [k] unmap_page_range          
+    63.22%           libc-2.17.so      [.] 0x000000000007c3e0        
+[acme@ssdandy ~]$
 
-> +
-> +	- a symbolically formed event like 'pmu/config=M,config1=N,config3=K/'
-> +
-> +          where M, N, K are numbers (in decimal, hex, octal format). Acceptable
-> +          values for each of 'config', 'config1' and 'config2' are defined by
-> +          corresponding entries in /sys/bus/event_sources/devices/<pmu>/format/*
-> +          param1 and param2 are defined as formats for the PMU in:
-> +	  /sys/bus/event_sources/devices/<pmu>/format/*
+After:
 
-   ^^^^ misaligned tab
+[acme@ssdandy linux]$ perf diff
+# Event 'cycles'
+#
+# Baseline    Delta  Shared Object     Symbol                        
+# ........  .......  ................  ..............................
+#
+    63.22%           libc-2.17.so      [.] 0x000000000007c3e0        
+    34.55%           [kernel.vmlinux]  [k] copy_user_generic_unrolled
+     2.12%           [kernel.vmlinux]  [k] perf_event_comm_output    
+     0.11%   +0.02%  [kernel.vmlinux]  [k] native_write_msr_safe     
+            +36.29%  [kernel.vmlinux]  [k] __split_vma.isra.31       
+             +2.45%  [kernel.vmlinux]  [k] local_clock               
+            +61.13%  [kernel.vmlinux]  [k] unmap_page_range          
+[acme@ssdandy linux]$
 
-> +
->          - a hardware breakpoint event in the form of '\mem:addr[:access]'
->            where addr is the address in memory you want to break in.
->            Access is the memory access type (read, write, execute) it can
-> diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-> index 29ee857..04e150d 100644
-> --- a/tools/perf/Documentation/perf-stat.txt
-> +++ b/tools/perf/Documentation/perf-stat.txt
-> @@ -25,10 +25,22 @@ OPTIONS
->  
+Which was ok up to the point where symbols that only appeared on the
+second run were not sorted by delta, can you fix that?
 
-thanks,
-jirka
+Please let me know if it is better to apply this one then a followup to
+sort the deltas or if a combined patch to achieve both is best.
+
+I.e.:
+
+[acme@ssdandy linux]$ perf diff
+# Event 'cycles'
+#
+# Baseline    Delta  Shared Object     Symbol                        
+# ........  .......  ................  ..............................
+#
+    63.22%           libc-2.17.so      [.] 0x000000000007c3e0        
+    34.55%           [kernel.vmlinux]  [k] copy_user_generic_unrolled
+     2.12%           [kernel.vmlinux]  [k] perf_event_comm_output    
+     0.11%   +0.02%  [kernel.vmlinux]  [k] native_write_msr_safe     
+            +61.13%  [kernel.vmlinux]  [k] unmap_page_range          
+            +36.29%  [kernel.vmlinux]  [k] __split_vma.isra.31       
+             +2.45%  [kernel.vmlinux]  [k] local_clock               
+
+[acme@ssdandy linux]$
+
+Humm, but then wouldn't we be more interested in sorting _everything_ by
+delta?
+
+- Arnaldo
