@@ -1,77 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154AbaLVPun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:50:43 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:41847 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588AbaLVPul (ORCPT
+	id S1755203AbaLVPwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:52:04 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:49030 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755000AbaLVPwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:50:41 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: System automatically wakes up because of Intel Rapid Start Technology
-Date: Mon, 22 Dec 2014 16:50:37 +0100
-Message-ID: <3318216.XHaCQKkcW4@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <20141222145949.GB11844@srcf.ucam.org>
-References: <9927036.n7iZq92iLW@xps13> <20141222145949.GB11844@srcf.ucam.org>
+	Mon, 22 Dec 2014 10:52:02 -0500
+Message-ID: <54983E8F.5060500@oracle.com>
+Date: Mon, 22 Dec 2014 10:53:51 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: xen-devel <xen-devel@lists.xenproject.org>
+CC: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Testing preemptibility test in xen_setup_cpu_clockevents()
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 December 2014 14:59:49 Matthew Garrett wrote:
-> Can you try this diff?
+With 250a1ac685f (x86, smpboot: Remove pointless preempt_disable() in 
+native_smp_prepare_cpus()) HVM guests no longer boot since we are 
+hitting BUG_ON(preemptible()) in xen_setup_cpu_clockevents().
 
-Unfortunately it doesn't work (I made a change, see here below).
+I don't think we need this test (PV or HVM), do we?
 
-> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-> index 5b2e761..637f980 100644
-> --- a/drivers/rtc/rtc-cmos.c
-> +++ b/drivers/rtc/rtc-cmos.c
-> @@ -48,6 +48,7 @@ struct cmos_rtc {
->  	struct device		*dev;
->  	int			irq;
->  	struct resource		*iomem;
-> +	struct rtc_wkalrm	alm;
->  
->  	void			(*wake_on)(struct device *);
->  	void			(*wake_off)(struct device *);
-> @@ -59,6 +60,8 @@ struct cmos_rtc {
->  	u8			day_alrm;
->  	u8			mon_alrm;
->  	u8			century;
-> +
-> +	bool			valid_alarm;
->  };
->  
->  /* both platform and pnp busses use negative numbers for invalid irqs */
-> @@ -879,6 +882,7 @@ static int cmos_suspend(struct device *dev)
->  
->  		cmos_checkintr(cmos, tmp);
->  	}
-> +	cmos->valid_alarm = !!cmos_read_alarm(dev, &cmos->alm);
 
-I moved this after spin_unlock_irq(), it causes a deadlock otherwise.
-
->  	spin_unlock_irq(&rtc_lock);
->  
->  	if (tmp & RTC_AIE) {
-> @@ -949,6 +953,10 @@ static int cmos_resume(struct device *dev)
->  			hpet_mask_rtc_irq_bit(RTC_AIE);
->  		} while (mask & RTC_AIE);
->  	}
-> +
-> +	if (cmos->valid_alarm)
-> +		cmos_set_alarm(dev, &cmos->alm);
-> +
->  	spin_unlock_irq(&rtc_lock);
->  
->  	dev_dbg(dev, "resume, ctrl %02x\n", tmp);
-> 
-> 
-> 
-
+-boris
