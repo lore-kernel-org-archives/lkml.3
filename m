@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847AbaLVXTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 18:19:10 -0500
-Received: from p3plsmtpa07-05.prod.phx3.secureserver.net ([173.201.192.234]:60646
-	"EHLO p3plsmtpa07-05.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751543AbaLVXTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 18:19:08 -0500
-Message-ID: <5498A6E8.8000600@lurklurk.org>
-Date: Mon, 22 Dec 2014 18:19:04 -0500
-From: David Drysdale <dmd@lurklurk.org>
-Reply-To: David Drysdale <drysdale@google.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753985AbaLVXTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 18:19:34 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45748 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751884AbaLVXTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 18:19:32 -0500
+Date: Tue, 23 Dec 2014 00:19:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, tony.luck@intel.com,
+        dougthompson@xmission.com, mchehab@osg.samsung.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org,
+        dave.hansen@linux.intel.com, mgorman@suse.de, bp@suse.de,
+        riel@redhat.com, jacob.w.shin@gmail.com
+Subject: Re: [PATCH 0/3] Fix MCE handling for AMD multi-node processors
+Message-ID: <20141222231929.GC1942@pd.tnic>
+References: <1419279012-4754-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20141222201542.GB1942@pd.tnic>
+ <5498858F.1030209@amd.com>
 MIME-Version: 1.0
-To: David Drysdale <drysdale@google.com>, torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, nab@linux-iscsi.org,
-        linux-kernel@vger.kernel.org, mmarek@suse.cz, jkosina@suse.cz
-Subject: Re: Linux 3.19-rc1 - merge window closed
-References: <CAHse=S-CGRrXPZXooHsnqO6BJytBKE4t=V_ESHL1m6Gjzeg9GQ@mail.gmail.com>
-In-Reply-To: <CAHse=S-CGRrXPZXooHsnqO6BJytBKE4t=V_ESHL1m6Gjzeg9GQ@mail.gmail.com>
-X-Forwarded-Message-Id: <CAHse=S-CGRrXPZXooHsnqO6BJytBKE4t=V_ESHL1m6Gjzeg9GQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5498858F.1030209@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 Dec 2014 18:02, "Linus Torvalds" <torvalds@linux-foundation.org> 
-wrote:
-  >
-  > On Mon, Dec 22, 2014 at 2:43 PM, Nicholas A. Bellinger
-  > <nab@linux-iscsi.org> wrote:
-  > > On Mon, 2014-12-22 at 21:56 +0100, Jiri Kosina wrote:
-  > >> On Mon, 22 Dec 2014, Andrew Morton wrote:
-  > >>
-  > >> > On Sat, 20 Dec 2014 23:11:39 -0800 "Nicholas A. Bellinger"
-<nab@linux-iscsi.org> wrote:
-  > >> >
-  > >> > > Just hit the following build failure with CONFIG_AUDIT=y:
-  > >> > >
-  > >> > > arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
-  > >> > > arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared
-(first use in this function)
-  > >> > > arch/x86/ia32/audit.c:38:7: note: each undeclared identifier
-is reported only once for each function it appears in
-  > >> > > make[2]: *** [arch/x86/ia32/audit.o] Error 1
-  > >> > > make[1]: *** [arch/x86/ia32] Error 2
-  > >> > > make: *** [arch/x86] Error 2
-  > >> > > make: *** Waiting for unfinished jobs....
-  > >> >
-  > >
-  > > Yep, post 'make mrproper' builds with CONFIG_AUDIT=y don't hit this
-  > > failure.
-  > >
-  > > The previous build was with v3.18-rc2 btw.
-  >
-  > Hmm. So it seems that there is something wrong with the dependency
-  > generation for the generated header files. Possibly limited to just
-  > the uapi files.
-  >
-  > But I can't seem to recreate it even by trying to first build 3.18-rc2
-  > and then switching to 3.19-rc1. So there's something
-  > not-very-straightforward going on, possibly including some nasty race
-  > in the Makefiles.
-  >
-  >                          Linus
+On Mon, Dec 22, 2014 at 02:56:47PM -0600, Aravind Gopalakrishnan wrote:
+> On 12/22/2014 2:15 PM, Borislav Petkov wrote:
+> >On Mon, Dec 22, 2014 at 02:10:09PM -0600, Aravind Gopalakrishnan wrote:
+> >>When a MCE happens that is to be logged onto bank 4 of AMD multi-node
+> >>processors, they are reported only to corresponding node base core of
+> >>the cpu on which the error occurred.
+> >>
+> >>Refer D18F3x44[NbMcaToMstCpuEn] on BKDGs of Fam10h and later for
+> >Let me try to understand this correctly:
+> >
+> >Does that mean that we could fix this by simply doing:
+> >
+> >D18F3x44[NbMcaToMstCpuEn]=0b
+> >
+> >on each NB?
+> >
+> 
+> Not quite..
+> When this field is 0, BKDG says the error may be reported to the core that
+> originated the request *if applicable and known*
+> Looking at the error signatures table for MC4 (Part 2),
+> we can see only some errors have 'ErrCoreId' column as valid
+> 
+> Besides, if IO originated the request, then it is reported only to NBC.
+> 
+> So, to take care of all these cases, I am just following one approach here:
+> and that is to look at NBC MSRs for any bank 4 errors.
+> (It seems to be what the BKDG recommends anyway as BIOS by default should
+> set D18F3x44[NbMcaToMstCpuEn])
 
-When this occurred previously, I also failed to reproduce it.  However, 
-it appeared (https://lkml.org/lkml/2014/11/25/542) to specifically 
-involve a stale copy of arch/x86/include/generated/asm/unistd_32.h.
+Then in that case you have to check the case where
+D18F3x44[NbMcaToMstCpuEn] is 0 for whatever reason (some BIOS forgot to
+set it or whatever) and to set it again.
 
-David
+Then, upon a quick scan, your patches are adding a lot of vendor-specific
+stuff which doesn't belong in the #MC handler, should probably be
+wrapped or so, no good idea right now.
+
+Then, you're using rd/wrmsr_on_cpu which does smp_call_function_single()
+which can deadlock in atomic context and #MC is one.
+
+Also, the math in amd_get_nbc_for_node() is too fragile and will break
+the moment some BIOS renumbers cores to accomodate some other OS.
+
+In any case, I won't be able to take a detailed look soon with the
+holidays coming up.
+
+Also, I'm wondering if this can't be solved much more elegantly
+by detecting that condition (bank == 4) in the #MC handler and
+issuing an IPI before exiting it using irq_work which will schedule
+do_machine_check on the NBC. And that should be even easier to do since
+we're moving the #MC handler out of the IST and to the normal kernel
+stack for 3.20, which would make this endeavor pretty cheap.
+
+Anyway, just a couple of thoughts...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
