@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113AbaLVWni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 17:43:38 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:46203 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805AbaLVWnh (ORCPT
+	id S1753488AbaLVWpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 17:45:38 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:51698 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaLVWpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 17:43:37 -0500
-Message-ID: <1419288214.8696.14.camel@haakon3.risingtidesystems.com>
-Subject: Re: Linux 3.19-rc1 - merge window closed
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Drysdale <drysdale@google.com>, mmarek@suse.cz
-Date: Mon, 22 Dec 2014 14:43:34 -0800
-In-Reply-To: <alpine.LRH.2.00.1412222156260.29843@twin.jikos.cz>
-References: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>
-	 <1419145899.8696.5.camel@haakon3.risingtidesystems.com>
-	 <20141222124310.b35177e67db8d76b64ec55f6@linux-foundation.org>
-	 <alpine.LRH.2.00.1412222156260.29843@twin.jikos.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Mon, 22 Dec 2014 17:45:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com
+Subject: Re: [RFC v1 PATCH 1/2] of/pci: add of_pci_dma_configure() update dma configuration
+Date: Mon, 22 Dec 2014 23:44:52 +0100
+Message-ID: <1723662.JYr5muIJha@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54989DDE.3060409@ti.com>
+References: <1418940425-2017-1-git-send-email-m-karicheri2@ti.com> <2285493.QXo0OxClZ5@wuerfel> <54989DDE.3060409@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:DwYsR1fzI2rVDPxuJ5z29u3h7ixZppVidi//+Lwz/F4yJ0TMfOu
+ k5a++/LS0ABtFRgdPCGS3rZ+ewvMbBMMIZ24n01xtijNAHWT4m1xr2yg7EE/SCI6INB1utO
+ ETX7+ly5cJCIjV9Zva5osgtjez1ksolDkHy815DwVI1+D7SwWyz4YWHSvNTgv+n+qnqjAOP
+ kg3uEC2FvA6U+JJoEb57g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-22 at 21:56 +0100, Jiri Kosina wrote:
-> On Mon, 22 Dec 2014, Andrew Morton wrote:
-> 
-> > On Sat, 20 Dec 2014 23:11:39 -0800 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > 
-> > > Just hit the following build failure with CONFIG_AUDIT=y:
-> > > 
-> > > arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
-> > > arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared (first use in this function)
-> > > arch/x86/ia32/audit.c:38:7: note: each undeclared identifier is reported only once for each function it appears in
-> > > make[2]: *** [arch/x86/ia32/audit.o] Error 1
-> > > make[1]: *** [arch/x86/ia32] Error 2
-> > > make: *** [arch/x86] Error 2
-> > > make: *** Waiting for unfinished jobs....
-> > 
-> > Your .config works for me.  Does a `make mrproper' fix it?
-> > 
-> > I've seen a few reports like this in recent months.  Something's
-> > up with the build dependency system.
-> 
-> Let's add Michal Marek to CC then.
-> 
+On Monday 22 December 2014 17:40:30 Murali Karicheri wrote:
+> On 12/22/2014 05:24 PM, Arnd Bergmann wrote:
+> > On Monday 22 December 2014 16:40:43 Murali Karicheri wrote:
+> >>>> +++ b/arch/arm/mm/dma-mapping.c
+> >>>> @@ -2052,9 +2052,10 @@ void arch_setup_dma_ops(struct device *dev, u64
+> >>>> dma_base, u64 size,
+> >>>>                            struct iommu_ops *iommu, bool coherent)
+> >>>>     {
+> >>>>            struct dma_map_ops *dma_ops;
+> >>>> +       u64 temp_size = min((*(dev->dma_mask) + 1), size);
+> >>>>
+> >>>>            dev->archdata.dma_coherent = coherent;
+> >>>> -       if (arm_setup_iommu_dma_ops(dev, dma_base, size, iommu))
+> >>>> +       if (arm_setup_iommu_dma_ops(dev, dma_base, temp_size, iommu))
+> >>>>
+> >>>> If you agree, I will post v1 of the patch with these updates. Let me
+> >>>> know. I did some basic tests on Keystone with these changes and it works
+> >>>> fine.
+> >>>
+> >>> It's not exactly what I meant. My main point was that we need to limit
+> >>> dev->dma_mask to (size-1) here, but you are not touching that.
+> >>
+> >> if you mean overriding the dev->dma_mask to min((*dev->dma_mask),
+> >> size-1), then I am getting the error "Coherent DMA mask 0x7fffffff (pfn
+> >> 0x780000-0x800000) covers a smaller range of system memory than the DMA
+> >> zone pfn 0x0-0x880000) when the devices on Keystone tries to set the dma
+> >> mask. Something wrong and I need to look into the code.
+> >
+> > Right, it sounds like the offset was applied incorrectly at some point.
+> >
+> > What are the DMA zone size and the phys-offset?
+> 2G and 0x8_0000_0000. This limit the usable DMA size to 2G on Keystone, 
+> I believe you shouldn't be limiting the dma mask to size-1 in this case, 
+> right? The DT setup the dma-range to have a size of 2G (0x80000000).
 
-Yep, post 'make mrproper' builds with CONFIG_AUDIT=y don't hit this
-failure.
+No, the problem is something else: the pfn range that we calculate for the
+coherent DMA mask should have been 0x800000-0x880000, not 0x780000-0x800000,
+so we would exactly match the ZONE_DMA.
 
-The previous build was with v3.18-rc2 btw.
-
---nab
-
+	Arnd
