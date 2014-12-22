@@ -1,218 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaLVJnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:43:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10202 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753733AbaLVJnL convert rfc822-to-8bit (ORCPT
+	id S1754199AbaLVJom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:44:42 -0500
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:46015 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004AbaLVJok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:43:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,622,1413270000"; 
-   d="scan'208";a="658352147"
-From: "Du, Yuyang" <yuyang.du@intel.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
-        Michael Turquette <mturquette@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: RE: [RFC PATCH 08/10] sched: Track blocked utilization contributions
-Thread-Topic: [RFC PATCH 08/10] sched: Track blocked utilization
- contributions
-Thread-Index: AQHQDjpLXhoAuFGoFUG9y0Mp6Cqd05yS/90AgAh6b3A=
-Date: Mon, 22 Dec 2014 09:43:05 +0000
-Message-ID: <0DA73B5D686AEC4AAEF6054BE04DA1CD11CEB15A@shsmsx102.ccr.corp.intel.com>
-References: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com>
- <1417529192-11579-9-git-send-email-morten.rasmussen@arm.com>
- <CAKfTPtDq7EpPWyw+=h+WKGeMPmbPdSrAyFFNssNhHczL3minZA@mail.gmail.com>
-In-Reply-To: <CAKfTPtDq7EpPWyw+=h+WKGeMPmbPdSrAyFFNssNhHczL3minZA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Dec 2014 04:44:40 -0500
+Message-ID: <5497E7CA.1030504@hp.com>
+Date: Mon, 22 Dec 2014 17:43:38 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+CC: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
+        joro@8bytes.org, vgoyal@redhat.com, dyoung@redhat.com,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, kexec@lists.infradead.org,
+        alex.williamson@redhat.com, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, doug.hatch@hp.com,
+        jerry.hoemann@hp.com, tom.vaden@hp.com, li.zhang6@hp.com,
+        lisa.mitchell@hp.com, billsumnerlinux@gmail.com
+Subject: Re: [PATCH 0/10] iommu/vt-d: Fix intel vt-d faults in kdump kernel
+References: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Vincent. Then again ping Peter and PJT and Ben for the
-rewrite patch v6, which has not been reviewed.
+This version works for 3.19.0-rc1.
 
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Vincent Guittot
-Sent: Wednesday, December 17, 2014 4:13 PM
-To: Morten Rasmussen
-Cc: Peter Zijlstra; mingo@redhat.com; Dietmar Eggemann; Paul Turner; Benjamin Segall; Michael Turquette; linux-kernel; linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH 08/10] sched: Track blocked utilization contributions
+Zhenhua
+On 12/22/2014 05:15 PM, Li, Zhen-Hua wrote:
+> This patchset is an update of Bill Sumner's patchset, implements a fix for:
+> If a kernel boots with intel_iommu=on on a system that supports intel vt-d,
+> when a panic happens, the kdump kernel will boot with these faults:
+>
+>      dmar: DRHD: handling fault status reg 102
+>      dmar: DMAR:[DMA Read] Request device [01:00.0] fault addr fff80000
+>      DMAR:[fault reason 01] Present bit in root entry is clear
+>
+>      dmar: DRHD: handling fault status reg 2
+>      dmar: INTR-REMAP: Request device [[61:00.0] fault index 42
+>      INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
+>
+> On some system, the interrupt remapping fault will also happen even if the
+> intel_iommu is not set to on, because the interrupt remapping will be enabled
+> when x2apic is needed by the system.
+>
+> The cause of the DMA fault is described in Bill's original version, and the
+> INTR-Remap fault is caused by a similar reason. In short, the initialization
+> of vt-d drivers causes the in-flight DMA and interrupt requests get wrong
+> response.
+>
+> To fix this problem, we modifies the behaviors of the intel vt-d in the
+> crashdump kernel:
+>
+> For DMA Remapping:
+> 1. To accept the vt-d hardware in an active state,
+> 2. Do not disable and re-enable the translation, keep it enabled.
+> 3. Use the old root entry table, do not rewrite the RTA register.
+> 4. Malloc and use new context entry table and page table, copy data from the
+>     old ones that used by the old kernel.
+> 5. to use different portions of the iova address ranges for the device drivers
+>     in the crashdump kernel than the iova ranges that were in-use at the time
+>     of the panic.
+> 6. After device driver is loaded, when it issues the first dma_map command,
+>     free the dmar_domain structure for this device, and generate a new one, so
+>     that the device can be assigned a new and empty page table.
+> 7. When a new context entry table is generated, we also save its address to
+>     the old root entry table.
+>
+> For Interrupt Remapping:
+> 1. To accept the vt-d hardware in an active state,
+> 2. Do not disable and re-enable the interrupt remapping, keep it enabled.
+> 3. Use the old interrupt remapping table, do not rewrite the IRTA register.
+> 4. When ioapic entry is setup, the interrupt remapping table is changed, and
+>     the updated data will be stored to the old interrupt remapping table.
+>
+> Advantages of this approach:
+> 1. All manipulation of the IO-device is done by the Linux device-driver
+>     for that device.
+> 2. This approach behaves in a manner very similar to operation without an
+>     active iommu.
+> 3. Any activity between the IO-device and its RMRR areas is handled by the
+>     device-driver in the same manner as during a non-kdump boot.
+> 4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
+>     This supports the practice of creating a special kdump kernel without
+>     drivers for any devices that are not required for taking a crashdump.
+> 5. Minimal code-changes among the existing mainline intel vt-d code.
+>
+> Summary of changes in this patch set:
+> 1. Added some useful function for root entry table in code intel-iommu.c
+> 2. Added new members to struct root_entry and struct irte;
+> 3. Functions to load old root entry table to iommu->root_entry from the memory
+>     of old kernel.
+> 4. Functions to malloc new context entry table and page table and copy the data
+>     from the old ones to the malloced new ones.
+> 5. Functions to enable support for DMA remapping in kdump kernel.
+> 6. Functions to load old irte data from the old kernel to the kdump kernel.
+> 7. Some code changes that support other behaviours that have been listed.
+> 8. In the new functions, use physical address as "unsigned long" type, not
+>     pointers.
+>
+> Original version by Bill Sumner:
+>      https://lkml.org/lkml/2014/1/10/518
+>      https://lkml.org/lkml/2014/4/15/716
+>      https://lkml.org/lkml/2014/4/24/836
+>
+> Zhenhua's last of Bill's patchset:
+>      https://lkml.org/lkml/2014/10/21/134
+>      https://lkml.org/lkml/2014/12/15/121
+>
+> Changed in this version:
+> 1. Do not disable and re-enable traslation and interrupt remapping.
+> 2. Use old root entry table.
+> 3. Use old interrupt remapping table.
+> 4. Use "unsigned long" as physical address.
+> 5. Use intel_unmap to unmap the old dma;
+>
+> This patchset should be applied with this one together:
+>      https://lkml.org/lkml/2014/11/5/43
+>      x86/iommu: fix incorrect bit operations in setting values
+>
+> Bill Sumner (5):
+>    iommu/vt-d: Update iommu_attach_domain() and its callers
+>    iommu/vt-d: Items required for kdump
+>    iommu/vt-d: data types and functions used for kdump
+>    iommu/vt-d: Add domain-id functions
+>    iommu/vt-d: enable kdump support in iommu module
+>
+> Li, Zhen-Hua (10):
+>    iommu/vt-d: Update iommu_attach_domain() and its callers
+>    iommu/vt-d: Items required for kdump
+>    iommu/vt-d: Add domain-id functions
+>    iommu/vt-d: functions to copy data from old mem
+>    iommu/vt-d: Add functions to load and save old re
+>    iommu/vt-d: datatypes and functions used for kdump
+>    iommu/vt-d: enable kdump support in iommu module
+>    iommu/vtd: assign new page table for dma_map
+>    iommu/vt-d: Copy functions for irte
+>    iommu/vt-d: Use old irte in kdump kernel
+>
+>   drivers/iommu/intel-iommu.c         | 1050 +++++++++++++++++++++++++++++++++--
+>   drivers/iommu/intel_irq_remapping.c |   99 +++-
+>   include/linux/intel-iommu.h         |   18 +
+>   3 files changed, 1123 insertions(+), 44 deletions(-)
+>
 
-On 2 December 2014 at 15:06, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> Introduces the blocked utilization, the utilization counter-part to 
-> cfs_rq->utilization_load_avg. It is the sum of sched_entity 
-> utilization contributions of entities that were recently on the cfs_rq 
-> that are currently blocked. Combined with sum of contributions of 
-> entities currently on the cfs_rq or currently running
-> (cfs_rq->utilization_load_avg) this can provide a more stable average 
-> view of the cpu usage.
-
-I'm fully aligned with the interest of adding blocked tasks in the CPU's utilization. Now, instead of adding one more atomic data and it's manipulation, it might be worth to move on yuyang.du@intel.com
-patchset: rewrites the per entity load tracking which includes blocked load.
-
->
-> cc: Ingo Molnar <mingo@redhat.com>
-> cc: Peter Zijlstra <peterz@infradead.org>
->
-> Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
-> ---
->  kernel/sched/fair.c  | 30 +++++++++++++++++++++++++++++-  
-> kernel/sched/sched.h |  8 ++++++--
->  2 files changed, 35 insertions(+), 3 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c index 
-> 090223f..adf64df 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2778,6 +2778,15 @@ static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
->                 cfs_rq->blocked_load_avg = 0;  }
->
-> +static inline void subtract_utilization_blocked_contrib(struct cfs_rq *cfs_rq,
-> +                                               long 
-> +utilization_contrib) {
-> +       if (likely(utilization_contrib < cfs_rq->utilization_blocked_avg))
-> +               cfs_rq->utilization_blocked_avg -= utilization_contrib;
-> +       else
-> +               cfs_rq->utilization_blocked_avg = 0; }
-> +
->  static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq);
->
->  /* Update a sched_entity's runnable average */ @@ -2813,6 +2822,8 @@ 
-> static inline void update_entity_load_avg(struct sched_entity *se,
->                 cfs_rq->utilization_load_avg += utilization_delta;
->         } else {
->                 subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
-> +               subtract_utilization_blocked_contrib(cfs_rq,
-> +                                                       
-> + -utilization_delta);
->         }
->  }
->
-> @@ -2830,14 +2841,20 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
->                 return;
->
->         if (atomic_long_read(&cfs_rq->removed_load)) {
-> -               unsigned long removed_load;
-> +               unsigned long removed_load, removed_utilization;
->                 removed_load = atomic_long_xchg(&cfs_rq->removed_load, 
-> 0);
-> +               removed_utilization =
-> +                       atomic_long_xchg(&cfs_rq->removed_utilization, 
-> + 0);
->                 subtract_blocked_load_contrib(cfs_rq, removed_load);
-> +               subtract_utilization_blocked_contrib(cfs_rq,
-> +                                                       
-> + removed_utilization);
->         }
->
->         if (decays) {
->                 cfs_rq->blocked_load_avg = decay_load(cfs_rq->blocked_load_avg,
->                                                       decays);
-> +               cfs_rq->utilization_blocked_avg =
-> +                       decay_load(cfs_rq->utilization_blocked_avg, 
-> + decays);
->                 atomic64_add(decays, &cfs_rq->decay_counter);
->                 cfs_rq->last_decay = now;
->         }
-> @@ -2884,6 +2901,8 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
->         /* migrated tasks did not contribute to our blocked load */
->         if (wakeup) {
->                 subtract_blocked_load_contrib(cfs_rq, 
-> se->avg.load_avg_contrib);
-> +               subtract_utilization_blocked_contrib(cfs_rq,
-> +                                       
-> + se->avg.utilization_avg_contrib);
->                 update_entity_load_avg(se, 0);
->         }
->
-> @@ -2910,6 +2929,8 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
->         cfs_rq->utilization_load_avg -= se->avg.utilization_avg_contrib;
->         if (sleep) {
->                 cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
-> +               cfs_rq->utilization_blocked_avg +=
-> +                                               
-> + se->avg.utilization_avg_contrib;
->                 se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
->         } /* migrations, e.g. sleep=0 leave decay_count == 0 */  } @@ 
-> -4929,6 +4950,8 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
->                 se->avg.decay_count = -__synchronize_entity_decay(se);
->                 atomic_long_add(se->avg.load_avg_contrib,
->                                                 
-> &cfs_rq->removed_load);
-> +               atomic_long_add(se->avg.utilization_avg_contrib,
-> +                                       &cfs_rq->removed_utilization);
->         }
->
->         /* We have migrated, no longer consider this task hot */ @@ 
-> -7944,6 +7967,8 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
->         if (se->avg.decay_count) {
->                 __synchronize_entity_decay(se);
->                 subtract_blocked_load_contrib(cfs_rq, 
-> se->avg.load_avg_contrib);
-> +               subtract_utilization_blocked_contrib(cfs_rq,
-> +                                       
-> + se->avg.utilization_avg_contrib);
->         }
->  #endif
->  }
-> @@ -8003,6 +8028,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)  #ifdef 
-> CONFIG_SMP
->         atomic64_set(&cfs_rq->decay_counter, 1);
->         atomic_long_set(&cfs_rq->removed_load, 0);
-> +       atomic_long_set(&cfs_rq->removed_utilization, 0);
->  #endif
->  }
->
-> @@ -8055,6 +8081,8 @@ static void task_move_group_fair(struct task_struct *p, int queued)
->                  */
->                 se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
->                 cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
-> +               cfs_rq->utilization_blocked_avg +=
-> +                                               
-> + se->avg.utilization_avg_contrib;
->  #endif
->         }
->  }
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h index 
-> e402133..208237f 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -368,11 +368,15 @@ struct cfs_rq {
->          * the blocked sched_entities on the rq.
->          * utilization_load_avg is the sum of the average running time of the
->          * sched_entities on the rq.
-> +        * utilization_blocked_avg is the utilization equivalent of
-> +        * blocked_load_avg, i.e. the sum of running contributions of blocked
-> +        * sched_entities associated with the rq.
->          */
-> -       unsigned long runnable_load_avg, blocked_load_avg, utilization_load_avg;
-> +       unsigned long runnable_load_avg, blocked_load_avg;
-> +       unsigned long utilization_load_avg, utilization_blocked_avg;
->         atomic64_t decay_counter;
->         u64 last_decay;
-> -       atomic_long_t removed_load;
-> +       atomic_long_t removed_load, removed_utilization;
->
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->         /* Required to track per-cpu representation of a task_group */
-> --
-> 1.9.1
->
->
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
