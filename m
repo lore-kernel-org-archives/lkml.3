@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392AbaLVJRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:17:23 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:36940 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754373AbaLVJRS (ORCPT
+	id S1754226AbaLVJQq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:16:46 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:54770 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971AbaLVJQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:17:18 -0500
+	Mon, 22 Dec 2014 04:16:37 -0500
 From: "Li, Zhen-Hua" <zhen-hual@hp.com>
 To: <dwmw2@infradead.org>, <indou.takao@jp.fujitsu.com>, <bhe@redhat.com>,
         <joro@8bytes.org>, <vgoyal@redhat.com>, <dyoung@redhat.com>
@@ -17,9 +17,9 @@ Cc: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
         <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
         <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
         <billsumnerlinux@gmail.com>, <zhen-hual@hp.com>
-Subject: [PATCH 09/10] iommu/vt-d: Copy functions for irte
-Date: Mon, 22 Dec 2014 17:15:28 +0800
-Message-Id: <1419239729-26529-10-git-send-email-zhen-hual@hp.com>
+Subject: [PATCH 01/10] iommu/vt-d: Update iommu_attach_domain() and its callers
+Date: Mon, 22 Dec 2014 17:15:20 +0800
+Message-Id: <1419239729-26529-2-git-send-email-zhen-hual@hp.com>
 X-Mailer: git-send-email 2.0.0-rc0
 In-Reply-To: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
 References: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
@@ -27,108 +27,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functions to copy the irte data from the old kernel into the kdump kernel.
+Allow specification of the domain-id for the new domain.
+This patch only adds the 'did' parameter to iommu_attach_domain()
+and modifies all of its callers to specify the default value of -1
+which says "no did specified, allocate a new one".
 
+This is no functional change from current behaviour -- just enables
+a functional change to be made in a later patch.
+
+Bill Sumner:
+    Original version.
+
+Li, Zhenhua:
+    Minor change, add change to function __iommu_attach_domain.
+
+Signed-off-by: Bill Sumner <billsumnerlinux@gmail.com>
 Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
 ---
- drivers/iommu/intel_irq_remapping.c | 57 +++++++++++++++++++++++++++++++++++++
- include/linux/intel-iommu.h         |  4 +++
- 2 files changed, 61 insertions(+)
+ drivers/iommu/intel-iommu.c | 34 ++++++++++++++++++++--------------
+ 1 file changed, 20 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index a55b207..13f2034 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -8,6 +8,7 @@
- #include <linux/irq.h>
- #include <linux/intel-iommu.h>
- #include <linux/acpi.h>
-+#include <linux/crash_dump.h>
- #include <asm/io_apic.h>
- #include <asm/smp.h>
- #include <asm/cpu.h>
-@@ -17,6 +18,11 @@
- 
- #include "irq_remapping.h"
- 
-+#ifdef CONFIG_CRASH_DUMP
-+static int __iommu_load_old_irte(struct intel_iommu *iommu);
-+static int __iommu_update_old_irte(struct intel_iommu *iommu, int index);
-+#endif /* CONFIG_CRASH_DUMP */
-+
- struct ioapic_scope {
- 	struct intel_iommu *iommu;
- 	unsigned int id;
-@@ -1296,3 +1302,54 @@ int dmar_ir_hotplug(struct dmar_drhd_unit *dmaru, bool insert)
- 
- 	return ret;
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 1232336..2dc6250 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1534,31 +1534,36 @@ static struct dmar_domain *alloc_domain(int flags)
  }
-+
-+#ifdef CONFIG_CRASH_DUMP
-+
-+static int __iommu_load_old_irte(struct intel_iommu *iommu)
-+{
-+	if ((!iommu)
-+		|| (!iommu->ir_table)
-+		|| (!iommu->ir_table->base)
-+		|| (!iommu->ir_table->base_old_phys)
-+		|| (!iommu->ir_table->base_old_virt))
-+		return -1;
-+
-+	memcpy(iommu->ir_table->base,
-+		iommu->ir_table->base_old_virt,
-+		INTR_REMAP_TABLE_ENTRIES*sizeof(struct irte));
-+
-+	return 0;
-+}
-+
-+static int __iommu_update_old_irte(struct intel_iommu *iommu, int index)
-+{
-+	int start;
-+	unsigned long size;
-+	void __iomem *to;
-+	void *from;
-+
-+	if ((!iommu)
-+		|| (!iommu->ir_table)
-+		|| (!iommu->ir_table->base)
-+		|| (!iommu->ir_table->base_old_phys)
-+		|| (!iommu->ir_table->base_old_virt))
-+		return -1;
-+
-+	if (index < -1 || index >= INTR_REMAP_TABLE_ENTRIES)
-+		return -1;
-+
-+	if (index == -1) {
-+		start = 0;
-+		size = INTR_REMAP_TABLE_ENTRIES * sizeof(struct irte);
-+	} else {
-+		start = index * sizeof(struct irte);
-+		size = sizeof(struct irte);
-+	}
-+
-+	to = iommu->ir_table->base_old_virt;
-+	from = iommu->ir_table->base;
-+	memcpy(to + start, from + start, size);
-+
-+	return 0;
-+}
-+#endif /* CONFIG_CRASH_DUMP */
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index 8e29b97..76c6ea5 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -290,6 +290,10 @@ struct q_inval {
- struct ir_table {
- 	struct irte *base;
- 	unsigned long *bitmap;
-+#ifdef CONFIG_CRASH_DUMP
-+	void __iomem *base_old_virt;
-+	unsigned long base_old_phys;
-+#endif
- };
- #endif
  
+ static int __iommu_attach_domain(struct dmar_domain *domain,
+-				 struct intel_iommu *iommu)
++				 struct intel_iommu *iommu,
++				 int domain_number)
+ {
+ 	int num;
+ 	unsigned long ndomains;
+ 
+ 	ndomains = cap_ndoms(iommu->cap);
+-	num = find_first_zero_bit(iommu->domain_ids, ndomains);
+-	if (num < ndomains) {
+-		set_bit(num, iommu->domain_ids);
+-		iommu->domains[num] = domain;
+-	} else {
+-		num = -ENOSPC;
+-	}
++	if (domain_number < 0) {
++		num = find_first_zero_bit(iommu->domain_ids, ndomains);
++		if (num < ndomains) {
++			set_bit(num, iommu->domain_ids);
++			iommu->domains[num] = domain;
++		} else {
++			num = -ENOSPC;
++		}
++	} else
++		num = domain_number;
+ 
+ 	return num;
+ }
+ 
+ static int iommu_attach_domain(struct dmar_domain *domain,
+-			       struct intel_iommu *iommu)
++			       struct intel_iommu *iommu,
++			       int domain_number)
+ {
+ 	int num;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&iommu->lock, flags);
+-	num = __iommu_attach_domain(domain, iommu);
++	num = __iommu_attach_domain(domain, iommu, domain_number);
+ 	spin_unlock_irqrestore(&iommu->lock, flags);
+ 	if (num < 0)
+ 		pr_err("IOMMU: no free domain ids\n");
+@@ -1577,7 +1582,7 @@ static int iommu_attach_vm_domain(struct dmar_domain *domain,
+ 		if (iommu->domains[num] == domain)
+ 			return num;
+ 
+-	return __iommu_attach_domain(domain, iommu);
++	return __iommu_attach_domain(domain, iommu, -1);
+ }
+ 
+ static void iommu_detach_domain(struct dmar_domain *domain,
+@@ -2231,6 +2236,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
+ 	u16 dma_alias;
+ 	unsigned long flags;
+ 	u8 bus, devfn;
++	int did = -1;   /* Default to "no domain_id supplied" */
+ 
+ 	domain = find_domain(dev);
+ 	if (domain)
+@@ -2264,7 +2270,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
+ 	domain = alloc_domain(0);
+ 	if (!domain)
+ 		return NULL;
+-	domain->id = iommu_attach_domain(domain, iommu);
++	domain->id = iommu_attach_domain(domain, iommu, did);
+ 	if (domain->id < 0) {
+ 		free_domain_mem(domain);
+ 		return NULL;
+@@ -2442,7 +2448,7 @@ static int __init si_domain_init(int hw)
+ 		return -EFAULT;
+ 
+ 	for_each_active_iommu(iommu, drhd) {
+-		ret = iommu_attach_domain(si_domain, iommu);
++		ret = iommu_attach_domain(si_domain, iommu, -1);
+ 		if (ret < 0) {
+ 			domain_exit(si_domain);
+ 			return -EFAULT;
+@@ -3866,7 +3872,7 @@ static int intel_iommu_add(struct dmar_drhd_unit *dmaru)
+ 	iommu_enable_translation(iommu);
+ 
+ 	if (si_domain) {
+-		ret = iommu_attach_domain(si_domain, iommu);
++		ret = iommu_attach_domain(si_domain, iommu, -1);
+ 		if (ret < 0 || si_domain->id != ret)
+ 			goto disable_iommu;
+ 		domain_attach_iommu(si_domain, iommu);
 -- 
 2.0.0-rc0
 
