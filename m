@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610AbaLVSKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 13:10:22 -0500
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:62532 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754957AbaLVSKU (ORCPT
+	id S1755637AbaLVSLW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 13:11:22 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44252 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134AbaLVSLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 13:10:20 -0500
-Message-ID: <1419271817.2317.12.camel@tiscali.nl>
-Subject: [PATCH RFC] ipw2200: select CFG80211_WEXT
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Johannes Berg <johannes.berg@intel.com>
-Cc: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Kalle Valo <kvalo@codeaurora.org>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 22 Dec 2014 19:10:17 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.8 (3.12.8-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Dec 2014 18:10:17.0843 (UTC) FILETIME=[8AAAAC30:01D01E12]
-X-RcptDomain: vger.kernel.org
+	Mon, 22 Dec 2014 13:11:21 -0500
+Date: Mon, 22 Dec 2014 18:10:45 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Zidan Wang <b50113@freescale.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, lars@metafoo.de,
+        ckeepax@opensource.wolfsonmicro.com, Li.Xiubo@freescale.com,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141222181045.GH17800@sirena.org.uk>
+References: <1418103916-31295-1-git-send-email-b50113@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wO3ULb5M+sQS9v8+"
+Content-Disposition: inline
+In-Reply-To: <1418103916-31295-1-git-send-email-b50113@freescale.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 31.51.36.65
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel][PATCH v4] ASoC: wm8960: Let wm8960 codec driver
+ manage its own MCLK
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 24a0aa212ee2 ("cfg80211: make WEXT compatibility unselectable")
-made it impossible to depend on CFG80211_WEXT. It does still allow to
-select that symbol. (Yes, the commit summary is confusing.)
 
-So make IPW2200 select CFG80211_WEXT, so that the ipw2200 driver can be
-built again.
+--wO3ULb5M+sQS9v8+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Johannes,
+On Tue, Dec 09, 2014 at 01:45:16PM +0800, Zidan Wang wrote:
 
-Building v3.19-rc1 for an outdated ThinkPad X41 left me without the
-ipw2200 driver. It turns out this trivial patch is all that's needed to
-make ipw2200 buildable again.
+> @@ -1002,6 +1005,13 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
+>  	if (wm8960 =3D=3D NULL)
+>  		return -ENOMEM;
+> =20
+> +	wm8960->mclk =3D devm_clk_get(&i2c->dev, "codec_mclk");
+> +
+> +	if (IS_ERR(wm8960->mclk)) {
+> +		if (PTR_ERR(wm8960->mclk) =3D=3D -EPROBE_DEFER)
+> +			return -EPROBE_DEFER;
+> +	}
+> +
+>  	wm8960->regmap =3D devm_regmap_init_i2c(i2c, &wm8960_regmap);
+>  	if (IS_ERR(wm8960->regmap))
+>  		return PTR_ERR(wm8960->regmap);
+> @@ -1041,6 +1051,9 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
+> =20
+>  	i2c_set_clientdata(i2c, wm8960);
+> =20
+> +	pm_runtime_enable(&i2c->dev);
+> +	pm_request_idle(&i2c->dev);
+> +
+>  	ret =3D snd_soc_register_codec(&i2c->dev,
+>  			&soc_codec_dev_wm8960, &wm8960_dai, 1);
+> =20
 
-(A similar patch would be needed for the drivers behind Kconfig symbol
-HERMES. Ie, orinico and friends.) 
+This isn't going to work if PM is disabled (which is still a valid
+configuration).  The general idiom for this is that the driver should
+start up with everything powered up then let runtime idle turn things
+off if they're not required.  That way if runtime PM is disabled then
+the system will still work as everything will just stay powered on all
+the time.
 
-I must admit that I do not fully understand your commit. (How was
-CFG80211_WEXT "marked for deprecation and removal for a little more than
-two years"?) There's some terminology confusion: what you call "select"
-I tend to call "set". Anyhow, your commit basically disables building
-ipw2200 (and apparently orinoco and friends)?
+--wO3ULb5M+sQS9v8+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Was that your intention?
- 
- drivers/net/wireless/ipw2x00/Kconfig | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff --git a/drivers/net/wireless/ipw2x00/Kconfig b/drivers/net/wireless/ipw2x00/Kconfig
-index 91c0cb3c368e..21de4fe6cf2d 100644
---- a/drivers/net/wireless/ipw2x00/Kconfig
-+++ b/drivers/net/wireless/ipw2x00/Kconfig
-@@ -65,7 +65,8 @@ config IPW2100_DEBUG
- 
- config IPW2200
- 	tristate "Intel PRO/Wireless 2200BG and 2915ABG Network Connection"
--	depends on PCI && CFG80211 && CFG80211_WEXT
-+	depends on PCI && CFG80211
-+	select CFG80211_WEXT
- 	select WIRELESS_EXT
- 	select WEXT_SPY
- 	select WEXT_PRIV
--- 
-2.1.0
+iQEcBAEBAgAGBQJUmF6kAAoJECTWi3JdVIfQ9n8H/jDkI+AF1J45YFitFrMTJjCo
+CQQYAdtDsiHKYxuvnzcAScVD88MKqn2xsCqcOVOjPhbEu2JdrqyJn8oYmnl+jhNe
+6d5Qe4cFEcrbFPhz0Pd50RBUAIGkFYXhCwrCZ7Wj0hHICG+hJTBa2UgnJMEfk1Rk
+4XNH1y029o1rjV4W+jNOM/+bXvyhleuk9ZoGgEefiIhggFwNMQgXj8+wjW30VVjN
+sCoBsFZysq+XKmnRSIXLTCbI9dVo0RBX4qKMStGXoor8O96LP3IdHitYVsIG2JZ6
+YpfxnMDN/9FCFKnpkxN9WPrR0mtTwDtK7AdsYSFMAucfj50fini76hgyTeAfXY0=
+=sRzo
+-----END PGP SIGNATURE-----
 
+--wO3ULb5M+sQS9v8+--
