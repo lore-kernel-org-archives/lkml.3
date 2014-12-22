@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798AbaLVXlG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 18:41:06 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:31659 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751162AbaLVXlE (ORCPT
+	id S1752805AbaLVXu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 18:50:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38103 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108AbaLVXu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 18:41:04 -0500
-Message-ID: <5498AB99.6060900@fb.com>
-Date: Mon, 22 Dec 2014 15:39:05 -0800
-From: Alex Gartrell <agartrell@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 22 Dec 2014 18:50:58 -0500
+Date: Mon, 22 Dec 2014 15:50:56 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Simone Weiss <simone.weiss@fau.de>
+Cc: helene.gsaenger@studium.fau.de, linux-kernel@i4.cs.fau.de,
+        lidza.louina@gmail.com, markh@compro.net,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dgnc/digi.h: checkpatch: Changend complex macros
+ (enclosed parantheses)
+Message-ID: <20141222235056.GA13403@kroah.com>
+References: <1419211054-3052-5-git-send-email-simone.weiss@fau.de>
+ <1419275042-12289-1-git-send-email-simone.weiss@fau.de>
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.apana.org.au>
-CC: <jasonwang@redhat.com>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mst@redhat.com>,
-        <herbert@gondor.apena.org.au>, <kernel-team@fb.com>
-Subject: Re: [RFC PATCH net-next] tun: support retrieving multiple packets
- in a single read with IFF_MULTI_READ
-References: <20141222120957.GA21319@gondor.apana.org.au> <54987C9F.5070103@fb.com> <20141222223436.GA25970@gondor.apana.org.au>
-In-Reply-To: <20141222223436.GA25970@gondor.apana.org.au>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-22_05:2014-12-22,2014-12-22,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=0
- compositescore=0.919135270856499 urlsuspect_oldscore=0.919135270856499
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.919135270856499 spamscore=0
- recipient_to_sender_domain_totalscore=1 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412220232
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419275042-12289-1-git-send-email-simone.weiss@fau.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Herbert,
+On Mon, Dec 22, 2014 at 08:04:02PM +0100, Simone Weiss wrote:
+> The patch previous in this thread (dgnc/dpacompat.h) defines partly the same macros as dgnc/digi.h and so it  is neccessary tochange the macros in this file as well, so no macros get redefined
+> 
 
-On 12/22/2014 02:34 PM, Herbert Xu wrote:
-> On Mon, Dec 22, 2014 at 12:18:39PM -0800, Alex Gartrell wrote:
->>
->> While fully aware that this makes me look like an idiot, I have to
->> admit that I've tried and failed to figure out how to get a socket
->> fd out of the tun device.
->
-> Well right now the socket is only used within the kernel by
-> vhost so it's not exported to user-space.  If we were to use
-> recvmmsg obviously we'd create a new interface based on sockets
-> for tun and expose the existing socket through that.
+Please wrap your changelog body text :(
 
-Ah, that explains it then.  I was afraid I was just going insane :)
+> 
+> 
+> Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+> Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de> 
 
-> The current file-based tun interface was never designed to be
-> a high-performance interface.  So let's take this opportunity
-> and create a new interface (but still using the same underlying
-> code since whatever you create should be easily applicable to
-> the existing kernel user vhost).
+Trailing whitespace :(
 
-Sounds good to me. I'll get a patch turned around soon.
+Please try again.
 
-Thanks,
--- 
-Alex Gartrell <agartrell@fb.com>
