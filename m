@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002AbaLVTkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:40:23 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40869 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651AbaLVTkV (ORCPT
+	id S1755205AbaLVTl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:41:57 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:42819 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634AbaLVTlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:40:21 -0500
-Date: Mon, 22 Dec 2014 11:40:11 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miroslav Benes <mbenes@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_sched stall detected, but no state dump
-Message-ID: <20141222194011.GV11609@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141210162823.GT25340@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1412111024010.17929@pobox.suse.cz>
- <20141211165010.GI25340@linux.vnet.ibm.com>
- <20141211190957.GA28172@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1412121431450.6587@pobox.suse.cz>
- <20141212165829.GQ25340@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1412151400090.17292@pobox.suse.cz>
- <alpine.LNX.2.00.1412191154260.14243@pobox.suse.cz>
- <20141219153220.GR11609@linux.vnet.ibm.com>
- <alpine.LNX.2.00.1412221334060.16432@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1412221334060.16432@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14122219-0033-0000-0000-0000031A458A
+	Mon, 22 Dec 2014 14:41:55 -0500
+Message-ID: <1419277314.8696.9.camel@haakon3.risingtidesystems.com>
+Subject: Re: Linux 3.19-rc1 - merge window closed
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Drysdale <drysdale@google.com>
+Date: Mon, 22 Dec 2014 11:41:54 -0800
+In-Reply-To: <20141221121122.GA16310@roeck-us.net>
+References: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>
+	 <1419145899.8696.5.camel@haakon3.risingtidesystems.com>
+	 <20141221121122.GA16310@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 01:42:14PM +0100, Miroslav Benes wrote:
-> On Fri, 19 Dec 2014, Paul E. McKenney wrote:
-> > On Fri, Dec 19, 2014 at 12:09:48PM +0100, Miroslav Benes wrote:
-
-[ . . . ]
-
-> > But what do you do if your test module happens to start spinning when
-> > there is no callback?
+On Sun, 2014-12-21 at 04:11 -0800, Guenter Roeck wrote:
+> On Sat, Dec 20, 2014 at 11:11:39PM -0800, Nicholas A. Bellinger wrote:
+> > Hi Linus,
 > > 
-> > One approach is to do a call_rcu() just after starting your loop.
-> > Alternatively, do several just before starting your loop.
+> > On Sat, 2014-12-20 at 17:43 -0800, Linus Torvalds wrote:
+> > > So it's been a day less than two weeks, and the merge window is closed.
+> > > 
+> ... 
+> > 
+> > Just hit the following build failure with CONFIG_AUDIT=y:
+> > 
+> > arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
+> > arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared (first use in this function)
+> > arch/x86/ia32/audit.c:38:7: note: each undeclared identifier is reported only once for each function it appears in
+> > make[2]: *** [arch/x86/ia32/audit.o] Error 1
+> > make[1]: *** [arch/x86/ia32] Error 2
+> > make: *** [arch/x86] Error 2
+> > make: *** Waiting for unfinished jobs....
+> > 
 > 
-> Yes, that would be the way if I understand it correctly. Fortunately there 
-> is always some pending RCU callback during my test. I wonder where it 
-> comes from (probably module handling. I'll try to find out just to be 
-> sure.). 
+> I tried your configuration. For some reason it builds for me, so I guess
+> I must be missing something. What is your build command line ?
 > 
-> So, is the following patch correct? I tested it and it seems ok. And sorry 
-> for the delay, I took the weekend off. Thank you for your patience.
 
-Good!  I forward ported it to -rcu, merged the two "if" statements,
-queued it, and have started testing.  Thank you!!!
+Nothing fancy or out of the ordinary:
 
-							Thanx, Paul
-
-> Miroslav
-> 
-> -- >8 --
-> >From 0dccc8e322e1a38016422be8f4af110eb7a405fc Mon Sep 17 00:00:00 2001
-> From: Miroslav Benes <mbenes@suse.cz>
-> Date: Mon, 22 Dec 2014 13:24:44 +0100
-> Subject: [PATCH] rcu: Fix RCU CPU stall detection in tiny implementation
-> 
-> The tiny RCU CPU stall detection depends on *rcp->curtail not being
-> NULL. It is however a tail pointer and thus NULL by definition. Instead we
-> should check rcp->rcucblist for the presence of pending callbacks which need to
-> be processed. With this fix INFO about the stall is printed and jiffies_stall
-> (jiffies at next stall) correctly updated.
-> 
-> Note that the check for pending callback is necessary to avoid spurious warnings
-> if there are no pendings callbacks.
-> 
-> Signed-off-by: Miroslav Benes <mbenes@suse.cz>
-> ---
->  kernel/rcu/tiny_plugin.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
-> index 858c565..868e132 100644
-> --- a/kernel/rcu/tiny_plugin.h
-> +++ b/kernel/rcu/tiny_plugin.h
-> @@ -145,13 +145,13 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
->  	rcp->ticks_this_gp++;
->  	j = jiffies;
->  	js = ACCESS_ONCE(rcp->jiffies_stall);
-> -	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
-> +	if (rcp->rcucblist && ULONG_CMP_GE(j, js)) {
->  		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
->  		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
->  		       jiffies - rcp->gp_start, rcp->qlen);
->  		dump_stack();
->  	}
-> -	if (*rcp->curtail && ULONG_CMP_GE(j, js))
-> +	if (rcp->rcucblist && ULONG_CMP_GE(j, js))
->  		ACCESS_ONCE(rcp->jiffies_stall) = jiffies +
->  			3 * rcu_jiffies_till_stall_check() + 3;
->  	else if (ULONG_CMP_GE(j, js))
-> -- 
-> 2.1.2
-> 
+root@scsi-mq:/usr/src/target-pending.git# time make -j 4
+scripts/kconfig/conf --silentoldconfig Kconfig
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CC      arch/x86/kernel/asm-offsets.s
+  GEN     include/generated/asm-offsets.h
+  CALL    scripts/checksyscalls.sh
+<stdin>:1226:2: warning: #warning syscall finit_module not implemented [-Wcpp]
+<stdin>:1229:2: warning: #warning syscall sched_setattr not implemented [-Wcpp]
+<stdin>:1232:2: warning: #warning syscall sched_getattr not implemented [-Wcpp]
+<stdin>:1235:2: warning: #warning syscall renameat2 not implemented [-Wcpp]
+<stdin>:1238:2: warning: #warning syscall seccomp not implemented [-Wcpp]
+<stdin>:1241:2: warning: #warning syscall getrandom not implemented [-Wcpp]
+<stdin>:1244:2: warning: #warning syscall memfd_create not implemented [-Wcpp]
+<stdin>:1247:2: warning: #warning syscall bpf not implemented [-Wcpp]
+<stdin>:1250:2: warning: #warning syscall execveat not implemented [-Wcpp]
+  CC      init/main.o
+  AS [M]  arch/x86/crypto/aes-x86_64-asm_64.o
+  AS      arch/x86/ia32/ia32entry.o
+  CC [M]  arch/x86/crypto/crc32c-intel_glue.o
+  CC      arch/x86/ia32/sys_ia32.o
+  CC      kernel/fork.o
+  LD [M]  arch/x86/crypto/aes-x86_64.o
+  LD [M]  arch/x86/crypto/crc32c-intel.o
+  CC      arch/x86/ia32/ia32_signal.o
+  CHK     include/generated/compile.h
+  CC      init/do_mounts.o
+  CC      arch/x86/kernel/process_64.o
+  CC      arch/x86/ia32/syscall_ia32.o
+  CC      arch/x86/ia32/audit.o
+arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
+arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared (first use in this function)
+arch/x86/ia32/audit.c:38:7: note: each undeclared identifier is reported only once for each function it appears in
+make[2]: *** [arch/x86/ia32/audit.o] Error 1
+make[1]: *** [arch/x86/ia32] Error 2
+make[1]: *** Waiting for unfinished jobs....
+  CC      arch/x86/kernel/signal.o
+  AS      arch/x86/kernel/entry_64.o
+  CC      arch/x86/kernel/traps.o
+  CC      init/do_mounts_initrd.o
+  CC      kernel/exec_domain.o
+^Cmake[1]: *** [init/do_mounts_initrd.o] Interrupt
+make: *** [init] Interrupt
+make[2]: *** [arch/x86/kernel/process_64.o] Interrupt
+make[2]: *** [arch/x86/kernel/traps.o] Interrupt
+make[1]: *** [kernel/exec_domain.o] Interrupt
+make[1]: *** [arch/x86/kernel] Interrupt
+make: *** [kernel] Interrupt
+make: *** [arch/x86] Interrupt
 
