@@ -1,99 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310AbaLVPil (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:38:41 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46060 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150AbaLVPii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:38:38 -0500
-Date: Mon, 22 Dec 2014 09:37:30 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Sneeker Yeh <sneeker.yeh@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>, Hans de Goede <hdegoede@redhat.com>,
-        Thomas Pugliese <thomas.pugliese@gmail.com>,
-        David Mosberger <davidm@egauge.net>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Andy Green <andy.green@linaro.org>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
-Subject: Re: [PATCH 3/3] usb: dwc3: add a quirk for device disconnection
- issue in Synopsis dwc3 core
-Message-ID: <20141222153730.GA12815@saruman>
-Reply-To: <balbi@ti.com>
-References: <1418695828-605-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
- <1418695828-605-4-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+	id S1755023AbaLVPs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:48:58 -0500
+Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:35497
+	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754843AbaLVPs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:48:57 -0500
+X-Originating-IP: [82.36.39.136]
+X-Spam: 0
+X-Authority: v=2.1 cv=dY0O3Bne c=1 sm=1 tr=0 a=h3ZJzbuz6X3s3VlFudNWSw==:117
+ a=h3ZJzbuz6X3s3VlFudNWSw==:17 a=DrNGYBpgUcYA:10 a=N659UExz7-8A:10
+ a=a5Gf7U6LAAAA:8 a=D19gQVrFAAAA:8 a=qYJF-06cJdgzHjE1qMkA:9 a=pILNOxqGKmIA:10
+Message-ID: <54983D66.6020506@blueyonder.co.uk>
+Date: Mon, 22 Dec 2014 15:48:54 +0000
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <1418695828-605-4-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Mark Hounschell <markh@compro.net>, linux-kernel@vger.kernel.org,
+        nouveau@lists.freedesktop.org
+Subject: Re: 3.19.0-rc1 nouvea build failure on GeForce GT 610 only
+References: <54981647.8010409@blueyonder.co.uk>	 <1419255471.30945.47.camel@x220> <1419256493.30945.53.camel@x220>
+In-Reply-To: <1419256493.30945.53.camel@x220>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 22/12/14 13:54, Paul Bolle wrote:
+> On Mon, 2014-12-22 at 14:37 +0100, Paul Bolle wrote:
+>> On Mon, 2014-12-22 at 13:01 +0000, Sid Boyce wrote:
+>>>     CHK     kernel/config_data.h
+>>>     CC [M]  drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o
+>>> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c: In function
+>>> ‘nvd0_dmaobj_bind’:
+>>> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: error:
+>>> ‘GM204_DISP_CORE_CHANNEL_DMA’ undeclared (first use in this function)
+>>>      case GM204_DISP_CORE_CHANNEL_DMA:
+>>>           ^
+>>> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: note: each
+>>> undeclared identifier is reported only once for each function it appears in
+>>> scripts/Makefile.build:257: recipe for target
+>>> 'drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o' failed
+>>> make[4]: *** [drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o] Error 1
+>>> scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm/nouveau'
+>>> failed
+>>> make[3]: *** [drivers/gpu/drm/nouveau] Error 2
+>>> scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm' failed
+>>> make[2]: *** [drivers/gpu/drm] Error 2
+>>> scripts/Makefile.build:402: recipe for target 'drivers/gpu' failed
+>>> make[1]: *** [drivers/gpu] Error 2
+>>> Makefile:938: recipe for target 'drivers' failed
+>>> make: *** [drivers] Error 2
+>>>
+>>> 01:00.0 VGA compatible controller: NVIDIA Corporation GF119 [GeForce GT
+>>> 610] (rev a1)
+>> Why would that controller influence the build?
+>>
+>>> No problems on 2 other boxes with GeForce 8600 GT] (rev a1)
+>> I ran into this error twice, while building Fedora 21 kernel rpms for
+>> v3.19-rc1 on my outdated ThinkPad X41 (which uses i915, for what it's
+>> worth). The error made very little sense to me. Especially since it
+>> didn't happen when building in the local git repository.
+>>
+>> So I basically, well, scrubbed the rpmbuild environment. And then the
+>> the third attempt to build kernels rpm succeeded! I assumed a hardware
+>> failure (see outdated above) and made a mental note to investigate that
+>> one of these days.
+>>
+>> But your report makes me think it's not my hardware. Could there be some
+>> _random_ failure with this driver in the build? Very odd...
+> A theory based on Mark's message in
+> https://lkml.org/lkml/2014/12/8/602 :
+>
+> My two failed builds somehow used previous version of class.h, that
+> didn't yet have commit 1f89b4756fb8 ("drm/gm204/disp: initial support")
+> applied. It's that commit which added the define for
+> GM204_DISP_CORE_CHANNEL_DMA.
+>
+> Is that even possible? Perhaps rpmbuild has a surprising way to handle
+> symlinks? All very puzzling...
+>
+>
+> Paul Bolle
+>
+>
+I did a git pull up to 3.19-rc1 separately on the 3 boxes and used the 
+.config from 3.18.0 as the base of make oldconfig.
 
-On Tue, Dec 16, 2014 at 10:10:28AM +0800, Sneeker Yeh wrote:
-> Synopsis DesignWare USB3 IP Core integrated with a config-free
-> phy needs special handling during device disconnection to avoid
-> the host controller dying.
->=20
-> This quirk makes sure PORT_CSC is cleared after the disable slot
-> command when usb device is disconnected from internal root hub,
-> otherwise, Synopsis core would fall into a state that cannot use
-> any endpoint command. Consequently, device disconnection procedure
-> might not be finished because sometimes endpoint need to be stop
-> by endpoint stop command issuing.
->=20
-> Symptom usually happens when disconnected device is keyboard,
-> mouse, and hub.
+When the build failed I did "make mrproper" and used the .config from 
+one of the other boxes, then from the other, all 3 .config gave the same 
+error.
 
-you need to point us to the synopsys STARS ticket number. That's the
-only way to reference this specific quirk. Add it to a comment
-somewhere.
+Successfully rebooted one of the boxes.
+sabre:~ # uname -r
+3.19.0-rc1-smp+
 
---=20
-balbi
-
---FCuugMFkClbJLl1L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUmDq6AAoJEIaOsuA1yqREBvsQAJ5hAbSbFOq1rpAfsrVX6QIG
-V+//vvw4jxayZT/pJhEhzihGa4EPA+A7mIncZ9wZ4hqclYqUnQmZvlnYHM2o2JPu
-Yhwr/xs5YplmYK6prNU9ROUgfK7YrjoY2jj+DfHrwdg6i/bPaaH9YwvFFFklAYzL
-FqPme1iqPU0Pg8hosOpclA1ikavMXEot31RqEPipBQUwFzwjVu0Eun5rWiTHEvhI
-jqhMWv+jazCIJpBAlgVVrGc+r7nfQ4mkjhBaQcUwQ9HczYlv1Rg8tMMCzH1xB/+v
-MdTqLIRXh9xej4unzTYmE5twX9Qo7rjadVaOnB1gEN7YQh5mGOq7n4YqS5t71Gzr
-4D9E4uSlL8zqpYnYdZrXQiiAbOb3O8yDXa1LKc3ZAZ/QhhHfo8YfspO6I3QIjmtg
-8Jsk/X05dkmlgCSXEnXtQCqBc4KpddHjH+1gziHOKio8Tte3eX2MFOZGk9q12heC
-2dpUHeKokJWaEK66O6clzBIyDWWXyNQIDtEjaXZts+lUN/hzjz5GSWGv6c2Vpd71
-VMIzr/chN6AJWAFoXNc827SVdEqQBcu4ziRR6mNJ/R99fdv52j3wtYJaf7z8vsiu
-kZ8FuBW8coQZg7IapDFkbGWATLBRKxaeZl+NISFdUNl2UgPQqCe4IZlYvHqiVVZi
-sGWJjgABKtq5Bp13ct48
-=Au6Y
------END PGP SIGNATURE-----
-
---FCuugMFkClbJLl1L--
+Regards ... Sid.
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot Emeritus 
+IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support Senior Staff 
+Specialist, Cricket Coach Microsoft Windows Free Zone - Linux used for 
+all Computing Tasks
