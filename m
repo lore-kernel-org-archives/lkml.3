@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbaLVLwZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 06:52:25 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:40665 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbaLVLum (ORCPT
+	id S1754765AbaLVLue (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 06:50:34 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:35371 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741AbaLVLua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 06:50:42 -0500
+	Mon, 22 Dec 2014 06:50:30 -0500
 From: Dongsu Park <dongsu.park@profitbricks.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
         Ming Lin <mlin@minggr.net>, Dongsu Park <dongsu.park@profitbricks.com>,
-        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org
-Subject: [RFC PATCH 17/17] Documentation: update notes in biovecs about arbitrarily sized bios
-Date: Mon, 22 Dec 2014 12:48:44 +0100
-Message-Id: <a116a7da8f881f69dfcc2e40bda91533f1bb3c57.1419241597.git.dongsu.park@profitbricks.com>
+        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
+Subject: [RFC PATCH 12/17] md/raid10: make sync_request_write() call bio_copy_data()
+Date: Mon, 22 Dec 2014 12:48:39 +0100
+Message-Id: <b7767767957ca758ac492e94dfb320bea4f52dd7.1419241597.git.dongsu.park@profitbricks.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <4287748e7d1a0fce1c951567a7688821f1a21e5e.1419241597.git.dongsu.park@profitbricks.com>
+In-Reply-To: <abe647cf7cf272220227fad4dac9c43641192f01.1419241597.git.dongsu.park@profitbricks.com>
 References: <cover.1419241597.git.dongsu.park@profitbricks.com>
  <d26a9a0fc9a7d1529c115785ee5935d5750782bd.1419241597.git.dongsu.park@profitbricks.com>
  <f67d71b4a375ab504c2fc02e94a9d2a651686cab.1419241597.git.dongsu.park@profitbricks.com>
@@ -29,61 +29,72 @@ References: <cover.1419241597.git.dongsu.park@profitbricks.com>
  <d42dae3d2a64fa4c3a0893f1af963151b31869e3.1419241597.git.dongsu.park@profitbricks.com>
  <4334b90a56b96ad7a11e4ba7eb97c2cf4405950d.1419241597.git.dongsu.park@profitbricks.com>
  <abe647cf7cf272220227fad4dac9c43641192f01.1419241597.git.dongsu.park@profitbricks.com>
- <b7767767957ca758ac492e94dfb320bea4f52dd7.1419241597.git.dongsu.park@profitbricks.com>
- <e35d37b66d621c51f2eb24ff024291bd1d53422e.1419241597.git.dongsu.park@profitbricks.com>
- <a7118fb6a3353958a19f4d848472da2de76de238.1419241597.git.dongsu.park@profitbricks.com>
- <a0e8166c0c5455755b0cd2d79e8066636c22aa77.1419241597.git.dongsu.park@profitbricks.com>
- <4287748e7d1a0fce1c951567a7688821f1a21e5e.1419241597.git.dongsu.park@profitbricks.com>
 In-Reply-To: <cover.1419241597.git.dongsu.park@profitbricks.com>
 References: <cover.1419241597.git.dongsu.park@profitbricks.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update block/biovecs.txt so that it includes a note on what kind of
-effects arbitrarily sized bios would bring to the block layer.
-Also fix a trivial typo, bio_iter_iovec.
+From: Kent Overstreet <kmo@daterainc.com>
 
+Refactor sync_request_write() of md/raid10 to use bio_copy_data()
+instead of open coding bio_vec iterations.
+
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+[dpark: add more description in commit message]
 Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: linux-doc@vger.kernel.org
+Cc: Neil Brown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org
 ---
- Documentation/block/biovecs.txt | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/md/raid10.c | 20 +++++---------------
+ 1 file changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/Documentation/block/biovecs.txt b/Documentation/block/biovecs.txt
-index 74a32ad..339045d 100644
---- a/Documentation/block/biovecs.txt
-+++ b/Documentation/block/biovecs.txt
-@@ -24,7 +24,7 @@ particular, presenting the illusion of partially completed biovecs so that
- normal code doesn't have to deal with bi_bvec_done.
- 
-  * Driver code should no longer refer to biovecs directly; we now have
--   bio_iovec() and bio_iovec_iter() macros that return literal struct biovecs,
-+   bio_iovec() and bio_iter_iovec() macros that return literal struct biovecs,
-    constructed from the raw biovecs but taking into account bi_bvec_done and
-    bi_size.
- 
-@@ -109,3 +109,18 @@ Other implications:
-    over all the biovecs in the new bio - which is silly as it's not needed.
- 
-    So, don't use bi_vcnt anymore.
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 32e282f..4a40354 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2107,18 +2107,11 @@ static void sync_request_write(struct mddev *mddev, struct r10bio *r10_bio)
+ 		tbio->bi_vcnt = vcnt;
+ 		tbio->bi_iter.bi_size = r10_bio->sectors << 9;
+ 		tbio->bi_rw = WRITE;
+-		tbio->bi_private = r10_bio;
+ 		tbio->bi_iter.bi_sector = r10_bio->devs[i].addr;
+-
+-		for (j=0; j < vcnt ; j++) {
+-			tbio->bi_io_vec[j].bv_offset = 0;
+-			tbio->bi_io_vec[j].bv_len = PAGE_SIZE;
+-
+-			memcpy(page_address(tbio->bi_io_vec[j].bv_page),
+-			       page_address(fbio->bi_io_vec[j].bv_page),
+-			       PAGE_SIZE);
+-		}
+ 		tbio->bi_end_io = end_sync_write;
++		tbio->bi_private = r10_bio;
 +
-+ * As of 3.18, block layer is written based on merging biovecs. Its goal is
-+   to avoid having to split bios; upper layer code such as bio_add_page()
-+   checks what the underlying device can handle, and tries to always create
-+   bios that don't need to be split. However, this approach has been actually
-+   cumbersome and error-prone. It eventually breaks down with stacked devices
-+   and devices with dynamic limits, which then adds a lot of complexity.
-+
-+   So its new interface allows the block layer to split bios as needed, so we
-+   could eliminate a lot of complexity elsewhere - particularly in stacked
-+   drivers. Code that creates bios can then create whatever size bios are
-+   convenient, and more importantly stacked drivers don't have to deal with
-+   both their own bio size limitations and the limitations of the underlying
-+   devices. Thus there's no need to define ->merge_bvec_fn() callbacks for
-+   individual block drivers.
++		bio_copy_data(tbio, fbio);
+ 
+ 		d = r10_bio->devs[i].devnum;
+ 		atomic_inc(&conf->mirrors[d].rdev->nr_pending);
+@@ -2134,17 +2127,14 @@ static void sync_request_write(struct mddev *mddev, struct r10bio *r10_bio)
+ 	 * that are active
+ 	 */
+ 	for (i = 0; i < conf->copies; i++) {
+-		int j, d;
++		int d;
+ 
+ 		tbio = r10_bio->devs[i].repl_bio;
+ 		if (!tbio || !tbio->bi_end_io)
+ 			continue;
+ 		if (r10_bio->devs[i].bio->bi_end_io != end_sync_write
+ 		    && r10_bio->devs[i].bio != fbio)
+-			for (j = 0; j < vcnt; j++)
+-				memcpy(page_address(tbio->bi_io_vec[j].bv_page),
+-				       page_address(fbio->bi_io_vec[j].bv_page),
+-				       PAGE_SIZE);
++			bio_copy_data(tbio, fbio);
+ 		d = r10_bio->devs[i].devnum;
+ 		atomic_inc(&r10_bio->remaining);
+ 		md_sync_acct(conf->mirrors[d].replacement->bdev,
 -- 
 2.1.0
 
