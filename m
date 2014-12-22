@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848AbaLVNsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 08:48:52 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43920 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754758AbaLVNsv (ORCPT
+	id S1754915AbaLVNtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 08:49:06 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:42565 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaLVNtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 08:48:51 -0500
-Date: Mon, 22 Dec 2014 13:48:23 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: alsa-devel@alsa-project.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Message-ID: <20141222134823.GP17800@sirena.org.uk>
-References: <1417914095-26553-1-git-send-email-jcmvbkbc@gmail.com>
- <CAMo8BfJCPU_ZM0w2Ry9kjU3O+HcWEmp_wgZ44oC7gBLW8DV5jw@mail.gmail.com>
+	Mon, 22 Dec 2014 08:49:04 -0500
+Date: Mon, 22 Dec 2014 19:18:51 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Helene Gsaenger <helene.gsaenger@studium.fau.de>
+Cc: simone.weiss@fau.de, linux-kernel@i4.cs.fau.de, lars@metafoo.de,
+        Michael.Hennerich@analog.com, jic23@kernel.org, knaack.h@gmx.de,
+        pmeerw@pmeerw.net, gregkh@linuxfoundation.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging/iio/accel: checkpatch: fixed long lines by
+ moving comments
+Message-ID: <20141222134851.GA8347@sudip-PC>
+References: <1419211422-9611-1-git-send-email-helene.gsaenger@studium.fau.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5/6IVfYouxg+lu1D"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMo8BfJCPU_ZM0w2Ry9kjU3O+HcWEmp_wgZ44oC7gBLW8DV5jw@mail.gmail.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 31.51.36.65
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: add xtensa xtfpga I2S interface and platform
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1419211422-9611-1-git-send-email-helene.gsaenger@studium.fau.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 22, 2014 at 02:23:42AM +0100, Helene Gsaenger wrote:
+> Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de>
+> Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+> ---
+>  drivers/staging/iio/accel/adis16203.h | 41 ++++++++++++++++++++++++++---------
+>  1 file changed, 31 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/accel/adis16203.h b/drivers/staging/iio/accel/adis16203.h
+> index acc688d..fefe2f9 100644
+> --- a/drivers/staging/iio/accel/adis16203.h
+> +++ b/drivers/staging/iio/accel/adis16203.h
+> @@ -16,26 +16,47 @@
+>  #define ADIS16203_ALM_SMPL2      0x26 /* Alarm 2, sample period */
+>  #define ADIS16203_ALM_CTRL       0x28 /* Alarm control */
+>  #define ADIS16203_AUX_DAC        0x30 /* Auxiliary DAC data */
+> -#define ADIS16203_GPIO_CTRL      0x32 /* General-purpose digital input/output control */
+> +#define ADIS16203_GPIO_CTRL      0x32 /* General-purpose digital input/output
+> +				       * control */
+>  #define ADIS16203_MSC_CTRL       0x34 /* Miscellaneous control */
+> -#define ADIS16203_SMPL_PRD       0x36 /* Internal sample period (rate) control */
+> +#define ADIS16203_SMPL_PRD       0x36 /* Internal sample period (rate)
+> +				       * control */
 
---5/6IVfYouxg+lu1D
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+this is not the style for multiline comments. Check in CodingStyle.
+and besides, I think it will be better if you can put the comments in a line of its own.
 
-On Mon, Dec 22, 2014 at 11:39:40AM +0300, Max Filippov wrote:
-> On Sun, Dec 7, 2014 at 4:01 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
-> > XTFPGA boards provides an audio subsystem that consists of TI CDCE706
-> > clock synthesizer, I2S transmitter and TLV320AIC23 audio codec.
-
-> > I2S transmitter has MMIO-based interface that resembles that of the
-> > OpenCores I2S transmitter. I2S transmitter is always a master on I2S
-> > bus. There's no specialized audio DMA, sample data are transferred to
-> > I2S transmitter FIFO by CPU through memory-mapped queue interface.
-
-> Ping?
-
-Don't send contentless quoted pings; they only add noise - if the patch
-has been lost they can't be applied, if it's waiting for review then
-a nag is just yet more e-mail to read.
-
---5/6IVfYouxg+lu1D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUmCEmAAoJECTWi3JdVIfQ4lEH/1VozZEL0nqvPHrMlH4eDs82
-hYxbairXMdVhdcUY0uKrCyve6XVWYhCKwSODlWoDKTUaaPmzSTNLj8wHC6vh1xEL
-ta2GJdKcE8JBW1dTlGNi3qjE6I+apvfleg36bDLfGZOm3Gy4G51OHoO3gbxGsMtb
-hpFZJc/yvLTiawJ/rXlpHPTIg1o7zW2d8bd6Jip9XkGTKSD4kMWS4yW9hSYxDT+N
-TLF7kJBnEprf3Xycv3EyK7xRm6Y/f59xtb7thhCwdLH/6dqax0TRjkbp/d7bl0H7
-KIgOnlJxSmX8sm0Ha8aB1F/VjVWaGgjlpneCxnMRgFAqEjZsgzQWZRDjgT0+A74=
-=Nabw
------END PGP SIGNATURE-----
-
---5/6IVfYouxg+lu1D--
+thanks
+sudip
+>  #define ADIS16203_AVG_CNT        0x38 /* Operation, filter configuration */
+>  #define ADIS16203_SLP_CNT        0x3A /* Operation, sleep mode control */
+>  #define ADIS16203_DIAG_STAT      0x3C /* Diagnostics, system status register */
+>  #define ADIS16203_GLOB_CMD       0x3E /* Operation, system command register */
+>  
+>  /* MSC_CTRL */
+> -#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10) /* Self-test at power-on: 1 = disabled, 0 = enabled */
+> -#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)  /* Reverses rotation of both inclination outputs */
+> +#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10) /* Self-test at
+> +							   * power-on:
+> +							   * 1 = disabled,
+> +							   * 0 = enabled */
+> +#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)  /* Reverses rotation
+> +							   * of both
+> +							   * inclination
+> +							   * outputs */
+>  #define ADIS16203_MSC_CTRL_SELF_TEST_EN	        (1 << 8)  /* Self-test enable */
+> -#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)  /* Data-ready enable: 1 = enabled, 0 = disabled */
+> -#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)  /* Data-ready polarity: 1 = active high, 0 = active low */
+> -#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)  /* Data-ready line selection: 1 = DIO1, 0 = DIO0 */
+> +#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)  /* Data-ready enable:
+> +							   * 1 = enabled,
+> +							   * 0 = disabled */
+> +#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)  /* Data-ready
+> +							   * polarity:
+> +							   * 1 = active high,
+> +							   * 0 = active low */
+> +#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)  /* Data-ready line
+> +							   * selection:
+> +							   * 1 = DIO1,
+> +							   * 0 = DIO0 */
+>  
+>  /* DIAG_STAT */
+> -#define ADIS16203_DIAG_STAT_ALARM2        (1<<9) /* Alarm 2 status: 1 = alarm active, 0 = alarm inactive */
+> -#define ADIS16203_DIAG_STAT_ALARM1        (1<<8) /* Alarm 1 status: 1 = alarm active, 0 = alarm inactive */
+> -#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5 /* Self-test diagnostic error flag */
+> +#define ADIS16203_DIAG_STAT_ALARM2        (1<<9) /* Alarm 2 status:
+> +						  * 1 = alarm active,
+> +						  * 0 = alarm inactive */
+> +#define ADIS16203_DIAG_STAT_ALARM1        (1<<8) /* Alarm 1 status:
+> +						  * 1 = alarm active,
+> +						  * 0 = alarm inactive */
+> +#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5 /* Self-test diagnostic error
+> +						 * flag */
+>  #define ADIS16203_DIAG_STAT_SPI_FAIL_BIT      3 /* SPI communications failure */
+>  #define ADIS16203_DIAG_STAT_FLASH_UPT_BIT     2 /* Flash update failure */
+>  #define ADIS16203_DIAG_STAT_POWER_HIGH_BIT    1 /* Power supply above 3.625 V */
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
