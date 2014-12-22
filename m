@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469AbaLVQto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:49:44 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:50264 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440AbaLVQtf (ORCPT
+	id S1755479AbaLVQu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:50:26 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:64765 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755223AbaLVQt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:49:35 -0500
+	Mon, 22 Dec 2014 11:49:29 -0500
 From: j.glisse@gmail.com
 To: akpm@linux-foundation.org
 Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
@@ -36,9 +36,9 @@ Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         Oded Gabbay <Oded.Gabbay@amd.com>,
         =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>,
         Jatin Kumar <jakumar@nvidia.com>
-Subject: [PATCH 6/7] HMM: add device page fault support.
-Date: Mon, 22 Dec 2014 11:49:00 -0500
-Message-Id: <1419266940-5440-7-git-send-email-j.glisse@gmail.com>
+Subject: [PATCH 4/7] HMM: add HMM page table.
+Date: Mon, 22 Dec 2014 11:48:58 -0500
+Message-Id: <1419266940-5440-5-git-send-email-j.glisse@gmail.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1419266940-5440-1-git-send-email-j.glisse@gmail.com>
 References: <1419266940-5440-1-git-send-email-j.glisse@gmail.com>
@@ -51,9 +51,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jérôme Glisse <jglisse@redhat.com>
 
-This patch add helper for device page fault. Device page fault helper will
-fill the mirror page table using the CPU page table all this synchronized
-with any update to CPU page table.
+Heterogeneous memory management main purpose is to mirror a process address.
+To do so it must maintain a secondary page table that is use by the device
+driver to program the device or build a device specific page table.
+
+Radix tree can not be use to create this secondary page table because HMM
+needs more flags than RADIX_TREE_MAX_TAGS (while this can be increase we
+believe HMM will require so much flags that cost will becomes prohibitive
+to others users of radix tree).
+
+Moreover radix tree is built around long but for HMM we need to store dma
+address and on some platform sizeof(dma_addr_t) > sizeof(long). Thus radix
+tree is unsuitable to fulfill HMM requirement hence why we introduce this
+code which allows to create page table that can grow and shrink dynamicly.
+
+The design is very clause to CPU page table as it reuse some of the feature
+such as spinlock embedded in struct page.
 
 Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
 Signed-off-by: Sherry Cheung <SCheung@nvidia.com>
@@ -62,473 +75,735 @@ Signed-off-by: Mark Hairgrove <mhairgrove@nvidia.com>
 Signed-off-by: John Hubbard <jhubbard@nvidia.com>
 Signed-off-by: Jatin Kumar <jakumar@nvidia.com>
 ---
- include/linux/hmm.h |   1 +
- mm/hmm.c            | 384 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 385 insertions(+)
+ MAINTAINERS            |   2 +
+ include/linux/hmm_pt.h | 261 ++++++++++++++++++++++++++++++
+ mm/Makefile            |   2 +-
+ mm/hmm_pt.c            | 425 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 689 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/hmm_pt.h
+ create mode 100644 mm/hmm_pt.c
 
-diff --git a/include/linux/hmm.h b/include/linux/hmm.h
-index dd34572..72e168b 100644
---- a/include/linux/hmm.h
-+++ b/include/linux/hmm.h
-@@ -259,6 +259,7 @@ struct hmm_mirror {
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c5bb62e..02f9f29 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4539,6 +4539,8 @@ L:	linux-mm@kvack.org
+ S:	Maintained
+ F:	mm/hmm.c
+ F:	include/linux/hmm.h
++F:	mm/hmm_pt.c
++F:	include/linux/hmm_pt.h
  
- int hmm_mirror_register(struct hmm_mirror *mirror, struct hmm_device *device);
- void hmm_mirror_unregister(struct hmm_mirror *mirror);
-+int hmm_mirror_fault(struct hmm_mirror *mirror, struct hmm_event *event);
- 
- 
- #endif /* CONFIG_HMM */
-diff --git a/mm/hmm.c b/mm/hmm.c
-index 90ebe75..5fb7e19 100644
---- a/mm/hmm.c
-+++ b/mm/hmm.c
-@@ -55,6 +55,9 @@ static struct srcu_struct srcu;
-  * @lock: Serialize the mirror list modifications.
-  * @kref: Reference counter
-  * @mmu_notifier: The mmu_notifier of this mm.
-+ * @device_faults: List of all active device page faults.
-+ * @ndevice_faults: Number of active device page faults.
-+ * @wait_queue: Wait queue for event synchronization.
-  *
-  * For each process address space (mm_struct) there is one and only one hmm
-  * struct. hmm functions will redispatch to each devices the change made to
-@@ -67,6 +70,9 @@ struct hmm {
- 	spinlock_t		lock;
- 	struct kref		kref;
- 	struct mmu_notifier	mmu_notifier;
-+	struct list_head	device_faults;
-+	unsigned		ndevice_faults;
-+	wait_queue_head_t	wait_queue;
- };
- 
- static struct mmu_notifier_ops hmm_notifier_ops;
-@@ -88,6 +94,11 @@ static void hmm_mirror_update_pt(struct hmm_mirror *mirror,
-  * help dealing with all this.
-  */
- 
-+static inline bool hmm_event_overlap(struct hmm_event *a, struct hmm_event *b)
+ HOST AP DRIVER
+ M:	Jouni Malinen <j@w1.fi>
+diff --git a/include/linux/hmm_pt.h b/include/linux/hmm_pt.h
+new file mode 100644
+index 0000000..88fc519
+--- /dev/null
++++ b/include/linux/hmm_pt.h
+@@ -0,0 +1,261 @@
++/*
++ * Copyright 2014 Red Hat Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Authors: Jérôme Glisse <jglisse@redhat.com>
++ */
++/*
++ * This provide a set of helpers for HMM page table. See include/linux/hmm.h
++ * for a description of what HMM is.
++ *
++ * HMM page table rely on a locking mecanism similar to CPU page table for page
++ * table update. It use the spinlock embedded inside the struct page to protect
++ * change to page table directory which should minimize lock contention for
++ * concurrent update.
++ *
++ * It does also provide a directory tree protection mechanism. Unlike CPU page
++ * table there is no mmap semaphore to protect directory tree from removal and
++ * this is done intentionaly so that concurrent removal/insertion of directory
++ * inside the tree can happen.
++ *
++ * So anyone walking down the page table must protect directory it traverses so
++ * they are not free by some other thread. This is done by using a reference
++ * counter for each directory. Before traversing a directory a reference is
++ * taken and once traversal is done the reference is drop.
++ *
++ * A directory entry dereference and refcount increment of sub-directory page
++ * must happen in a critical rcu section so that directory page removal can
++ * gracefully wait for all possible other threads that might have dereferenced
++ * the directory.
++ */
++#ifndef _HMM_PT_H
++#define _HMM_PT_H
++
++/*
++ * The HMM page table entry does not reflect any specific hardware. It is just
++ * a common entry format use by HMM internal and expose to HMM user so they can
++ * extract information out of HMM page table.
++ */
++#define HMM_PTE_VALID		(1 << 0)
++#define HMM_PTE_WRITE		(1 << 1)
++#define HMM_PTE_DIRTY		(1 << 2)
++#define HMM_PFN_SHIFT		4
++#define HMM_PFN_MASK		(~((dma_addr_t)((1 << HMM_PFN_SHIFT) - 1)))
++
++static inline dma_addr_t hmm_pte_from_pfn(dma_addr_t pfn)
 +{
-+	return !((a->end <= b->start) || (a->start >= b->end));
++	return (pfn << HMM_PFN_SHIFT) | HMM_PTE_VALID;
 +}
 +
- static inline int hmm_event_init(struct hmm_event *event,
- 				 struct hmm *hmm,
- 				 unsigned long start,
-@@ -149,6 +160,9 @@ static int hmm_init(struct hmm *hmm)
- 	hmm->vm_end = TASK_SIZE;
- 	kref_init(&hmm->kref);
- 	INIT_HLIST_HEAD(&hmm->mirrors);
-+	INIT_LIST_HEAD(&hmm->device_faults);
-+	hmm->ndevice_faults = 0;
-+	init_waitqueue_head(&hmm->wait_queue);
- 	spin_lock_init(&hmm->lock);
- 
- 	/* register notifier */
-@@ -205,6 +219,60 @@ static inline struct hmm *hmm_unref(struct hmm *hmm)
- 	return NULL;
- }
- 
-+static int hmm_device_fault_start(struct hmm *hmm, struct hmm_event *event)
++static inline unsigned long hmm_pte_pfn(dma_addr_t pte)
 +{
-+	int ret = 0;
-+
-+	mmu_notifier_range_wait_valid(hmm->mm, event->start, event->end);
-+
-+	spin_lock(&hmm->lock);
-+	if (mmu_notifier_range_is_valid(hmm->mm, event->start, event->end)) {
-+		list_add_tail(&event->list, &hmm->device_faults);
-+		hmm->ndevice_faults++;
-+		event->backoff = false;
-+	} else
-+		ret = -EAGAIN;
-+	spin_unlock(&hmm->lock);
-+
-+	wake_up(&hmm->wait_queue);
-+
-+	return ret;
++	return pte >> HMM_PFN_SHIFT;
 +}
 +
-+static void hmm_device_fault_end(struct hmm *hmm, struct hmm_event *event)
-+{
-+	hmm_event_wait(event);
++#define HMM_PT_MAX_LEVEL	6
 +
-+	spin_lock(&hmm->lock);
-+	list_del_init(&event->list);
-+	hmm->ndevice_faults--;
-+	spin_unlock(&hmm->lock);
-+
-+	wake_up(&hmm->wait_queue);
-+}
-+
-+static void hmm_wait_device_fault(struct hmm *hmm, struct hmm_event *ievent)
-+{
-+	struct hmm_event *fevent;
-+	unsigned long wait_for = 0;
-+
-+again:
-+	spin_lock(&hmm->lock);
-+	list_for_each_entry(fevent, &hmm->device_faults, list) {
-+		if (!hmm_event_overlap(fevent, ievent))
-+			continue;
-+		fevent->backoff = true;
-+		wait_for = hmm->ndevice_faults;
-+	}
-+	spin_unlock(&hmm->lock);
-+
-+	if (wait_for > 0) {
-+		wait_event(hmm->wait_queue, wait_for != hmm->ndevice_faults);
-+		wait_for = 0;
-+		goto again;
-+	}
-+}
-+
- static void hmm_update(struct hmm *hmm, struct hmm_event *event)
- {
- 	struct hmm_mirror *mirror;
-@@ -214,6 +282,8 @@ static void hmm_update(struct hmm *hmm, struct hmm_event *event)
- 	if (hmm->mm->hmm != hmm)
- 		return;
- 
-+	hmm_wait_device_fault(hmm, event);
-+
- 	id = srcu_read_lock(&srcu);
- 
- 	hlist_for_each_entry_rcu(mirror, &hmm->mirrors, mlist)
-@@ -226,6 +296,35 @@ static void hmm_update(struct hmm *hmm, struct hmm_event *event)
- 		hmm_mirror_update_pt(mirror, event);
- 
- 	srcu_read_unlock(&srcu, id);
-+
-+	wake_up(&hmm->wait_queue);
-+}
-+
-+static int hmm_mm_fault(struct hmm *hmm,
-+			struct hmm_event *event,
-+			struct vm_area_struct *vma,
-+			unsigned long addr)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	unsigned flags;
-+	int r;
-+
-+	flags = (event->etype == HMM_DEVICE_WFAULT) ? FAULT_FLAG_WRITE : 0;
-+	for (addr &= PAGE_MASK; addr < event->end; addr += PAGE_SIZE) {
-+
-+		flags |= FAULT_FLAG_ALLOW_RETRY;
-+		do {
-+			r = handle_mm_fault(mm, vma, addr, flags);
-+			if (!(r & VM_FAULT_RETRY) && (r & VM_FAULT_ERROR)) {
-+				if (r & VM_FAULT_OOM)
-+					return -ENOMEM;
-+				/* Same error code for all other cases. */
-+				return -EFAULT;
-+			}
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+		} while (r & VM_FAULT_RETRY);
-+	}
-+	return 0;
- }
- 
- 
-@@ -267,6 +366,8 @@ static void hmm_notifier_release(struct mmu_notifier *mn, struct mm_struct *mm)
- 	spin_unlock(&hmm->lock);
- 
- 	srcu_read_unlock(&srcu, id);
-+
-+	wake_up(&hmm->wait_queue);
- }
- 
- static void hmm_mmu_mprot_to_etype(struct mm_struct *mm,
-@@ -422,6 +523,289 @@ static void hmm_mirror_update_pt(struct hmm_mirror *mirror,
- 	hmm_pt_iter_fini(&iter, &mirror->pt);
- }
- 
-+static inline bool hmm_mirror_is_stopped(struct hmm_mirror *mirror)
-+{
-+	if (hlist_unhashed(&mirror->mlist) || list_empty(&mirror->dlist))
-+		return true;
-+	return false;
-+}
-+
-+struct hmm_mirror_fault {
-+	struct hmm_mirror	*mirror;
-+	struct hmm_event	*event;
-+	struct vm_area_struct	*vma;
-+	unsigned long		addr;
-+	struct hmm_pt_iter	*iter;
++/* struct hmm_pt - HMM page table structure.
++ *
++ * @mask: Array of address mask value of each level.
++ * @directory_mask: Mask for directory index (see below).
++ * @last: Last valid address (inclusive).
++ * @pgd: page global directory (top first level of the directory tree).
++ * @lock: Share lock if spinlock_t does not fit in struct page.
++ * @shift: Array of address shift value of each level.
++ * @llevel: Last level.
++ *
++ * The index into each directory for a given address and level is :
++ *   (address >> shift[level]) & directory_mask
++ *
++ * Only hmm_pt.last field needs to be set before calling hmm_pt_init().
++ */
++struct hmm_pt {
++	unsigned long		mask[HMM_PT_MAX_LEVEL];
++	unsigned long		directory_mask;
++	unsigned long		last;
++	dma_addr_t		*pgd;
++	spinlock_t		lock;
++	unsigned char		shift[HMM_PT_MAX_LEVEL];
++	unsigned char		llevel;
 +};
 +
-+static int hmm_mirror_fault_hpmd(struct hmm_mirror *mirror,
-+				 struct hmm_event *event,
-+				 struct vm_area_struct *vma,
-+				 struct hmm_pt_iter *iter,
-+				 pmd_t *pmdp,
-+				 struct hmm_mirror_fault *mirror_fault,
-+				 unsigned long start,
-+				 unsigned long end)
++int hmm_pt_init(struct hmm_pt *pt);
++void hmm_pt_fini(struct hmm_pt *pt);
++
++static inline unsigned hmm_pt_index(struct hmm_pt *pt,
++				    unsigned long addr,
++				    unsigned level)
 +{
-+	struct page *page;
-+	unsigned long addr, pfn;
-+	unsigned flags = FOLL_TOUCH;
-+	spinlock_t *ptl;
-+	int ret;
++	return (addr >> pt->shift[level]) & pt->directory_mask;
++}
 +
-+	ptl = pmd_lock(mirror->hmm->mm, pmdp);
-+	if (unlikely(!pmd_trans_huge(*pmdp))) {
-+		spin_unlock(ptl);
-+		return -EAGAIN;
-+	}
-+	if (unlikely(pmd_trans_splitting(*pmdp))) {
-+		spin_unlock(ptl);
-+		wait_split_huge_page(vma->anon_vma, pmdp);
-+		return -EAGAIN;
-+	}
-+	flags |= event->etype == HMM_DEVICE_WFAULT ? FOLL_WRITE : 0;
-+	page = follow_trans_huge_pmd(vma, start, pmdp, flags);
-+	pfn = page_to_pfn(page);
-+	spin_unlock(ptl);
++#if USE_SPLIT_PTE_PTLOCKS && !ALLOC_SPLIT_PTLOCKS
++static inline void hmm_pt_directory_lock(struct hmm_pt *pt,
++					 struct page *ptd,
++					 unsigned level)
++{
++	if (level)
++		spin_lock(&ptd->ptl);
++	else
++		spin_lock(&pt->lock);
++}
 +
-+	/* Just fault in the whole PMD. */
-+	start &= PMD_MASK;
-+	end = start + PMD_SIZE - 1;
++static inline void hmm_pt_directory_unlock(struct hmm_pt *pt,
++					   struct page *ptd,
++					   unsigned level)
++{
++	if (level)
++		spin_unlock(&ptd->ptl);
++	else
++		spin_unlock(&pt->lock);
++}
++#else /* USE_SPLIT_PTE_PTLOCKS && !ALLOC_SPLIT_PTLOCKS */
++static inline void hmm_pt_directory_lock(struct hmm_pt *pt,
++					 struct page *ptd,
++					 unsigned level)
++{
++	spin_lock(&pt->lock);
++}
 +
-+	if (!pmd_write(*pmdp) && event->etype == HMM_DEVICE_WFAULT)
-+			return -ENOENT;
++static inline void hmm_pt_directory_unlock(struct hmm_pt *pt,
++					   struct page *ptd,
++					   unsigned level)
++{
++	spin_unlock(&pt->lock);
++}
++#endif
 +
-+	for (ret = 0, addr = start; !ret && addr < end;) {
-+		unsigned long i = 0, hmm_end, next;
-+		dma_addr_t *hmm_pte;
++static inline unsigned long hmm_pt_level_start(struct hmm_pt *pt,
++					       unsigned long addr,
++					       unsigned level)
++{
++	return addr & pt->mask[level];
++}
 +
-+		hmm_pte = hmm_pt_iter_fault(iter, &mirror->pt, addr);
-+		if (!hmm_pte)
-+			return -ENOMEM;
++static inline unsigned long hmm_pt_level_end(struct hmm_pt *pt,
++					     unsigned long addr,
++					     unsigned level)
++{
++	return (addr | (~pt->mask[level])) + 1UL;
++}
 +
-+		hmm_end = hmm_pt_level_next(&mirror->pt, addr, end,
-+					    mirror->pt.llevel - 1);
-+		hmm_pt_iter_directory_lock(iter, &mirror->pt);
-+		do {
-+			next = hmm_pt_level_next(&mirror->pt, addr, hmm_end,
-+						 mirror->pt.llevel);
++static inline unsigned long hmm_pt_level_next(struct hmm_pt *pt,
++					      unsigned long addr,
++					      unsigned long end,
++					      unsigned level)
++{
++	addr = (addr | (~pt->mask[level])) + 1UL;
++	return (addr - 1 < end - 1) ? addr : end;
++}
 +
-+			if (!(hmm_pte[i] & HMM_PTE_VALID)) {
-+				hmm_pte[i] = hmm_pte_from_pfn(pfn);
-+				hmm_pt_iter_directory_ref(iter,
-+							  mirror->pt.llevel);
-+			}
-+			BUG_ON(hmm_pte_pfn(hmm_pte[i]) != pfn);
-+			hmm_pte[i] |= pmd_write(*pmdp) ? HMM_PTE_WRITE : 0;
-+		} while (addr = next, pfn++, i++, addr != hmm_end);
-+		hmm_pt_iter_directory_unlock(iter, &mirror->pt);
-+		mirror_fault->addr = addr;
-+	}
++
++/* struct hmm_pt_iter - page table iterator states.
++ *
++ * @ptd: Array of directory struct page pointer for each levels.
++ * @ptdp: Array of pointer to mapped directory levels.
++ * @dead_directories: List of directories that died while walking page table.
++ * @cur: Current address.
++ */
++struct hmm_pt_iter {
++	struct page		*ptd[HMM_PT_MAX_LEVEL - 1];
++	dma_addr_t		*ptdp[HMM_PT_MAX_LEVEL - 1];
++	struct list_head	dead_directories;
++	unsigned long		cur;
++};
++
++void hmm_pt_iter_init(struct hmm_pt_iter *iter);
++void hmm_pt_iter_fini(struct hmm_pt_iter *iter, struct hmm_pt *pt);
++unsigned long hmm_pt_iter_next(struct hmm_pt_iter *iter,
++			       struct hmm_pt *pt,
++			       unsigned long addr,
++			       unsigned long end);
++dma_addr_t *hmm_pt_iter_update(struct hmm_pt_iter *iter,
++			       struct hmm_pt *pt,
++			       unsigned long addr);
++dma_addr_t *hmm_pt_iter_fault(struct hmm_pt_iter *iter,
++			      struct hmm_pt *pt,
++			      unsigned long addr);
++
++/* hmm_pt_protect_directory_unref() - reference a directory.
++ *
++ * @iter: Iterator states that currently protect the directory.
++ * @level: Level of the directory to reference.
++ *
++ * This function will reference a directory but it is illegal for refcount to
++ * be 0 as this helper should only be call when iterator is protecting the
++ * directory (ie iterator hold a reference for the directory).
++ *
++ * HMM user will call this with level = pt.llevel any other value is supicious
++ * outside of hmm_pt code.
++ */
++static inline void hmm_pt_iter_directory_ref(struct hmm_pt_iter *iter,
++					     char level)
++{
++	/* Nothing to do for root level. */
++	if (!level)
++		return;
++
++	if (!atomic_inc_not_zero(&iter->ptd[level - 1]->_mapcount))
++		/* Illegal this should not happen. */
++		BUG();
++}
++
++/* hmm_pt_protect_directory_unref() - unreference a directory.
++ *
++ * @iter: Iterator states that currently protect the directory.
++ * @level: Level of the directory to unreference.
++ *
++ * This function will unreference a directory but it is illegal for refcount to
++ * reach 0 here as this helper should only be call when iterator is protecting
++ * the directory (ie iterator hold a reference for the directory).
++ *
++ * HMM user will call this with level = pt.llevel any other value is supicious
++ * outside of hmm_pt code.
++ */
++static inline void hmm_pt_iter_directory_unref(struct hmm_pt_iter *iter,
++					       char level)
++{
++	/* Nothing to do for root level. */
++	if (!level)
++		return;
++
++	if (!atomic_dec_and_test(&iter->ptd[level - 1]->_mapcount))
++		return;
++
++	/* Illegal this should not happen. */
++	BUG();
++}
++
++static inline dma_addr_t *hmm_pt_iter_ptdp(struct hmm_pt_iter *iter,
++					   struct hmm_pt *pt,
++					   unsigned long addr)
++{
++	BUG_ON(!iter->ptd[pt->llevel - 1] ||
++	       addr < hmm_pt_level_start(pt, iter->cur, pt->llevel) ||
++	       addr >= hmm_pt_level_end(pt, iter->cur, pt->llevel));
++	return &iter->ptdp[pt->llevel - 1][hmm_pt_index(pt, addr, pt->llevel)];
++}
++
++static inline void hmm_pt_iter_directory_lock(struct hmm_pt_iter *iter,
++					      struct hmm_pt *pt)
++{
++	hmm_pt_directory_lock(pt, iter->ptd[pt->llevel - 1], pt->llevel);
++}
++
++static inline void hmm_pt_iter_directory_unlock(struct hmm_pt_iter *iter,
++						struct hmm_pt *pt)
++{
++	hmm_pt_directory_unlock(pt, iter->ptd[pt->llevel - 1], pt->llevel);
++}
++
++
++#endif /* _HMM_PT_H */
+diff --git a/mm/Makefile b/mm/Makefile
+index cb2f9ed..d2e50f2 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -73,4 +73,4 @@ obj-$(CONFIG_GENERIC_EARLY_IOREMAP) += early_ioremap.o
+ obj-$(CONFIG_CMA)	+= cma.o
+ obj-$(CONFIG_MEMORY_BALLOON) += balloon_compaction.o
+ obj-$(CONFIG_PAGE_EXTENSION) += page_ext.o
+-obj-$(CONFIG_HMM) += hmm.o
++obj-$(CONFIG_HMM) += hmm.o hmm_pt.o
+diff --git a/mm/hmm_pt.c b/mm/hmm_pt.c
+new file mode 100644
+index 0000000..4af7ca8
+--- /dev/null
++++ b/mm/hmm_pt.c
+@@ -0,0 +1,425 @@
++/*
++ * Copyright 2014 Red Hat Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Authors: Jérôme Glisse <jglisse@redhat.com>
++ */
++/*
++ * This provide a set of helpers for HMM page table. See include/linux/hmm.h
++ * for a description of what HMM is and include/linux/hmm_pt.h.
++ */
++#include <linux/highmem.h>
++#include <linux/slab.h>
++#include <linux/hmm_pt.h>
++
++/* hmm_pt_init() - initialize HMM page table.
++ *
++ * @pt: HMM page table to initialize.
++ *
++ * This function will initialize HMM page table and allocate memory for global
++ * directory. Only the hmm_pt.last fields need to be set prior to calling this
++ * function.
++ */
++int hmm_pt_init(struct hmm_pt *pt)
++{
++	unsigned directory_shift, i = 0, npgd;
++
++	pt->last &= PAGE_MASK;
++	spin_lock_init(&pt->lock);
++	/* Directory shift is the number of bits that a single directory level
++	 * represent. For instance if PAGE_SIZE is 4096 and each entry takes 8
++	 * bytes (sizeof(dma_addr_t) == 8) then directory_shift = 9.
++	 */
++	directory_shift = PAGE_SHIFT - ilog2(sizeof(dma_addr_t));
++	/* Level 0 is the root level of the page table. It might use less
++	 * bits than directory_shift but all sub-directory level will use all
++	 * directory_shift bits.
++	 *
++	 * For instance if hmm_pt.last == (1 << 48), PAGE_SHIFT == 12 and
++	 * sizeof(dma_addr_t) == 8 then :
++	 *   directory_shift = 9
++	 *   shift[0] = 39
++	 *   shift[1] = 30
++	 *   shift[2] = 21
++	 *   shift[3] = 12
++	 *   llevel = 3
++	 *
++	 * Note that shift[llevel] == PAGE_SHIFT because the last level
++	 * correspond to the page table entry level (ignoring the case of huge
++	 * page).
++	 */
++	pt->shift[0] = ((__fls(pt->last >> PAGE_SHIFT) / directory_shift) *
++			directory_shift) + PAGE_SHIFT;
++	while (pt->shift[i++] > PAGE_SHIFT)
++		pt->shift[i] = pt->shift[i - 1] - directory_shift;
++	pt->llevel = i - 1;
++	pt->directory_mask = (1 << directory_shift) - 1;
++
++	for (i = 0; i <= pt->llevel; ++i)
++		pt->mask[i] = ~((1UL << pt->shift[i]) - 1);
++
++	npgd = (pt->last >> pt->shift[0]) + 1;
++	pt->pgd = kzalloc(npgd * sizeof(dma_addr_t), GFP_KERNEL);
++	if (!pt->pgd)
++		return -ENOMEM;
 +
 +	return 0;
 +}
++EXPORT_SYMBOL(hmm_pt_init);
 +
-+static int hmm_mirror_fault_pmd(pmd_t *pmdp,
-+				unsigned long start,
-+				unsigned long end,
-+				struct mm_walk *walk)
++static void hmm_pt_fini_directory(struct hmm_pt *pt,
++				  struct page *ptd,
++				  unsigned level)
 +{
-+	struct hmm_mirror_fault *mirror_fault = walk->private;
-+	struct hmm_mirror *mirror = mirror_fault->mirror;
-+	struct hmm_event *event = mirror_fault->event;
-+	struct hmm_pt_iter *iter = mirror_fault->iter;
-+	bool write = (event->etype == HMM_DEVICE_WFAULT);
-+	unsigned long addr;
-+	int ret = 0;
++	dma_addr_t *ptdp;
++	unsigned i;
 +
-+	/* Make sure there was no gap. */
-+	if (start != mirror_fault->addr)
-+		return -ENOENT;
++	if (level == pt->llevel)
++		return;
 +
-+	if (event->backoff)
-+		return -EAGAIN;
++	ptdp = kmap(ptd);
++	for (i = 0; i <= pt->directory_mask; ++i) {
++		struct page *lptd;
 +
-+	if (pmd_none(*pmdp))
-+		return -ENOENT;
-+
-+	if (pmd_trans_huge(*pmdp))
-+		return hmm_mirror_fault_hpmd(mirror, event, mirror_fault->vma,
-+					     iter, pmdp, mirror_fault, start,
-+					     end);
-+
-+	if (pmd_none_or_trans_huge_or_clear_bad(pmdp))
-+		return -EFAULT;
-+
-+	for (ret = 0, addr = start; !ret && addr < end;) {
-+		unsigned long i = 0, hmm_end, next;
-+		dma_addr_t *hmm_pte;
-+		pte_t *ptep;
-+
-+		hmm_pte = hmm_pt_iter_fault(iter, &mirror->pt, addr);
-+		if (!hmm_pte)
-+			return -ENOMEM;
-+
-+		hmm_end = hmm_pt_level_next(&mirror->pt, addr, end,
-+					    mirror->pt.llevel - 1);
-+		ptep = pte_offset_map(pmdp, start);
-+		hmm_pt_iter_directory_lock(iter, &mirror->pt);
-+		do {
-+			next = hmm_pt_level_next(&mirror->pt, addr, hmm_end,
-+						 mirror->pt.llevel);
-+			if (!pte_present(*ptep) || (write && !pte_write(*ptep))) {
-+				ret = -ENOENT;
-+				ptep++;
-+				break;
-+			}
-+
-+			if (!(hmm_pte[i] & HMM_PTE_VALID)) {
-+				hmm_pte[i] = hmm_pte_from_pfn(pte_pfn(*ptep));
-+				hmm_pt_iter_directory_ref(iter,
-+							  mirror->pt.llevel);
-+			}
-+			BUG_ON(hmm_pte_pfn(hmm_pte[i]) != pte_pfn(*ptep));
-+			hmm_pte[i] |= pte_write(*ptep) ? HMM_PTE_WRITE : 0;
-+		} while (addr = next, ptep++, i++, addr != hmm_end);
-+		hmm_pt_iter_directory_unlock(iter, &mirror->pt);
-+		pte_unmap(ptep - 1);
-+		mirror_fault->addr = addr;
++		if (!(ptdp[i] & HMM_PTE_VALID))
++			continue;
++		lptd = pfn_to_page(hmm_pte_pfn(ptdp[i]));
++		ptdp[i] = 0;
++		hmm_pt_fini_directory(pt, lptd, level + 1);
++		atomic_set(&ptd->_mapcount, -1);
++		__free_page(ptd);
 +	}
-+
-+	return ret;
++	kunmap(ptd);
 +}
 +
-+static int hmm_mirror_handle_fault(struct hmm_mirror *mirror,
-+				   struct hmm_event *event,
-+				   struct vm_area_struct *vma,
-+				   struct hmm_pt_iter *iter)
++/* hmm_pt_fini() - finalize HMM page table.
++ *
++ * @pt: HMM page table to finalize.
++ *
++ * This function will free all resources of a directory page table.
++ */
++void hmm_pt_fini(struct hmm_pt *pt)
 +{
-+	struct hmm_mirror_fault mirror_fault;
-+	unsigned long addr = event->start;
-+	struct mm_walk walk = {0};
-+	int ret = 0;
++	unsigned i;
 +
-+	if ((event->etype == HMM_DEVICE_WFAULT) && !(vma->vm_flags & VM_WRITE))
-+		return -EACCES;
++	/* Free all directory. */
++	for (i = 0; i <= (pt->last >> pt->shift[0]); ++i) {
++		struct page *ptd;
 +
-+	ret = hmm_device_fault_start(mirror->hmm, event);
-+	if (ret)
-+		return ret;
-+
-+again:
-+	if (event->backoff) {
-+		ret = -EAGAIN;
-+		goto out;
-+	}
-+	if (addr >= event->end)
-+		goto out;
-+
-+	mirror_fault.event = event;
-+	mirror_fault.mirror = mirror;
-+	mirror_fault.vma = vma;
-+	mirror_fault.addr = addr;
-+	mirror_fault.iter = iter;
-+	walk.mm = mirror->hmm->mm;
-+	walk.private = &mirror_fault;
-+	walk.pmd_entry = hmm_mirror_fault_pmd;
-+	ret = walk_page_range(addr, event->end, &walk);
-+	if (!ret) {
-+		struct hmm_fence *fence;
-+
-+		fence = mirror->device->ops->update(mirror, event);
-+		if (fence) {
-+			if (IS_ERR(fence)) {
-+				ret = PTR_ERR(fence);
-+				goto out;
-+			} else {
-+				fence->mirror = mirror;
-+				list_add_tail(&fence->list, &event->fences);
-+			}
-+		}
-+		addr = mirror_fault.addr;
-+		goto again;
++		if (!(pt->pgd[i] & HMM_PTE_VALID))
++			continue;
++		ptd = pfn_to_page(hmm_pte_pfn(pt->pgd[i]));
++		pt->pgd[i] = 0;
++		hmm_pt_fini_directory(pt, ptd, 1);
++		atomic_set(&ptd->_mapcount, -1);
++		__free_page(ptd);
 +	}
 +
-+out:
-+	hmm_device_fault_end(mirror->hmm, event);
-+	if (ret == -ENOENT) {
-+		ret = hmm_mm_fault(mirror->hmm, event, vma, addr);
-+		ret = ret ? ret : -EAGAIN;
-+	}
-+	return ret;
++	kfree(pt->pgd);
++	pt->pgd = NULL;
 +}
++EXPORT_SYMBOL(hmm_pt_fini);
 +
-+int hmm_mirror_fault(struct hmm_mirror *mirror, struct hmm_event *event)
++
++/* hmm_pt_init() - initialize iterator states.
++ *
++ * @iter: Iterator states.
++ *
++ * This function will initialize iterator states. It must always be pair with a
++ * call to hmm_pt_iter_fini().
++ */
++void hmm_pt_iter_init(struct hmm_pt_iter *iter)
 +{
-+	struct vm_area_struct *vma;
-+	struct hmm_pt_iter iter;
-+	int ret = 0;
++	memset(iter->ptd, 0, sizeof(void *) * (HMM_PT_MAX_LEVEL - 1));
++	memset(iter->ptdp, 0, sizeof(void *) * (HMM_PT_MAX_LEVEL - 1));
++	INIT_LIST_HEAD(&iter->dead_directories);
++}
++EXPORT_SYMBOL(hmm_pt_iter_init);
 +
-+	if (!mirror || event->start >= mirror->hmm->vm_end)
-+		return -EINVAL;
-+	if (hmm_event_init(event, mirror->hmm, event->start,
-+			   event->end, event->etype))
-+		return -EINVAL;
-+	hmm_pt_iter_init(&iter);
++/* hmm_pt_iter_directory_unref_safe() - unref a directory that is safe to free.
++ *
++ * @iter: Iterator states.
++ * @pt: HMM page table.
++ * @level: Level of the directory to unref.
++ *
++ * This function will unreference a directory and add it to dead list if
++ * directory no longer have any reference. It will also clear the entry to
++ * that directory into the upper level directory as well as dropping ref
++ * on the upper directory.
++ */
++static void hmm_pt_iter_directory_unref_safe(struct hmm_pt_iter *iter,
++					     struct hmm_pt *pt,
++					     unsigned level)
++{
++	struct page *upper_ptd;
++	dma_addr_t *upper_ptdp;
 +
-+retry:
-+	if (hmm_mirror_is_stopped(mirror))
-+		return -ENODEV;
++	/* Nothing to do for root level. */
++	if (!level)
++		return;
++
++	if (!atomic_dec_and_test(&iter->ptd[level - 1]->_mapcount))
++		return;
++
++	upper_ptd = level > 1 ? iter->ptd[level - 2] : NULL;
++	upper_ptdp = level > 1 ? iter->ptdp[level - 2] : pt->pgd;
++	upper_ptdp = &upper_ptdp[hmm_pt_index(pt, iter->cur, level - 1)];
++	hmm_pt_directory_lock(pt, upper_ptd, level - 1);
++	/*
++	 * There might be race btw decrementing reference count on a directory
++	 * and another thread trying to fault in a new directory. To avoid
++	 * erasing the new directory entry we need to check that the entry
++	 * still correspond to the directory we are removing.
++	 */
++	if (hmm_pte_pfn(*upper_ptdp) == page_to_pfn(iter->ptd[level - 1]))
++		*upper_ptdp = 0;
++	hmm_pt_directory_unlock(pt, upper_ptd, level - 1);
++
++	/* Add it to delayed free list. */
++	list_add_tail(&iter->ptd[level - 1]->lru, &iter->dead_directories);
 +
 +	/*
-+	 * So synchronization with the cpu page table is the most important
-+	 * and tedious aspect of device page fault. There must be a strong
-+	 * ordering btw call to device->update() for device page fault and
-+	 * device->update() for cpu page table invalidation/update.
-+	 *
-+	 * Page that are exposed to device driver must stay valid while the
-+	 * callback is in progress ie any cpu page table invalidation that
-+	 * render those pages obsolete must call device->update() after the
-+	 * device->update() call that faulted those pages.
-+	 *
-+	 * To achieve this we rely on few things. First the mmap_sem insure
-+	 * us that any munmap() syscall will serialize with us. So issue are
-+	 * with unmap_mapping_range() and with migrate or merge page. For this
-+	 * hmm keep track of affected range of address and block device page
-+	 * fault that hit overlapping range.
++	 * The upper directory is not safe to unref as we have an extra ref and
++	 * thus refcount should not reach 0.
 +	 */
-+	down_read(&mirror->hmm->mm->mmap_sem);
-+	vma = find_vma_intersection(mirror->hmm->mm, event->start, event->end);
-+	if (!vma) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+	if (vma->vm_start > event->start) {
-+		event->end = vma->vm_start;
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+	event->end = min(event->end, vma->vm_end) & PAGE_MASK;
-+	if ((vma->vm_flags & (VM_IO | VM_PFNMAP | VM_MIXEDMAP | VM_HUGETLB))) {
-+		ret = -EFAULT;
-+		goto out;
-+	}
-+
-+	switch (event->etype) {
-+	case HMM_DEVICE_RFAULT:
-+	case HMM_DEVICE_WFAULT:
-+		ret = hmm_mirror_handle_fault(mirror, event, vma, &iter);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+out:
-+	/* Drop the mmap_sem so anyone waiting on it have a chance. */
-+	up_read(&mirror->hmm->mm->mmap_sem);
-+	wake_up(&mirror->hmm->wait_queue);
-+	if (ret == -EAGAIN)
-+		goto retry;
-+	hmm_pt_iter_fini(&iter, &mirror->pt);
-+	return ret;
++	hmm_pt_iter_directory_unref(iter, level - 1);
 +}
-+EXPORT_SYMBOL(hmm_mirror_fault);
 +
- /* hmm_mirror_register() - register mirror against current process for a device.
-  *
-  * @mirror: The mirror struct being registered.
++static void hmm_pt_iter_unprotect_directory(struct hmm_pt_iter *iter,
++					    struct hmm_pt *pt,
++					    unsigned level)
++{
++	if (!iter->ptd[level - 1])
++		return;
++	kunmap(iter->ptd[level - 1]);
++	hmm_pt_iter_directory_unref_safe(iter, pt, level);
++	iter->ptd[level - 1] = NULL;
++}
++
++/* hmm_pt_iter_protect_directory() - protect a directory.
++ *
++ * @iter: Iterator states.
++ * @ptd: directory struct page to protect.
++ * @addr: Address of the directory.
++ * @level: Level of this directory (> 0).
++ * Returns -EINVAL on error, 1 if protection succeeded, 0 otherwise.
++ *
++ * This function will proctect a directory by taking a reference. It will also
++ * map the directory to allow cpu access.
++ *
++ * Call to this function must be made from inside the rcu read critical section
++ * that convert the table entry to the directory struct page. Doing so allow to
++ * support concurrent removal of directory because this function will take the
++ * reference inside the rcu critical section and thus rcu synchronization will
++ * garanty that we can safely free directory.
++ */
++int hmm_pt_iter_protect_directory(struct hmm_pt_iter *iter,
++				  struct page *ptd,
++				  unsigned long addr,
++				  unsigned level)
++{
++	/* This must be call inside rcu read section. */
++	BUG_ON(!rcu_read_lock_held());
++
++	if (!level || iter->ptd[level - 1]) {
++		rcu_read_unlock();
++		return -EINVAL;
++	}
++
++	if (!atomic_inc_not_zero(&ptd->_mapcount)) {
++		rcu_read_unlock();
++		return 0;
++	}
++
++	rcu_read_unlock();
++
++	iter->ptd[level - 1] = ptd;
++	iter->ptdp[level - 1] = kmap(ptd);
++	iter->cur = addr;
++
++	return 1;
++}
++
++unsigned long hmm_pt_iter_next(struct hmm_pt_iter *iter,
++			       struct hmm_pt *pt,
++			       unsigned long addr,
++			       unsigned long end)
++{
++	unsigned i;
++
++	for (i = pt->llevel; i >= 1; --i) {
++		if (!iter->ptd[i - 1])
++			continue;
++		if (addr >= hmm_pt_level_start(pt, iter->cur, i) &&
++		    addr < hmm_pt_level_end(pt, iter->cur, i))
++			return hmm_pt_level_next(pt, iter->cur, end, i);
++	}
++
++	/*
++	 * No need for rcu protection worst case is we return a now dead
++	 * address.
++	 */
++	if (pt->pgd[hmm_pt_index(pt, addr, 0)] & HMM_PTE_VALID)
++		return hmm_pt_level_next(pt, addr, end, pt->llevel);
++	for (; addr < end; addr = hmm_pt_level_next(pt, addr, end, 0))
++		if (pt->pgd[hmm_pt_index(pt, addr, 0)] & HMM_PTE_VALID)
++			return addr;
++	return end;
++}
++EXPORT_SYMBOL(hmm_pt_iter_next);
++
++dma_addr_t *hmm_pt_iter_update(struct hmm_pt_iter *iter,
++			       struct hmm_pt *pt,
++			       unsigned long addr)
++{
++	int i;
++
++	addr &= PAGE_MASK;
++
++	if (iter->ptd[pt->llevel - 1] &&
++	    addr >= hmm_pt_level_start(pt, iter->cur, pt->llevel) &&
++	    addr < hmm_pt_level_end(pt, iter->cur, pt->llevel))
++		return hmm_pt_iter_ptdp(iter, pt, addr);
++
++	/* First unprotect any directory that do not cover the address. */
++	for (i = pt->llevel; i >= 1; --i) {
++		if (!iter->ptd[i - 1])
++			continue;
++		if (addr >= hmm_pt_level_start(pt, iter->cur, i) &&
++		    addr < hmm_pt_level_end(pt, iter->cur, i))
++			break;
++		hmm_pt_iter_unprotect_directory(iter, pt, i);
++	}
++
++	/* Walk down to last level of the directory tree. */
++	for (; i < pt->llevel; ++i) {
++		struct page *ptd;
++		dma_addr_t pte, *ptdp;
++
++		rcu_read_lock();
++		ptdp = i ? iter->ptdp[i - 1] : pt->pgd;
++		pte = ACCESS_ONCE(ptdp[hmm_pt_index(pt, addr, i)]);
++		if (!(pte & HMM_PTE_VALID)) {
++			rcu_read_unlock();
++			return NULL;
++		}
++		ptd = pfn_to_page(hmm_pte_pfn(pte));
++		/* RCU read unlock inside hmm_pt_iter_protect_directory(). */
++		if (hmm_pt_iter_protect_directory(iter, ptd, addr, i + 1) != 1)
++			return NULL;
++	}
++
++	return hmm_pt_iter_ptdp(iter, pt, addr);
++}
++EXPORT_SYMBOL(hmm_pt_iter_update);
++
++dma_addr_t *hmm_pt_iter_fault(struct hmm_pt_iter *iter,
++			      struct hmm_pt *pt,
++			      unsigned long addr)
++{
++	dma_addr_t *ptdp = hmm_pt_iter_update(iter, pt, addr);
++	struct page *new = NULL;
++	int i;
++
++	if (ptdp)
++		return ptdp;
++
++	/* Populate directory tree structures. */
++	for (i = 1; i <= pt->llevel; ++i) {
++		struct page *upper_ptd;
++		dma_addr_t *upper_ptdp;
++
++		if (iter->ptd[i - 1])
++			continue;
++
++		new = new ? new : alloc_page(GFP_HIGHUSER | __GFP_ZERO);
++		if (!new)
++			return NULL;
++
++		upper_ptd = i > 1 ? iter->ptd[i - 2] : NULL;
++		upper_ptdp = i > 1 ? iter->ptdp[i - 2] : pt->pgd;
++		upper_ptdp = &upper_ptdp[hmm_pt_index(pt, addr, i - 1)];
++		hmm_pt_directory_lock(pt, upper_ptd, i - 1);
++		if (((*upper_ptdp) & HMM_PTE_VALID)) {
++			struct page *ptd;
++
++			ptd = pfn_to_page(hmm_pte_pfn(*upper_ptdp));
++			if (atomic_inc_not_zero(&ptd->_mapcount)) {
++				/* Already allocated by another thread. */
++				iter->ptd[i - 1] = ptd;
++				hmm_pt_directory_unlock(pt, upper_ptd, i - 1);
++				iter->ptdp[i - 1] = kmap(ptd);
++				iter->cur = hmm_pt_level_start(pt, addr, i);
++				continue;
++			}
++			/*
++			 * Means we raced with removal of dead directory it is
++			 * safe to overwritte *upper_ptdp entry with new entry.
++			 */
++		}
++		/* Initialize struct page field for the directory. */
++		atomic_set(&new->_mapcount, 1);
++#if USE_SPLIT_PTE_PTLOCKS && !ALLOC_SPLIT_PTLOCKS
++		spin_lock_init(&new->ptl);
++#endif
++		*upper_ptdp = hmm_pte_from_pfn(page_to_pfn(new));
++		hmm_pt_iter_directory_ref(iter, i - 1);
++		/* Unlock upper directory and map the new directory. */
++		hmm_pt_directory_unlock(pt, upper_ptd, i - 1);
++		iter->ptd[i - 1] = new;
++		iter->ptdp[i - 1] = kmap(new);
++		iter->cur = hmm_pt_level_start(pt, addr, i);
++		new = NULL;
++	}
++	if (new)
++		__free_page(new);
++	return hmm_pt_iter_ptdp(iter, pt, addr);
++}
++
++/* hmm_pt_iter_fini() - finalize iterator.
++ *
++ * @iter: Iterator states.
++ * @pt: HMM page table.
++ *
++ * This function will cleanup iterator by unmapping and unreferencing any
++ * directory still mapped and referenced. It will also free any dead directory.
++ */
++void hmm_pt_iter_fini(struct hmm_pt_iter *iter, struct hmm_pt *pt)
++{
++	struct page *ptd, *tmp;
++	unsigned i;
++
++	for (i = pt->llevel; i >= 1; --i) {
++		if (!iter->ptd[i - 1])
++			continue;
++		hmm_pt_iter_unprotect_directory(iter, pt, i);
++	}
++
++	/* Avoid useless synchronize_rcu() if there is no directory to free. */
++	if (list_empty(&iter->dead_directories))
++		return;
++
++	/*
++	 * Some iterator may have dereferenced a dead directory entry and looked
++	 * up the struct page but haven't check yet the reference count. As all
++	 * the above happen in rcu read critical section we know that we need
++	 * to wait for grace period before being able to free any of the dead
++	 * directory page.
++	 */
++	synchronize_rcu();
++	list_for_each_entry_safe(ptd, tmp, &iter->dead_directories, lru) {
++		list_del(&ptd->lru);
++		atomic_set(&ptd->_mapcount, -1);
++		__free_page(ptd);
++	}
++}
++EXPORT_SYMBOL(hmm_pt_iter_fini);
 -- 
 1.9.3
 
