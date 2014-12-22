@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916AbaLVS5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 13:57:30 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:34626 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555AbaLVS52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 13:57:28 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: System automatically wakes up because of Intel Rapid Start Technology
-Date: Mon, 22 Dec 2014 19:57:25 +0100
-Message-ID: <6760597.z8zpCLmhLz@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <2403684.tbaxlpZUxO@xps13>
-References: <9927036.n7iZq92iLW@xps13> <20141222180254.GA13985@srcf.ucam.org> <2403684.tbaxlpZUxO@xps13>
+	id S1754953AbaLVTAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:00:43 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60364 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754378AbaLVTAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 14:00:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="432256260"
+Date: Mon, 22 Dec 2014 11:00:41 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: rusty@rustcorp.com.au, Dana Elifaz <Dana.Elifaz@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Oded Gabbay <oded.gabbay@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit
+ kernel
+Message-ID: <20141222190041.GC17192@tassilo.jf.intel.com>
+References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
+ <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com>
+ <20141222184940.GB17192@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141222184940.GB17192@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 December 2014 19:41:52 Gabriele Mazzotta wrote:
-> On Monday 22 December 2014 18:02:54 Matthew Garrett wrote:
-> > Getting this right is a little bit annoying - if the timer would have 
-> > expired during the time we were suspended, we don't want to re-enable 
-> > it. I *think* this covers all cases, and does it in generic code rather 
-> > than special-casing it. Any chance you can give it a test?
+On Mon, Dec 22, 2014 at 10:49:40AM -0800, Andi Kleen wrote:
+> On Mon, Dec 22, 2014 at 11:58:43AM -0500, Alex Deucher wrote:
+> > On Mon, Dec 22, 2014 at 6:11 AM, Oded Gabbay <oded.gabbay@amd.com> wrote:
+> > > amdkfd driver can be compiled only in 64-bit kernel. Therefore, there is no
+> > > point in trying to initialize amdkfd in 32-bit kernel.
+> > >
+> > > In addition, in case of specific configuration of 32-bit kernel, no modules and
+> > > random kernel base, the symbol_request function doesn't work as expected - It
+> > > doesn't return NULL if the symbol doesn't exists. That makes the kernel panic.
+> > > Therefore, the as amdkfd doesn't compile in 32-bit kernel, the best way is just
+> > > to return false immediately.
+> > >
+> > > Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+> > 
+> > Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 > 
-> I've done a quick test. has_persistent_clock() is false on my system,
-> so this patch has no effect as it is.
+> Sorry but the patch is just bogus. X-bit only code is usually
+> a very bad sign for the code. This is not windows programing after all.
+> 
+> Even if you wanted to do a 64bit only driver -- which
+> you probably don't -- the standard way would be to exclude
+> it in Kconfig.
+> 
+> Please root-cause why symbol_request doesn't work on 32bit
+> and fix it properly.
+> 
+> +rusty.
 
-I did another quick test and moved the code so that it is executed
-before has_persistent_clock() is checked. Everything seems to be
-working as intended. I tried to suspend and resume multiple times
-within one minute and exactly one minute after the last suspension
-the system transitioned from S3 to S4.
+And also with correct email.
 
-I haven't checked properly whether it is OK or not to simply move
-the code or not, but I wanted to let you know that it works.
-
-> > diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-> > index 472a5ad..4e3a2a1 100644
-> > --- a/drivers/rtc/class.c
-> > +++ b/drivers/rtc/class.c
-> > @@ -91,6 +91,8 @@ static int rtc_suspend(struct device *dev)
-> >  		old_system = timespec64_sub(old_system, delta_delta);
-> >  	}
-> >  
-> > +	rtc->valid_alarm = !rtc_read_alarm(rtc, &rtc->alarm);
-> > +
-> >  	return 0;
-> >  }
-> >  
-> > @@ -145,6 +147,29 @@ static int rtc_resume(struct device *dev)
-> >  	if (sleep_time.tv_sec >= 0)
-> >  		timekeeping_inject_sleeptime64(&sleep_time);
-> >  	rtc_hctosys_ret = 0;
-> > +
-> > +	/*
-> > +	 * If there was an alarm set before suspend, make sure that the
-> > +	 * platform hasn't overwritten it
-> > +	 */
-> > +	if (rtc->valid_alarm) {
-> > +		struct rtc_time tm;
-> > +		long now, scheduled;
-> > +
-> > +		rtc_read_time(rtc, &tm);
-> > +		rtc_tm_to_time(&rtc->alarm.time, &scheduled);
-> > +		rtc_tm_to_time(&tm, &now);
-> > +
-> > +		/* Clear the alarm if it went off during suspend */
-> > +		if (scheduled <= now) {
-> > +			rtc_time_to_tm(0, &rtc->alarm.time);
-> > +			rtc->alarm.enabled = 0;
-> > +		}
-> > +
-> > +		if (rtc->ops && rtc->ops->set_alarm)
-> > +			rtc->ops->set_alarm(rtc->dev.parent, &rtc->alarm);
-> > +	}
-> > +
-> >  	return 0;
-> >  }
-> >  
-> > diff --git a/include/linux/rtc.h b/include/linux/rtc.h
-> > index 6d6be09..bc805ff 100644
-> > --- a/include/linux/rtc.h
-> > +++ b/include/linux/rtc.h
-> > @@ -133,6 +133,10 @@ struct rtc_device
-> >  	/* Some hardware can't support UIE mode */
-> >  	int uie_unsupported;
-> >  
-> > +#ifdef CONFIG_PM_SLEEP
-> > +	struct rtc_wkalrm alarm;
-> > +	bool valid_alarm;
-> > +#endif
-> >  #ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
-> >  	struct work_struct uie_task;
-> >  	struct timer_list uie_timer;
-> > 
-> > 
-> > 
-
+-Andi
