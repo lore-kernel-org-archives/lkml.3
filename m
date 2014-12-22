@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646AbaLVVFl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 16:05:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37327 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573AbaLVVFk (ORCPT
+	id S1755577AbaLVVJs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 16:09:48 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:61378 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888AbaLVVJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 16:05:40 -0500
-Date: Mon, 22 Dec 2014 13:05:39 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Toshi Kikuchi <toshik@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/genalloc.c: fix the end addr check in
- addr_in_gen_pool()
-Message-Id: <20141222130539.8bcb58ffa9db2258204bf807@linux-foundation.org>
-In-Reply-To: <1418956259-13003-1-git-send-email-toshik@chromium.org>
-References: <1418956259-13003-1-git-send-email-toshik@chromium.org>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Dec 2014 16:09:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <1419261091-29888-2-git-send-email-p.zabel@pengutronix.de>
+References: <1419261091-29888-1-git-send-email-p.zabel@pengutronix.de>
+	<1419261091-29888-2-git-send-email-p.zabel@pengutronix.de>
+Date: Mon, 22 Dec 2014 14:09:46 -0700
+Message-ID: <CANLsYkydZGBQa2KXyVsjp3PaAvfBtOSf+qa0yVdzidJbxcQybw@mail.gmail.com>
+Subject: Re: [PATCH v6 1/3] of: Decrement refcount of previous endpoint in of_graph_get_next_endpoint
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kernel@pengutronix.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014 18:30:59 -0800 Toshi Kikuchi <toshik@chromium.org> wrote:
-
-> Since chunk->end_addr is (chunk->start_addr + size - 1),
-> the end address to compare should be (start + size - 1).
-> 
-> Signed-off-by: Toshi Kikuchi <toshik@chromium.org>
+On 22 December 2014 at 08:11, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> Decrementing the reference count of the previous endpoint node allows to
+> use the of_graph_get_next_endpoint function in a for_each_... style macro.
+> All current users of this function that pass a non-NULL prev parameter
+> (that is, soc_camera and imx-drm) are changed to not decrement the passed
+> prev argument's refcount themselves.
+>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 > ---
->  lib/genalloc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/lib/genalloc.c b/lib/genalloc.c
-> index 2e65d20..42a95e9 100644
-> --- a/lib/genalloc.c
-> +++ b/lib/genalloc.c
-> @@ -415,7 +415,7 @@ bool addr_in_gen_pool(struct gen_pool *pool, unsigned long start,
->  			size_t size)
+> Changes since v5:
+>  - Rebased onto v3.19-rc1
+>  - Added coresight and rcar-du
+> ---
+>  drivers/coresight/of_coresight.c               | 13 ++-----------
+>  drivers/gpu/drm/imx/imx-drm-core.c             | 13 ++-----------
+>  drivers/gpu/drm/rcar-du/rcar_du_kms.c          | 15 ++++-----------
+>  drivers/media/platform/soc_camera/soc_camera.c |  3 ++-
+>  drivers/of/base.c                              |  9 +--------
+>  5 files changed, 11 insertions(+), 42 deletions(-)
+>
+> diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
+> index 5030c07..349c88b 100644
+> --- a/drivers/coresight/of_coresight.c
+> +++ b/drivers/coresight/of_coresight.c
+> @@ -52,15 +52,6 @@ of_coresight_get_endpoint_device(struct device_node *endpoint)
+>                                endpoint, of_dev_node_match);
+>  }
+>
+> -static struct device_node *of_get_coresight_endpoint(
+> -               const struct device_node *parent, struct device_node *prev)
+> -{
+> -       struct device_node *node = of_graph_get_next_endpoint(parent, prev);
+> -
+> -       of_node_put(prev);
+> -       return node;
+> -}
+> -
+>  static void of_coresight_get_ports(struct device_node *node,
+>                                    int *nr_inport, int *nr_outport)
 >  {
->  	bool found = false;
-> -	unsigned long end = start + size;
-> +	unsigned long end = start + size - 1;
->  	struct gen_pool_chunk *chunk;
->  
->  	rcu_read_lock();
+> @@ -68,7 +59,7 @@ static void of_coresight_get_ports(struct device_node *node,
+>         int in = 0, out = 0;
+>
+>         do {
+> -               ep = of_get_coresight_endpoint(node, ep);
+> +               ep = of_graph_get_next_endpoint(node, ep);
+>                 if (!ep)
+>                         break;
+>
+> @@ -140,7 +131,7 @@ struct coresight_platform_data *of_get_coresight_platform_data(
+>                 /* Iterate through each port to discover topology */
+>                 do {
+>                         /* Get a handle on a port */
+> -                       ep = of_get_coresight_endpoint(node, ep);
+> +                       ep = of_graph_get_next_endpoint(node, ep);
+>                         if (!ep)
+>                                 break;
+>
 
-urgh.  gen_pool_chunk.end_addr should have been made exclusive, not
-inclusive.  Or switch to start_addr/size.  The code would be
-considerably nicer that way.
-
-And the struct gen_pool_chunk definition should be moved into
-genalloc.c.  I'm not sure what drivers/acpi/apei/ghes.c is doing
-fiddling around with genalloc internals, but it should stop doing it.
-
-Sigh :(
+I tested this in my tree - ack.
