@@ -1,118 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaLVXQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 18:16:10 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41154 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753363AbaLVXQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 18:16:08 -0500
-Date: Mon, 22 Dec 2014 15:16:04 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-Message-ID: <20141222231604.GC8287@jaegeuk-mac02.mot.com>
-References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
- <20141222020317.GB3335@lcm>
- <000001d01db6$7d718770$78549650$@samsung.com>
+	id S1753847AbaLVXTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 18:19:10 -0500
+Received: from p3plsmtpa07-05.prod.phx3.secureserver.net ([173.201.192.234]:60646
+	"EHLO p3plsmtpa07-05.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751543AbaLVXTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 18:19:08 -0500
+Message-ID: <5498A6E8.8000600@lurklurk.org>
+Date: Mon, 22 Dec 2014 18:19:04 -0500
+From: David Drysdale <dmd@lurklurk.org>
+Reply-To: David Drysdale <drysdale@google.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001d01db6$7d718770$78549650$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Drysdale <drysdale@google.com>, torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, nab@linux-iscsi.org,
+        linux-kernel@vger.kernel.org, mmarek@suse.cz, jkosina@suse.cz
+Subject: Re: Linux 3.19-rc1 - merge window closed
+References: <CAHse=S-CGRrXPZXooHsnqO6BJytBKE4t=V_ESHL1m6Gjzeg9GQ@mail.gmail.com>
+In-Reply-To: <CAHse=S-CGRrXPZXooHsnqO6BJytBKE4t=V_ESHL1m6Gjzeg9GQ@mail.gmail.com>
+X-Forwarded-Message-Id: <CAHse=S-CGRrXPZXooHsnqO6BJytBKE4t=V_ESHL1m6Gjzeg9GQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+On 22 Dec 2014 18:02, "Linus Torvalds" <torvalds@linux-foundation.org> 
+wrote:
+  >
+  > On Mon, Dec 22, 2014 at 2:43 PM, Nicholas A. Bellinger
+  > <nab@linux-iscsi.org> wrote:
+  > > On Mon, 2014-12-22 at 21:56 +0100, Jiri Kosina wrote:
+  > >> On Mon, 22 Dec 2014, Andrew Morton wrote:
+  > >>
+  > >> > On Sat, 20 Dec 2014 23:11:39 -0800 "Nicholas A. Bellinger"
+<nab@linux-iscsi.org> wrote:
+  > >> >
+  > >> > > Just hit the following build failure with CONFIG_AUDIT=y:
+  > >> > >
+  > >> > > arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
+  > >> > > arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared
+(first use in this function)
+  > >> > > arch/x86/ia32/audit.c:38:7: note: each undeclared identifier
+is reported only once for each function it appears in
+  > >> > > make[2]: *** [arch/x86/ia32/audit.o] Error 1
+  > >> > > make[1]: *** [arch/x86/ia32] Error 2
+  > >> > > make: *** [arch/x86] Error 2
+  > >> > > make: *** Waiting for unfinished jobs....
+  > >> >
+  > >
+  > > Yep, post 'make mrproper' builds with CONFIG_AUDIT=y don't hit this
+  > > failure.
+  > >
+  > > The previous build was with v3.18-rc2 btw.
+  >
+  > Hmm. So it seems that there is something wrong with the dependency
+  > generation for the generated header files. Possibly limited to just
+  > the uapi files.
+  >
+  > But I can't seem to recreate it even by trying to first build 3.18-rc2
+  > and then switching to 3.19-rc1. So there's something
+  > not-very-straightforward going on, possibly including some nasty race
+  > in the Makefiles.
+  >
+  >                          Linus
 
-On Mon, Dec 22, 2014 at 03:10:30PM +0800, Chao Yu wrote:
-> Hi Changman,
-> 
-> > -----Original Message-----
-> > From: Changman Lee [mailto:cm224.lee@samsung.com]
-> > Sent: Monday, December 22, 2014 10:03 AM
-> > To: Chao Yu
-> > Cc: Jaegeuk Kim; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > 
-> > Hi Yu,
-> > 
-> > Good approach.
-> 
-> Thank you. :)
-> 
-> > As you know, however, f2fs breaks extent itself due to COW.
-> 
-> Yes, and sometimes f2fs use IPU when override writing, in this condition,
-> by using this approach we can cache more contiguous mapping extent for better
-> performance.
+When this occurred previously, I also failed to reproduce it.  However, 
+it appeared (https://lkml.org/lkml/2014/11/25/542) to specifically 
+involve a stale copy of arch/x86/include/generated/asm/unistd_32.h.
 
-Hmm. When f2fs faces with this case, there is no chance to make an extent itself
-at all.
-
-> 
-> > Unlike other filesystem like btrfs, minimum extent of f2fs could have 4KB granularity.
-> > So we would have lots of extents per inode and it could lead to overhead
-> > to manage extents.
-> 
-> Agree, the more number of extents are growing in one inode, the more memory
-> pressure and longer latency operating in rb-tree we are facing.
-> IMO, to solve this problem, we'd better to add limitation or shrink ability into
-> extent cache:
-> 1.limit extent number per inode with the value set from sysfs and discard extent
-> from inode's extent lru list if we touch the limitation; (e.g. in FAT, max number
-> of mapping extent per inode is fixed: 8)
-> 2.add all extents of inodes into a global lru list, we will try to shrink this list
-> if we're facing memory pressure.
-> 
-> How do you think? or any better ideas are welcome. :)
-
-Historically, the reason that I added only one small extent cache is that I
-wanted to avoid additional data structures having any overhead in critical data
-write path.
-Instead, I intended to use a well operating node page cache.
-
-We need to consider what would be the benefit when using extent cache rather
-than existing node page cache.
-
-Thanks,
-
-> 
-> > 
-> > Anyway, mount option could be alternative for this patch.
-> 
-> Yes, will do.
-> 
-> Thanks,
-> Yu
-> 
-> > 
-> > On Fri, Dec 19, 2014 at 06:49:29PM +0800, Chao Yu wrote:
-> > > Now f2fs have page-block mapping cache which can cache only one extent mapping
-> > > between contiguous logical address and physical address.
-> > > Normally, this design will work well because f2fs will expand coverage area of
-> > > the mapping extent when we write forward sequentially. But when we write data
-> > > randomly in Out-Place-Update mode, the extent will be shorten and hardly be
-> > > expanded for most time as following reasons:
-> > > 1.The short part of extent will be discarded if we break contiguous mapping in
-> > > the middle of extent.
-> > > 2.The new mapping will be added into mapping cache only at head or tail of the
-> > > extent.
-> > > 3.We will drop the extent cache when the extent became very fragmented.
-> > > 4.We will not update the extent with mapping which we get from readpages or
-> > > readpage.
-> > >
-> > > To solve above problems, this patch adds extent cache base on rb-tree like other
-> > > filesystems (e.g.: ext4/btrfs) in f2fs. By this way, f2fs can support another
-> > > more effective cache between dnode page cache and disk. It will supply high hit
-> > > ratio in the cache with fewer memory when dnode page cache are reclaimed in
-> > > environment of low memory.
-> > >
-> > > Todo:
-> > > *introduce mount option for extent cache.
-> > > *add shrink ability for extent cache.
-> > >
-> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > ---
+David
