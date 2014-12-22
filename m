@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004AbaLVWY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 17:24:59 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:54347 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853AbaLVWY5 (ORCPT
+	id S1753908AbaLVW1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 17:27:42 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:47386 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbaLVW1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 17:24:57 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com
-Subject: Re: [RFC v1 PATCH 1/2] of/pci: add of_pci_dma_configure() update dma configuration
-Date: Mon, 22 Dec 2014 23:24:33 +0100
-Message-ID: <2285493.QXo0OxClZ5@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54988FDB.8000108@ti.com>
-References: <1418940425-2017-1-git-send-email-m-karicheri2@ti.com> <11285984.OK9CqQGmjZ@wuerfel> <54988FDB.8000108@ti.com>
+	Mon, 22 Dec 2014 17:27:41 -0500
+Date: Mon, 22 Dec 2014 14:27:39 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave.hansen@linux.intel.com>
+cc: Rafael Aquini <aquini@redhat.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, oleg@redhat.com, linux-mm@kvack.org
+Subject: Re: [PATCH] proc: task_mmu: show page size in
+ /proc/<pid>/numa_maps
+In-Reply-To: <5495A698.4050707@linux.intel.com>
+Message-ID: <alpine.DEB.2.10.1412221422120.11431@chino.kir.corp.google.com>
+References: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com> <5495A698.4050707@linux.intel.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:s4JTSFr1G6h9UWEP+abvC652jVLKlu8FMR1T+CdefR5mWJip/Pb
- tJLkHZFOnUaShNfZOi2+Ij+aaWhgrWS9BkuI64q9F8oaTr3rsn6Eod+oNptelFc3dLjWLHD
- T3stBgDU/dOh/fim0XqlonZfcMuk7tZAnXf7UHP/bpR/qb55K9UFJIdnz2O7A505o6KJ68b
- AL18Faxy8dRDPr6aPKm9Q==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 December 2014 16:40:43 Murali Karicheri wrote:
-> >> +++ b/arch/arm/mm/dma-mapping.c
-> >> @@ -2052,9 +2052,10 @@ void arch_setup_dma_ops(struct device *dev, u64
-> >> dma_base, u64 size,
-> >>                           struct iommu_ops *iommu, bool coherent)
-> >>    {
-> >>           struct dma_map_ops *dma_ops;
-> >> +       u64 temp_size = min((*(dev->dma_mask) + 1), size);
-> >>
-> >>           dev->archdata.dma_coherent = coherent;
-> >> -       if (arm_setup_iommu_dma_ops(dev, dma_base, size, iommu))
-> >> +       if (arm_setup_iommu_dma_ops(dev, dma_base, temp_size, iommu))
-> >>
-> >> If you agree, I will post v1 of the patch with these updates. Let me
-> >> know. I did some basic tests on Keystone with these changes and it works
-> >> fine.
-> >
-> > It's not exactly what I meant. My main point was that we need to limit
-> > dev->dma_mask to (size-1) here, but you are not touching that.
+On Sat, 20 Dec 2014, Dave Hansen wrote:
+
+> I sometimes wonder what 'numa_maps' purpose is any if we should have
+> _some_ kind of policy about what goes in there vs. smaps.  numa_maps
+> seems to be turning in to smaps, minus the \n. :)
 > 
-> if you mean overriding the dev->dma_mask to min((*dev->dma_mask), 
-> size-1), then I am getting the error "Coherent DMA mask 0x7fffffff (pfn 
-> 0x780000-0x800000) covers a smaller range of system memory than the DMA 
-> zone pfn 0x0-0x880000) when the devices on Keystone tries to set the dma 
-> mask. Something wrong and I need to look into the code.
 
-Right, it sounds like the offset was applied incorrectly at some point.
+It seems like an interface, similar to the one proposed by Ulrich, that 
+described the NUMA topology would have obsoleted numa_maps and you could 
+only rely on smaps to determine locality.  There's existing userspace 
+dependencies on numa_maps already, though, so owell.
 
-What are the DMA zone size and the phys-offset?
-
-	Arnd
+I had to fix numa_maps output when autonuma was merged for a much more 
+subtle difference at 
+http://marc.info/?l=git-commits-head&m=139113691614467 so I know some 
+people actually parse this and care quite a bit about its accuracy, it's a 
+shame it can't be deprecated in favor of adding the necessary information 
+to smaps.
