@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277AbaLVQ64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:58:56 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:60711 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932243AbaLVQ6n (ORCPT
+	id S932289AbaLVQ70 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:59:26 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:51763 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488AbaLVQ6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:58:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
-References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com>
-Date: Mon, 22 Dec 2014 11:58:43 -0500
-Message-ID: <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com>
-Subject: Re: [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: Alexander Deucher <Alexander.Deucher@amd.com>,
-        Dana Elifaz <Dana.Elifaz@amd.com>, LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Huang Ying <ying.huang@intel.com>, LKP ML <lkp@01.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Dec 2014 11:58:36 -0500
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Paul Bolle <pebolle@tiscali.nl>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH 3.19-rc1 v14 7/8] arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+Date: Mon, 22 Dec 2014 16:57:24 +0000
+Message-Id: <1419267445-8330-8-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1419267445-8330-1-git-send-email-daniel.thompson@linaro.org>
+References: <1419267445-8330-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 6:11 AM, Oded Gabbay <oded.gabbay@amd.com> wrote:
-> amdkfd driver can be compiled only in 64-bit kernel. Therefore, there is no
-> point in trying to initialize amdkfd in 32-bit kernel.
->
-> In addition, in case of specific configuration of 32-bit kernel, no modules and
-> random kernel base, the symbol_request function doesn't work as expected - It
-> doesn't return NULL if the symbol doesn't exists. That makes the kernel panic.
-> Therefore, the as amdkfd doesn't compile in 32-bit kernel, the best way is just
-> to return false immediately.
->
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+On EP93XX uncompress.h uses CONFIG_DEBUG_UART_PHYS instead of a hard
+coded serial port. This means the build breaks when DEBUG_LL
+(and DEBUG_LL_UART_PL01X) is not enabled.
 
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+This is fixed by adding a new dependency.
 
-> ---
->  drivers/gpu/drm/radeon/radeon_kfd.c | 4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
-> index 242fd8b..cb77e5c 100644
-> --- a/drivers/gpu/drm/radeon/radeon_kfd.c
-> +++ b/drivers/gpu/drm/radeon/radeon_kfd.c
-> @@ -101,6 +101,7 @@ static const struct kgd2kfd_calls *kgd2kfd;
->
->  bool radeon_kfd_init(void)
->  {
-> +#ifdef CONFIG_X86_64
->         bool (*kgd2kfd_init_p)(unsigned, const struct kfd2kgd_calls*,
->                                 const struct kgd2kfd_calls**);
->
-> @@ -117,6 +118,9 @@ bool radeon_kfd_init(void)
->         }
->
->         return true;
-> +#else
-> +       return false;
-> +#endif
->  }
->
->  void radeon_kfd_fini(void)
-> --
-> 1.9.1
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arm/Kconfig.debug | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index ff43ea38fe1f..e250505b9ae1 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -1370,7 +1370,8 @@ config DEBUG_UART_PHYS
+ 	default 0xfffb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
+ 	default 0xfffe8600 if DEBUG_UART_BCM63XX
+ 	default 0xfffff700 if ARCH_IOP33X
+-	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
++	depends on ARCH_EP93XX || \
++	        DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
+ 		DEBUG_LL_UART_EFM32 || \
+ 		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_MESON_UARTAO || \
+ 		DEBUG_MSM_UART || DEBUG_NETX_UART || \
+-- 
+1.9.3
+
