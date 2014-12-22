@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023AbaLVPs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:48:58 -0500
-Received: from know-smtprelay-omc-10.server.virginmedia.net ([80.0.253.74]:35497
-	"EHLO know-smtprelay-omc-10.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754843AbaLVPs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:48:57 -0500
-X-Originating-IP: [82.36.39.136]
-X-Spam: 0
-X-Authority: v=2.1 cv=dY0O3Bne c=1 sm=1 tr=0 a=h3ZJzbuz6X3s3VlFudNWSw==:117
- a=h3ZJzbuz6X3s3VlFudNWSw==:17 a=DrNGYBpgUcYA:10 a=N659UExz7-8A:10
- a=a5Gf7U6LAAAA:8 a=D19gQVrFAAAA:8 a=qYJF-06cJdgzHjE1qMkA:9 a=pILNOxqGKmIA:10
-Message-ID: <54983D66.6020506@blueyonder.co.uk>
-Date: Mon, 22 Dec 2014 15:48:54 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755154AbaLVPun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:50:43 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:41847 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588AbaLVPul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:50:41 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: System automatically wakes up because of Intel Rapid Start Technology
+Date: Mon, 22 Dec 2014 16:50:37 +0100
+Message-ID: <3318216.XHaCQKkcW4@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20141222145949.GB11844@srcf.ucam.org>
+References: <9927036.n7iZq92iLW@xps13> <20141222145949.GB11844@srcf.ucam.org>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Mark Hounschell <markh@compro.net>, linux-kernel@vger.kernel.org,
-        nouveau@lists.freedesktop.org
-Subject: Re: 3.19.0-rc1 nouvea build failure on GeForce GT 610 only
-References: <54981647.8010409@blueyonder.co.uk>	 <1419255471.30945.47.camel@x220> <1419256493.30945.53.camel@x220>
-In-Reply-To: <1419256493.30945.53.camel@x220>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/12/14 13:54, Paul Bolle wrote:
-> On Mon, 2014-12-22 at 14:37 +0100, Paul Bolle wrote:
->> On Mon, 2014-12-22 at 13:01 +0000, Sid Boyce wrote:
->>>     CHK     kernel/config_data.h
->>>     CC [M]  drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o
->>> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c: In function
->>> ‘nvd0_dmaobj_bind’:
->>> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: error:
->>> ‘GM204_DISP_CORE_CHANNEL_DMA’ undeclared (first use in this function)
->>>      case GM204_DISP_CORE_CHANNEL_DMA:
->>>           ^
->>> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: note: each
->>> undeclared identifier is reported only once for each function it appears in
->>> scripts/Makefile.build:257: recipe for target
->>> 'drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o' failed
->>> make[4]: *** [drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o] Error 1
->>> scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm/nouveau'
->>> failed
->>> make[3]: *** [drivers/gpu/drm/nouveau] Error 2
->>> scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm' failed
->>> make[2]: *** [drivers/gpu/drm] Error 2
->>> scripts/Makefile.build:402: recipe for target 'drivers/gpu' failed
->>> make[1]: *** [drivers/gpu] Error 2
->>> Makefile:938: recipe for target 'drivers' failed
->>> make: *** [drivers] Error 2
->>>
->>> 01:00.0 VGA compatible controller: NVIDIA Corporation GF119 [GeForce GT
->>> 610] (rev a1)
->> Why would that controller influence the build?
->>
->>> No problems on 2 other boxes with GeForce 8600 GT] (rev a1)
->> I ran into this error twice, while building Fedora 21 kernel rpms for
->> v3.19-rc1 on my outdated ThinkPad X41 (which uses i915, for what it's
->> worth). The error made very little sense to me. Especially since it
->> didn't happen when building in the local git repository.
->>
->> So I basically, well, scrubbed the rpmbuild environment. And then the
->> the third attempt to build kernels rpm succeeded! I assumed a hardware
->> failure (see outdated above) and made a mental note to investigate that
->> one of these days.
->>
->> But your report makes me think it's not my hardware. Could there be some
->> _random_ failure with this driver in the build? Very odd...
-> A theory based on Mark's message in
-> https://lkml.org/lkml/2014/12/8/602 :
->
-> My two failed builds somehow used previous version of class.h, that
-> didn't yet have commit 1f89b4756fb8 ("drm/gm204/disp: initial support")
-> applied. It's that commit which added the define for
-> GM204_DISP_CORE_CHANNEL_DMA.
->
-> Is that even possible? Perhaps rpmbuild has a surprising way to handle
-> symlinks? All very puzzling...
->
->
-> Paul Bolle
->
->
-I did a git pull up to 3.19-rc1 separately on the 3 boxes and used the 
-.config from 3.18.0 as the base of make oldconfig.
+On Monday 22 December 2014 14:59:49 Matthew Garrett wrote:
+> Can you try this diff?
 
-When the build failed I did "make mrproper" and used the .config from 
-one of the other boxes, then from the other, all 3 .config gave the same 
-error.
+Unfortunately it doesn't work (I made a change, see here below).
 
-Successfully rebooted one of the boxes.
-sabre:~ # uname -r
-3.19.0-rc1-smp+
+> diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+> index 5b2e761..637f980 100644
+> --- a/drivers/rtc/rtc-cmos.c
+> +++ b/drivers/rtc/rtc-cmos.c
+> @@ -48,6 +48,7 @@ struct cmos_rtc {
+>  	struct device		*dev;
+>  	int			irq;
+>  	struct resource		*iomem;
+> +	struct rtc_wkalrm	alm;
+>  
+>  	void			(*wake_on)(struct device *);
+>  	void			(*wake_off)(struct device *);
+> @@ -59,6 +60,8 @@ struct cmos_rtc {
+>  	u8			day_alrm;
+>  	u8			mon_alrm;
+>  	u8			century;
+> +
+> +	bool			valid_alarm;
+>  };
+>  
+>  /* both platform and pnp busses use negative numbers for invalid irqs */
+> @@ -879,6 +882,7 @@ static int cmos_suspend(struct device *dev)
+>  
+>  		cmos_checkintr(cmos, tmp);
+>  	}
+> +	cmos->valid_alarm = !!cmos_read_alarm(dev, &cmos->alm);
 
-Regards ... Sid.
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot Emeritus 
-IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support Senior Staff 
-Specialist, Cricket Coach Microsoft Windows Free Zone - Linux used for 
-all Computing Tasks
+I moved this after spin_unlock_irq(), it causes a deadlock otherwise.
+
+>  	spin_unlock_irq(&rtc_lock);
+>  
+>  	if (tmp & RTC_AIE) {
+> @@ -949,6 +953,10 @@ static int cmos_resume(struct device *dev)
+>  			hpet_mask_rtc_irq_bit(RTC_AIE);
+>  		} while (mask & RTC_AIE);
+>  	}
+> +
+> +	if (cmos->valid_alarm)
+> +		cmos_set_alarm(dev, &cmos->alm);
+> +
+>  	spin_unlock_irq(&rtc_lock);
+>  
+>  	dev_dbg(dev, "resume, ctrl %02x\n", tmp);
+> 
+> 
+> 
+
