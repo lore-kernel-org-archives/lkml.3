@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaLVLtx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 06:49:53 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:33165 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653AbaLVLtv (ORCPT
+	id S1754421AbaLVLtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 06:49:49 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:58567 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602AbaLVLtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 06:49:51 -0500
+	Mon, 22 Dec 2014 06:49:46 -0500
 From: Dongsu Park <dongsu.park@profitbricks.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
-        Ming Lin <mlin@minggr.net>, Dongsu Park <dongsu.park@profitbricks.com>,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        linux-btrfs@vger.kernel.org
-Subject: [RFC PATCH 05/17] btrfs: remove bio splitting and merge_bvec_fn() calls
-Date: Mon, 22 Dec 2014 12:48:32 +0100
-Message-Id: <e4b7b017eaa81784889ebb2a4e6a7d4366adf13a.1419241597.git.dongsu.park@profitbricks.com>
+        Ming Lin <mlin@minggr.net>, Dongsu Park <dongsu.park@profitbricks.com>
+Subject: [RFC PATCH 03/17] block: simplify issueing discard, write_same, zeroout
+Date: Mon, 22 Dec 2014 12:48:30 +0100
+Message-Id: <fe96db02d805ca6191dd605d03dac0d04c926fc1.1419241597.git.dongsu.park@profitbricks.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <bb0051ceb5805896089ded26c0f7f06758b25105.1419241597.git.dongsu.park@profitbricks.com>
+In-Reply-To: <f67d71b4a375ab504c2fc02e94a9d2a651686cab.1419241597.git.dongsu.park@profitbricks.com>
 References: <cover.1419241597.git.dongsu.park@profitbricks.com>
  <d26a9a0fc9a7d1529c115785ee5935d5750782bd.1419241597.git.dongsu.park@profitbricks.com>
  <f67d71b4a375ab504c2fc02e94a9d2a651686cab.1419241597.git.dongsu.park@profitbricks.com>
- <fe96db02d805ca6191dd605d03dac0d04c926fc1.1419241597.git.dongsu.park@profitbricks.com>
- <bb0051ceb5805896089ded26c0f7f06758b25105.1419241597.git.dongsu.park@profitbricks.com>
 In-Reply-To: <cover.1419241597.git.dongsu.park@profitbricks.com>
 References: <cover.1419241597.git.dongsu.park@profitbricks.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,119 +27,303 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kent Overstreet <kmo@daterainc.com>
 
-Btrfs has been doing bio splitting from btrfs_map_bio(), by checking
-device limits as well as calling ->merge_bvec_fn() etc. That is not
-necessary any more, because generic_make_request() is now able to
-handle arbitrarily sized bios. So clean up unnecessary code paths.
+Simplify special cases for issueing discard, write_same, and zeroout,
+replacing bio_batch completions with submit_bio_wait(). This conversion
+is possible because generic_make_request() will now do for us what the
+code in blk-lib.c was doing manually, with the bio_batch stuff. So we
+still need some looping in case we're trying to discard/zeroout more
+than around a gigabyte, but when we can submit that much at a time
+doing the submissions in parallel really shouldn't matter.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 [dpark: add more description in commit message]
 Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
-Cc: Chris Mason <clm@fb.com>
-Cc: Josef Bacik <jbacik@fb.com>
-Cc: linux-btrfs@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
 ---
- fs/btrfs/volumes.c | 73 ------------------------------------------------------
- 1 file changed, 73 deletions(-)
+ block/blk-lib.c | 173 ++++++++++----------------------------------------------
+ 1 file changed, 29 insertions(+), 144 deletions(-)
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 50c5a87..c627bf8 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -5691,34 +5691,6 @@ static noinline void btrfs_schedule_bio(struct btrfs_root *root,
- 				 &device->work);
- }
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 8411be3..deef044 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -9,23 +9,6 @@
  
--static int bio_size_ok(struct block_device *bdev, struct bio *bio,
--		       sector_t sector)
+ #include "blk.h"
+ 
+-struct bio_batch {
+-	atomic_t		done;
+-	unsigned long		flags;
+-	struct completion	*wait;
+-};
+-
+-static void bio_batch_end_io(struct bio *bio, int err)
 -{
--	struct bio_vec *prev;
--	struct request_queue *q = bdev_get_queue(bdev);
--	unsigned int max_sectors = queue_max_sectors(q);
--	struct bvec_merge_data bvm = {
--		.bi_bdev = bdev,
--		.bi_sector = sector,
--		.bi_rw = bio->bi_rw,
--	};
+-	struct bio_batch *bb = bio->bi_private;
 -
--	if (WARN_ON(bio->bi_vcnt == 0))
--		return 1;
--
--	prev = &bio->bi_io_vec[bio->bi_vcnt - 1];
--	if (bio_sectors(bio) > max_sectors)
--		return 0;
--
--	if (!q->merge_bvec_fn)
--		return 1;
--
--	bvm.bi_size = bio->bi_iter.bi_size - prev->bv_len;
--	if (q->merge_bvec_fn(q, &bvm, prev) < prev->bv_len)
--		return 0;
--	return 1;
+-	if (err && (err != -EOPNOTSUPP))
+-		clear_bit(BIO_UPTODATE, &bb->flags);
+-	if (atomic_dec_and_test(&bb->done))
+-		complete(bb->wait);
+-	bio_put(bio);
 -}
 -
- static void submit_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
- 			      struct bio *bio, u64 physical, int dev_nr,
- 			      int rw, int async)
-@@ -5752,38 +5724,6 @@ static void submit_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
- 		btrfsic_submit_bio(rw, bio);
- }
+ /**
+  * blkdev_issue_discard - queue a discard
+  * @bdev:	blockdev to issue discard for
+@@ -40,15 +23,10 @@ static void bio_batch_end_io(struct bio *bio, int err)
+ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
+ {
+-	DECLARE_COMPLETION_ONSTACK(wait);
+ 	struct request_queue *q = bdev_get_queue(bdev);
+ 	int type = REQ_WRITE | REQ_DISCARD;
+-	unsigned int max_discard_sectors, granularity;
+-	int alignment;
+-	struct bio_batch bb;
+ 	struct bio *bio;
+ 	int ret = 0;
+-	struct blk_plug plug;
  
--static int breakup_stripe_bio(struct btrfs_root *root, struct btrfs_bio *bbio,
--			      struct bio *first_bio, struct btrfs_device *dev,
--			      int dev_nr, int rw, int async)
--{
--	struct bio_vec *bvec = first_bio->bi_io_vec;
--	struct bio *bio;
--	int nr_vecs = bio_get_nr_vecs(dev->bdev);
--	u64 physical = bbio->stripes[dev_nr].physical;
+ 	if (!q)
+ 		return -ENXIO;
+@@ -56,69 +34,27 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	if (!blk_queue_discard(q))
+ 		return -EOPNOTSUPP;
+ 
+-	/* Zero-sector (unknown) and one-sector granularities are the same.  */
+-	granularity = max(q->limits.discard_granularity >> 9, 1U);
+-	alignment = (bdev_discard_alignment(bdev) >> 9) % granularity;
 -
--again:
--	bio = btrfs_bio_alloc(dev->bdev, physical >> 9, nr_vecs, GFP_NOFS);
--	if (!bio)
--		return -ENOMEM;
--
--	while (bvec <= (first_bio->bi_io_vec + first_bio->bi_vcnt - 1)) {
--		if (bio_add_page(bio, bvec->bv_page, bvec->bv_len,
--				 bvec->bv_offset) < bvec->bv_len) {
--			u64 len = bio->bi_iter.bi_size;
--
--			atomic_inc(&bbio->stripes_pending);
--			submit_stripe_bio(root, bbio, bio, physical, dev_nr,
--					  rw, async);
--			physical += len;
--			goto again;
--		}
--		bvec++;
+-	/*
+-	 * Ensure that max_discard_sectors is of the proper
+-	 * granularity, so that requests stay aligned after a split.
+-	 */
+-	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
+-	max_discard_sectors -= max_discard_sectors % granularity;
+-	if (unlikely(!max_discard_sectors)) {
+-		/* Avoid infinite loop below. Being cautious never hurts. */
+-		return -EOPNOTSUPP;
 -	}
 -
--	submit_stripe_bio(root, bbio, bio, physical, dev_nr, rw, async);
--	return 0;
--}
--
- static void bbio_error(struct btrfs_bio *bbio, struct bio *bio, u64 logical)
- {
- 	atomic_inc(&bbio->error);
-@@ -5862,19 +5802,6 @@ int btrfs_map_bio(struct btrfs_root *root, int rw, struct bio *bio,
- 			continue;
- 		}
+ 	if (flags & BLKDEV_DISCARD_SECURE) {
+ 		if (!blk_queue_secdiscard(q))
+ 			return -EOPNOTSUPP;
+ 		type |= REQ_SECURE;
+ 	}
  
--		/*
--		 * Check and see if we're ok with this bio based on it's size
--		 * and offset with the given device.
--		 */
--		if (!bio_size_ok(dev->bdev, first_bio,
--				 bbio->stripes[dev_nr].physical >> 9)) {
--			ret = breakup_stripe_bio(root, bbio, first_bio, dev,
--						 dev_nr, rw, async_submit);
--			BUG_ON(ret);
--			dev_nr++;
--			continue;
+-	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
+-	bb.wait = &wait;
+-
+-	blk_start_plug(&plug);
+ 	while (nr_sects) {
+-		unsigned int req_sects;
+-		sector_t end_sect, tmp;
+-
+ 		bio = bio_alloc(gfp_mask, 1);
+-		if (!bio) {
+-			ret = -ENOMEM;
+-			break;
 -		}
 -
- 		if (dev_nr < total_devs - 1) {
- 			bio = btrfs_bio_clone(first_bio, GFP_NOFS);
- 			BUG_ON(!bio); /* -ENOMEM */
+-		req_sects = min_t(sector_t, nr_sects, max_discard_sectors);
++		if (!bio)
++			return -ENOMEM;
+ 
+-		/*
+-		 * If splitting a request, and the next starting sector would be
+-		 * misaligned, stop the discard at the previous aligned sector.
+-		 */
+-		end_sect = sector + req_sects;
+-		tmp = end_sect;
+-		if (req_sects < nr_sects &&
+-		    sector_div(tmp, granularity) != alignment) {
+-			end_sect = end_sect - alignment;
+-			sector_div(end_sect, granularity);
+-			end_sect = end_sect * granularity + alignment;
+-			req_sects = end_sect - sector;
+-		}
+-
+-		bio->bi_iter.bi_sector = sector;
+-		bio->bi_end_io = bio_batch_end_io;
+ 		bio->bi_bdev = bdev;
+-		bio->bi_private = &bb;
++		bio->bi_iter.bi_sector = sector;
++		bio->bi_iter.bi_size = min_t(sector_t, nr_sects, 1 << 20) << 9;
+ 
+-		bio->bi_iter.bi_size = req_sects << 9;
+-		nr_sects -= req_sects;
+-		sector = end_sect;
++		sector += bio_sectors(bio);
++		nr_sects -= bio_sectors(bio);
+ 
+-		atomic_inc(&bb.done);
+-		submit_bio(type, bio);
++		ret = submit_bio_wait(type, bio);
++		if (ret)
++			break;
+ 
+ 		/*
+ 		 * We can loop for a long time in here, if someone does
+@@ -128,14 +64,6 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		 */
+ 		cond_resched();
+ 	}
+-	blk_finish_plug(&plug);
+-
+-	/* Wait for bios in-flight */
+-	if (!atomic_dec_and_test(&bb.done))
+-		wait_for_completion_io(&wait);
+-
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		ret = -EIO;
+ 
+ 	return ret;
+ }
+@@ -156,61 +84,37 @@ int blkdev_issue_write_same(struct block_device *bdev, sector_t sector,
+ 			    sector_t nr_sects, gfp_t gfp_mask,
+ 			    struct page *page)
+ {
+-	DECLARE_COMPLETION_ONSTACK(wait);
+ 	struct request_queue *q = bdev_get_queue(bdev);
+-	unsigned int max_write_same_sectors;
+-	struct bio_batch bb;
+ 	struct bio *bio;
+ 	int ret = 0;
+ 
+ 	if (!q)
+ 		return -ENXIO;
+ 
+-	max_write_same_sectors = q->limits.max_write_same_sectors;
+-
+-	if (max_write_same_sectors == 0)
++	if (!q->limits.max_write_same_sectors)
+ 		return -EOPNOTSUPP;
+ 
+-	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
+-	bb.wait = &wait;
+-
+ 	while (nr_sects) {
+ 		bio = bio_alloc(gfp_mask, 1);
+-		if (!bio) {
+-			ret = -ENOMEM;
+-			break;
+-		}
++		if (!bio)
++			return -ENOMEM;
+ 
+-		bio->bi_iter.bi_sector = sector;
+-		bio->bi_end_io = bio_batch_end_io;
+ 		bio->bi_bdev = bdev;
+-		bio->bi_private = &bb;
++		bio->bi_iter.bi_sector = sector;
++		bio->bi_iter.bi_size = min_t(sector_t, nr_sects, 1 << 20) << 9;
+ 		bio->bi_vcnt = 1;
+ 		bio->bi_io_vec->bv_page = page;
+ 		bio->bi_io_vec->bv_offset = 0;
+ 		bio->bi_io_vec->bv_len = bdev_logical_block_size(bdev);
+ 
+-		if (nr_sects > max_write_same_sectors) {
+-			bio->bi_iter.bi_size = max_write_same_sectors << 9;
+-			nr_sects -= max_write_same_sectors;
+-			sector += max_write_same_sectors;
+-		} else {
+-			bio->bi_iter.bi_size = nr_sects << 9;
+-			nr_sects = 0;
+-		}
++		sector += bio_sectors(bio);
++		nr_sects -= bio_sectors(bio);
+ 
+-		atomic_inc(&bb.done);
+-		submit_bio(REQ_WRITE | REQ_WRITE_SAME, bio);
++		ret = submit_bio_wait(REQ_WRITE | REQ_WRITE_SAME, bio);
++		if (ret)
++			break;
+ 	}
+ 
+-	/* Wait for bios in-flight */
+-	if (!atomic_dec_and_test(&bb.done))
+-		wait_for_completion_io(&wait);
+-
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		ret = -ENOTSUPP;
+-
+ 	return ret;
+ }
+ EXPORT_SYMBOL(blkdev_issue_write_same);
+@@ -225,33 +129,22 @@ EXPORT_SYMBOL(blkdev_issue_write_same);
+  * Description:
+  *  Generate and issue number of bios with zerofiled pages.
+  */
+-
+ static int __blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 				  sector_t nr_sects, gfp_t gfp_mask)
+ {
+-	int ret;
++	int ret = 0;
+ 	struct bio *bio;
+-	struct bio_batch bb;
+ 	unsigned int sz;
+-	DECLARE_COMPLETION_ONSTACK(wait);
+-
+-	atomic_set(&bb.done, 1);
+-	bb.flags = 1 << BIO_UPTODATE;
+-	bb.wait = &wait;
+ 
+-	ret = 0;
+-	while (nr_sects != 0) {
++	while (nr_sects) {
+ 		bio = bio_alloc(gfp_mask,
+-				min(nr_sects, (sector_t)BIO_MAX_PAGES));
+-		if (!bio) {
+-			ret = -ENOMEM;
+-			break;
+-		}
++				min(nr_sects / (PAGE_SIZE >> 9),
++				    (sector_t)BIO_MAX_PAGES));
++		if (!bio)
++			return -ENOMEM;
+ 
+ 		bio->bi_iter.bi_sector = sector;
+ 		bio->bi_bdev   = bdev;
+-		bio->bi_end_io = bio_batch_end_io;
+-		bio->bi_private = &bb;
+ 
+ 		while (nr_sects != 0) {
+ 			sz = min((sector_t) PAGE_SIZE >> 9 , nr_sects);
+@@ -261,18 +154,11 @@ static int __blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			if (ret < (sz << 9))
+ 				break;
+ 		}
+-		ret = 0;
+-		atomic_inc(&bb.done);
+-		submit_bio(WRITE, bio);
+-	}
+-
+-	/* Wait for bios in-flight */
+-	if (!atomic_dec_and_test(&bb.done))
+-		wait_for_completion_io(&wait);
+ 
+-	if (!test_bit(BIO_UPTODATE, &bb.flags))
+-		/* One of bios in the batch was completed with error.*/
+-		ret = -EIO;
++		ret = submit_bio_wait(WRITE, bio);
++		if (ret)
++			break;
++	}
+ 
+ 	return ret;
+ }
+@@ -287,7 +173,6 @@ static int __blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+  * Description:
+  *  Generate and issue number of bios with zerofiled pages.
+  */
+-
+ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			 sector_t nr_sects, gfp_t gfp_mask)
+ {
 -- 
 2.1.0
 
