@@ -1,204 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353AbaLVPa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:30:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:54104 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842AbaLVPa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:30:56 -0500
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 10/10] perf tools: Remove some unused functions from color.c
-Date: Mon, 22 Dec 2014 12:30:09 -0300
-Message-Id: <1419262209-9464-11-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1419262209-9464-1-git-send-email-acme@kernel.org>
-References: <1419262209-9464-1-git-send-email-acme@kernel.org>
+	id S932100AbaLVPbb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:31:31 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:51026 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932067AbaLVPb2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:31:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <54982C98.9070806@oracle.com>
+References: <54982C98.9070806@oracle.com>
+Date: Mon, 22 Dec 2014 19:31:27 +0400
+Message-ID: <CAPAsAGzHyx=9oy7ZFdL3dERrKR3or_PiDqm_chbDRvx+c3ZHPg@mail.gmail.com>
+Subject: Re: fs: proc: gpf in find_entry
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "davej >> Dave Jones" <davej@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+2014-12-22 17:37 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following spew:
+>
+> [ 2015.960381] general protection fault: 0000 [#1] PREEMPT SMP KASAN
 
-Removes some functions that are not used anywhere:
+Actually this is NULL-ptr dereference. Since you are using kasan with
+inline instrumentation
+NULL-ptr deref transforms into GPF.
 
- color_parse_mem()
- color_parse()
 
-This was partially found by using a static code analysis program called cppcheck.
+> [ 2015.970534] RAX: 0000000000000000 RBX: ffff88000003a960 RCX: 0000000000000073
+> [ 2015.970534] RDX: 1ffff10101c8f3c4 RSI: 0000000000000000 RDI: ffff88080e479e20
+> [ 2015.970534] RBP: ffff88080e477a28 R08: 0000000000000066 R09: 0000000000000073
+> [ 2015.970534] R10: ffffda0017d55630 R11: dfffe90000000000 R12: ffff88005fc644b8
+> [ 2015.970534] R13: dfffe90000000000 R14: ffffffff92464884 R15: 0000000000000000
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-Link: http://lkml.kernel.org/r/1419079865-354-1-git-send-email-rickard_strandqvist@spectrumdigital.se
-[ Remove now unused parse_{attr,color} routines too ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/color.c | 126 ------------------------------------------------
- tools/perf/util/color.h |   2 -
- 2 files changed, 128 deletions(-)
+[...]
 
-diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
-index f4654183d391..55355b3d4f85 100644
---- a/tools/perf/util/color.c
-+++ b/tools/perf/util/color.c
-@@ -5,132 +5,6 @@
- 
- int perf_use_color_default = -1;
- 
--static int parse_color(const char *name, int len)
--{
--	static const char * const color_names[] = {
--		"normal", "black", "red", "green", "yellow",
--		"blue", "magenta", "cyan", "white"
--	};
--	char *end;
--	int i;
--
--	for (i = 0; i < (int)ARRAY_SIZE(color_names); i++) {
--		const char *str = color_names[i];
--		if (!strncasecmp(name, str, len) && !str[len])
--			return i - 1;
--	}
--	i = strtol(name, &end, 10);
--	if (end - name == len && i >= -1 && i <= 255)
--		return i;
--	return -2;
--}
--
--static int parse_attr(const char *name, int len)
--{
--	static const int attr_values[] = { 1, 2, 4, 5, 7 };
--	static const char * const attr_names[] = {
--		"bold", "dim", "ul", "blink", "reverse"
--	};
--	unsigned int i;
--
--	for (i = 0; i < ARRAY_SIZE(attr_names); i++) {
--		const char *str = attr_names[i];
--		if (!strncasecmp(name, str, len) && !str[len])
--			return attr_values[i];
--	}
--	return -1;
--}
--
--void color_parse(const char *value, const char *var, char *dst)
--{
--	color_parse_mem(value, strlen(value), var, dst);
--}
--
--void color_parse_mem(const char *value, int value_len, const char *var,
--		char *dst)
--{
--	const char *ptr = value;
--	int len = value_len;
--	int attr = -1;
--	int fg = -2;
--	int bg = -2;
--
--	if (!strncasecmp(value, "reset", len)) {
--		strcpy(dst, PERF_COLOR_RESET);
--		return;
--	}
--
--	/* [fg [bg]] [attr] */
--	while (len > 0) {
--		const char *word = ptr;
--		int val, wordlen = 0;
--
--		while (len > 0 && !isspace(word[wordlen])) {
--			wordlen++;
--			len--;
--		}
--
--		ptr = word + wordlen;
--		while (len > 0 && isspace(*ptr)) {
--			ptr++;
--			len--;
--		}
--
--		val = parse_color(word, wordlen);
--		if (val >= -1) {
--			if (fg == -2) {
--				fg = val;
--				continue;
--			}
--			if (bg == -2) {
--				bg = val;
--				continue;
--			}
--			goto bad;
--		}
--		val = parse_attr(word, wordlen);
--		if (val < 0 || attr != -1)
--			goto bad;
--		attr = val;
--	}
--
--	if (attr >= 0 || fg >= 0 || bg >= 0) {
--		int sep = 0;
--
--		*dst++ = '\033';
--		*dst++ = '[';
--		if (attr >= 0) {
--			*dst++ = '0' + attr;
--			sep++;
--		}
--		if (fg >= 0) {
--			if (sep++)
--				*dst++ = ';';
--			if (fg < 8) {
--				*dst++ = '3';
--				*dst++ = '0' + fg;
--			} else {
--				dst += sprintf(dst, "38;5;%d", fg);
--			}
--		}
--		if (bg >= 0) {
--			if (sep++)
--				*dst++ = ';';
--			if (bg < 8) {
--				*dst++ = '4';
--				*dst++ = '0' + bg;
--			} else {
--				dst += sprintf(dst, "48;5;%d", bg);
--			}
--		}
--		*dst++ = 'm';
--	}
--	*dst = 0;
--	return;
--bad:
--	die("bad color value '%.*s' for variable '%s'", value_len, value, var);
--}
--
- int perf_config_colorbool(const char *var, const char *value, int stdout_is_tty)
- {
- 	if (value) {
-diff --git a/tools/perf/util/color.h b/tools/perf/util/color.h
-index 0a594b8a0c26..38146f922c54 100644
---- a/tools/perf/util/color.h
-+++ b/tools/perf/util/color.h
-@@ -30,8 +30,6 @@ extern int perf_use_color_default;
- int perf_color_default_config(const char *var, const char *value, void *cb);
- 
- int perf_config_colorbool(const char *var, const char *value, int stdout_is_tty);
--void color_parse(const char *value, const char *var, char *dst);
--void color_parse_mem(const char *value, int len, const char *var, char *dst);
- int color_vsnprintf(char *bf, size_t size, const char *color,
- 		    const char *fmt, va_list args);
- int color_vfprintf(FILE *fp, const char *color, const char *fmt, va_list args);
--- 
-1.9.3
+> All code
+> ========
+>    0:   e8 03 42 80 3c          callq  0x3c804208
+>    5:   28 00                   sub    %al,(%rax)
+>    7:   0f 85 ff 01 00 00       jne    0x20c
+>    d:   4c 8b 7b 18             mov    0x18(%rbx),%r15
+>   11:   4d 85 ff                test   %r15,%r15
+>   14:   0f 84 de 01 00 00       je     0x1f8
+>   1a:   41 f6 c7 07             test   $0x7,%r15b
+>   1e:   0f 85 d4 01 00 00       jne    0x1f8
+>   24:   4c 89 f8                mov    %r15,%rax
+>   27:   48 c1 e8 03             shr    $0x3,%rax
+>   2b:*  42 80 3c 28 00          cmpb   $0x0,(%rax,%r13,1)               <-- trapping instruction
 
+Three commands above are result of KASAN's instrumentation.
+They check shadow for address in %r15:
+     if (*((%r15 >> 3) + kasan_shadow_offset)
+
+
+>   30:   0f 85 b5 01 00 00       jne    0x1eb
+>   36:   4d 8b 37                mov    (%r15),%r14
+
+And here is memory access, that KASAN checking.
