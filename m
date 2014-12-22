@@ -1,126 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaLVXb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 18:31:58 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:35181 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaLVXb4 (ORCPT
+	id S1753441AbaLVXjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 18:39:00 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:34007 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaLVXi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 18:31:56 -0500
+	Mon, 22 Dec 2014 18:38:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <5498A5EC.4080101@redhat.com>
-References: <CALCETrV4Bhc=pwjJR-S7dfgcR7n0xKtj0o=ofOxCfJmnVFcjGw@mail.gmail.com>
- <20141222133430.GA23631@amt.cnet> <CALCETrXU+Z_t3qon+DR1hUiqSgpWLe9w74guBxbDG68ytM0icg@mail.gmail.com>
- <54989FF0.3090300@redhat.com> <CALCETrXzKZ=RhT2h32QxCskY5_hWtNQOYMnKcaRXCWRtQCta7g@mail.gmail.com>
- <5498A5EC.4080101@redhat.com>
+In-Reply-To: <20141223002347.18271w0cdr8gba4j@webmail.upv.es>
+References: <5489E6D2.2060200@upv.es> <5489FAAD.7000606@upv.es>
+ <20141211221158.GS18807@outflux.net> <548B18AC.9@upv.es> <CALCETrVAaDDvAttVkJ+1ygymE_uEZOCLtGHHN15v_VDf1PVsmA@mail.gmail.com>
+ <5494A0DF.10905@upv.es> <CALCETrWB_T9ui=_JSQRLrtbNDx=sJ22im1XujhxptfZRtedeeg@mail.gmail.com>
+ <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
+ <20141222183615.4193722q3opf4uj3@webmail.upv.es> <CALCETrWUXbzb_MMEugWNzuY-gebkUbzLW6Z=gmCfau7oBRUdJg@mail.gmail.com>
+ <20141223002347.18271w0cdr8gba4j@webmail.upv.es>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 22 Dec 2014 15:31:33 -0800
-Message-ID: <CALCETrWmKGA-y=VyA3vz+ESprios5xytDUjS_=nQrphLdjVDew@mail.gmail.com>
-Subject: Re: Cleaning up the KVM clock
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 22 Dec 2014 15:38:35 -0800
+Message-ID: <CALCETrU+NPQexUMDCxdram-gSFtGzrQOoyekfCaXwdwebcnxSg@mail.gmail.com>
+Subject: Re: [PATCH] ASLRv3: randomize_va_space=3 preventing offset2lib attack
+To: Hector Marco Gisbert <hecmargi@upv.es>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Anton Blanchard <anton@samba.org>, Jiri Kosina <jkosina@suse.cz>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney.cavm@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arun Chandran <achandran@mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ismael Ripoll <iripoll@disca.upv.es>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?Q?Hanno_B=C3=B6ck?= <hanno@hboeck.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kees Cook <keescook@chromium.org>, Reno Robert <renorobert@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 3:14 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+On Mon, Dec 22, 2014 at 3:23 PM, Hector Marco Gisbert <hecmargi@upv.es> wrote:
+>> Before I even *consider* the code, I want to know two things:
+>
+>  >
+>  > 1. Is there actually a problem in the first place?  The vdso
+>  > randomization in all released kernels is blatantly buggy, but it's
+>  > fixed in -tip, so it should be fixed by the time that 3.19-rc2 comes
+>  > out, and the fix is marked for -stable.  Can you try a fixed kernel:
+>  >
+>  >
+> https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=x86/urgent&id=fbe1bf140671619508dfa575d74a185ae53c5dbb
 >
 >
-> On 23/12/2014 00:00, Andy Lutomirski wrote:
->> On Mon, Dec 22, 2014 at 2:49 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->>>
->>>
->>> On 22/12/2014 17:03, Andy Lutomirski wrote:
->>>> This is wrong.  The guest *kernel* might not see the intermediate
->>>> state because the kernel (presumably it disabled migration while
->>>> reading pvti), but the guest vdso can't do that and could very easily
->>>> observe pvti while it's being written.
->>>
->>> No.  kvm_guest_time_update is called by vcpu_enter_guest, while the vCPU
->>> is not running, so it's entirely atomic from the point of view of the guest.
->>
->> Which vCPU?  Unless kvm_guest_time_update freezes all of the vcpus,
->> then there's a race:
->>
->> vCPU 0 guest: __getcpu
->> vdso thread migrates to vCPU 1
->> vCPU 0 exits
->> host starts writing pvti for vCPU 0
->> vdso thread starts reading pvti
->> host finishes writing pvti for vCPU 0
->> vCPU 0 resumes
->> vdso migrates back to vCPU 0
->> __getcpu returns 0
->>
->> and we fail.
+> Well if it is already fixed, then great!.
 >
-> Yes, it does.  See kvm_gen_update_masterclock.
+> But since the vdso is something like a library (cause it contains code,
+> and no data), it shall be handled as a library and so it shall be
+> located jointly with the other libraries rather than close to the stack.
+> Later I'll talk about randomizing libraries among them.
 >
-> See also http://www.spinics.net/lists/kvm/msg95533.html for some
-> discussion about KVM_REQ_MCLOCK_INPROGRESS.
+> I think that the core idea of the current ASLR implementation is that
+> all the areas that share similar content (libraries, stack, heap,
+> application) shall be placed together. Following more or less the MILS
+> division. This way, a memory leak of an address of the stack is not very
+> useful for building a ROP on the libraries.
+>
+> Another issue is the page table locality. The implementation tries to
+> allocate the vdso "close" to the stack so that is fits into the PMD of
+> the stack (and so, use less pages for the pagetables). Well, placing the
+> vdso in the mmap area would solve the problem at once.
+>
+> Unfortunately, with your path the VDSO entropy has 18 entropy bits. But
+> this is not true. The real entropy is masked with the entropy of the
+> stack. In other words, if an attacker guesses where the stack is placed
+> they have to do negligible work to guess where the VDSO is located.
+> Note that, a memory leak from a data area (which is of little help to
+> the attacker) can be used to locate the VDSO (which is of great interest
+> because it is executable and contains nice stuff).
 
-Ah.  Assuming that works, then most of my patches are unnecessary.
-But then I have a different question: why do we bother doing the
-__getcpu at all?  Can we rely on cpu 0's pvti to be appropriate for
-all of the vcpus to use if the stable bit is set?
+I'm not sure it's negligible.  It's 9 bits if the attacker can figure
+out the stack alignment and 18 bits if the attacker can't.  This isn't
+great, but it's far from nothing.
 
 >
->> I'm having a hard time testing, since KVM on 3.19-rc1 appears to be
->> entirely unusable.  No matter what I do, I get this very early in
->> guest boot:
->>
->> KVM internal error. Suberror: 1
->> emulation failure
->> EAX=000dee58 EBX=00000000 ECX=00000000 EDX=00000cfd
->> ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fc4
->> EIP=000f17f4 EFL=00010012 [----A--] CPL=0 II=0 A20=1 SMM=0 HLT=0
->> ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
->> SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
->> TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
->> GDT=     000f6c58 00000037
->> IDT=     000f6c96 00000000
->> CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
->> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
->> DR3=0000000000000000
->> DR6=00000000ffff0ff0 DR7=0000000000000400
->> EFER=0000000000000000
->> Code=e8 75 fc ff ff 89 f2 a8 10 89 d8 75 0a b9 74 17 ff ff ff d1 <5b>
->> 5e c3 5b 5e e9 76 ff ff ff 57 56 53 8b 35 38 65 0f 00 85 f6 0f 88 be
->> 00 00 00 0f b7 f6
->>
->> and it sometimes comes with a lockdep splat, too.
+> Using my solution, the VDSO will have the same 28 bits of randomness
+> than the libraries (but all will be together).
 >
-> I can look at it tomorrow.  Does commit
-> 2c4aa55a6af070262cca425745e8e54310e96b8d work for you?
+> After after 10000 executions I have found 76 repeated addresses (still
+> low entropy, but much better than before). But with my patch, there was
+> no repetition (much better entropy).
+>
+>
+>  > 2. I'm not sure your patch helpes.  The currently exciting articles on
+>  > ASLR weaknesses seem to focus on two narrow issues:
+>  >
+>  > a. With PIE executables, the offset from the executable to the
+>  > libraries is constant.  This is unfortunate when your threat model
+>  > allows you to learn the executable base address and all your gadgets
+>  > are in shared libraries.
+>
+> Regardes the offset2lib... The core idea is that we shall consider the
+> application code and libraries as two slightly different things (or two
+> different security regions). Since applications are in general more
+> prone to have bugs than libraries, it seems that this is the way to do
+> it from the security point of view.  Obviously, stack and libraries are
+> clearly apart (you can even assign different access permissions).
+> Application code and libraries are not that different, but it would be
+> better of they are not together.... and sincerely, I think that the cost
+> of allocate them apart is so small that it worth the code.
+>
+> If the extra cost of (One or two pages) per process required to place
+> the application code to another area is too high, then may be it can be
+> implemented as another level of ASLR randomize_va_space=3 (if any).
+>
+>
+>  > b. The VDSO base address is pathetically low on min entropy.  This
+>  > will be dramatically improved shortly.
+>  >
+>  > The pax tests seem to completely ignore the joint distribution of the
+>  > relevant addresses.  My crystal ball predicts that, if I apply your
+>  > patch, someone will write an article observing that the libc-to-vdso
+>  > offset is constant or, OMG!, the PIE-executable-to-vdso offset is
+>  > constant.
+>  >
+>  > So... is there a problem in the first place, and is the situation
+>  > really improved with your patch?
+>  >
+>  > --Andy
+>
+> Absolutely agree.
+>
+> The offset2x shall be considered now. And rather than moving objects
+> like the vdso, vvar stack, heap... etc.. etc.. we shall consider
+> seriously the cost of a full (all maps) to be real random. That is
+> inter-mmap ASLR.
+>
+> Current implementation is not that bad, except that the application was
+> considered in the same "category" than libraries. But I guess that it
+> deserves a region for its own. Also, I think that executable code shall
+> be apart from data.. which supports the idea of inter-mmap randomization.
+>
+> Sorry if I'm mixing VDSO, and offset2lib issues, but they share a
+> similar core problem.
+>
 
-Nope.
+If I see a real argument that randomizing the vdso like a library is
+better than randomizing it separately but weakly, I'll gladly consider
+it.  But the references I've seen (and I haven't looked all that hard,
+and I'm not an memory exploit writer) are unconvincing.
 
-Running:
-
-qemu-system-x86_64 -machine accel=kvm:tcg -cpu host -parallel none
--net none -echr 1 -serial none -chardev
-stdio,id=console,signal=off,mux=on -serial chardev:console -mon
-chardev=console -vga none -display none
-
-from L1 where L1 is 3.19-rc1 or
-2c4aa55a6af070262cca425745e8e54310e96b8d and L0 is a good Fedora
-kernel results in the same failure after a couple of seconds.  This is
-on Sandy Bridge Extreme.
-
-I tried 3.19-rc1 on bare metal earlier today, and it didn't work any better.
+I'd really rather see a strong inter-mmap randomization scheme adopted.
 
 --Andy
 
 >
-> Paolo
+> --Hector Marco.
+>
+>
+>
 
 
 
