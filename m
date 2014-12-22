@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450AbaLVR0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 12:26:14 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39352 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089AbaLVR0N (ORCPT
+	id S1755368AbaLVR2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 12:28:39 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:57492 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134AbaLVR2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 12:26:13 -0500
-Message-ID: <1419269161.3786.4.camel@infradead.org>
-Subject: Re: [PATCH] arch: powerpc: platforms: ps3: repository.c:  Remove
- unused function
-From: Geoff Levand <geoff@infradead.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Andre Heider <a.heider@gmail.com>,
-        Nathan Whitehorn <nwhitehorn@freebsd.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Mon, 22 Dec 2014 09:26:01 -0800
-In-Reply-To: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Dec 2014 12:28:37 -0500
+Message-ID: <5498549B.8070101@gmail.com>
+Date: Mon, 22 Dec 2014 20:27:55 +0300
+From: Dmitry Osipenko <digetx@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, Joseph Lo <josephl@nvidia.com>
+CC: stable@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: Use PMC scratch register 40 for tegra_resume()
+ location store
+References: <1419202392-1159-1-git-send-email-digetx@gmail.com> <54984429.8040905@wwwdotorg.org>
+In-Reply-To: <54984429.8040905@wwwdotorg.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-12-20 at 16:00 +0100, Rickard Strandqvist wrote:
-> Remove the function ps3_repository_write_highmem_info() that is not used anywhere.
+22.12.2014 19:17, Stephen Warren пишет:
+> On 12/21/2014 03:52 PM, Dmitry Osipenko wrote:
+>> Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed
+>> tegra_resume()
+>> location storing from late to early and as result broke suspend on tegra20.
+>> PMC scratch register 41 was used by tegra lp1 suspend core code for storing
+>> physical memory address of common resume function and in the same time used by
+>> tegra20 cpuidle driver for storing cpu1 "resettable" status, so it implied
+>> strict order of scratch register use. Fix it by using scratch 40 instead of 41
+>> for tegra_resume() location store.
+> 
+> You likely can't simply change the PMC scratch register usage arbitrarily;
+> specific registers are designated for specific purposes, and code outside the
+> Linux kernel (bootloaders, LP0 resume code, secure monitors, etc.) may depend on
+> those specific values being in those registers. Without significant research,
+> I'd suggest not changing the PMC scratch register usage.
 
-NAK
+Sure, that's why I asked to verify if scratch register 40 is in use in the
+comment after commit message. I've checked that u-boot doesn't use it (since
+upstream kernel doesn't care about any other bootloader), but no idea about
+secure monitor. It's definitely safer to avoid changing scratch regs usage, I
+thought that proposed solution would be best from the pure code point of view.
+So, I'm considering your answer as a rejection of the patch (please, let me know
+if I'm wrong) and will prepare another one. Btw, it would be nice to have
+scratch registers usage publicly documented somewhere (on "Tegra Public
+Application Notes" webpage for example), if it's possible, of course.
 
-ps3_repository_write_highmem_info() is needed by otheros++.  What we
-need is a kernel patch to add the highmem info to the repository once it
-is known.
-
-These ps3_repository_write_highmem routines are also the only
-documentation the freeBSD port has as to how the highmem info is (should
-be) saved in the repository.
-
--Geoff
-
-
+-- 
+Dmitry
