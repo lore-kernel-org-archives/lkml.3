@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932151AbaLVQwe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:52:34 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44157 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121AbaLVQwc (ORCPT
+	id S932204AbaLVQxX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:53:23 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.153]:38642 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755518AbaLVQv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:52:32 -0500
-Date: Mon, 22 Dec 2014 16:51:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andrew Jackson <Andrew.Jackson@arm.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20141222165151.GB17800@sirena.org.uk>
-References: <cover.1418826016.git.Andrew.Jackson@arm.com>
- <2842090b2c7a8a98aed0cfa02addcef0b2e8ec6b.1418826016.git.Andrew.Jackson@arm.com>
- <20141222142636.GT17800@sirena.org.uk>
- <54983E0A.2050005@arm.com>
+	Mon, 22 Dec 2014 11:51:28 -0500
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-9.tower-179.messagelabs.com!1419267085!36888949!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <a460e5a2a156b2097167df04a79bb73d450e3557.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
+In-Reply-To: <cover.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
+References: <cover.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Date: Mon, 22 Dec 2014 16:51:20 +0000
+Subject: [PATCH v5 4/7] iio: da9150: Add DT binding documentation for GPADC
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        <linux-iio@vger.kernel.org>, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+CC: <linux-kernel@vger.kernel.org>, <support.opensource@diasemi.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NctWKJLgDreUm1FS"
-Content-Disposition: inline
-In-Reply-To: <54983E0A.2050005@arm.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 31.51.36.65
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 5/5] ASoC: dwc: Add documentation for I2S DT
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+---
+ .../devicetree/bindings/iio/adc/da9150-gpadc.txt         | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iio/adc/da9150-gpadc.txt
 
---NctWKJLgDreUm1FS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+diff --git a/Documentation/devicetree/bindings/iio/adc/da9150-gpadc.txt b/Documentation/devicetree/bindings/iio/adc/da9150-gpadc.txt
+new file mode 100644
+index 0000000..c07228d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iio/adc/da9150-gpadc.txt
+@@ -0,0 +1,16 @@
++Dialog Semiconductor DA9150 IIO GPADC bindings
++
++Required properties:
++- compatible: "dlg,da9150-gpadc" for DA9150 IIO GPADC
++- #io-channel-cells: Should be set to <1>
++  (See Documentation/devicetree/bindings/iio/iio-bindings.txt for further info)
++
++For further information on GPADC channels, see device datasheet.
++
++
++Example:
++
++	gpadc: da9150-gpadc {
++		compatible = "dlg,da9150-gpadc";
++		#io-channel-cells = <1>;
++	};
+--
+1.9.3
 
-On Mon, Dec 22, 2014 at 03:51:38PM +0000, Andrew Jackson wrote:
-> On 12/22/14 14:26, Mark Brown wrote:
-
-> > This is a name based lookup of clocks but the code doesn't use
-> > apb_pclk at all; it needs to or the binding needs to say that apb_pclk
-> > must be the first listed clock (which would not be good).
-
-> I can remove apb_pclk: I was modelling the device tree entry on=20
-> various PLxxx examples (c.f. amba-pl011) which also reference an AMBA clo=
-ck
-> but don't use it.  (The effect being to document what clock the block is
-> driven by.)
-
-With the AMBA devices the AMBA core manages the bus clock for the
-drivers IIRC.
-
---NctWKJLgDreUm1FS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUmEwmAAoJECTWi3JdVIfQjScH/3Yk376mDDobaz9ioBVvzEWa
-iVzK7Ke2oJPFyPU0Z6Zqa3rgXf2axlAcUu4IPMEIeKNlByt61/weFntwIJlGaYax
-VwVXLKyz+/RwBxxHc/GLOaH4JCZSjAKz1juFYMGvR5EkiyELCoitBfmVL/zTlcnK
-f/tgHmNcPdkQE6VE1OFMpwJ/IOn8t1v913PdPLA0aNPx0W0VyNT1rohvShf0h7p5
-N3P+XTVAhZrEsJf1DaWQVcKRPdI4HywiBN6diqcW6gcz3pvptF3+bV+X1y0hTESu
-t/YeK9ZFMA9vJYdz3cw4kGcr0UX89jOrSwllXYpUzRI7TJY5MRbBQGb9oD5LDu4=
-=D5+w
------END PGP SIGNATURE-----
-
---NctWKJLgDreUm1FS--
