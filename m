@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634AbaLVUpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 15:45:46 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:43416 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896AbaLVUpp (ORCPT
+	id S1755385AbaLVUuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 15:50:20 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:62172 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938AbaLVUuT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 15:45:45 -0500
-From: Dmitriy Polyanskiy <polyanskiy.d.v@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        svt-service@ukr.net
-Subject: [PATCH] Staging: line6: fix coding style issue in pcm.h
-Date: Mon, 22 Dec 2014 22:45:01 +0200
-Message-Id: <1419281101-19739-1-git-send-email-polyanskiy.d.v@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 22 Dec 2014 15:50:19 -0500
+From: samuel kihahu <skihahu@gmail.com>
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com,
+        gregkh@linuxfoundation.org, HPDD-discuss@ml01.01.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        skihahu <skihahu@gmail.com>
+Subject: [PATCH] staging: lustre: cleanup align switch and case
+Date: Mon, 22 Dec 2014 23:48:57 +0300
+Message-Id: <1419281337-4076-1-git-send-email-skihahu@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to pcm.h file that fixes up some space warnings
-found by checkpatch.pl
+From: skihahu <skihahu@gmail.com>
 
-Signed-off-by: Dmitriy Polyanskiy <polyanskiy.d.v@gmail.com>
+Align switch and case to be at the same indent.
+
+Signed-off-by: samuel kihahu <skihahu@gmail.com>
 ---
- drivers/staging/line6/pcm.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lnet/selftest/module.c | 50 +++++++++++++--------------
+ 1 file changed, 25 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/staging/line6/pcm.h b/drivers/staging/line6/pcm.h
-index 6aa0d46..5d87934 100644
---- a/drivers/staging/line6/pcm.h
-+++ b/drivers/staging/line6/pcm.h
-@@ -145,21 +145,21 @@ enum {
- 	    LINE6_BIT_PCM_IMPULSE_PLAYBACK_BUFFER |
- #endif
- 	    LINE6_BIT_PCM_ALSA_PLAYBACK_BUFFER |
--	    LINE6_BIT_PCM_MONITOR_PLAYBACK_BUFFER ,
-+	    LINE6_BIT_PCM_MONITOR_PLAYBACK_BUFFER,
- 
- 	LINE6_BITS_PLAYBACK_STREAM =
- #ifdef CONFIG_LINE6_USB_IMPULSE_RESPONSE
- 	    LINE6_BIT_PCM_IMPULSE_PLAYBACK_STREAM |
- #endif
- 	    LINE6_BIT_PCM_ALSA_PLAYBACK_STREAM |
--	    LINE6_BIT_PCM_MONITOR_PLAYBACK_STREAM ,
-+	    LINE6_BIT_PCM_MONITOR_PLAYBACK_STREAM,
- 
- 	LINE6_BITS_CAPTURE_BUFFER =
- #ifdef CONFIG_LINE6_USB_IMPULSE_RESPONSE
- 	    LINE6_BIT_PCM_IMPULSE_CAPTURE_BUFFER |
- #endif
- 	    LINE6_BIT_PCM_ALSA_CAPTURE_BUFFER |
--	    LINE6_BIT_PCM_MONITOR_CAPTURE_BUFFER ,
-+	    LINE6_BIT_PCM_MONITOR_CAPTURE_BUFFER,
- 
- 	LINE6_BITS_CAPTURE_STREAM =
- #ifdef CONFIG_LINE6_USB_IMPULSE_RESPONSE
--- 
-1.7.9.5
+diff --git a/drivers/staging/lustre/lnet/selftest/module.c b/drivers/staging/lustre/lnet/selftest/module.c
+index 6dd4309..b5f07fa 100644
+--- a/drivers/staging/lustre/lnet/selftest/module.c
++++ b/drivers/staging/lustre/lnet/selftest/module.c
+@@ -61,31 +61,31 @@ lnet_selftest_fini(void)
+	int	i;
 
+	switch (lst_init_step) {
+-		case LST_INIT_CONSOLE:
+-			lstcon_console_fini();
+-		case LST_INIT_FW:
+-			sfw_shutdown();
+-		case LST_INIT_RPC:
+-			srpc_shutdown();
+-		case LST_INIT_WI_TEST:
+-			for (i = 0;
+-			     i < cfs_cpt_number(lnet_cpt_table()); i++) {
+-				if (lst_sched_test[i] == NULL)
+-					continue;
+-				cfs_wi_sched_destroy(lst_sched_test[i]);
+-			}
+-			LIBCFS_FREE(lst_sched_test,
+-				    sizeof(lst_sched_test[0]) *
+-				    cfs_cpt_number(lnet_cpt_table()));
+-			lst_sched_test = NULL;
+-
+-		case LST_INIT_WI_SERIAL:
+-			cfs_wi_sched_destroy(lst_sched_serial);
+-			lst_sched_serial = NULL;
+-		case LST_INIT_NONE:
+-			break;
+-		default:
+-			LBUG();
++	case LST_INIT_CONSOLE:
++		lstcon_console_fini();
++	case LST_INIT_FW:
++		sfw_shutdown();
++	case LST_INIT_RPC:
++		srpc_shutdown();
++	case LST_INIT_WI_TEST:
++		for (i = 0;
++		     i < cfs_cpt_number(lnet_cpt_table()); i++) {
++			if (lst_sched_test[i] == NULL)
++				continue;
++			cfs_wi_sched_destroy(lst_sched_test[i]);
++		}
++		LIBCFS_FREE(lst_sched_test,
++			    sizeof(lst_sched_test[0]) *
++			    cfs_cpt_number(lnet_cpt_table()));
++		lst_sched_test = NULL;
++
++	case LST_INIT_WI_SERIAL:
++		cfs_wi_sched_destroy(lst_sched_serial);
++		lst_sched_serial = NULL;
++	case LST_INIT_NONE:
++		break;
++	default:
++		LBUG();
+	}
+	return;
+ }
