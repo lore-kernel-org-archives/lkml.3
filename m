@@ -1,171 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180AbaLVKKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 05:10:50 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:53545 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027AbaLVKKt (ORCPT
+	id S1754208AbaLVKOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 05:14:36 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:64968 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754027AbaLVKOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 05:10:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <1416292375-29560-2-git-send-email-dave.long@linaro.org>
-References: <1416292375-29560-1-git-send-email-dave.long@linaro.org>
-	<1416292375-29560-2-git-send-email-dave.long@linaro.org>
-Date: Mon, 22 Dec 2014 15:40:48 +0530
-Message-ID: <CAHM4w1n4MZ7o2M9ZV+6ZO1QAXWZkFi5fvPfjStY9Xdc+=tgyRg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/5] arm64: Kprobes with single stepping support
-From: Pratyush Anand <pratyush.anand@gmail.com>
-To: David Long <dave.long@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        William Cohen <wcohen@redhat.com>, davem@davemloft.net,
-        Pratyush Anand <panand@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Dec 2014 05:14:35 -0500
+Message-ID: <1419243273.30945.19.camel@x220>
+Subject: Re: [PATCH] [TRIVIAL] IBM Akebono: Remove select of
+ IBM_EMAC_RGMII_WOL
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Alistair Popple <alistair@popple.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 22 Dec 2014 11:14:33 +0100
+In-Reply-To: <1415008333.20372.26.camel@x220>
+References: <1415008333.20372.26.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Dec 2014 10:14:33.0770 (UTC) FILETIME=[1512C8A0:01D01DD0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Hi Jiri,
 
-On Tue, Nov 18, 2014 at 12:02 PM, David Long <dave.long@linaro.org> wrote:
-> From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
->
-> Add support for basic kernel probes(kprobes) and jump probes
-> (jprobes) for ARM64.
+On Mon, 2014-11-03 at 10:52 +0100, Paul Bolle wrote:
+> Commit 2a2c74b2efcb ("IBM Akebono: Add the Akebono platform") added a
+> select of IBM_EMAC_RGMII_WOL. But that Kconfig symbol isn't (yet) part
+> of the tree. So this select has been a nop since that commit was
+> included in v3.16-rc1.
+> 
+> The code to add this symbol is not included in next-20141103. So let's
+> remove this select. It can be readded when that symbol is actually added
+> to the tree.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Cc: Alistair Popple <alistair@popple.id.au>
+> ---
+> Untested. Done on top of next-20141103.
+> 
+> Third time's a charm? First raised in
+> https://lkml.org/lkml/2014/5/1/106 . Reminder sent in
+> https://lkml.org/lkml/2014/9/4/645 . I'm not aware of any news on this
+> front, so this trivial patch seems reasonable now.
+> 
+> A patch to readd this select could be added - if people still care about
+> it, that is - in the series that adds this symbol. A web search suggests
+> Alistair takes care of that series, so Alistair gets a Cc: here.
 
-Some part of the code can be reused for uprobes as well. I think,
-there would still be next
-revision. So, if you can re-factor those parts in v4.
+This select of IBM_EMAC_RGMII_WOL still shows up in next-20141221 and
+v3.19-rc1. Did you have a chance to look at this patch?
 
-[...]
+>  arch/powerpc/platforms/44x/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
+> index d2ac1c116454..5538e57c36c1 100644
+> --- a/arch/powerpc/platforms/44x/Kconfig
+> +++ b/arch/powerpc/platforms/44x/Kconfig
+> @@ -214,7 +214,6 @@ config AKEBONO
+>  	select ETHERNET
+>  	select NET_VENDOR_IBM
+>  	select IBM_EMAC_EMAC4
+> -	select IBM_EMAC_RGMII_WOL
+>  	select USB if USB_SUPPORT
+>  	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
+>  	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
 
-
-> +++ b/arch/arm64/include/asm/probes.h
-> @@ -0,0 +1,50 @@
-> +/*
-> + * arch/arm64/include/asm/probes.h
-> + *
-> + * Copyright (C) 2013 Linaro Limited
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +#ifndef _ARM_PROBES_H
-> +#define _ARM_PROBES_H
-> +
-> +struct kprobe;
-> +struct arch_specific_insn;
-> +
-> +typedef u32 kprobe_opcode_t;
-> +typedef unsigned long (kprobes_pstate_check_t)(unsigned long);
-> +typedef unsigned long
-> +(kprobes_condition_check_t)(struct kprobe *p, struct pt_regs *);
-
-To be used for uprobe:
-p->opcode and p->ainsn can be passed in stead of p.
-
-> +typedef void
-> +(kprobes_prepare_t)(struct kprobe *, struct arch_specific_insn *);
-
-ditto.. can pass p->opcode in stead of p.
-
-> +typedef void (kprobes_handler_t) (u32 opcode, long addr, struct pt_regs *);
-> +
-> +enum pc_restore_type {
-> +       NO_RESTORE,
-> +       RESTORE_PC,
-> +};
-> +
-> +struct kprobe_pc_restore {
-> +       enum pc_restore_type type;
-> +       unsigned long addr;
-> +};
-> +
-> +/* architecture specific copy of original instruction */
-> +struct arch_specific_insn {
-> +       kprobe_opcode_t *insn;
-> +       kprobes_pstate_check_t *pstate_cc;
-> +       kprobes_condition_check_t *check_condn;
-> +       kprobes_prepare_t *prepare;
-> +       kprobes_handler_t *handler;
-> +       /* restore address after step xol */
-> +       struct kprobe_pc_restore restore;
-> +};
-
-Probably it would be better to keep name as probe_xxxx in stead of kprobe_xxxx.
-
-> +
-> +#endif
-
-[...]
-
-> diff --git a/arch/arm64/kernel/kprobes-arm64.c b/arch/arm64/kernel/kprobes-arm64.c
-
-I think most of the stuff of this file can be used for uprobe. So what
-about keeping
-name as probes-arm64.c
+Thanks,
 
 
-> new file mode 100644
-> index 0000000..30d1c14
+Paul Bolle
 
-[...]
-
-[...]
-
-> +enum kprobe_insn __kprobes
-> +arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi)
-> +{
-> +       return kprobe_decode_insn(insn, asi, aarch64_decode_table);
-> +}
-
-may be we can replace kprobe to probe for the above function as well.
-
-
-[...]
-
-
-
-> +/*
-> + * arch/arm64/kernel/kprobes.h
-> + *
-> + * Copyright (C) 2013 Linaro Limited.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + */
-> +
-> +#ifndef _ARM_KERNEL_KPROBES_H
-> +#define _ARM_KERNEL_KPROBES_H
-> +
-> +/* BRK opcodes with ESR encoding  */
-> +#define BRK64_ESR_MASK         0xFFFF
-> +#define BRK64_ESR_KPROBES      0x0004
-> +#define BRK64_OPCODE_KPROBES   0xD4200080      /* "brk 0x4" */
-> +#define ARCH64_NOP_OPCODE      0xD503201F
-
-Probably these definitions can be kept in asm/insn.h. There we can add another
-BRK64_OPCODE_UPROBES with different brk code.
-
-
-~Pratyush
