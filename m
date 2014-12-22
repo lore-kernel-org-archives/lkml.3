@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497AbaLVUSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 15:18:17 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:54895 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702AbaLVUSP (ORCPT
+	id S1755567AbaLVUSz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 15:18:55 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:7574 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754764AbaLVUSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 15:18:15 -0500
+	Mon, 22 Dec 2014 15:18:53 -0500
+Message-ID: <54987C9F.5070103@fb.com>
+Date: Mon, 22 Dec 2014 12:18:39 -0800
+From: Alex Gartrell <agartrell@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20141222200804.18A7A803@viggo.jf.intel.com>
-References: <20141222200803.D316DA2A@viggo.jf.intel.com> <20141222200804.18A7A803@viggo.jf.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 22 Dec 2014 12:17:53 -0800
-Message-ID: <CALCETrWAgPjLTA-iSabFmqVKiOKGPGgDgSWdjz3wsncs1X+WOg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86, mpx: explicitly disable 32-bit MPX support on
- 64-bit kernels
-To: Dave Hansen <dave@sr71.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Herbert Xu <herbert@gondor.apana.org.au>
+CC: <jasonwang@redhat.com>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mst@redhat.com>,
+        <herbert@gondor.apena.org.au>, <kernel-team@fb.com>
+Subject: Re: [RFC PATCH net-next] tun: support retrieving multiple packets
+ in a single read with IFF_MULTI_READ
+References: <20141222120957.GA21319@gondor.apana.org.au>
+In-Reply-To: <20141222120957.GA21319@gondor.apana.org.au>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-22_03:2014-12-22,2014-12-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.919135270856499 urlsuspect_oldscore=0.919135270856499
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.919135270856499 spamscore=0
+ recipient_to_sender_domain_totalscore=1 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412220204
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 12:08 PM, Dave Hansen <dave@sr71.net> wrote:
->
-> From: Dave Hansen <dave.hansen@linux.intel.com>
->
-> We had originally planned on submitting MPX support in one patch
-> set.  We eventually broke it up in to two pieces for easier
-> review.  One of the features that didn't make the first round
-> was supporting 32-bit binaries on 64-bit kernels.
->
-> Once we split the set up, we never added code to restrict 32-bit
-> binaries from _using_ MPX on 64-bit kernels.
->
-> The 32-bit bounds tables are a different format than the 64-bit
-> ones.  Without this patch, the kernel will try to read a 32-bit
-> binary's tables as if they were the 64-bit version.  They will
-> likely be noticed as being invalid rather quickly and the app
-> will get killed, but that's kinda mean.
->
-> This patch adds an explicit check, and will make a 64-bit kernel
-> essentially behave as if it has no MPX support when called from
-> a 32-bit binary.
->
-> I intend to remove this check once the mixed binary support is
-> added.  Those patches are posted if anyone is interested:
->
->         https://lkml.org/lkml/2014/12/12/632
->
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> ---
->
->  b/arch/x86/mm/mpx.c |    6 ++++++
->  1 file changed, 6 insertions(+)
->
-> diff -puN arch/x86/mm/mpx.c~x86-mpx-explicitly-disable-32-bit-on-64-bit-for-3_19 arch/x86/mm/mpx.c
-> --- a/arch/x86/mm/mpx.c~x86-mpx-explicitly-disable-32-bit-on-64-bit-for-3_19    2014-12-22 12:06:18.308911687 -0800
-> +++ b/arch/x86/mm/mpx.c 2014-12-22 12:06:18.311911822 -0800
-> @@ -349,6 +349,12 @@ static __user void *task_get_bounds_dir(
->                 return MPX_INVALID_BOUNDS_DIR;
->
->         /*
-> +        * 32-bit binaries on 64-bit kernels are currently
-> +        * unsupported.
-> +        */
-> +       if (IS_ENABLED(CONFIG_X86_64) && test_thread_flag(TIF_IA32))
-> +               return MPX_INVALID_BOUNDS_DIR;
+Hey Herbert,
 
-Should this check mm->ia32_compat instead?
+Thanks for getting back to me
 
-Otherwise,
+On 12/22/14 4:09 AM, Herbert Xu wrote:
+> As tun already has a socket interface can we do this through
+> recvmmsg?
 
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+This just presents an easier interface (IMHO) for accomplishing that. 
+And I say easier because I was unable how to figure out the recvmmsg way 
+to do it.
 
-> +       /*
->          * The bounds directory pointer is stored in a register
->          * only accessible if we first do an xsave.
->          */
-> _
+While fully aware that this makes me look like an idiot, I have to admit 
+that I've tried and failed to figure out how to get a socket fd out of 
+the tun device.
 
+The regular fd doesn't work (which is obvious when you look at the 
+implementation sock_from_file), there's a tun_get_socket function but 
+it's only referenced by a single file, and none of the ioctl's jump out 
+at me as doing anything to enable this behavior.  Additionally, 
+tuntap.txt makes no mention of sockets specifically.
 
+FWIW, I don't feel strongly that IFF_MULTI_READ is the right way to do 
+this either.
 
+Thanks,
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Alex Gartrell <agartrell@fb.com>
+
