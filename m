@@ -1,178 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881AbaLVOe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:34:26 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:60545 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184AbaLVOeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:34:24 -0500
-Date: Mon, 22 Dec 2014 15:34:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm ML <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: guest hanging on rc1
-Message-ID: <20141222143421.GA4403@pd.tnic>
+	id S1754977AbaLVOhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:37:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35636 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768AbaLVOhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 09:37:18 -0500
+Message-ID: <54982C98.9070806@oracle.com>
+Date: Mon, 22 Dec 2014 09:37:12 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "davej >> Dave Jones" <davej@redhat.com>
+Subject: fs: proc: gpf in find_entry
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
+Hi all,
 
-so I installed an old SUSE guest (SLES10, kernel is 2.6.16 + enterprise
-stuff) and it was booting and all was fine but this week not anymore.
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel, I've stumbled on the following spew:
 
-Host kernel is 3.19-rc1 + tip/master. I did miss some kvm config options
-initially so I did
+[ 2015.960381] general protection fault: 0000 [#1] PREEMPT SMP KASAN
+[ 2015.961912] Dumping ftrace buffer:
+[ 2015.962803]    (ftrace buffer empty)
+[ 2015.963370] Modules linked in:
+[ 2015.963895] CPU: 1 PID: 16983 Comm: trinity-c126 Not tainted 3.18.0-next-20141219-sasha-00047-gaab33f6-dirty #1627
+[ 2015.965991] task: ffff88080e478000 ti: ffff88080e474000 task.ti: ffff88080e474000
+[ 2015.968196] RIP: find_entry (fs/proc/proc_sysctl.c:95)
+[ 2015.970534] RSP: 0018:ffff88080e4779d8  EFLAGS: 00010246
+[ 2015.970534] RAX: 0000000000000000 RBX: ffff88000003a960 RCX: 0000000000000073
+[ 2015.970534] RDX: 1ffff10101c8f3c4 RSI: 0000000000000000 RDI: ffff88080e479e20
+[ 2015.970534] RBP: ffff88080e477a28 R08: 0000000000000066 R09: 0000000000000073
+[ 2015.970534] R10: ffffda0017d55630 R11: dfffe90000000000 R12: ffff88005fc644b8
+[ 2015.970534] R13: dfffe90000000000 R14: ffffffff92464884 R15: 0000000000000000
+[ 2015.970534] FS:  00007f9cd6c6f700(0000) GS:ffff8800c2200000(0000) knlGS:0000000000000000
+[ 2015.970534] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2015.970534] CR2: 00007f9cd0b9c000 CR3: 00000008193fb000 CR4: 00000000000006a0
+[ 2015.970534] DR0: ffffffffff000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 2015.970534] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 2015.970534] Stack:
+[ 2015.970534]  ffff88080e477a28 ffff88080e477a50 00000003beaab0c0 ffff8800beaab0f8
+[ 2015.970534]  0000000000000001 ffff8800beaab0f8 ffff8800beaab0c0 ffff8806079af638
+[ 2015.970534]  0000000000000003 ffff88045f3cc000 ffff88080e477a88 ffffffff81c4e0ef
+[ 2015.970534] Call Trace:
+[ 2015.970534] proc_sys_lookup (fs/proc/proc_sysctl.c:303 fs/proc/proc_sysctl.c:452)
+[ 2015.970534] ? d_alloc (fs/dcache.c:1499)
+[ 2015.970534] lookup_real (fs/namei.c:1371)
+[ 2015.970534] __lookup_hash (fs/namei.c:1390)
+[ 2015.970534] link_path_walk (fs/namei.c:1496 fs/namei.c:1576 fs/namei.c:1830)
+[ 2015.970534] ? preempt_count_sub (kernel/sched/core.c:2620)
+[ 2015.970534] ? get_parent_ip (kernel/sched/core.c:2564)
+[ 2015.970534] ? get_parent_ip (kernel/sched/core.c:2564)
+[ 2015.970534] ? __cmpxchg_double_slab.isra.4 (./arch/x86/include/asm/preempt.h:95 include/linux/bit_spinlock.h:81 mm/slub.c:346 mm/slub.c:386)
+[ 2015.970534] path_init (fs/namei.c:1947)
+[ 2015.970534] ? deactivate_slab (include/linux/spinlock.h:349 mm/slub.c:1945)
+[ 2015.970534] path_lookupat (fs/namei.c:1989)
+[ 2015.970534] ? alloc_debug_processing (mm/slub.c:1044)
+[ 2015.970534] filename_lookup (fs/namei.c:2025)
+[ 2015.970534] kern_path_create (fs/namei.c:3309)
+[ 2015.970534] ? getname_flags (fs/namei.c:159)
+[ 2015.970534] ? vtime_account_user (kernel/sched/cputime.c:701)
+[ 2015.970534] user_path_create (fs/namei.c:3381)
+[ 2015.970534] SyS_mknod (fs/namei.c:3443 fs/namei.c:3431 fs/namei.c:3475 fs/namei.c:3473)
+[ 2015.970534] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+[ 2015.970534] Code: e8 03 42 80 3c 28 00 0f 85 ff 01 00 00 4c 8b 7b 18 4d 85 ff 0f 84 de 01 00 00 41 f6 c7 07 0f 85 d4 01 00 00 4c 89 f8 48 c1 e8 03 <42> 80 3c 28 00 0f 85 b5 01 00 00 4d 8b 37 4d 85 ff 0f 84 55 02
+All code
+========
+   0:	e8 03 42 80 3c       	callq  0x3c804208
+   5:	28 00                	sub    %al,(%rax)
+   7:	0f 85 ff 01 00 00    	jne    0x20c
+   d:	4c 8b 7b 18          	mov    0x18(%rbx),%r15
+  11:	4d 85 ff             	test   %r15,%r15
+  14:	0f 84 de 01 00 00    	je     0x1f8
+  1a:	41 f6 c7 07          	test   $0x7,%r15b
+  1e:	0f 85 d4 01 00 00    	jne    0x1f8
+  24:	4c 89 f8             	mov    %r15,%rax
+  27:	48 c1 e8 03          	shr    $0x3,%rax
+  2b:*	42 80 3c 28 00       	cmpb   $0x0,(%rax,%r13,1)		<-- trapping instruction
+  30:	0f 85 b5 01 00 00    	jne    0x1eb
+  36:	4d 8b 37             	mov    (%r15),%r14
+  39:	4d 85 ff             	test   %r15,%r15
+  3c:	0f                   	.byte 0xf
+  3d:	84 55 02             	test   %dl,0x2(%rbp)
+	...
 
-$ make kvmconfig
-
-and it added those (see diff at the end).
-
-Now, when I go to the monitor and do
-
-(qemu) p $eip
-0xffffffff80120e7e
-
-This address is in kvm_register_clock() on the guest kernel:
-
-ffffffff80120dd2 <kvm_register_clock>:
-ffffffff80120dd2:       55                      push   %rbp
-ffffffff80120dd3:       53                      push   %rbx
-ffffffff80120dd4:       48 83 ec 08             sub    $0x8,%rsp
-ffffffff80120dd8:       65 8b 34 25 24 00 00    mov    %gs:0x24,%esi
-ffffffff80120ddf:       00 
-ffffffff80120de0:       31 c0                   xor    %eax,%eax
-ffffffff80120de2:       83 3d 7f a8 33 00 00    cmpl   $0x0,0x33a87f(%rip)        # ffffffff8045b668 <use_kvm_time>
-ffffffff80120de9:       0f 84 91 00 00 00       je     ffffffff80120e80 <kvm_register_clock+0xae>
-ffffffff80120def:       48 63 d6                movslq %esi,%rdx
-ffffffff80120df2:       48 c7 c0 80 04 43 80    mov    $0xffffffff80430480,%rax
-ffffffff80120df9:       48 8b 14 d5 20 42 3f    mov    -0x7fc0bde0(,%rdx,8),%rdx
-ffffffff80120e00:       80 
-ffffffff80120e01:       4c 8b 42 08             mov    0x8(%rdx),%r8
-ffffffff80120e05:       4a 8d 14 00             lea    (%rax,%r8,1),%rdx
-ffffffff80120e09:       48 b8 ff ff ff 7f ff    movabs $0xffffffff7fffffff,%rax
-ffffffff80120e10:       ff ff ff 
-ffffffff80120e13:       48 39 c2                cmp    %rax,%rdx
-ffffffff80120e16:       8d 8a 00 00 00 80       lea    -0x80000000(%rdx),%ecx
-ffffffff80120e1c:       77 02                   ja     ffffffff80120e20 <kvm_register_clock+0x4e>
-ffffffff80120e1e:       89 d1                   mov    %edx,%ecx
-ffffffff80120e20:       48 c7 c0 80 04 43 80    mov    $0xffffffff80430480,%rax
-ffffffff80120e27:       83 c9 01                or     $0x1,%ecx
-ffffffff80120e2a:       4a 8d 14 00             lea    (%rax,%r8,1),%rdx
-ffffffff80120e2e:       48 b8 ff ff ff 7f ff    movabs $0xffffffff7fffffff,%rax
-ffffffff80120e35:       ff ff ff 
-ffffffff80120e38:       89 cd                   mov    %ecx,%ebp
-ffffffff80120e3a:       48 39 c2                cmp    %rax,%rdx
-ffffffff80120e3d:       76 07                   jbe    ffffffff80120e46 <kvm_register_clock+0x74>
-ffffffff80120e3f:       b8 00 00 00 80          mov    $0x80000000,%eax
-ffffffff80120e44:       eb 0a                   jmp    ffffffff80120e50 <kvm_register_clock+0x7e>
-ffffffff80120e46:       48 b8 00 00 00 00 00    movabs $0x7f0000000000,%rax
-ffffffff80120e4d:       7f 00 00 
-ffffffff80120e50:       48 8d 04 02             lea    (%rdx,%rax,1),%rax
-ffffffff80120e54:       48 89 c2                mov    %rax,%rdx
-ffffffff80120e57:       48 c1 ea 20             shr    $0x20,%rdx
-ffffffff80120e5b:       48 85 ff                test   %rdi,%rdi
-ffffffff80120e5e:       89 d3                   mov    %edx,%ebx
-ffffffff80120e60:       74 11                   je     ffffffff80120e73 <kvm_register_clock+0xa1>
-ffffffff80120e62:       49 89 f8                mov    %rdi,%r8
-ffffffff80120e65:       31 c0                   xor    %eax,%eax
-ffffffff80120e67:       48 c7 c7 f4 7a 31 80    mov    $0xffffffff80317af4,%rdi
-ffffffff80120e6e:       e8 b7 4a 01 00          callq  ffffffff8013592a <printk>
-ffffffff80120e73:       b9 12 00 00 00          mov    $0x12,%ecx
-ffffffff80120e78:       89 e8                   mov    %ebp,%eax
-ffffffff80120e7a:       89 da                   mov    %ebx,%edx
-ffffffff80120e7c:       0f 30                   wrmsr  
-ffffffff80120e7e:       31 c0                   xor    %eax,%eax		<--- rIP
-ffffffff80120e80:       5a                      pop    %rdx
-ffffffff80120e81:       5b                      pop    %rbx
-ffffffff80120e82:       5d                      pop    %rbp
-ffffffff80120e83:       c3                      retq   
-
-right after we've written the 0x12 MSR, i.e. MSR_KVM_SYSTEM_TIME.
-
-So something broke somewhere and the guest won't boot anymore. Even if I
-try to boot the iso image which I used to install it, its kernel hangs
-there too. Not the same VA though:
-
-(qemu) p $eip
-0xffffffff8011b172
-(qemu)
-
-but the exact same place:
-
-(qemu) x/20i 0xffffffff8011b150
-0xffffffff8011b150:  je     0x7fff8011b167
-0xffffffff8011b152:  mov    %rdi,%r8
-0xffffffff8011b155:  mov    %ebp,%ecx
-0xffffffff8011b157:  xor    %esi,%esi
-0xffffffff8011b159:  mov    $0xffffffff802ee1ac,%rdi
-0xffffffff8011b160:  xor    %eax,%eax
-0xffffffff8011b162:  callq  0x7fff8012a562
-0xffffffff8011b167:  mov    $0x12,%ecx
-0xffffffff8011b16c:  mov    %ebp,%eax
-0xffffffff8011b16e:  mov    %ebx,%edx
-0xffffffff8011b170:  wrmsr  
-0xffffffff8011b172:  xor    %eax,%eax			<--- rIP
-0xffffffff8011b174:  pop    %rdx
-0xffffffff8011b175:  pop    %rbx
-0xffffffff8011b176:  pop    %rbp
-0xffffffff8011b177:  retq   
-0xffffffff8011b178:  push   %rbp
-0xffffffff8011b179:  mov    %edi,%ebp
-0xffffffff8011b17b:  push   %rbx
-0xffffffff8011b17c:  sub    $0x8,%rsp
-
-Right after the MSR write.
-
-Any ideas how to debug this further? :)
-
-Thanks.
+Code starting with the faulting instruction
+===========================================
+   0:	42 80 3c 28 00       	cmpb   $0x0,(%rax,%r13,1)
+   5:	0f 85 b5 01 00 00    	jne    0x1c0
+   b:	4d 8b 37             	mov    (%r15),%r14
+   e:	4d 85 ff             	test   %r15,%r15
+  11:	0f                   	.byte 0xf
+  12:	84 55 02             	test   %dl,0x2(%rbp)
+	...
+[ 2015.970534] RIP find_entry (fs/proc/proc_sysctl.c:95)
+[ 2015.970534]  RSP <ffff88080e4779d8>
+[ 2016.028073] ---[ end trace 142d37d0fb80aa87 ]---
+[ 2016.028925] Kernel panic - not syncing: Fatal exception
+[ 2016.030263] Dumping ftrace buffer:
+[ 2016.030847]    (ftrace buffer empty)
+[ 2016.031399] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)
+[ 2016.032890] Rebooting in 1 seconds..
 
 
---- /boot/config-3.19.0-rc1+    2014-12-22 11:20:13.015922953 +0100
-+++ .config     2014-12-22 13:31:24.030189420 +0100
-@@ -336,7 +336,15 @@ CONFIG_X86_FEATURE_NAMES=y
- CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
- CONFIG_SCHED_OMIT_FRAME_POINTER=y
- # CONFIG_KVMTOOL_TEST_ENABLE is not set
--# CONFIG_HYPERVISOR_GUEST is not set
-+CONFIG_HYPERVISOR_GUEST=y
-+CONFIG_PARAVIRT=y
-+# CONFIG_PARAVIRT_DEBUG is not set
-+# CONFIG_PARAVIRT_SPINLOCKS is not set
-+# CONFIG_XEN is not set
-+CONFIG_KVM_GUEST=y
-+# CONFIG_KVM_DEBUG_FS is not set
-+# CONFIG_PARAVIRT_TIME_ACCOUNTING is not set
-+CONFIG_PARAVIRT_CLOCK=y
- CONFIG_NO_BOOTMEM=y
- # CONFIG_MEMTEST is not set
- CONFIG_MK8=y
-@@ -1126,6 +1134,7 @@ CONFIG_VIRTIO_BLK=y
- # CONFIG_SENSORS_APDS990X is not set
- # CONFIG_HMC6352 is not set
- # CONFIG_DS1682 is not set
-+# CONFIG_VMWARE_BALLOON is not set
- # CONFIG_BMP085_I2C is not set
- # CONFIG_USB_SWITCH_FSA9480 is not set
- # CONFIG_SRAM is not set
-@@ -2708,6 +2717,7 @@ CONFIG_VIRTIO_PCI=y
- #
- # Microsoft Hyper-V guest support
- #
-+# CONFIG_HYPERV is not set
- # CONFIG_STAGING is not set
- # CONFIG_X86_PLATFORM_DEVICES is not set
- # CONFIG_CHROME_PLATFORMS is not set
+Thanks,
+Sasha
 
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
