@@ -1,254 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410AbaLVRKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 12:10:08 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:53378 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481AbaLVRKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 12:10:06 -0500
-Message-ID: <5498506A.4010100@gmail.com>
-Date: Mon, 22 Dec 2014 10:10:02 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932097AbaLVRKi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 12:10:38 -0500
+Received: from mga14.intel.com ([192.55.52.115]:6592 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754841AbaLVRKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 12:10:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,625,1413270000"; 
+   d="scan'208";a="658551121"
+Message-ID: <5498508A.4080108@linux.intel.com>
+Date: Mon, 22 Dec 2014 09:10:34 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Valdis.Kletnieks@vt.edu, acme@kernel.org, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] tools lib traceevent: Add support for IP address formats
-References: <1418915443-45707-1-git-send-email-dsahern@gmail.com> <17321.1418939104@turing-police.cc.vt.edu> <549351A7.9040408@gmail.com> <54938266.9090007@gmail.com> <20141222170103.GG29096@krava.brq.redhat.com>
-In-Reply-To: <20141222170103.GG29096@krava.brq.redhat.com>
-Content-Type: multipart/mixed;
- boundary="------------030101010600060909040108"
+To: Rafael Aquini <aquini@redhat.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, oleg@redhat.com, rientjes@google.com,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] proc: task_mmu: show page size in /proc/<pid>/numa_maps
+References: <c97f30472ec5fe79cb8fa8be66cc3d8509777990.1419079617.git.aquini@redhat.com> <20141220183613.GA19229@phnom.home.cmpxchg.org> <20141220194457.GA3166@x61.redhat.com> <54970B49.3070104@linux.intel.com> <20141221222850.GA2038@x61.redhat.com>
+In-Reply-To: <20141221222850.GA2038@x61.redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030101010600060909040108
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+On 12/21/2014 02:28 PM, Rafael Aquini wrote:
+>>> > > I'm fine either way, it makes the change even simpler. Also, if we
+>>> > > decide to get rid of page_size != PAGE_SIZE condition I believe we can 
+>>> > > also get rid of that "huge" hint being conditionally printed out too.
+>> > 
+>> > That would break existing users of the "huge" flag.  That makes it out
+>> > of the question, right?
+>> >
+> Yeah, but it sort of follows the same complaint Johannes did for the 
+> conditional page size printouts. If we start to print out page size
+> deliberately for each map regardless their backing pages being PAGE_SIZE 
+> long or bigger, I don't see much point on keep conditionally printing out 
+> the 'huge' hint out.
 
-On 12/22/14 10:01 AM, Jiri Olsa wrote:
-> apart from your tracepoints, is there another tracepoint using this?
-> I couldn't find any.. I dont think it's a problem.. just wanted to
-> try it;-)
+Because existing userspace might be relying on it.  If we take the
+'huge' hint out, userspace will break.
 
-grrr... i was hoping no one would ask that question. I am not aware of 
-any in tree. We use it locally in custom tracepoints in the networking 
-stack (from what I can tell netdev will not take -- LTTng tried many 
-years ago) and in a couple of klms.
+> As I said before, I'm fine either way though I think
+> we can keep the current behaviour, and just disambiguate page sizes !=
+> PAGE_SIZE as in the current proposal.
 
-The attached patch is what I used to test (plus our local versions). It 
-is derived from a patch on the 3.4 kernel which allows us to trace 
-address changes.
-
-David
-
---------------030101010600060909040108
-Content-Type: text/plain; charset=UTF-8; x-mac-type="0"; x-mac-creator="0";
- name="tracepoints-to-test-IP-address-format-output.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="tracepoints-to-test-IP-address-format-output.patch"
-
->From bedfad82a159226f06a8035f6a7622fce6df7a0a Mon Sep 17 00:00:00 2001
-From: David Ahern <dsahern@gmail.com>
-Date: Thu, 18 Dec 2014 19:03:28 -0700
-Subject: [PATCH 2/2] tracepoints to test IP address format output
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- include/trace/events/ipv4.h | 42 ++++++++++++++++++++++++++++++++++++++++++
- include/trace/events/ipv6.h | 44 ++++++++++++++++++++++++++++++++++++++++++++
- net/core/net-traces.c       |  2 ++
- net/ipv4/devinet.c          |  4 ++++
- net/ipv6/addrconf.c         |  4 ++++
- 5 files changed, 96 insertions(+)
- create mode 100644 include/trace/events/ipv4.h
- create mode 100644 include/trace/events/ipv6.h
-
-diff --git a/include/trace/events/ipv4.h b/include/trace/events/ipv4.h
-new file mode 100644
-index 000000000000..24e1e8a8b843
---- /dev/null
-+++ b/include/trace/events/ipv4.h
-@@ -0,0 +1,42 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM ipv4
-+
-+#if !defined(_TRACE_EVENTS_IPV4_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_EVENTS_IPV4_H
-+
-+#include <linux/inetdevice.h>
-+#include <linux/tracepoint.h>
-+
-+DECLARE_EVENT_CLASS(ipv4_addr_template,
-+
-+	TP_PROTO(struct in_ifaddr *ifa,
-+		 struct in_device *in_dev),
-+
-+	TP_ARGS(ifa, in_dev),
-+
-+	TP_STRUCT__entry(
-+		__array(__u8, addr, 4)
-+	),
-+
-+	TP_fast_assign(
-+		memcpy(&__entry->addr,  &ifa->ifa_address, 4);
-+	),
-+
-+	TP_printk("pI4=%pI4 pi4=%pi4",
-+		__entry->addr, __entry->addr)
-+);
-+
-+DEFINE_EVENT(ipv4_addr_template, ipv4_add_addr,
-+	TP_PROTO(struct in_ifaddr *ifa, struct in_device *in_dev),
-+	TP_ARGS(ifa, in_dev)
-+);
-+
-+DEFINE_EVENT(ipv4_addr_template, ipv4_del_addr,
-+	TP_PROTO(struct in_ifaddr *ifa, struct in_device *in_dev),
-+	TP_ARGS(ifa, in_dev)
-+);
-+
-+#endif /* _TRACE_EVENTS_IPV4_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/include/trace/events/ipv6.h b/include/trace/events/ipv6.h
-new file mode 100644
-index 000000000000..db1ae85eaa0c
---- /dev/null
-+++ b/include/trace/events/ipv6.h
-@@ -0,0 +1,44 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM ipv6
-+
-+#if !defined(_TRACE_EVENTS_IPV6_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_EVENTS_IPV6_H
-+
-+#include <net/if_inet6.h>
-+#include <linux/tracepoint.h>
-+
-+DECLARE_EVENT_CLASS(ipv6_addr_template,
-+
-+	TP_PROTO(struct inet6_ifaddr *ifa),
-+
-+	TP_ARGS(ifa),
-+
-+	TP_STRUCT__entry(
-+		__array(__u8, addr, (int)sizeof(struct in6_addr))
-+	),
-+
-+	TP_fast_assign(
-+		memcpy(&__entry->addr,  &ifa->addr, (int)sizeof(struct in6_addr));
-+	),
-+
-+	TP_printk("pi6=%pi6 pI6=%pI6 pI6c=%pI6c",
-+		__entry->addr, __entry->addr, __entry->addr)
-+);
-+
-+DEFINE_EVENT(ipv6_addr_template, ipv6_add_addr,
-+
-+	TP_PROTO(struct inet6_ifaddr *ifa),
-+
-+	TP_ARGS(ifa)
-+);
-+DEFINE_EVENT(ipv6_addr_template, ipv6_del_addr,
-+
-+	TP_PROTO(struct inet6_ifaddr *ifa),
-+
-+	TP_ARGS(ifa)
-+);
-+
-+#endif /* _TRACE_EVENTS_IPV6_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/net/core/net-traces.c b/net/core/net-traces.c
-index ba3c0120786c..b564a28852d1 100644
---- a/net/core/net-traces.c
-+++ b/net/core/net-traces.c
-@@ -31,6 +31,8 @@
- #include <trace/events/napi.h>
- #include <trace/events/sock.h>
- #include <trace/events/udp.h>
-+#include <trace/events/ipv4.h>
-+#include <trace/events/ipv6.h>
- 
- EXPORT_TRACEPOINT_SYMBOL_GPL(kfree_skb);
- 
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index 214882e7d6de..aa6ba2ad93fd 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -64,6 +64,7 @@
- #include <net/rtnetlink.h>
- #include <net/net_namespace.h>
- #include <net/addrconf.h>
-+#include <trace/events/ipv4.h>
- 
- #include "fib_lookup.h"
- 
-@@ -358,6 +359,7 @@ static void __inet_del_ifa(struct in_device *in_dev, struct in_ifaddr **ifap,
- 				inet_hash_remove(ifa);
- 				*ifap1 = ifa->ifa_next;
- 
-+				trace_ipv4_del_addr(ifa, in_dev);
- 				rtmsg_ifa(RTM_DELADDR, ifa, nlh, portid);
- 				blocking_notifier_call_chain(&inetaddr_chain,
- 						NETDEV_DOWN, ifa);
-@@ -395,6 +397,7 @@ static void __inet_del_ifa(struct in_device *in_dev, struct in_ifaddr **ifap,
- 	   is valid, it will try to restore deleted routes... Grr.
- 	   So that, this order is correct.
- 	 */
-+	trace_ipv4_del_addr(ifa1, in_dev);
- 	rtmsg_ifa(RTM_DELADDR, ifa1, nlh, portid);
- 	blocking_notifier_call_chain(&inetaddr_chain, NETDEV_DOWN, ifa1);
- 
-@@ -476,6 +479,7 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
- 	ifa->ifa_next = *ifap;
- 	*ifap = ifa;
- 
-+	trace_ipv4_add_addr(ifa, in_dev);
- 	inet_hash_insert(dev_net(in_dev->dev), ifa);
- 
- 	cancel_delayed_work(&check_lifetime_work);
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index f7c8bbeb27b7..294cb618baf5 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -90,6 +90,7 @@
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
- #include <linux/export.h>
-+#include <trace/events/ipv6.h>
- 
- /* Set to 3 to get tracing... */
- #define ACONF_DEBUG 2
-@@ -874,6 +875,7 @@ ipv6_add_addr(struct inet6_dev *idev, const struct in6_addr *addr,
- 	in6_dev_hold(idev);
- 	/* For caller */
- 	in6_ifa_hold(ifa);
-+	trace_ipv6_add_addr(ifa);
- 
- 	/* Add to big hash table */
- 	hash = inet6_addr_hash(addr);
-@@ -1658,8 +1660,10 @@ static void addrconf_dad_stop(struct inet6_ifaddr *ifp, int dad_failed)
- 		} else {
- 			spin_unlock_bh(&ifp->lock);
- 		}
-+		trace_ipv6_del_addr(ifp);
- 		ipv6_del_addr(ifp);
- 	} else {
-+		trace_ipv6_del_addr(ifp);
- 		ipv6_del_addr(ifp);
- 	}
- }
--- 
-1.9.3 (Apple Git-50)
-
-
---------------030101010600060909040108--
+Unless we somehow have a (really good) handle on how many apps out there
+are reading and using 'huge', I think we have to keep the existing behavior.
