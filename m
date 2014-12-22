@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094AbaLVOlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:41:44 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:49117 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076AbaLVOll (ORCPT
+	id S932112AbaLVOlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:41:47 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:36402 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091AbaLVOlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:41:41 -0500
+	Mon, 22 Dec 2014 09:41:45 -0500
 From: Daniele Forsi <dforsi@gmail.com>
 To: Henk Vergonet <Henk.Vergonet@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: usbb2k-api-dev@nongnu.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 0/2] USB: input: yealink.c: update key mappings
-Date: Mon, 22 Dec 2014 15:41:07 +0100
-Message-Id: <1419259269-23820-1-git-send-email-dforsi@gmail.com>
+        linux-kernel@vger.kernel.org, Daniele Forsi <dforsi@gmail.com>
+Subject: [RFC PATCH 2/2] USB: input: yealink.c: add mapping for "RING" and "MUTE" keys
+Date: Mon, 22 Dec 2014 15:41:09 +0100
+Message-Id: <1419259269-23820-3-git-send-email-dforsi@gmail.com>
 X-Mailer: git-send-email 2.1.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1419259269-23820-1-git-send-email-dforsi@gmail.com>
+References: <1419259269-23820-1-git-send-email-dforsi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+According to the user manual of the "VOIP-3 SKY" USB phone, the RING
+key is used to select different ring tones and the MUTE key is used
+to mute the microphone.
 
-I have an Yealink USB phone which is handled by the yealink.c driver but the
-'#' key returns an unexpected value and keys labeled "RING" and "MUTE" do not
-return any value to userspace.
+Signed-off-by: Daniele Forsi <dforsi@gmail.com>
+---
+ drivers/input/misc/yealink.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-In the first patch of this series I replace the combination KEY_LEFTSHIFT and
-KEY_3 with KEY_NUMERIC_POUND and I also replace other keys for internal consistency
-and with the cm109.c driver, which according to the comment in the code is derived
-from this one, is this the right approach?
-
-In the second patch I add two additional keys which could be handled by userspace:
- "RING" whose purpose according to the user manual is to cycle all available ringtones
- "MUTE" whose purpose is to mute the USB microphone
-which KEY_* values should be used for them?
-
-I have two more questions:
-DRIVER_VERSION should be updated?
-are both patches suitable for stable?
-
-Daniele Forsi (2):
-  USB: input: yealink.c: use KEY_NUMERIC_* for numeric keys, star and
-    pound
-  USB: input: yealink.c: add mapping for "RING" and "MUTE" keys
-
- drivers/input/misc/yealink.c | 43 +++++++++++++++++++------------------------
- 1 file changed, 19 insertions(+), 24 deletions(-)
-
+diff --git a/drivers/input/misc/yealink.c b/drivers/input/misc/yealink.c
+index e9403da..0b86c49 100644
+--- a/drivers/input/misc/yealink.c
++++ b/drivers/input/misc/yealink.c
+@@ -189,7 +189,9 @@ static int setChar(struct yealink_dev *yld, int el, int chr)
+  * USB-P1K button layout:
+  *
+  *             up
++ *            ring
+  *       IN           OUT
++ *            mute
+  *            down
+  *
+  *     pickup   C    hangup
+@@ -207,7 +209,9 @@ static int map_p1k_to_key(int scancode)
+ 	switch(scancode) {		/* phone key:	*/
+ 	case 0x23: return KEY_LEFT;	/*   IN		*/
+ 	case 0x33: return KEY_UP;	/*   up		*/
++	case 0x44: return KEY_SOUND;	/*   ring	*/
+ 	case 0x04: return KEY_RIGHT;	/*   OUT	*/
++	case 0x41: return KEY_MICMUTE;	/*   mute	*/
+ 	case 0x24: return KEY_DOWN;	/*   down	*/
+ 	case 0x03: return KEY_ENTER;	/*   pickup	*/
+ 	case 0x14: return KEY_BACKSPACE; /*  C		*/
 -- 
 2.1.3
 
