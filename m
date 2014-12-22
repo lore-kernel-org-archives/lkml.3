@@ -1,138 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbaLVOpX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:45:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:52056 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755128AbaLVOpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:45:19 -0500
-Date: Mon, 22 Dec 2014 11:45:13 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 4/7] perf diff: Fix to sort by baseline field by default
-Message-ID: <20141222144513.GB2717@kernel.org>
-References: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
- <1419223455-4362-5-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419223455-4362-5-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755059AbaLVOrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:47:51 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:32393 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300AbaLVOrt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 09:47:49 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-b2-54982f12253f
+Message-id: <54982F0D.6040702@samsung.com>
+Date: Mon, 22 Dec 2014 15:47:41 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+Cc: Kukjin Kim <kgene@kernel.org>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, robh+dt <robh+dt@kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 00/11] Exynos7: Adding USB 3.0 support
+References: <1416576954-11997-1-git-send-email-gautam.vivek@samsung.com>
+ <20141121151130.GD7508@saruman> <54704BF0.1000903@ti.com>
+ <5470A7C5.1070302@kernel.org>
+ <CAFp+6iE5XJ+TGu+8TvRFd3Up-kzki3VPD4k6gPXaYbscfwnz4w@mail.gmail.com>
+In-reply-to: <CAFp+6iE5XJ+TGu+8TvRFd3Up-kzki3VPD4k6gPXaYbscfwnz4w@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xy7pC+jNCDDb80bE4eL/eYv6Rc6wW
+	bVcOslu8/b6F3aJ58Xo2i94FV9ks+h+/Zra48LSHzeLyrjlsFrOX9LNYzDi/j8li0bJWZovW
+	vUfYLSb8vsBmsWrXH0YHfo+ds+6ye2xa1cnmsX/uGnaP2Xd/MHr0bVnF6HH8xnYmj8+b5ALY
+	o7hsUlJzMstSi/TtErgyVs/mKPjOXnH0K2sD4wS2LkZODgkBE4klFzuZIWwxiQv31gPFuTiE
+	BJYySnSeOMYIkhAS+MQosf0vmM0roCVx7cByFhCbRUBV4uD5B2A2m4ChRO/RPrAaUYEIiZN3
+	97BD1AtK/Jh8D6xGREBH4lBrPwvIAmaBDlaJBxefgiWEBawkWv93s0Bsfs0oMfdCG9hJnALB
+	EhN/f2btYuQA6lCXmDIlFyTMLCAvsXnNW+YJjAKzkOyYhVA1C0nVAkbmVYyiqaXJBcVJ6blG
+	esWJucWleel6yfm5mxghMfR1B+PSY1aHGAU4GJV4eDtWTQsRYk0sK67MPcQowcGsJMJ7+PP0
+	ECHelMTKqtSi/Pii0pzU4kOMTBycUg2MzVERuaGOJ4+Jmi5zLL45Mf1r+SZHzcA/r1+1dpqt
+	lJv6588fP4vZAu29ckVmFiY2Vi+uvCg8U3Ww9N6jaiPXTwWPen21Zl7ic0+x+ia7Q/gIW+QK
+	xjk+80yFTK9djnhRdeX30TgWEcZgwXX3Vn2/MEPkicIGI2/7BV8CFX5/LH+uc2/Z94WaSizF
+	GYmGWsxFxYkAapinBn8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 22, 2014 at 01:44:12PM +0900, Namhyung Kim escreveu:
-> The currently perf diff didn't add the baseline and delta (or other
-> compute) fields to the sort list so output will be sorted by other
-> fields like alphabetical order of DSO or symbol as below example.
+Hi Vivek,
+
+On 25/11/14 12:48, Vivek Gautam wrote:
+> On Sat, Nov 22, 2014 at 8:42 PM, Kukjin Kim <kgene@kernel.org> wrote:
+>> > On 11/22/14 17:40, Kishon Vijay Abraham I wrote:
+>>> >> On Friday 21 November 2014 08:41 PM, Felipe Balbi wrote:
+...
+>>>> >>> I took dwc3 driver patches.
+>>> >>
+>>> >> I took the phy patches.
+>>> >>
+>> > I'll take DT changes once exynos7 is landing into samsung tree :)
+>> >
+> You too may want to pick the sole clock driver patch in this series
+> for 3.19 ? :-)
+> "clk: exynos7: Add required clock tree for USB"
 > 
-> Fix it by adding hpp formats for the fields and provides default
-> compare functions.
-> 
-> Before:
-> 
->   $ perf diff
->   # Event 'cycles'
->   #
->   # Baseline    Delta  Shared Object       Symbol
->   # ........  .......  ..................  ...............................
->   #
->                        [bridge]            [k] ip_sabotage_in
->                        [btrfs]             [k] __etree_search.constprop.47
->        0.01%           [btrfs]             [k] btrfs_file_mmap
->        0.01%   -0.01%  [btrfs]             [k] btrfs_getattr
->                        [e1000e]            [k] e1000_watchdog
->        0.00%           [kernel.vmlinux]    [k] PageHuge
->        0.00%           [kernel.vmlinux]    [k] __acct_update_integrals
->        0.00%           [kernel.vmlinux]    [k] __activate_page
->                        [kernel.vmlinux]    [k] __alloc_fd
->        0.02%   +0.02%  [kernel.vmlinux]    [k] __alloc_pages_nodemask
->        ...
-> 
-> After:
-> 
->   # Baseline    Delta  Shared Object       Symbol
->   # ........  .......  ..................  ................................
->   #
->       24.73%   -4.62%  perf                [.] append_chain_children
->        7.96%   -1.29%  perf                [.] dso__find_symbol
->        6.97%   -2.07%  libc-2.20.so        [.] vfprintf
->        4.61%   +0.88%  libc-2.20.so        [.] __fprintf_chk
->        4.41%   +2.43%  perf                [.] sort__comm_cmp
->        4.10%   -0.16%  perf                [.] comm__str
->        4.03%   -0.93%  perf                [.] machine__findnew_thread_time
->        3.82%   +3.09%  perf                [.] __hists__add_entry
->        2.95%   -0.18%  perf                [.] sort__dso_cmp
->        ...
+> Please let me know if the merge window is still open on your side so
+> that you can pick this patch.
 
-Looks better, here I tried running 'perf record usleep 1'  in quick
-succession to then run 'perf diff'  before and after this patch, got:
+My apologies, it seems I have missed this patch. :/
+Feel free to ping me off the list in future if there is no response
+for more than week.
+I queued this patch now for 3.20.  I'm putting all the exynos7 clk
+patches on a separate branch which could then be pulled into samsung
+arm tree for the dependant dts changes.
 
-Before:
-
-[ssdandy ~]$ cat /tmp/before
-# Event 'cycles'
-#
-# Baseline    Delta  Shared Object     Symbol                        
-# ........  .......  ................  ..............................
-#
-            +36.29%  [kernel.vmlinux]  [k] __split_vma.isra.31       
-    34.55%           [kernel.vmlinux]  [k] copy_user_generic_unrolled
-             +2.45%  [kernel.vmlinux]  [k] local_clock               
-     0.11%   +0.02%  [kernel.vmlinux]  [k] native_write_msr_safe     
-     2.12%           [kernel.vmlinux]  [k] perf_event_comm_output    
-            +61.13%  [kernel.vmlinux]  [k] unmap_page_range          
-    63.22%           libc-2.17.so      [.] 0x000000000007c3e0        
-[acme@ssdandy ~]$
-
-After:
-
-[acme@ssdandy linux]$ perf diff
-# Event 'cycles'
-#
-# Baseline    Delta  Shared Object     Symbol                        
-# ........  .......  ................  ..............................
-#
-    63.22%           libc-2.17.so      [.] 0x000000000007c3e0        
-    34.55%           [kernel.vmlinux]  [k] copy_user_generic_unrolled
-     2.12%           [kernel.vmlinux]  [k] perf_event_comm_output    
-     0.11%   +0.02%  [kernel.vmlinux]  [k] native_write_msr_safe     
-            +36.29%  [kernel.vmlinux]  [k] __split_vma.isra.31       
-             +2.45%  [kernel.vmlinux]  [k] local_clock               
-            +61.13%  [kernel.vmlinux]  [k] unmap_page_range          
-[acme@ssdandy linux]$
-
-Which was ok up to the point where symbols that only appeared on the
-second run were not sorted by delta, can you fix that?
-
-Please let me know if it is better to apply this one then a followup to
-sort the deltas or if a combined patch to achieve both is best.
-
-I.e.:
-
-[acme@ssdandy linux]$ perf diff
-# Event 'cycles'
-#
-# Baseline    Delta  Shared Object     Symbol                        
-# ........  .......  ................  ..............................
-#
-    63.22%           libc-2.17.so      [.] 0x000000000007c3e0        
-    34.55%           [kernel.vmlinux]  [k] copy_user_generic_unrolled
-     2.12%           [kernel.vmlinux]  [k] perf_event_comm_output    
-     0.11%   +0.02%  [kernel.vmlinux]  [k] native_write_msr_safe     
-            +61.13%  [kernel.vmlinux]  [k] unmap_page_range          
-            +36.29%  [kernel.vmlinux]  [k] __split_vma.isra.31       
-             +2.45%  [kernel.vmlinux]  [k] local_clock               
-
-[acme@ssdandy linux]$
-
-Humm, but then wouldn't we be more interested in sorting _everything_ by
-delta?
-
-- Arnaldo
+-- 
+Thanks,
+Sylwester
