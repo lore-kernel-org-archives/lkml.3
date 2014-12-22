@@ -1,96 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086AbaLVXO6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 18:14:58 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64621 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938AbaLVXO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 18:14:57 -0500
-Message-ID: <5498A5EC.4080101@redhat.com>
-Date: Tue, 23 Dec 2014 00:14:52 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753714AbaLVXQK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 18:16:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41154 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753363AbaLVXQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 18:16:08 -0500
+Date: Mon, 22 Dec 2014 15:16:04 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
+Message-ID: <20141222231604.GC8287@jaegeuk-mac02.mot.com>
+References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
+ <20141222020317.GB3335@lcm>
+ <000001d01db6$7d718770$78549650$@samsung.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Cleaning up the KVM clock
-References: <CALCETrV4Bhc=pwjJR-S7dfgcR7n0xKtj0o=ofOxCfJmnVFcjGw@mail.gmail.com> <20141222133430.GA23631@amt.cnet> <CALCETrXU+Z_t3qon+DR1hUiqSgpWLe9w74guBxbDG68ytM0icg@mail.gmail.com> <54989FF0.3090300@redhat.com> <CALCETrXzKZ=RhT2h32QxCskY5_hWtNQOYMnKcaRXCWRtQCta7g@mail.gmail.com>
-In-Reply-To: <CALCETrXzKZ=RhT2h32QxCskY5_hWtNQOYMnKcaRXCWRtQCta7g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001d01db6$7d718770$78549650$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Chao,
 
-
-On 23/12/2014 00:00, Andy Lutomirski wrote:
-> On Mon, Dec 22, 2014 at 2:49 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->>
->>
->> On 22/12/2014 17:03, Andy Lutomirski wrote:
->>> This is wrong.  The guest *kernel* might not see the intermediate
->>> state because the kernel (presumably it disabled migration while
->>> reading pvti), but the guest vdso can't do that and could very easily
->>> observe pvti while it's being written.
->>
->> No.  kvm_guest_time_update is called by vcpu_enter_guest, while the vCPU
->> is not running, so it's entirely atomic from the point of view of the guest.
+On Mon, Dec 22, 2014 at 03:10:30PM +0800, Chao Yu wrote:
+> Hi Changman,
 > 
-> Which vCPU?  Unless kvm_guest_time_update freezes all of the vcpus,
-> then there's a race:
+> > -----Original Message-----
+> > From: Changman Lee [mailto:cm224.lee@samsung.com]
+> > Sent: Monday, December 22, 2014 10:03 AM
+> > To: Chao Yu
+> > Cc: Jaegeuk Kim; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
+> > 
+> > Hi Yu,
+> > 
+> > Good approach.
 > 
-> vCPU 0 guest: __getcpu
-> vdso thread migrates to vCPU 1
-> vCPU 0 exits
-> host starts writing pvti for vCPU 0
-> vdso thread starts reading pvti
-> host finishes writing pvti for vCPU 0
-> vCPU 0 resumes
-> vdso migrates back to vCPU 0
-> __getcpu returns 0
+> Thank you. :)
 > 
-> and we fail.
-
-Yes, it does.  See kvm_gen_update_masterclock.
-
-See also http://www.spinics.net/lists/kvm/msg95533.html for some
-discussion about KVM_REQ_MCLOCK_INPROGRESS.
-
-> I'm having a hard time testing, since KVM on 3.19-rc1 appears to be
-> entirely unusable.  No matter what I do, I get this very early in
-> guest boot:
+> > As you know, however, f2fs breaks extent itself due to COW.
 > 
-> KVM internal error. Suberror: 1
-> emulation failure
-> EAX=000dee58 EBX=00000000 ECX=00000000 EDX=00000cfd
-> ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fc4
-> EIP=000f17f4 EFL=00010012 [----A--] CPL=0 II=0 A20=1 SMM=0 HLT=0
-> ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
-> SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-> TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-> GDT=     000f6c58 00000037
-> IDT=     000f6c96 00000000
-> CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
-> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
-> DR3=0000000000000000
-> DR6=00000000ffff0ff0 DR7=0000000000000400
-> EFER=0000000000000000
-> Code=e8 75 fc ff ff 89 f2 a8 10 89 d8 75 0a b9 74 17 ff ff ff d1 <5b>
-> 5e c3 5b 5e e9 76 ff ff ff 57 56 53 8b 35 38 65 0f 00 85 f6 0f 88 be
-> 00 00 00 0f b7 f6
+> Yes, and sometimes f2fs use IPU when override writing, in this condition,
+> by using this approach we can cache more contiguous mapping extent for better
+> performance.
+
+Hmm. When f2fs faces with this case, there is no chance to make an extent itself
+at all.
+
 > 
-> and it sometimes comes with a lockdep splat, too.
+> > Unlike other filesystem like btrfs, minimum extent of f2fs could have 4KB granularity.
+> > So we would have lots of extents per inode and it could lead to overhead
+> > to manage extents.
+> 
+> Agree, the more number of extents are growing in one inode, the more memory
+> pressure and longer latency operating in rb-tree we are facing.
+> IMO, to solve this problem, we'd better to add limitation or shrink ability into
+> extent cache:
+> 1.limit extent number per inode with the value set from sysfs and discard extent
+> from inode's extent lru list if we touch the limitation; (e.g. in FAT, max number
+> of mapping extent per inode is fixed: 8)
+> 2.add all extents of inodes into a global lru list, we will try to shrink this list
+> if we're facing memory pressure.
+> 
+> How do you think? or any better ideas are welcome. :)
 
-I can look at it tomorrow.  Does commit
-2c4aa55a6af070262cca425745e8e54310e96b8d work for you?
+Historically, the reason that I added only one small extent cache is that I
+wanted to avoid additional data structures having any overhead in critical data
+write path.
+Instead, I intended to use a well operating node page cache.
 
-Paolo
+We need to consider what would be the benefit when using extent cache rather
+than existing node page cache.
+
+Thanks,
+
+> 
+> > 
+> > Anyway, mount option could be alternative for this patch.
+> 
+> Yes, will do.
+> 
+> Thanks,
+> Yu
+> 
+> > 
+> > On Fri, Dec 19, 2014 at 06:49:29PM +0800, Chao Yu wrote:
+> > > Now f2fs have page-block mapping cache which can cache only one extent mapping
+> > > between contiguous logical address and physical address.
+> > > Normally, this design will work well because f2fs will expand coverage area of
+> > > the mapping extent when we write forward sequentially. But when we write data
+> > > randomly in Out-Place-Update mode, the extent will be shorten and hardly be
+> > > expanded for most time as following reasons:
+> > > 1.The short part of extent will be discarded if we break contiguous mapping in
+> > > the middle of extent.
+> > > 2.The new mapping will be added into mapping cache only at head or tail of the
+> > > extent.
+> > > 3.We will drop the extent cache when the extent became very fragmented.
+> > > 4.We will not update the extent with mapping which we get from readpages or
+> > > readpage.
+> > >
+> > > To solve above problems, this patch adds extent cache base on rb-tree like other
+> > > filesystems (e.g.: ext4/btrfs) in f2fs. By this way, f2fs can support another
+> > > more effective cache between dnode page cache and disk. It will supply high hit
+> > > ratio in the cache with fewer memory when dnode page cache are reclaimed in
+> > > environment of low memory.
+> > >
+> > > Todo:
+> > > *introduce mount option for extent cache.
+> > > *add shrink ability for extent cache.
+> > >
+> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > ---
