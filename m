@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbaLVId2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 03:33:28 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:49122 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaLVId1 (ORCPT
+	id S1754055AbaLVIjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 03:39:43 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:39822 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583AbaLVIjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 03:33:27 -0500
-Message-ID: <5497D750.2040104@hitachi.com>
-Date: Mon, 22 Dec 2014 17:33:20 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 22 Dec 2014 03:39:41 -0500
 MIME-Version: 1.0
-To: Divya Vyas <edivya.vyas@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Merge ftrace data of host and guest
-References: <CAGfiMvCLgdaACWuUJAWecaLP9cSZRLFzzWgNGoiZTidT9m60cg@mail.gmail.com> <20141220051008.GE5474@home.goodmis.org> <CAGfiMvB8tH30MGKz2XQ6ugZjrBxRmYUSiBb-_bOwzGr8mFCbiA@mail.gmail.com> <CAGfiMvBOTm2EH5R1W8AwWWxTROX8hO=YH78fJm=Ljo4H7btkKA@mail.gmail.com>
-In-Reply-To: <CAGfiMvBOTm2EH5R1W8AwWWxTROX8hO=YH78fJm=Ljo4H7btkKA@mail.gmail.com>
+In-Reply-To: <1417914095-26553-1-git-send-email-jcmvbkbc@gmail.com>
+References: <1417914095-26553-1-git-send-email-jcmvbkbc@gmail.com>
+Date: Mon, 22 Dec 2014 11:39:40 +0300
+Message-ID: <CAMo8BfJCPU_ZM0w2Ry9kjU3O+HcWEmp_wgZ44oC7gBLW8DV5jw@mail.gmail.com>
+Subject: Re: [PATCH v3] ASoC: add xtensa xtfpga I2S interface and platform
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Max Filippov <jcmvbkbc@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Dec 7, 2014 at 4:01 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+> XTFPGA boards provides an audio subsystem that consists of TI CDCE706
+> clock synthesizer, I2S transmitter and TLV320AIC23 audio codec.
+>
+> I2S transmitter has MMIO-based interface that resembles that of the
+> OpenCores I2S transmitter. I2S transmitter is always a master on I2S
+> bus. There's no specialized audio DMA, sample data are transferred to
+> I2S transmitter FIFO by CPU through memory-mapped queue interface.
 
-I'm working on trace-cmd virt-server feature. This is just a basic feature
-to allow trace-cmd using virtio-trace (no time synchronizing).
-I'll send the updated version of the series soon.
+Ping?
 
-(2014/12/22 16:07), Divya Vyas wrote:
-> Hi ,
-> 
-> One more thing I want to add that Yoshihiro YUNOMAE's  trace-merge
-> script does this time synchronization. We have to calculate guest
-> offset and then subtract with host time .
-
-Right, to complete this work we need trace-merge like merging feature.
-I assume that we can do that by passing the offset of the timestamp
-information with guest trace data (that is the simplest implementation).
-
-However, currently trace-merge depends on x86 TSC, but some intel
-processors TSC is not stable. That is current barrier of trace-merge.
-
-Thank you,
-
-
-> 
-> But it is not applying on current trace-cmd report output format and
-> not giving desired output .
-> 
-> Thanks,
-> Divya Vyas
-> 
-> On Mon, Dec 22, 2014 at 12:34 PM, Divya Vyas <edivya.vyas@gmail.com> wrote:
->> Hi Steven,
->>
->> I am sorry but I am very new to trace-cmd , that's why I didn't knew
->> what you are working on it.
->>
->> I will explain you whole scenario , Actually I have multiple guests
->> and a host and I want to see all traces on a single file  with
->> trace-cmd report command and may be kernelshark also .
->>
->> trace-cmd report -i guest.dat -i host.dat command is giving me all
->> traces is single file but the timestamp is different for guest . So
->> the challenge for me is to sync the timestamp of guest and host .  Can
->> you advise me something in this ? How can I sync gettimeofday clocks
->> of guest and host ?
->>
->> and kernelshark doesnt take trace-cmd report input , I think it takes
->> guest.dat and host.dat .
->> Is there any other viewer available for ftrace ?
->>
->>
->>
->>
->>
->>
->> On Sat, Dec 20, 2014 at 10:40 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->>> On Fri, Dec 19, 2014 at 05:52:52PM +0530, Divya Vyas wrote:
->>>> Hi,
->>>
->>> Hi, it would be  helpful if you Cc'd me. I would have responded quicker. Luckily,
->>> someone noticed this email and told me about it.
->>>
->>>>
->>>> I think it is not desired output . Ths script is written for diffrent
->>>> format .ftrace format is ( trace-cmd report command generates) :
->>>
->>> I'm actually working on trace-cmd this week and hopefully I'll be able to release
->>> 2.5 by x-mas.
->>>
->>> I believe that Masami is going to start continuing work on the virt guest
->>> tracer for trace-cmd.
->>>
->>> Also, for now, for a crud way of merging, if both the gettimeofday clocks
->>> of the host and guest are synced, you could do:
->>>
->>> guest> trace-cmd record -o guest.dat --date  ...
->>>
->>> host> trace-cmd record -o host.dat --date ...
->>>
->>> and then run:
->>>
->>> trace-cmd report -i guest.dat -i host.dat
->>>
->>> and trace-cmd will merge the two. The --date will add a way to sync the trace
->>> timestamps to a wall clock and that will be used to try to interleave the
->>> events of both the data files.
->>>
->>> -- Steve
->>>
-> 
-
+> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+> ---
+> Changes v2->v3:
+> - drop .owner = THIS_MODULE from the struct platform_driver initialization;
+> - rebase to 3.18-rc7.
+>
+> Changes v1->v2:
+> - fix module name in the sound/soc/xtensa/Makefile;
+> - split PCM data transfer code and I2S interface setup code;
+> - move clock enabling/disabling to runtime PM code;
+> - document I2S interface RATIO field;
+> - rewrite I2S interface LEVEL field calculation to avoid overflows;
+> - drop select statements from Kconfig;
+> - document RCU usage for tx_substream;
+> - clean up code running in RCU read-side critical section;
+> - use threaded IRQ handler instead of IRQ + tasklet;
+> - remove empty PCM callback handlers;
+> - add const to static structures where applicable;
+> - use platform_set_drvdata instead of dev_set_drvdata;
+> - drop redundant error reporting code;
+> - use platform_get_irq instead of platform_get_resource;
+> - clean up xtfpga_i2s_remove;
+> - add comments.
+>
+>  .../devicetree/bindings/sound/cdns,xtfpga-i2s.txt  |  18 +
+>  MAINTAINERS                                        |   1 +
+>  sound/soc/Kconfig                                  |   1 +
+>  sound/soc/Makefile                                 |   1 +
+>  sound/soc/xtensa/Kconfig                           |   7 +
+>  sound/soc/xtensa/Makefile                          |   3 +
+>  sound/soc/xtensa/xtfpga-i2s.c                      | 675 +++++++++++++++++++++
+>  7 files changed, 706 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/sound/cdns,xtfpga-i2s.txt
+>  create mode 100644 sound/soc/xtensa/Kconfig
+>  create mode 100644 sound/soc/xtensa/Makefile
+>  create mode 100644 sound/soc/xtensa/xtfpga-i2s.c
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Thanks.
+-- Max
