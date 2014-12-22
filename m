@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270AbaLVTRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:17:04 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:51727 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869AbaLVTRB (ORCPT
+	id S1755335AbaLVTRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:17:19 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:33111 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134AbaLVTRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:17:01 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Alex Hung <alex.hung@canonical.com>
-Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Darren Hart <dvhart@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-Date: Mon, 22 Dec 2014 20:16:58 +0100
-Message-ID: <1675821.m9zcYReJQs@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <CAJ=jqubEggcXs0kvegGUpVh8PNh-GmdcnXkXUjqv4fHD-zXdEA@mail.gmail.com>
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <2697957.miSb4Rm7HK@xps13> <CAJ=jqubEggcXs0kvegGUpVh8PNh-GmdcnXkXUjqv4fHD-zXdEA@mail.gmail.com>
+	Mon, 22 Dec 2014 14:17:17 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20141214181744.GF5310@linux.vnet.ibm.com>
+References: <20141214175747.2e6c506e@canb.auug.org.au> <CALCETrXu19aHhudTfPAr5PM05FR0xKBiSHgbubVhh6QUrHCADw@mail.gmail.com>
+ <20141214120318.GA5310@linux.vnet.ibm.com> <CALCETrWsy5sxVTmjNu7t+o-QvEVY-csQHkP-PXT1aMFiXnzzhQ@mail.gmail.com>
+ <20141214173715.GB5310@linux.vnet.ibm.com> <CALCETrWT7SLO3E+nV2g=QzJHAeWU4FBRENq=7OvoNDrHA7W0fg@mail.gmail.com>
+ <20141214181744.GF5310@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 22 Dec 2014 11:16:56 -0800
+Message-ID: <CALCETrXfc5SpjOUfRuj7d5Kzushjucw-njcGT+XW6L26c3BFyA@mail.gmail.com>
+Subject: Re: linux-next: question about the luto-misc tree
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 December 2014 15:27:57 Alex Hung wrote:
-> = Testing =
-> 
-> I tested six Dell systems for two sets of patches for dell radio
-> button - two system with radio slider and four with radio hotkey.
-> There are also two systems with working ARBT method.
-> 
-> == Basic Information ==
-> Based OS: Ubuntu 14.10 (kernel 3.16 [1]) and kernel 3.18 [2]
-> 
-> Patches:
-> 1. dell-wireless v3 = original v2 + Gabriele's suggestion [3]
-> 2. dell-rbtn [4]
-> 
-> Method:
-> 1. run "rfkill list" and press hotkey / toggle slider during runtime
-> 2. run "rfkill list" and toggle slider during S3
-> 
-> == Results ==
-> 
-> I summarized the tests in Google sheet as below. Please advise if
-> anyone has problem reading it.
-> 
-> https://docs.google.com/spreadsheets/d/1voffS6dNglwAExSGh3UmG__UAO2qfZ829CkJLPo06aI/edit?usp=sharing
-> 
-> PS. The document will stay as long as possible for future references.
-> 
-> == Summary ==
-> 
-> 1. I did not observed a duplicated event. However, keycode 240
-> (unknown) is generated on many UUT. It is not issued by dell-laptop or
-> del-wmi. I am suspecting it is the other event Pali observes but it
-> can be the result of different distro.
-> 
-> 2. Some system issues scancode "0xe0 0x73 0xe0 0xf3". It can also be
-> used toggle wireless state but this can also be distro-dependent. This
-> scancode does nothing on Ubuntu 14.10.
-> 
-> 2. There are two systems with working ARBT (XPS 13 9333 and Inspiron
-> 7447). Calling ARBT(1) changes BIOS behaviours, and this matches to
-> Dell's document. We should include it in the patch for maximum
-> capability.
-> 
-> 
-> [1] dell-wireless is only tested 3.16.
-> [2] dell-rbtn is tested on 3.16 and 3.18, but no differences are observed.
-> [3] http://people.canonical.com/~alexhung/dell-wireless/
-> [4] http://people.canonical.com/~alexhung/dell-rbtn/
+On Sun, Dec 14, 2014 at 10:17 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Sun, Dec 14, 2014 at 09:41:04AM -0800, Andy Lutomirski wrote:
+>> On Sun, Dec 14, 2014 at 9:37 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Sun, Dec 14, 2014 at 08:29:33AM -0800, Andy Lutomirski wrote:
+>> >> On Sun, Dec 14, 2014 at 4:03 AM, Paul E. McKenney
+>> >> <paulmck@linux.vnet.ibm.com> wrote:
+>> >> > On Sat, Dec 13, 2014 at 11:26:36PM -0800, Andy Lutomirski wrote:
+>> >> >> On Dec 13, 2014 10:58 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
+>> >> >> >
+>> >> >> > Hi Andy,
+>> >> >> >
+>> >> >> > The luto-misc tree seems to have a whole series of commits in it that
+>> >> >> > have just bee removed from the rcu tree ...  You really have to be very
+>> >> >> > careful if you base your work on a tree that is regularly rebased.
+>> >> >>
+>> >> >> Hmm.  They were there a couple days ago.  Paul, what should I do about
+>> >> >> this?  I only need the one NMI nesting change for the stuff in
+>> >> >> luto/next.
+>> >> >>
+>> >> >> > I also wonder if the other commits in that tree are destined for
+>> >> >> > v3.19?  If they are for v3.20, then they should not be in linux-next
+>> >> >> > until after v3.19-rc1 has been released.
+>> >> >>
+>> >> >> They're for 3.20.  I'll drop the whole series from the next branch for now.
+>> >> >
+>> >> > You mean the NMI nesting change below, correct?  One approach would be
+>> >> > to include the branch rcu/dev from my -rcu tree.  Would that work for you?
+>> >>
+>> >> That would work.
+>> >>
+>> >> The problem is that, if you rebase again and I don't notice, then
+>> >> it'll generate a pile of conflicts.  Is there someway that I can flag
+>> >> my next tree as depending on a certain commi existing in another tree
+>> >> so that the scripts that generate linux-next will ignore it if the
+>> >> base commit goes away?
+>> >
+>> > The commits would still stick around because I keep date-encoded branches.
+>> > But just to make things easier, I created a andy.2014.11.21a branch that
+>> > points to the current commit and will stay there.  Please let me know how
+>> > it goes.
+>>
+>> That's the same commit that's in rcu/dev and was in luto/next, I
+>> think.  Is the issue just that you pulled the whole thing from
+>> whichever linux-rcu branch is in -next, but I still had it, so it
+>> caused a problem?
+>
+> I still have the commit.  All I did was move the rcu/next branch that
+> Stephen pulls from.
+>
+>> In any case, I'll wait for 3.19-rc1 before re-adding any of this.
+>
+> That does sound simpler, as I will make this commit available to -next
+> at that point.  ;-)
+>
 
-I've just tried the last revision of dell-wireless and noticed that a
-notification (0x80) is sent to DELLABCE after a transition from S3 to
-S0, causing dell-wireless to send KEY_RFKILL. This shouldn't happen.
-Same thing for transitions from S4 to S0.
+I'm re-adding the branch, since 3.19-rc1 is out, the change appears to
+still exist as-is in your tree, and it merges cleanly and builds in
+the latest -next for me.  Let me know if this will be problematic for
+any reason.
 
-Gabriele
+Thanks,
+Andy
+
+>                                                         Thanx, Paul
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
