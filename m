@@ -1,101 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335AbaLVTRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:17:19 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:33111 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134AbaLVTRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:17:17 -0500
+	id S1755392AbaLVTRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:17:47 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:50485 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754948AbaLVTRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 14:17:45 -0500
+Date: Mon, 22 Dec 2014 21:14:52 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>, Davidlohr Bueso <dave@stgolabs.net>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, dave@stgolabs.net,
+        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: mm: NULL ptr deref in unlink_file_vma
+Message-ID: <20141222191452.GA20295@node.dhcp.inet.fi>
+References: <549832E2.8060609@oracle.com>
+ <20141222180102.GA8072@node.dhcp.inet.fi>
+ <54985D59.5010506@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20141214181744.GF5310@linux.vnet.ibm.com>
-References: <20141214175747.2e6c506e@canb.auug.org.au> <CALCETrXu19aHhudTfPAr5PM05FR0xKBiSHgbubVhh6QUrHCADw@mail.gmail.com>
- <20141214120318.GA5310@linux.vnet.ibm.com> <CALCETrWsy5sxVTmjNu7t+o-QvEVY-csQHkP-PXT1aMFiXnzzhQ@mail.gmail.com>
- <20141214173715.GB5310@linux.vnet.ibm.com> <CALCETrWT7SLO3E+nV2g=QzJHAeWU4FBRENq=7OvoNDrHA7W0fg@mail.gmail.com>
- <20141214181744.GF5310@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 22 Dec 2014 11:16:56 -0800
-Message-ID: <CALCETrXfc5SpjOUfRuj7d5Kzushjucw-njcGT+XW6L26c3BFyA@mail.gmail.com>
-Subject: Re: linux-next: question about the luto-misc tree
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54985D59.5010506@oracle.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 10:17 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Sun, Dec 14, 2014 at 09:41:04AM -0800, Andy Lutomirski wrote:
->> On Sun, Dec 14, 2014 at 9:37 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Sun, Dec 14, 2014 at 08:29:33AM -0800, Andy Lutomirski wrote:
->> >> On Sun, Dec 14, 2014 at 4:03 AM, Paul E. McKenney
->> >> <paulmck@linux.vnet.ibm.com> wrote:
->> >> > On Sat, Dec 13, 2014 at 11:26:36PM -0800, Andy Lutomirski wrote:
->> >> >> On Dec 13, 2014 10:58 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
->> >> >> >
->> >> >> > Hi Andy,
->> >> >> >
->> >> >> > The luto-misc tree seems to have a whole series of commits in it that
->> >> >> > have just bee removed from the rcu tree ...  You really have to be very
->> >> >> > careful if you base your work on a tree that is regularly rebased.
->> >> >>
->> >> >> Hmm.  They were there a couple days ago.  Paul, what should I do about
->> >> >> this?  I only need the one NMI nesting change for the stuff in
->> >> >> luto/next.
->> >> >>
->> >> >> > I also wonder if the other commits in that tree are destined for
->> >> >> > v3.19?  If they are for v3.20, then they should not be in linux-next
->> >> >> > until after v3.19-rc1 has been released.
->> >> >>
->> >> >> They're for 3.20.  I'll drop the whole series from the next branch for now.
->> >> >
->> >> > You mean the NMI nesting change below, correct?  One approach would be
->> >> > to include the branch rcu/dev from my -rcu tree.  Would that work for you?
->> >>
->> >> That would work.
->> >>
->> >> The problem is that, if you rebase again and I don't notice, then
->> >> it'll generate a pile of conflicts.  Is there someway that I can flag
->> >> my next tree as depending on a certain commi existing in another tree
->> >> so that the scripts that generate linux-next will ignore it if the
->> >> base commit goes away?
->> >
->> > The commits would still stick around because I keep date-encoded branches.
->> > But just to make things easier, I created a andy.2014.11.21a branch that
->> > points to the current commit and will stay there.  Please let me know how
->> > it goes.
->>
->> That's the same commit that's in rcu/dev and was in luto/next, I
->> think.  Is the issue just that you pulled the whole thing from
->> whichever linux-rcu branch is in -next, but I still had it, so it
->> caused a problem?
->
-> I still have the commit.  All I did was move the rcu/next branch that
-> Stephen pulls from.
->
->> In any case, I'll wait for 3.19-rc1 before re-adding any of this.
->
-> That does sound simpler, as I will make this commit available to -next
-> at that point.  ;-)
->
+On Mon, Dec 22, 2014 at 01:05:13PM -0500, Sasha Levin wrote:
+> On 12/22/2014 01:01 PM, Kirill A. Shutemov wrote:
+> > On Mon, Dec 22, 2014 at 10:04:02AM -0500, Sasha Levin wrote:
+> >> > Hi all,
+> >> > 
+> >> > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> >> > kernel, I've stumbled on the following spew:
+> >> > 
+> >> > [  432.376425] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> >> > [  432.378876] IP: down_write (./arch/x86/include/asm/rwsem.h:105 ./arch/x86/include/asm/rwsem.h:121 kernel/locking/rwsem.c:71)
+> > Looks like vma->vm_file->mapping is NULL. Somebody freed ->vm_file from
+> > under us?
+> > 
+> > I suspect Davidlohr's patchset on i_mmap_lock, but I cannot find any code
+> > path which could lead to the crash.
+> 
+> I've reported a different issue which that patchset: https://lkml.org/lkml/2014/12/9/741
+> 
+> I guess it could be related?
 
-I'm re-adding the branch, since 3.19-rc1 is out, the change appears to
-still exist as-is in your tree, and it merges cleanly and builds in
-the latest -next for me.  Let me know if this will be problematic for
-any reason.
+Maybe.
 
-Thanks,
-Andy
+Other thing:
 
->                                                         Thanx, Paul
->
+ unmap_mapping_range()
+   i_mmap_lock_read(mapping);
+   unmap_mapping_range_tree()
+     unmap_mapping_range_vma()
+       zap_page_range_single()
+         unmap_single_vma()
+	   untrack_pfn()
+	     vma->vm_flags &= ~VM_PAT;
 
+It seems we modify ->vm_flags without mmap_sem taken, means we can corrupt
+them.
 
+Sasha could you check if you hit untrack_pfn()?
 
+The problem probably was hidden by exclusive i_mmap_lock on
+unmap_mapping_range(), but it's not exclusive anymore afrer Dave's
+patchset.
+
+Konstantin, you've modified untrack_pfn() back in 2012 to change
+->vm_flags. Any coments?
+
+For now, I would propose to revert the commit and probably re-introduce it
+after v3.19:
+
+>From 14392c69fcfeeda34eb9f75d983dad32698cdd5c Mon Sep 17 00:00:00 2001
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Mon, 22 Dec 2014 21:01:54 +0200
+Subject: [PATCH] Revert "mm/memory.c: share the i_mmap_rwsem"
+
+This reverts commit c8475d144abb1e62958cc5ec281d2a9e161c1946.
+
+There are several[1][2] of bug reports which points to this commit as potential
+cause[3].
+
+Let's revert it until we figure out what's going on.
+
+[1] https://lkml.org/lkml/2014/11/14/342
+[2] https://lkml.org/lkml/2014/12/22/213
+[3] https://lkml.org/lkml/2014/12/9/741
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+ mm/memory.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index 649e7d440bd7..ca920d1fd314 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2378,12 +2378,12 @@ void unmap_mapping_range(struct address_space *mapping,
+ 		details.last_index = ULONG_MAX;
+ 
+ 
+-	i_mmap_lock_read(mapping);
++	i_mmap_lock_write(mapping);
+ 	if (unlikely(!RB_EMPTY_ROOT(&mapping->i_mmap)))
+ 		unmap_mapping_range_tree(&mapping->i_mmap, &details);
+ 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
+ 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
+-	i_mmap_unlock_read(mapping);
++	i_mmap_unlock_write(mapping);
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
+ 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+ Kirill A. Shutemov
