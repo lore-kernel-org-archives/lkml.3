@@ -1,168 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaLVH2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 02:28:00 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:47685 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184AbaLVH16 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 02:27:58 -0500
+	id S1754075AbaLVHaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 02:30:21 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35493 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753184AbaLVHaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 02:30:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="432022412"
+Message-ID: <5497C882.4000108@intel.com>
+Date: Mon, 22 Dec 2014 15:30:10 +0800
+From: "Chen, Tiejun" <tiejun.chen@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <2697957.miSb4Rm7HK@xps13>
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com>
-	<94523420.RuhoUzmTQs@xps13>
-	<201412052223.25059@pali>
-	<2697957.miSb4Rm7HK@xps13>
-Date: Mon, 22 Dec 2014 15:27:57 +0800
-Message-ID: <CAJ=jqubEggcXs0kvegGUpVh8PNh-GmdcnXkXUjqv4fHD-zXdEA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-From: Alex Hung <alex.hung@canonical.com>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Darren Hart <dvhart@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
+References: <20141221124640.GA4059@cucamonga.audible.transient.net>
+In-Reply-To: <20141221124640.GA4059@cucamonga.audible.transient.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-= Testing =
-
-I tested six Dell systems for two sets of patches for dell radio
-button - two system with radio slider and four with radio hotkey.
-There are also two systems with working ARBT method.
-
-== Basic Information ==
-Based OS: Ubuntu 14.10 (kernel 3.16 [1]) and kernel 3.18 [2]
-
-Patches:
-1. dell-wireless v3 = original v2 + Gabriele's suggestion [3]
-2. dell-rbtn [4]
-
-Method:
-1. run "rfkill list" and press hotkey / toggle slider during runtime
-2. run "rfkill list" and toggle slider during S3
-
-== Results ==
-
-I summarized the tests in Google sheet as below. Please advise if
-anyone has problem reading it.
-
-https://docs.google.com/spreadsheets/d/1voffS6dNglwAExSGh3UmG__UAO2qfZ829CkJLPo06aI/edit?usp=sharing
-
-PS. The document will stay as long as possible for future references.
-
-== Summary ==
-
-1. I did not observed a duplicated event. However, keycode 240
-(unknown) is generated on many UUT. It is not issued by dell-laptop or
-del-wmi. I am suspecting it is the other event Pali observes but it
-can be the result of different distro.
-
-2. Some system issues scancode "0xe0 0x73 0xe0 0xf3". It can also be
-used toggle wireless state but this can also be distro-dependent. This
-scancode does nothing on Ubuntu 14.10.
-
-2. There are two systems with working ARBT (XPS 13 9333 and Inspiron
-7447). Calling ARBT(1) changes BIOS behaviours, and this matches to
-Dell's document. We should include it in the patch for maximum
-capability.
-
-
-[1] dell-wireless is only tested 3.16.
-[2] dell-rbtn is tested on 3.16 and 3.18, but no differences are observed.
-[3] http://people.canonical.com/~alexhung/dell-wireless/
-[4] http://people.canonical.com/~alexhung/dell-rbtn/
-
-On Sat, Dec 6, 2014 at 5:49 AM, Gabriele Mazzotta
-<gabriele.mzt@gmail.com> wrote:
-> On Friday 05 December 2014 22:23:25 Pali Rohár wrote:
->> On Friday 05 December 2014 22:12:42 Gabriele Mazzotta wrote:
->> > On Friday 05 December 2014 22:03:24 Pali Rohár wrote:
->> > > On Friday 05 December 2014 21:53:10 Gabriele Mazzotta wrote:
->> > > > On Friday 05 December 2014 21:38:17 Pali Rohár wrote:
->> > > > > On Wednesday 03 December 2014 14:00:23 Darren Hart wrote:
->> > > > > > On Thu, Dec 04, 2014 at 10:55:32AM +0100, Pali Rohár
->> wrote:
->> > > > > > > Darren, I think that if we do not solve problem with
->> > > > > > > duplicate key events (in dell-wireless.c) we should
->> > > > > > > postpone these patches to later kernel version. It
->> > > > > > > is better to not have such regression as it confuse
->> > > > > > > software like NetworkManager which is widely used.
->> > > > > >
->> > > > > > OK, that's what I needed. Thanks. Ignore my previous
->> > > > > > request, you answered it here. I will drop
->> > > > > > dell-wireless.c and look for a combined solution from
->> > > > > > you and Alex for the next release.
->> > > > > >
->> > > > > > Thanks,
->> > > > >
->> > > > > And according to discussion about Side effect of
->> > > > > pressing special keys at [1] [2] we should not report
->> > > > > this wireless key event (as input device) to userspace.
->> > > > > And Alex's driver is doing that.
->> > > > >
->> > > > > [1] -
->> > > > > http://www.spinics.net/lists/platform-driver-x86/msg0592
->> > > > > 2.h tml [2] -
->> > > > > http://www.spinics.net/lists/platform-driver-x86/msg0592
->> > > > > 4.h tml
->> > > >
->> > > > Alex's patch is for those laptop whose BIOS only sends a
->> > > > notification to DELLABCE when Fn keys are pressed. His
->> > > > patch simply translates these ACPI notifications to
->> > > > KEY_RFKILL keypresses.
->> > >
->> > > Yes, and your last patch disables sending such KEY events to
->> > > userspace (in dell-wmi driver). BIOS already handle changes,
->> > > so key press should not be reported to userspace... [1]
->> > > (from previous email).
->> >
->> > This is not true if ARBT (with 1 as parameter) is called. When
->> > this is done, the BIOS stops managing the radio devices
->> > completely and reporting KEY_RFKILL to userspace becomes a
->> > necessity. I guess that the laptops on which this patch was
->> > tested behaved like mine after ARBT is called, given that the
->> > call was missing completely in the original patch.
->> >
->>
->> Ok. It means that at least original Alex patch needs to be
->> reworked (so we will do not see duplicate events problem and
->> problem described in previous email).
->>
->> But my other question is... If ARBT(1) is called then it disables
->> BIOS support for managing radio devices on your laptop. Why we
->> need patch which disabling useful functionality (= ability to
->> disable wifi rfkill)? We still do not have patch which can
->> correctly set rfkill state by software on laptops of your fn key
->> type.
+On 2014/12/21 20:46, Jamie Heilman wrote:
+> With v3.19-rc1 when I run qemu-system-x86_64 -machine pc,accel=kvm I
+> get:
 >
-> That's what happens on my laptop, but Alex said that the laptops on
-> which he worked, ARBT was empty, so I guess it's not always a choice.
-> In order not to break things, all the laptops that support both the
-> methods must be set to the correct mode through ARBT when the module
-> is loaded. If this is not done, then what you say is correct, we should
-> not report KEY_RFKILL, or at least do it selectively, but I guess that
-> this is not be possible without a whitelist (that we don't have).
+> KVM: entry failed, hardware error 0x80000021
+
+Looks some MSR writing issues such a failed entry.
+
 >
->> > > > Correct if I'm wrong, but shouldn't his patch have no
->> > > > effects on your laptop? If I'm not wrong, CRBT returns 2
->> > > > on your laptop, so the input device is not even created.
->> > > > Am I missing something?
->> > > >
->> > > > Gabriele
->> > >
->> > > Yes, it has no effect for my laptop.
->>
->>
+> If you're running a guest on an Intel machine without unrestricted mode
+> support, the failure can be most likely due to the guest entering an invalid
+> state for Intel VT. For example, the guest maybe running in big real mode
+> which is not supported on less recent Intel processors.
+>
+> EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
+> ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+> EIP=0000e05b EFL=00010002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+> ES =0000 00000000 0000ffff 00009300
+> CS =f000 000f0000 0000ffff 00009b00
+> SS =0000 00000000 0000ffff 00009300
+> DS =0000 00000000 0000ffff 00009300
+> FS =0000 00000000 0000ffff 00009300
+> GS =0000 00000000 0000ffff 00009300
+> LDT=0000 00000000 0000ffff 00008200
+> TR =0000 00000000 0000ffff 00008b00
+> GDT=     00000000 0000ffff
+> IDT=     00000000 0000ffff
+> CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000
+> DR6=00000000ffff0ff0 DR7=0000000000000400
+> EFER=0000000000000000
+
+And I don't see any obvious wrong as well. Any valuable info from dmesg?
+
+> Code=85 00 87 00 89 00 8b 00 00 00 86 00 88 00 8a 00 8c 00 00 90 <2e> 66 83 3e 30 6c 00 0f 85 e7 f2 31 c0 8e d0 66 bc 00 70 00 00 66 ba 31 2e 0f 00 e9 45 f1
+>
+> This is with QEMU emulator version 2.1.2 (Debian 1:2.1+dfsg-11),
+> Copyright (c) 2003-2008 Fabrice Bellard
+>
+> The host system is:
+>
+> cpu family      : 6
+> model           : 23
+> model name      : Intel(R) Core(TM)2 Duo CPU     E8400  @ 3.00GHz
+> stepping        : 10
+> microcode       : 0xa0b
+> ...
+> flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good nopl aperfmperf pni dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm sse4_1 xsave lahf_lm dtherm tpr_shadow vnmi flexpriority
+>
+> I bisected this back to:
+>
+> commit 34a1cd60d17f62c1f077c1478a6c2ca8c3d17af4
+> Author: Tiejun Chen <tiejun.chen@intel.com>
+> Date:   Tue Oct 28 10:14:48 2014 +0800
+>
+>      kvm: x86: vmx: move some vmx setting from vmx_init() to hardware_setup()
+>
+>      Instead of vmx_init(), actually it would make reasonable sense to do
+>      anything specific to vmx hardware setting in vmx_x86_ops->hardware_setup().
 >
 
+This commit just reorders something but some MSR writing depend on 
+previous status.
+
+Could you try this?
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index feb852b..96c84a8 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -5840,49 +5840,6 @@ static __init int hardware_setup(void)
+         memset(vmx_msr_bitmap_legacy, 0xff, PAGE_SIZE);
+         memset(vmx_msr_bitmap_longmode, 0xff, PAGE_SIZE);
+
+-       vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
+-       vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
+-       vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
+-       vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_CS, false);
+-       vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
+-       vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
+-       vmx_disable_intercept_for_msr(MSR_IA32_BNDCFGS, true);
+-
+-       memcpy(vmx_msr_bitmap_legacy_x2apic,
+-                       vmx_msr_bitmap_legacy, PAGE_SIZE);
+-       memcpy(vmx_msr_bitmap_longmode_x2apic,
+-                       vmx_msr_bitmap_longmode, PAGE_SIZE);
+-
+-       if (enable_apicv) {
+-               for (msr = 0x800; msr <= 0x8ff; msr++)
+-                       vmx_disable_intercept_msr_read_x2apic(msr);
+-
+-               /* According SDM, in x2apic mode, the whole id reg is used.
+-                * But in KVM, it only use the highest eight bits. Need to
+-                * intercept it */
+-               vmx_enable_intercept_msr_read_x2apic(0x802);
+-               /* TMCCT */
+-               vmx_enable_intercept_msr_read_x2apic(0x839);
+-               /* TPR */
+-               vmx_disable_intercept_msr_write_x2apic(0x808);
+-               /* EOI */
+-               vmx_disable_intercept_msr_write_x2apic(0x80b);
+-               /* SELF-IPI */
+-               vmx_disable_intercept_msr_write_x2apic(0x83f);
+-       }
+-
+-       if (enable_ept) {
+-               kvm_mmu_set_mask_ptes(0ull,
+-                       (enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
+-                       (enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
+-                       0ull, VMX_EPT_EXECUTABLE_MASK);
+-               ept_set_mmio_spte_mask();
+-               kvm_enable_tdp();
+-       } else
+-               kvm_disable_tdp();
+-
+-       update_ple_window_actual_max();
+-
+         if (setup_vmcs_config(&vmcs_config) < 0) {
+                 r = -EIO;
+                 goto out7;
+@@ -5945,6 +5902,49 @@ static __init int hardware_setup(void)
+         if (nested)
+                 nested_vmx_setup_ctls_msrs();
+
++       vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
++       vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
++       vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
++       vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_CS, false);
++       vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_ESP, false);
++       vmx_disable_intercept_for_msr(MSR_IA32_SYSENTER_EIP, false);
++       vmx_disable_intercept_for_msr(MSR_IA32_BNDCFGS, true);
++
++       memcpy(vmx_msr_bitmap_legacy_x2apic,
++                       vmx_msr_bitmap_legacy, PAGE_SIZE);
++       memcpy(vmx_msr_bitmap_longmode_x2apic,
++                       vmx_msr_bitmap_longmode, PAGE_SIZE);
++
++       if (enable_apicv) {
++               for (msr = 0x800; msr <= 0x8ff; msr++)
++                       vmx_disable_intercept_msr_read_x2apic(msr);
++
++               /* According SDM, in x2apic mode, the whole id reg is used.
++                * But in KVM, it only use the highest eight bits. Need to
++                * intercept it */
++               vmx_enable_intercept_msr_read_x2apic(0x802);
++               /* TMCCT */
++               vmx_enable_intercept_msr_read_x2apic(0x839);
++               /* TPR */
++               vmx_disable_intercept_msr_write_x2apic(0x808);
++               /* EOI */
++               vmx_disable_intercept_msr_write_x2apic(0x80b);
++               /* SELF-IPI */
++               vmx_disable_intercept_msr_write_x2apic(0x83f);
++       }
++
++       if (enable_ept) {
++               kvm_mmu_set_mask_ptes(0ull,
++                       (enable_ept_ad_bits) ? VMX_EPT_ACCESS_BIT : 0ull,
++                       (enable_ept_ad_bits) ? VMX_EPT_DIRTY_BIT : 0ull,
++                       0ull, VMX_EPT_EXECUTABLE_MASK);
++               ept_set_mmio_spte_mask();
++               kvm_enable_tdp();
++       } else
++               kvm_disable_tdp();
++
++       update_ple_window_actual_max();
++
+         return alloc_kvm_area();
+
+  out7:
 
 
--- 
-Cheers,
-Alex Hung
+Thanks
+Tiejun
