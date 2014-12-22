@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbaLVIjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 03:39:43 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:39822 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaLVIjl (ORCPT
+	id S1754120AbaLVImW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 03:42:22 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:48021 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583AbaLVImU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 03:39:41 -0500
+	Mon, 22 Dec 2014 03:42:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <1417914095-26553-1-git-send-email-jcmvbkbc@gmail.com>
-References: <1417914095-26553-1-git-send-email-jcmvbkbc@gmail.com>
-Date: Mon, 22 Dec 2014 11:39:40 +0300
-Message-ID: <CAMo8BfJCPU_ZM0w2Ry9kjU3O+HcWEmp_wgZ44oC7gBLW8DV5jw@mail.gmail.com>
-Subject: Re: [PATCH v3] ASoC: add xtensa xtfpga I2S interface and platform
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: alsa-devel@alsa-project.org, Mark Brown <broonie@kernel.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Max Filippov <jcmvbkbc@gmail.com>
+In-Reply-To: <1419237118-9712-1-git-send-email-geert@linux-m68k.org>
+References: <1419237118-9712-1-git-send-email-geert@linux-m68k.org>
+Date: Mon, 22 Dec 2014 09:42:18 +0100
+X-Google-Sender-Auth: ETE27FZKFm2IfRKVAx___rUHTfs
+Message-ID: <CAMuHMdU0ym7PLkEcdmDnxvDVBn879QWkOm=-zUXFaQMh2FHfrQ@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.19-rc1
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Miao Steven <realmz6@gmail.com>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>,
+        Cris <linux-cris-kernel@axis.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 7, 2014 at 4:01 AM, Max Filippov <jcmvbkbc@gmail.com> wrote:
-> XTFPGA boards provides an audio subsystem that consists of TI CDCE706
-> clock synthesizer, I2S transmitter and TLV320AIC23 audio codec.
+On Mon, Dec 22, 2014 at 9:31 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Below is the list of build error/warning regressions/improvements in
+> v3.19-rc1[1] compared to v3.18[2].
 >
-> I2S transmitter has MMIO-based interface that resembles that of the
-> OpenCores I2S transmitter. I2S transmitter is always a master on I2S
-> bus. There's no specialized audio DMA, sample data are transferred to
-> I2S transmitter FIFO by CPU through memory-mapped queue interface.
+> Summarized:
+>   - build errors: +24/-16
 
-Ping?
+  + /home/kisskb/slave/src/arch/powerpc/xmon/xmon.c: error: unused
+variable 'badaddr' [-Werror=unused-variable]:  => 1185:13
+  + /home/kisskb/slave/src/arch/powerpc/xmon/xmon.c: error: unused
+variable 'mode' [-Werror=unused-variable]:  => 1183:6
 
-> Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
-> ---
-> Changes v2->v3:
-> - drop .owner = THIS_MODULE from the struct platform_driver initialization;
-> - rebase to 3.18-rc7.
->
-> Changes v1->v2:
-> - fix module name in the sound/soc/xtensa/Makefile;
-> - split PCM data transfer code and I2S interface setup code;
-> - move clock enabling/disabling to runtime PM code;
-> - document I2S interface RATIO field;
-> - rewrite I2S interface LEVEL field calculation to avoid overflows;
-> - drop select statements from Kconfig;
-> - document RCU usage for tx_substream;
-> - clean up code running in RCU read-side critical section;
-> - use threaded IRQ handler instead of IRQ + tasklet;
-> - remove empty PCM callback handlers;
-> - add const to static structures where applicable;
-> - use platform_set_drvdata instead of dev_set_drvdata;
-> - drop redundant error reporting code;
-> - use platform_get_irq instead of platform_get_resource;
-> - clean up xtfpga_i2s_remove;
-> - add comments.
->
->  .../devicetree/bindings/sound/cdns,xtfpga-i2s.txt  |  18 +
->  MAINTAINERS                                        |   1 +
->  sound/soc/Kconfig                                  |   1 +
->  sound/soc/Makefile                                 |   1 +
->  sound/soc/xtensa/Kconfig                           |   7 +
->  sound/soc/xtensa/Makefile                          |   3 +
->  sound/soc/xtensa/xtfpga-i2s.c                      | 675 +++++++++++++++++++++
->  7 files changed, 706 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/sound/cdns,xtfpga-i2s.txt
->  create mode 100644 sound/soc/xtensa/Kconfig
->  create mode 100644 sound/soc/xtensa/Makefile
->  create mode 100644 sound/soc/xtensa/xtfpga-i2s.c
+powerpc-randconfig
 
--- 
-Thanks.
--- Max
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7343/irq.c: error:
+too few arguments to function 'ioread16':  => 44:2
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7343/irq.c: error:
+too few arguments to function 'iowrite16':  => 123:2
+
+sh4/se7343_defconfig
+
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7722/irq.c: error:
+too few arguments to function 'ioread16':  => 43:2
+  + /home/kisskb/slave/src/arch/sh/boards/mach-se/7722/irq.c: error:
+too few arguments to function 'iowrite16':  => 116:2
+
+sh4/se7722_defconfig
+
+  + /home/kisskb/slave/src/drivers/usb/musb/blackfin.c: error:
+'bfin_writel' undeclared here (not in a function):  => 476:13
+
+bfin/BF527-EZKIT-V2_defconfig
+
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_BABBLE_CTL' undeclared here (not in a function):  => 67:17
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_CONFIGDATA' undeclared here (not in a function):  => 62:18
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_EPINFO' undeclared here (not in a function):  => 74:14
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_RAMINFO' undeclared here (not in a function):  => 75:15
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_RXFIFOADD' undeclared here (not in a function):  => 71:17
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_RXFIFOSZ' undeclared here (not in a function):  => 69:16
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_TXFIFOADD' undeclared here (not in a function):  => 70:17
+  + /home/kisskb/slave/src/drivers/usb/musb/musb_debugfs.c: error:
+'MUSB_TXFIFOSZ' undeclared here (not in a function):  => 68:16
+
+bfin/BF527-EZKIT_defconfig
+bfin/BF527-EZKIT-V2_defconfig
+bfin/BF548-EZKIT_defconfig
+bfin/CM-BF548_defconfig
+bfin/CM-BF527_defconfig
+
+  + /home/kisskb/slave/src/include/linux/irq.h: error: conflicting
+types for 'ioread16':  => 856:19
+  + /home/kisskb/slave/src/include/linux/irq.h: error: conflicting
+types for 'iowrite16':  => 847:20
+
+sh4/se7343_defconfig
+sh4/se7722_defconfig
+
+  + error: "csum_partial_copy_nocheck" [net/ipv6/ipv6.ko] undefined!:  => N/A
+
+cris/cris-allmodconfig
+
+  + error: No rule to make target include/config/auto.conf:  => N/A
+
+arm/arm-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/8241/ (262 out of 262 configs)
+> [2] http://kisskb.ellerman.id.au/kisskb/head/8168/ (262 out of 262 configs)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
