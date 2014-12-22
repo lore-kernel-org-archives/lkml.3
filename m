@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389AbaLVT5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:57:14 -0500
-Received: from mail-bl2on0112.outbound.protection.outlook.com ([65.55.169.112]:28576
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1755483AbaLVT5g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:57:36 -0500
+Received: from mail-bn1bon0113.outbound.protection.outlook.com ([157.56.111.113]:65282
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755174AbaLVT5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:57:06 -0500
-X-Greylist: delayed 859 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Dec 2014 14:57:06 EST
-X-WSS-ID: 0NH01F7-08-5IA-02
+	id S1754858AbaLVT5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 14:57:34 -0500
+X-WSS-ID: 0NH01F7-07-0CC-02
 X-M-MSG: 
 From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
@@ -18,98 +17,196 @@ To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
 CC: <dave.hansen@linux.intel.com>, <mgorman@suse.de>, <bp@suse.de>,
         <riel@redhat.com>, <jacob.w.shin@gmail.com>,
         Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH 3/3] edac, mce_amd_inj: Inject errors only on NBC for bank 4 errors
-Date: Mon, 22 Dec 2014 14:10:12 -0600
-Message-ID: <1419279012-4754-4-git-send-email-Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH 1/3] x86,amd: Refactor amd cpu topology functions for multi-node processors
+Date: Mon, 22 Dec 2014 14:10:10 -0600
+Message-ID: <1419279012-4754-2-git-send-email-Aravind.Gopalakrishnan@amd.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1419279012-4754-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
 References: <1419279012-4754-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(43544003)(189002)(31966008)(50226001)(106466001)(86362001)(19580395003)(4396001)(50466002)(48376002)(36756003)(68736005)(64706001)(2201001)(20776003)(47776003)(97736003)(21056001)(107046002)(77096005)(2950100001)(92566001)(105586002)(46102003)(19580405001)(101416001)(76176999)(50986999)(229853001)(87936001)(89996001)(120916001)(84676001)(53416004)(77156002)(99396003)(62966003)(921003)(1121003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB193;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(84676001)(105586002)(76176999)(87936001)(101416001)(106466001)(50986999)(19580405001)(2201001)(120916001)(53416004)(99396003)(19580395003)(229853001)(107046002)(50226001)(4396001)(36756003)(97736003)(68736005)(21056001)(20776003)(47776003)(48376002)(64706001)(2950100001)(89996001)(46102003)(77096005)(92566001)(86362001)(31966008)(575784001)(50466002)(77156002)(62966003)(921003)(1121003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB208;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB193;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB208;
 X-Forefront-PRVS: 0433DB2766
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB208;
 X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 19:42:50.0254
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 19:42:46.1704
  (UTC)
 X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB193
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CO1PR02MB208
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Fam10h onwards, bank4 MCE are reported only to the node base
-cores. This patch modifies the do_inject code path to take care
-of this.
+We would like to be able to provide a mechanism for finding the NBC for
+each node in multi-node platforms. For this, we will need the number of
+nodes per processor.
 
-Refer D18F3x44[NbMcaToMstCpuEn] on BKDGs of Fam10h and later for
-clarifications on the reporting of MC4 errors only to NBC MSRs.
+So, factor this calculation out of amd_get_topology() and provide separate
+getter function 'amd_get_nbc_for_node' for obtaining NBC for a node.
+
+Another useful calculation is to find the NBC of a node on which a given cpu
+is on. Provide a getter for this as well.
+ - We are using it in EDAC drivers, MCE handlers right away, so marked
+  extern.
+ - We currently don't use amd_get_nbc_for_node outside of here, so
+  marking it static.  We can make this extern as and when need arises.
+
+While at it, reverse the return condition in amd_get_topology
+and save an indent level.
 
 Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 ---
- drivers/edac/mce_amd_inj.c | 21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/processor.h |  1 +
+ arch/x86/kernel/cpu/amd.c        | 78 ++++++++++++++++++++++++++++++++--------
+ 2 files changed, 65 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
-index 0bd91a8..d4aa14f 100644
---- a/drivers/edac/mce_amd_inj.c
-+++ b/drivers/edac/mce_amd_inj.c
-@@ -126,6 +126,7 @@ static void do_inject(void)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index a092a0c..6e1dc06 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -979,6 +979,7 @@ static inline int mpx_disable_management(struct task_struct *tsk)
+ #endif /* CONFIG_X86_INTEL_MPX */
+ 
+ extern u16 amd_get_nb_id(int cpu);
++extern unsigned int amd_get_nbc_for_cpu(int cpu);
+ 
+ static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
  {
- 	u64 mcg_status = 0;
- 	unsigned int cpu = i_mce.extcpu;
-+	int saved_cpu = -1;
- 	u8 b = i_mce.bank;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index a220239..0c0eae5 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -281,6 +281,28 @@ static int nearby_node(int apicid)
+ }
+ #endif
  
- 	if (!(i_mce.inject_flags & MCJ_EXCEPTION)) {
-@@ -143,22 +144,34 @@ static void do_inject(void)
- 	if (!(i_mce.status & MCI_STATUS_PCC))
- 		mcg_status |= MCG_STATUS_RIPV;
- 
--	toggle_hw_mce_inject(cpu, true);
--
- 	wrmsr_on_cpu(cpu, MSR_IA32_MCG_STATUS,
- 		     (u32)mcg_status, (u32)(mcg_status >> 32));
- 
-+	/*
-+	 * for Fam10h+, if bank = 4, then we should write to NBC MSR
-+	 * for multi-node processors else to core 0 for single node processors
-+	 */
-+	if (boot_cpu_data.x86 >= 0x10 && b == 4) {
-+		saved_cpu = cpu;
-+		cpu = amd_get_nbc_for_cpu(cpu);
++#ifdef CONFIG_X86_HT
++static u32 amd_get_num_nodes(struct cpuinfo_x86 *c)
++{
++	u32 nodes = 1;
++
++	if (cpu_has_topoext) {
++		u32 ecx;
++
++		ecx = cpuid_ecx(0x8000001e);
++		nodes = ((ecx >> 8) & 7) + 1;
++	} else if (cpu_has(c, X86_FEATURE_NODEID_MSR)) {
++		u64 value;
++
++		rdmsrl(MSR_FAM10H_NODE_ID, value);
++		nodes = ((value >> 3) & 7) + 1;
 +	}
 +
-+	toggle_hw_mce_inject(cpu, true);
++	return nodes;
++}
++EXPORT_SYMBOL_GPL(amd_get_num_nodes);
++#endif
 +
- 	wrmsr_on_cpu(cpu, MSR_IA32_MCx_STATUS(b),
- 		     (u32)i_mce.status, (u32)(i_mce.status >> 32));
+ /*
+  * Fixup core topology information for
+  * (1) AMD multi-node processors
+@@ -291,15 +313,18 @@ static int nearby_node(int apicid)
+ static void amd_get_topology(struct cpuinfo_x86 *c)
+ {
+ 	u32 nodes, cores_per_cu = 1;
++	u32 cores_per_node;
++	u32 cus_per_node;
+ 	u8 node_id;
+ 	int cpu = smp_processor_id();
  
- 	wrmsr_on_cpu(cpu, MSR_IA32_MCx_ADDR(b),
- 		     (u32)i_mce.addr, (u32)(i_mce.addr >> 32));
- 
-+	toggle_hw_mce_inject(cpu, false);
+ 	/* get information required for multi-node processors */
++	nodes = amd_get_num_nodes(c);
 +
-+	if (saved_cpu != -1)
-+		cpu = saved_cpu;
+ 	if (cpu_has_topoext) {
+ 		u32 eax, ebx, ecx, edx;
+ 
+ 		cpuid(0x8000001e, &eax, &ebx, &ecx, &edx);
+-		nodes = ((ecx >> 8) & 7) + 1;
+ 		node_id = ecx & 7;
+ 
+ 		/* get compute unit information */
+@@ -310,27 +335,24 @@ static void amd_get_topology(struct cpuinfo_x86 *c)
+ 		u64 value;
+ 
+ 		rdmsrl(MSR_FAM10H_NODE_ID, value);
+-		nodes = ((value >> 3) & 7) + 1;
+ 		node_id = value & 7;
+ 	} else
+ 		return;
+ 
+ 	/* fixup multi-node processor information */
+-	if (nodes > 1) {
+-		u32 cores_per_node;
+-		u32 cus_per_node;
++	if (nodes < 2)
++		return;
+ 
+-		set_cpu_cap(c, X86_FEATURE_AMD_DCM);
+-		cores_per_node = c->x86_max_cores / nodes;
+-		cus_per_node = cores_per_node / cores_per_cu;
++	set_cpu_cap(c, X86_FEATURE_AMD_DCM);
++	cores_per_node = c->x86_max_cores / nodes;
++	cus_per_node = cores_per_node / cores_per_cu;
+ 
+-		/* store NodeID, use llc_shared_map to store sibling info */
+-		per_cpu(cpu_llc_id, cpu) = node_id;
++	/* store NodeID, use llc_shared_map to store sibling info */
++	per_cpu(cpu_llc_id, cpu) = node_id;
+ 
+-		/* core id has to be in the [0 .. cores_per_node - 1] range */
+-		c->cpu_core_id %= cores_per_node;
+-		c->compute_unit_id %= cus_per_node;
+-	}
++	/* core id has to be in the [0 .. cores_per_node - 1] range */
++	c->cpu_core_id %= cores_per_node;
++	c->compute_unit_id %= cus_per_node;
+ }
+ #endif
+ 
+@@ -365,6 +387,34 @@ u16 amd_get_nb_id(int cpu)
+ }
+ EXPORT_SYMBOL_GPL(amd_get_nb_id);
+ 
++#ifdef CONFIG_X86_HT
++static u32 amd_get_nbc_for_node(int node_id)
++{
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++	u32 nodes, cores_per_node;
 +
- 	wrmsr_on_cpu(cpu, MSR_IA32_MCx_MISC(b),
- 		     (u32)i_mce.misc, (u32)(i_mce.misc >> 32));
- 
--	toggle_hw_mce_inject(cpu, false);
--
- 	smp_call_function_single(cpu, trigger_mce, NULL, 0);
- 
- err:
++	nodes = amd_get_num_nodes(c);
++	cores_per_node = c->x86_max_cores / nodes;
++
++	return cores_per_node * node_id;
++}
++EXPORT_SYMBOL_GPL(amd_get_nbc_for_node);
++#endif
++
++#ifdef CONFIG_X86_HT
++unsigned int amd_get_nbc_for_cpu(int cpu)
++{
++	unsigned int nbc = 0;
++
++	/* for multi-node */
++	if (test_cpu_cap(&boot_cpu_data, X86_FEATURE_AMD_DCM))
++		nbc = amd_get_nbc_for_node(amd_get_nb_id(cpu));
++
++	return nbc;
++}
++EXPORT_SYMBOL_GPL(amd_get_nbc_for_cpu);
++#endif
++
+ static void srat_detect_node(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_NUMA
 -- 
 2.0.2
 
