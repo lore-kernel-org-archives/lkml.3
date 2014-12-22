@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780AbaLVWRj (ORCPT <rfc822;w@1wt.eu>);
+	id S1755800AbaLVWRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 17:17:43 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56407 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755762AbaLVWRj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Dec 2014 17:17:39 -0500
-Received: from sauhun.de ([89.238.76.85]:53783 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755726AbaLVWRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 17:17:37 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-gpio@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        Varka Bhadram <varkabhadram@gmail.com>,
-        Alexander Aring <alex.aring@gmail.com>, linux-wpan@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 3/3] net: ieee802154: don't use devm_pinctrl_get_select_default() in probe
-Date: Mon, 22 Dec 2014 23:16:55 +0100
-Message-Id: <1419286616-9893-3-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419286616-9893-1-git-send-email-wsa@the-dreams.de>
-References: <1419286616-9893-1-git-send-email-wsa@the-dreams.de>
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 05/28] cpufreq: drop owner assignment from platform_drivers
+Date: Mon, 22 Dec 2014 23:39:32 +0100
+Message-ID: <2262992.pVJSfL5P4D@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKohpok_G3Gf3XbcK06ELM3ocWQmNPepx1i72VXR8sNbK1L81Q@mail.gmail.com>
+References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de> <1419196495-9626-6-git-send-email-wsa@the-dreams.de> <CAKohpok_G3Gf3XbcK06ELM3ocWQmNPepx1i72VXR8sNbK1L81Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit ab78029ecc34 (drivers/pinctrl: grab default handles from device
-core), we can rely on device core for setting the default pins.
+On Monday, December 22, 2014 07:14:56 AM Viresh Kumar wrote:
+> On 22 December 2014 at 02:44, Wolfram Sang <wsa@the-dreams.de> wrote:
+> > This platform_driver does not need to set an owner, it will be populated by the
+> > driver core.
+> >
+> > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> > ---
+> > Generated with coccinelle. SmPL file is in the introductory msg. The big
+> > cleanup was pulled in this merge window. This series catches the bits fallen
+> > through. The patches shall go in via the subsystem trees.
+> >
+> >  drivers/cpufreq/ls1x-cpufreq.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> >
+> > diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
+> > index 25fbd6a1374f..f0913eee2f50 100644
+> > --- a/drivers/cpufreq/ls1x-cpufreq.c
+> > +++ b/drivers/cpufreq/ls1x-cpufreq.c
+> > @@ -210,7 +210,6 @@ out:
+> >  static struct platform_driver ls1x_cpufreq_platdrv = {
+> >         .driver = {
+> >                 .name   = "ls1x-cpufreq",
+> > -               .owner  = THIS_MODULE,
+> >         },
+> >         .probe          = ls1x_cpufreq_probe,
+> >         .remove         = ls1x_cpufreq_remove,
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> --
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- drivers/net/ieee802154/cc2520.c | 7 -------
- 1 file changed, 7 deletions(-)
+OK
 
-diff --git a/drivers/net/ieee802154/cc2520.c b/drivers/net/ieee802154/cc2520.c
-index c2b7da3da183..033473448d9f 100644
---- a/drivers/net/ieee802154/cc2520.c
-+++ b/drivers/net/ieee802154/cc2520.c
-@@ -19,7 +19,6 @@
- #include <linux/workqueue.h>
- #include <linux/interrupt.h>
- #include <linux/skbuff.h>
--#include <linux/pinctrl/consumer.h>
- #include <linux/of_gpio.h>
- #include <linux/ieee802154.h>
- 
-@@ -841,7 +840,6 @@ done:
- static int cc2520_probe(struct spi_device *spi)
- {
- 	struct cc2520_private *priv;
--	struct pinctrl *pinctrl;
- 	struct cc2520_platform_data *pdata;
- 	int ret;
- 
-@@ -854,11 +852,6 @@ static int cc2520_probe(struct spi_device *spi)
- 
- 	spi_set_drvdata(spi, priv);
- 
--	pinctrl = devm_pinctrl_get_select_default(&spi->dev);
--	if (IS_ERR(pinctrl))
--		dev_warn(&spi->dev,
--			 "pinctrl pins are not configured\n");
--
- 	pdata = cc2520_get_platform_data(spi);
- 	if (!pdata) {
- 		dev_err(&spi->dev, "no platform data\n");
+Wolfram, please feel free to push this through whatever tree you think is
+appropriate.
+
+
 -- 
-2.1.3
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
