@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633AbaLVMKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 07:10:04 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:47895 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbaLVMKB (ORCPT
+	id S1754787AbaLVMMG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 07:12:06 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43806 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482AbaLVMME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 07:10:01 -0500
-Date: Mon, 22 Dec 2014 23:09:57 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Alex Gartrell <agartrell@fb.com>
-Cc: jasonwang@redhat.com, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com,
-        herbert@gondor.apena.org.au, kernel-team@fb.com, agartrell@fb.com
-Subject: Re: [RFC PATCH net-next] tun: support retrieving multiple packets in
- a single read with IFF_MULTI_READ
-Message-ID: <20141222120957.GA21319@gondor.apana.org.au>
+	Mon, 22 Dec 2014 07:12:04 -0500
+Date: Mon, 22 Dec 2014 12:11:41 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        lgirdwood@gmail.com, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Message-ID: <20141222121141.GH17800@sirena.org.uk>
+References: <1418979886-31482-1-git-send-email-beomho.seo@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KscVNZbUup0vZz0f"
 Content-Disposition: inline
-In-Reply-To: <1417752000-27171-1-git-send-email-agartrell@fb.com>
-Organization: Core
-X-Newsgroups: apana.lists.os.linux.kernel,apana.lists.os.linux.netdev
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1418979886-31482-1-git-send-email-beomho.seo@samsung.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 31.51.36.65
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: max14577: Use regulator_nodes/of_match in the
+ descriptor
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Gartrell <agartrell@fb.com> wrote:
-> This patch adds the IFF_MULTI_READ flag.  This has the following behavior.
-> 
-> 1) If a read is too short for a packet, a single stripped packet will be read
-> 
-> 2) If a read is long enough for multiple packets, as many *full* packets
-> will be read as possible.  We will not return a stripped packet, so even if
-> there are many, many packets, we may get a short read.
-> 
-> In casual performance testing with a simple test program that simply reads
-> and counts packets, IFF_MULTI_READ conservatively yielded a 30% CPU win, as
-> measured by top.  Load was being driven by a bunch of hpings running on a
-> server on the same L2 network (single hop through a top-of-rack switch).
-> 
-> Signed-off-by: Alex Gartrell <agartrell@fb.com>
 
-As tun already has a socket interface can we do this through
-recvmmsg?
+--KscVNZbUup0vZz0f
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+On Fri, Dec 19, 2014 at 06:04:46PM +0900, Beomho Seo wrote:
+> This patch is add regulator_nodes/ofmatch in the regulator descriptor
+> for using information from DT instead of specific codes.
+> That will be used regulation_of_get_init_data function for get regulator
+> property on device tree. Using that make driver simpler.
+
+Applied, thanks.
+
+--KscVNZbUup0vZz0f
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUmAp8AAoJECTWi3JdVIfQiw4H/iSmIDFD0EeWlAFKydTqnbkH
+zE3AIa9Qi3eaeci0u3Nw2P2/Tt4W533tNqDf53VQN4l0m1bFWbAegY9o3n5VJpiU
+b2K9uYaciJ4b6bG3GrV4RaucfH2orLlANrpYr/9xLqaL78jcUvC40OsXFVLjHWkp
+51JAEJI0SX3FP5dTYFpzqCnBKRc2PMX1f8mpHEe1DUwmh7f4Vg4oqWhn6kHJI0NK
+ekxUB9jsJlm6i83bKZzPeJZhlorjLgXybQoydvwLBcKFjaLu2szL8jrCGUGZHzT5
+7GpiDMpVJ9pZkf4kP9KvDoGGbWfsfnnnpacaKKDU/Ugrw7TDPTmX5OKQKl9VbVI=
+=6LZA
+-----END PGP SIGNATURE-----
+
+--KscVNZbUup0vZz0f--
