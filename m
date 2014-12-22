@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240AbaLVPwT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:52:19 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:37712 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755058AbaLVPwR (ORCPT
+	id S1755274AbaLVPxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:53:12 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60529 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755247AbaLVPxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:52:17 -0500
-Message-ID: <54983E0A.2050005@arm.com>
-Date: Mon, 22 Dec 2014 15:51:38 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 22 Dec 2014 10:53:09 -0500
+Date: Mon, 22 Dec 2014 16:53:03 +0100
+From: Philipp Zabel <pza@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Steve Longerbeam <slongerbeam@gmail.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        David Airlie <airlied@linux.ie>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
+        Jiada Wang <jiada_wang@mentor.com>,
+        Steve Longerbeam <steve_longerbeam@mentor.com>
+Subject: Re: [PATCH v2 4/7] imx-drm: ipuv3-crtc: Implement mode_fixup
+Message-ID: <20141222155303.GB32333@pengutronix.de>
+References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
+ <1418954426-21909-5-git-send-email-steve_longerbeam@mentor.com>
+ <20141220155254.GJ11285@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 5/5] ASoC: dwc: Add documentation for I2S DT
-References: <cover.1418826016.git.Andrew.Jackson@arm.com> <2842090b2c7a8a98aed0cfa02addcef0b2e8ec6b.1418826016.git.Andrew.Jackson@arm.com> <20141222142636.GT17800@sirena.org.uk>
-In-Reply-To: <20141222142636.GT17800@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141220155254.GJ11285@n2100.arm.linux.org.uk>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:28:56 up 68 days,  2:42, 41 users,  load average: 0,04, 0,08,
+ 0,11
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: pza@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/14 14:26, Mark Brown wrote:
-> On Fri, Dec 19, 2014 at 04:18:09PM +0000, Andrew Jackson wrote:
+Hi Russell,
+
+On Sat, Dec 20, 2014 at 03:52:54PM +0000, Russell King - ARM Linux wrote:
+> On Thu, Dec 18, 2014 at 06:00:23PM -0800, Steve Longerbeam wrote:
+> > Ask the IPU display interface, via ipu_di_adjust_videomode(), to
+> > adjust a video mode to meet any DI restrictions. The function takes
+> > a subsystem independent videomode, so the drm_display_mode must be
+> > converted to videomode first, and then the adjusted mode converted
+> > back to a drm_display_mode.
 > 
->> Add documentation for Designware I2S hardware block.  The block requires
->> two clocks (one for audio sampling, the other for APB) and DMA channels
->> for receive and transmit.
-> 
-> You should generally include the binding before the code to parse it,
-> both because the binding is required in order to tell if the code is
-> doing the right thing and also because people will often not even look
-> at code with a missing binding.
+> What is the reason to use videomode (apart from it being subsystem
+> independent)?  Do we forsee implementation of other output subsystems
+> for the IPU?
 
-Fair enough: I'll reorder the (remaining) patches.
+There might be the issue of possible CSI -> IC -> DC -> DI passthrough,
+where the DI timing must be synchronized to the CSI input signal.
+I haven't really thought about how that should be integrated with the
+DRM driver mostly because of the 1024 pixel output width maximum in the
+IC, which limits the usefulness somewhat.
+I like the use of struct videomode here for the symmetry with patch 6.
+But currently, we could make ipu_di_adjust_videomode take a drm_display_mode
+just as well.
 
->> + - clocks : Pairs of phandle and specifier referencing the controller's clocks.
->> +   The controller expects two clocks, the clock used for the APB interface and
->> +   the clock used as the sampling rate reference clock sample.
->> + - clock-names : "apb_plck" for the clock to the APB interface, "i2sclk" for the sample
->> +   rate reference clock.
-> 
-> This is a name based lookup of clocks but the code doesn't use
-> apb_pclk at all; it needs to or the binding needs to say that apb_pclk
-> must be the first listed clock (which would not be good).
-
-I can remove apb_pclk: I was modelling the device tree entry on 
-various PLxxx examples (c.f. amba-pl011) which also reference an AMBA clock
-but don't use it.  (The effect being to document what clock the block is
-driven by.)
-
->> +	soc_i2s: i2s@7ff90000 {
->> +		compatible = "snps,designware-i2s";
->> +		reg = <0x0 0x7ff90000 0x0 0x1000>;
->> +		clocks = <&scpi_i2sclk 0>, <&soc_refclk100mhz>;
->> +		clock-names = "i2sclk", "apb_pclk";
->> +		#sound-dai-cells = <0>;
->> +		dmas = <&dma0 5>;
->> +		dma-names = "tx";
->> +	};
-> 
-> This omits a lot of configurability that is in platform data and
-> replaces it by reading back the parameters from the hardware.  If this
-> is a viable approach to that configuration you should do this for both
-> platform data and device tree rather than only device tree.  The point
-> with keeping platform data is that it's not good to make the device DT
-> only, improving the usability of platform data in a way that happens to
-> also make the DT case easier is totally fine.  If we can determine how
-> the IP is configured from the hardware that's both less work and more
-> robust no matter how the device is instantiated.
-> 
-
-I agree.  I didn't do it like this originally because it wasn't clear
-whether or not the original driver catered for some custom IP and I 
-wanted to ensure that I didn't break the existing driver.  I'm happy to
-switch both platform data and device tree to reading their parameters
-from the hardware.
-
-	Andrew
-
+regards
+Philipp
