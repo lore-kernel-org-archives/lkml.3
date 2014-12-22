@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbaLVT0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:26:46 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41920 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134AbaLVT0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:26:44 -0500
-Message-ID: <54987072.4050002@codeaurora.org>
-Date: Mon, 22 Dec 2014 11:26:42 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754981AbaLVTbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:31:21 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:35248 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754442AbaLVTbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 14:31:20 -0500
+Date: Mon, 22 Dec 2014 11:30:45 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>, dev@codyps.com,
+        peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v6 1/4] tools/perf: support parsing parameterized events
+Message-ID: <20141222193045.GA19784@us.ibm.com>
+References: <1419234567-22784-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <1419234567-22784-2-git-send-email-sukadev@linux.vnet.ibm.com>
+ <20141222143710.GA29096@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-CC: Rajendra Nayak <rnayak@ti.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] clk: Fix __GFP_FS allocation with irqs disabled
-References: <1419248747-3367-1-git-send-email-k.kozlowski@samsung.com> <54986525.3070305@codeaurora.org>
-In-Reply-To: <54986525.3070305@codeaurora.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141222143710.GA29096@krava.brq.redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14122219-0033-0000-0000-00000162F2FA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2014 10:38 AM, Stephen Boyd wrote:
-> On 12/22/2014 03:45 AM, Krzysztof Kozlowski wrote:
->
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index f4963b7d4e17..35079302a650 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -1150,6 +1150,12 @@ static int clk_fetch_parent_index(struct clk *clk, struct clk *parent)
->>  {
->>  	int i;
->>  
->> +	if (clk->num_parents == 1) {
->> +		if (IS_ERR_OR_NULL(clk->parent))
->> +			clk->parent = __clk_lookup(clk->parent_names[0]);
->> +		return 0;
->> +	}
->> +
->>  	if (!clk->parents) {
->>  		clk->parents = kcalloc(clk->num_parents,
->>  					sizeof(struct clk *), GFP_KERNEL);
-> This may be a worthwhile optimization, but I wonder why the clk_ops for
-> this clock need to fetch the parent index at all? Which clock are we
-> actually dealing with here?
->
+Jiri Olsa [jolsa@redhat.com] wrote:
+| On Sun, Dec 21, 2014 at 11:49:24PM -0800, Sukadev Bhattiprolu wrote:
+| 
+| SNIP
+| 
+| > +	}
+| >  
+| >  	switch (format->value) {
+| >  	case PERF_PMU_FORMAT_VALUE_CONFIG:
+| > @@ -592,11 +629,16 @@ static int pmu_config_term(struct list_head *formats,
+| >  	}
+| >  
+| >  	/*
+| > -	 * XXX If we ever decide to go with string values for
+| > -	 * non-hardcoded terms, here's the place to translate
+| > -	 * them into value.
+| > +	 * Either directly use a numeric term, or try to translate string terms
+| > +	 * using event parameters.
+| >  	 */
+| > -	pmu_format_value(format->bits, term->val.num, vp, zero);
+| > +	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM)
+| > +		val = term->val.num;
+| > +	else
+| > +		if (pmu_resolve_param_term(term, head_terms, &val))
+| > +			return -EINVAL;
+| > +
+| 
+| I'm ok with the change logic, but I'm missing here check for the 'term'
+| string value to be '?', so we force subst terms to have '?' as value..
+| I believe thats what we decided in the previous set discussion, right?
 
-The clk_set_rate() call should still be fixed, but we can probably do
-this too.
+The =? is not a user input, so I did not think of validating that.
 
----8<---
+perf tool expects kernel/sysfs to show entries like 'core=?'. Are you
+saying that we should error out if kernel mistakenly displays 'core=$val'
+or 'core=?val' ? 
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-Date: Mon, 22 Dec 2014 11:24:28 -0800
-Subject: [PATCH] clk: Skip fetching index for single parent clocks
+If a required parameter is missing, we catch that in pmu_resolve_param_term().
+If a bogus parameter is specified we catch that above in pmu_config_term().
 
-We don't need to fetch the parent index for clocks if they only
-have one parent. Doing this also avoid an unnecessary allocation
-for the parent cache.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/clk.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 675f37a7329f..e3a2d36124fd 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1420,7 +1420,7 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
- 	}
- 
- 	/* try finding the new parent index */
--	if (parent) {
-+	if (parent && clk->num_parents > 1) {
- 		p_index = clk_fetch_parent_index(clk, parent);
- 		if (p_index < 0) {
- 			pr_debug("%s: clk %s can not be parent of clk %s\n",
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+| 
+| I guess the it'd be nice to parse it directly in the bison code like
+| below (could be done later), but I'd be ok with simple check on this
+| place for now.
+| 
+| thanks,
+| jirka
+| 
+| 
+| ---
+| diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+| index 93c4c9fbc922..7e021c64d5cc 100644
+| --- a/tools/perf/util/parse-events.y
+| +++ b/tools/perf/util/parse-events.y
+| @@ -484,6 +484,14 @@ PE_TERM '=' PE_VALUE
+|  	$$ = term;
+|  }
+|  |
+| +PE_TERM '=' PE_SUBST
+| +{
+| +	struct parse_events_term *term;
+| +
+| +	ABORT_ON(parse_events_term__subst(&term, (int)$1, NULL, NULL));
+| +	$$ = term;
+| +}
+| +|
+|  PE_TERM
+|  {
+|  	struct parse_events_term *term;
 
