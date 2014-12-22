@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042AbaLVOM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:12:58 -0500
-Received: from mga09.intel.com ([134.134.136.24]:35979 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754810AbaLVOM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:12:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,624,1413270000"; 
-   d="scan'208";a="627719192"
-Date: Mon, 22 Dec 2014 22:13:18 +0800
-From: Yong Wang <yong.y.wang@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Wu, Feng" <feng.wu@intel.com>, "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jiang Liu <jiang.liu-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
-Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-Message-ID: <20141222141318.GA12171@ywang-linux>
-References: <E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>
- <5494131E.9030505@redhat.com>
- <E959C4978C3B6342920538CF579893F00230D036@SHSMSX104.ccr.corp.intel.com>
- <549576C7.4030800@redhat.com>
- <E959C4978C3B6342920538CF579893F0023103FB@SHSMSX104.ccr.corp.intel.com>
- <5497E41F.50301@redhat.com>
- <E959C4978C3B6342920538CF579893F002310D51@SHSMSX104.ccr.corp.intel.com>
- <5497FB50.1080606@redhat.com>
- <E959C4978C3B6342920538CF579893F002310DAB@SHSMSX104.ccr.corp.intel.com>
- <5497FF38.3040503@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5497FF38.3040503@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755078AbaLVONP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:13:15 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27375 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755056AbaLVONM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 09:13:12 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-db-549826f6a86f
+Message-id: <549826F4.6080709@samsung.com>
+Date: Mon, 22 Dec 2014 15:13:08 +0100
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: dinh.linux@gmail.com
+Cc: "paulz@synopsys.com >> Paul Zimmerman" <paulz@synopsys.com>,
+        "balbi@ti.com" <balbi@ti.com>, gregkh@linuxfoundation.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: usb: dwc2: problems with IN requests completion in linux-next
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t/xa7rf1GaEGKz/J2px8H69xcqT2hbN
+	i9ezWVzeNYfNYtGyVmaLtUfusltsnzKdyYHdY+esu+we++euYffo27KK0WPL/s+MHsdvbGfy
+	+LxJLoAtissmJTUnsyy1SN8ugStj680f7AVLOSsm95g0MB5m72Lk5JAQMJFYP/cFC4QtJnHh
+	3nq2LkYuDiGBpYwSLbffMIEkhAQ+MkpsesoPYvMKaElcft7GBmKzCKhKLDtxDqyZTUBHYsv3
+	CYwgtqhAhMSVNXMYIeoFJX5MvgdWIyIgITG5YwnYAmaB5UwS19Z8AbtCWMBNYt3cVcxdjBxA
+	CXWJKVNyQcLMAvISm9e8ZZ7AyDcLyahZCFWzkFQtYGRexSiaWppcUJyUnmukV5yYW1yal66X
+	nJ+7iREStl93MC49ZnWIUYCDUYmHt2PVtBAh1sSy4srcQ4wSHMxKIryHP08PEeJNSaysSi3K
+	jy8qzUktPsTIxMEp1cAobX5H11DVKbpFR9hvua7/q5uM/w3CT737V7qVs/WcvDz7VOa6r1ej
+	5jQY13WdZ/zMsHNB1xf5xQ0Gdz/q31j/yFD7tjfnp2VvGj2b7Y20LwWtZnfU38/RnbY7/Naf
+	QGeO0z/eu8a/rqs9vq9bXafsevmyhV8W568R4/PZ42TGaXXsKPdHhW4lluKMREMt5qLiRABd
+	24e7OQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 12:23:36PM +0100, Paolo Bonzini wrote:
-> 
-> 
-> On 22/12/2014 12:17, Wu, Feng wrote:
-> >> Yes, and those need not be accelerated.  But what if you set
-> >> affinity to a single CPU?
-> >
-> > How do I set affinity to a single CPU if guest configure a lowest
-> > priority interrupt? Thanks a lot!
-> 
-> I mean if the guest (via irqbalance and /proc/irq/) configures affinity
-> to a single vCPU.  In that case, you can use PI.
-> 
+Hi,
 
-The problem is we still need to support PI with lowest priority delivery mode
-even if guest does not configure irq affinity via /proc/irq/. Don't we?
+I have recently noticed problem with DWC2 driver in latest linux-next. I
+use it in gadget only mode at Samsung platform (Odroid U3) but I believe
+the bug can be reproduced at another platforms.
 
-Thanks
--Yong
+While running FFS example (tools/usb/ffs-aio-example/simple/) the
+communication breaks after few seconds. It's because one of IN requests
+enqueued in DWC2 driver do not complete. At USB analyzer I see that USB
+device started to transmit data from this request, but it ended incomplete.
 
+I bisected kernel tree, and I got following patches are reason of break.
+
+941fcce usb: dwc2: Update the gadget driver to use common dwc2_hsotg
+structure
+117777b usb: dwc2: Move gadget probe function into platform code
+bcc0607 usb: dwc2: convert to use dev_pm_ops API
+510ffaa usb: dwc2: Initialize the USB core for peripheral mode
+db8178c usb: dwc2: Update common interrupt handler to call gadget
+interrupt handler
+8d736d8 usb: dwc2: gadget: Do not fail probe if there isn't a clock node
+
+Patch 941fcce breaks DWC2 driver at my platform and it starts to work
+from 8d736d8 but it has described bug.
+
+I will try to localize reason of this issue.
+
+Best regards,
+Robert Baldyga
