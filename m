@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaLVSbQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 13:31:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:34202 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322AbaLVSbO (ORCPT
+	id S1754836AbaLVSgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 13:36:43 -0500
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:3485 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754513AbaLVSgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 13:31:14 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: david.vrabel@citrix.com, konrad.wilk@oracle.com
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        boris.ostrovsky@oracle.com
-Subject: [PATCH] xen/time: Remove unnecessary BUG_ON(preemptible()) in xen_setup_timer()
-Date: Mon, 22 Dec 2014 13:33:10 -0500
-Message-Id: <1419273190-18821-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.9.3
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 22 Dec 2014 13:36:41 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuwPALBjmFRXQ5YW/2dsb2JhbABbgwaBKrQDBQEBAQEBAQUBd5coBAKBHBcBAQEBAX2EaSOBGjeIMAHAHZBThgCJDmQdhBMFlwORSyKBRQGCKT0xgQOBQAEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: davem@davemloft.net, joe@perches.com, Fabian Frederick <fabf@skynet.be>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] netfilter: remove unnecessary sizeof(char)
+Date: Mon, 22 Dec 2014 19:36:15 +0100
+Message-Id: <1419273375-24312-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no reason for having it and, with commit 250a1ac685f1 ("x86,
-smpboot: Remove pointless preempt_disable() in
-native_smp_prepare_cpus()"), it prevents HVM guests from booting.
+sizeof(char) is always 1.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Suggested-by: Joe Perches <joe@perches.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- arch/x86/xen/time.c | 2 --
- 1 file changed, 2 deletions(-)
+ net/netfilter/nf_log.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index f473d26..23019b4 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -458,8 +458,6 @@ void xen_setup_timer(int cpu)
- 
- void xen_setup_cpu_clockevents(void)
- {
--	BUG_ON(preemptible());
--
- 	clockevents_register_device(this_cpu_ptr(&xen_clock_events.evt));
- }
- 
+diff --git a/net/netfilter/nf_log.c b/net/netfilter/nf_log.c
+index 43c926c..1191f66 100644
+--- a/net/netfilter/nf_log.c
++++ b/net/netfilter/nf_log.c
+@@ -426,7 +426,7 @@ static int netfilter_log_sysctl_init(struct net *net)
+ 				nf_log_sysctl_fnames[i];
+ 			nf_log_sysctl_table[i].data = NULL;
+ 			nf_log_sysctl_table[i].maxlen =
+-				NFLOGGER_NAME_LEN * sizeof(char);
++				NFLOGGER_NAME_LEN;
+ 			nf_log_sysctl_table[i].mode = 0644;
+ 			nf_log_sysctl_table[i].proc_handler =
+ 				nf_log_proc_dostring;
 -- 
-1.9.3
+1.9.1
 
