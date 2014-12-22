@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017AbaLVTQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:16:23 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:49620 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250AbaLVTQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:16:22 -0500
-Date: Mon, 22 Dec 2014 20:14:35 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Simon Guinot <simon.guinot@sequanux.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, Lior Amsalem <alior@marvell.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Ryan Press <ryan@presslab.us>, Nadav Haklai <nadavh@marvell.com>,
-        Greg Ungerer <gerg@uclinux.org>, Benoit Masson <yahoo@perenite.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "klightspeed @ killerwolves . net" <klightspeed@killerwolves.net>,
-        Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Arnaud Ebalard <arno@natisbad.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>,
-        Marcin Wojtas <mw@semihalf.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Simon Baatz <gmbnomis@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>, Willy Tarreau <w@1wt.eu>
-Subject: Re: [PATCH 00/27] ARM: mvebu: armada-*: Relicense the device tree
- under GPLv2+/X11
-Message-ID: <20141222191435.GI32716@lunn.ch>
-References: <20141218191528.GY967@titan.lakedaemon.net>
- <549437DD.7040602@free-electrons.com>
- <20141219160230.GZ967@titan.lakedaemon.net>
- <54944DAC.1000709@free-electrons.com>
- <20141219170328.GA967@titan.lakedaemon.net>
- <54945C5C.2080801@free-electrons.com>
- <20141219174300.GB967@titan.lakedaemon.net>
- <20141219181616.GG19261@kw.sim.vm.gnt>
- <20141221235000.GC28117@titan.lakedaemon.net>
- <20141222112933.GK19261@kw.sim.vm.gnt>
+	id S1755270AbaLVTRE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:17:04 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:51727 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869AbaLVTRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 14:17:01 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Alex Hung <alex.hung@canonical.com>
+Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Darren Hart <dvhart@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
+Date: Mon, 22 Dec 2014 20:16:58 +0100
+Message-ID: <1675821.m9zcYReJQs@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <CAJ=jqubEggcXs0kvegGUpVh8PNh-GmdcnXkXUjqv4fHD-zXdEA@mail.gmail.com>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <2697957.miSb4Rm7HK@xps13> <CAJ=jqubEggcXs0kvegGUpVh8PNh-GmdcnXkXUjqv4fHD-zXdEA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141222112933.GK19261@kw.sim.vm.gnt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > In the long term, we're attempting to provide one neutral place [1] for
-> > the bootloaders and kernels to pull devicetrees from and contribute
-> > changes back to.
+On Monday 22 December 2014 15:27:57 Alex Hung wrote:
+> = Testing =
 > 
-> OK, let's see if I understand correctly.
+> I tested six Dell systems for two sets of patches for dell radio
+> button - two system with radio slider and four with radio hotkey.
+> There are also two systems with working ARBT method.
 > 
-> If I don't agree with the GPLv2+/x11 relicensing, then support for
-> almost all the LaCie boards will be removed from the Linux kernel (maybe
-> during the next merge window) ? Is that correct ?
+> == Basic Information ==
+> Based OS: Ubuntu 14.10 (kernel 3.16 [1]) and kernel 3.18 [2]
+> 
+> Patches:
+> 1. dell-wireless v3 = original v2 + Gabriele's suggestion [3]
+> 2. dell-rbtn [4]
+> 
+> Method:
+> 1. run "rfkill list" and press hotkey / toggle slider during runtime
+> 2. run "rfkill list" and toggle slider during S3
+> 
+> == Results ==
+> 
+> I summarized the tests in Google sheet as below. Please advise if
+> anyone has problem reading it.
+> 
+> https://docs.google.com/spreadsheets/d/1voffS6dNglwAExSGh3UmG__UAO2qfZ829CkJLPo06aI/edit?usp=sharing
+> 
+> PS. The document will stay as long as possible for future references.
+> 
+> == Summary ==
+> 
+> 1. I did not observed a duplicated event. However, keycode 240
+> (unknown) is generated on many UUT. It is not issued by dell-laptop or
+> del-wmi. I am suspecting it is the other event Pali observes but it
+> can be the result of different distro.
+> 
+> 2. Some system issues scancode "0xe0 0x73 0xe0 0xf3". It can also be
+> used toggle wireless state but this can also be distro-dependent. This
+> scancode does nothing on Ubuntu 14.10.
+> 
+> 2. There are two systems with working ARBT (XPS 13 9333 and Inspiron
+> 7447). Calling ARBT(1) changes BIOS behaviours, and this matches to
+> Dell's document. We should include it in the patch for maximum
+> capability.
+> 
+> 
+> [1] dell-wireless is only tested 3.16.
+> [2] dell-rbtn is tested on 3.16 and 3.18, but no differences are observed.
+> [3] http://people.canonical.com/~alexhung/dell-wireless/
+> [4] http://people.canonical.com/~alexhung/dell-rbtn/
 
-I would NAK such a removal. 
+I've just tried the last revision of dell-wireless and noticed that a
+notification (0x80) is sent to DELLABCE after a transition from S3 to
+S0, causing dell-wireless to send KEY_RFKILL. This shouldn't happen.
+Same thing for transitions from S4 to S0.
 
-	   Andrew
+Gabriele
