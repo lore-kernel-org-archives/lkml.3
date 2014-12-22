@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237AbaLVPKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:10:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44063 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768AbaLVPKo (ORCPT
+	id S1755244AbaLVPLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:11:42 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50625 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754863AbaLVPLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:10:44 -0500
-Date: Mon, 22 Dec 2014 15:10:25 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        lgirdwood@gmail.com, cw00.choi@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com
-Message-ID: <20141222151025.GY17800@sirena.org.uk>
-References: <1418901216-19030-1-git-send-email-beomho.seo@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FvpZCdL3V2P9482l"
-Content-Disposition: inline
-In-Reply-To: <1418901216-19030-1-git-send-email-beomho.seo@samsung.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 31.51.36.65
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: rt5033-regulator: Use
- regulator_nodes/of_match in the descriptor
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Mon, 22 Dec 2014 10:11:40 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v6 0/3] Add of-graph helpers to loop over endpoints and find ports by id
+Date: Mon, 22 Dec 2014 16:11:28 +0100
+Message-Id: <1419261091-29888-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.1.3
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---FvpZCdL3V2P9482l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+next try for v3.20. After the merge window we have a few new users of
+of_graph_get_next_endpoint, could I please get some acks from the respective
+maintainers for this to go in through Grant's tree?
 
-On Thu, Dec 18, 2014 at 08:13:36PM +0900, Beomho Seo wrote:
-> This patch is add regulator_nodes/of_match in the regulator descriptor
-> for using information from DT instead of sppecific codes.
+This series converts all existing users of of_graph_get_next_endpoint that pass
+a non-NULL prev argument to the function and decrement its refcount themselves
+to stop doing that. The of_node_put is moved into of_graph_get_next_endpoint
+instead.
+This allows to add a for_each_endpoint_of_node helper macro to loop over all
+endpoints in a device tree node.
 
->  drivers/regulator/rt5033-regulator.c |    8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
+Changes since v5:
+ - Rebased onto v3.19-rc1
+ - Added new users of of_graph_get_next_endpoint, coresight and
+   drm/rcar-du. There's also rockchip, but the driver already doesn't
+   decrement the prev node's reference count.
+ - Dropped the "use for_each_endpoint_of_node macro" patches,
+   I'll add the new users and resend them separately.
 
-This isn't replacing existing code with use of the framework, it's
-adding new bindings where there were none before so it needs to add a
-binding document too.
+The previous version can be found here: https://lkml.org/lkml/2014/9/29/529
 
---FvpZCdL3V2P9482l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+regards
+Philipp
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Philipp Zabel (3):
+  of: Decrement refcount of previous endpoint in
+    of_graph_get_next_endpoint
+  of: Add for_each_endpoint_of_node helper macro
+  of: Add of_graph_get_port_by_id function
 
-iQEcBAEBAgAGBQJUmDRgAAoJECTWi3JdVIfQynIH/2xAjbwTHL8cbNpaumgU7CQf
-R+BFNItfngflNMPBm6LIlkp7Y9aAjbHinvwHXe57KhN5ei/mFyOcGdXdYArrUrwz
-C8Z/O2j5NFlj9lbcOozAAyclAkQKwJkA+Sih5DolEC9RNNP/l59fhaYZnKTu5QBp
-LXM+ZfK43onmC55uG6Ku/BQ3oHbJT/3efSi8HRezX3fwGAiM6Rnd9fBC+Ha2QHGq
-4RBQVYYejOkXYcs+XWhkQ88iqxDczh4wsBuQsIYD/X/ciiBpYpMX3iK88R5UTVDG
-J4SrvbuseEwRehxe/nvQKah136M5BnldRZNqleAkYuzOPj8LIjEdLcpchX5M10Y=
-=dlST
------END PGP SIGNATURE-----
+ drivers/coresight/of_coresight.c               | 13 ++--------
+ drivers/gpu/drm/imx/imx-drm-core.c             | 13 ++--------
+ drivers/gpu/drm/rcar-du/rcar_du_kms.c          | 15 +++--------
+ drivers/media/platform/soc_camera/soc_camera.c |  3 ++-
+ drivers/of/base.c                              | 35 ++++++++++++++++++++------
+ include/linux/of_graph.h                       | 18 +++++++++++++
+ 6 files changed, 55 insertions(+), 42 deletions(-)
 
---FvpZCdL3V2P9482l--
+-- 
+2.1.4
+
