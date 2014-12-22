@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154AbaLVQ2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:28:43 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:53627 "EHLO
+	id S932178AbaLVQ2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:28:49 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:53637 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932087AbaLVQ2j (ORCPT
+	with ESMTP id S932155AbaLVQ2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:28:39 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-78-549846b5cafb
+	Mon, 22 Dec 2014 11:28:44 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-90-549846bab59c
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>,
         Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
@@ -19,82 +19,86 @@ Cc: lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
         Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH v2 3/8] hwmon: dts: Doc: Add DTS doc to explain how to use PWM
- FAN as a cooling device
-Date: Mon, 22 Dec 2014 17:27:43 +0100
-Message-id: <1419265668-32283-4-git-send-email-l.majewski@samsung.com>
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: [PATCH v2 4/8] ARM: dts: Add pwm-fan node to the Odroid-U3 board
+Date: Mon, 22 Dec 2014 17:27:44 +0100
+Message-id: <1419265668-32283-5-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1419265668-32283-1-git-send-email-l.majewski@samsung.com>
 References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
  <1419265668-32283-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jAd2tbjNCDD62GVg8XrOYyWL+kXOs
-	FvOvXGO1WHr3E5vFj9cX2CzW/FWy6F1wlc3izSNuizcPNzNaXN41h83ic+8RRosZ5/cxWTxZ
-	eIbJ4s60vWwWh9+0szrwe+ycdZfd48HE3Wwe66a9ZfbY+b2B3aNvyypGj82nqz0+b5ILYI/i
-	sklJzcksSy3St0vgyvj/pI29YApvxZtr29kbGHdxdTFyckgImEhcWdLEAmGLSVy4t56ti5GL
-	Q0hgEaPEl6fH2EASQgJdTBL/94SC2GwCehKf7z5lAikSEZjBKLG/6Rs7iMMscIVZ4tupRrBR
-	wgIZEpd6H7J2MXJwsAioSjw75A8S5hVwk2jfcoYJYpuiRPezCWwgJZwC7hK/X/FCLG5mlDi1
-	oJF5AiPvAkaGVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBQftMegfjqgaLQ4wCHIxKPLyc
-	adNDhFgTy4orcw8xSnAwK4nwXrWcESLEm5JYWZValB9fVJqTWnyIUZqDRUmcV8m+LURIID2x
-	JDU7NbUgtQgmy8TBKdXAOPnQ349OHfO6lj2e6Vy34nWQnMLmDauO5dnfkwtu2NsVplvkuTvm
-	+IXJ2ysWtH/67vXnkOUvgeCdHjGqzpsnvG25fX5pxNzqI4v4/O71Ot/be93vu3ZJoXerhFdt
-	SfCxeKPNScKJ/XZ3Ihvm3Fn/sZD9K89ruY+vbVVNcvWV7YtzLZ9etXRtVGIpzkg01GIuKk4E
-	AFt32n9WAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jAd1dbjNCDB5eVrJ4vGYxk8X8I+dY
+	LeZfucZqsfTuJzaLH68vsFms+atk0bvgKpvFm0fcFpd3zWGz+Nx7hNFixvl9TBZPFp5hsrgz
+	bS+bxeE37awOfB47Z91l93gwcTebx7ppb5k9dn5vYPfo27KK0WPz6WqPz5vkAtijuGxSUnMy
+	y1KL9O0SuDK+Pj3IXLCTt+LT4z7mBsaPXF2MnBwSAiYSre93sULYYhIX7q1n62Lk4hASWMQo
+	0f71CCOE08UkMWfOJGaQKjYBPYnPd58ygSREBGYwSuxv+sYO4jALrGCWmHLjFRNIlbCAp8SU
+	y/NYQGwWAVWJl4+egO3gFXCTOLNgDjvEPkWJ7mcTgPZxcHAKuEv8fsULsa2ZUeLUgkbmCYy8
+	CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEh+szqR2MKxssDjEKcDAq8fBypE0PEWJN
+	LCuuzD3EKMHBrCTCe9VyRogQb0piZVVqUX58UWlOavEhRmkOFiVxXiX7thAhgfTEktTs1NSC
+	1CKYLBMHp1QD40xtzTvWXWtvz/+zrDP0M4d4Tm3kgpxZl4/PqSjtPpIfm9P554ZQYsfK0tsZ
+	i+f1TXjacTyUcYb1+UMbdO4kXtTdPvWVx35tcwaenA+XWy/GeO+vZj0Z0fNRbJFiHEtWlZyb
+	g/5MwQ0m/TpbpHa4/0h5J/CL8beape0smZN/wpNMClPX9h/TVmIpzkg01GIuKk4EAMMNTrtT	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several new properties to allow PWM fan working as a cooling device have been
-combined into this single commit.
+From: Kamil Debski <k.debski@samsung.com>
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
----
-Changes for v2:
-- Rename cooling-pwm-values to cooling-levels
-- Remove default-pulse-width property and stick to default hwmon policy
----
- .../devicetree/bindings/hwmon/pwm-fan.txt          | 23 ++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+Add pwm-fan node to the Odroid-U3 board file to enable PWM control of the
+cooling fan. In addition, add the "pwm" label to the pwm@139D0000 node
+in the exynos4412.dtsi.
 
-diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-index 610757c..001446a 100644
---- a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-+++ b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-@@ -3,10 +3,33 @@ Bindings for a fan connected to the PWM lines
- Required properties:
- - compatible	: "pwm-fan"
- - pwms		: the PWM that is used to control the PWM fan
-+- cooling-levels      : PWM duty cycle values in a range from 0 to 255
-+			which correspond to thermal cooling states
-+
-+Thorough description of the following bindings:
-+		cooling-min-state = <0>;
-+		cooling-max-state = <3>;
-+		#cooling-cells = <2>;
-+		thermal-zone {
-+			cpu_thermal: cpu-thermal {
-+			cooling-maps {
-+				map0 {
-+				     trip = <&cpu_alert1>;
-+				     cooling-device = <&fan0 0 1>;
-+				};
-+			};
-+		};
-+
-+for PWM FAN used as cooling device can be found at:
-+./Documentation/devicetree/bindings/thermal/thermal.txt
- 
- Example:
- 	pwm-fan {
- 		compatible = "pwm-fan";
- 		status = "okay";
- 		pwms = <&pwm 0 10000 0>;
-+		cooling-min-state = <0>;
-+		cooling-max-state = <3>;
-+		#cooling-cells = <2>;
-+		cooling-levels = <0 102 170 255>;
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+[Rebased on the newest mainline by l.majewski@samsung.com]
+---
+Changes since v1:
+- added pwm label to the pwm@139D0000 node in exynos4.dtsi
+- use the pwm label in the exynos4412-odroidu3.dts
+- change order or properties in the pwn-fan node, to be sorted
+  in alphabetical order
+
+---
+ arch/arm/boot/dts/exynos4.dtsi            |  2 +-
+ arch/arm/boot/dts/exynos4412-odroidu3.dts | 13 +++++++++++++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
+index 1735bb3..f227a39 100644
+--- a/arch/arm/boot/dts/exynos4.dtsi
++++ b/arch/arm/boot/dts/exynos4.dtsi
+@@ -583,7 +583,7 @@
+ 		status = "disabled";
  	};
+ 
+-	pwm@139D0000 {
++	pwm: pwm@139D0000 {
+ 		compatible = "samsung,exynos4210-pwm";
+ 		reg = <0x139D0000 0x1000>;
+ 		interrupts = <0 37 0>, <0 38 0>, <0 39 0>, <0 40 0>, <0 41 0>;
+diff --git a/arch/arm/boot/dts/exynos4412-odroidu3.dts b/arch/arm/boot/dts/exynos4412-odroidu3.dts
+index c8a64be..60bd1e4 100644
+--- a/arch/arm/boot/dts/exynos4412-odroidu3.dts
++++ b/arch/arm/boot/dts/exynos4412-odroidu3.dts
+@@ -31,6 +31,19 @@
+ 			linux,default-trigger = "heartbeat";
+ 		};
+ 	};
++
++	pwm-fan {
++		compatible = "pwm-fan";
++		pwms = <&pwm 0 10000 0>;
++		status = "okay";
++	};
++};
++
++&pwm {
++	pinctrl-0 = <&pwm0_out>;
++	pinctrl-names = "default";
++	samsung,pwm-outputs = <0>;
++	status = "okay";
+ };
+ 
+ &usb3503 {
 -- 
 2.0.0.rc2
 
