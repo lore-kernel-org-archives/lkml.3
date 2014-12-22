@@ -1,147 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaLVJQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:16:46 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:54770 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971AbaLVJQh (ORCPT
+	id S1754510AbaLVJUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:20:00 -0500
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:36502 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496AbaLVJT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:16:37 -0500
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: <dwmw2@infradead.org>, <indou.takao@jp.fujitsu.com>, <bhe@redhat.com>,
-        <joro@8bytes.org>, <vgoyal@redhat.com>, <dyoung@redhat.com>
-Cc: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <kexec@lists.infradead.org>,
-        <alex.williamson@redhat.com>, <ddutile@redhat.com>,
-        <ishii.hironobu@jp.fujitsu.com>, <bhelgaas@google.com>,
-        <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
-        <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
-        <billsumnerlinux@gmail.com>, <zhen-hual@hp.com>
-Subject: [PATCH 01/10] iommu/vt-d: Update iommu_attach_domain() and its callers
-Date: Mon, 22 Dec 2014 17:15:20 +0800
-Message-Id: <1419239729-26529-2-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 2.0.0-rc0
-In-Reply-To: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
-References: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
+	Mon, 22 Dec 2014 04:19:56 -0500
+X-ASG-Debug-ID: 1419239084-0759e769b747c420002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Mon, 22 Dec 2014 10:04:38 +0100
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Sebastian Reichel <sre@kernel.org>
+CC: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        =?utf-8?B?UmVuw6k=?= Moll <linux@r-moll.nl>,
+        Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 00/13] ltc2952 modernization and new functionality
+Message-ID: <20141222090438.GA6427@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH 00/13] ltc2952 modernization and new functionality
+References: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1413988270-28092-1-git-send-email-frans.klaver@xsens.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.149]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1419239084
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: https://filter1.ibarracuda.nl:443/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.13245
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow specification of the domain-id for the new domain.
-This patch only adds the 'did' parameter to iommu_attach_domain()
-and modifies all of its callers to specify the default value of -1
-which says "no did specified, allocate a new one".
+Hi there,
 
-This is no functional change from current behaviour -- just enables
-a functional change to be made in a later patch.
+On Wed, Oct 22, 2014 at 04:30:57PM +0200, Frans Klaver wrote:
+> 
+> This series implements devm_* usage, reduction of globals, some cleanup and
+> finally makes the input trigger optional.
 
-Bill Sumner:
-    Original version.
+Has this fallen through the cracks?
 
-Li, Zhenhua:
-    Minor change, add change to function __iommu_attach_domain.
-
-Signed-off-by: Bill Sumner <billsumnerlinux@gmail.com>
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/iommu/intel-iommu.c | 34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 1232336..2dc6250 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1534,31 +1534,36 @@ static struct dmar_domain *alloc_domain(int flags)
- }
- 
- static int __iommu_attach_domain(struct dmar_domain *domain,
--				 struct intel_iommu *iommu)
-+				 struct intel_iommu *iommu,
-+				 int domain_number)
- {
- 	int num;
- 	unsigned long ndomains;
- 
- 	ndomains = cap_ndoms(iommu->cap);
--	num = find_first_zero_bit(iommu->domain_ids, ndomains);
--	if (num < ndomains) {
--		set_bit(num, iommu->domain_ids);
--		iommu->domains[num] = domain;
--	} else {
--		num = -ENOSPC;
--	}
-+	if (domain_number < 0) {
-+		num = find_first_zero_bit(iommu->domain_ids, ndomains);
-+		if (num < ndomains) {
-+			set_bit(num, iommu->domain_ids);
-+			iommu->domains[num] = domain;
-+		} else {
-+			num = -ENOSPC;
-+		}
-+	} else
-+		num = domain_number;
- 
- 	return num;
- }
- 
- static int iommu_attach_domain(struct dmar_domain *domain,
--			       struct intel_iommu *iommu)
-+			       struct intel_iommu *iommu,
-+			       int domain_number)
- {
- 	int num;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&iommu->lock, flags);
--	num = __iommu_attach_domain(domain, iommu);
-+	num = __iommu_attach_domain(domain, iommu, domain_number);
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- 	if (num < 0)
- 		pr_err("IOMMU: no free domain ids\n");
-@@ -1577,7 +1582,7 @@ static int iommu_attach_vm_domain(struct dmar_domain *domain,
- 		if (iommu->domains[num] == domain)
- 			return num;
- 
--	return __iommu_attach_domain(domain, iommu);
-+	return __iommu_attach_domain(domain, iommu, -1);
- }
- 
- static void iommu_detach_domain(struct dmar_domain *domain,
-@@ -2231,6 +2236,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
- 	u16 dma_alias;
- 	unsigned long flags;
- 	u8 bus, devfn;
-+	int did = -1;   /* Default to "no domain_id supplied" */
- 
- 	domain = find_domain(dev);
- 	if (domain)
-@@ -2264,7 +2270,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
- 	domain = alloc_domain(0);
- 	if (!domain)
- 		return NULL;
--	domain->id = iommu_attach_domain(domain, iommu);
-+	domain->id = iommu_attach_domain(domain, iommu, did);
- 	if (domain->id < 0) {
- 		free_domain_mem(domain);
- 		return NULL;
-@@ -2442,7 +2448,7 @@ static int __init si_domain_init(int hw)
- 		return -EFAULT;
- 
- 	for_each_active_iommu(iommu, drhd) {
--		ret = iommu_attach_domain(si_domain, iommu);
-+		ret = iommu_attach_domain(si_domain, iommu, -1);
- 		if (ret < 0) {
- 			domain_exit(si_domain);
- 			return -EFAULT;
-@@ -3866,7 +3872,7 @@ static int intel_iommu_add(struct dmar_drhd_unit *dmaru)
- 	iommu_enable_translation(iommu);
- 
- 	if (si_domain) {
--		ret = iommu_attach_domain(si_domain, iommu);
-+		ret = iommu_attach_domain(si_domain, iommu, -1);
- 		if (ret < 0 || si_domain->id != ret)
- 			goto disable_iommu;
- 		domain_attach_iommu(si_domain, iommu);
--- 
-2.0.0-rc0
-
+Thanks,
+Frans
