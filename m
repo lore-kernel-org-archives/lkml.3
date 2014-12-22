@@ -1,171 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156AbaLVTEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:04:09 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:36169 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754598AbaLVTEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:04:08 -0500
-From: Simone Weiss <simone.weiss@fau.de>
-To: simone.weiss@fau.de
-Cc: helene.gsaenger@studium.fau.de, linux-kernel@i4.cs.fau.de,
-        lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] dgnc/digi.h: checkpatch: Changend complex macros (enclosed parantheses)
-Date: Mon, 22 Dec 2014 20:04:02 +0100
-Message-Id: <1419275042-12289-1-git-send-email-simone.weiss@fau.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419211054-3052-5-git-send-email-simone.weiss@fau.de>
-References: <1419211054-3052-5-git-send-email-simone.weiss@fau.de>
+	id S1755253AbaLVTEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:04:40 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:45801 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460AbaLVTEj (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 22 Dec 2014 14:04:39 -0500
+Message-ID: <1419275072.8812.1.camel@stgolabs.net>
+Subject: Re: mm: NULL ptr deref in unlink_file_vma
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>
+Date: Mon, 22 Dec 2014 11:04:32 -0800
+In-Reply-To: <20141222180420.GA20261@node.dhcp.inet.fi>
+References: <549832E2.8060609@oracle.com>
+	 <20141222180102.GA8072@node.dhcp.inet.fi>
+	 <20141222180420.GA20261@node.dhcp.inet.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch previous in this thread (dgnc/dpacompat.h) defines partly the same macros as dgnc/digi.h and so it  is neccessary tochange the macros in this file as well, so no macros get redefined
+On Mon, 2014-12-22 at 20:04 +0200, Kirill A. Shutemov wrote:
+> [ fixed Davidlohr's address. ]
+> 
+> On Mon, Dec 22, 2014 at 08:01:02PM +0200, Kirill A. Shutemov wrote:
+> > On Mon, Dec 22, 2014 at 10:04:02AM -0500, Sasha Levin wrote:
+> > > Hi all,
+> > > 
+> > > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> > > kernel, I've stumbled on the following spew:
+> > > 
+> > > [  432.376425] BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> > > [  432.378876] IP: down_write (./arch/x86/include/asm/rwsem.h:105 ./arch/x86/include/asm/rwsem.h:121 kernel/locking/rwsem.c:71)
+> > 
+> > Looks like vma->vm_file->mapping is NULL. Somebody freed ->vm_file from
+> > under us?
+> > 
+> > I suspect Davidlohr's patchset on i_mmap_lock, but I cannot find any code
+> > path which could lead to the crash.
 
+Sasha, does this still occur if you revert c8475d144abb?
 
+> > I've noticed one strange code path, which probably is not related to the
+> > issue:
+> > 
+> > unmap_mapping_range()
+> >   i_mmap_lock_read(mapping);
+> >   unmap_mapping_range_tree()
+> >     unmap_mapping_range_vma()
+> >       zap_page_range_single()
+> >         unmap_single_vma()
+> > 	  if (unlikely(is_vm_hugetlb_page(vma))) {
+> > 	    i_mmap_lock_write(vma->vm_file->f_mapping);
 
-Signed-off-by: Simone Weiss <simone.weiss@fau.de>
-Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de> 
----
- drivers/staging/dgnc/digi.h | 52 ++++++++++++++++++++++-----------------------
- 1 file changed, 26 insertions(+), 26 deletions(-)
+Right, this is would be completely bogus. But the deadlock cannot happen
+in reality as hugetlb uses its own handlers and thus never calls
+unmap_mapping_range.
 
-diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
-index 3181a35..c9675de 100644
---- a/drivers/staging/dgnc/digi.h
-+++ b/drivers/staging/dgnc/digi.h
-@@ -38,8 +38,8 @@
- 
- #if !defined(TIOCMODG)
- 
--#define	TIOCMODG	('d'<<8) | 250		/* get modem ctrl state	*/
--#define	TIOCMODS	('d'<<8) | 251		/* set modem ctrl state	*/
-+#define	TIOCMODG	(('d'<<8) | 250)	/* get modem ctrl state	*/
-+#define	TIOCMODS	(('d'<<8) | 251)	/* set modem ctrl state	*/
- 
- #ifndef TIOCM_LE
- #define		TIOCM_LE	0x01		/* line enable		*/
-@@ -58,44 +58,44 @@
- #endif
- 
- #if !defined(TIOCMSET)
--#define	TIOCMSET	('d'<<8) | 252		/* set modem ctrl state	*/
--#define	TIOCMGET	('d'<<8) | 253		/* set modem ctrl state	*/
-+#define	TIOCMSET	(('d'<<8) | 252)	/* set modem ctrl state	*/
-+#define	TIOCMGET	(('d'<<8) | 253)	/* set modem ctrl state	*/
- #endif
- 
- #if !defined(TIOCMBIC)
--#define	TIOCMBIC	('d'<<8) | 254		/* set modem ctrl state */
--#define	TIOCMBIS	('d'<<8) | 255		/* set modem ctrl state */
-+#define	TIOCMBIC	(('d'<<8) | 254)	/* set modem ctrl state */
-+#define	TIOCMBIS	(('d'<<8) | 255)	/* set modem ctrl state */
- #endif
- 
- 
- #if !defined(TIOCSDTR)
--#define	TIOCSDTR	('e'<<8) | 0		/* set DTR		*/
--#define	TIOCCDTR	('e'<<8) | 1		/* clear DTR		*/
-+#define	TIOCSDTR	(('e'<<8) | 0)		/* set DTR		*/
-+#define	TIOCCDTR	(('e'<<8) | 1)		/* clear DTR		*/
- #endif
- 
- /************************************************************************
-  * Ioctl command arguments for DIGI parameters.
-  ************************************************************************/
--#define DIGI_GETA	('e'<<8) | 94		/* Read params		*/
-+#define DIGI_GETA	(('e'<<8) | 94)		/* Read params		*/
- 
--#define DIGI_SETA	('e'<<8) | 95		/* Set params		*/
--#define DIGI_SETAW	('e'<<8) | 96		/* Drain & set params	*/
--#define DIGI_SETAF	('e'<<8) | 97		/* Drain, flush & set params */
-+#define DIGI_SETA	(('e'<<8) | 95)		/* Set params		*/
-+#define DIGI_SETAW	(('e'<<8) | 96)		/* Drain & set params	*/
-+#define DIGI_SETAF	(('e'<<8) | 97)		/* Drain, flush & set params */
- 
--#define DIGI_KME	('e'<<8) | 98		/* Read/Write Host	*/
-+#define DIGI_KME	(('e'<<8) | 98)		/* Read/Write Host	*/
- 						/* Adapter Memory	*/
- 
--#define	DIGI_GETFLOW	('e'<<8) | 99		/* Get startc/stopc flow */
-+#define	DIGI_GETFLOW	(('e'<<8) | 99)		/* Get startc/stopc flow */
- 						/* control characters	 */
--#define	DIGI_SETFLOW	('e'<<8) | 100		/* Set startc/stopc flow */
-+#define	DIGI_SETFLOW	(('e'<<8) | 100)	/* Set startc/stopc flow */
- 						/* control characters	 */
--#define	DIGI_GETAFLOW	('e'<<8) | 101		/* Get Aux. startc/stopc */
-+#define	DIGI_GETAFLOW	(('e'<<8) | 101)	/* Get Aux. startc/stopc */
- 						/* flow control chars	 */
--#define	DIGI_SETAFLOW	('e'<<8) | 102		/* Set Aux. startc/stopc */
-+#define	DIGI_SETAFLOW	(('e'<<8) | 102)	/* Set Aux. startc/stopc */
- 						/* flow control chars	 */
- 
--#define DIGI_GEDELAY	('d'<<8) | 246		/* Get edelay */
--#define DIGI_SEDELAY	('d'<<8) | 247		/* Set edelay */
-+#define DIGI_GEDELAY	(('d'<<8) | 246)	/* Get edelay */
-+#define DIGI_SEDELAY	(('d'<<8) | 247)	/* Set edelay */
- 
- struct	digiflow_t {
- 	unsigned char	startc;				/* flow cntl start char	*/
-@@ -104,8 +104,8 @@ struct	digiflow_t {
- 
- 
- #ifdef	FLOW_2200
--#define	F2200_GETA	('e'<<8) | 104		/* Get 2x36 flow cntl flags */
--#define	F2200_SETAW	('e'<<8) | 105		/* Set 2x36 flow cntl flags */
-+#define	F2200_GETA	(('e'<<8) | 104)	/* Get 2x36 flow cntl flags */
-+#define	F2200_SETAW	(('e'<<8) | 105)	/* Set 2x36 flow cntl flags */
- #define		F2200_MASK	0x03		/* 2200 flow cntl bit mask  */
- #define		FCNTL_2200	0x01		/* 2x36 terminal flow cntl  */
- #define		PCNTL_2200	0x02		/* 2x36 printer flow cntl   */
-@@ -241,7 +241,7 @@ struct digi_dinfo {
- 	char		dinfo_version[16];	/* driver version       */
- };
- 
--#define	DIGI_GETDD	('d'<<8) | 248		/* get driver info      */
-+#define	DIGI_GETDD	(('d'<<8) | 248)	/* get driver info      */
- 
- /************************************************************************
-  * Structure used with ioctl commands for per-board information
-@@ -261,7 +261,7 @@ struct digi_info {
- 	char		info_reserved[7];	/* for future expansion    */
- };
- 
--#define	DIGI_GETBD	('d'<<8) | 249		/* get board info          */
-+#define	DIGI_GETBD	(('d'<<8) | 249)	/* get board info          */
- 
- struct digi_stat {
- 	unsigned int	info_chan;		/* Channel number (0 based)  */
-@@ -276,7 +276,7 @@ struct digi_stat {
- 	unsigned int	info_reserved[8];	/* for future expansion    */
- };
- 
--#define	DIGI_GETSTAT	('d'<<8) | 244		/* get board info          */
-+#define	DIGI_GETSTAT	(('d'<<8) | 244)	/* get board info          */
- /************************************************************************
-  *
-  * Structure used with ioctl commands for per-channel information
-@@ -339,7 +339,7 @@ struct digi_getcounter {
- #define INFO_CH_WLOW	0x0020
- #define INFO_XXBUF_BUSY 0x0040
- 
--#define	DIGI_GETCH	('d'<<8) | 245		/* get board info          */
-+#define	DIGI_GETCH	(('d'<<8) | 245)	/* get board info          */
- 
- /* Board type definitions */
- 
-@@ -384,7 +384,7 @@ struct digi_getcounter {
- #define BD_TRIBOOT	0x8
- #define	BD_BADKME	0x80
- 
--#define DIGI_SPOLL            ('d'<<8) | 254  /* change poller rate   */
-+#define DIGI_SPOLL            (('d'<<8) | 254)  /* change poller rate   */
- 
- #define DIGI_SETCUSTOMBAUD	_IOW('e', 106, int)	/* Set integer baud rate */
- #define DIGI_GETCUSTOMBAUD	_IOR('e', 107, int)	/* Get integer baud rate */
--- 
-1.9.1
+Thanks,
+Davidlohr
 
