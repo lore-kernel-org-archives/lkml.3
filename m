@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaLVFC0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 00:02:26 -0500
-Received: from ozlabs.org ([103.22.144.67]:47655 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750787AbaLVFCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 00:02:25 -0500
-In-Reply-To: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Geoff Levand <geoff@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-From: Michael Ellerman <mpe@ellerman.id.au>
-Cc: cbe-oss-dev@lists.ozlabs.org,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: arch: powerpc: platforms: ps3: repository.c: Remove unused function
-Message-Id: <20141222050223.39FA91400E7@ozlabs.org>
-Date: Mon, 22 Dec 2014 16:02:23 +1100 (AEDT)
+	id S1753723AbaLVFGj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 00:06:39 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36354 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbaLVFGh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 00:06:37 -0500
+From: Cyril Bur <cyrilbur@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mpe@ellerman.id.au, drjones@redhat.com, dzickus@redhat.com,
+        akpm@linux-foundation.org, mingo@kernel.org, uobergfe@redhat.com,
+        chaiw.fnst@cn.fujitsu.com, cl@linu.com, fabf@skynet.be,
+        atomlin@redhat.com, benzh@chromium.org, Cyril Bur <cyrilbur@gmail.com>
+Subject: [PATCH 0/2] Quieten softlockup detector on virtualised kernels
+Date: Mon, 22 Dec 2014 16:06:02 +1100
+Message-Id: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
+X-Mailer: git-send-email 1.9.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14122205-0029-0000-0000-000000DE90F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-20-12 at 15:00:01 UTC, Rickard Strandqvist wrote:
-> Remove the function ps3_repository_write_highmem_info() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
+When the hypervisor pauses a virtualised kernel the kernel will observe a jump
+in timebase, this can cause spurious messages from the softlockup detector.
 
-Actually it looks like everything under CONFIG_PS3_REPOSITORY_WRITE is unused,
-and never was used.
+Whilst these messages are harmless, they are accompanied with a stack trace
+which causes undue concern and more problematically the stack trace in the
+guest has nothing to do with the observed problem and can only be misleading.
 
-We appreciate these sort of patches, but if you can dig a little deeper and
-also work out why the code is unused that would be much more useful.
+Futhermore, on POWER8 this is completely avoidable with the introduction of
+the Virtual Time Base (VTB) register.
 
-cheers
+Cyril Bur (2):
+  Add another clock for use with the soft lockup watchdog.
+  powerpc: add running_clock for powerpc to prevent spurious softlockup
+    warnings
+
+ arch/powerpc/kernel/time.c | 24 ++++++++++++++++++++++++
+ include/linux/sched.h      |  1 +
+ kernel/sched/clock.c       | 14 ++++++++++++++
+ kernel/watchdog.c          |  2 +-
+ 4 files changed, 40 insertions(+), 1 deletion(-)
+
+-- 
+1.9.1
+
