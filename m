@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382AbaLVKZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 05:25:42 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:24147 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754140AbaLVKZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 05:25:41 -0500
-Message-ID: <5497F1A3.7060004@c-s.fr>
-Date: Mon, 22 Dec 2014 11:25:39 +0100
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754224AbaLVKaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 05:30:25 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:51017 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027AbaLVKaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 05:30:23 -0500
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: Re: [v2 PATCH 1/2] powerpc32: adds handling of _PAGE_RO
-References: <20141217091431.D3F761A5E0D@localhost.localdomain> <1418868868.5581.121.camel@freescale.com>
-In-Reply-To: <1418868868.5581.121.camel@freescale.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141219010452.GC1538@bbox>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
+	<CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
+	<35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
+	<20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
+	<35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
+	<20141208114601.GA28846@node.dhcp.inet.fi>
+	<35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
+	<CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
+	<35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
+	<35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
+	<20141219010452.GC1538@bbox>
+Date: Mon, 22 Dec 2014 14:30:22 +0400
+Message-ID: <CALYGNiPbwCDtYNO+JrNDNJkqXHdwPVduT4fz0tQ_cM0SrXTJ4Q@mail.gmail.com>
+Subject: Re: [RFC] MADV_FREE doesn't work when doesn't have swap partition
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 19, 2014 at 4:04 AM, Minchan Kim <minchan@kernel.org> wrote:
+> On Thu, Dec 18, 2014 at 11:50:01AM +0800, Wang, Yalin wrote:
+>> I notice this commit:
+>> mm: support madvise(MADV_FREE),
+>>
+>> it can free clean anonymous pages directly,
+>> doesn't need pageout to swap partition,
+>>
+>> but I found it doesn't work on my platform,
+>> which don't enable any swap partitions.
+>
+> Current implementation, if there is no empty slot in swap, it does
+> instant free instead of delayed free. Look at madvise_vma.
+>
+>>
+>> I make a change for this.
+>> Just to explain my issue clearly,
+>> Do we need some other checks to still scan anonymous pages even
+>> Don't have swap partition but have clean anonymous pages?
+>
+> There is a few places we should consider if you want to scan anonymous page
+> withotu swap. Refer 69c854817566 and 74e3f3c3391d.
+>
+> However, it's not simple at the moment. If we reenable anonymous scan without swap,
+> it would make much regress of reclaim. So my direction is move normal anonymos pages
+> into unevictable LRU list because they're real unevictable without swap and
+> put delayed freeing pages into anon LRU list and age them.
 
-Le 18/12/2014 03:14, Scott Wood a écrit :
-> On Wed, 2014-12-17 at 10:14 +0100, Christophe Leroy wrote:
->> Some powerpc like the 8xx don't have a RW bit in PTE bits but a RO (Read Only) bit.
->> This patch implements the handling of a _PAGE_RO flag to be used in place of _PAGE_RW
->>
->> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
->>
+This sounds reasonable. In this case swapon must either scan
+unevictable pages and make
+some of them evictable again or just move all unevictable pages into
+active list and postpone
+this job till reclaimer invocation.
+
+>
 >> ---
->> v2 is a complete rework compared to v1
+>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> index 5e8772b..8258f3a 100644
+>> --- a/mm/vmscan.c
+>> +++ b/mm/vmscan.c
+>> @@ -1941,7 +1941,7 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
+>>                 force_scan = true;
 >>
->>   arch/powerpc/include/asm/pgtable-ppc32.h | 11 ++++++-----
->>   arch/powerpc/include/asm/pgtable.h       | 10 +++++++---
->>   arch/powerpc/include/asm/pte-common.h    | 27 ++++++++++++++++++---------
->>   arch/powerpc/mm/gup.c                    |  2 ++
->>   arch/powerpc/mm/mem.c                    |  2 +-
->>   arch/powerpc/mm/pgtable_32.c             | 24 ++++++++++++++++++++----
->>   6 files changed, 54 insertions(+), 22 deletions(-)
->>
->> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
->> index 543bb8e..64ed9e1 100644
->> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
->> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
->> @@ -125,7 +125,7 @@ extern int icache_44x_need_flush;
->>   #ifndef __ASSEMBLY__
->>   
->>   #define pte_clear(mm, addr, ptep) \
->> -	do { pte_update(ptep, ~_PAGE_HASHPTE, 0); } while (0)
->> +	do { pte_update(ptep, ~_PAGE_HASHPTE, _PAGE_RO); } while (0)
-> Is this really necessary?  It's already clearing the valid bit.
+>>         /* If we have no swap space, do not bother scanning anon pages. */
+>> -       if (!sc->may_swap || (get_nr_swap_pages() <= 0)) {
+>> +       if (!sc->may_swap) {
+>>                 scan_balance = SCAN_FILE;
+>>                 goto out;
+>>         }
 >
-> Likewise in several other places that set or check for _PAGE_RO on pages
-> for which no access is permitted.
+> --
+> Kind regards,
+> Minchan Kim
 >
->
-You are right, this is not needed. I needed it because I had defined 
-pte_none() as requiring _PAGE_RO set. But we can keep value 0 as 
-pte_none. Taken into account in v3
-
-Christophe
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
