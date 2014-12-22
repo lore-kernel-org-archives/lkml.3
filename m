@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723AbaLVFGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 00:06:39 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36354 "EHLO
+	id S1753890AbaLVFGz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 00:06:55 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:36406 "EHLO
 	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaLVFGh (ORCPT
+	with ESMTP id S1753794AbaLVFGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 00:06:37 -0500
+	Mon, 22 Dec 2014 00:06:54 -0500
 From: Cyril Bur <cyrilbur@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: mpe@ellerman.id.au, drjones@redhat.com, dzickus@redhat.com,
         akpm@linux-foundation.org, mingo@kernel.org, uobergfe@redhat.com,
         chaiw.fnst@cn.fujitsu.com, cl@linu.com, fabf@skynet.be,
         atomlin@redhat.com, benzh@chromium.org, Cyril Bur <cyrilbur@gmail.com>
-Subject: [PATCH 0/2] Quieten softlockup detector on virtualised kernels
-Date: Mon, 22 Dec 2014 16:06:02 +1100
-Message-Id: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
+Subject: [PATCH 1/2] Add another clock for use with the soft lockup watchdog.
+Date: Mon, 22 Dec 2014 16:06:03 +1100
+Message-Id: <1419224764-11384-2-git-send-email-cyrilbur@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
+References: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14122205-0029-0000-0000-000000DE90F1
+x-cbid: 14122205-0029-0000-0000-000000DE910C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the hypervisor pauses a virtualised kernel the kernel will observe a jump
-in timebase, this can cause spurious messages from the softlockup detector.
+This permits the use of arch specific clocks for which virtualised kernels can
+use their notion of 'running' time, not the elpased wall time which will
+include host execution time.
 
-Whilst these messages are harmless, they are accompanied with a stack trace
-which causes undue concern and more problematically the stack trace in the
-guest has nothing to do with the observed problem and can only be misleading.
+Signed-off-by: Cyril Bur <cyrilbur@gmail.com>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/clock.c  | 14 ++++++++++++++
+ kernel/watchdog.c     |  2 +-
+ 3 files changed, 16 insertions(+), 1 deletion(-)
 
-Futhermore, on POWER8 this is completely avoidable with the introduction of
-the Virtual Time Base (VTB) register.
-
-Cyril Bur (2):
-  Add another clock for use with the soft lockup watchdog.
-  powerpc: add running_clock for powerpc to prevent spurious softlockup
-    warnings
-
- arch/powerpc/kernel/time.c | 24 ++++++++++++++++++++++++
- include/linux/sched.h      |  1 +
- kernel/sched/clock.c       | 14 ++++++++++++++
- kernel/watchdog.c          |  2 +-
- 4 files changed, 40 insertions(+), 1 deletion(-)
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8db31ef..e400162 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2145,6 +2145,7 @@ extern unsigned long long notrace sched_clock(void);
+  */
+ extern u64 cpu_clock(int cpu);
+ extern u64 local_clock(void);
++extern u64 running_clock(void);
+ extern u64 sched_clock_cpu(int cpu);
+ 
+ 
+diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
+index c27e4f8..c83af4f 100644
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -74,6 +74,20 @@ unsigned long long __weak sched_clock(void)
+ }
+ EXPORT_SYMBOL_GPL(sched_clock);
+ 
++/*
++ * Running clock - returns the time that has elapsed while a guest has been
++ * running.
++ * On a guest this value should be sched_clock minus the time the
++ * guest was suspended by the hypervisor (for any reason).
++ * On bare metal this function should return the same as sched_clock.
++ * Architectures and sub-architectures can override this.
++ */
++unsigned long long __weak running_clock(void)
++{
++	return sched_clock();
++}
++EXPORT_SYMBOL_GPL(running_clock);
++
+ __read_mostly int sched_clock_running;
+ 
+ #ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 70bf118..3174bf8 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -154,7 +154,7 @@ static int get_softlockup_thresh(void)
+  */
+ static unsigned long get_timestamp(void)
+ {
+-	return local_clock() >> 30LL;  /* 2^30 ~= 10^9 */
++	return running_clock() >> 30LL;  /* 2^30 ~= 10^9 */
+ }
+ 
+ static void set_sample_period(void)
 -- 
 1.9.1
 
