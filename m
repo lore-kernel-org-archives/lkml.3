@@ -1,91 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047AbaLVTCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:02:52 -0500
-Received: from sauhun.de ([89.238.76.85]:53663 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754745AbaLVTCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:02:50 -0500
-Date: Mon, 22 Dec 2014 20:02:33 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Walter Lozano <walter@vanguardiasur.com.ar>
-Cc: mika.westerberg@linux.intel.com, Romain.Baeriswyl@abilis.com,
-        atull@opensource.altera.com, raymond.tan@intel.com,
-        carlpeng008@gmail.com, linux-i2c@vger.kernel.org,
+	id S1755156AbaLVTEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:04:09 -0500
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:36169 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754598AbaLVTEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 14:04:08 -0500
+From: Simone Weiss <simone.weiss@fau.de>
+To: simone.weiss@fau.de
+Cc: helene.gsaenger@studium.fau.de, linux-kernel@i4.cs.fau.de,
+        lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC] i2c: designware: Avoid initcall and initialize the driver
- like a regular one
-Message-ID: <20141222190233.GA1014@katana>
-References: <1419272149-28716-1-git-send-email-walter@vanguardiasur.com.ar>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <1419272149-28716-1-git-send-email-walter@vanguardiasur.com.ar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Subject: [PATCH] dgnc/digi.h: checkpatch: Changend complex macros (enclosed parantheses)
+Date: Mon, 22 Dec 2014 20:04:02 +0100
+Message-Id: <1419275042-12289-1-git-send-email-simone.weiss@fau.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1419211054-3052-5-git-send-email-simone.weiss@fau.de>
+References: <1419211054-3052-5-git-send-email-simone.weiss@fau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The patch previous in this thread (dgnc/dpacompat.h) defines partly the same macros as dgnc/digi.h and so it  is neccessary tochange the macros in this file as well, so no macros get redefined
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Dec 22, 2014 at 03:15:49PM -0300, Walter Lozano wrote:
-> Currently, the driver is relying on a subsys_initcall() to register
-> the platform driver struct. This is typically done to allow early uses
-> of the I2C bus (for instance, I2C regulators used from early machine code=
-).
->=20
-> While this might work on some cases, it breaks on others. For instance,
-> I2C devices with GPIO-wired interrupts will fail to request the
-> interrupt because of this initcall usage.
->=20
-> This commits attempts to fix the above issue, by converting the I2C
-> driver into a regular kernel platform driver. This guarantees it will
-> probe after GPIOs drivers.
->=20
-> Platforms based on devicetree won't be affected by this change.
 
-Huh, why is that?
+Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de> 
+---
+ drivers/staging/dgnc/digi.h | 52 ++++++++++++++++++++++-----------------------
+ 1 file changed, 26 insertions(+), 26 deletions(-)
 
-> Legacy platforms, relying on the I2C being available early, might need
-> to implement proper defered mechanisms to overcome potential problems.
+diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
+index 3181a35..c9675de 100644
+--- a/drivers/staging/dgnc/digi.h
++++ b/drivers/staging/dgnc/digi.h
+@@ -38,8 +38,8 @@
+ 
+ #if !defined(TIOCMODG)
+ 
+-#define	TIOCMODG	('d'<<8) | 250		/* get modem ctrl state	*/
+-#define	TIOCMODS	('d'<<8) | 251		/* set modem ctrl state	*/
++#define	TIOCMODG	(('d'<<8) | 250)	/* get modem ctrl state	*/
++#define	TIOCMODS	(('d'<<8) | 251)	/* set modem ctrl state	*/
+ 
+ #ifndef TIOCM_LE
+ #define		TIOCM_LE	0x01		/* line enable		*/
+@@ -58,44 +58,44 @@
+ #endif
+ 
+ #if !defined(TIOCMSET)
+-#define	TIOCMSET	('d'<<8) | 252		/* set modem ctrl state	*/
+-#define	TIOCMGET	('d'<<8) | 253		/* set modem ctrl state	*/
++#define	TIOCMSET	(('d'<<8) | 252)	/* set modem ctrl state	*/
++#define	TIOCMGET	(('d'<<8) | 253)	/* set modem ctrl state	*/
+ #endif
+ 
+ #if !defined(TIOCMBIC)
+-#define	TIOCMBIC	('d'<<8) | 254		/* set modem ctrl state */
+-#define	TIOCMBIS	('d'<<8) | 255		/* set modem ctrl state */
++#define	TIOCMBIC	(('d'<<8) | 254)	/* set modem ctrl state */
++#define	TIOCMBIS	(('d'<<8) | 255)	/* set modem ctrl state */
+ #endif
+ 
+ 
+ #if !defined(TIOCSDTR)
+-#define	TIOCSDTR	('e'<<8) | 0		/* set DTR		*/
+-#define	TIOCCDTR	('e'<<8) | 1		/* clear DTR		*/
++#define	TIOCSDTR	(('e'<<8) | 0)		/* set DTR		*/
++#define	TIOCCDTR	(('e'<<8) | 1)		/* clear DTR		*/
+ #endif
+ 
+ /************************************************************************
+  * Ioctl command arguments for DIGI parameters.
+  ************************************************************************/
+-#define DIGI_GETA	('e'<<8) | 94		/* Read params		*/
++#define DIGI_GETA	(('e'<<8) | 94)		/* Read params		*/
+ 
+-#define DIGI_SETA	('e'<<8) | 95		/* Set params		*/
+-#define DIGI_SETAW	('e'<<8) | 96		/* Drain & set params	*/
+-#define DIGI_SETAF	('e'<<8) | 97		/* Drain, flush & set params */
++#define DIGI_SETA	(('e'<<8) | 95)		/* Set params		*/
++#define DIGI_SETAW	(('e'<<8) | 96)		/* Drain & set params	*/
++#define DIGI_SETAF	(('e'<<8) | 97)		/* Drain, flush & set params */
+ 
+-#define DIGI_KME	('e'<<8) | 98		/* Read/Write Host	*/
++#define DIGI_KME	(('e'<<8) | 98)		/* Read/Write Host	*/
+ 						/* Adapter Memory	*/
+ 
+-#define	DIGI_GETFLOW	('e'<<8) | 99		/* Get startc/stopc flow */
++#define	DIGI_GETFLOW	(('e'<<8) | 99)		/* Get startc/stopc flow */
+ 						/* control characters	 */
+-#define	DIGI_SETFLOW	('e'<<8) | 100		/* Set startc/stopc flow */
++#define	DIGI_SETFLOW	(('e'<<8) | 100)	/* Set startc/stopc flow */
+ 						/* control characters	 */
+-#define	DIGI_GETAFLOW	('e'<<8) | 101		/* Get Aux. startc/stopc */
++#define	DIGI_GETAFLOW	(('e'<<8) | 101)	/* Get Aux. startc/stopc */
+ 						/* flow control chars	 */
+-#define	DIGI_SETAFLOW	('e'<<8) | 102		/* Set Aux. startc/stopc */
++#define	DIGI_SETAFLOW	(('e'<<8) | 102)	/* Set Aux. startc/stopc */
+ 						/* flow control chars	 */
+ 
+-#define DIGI_GEDELAY	('d'<<8) | 246		/* Get edelay */
+-#define DIGI_SEDELAY	('d'<<8) | 247		/* Set edelay */
++#define DIGI_GEDELAY	(('d'<<8) | 246)	/* Get edelay */
++#define DIGI_SEDELAY	(('d'<<8) | 247)	/* Set edelay */
+ 
+ struct	digiflow_t {
+ 	unsigned char	startc;				/* flow cntl start char	*/
+@@ -104,8 +104,8 @@ struct	digiflow_t {
+ 
+ 
+ #ifdef	FLOW_2200
+-#define	F2200_GETA	('e'<<8) | 104		/* Get 2x36 flow cntl flags */
+-#define	F2200_SETAW	('e'<<8) | 105		/* Set 2x36 flow cntl flags */
++#define	F2200_GETA	(('e'<<8) | 104)	/* Get 2x36 flow cntl flags */
++#define	F2200_SETAW	(('e'<<8) | 105)	/* Set 2x36 flow cntl flags */
+ #define		F2200_MASK	0x03		/* 2200 flow cntl bit mask  */
+ #define		FCNTL_2200	0x01		/* 2x36 terminal flow cntl  */
+ #define		PCNTL_2200	0x02		/* 2x36 printer flow cntl   */
+@@ -241,7 +241,7 @@ struct digi_dinfo {
+ 	char		dinfo_version[16];	/* driver version       */
+ };
+ 
+-#define	DIGI_GETDD	('d'<<8) | 248		/* get driver info      */
++#define	DIGI_GETDD	(('d'<<8) | 248)	/* get driver info      */
+ 
+ /************************************************************************
+  * Structure used with ioctl commands for per-board information
+@@ -261,7 +261,7 @@ struct digi_info {
+ 	char		info_reserved[7];	/* for future expansion    */
+ };
+ 
+-#define	DIGI_GETBD	('d'<<8) | 249		/* get board info          */
++#define	DIGI_GETBD	(('d'<<8) | 249)	/* get board info          */
+ 
+ struct digi_stat {
+ 	unsigned int	info_chan;		/* Channel number (0 based)  */
+@@ -276,7 +276,7 @@ struct digi_stat {
+ 	unsigned int	info_reserved[8];	/* for future expansion    */
+ };
+ 
+-#define	DIGI_GETSTAT	('d'<<8) | 244		/* get board info          */
++#define	DIGI_GETSTAT	(('d'<<8) | 244)	/* get board info          */
+ /************************************************************************
+  *
+  * Structure used with ioctl commands for per-channel information
+@@ -339,7 +339,7 @@ struct digi_getcounter {
+ #define INFO_CH_WLOW	0x0020
+ #define INFO_XXBUF_BUSY 0x0040
+ 
+-#define	DIGI_GETCH	('d'<<8) | 245		/* get board info          */
++#define	DIGI_GETCH	(('d'<<8) | 245)	/* get board info          */
+ 
+ /* Board type definitions */
+ 
+@@ -384,7 +384,7 @@ struct digi_getcounter {
+ #define BD_TRIBOOT	0x8
+ #define	BD_BADKME	0x80
+ 
+-#define DIGI_SPOLL            ('d'<<8) | 254  /* change poller rate   */
++#define DIGI_SPOLL            (('d'<<8) | 254)  /* change poller rate   */
+ 
+ #define DIGI_SETCUSTOMBAUD	_IOW('e', 106, int)	/* Set integer baud rate */
+ #define DIGI_GETCUSTOMBAUD	_IOR('e', 107, int)	/* Get integer baud rate */
+-- 
+1.9.1
 
-NAK. We can't say "Let's cause a regression to force people to fix
-things that used to work" IMO. You exactly pointed out the problem that usi=
-ng
-subsys_initcall() creates.
-
-What about fixing the drivers you use to support deferred probing when
-acquitin the irq?
-
-Regards,
-
-   Wolfram
-
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUmGrJAAoJEBQN5MwUoCm2dSQQAJ9fQhqOe5KBj5bau/KFlRkV
-zGMtMaD0A6VmytpDWzwNoZu0qoTtu5/E1IVnb/otKQaIJssUOfOTsQpulZeP7xBs
-3kpLPI6AqLt/y10a6VwdUN4eQlrgMquzsgkCRHsYghInKSYJmV22bTgfcV0CK+ty
-QhNmFlOXGz841DsOp3rfj5thMO6BZcURi98HpNMRtUqooqrGcgrUbaDVWmm3oTsi
-gv3Nn8PGVLRRoBkp6q0h4HMJXiHGvATWnKJoDTIKt/YEoRwNToZ/vRsfHGvpestn
-jdJj9pNHopzC5lPDmQbJ+k6qnnPKZ2YN5Ji5IzRXjTZEkmUbx3IrMtJX1B9v5XgI
-SOQBSfSHBO1kWEUPDm5IdZpzYXeNp0X3ydUw2xOF2n5rrTG4SUj/PJreJC768fQA
-NDfFdYQudzcJ5ElOL4CwvEHfrOZ4PkZFnkSnCDzPu8rxZ+wuKiNwGRGNpxDecbBR
-Q1ChZ+ej0scmrifw8CUewPX6nQvmViv2rqZQsELo744nin6nxMufBMQ4epkwDwYT
-hggQS7gSyEXYtAZ9SaCtNQK2YgPnsY/rC9TyFwcG/EQ2jo5z45qKbPXAY0Wp3/VO
-TB+8akfhTuMI7WJ/dyayMSyXW6gYnW7X42eyBEty1Hu01ojBEPVkntgSdcn1Sn/e
-X0mlG5xvF8t+e135BJBF
-=i8Ng
------END PGP SIGNATURE-----
-
---ZGiS0Q5IWpPtfppv--
