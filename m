@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaLVDS5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 22:18:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:7381 "EHLO mga01.intel.com"
+	id S1753962AbaLVDTR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 22:19:17 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:56830 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764AbaLVDS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 22:18:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,620,1413270000"; 
-   d="scan'208";a="627504124"
-Message-ID: <54978D9C.9070605@linux.intel.com>
-Date: Mon, 22 Dec 2014 11:18:52 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+	id S1753764AbaLVDTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 22:19:15 -0500
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>, Olof Johansson <olof@lixom.net>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Daniel Thompson <daniel.thompson@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: x86: kernel: apb_timer.c:  Remove unused function
-References: <1419166698-2470-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1419166698-2470-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v2] ARM: mm: fix size rounding-down of arm_add_memory() function
+Date: Mon, 22 Dec 2014 12:17:29 +0900
+Message-Id: <1419218249-5744-1-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/21 20:58, Rickard Strandqvist wrote:
-> Remove the function is_apbt_capable() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  arch/x86/kernel/apb_timer.c |    8 --------
->  1 file changed, 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
-> index b708738..6a7c23f 100644
-> --- a/arch/x86/kernel/apb_timer.c
-> +++ b/arch/x86/kernel/apb_timer.c
-> @@ -135,14 +135,6 @@ static inline void apbt_clear_mapping(void)
->  	apbt_virt_address = NULL;
->  }
->  
-> -/*
-> - * APBT timer interrupt enable / disable
-> - */
-> -static inline int is_apbt_capable(void)
-> -{
-> -	return apbt_virt_address ? 1 : 0;
-> -}
-> -
->  static int __init apbt_clockevent_register(void)
->  {
->  	struct sfi_timer_table_entry *mtmr;
-> 
-Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
+The current rounding of "size" is wrong:
+
+ - If "start" is sufficiently near the next page boundary, "size"
+   is decremented by more than enough and the last page is lost.
+
+ - If "size" is sufficiently small, it is wrapped around and gets
+   a bogus value.
+
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+
+Changes in v2:
+ - Avoid wrap around of "size"
+
+ arch/arm/kernel/setup.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index f9c8639..d13f185 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -657,10 +657,13 @@ int __init arm_add_memory(u64 start, u64 size)
+ 
+ 	/*
+ 	 * Ensure that start/size are aligned to a page boundary.
+-	 * Size is appropriately rounded down, start is rounded up.
++	 * Size is rounded down, start is rounded up.
+ 	 */
+-	size -= start & ~PAGE_MASK;
+ 	aligned_start = PAGE_ALIGN(start);
++	if (aligned_start > start + size)
++		size = 0;
++	else
++		size -= aligned_start - start;
+ 
+ #ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
+ 	if (aligned_start > ULONG_MAX) {
+-- 
+1.9.1
+
