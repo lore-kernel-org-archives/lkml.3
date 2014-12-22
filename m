@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376AbaLVQJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:09:12 -0500
-Received: from box2.japko.eu ([91.121.152.53]:55554 "EHLO box2.japko.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755223AbaLVQJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:09:10 -0500
-Date: Mon, 22 Dec 2014 17:08:34 +0100
-From: Krzysztof Adamski <k@japko.eu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Forest Bond <forest@alittletooquiet.net>,
-        Malcolm Priestley <tvboxspy@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6656: whitespace checkpatch warning fix.
-Message-ID: <20141222160834.GA11241@box2.japko.eu>
+	id S932083AbaLVQKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:10:13 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:43915 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868AbaLVQKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 11:10:11 -0500
+X-IronPort-AV: E=Sophos;i="5.07,624,1413244800"; 
+   d="scan'208";a="207546450"
+Message-ID: <54984255.8030702@citrix.com>
+Date: Mon, 22 Dec 2014 16:09:57 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        xen-devel <xen-devel@lists.xenproject.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [Xen-devel] Testing preemptibility test in xen_setup_cpu_clockevents()
+References: <54983E8F.5060500@oracle.com>
+In-Reply-To: <54983E8F.5060500@oracle.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes following checkpatch.pl error:
-ERROR: space prohibited before that ',' (ctx:WxW)
+On 22/12/14 15:53, Boris Ostrovsky wrote:
+> With 250a1ac685f (x86, smpboot: Remove pointless preempt_disable() in
+> native_smp_prepare_cpus()) HVM guests no longer boot since we are
+> hitting BUG_ON(preemptible()) in xen_setup_cpu_clockevents().
+> 
+> I don't think we need this test (PV or HVM), do we?
 
-Signed-off-by: Krzysztof Adamski <k@japko.eu>
----
- drivers/staging/vt6656/rxtx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It looks safe to remove the BUG_ON().
 
-diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-index ea5140a..5a18e26 100644
---- a/drivers/staging/vt6656/rxtx.c
-+++ b/drivers/staging/vt6656/rxtx.c
-@@ -55,7 +55,7 @@ static const u16 vnt_fb_opt0[2][5] = {
- 
- static const u16 vnt_fb_opt1[2][5] = {
- 	{RATE_12M, RATE_18M, RATE_24M, RATE_24M, RATE_36M}, /* fallback_rate0 */
--	{RATE_6M , RATE_6M,  RATE_12M, RATE_12M, RATE_18M}, /* fallback_rate1 */
-+	{RATE_6M,  RATE_6M,  RATE_12M, RATE_12M, RATE_18M}, /* fallback_rate1 */
- };
- 
- #define RTSDUR_BB       0
--- 
-1.7.10.4
-
+David
