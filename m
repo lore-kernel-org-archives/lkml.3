@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaLVKOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 05:14:36 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:64968 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754027AbaLVKOf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 05:14:35 -0500
-Message-ID: <1419243273.30945.19.camel@x220>
-Subject: Re: [PATCH] [TRIVIAL] IBM Akebono: Remove select of
- IBM_EMAC_RGMII_WOL
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Alistair Popple <alistair@popple.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 22 Dec 2014 11:14:33 +0100
-In-Reply-To: <1415008333.20372.26.camel@x220>
-References: <1415008333.20372.26.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Dec 2014 10:14:33.0770 (UTC) FILETIME=[1512C8A0:01D01DD0]
-X-RcptDomain: vger.kernel.org
+	id S1754254AbaLVKOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 05:14:48 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:24055 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754027AbaLVKOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 05:14:47 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: [PATCH v3 0/2] powerpc32: handle inverted _PAGE_RW bit outside of TLB handlers
+Message-Id: <20141222101444.3F5DD1A5E15@localhost.localdomain>
+Date: Mon, 22 Dec 2014 11:14:43 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Some powerpc like the 8xx don't have a RW bit in PTE bits but a RO (Read Only) bit.
+This patch implements the handling of a _PAGE_RO flag to be used in place of _PAGE_RW
 
-On Mon, 2014-11-03 at 10:52 +0100, Paul Bolle wrote:
-> Commit 2a2c74b2efcb ("IBM Akebono: Add the Akebono platform") added a
-> select of IBM_EMAC_RGMII_WOL. But that Kconfig symbol isn't (yet) part
-> of the tree. So this select has been a nop since that commit was
-> included in v3.16-rc1.
-> 
-> The code to add this symbol is not included in next-20141103. So let's
-> remove this select. It can be readded when that symbol is actually added
-> to the tree.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> Cc: Alistair Popple <alistair@popple.id.au>
-> ---
-> Untested. Done on top of next-20141103.
-> 
-> Third time's a charm? First raised in
-> https://lkml.org/lkml/2014/5/1/106 . Reminder sent in
-> https://lkml.org/lkml/2014/9/4/645 . I'm not aware of any news on this
-> front, so this trivial patch seems reasonable now.
-> 
-> A patch to readd this select could be added - if people still care about
-> it, that is - in the series that adds this symbol. A web search suggests
-> Alistair takes care of that series, so Alistair gets a Cc: here.
+Patchset:
+1) powerpc32: adds handling of _PAGE_RO
+2) powerpc/8xx: use _PAGE_RO instead of _PAGE_RW
 
-This select of IBM_EMAC_RGMII_WOL still shows up in next-20141221 and
-v3.19-rc1. Did you have a chance to look at this patch?
+All changes have been successfully tested on MPC885
 
->  arch/powerpc/platforms/44x/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-> index d2ac1c116454..5538e57c36c1 100644
-> --- a/arch/powerpc/platforms/44x/Kconfig
-> +++ b/arch/powerpc/platforms/44x/Kconfig
-> @@ -214,7 +214,6 @@ config AKEBONO
->  	select ETHERNET
->  	select NET_VENDOR_IBM
->  	select IBM_EMAC_EMAC4
-> -	select IBM_EMAC_RGMII_WOL
->  	select USB if USB_SUPPORT
->  	select USB_OHCI_HCD_PLATFORM if USB_OHCI_HCD
->  	select USB_EHCI_HCD_PLATFORM if USB_EHCI_HCD
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Tested-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-Thanks,
+---
+v2 is a complete rework compared to v1
+v3 takes into account comments from Scott on v2
 
-
-Paul Bolle
-
+ arch/powerpc/include/asm/pgtable-ppc32.h | 12 +++++++-----
+ arch/powerpc/include/asm/pgtable.h       |  7 +++++--
+ arch/powerpc/include/asm/pte-8xx.h       |  9 ++++-----
+ arch/powerpc/include/asm/pte-common.h    | 25 +++++++++++++++++--------
+ arch/powerpc/kernel/head_8xx.S           |  3 ---
+ arch/powerpc/mm/gup.c                    |  2 ++
+ arch/powerpc/mm/pgtable_32.c             |  2 +-
+ 7 files changed, 36 insertions(+), 24 deletions(-)
