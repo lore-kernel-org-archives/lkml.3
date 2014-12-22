@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312AbaLVTFT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 14:05:19 -0500
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:42639 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754460AbaLVTFR (ORCPT
+	id S1754966AbaLVTLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 14:11:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36702 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754786AbaLVTLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 14:05:17 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuwPAL1qmFRXQ5YW/2dsb2JhbABbgwaBKrQDBQEBAQEBAQUBd5coBAKBHBcBAQEBAX2EOi8jgRo3iDABwBWQVoYAiXIdhBMFlwORSyKBRQGCKT0xgkMBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: joe@perches.com, Fabian Frederick <fabf@skynet.be>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        ocfs2-devel@oss.oracle.com
-Subject: [PATCH 1/1 linux-next] ocfs2: remove unnecessary sizeof(char)
-Date: Mon, 22 Dec 2014 20:05:09 +0100
-Message-Id: <1419275109-11641-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	Mon, 22 Dec 2014 14:11:51 -0500
+Date: Mon, 22 Dec 2014 11:11:50 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Simone Weiss <simone.weiss@fau.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
+        lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
+        helene.gsaenger@studium.fau.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [PATCH v2 2/6] dgnc/dgnc_sysfs.c: checkpatch: Use of
+ dev_err ? instead of printk
+Message-ID: <20141222191150.GA26768@kroah.com>
+References: <20141222020039.GA2489@kroah.com>
+ <1419273836-11192-1-git-send-email-simone.weiss@fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419273836-11192-1-git-send-email-simone.weiss@fau.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sizeof(char) is always 1.
+On Mon, Dec 22, 2014 at 07:43:56PM +0100, Simone Weiss wrote:
+> I originally wanted to replace both of  the  printk cals in this file with dev_err().
+> But in the function dgnc_create_driver_sysfiles only the struct pci_driver was given,
+> sadly I coudn't figure out a way to get a struct device when only a struct pci_driver is given.
 
-Suggested-by: Joe Perches <joe@perches.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ocfs2/journal.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ocfs2/journal.c b/fs/ocfs2/journal.c
-index e238bbc..750597c 100644
---- a/fs/ocfs2/journal.c
-+++ b/fs/ocfs2/journal.c
-@@ -129,8 +129,8 @@ int ocfs2_compute_replay_slots(struct ocfs2_super *osb)
- 	if (osb->replay_map)
- 		return 0;
- 
--	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) +
--			     (osb->max_slots * sizeof(char)), GFP_KERNEL);
-+	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) + osb->max_slots,
-+			     GFP_KERNEL);
- 
- 	if (!replay_map) {
- 		mlog_errno(-ENOMEM);
--- 
-1.9.1
+There should not be any driver-specific sysfs files, if so, something is
+wrong here...
 
