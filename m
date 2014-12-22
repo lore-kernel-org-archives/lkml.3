@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaLVNgK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 08:36:10 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23403 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754400AbaLVNgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 08:36:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,624,1413270000"; 
-   d="scan'208";a="651622173"
-Date: Mon, 22 Dec 2014 15:35:19 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org
-Subject: Re: [PATCH 15/28] pinctrl: intel: drop owner assignment from
- platform_drivers
-Message-ID: <20141222133519.GC1314@lahna.fi.intel.com>
-References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
- <1419196495-9626-16-git-send-email-wsa@the-dreams.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419196495-9626-16-git-send-email-wsa@the-dreams.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754859AbaLVNiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 08:38:00 -0500
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:65410 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754300AbaLVNh7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 08:37:59 -0500
+Message-ID: <1419255471.30945.47.camel@x220>
+Subject: Re: 3.19.0-rc1 nouvea build failure on GeForce GT 610 only
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sid Boyce <sboyce@blueyonder.co.uk>
+Cc: linux-kernel@vger.kernel.org, nouveau@lists.freedesktop.org
+Date: Mon, 22 Dec 2014 14:37:51 +0100
+In-Reply-To: <54981647.8010409@blueyonder.co.uk>
+References: <54981647.8010409@blueyonder.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 22 Dec 2014 13:37:56.0699 (UTC) FILETIME=[7E95FAB0:01D01DEC]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 10:14:36PM +0100, Wolfram Sang wrote:
-> This platform_driver does not need to set an owner, it will be populated by the
-> driver core.
-> 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Hi Sid,
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+On Mon, 2014-12-22 at 13:01 +0000, Sid Boyce wrote:
+>    CHK     kernel/config_data.h
+>    CC [M]  drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o
+> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c: In function 
+> ‘nvd0_dmaobj_bind’:
+> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: error: 
+> ‘GM204_DISP_CORE_CHANNEL_DMA’ undeclared (first use in this function)
+>     case GM204_DISP_CORE_CHANNEL_DMA:
+>          ^
+> drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.c:54:8: note: each 
+> undeclared identifier is reported only once for each function it appears in
+> scripts/Makefile.build:257: recipe for target 
+> 'drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o' failed
+> make[4]: *** [drivers/gpu/drm/nouveau/core/engine/dmaobj/nvd0.o] Error 1
+> scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm/nouveau' 
+> failed
+> make[3]: *** [drivers/gpu/drm/nouveau] Error 2
+> scripts/Makefile.build:402: recipe for target 'drivers/gpu/drm' failed
+> make[2]: *** [drivers/gpu/drm] Error 2
+> scripts/Makefile.build:402: recipe for target 'drivers/gpu' failed
+> make[1]: *** [drivers/gpu] Error 2
+> Makefile:938: recipe for target 'drivers' failed
+> make: *** [drivers] Error 2
+> 
+> 01:00.0 VGA compatible controller: NVIDIA Corporation GF119 [GeForce GT 
+> 610] (rev a1)
+
+Why would that controller influence the build?
+
+> No problems on 2 other boxes with GeForce 8600 GT] (rev a1)
+
+I ran into this error twice, while building Fedora 21 kernel rpms for
+v3.19-rc1 on my outdated ThinkPad X41 (which uses i915, for what it's
+worth). The error made very little sense to me. Especially since it
+didn't happen when building in the local git repository.
+
+So I basically, well, scrubbed the rpmbuild environment. And then the
+the third attempt to build kernels rpm succeeded! I assumed a hardware
+failure (see outdated above) and made a mental note to investigate that
+one of these days.
+
+But your report makes me think it's not my hardware. Could there be some
+_random_ failure with this driver in the build? Very odd...
+
+
+Paul Bolle
+
