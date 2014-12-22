@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688AbaLVVbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 16:31:11 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:43670 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351AbaLVVbJ (ORCPT
+	id S1755735AbaLVVfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 16:35:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37467 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715AbaLVVfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 16:31:09 -0500
-Date: Mon, 22 Dec 2014 16:31:07 -0500 (EST)
-Message-Id: <20141222.163107.1023158393448021294.davem@davemloft.net>
-To: wsa@the-dreams.de
-Cc: linux-kernel@vger.kernel.org, peppe.cavallaro@st.com,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 10/28] net: ethernet: stmicro: stmmac: drop owner
- assignment from platform_drivers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1419196495-9626-11-git-send-email-wsa@the-dreams.de>
-References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
-	<1419196495-9626-11-git-send-email-wsa@the-dreams.de>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 22 Dec 2014 16:35:03 -0500
+Date: Mon, 22 Dec 2014 13:35:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, ocfs2-devel@oss.oracle.com,
+        Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [Ocfs2-devel] [PATCH 1/1 linux-next] ocfs2: remove unnecessary
+ sizeof(char)
+Message-Id: <20141222133501.916a0944e5f0719e60e2c4eb@linux-foundation.org>
+In-Reply-To: <1419275109-11641-1-git-send-email-fabf@skynet.be>
+References: <1419275109-11641-1-git-send-email-fabf@skynet.be>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 22 Dec 2014 13:31:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfram Sang <wsa@the-dreams.de>
-Date: Sun, 21 Dec 2014 22:14:31 +0100
+On Mon, 22 Dec 2014 20:05:09 +0100 Fabian Frederick <fabf@skynet.be> wrote:
 
-> This platform_driver does not need to set an owner, it will be populated by the
-> driver core.
+> sizeof(char) is always 1.
 > 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ...
+>
+> --- a/fs/ocfs2/journal.c
+> +++ b/fs/ocfs2/journal.c
+> @@ -129,8 +129,8 @@ int ocfs2_compute_replay_slots(struct ocfs2_super *osb)
+>  	if (osb->replay_map)
+>  		return 0;
+>  
+> -	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) +
+> -			     (osb->max_slots * sizeof(char)), GFP_KERNEL);
+> +	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) + osb->max_slots,
+> +			     GFP_KERNEL);
+>  
+>  	if (!replay_map) {
+>  		mlog_errno(-ENOMEM);
 
-Applied, thanks.
+I dunno.  The code at present isn't particularly idiomatic, but it has
+some documentation value and says "I know what I'm doing".
+
+It would be better if it was
+
+	kzalloc(sizeof(struct ocfs2_replay_map) *
+		sizeof(struct ocfs2_replay_map.rm_replay_slots[0]), ...);
+
+And it would be better if C permitted that ;)
+
+	kzalloc(sizeof(struct ocfs2_replay_map) *
+		sizeof((struct ocfs2_replay_map *)0)->rm_replay_slots[0]), ...);
+
+yuk.
+
