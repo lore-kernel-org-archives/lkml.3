@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968AbaLVXAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 18:00:25 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:59635 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaLVXAY (ORCPT
+	id S1753442AbaLVXCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 18:02:04 -0500
+Received: from p3plsmtpa07-01.prod.phx3.secureserver.net ([173.201.192.230]:39787
+	"EHLO p3plsmtpa07-01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751285AbaLVXCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 18:00:24 -0500
+	Mon, 22 Dec 2014 18:02:01 -0500
+X-Greylist: delayed 429 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Dec 2014 18:02:01 EST
+Message-ID: <5498A137.6020707@lurklurk.org>
+Date: Mon, 22 Dec 2014 17:54:47 -0500
+From: David Drysdale <dmd@lurklurk.org>
+Reply-To: David Drysdale <drysdale@google.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <54989FF0.3090300@redhat.com>
-References: <CALCETrV4Bhc=pwjJR-S7dfgcR7n0xKtj0o=ofOxCfJmnVFcjGw@mail.gmail.com>
- <20141222133430.GA23631@amt.cnet> <CALCETrXU+Z_t3qon+DR1hUiqSgpWLe9w74guBxbDG68ytM0icg@mail.gmail.com>
- <54989FF0.3090300@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 22 Dec 2014 15:00:02 -0800
-Message-ID: <CALCETrXzKZ=RhT2h32QxCskY5_hWtNQOYMnKcaRXCWRtQCta7g@mail.gmail.com>
-Subject: Re: Cleaning up the KVM clock
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: David Drysdale <drysdale@google.com>, schwab@linux-m68k.org,
+        geert@linux-m68k.org
+CC: shuahkh@osg.samsung.com, akpm@linux-foundation.org,
+        linux-api@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH selftest fails!] m68k: Wire up execveat
+References: <alpine.DEB.2.10.1412211159410.7624@ayla.of.borg>	<874msp3w7j.fsf@igel.home> <CAHse=S-KzC5y8eC_ZFrbUJo0Ub5Qv8WeeXHdY1-F=HckAX=L=A@mail.gmail.com>
+In-Reply-To: <CAHse=S-KzC5y8eC_ZFrbUJo0Ub5Qv8WeeXHdY1-F=HckAX=L=A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 2:49 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+[Re-send from a different email address because I apparently can't send 
+plaintext from gMail on my phone.]
+
+On 21 Dec 2014 09:37, "Andreas Schwab" <schwab@linux-m68k.org> wrote:
+ >
+> Geert Uytterhoeven <geert@linux-m68k.org> writes:
 >
+>  > Check success of execveat(5,
+> 'xxxxxxxxxxxxxxxxxxxx...yyyyyyyyyyyyyyyyyyyy', 0)... [FAIL] (child 792
+> exited with 126 not 127)
 >
-> On 22/12/2014 17:03, Andy Lutomirski wrote:
->> This is wrong.  The guest *kernel* might not see the intermediate
->> state because the kernel (presumably it disabled migration while
->> reading pvti), but the guest vdso can't do that and could very easily
->> observe pvti while it's being written.
+> POSIX says
+> (http://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_08_02):
 >
-> No.  kvm_guest_time_update is called by vcpu_enter_guest, while the vCPU
-> is not running, so it's entirely atomic from the point of view of the guest.
-
-Which vCPU?  Unless kvm_guest_time_update freezes all of the vcpus,
-then there's a race:
-
-vCPU 0 guest: __getcpu
-vdso thread migrates to vCPU 1
-vCPU 0 exits
-host starts writing pvti for vCPU 0
-vdso thread starts reading pvti
-host finishes writing pvti for vCPU 0
-vCPU 0 resumes
-vdso migrates back to vCPU 0
-__getcpu returns 0
-
-and we fail.
-
+>      If a command is not found, the exit status shall be 127. If the
+>      command name is found, but it is not an executable utility, the exit
+>      status shall be 126.
 >
->> I'll send patches for the whole mess, complete with lots of comments,
->> after I test them a bit today.
->
-> Ok, some comments can certainly help the discussion.
->
+ > Andreas.
+ >
 
-I'm having a hard time testing, since KVM on 3.19-rc1 appears to be
-entirely unusable.  No matter what I do, I get this very early in
-guest boot:
+That sounds like a bit of a grey area -- is ENAMETOOLONG nearer to 
+ENOENT or EACCES?   Maybe it's best to make the test allow either (given 
+that it's not a test of shell behaviour).
 
-KVM internal error. Suberror: 1
-emulation failure
-EAX=000dee58 EBX=00000000 ECX=00000000 EDX=00000cfd
-ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fc4
-EIP=000f17f4 EFL=00010012 [----A--] CPL=0 II=0 A20=1 SMM=0 HLT=0
-ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
-SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-GDT=     000f6c58 00000037
-IDT=     000f6c96 00000000
-CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
-DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
-DR3=0000000000000000
-DR6=00000000ffff0ff0 DR7=0000000000000400
-EFER=0000000000000000
-Code=e8 75 fc ff ff 89 f2 a8 10 89 d8 75 0a b9 74 17 ff ff ff d1 <5b>
-5e c3 5b 5e e9 76 ff ff ff 57 56 53 8b 35 38 65 0f 00 85 f6 0f 88 be
-00 00 00 0f b7 f6
+I can update the test to do that, but it probably won't be until the new 
+year I'm afraid.
 
-and it sometimes comes with a lockdep splat, too.
-
---Andy
-
-> Paolo
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+David
