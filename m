@@ -1,127 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195AbaLVWM7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 17:12:59 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60696 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932134AbaLVWM6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 17:12:58 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Jakub Sitnicki <jsitnicki@gmail.com>
-Cc: rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PNP: Switch from __check_region() to __request_region()
-Date: Mon, 22 Dec 2014 23:34:48 +0100
-Message-ID: <2588457.Skz2ar9t5B@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <87vbl4lynj.fsf@frog.home>
-References: <1418072517-5413-1-git-send-email-jsitnicki@gmail.com> <878uid5my1.fsf@frog.home> <87vbl4lynj.fsf@frog.home>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755744AbaLVWRg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 17:17:36 -0500
+Received: from sauhun.de ([89.238.76.85]:53780 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754781AbaLVWRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 17:17:34 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-gpio@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Nicolas Pitre <nico@fluxnic.net>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org
+Subject: [PATCH 2/3] mmc: host: don't use devm_pinctrl_get_select_default() in probe
+Date: Mon, 22 Dec 2014 23:16:54 +0100
+Message-Id: <1419286616-9893-2-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1419286616-9893-1-git-send-email-wsa@the-dreams.de>
+References: <1419286616-9893-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 22, 2014 12:19:44 PM Jakub Sitnicki wrote:
-> On Fri, Dec 12, 2014 at 08:47 AM CET, Jakub Sitnicki wrote:
-> > Rafael J. Wysocki <rjw@rjwysocki.net> writes:
-> >
-> >> On Monday, December 08, 2014 10:01:57 PM Jakub Sitnicki wrote:
-> >>> diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-> >>> index 782e822..f980ff7 100644
-> >>> --- a/drivers/pnp/resource.c
-> >>> +++ b/drivers/pnp/resource.c
-> >>> @@ -179,8 +179,9 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
-> >>>  	/* check if the resource is already in use, skip if the
-> >>>  	 * device is active because it itself may be in use */
-> >>>  	if (!dev->active) {
-> >>> -		if (__check_region(&ioport_resource, *port, length(port, end)))
-> >>> +		if (!request_region(*port, length(port, end), "pnp"))
-> >>>  			return 0;
-> >>> +		release_region(*port, length(port, end));
-> >>
-> >> Shouldn't we also release the resource returned by request_region() if it is
-> >> not NULL?
-> >>
-> >
-> > Thanks for taking a look at this. I think we're good here. If you please
-> > bear with me for a moment:
-> >
-> > release_resource() removes an element from the list of resource parent's
-> > children (and makes it an orphan):
-> >
-> > 	p = &old->parent->child;
-> > 	for (;;) {
-> > 		tmp = *p;
-> > 		if (!tmp)
-> > 			break;
-> > 		if (tmp == old) {
-> > 			*p = tmp->sibling;
-> > 			old->parent = NULL;
-> > 			return 0;
-> > 		}
-> > 		p = &tmp->sibling;
-> > 	}
-> >
-> > release_region() does the same but with additional checks, and also
-> > frees the resource:
-> >
-> > 	p = &parent->child;
-> >         /* ... */
-> > 	for (;;) {
-> > 		struct resource *res = *p;
-> >
-> > 		if (!res)
-> > 			break;
-> > 		if (res->start <= start && res->end >= end) {
-> >                         /* ... */
-> > 			*p = res->sibling;
-> >                         /* ... */
-> > 			free_resource(res);
-> > 			return;
-> > 		}
-> > 		p = &res->sibling;
-> > 	}
-> >
-> > When making the change I've based on other code in the kernel which also
-> > make use of request_region().
-> >
-> > To quote one example, drivers/net/ethernet/8390/ne2k-pci.c cleans up its
-> > I/O port region when initialization fails like so:
-> >
-> > static int ne2k_pci_init_one(struct pci_dev *pdev,
-> > 			     const struct pci_device_id *ent)
-> > {
-> >         /* ... */
-> >
-> > 	if (request_region (ioaddr, NE_IO_EXTENT, DRV_NAME) == NULL) {
-> > 		dev_err(&pdev->dev, "I/O resource 0x%x @ 0x%lx busy\n",
-> > 			NE_IO_EXTENT, ioaddr);
-> > 		return -EBUSY;
-> > 	}
-> >
-> >         /* ... */
-> >
-> > 	dev = alloc_ei_netdev();
-> > 	if (!dev) {
-> > 		dev_err(&pdev->dev, "cannot allocate ethernet device\n");
-> > 		goto err_out_free_res;
-> > 	}
-> >
-> >         /* ... */
-> >
-> > err_out_free_res:
-> > 	release_region (ioaddr, NE_IO_EXTENT);
-> > 	return -ENODEV;
-> > }
-> 
-> Just wondering, do you have any further thoughts on this?
+Since commit ab78029ecc34 (drivers/pinctrl: grab default handles from device
+core), we can rely on device core for setting the default pins.
 
-I'll queue it up for 3.20 later in January.
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/mmc/host/mvsdio.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-
+diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+index 4f8618f4522d..a2cb92851f1f 100644
+--- a/drivers/mmc/host/mvsdio.c
++++ b/drivers/mmc/host/mvsdio.c
+@@ -25,7 +25,6 @@
+ #include <linux/of_irq.h>
+ #include <linux/mmc/host.h>
+ #include <linux/mmc/slot-gpio.h>
+-#include <linux/pinctrl/consumer.h>
+ 
+ #include <asm/sizes.h>
+ #include <asm/unaligned.h>
+@@ -704,7 +703,6 @@ static int mvsd_probe(struct platform_device *pdev)
+ 	const struct mbus_dram_target_info *dram;
+ 	struct resource *r;
+ 	int ret, irq;
+-	struct pinctrl *pinctrl;
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	irq = platform_get_irq(pdev, 0);
+@@ -721,10 +719,6 @@ static int mvsd_probe(struct platform_device *pdev)
+ 	host->mmc = mmc;
+ 	host->dev = &pdev->dev;
+ 
+-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+-	if (IS_ERR(pinctrl))
+-		dev_warn(&pdev->dev, "no pins associated\n");
+-
+ 	/*
+ 	 * Some non-DT platforms do not pass a clock, and the clock
+ 	 * frequency is passed through platform_data. On DT platforms,
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+2.1.3
+
