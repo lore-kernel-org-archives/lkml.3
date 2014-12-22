@@ -1,71 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbaLVPbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 10:31:31 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51026 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbaLVPb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 10:31:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <54982C98.9070806@oracle.com>
-References: <54982C98.9070806@oracle.com>
-Date: Mon, 22 Dec 2014 19:31:27 +0400
-Message-ID: <CAPAsAGzHyx=9oy7ZFdL3dERrKR3or_PiDqm_chbDRvx+c3ZHPg@mail.gmail.com>
-Subject: Re: fs: proc: gpf in find_entry
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "davej >> Dave Jones" <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755256AbaLVPaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 10:30:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:53968 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755196AbaLVPag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 10:30:36 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 04/10] perf hists: Rename hist_entry__free to __delete
+Date: Mon, 22 Dec 2014 12:30:03 -0300
+Message-Id: <1419262209-9464-5-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1419262209-9464-1-git-send-email-acme@kernel.org>
+References: <1419262209-9464-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-22 17:37 GMT+03:00 Sasha Levin <sasha.levin@oracle.com>:
-> Hi all,
->
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
->
-> [ 2015.960381] general protection fault: 0000 [#1] PREEMPT SMP KASAN
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Actually this is NULL-ptr dereference. Since you are using kasan with
-inline instrumentation
-NULL-ptr deref transforms into GPF.
+No logic changes, just to be consistent.
 
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-f7n5y0mvk6gew5185h6fg316@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-diff.c         | 2 +-
+ tools/perf/tests/hists_cumulate.c | 2 +-
+ tools/perf/tests/hists_output.c   | 2 +-
+ tools/perf/util/hist.c            | 8 ++++----
+ tools/perf/util/hist.h            | 2 +-
+ 5 files changed, 8 insertions(+), 8 deletions(-)
 
-> [ 2015.970534] RAX: 0000000000000000 RBX: ffff88000003a960 RCX: 0000000000000073
-> [ 2015.970534] RDX: 1ffff10101c8f3c4 RSI: 0000000000000000 RDI: ffff88080e479e20
-> [ 2015.970534] RBP: ffff88080e477a28 R08: 0000000000000066 R09: 0000000000000073
-> [ 2015.970534] R10: ffffda0017d55630 R11: dfffe90000000000 R12: ffff88005fc644b8
-> [ 2015.970534] R13: dfffe90000000000 R14: ffffffff92464884 R15: 0000000000000000
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 1ce425d101a9..90fd5d2f61f0 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -430,7 +430,7 @@ static void hists__baseline_only(struct hists *hists)
+ 		next = rb_next(&he->rb_node_in);
+ 		if (!hist_entry__next_pair(he)) {
+ 			rb_erase(&he->rb_node_in, root);
+-			hist_entry__free(he);
++			hist_entry__delete(he);
+ 		}
+ 	}
+ }
+diff --git a/tools/perf/tests/hists_cumulate.c b/tools/perf/tests/hists_cumulate.c
+index 614d5c4978ab..b6a9e2a02e46 100644
+--- a/tools/perf/tests/hists_cumulate.c
++++ b/tools/perf/tests/hists_cumulate.c
+@@ -140,7 +140,7 @@ static void del_hist_entries(struct hists *hists)
+ 		he = rb_entry(node, struct hist_entry, rb_node);
+ 		rb_erase(node, root_out);
+ 		rb_erase(&he->rb_node_in, root_in);
+-		hist_entry__free(he);
++		hist_entry__delete(he);
+ 	}
+ }
+ 
+diff --git a/tools/perf/tests/hists_output.c b/tools/perf/tests/hists_output.c
+index a748f2be1222..41328a0ed47a 100644
+--- a/tools/perf/tests/hists_output.c
++++ b/tools/perf/tests/hists_output.c
+@@ -106,7 +106,7 @@ static void del_hist_entries(struct hists *hists)
+ 		he = rb_entry(node, struct hist_entry, rb_node);
+ 		rb_erase(node, root_out);
+ 		rb_erase(&he->rb_node_in, root_in);
+-		hist_entry__free(he);
++		hist_entry__delete(he);
+ 	}
+ }
+ 
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 6e88b9e395df..9090b5fc07e0 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -266,7 +266,7 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+ 			if (!n->filtered)
+ 				--hists->nr_non_filtered_entries;
+ 
+-			hist_entry__free(n);
++			hist_entry__delete(n);
+ 		}
+ 	}
+ }
+@@ -289,7 +289,7 @@ void hists__delete_entries(struct hists *hists)
+ 		if (!n->filtered)
+ 			--hists->nr_non_filtered_entries;
+ 
+-		hist_entry__free(n);
++		hist_entry__delete(n);
+ 	}
+ }
+ 
+@@ -939,7 +939,7 @@ hist_entry__collapse(struct hist_entry *left, struct hist_entry *right)
+ 	return cmp;
+ }
+ 
+-void hist_entry__free(struct hist_entry *he)
++void hist_entry__delete(struct hist_entry *he)
+ {
+ 	zfree(&he->branch_info);
+ 	zfree(&he->mem_info);
+@@ -978,7 +978,7 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+ 						iter->callchain,
+ 						he->callchain);
+ 			}
+-			hist_entry__free(he);
++			hist_entry__delete(he);
+ 			return false;
+ 		}
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index d0ef9a19a744..2f9095934361 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -119,7 +119,7 @@ int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
+ int hist_entry__transaction_len(void);
+ int hist_entry__sort_snprintf(struct hist_entry *he, char *bf, size_t size,
+ 			      struct hists *hists);
+-void hist_entry__free(struct hist_entry *);
++void hist_entry__delete(struct hist_entry *he);
+ 
+ void hists__output_resort(struct hists *hists);
+ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
+-- 
+1.9.3
 
-[...]
-
-> All code
-> ========
->    0:   e8 03 42 80 3c          callq  0x3c804208
->    5:   28 00                   sub    %al,(%rax)
->    7:   0f 85 ff 01 00 00       jne    0x20c
->    d:   4c 8b 7b 18             mov    0x18(%rbx),%r15
->   11:   4d 85 ff                test   %r15,%r15
->   14:   0f 84 de 01 00 00       je     0x1f8
->   1a:   41 f6 c7 07             test   $0x7,%r15b
->   1e:   0f 85 d4 01 00 00       jne    0x1f8
->   24:   4c 89 f8                mov    %r15,%rax
->   27:   48 c1 e8 03             shr    $0x3,%rax
->   2b:*  42 80 3c 28 00          cmpb   $0x0,(%rax,%r13,1)               <-- trapping instruction
-
-Three commands above are result of KASAN's instrumentation.
-They check shadow for address in %r15:
-     if (*((%r15 >> 3) + kasan_shadow_offset)
-
-
->   30:   0f 85 b5 01 00 00       jne    0x1eb
->   36:   4d 8b 37                mov    (%r15),%r14
-
-And here is memory access, that KASAN checking.
