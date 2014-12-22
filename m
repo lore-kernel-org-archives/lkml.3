@@ -1,146 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaLVJ0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:26:24 -0500
-Received: from mail-by2on0122.outbound.protection.outlook.com ([207.46.100.122]:33298
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1754158AbaLVJ1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:27:12 -0500
+Received: from mail-bn1on0137.outbound.protection.outlook.com ([157.56.110.137]:52976
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754003AbaLVJ0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:26:21 -0500
-X-WSS-ID: 0NGZ8VO-08-95J-02
+	id S1754164AbaLVJ1K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 04:27:10 -0500
+X-WSS-ID: 0NGZ8X2-08-96Q-02
 X-M-MSG: 
-Message-ID: <5497E3A6.7070600@amd.com>
-Date: Mon, 22 Dec 2014 11:25:58 +0200
+Message-ID: <5497E3D7.1060405@amd.com>
+Date: Mon, 22 Dec 2014 11:26:47 +0200
 From: Oded Gabbay <oded.gabbay@amd.com>
 Organization: AMD
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Subject: Re: [LKP] [drm/radeon] BUG: unable to handle kernel paging request
- at 03200000
-References: <1418890668.26403.6.camel@intel.com> <54928E6B.1020501@amd.com>
- <1418891181.26403.9.camel@intel.com>
-In-Reply-To: <1418891181.26403.9.camel@intel.com>
+To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>,
+        "Dave Airlie" <airlied@gmail.com>
+CC: dri-devel <dri-devel@lists.freedesktop.org>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>,
+        "Elifaz, Dana" <Dana.Elifaz@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] amdkfd: Don't clear *kfd2kgd on kfd_module_init
+References: <1419108374-7020-1-git-send-email-oded.gabbay@amd.com>
+	<1419108374-7020-2-git-send-email-oded.gabbay@amd.com>
+	<5496AEAD.3090003@vodafone.de>	<5496B04C.50502@amd.com>
+	<5496BAE0.5090901@vodafone.de>	<5496C5EA.7050200@amd.com>
+	<5496CA0F.8000800@amd.com>	<5496EDF1.7080106@vodafone.de>
+	<5496EF34.70302@amd.com>	<5496F0DD.40903@vodafone.de>
+	<5497C98C.2080208@amd.com>
+ <CAPM=9tzpvmu=6X32-jc4VeVTZENW9iQDq6aB1dxo6TkbkKOpkQ@mail.gmail.com>
+ <5497CB91.2080306@amd.com> <5497DD0E.7040400@vodafone.de>
+In-Reply-To: <5497DD0E.7040400@vodafone.de>
 Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.20.0.84]
+Content-Transfer-Encoding: 8BIT
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=none (sender IP is 165.204.84.222)
  smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(69234005)(51704005)(24454002)(377454003)(479174004)(377424004)(164054003)(199003)(189002)(62966003)(77156002)(54356999)(101416001)(76176999)(87266999)(23676002)(64126003)(59896002)(50466002)(68736005)(50986999)(65806001)(65956001)(15975445007)(31966008)(77096005)(575784001)(21056001)(87936001)(99396003)(110136001)(92566001)(2950100001)(86362001)(20776003)(83506001)(107046002)(97736003)(4396001)(46102003)(120916001)(36756003)(47776003)(64706001)(105586002)(106466001)(80316001)(33656002)(19580405001)(84676001)(19580395003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(377454003)(51704005)(24454002)(479174004)(189002)(199003)(31966008)(97736003)(50986999)(87936001)(59896002)(99396003)(101416001)(54356999)(76176999)(21056001)(36756003)(77096005)(2950100001)(4396001)(33656002)(105586002)(86362001)(62966003)(107046002)(77156002)(106466001)(93886004)(120916001)(46102003)(80316001)(64126003)(68736005)(92566001)(84676001)(87266999)(65956001)(65806001)(20776003)(50466002)(23676002)(64706001)(47776003)(83506001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB203;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR02MB200;
 X-Forefront-PRVS: 0433DB2766
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
 X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 09:26:18.6929
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 22 Dec 2014 09:27:07.0689
  (UTC)
 X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR02MB203
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR02MB200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 12/18/2014 10:26 AM, Huang Ying wrote:
-> On Thu, 2014-12-18 at 10:20 +0200, Oded Gabbay wrote:
->> On 12/18/2014 10:17 AM, Huang Ying wrote:
->>> FYI, we noticed the below changes on
->>>
->>> commit e28740ece34d314002b1ddfa14e8fb7c7b909489 ("drm/radeon: Add radeon <--> amdkfd interface")
->>>
->>>
->>> +------------------------------------------+------------+------------+
->>> |                                          | 1c0a46255f | e28740ece3 |
->>> +------------------------------------------+------------+------------+
->>> | boot_successes                           | 0          | 0          |
->>> | boot_failures                            | 10         | 13         |
->>> | BUG:kernel_boot_hang                     | 9          | 9          |
->>> | INFO:suspicious_RCU_usage                | 1          | 3          |
->>> | backtrace:do_fork                        | 1          | 3          |
->>> | BUG:unable_to_handle_kernel              | 0          | 3          |
->>> | Oops                                     | 0          | 3          |
->>> | Kernel_panic-not_syncing:Fatal_exception | 0          | 3          |
->>> | backtrace:radeon_init                    | 0          | 3          |
->>> | backtrace:kernel_init_freeable           | 0          | 3          |
->>> | BUG:kernel_boot_crashed                  | 0          | 1          |
->>> +------------------------------------------+------------+------------+
->>>
->>>
->>> [    5.407193] Linux agpgart interface v0.103
->>> [    5.428469] [drm] Initialized drm 1.1.0 20060810
->>> [    5.438456] [drm] radeon kernel modesetting enabled.
->>> [    5.439741] BUG: unable to handle kernel paging request at 03200000
->>> [    5.440063] IP: [<03200000>] 0x3200000
->>> [    5.440063] *pde = 00000000
->>> [    5.440063] Oops: 0000 [#1] SMP
->>> [    5.440063] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-g603ba7e #14
->>> [    5.440063] task: 42e08000 ti: 42e02000 task.ti: 42e02000
->>> [    5.440063] EIP: 0060:[<03200000>] EFLAGS: 00010246 CPU: 0
->>> [    5.440063] EIP is at 0x3200000
->>> [    5.440063] EAX: 00000001 EBX: 00000000 ECX: 4738b460 EDX: 45735a64
->>> [    5.440063] ESI: 4662d0dd EDI: 401fafa0 EBP: 42e03f20 ESP: 42e03f18
->>> [    5.440063]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
->>> [    5.440063] CR0: 8005003b CR2: 03200000 CR3: 067f0000 CR4: 00000690
->>> [    5.440063] Stack:
->>> [    5.440063]  44bf19b1 00000000 42e03f28 4662d20b 42e03f8c 465b6e5d 00000000 00000000
->>> [    5.440063]  00000000 00000000 00000000 00000000 000000ea 00000000 00000000 00000101
->>> [    5.440063]  45f2dfba 00000010 00000012 00000200 47fdcf54 47fdcf54 00000006 00000291
->>> [    5.440063] Call Trace:
->>> [    5.440063]  [<44bf19b1>] ? radeon_kfd_init+0x67/0xab
->>> [    5.440063]  [<4662d20b>] radeon_init+0x12e/0x15c
->>> [    5.440063]  [<465b6e5d>] do_one_initcall+0x25f/0x41e
->>> [    5.440063]  [<465b7291>] kernel_init_freeable+0x275/0x423
->>> [    5.440063]  [<455b4e52>] kernel_init+0x1c/0x293
->>> [    5.440063]  [<455df181>] ret_from_kernel_thread+0x21/0x30
->>> [    5.440063]  [<455b4e36>] ? rest_init+0x33e/0x33e
->>> [    5.440063] Code:  Bad EIP value.
->>> [    5.440063] EIP: [<03200000>] 0x3200000 SS:ESP 0068:42e03f18
->>> [    5.440063] CR2: 0000000003200000
->>> [    5.440063] ---[ end trace 1959b295b01c0c14 ]---
->>> [    5.440063] Kernel panic - not syncing: Fatal exception
->>>
->>>
->>> Thanks,
->>> Huang, Ying
->>>
->>>
->>>
->>>
->>> _______________________________________________
->>> LKP mailing list
->>> LKP@linux.intel.com
->>>
+On 12/22/2014 10:57 AM, Christian König wrote:
+> Am 22.12.2014 um 08:43 schrieb Oded Gabbay:
 >>
->> Is this a 32-bit kernel ?
->> Is amdkfd compiled ?
+>>
+>> On 12/22/2014 09:40 AM, Dave Airlie wrote:
+>>>>>>>> There should be, but when the modules are compiled in, they are loaded
+>>>>>>>> based on
+>>>>>>>> link order only, if they are in the same group, and the groups are
+>>>>>>>> loaded by a
+>>>>>>>> pre-defined order.
+>>>>>>>
+>>>>>>> Is that really still up to date? I've seen effort to change that
+>>>>>>> something like
+>>>>>>> 10+ years ago when Rusty reworked the module system. And it is comming
+>>>>>>> up on the
+>>>>>>> lists again from time to time.
+>>>>>>
+>>>>>>  From what I can see in the Makefile rules, code and google, yes, that's
+>>>>>> still
+>>>>>> the situation. If someone will prove me wrong I will be more than happy
+>>>>>> to
+>>>>>> correct my code.
+>>>>>>>
+>>>>>>>
+>>>>>>>> I don't want to move iommu before gpu, so I don't have a solution for
+>>>>>>>> the
+>>>>>>>> order between amdkfd and amd_iommu_v2.
+>>>>>>>
+>>>>>>> Why not? That's still better than creating a kernel workqueue,
+>>>>>>> scheduling one
+>>>>>>> work item on it, rescheduling the task until everything is completed and
+>>>>>>> you can
+>>>>>>> continue.
+>>>>>>
+>>>>>> Because I don't know the consequences of moving an entire subsystem in
+>>>>>> front
+>>>>>> of another one. In addition, even if everyone agrees, I'm pretty sure
+>>>>>> that
+>>>>>> Linus won't be happy to do that in -rc stages. So maybe this is something
+>>>>>> to
+>>>>>> consider for 3.20 merge window, but I would still like to provide a
+>>>>>> solution
+>>>>>> for 3.19.
+>>>>>
+>>>>>
+>>>>> Yeah, true indeed. How about depending on everything being compiled as
+>>>>> module
+>>>>> for 3.19 then? Still better than having such a hack in the driver for as a
+>>>>> temporary workaround for one release.
+>>>>>
+>>>> I thought about it, but because this problem was originally reported by a
+>>>> user that told us he couldn't use modules because of his setup, I decided
+>>>> not to.
+>>>> I assume there are other users out there who needs this option (compiled
+>>>> everything in the kernel - embedded ?), so I don't want to make their life
+>>>> harder.
+>>>>
+>>>> In addition, saying it is a workaround for one release is true in case
+>>>> moving iommu subsystem in front of gpu subsystem is acceptable and doesn't
+>>>> cause other problems, unknown at this point.
+>>>>
+>>>> Bottom line, my personal preference is to help the users _now_ and if a
+>>>> better fix is found in the future, change the code accordingly.
+>>>
+>>> My guess is moving the iommu subsystem in front of the GPU would be rational.
+>>>
+>>> It does seem like it would generally have a depend in that order.
+>>>
+>>> Dave.
+>>>
+>> Dave,
+>> I agree, but don't you think it is too risky for -rc stages ?
+>> If not, I can try it and if it works on KV, I can submit a patch.
+>> But if you do think it is risky, what do you recommend for 3.19 ? Do the fix I
+>> suggested or disable build-in compilation option ?
 >
-> The kconfig file is attached in the original email.  From it, it is
-> 32-bit kernel.  I don't find AMDKFD in config file.  Could you help me
-> to check it?
+> I would say create the patch of changing the order (should be trivial), describe
+> in detail in the commit message what this is supposed to fix and why such an
+> severe change was done in -rc1 and submit it upstream.
 >
-> Best Regards,
-> Huang, Ying
+> We can still revert it in -rc2 if it breaks anything.
 >
+> Christian.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>     Oded
 >
-OK, I found the culprit.
-If you define 32-bit kernel, No modules and random kernel base, than the 
-symbol_request function doesn't return NULL if the symbol doesn't exists, which 
-causes the rest of the code to have undefined results.
 
-I prepared a patch to fix it and hopefully it will be in -rc2. I will sent it to 
-dri-devel as usual.
+OK, I'll try it on my machine and if it works, I will send the patch to the list.
 
 	Oded
