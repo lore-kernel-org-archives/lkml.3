@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681AbaLVWAu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 17:00:50 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:62349 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702AbaLVWAt convert rfc822-to-8bit (ORCPT
+	id S1755757AbaLVWED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 17:04:03 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:38039 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605AbaLVWEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 17:00:49 -0500
+	Mon, 22 Dec 2014 17:04:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141222150707.GE29096@krava.brq.redhat.com>
-References: <1419079541-32288-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20141222145210.GA2188@redhat.com> <20141222150707.GE29096@krava.brq.redhat.com>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 22 Dec 2014 23:00:27 +0100
-Message-ID: <CAFo99gb-LQQEBD=jqZfBqJHu6za8bocJ7mSEGWyN5ikWkaGfSQ@mail.gmail.com>
-Subject: Re: [PATCH] tools: lib: traceevent: event-parse.c: Remove some unused functions
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Jiri Olsa <jolsa@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
+In-Reply-To: <Pine.LNX.4.44L0.1412221553230.32109-100000@netrider.rowland.org>
+References: <CAD=FV=UWOOwr3K6vPbAiHTUuv1DdbVRQ1yKKWWS6KOv6J4B51w@mail.gmail.com>
+	<Pine.LNX.4.44L0.1412221553230.32109-100000@netrider.rowland.org>
+Date: Mon, 22 Dec 2014 14:03:59 -0800
+Message-ID: <CAD=FV=XzL7gEEHc6TN3nLSiscag9mUFbRZLsi48c5JZQ4D+Qig@mail.gmail.com>
+Subject: Re: [PATCH 2/2] USB: ehci-platform: Support ehci reset after resume quirk
+From: Doug Anderson <dianders@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Wu Liang feng <wulf@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Tao Huang <huangtao@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Eddie Cai <eddie.cai@rock-chips.com>, Roy Li <roy.li@rock-chips.com>,
+        Chris <zyw@rock-chips.com>, Julius Werner <jwerner@google.com>,
+        Pawel Osciak <posciak@google.com>, Tomasz Figa <tfiga@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-22 16:07 GMT+01:00 Jiri Olsa <jolsa@redhat.com>:
-> On Mon, Dec 22, 2014 at 12:52:10PM -0200, Arnaldo Carvalho de Melo wrote:
->> Em Sat, Dec 20, 2014 at 01:45:41PM +0100, Rickard Strandqvist escreveu:
->> > Removes some functions that are not used anywhere:
->> > pevent_get_any_field_val() pevent_get_common_field_val() pevent_event_fields() pevent_event_common_fields() pevent_list_events() pevent_print_event() pevent_data_event_from_type() pevent_register_trace_clock() pevent_pid_is_registered()
+Hi,
+
+On Mon, Dec 22, 2014 at 1:04 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 22 Dec 2014, Doug Anderson wrote:
+>
+>> Alan,
+>>
+>> On Mon, Dec 22, 2014 at 8:06 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> > On Mon, 22 Dec 2014, Wu Liang feng wrote:
 >> >
->> > This was partially found by using a static code analysis program called cppcheck.
+>> >> The EHCI controller doesn't properly detect the case when
+>> >
+>> > "The" EHCI controller?  I don't know what EHCI controller you're
+>> > talking about, but my controllers don't have any trouble detecting
+>> > device removal during suspend.
 >>
->> Steven, Namhyung, Jiri:
+>> This is specifically the EHCI controller on rk3288.  Not sure why Wu
+>> Liang feng removed that part of the description.
+>
+> Maybe it could be put back in.
+
+Sounds good.  Wu Liang feng, could you spin and make sure you say that
+this is the EHCI controller in rk3288?  Make sure to keep tags that
+were added (Acked, Reviewed, Tested).
+
+
+>> On rk3288-pinky I have tested that without this patch the EHCI
+>> controller flips out when a USB webcam is plugged into the port and is
+>> power cycled across suspend/resume.  With this patch the controller
+>> properly unplugs / replugs the webcam.
 >>
->> Are you ok with me applying this patch? I'm all for it, dead code better
->> be removed, but I don't know what are your plans wrt synchronization
->> with the trace-cmd repo.
+>> Tested-by: Doug Anderson <dianders@chromium.org>
 >
-> I'm not aware about more porting from traceevent lib, but I'm
-> guessing there's still lot of things missing..?
->
-> However, if we go with the removal, this patch has same
-> issue as the other one.. missing removal of functions
-> used only in removed code:
->
->
->   CC FPIC  event-parse.o
-> /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/event-parse.c:4597:13: warning: ‘is_timestamp_in_us’ defined but not used [-Wunused-function]
->  static bool is_timestamp_in_us(char *trace_clock, bool use_trace_clock)
->              ^
-> /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/event-parse.c:4624:12: warning: ‘events_name_cmp’ defined but not used [-Wunused-function]
->  static int events_name_cmp(const void *a, const void *b)
->             ^
-> /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/event-parse.c:4641:12: warning: ‘events_system_cmp’ defined but not used [-Wunused-function]
->  static int events_system_cmp(const void *a, const void *b)
->             ^
-> /home/jolsa/kernel.org/linux-perf/tools/lib/traceevent/event-parse.c:4659:1: warning: ‘get_event_fields’ defined but not used [-Wunused-function]
->  get_event_fields(const char *type, const char *name,
->  ^
->   CC FPIC  event-plugin.o
->
->
-> thanks,
-> jirka
+> I assume you also tested the case where the webcam is _not_
+> power-cycled during the suspend.
 
-Hi
+Good point.  I was about 99% sure I tested that case, but I just
+retested now and now I'm 100% sure.  ;)
 
-Sounds good!
-I'll check on the warnings to.
-
-Kind regards
-Rickard Strandqvist
+-Doug
