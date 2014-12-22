@@ -1,115 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaLVOmN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 09:42:13 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:47157 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077AbaLVOln (ORCPT
+	id S1754995AbaLVOoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 09:44:08 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:59423 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560AbaLVOoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 09:41:43 -0500
-From: Daniele Forsi <dforsi@gmail.com>
-To: Henk Vergonet <Henk.Vergonet@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: usbb2k-api-dev@nongnu.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniele Forsi <dforsi@gmail.com>
-Subject: [RFC PATCH 1/2] USB: input: yealink.c: use KEY_NUMERIC_* for numeric keys, star and pound
-Date: Mon, 22 Dec 2014 15:41:08 +0100
-Message-Id: <1419259269-23820-2-git-send-email-dforsi@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419259269-23820-1-git-send-email-dforsi@gmail.com>
-References: <1419259269-23820-1-git-send-email-dforsi@gmail.com>
+	Mon, 22 Dec 2014 09:44:06 -0500
+Date: Mon, 22 Dec 2014 14:44:00 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: System automatically wakes up because of Intel Rapid Start
+ Technology
+Message-ID: <20141222144400.GA11801@srcf.ucam.org>
+References: <9927036.n7iZq92iLW@xps13>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9927036.n7iZq92iLW@xps13>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the "pound" key that being mapped to Shift+3 was returning '£' instead
-of '#' when using an Italian keyboard mapping and use the same values as
-the cm109.c driver (which was based on this yealink.c driver) also for '0'
-to '9' and for '*'.
+Huh. Yeah, I actually see the same behaviour on my Thinkpad. Let me play 
+with this a little.
 
-Signed-off-by: Daniele Forsi <dforsi@gmail.com>
----
- drivers/input/misc/yealink.c | 39 +++++++++++++++------------------------
- 1 file changed, 15 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/input/misc/yealink.c b/drivers/input/misc/yealink.c
-index 79c964c..e9403da 100644
---- a/drivers/input/misc/yealink.c
-+++ b/drivers/input/misc/yealink.c
-@@ -212,27 +212,24 @@ static int map_p1k_to_key(int scancode)
- 	case 0x03: return KEY_ENTER;	/*   pickup	*/
- 	case 0x14: return KEY_BACKSPACE; /*  C		*/
- 	case 0x13: return KEY_ESC;	/*   hangup	*/
--	case 0x00: return KEY_1;	/*   1		*/
--	case 0x01: return KEY_2;	/*   2 		*/
--	case 0x02: return KEY_3;	/*   3		*/
--	case 0x10: return KEY_4;	/*   4		*/
--	case 0x11: return KEY_5;	/*   5		*/
--	case 0x12: return KEY_6;	/*   6		*/
--	case 0x20: return KEY_7;	/*   7		*/
--	case 0x21: return KEY_8;	/*   8		*/
--	case 0x22: return KEY_9;	/*   9		*/
--	case 0x30: return KEY_KPASTERISK; /* *		*/
--	case 0x31: return KEY_0;	/*   0		*/
--	case 0x32: return KEY_LEFTSHIFT |
--			  KEY_3 << 8;	/*   #		*/
-+	case 0x00: return KEY_NUMERIC_1;	/*   1		*/
-+	case 0x01: return KEY_NUMERIC_2;	/*   2		*/
-+	case 0x02: return KEY_NUMERIC_3;	/*   3		*/
-+	case 0x10: return KEY_NUMERIC_4;	/*   4		*/
-+	case 0x11: return KEY_NUMERIC_5;	/*   5		*/
-+	case 0x12: return KEY_NUMERIC_6;	/*   6		*/
-+	case 0x20: return KEY_NUMERIC_7;	/*   7		*/
-+	case 0x21: return KEY_NUMERIC_8;	/*   8		*/
-+	case 0x22: return KEY_NUMERIC_9;	/*   9		*/
-+	case 0x30: return KEY_NUMERIC_STAR;	/*   *		*/
-+	case 0x31: return KEY_NUMERIC_0;	/*   0		*/
-+	case 0x32: return KEY_NUMERIC_POUND;	/*   #		*/
- 	}
- 	return -EINVAL;
- }
- 
- /* Completes a request by converting the data into events for the
-  * input subsystem.
-- *
-- * The key parameter can be cascaded: key2 << 8 | key1
-  */
- static void report_key(struct yealink_dev *yld, int key)
- {
-@@ -240,17 +237,13 @@ static void report_key(struct yealink_dev *yld, int key)
- 
- 	if (yld->key_code >= 0) {
- 		/* old key up */
--		input_report_key(idev, yld->key_code & 0xff, 0);
--		if (yld->key_code >> 8)
--			input_report_key(idev, yld->key_code >> 8, 0);
-+		input_report_key(idev, yld->key_code, 0);
- 	}
- 
- 	yld->key_code = key;
- 	if (key >= 0) {
- 		/* new valid key */
--		input_report_key(idev, key & 0xff, 1);
--		if (key >> 8)
--			input_report_key(idev, key >> 8, 1);
-+		input_report_key(idev, key, 1);
- 	}
- 	input_sync(idev);
- }
-@@ -966,9 +959,7 @@ static int usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	for (i = 0; i < 256; i++) {
- 		int k = map_p1k_to_key(i);
- 		if (k >= 0) {
--			set_bit(k & 0xff, input_dev->keybit);
--			if (k >> 8)
--				set_bit(k >> 8, input_dev->keybit);
-+			set_bit(k, input_dev->keybit);
- 		}
- 	}
- 
 -- 
-2.1.3
-
+Matthew Garrett | mjg59@srcf.ucam.org
