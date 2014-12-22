@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435AbaLVQ5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 11:57:51 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44733 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755312AbaLVQ5s (ORCPT
+	id S1755456AbaLVQ5z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 11:57:55 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:51670 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755430AbaLVQ5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 11:57:48 -0500
+	Mon, 22 Dec 2014 11:57:51 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -16,9 +16,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         John Stultz <john.stultz@linaro.org>,
         Sumit Semwal <sumit.semwal@linaro.org>, patches@linaro.org,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH 3.19-rc1 v14 2/8] arm: configs: Enable DEBUG_LL_UART_8250 where needed
-Date: Mon, 22 Dec 2014 16:57:19 +0000
-Message-Id: <1419267445-8330-3-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH 3.19-rc1 v14 3/8] arm: Remove DEBUG_LL_UART_NONE
+Date: Mon, 22 Dec 2014 16:57:20 +0000
+Message-Id: <1419267445-8330-4-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1419267445-8330-1-git-send-email-daniel.thompson@linaro.org>
 References: <1419267445-8330-1-git-send-email-daniel.thompson@linaro.org>
@@ -26,101 +26,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All defconfigs touched by this patch already enable DEBUG_LL and by
-default DEBUG_LL_UART_NONE will be selected. This causes no issues
-today because due to some back compatibility magic we eventually need
-to remove it is not actually honoured. Nevertheless DEBUG_LL_UART_8250
-is the right value for these platforms and should be set in the config
-files.
+Only a very small handful of platforms support DEBUG_LL_UART_NONE but it
+lurks in the menus of every single platform config ready to break the
+build. This is an especial problem for defconfig/oldconfig since it is
+often selected by default.
+
+This patch solves the problem by removing this option. Any platforms
+still depending upon this option must be migrated.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
 ---
- arch/arm/configs/iop32x_defconfig  | 1 +
- arch/arm/configs/iop33x_defconfig  | 1 +
- arch/arm/configs/ixp4xx_defconfig  | 1 +
- arch/arm/configs/lpc32xx_defconfig | 1 +
- arch/arm/configs/mv78xx0_defconfig | 1 +
- arch/arm/configs/orion5x_defconfig | 1 +
- arch/arm/configs/rpc_defconfig     | 1 +
- 7 files changed, 7 insertions(+)
+ arch/arm/Kconfig.debug | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/arch/arm/configs/iop32x_defconfig b/arch/arm/configs/iop32x_defconfig
-index 4f2ec3ac138e..c3058da631da 100644
---- a/arch/arm/configs/iop32x_defconfig
-+++ b/arch/arm/configs/iop32x_defconfig
-@@ -106,6 +106,7 @@ CONFIG_MAGIC_SYSRQ=y
- CONFIG_DEBUG_KERNEL=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
- CONFIG_KEYS=y
- CONFIG_KEYS_DEBUG_PROC_KEYS=y
- CONFIG_CRYPTO_NULL=y
-diff --git a/arch/arm/configs/iop33x_defconfig b/arch/arm/configs/iop33x_defconfig
-index aa36128abca2..713faeee8cf4 100644
---- a/arch/arm/configs/iop33x_defconfig
-+++ b/arch/arm/configs/iop33x_defconfig
-@@ -87,5 +87,6 @@ CONFIG_DEBUG_KERNEL=y
- # CONFIG_RCU_CPU_STALL_DETECTOR is not set
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
- # CONFIG_CRC32 is not set
-diff --git a/arch/arm/configs/ixp4xx_defconfig b/arch/arm/configs/ixp4xx_defconfig
-index 1af665e847d1..24636cfdf6df 100644
---- a/arch/arm/configs/ixp4xx_defconfig
-+++ b/arch/arm/configs/ixp4xx_defconfig
-@@ -202,3 +202,4 @@ CONFIG_MAGIC_SYSRQ=y
- CONFIG_DEBUG_KERNEL=y
- CONFIG_DEBUG_ERRORS=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
-diff --git a/arch/arm/configs/lpc32xx_defconfig b/arch/arm/configs/lpc32xx_defconfig
-index 9f56ca3985ae..c100b7df5441 100644
---- a/arch/arm/configs/lpc32xx_defconfig
-+++ b/arch/arm/configs/lpc32xx_defconfig
-@@ -204,6 +204,7 @@ CONFIG_DEBUG_INFO=y
- # CONFIG_FTRACE is not set
- # CONFIG_ARM_UNWIND is not set
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
- CONFIG_EARLY_PRINTK=y
- CONFIG_CRYPTO_ANSI_CPRNG=y
- # CONFIG_CRYPTO_HW is not set
-diff --git a/arch/arm/configs/mv78xx0_defconfig b/arch/arm/configs/mv78xx0_defconfig
-index 0dae1c1f007a..85d10d2e3d66 100644
---- a/arch/arm/configs/mv78xx0_defconfig
-+++ b/arch/arm/configs/mv78xx0_defconfig
-@@ -132,6 +132,7 @@ CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_ERRORS=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
- CONFIG_CRYPTO_CBC=m
- CONFIG_CRYPTO_ECB=m
- CONFIG_CRYPTO_PCBC=m
-diff --git a/arch/arm/configs/orion5x_defconfig b/arch/arm/configs/orion5x_defconfig
-index 952430d9e2d9..855143fac6bd 100644
---- a/arch/arm/configs/orion5x_defconfig
-+++ b/arch/arm/configs/orion5x_defconfig
-@@ -156,6 +156,7 @@ CONFIG_LATENCYTOP=y
- # CONFIG_FTRACE is not set
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
- CONFIG_CRYPTO_CBC=m
- CONFIG_CRYPTO_ECB=m
- CONFIG_CRYPTO_PCBC=m
-diff --git a/arch/arm/configs/rpc_defconfig b/arch/arm/configs/rpc_defconfig
-index 00515ef9782d..89631795a915 100644
---- a/arch/arm/configs/rpc_defconfig
-+++ b/arch/arm/configs/rpc_defconfig
-@@ -131,3 +131,4 @@ CONFIG_DEBUG_KERNEL=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_ERRORS=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index c5648cc1466d..6ee9b0d361ee 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -1031,15 +1031,6 @@ choice
+ 		  This option selects UART0 on VIA/Wondermedia System-on-a-chip
+ 		  devices, including VT8500, WM8505, WM8650 and WM8850.
+ 
+-	config DEBUG_LL_UART_NONE
+-		bool "No low-level debugging UART"
+-		depends on !ARCH_MULTIPLATFORM
+-		help
+-		  Say Y here if your platform doesn't provide a UART option
+-		  above. This relies on your platform choosing the right UART
+-		  definition internally in order for low-level debugging to
+-		  work.
+-
+ 	config DEBUG_ICEDCC
+ 		bool "Kernel low-level debugging via EmbeddedICE DCC channel"
+ 		help
 -- 
 1.9.3
 
