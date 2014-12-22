@@ -1,279 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989AbaLVEn4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Dec 2014 23:43:56 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:50425 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744AbaLVEnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Dec 2014 23:43:40 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 2/7] perf report: Show progress bar for output resorting
-Date: Mon, 22 Dec 2014 13:44:10 +0900
-Message-Id: <1419223455-4362-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
-References: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
+	id S1754127AbaLVErd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Dec 2014 23:47:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753813AbaLVErb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Dec 2014 23:47:31 -0500
+Message-ID: <5497A1FA.1090808@redhat.com>
+Date: Mon, 22 Dec 2014 10:15:46 +0530
+From: Pratyush Anand <panand@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Fabrice Gasnier <fabrice.gasnier@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <treding@nvidia.com>,
+        Minghuan Lian <Minghuan.Lian@freescale.com>,
+        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Srikanth Thokala <sthokal@xilinx.com>
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        linux-pci@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 2/5] PCI: st: Add Device Tree bindings for sti pcie
+References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org> <1418812486-12394-3-git-send-email-gabriel.fernandez@linaro.org>
+In-Reply-To: <1418812486-12394-3-git-send-email-gabriel.fernandez@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes it takes a time to resort hist entries for output in case of
-a large data file.  Show a progress bar window and inform user.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-annotate.c     |  2 +-
- tools/perf/builtin-diff.c         |  2 +-
- tools/perf/builtin-report.c       | 24 ++++++++++++++++++++++--
- tools/perf/builtin-top.c          |  4 ++--
- tools/perf/tests/hists_cumulate.c |  2 +-
- tools/perf/tests/hists_filter.c   |  2 +-
- tools/perf/tests/hists_output.c   | 10 +++++-----
- tools/perf/util/hist.c            | 10 +++++++++-
- tools/perf/util/hist.h            |  2 +-
- 9 files changed, 43 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index e7417fe97a97..747f86103599 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -232,7 +232,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
- 		if (nr_samples > 0) {
- 			total_nr_samples += nr_samples;
- 			hists__collapse_resort(hists, NULL);
--			hists__output_resort(hists);
-+			hists__output_resort(hists, NULL);
- 
- 			if (symbol_conf.event_group &&
- 			    !perf_evsel__is_group_leader(pos))
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 90fd5d2f61f0..e787a4406d1f 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -605,7 +605,7 @@ static void hists__process(struct hists *hists)
- 		hists__precompute(hists);
- 		hists__compute_resort(hists);
- 	} else {
--		hists__output_resort(hists);
-+		hists__output_resort(hists, NULL);
- 	}
- 
- 	hists__fprintf(hists, true, 0, 0, 0, stdout);
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index e2a0c2bbb3bf..2f91094e228b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -444,6 +444,19 @@ static void report__collapse_hists(struct report *rep)
- 	ui_progress__finish();
- }
- 
-+static void report__output_resort(struct report *rep)
-+{
-+	struct ui_progress prog;
-+	struct perf_evsel *pos;
-+
-+	ui_progress__init(&prog, rep->nr_entries, "Sorting events for output...");
-+
-+	evlist__for_each(rep->session->evlist, pos)
-+		hists__output_resort(evsel__hists(pos), &prog);
-+
-+	ui_progress__finish();
-+}
-+
- static int __cmd_report(struct report *rep)
- {
- 	int ret;
-@@ -495,13 +508,20 @@ static int __cmd_report(struct report *rep)
- 	if (session_done())
- 		return 0;
- 
-+	/*
-+	 * recalculate number of entries after collapsing since it
-+	 * might be changed during the collapse phase.
-+	 */
-+	rep->nr_entries = 0;
-+	evlist__for_each(session->evlist, pos)
-+		rep->nr_entries += evsel__hists(pos)->nr_entries;
-+
- 	if (rep->nr_entries == 0) {
- 		ui__error("The %s file has no samples!\n", file->path);
- 		return 0;
- 	}
- 
--	evlist__for_each(session->evlist, pos)
--		hists__output_resort(evsel__hists(pos));
-+	report__output_resort(rep);
- 
- 	return report__browse_hists(rep);
- }
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index f1267bcf0af1..7d67e23414cc 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -285,7 +285,7 @@ static void perf_top__print_sym_table(struct perf_top *top)
- 	}
- 
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- 
- 	hists__output_recalc_col_len(hists, top->print_entries - printed);
- 	putchar('\n');
-@@ -554,7 +554,7 @@ static void perf_top__sort_new_samples(void *arg)
- 	}
- 
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- }
- 
- static void *display_thread_tui(void *arg)
-diff --git a/tools/perf/tests/hists_cumulate.c b/tools/perf/tests/hists_cumulate.c
-index b6a9e2a02e46..5bb3ad42be57 100644
---- a/tools/perf/tests/hists_cumulate.c
-+++ b/tools/perf/tests/hists_cumulate.c
-@@ -187,7 +187,7 @@ static int do_test(struct hists *hists, struct result *expected, size_t nr_expec
- 	 * function since TEST_ASSERT_VAL() returns in case of failure.
- 	 */
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- 
- 	if (verbose > 2) {
- 		pr_info("use callchain: %d, cumulate callchain: %d\n",
-diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
-index 74f257a81265..59e53db7914c 100644
---- a/tools/perf/tests/hists_filter.c
-+++ b/tools/perf/tests/hists_filter.c
-@@ -138,7 +138,7 @@ int test__hists_filter(void)
- 		struct hists *hists = evsel__hists(evsel);
- 
- 		hists__collapse_resort(hists, NULL);
--		hists__output_resort(hists);
-+		hists__output_resort(hists, NULL);
- 
- 		if (verbose > 2) {
- 			pr_info("Normal histogram\n");
-diff --git a/tools/perf/tests/hists_output.c b/tools/perf/tests/hists_output.c
-index 41328a0ed47a..b52c9faea224 100644
---- a/tools/perf/tests/hists_output.c
-+++ b/tools/perf/tests/hists_output.c
-@@ -152,7 +152,7 @@ static int test1(struct perf_evsel *evsel, struct machine *machine)
- 		goto out;
- 
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- 
- 	if (verbose > 2) {
- 		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
-@@ -252,7 +252,7 @@ static int test2(struct perf_evsel *evsel, struct machine *machine)
- 		goto out;
- 
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- 
- 	if (verbose > 2) {
- 		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
-@@ -306,7 +306,7 @@ static int test3(struct perf_evsel *evsel, struct machine *machine)
- 		goto out;
- 
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- 
- 	if (verbose > 2) {
- 		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
-@@ -384,7 +384,7 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
- 		goto out;
- 
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- 
- 	if (verbose > 2) {
- 		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
-@@ -487,7 +487,7 @@ static int test5(struct perf_evsel *evsel, struct machine *machine)
- 		goto out;
- 
- 	hists__collapse_resort(hists, NULL);
--	hists__output_resort(hists);
-+	hists__output_resort(hists, NULL);
- 
- 	if (verbose > 2) {
- 		pr_info("[fields = %s, sort = %s]\n", field_order, sort_order);
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 30c49498495c..bd4a2cd73236 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -6,6 +6,7 @@
- #include "evlist.h"
- #include "evsel.h"
- #include "annotate.h"
-+#include "ui/progress.h"
- #include <math.h>
- 
- static bool hists__filter_entry_by_dso(struct hists *hists,
-@@ -985,6 +986,7 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
- 		else
- 			p = &(*p)->rb_right;
- 	}
-+	hists->nr_entries++;
- 
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, root);
-@@ -1022,7 +1024,10 @@ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
- 	if (!sort__need_collapse)
- 		return;
- 
-+	hists->nr_entries = 0;
-+
- 	root = hists__get_rotate_entries_in(hists);
-+
- 	next = rb_first(root);
- 
- 	while (next) {
-@@ -1117,7 +1122,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
- 	rb_insert_color(&he->rb_node, entries);
- }
- 
--void hists__output_resort(struct hists *hists)
-+void hists__output_resort(struct hists *hists, struct ui_progress *prog)
- {
- 	struct rb_root *root;
- 	struct rb_node *next;
-@@ -1146,6 +1151,9 @@ void hists__output_resort(struct hists *hists)
- 
- 		if (!n->filtered)
- 			hists__calc_col_len(hists, n);
-+
-+		if (prog)
-+			ui_progress__update(prog, 1);
- 	}
- }
- 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 2f9095934361..9305580cd53e 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -121,7 +121,7 @@ int hist_entry__sort_snprintf(struct hist_entry *he, char *bf, size_t size,
- 			      struct hists *hists);
- void hist_entry__delete(struct hist_entry *he);
- 
--void hists__output_resort(struct hists *hists);
-+void hists__output_resort(struct hists *hists, struct ui_progress *prog);
- void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
- 
- void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
--- 
-2.1.3
+On Wednesday 17 December 2014 04:04 PM, Gabriel FERNANDEZ wrote:
+> sti pcie is built around a Synopsis Designware PCIe IP.
+>
+> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> ---
+>   Documentation/devicetree/bindings/pci/st-pcie.txt | 53 +++++++++++++++++++++++
+>   1 file changed, 53 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/pci/st-pcie.txt
+>
+> diff --git a/Documentation/devicetree/bindings/pci/st-pcie.txt b/Documentation/devicetree/bindings/pci/st-pcie.txt
+> new file mode 100644
+> index 0000000..bd3488f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pci/st-pcie.txt
+> @@ -0,0 +1,53 @@
+> +STMicroelectronics STi PCIe controller
+> +
+> +This PCIe host controller is based on the Synopsis Designware PCIe IP
+> +and thus inherits all the common properties defined in designware-pcie.txt.
+> +
+> +Required properties:
+> + - compatible: "st,stih407-pcie"
+> + - reg: base address and length of the pcie controller, mem-window address
+> +   and length available to the controller.
+> + - interrupts: A list of interrupt outputs of the controller.
+> + - interrupt-names: Must include the following entries:
+> +   "msi": STi interrupt that is asserted when an MSI is received
+> + - st,syscfg : should be a phandle of the syscfg node. Also contains syscfg
+> +   offset for IP configuration.
+> + - resets, reset-names: the power-down and soft-reset lines of PCIe IP.
+> +   Associated names must be "powerdown" and "softreset".
+> + - phys, phy-names: the phandle for the PHY device.
+> +   Associated name must be "pcie_phy"
+> +
+> +Optional properties:
+> + - reset-gpio: a GPIO spec to define which pin is connected to the bus reset.
+> +
+> +Example:
+> +
+> +pcie0: pcie@9b00000 {
+> +	compatible = "st,stih407-pcie", "snps,dw-pcie";
+> +	device_type = "pci";
+> +	reg = <0x09b00000 0x4000>,	/* dbi cntrl registers */
+> +	      <0x2fff0000 0x00010000>,	/* configuration space */
+> +	      <0x40000000 0x80000000>;	/* lmi mem window */
+> +	reg-names = "dbi", "config", "mem-window";
+> +	st,syscfg = <&syscfg_core 0xd8 0xe0>;
+> +	#address-cells = <3>;
+> +	#size-cells = <2>;
+> +	ranges = <0x00000800 0 0x2fff0000 0x2fff0000 0 0x00010000   /* configuration space */
 
+Pass it through reg property.
+See: arch/arm/boot/dts/spear1310.dtsi or any other dw pcie's dtsi.
+
+
+@Jingoo, Mohit: I would suggest following changes so that no upcoming 
+platform can add it through ranges.
+
+diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
+index 4fc03b7f1cee..f21570847d08 100644
+--- a/arch/arm/boot/dts/imx6qdl.dtsi
++++ b/arch/arm/boot/dts/imx6qdl.dtsi
+@@ -143,8 +143,7 @@
+                         #address-cells = <3>;
+                         #size-cells = <2>;
+                         device_type = "pci";
+-                       ranges = <0x00000800 0 0x01f00000 0x01f00000 0 
+0x00080000 /* configuration space */
+-                                 0x81000000 0 0          0x01f80000 0 
+0x00010000 /* downstream I/O */
++                       ranges = 0x81000000 0 0          0x01f80000 0 
+0x00010000 /* downstream I/O */
+                                   0x82000000 0 0x01000000 0x01000000 0 
+0x00f00000>; /* non-prefetchable memory */
+                         num-lanes = <1>;
+                         interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>;
+diff --git a/arch/arm/boot/dts/imx6sx.dtsi b/arch/arm/boot/dts/imx6sx.dtsi
+index 7a24fee1e7ae..72593a77455e 100644
+--- a/arch/arm/boot/dts/imx6sx.dtsi
++++ b/arch/arm/boot/dts/imx6sx.dtsi
+@@ -1197,14 +1197,14 @@
+
+                 pcie: pcie@0x08000000 {
+                         compatible = "fsl,imx6sx-pcie", "snps,dw-pcie";
+-                       reg = <0x08ffc000 0x4000>; /* DBI */
++                       reg = <0x08ffc000 0x4000>, /* DBI */
++                               <0x08f00000 0x80000>;
++                       reg-names = "dbi", "config";
+                         #address-cells = <3>;
+                         #size-cells = <2>;
+                         device_type = "pci";
+-                                 /* configuration space */
+-                       ranges = <0x00000800 0 0x08f00000 0x08f00000 0 
+0x00080000
+                                   /* downstream I/O */
+-                                 0x81000000 0 0          0x08f80000 0 
+0x00010000
++                       ranges =  0x81000000 0 0          0x08f80000 0 
+0x00010000
+                                   /* non-prefetchable memory */
+                                   0x82000000 0 0x08000000 0x08000000 0 
+0x00f00000>;
+                         num-lanes = <1>;
+diff --git a/drivers/pci/host/pcie-designware.c 
+b/drivers/pci/host/pcie-designware.c
+index df781cdf13c1..0b22b42e1ff9 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -409,19 +409,6 @@ int __init dw_pcie_host_init(struct pcie_port *pp)
+                         pp->mem_mod_base = of_read_number(parser.range -
+                                                           parser.np + 
+na, ns);
+                 }
+-               if (restype == 0) {
+-                       of_pci_range_to_resource(&range, np, &pp->cfg);
+-                       pp->cfg0_size = resource_size(&pp->cfg)/2;
+-                       pp->cfg1_size = resource_size(&pp->cfg)/2;
+-                       pp->cfg0_base = pp->cfg.start;
+-                       pp->cfg1_base = pp->cfg.start + pp->cfg0_size;
+-
+-                       /* Find the untranslated configuration space 
+address */
+-                       pp->cfg0_mod_base = of_read_number(parser.range -
+-                                                          parser.np + 
+na, ns);
+-                       pp->cfg1_mod_base = pp->cfg0_mod_base +
+-                                           pp->cfg0_size;
+-               }
+         }
+
+         ret = of_pci_parse_bus_range(np, &pp->busn);
+
+
+Regards
+Pratyush
+
+> +		  0x82000000 0 0x20000000 0x20000000 0 0x0FFF0000>; /* non-prefetchable memory */
+> +	num-lanes = <1>;
+> +	interrupts = <GIC_SPI 164 IRQ_TYPE_LEVEL_HIGH>;
+> +	interrupt-names = "msi";
+> +	#interrupt-cells = <1>;
+> +	interrupt-map-mask = <0 0 0 7>;
+> +	interrupt-map = <0 0 0 1 &intc GIC_SPI 160 IRQ_TYPE_LEVEL_HIGH>, /* INT A */
+> +			<0 0 0 2 &intc GIC_SPI 161 IRQ_TYPE_LEVEL_HIGH>, /* INT B */
+> +			<0 0 0 3 &intc GIC_SPI 162 IRQ_TYPE_LEVEL_HIGH>, /* INT C */
+> +			<0 0 0 4 &intc GIC_SPI 163 IRQ_TYPE_LEVEL_HIGH>; /* INT D */
+> +
+> +	resets = <&powerdown STIH407_PCIE0_POWERDOWN>,
+> +		 <&softreset STIH407_PCIE0_SOFTRESET>;
+> +	reset-names = "powerdown",
+> +		      "softreset";
+> +	phys = <&phy_port0 PHY_TYPE_PCIE>;
+> +	phy-names = "pcie_phy";
+> +};
+>
