@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaLVJHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 04:07:36 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:52768 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbaLVJHe (ORCPT
+	id S1754190AbaLVJHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 04:07:46 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:27858 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172AbaLVJHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 04:07:34 -0500
-Message-ID: <5497DF4C.4000104@arm.com>
-Date: Mon, 22 Dec 2014 09:07:24 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rrichter@cavium.com>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        Rob Herring <robh+dt@kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH v2 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
- board dts and Makefile
-References: <1418825853-10934-1-git-send-email-eddie.huang@mediatek.com> <20141217143305.GC8942@leverpostej> <54919AC9.2090306@arm.com> <3669965.zfJEHTFEBI@wuerfel>
-In-Reply-To: <3669965.zfJEHTFEBI@wuerfel>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Dec 2014 04:07:42 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-27-5497df5cce72
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Changman Lee'" <cm224.lee@samsung.com>
+Cc: "'Jaegeuk Kim'" <jaegeuk@kernel.org>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
+ <20141222020317.GB3335@lcm>
+In-reply-to: <20141222020317.GB3335@lcm>
+Subject: RE: [RFC PATCH] f2fs: add extent cache base on rb-tree
+Date: Mon, 22 Dec 2014 17:06:52 +0800
+Message-id: <000401d01dc6$bce92330$36bb6990$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIdrOZR/WghInHEXExEmQlsJ7ruVwGbtX4em/NRpNA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsVy+t9jQd2Y+9NDDP6s1bC4tq+RyeLJ+lnM
+	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXRtu2g+wF
+	a0Urbmw0bWD8IdDFyMkhIWAicebUQkYIW0ziwr31bF2MXBxCAtMZJSau+g3l/GCUmPD6OStI
+	FZuAisTyjv9MILaIgJbE/p5uFhCbWSBP4vysBrAaIYFwie3LloFN5RTQkPj27hFYvbCAvcTC
+	Oe+YQWwWAVWJy/2XwWxeAUuJ8/1rWCFsQYkfk+9BzdSSWL/zOBOELS+xec1bZohLFSR2nH3N
+	CHGDlcSTyR3MEDXiEhuP3GKZwCg0C8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzDfWKE3OL
+	S/PS9ZLzczcxgmPgmdQOxpUNFocYBTgYlXh4OdKmhwixJpYVV+YeYpTgYFYS4d3aDRTiTUms
+	rEotyo8vKs1JLT7EKM3BoiTOq2TfFiIkkJ5YkpqdmlqQWgSTZeLglGpgtBR49JfxnwBv6db9
+	sxZqd/5m8L0X/yJm1e505vtZRr7nz/wIWCOj9pTj+OGFmS9KQ64bpm6+F1KskGn25tvVA692
+	W6mrzPHKu+7p5WL138izy07oGFPy5/l/n8TzHnBPZjy3NO5pZF1j75L782bcDtH5k6hhofHh
+	57l8s5ZtUsWrBV/dZ5qdqsRSnJFoqMVcVJwIAH9TjEt9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/12/14 20:07, Arnd Bergmann wrote:
-> On Wednesday 17 December 2014 15:01:29 Marc Zyngier wrote:
->>
->> Indeed, as described in the documentation:
->> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0471b/CHDIFAEE.html
->>
->> Also it is worth noticing that given how GICV is placed, it will never
->> work with 64K pages and virtualization. Pretty sad.
+Hi Changman,
+
+> -----Original Message-----
+> From: Changman Lee [mailto:cm224.lee@samsung.com]
+> Sent: Monday, December 22, 2014 10:03 AM
+> To: Chao Yu
+> Cc: Jaegeuk Kim; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
 > 
-> Does this mean no VGIC support on this platform so you have to emulate it
-> in order to run virtual machines with 64K pages, or does it mean that
-> it's impossible to use that way because you can't emulate it?
+> Hi Yu,
+> 
+> Good approach.
+> As you know, however, f2fs breaks extent itself due to COW.
+> Unlike other filesystem like btrfs, minimum extent of f2fs could have 4KB granularity.
+> So we would have lots of extents per inode and it could lead to overhead
+> to manage extents.
+> 
+> Anyway, mount option could be alternative for this patch.
+> 
+> On Fri, Dec 19, 2014 at 06:49:29PM +0800, Chao Yu wrote:
+> > Now f2fs have page-block mapping cache which can cache only one extent mapping
+> > between contiguous logical address and physical address.
+> > Normally, this design will work well because f2fs will expand coverage area of
+> > the mapping extent when we write forward sequentially. But when we write data
+> > randomly in Out-Place-Update mode, the extent will be shorten and hardly be
+> > expanded for most time as following reasons:
+> > 1.The short part of extent will be discarded if we break contiguous mapping in
+> > the middle of extent.
+> > 2.The new mapping will be added into mapping cache only at head or tail of the
+> > extent.
+> > 3.We will drop the extent cache when the extent became very fragmented.
+> > 4.We will not update the extent with mapping which we get from readpages or
+> > readpage.
+> >
+> > To solve above problems, this patch adds extent cache base on rb-tree like other
+> > filesystems (e.g.: ext4/btrfs) in f2fs. By this way, f2fs can support another
+> > more effective cache between dnode page cache and disk. It will supply high hit
+> > ratio in the cache with fewer memory when dnode page cache are reclaimed in
+> > environment of low memory.
+> >
+> > Todo:
+> > *introduce mount option for extent cache.
+> > *add shrink ability for extent cache.
+> >
+> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 
-As Peter said, this is not a configuration we're willing to support:
-- we don't have a API to tell userspace emulation about interrupts
-generated by the generic timers
-- we could move the whole GIC emulation into the kernel (at the moment,
-only the distributor is there), but that would be a complete nightmare
+[snip]
 
-It really looks like a case of "let's drop a bunch of 64bit cores into
-an existing SoC". Shame people can't read integration guidelines...
+> > +static void __try_merge_extent(struct inode *inode, struct extent_info *ei)
+> > +{
+> > +	struct rb_root *root = &F2FS_I(inode)->ei_tree.root;
+> > +	struct extent_info *pei = NULL;
+> > +	struct rb_node *node;
+> > +
+> > +	node = rb_prev(&ei->rb_node);
+> > +	if (node) {
+> > +		pei = rb_entry(node, struct extent_info, rb_node);
+> > +		if (ei->blk == pei->blk + pei->len) {
+> 
+> Shouldn't we check below together, too?
+> if (ei->fofs == pei->fofs + pei->len)
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Yes, you're right.
+The following "if (ei->blk + 1 == pei->blk)" has the same problem.
+I will fix this issue, thanks for your review!
+
+Regards,
+Yu
+
+
