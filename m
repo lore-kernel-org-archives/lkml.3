@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932165AbaLWPPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 10:15:15 -0500
-Received: from mail-oi0-f54.google.com ([209.85.218.54]:55366 "EHLO
-	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756310AbaLWPPL (ORCPT
+	id S1756168AbaLWPXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 10:23:53 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:38606 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaLWPXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 10:15:11 -0500
+	Tue, 23 Dec 2014 10:23:51 -0500
+Message-ID: <5499897D.3000904@oracle.com>
+Date: Tue, 23 Dec 2014 10:25:49 -0500
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Date: Tue, 23 Dec 2014 23:15:10 +0800
-Message-ID: <CAHkaATRdNgcZnAvgKFRmiMEhLOPxFEPpjTu+XNkDk9DxG+4Fpg@mail.gmail.com>
-Subject: [PATCH] arm64: setup return path for el1_undef
-From: Min-Hua Chen <orca.chen@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Larry Bassel <larry.bassel@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Neil Zhang <zhangwm@marvell.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paolo Bonzini <pbonzini@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>
+Subject: Re: [Xen-devel] [RFC 2/2] x86, vdso, pvclock: Simplify and speed
+ up the vdso pvclock reader
+References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net> <549986B8.3030606@oracle.com> <549986C3.4060807@redhat.com>
+In-Reply-To: <549986C3.4060807@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setup return path for el1_undef since el1_undef may
-be handled by handlers.
+On 12/23/2014 10:14 AM, Paolo Bonzini wrote:
+>
+> On 23/12/2014 16:14, Boris Ostrovsky wrote:
+>>> +    do {
+>>> +        version = pvti->version;
+>>> +
+>>> +        /* This is also a read barrier, so we'll read version first. */
+>>> +        rdtsc_barrier();
+>>> +        tsc = __native_read_tsc();
+>>
+>> This will cause VMEXIT on Xen with TSC_MODE_ALWAYS_EMULATE which is
+>> used, for example, after guest migrated (unless HW is capable of scaling
+>> TSC rate).
+> So does the __pvclock_read_cycles this is replacing (via
+> pvclock_get_nsec_offset).
 
-asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
-{
-    siginfo_t info;
-    void __user *pc = (void __user *)instruction_pointer(regs);
+Right, I didn't notice that.
 
-    /* check for AArch32 breakpoint instructions */
-    if (!aarch32_break_handler(regs))
-        return;
-
-    if (call_undef_hook(regs) == 0)
-        return;
-
-    ...
-}
-
-Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
----
- arch/arm64/kernel/entry.S |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index fd4fa37..86ebec5 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -313,7 +313,8 @@ el1_undef:
-      */
-     enable_dbg
-     mov    x0, sp
--    b    do_undefinstr
-+    bl    do_undefinstr
-+    kernel_exit 1
- el1_dbg:
-     /*
-      * Debug exception handling
--- 
-1.7.10.4
+-boris
