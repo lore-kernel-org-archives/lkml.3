@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129AbaLWRde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 12:33:34 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:51801 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193AbaLWRdd (ORCPT
+	id S1754770AbaLWRes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 12:34:48 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45869 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaLWRer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 12:33:33 -0500
-X-IronPort-AV: E=Sophos;i="5.07,633,1413270000"; 
-   d="scan'208";a="53671460"
-Message-ID: <5499A769.2000605@broadcom.com>
-Date: Tue, 23 Dec 2014 18:33:29 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Tue, 23 Dec 2014 12:34:47 -0500
+Date: Tue, 23 Dec 2014 17:34:05 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-spi@vger.kernel.org, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Martin Oldfield <m@mjoldfield.com>, linux-kernel@vger.kernel.org
+Message-ID: <20141223173405.GP17800@sirena.org.uk>
+References: <1417425166-150374-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20141223134917.GI1314@lahna.fi.intel.com>
 MIME-Version: 1.0
-To: Kalle Valo <kvalo@codeaurora.org>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        <linux-wireless@vger.kernel.org>, Brett Rudley <brudley@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Christophe Prigent <christophe.prigent@intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: Do not crash if platform data is not populated
-References: <1419346112-173303-1-git-send-email-mika.westerberg@linux.intel.com>	<54998C31.9090500@broadcom.com>	<20141223154738.GM1314@lahna.fi.intel.com> <54999161.504@broadcom.com> <877fxie1x8.fsf@kamboji.qca.qualcomm.com>
-In-Reply-To: <877fxie1x8.fsf@kamboji.qca.qualcomm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Lqu5hkAdORZH7CMT"
+Content-Disposition: inline
+In-Reply-To: <20141223134917.GI1314@lahna.fi.intel.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 31.51.36.65
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi/pxa2xx: Clear cur_chip pointer before starting next
+ message
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/14 18:00, Kalle Valo wrote:
-> Arend van Spriel<arend@broadcom.com>  writes:
->
->> On 12/23/14 16:47, Mika Westerberg wrote:
->>> On Tue, Dec 23, 2014 at 04:37:21PM +0100, Arend van Spriel wrote:
->>>> On 12/23/14 15:48, Mika Westerberg wrote:
->>>>> The driver looks for pdata->oob_irq_supported to find out if wowl can be
->>>>> supported. However, not all platforms populate pdata in which case we crash
->>>>> the kernel because of NULL pointer dereference.
->>>>
->>>> Thanks, Mika
->>>>
->>>> However, this was already reported by Dan Carpenter and I submitted a patch
->>>> for that a couple of days ago: "[PATCH 02/10] brcmfmac: Fix possible
->>>> dereference of NULL pointer." [1].
->>>>
->>>> Regards,
->>>> Arend
->>>>
->>>> [1]
->>>> http://mid.gmane.org/1419162233-19492-3-git-send-email-arend@broadcom.com
->>>
->>> Oh, good. I didn't notice that one.
->>>
->>> Thanks for fixing it :)
->>>
->>> BTW, that patch seems to miss brcmf_ops_sdio_resume(), perhaps it is
->>> fixed in another patch?
->>
->> Aargh, a nice "BTW" this is as there is no other patch for the resume
->> code. Maybe I should ask Kalle to apply your patch instead of ours. If
->> it did not already got applied.
->
-> I have been waiting for net-next to open so I haven't applied any -next
-> patches yet. So if you want I can take Mika's patch as well. Just send a
-> reply to your patch I should drop.
->
-> And should this patch go to 3.19?
 
-Yeah, the issue was introduced in 3.19 so that makes sense.
+--Lqu5hkAdORZH7CMT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
-Arend
+On Tue, Dec 23, 2014 at 03:49:17PM +0200, Mika Westerberg wrote:
 
+> Mark, any comments on this?
 
+Please don't send contentless pings, they just add more e-mail.  Resend
+if you think something has been lost.
+
+--Lqu5hkAdORZH7CMT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUmaeHAAoJECTWi3JdVIfQftkH/i96nI4/ap+h67Q2bN7vZthH
+cxe59ZLMjYkLMytRrnz+SNyXzqS0A1MFrHNRhXX4IQLEYUp39qcZ+fX5XK6av4b3
+JlqzzwRgT4xZEhg/P/3JvGfs/UCtKrnk2gM7g1bJpM5paNwyVJxuTP+CCGmyjUIe
+CuXW0ZlloWPk3md2JEMtMWvRWjc9yBetQrVkpPvZbyhC9viisCPn+tASoqtkwnSI
+9WrajBORnGI9p2PXJPFq+OkuX0e+wCef04rpL8PQYXOm0WchIOV/8QVvr7JcMTRJ
+FxoHSe4RQ85gIlnyB/8SJobGYJu7E/H08b1RiQDf//qqdh6YTVc3vQUbP0OvJK8=
+=YVbY
+-----END PGP SIGNATURE-----
+
+--Lqu5hkAdORZH7CMT--
