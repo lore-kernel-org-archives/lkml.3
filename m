@@ -1,71 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325AbaLWIOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 03:14:55 -0500
-Received: from mail.eperm.de ([89.247.134.16]:50995 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754896AbaLWIOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 03:14:49 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v5 3/8] crypto: AF_ALG: add AEAD support
-Date: Tue, 23 Dec 2014 09:14:43 +0100
-Message-ID: <101382546.xjTjAHLGAb@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141222112341.GA19532@gondor.apana.org.au>
-References: <56740432.V2v4gLHrzS@tachyon.chronox.de> <3151022.sz5v21Vqeg@tachyon.chronox.de> <20141222112341.GA19532@gondor.apana.org.au>
+	id S1755462AbaLWIQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 03:16:13 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:58872 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759AbaLWIQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 03:16:11 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAH4rwTKeN0P84FJnocoKV4t9rc2Ox_EYc+LEibD+Y83n7C8aVA@mail.gmail.com>
+References: <5489E6D2.2060200@upv.es> <5489FAAD.7000606@upv.es>
+ <20141211221158.GS18807@outflux.net> <548B18AC.9@upv.es> <CALCETrVAaDDvAttVkJ+1ygymE_uEZOCLtGHHN15v_VDf1PVsmA@mail.gmail.com>
+ <5494A0DF.10905@upv.es> <CALCETrWB_T9ui=_JSQRLrtbNDx=sJ22im1XujhxptfZRtedeeg@mail.gmail.com>
+ <CALCETrWtAM5VGokNkw0tHLXRnRsORND7YY6ehYArtvEtt19COA@mail.gmail.com>
+ <20141222183615.4193722q3opf4uj3@webmail.upv.es> <CALCETrWUXbzb_MMEugWNzuY-gebkUbzLW6Z=gmCfau7oBRUdJg@mail.gmail.com>
+ <20141223002347.18271w0cdr8gba4j@webmail.upv.es> <CALCETrU+NPQexUMDCxdram-gSFtGzrQOoyekfCaXwdwebcnxSg@mail.gmail.com>
+ <CAH4rwTKeN0P84FJnocoKV4t9rc2Ox_EYc+LEibD+Y83n7C8aVA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 23 Dec 2014 00:15:49 -0800
+Message-ID: <CALCETrUZdvzasLgMUwHW1N+Gu+dqS+xsZeP=eKuXRDj8v5C+ag@mail.gmail.com>
+Subject: Re: [PATCH] ASLRv3: randomize_va_space=3 preventing offset2lib attack
+To: Reno Robert <renorobert@gmail.com>
+Cc: Hector Marco Gisbert <hecmargi@upv.es>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Anton Blanchard <anton@samba.org>, Jiri Kosina <jkosina@suse.cz>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney.cavm@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arun Chandran <achandran@mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ismael Ripoll <iripoll@disca.upv.es>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?Q?Hanno_B=C3=B6ck?= <hanno@hboeck.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 22. Dezember 2014, 22:23:41 schrieb Herbert Xu:
+On Tue, Dec 23, 2014 at 12:07 AM, Reno Robert <renorobert@gmail.com> wrote:
+> Hi Andy,
+>
+> I would like to mention couple of things
+>
+> 1. With reference to details mentioned in vdso patch, there are ~76 repeated
+> address in 10000 runs. This may not be good enough. Consider the case of
+> local exploitation, one can still easily bruteforce the address and use
+> gadgets in vdso without any information leak. Even in network daemon, if it
+> restarts, bruteforce is still feasible. vdso has enough good code to chain a
+> proper exploit, so its randomization should be considered serious.
+>
+> Also i'm not sure if there could be any modulo bias in the new patch with
+> respect to offset computation.
 
-Hi Herbert,
+There is a bias: the vdso end address is most likely to be at the end
+of a PMD.  That bias is much, much smaller than before, though.
 
-> On Sun, Dec 07, 2014 at 11:22:30PM +0100, Stephan Mueller wrote:
-> > +static inline bool aead_sufficient_data(struct aead_ctx *ctx)
-> > +{
-> > +	unsigned as = crypto_aead_authsize(crypto_aead_reqtfm(&ctx-
->aead_req));
-> > +
-> > +	return (ctx->used >= (ctx->aead_assoclen + ctx->enc ? : as ));
-> 
-> Is this supposed to be
-> 
-> 	return (ctx->used >= (ctx->aead_assoclen + (ctx->enc ?: as)));
+Keep in mind, though, that 76 repeated addresses in 10k runs isn't so
+terrible, as an attacker won't know *which* 76 addresses will repeat.
+But yes, this won't prevent an exploit by an attacker who can try many
+thousands of times.
 
-Thanks, will be fixed in the next iteration
-> 
-> > +static int aead_recvmsg(struct kiocb *unused, struct socket *sock,
-> > +			    struct msghdr *msg, size_t ignored, int flags)
-> > +{
-> 
-> ...
-> 
-> > +	err = -ENOMEM;
-> > +	if (!aead_sufficient_data(ctx))
-> > +		goto unlock;
-> 
-> You should just block if there is insufficient input.
-> 
-I do not concur here due to the following:
+>
+> 2. As Hector already mentioned, if someone could figure out the address of
+> an executable segment(vdso in this case) by knowing an address of data area
+> (stack), this may not be desirable. I agree that some information leak is
+> needed here.
 
-- the check aead_readable() immediately before this check implements the 
-blocking if we do not have sufficient data *and* more data is to be expected
+There are two reasons I don't want to just treat the vdso like every other dso:
 
-- this very check for aead_sufficient_data() comes into play if the caller 
-does not have more data (i.e. ctx->more is zero). In this case, more data is 
-not to be expected and we cannot wait as this would be a deadlock in user 
-space.
+1. Compatibility.  Changing that would not be okay for stable kernels,
+whereas my patch doesn't change the allowed range.
+
+2. I'd like to make sure it's not worse for some reason.  The vdso has
+very well known contents, and if you can somehow jump somewhere
+relative to another dso's code or data, then it could be used for an
+exploit.  I don't know how realistic that is.
+
+--Andy
+
+>
+>
+> On Tue, Dec 23, 2014 at 5:08 AM, Andy Lutomirski <luto@amacapital.net>
+> wrote:
+>>
+>> On Mon, Dec 22, 2014 at 3:23 PM, Hector Marco Gisbert <hecmargi@upv.es>
+>> wrote:
+>> >> Before I even *consider* the code, I want to know two things:
+>> >
+>> >  >
+>> >  > 1. Is there actually a problem in the first place?  The vdso
+>> >  > randomization in all released kernels is blatantly buggy, but it's
+>> >  > fixed in -tip, so it should be fixed by the time that 3.19-rc2 comes
+>> >  > out, and the fix is marked for -stable.  Can you try a fixed kernel:
+>> >  >
+>> >  >
+>> >
+>> > https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=x86/urgent&id=fbe1bf140671619508dfa575d74a185ae53c5dbb
+>> >
+>> >
+>> > Well if it is already fixed, then great!.
+>> >
+>> > But since the vdso is something like a library (cause it contains code,
+>> > and no data), it shall be handled as a library and so it shall be
+>> > located jointly with the other libraries rather than close to the stack.
+>> > Later I'll talk about randomizing libraries among them.
+>> >
+>> > I think that the core idea of the current ASLR implementation is that
+>> > all the areas that share similar content (libraries, stack, heap,
+>> > application) shall be placed together. Following more or less the MILS
+>> > division. This way, a memory leak of an address of the stack is not very
+>> > useful for building a ROP on the libraries.
+>> >
+>> > Another issue is the page table locality. The implementation tries to
+>> > allocate the vdso "close" to the stack so that is fits into the PMD of
+>> > the stack (and so, use less pages for the pagetables). Well, placing the
+>> > vdso in the mmap area would solve the problem at once.
+>> >
+>> > Unfortunately, with your path the VDSO entropy has 18 entropy bits. But
+>> > this is not true. The real entropy is masked with the entropy of the
+>> > stack. In other words, if an attacker guesses where the stack is placed
+>> > they have to do negligible work to guess where the VDSO is located.
+>> > Note that, a memory leak from a data area (which is of little help to
+>> > the attacker) can be used to locate the VDSO (which is of great interest
+>> > because it is executable and contains nice stuff).
+>>
+>> I'm not sure it's negligible.  It's 9 bits if the attacker can figure
+>> out the stack alignment and 18 bits if the attacker can't.  This isn't
+>> great, but it's far from nothing.
+>>
+>> >
+>> > Using my solution, the VDSO will have the same 28 bits of randomness
+>> > than the libraries (but all will be together).
+>> >
+>> > After after 10000 executions I have found 76 repeated addresses (still
+>> > low entropy, but much better than before). But with my patch, there was
+>> > no repetition (much better entropy).
+>> >
+>> >
+>> >  > 2. I'm not sure your patch helpes.  The currently exciting articles
+>> > on
+>> >  > ASLR weaknesses seem to focus on two narrow issues:
+>> >  >
+>> >  > a. With PIE executables, the offset from the executable to the
+>> >  > libraries is constant.  This is unfortunate when your threat model
+>> >  > allows you to learn the executable base address and all your gadgets
+>> >  > are in shared libraries.
+>> >
+>> > Regardes the offset2lib... The core idea is that we shall consider the
+>> > application code and libraries as two slightly different things (or two
+>> > different security regions). Since applications are in general more
+>> > prone to have bugs than libraries, it seems that this is the way to do
+>> > it from the security point of view.  Obviously, stack and libraries are
+>> > clearly apart (you can even assign different access permissions).
+>> > Application code and libraries are not that different, but it would be
+>> > better of they are not together.... and sincerely, I think that the cost
+>> > of allocate them apart is so small that it worth the code.
+>> >
+>> > If the extra cost of (One or two pages) per process required to place
+>> > the application code to another area is too high, then may be it can be
+>> > implemented as another level of ASLR randomize_va_space=3 (if any).
+>> >
+>> >
+>> >  > b. The VDSO base address is pathetically low on min entropy.  This
+>> >  > will be dramatically improved shortly.
+>> >  >
+>> >  > The pax tests seem to completely ignore the joint distribution of the
+>> >  > relevant addresses.  My crystal ball predicts that, if I apply your
+>> >  > patch, someone will write an article observing that the libc-to-vdso
+>> >  > offset is constant or, OMG!, the PIE-executable-to-vdso offset is
+>> >  > constant.
+>> >  >
+>> >  > So... is there a problem in the first place, and is the situation
+>> >  > really improved with your patch?
+>> >  >
+>> >  > --Andy
+>> >
+>> > Absolutely agree.
+>> >
+>> > The offset2x shall be considered now. And rather than moving objects
+>> > like the vdso, vvar stack, heap... etc.. etc.. we shall consider
+>> > seriously the cost of a full (all maps) to be real random. That is
+>> > inter-mmap ASLR.
+>> >
+>> > Current implementation is not that bad, except that the application was
+>> > considered in the same "category" than libraries. But I guess that it
+>> > deserves a region for its own. Also, I think that executable code shall
+>> > be apart from data.. which supports the idea of inter-mmap
+>> > randomization.
+>> >
+>> > Sorry if I'm mixing VDSO, and offset2lib issues, but they share a
+>> > similar core problem.
+>> >
+>>
+>> If I see a real argument that randomizing the vdso like a library is
+>> better than randomizing it separately but weakly, I'll gladly consider
+>> it.  But the references I've seen (and I haven't looked all that hard,
+>> and I'm not an memory exploit writer) are unconvincing.
+>>
+>> I'd really rather see a strong inter-mmap randomization scheme adopted.
+>>
+>> --Andy
+>>
+>> >
+>> > --Hector Marco.
+>> >
+>> >
+>> >
+>>
+>>
+>>
+>> --
+>> Andy Lutomirski
+>> AMA Capital Management, LLC
+>
+>
+>
+>
+> --
+> Regards,
+> Reno Robert
+> http://v0ids3curity.blogspot.in/
+>
+>
+
+
 
 -- 
-Ciao
-Stephan
+Andy Lutomirski
+AMA Capital Management, LLC
