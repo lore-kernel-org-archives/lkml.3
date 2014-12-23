@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbaLWJOr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:14:47 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:62217 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628AbaLWJOp (ORCPT
+	id S1754484AbaLWJTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:19:51 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:48752 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaLWJTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:14:45 -0500
-Date: Tue, 23 Dec 2014 10:14:40 +0100
+	Tue, 23 Dec 2014 04:19:49 -0500
+Date: Tue, 23 Dec 2014 10:19:44 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
-        dave.hansen@linux.intel.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] x86 mpx: fix potential performance issue on unmaps
-Message-ID: <20141223091440.GA9112@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Dave Hansen <dave@sr71.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Subject: Re: [PATCH 1/2] x86, mpx: explicitly disable 32-bit MPX support on
+ 64-bit kernels
+Message-ID: <20141223091944.GB9112@gmail.com>
 References: <20141222200803.D316DA2A@viggo.jf.intel.com>
- <20141222200805.13639956@viggo.jf.intel.com>
+ <20141222200804.18A7A803@viggo.jf.intel.com>
+ <CALCETrWAgPjLTA-iSabFmqVKiOKGPGgDgSWdjz3wsncs1X+WOg@mail.gmail.com>
+ <54987D4F.3000908@sr71.net>
+ <CALCETrXF11MeP8vc4eKqJz+2OOYQzmrK_erVEz=pZS3c=YWibw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141222200805.13639956@viggo.jf.intel.com>
+In-Reply-To: <CALCETrXF11MeP8vc4eKqJz+2OOYQzmrK_erVEz=pZS3c=YWibw@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Dave Hansen <dave@sr71.net> wrote:
+* Andy Lutomirski <luto@amacapital.net> wrote:
 
+> On Mon, Dec 22, 2014 at 12:21 PM, Dave Hansen <dave@sr71.net> wrote:
+> > On 12/22/2014 12:17 PM, Andy Lutomirski wrote:
+> >>> >         /*
+> >>> > +        * 32-bit binaries on 64-bit kernels are currently
+> >>> > +        * unsupported.
+> >>> > +        */
+> >>> > +       if (IS_ENABLED(CONFIG_X86_64) && test_thread_flag(TIF_IA32))
+> >>> > +               return MPX_INVALID_BOUNDS_DIR;
+> >> Should this check mm->ia32_compat instead?
+> >
+> > set_personality_64bit/ia32() seem to make that and TIF_IA32 awfully
+> > equivalent.  Is there a specific reason for wanting it done this way?
 > 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> The 3.19 release window saw some TLB modifications merged which
-> caused a performance regression.  They were fixed in commit
-> 045bbb9fa.
-> 
-> Once that fix was applied, I also noticed that there was a small
-> but intermittent regression still present.  It was not present
-> consistently enough to bisect reliably, but I'm fairly confident
-> that it came from (my own) MPX patches.  The source was reading
-> a relatively unused field in the mm_struct via arch_unmap.
-> 
-> I also noted that this code was in the main instruction flow of
-> do_munmap() and probably had more icache impact than we want.
-> 
-> This patch does two things:
-> 1. Adds a static (via Kconfig) and dynamic (via cpuid) check
->    for MPX with cpu_feature_enabled().  This keeps us from
->    reading that cacheline in the mm and trades it for a check
->    of the global CPUID variables at least on CPUs without MPX.
-> 2. Adds an unlikely() to ensure that the MPX call ends up out
->    of the main instruction flow in do_munmap().  I've added
->    a detailed comment about why this was done and why we want
->    it even on systems where MPX is present.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> ---
-> 
->  b/arch/x86/include/asm/mmu_context.h |   20 +++++++++++++++++++-
->  1 file changed, 19 insertions(+), 1 deletion(-)
-> 
-> diff -puN arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap arch/x86/include/asm/mmu_context.h
-> --- a/arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap	2014-12-22 12:06:18.677928330 -0800
-> +++ b/arch/x86/include/asm/mmu_context.h	2014-12-22 12:06:18.680928465 -0800
-> @@ -130,7 +130,25 @@ static inline void arch_bprm_mm_init(str
->  static inline void arch_unmap(struct mm_struct *mm, struct vm_area_struct *vma,
->  			      unsigned long start, unsigned long end)
->  {
-> -	mpx_notify_unmap(mm, vma, start, end);
-> +	/*
-> +	 * mpx_notify_unmap() goes and reads a rarely-hot
-> +	 * cacheline in the mm_struct.  That can be expensive
-> +	 * enough to be seen in profiles.
-> +	 *
-> +	 * The mpx_notify_unmap() call and its contents have been
-> +	 * observed to affect munmap() performance on hardware
-> +	 * where MPX is not present.
-> +	 *
-> +	 * The unlikely() optimizes for the fast case: no MPX
-> +	 * in the CPU, or no MPX use in the process.  Even if
-> +	 * we get this wrong (in the unlikely event that MPX
-> +	 * is widely enabled on some system) the overhead of
-> +	 * MPX itself (reading bounds tables) is expected to
-> +	 * overwhelm the overhead of getting this unlikely()
-> +	 * consistently wrong.
-> +	 */
-> +	if (unlikely(cpu_feature_enabled(X86_FEATURE_MPX)))
-> +		mpx_notify_unmap(mm, vma, start, end);
->  }
+> My general desire to remove various bogus TIF_IA32 references. 
+> [...]
 
-Hm, so this patch still does not help people who have an MPX 
-capable CPU but don't have (or don't have many) MPX using apps. 
-What about them?
+So we generally want to use mm->context.ia32_compat instead of 
+TIF_IA32, because in the end TIF_IA32 will go away altogether?
+
+Or do you just want to audit all TIF_IA32 places (because most of 
+them are wrong), and using mm->context.ia32_compat where it's 
+justified and eliminating TIF_IA32 use is a nice way to document 
+that ongoing audit without breaking stuff and such?
+
+> [...]  But this is only temporary, so I don't really care.
+
+New code that touches this area should better use new principles, 
+so I have no problem with requiring this, as long as it's well 
+explained and logical and desirable to everyone.
 
 Thanks,
 
