@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629AbaLWEcL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 23:32:11 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:54825 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949AbaLWEcK (ORCPT
+	id S1754657AbaLWEfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 23:35:06 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:46596 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734AbaLWEfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 23:32:10 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-87-5498f047844c
-Date: Tue, 23 Dec 2014 13:30:56 +0900
-From: Changman Lee <cm224.lee@samsung.com>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Jaegeuk Kim'" <jaegeuk@kernel.org>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-Message-id: <20141223043056.GC3335@lcm>
-References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
- <20141222020317.GB3335@lcm> <000001d01db6$7d718770$78549650$@samsung.com>
+	Mon, 22 Dec 2014 23:35:03 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-ca-5498f0f42aac
+Message-id: <5498F0F4.7020700@samsung.com>
+Date: Tue, 23 Dec 2014 13:35:00 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-In-reply-to: <000001d01db6$7d718770$78549650$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42I5/e+Zsa77hxkhBveWmVr8b/rIZvFk/Sxm
-	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY/XWOWwF
-	D6UqJu/3bmD8KNLFyMkhIWAisfvHJBYIW0ziwr31bF2MXBxCAssYJbb9m8UMU3T091JmiMQi
-	RomdDWsZIZyfjBLHLlxjBaliEVCVePjxKRuIzSagJdF+ei3YWBEBJYlf8xeB1TAL5Emcn9UA
-	ZHNwCAvYS7x85Qli8gqoS5x4KAoxspVR4t/CCewg5bwCghI/Jt9jgWjVkli/8zgThC0t8ejv
-	DLAaTgEribPHL4DViAqoSEw5uY0N4uh17BKLb5dBnCYg8W3yIRaQXRICshKbDkD9JSlxcMUN
-	lgmMYrOQbJuFZNssJNsWMDKvYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiJpIk7GO8fsD7E
-	KMDBqMTDu+DMjBAh1sSy4srcQ4ymQFdMZJYSTc4HxmteSbyhsZmRhamJqbGRuaWZkjivjvTP
-	YCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MHC8PJrVct0tO3zuzXbRRf0niswnBD2NCnqmx
-	fNLgs/7zsLKbwflq2raHHq8TFteuXLrofucVb/7T0wrzOdO3vU1xtjl5zu9YfWPiBMeanX0y
-	YRf8ChXLs+ZvEXtqHXvw+LUsGeH23byd8uJq3y6WXkwTf30+WU1UOPfdvtLML52uW/dvCClW
-	YinOSDTUYi4qTgQABB58fp8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jAV33DzNCDH4sNLT43/SRzeLJ+lnM
-	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
-	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8bqrXPYCh5KVUze793A+FGki5GTQ0LAROLo76XMELaYxIV769m6
-	GLk4hAQWMUrsbFjLCOH8ZJQ4duEaK0gVi4CqxMOPT9lAbDYBLYn202tZQGwRASWJX/MXgdUw
-	C+RJnJ/VAGRzcAgL2Eu8fOUJYvIKqEuceCgKMbKVUeLfwgnsIOW8AoISPybfY4Fo1ZJYv/M4
-	E4QtLfHo7wywGk4BK4mzxy+A1YgKqEhMObmNbQKjwCwk7bOQtM9C0r6AkXkVo2hqQXJBcVJ6
-	rpFecWJucWleul5yfu4mRnCkPpPewbiqweIQowAHoxIP74IzM0KEWBPLiitzDzFKcDArifCq
-	twKFeFMSK6tSi/Lji0pzUosPMZoCA2Mis5Rocj4wieSVxBsam5gZWRqZWRiZmJsrifMq2beF
-	CAmkJ5akZqemFqQWwfQxcXBKNTAu7L144rDti/tz7sdNYxXJehy+Ik32bf6OCbu53n0Kft4d
-	s/K35g/mlcJrxcJneYcZLFUrj7dwqj/ySTkl98GktgknzG7Us7x7/fRf8QlX5Rd/OYwF15jf
-	3j09qexe3WfFrL3iuvNW2WzKXfBj84Lk39slfTZJZunM+OgetDXYaK/5i8B55Zr2SizFGYmG
-	WsxFxYkAKuPd3+oCAAA=
+To: Varka Bhadram <varkabhadram@gmail.com>
+Cc: myungjoo.ham@samsung.com, kgene.kim@samsung.com,
+        Kyungmin Park <kyungmin.park@samsung.com>, rafael.j.wysocki@intel.com,
+        Mark Rutland <mark.rutland@arm.com>, a.kesavan@samsung.com,
+        tomasz.figa@gmail.com, k.kozlowski@samsung.com, inki.dae@samsung.com,
+        linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCHv5 3/9] devfreq: event: Add exynos-ppmu devfreq-event driver
+References: <1419304697-14789-1-git-send-email-cw00.choi@samsung.com>
+ <1419304697-14789-4-git-send-email-cw00.choi@samsung.com>
+ <CAEUmHyYnb8_HNnuz8BLhMOh01+gpXfTv63P-ubYE1DK9uptonA@mail.gmail.com>
+In-reply-to: <CAEUmHyYnb8_HNnuz8BLhMOh01+gpXfTv63P-ubYE1DK9uptonA@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsWyRsSkQPfLhxkhBo0H9C0er1nMZDH/yDlW
+	i0n3J7BYvH5haNG74CqbxdmmN+wWmx5fY7W4vGsOm8Xn3iOMFjPO72OyWHr9IpPF7cYVbBaP
+	V7xlt1i16w+jxcmOOYwO/B5r5q1h9Ng56y67x+I9L5k8Ni+p9+jbsorR4/MmuQC2KC6blNSc
+	zLLUIn27BK6MZed+MhZ816hY+OY3SwPjGukuRk4OCQETiZnbW1ggbDGJC/fWs3UxcnEICSxl
+	lJj+cz0LTFHLmXPMEIlFjBJ/l61lhHBeM0rMO3OQGaSKV0BL4tvb02wgNouAqsTK+7vYQWw2
+	oPj+FzfA4qICYRIrp19hgagXlPgx+R6QzcEhAlRz5qMIyExmgUksEtdmN4DVCwv4Syw/f5cV
+	YtkJRommUw2sIAlOgWCJLR+egA1iFlCXmDRvETOELS+xec1bsFMlBHo5JNafmMQIcZGAxLfJ
+	h8C2SQjISmw6wAzxmqTEwRU3WCYwis1CctMsJGNnIRm7gJF5FaNoakFyQXFSepGpXnFibnFp
+	Xrpecn7uJkZgRJ/+92ziDsb7B6wPMQpwMCrx8C44MyNEiDWxrLgy9xCjKdAVE5mlRJPzgWkj
+	ryTe0NjMyMLUxNTYyNzSTEmcV0f6Z7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxmK3PpUe
+	Fm2b9SWBt7aF/E3WXMfsqbbJcqOJsqr3o9sPG7vLT0sp//T/qhV0vi/ay/26WeKrrAg3jXVH
+	F5m3HXV1VZ3jsqb358Hj0zX1Nf8HetuEFxwQ4C86+t9gy7U1FbOLphjzs7Atu/pG9VvDVxb3
+	w78r16woDTcsN7t17nlobPQG3xWKSizFGYmGWsxFxYkA5WsHFOMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jAd0vH2aEGDR2q1s8XrOYyWL+kXOs
+	FpPuT2CxeP3C0KJ3wVU2i7NNb9gtNj2+xmpxedccNovPvUcYLWac38dksfT6RSaL240r2Cwe
+	r3jLbrFq1x9Gi5Mdcxgd+D3WzFvD6LFz1l12j8V7XjJ5bF5S79G3ZRWjx+dNcgFsUQ2MNhmp
+	iSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJysplCXmlAKF
+	AhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM5ad+8lY8F2jYuGb3ywNjGukuxg5OSQE
+	TCRazpxjhrDFJC7cW8/WxcjFISSwiFHi77K1jBDOa0aJeWcOglXxCmhJfHt7mg3EZhFQlVh5
+	fxc7iM0GFN//4gZYXFQgTGLl9CssEPWCEj8m3wOyOThEgGrOfBQBmcksMIlF4trsBrB6YQF/
+	ieXn77JCLDvBKNF0qoEVJMEpECyx5cMTsEHMAuoSk+YtYoaw5SU2r3nLPIFRYBaSHbOQlM1C
+	UraAkXkVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnC6eCa1g3Flg8UhRgEORiUe3gVnZoQI
+	sSaWFVfmHmKU4GBWEuFVbwUK8aYkVlalFuXHF5XmpBYfYjQFBsFEZinR5HxgKssriTc0NjEz
+	sjQyN7QwMjZXEudVsm8LERJITyxJzU5NLUgtgulj4uCUAiYK9fUJT2W4ONn/za9uvXI67GLp
+	n2seTatr1y9wfaVX4PynrM3zUmH9idCbX+punvERzbqlJGS598rRmz/PtgV9dlz7ju3PJ9lF
+	1wXz67rlzzbtar3w/P/f5oCpjgkv9h7JYdJ5p9K3hvfjp7DofrkkxT7Lds34qEa+nLoPptM4
+	D/+8N2/L86lKLMUZiYZazEXFiQDvUbzoLQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,88 +66,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12/23/2014 12:40 PM, Varka Bhadram wrote:
+> On Tue, Dec 23, 2014 at 8:48 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> This patch adds exynos-ppmu devfreq-event driver to get performance data
+>> of each IP for Samsung Exynos SoC. These event from Exynos PPMU provide
+>> useful information about the behavior of the SoC that you can use when
+>> analyzing system performance, and made visible and can be counted using
+>> logic in each IP.
+>>
+>> This patch is based on existing drivers/devfreq/exynos/exynos-ppmu.c
+>>
+>> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> 
+> (...)
+>> +static int exynos_ppmu_parse_dt(struct exynos_ppmu_data *data)
+>> +{
+>> +       struct device *dev = data->dev;
+>> +       struct device_node *np = dev->of_node;
+>> +       int ret = 0;
+>> +
+>> +       if (!np) {
+>> +               dev_err(dev, "failed to find devicetree node\n");
+>> +               return -EINVAL;
+>> +       }
+>> +
+>> +       /* Maps the memory mapped IO to control PPMU register */
+>> +       data->ppmu.base = of_iomap(np, 0);
+>> +       if (IS_ERR_OR_NULL(data->ppmu.base)) {
+>> +               dev_err(dev, "failed to map memory region\n");
+>> +               return -EINVAL;
+> -ENOMEM or -ENXIO is the proper error return value..?
 
-On Mon, Dec 22, 2014 at 03:10:30PM +0800, Chao Yu wrote:
-> Hi Changman,
-> 
-> > -----Original Message-----
-> > From: Changman Lee [mailto:cm224.lee@samsung.com]
-> > Sent: Monday, December 22, 2014 10:03 AM
-> > To: Chao Yu
-> > Cc: Jaegeuk Kim; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > 
-> > Hi Yu,
-> > 
-> > Good approach.
-> 
-> Thank you. :)
-> 
-> > As you know, however, f2fs breaks extent itself due to COW.
-> 
-> Yes, and sometimes f2fs use IPU when override writing, in this condition,
-> by using this approach we can cache more contiguous mapping extent for better
-> performance.
-> 
-> > Unlike other filesystem like btrfs, minimum extent of f2fs could have 4KB granularity.
-> > So we would have lots of extents per inode and it could lead to overhead
-> > to manage extents.
-> 
-> Agree, the more number of extents are growing in one inode, the more memory
-> pressure and longer latency operating in rb-tree we are facing.
-> IMO, to solve this problem, we'd better to add limitation or shrink ability into
-> extent cache:
-> 1.limit extent number per inode with the value set from sysfs and discard extent
-> from inode's extent lru list if we touch the limitation; (e.g. in FAT, max number
-> of mapping extent per inode is fixed: 8)
-> 2.add all extents of inodes into a global lru list, we will try to shrink this list
-> if we're facing memory pressure.
-> 
-> How do you think? or any better ideas are welcome. :)
-> 
+OK. I'll return -ENOMEM value.
 
-I think both of them are considerable options.
-How about adding extent to inode selected by user using ioctl or xattr?
-In the case of read most files having large size, user could get a benefit
-surely although they are seperated some pieces.
+> 
+>> +       }
+>> +
+>> +       data->clk_ppmu = devm_clk_get(dev, "ppmu");
+>> +       if (IS_ERR(data->clk_ppmu)) {
+>> +               data->clk_ppmu = NULL;
+>> +               dev_warn(dev, "failed to get PPMU clock\n");
+>> +       }
+> If PPMU clk get fails..?  return PTR_ERR(data->clk_ppmu)
 
-Thanks,
+If Exynos SoC don't register the clock to clock tree, the clock remains on state.
+So, I print just warning message.
 
-> > 
-> > Anyway, mount option could be alternative for this patch.
-> 
-> Yes, will do.
-> 
-> Thanks,
-> Yu
-> 
-> > 
-> > On Fri, Dec 19, 2014 at 06:49:29PM +0800, Chao Yu wrote:
-> > > Now f2fs have page-block mapping cache which can cache only one extent mapping
-> > > between contiguous logical address and physical address.
-> > > Normally, this design will work well because f2fs will expand coverage area of
-> > > the mapping extent when we write forward sequentially. But when we write data
-> > > randomly in Out-Place-Update mode, the extent will be shorten and hardly be
-> > > expanded for most time as following reasons:
-> > > 1.The short part of extent will be discarded if we break contiguous mapping in
-> > > the middle of extent.
-> > > 2.The new mapping will be added into mapping cache only at head or tail of the
-> > > extent.
-> > > 3.We will drop the extent cache when the extent became very fragmented.
-> > > 4.We will not update the extent with mapping which we get from readpages or
-> > > readpage.
-> > >
-> > > To solve above problems, this patch adds extent cache base on rb-tree like other
-> > > filesystems (e.g.: ext4/btrfs) in f2fs. By this way, f2fs can support another
-> > > more effective cache between dnode page cache and disk. It will supply high hit
-> > > ratio in the cache with fewer memory when dnode page cache are reclaimed in
-> > > environment of low memory.
-> > >
-> > > Todo:
-> > > *introduce mount option for extent cache.
-> > > *add shrink ability for extent cache.
-> > >
-> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > ---
-> 
+But, It is not proper. I'll fix it.
+
+>> +
+>> +       ret = of_get_devfreq_events(np, data);
+>> +       if (ret < 0) {
+>> +               dev_err(dev, "failed to parse exynos ppmu dt node\n");
+>> +               goto err;
+>> +       }
+>> +
+>> +       return 0;
+>> +
+>> +err:
+>> +       iounmap(data->ppmu.base);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +static int exynos_ppmu_probe(struct platform_device *pdev)
+>> +{
+>> +       struct exynos_ppmu_data *data;
+>> +       struct devfreq_event_dev **edev;
+>> +       struct devfreq_event_desc *desc;
+>> +       int i, ret = 0, size;
+>> +
+>> +       data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+>> +       if (!data)
+>> +               return -ENOMEM;
+>> +
+>> +       mutex_init(&data->lock);
+>> +       data->dev = &pdev->dev;
+>> +
+>> +       /* Parse dt data to get resource */
+>> +       ret = exynos_ppmu_parse_dt(data);
+>> +       if (ret < 0) {
+>> +               dev_err(&pdev->dev,
+>> +                       "failed to parse devicetree for resource\n");
+>> +               return ret;
+>> +       }
+>> +       desc = data->desc;
+>> +
+>> +       size = sizeof(struct devfreq_event_dev *) * data->num_events;
+>> +       data->edev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+>> +       if (!data->edev) {
+>> +               dev_err(&pdev->dev,
+>> +                       "failed to allocate memory devfreq-event devices\n");
+>> +               return -ENOMEM;
+>> +       }
+>> +       edev = data->edev;
+>> +       platform_set_drvdata(pdev, data);
+>> +
+>> +       for (i = 0; i < data->num_events; i++) {
+>> +               edev[i] = devfreq_event_add_edev(&pdev->dev, &desc[i]);
+>> +               if (IS_ERR(edev)) {
+>> +                       ret = PTR_ERR(edev);
+>> +                       dev_err(&pdev->dev,
+>> +                               "failed to add devfreq-event device\n");
+>> +                       goto err;
+>> +               }
+>> +       }
+>> +
+>> +       clk_prepare_enable(data->clk_ppmu);
+>> +
+>> +       return 0;
+>> +err:
+>> +       iounmap(data->ppmu.base);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +static int exynos_ppmu_remove(struct platform_device *pdev)
+>> +{
+>> +       struct exynos_ppmu_data *data = platform_get_drvdata(pdev);
+>> +       int i, ret = 0;
+>> +
+>> +       for (i = 0; i < data->num_events; i++) {
+>> +               ret = devfreq_event_remove_edev(data->edev[i]);
+>> +               if (ret < 0) {
+>> +                       dev_err(&pdev->dev,
+>> +                               "failed to remove devfreq-event device\n");
+>> +                       goto err;
+>> +               }
+>> +       }
+>> +
+>> +err:
+>> +       clk_disable_unprepare(data->clk_ppmu);
+>> +       iounmap(data->ppmu.base);
+>> +
+>> +       return ret;
+>> +}
+>> +
+>> +static struct of_device_id exynos_ppmu_id_match[] = {
+>> +       { .compatible = "samsung,exynos-ppmu", },
+>> +       { /* sentinel */ },
+>> +};
+>> +
+>> +static struct platform_driver exynos_ppmu_driver = {
+>> +       .probe  = exynos_ppmu_probe,
+>> +       .remove = exynos_ppmu_remove,
+>> +       .driver = {
+>> +               .name   = "exynos-ppmu",
+>> +               .owner  = THIS_MODULE,
+> remove owner field. It will be populate by driver core.
+
+OK. I'll remove it.
+
+Thanks for your review.
+
+Best Regards,
+Chanwoo Choi
