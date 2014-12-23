@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303AbaLWPiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 10:38:08 -0500
-Received: from foo.gazonk.org ([212.247.24.42]:39903 "HELO gazonk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756284AbaLWPiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 10:38:05 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Dec 2014 10:38:04 EST
-Date: Tue, 23 Dec 2014 16:31:21 +0100 (CET)
-From: =?UTF-8?Q?Jonas_Bofj=C3=A4ll?= <j-lnxk@gazonk.org>
-X-X-Sender: jonas@gazonk.org
-To: linux-kernel@vger.kernel.org
-Subject: Stuck in iowait regression in 3.18.1
-Message-ID: <alpine.LNX.2.11.1412231609190.19634@gazonk.org>
-User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1756343AbaLWPii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 10:38:38 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:49397 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327AbaLWPig (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 10:38:36 -0500
+From: Kroderia <kroderia@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Kroderia <kroderia@gmail.com>
+Subject: [PATCH 1/1] staging: skein: Delete a useless white space line
+Date: Tue, 23 Dec 2014 15:37:53 +0000
+Message-Id: <1419349073-6308-1-git-send-email-kroderia@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After an uptime of a couple of days, I see some very strange i/o problems 
-on Linux 3.18.1. The problem does not exist on 3.17.7 with identical 
-configuration.
+Signed-off-by: Ben Chan <kroderia@gmail.com>
+---
+ drivers/staging/skein/skein_generic.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-I originally had these problems running under VMware, using pvscsi, but I 
-have since started seeing the same problems under KVM.
+diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
+index 85bd7d0..899078f 100644
+--- a/drivers/staging/skein/skein_generic.c
++++ b/drivers/staging/skein/skein_generic.c
+@@ -191,7 +191,6 @@ static int __init skein_generic_init(void)
+ 
+ 	return 0;
+ 
+-		
+ unreg512:
+ 	crypto_unregister_shash(&alg512);
+ unreg256:
+-- 
+1.7.10.4
 
-The process most likely to trip these problems are xz. The process gets 
-stuck in iowait (D in ps) after having read or written a few hundred kB, 
-almost every time it is run. The same thing has happened to a few other 
-processes too (including sort and uniq), but the overwhelming majority 
-work just fine.
-
-The process _does_ get cputime eventually. A kill signal is honored in 
-the time span of about an hour. Mostly. (Also, when working on reproducing 
-the problem I once lost visibility of other terminal's processes under 
-/proc. Could be related?)
-
-I would like to bisect the 3.18 changes to see which one introduced this, 
-but reproducing this takes several days. Any input or ideas how to hunt 
-this down further?
