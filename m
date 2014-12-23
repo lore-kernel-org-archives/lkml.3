@@ -1,210 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447AbaLWCsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 21:48:50 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:38880 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695AbaLWCst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 21:48:49 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 23 Dec 2014 11:50:29 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Seth Jennings <sjennings@variantweb.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Nitin Gupta <ngupta@vflare.org>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com
-Subject: Re: [RFC 0/6] zsmalloc support compaction
-Message-ID: <20141223025029.GB30174@bbox>
-References: <1417488587-28609-1-git-send-email-minchan@kernel.org>
- <20141217231930.GA13582@cerebellum.variantweb.net>
- <20141219004648.GB1538@bbox>
+	id S1754441AbaLWCyA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 21:54:00 -0500
+Received: from r00tworld.com ([212.85.137.150]:60525 "EHLO r00tworld.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753695AbaLWCx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 21:53:59 -0500
+X-Greylist: delayed 2736 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Dec 2014 21:53:58 EST
+From: "PaX Team" <pageexec@freemail.hu>
+To: linux-kernel@vger.kernel.org, rogelio.serrano@gmail.com
+Date: Tue, 23 Dec 2014 03:08:10 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141219004648.GB1538@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: atomic_inc and spin_lock_irq
+Reply-to: pageexec@freemail.hu
+Message-ID: <5498CE8A.26946.7AAE3D1@pageexec.freemail.hu>
+In-reply-to: <CAB_-8bLk-HVWB6Mmt=rjDguou1kbGQ9c7o5nQxV3zAg+Txf7GQ@mail.gmail.com>
+References: <CAB_-8bLk-HVWB6Mmt=rjDguou1kbGQ9c7o5nQxV3zAg+Txf7GQ@mail.gmail.com>
+X-mailer: Pegasus Mail for Windows (4.70)
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7BIT
+Content-description: Mail message body
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (r00tworld.com [212.85.137.150]); Tue, 23 Dec 2014 03:08:13 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 09:46:48AM +0900, Minchan Kim wrote:
-> Hey Seth,
-> 
-> On Wed, Dec 17, 2014 at 05:19:30PM -0600, Seth Jennings wrote:
-> > On Tue, Dec 02, 2014 at 11:49:41AM +0900, Minchan Kim wrote:
-> > > Recently, there was issue about zsmalloc fragmentation and
-> > > I got a report from Juno that new fork failed although there
-> > > are plenty of free pages in the system.
-> > > His investigation revealed zram is one of the culprit to make
-> > > heavy fragmentation so there was no more contiguous 16K page
-> > > for pgd to fork in the ARM.
-> > > 
-> > > This patchset implement *basic* zsmalloc compaction support
-> > > and zram utilizes it so admin can do
-> > > 	"echo 1 > /sys/block/zram0/compact"
-> > > 
-> > > Actually, ideal is that mm migrate code is aware of zram pages and
-> > > migrate them out automatically without admin's manual opeartion
-> > > when system is out of contiguous page. Howver, we need more thinking
-> > > before adding more hooks to migrate.c. Even though we implement it,
-> > > we need manual trigger mode, too so I hope we could enhance
-> > > zram migration stuff based on this primitive functions in future.
-> > > 
-> > > I just tested it on only x86 so need more testing on other arches.
-> > > Additionally, I should have a number for zsmalloc regression
-> > > caused by indirect layering. Unfortunately, I don't have any
-> > > ARM test machine on my desk. I will get it soon and test it.
-> > > Anyway, before further work, I'd like to hear opinion.
-> > > 
-> > > Pathset is based on v3.18-rc6-mmotm-2014-11-26-15-45.
-> > 
-> > Hey Minchan, sorry it has taken a while for me to look at this.
-> 
-> It's better than forever silence. Thanks, Seth.
-> 
-> > 
-> > I have prototyped this for zbud to and I see you face some of the same
-> > issues, some of them much worse for zsmalloc like large number of
-> > objects to move to reclaim a page (with zbud, the max is 1).
-> > 
-> > I see you are using zsmalloc itself for allocating the handles.  Why not
-> > kmalloc()?  Then you wouldn't need to track the handle_class stuff and
-> > adjust the class sizes (just in the interest of changing only what is
-> > need to achieve the functionality).
-> 
-> 1. kmalloc minimum size : 8 byte but 4byte is enough to keep the handle
-> 2. handle can pin lots of slab pages in memory
-> 3. it's inaccurate for accouting memory usage of zsmalloc
-> 4. Creating handle class in zsmalloc is simple.
-> 
-> > 
-> > I used kmalloc() but that is not without issue as the handles can be
-> > allocated from many slabs and any slab that contains a handle can't be
-> > freed, basically resulting in the handles themselves needing to be
-> > compacted, which they can't be because the user handle is a pointer to
-> > them.
-> 
-> Sure.
+On 18 Dec 2014 at 21:07, Rogelio M. Serrano Jr. wrote:
 
-One thing for good with slab is that it could remove unnecessary operations
-to translate handle to handle's position(page, idx) so that it would be
-faster although we waste 50% on 32 bit machine. Okay, I will check it.
+> whats the difference between:
+> 
+> atomic_inc(&port->count);
+> 
+> and
+> 
+> spin_lock_irq(&port->lock);
+> ++port->count;
+> spin_unlock_irq(&port->lock);
 
-Thanks, Seth.
+in PaX this kind of change brings the ->count accesses under the coverage
+of the REFCOUNT feature. if the kernel had a non-atomic refcount type and
+corresponding accessors, they'd be used here instead.
 
-
-> 
-> > 
-> > One way to fix this, but it would be some amount of work, is to have the
-> > user (zswap/zbud) provide the space for the handle to zbud/zsmalloc.
->               zram?
-> > The zswap/zbud layer knows the size of the device (i.e. handle space)
->             zram?
-> > and could allocate a statically sized vmalloc area for holding handles
-> > so they don't get spread all over memory.  I haven't fully explored this
-> > idea yet.
-> 
-> Hmm, I don't think it's a good idea.
-> 
-> Don't make an assumption that user of allocator know the size in advance.
-> In addition, you want to populate all of pages to keep handle in vmalloc
-> area statiscally? It wouldn't be huge but it depends on the user's setup
-> of disksize. More question: How do you search empty slot for new handle?
-> At last, we need caching logic and small allocator for that.
-> IMHO, it has cons than pros compared current my approach.
-> 
-> > 
-> > It is pretty limiting having the user trigger the compaction. Can we
-> 
-> Yeb, As I said, we need more policy but in this step, I want to introduce
-> primitive functions to enhance our policy as next step.
-> 
-> > have a work item that periodically does some amount of compaction?
-> 
-> I'm not sure periodic cleanup is good idea. I'd like to pass the decision
-> to the user, rather than allocator itself. It's enough for allocator
-> to expose current status to the user.
-> 
-> 
-> > Maybe also have something analogous to direct reclaim that, when
-> > zs_malloc fails to secure a new page, it will try to compact to get one?
-> > I understand this is a first step.  Maybe too much.
-> 
-> Yeb, I want to separate enhance as another patchset.
-> 
-> > 
-> > Also worth pointing out that the fullness groups are very coarse.
-> > Combining the objects from a ZS_ALMOST_EMPTY zspage and ZS_ALMOST_FULL
-> > zspage, might not result in very tight packing.  In the worst case, the
-> > destination zspage would be slightly over 1/4 full (see
-> > fullness_threshold_frac)
-> 
-> Good point. Actually, I had noticed that.
-> after all of ALMOST_EMPTY zspages are done to migrate, we might peek
-> out ZS_ALMOST_FULL zspages to consider.
-> 
-> > 
-> > It also seems that you start with the smallest size classes first.
-> > Seems like if we start with the biggest first, we move fewer objects and
-> > reclaim more pages.
-> 
-> Good idea. I will respin.
-> Thanks for the comment!
-> 
-> > 
-> > It does add a lot of code :-/  Not sure if there is any way around that
-> > though if we want this functionality for zsmalloc.
-> > 
-> > Seth
-> > 
-> > > 
-> > > Thanks.
-> > > 
-> > > Minchan Kim (6):
-> > >   zsmalloc: expand size class to support sizeof(unsigned long)
-> > >   zsmalloc: add indrection layer to decouple handle from object
-> > >   zsmalloc: implement reverse mapping
-> > >   zsmalloc: encode alloced mark in handle object
-> > >   zsmalloc: support compaction
-> > >   zram: support compaction
-> > > 
-> > >  drivers/block/zram/zram_drv.c |  24 ++
-> > >  drivers/block/zram/zram_drv.h |   1 +
-> > >  include/linux/zsmalloc.h      |   1 +
-> > >  mm/zsmalloc.c                 | 596 +++++++++++++++++++++++++++++++++++++-----
-> > >  4 files changed, 552 insertions(+), 70 deletions(-)
-> > > 
-> > > -- 
-> > > 2.0.0
-> > > 
-> > > --
-> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > see: http://www.linux-mm.org/ .
-> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
