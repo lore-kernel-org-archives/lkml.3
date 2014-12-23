@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820AbaLWKU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 05:20:59 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:3689 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754481AbaLWKUn convert rfc822-to-8bit (ORCPT
+	id S1755851AbaLWKVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 05:21:12 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:62920 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755796AbaLWKU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 05:20:43 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="45757574"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-Subject: [PATCH v9 3/3] Documentation: add docs for /proc/pidns_hierarchy
-Date: Tue, 23 Dec 2014 18:20:39 +0800
-Message-ID: <1419330039-29207-4-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1419330039-29207-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-References: <1419330039-29207-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-MIME-Version: 1.0
+	Tue, 23 Dec 2014 05:20:58 -0500
+Message-ID: <1419330055.30945.76.camel@x220>
+Subject: Re: [PATCH RFC] ipw2200: select CFG80211_WEXT
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kalle Valo <kvalo@codeaurora.org>
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 23 Dec 2014 11:20:55 +0100
+In-Reply-To: <871tnqhn7j.fsf@kamboji.qca.qualcomm.com>
+References: <1419271817.2317.12.camel@tiscali.nl>
+	 <871tnqhn7j.fsf@kamboji.qca.qualcomm.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.237]
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Dec 2014 10:20:55.0572 (UTC) FILETIME=[230EE540:01D01E9A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
- Documentation/namespaces/pidns-hierarchy.txt | 51 ++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
- create mode 100644 Documentation/namespaces/pidns-hierarchy.txt
+On Tue, 2014-12-23 at 08:52 +0200, Kalle Valo wrote:
+> Paul Bolle <pebolle@tiscali.nl> writes:
+> 
+> > Commit 24a0aa212ee2 ("cfg80211: make WEXT compatibility unselectable")
+> > made it impossible to depend on CFG80211_WEXT. It does still allow to
+> > select that symbol. (Yes, the commit summary is confusing.)
+> >
+> > So make IPW2200 select CFG80211_WEXT, so that the ipw2200 driver can be
+> > built again.
+> 
+> I think the last sentence is a bit misleading (this isn't a compilation
+> error, right?)
 
-diff --git a/Documentation/namespaces/pidns-hierarchy.txt b/Documentation/namespaces/pidns-hierarchy.txt
-new file mode 100644
-index 0000000..feb92a9
---- /dev/null
-+++ b/Documentation/namespaces/pidns-hierarchy.txt
-@@ -0,0 +1,51 @@
-+This document is about how to use pid namespace hierarchy procfs.
-+
-+We knew whether two pids living in the same pid namespace
-+by /proc/PID/ns/pid, but their relationships
-+between pids were unknown:
-+we couldn't tell that one pid was another one's parent/siblings...
-+But /proc/pidns_hierarchy could tell us the answer.
-+
-+/proc/pidns_hierarchy will show the hierarchy of pid namespace
-+in the form of:
-+
-+<init_PID> <parent_of_init_PID> <relative PID level>
-+
-+init_PID:            child reaper in a pid namespace
-+parent_of_init_PID:  init_PID's parent, child reaper too
-+relative PID level:  pid level relative to caller's ns,
-+                     started from '1'.
-+
-+Here is a chart to describe the relationship between
-+some pids:
-+
-+         init_pid_ns                          level 0
-+              |
-+              1
-+              |
-+┌────────────┐
-+ns1                      ns2                  level 1
-+|                         |
-+1550                    18060
-+                          |
-+                          |
-+                         ns3                  level 2
-+                          |
-+                        18102
-+                          |
-+                 ┌──────────┐
-+                 ns4                   ns5    level 3
-+                 |                     |
-+                1534                  1600
-+
-+It will be showed by /proc/pidns_hierarchy as below:
-+
-+#cat /proc/pidns_hierarchy
-+18060 1 1
-+18102 18060 2
-+1534  18102 3
-+1600  18102 3
-+1550  1 1
-+
-+Note: numbers in column 1 are pid numbers in current ns,
-+    they represent the pid '1' in different ns
--- 
-1.9.3
+No, it's not a compilation error.
+
+The reasoning here is that all code hidden behind a Kconfig symbol that
+cannot be set will, in practice, never be built. Sure, there are hoops
+one can jump through to try to bypass the generated .config, but no one
+should have to do that.
+
+>  and I would like to clarify it like this:
+> 
+> "So make IPW2200 select CFG80211_WEXT, so that the ipw2200 driver can be
+> enabled in config again."
+> 
+> Does that look ok?
+
+I understand the confusion my text might cause, so I'm fine with your
+amendment.
+
+Thanks,
+
+
+Paul Bolle
 
