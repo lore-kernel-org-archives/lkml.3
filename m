@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaLWNlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 08:41:49 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:11144 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862AbaLWNlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 08:41:47 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-7a-549971188aa5
-Message-id: <54997113.2080804@samsung.com>
-Date: Tue, 23 Dec 2014 14:41:39 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: tomasz.figa@gmail.com, kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        inki.dae@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3]  clk: samsung: Use samsung_cmu_register_one() to
- simplify code
-References: <1419320423-19228-1-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1419320423-19228-1-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t/xq7oShTNDDC68Y7K4/uU5q8Wk+xNY
-	LHoXXGWzONv0ht3i8q45bBYzzu9jsli16w+jA7vHzll32T36tqxi9Pi8SS6AOYrLJiU1J7Ms
-	tUjfLoEr48ufFawFZ7kqOlYfYGpgfMzRxcjJISFgIrHm3HxGCFtM4sK99WxdjFwcQgJLGSX+
-	rlvOAuF8YpTonHaJFaSKV0BL4tizv2AdLAKqEs2Tb4PF2QQMJXqP9oHFRQUiJE7e3cMOUS8o
-	8WPyPRYQW0RAQ2Lm3ytgNcwCyxglri2KBbGFBSIlPl3dzAxiCwm4Suz8PBesl1PATeLnzI9A
-	vRxA9XoS9y9qQbTKS2xe85Z5AqPALCQbZiFUzUJStYCReRWjaGppckFxUnquoV5xYm5xaV66
-	XnJ+7iZGSDh/2cG4+JjVIUYBDkYlHt6T72eECLEmlhVX5h5ilOBgVhLhlU+fGSLEm5JYWZVa
-	lB9fVJqTWnyIkYmDU6qBMeT+l4n1c7qN+bQe8M455Sl4rC/tZJ3yu5VWj6c5vPqy9v2zRmfr
-	OM7pqwxez9C5fzo1dtLNumcpQpe81iq8dwtTD+LMiRHkePfnz3UJv7dfIvrv3Ju8cIpBhnYW
-	87fDURs2XY1YsF0u2+dYsFse65TLH668WKUiJL1Yeb93c1XUq4M5037+E1ViKc5INNRiLipO
-	BABKPrnfRQIAAA==
+	id S932085AbaLWNt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 08:49:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:14675 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753681AbaLWNtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 08:49:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,632,1413270000"; 
+   d="scan'208";a="628224475"
+Date: Tue, 23 Dec 2014 15:49:17 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Martin Oldfield <m@mjoldfield.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi/pxa2xx: Clear cur_chip pointer before starting next
+ message
+Message-ID: <20141223134917.GI1314@lahna.fi.intel.com>
+References: <1417425166-150374-1-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1417425166-150374-1-git-send-email-mika.westerberg@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
-
-On 23/12/14 08:40, Chanwoo Choi wrote:
-> This patch-set uses the samsung_cmu_register_one() function to simplify the
-> clock driver for Exynos3250/Exynos4415 SoC and change return value of
-> samsung_cmu_register_one() because some clock driver may need the instance
-> of samsung_clk_provider structure.
+On Mon, Dec 01, 2014 at 11:12:46AM +0200, Mika Westerberg wrote:
+> Once the current message is finished, the driver notifies SPI core about
+> this by calling spi_finalize_current_message(). This function queues next
+> message to be transferred. If there are more messages in the queue, it is
+> possible that the driver is asked to transfer the next message at this
+> point.
 > 
-> Chanwoo Choi (3):
->   clk: samsung: Changes the return value of samsung_cmu_register_one()
->   clk: samsung: exynos3250: Use samsung_cmu_register_one() to simplify code
->   clk: samsung: exynos4415: Use samsung_cmu_register_one() to simplify code
+> When spi_finalize_current_message() returns the driver clears the
+> drv_data->cur_chip pointer to NULL. The problem is that if the driver
+> already started the next message clearing drv_data->cur_chip will cause
+> NULL pointer dereference which crashes the kernel like:
 > 
->  drivers/clk/samsung/clk-exynos3250.c | 217 ++++++++---------------------------
->  drivers/clk/samsung/clk-exynos4415.c | 216 ++++++++--------------------------
->  drivers/clk/samsung/clk.c            |  13 ++-
->  drivers/clk/samsung/clk.h            |   3 +-
->  4 files changed, 107 insertions(+), 342 deletions(-)
+>  BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+>  IP: [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
+>  PGD 78bb8067 PUD 37712067 PMD 0
+>  Oops: 0000 [#1] SMP
+>  Modules linked in:
+>  CPU: 1 PID: 11 Comm: ksoftirqd/1 Tainted: G           O   3.18.0-rc4-mjo #5
+>  Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS MNW2CRB1.X64.0071.R30.1408131301 08/13/2014
+>  task: ffff880077f9f290 ti: ffff88007a820000 task.ti: ffff88007a820000
+>  RIP: 0010:[<ffffffffa0022bc8>]  [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
+>  RSP: 0018:ffff88007a823d08  EFLAGS: 00010202
+>  RAX: 0000000000000008 RBX: ffff8800379a4430 RCX: 0000000000000026
+>  RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffff8800379a4430
+>  RBP: ffff88007a823d18 R08: 00000000ffffffff R09: 000000007a9bc65a
+>  R10: 000000000000028f R11: 0000000000000005 R12: ffff880070123e98
+>  R13: ffff880070123de8 R14: 0000000000000100 R15: ffffc90004888000
+>  FS:  0000000000000000(0000) GS:ffff880079a80000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>  CR2: 0000000000000048 CR3: 000000007029b000 CR4: 00000000001007e0
+>  Stack:
+>   ffff88007a823d58 ffff8800379a4430 ffff88007a823d48 ffffffffa0022c89
+>   0000000000000000 ffff8800379a4430 0000000000000000 0000000000000006
+>   ffff88007a823da8 ffffffffa0023be0 ffff88007a823dd8 ffffffff81076204
+>  Call Trace:
+>   [<ffffffffa0022c89>] giveback+0x69/0xa0 [spi_pxa2xx_platform]
+>   [<ffffffffa0023be0>] pump_transfers+0x710/0x740 [spi_pxa2xx_platform]
+>   [<ffffffff81076204>] ? pick_next_task_fair+0x744/0x830
+>   [<ffffffff81049679>] tasklet_action+0xa9/0xe0
+>   [<ffffffff81049a0e>] __do_softirq+0xee/0x280
+>   [<ffffffff81049bc0>] run_ksoftirqd+0x20/0x40
+>   [<ffffffff810646df>] smpboot_thread_fn+0xff/0x1b0
+>   [<ffffffff810645e0>] ? SyS_setgroups+0x150/0x150
+>   [<ffffffff81060f9d>] kthread+0xcd/0xf0
+>   [<ffffffff81060ed0>] ? kthread_create_on_node+0x180/0x180
+>   [<ffffffff8187a82c>] ret_from_fork+0x7c/0xb0
+> 
+> Fix this by clearing drv_data->cur_chip before we call spi_finalize_current_message().
+> 
+> Reported-by: Martin Oldfield <m@mjoldfield.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Thanks for the cleanup, I've queued that for 3.20. And fixed a minor
-checkpatch warning when applying:
-
-ERROR: "foo* __init bar" should be "foo * __init bar"
-#29: FILE: drivers/clk/samsung/clk.c:377:
-+struct samsung_clk_provider* __init samsung_cmu_register_one(
-
-total: 1 errors, 0 warnings, 42 lines checked
-
-0001-clk-samsung-Changes-the-return-value-of-samsung_cmu_.patch has style
-problems, please review.
-
--- 
-Thanks,
-Sylwester
+Mark, any comments on this?
