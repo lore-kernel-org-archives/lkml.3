@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040AbaLWKDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 05:03:54 -0500
-Received: from mail-by2on0101.outbound.protection.outlook.com ([207.46.100.101]:44062
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755446AbaLWJ6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:58:30 -0500
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <dri-devel@lists.freedesktop.org>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <kernel@pengutronix.de>,
-        <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
-        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
-        <andyshrk@gmail.com>, <stefan.wahren@i2se.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v4 02/21] of: Add vendor prefix for Himax Technologies Inc.
-Date: Tue, 23 Dec 2014 18:02:00 +0800
-Message-ID: <1419328939-22758-3-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1419328939-22758-1-git-send-email-Ying.Liu@freescale.com>
-References: <1419328939-22758-1-git-send-email-Ying.Liu@freescale.com>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(21056001)(64706001)(20776003)(68736005)(4396001)(2950100001)(84676001)(50466002)(19580405001)(87936001)(47776003)(48376002)(106466001)(50226001)(105606002)(89996001)(46102003)(36756003)(19580395003)(31966008)(77156002)(2351001)(97736003)(229853001)(107046002)(92566001)(120916001)(76176999)(110136001)(62966003)(85426001)(77096005)(104016003)(99396003)(6806004)(50986999)(86362001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0639;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1755774AbaLWKHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 05:07:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38317 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753899AbaLWKHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 05:07:34 -0500
+Message-ID: <54993EE3.6000204@suse.cz>
+Date: Tue, 23 Dec 2014 11:07:31 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0639;
-X-Forefront-PRVS: 04347F8039
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 09:58:20.6827
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0639
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Drysdale <drysdale@google.com>
+Subject: Re: Linux 3.19-rc1 - merge window closed
+References: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>	 <1419145899.8696.5.camel@haakon3.risingtidesystems.com>	 <20141222124310.b35177e67db8d76b64ec55f6@linux-foundation.org>	 <alpine.LRH.2.00.1412222156260.29843@twin.jikos.cz> <1419288214.8696.14.camel@haakon3.risingtidesystems.com>
+In-Reply-To: <1419288214.8696.14.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
----
-v3->v4:
- * Fix an ordering issue to address Stefan Wahren's comment.
+Dne 22.12.2014 v 23:43 Nicholas A. Bellinger napsal(a):
+> On Mon, 2014-12-22 at 21:56 +0100, Jiri Kosina wrote:
+>> On Mon, 22 Dec 2014, Andrew Morton wrote:
+>>
+>>> On Sat, 20 Dec 2014 23:11:39 -0800 "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+>>>
+>>>> Just hit the following build failure with CONFIG_AUDIT=y:
+>>>>
+>>>> arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
+>>>> arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared (first use in this function)
+>>>> arch/x86/ia32/audit.c:38:7: note: each undeclared identifier is reported only once for each function it appears in
+>>>> make[2]: *** [arch/x86/ia32/audit.o] Error 1
+>>>> make[1]: *** [arch/x86/ia32] Error 2
+>>>> make: *** [arch/x86] Error 2
+>>>> make: *** Waiting for unfinished jobs....
+>>>
+>>> Your .config works for me.  Does a `make mrproper' fix it?
+>>>
+>>> I've seen a few reports like this in recent months.  Something's
+>>> up with the build dependency system.
+>>
+>> Let's add Michal Marek to CC then.
+>>
+> 
+> Yep, post 'make mrproper' builds with CONFIG_AUDIT=y don't hit this
+> failure.
+> 
+> The previous build was with v3.18-rc2 btw.
 
-v2->v3:
- * None.
+I guess you don't have the v3.18-rc2 based .config anymore, do you? Do
+you remember what kind of confuration it was, i.e. was it a defconfig /
+allmodconfig / 'typical distro build' / ...?
 
-v1->v2:
- * None.
-
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 78efebb..f46adb2 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -67,6 +67,7 @@ gumstix	Gumstix, Inc.
- gw	Gateworks Corporation
- hannstar	HannStar Display Corporation
- haoyu	Haoyu Microelectronic Co. Ltd.
-+himax	Himax Technologies, Inc.
- hisilicon	Hisilicon Limited.
- hit	Hitachi Ltd.
- honeywell	Honeywell
--- 
-2.1.0
+Thanks,
+Michal
 
