@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788AbaLWKzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 05:55:18 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:53174 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaLWKzQ (ORCPT
+	id S1755922AbaLWKzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 05:55:22 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:52693 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750963AbaLWKzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 05:55:16 -0500
-Date: Tue, 23 Dec 2014 10:55:06 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Suzuki Poulose <Suzuki.Poulose@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: Fix SCTLR_EL1 initialisation
-Message-ID: <20141223105505.GA21816@e104818-lin.cambridge.arm.com>
-References: <1418831421-19370-1-git-send-email-suzuki.poulose@arm.com>
- <20141217173915.GF30307@arm.com>
+	Tue, 23 Dec 2014 05:55:19 -0500
+From: Kalle Valo <kvalo@codeaurora.org>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] ipw2200: select CFG80211_WEXT
+References: <1419271817.2317.12.camel@tiscali.nl>
+	<1419330521.6091.1.camel@sipsolutions.net>
+Date: Tue, 23 Dec 2014 12:55:11 +0200
+In-Reply-To: <1419330521.6091.1.camel@sipsolutions.net> (Johannes Berg's
+	message of "Tue, 23 Dec 2014 11:28:41 +0100")
+Message-ID: <87oaqueiuo.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141217173915.GF30307@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 05:39:16PM +0000, Will Deacon wrote:
-> On Wed, Dec 17, 2014 at 03:50:21PM +0000, Suzuki K. Poulose wrote:
-> > From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
-> > 
-> > We initialise the SCTLR_EL1 value by read-modify-writeback
-> > of the desired bits, leaving the other bits (including reserved
-> > bits(RESx)) untouched. However, sometimes the boot monitor could
-> > leave garbage values in the RESx bits which could have different
-> > implications. This patch makes sure that all the bits, including
-> > the RESx bits, are set to the proper state, except for the
-> > 'endianness' control bits, EE(25) & E0E(24)- which are set early
-> > in the el2_setup.
-> > 
-> > Updated the state of the Bit[6] in the comment to RES0 in the
-> > comment.
-> > 
-> > Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
-> > Cc: Will Deacon <will.deacon@arm.com>
-> > Cc: Catalin Marinas <catalin.marinas@arm.com>
-> > ---
-> 
-> Looks good to me:
-> 
->   Acked-by: Will Deacon <will.deacon@arm.com>
-> 
-> Is this 3.19 material, or simply a cleanup/being cautious?
+Johannes Berg <johannes@sipsolutions.net> writes:
 
-I'll leave this for the 3.20 merging window.
+> On Mon, 2014-12-22 at 19:10 +0100, Paul Bolle wrote:
+>> Commit 24a0aa212ee2 ("cfg80211: make WEXT compatibility unselectable")
+>> made it impossible to depend on CFG80211_WEXT. It does still allow to
+>> select that symbol. (Yes, the commit summary is confusing.)
+>> 
+>> So make IPW2200 select CFG80211_WEXT, so that the ipw2200 driver can be
+>> built again.
+>> 
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> ---
+>> Johannes,
+>> 
+>> Building v3.19-rc1 for an outdated ThinkPad X41 left me without the
+>> ipw2200 driver. It turns out this trivial patch is all that's needed to
+>> make ipw2200 buildable again.
+>> 
+>> (A similar patch would be needed for the drivers behind Kconfig symbol
+>> HERMES. Ie, orinico and friends.) 
+>
+> Yeah, config HERMES needs the same change.
+>
+> Kalle, do you want to take those through your tree, or should I fix it
+> seeing that I introduced the bug in a sense?
+
+To keep things simple I would prefer to take this through
+wireless-drivers.git, if it's ok for you.
 
 -- 
-Catalin
+Kalle Valo
