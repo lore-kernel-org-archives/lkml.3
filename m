@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaLWJKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:10:13 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:26114 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369AbaLWJKK (ORCPT
+	id S1755425AbaLWJLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:11:09 -0500
+Received: from regular1.263xmail.com ([211.150.99.132]:52932 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754798AbaLWJLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:10:10 -0500
-From: Qais Yousef <qais.yousef@imgtec.com>
-To: <alsa-devel@alsa-project.org>
-CC: Qais Yousef <qais.yousef@imgtec.com>, Vinod Koul <vinod.koul@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ALSA: ASoC: soc-compress.c: fix NULL dereference
-Date: Tue, 23 Dec 2014 09:09:27 +0000
-Message-ID: <1419325767-30602-1-git-send-email-qais.yousef@imgtec.com>
-X-Mailer: git-send-email 2.1.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.94]
+	Tue, 23 Dec 2014 04:11:03 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-ADDR-CHECKED: 0
+X-RL-SENDER: jay.xu@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: jay.xu@rock-chips.com
+X-UNIQUE-TAG: <1b6de40d824bd5abdb1e973043957e36>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Jianqun Xu <jay.xu@rock-chips.com>
+To: lgirdwood@gmail.com, heiko@sntech.de, broonie@kernel.org, perex@perex.cz,
+        tiwai@suse.de, sonnyrao@chromium.org
+Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jianqun Xu <jay.xu@rock-chips.com>
+Subject: [PATCH 1/2] ASoC: rockchip: i2s: fix error defination of transmit data level
+Date: Tue, 23 Dec 2014 17:08:28 +0800
+Message-Id: <1419325709-15374-2-git-send-email-jay.xu@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1419325709-15374-1-git-send-email-jay.xu@rock-chips.com>
+References: <1419325709-15374-1-git-send-email-jay.xu@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In soc_new_compress() when rtd->dai_link->daynmic is set, we create the pcm
-substreams with this call:
+According to description about "Transmit Data Level",
 
-   ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
-                                   1, 0, &be_pcm);
+This bit field controls the level at which a DMA request
+is made by the transmit logic.
 
-which passes 0 as capture_count leading to
+It is equal to the watermark level.
 
-   be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream
+That is, the dma_tx_req signal is generated when the number
+of valid data entries in the TXFIFO
+(TXFIFO0 if CSR=00
+ TXFIFO1 if CSR=01
+ TXFIFO2 if CSR=10
+ TXFIFO3 if CSR=11)
+is equal to or below this field value.
 
-being NULL, hence when trying to set rtd a few lines below we get an oops.
-Fix by removing this line of code since CAPTURE substream will always be NULL.
+Different to receive data level, transmit data level does not need
+to "-1".
 
-Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
 ---
-Not sure if this is the correct fix but that's what I could come up with my
-limited knowledge.
+ sound/soc/rockchip/rockchip_i2s.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I think the more correct solution would be to use the value of
-rtd->dai_link->dpcm_playback and rtd->dai_link->dpcm_capture in the args of
-snd_pcm_new_internal() for playback_count and capture_count.
-
- sound/soc/soc-compress.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/sound/soc/soc-compress.c b/sound/soc/soc-compress.c
-index 590a82f01d0b..7ab39f65384c 100644
---- a/sound/soc/soc-compress.c
-+++ b/sound/soc/soc-compress.c
-@@ -669,7 +669,6 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
- 		rtd->pcm = be_pcm;
- 		rtd->fe_compr = 1;
- 		be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
--		be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
- 		memcpy(compr->ops, &soc_compr_dyn_ops, sizeof(soc_compr_dyn_ops));
- 	} else
- 		memcpy(compr->ops, &soc_compr_ops, sizeof(soc_compr_ops));
+diff --git a/sound/soc/rockchip/rockchip_i2s.h b/sound/soc/rockchip/rockchip_i2s.h
+index 89a5d8b..93f456f 100644
+--- a/sound/soc/rockchip/rockchip_i2s.h
++++ b/sound/soc/rockchip/rockchip_i2s.h
+@@ -127,7 +127,7 @@
+ #define I2S_DMACR_TDE_DISABLE	(0 << I2S_DMACR_TDE_SHIFT)
+ #define I2S_DMACR_TDE_ENABLE	(1 << I2S_DMACR_TDE_SHIFT)
+ #define I2S_DMACR_TDL_SHIFT	0
+-#define I2S_DMACR_TDL(x)	((x - 1) << I2S_DMACR_TDL_SHIFT)
++#define I2S_DMACR_TDL(x)	((x) << I2S_DMACR_TDL_SHIFT)
+ #define I2S_DMACR_TDL_MASK	(0x1f << I2S_DMACR_TDL_SHIFT)
+ 
+ /*
 -- 
-2.1.0
+1.9.1
+
 
