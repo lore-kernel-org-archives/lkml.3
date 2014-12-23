@@ -1,136 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666AbaLWLKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 06:10:22 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:60537 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaLWLKU (ORCPT
+	id S932093AbaLWLMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 06:12:55 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54876 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639AbaLWLMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 06:10:20 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-4e-54994d990be3
-Message-id: <54994D88.3000009@samsung.com>
-Date: Tue, 23 Dec 2014 12:10:00 +0100
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        kernel@pengutronix.de, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH v6 3/3] of: Add of_graph_get_port_by_id function
-References: <1419261091-29888-1-git-send-email-p.zabel@pengutronix.de>
- <1419261091-29888-4-git-send-email-p.zabel@pengutronix.de>
-In-reply-to: <1419261091-29888-4-git-send-email-p.zabel@pengutronix.de>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t/xq7ozfWeGGGyZxGNx5et7Nov3G+cx
-	WRz4s4PRonnxejaLVVN3slh0TlzCbrHp8TVWi8u75rBZ9GzYympxcZ28xdY9B5gs7t47wWKx
-	+cNLNgdej5bmHjaPDx/jPGZ3zGT1uHNtD5vH/rlr2D3udx9n8ti8pN6j/6+BR9+WVYwenzfJ
-	BXBFcdmkpOZklqUW6dslcGXcXjmLueCdaMWfxtwGxsOCXYycHBICJhI9j06yQNhiEhfurWfr
-	YuTiEBJYyiixZvUiNpCEkMAnRoljz5xAbF4BLYn3Gz+xg9gsAqoSbzZvZgKx2QQ0Jf5uvglW
-	LyoQIfFh1Vc2iHpBiR+T74EtEBEIkbi3pY8ZxGYWOM4ssf2UNYgtLOAicef+bxaIxc2MEid/
-	TmEESXAKuEv8efMcaBkHUIO6xJQpuRC98hKb17xlnsAoMAvJilkIVbOQVC1gZF7FKJpamlxQ
-	nJSea6hXnJhbXJqXrpecn7uJERJHX3YwLj5mdYhRgINRiYf35PsZIUKsiWXFlbmHGCU4mJVE
-	eF+KzwwR4k1JrKxKLcqPLyrNSS0+xMjEwSnVwGjlU1267L/1cd2tfSm+zU57hes1Itu2FWyJ
-	P/i6931WzJuPvR/O+/w0boj9NXPC/rg5ad/Ze542TCrI/uPCwzOv7F+O5PO4Cz43NlwVvZW4
-	7NC3dW+M/y7MfL/zBe/Oiwuy898fkd/x4G9LySG51M7iSTp+os53jF/xe38oDj3w4avXfCvH
-	R1ZKLMUZiYZazEXFiQBIYc7agQIAAA==
+	Tue, 23 Dec 2014 06:12:53 -0500
+Date: Tue, 23 Dec 2014 12:12:50 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [GIT PULL] fbdev fixes for 3.19
+Message-ID: <20141223111250.GA30284@amd>
+References: <54899F0E.4090309@ti.com>
+ <20141220210125.GB16705@amd>
+ <20141220212027.GC16705@amd>
+ <20141220215718.GA25101@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141220215718.GA25101@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
-
-On 12/22/2014 04:11 PM, Philipp Zabel wrote:
-> This patch adds a function to get a port device tree node by port id,
-> or reg property value.
+On Sat 2014-12-20 22:57:18, Pavel Machek wrote:
+> On Sat 2014-12-20 22:20:27, Pavel Machek wrote:
+> > On Sat 2014-12-20 22:01:25, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > Please pull fbdev changes for 3.19.
+> > > > 
+> > > >  Tomi
+> > > 
+> > > v3.19-rc0 breaks video on my n900.
+> > > 
+> > > > Archit Taneja (7):
+> > > >       OMAPDSS: DPI: Use DPI driver data
+> > > >       OMAPDSS: DPI: Allocate driver data
+> > > >       OMAPDSS: DPI: Store dpi_data pointer in the DT port's data
+> > > >       OMAPDSS: DSS: init dss ports cleanly
+> > > >       OMAPDSS: DT: Get source endpoint by matching reg-id
+> > > >       OMAPDSS: DPI: Add support for multiple instances
+> > > >       OMAPDSS: DSS: add a param to dpi_select_source which specifies
+> > > >       it's port number
+> > > 
+> > > And I have these in my tree, so I should have latest fixes. Any ideas
+> > > what I should try?
+> > 
+> > I test-merged 3315764efceaccfb02c7d4c99ef8eed6716cd861, and boom,
+> > video is gone.
 > 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> ---
->  drivers/of/base.c        | 26 ++++++++++++++++++++++++++
->  include/linux/of_graph.h |  7 +++++++
->  2 files changed, 33 insertions(+)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index aac66df..c816299 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2080,6 +2080,32 @@ int of_graph_parse_endpoint(const struct device_node *node,
->  EXPORT_SYMBOL(of_graph_parse_endpoint);
->  
->  /**
-> + * of_graph_get_port_by_id() - get the port matching a given id
-> + * @parent: pointer to the parent device node
+> I reverted
+> 4b4123f0c7b02f7cf1a3189f967f079197578c3a..9051909e451a0368c95ccf74562adb53fd2719f8
+> in 3.19, and voila, video is back.
 
-Here you have 'parent' and 'node' in the code.
+Tomi?
 
-> + * @id: id of the port
-> + *
-> + * Return: A 'port' node pointer with refcount incremented. The caller
-> + * has to use of_node_put() on it when done.
-> + */
-> +struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id)
-> +{
-> +	struct device_node *port;
-> +
-> +	for_each_child_of_node(node, port) {
-> +		u32 port_id = 0;
-> +
-> +		if (of_node_cmp(port->name, "port") != 0)
-> +			continue;
-> +		of_property_read_u32(port, "reg", &port_id);
-> +		if (id == port_id)
-> +			return port;
-> +	}
-> +
-> +	return NULL;
-> +}
+Your merge causes regression on my hardware. I'd expect some
+communication from you. If you don't have time right now, can we
+revert the merge until its fixed?
 
+									Pavel
 
-Maybe I miss something but it does not handle optional 'ports' node.
-
-Regards
-Andrzej
-
-
-> +EXPORT_SYMBOL(of_graph_get_port_by_id);
-> +
-> +/**
->   * of_graph_get_next_endpoint() - get next endpoint node
->   * @parent: pointer to the parent device node
->   * @prev: previous endpoint node, or NULL to get first
-> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-> index e43442e..3c1c95a 100644
-> --- a/include/linux/of_graph.h
-> +++ b/include/linux/of_graph.h
-> @@ -40,6 +40,7 @@ struct of_endpoint {
->  #ifdef CONFIG_OF
->  int of_graph_parse_endpoint(const struct device_node *node,
->  				struct of_endpoint *endpoint);
-> +struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id);
->  struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
->  					struct device_node *previous);
->  struct device_node *of_graph_get_remote_port_parent(
-> @@ -53,6 +54,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
->  	return -ENOSYS;
->  }
->  
-> +static inline struct device_node *of_graph_get_port_by_id(
-> +					struct device_node *node, u32 id)
-> +{
-> +	return NULL;
-> +}
-> +
->  static inline struct device_node *of_graph_get_next_endpoint(
->  					const struct device_node *parent,
->  					struct device_node *previous)
-> 
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
