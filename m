@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755125AbaLWI1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 03:27:47 -0500
-Received: from mail.eperm.de ([89.247.134.16]:51001 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026AbaLWI1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 03:27:45 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v5 5/8] crypto: AF_ALG: add user space interface for RNG
-Date: Tue, 23 Dec 2014 09:27:40 +0100
-Message-ID: <1708286.gWpYI6yUk0@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141222112730.GB19532@gondor.apana.org.au>
-References: <56740432.V2v4gLHrzS@tachyon.chronox.de> <3380968.kTQNpvjKFa@tachyon.chronox.de> <20141222112730.GB19532@gondor.apana.org.au>
+	id S1755459AbaLWIaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 03:30:15 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:32991 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754873AbaLWIaN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 03:30:13 -0500
+Message-ID: <54992809.7040605@redhat.com>
+Date: Tue, 23 Dec 2014 09:30:01 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Newsgroups: gmane.linux.kernel,gmane.comp.emulators.kvm.devel
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        glommer@gmail.com
+Subject: Re: [RFC 0/2] x86, vdso, pvclock: Cleanups and speedups
+References: <cover.1419295081.git.luto@amacapital.net> <549917F6.1080504@redhat.com> <CALCETrUtf=a9wRYwftJxNB6Smrf0pXS43qPd37XO0_mxrGJ-Cg@mail.gmail.com>
+In-Reply-To: <CALCETrUtf=a9wRYwftJxNB6Smrf0pXS43qPd37XO0_mxrGJ-Cg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 22. Dezember 2014, 22:27:30 schrieb Herbert Xu:
-
-Hi Herbert,
-
-> On Sun, Dec 07, 2014 at 11:23:48PM +0100, Stephan Mueller wrote:
-> > Allow user space to seed / reset the RNG via a setsockopt.
-> > 
-> > This patch reuses alg_setkey to copy data into the kernel. The
-> > alg_setkey is now used for two mechanisms: setkey and seeding.
-> > The function is extended by the providing the function pointer
-> > to the function handling the copied data.
-> > 
-> > As the alg_setkey is now usable for more than just setkey, it is renamed
-> > to alg_setop.
-> 
-> Just call it setkey, there is no harm in treating the seed as a key
-> is there?
-> 
-> In fact we should have done this from the very start.
-> crypto_rng_reset should be renamed crypto_rng_setkey.
-
-Ok, that means I will drop this patch entirely and wire up the reseeding 
-function in algif_rng.c with setkey.
-> 
-> Cheers,
 
 
--- 
-Ciao
-Stephan
+On 23/12/2014 09:16, Andy Lutomirski wrote:
+> Any thoughts as to whether it should be tagged for stable?  I haven't
+> looked closely enough at the old pvclock code or the generated code to
+> have much of an opinion there.  It'll be a big speedup for non-pvclock
+> users at least.
+
+Yes, please.
+
+Paolo
