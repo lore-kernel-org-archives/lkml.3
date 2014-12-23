@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359AbaLWS04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 13:26:56 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54917 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaLWS0y (ORCPT
+	id S1755072AbaLWS15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 13:27:57 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47028 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaLWS14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 13:26:54 -0500
-From: Dmitry Osipenko <digetx@gmail.com>
-To: digetx@gmail.com, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: <stable@vger.kernel.org>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] soc: tegra: pmc: Use syscore PM ops
-Date: Tue, 23 Dec 2014 21:25:11 +0300
-Message-Id: <1419359126-19124-1-git-send-email-digetx@gmail.com>
-X-Mailer: git-send-email 2.2.0
+	Tue, 23 Dec 2014 13:27:56 -0500
+Date: Tue, 23 Dec 2014 12:27:37 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Carsten Behling <carsten.behling@ridgerun.com>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: usb: musb: Scheduling of interrupt endpoints
+Message-ID: <20141223182737.GF9147@saruman>
+Reply-To: <balbi@ti.com>
+References: <54947E99.4010908@ridgerun.com>
+ <5499835B.508@ridgerun.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ExXT7PjY8AI4Hyfa"
+Content-Disposition: inline
+In-Reply-To: <5499835B.508@ridgerun.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed tegra_resume()
-location storing from late to early, and as a result, broke suspend on Tegra20.
-PMC scratch register 41 is used by tegra LP1 resume code for retrieving stored
-physical memory address of common resume function and in the same time used by
-tegra20_cpu_shutdown() (which is shared by Tegra20 cpuidle driver and platform
-smp code) for storing cpu1 "resettable" status. It implies strict order of
-scratch register usage, otherwise resume function address is lost on Tegra20
-after disabling non-boot CPU's on suspend. Fix it by making PMC driver use
-syscore PM ops to ensure correct order of scratch register usage.
+--ExXT7PjY8AI4Hyfa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
-Fixes: 7232398abc6a (ARM: tegra: Convert PMC to a driver)
-Cc: <stable@vger.kernel.org> # v3.17+
----
+Hi,
 
-v2: changed commit description
+On Tue, Dec 23, 2014 at 08:59:39AM -0600, Carsten Behling wrote:
+> Would it help if I send a patch as a suggestion and as basis for
+> discussion?
 
- drivers/soc/tegra/pmc.c | 37 +++++++++++++++++++------------------
- 1 file changed, 19 insertions(+), 18 deletions(-)
+yes, it would also help if you didn't top-post :-)
 
-diff --git a/drivers/soc/tegra/pmc.c b/drivers/soc/tegra/pmc.c
-index a2c0ceb..4ebd94a 100644
---- a/drivers/soc/tegra/pmc.c
-+++ b/drivers/soc/tegra/pmc.c
-@@ -33,6 +33,7 @@
- #include <linux/reset.h>
- #include <linux/seq_file.h>
- #include <linux/spinlock.h>
-+#include <linux/syscore_ops.h>
- 
- #include <soc/tegra/common.h>
- #include <soc/tegra/fuse.h>
-@@ -703,6 +704,23 @@ static void tegra_pmc_init(struct tegra_pmc *pmc)
- 	tegra_pmc_writel(value, PMC_CNTRL);
- }
- 
-+static int tegra_pmc_suspend(void)
-+{
-+	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
-+
-+	return 0;
-+}
-+
-+static void tegra_pmc_resume(void)
-+{
-+	tegra_pmc_writel(0x0, PMC_SCRATCH41);
-+}
-+
-+static struct syscore_ops tegra_pmc_syscore_ops = {
-+	.suspend = tegra_pmc_suspend,
-+	.resume = tegra_pmc_resume,
-+};
-+
- static int tegra_pmc_probe(struct platform_device *pdev)
- {
- 	void __iomem *base = pmc->base;
-@@ -736,27 +754,11 @@ static int tegra_pmc_probe(struct platform_device *pdev)
- 			return err;
- 	}
- 
--	return 0;
--}
--
--#ifdef CONFIG_PM_SLEEP
--static int tegra_pmc_suspend(struct device *dev)
--{
--	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
-+	register_syscore_ops(&tegra_pmc_syscore_ops);
- 
- 	return 0;
- }
- 
--static int tegra_pmc_resume(struct device *dev)
--{
--	tegra_pmc_writel(0x0, PMC_SCRATCH41);
--
--	return 0;
--}
--#endif
--
--static SIMPLE_DEV_PM_OPS(tegra_pmc_pm_ops, tegra_pmc_suspend, tegra_pmc_resume);
--
- static const char * const tegra20_powergates[] = {
- 	[TEGRA_POWERGATE_CPU] = "cpu",
- 	[TEGRA_POWERGATE_3D] = "3d",
-@@ -894,7 +896,6 @@ static struct platform_driver tegra_pmc_driver = {
- 		.name = "tegra-pmc",
- 		.suppress_bind_attrs = true,
- 		.of_match_table = tegra_pmc_match,
--		.pm = &tegra_pmc_pm_ops,
- 	},
- 	.probe = tegra_pmc_probe,
- };
--- 
-2.2.0
+--=20
+balbi
 
+--ExXT7PjY8AI4Hyfa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUmbQZAAoJEIaOsuA1yqREqVAP/0kGaVUf/WLpOdlrgcTk/uF/
+3tC+Dly9vvlqixsfrt8g4cf2u/cu/wEubqS8zC4B2sqKM5UYAFXd61aQJLNnao6C
+NyBPofAwScLoPLBum/tG/B2MqzR+1mgdB9QnIMMG1IcctTG1K/9XP2+OTU+VBCd6
+JbeTyfGsE8it/dLAeP4EXcP7XQlCgt6/KZxfh3S3cM+kZAxV4b5Tx70hHtDxKsAW
+cM211f6esbmZM6jigTQyoPzzWSIDVtjr1rwhzmjOfLrrd/9Wb1tQt9S8fiA8s1EL
+Qz+y5OYtET0Dn9IDTBexXlMPJOaDhIwI6h4HwwLFhvzLZMJ/5qmmYFR9QTn9WyxY
+kq1JiGvYWJ7ESdNDf8yQoflKR6O1sESFIyWGq7hCjA1R1wHyPAZhACJ1MMSfjAv2
+PUkfsT+nIK92eP4VH3Qx0ZZMZ0FVJq+bwXy/6uCbzKdlEOKmSue4Woh5qDvtgFAU
+iB7k/YiDUcTCoh+o1sqcGLISvgXzqvts9RxV5vVSk56eFEYobDihdKbObgT5kPUm
+52Tx1fklQUnWwD08LiqPkjHn3nxoFIWHT9LSWJefvgpurKRAVNVduzIJItVtGcLl
+UUQKb/S4L1f5cUjTWnktgODrg03gysC/KQFCP83dLaGS59JVCqoCVTnRsezPkAXT
+rUuBIAoQ+pa1bwypjHRd
+=d0kD
+-----END PGP SIGNATURE-----
+
+--ExXT7PjY8AI4Hyfa--
