@@ -1,87 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162AbaLWI71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 03:59:27 -0500
-Received: from mail-bn1on0147.outbound.protection.outlook.com ([157.56.110.147]:44192
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750740AbaLWI7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 03:59:25 -0500
-Message-ID: <54992FED.5080908@freescale.com>
-Date: Tue, 23 Dec 2014 17:03:41 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Stefan Wahren <stefan.wahren@i2se.com>, <dri-devel@lists.freedesktop.org>
-CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <thierry.reding@gmail.com>,
-        <shawn.guo@linaro.org>, <airlied@linux.ie>, <andyshrk@gmail.com>,
-        <p.zabel@pengutronix.de>, <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH RFC v3 11/18] drm/bridge: Add Synopsys DesignWare MIPI
- DSI host controller driver
-References: <1419306399-9387-1-git-send-email-Ying.Liu@freescale.com>
- <1419306399-9387-12-git-send-email-Ying.Liu@freescale.com>
- <1770602566.921194.1419323596151.JavaMail.open-xchange@oxbaltgw08.schlund.de>
-In-Reply-To: <1770602566.921194.1419323596151.JavaMail.open-xchange@oxbaltgw08.schlund.de>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(51704005)(24454002)(164054003)(377454003)(43544003)(189002)(479174004)(199003)(80316001)(76176999)(50986999)(99396003)(87936001)(65956001)(65806001)(23676002)(64126003)(31966008)(50466002)(6806004)(19580405001)(19580395003)(47776003)(85426001)(20776003)(64706001)(83506001)(84676001)(77156002)(105606002)(36756003)(120916001)(54356999)(62966003)(87266999)(4396001)(97736003)(59896002)(107046002)(106466001)(46102003)(104016003)(2950100001)(77096005)(33656002)(15975445007)(86362001)(68736005)(21056001)(92566001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0634;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0634;
-X-Forefront-PRVS: 04347F8039
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 08:59:21.6738
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0634
+	id S1754667AbaLWI7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 03:59:41 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:56260 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaLWI7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 03:59:38 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-3b-54992ef49faf
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1419179723-3234-1-git-send-email-jaegeuk@kernel.org>
+ <1419179723-3234-6-git-send-email-jaegeuk@kernel.org>
+ <003201d01e7e$66126ae0$323740a0$@samsung.com>
+ <20141223074041.GB9946@jaegeuk-mac02.hsd1.ca.comcast.net>
+In-reply-to: <20141223074041.GB9946@jaegeuk-mac02.hsd1.ca.comcast.net>
+Subject: RE: [f2fs-dev] [PATCH 6/6] f2fs: avoid double lock for cp_rwsem
+Date: Tue, 23 Dec 2014 16:58:46 +0800
+Message-id: <003801d01e8e$c496f080$4dc4d180$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQG1NCgn0vPNMcmFarKO/1VZ45E3HgHz1ZrOAez3nYIBn8/U+5ymqa0A
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jAd2vejNDDHqWsFg8WT+L2eLSIneL
+	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAlbH2xXaWgsNyFT87
+	TzA3MK6S6GLk5JAQMJHY3LubFcIWk7hwbz1bFyMXh5DAIkaJlu7/7CAJIYEfjBIPXnmA2GwC
+	KhLLO/4zgdgiAmoSvfumgNnMApkSE/pfsEM0P2WUeN64FqyZU8BN4vnkHUBTOTiEBTwkdnWV
+	goRZBFQlDh95ygxi8wpYSmzvecgEYQtK/Jh8jwVippbE+p3HoebLS2xe85YZ4lAFiR1nXzNC
+	3OAmcePgTUaIGnGJjUdusUxgFJqFZNQsJKNmIRk1C0nLAkaWVYyiqQXJBcVJ6blGesWJucWl
+	eel6yfm5mxjBgf9MegfjqgaLQ4wCHIxKPLwLzswIEWJNLCuuzD3EKMHBrCTC+1J8ZogQb0pi
+	ZVVqUX58UWlOavEhRmkOFiVxXiX7thAhgfTEktTs1NSC1CKYLBMHp1QDY85GJ7E3DyqWq7bk
+	XV+YztsovOXHrPols3Z0yrV0GD4wTnNa+tyo2OVW14Vn1UUZz698nn3IN2cjh41oFg+P4u3I
+	Yu9ApnsKypFt86r9Su+nNPXPe573YEL7yo3vc5WOC/O131cMNApvmXEtvHphs/L+vly+9Edp
+	F2MZiqKmK4U47HS91fldiaU4I9FQi7moOBEAsRq3V3gCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
+Hi Jaegeuk,
 
-On 12/23/2014 04:33 PM, Stefan Wahren wrote:
-> Hi Liu,
->
->> Liu Ying <Ying.Liu@freescale.com> hat am 23. Dezember 2014 um 04:46
->> geschrieben:
->>
->>
->> This patch adds Synopsys DesignWare MIPI DSI host controller driver support.
->> Currently, the driver supports the burst with sync pulses mode only.
->>
->> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> ---
->> v2->v3:
->> * Newly introduced in v3 to address Andy Yan's comment. This is based on
->> the i.MX MIPI DSI driver in v2. To make the Synopsys DesignWare MIPI DSI
->> host controller driver less platform-dependant, this patch places it at
->> the drm/bridge directory as a DRM bridge driver.
->>
->> .../devicetree/bindings/drm/bridge/dw_mipi_dsi.txt | 72 ++
->
-> please take care of [1] and send the Documentation part as a separate patch.
-> This should also apply to all the other patches from your series.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Tuesday, December 23, 2014 3:41 PM
+> To: Chao Yu
+> Cc: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: [f2fs-dev] [PATCH 6/6] f2fs: avoid double lock for cp_rwsem
+> 
+> Hi,
+> 
+> On Tue, Dec 23, 2014 at 03:01:36PM +0800, Chao Yu wrote:
+> > Hi Jaegeuk,
+> >
+> > > -----Original Message-----
+> > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > > Sent: Monday, December 22, 2014 12:35 AM
+> > > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> > > linux-f2fs-devel@lists.sourceforge.net
+> > > Cc: Jaegeuk Kim
+> > > Subject: [f2fs-dev] [PATCH 6/6] f2fs: avoid double lock for cp_rwsem
+> > >
+> > > The __f2fs_add_link is covered by cp_rwsem all the time.
+> > > This calls init_inode_metadata, which conducts some acl operations including
+> > > memory allocation with GFP_KERNEL previously.
+> > > But, under memory pressure, f2fs_write_data_page can be called, which also
+> > > grabs cp_mutex too.
+> >
+> > grabs cp_rwsem.
+> 
+> Got it.
+> 
+> >
+> > > Basically, it's safe since down_read was used in both of cases, but it'd
+> > > better avoid this situation in advance.
+> >
+> > If checkpoint intend to hold down_write in the middle of the two down_read
+> > caller, it will cause a deadlock, so it's not safe.
+> 
+> What I meant was like this.
+> - down_read
 
-All right, I'll do that.
+If someone else intends to hold down_write (in checkpoint()) here,
+we will encounter deadlock.
 
-Thanks,
-Liu Ying
+Because this writer will add itself to inner waiter list of spinlock as there
+is an exist reader had held this lock, then the following reader will start to
+spin as it detect that waiter list is not empty. Then deadlock occurred.
 
->
-> Thanks
->
-> Stefan
->
-> [1] -
-> http://lxr.free-electrons.com/source/Documentation/devicetree/bindings/submitting-patches.txt
->
+I guess this design can effectively avoid starve for the writer when encounters
+a large number of readers.
+
+Thanks
+
+>   - down_read
+>   - up_read
+> - up_read
+> 
+> This should be safe, right?
+> Thanks,
+> 
+> >
+> > Could you update the comments?
+> >
+> > >
+> > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> >
+> > Anyway, Nice catch and please add:
+> >
+> > Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+> >
+> > > ---
+> > >  fs/f2fs/acl.c | 4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
+> > > index 1ccb26b..7f12d28 100644
+> > > --- a/fs/f2fs/acl.c
+> > > +++ b/fs/f2fs/acl.c
+> > > @@ -62,7 +62,7 @@ static struct posix_acl *f2fs_acl_from_disk(const char *value, size_t
+> size)
+> > >  	if (count == 0)
+> > >  		return NULL;
+> > >
+> > > -	acl = posix_acl_alloc(count, GFP_KERNEL);
+> > > +	acl = posix_acl_alloc(count, GFP_NOFS);
+> > >  	if (!acl)
+> > >  		return ERR_PTR(-ENOMEM);
+> > >
+> > > @@ -116,7 +116,7 @@ static void *f2fs_acl_to_disk(const struct posix_acl *acl, size_t *size)
+> > >  	int i;
+> > >
+> > >  	f2fs_acl = kmalloc(sizeof(struct f2fs_acl_header) + acl->a_count *
+> > > -			sizeof(struct f2fs_acl_entry), GFP_KERNEL);
+> > > +			sizeof(struct f2fs_acl_entry), GFP_NOFS);
+> > >  	if (!f2fs_acl)
+> > >  		return ERR_PTR(-ENOMEM);
+> > >
+> > > --
+> > > 2.1.1
+> > >
+> > >
+> > > ------------------------------------------------------------------------------
+> > > Download BIRT iHub F-Type - The Free Enterprise-Grade BIRT Server
+> > > from Actuate! Instantly Supercharge Your Business Reports and Dashboards
+> > > with Interactivity, Sharing, Native Excel Exports, App Integration & more
+> > > Get technology previously reserved for billion-dollar corporations, FREE
+> > > http://pubads.g.doubleclick.net/gampad/clk?id=164703151&iu=/4140/ostg.clktrk
+> > > _______________________________________________
+> > > Linux-f2fs-devel mailing list
+> > > Linux-f2fs-devel@lists.sourceforge.net
+> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+
