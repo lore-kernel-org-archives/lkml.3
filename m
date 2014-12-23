@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086AbaLWOo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 09:44:29 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:45229 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750983AbaLWOo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 09:44:27 -0500
-Date: Tue, 23 Dec 2014 09:44:13 -0500
-From: Chris Mason <clm@fb.com>
-Subject: Re: [RFC PATCH 05/17] btrfs: remove bio splitting and
- merge_bvec_fn() calls
-To: Dongsu Park <dongsu.park@profitbricks.com>
-CC: <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Kent Overstreet <kmo@daterainc.com>, Ming Lin <mlin@minggr.net>,
-        Dongsu Park <dongsu.park@profitbricks.com>,
-        Josef Bacik <jbacik@fb.com>, <linux-btrfs@vger.kernel.org>
-Message-ID: <1419345853.13012.10@mail.thefacebook.com>
-In-Reply-To: <e4b7b017eaa81784889ebb2a4e6a7d4366adf13a.1419241597.git.dongsu.park@profit
-	bricks.com>
-References: <cover.1419241597.git.dongsu.park@profitbricks.com>
-	<e4b7b017eaa81784889ebb2a4e6a7d4366adf13a.1419241597.git.dongsu.park@profitbricks.com>
-X-Mailer: geary/0.8.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-23_05:2014-12-23,2014-12-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=0
- compositescore=0.925924926977281 urlsuspect_oldscore=0.925924926977281
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.925924926977281 spamscore=0
- recipient_to_sender_domain_totalscore=29 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412230148
-X-FB-Internal: deliver
+	id S1756162AbaLWOs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 09:48:57 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60917 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755704AbaLWOs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 09:48:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,632,1413270000"; 
+   d="scan'208";a="659056801"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-wireless@vger.kernel.org
+Cc: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        Kalle Valo <kvalo@codeaurora.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Christophe Prigent <christophe.prigent@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] brcmfmac: Do not crash if platform data is not populated
+Date: Tue, 23 Dec 2014 16:48:32 +0200
+Message-Id: <1419346112-173303-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 6:48 AM, Dongsu Park 
-<dongsu.park@profitbricks.com> wrote:
-> From: Kent Overstreet <kmo@daterainc.com>
-> 
-> Btrfs has been doing bio splitting from btrfs_map_bio(), by checking
-> device limits as well as calling ->merge_bvec_fn() etc. That is not
-> necessary any more, because generic_make_request() is now able to
-> handle arbitrarily sized bios. So clean up unnecessary code paths.
-> 
-> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-> [dpark: add more description in commit message]
-> Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
-> Cc: Chris Mason <clm@fb.com>
-> Cc: Josef Bacik <jbacik@fb.com>
-> Cc: linux-btrfs@vger.kernel.org
-> ---
+The driver looks for pdata->oob_irq_supported to find out if wowl can be
+supported. However, not all platforms populate pdata in which case we crash
+the kernel because of NULL pointer dereference.
 
-Looks good, I'll test it here too.  Thanks!
+Fixes: 330b4e4be937 ("brcmfmac: Add wowl support for SDIO devices.")
+Reported-by: Christophe Prigent <christophe.prigent@intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Signed-off-by: Chris Mason <clm@fb.com>
-
-
+diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+index 3c06e9365949..9880dae2a569 100644
+--- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+@@ -1070,7 +1070,7 @@ static int brcmf_ops_sdio_probe(struct sdio_func *func,
+ 	 */
+ 	if ((sdio_get_host_pm_caps(sdiodev->func[1]) & MMC_PM_KEEP_POWER) &&
+ 	    ((sdio_get_host_pm_caps(sdiodev->func[1]) & MMC_PM_WAKE_SDIO_IRQ) ||
+-	     (sdiodev->pdata->oob_irq_supported)))
++	     (sdiodev->pdata && sdiodev->pdata->oob_irq_supported)))
+ 		bus_if->wowl_supported = true;
+ #endif
+ 
+@@ -1167,7 +1167,7 @@ static int brcmf_ops_sdio_resume(struct device *dev)
+ 	struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
+ 
+ 	brcmf_dbg(SDIO, "Enter\n");
+-	if (sdiodev->pdata->oob_irq_supported)
++	if (sdiodev->pdata && sdiodev->pdata->oob_irq_supported)
+ 		disable_irq_wake(sdiodev->pdata->oob_irq_nr);
+ 	brcmf_sdio_wd_timer(sdiodev->bus, BRCMF_WD_POLL_MS);
+ 	atomic_set(&sdiodev->suspend, false);
+-- 
+2.1.3
 
