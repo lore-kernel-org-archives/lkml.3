@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324AbaLWP50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 10:57:26 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:53267 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965AbaLWP5Z (ORCPT
+	id S1756310AbaLWP7e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 10:59:34 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:53962 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756178AbaLWP7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 10:57:25 -0500
-Date: Tue, 23 Dec 2014 15:57:14 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Min-Hua Chen <orca.chen@gmail.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Larry Bassel <larry.bassel@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        "zhangwm@marvell.com" <zhangwm@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: setup return path for el1_undef
-Message-ID: <20141223155714.GC21816@e104818-lin.cambridge.arm.com>
-References: <CAHkaATRdNgcZnAvgKFRmiMEhLOPxFEPpjTu+XNkDk9DxG+4Fpg@mail.gmail.com>
+	Tue, 23 Dec 2014 10:59:32 -0500
+X-IronPort-AV: E=Sophos;i="5.07,632,1413270000"; 
+   d="scan'208";a="53822714"
+Message-ID: <54999161.504@broadcom.com>
+Date: Tue, 23 Dec 2014 16:59:29 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHkaATRdNgcZnAvgKFRmiMEhLOPxFEPpjTu+XNkDk9DxG+4Fpg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: <linux-wireless@vger.kernel.org>, Brett Rudley <brudley@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        Kalle Valo <kvalo@codeaurora.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Christophe Prigent <christophe.prigent@intel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: Do not crash if platform data is not populated
+References: <1419346112-173303-1-git-send-email-mika.westerberg@linux.intel.com> <54998C31.9090500@broadcom.com> <20141223154738.GM1314@lahna.fi.intel.com>
+In-Reply-To: <20141223154738.GM1314@lahna.fi.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 03:15:10PM +0000, Min-Hua Chen wrote:
-> Setup return path for el1_undef since el1_undef may
-> be handled by handlers.
+On 12/23/14 16:47, Mika Westerberg wrote:
+> On Tue, Dec 23, 2014 at 04:37:21PM +0100, Arend van Spriel wrote:
+>> On 12/23/14 15:48, Mika Westerberg wrote:
+>>> The driver looks for pdata->oob_irq_supported to find out if wowl can be
+>>> supported. However, not all platforms populate pdata in which case we crash
+>>> the kernel because of NULL pointer dereference.
+>>
+>> Thanks, Mika
+>>
+>> However, this was already reported by Dan Carpenter and I submitted a patch
+>> for that a couple of days ago: "[PATCH 02/10] brcmfmac: Fix possible
+>> dereference of NULL pointer." [1].
+>>
+>> Regards,
+>> Arend
+>>
+>> [1]
+>> http://mid.gmane.org/1419162233-19492-3-git-send-email-arend@broadcom.com
+>
+> Oh, good. I didn't notice that one.
+>
+> Thanks for fixing it :)
+>
+> BTW, that patch seems to miss brcmf_ops_sdio_resume(), perhaps it is
+> fixed in another patch?
 
-Did you find a real issue or it was just code inspection.
+Aargh, a nice "BTW" this is as there is no other patch for the resume 
+code. Maybe I should ask Kalle to apply your patch instead of ours. If 
+it did not already got applied.
 
-> asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
-> {
->     siginfo_t info;
->     void __user *pc = (void __user *)instruction_pointer(regs);
-> 
->     /* check for AArch32 breakpoint instructions */
->     if (!aarch32_break_handler(regs))
->         return;
-> 
->     if (call_undef_hook(regs) == 0)
->         return;
-> 
->     ...
-> }
-> Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
-> ---
->  arch/arm64/kernel/entry.S |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index fd4fa37..86ebec5 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -313,7 +313,8 @@ el1_undef:
->       */
->      enable_dbg
->      mov    x0, sp
-> -    b    do_undefinstr
-> +    bl    do_undefinstr
-> +    kernel_exit 1
->  el1_dbg:
->      /*
->       * Debug exception handling
-
-I don't think this is needed. The code is pretty convoluted but for an
-EL1 undefined exception we should never return from do_undefinstr(). The
-call_undef_hook() function returns 1 if !user_mode(regs) and this should
-cause a kernel panic. Basically we do not allow any kind of undefined
-instructions in the arm64 kernel.
-
--- 
-Catalin
+Regards,
+Arend
