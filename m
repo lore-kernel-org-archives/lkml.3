@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756518AbaLWT72 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 14:59:28 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:49839 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaLWT70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 14:59:26 -0500
-Date: Tue, 23 Dec 2014 11:58:50 -0800
+	id S1756584AbaLWUAQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 15:00:16 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37083 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512AbaLWUAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 15:00:13 -0500
+Date: Tue, 23 Dec 2014 11:59:34 -0800
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
@@ -15,196 +14,79 @@ Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
         Paul Mackerras <paulus@samba.org>, dev@codyps.com,
         peterz@infradead.org, hbabu@us.ibm.com, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v6 1/4] tools/perf: support parsing parameterized events
-Message-ID: <20141223195850.GA26952@us.ibm.com>
+Subject: Re: [PATCH v6 3/4] perf Documentation: add event parameters
+Message-ID: <20141223195934.GB26952@us.ibm.com>
 References: <1419234567-22784-1-git-send-email-sukadev@linux.vnet.ibm.com>
- <1419234567-22784-2-git-send-email-sukadev@linux.vnet.ibm.com>
- <20141222143710.GA29096@krava.brq.redhat.com>
- <20141222193045.GA19784@us.ibm.com>
- <20141223095506.GB22265@krava.brq.redhat.com>
+ <1419234567-22784-4-git-send-email-sukadev@linux.vnet.ibm.com>
+ <20141222143943.GB29096@krava.brq.redhat.com>
+ <20141222193436.GB19784@us.ibm.com>
+ <20141223095121.GA22265@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141223095506.GB22265@krava.brq.redhat.com>
+In-Reply-To: <20141223095121.GA22265@krava.brq.redhat.com>
 X-Operating-System: Linux 2.0.32 on an i486
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14122319-0033-0000-0000-0000031D6834
+x-cbid: 14122320-0033-0000-0000-000001660BE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From a24b480ff54381a7e092597864cf615162afdd60 Mon Sep 17 00:00:00 2001
+>From bfc20fd2161060cc51f3f24aa91663da39e97750 Mon Sep 17 00:00:00 2001
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
-Date: Wed, 24 Sep 2014 12:27:15 -0700
-Subject: [PATCH 1/4] tools/perf: support parsing parameterized events
+Date: Wed, 24 Sep 2014 12:27:22 -0700
+Subject: [PATCH 3/4] perf Documentation: add event parameters
 
-Enable event specification like:
+Event parameters are a basic way for partial events to be specified in
+sysfs with per-event names given to the fields that need to be filled in
+when using a particular event.
 
-	pmu/event_name,param1=0x1,param2=0x4/
+It is intended for supporting cases where the single 'cpu' parameter is
+insufficient. For example, POWER 8 has events for physical
+sockets/cores/cpus that are accessible from with virtual machines. To
+keep using the single 'cpu' parameter we'd need to perform a mapping
+between Linux's cpus and the physical machine's cpus (in this case
+Linux is running under a hypervisor). This isn't possible because
+bindings between our cpus and physical cpus may not be fixed, and we
+probably won't have a "cpu" on each physical cpu.
 
-Assuming that
+Changelog[v6]
+	Update event description to explain how required parameters
+	are displayed.
 
-	/sys/bus/event_source/devices/pmu/events/event_name
-
-Contains something like
-
-	param2=?,bar=1,param1=?
-
-Changelog[v6]:
-	[Jiri Olsa] Add a check to make sure that sysfs entries with
-	parameters exactly match '=?'.
-
-Changelog[v4]:
-	[Jiri Olsa] Merge to recent perf-core and fix a small conflict.
-
-Changelog[v3]:
-	[Jiri Olsa] If the sysfs event file specifies 'param=val', make the
-	usage 'hv_24x7/event,param=123/' rather than 'hv_24x7/event,val=123/'.
-
+CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- tools/perf/util/parse-events.h |  1 +
- tools/perf/util/pmu.c          | 74 +++++++++++++++++++++++++++++++++++-------
- 2 files changed, 64 insertions(+), 11 deletions(-)
+ Documentation/ABI/testing/sysfs-bus-event_source-devices-events | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index db2cf78..ca226ce 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -71,6 +71,7 @@ struct parse_events_term {
- 	int type_val;
- 	int type_term;
- 	struct list_head list;
-+	bool used;
- };
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+index 20979f8..505f080 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -52,12 +52,18 @@ Description:	Per-pmu performance monitoring events specific to the running syste
+ 			event=0x2abc
+ 			event=0x423,inv,cmask=0x3
+ 			domain=0x1,offset=0x8,starting_index=0xffff
++			domain=0x1,offset=0x8,core=?
  
- struct parse_events_evlist {
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 5c9c494..bfbecf7 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -551,31 +551,68 @@ static void pmu_format_value(unsigned long *format, __u64 value, __u64 *v,
- }
+ 		Each of the assignments indicates a value to be assigned to a
+ 		particular set of bits (as defined by the format file
+ 		corresponding to the <term>) in the perf_event structure passed
+ 		to the perf_open syscall.
  
- /*
-+ * Term is a string term, and might be a param-term. Try to look up it's value
-+ * in the remaining terms.
-+ * - We have a term like "base-or-format-term=param-term",
-+ * - We need to find the value supplied for "param-term" (with param-term named
-+ *   in a config string) later on in the term list.
-+ */
-+static int pmu_resolve_param_term(struct parse_events_term *term,
-+				  struct list_head *head_terms,
-+				  __u64 *value)
-+{
-+	struct parse_events_term *t;
++		In the case of the last example, a value replacing "?" would
++		need to be provided by the user selecting the particular event.
++		This is referred to as "event parameterization". Event
++		parameters have the format 'param=?'.
 +
-+	list_for_each_entry(t, head_terms, list) {
-+		if (t->type_val == PARSE_EVENTS__TERM_TYPE_NUM) {
-+			if (!strcmp(t->config, term->config)) {
-+				t->used = true;
-+				*value = t->val.num;
-+				return 0;
-+			}
-+		}
-+	}
-+
-+	if (verbose)
-+		printf("Required parameter '%s' not specified\n", term->config);
-+
-+	return -1;
-+}
-+
-+/*
-  * Setup one of config[12] attr members based on the
-  * user input data - term parameter.
-  */
- static int pmu_config_term(struct list_head *formats,
- 			   struct perf_event_attr *attr,
- 			   struct parse_events_term *term,
-+			   struct list_head *head_terms,
- 			   bool zero)
- {
- 	struct perf_pmu_format *format;
- 	__u64 *vp;
-+	__u64 val;
-+
-+	/*
-+	 * If this is a parameter we've already used for parameterized-eval,
-+	 * skip it in normal eval.
-+	 */
-+	if (term->used)
-+		return 0;
- 
- 	/*
--	 * Support only for hardcoded and numnerial terms.
- 	 * Hardcoded terms should be already in, so nothing
- 	 * to be done for them.
- 	 */
- 	if (parse_events__is_hardcoded_term(term))
- 		return 0;
- 
--	if (term->type_val != PARSE_EVENTS__TERM_TYPE_NUM)
--		return -EINVAL;
--
- 	format = pmu_find_format(formats, term->config);
--	if (!format)
-+	if (!format) {
-+		if (verbose)
-+			printf("Invalid event/parameter '%s'\n", term->config);
- 		return -EINVAL;
-+	}
- 
- 	switch (format->value) {
- 	case PERF_PMU_FORMAT_VALUE_CONFIG:
-@@ -592,11 +629,25 @@ static int pmu_config_term(struct list_head *formats,
- 	}
- 
- 	/*
--	 * XXX If we ever decide to go with string values for
--	 * non-hardcoded terms, here's the place to translate
--	 * them into value.
-+	 * Either directly use a numeric term, or try to translate string terms
-+	 * using event parameters.
- 	 */
--	pmu_format_value(format->bits, term->val.num, vp, zero);
-+	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM)
-+		val = term->val.num;
-+	else if (term->type_val == PARSE_EVENTS__TERM_TYPE_STR) {
-+		if (strcmp(term->val.str, "?")) {
-+			if (verbose)
-+				pr_info("Invalid sysfs entry %s=%s\n",
-+						term->config, term->val.str);
-+			return -EINVAL;
-+		}
-+
-+		if (pmu_resolve_param_term(term, head_terms, &val))
-+			return -EINVAL;
-+	} else
-+		return -EINVAL;
-+
-+	pmu_format_value(format->bits, val, vp, zero);
- 	return 0;
- }
- 
-@@ -607,9 +658,10 @@ int perf_pmu__config_terms(struct list_head *formats,
- {
- 	struct parse_events_term *term;
- 
--	list_for_each_entry(term, head_terms, list)
--		if (pmu_config_term(formats, attr, term, zero))
-+	list_for_each_entry(term, head_terms, list) {
-+		if (pmu_config_term(formats, attr, term, head_terms, zero))
- 			return -EINVAL;
-+	}
- 
- 	return 0;
- }
+ What: /sys/bus/event_source/devices/<pmu>/events/<event>.unit
+ Date: 2014/02/24
+ Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
 -- 
 1.8.3.1
 
