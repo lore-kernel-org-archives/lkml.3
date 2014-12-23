@@ -1,195 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaLWDk0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 22:40:26 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:56411 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728AbaLWDkX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 22:40:23 -0500
+	id S1754574AbaLWDmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 22:42:44 -0500
+Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:41600
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753949AbaLWDml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 22:42:41 -0500
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <dri-devel@lists.freedesktop.org>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <kernel@pengutronix.de>,
+        <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
+        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
+        <andyshrk@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH RFC v3 00/18] Add support for i.MX MIPI DSI DRM driver
+Date: Tue, 23 Dec 2014 11:46:21 +0800
+Message-ID: <1419306399-9387-1-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 2.1.0
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(243025005)(92566001)(107046002)(120916001)(77156002)(229853001)(97736003)(2351001)(99396003)(86362001)(6806004)(50986999)(85426001)(62966003)(110136001)(77096005)(104016003)(50466002)(87936001)(21056001)(84676001)(15975445007)(20776003)(64706001)(4396001)(50226001)(68736005)(106466001)(36756003)(105606002)(31966008)(89996001)(19580395003)(46102003)(48376002)(47776003)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0639;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <1419304697-14789-4-git-send-email-cw00.choi@samsung.com>
-References: <1419304697-14789-1-git-send-email-cw00.choi@samsung.com>
-	<1419304697-14789-4-git-send-email-cw00.choi@samsung.com>
-Date: Tue, 23 Dec 2014 09:10:20 +0530
-Message-ID: <CAEUmHyYnb8_HNnuz8BLhMOh01+gpXfTv63P-ubYE1DK9uptonA@mail.gmail.com>
-Subject: Re: [PATCHv5 3/9] devfreq: event: Add exynos-ppmu devfreq-event driver
-From: Varka Bhadram <varkabhadram@gmail.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: myungjoo.ham@samsung.com, kgene.kim@samsung.com,
-        Kyungmin Park <kyungmin.park@samsung.com>, rafael.j.wysocki@intel.com,
-        Mark Rutland <mark.rutland@arm.com>, a.kesavan@samsung.com,
-        tomasz.figa@gmail.com, k.kozlowski@samsung.com, inki.dae@samsung.com,
-        linux-pm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0639;
+X-Forefront-PRVS: 04347F8039
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 03:42:38.0749
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0639
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 8:48 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch adds exynos-ppmu devfreq-event driver to get performance data
-> of each IP for Samsung Exynos SoC. These event from Exynos PPMU provide
-> useful information about the behavior of the SoC that you can use when
-> analyzing system performance, and made visible and can be counted using
-> logic in each IP.
->
-> This patch is based on existing drivers/devfreq/exynos/exynos-ppmu.c
->
-> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Hi,
 
-(...)
-> +static int exynos_ppmu_parse_dt(struct exynos_ppmu_data *data)
-> +{
-> +       struct device *dev = data->dev;
-> +       struct device_node *np = dev->of_node;
-> +       int ret = 0;
-> +
-> +       if (!np) {
-> +               dev_err(dev, "failed to find devicetree node\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       /* Maps the memory mapped IO to control PPMU register */
-> +       data->ppmu.base = of_iomap(np, 0);
-> +       if (IS_ERR_OR_NULL(data->ppmu.base)) {
-> +               dev_err(dev, "failed to map memory region\n");
-> +               return -EINVAL;
--ENOMEM or -ENXIO is the proper error return value..?
+This series addresses comments from Philipp Zabel and Andy Yan on v2.
 
-> +       }
-> +
-> +       data->clk_ppmu = devm_clk_get(dev, "ppmu");
-> +       if (IS_ERR(data->clk_ppmu)) {
-> +               data->clk_ppmu = NULL;
-> +               dev_warn(dev, "failed to get PPMU clock\n");
-> +       }
-If PPMU clk get fails..?  return PTR_ERR(data->clk_ppmu)
-> +
-> +       ret = of_get_devfreq_events(np, data);
-> +       if (ret < 0) {
-> +               dev_err(dev, "failed to parse exynos ppmu dt node\n");
-> +               goto err;
-> +       }
-> +
-> +       return 0;
-> +
-> +err:
-> +       iounmap(data->ppmu.base);
-> +
-> +       return ret;
-> +}
-> +
-> +static int exynos_ppmu_probe(struct platform_device *pdev)
-> +{
-> +       struct exynos_ppmu_data *data;
-> +       struct devfreq_event_dev **edev;
-> +       struct devfreq_event_desc *desc;
-> +       int i, ret = 0, size;
-> +
-> +       data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-> +       if (!data)
-> +               return -ENOMEM;
-> +
-> +       mutex_init(&data->lock);
-> +       data->dev = &pdev->dev;
-> +
-> +       /* Parse dt data to get resource */
-> +       ret = exynos_ppmu_parse_dt(data);
-> +       if (ret < 0) {
-> +               dev_err(&pdev->dev,
-> +                       "failed to parse devicetree for resource\n");
-> +               return ret;
-> +       }
-> +       desc = data->desc;
-> +
-> +       size = sizeof(struct devfreq_event_dev *) * data->num_events;
-> +       data->edev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-> +       if (!data->edev) {
-> +               dev_err(&pdev->dev,
-> +                       "failed to allocate memory devfreq-event devices\n");
-> +               return -ENOMEM;
-> +       }
-> +       edev = data->edev;
-> +       platform_set_drvdata(pdev, data);
-> +
-> +       for (i = 0; i < data->num_events; i++) {
-> +               edev[i] = devfreq_event_add_edev(&pdev->dev, &desc[i]);
-> +               if (IS_ERR(edev)) {
-> +                       ret = PTR_ERR(edev);
-> +                       dev_err(&pdev->dev,
-> +                               "failed to add devfreq-event device\n");
-> +                       goto err;
-> +               }
-> +       }
-> +
-> +       clk_prepare_enable(data->clk_ppmu);
-> +
-> +       return 0;
-> +err:
-> +       iounmap(data->ppmu.base);
-> +
-> +       return ret;
-> +}
-> +
-> +static int exynos_ppmu_remove(struct platform_device *pdev)
-> +{
-> +       struct exynos_ppmu_data *data = platform_get_drvdata(pdev);
-> +       int i, ret = 0;
-> +
-> +       for (i = 0; i < data->num_events; i++) {
-> +               ret = devfreq_event_remove_edev(data->edev[i]);
-> +               if (ret < 0) {
-> +                       dev_err(&pdev->dev,
-> +                               "failed to remove devfreq-event device\n");
-> +                       goto err;
-> +               }
-> +       }
-> +
-> +err:
-> +       clk_disable_unprepare(data->clk_ppmu);
-> +       iounmap(data->ppmu.base);
-> +
-> +       return ret;
-> +}
-> +
-> +static struct of_device_id exynos_ppmu_id_match[] = {
-> +       { .compatible = "samsung,exynos-ppmu", },
-> +       { /* sentinel */ },
-> +};
-> +
-> +static struct platform_driver exynos_ppmu_driver = {
-> +       .probe  = exynos_ppmu_probe,
-> +       .remove = exynos_ppmu_remove,
-> +       .driver = {
-> +               .name   = "exynos-ppmu",
-> +               .owner  = THIS_MODULE,
-remove owner field. It will be populate by driver core.
-> +               .of_match_table = exynos_ppmu_id_match,
-> +       },
-> +};
-> +module_platform_driver(exynos_ppmu_driver);
-> +
-> +MODULE_DESCRIPTION("Exynos PPMU(Platform Performance Monitoring Unit) driver");
-> +MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:exynos-ppmu");
-> --
-> 1.8.5.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The i.MX MIPI DSI is a Synopsys DesignWare MIPI DSI host controller IP.
+This series adds support for a Synopsys DesignWare MIPI DSI host controller
+DRM bridge driver and a i.MX MIPI DSI specific DRM driver.
+Currently, the MIPI DSI drivers only support the burst with sync pulse mode.
 
+This series also includes a DRM panel driver for the Truly TFT480800-16-E panel
+which is driven by the Himax HX8369A driver IC.  The driver IC data sheet could
+be found at [1].  As mentioned by the data sheet, the driver IC supports several
+interface modes.  Currently, the DRM panel driver only supports the MIPI DSI video
+mode.  New interface modes could be added later(perhaps, just like the way the DRM
+simple panel driver supports both MIPI DSI interface panels and simple(parallel)
+interface panels).
 
+The MIPI DSI feature is tested on i.MX6Q SabreSD board and i.MX6DL SabreSD board.
+The MIPI DSI display could be enabled directly on i.MX6Q SabreSD board after
+applying this series, because the 26.4MHz pixel clock the panel requires could be
+derived from the IPU HSP clock(264MHz) with an integer divider.
+On i.MX6DL SabreSD board, we need to manually disable the LVDS and HDMI displays in
+the device tree blob, since the i.MX6DL IPU HSP clock is 198MHz at present, which
+makes the pixel clock share the PLL5 video clock source with the LVDS and HDMI,
+thus, the panel cannot get the pixel clock rate it wants.
+
+Patch 01/18 is needed to get a precise pixel clock rate(26.4MHz) from the PLL5 video
+clock.  If we don't have this patch, the pixel clock rate is about 20MHz, which
+causes a horitonal shift on the display image.
+
+This series can be applied on the drm-next branch.
+
+[1] http://www.allshore.com/pdf/Himax_HX8369-A.pdf
+
+Liu Ying (18):
+  clk: divider: Correct parent clk round rate if no bestdiv is normally
+    found
+  of: Add vendor prefix for Himax Technologies Inc.
+  of: Add vendor prefix for Truly Semiconductors Limited
+  ARM: imx6q: Add GPR3 MIPI muxing control register field shift bits
+    definition
+  ARM: imx6q: clk: Add the video_27m clock
+  ARM: imx6q: clk: Change hdmi_isfr clock's parent to be video_27m clock
+  ARM: imx6q: clk: Change hsi_tx clock to be a shared clock gate
+  ARM: imx6q: clk: Add support for mipi_core_cfg clock as a shared clock
+    gate
+  ARM: dts: imx6qdl: Move existing MIPI DSI ports into a new 'ports'
+    node
+  drm/dsi: Add a helper to get bits per pixel of MIPI DSI pixel format
+  drm/bridge: Add Synopsys DesignWare MIPI DSI host controller driver
+  drm: imx: Support Synopsys DesignWare MIPI DSI host controller
+  drm: panel: Add support for Himax HX8369A MIPI DSI panel
+  ARM: dtsi: imx6qdl: Add support for MIPI DSI host controller
+  ARM: dts: imx6qdl-sabresd: Add support for TRULY TFT480800-16-E MIPI
+    DSI panel
+  ARM: imx_v6_v7_defconfig: Cleanup for imx drm being moved out of
+    staging
+  ARM: imx_v6_v7_defconfig: Add support for MIPI DSI host controller
+  ARM: imx_v6_v7_defconfig: Add support for Himax HX8369A panel
+
+ .../devicetree/bindings/drm/bridge/dw_mipi_dsi.txt |  72 ++
+ .../devicetree/bindings/drm/imx/mipi_dsi.txt       |  75 ++
+ .../devicetree/bindings/panel/himax,hx8369a.txt    |  41 +
+ .../devicetree/bindings/vendor-prefixes.txt        |   2 +
+ arch/arm/boot/dts/imx6q.dtsi                       |  20 +-
+ arch/arm/boot/dts/imx6qdl-sabresd.dtsi             |  20 +
+ arch/arm/boot/dts/imx6qdl.dtsi                     |  29 +-
+ arch/arm/configs/imx_v6_v7_defconfig               |  17 +-
+ arch/arm/mach-imx/clk-imx6q.c                      |   7 +-
+ drivers/clk/clk-divider.c                          |   3 +-
+ drivers/gpu/drm/bridge/Kconfig                     |   5 +
+ drivers/gpu/drm/bridge/Makefile                    |   1 +
+ drivers/gpu/drm/bridge/dw_mipi_dsi.c               | 998 +++++++++++++++++++++
+ drivers/gpu/drm/imx/Kconfig                        |   7 +
+ drivers/gpu/drm/imx/Makefile                       |   1 +
+ drivers/gpu/drm/imx/dw_mipi_dsi-imx.c              | 226 +++++
+ drivers/gpu/drm/panel/Kconfig                      |   5 +
+ drivers/gpu/drm/panel/Makefile                     |   1 +
+ drivers/gpu/drm/panel/panel-himax-hx8369a.c        | 573 ++++++++++++
+ include/drm/bridge/dw_mipi_dsi.h                   |  27 +
+ include/drm/drm_mipi_dsi.h                         |  14 +
+ include/dt-bindings/clock/imx6qdl-clock.h          |   4 +-
+ include/linux/mfd/syscon/imx6q-iomuxc-gpr.h        |   1 +
+ 23 files changed, 2119 insertions(+), 30 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
+ create mode 100644 Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
+ create mode 100644 Documentation/devicetree/bindings/panel/himax,hx8369a.txt
+ create mode 100644 drivers/gpu/drm/bridge/dw_mipi_dsi.c
+ create mode 100644 drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
+ create mode 100644 drivers/gpu/drm/panel/panel-himax-hx8369a.c
+ create mode 100644 include/drm/bridge/dw_mipi_dsi.h
 
 -- 
-Thanks and Regards,
-Varka Bhadram.
+2.1.0
+
