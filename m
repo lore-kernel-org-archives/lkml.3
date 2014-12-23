@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782AbaLWLOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 06:14:50 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:45516 "EHLO
+	id S1755727AbaLWLYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 06:24:20 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:46696 "EHLO
 	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421AbaLWLOs (ORCPT
+	with ESMTP id S1754639AbaLWLYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 06:14:48 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
-        joe@perches.com, ocfs2-devel@oss.oracle.com,
-        Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [Ocfs2-devel] [PATCH 1/1 linux-next] ocfs2: remove unnecessary sizeof(char)
-Organization: D03
-References: <1419275109-11641-1-git-send-email-fabf@skynet.be>
-	<20141222133501.916a0944e5f0719e60e2c4eb@linux-foundation.org>
-X-Hashcash: 1:20:141223:akpm@linux-foundation.org::cM6Lx7PU8xdMfuMt:0000000000000000000000000000000000000HXR
-X-Hashcash: 1:20:141223:mfasheh@suse.com::m4p9eNrdeCd5+eq9:01zAV
-X-Hashcash: 1:20:141223:linux-kernel@vger.kernel.org::mFrE8k6d8p6Kpq12:0000000000000000000000000000000002d4C
-X-Hashcash: 1:20:141223:ocfs2-devel@oss.oracle.com::IYRLdmlivFeTHMo+:000000000000000000000000000000000004LUD
-X-Hashcash: 1:20:141223:fabf@skynet.be::xb17i7Z7iZZlc6Mx:0005tZH
-X-Hashcash: 1:20:141223:joe@perches.com::uTvdwUEhUtMOZ5TU:00NyGO
-Date: Tue, 23 Dec 2014 12:14:44 +0100
-In-Reply-To: <20141222133501.916a0944e5f0719e60e2c4eb@linux-foundation.org>
-	(Andrew Morton's message of "Mon, 22 Dec 2014 13:35:01 -0800")
-Message-ID: <87k31ibot7.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 23 Dec 2014 06:24:18 -0500
+Date: Tue, 23 Dec 2014 12:24:18 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Preston Fick <pffick@gmail.com>
+Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: serial: cp210x: Correcting IDs for production CEL
+ MeshConnect USB Stick
+Message-ID: <20141223112418.GJ30375@localhost>
+References: <1419226419-19440-1-git-send-email-pffick@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419226419-19440-1-git-send-email-pffick@gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
+On Sun, Dec 21, 2014 at 11:33:39PM -0600, Preston Fick wrote:
 
-> On Mon, 22 Dec 2014 20:05:09 +0100 Fabian Frederick <fabf@skynet.be> wrote:
->
->>  
->> -	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) +
->> -			     (osb->max_slots * sizeof(char)), GFP_KERNEL);
->> +	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) + osb->max_slots,
->> +			     GFP_KERNEL);
->>  
->
-> I dunno.  The code at present isn't particularly idiomatic, but it has
-> some documentation value and says "I know what I'm doing".
->
-> It would be better if it was
->
-> 	kzalloc(sizeof(struct ocfs2_replay_map) *
-> 		sizeof(struct ocfs2_replay_map.rm_replay_slots[0]), ...);
->
-> And it would be better if C permitted that ;)
->
-> 	kzalloc(sizeof(struct ocfs2_replay_map) *
-> 		sizeof((struct ocfs2_replay_map *)0)->rm_replay_slots[0]), ...);
->
-> yuk.
+Please add a proper commit message here describing why this is needed.
+Are there any devices with the original PID or was that just a typo?
 
-Well, the yuckiness could be hidden behind FIELD_SIZEOF. CodingStyle
-explicitly mentions that macro. No opinion on whether it's worth it in
-this case.
+> Signed-off-by: Preston Fick <pffick@gmail.com>
+> ---
+>  drivers/usb/serial/cp210x.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+> index 6c4eb3c..fb8d3fa 100644
+> --- a/drivers/usb/serial/cp210x.c
+> +++ b/drivers/usb/serial/cp210x.c
+> @@ -120,7 +120,7 @@ static const struct usb_device_id id_table[] = {
+>  	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+>  	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+>  	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+> -	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
+> +	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL MeshConnect USB Stick */
+>  	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+>  	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+>  	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
 
-Rasmus
+Thanks,
+Johan
