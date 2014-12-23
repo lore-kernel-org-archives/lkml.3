@@ -1,201 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867AbaLWHgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 02:36:13 -0500
-Received: from mail.kernel.org ([198.145.19.201]:50972 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaLWHgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 02:36:12 -0500
-Date: Mon, 22 Dec 2014 23:36:09 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-Message-ID: <20141223073609.GA9946@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
- <20141222020317.GB3335@lcm>
- <000001d01db6$7d718770$78549650$@samsung.com>
- <20141222231604.GC8287@jaegeuk-mac02.mot.com>
- <002a01d01e5c$e2ba0250$a82e06f0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002a01d01e5c$e2ba0250$a82e06f0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755050AbaLWHkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 02:40:32 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:37973 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694AbaLWHk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 02:40:28 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-d5-54991c6a960d
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
+Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com, inki.dae@samsung.com,
+        cw00.choi@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 1/3] clk: samsung: Changes the return value of
+ samsung_cmu_register_one()
+Date: Tue, 23 Dec 2014 16:40:21 +0900
+Message-id: <1419320423-19228-2-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+In-reply-to: <1419320423-19228-1-git-send-email-cw00.choi@samsung.com>
+References: <1419320423-19228-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkWDdLZmaIweMObYvrX56zWky6P4HF
+	onfBVTaLs01v2C0u75rDZjHj/D4mi6cTLrJZHH7TzmqxatcfRgdOj52z7rJ73Lm2h82jb8sq
+	Ro/Pm+QCWKK4bFJSczLLUov07RK4MrZO72UsuCBUce3QFLYGxhP8XYycHBICJhJP1/9khLDF
+	JC7cW8/WxcjFISSwlFFi+uE7zDBFz3pnMUMkFjFKHJnXwAKSEBJoYpJ4/kQVxGYT0JLY/+IG
+	UDcHh4iAocTNQ0og9cwC5xgl1i7rZwOpERaIlnh6fQXYUBYBVYn1c48xgdi8Aq4Sbc9eM0Es
+	U5BYtnwmK4jNKeAm8XPmR6hdrhI7P89lBxkqIbCMXeJB705GiEECEt8mH2IBWSwhICux6QDU
+	0ZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmDAn/73bMIOxnsHrA8x
+	CnAwKvHwLjwzI0SINbGsuDL3EKMp0IaJzFKiyfnAuMoriTc0NjOyMDUxNTYytzRTEud9LfUz
+	WEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOjHs/b85OPOFzXSrksZLdYMUHZKS+jKtZqS2bo
+	wgzrZw9y47JeCsu9nnW4ZL3MTX+ZFU+mTq0MaroTeWrR1vhlXv13eGLC3VVERUr5NhqkfvPf
+	fu15mqXiN47Dj35pnExbxh+hs0Xls836lyUbj01oW22ySCX+Y8TBaQLF+897z+2/XaHW/zlQ
+	iaU4I9FQi7moOBEAOBJsE3MCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jAd0smZkhBnu3KVtc//Kc1WLS/Qks
+	Fr0LrrJZnG16w25xedccNosZ5/cxWTydcJHN4vCbdlaLVbv+MDpweuycdZfd4861PWwefVtW
+	MXp83iQXwBLVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg
+	65aZA3SMkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFj6/RexoILQhXX
+	Dk1ha2A8wd/FyMkhIWAi8ax3FjOELSZx4d56ti5GLg4hgUWMEkfmNbCAJIQEmpgknj9RBbHZ
+	BLQk9r+4AVTEwSEiYChx85ASSD2zwDlGibXL+tlAaoQFoiWeXl8BNpRFQFVi/dxjTCA2r4Cr
+	RNuz10wQyxQkli2fyQpicwq4Sfyc+RFql6vEzs9z2Scw8i5gZFjFKJpakFxQnJSea6hXnJhb
+	XJqXrpecn7uJERxPz6R2MK5ssDjEKMDBqMTDu+DMjBAh1sSy4srcQ4wSHMxKIrwvxWeGCPGm
+	JFZWpRblxxeV5qQWH2I0BbpqIrOUaHI+MNbzSuINjU3MjCyNzA0tjIzNlcR5lezbQoQE0hNL
+	UrNTUwtSi2D6mDg4pRoY+Zbfd/FX359xSd7ScVlWFG+AAGPoSpc76lyqzawi2zkMyzx+5nw1
+	8X5rrmISev+Rm45/29r6v1xRbLkle78tjH4v4HxpyovWWH2XzwLXl074t2lV/UQdybw9k46+
+	MH/aVy3jEawg73eac9cndaXnJjLRT7XXX1LkeLRoc31ykLmErWGigpESS3FGoqEWc1FxIgCC
+	r534vQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+This patch changes the return value of samsung_cmu_register_one()
+from 'void type' to 'samsung_clk_provider structure' pointer type because
+samsung_clk_provider may be used in each clock driver.
 
-On Tue, Dec 23, 2014 at 11:01:39AM +0800, Chao Yu wrote:
-> Hi Jaegeuk,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Tuesday, December 23, 2014 7:16 AM
-> > To: Chao Yu
-> > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > 
-> > Hi Chao,
-> > 
-> > On Mon, Dec 22, 2014 at 03:10:30PM +0800, Chao Yu wrote:
-> > > Hi Changman,
-> > >
-> > > > -----Original Message-----
-> > > > From: Changman Lee [mailto:cm224.lee@samsung.com]
-> > > > Sent: Monday, December 22, 2014 10:03 AM
-> > > > To: Chao Yu
-> > > > Cc: Jaegeuk Kim; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > > > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > > >
-> > > > Hi Yu,
-> > > >
-> > > > Good approach.
-> > >
-> > > Thank you. :)
-> > >
-> > > > As you know, however, f2fs breaks extent itself due to COW.
-> > >
-> > > Yes, and sometimes f2fs use IPU when override writing, in this condition,
-> > > by using this approach we can cache more contiguous mapping extent for better
-> > > performance.
-> > 
-> > Hmm. When f2fs faces with this case, there is no chance to make an extent itself
-> > at all.
-> 
-> With new implementation of this patch f2fs will build extent cache when readpage/readpages.
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ drivers/clk/samsung/clk.c | 13 ++++++++++---
+ drivers/clk/samsung/clk.h |  3 ++-
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-I don't understand your points exactly. :(
-If there are no on-disk extents, it doesn't matter when the caches are built.
-Could you define what scenarios you're looking at?
+diff --git a/drivers/clk/samsung/clk.c b/drivers/clk/samsung/clk.c
+index 4bda540..980c5da 100644
+--- a/drivers/clk/samsung/clk.c
++++ b/drivers/clk/samsung/clk.c
+@@ -374,19 +374,24 @@ static void samsung_clk_sleep_init(void __iomem *reg_base,
+  * Common function which registers plls, muxes, dividers and gates
+  * for each CMU. It also add CMU register list to register cache.
+  */
+-void __init samsung_cmu_register_one(struct device_node *np,
++struct samsung_clk_provider* __init samsung_cmu_register_one(
++			struct device_node *np,
+ 			struct samsung_cmu_info *cmu)
+ {
+ 	void __iomem *reg_base;
+ 	struct samsung_clk_provider *ctx;
+ 
+ 	reg_base = of_iomap(np, 0);
+-	if (!reg_base)
++	if (!reg_base) {
+ 		panic("%s: failed to map registers\n", __func__);
++		return NULL;
++	}
+ 
+ 	ctx = samsung_clk_init(np, reg_base, cmu->nr_clk_ids);
+-	if (!ctx)
++	if (!ctx) {
+ 		panic("%s: unable to alllocate ctx\n", __func__);
++		return ctx;
++	}
+ 
+ 	if (cmu->pll_clks)
+ 		samsung_clk_register_pll(ctx, cmu->pll_clks, cmu->nr_pll_clks,
+@@ -410,4 +415,6 @@ void __init samsung_cmu_register_one(struct device_node *np,
+ 			cmu->nr_clk_regs);
+ 
+ 	samsung_clk_of_add_provider(np, ctx);
++
++	return ctx;
+ }
+diff --git a/drivers/clk/samsung/clk.h b/drivers/clk/samsung/clk.h
+index 8acabe1..e4c7538 100644
+--- a/drivers/clk/samsung/clk.h
++++ b/drivers/clk/samsung/clk.h
+@@ -392,7 +392,8 @@ extern void __init samsung_clk_register_pll(struct samsung_clk_provider *ctx,
+ 			struct samsung_pll_clock *pll_list,
+ 			unsigned int nr_clk, void __iomem *base);
+ 
+-extern void __init samsung_cmu_register_one(struct device_node *,
++extern struct samsung_clk_provider __init *samsung_cmu_register_one(
++			struct device_node *,
+ 			struct samsung_cmu_info *);
+ 
+ extern unsigned long _get_rate(const char *clk_name);
+-- 
+1.8.5.5
 
-> 
-> > 
-> > >
-> > > > Unlike other filesystem like btrfs, minimum extent of f2fs could have 4KB granularity.
-> > > > So we would have lots of extents per inode and it could lead to overhead
-> > > > to manage extents.
-> > >
-> > > Agree, the more number of extents are growing in one inode, the more memory
-> > > pressure and longer latency operating in rb-tree we are facing.
-> > > IMO, to solve this problem, we'd better to add limitation or shrink ability into
-> > > extent cache:
-> > > 1.limit extent number per inode with the value set from sysfs and discard extent
-> > > from inode's extent lru list if we touch the limitation; (e.g. in FAT, max number
-> > > of mapping extent per inode is fixed: 8)
-> > > 2.add all extents of inodes into a global lru list, we will try to shrink this list
-> > > if we're facing memory pressure.
-> > >
-> > > How do you think? or any better ideas are welcome. :)
-> > 
-> > Historically, the reason that I added only one small extent cache is that I
-> > wanted to avoid additional data structures having any overhead in critical data
-> > write path.
-> 
-> Thank you for telling me the history of original extent cache.
-> 
-> > Instead, I intended to use a well operating node page cache.
-> > 
-> > We need to consider what would be the benefit when using extent cache rather
-> > than existing node page cache.
-> 
-> IMO, node page cache belongs to system level cache, filesystem sub system can
-> not control it completely, cached uptodate node page will be invalidated by
-> using drop_caches from sysfs, or reclaimer of mm, result in more IO when we need
-> these node page next time.
-
-Yes, that's exactly what I wanted.
-
-> New extent cache belongs to filesystem level cache, it is completely controlled
-> by filesystem itself. What we can profit is: on the one hand, it is used as
-> first level cache above the node page cache, which can also increase the cache
-> hit ratio.
-
-I don't think so. The hit ratio depends on the cache policy. The node page
-cache is managed globally by kernel in LRU manner, so I think this can show
-affordable hit ratio.
-
-> On the other hand, it is more instable and controllable than node page
-> cache.
-
-It depends on how you can control the extent cache. But, I'm not sure that
-would be better than page cache managed by MM.
-
-So, my concerns are:
-
-1. Redundant memory overhead
- : The extent cache is likely on top of the node page cache, which will consume 
- memory redundantly.
-
-2. CPU overhead
- : In every block address updates, it needs to traverse extent cache entries.
-
-3. Effectiveness
- : We have a node page cache that is managed by MM in LRU order. I think this
- provides good hit ratio, system-wide memory relciaming algorithms, and well-
- defined locking mechanism.
-
-4. Cache reclaiming policy
- a. global approach: it needs to consider lock contention, CPU overhead, and
-                     shrinker. I don't think it is better than page cache.
- b. local approach: there still exists cold misses at the initial read
-                    operations. After then, how does the extent cache increase
-		    hit ratio more than giving node page cache?
-
-		    For example, in the case of pretty normal scenario like
-		    open -> read -> close -> open -> read ..., we can't get
-		    benefits form locally-managed extent cache, while node
-		    page cache serves many block addresses.
-
-This is my initial thought on the extent cache.
-Definitely, it is worth to discuss further in more details.
-
-Thanks,
-
-> 
-> Thanks,
-> Yu
-> 
-> > 
-> > Thanks,
-> > 
-> > >
-> > > >
-> > > > Anyway, mount option could be alternative for this patch.
-> > >
-> > > Yes, will do.
-> > >
-> > > Thanks,
-> > > Yu
-> > >
-> > > >
-> > > > On Fri, Dec 19, 2014 at 06:49:29PM +0800, Chao Yu wrote:
-> > > > > Now f2fs have page-block mapping cache which can cache only one extent mapping
-> > > > > between contiguous logical address and physical address.
-> > > > > Normally, this design will work well because f2fs will expand coverage area of
-> > > > > the mapping extent when we write forward sequentially. But when we write data
-> > > > > randomly in Out-Place-Update mode, the extent will be shorten and hardly be
-> > > > > expanded for most time as following reasons:
-> > > > > 1.The short part of extent will be discarded if we break contiguous mapping in
-> > > > > the middle of extent.
-> > > > > 2.The new mapping will be added into mapping cache only at head or tail of the
-> > > > > extent.
-> > > > > 3.We will drop the extent cache when the extent became very fragmented.
-> > > > > 4.We will not update the extent with mapping which we get from readpages or
-> > > > > readpage.
-> > > > >
-> > > > > To solve above problems, this patch adds extent cache base on rb-tree like other
-> > > > > filesystems (e.g.: ext4/btrfs) in f2fs. By this way, f2fs can support another
-> > > > > more effective cache between dnode page cache and disk. It will supply high hit
-> > > > > ratio in the cache with fewer memory when dnode page cache are reclaimed in
-> > > > > environment of low memory.
-> > > > >
-> > > > > Todo:
-> > > > > *introduce mount option for extent cache.
-> > > > > *add shrink ability for extent cache.
-> > > > >
-> > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > > ---
