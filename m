@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539AbaLWVUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 16:20:22 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:43352 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaLWVUV (ORCPT
+	id S1756620AbaLWVWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 16:22:16 -0500
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:59856 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025AbaLWVWP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 16:20:21 -0500
+	Tue, 23 Dec 2014 16:22:15 -0500
+Date: Tue, 23 Dec 2014 22:22:10 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: dwalker@fifo99.com
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH 1/3] printk: Use a flag to indicate console-private loglevel
+Message-ID: <20141223222210.76336cd5@neptune.home>
+In-Reply-To: <20141220224908.GB4466@fifo99.com>
+References: <20141220224908.GB4466@fifo99.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i686-pc-linux-gnu)
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 23 Dec 2014 13:19:59 -0800
-Message-ID: <CALCETrWHcme9hyROr-bDcutzGR7ZLFCo0iNp5j4tkDPuxt09Og@mail.gmail.com>
-Subject: [GIT PULL] One more vdso fix for 3.19
-To: Ingo Molnar <mingo@redhat.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo et al,
+In order to set loglevel for a given console that is not affected by
+global loglevel as adjusted via syslog(2), add a flag to the console and
+choose the level to match against msg level depending on this flag.
 
-Please consider pulling for x86/urgent.
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+---
+This depends on Daniel's patch "printk: add per console loglevel"
+and modifies the way its filtering is applied.
 
-Thanks,
-Andy
 
+ include/linux/console.h |  1 +
+ kernel/printk/printk.c  | 12 ++++++------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-The following changes since commit 394f56fe480140877304d342dec46d50dc823d46:
+diff --git a/include/linux/console.h b/include/linux/console.h
+index 99020d5..f3a8996 100644
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -115,6 +115,7 @@ static inline int con_debug_leave(void)
+ #define CON_BOOT	(8)
+ #define CON_ANYTIME	(16) /* Safe to call when cpu is offline */
+ #define CON_BRL		(32) /* Used for a braille device */
++#define CON_LOGLEVEL	(64) /* Per-console log-level filtering */
+ 
+ struct console {
+ 	char	name[16];
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 218d94d..8f09f30 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1399,12 +1399,12 @@ static void call_console_drivers(int level, const char *text, size_t len)
+ 
+ 	trace_console(text, len);
+ 
+-	if (level >= console_loglevel && !ignore_loglevel)
+-		return;
+ 	if (!console_drivers)
+ 		return;
+ 
+ 	for_each_console(con) {
++		if (!ignore_loglevel && level >= (con->flags & CON_LOGLEVEL ? con->loglevel : console_loglevel))
++			continue;
+ 		if (exclusive_console && con != exclusive_console)
+ 			continue;
+ 		if (!(con->flags & CON_ENABLED))
+@@ -1414,9 +1414,6 @@ static void call_console_drivers(int level, const char *text, size_t len)
+ 		if (!cpu_online(smp_processor_id()) &&
+ 		    !(con->flags & CON_ANYTIME))
+ 			continue;
+-		if (con->loglevel && !ignore_loglevel &&
+-		    level >= con->loglevel)
+-			continue;
+ 		con->write(con, text, len);
+ 	}
+ }
+@@ -2512,7 +2509,10 @@ void register_console(struct console *newcon)
+ 		    newcon->setup(newcon, console_cmdline[i].options) != 0)
+ 			break;
+ 
+-		newcon->loglevel = c->loglevel;
++		if (c->loglevel) {
++			newcon->loglevel = c->loglevel;
++			newcon->flags |= CON_LOGLEVEL;
++		}
+ 		newcon->flags |= CON_ENABLED;
+ 		newcon->index = c->index;
+ 		if (i == selected_console) {
+-- 
+2.0.4
 
-  x86_64, vdso: Fix the vdso address randomization algorithm
-(2014-12-20 16:56:57 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git
-tags/pr-20141223-x86-vdso
-
-for you to fetch changes up to 1ddf0b1b11aa8a90cef6706e935fc31c75c406ba:
-
-  x86, vdso: Use asm volatile in __getcpu (2014-12-23 13:05:30 -0800)
-
-----------------------------------------------------------------
-This is hopefully the last vdso fix for 3.19.  It should be very
-safe (it just adds a volatile).
-
-I don't think it fixes an actual bug (the __getcpu calls in the
-pvclock code may not have been needed in the first place), but
-discussion on that point is ongoing.
-
-It also fixes a big performance issue in 3.18 and earlier in which
-the lsl instructions in vclock_gettime got hoisted so far up the
-function that they happened even when the function they were in was
-never called.  n 3.19, the performance issue seems to be gone due to
-the whims of my compiler and some interaction with a branch that's
-now gone.
-
-I'll hopefully have a much bigger overhaul of the pvclock code
-for 3.20, but it needs careful review.
-
-----------------------------------------------------------------
-Andy Lutomirski (1):
-      x86, vdso: Use asm volatile in __getcpu
-
- arch/x86/include/asm/vgtod.h | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
