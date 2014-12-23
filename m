@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbaLWGW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 01:22:56 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34655 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaLWGWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 01:22:55 -0500
-From: root <chenggang.qin@gmail.com>
-X-Google-Original-From: root <chenggang.qcg>
-To: linux-kernel@vger.kernel.org
-Cc: Chenggang Qin <chenggang.qcg@taobao.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>
-Subject: [PATCH] perf core: Use KSTK_ESP() instead of pt_regs->sp while output user regs
-Date: Tue, 23 Dec 2014 14:22:25 +0800
-Message-Id: <1419315745-20767-1-git-send-email-user@chenggang-laptop>
-X-Mailer: git-send-email 1.9.1
+	id S1754642AbaLWGco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 01:32:44 -0500
+Received: from ozlabs.org ([103.22.144.67]:56071 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056AbaLWGcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 01:32:42 -0500
+Date: Tue, 23 Dec 2014 17:32:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Will Deacon <will.deacon@arm.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: linux-next: missing merge fix patch for the merge of the
+ xen-tip tree with the arm-soc tree
+Message-ID: <20141223173234.7c4c45f5@canb.auug.org.au>
+In-Reply-To: <CA+55aFwQKe0PvSuYqOeQMM8kouB3mkyQQ=gFMX=bkPx3GxanvA@mail.gmail.com>
+References: <20141208184908.27bfd605@canb.auug.org.au>
+	<20141208103328.GE27367@arm.com>
+	<20141223132605.02d81e01@canb.auug.org.au>
+	<CA+55aFwQKe0PvSuYqOeQMM8kouB3mkyQQ=gFMX=bkPx3GxanvA@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/74vVFQ3VyjweQBk_D1gmmF/"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chenggang Qin <chenggang.qcg@taobao.com>
+--Sig_/74vVFQ3VyjweQBk_D1gmmF/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-For x86_64, the exact value of user stack's esp should be got by KSTK_ESP(current).
-current->thread.usersp is copied from PDA while enter ring0. 
-Now, we output the value of sp from pt_regs. But pt_regs->sp has changed before
-it was pushed into kernel stack.
+Hi Linus,
 
-So, we cannot get the correct callchain while unwind some user stacks.
-For example, if the stack contains __lll_unlock_wake()/__lll_lock_wait(), the
-callchain will break some times with the latest version of libunwind.
-The root cause is the sp that is used by libunwind may be wrong.
+On Mon, 22 Dec 2014 20:09:50 -0800 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> On Mon, Dec 22, 2014 at 6:26 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+> > Hi Linus,
+> >
+> > I have been carrying this merge fix patch for some time that is now
+> > needed in your tree:
+>=20
+> No, it's not. Look more closely.
+>=20
+> My merge put the
+>=20
+>         dev->archdata.dma_coherent =3D coherent;
+>=20
+> line at the top of the function, like the way it was in the original comm=
+it.
 
-If we use KSTK_ESP(current), the correct callchain can be got everytime.
-Other architectures also have KSTK_ESP() macro.
+Oops, sorry about that.
 
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
----
- arch/x86/kernel/perf_regs.c | 3 +++
- 1 file changed, 3 insertions(+)
+--Sig_/74vVFQ3VyjweQBk_D1gmmF/
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-diff --git a/arch/x86/kernel/perf_regs.c b/arch/x86/kernel/perf_regs.c
-index e309cc5..5da8df8 100644
---- a/arch/x86/kernel/perf_regs.c
-+++ b/arch/x86/kernel/perf_regs.c
-@@ -60,6 +60,9 @@ u64 perf_reg_value(struct pt_regs *regs, int idx)
- 	if (WARN_ON_ONCE(idx >= ARRAY_SIZE(pt_regs_offset)))
- 		return 0;
- 
-+	if (idx == PERF_REG_X86_SP)
-+		return KSTK_ESP(current);
-+
- 	return regs_get_register(regs, pt_regs_offset[idx]);
- }
- 
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJUmQyHAAoJEMDTa8Ir7ZwVJK4QAI6Sto8zHENd4L6S86wn7F9B
+Jj3CSvO2A503KTA/Muneq4//PRplt0RZZUP/nDaPSc8ZKjCd+SNxp2vBPZRSUoWh
+OtevOroAGAlDvWz2AgF49TVw1ud73AiVgInFSFGmdhPzk47akTe+V4S8q2Yflo+I
+b1CC/PvVC1sW36dA3kKZ11EldNzF5AXAu7gHdFNSKB3FAIkar4jaq8tj9x6OBcDZ
+9Eo+fWduvEBI4QKBsb9dB1O5Wweon+/29rsEj3J989loYS4aD3Y5hpr+/EVtEPs7
+P6mvYmoI4KEhtHWzlFLF7t5/AeCzA/pKmTBiOrlAR5Mnru485jCJb1v+jN8LmwmK
+afwcBcEunVQihmETSMX5lBlq4IefrsYYVEoTO0wz04zP3Hd4kyGZVsoiGl48O6Rc
+Bnnw7Ke4xyy+4h6PYhTUS0EDloxBlVUfCvm5e87/yJ14sjLnt4CUUXm9gcpwFLp6
+o+nS/nfgScKiKXnVk5etNQ9z4Wd96XUJdlAvhX3FcV1/ZaAMzk1HiE0P9XUl76mo
+/eB01BmTjH+6hgl3ZnTOH33+s5cZVA0JixX3lvjyeaBvTNHjPhaUwMybkPFeWXzH
+HTWyO58H6RKTCVNFsD+vuDHOlgGgU3z28Nlxgmh7/wO15/tOX2f4HbPn6jX1dIN2
+7gm/dC6cGmJkf09fzWPo
+=phOW
+-----END PGP SIGNATURE-----
+
+--Sig_/74vVFQ3VyjweQBk_D1gmmF/--
