@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359AbaLWStO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 13:49:14 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:47085 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaLWStM (ORCPT
+	id S1756421AbaLWStt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 13:49:49 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:47844 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097AbaLWSts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 13:49:12 -0500
+	Tue, 23 Dec 2014 13:49:48 -0500
+Date: Tue, 23 Dec 2014 12:48:58 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Robert Baldyga <r.baldyga@samsung.com>,
+        David Cohen <david.a.cohen@linux.intel.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
+        <m.szyprowski@samsung.com>, <k.opasiak@samsung.com>,
+        <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v5] usb: gadget: f_fs: add "no_disconnect" mode
+Message-ID: <20141223184858.GM9147@saruman>
+Reply-To: <balbi@ti.com>
+References: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20141223091944.GB9112@gmail.com>
-References: <20141222200803.D316DA2A@viggo.jf.intel.com> <20141222200804.18A7A803@viggo.jf.intel.com>
- <CALCETrWAgPjLTA-iSabFmqVKiOKGPGgDgSWdjz3wsncs1X+WOg@mail.gmail.com>
- <54987D4F.3000908@sr71.net> <CALCETrXF11MeP8vc4eKqJz+2OOYQzmrK_erVEz=pZS3c=YWibw@mail.gmail.com>
- <20141223091944.GB9112@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 23 Dec 2014 10:48:50 -0800
-Message-ID: <CALCETrWuG6kDeGAqMmw7EuSrLBJvU8xWbzMn+A0kjB5eMfEBuA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86, mpx: explicitly disable 32-bit MPX support on
- 64-bit kernels
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Dave Hansen <dave@sr71.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WuedheRyq6FDfQ9j"
+Content-Disposition: inline
+In-Reply-To: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 1:19 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Andy Lutomirski <luto@amacapital.net> wrote:
->
->> On Mon, Dec 22, 2014 at 12:21 PM, Dave Hansen <dave@sr71.net> wrote:
->> > On 12/22/2014 12:17 PM, Andy Lutomirski wrote:
->> >>> >         /*
->> >>> > +        * 32-bit binaries on 64-bit kernels are currently
->> >>> > +        * unsupported.
->> >>> > +        */
->> >>> > +       if (IS_ENABLED(CONFIG_X86_64) && test_thread_flag(TIF_IA32))
->> >>> > +               return MPX_INVALID_BOUNDS_DIR;
->> >> Should this check mm->ia32_compat instead?
->> >
->> > set_personality_64bit/ia32() seem to make that and TIF_IA32 awfully
->> > equivalent.  Is there a specific reason for wanting it done this way?
->>
->> My general desire to remove various bogus TIF_IA32 references.
->> [...]
->
-> So we generally want to use mm->context.ia32_compat instead of
-> TIF_IA32, because in the end TIF_IA32 will go away altogether?
->
-> Or do you just want to audit all TIF_IA32 places (because most of
-> them are wrong), and using mm->context.ia32_compat where it's
-> justified and eliminating TIF_IA32 use is a nice way to document
-> that ongoing audit without breaking stuff and such?
+--WuedheRyq6FDfQ9j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-TBH, I haven't gotten that far.  But of the uses I've looked at, most
-seem to want TS_COMPAT instead (is_ia32_task, which is IMO terribly
-named), some are so buggier than just using a strange flag, and I
-suspect that the rest would make more sense using
-mm->context.ia32_compat.
+On Thu, Dec 18, 2014 at 09:55:10AM +0100, Robert Baldyga wrote:
+> Since we can compose gadgets from many functions, there is the problem
+> related to gadget breakage while FunctionFS daemon being closed. FFS
+> function is userspace code so there is no way to know when it will close
+> files (it doesn't matter what is the reason of this situation, it can
+> be daemon logic, program breakage, process kill or any other). So when
+> we have another function in gadget which, for example, sends some amount
+> of data, does some software update or implements some real-time functiona=
+lity,
+> we may want to keep the gadget connected despite FFS function is no longer
+> functional.
+>=20
+> We can't just remove one of functions from gadget since it has been
+> enumerated, so the only way to keep entire gadget working is to make
+> broken FFS function deactivated but still visible to host. For this
+> purpose this patch introduces "no_disconnect" mode. It can be enabled
+> by setting mount option "no_disconnect=3D1", and results with defering
+> function disconnect to the moment of reopen ep0 file or filesystem
+> unmount. After closing all endpoint files, FunctionFS is set to state
+> FFS_DEACTIVATED.
+>=20
+> When ffs->state =3D=3D FFS_DEACTIVATED:
+> - function is still bound and visible to host,
+> - setup requests are automatically stalled,
+> - transfers on other endpoints are refused,
+> - epfiles, except ep0, are deleted from the filesystem,
+> - opening ep0 causes the function to be closed, and then FunctionFS
+>   is ready for descriptors and string write,
+> - altsetting change causes the function to be closed - we want to keep
+>   function alive until another functions are potentialy used, altsetting
+>   change means that another configuration is being selected or USB cable
+>   was unplugged, which indicates that we don't need to stay longer in
+>   FFS_DEACTIVATED state
+> - unmounting of the FunctionFS instance causes the function to be closed.
+>=20
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 
-I was planning on sending some patches to incrementally improve the
-situation and then seeing where we end up.
+David, can you test it with your setup ?
 
->
->> [...]  But this is only temporary, so I don't really care.
->
-> New code that touches this area should better use new principles,
-> so I have no problem with requiring this, as long as it's well
-> explained and logical and desirable to everyone.
->
+cheers
 
-Given that this patch is a fix for 3.19, the code looks correct, and
-the check will go away in 3.20, I see no reason to worry about this
-particular patch.
+--=20
+balbi
 
---Andy
+--WuedheRyq6FDfQ9j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Thanks,
->
->         Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUmbkaAAoJEIaOsuA1yqREMhwP/3098zk9U+rnPf46luxpIGX1
+o0jrmvClU7oYQf7jthk6flC7Uw33i5CiLUifJrxwzF7GxEy6CLxm8hQa8Uy5iCoY
+nYr+kbySBW5PmhJrKUu0Ywd8eMZor7kflkRjp4irWlom/FzeztvN1hH3Vy4PXQyf
+83/oZr9ETuFQxj7dfaB6aFe4bo2flvb3Lz0/dpxEZ2r4kdv+OOVL3FxphlkNHP6c
+Y9hO+ucImQT7RWXY4wF2u+ngddcn+uTMhBHEAub2wetGQN3Myqyf3P1AcojHLZPV
+iwFrMSHC42VOZhSMUPj9abAwOZOURBw1oHf2YBYhHo5lcCiqvg4fpN7O9gBvrZdz
+3Siw2UmAHRsPRpisv583jqHIYvTlQJCAdSb962iUc3c0wCYWPxkIfUyfKSpW/sow
+fpwvsGVS0lotrqId3/MGC5PPL8r6sdsL02sJjfYViGkO8Lez5ZGRzZD/Fu6YxhEW
+TKDpmt0gSAdZMPnVxnjC2+h/4259pe5blDDczUPIj9GQGaQWBpL6zCkvnUOQG8RE
+spLCLcRx84HTcdre+ug5QE5U1fPUpB2+EpqmJ25n20uOLdQUIBhQS8nXbfj5Rn1D
+BhQAYJpBz9A+RsxiwZtD+roB86sf5a7ug6o0djtKiC/2q1d+FSze8bSC+7M90YbC
+JWn0c6vhrF1aXH85nAYC
+=D75q
+-----END PGP SIGNATURE-----
 
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+--WuedheRyq6FDfQ9j--
