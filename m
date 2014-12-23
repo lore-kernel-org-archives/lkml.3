@@ -1,167 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808AbaLWLBU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 06:01:20 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:29689 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754709AbaLWLBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 06:01:18 -0500
-X-IronPort-AV: E=Sophos;i="5.07,631,1413244800"; 
-   d="scan'208";a="207333193"
-Message-ID: <54994B7B.20309@citrix.com>
-Date: Tue, 23 Dec 2014 11:01:15 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>, David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: xen-devel <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] xen/x86: properly retrieve NMI reason
-References: <54945D760200007800051157@mail.emea.novell.com>
-In-Reply-To: <54945D760200007800051157@mail.emea.novell.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+	id S1755666AbaLWLKW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 06:10:22 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:60537 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026AbaLWLKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 06:10:20 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-4e-54994d990be3
+Message-id: <54994D88.3000009@samsung.com>
+Date: Tue, 23 Dec 2014 12:10:00 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        kernel@pengutronix.de, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH v6 3/3] of: Add of_graph_get_port_by_id function
+References: <1419261091-29888-1-git-send-email-p.zabel@pengutronix.de>
+ <1419261091-29888-4-git-send-email-p.zabel@pengutronix.de>
+In-reply-to: <1419261091-29888-4-git-send-email-p.zabel@pengutronix.de>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t/xq7ozfWeGGGyZxGNx5et7Nov3G+cx
+	WRz4s4PRonnxejaLVVN3slh0TlzCbrHp8TVWi8u75rBZ9GzYympxcZ28xdY9B5gs7t47wWKx
+	+cNLNgdej5bmHjaPDx/jPGZ3zGT1uHNtD5vH/rlr2D3udx9n8ti8pN6j/6+BR9+WVYwenzfJ
+	BXBFcdmkpOZklqUW6dslcGXcXjmLueCdaMWfxtwGxsOCXYycHBICJhI9j06yQNhiEhfurWfr
+	YuTiEBJYyiixZvUiNpCEkMAnRoljz5xAbF4BLYn3Gz+xg9gsAqoSbzZvZgKx2QQ0Jf5uvglW
+	LyoQIfFh1Vc2iHpBiR+T74EtEBEIkbi3pY8ZxGYWOM4ssf2UNYgtLOAicef+bxaIxc2MEid/
+	TmEESXAKuEv8efMcaBkHUIO6xJQpuRC98hKb17xlnsAoMAvJilkIVbOQVC1gZF7FKJpamlxQ
+	nJSea6hXnJhbXJqXrpecn7uJERJHX3YwLj5mdYhRgINRiYf35PsZIUKsiWXFlbmHGCU4mJVE
+	eF+KzwwR4k1JrKxKLcqPLyrNSS0+xMjEwSnVwGjlU1267L/1cd2tfSm+zU57hes1Itu2FWyJ
+	P/i6931WzJuPvR/O+/w0boj9NXPC/rg5ad/Ze542TCrI/uPCwzOv7F+O5PO4Cz43NlwVvZW4
+	7NC3dW+M/y7MfL/zBe/Oiwuy898fkd/x4G9LySG51M7iSTp+os53jF/xe38oDj3w4avXfCvH
+	R1ZKLMUZiYZazEXFiQBIYc7agQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/12/14 16:16, Jan Beulich wrote:
-> Using the native code here can't work properly, as the hypervisor would
-> normally have cleared the two reason bits by the time Dom0 gets to see
-> the NMI (if passed to it at all). There's a shared info field for this,
-> and there's an existing hook to use - just fit the two together. Note
-> that the hook can (and should) be used irrespective of whether being in
-> Dom0, as accessing port 0x61 in a DomU would be even worse, while the
-> shared info field would just hold zero all the time.
+Hi Philipp,
 
-What's the user visible impact of this fix?
-
-David
-
+On 12/22/2014 04:11 PM, Philipp Zabel wrote:
+> This patch adds a function to get a port device tree node by port id,
+> or reg property value.
 > 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 > ---
->  arch/x86/xen/enlighten.c    |   22 +++++++++++++++++-
->  include/xen/interface/nmi.h |   52 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 73 insertions(+), 1 deletion(-)
+>  drivers/of/base.c        | 26 ++++++++++++++++++++++++++
+>  include/linux/of_graph.h |  7 +++++++
+>  2 files changed, 33 insertions(+)
 > 
-> --- 3.18/arch/x86/xen/enlighten.c
-> +++ 3.18-xen-x86-NMI-reason/arch/x86/xen/enlighten.c
-> @@ -40,6 +40,7 @@
->  #include <xen/interface/physdev.h>
->  #include <xen/interface/vcpu.h>
->  #include <xen/interface/memory.h>
-> +#include <xen/interface/nmi.h>
->  #include <xen/interface/xen-mca.h>
->  #include <xen/features.h>
->  #include <xen/page.h>
-> @@ -66,6 +67,7 @@
->  #include <asm/reboot.h>
->  #include <asm/stackprotector.h>
->  #include <asm/hypervisor.h>
-> +#include <asm/mach_traps.h>
->  #include <asm/mwait.h>
->  #include <asm/pci_x86.h>
->  #include <asm/pat.h>
-> @@ -1357,6 +1359,21 @@ static const struct machine_ops xen_mach
->  	.emergency_restart = xen_emergency_restart,
->  };
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index aac66df..c816299 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -2080,6 +2080,32 @@ int of_graph_parse_endpoint(const struct device_node *node,
+>  EXPORT_SYMBOL(of_graph_parse_endpoint);
 >  
-> +static unsigned char xen_get_nmi_reason(void)
+>  /**
+> + * of_graph_get_port_by_id() - get the port matching a given id
+> + * @parent: pointer to the parent device node
+
+Here you have 'parent' and 'node' in the code.
+
+> + * @id: id of the port
+> + *
+> + * Return: A 'port' node pointer with refcount incremented. The caller
+> + * has to use of_node_put() on it when done.
+> + */
+> +struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id)
 > +{
-> +	unsigned char reason = 0;
+> +	struct device_node *port;
 > +
-> +	/* Construct a value which looks like it came from port 0x61. */
-> +	if (test_bit(_XEN_NMIREASON_io_error,
-> +		     &HYPERVISOR_shared_info->arch.nmi_reason))
-> +		reason |= NMI_REASON_IOCHK;
-> +	if (test_bit(_XEN_NMIREASON_pci_serr,
-> +		     &HYPERVISOR_shared_info->arch.nmi_reason))
-> +		reason |= NMI_REASON_SERR;
+> +	for_each_child_of_node(node, port) {
+> +		u32 port_id = 0;
 > +
-> +	return reason;
-> +}
-> +
->  static void __init xen_boot_params_init_edd(void)
->  {
->  #if IS_ENABLED(CONFIG_EDD)
-> @@ -1541,9 +1558,12 @@ asmlinkage __visible void __init xen_sta
->  	pv_info = xen_info;
->  	pv_init_ops = xen_init_ops;
->  	pv_apic_ops = xen_apic_ops;
-> -	if (!xen_pvh_domain())
-> +	if (!xen_pvh_domain()) {
->  		pv_cpu_ops = xen_cpu_ops;
->  
-> +		x86_platform.get_nmi_reason = xen_get_nmi_reason;
+> +		if (of_node_cmp(port->name, "port") != 0)
+> +			continue;
+> +		of_property_read_u32(port, "reg", &port_id);
+> +		if (id == port_id)
+> +			return port;
 > +	}
 > +
->  	if (xen_feature(XENFEAT_auto_translated_physmap))
->  		x86_init.resources.memory_setup = xen_auto_xlated_memory_setup;
->  	else
-> --- /usr/local/src/linux-3.18/include/xen/interface/nmi.h	1970-01-01 01:00:00.000000000 +0100
-> +++ 3.18-xen-x86-NMI-reason/include/xen/interface/nmi.h
-> @@ -0,0 +1,52 @@
-> +/******************************************************************************
-> + * nmi.h
-> + * 
-> + * NMI callback registration and reason codes.
-> + * 
-> + * Copyright (c) 2005, Keir Fraser <keir@xensource.com>
-> + */
+> +	return NULL;
+> +}
+
+
+Maybe I miss something but it does not handle optional 'ports' node.
+
+Regards
+Andrzej
+
+
+> +EXPORT_SYMBOL(of_graph_get_port_by_id);
 > +
-> +#ifndef __XEN_PUBLIC_NMI_H__
-> +#define __XEN_PUBLIC_NMI_H__
+> +/**
+>   * of_graph_get_next_endpoint() - get next endpoint node
+>   * @parent: pointer to the parent device node
+>   * @prev: previous endpoint node, or NULL to get first
+> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+> index e43442e..3c1c95a 100644
+> --- a/include/linux/of_graph.h
+> +++ b/include/linux/of_graph.h
+> @@ -40,6 +40,7 @@ struct of_endpoint {
+>  #ifdef CONFIG_OF
+>  int of_graph_parse_endpoint(const struct device_node *node,
+>  				struct of_endpoint *endpoint);
+> +struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id);
+>  struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+>  					struct device_node *previous);
+>  struct device_node *of_graph_get_remote_port_parent(
+> @@ -53,6 +54,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
+>  	return -ENOSYS;
+>  }
+>  
+> +static inline struct device_node *of_graph_get_port_by_id(
+> +					struct device_node *node, u32 id)
+> +{
+> +	return NULL;
+> +}
 > +
-> +#include <xen/interface/xen.h>
-> +
-> +/*
-> + * NMI reason codes:
-> + * Currently these are x86-specific, stored in arch_shared_info.nmi_reason.
-> + */
-> + /* I/O-check error reported via ISA port 0x61, bit 6. */
-> +#define _XEN_NMIREASON_io_error     0
-> +#define XEN_NMIREASON_io_error      (1UL << _XEN_NMIREASON_io_error)
-> + /* PCI SERR reported via ISA port 0x61, bit 7. */
-> +#define _XEN_NMIREASON_pci_serr     1
-> +#define XEN_NMIREASON_pci_serr      (1UL << _XEN_NMIREASON_pci_serr)
-> + /* Unknown hardware-generated NMI. */
-> +#define _XEN_NMIREASON_unknown      2
-> +#define XEN_NMIREASON_unknown       (1UL << _XEN_NMIREASON_unknown)
-> +
-> +/*
-> + * long nmi_op(unsigned int cmd, void *arg)
-> + * NB. All ops return zero on success, else a negative error code.
-> + */
-> +
-> +/*
-> + * Register NMI callback for this (calling) VCPU. Currently this only makes
-> + * sense for domain 0, vcpu 0. All other callers will be returned EINVAL.
-> + * arg == pointer to xennmi_callback structure.
-> + */
-> +#define XENNMI_register_callback   0
-> +struct xennmi_callback {
-> +    unsigned long handler_address;
-> +    unsigned long pad;
-> +};
-> +typedef struct xennmi_callback xennmi_callback_t;
-> +DEFINE_XEN_GUEST_HANDLE(xennmi_callback_t);
-> +
-> +/*
-> + * Deregister NMI callback for this (calling) VCPU.
-> + * arg == NULL.
-> + */
-> +#define XENNMI_unregister_callback 1
-> +
-> +#endif /* __XEN_PUBLIC_NMI_H__ */
-> 
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+>  static inline struct device_node *of_graph_get_next_endpoint(
+>  					const struct device_node *parent,
+>  					struct device_node *previous)
 > 
 
