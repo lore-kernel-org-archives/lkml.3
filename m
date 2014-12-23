@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651AbaLWXKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 18:10:09 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:61946 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbaLWXKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 18:10:06 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Audit fixes for 3.19
-Date: Tue, 23 Dec 2014 18:10:03 -0500
-Message-ID: <1426990.sj1Az20XEf@sifl>
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+	id S1756634AbaLWXKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 18:10:07 -0500
+Received: from ozlabs.org ([103.22.144.67]:47419 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751475AbaLWXKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 18:10:05 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Oded Gabbay <oded.gabbay@amd.com>, Andi Kleen <ak@linux.intel.com>,
+        Alex Deucher <alexdeucher@gmail.com>
+Cc: Dana Elifaz <Dana.Elifaz@amd.com>, LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
+In-Reply-To: <54986EA2.106@amd.com>
+References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com> <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com> <20141222184940.GB17192@tassilo.jf.intel.com> <20141222190041.GC17192@tassilo.jf.intel.com> <54986EA2.106@amd.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 24 Dec 2014 09:31:13 +1030
+Message-ID: <874msmt1hi.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Oded Gabbay <oded.gabbay@amd.com> writes:
+> I didn't say it doesn't always work.
+> The actual thing that doesn't work is the define symbol_get and only in a
+> specific case of 32bit kernel AND CONFIG_MODULES is unset AND
+> CONFIG_RANDOMIZE_BASE is set.
+> The define in that case is:
+> #define symbol_get(x) ({ extern typeof(x) x __attribute__((weak)); &(x); })
+>
+> Why it doesn't work (doesn't return NULL when symbol doesn't exists) ?
 
-Four patches to fix various problems with the audit subsystem, all are fairly 
-small and straightforward.  One patch fixes a problem where we weren't using 
-the correct gfp allocation flags (GFP_KERNEL regardless of context, oops), one 
-patch fixes a problem with old userspace tools (this was broken for a while), 
-one patch fixes a problem where we weren't recording pathnames correctly, and 
-one fixes a problem with PID based filters.  In general I don't think there is 
-anything controversial with this patchset, and it fixes some rather 
-unfortunate bugs; the allocation flag one can be particularly scary looking 
-for users.  Please pull for the next v3.19-rcX.
+Hmm, I'd guess CONFIG_RANDOMIZE_BASE is relocating NULL symbols...
+
+No, I can't reproduce this.  Please send your .config privately.
+
+Here's my test case:
+
+diff --git a/init/main.c b/init/main.c
+index 61b993767db5..a3ee1ec97ec3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -683,6 +683,12 @@ asmlinkage __visible void __init start_kernel(void)
+ 
+ 	ftrace_init();
+ 
++	{
++		extern void nonexistent_fn(void);
++		printk("symbol_get(nonexistent_fn) = %p\n",
++		       symbol_get(nonexistent_fn));
++	}
++
+ 	/* Do the rest non-__init'ed, we're now alive */
+ 	rest_init();
+ }
 
 Thanks,
--Paul
-
----
-The following changes since commit 0f7e94ee40d06f7a04e039392dfee8244bd8a7e0:
-
-  Merge branch 'next' into upstream for v3.19 (2014-12-09 14:38:30 -0500)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/pcmoore/audit upstream
-
-for you to fetch changes up to 041d7b98ffe59c59fdd639931dea7d74f9aa9a59:
-
-  audit: restore AUDIT_LOGINUID unset ABI (2014-12-23 16:40:18 -0500)
-
-----------------------------------------------------------------
-Paul Moore (2):
-      audit: don't attempt to lookup PIDs when changing PID filtering audit 
-             rules
-      audit: correctly record file names with different path name types
-
-Richard Guy Briggs (2):
-      audit: use supplied gfp_mask from audit_buffer in 
-             kauditd_send_multicast_skb
-      audit: restore AUDIT_LOGINUID unset ABI
-
- include/linux/audit.h |  4 ++++
- kernel/audit.c        |  8 ++++----
- kernel/auditfilter.c  | 23 ++++++++++-------------
- kernel/auditsc.c      | 14 ++++++++++----
- 4 files changed, 28 insertions(+), 21 deletions(-)
-
-
+Rusty.
