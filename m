@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339AbaLWQPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 11:15:11 -0500
-Received: from ec2-54-201-57-178.us-west-2.compute.amazonaws.com ([54.201.57.178]:44446
-	"EHLO ip-172-31-12-36.us-west-2.compute.internal"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756167AbaLWQPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 11:15:09 -0500
-Date: Tue, 23 Dec 2014 16:11:45 +0000
-From: dwalker@fifo99.com
-To: Joe Perches <joe@perches.com>
-Cc: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] printk: add per console loglevel
-Message-ID: <20141223161144.GA19144@fifo99.com>
-References: <20141220224908.GB4466@fifo99.com>
- <20141221194753.49c12693@neptune.home>
- <1419188604.4200.8.camel@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1419188604.4200.8.camel@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756372AbaLWQQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 11:16:49 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:30562 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756084AbaLWQQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 11:16:48 -0500
+Message-Id: <20141223161340.297942985@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 23 Dec 2014 11:13:40 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 0/2] tracing: Remove bottle neck mutex in splicing from ring buffer
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 11:03:24AM -0800, Joe Perches wrote:
-> On Sun, 2014-12-21 at 19:47 +0100, Bruno Prémont wrote:
-> > On Sat, 20 December 2014 dwalker@fifo99.com wrote:
-> > > This adds to to the console= command line options allowing the
-> > > addition of a per console log level setting.
-> > > 
-> > > examples,
-> > > 
-> > > 	console=ttyS0,ll4
-> > > 	console=tty0,ll6
-> > > 
-> > > This can be used on systems which have multiple serial consoles, but
-> > > it's desired for logging to be light on one and heavy on another.
-> > 
-> > Looks useful to me.
-> 
-> I think this is reasonable to, but for consistency
-> with other loglevel uses, I suggest using
-> loglevel=<level> instead of ll<d>
-> 
+While profiling with trace-cmd, I found that the there was a global
+mutex being taken in the per-cpu splice code. This was slowing down
+the recording and causing more missed events than necessary.
 
-I can try it, I didn't do it initially because I didn't want to confuse the parsing of the other
-parameters ..
+By adding a ref count to the tracer, and preventing the tracer from
+changing when the ref count is non-zero (when a trace file is opened)
+we can remove the taking of the trace_types_lock mutex from the
+splice page and speed things up a bit.
 
-Daniel
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
+
+Head SHA1: d716ff71dd12bc6328f84a9ec1c3647daf01c827
+
+
+Steven Rostedt (Red Hat) (2):
+      tracing: Add ref count to tracer for when they are being read by pipe
+      tracing: Remove taking of trace_types_lock in pipe files
+
+----
+ kernel/trace/trace.c | 126 ++++++++++++++++++---------------------------------
+ kernel/trace/trace.h |   1 +
+ 2 files changed, 44 insertions(+), 83 deletions(-)
+
