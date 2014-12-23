@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaLWEFz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 23:05:55 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:46167 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890AbaLWEFy (ORCPT
+	id S1754567AbaLWEJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 23:09:53 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:56615 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411AbaLWEJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 23:05:54 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Tue, 23 Dec 2014 13:06:33 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 7/7] perf tools: Set attr.task bit for a tracking event
-Message-ID: <20141223040633.GB14960@sejong>
-References: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
- <1419223455-4362-8-git-send-email-namhyung@kernel.org>
- <20141222144919.GA7644@kernel.org>
+	Mon, 22 Dec 2014 23:09:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141222144919.GA7644@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141223132605.02d81e01@canb.auug.org.au>
+References: <20141208184908.27bfd605@canb.auug.org.au>
+	<20141208103328.GE27367@arm.com>
+	<20141223132605.02d81e01@canb.auug.org.au>
+Date: Mon, 22 Dec 2014 20:09:50 -0800
+X-Google-Sender-Auth: jtkXOgF_Wn19U5T8friXKFUPDjA
+Message-ID: <CA+55aFwQKe0PvSuYqOeQMM8kouB3mkyQQ=gFMX=bkPx3GxanvA@mail.gmail.com>
+Subject: Re: linux-next: missing merge fix patch for the merge of the xen-tip
+ tree with the arm-soc tree
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Will Deacon <will.deacon@arm.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 11:49:19AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Dec 22, 2014 at 01:44:15PM +0900, Namhyung Kim escreveu:
-> > The perf_event_attr.task bit is to track task (fork and exit) events
-> > but it missed to be set by perf_evsel__config().  While it was not a
-> > problem in practice since setting other bits (comm/mmap) ended up
-> > being in same result, it'd be good to set it explicitly anyway.
-> 
-> I didn't understand, so this isn't strictly needed? I.e. what is the
-> point of the attr->task bit then?
+On Mon, Dec 22, 2014 at 6:26 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Linus,
+>
+> I have been carrying this merge fix patch for some time that is now
+> needed in your tree:
 
-Yes, it's not strictly needed for this case.  The attr->task is to
-track task related events (fork/exit) only but other meta events like
-comm and mmap[2] also needs the task events.  So setting attr->comm
-and/or attr->mmap causes the kernel emits the task events anyway.  So
-the attr->task is only meaningful when other bits are off but I'd like
-to set it for completeness.
+No, it's not. Look more closely.
 
-Thanks,
-Namhyung
+My merge put the
+
+        dev->archdata.dma_coherent = coherent;
+
+line at the top of the function, like the way it was in the original commit.
+
+                            Linus
