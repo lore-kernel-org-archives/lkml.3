@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943AbaLWMWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 07:22:54 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:42534 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713AbaLWMWx (ORCPT
+	id S1755987AbaLWMZE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 07:25:04 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:56767 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaLWMZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 07:22:53 -0500
-Date: Tue, 23 Dec 2014 17:52:47 +0530
-From: Vaishali Thakkar <vthakkar1994@gmail.com>
-To: matthew.r.wilcox@intel.com
-Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Drivers: block: Introduce use of put_unaligned_be64
-Message-ID: <20141223122247.GA3122@vaishali-Ideapad-Z570>
+	Tue, 23 Dec 2014 07:25:01 -0500
+Date: Tue, 23 Dec 2014 13:24:58 +0100
+From: Dongsu Park <dongsu.park@profitbricks.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Kent Overstreet <kmo@daterainc.com>, Ming Lin <mlin@minggr.net>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 08/17] block: refactor __bio_copy_iov()
+Message-ID: <20141223122458.GF15080@gmail.com>
+References: <cover.1419241597.git.dongsu.park@profitbricks.com>
+ <0b6ba533a64aec98e8447bfd30c6622d0729d12e.1419241597.git.dongsu.park@profitbricks.com>
+ <20141223104551.GC27600@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141223104551.GC27600@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of function put_unaligned_be64.
+On 23.12.2014 02:45, Christoph Hellwig wrote:
+> >  static int __bio_copy_iov(struct bio *bio, const struct iov_iter *iter,
+> > +			  int to_iov)
+> >  {
+> > +	int i;
+> >  	struct bio_vec *bvec;
+> >  	struct iov_iter iov_iter = *iter;
+> 
+> Why not pass the iov_iter by value?
 
-This is done using Coccinelle and semantic patch used for this is
-as follows:
+Agreed.
 
-// <smpl>
-@sizeb64@
-typedef u64, __be64, uint64_t;
-{u64,__be64,uint64_t} e64;
-position p,p64;
-expression len,e;
-@@
+> >  	bio_for_each_segment_all(bvec, bio, i) {
+> > +		ssize_t ret;
+> > +
+> > +		if (to_iov == WRITE)
+> > +			ret = copy_page_to_iter(bvec->bv_page,
+> > +						bvec->bv_offset,
+> > +						bvec->bv_len,
+> > +						&iov_iter);
+> > +		else
+> > +			ret = copy_page_from_iter(bvec->bv_page,
+> > +						  bvec->bv_offset,
+> > +						  bvec->bv_len,
+> > +						  &iov_iter);
+> > +
+> > +		if (!iov_iter_count(&iov_iter))
+> > +			break;
+> >  
+> > +		if (ret < bvec->bv_len)
+> > +			return -EFAULT;
+> >  	}
+> >  
+> > +	return 0;
+> 
+> Seems like this should be split into two functions for the read
+> and write cases?
 
-len = \(8\|sizeof(u64)\|sizeof(__be64)\|sizeof(uint64_t)\|sizeof(e64)\)
-... when != len = e
-memcpy@p64(...,len)
+Agreed. I'll update it in the next round.
 
-@othersizeb64 exists@
-position p != sizeb64.p,pbad;
-expression len,e,e1;
-@@
-
-len@p = e1
-... when != len = e
-memcpy@pbad(...,len)
-
-@o@
-identifier tmp;
-expression ptr;
-expression y,e;
-{u64,__be64,uint64_t} e64;
-type T;
-position p,sizeb64.p64,p1 != othersizeb64.pbad;
-@@
-
-- tmp = cpu_to_be64(y);
-
-  <+... when != tmp
-(
-- memcpy(ptr, (T)&tmp, \(8\|sizeof(u64)\|sizeof(__be64)\|sizeof(uint64_t)\|sizeof(e64)\));
-+ put_unaligned_be64(y,ptr);
-|
-- memcpy@p64@p1(ptr, (T)&tmp, ...);
-+ put_unaligned_be64(y,ptr);
-|
-- memcpy@p(ptr, (T)&tmp, ...);
-+ put_unaligned_be64(y,ptr);
-)
-  ...+>
-? tmp = e
-
-@script:python@
-p << o.p;
-@@
-
-print "dangerous second argument in %s:%s" % (p[0].file,p[0].line)
-
-@@ type T; identifier o.tmp; @@
-
-- T tmp;
-...when != tmp
-//</smpl>
-
-Signed-off-by: Vaishali Thakkar <vthakkar1994@gmail.com>
----
- drivers/block/nvme-scsi.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
-index a4cd6d6..94abb8a 100644
---- a/drivers/block/nvme-scsi.c
-+++ b/drivers/block/nvme-scsi.c
-@@ -43,7 +43,7 @@
- #include <linux/types.h>
- #include <scsi/sg.h>
- #include <scsi/scsi.h>
--
-+#include <linux/unaligned/access_ok.h>
- 
- static int sg_version_num = 30534;	/* 2 digits for each component */
- 
-@@ -1417,7 +1417,6 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
- 	u64 rlba;
- 	u8 prot_en;
- 	u8 p_type_lut[4] = {0, 0, 1, 2};
--	__be64 tmp_rlba;
- 	__be32 tmp_rlba_32;
- 	__be32 tmp_len;
- 
-@@ -1434,9 +1433,8 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
- 		memcpy(response, &tmp_rlba_32, sizeof(u32));
- 		memcpy(&response[4], &tmp_len, sizeof(u32));
- 	} else {
--		tmp_rlba = cpu_to_be64(rlba);
- 		tmp_len = cpu_to_be32(lba_length);
--		memcpy(response, &tmp_rlba, sizeof(u64));
-+		put_unaligned_be64(rlba, response);
- 		memcpy(&response[8], &tmp_len, sizeof(u32));
- 		response[12] = (p_type_lut[id_ns->dps & 0x3] << 1) | prot_en;
- 		/* P_I_Exponent = 0x0 | LBPPBE = 0x0 */
--- 
-1.9.1
-
+Thanks,
+Dongsu
