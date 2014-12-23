@@ -1,100 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754429AbaLWB07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 20:26:59 -0500
-Received: from mga11.intel.com ([192.55.52.93]:27515 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751114AbaLWB05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 20:26:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,628,1413270000"; 
-   d="scan'208";a="641681264"
-Message-ID: <5498C4D9.8050509@intel.com>
-Date: Tue, 23 Dec 2014 09:26:49 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1753821AbaLWBdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 20:33:05 -0500
+Received: from mail-bn1on0117.outbound.protection.outlook.com ([157.56.110.117]:55757
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751127AbaLWBdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 20:33:03 -0500
+X-Greylist: delayed 870 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Dec 2014 20:33:03 EST
+Date: Tue, 23 Dec 2014 08:09:44 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Sanchayan Maity <maitysanchayan@gmail.com>
+CC: <stefan@agner.ch>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] usb: chipidea: add one errata for revision 2.40a
+Message-ID: <20141223000940.GA11551@shlinux2>
+References: <cover.1418981438.git.maitysanchayan@gmail.com>
+ <20141222011840.GB9242@shlinux2> <54981816.4010708@gmail.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Zhang Rui <rui.zhang@intel.com>
-CC: Olof Johansson <olof@lixom.net>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jg1.han@samsung.com
-Subject: Re: [PATCH v6] Thermal: introduce INT3406 thermal driver
-References: <54868CF6.6020505@intel.com> <CAOesGMirF-_H2ZzFR-VpwkEErZE2uQJSYx5EuePArQsEh=r_Kw@mail.gmail.com> <20141211010226.GA26253@aaronlu.sh.intel.com> <CAOesGMj_uObbxLdpobEhP=nRPsFUJNCtq01RH7ZSECd5=1Ti6Q@mail.gmail.com> <1418265472.12435.68.camel@rzhang1-toshiba> <548934D0.8000502@intel.com> <1418286781.12435.73.camel@rzhang1-toshiba> <54895821.3050902@intel.com> <1419217761.19619.2.camel@rzhang1-toshiba> <20141222095344.GE4525@x1>
-In-Reply-To: <20141222095344.GE4525@x1>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <54981816.4010708@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(51704005)(24454002)(479174004)(189002)(199003)(43544003)(377454003)(85426001)(97756001)(83506001)(84676001)(110136001)(6806004)(19580395003)(50466002)(46102003)(104016003)(106466001)(107046002)(99396003)(120916001)(105606002)(46406003)(21056001)(86362001)(4396001)(50986999)(54356999)(76176999)(87936001)(92566001)(1411001)(2950100001)(77096005)(33656002)(33716001)(31966008)(23726002)(62966003)(97736003)(77156002)(64706001)(15975445007)(68736005)(20776003)(47776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0629;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0629;
+X-Forefront-PRVS: 04347F8039
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 01:18:29.9764
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0629
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2014 05:53 PM, Lee Jones wrote:
-> On Mon, 22 Dec 2014, Zhang Rui wrote:
+On Mon, Dec 22, 2014 at 06:39:42PM +0530, Sanchayan Maity wrote:
+> On 12/22/2014 06:48 AM, Peter Chen wrote:
+> > On Fri, Dec 19, 2014 at 03:25:26PM +0530, Sanchayan Maity wrote:
+> >> The first two patches add identification register API's. These can
+> >> be used to get controller's revision. 
+> >>
+> >> The third patch implements an errata for revision 2.40a. Not sure
+> >> which other SOCs implement this version of the Chipidea core but
+> >> this fixes the usb client issue observed on Vybrids. The patch was
+> >> tested on a Toradex Colibri VF61 module with the 3.18 kernel. iperf
+> >> tests ran for three hours plus, with these patches applied have found
+> >> the USB client connection to be now reliable.
+> > 
+> > Would you help do a overnight test? It is passed, I will queue them,
+> > thanks.
 > 
->> On Thu, 2014-12-11 at 16:38 +0800, Aaron Lu wrote:
->>> INT3406 ACPI device object resembles an ACPI video output device, but its
->>> _BCM is said to be deprecated and should not be used. So we will make
->>> use of the raw interface to do the actual cooling. Due to this, the
->>> backlight core has some modifications. Also, to re-use some of the ACPI
->>> video module's code, one function has been exported.
->>>
->>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
->>
->> Jingoo and Lee,
->>
->> are you okay with the changes in drivers/video/backlight/backlight.c and
->> include/linux/backlight.h?
-> 
-> NB: Jingoo still needs to review the crux of the patch.
-> 
->>> ---
->>> v6: Fix an issue that wrongly set error path return value as reported
->>> by Olof Johansson.
->>>
->>>  drivers/acpi/video.c                              |  77 ++++----
->>>  drivers/thermal/Kconfig                           |  26 +--
->>>  drivers/thermal/int340x_thermal/Kconfig           |  41 ++++
->>>  drivers/thermal/int340x_thermal/Makefile          |   1 +
->>>  drivers/thermal/int340x_thermal/int3406_thermal.c | 229 ++++++++++++++++++++++
->>>  drivers/video/backlight/backlight.c               |  44 +++--
->>>  include/acpi/video.h                              |  20 ++
->>>  include/linux/backlight.h                         |   2 +
->>>  8 files changed, 366 insertions(+), 74 deletions(-)
->>>  create mode 100644 drivers/thermal/int340x_thermal/Kconfig
->>>  create mode 100644 drivers/thermal/int340x_thermal/int3406_thermal.c
-> 
-> I gather by the message at the top that you're looking for an Ack so
-> this can be routed through another subsystem.  Not going to happen.
-> 
-> So you're on v6 already and a) no one has mentioned that introducing a
-> new driver AND making core framework changes (in a different subsystem
-> to boot) in one patch is bad and b) this is the first time you've
-> Cc'ed the maintainers of the aforementioned subsystem?
-> 
-> Moving forward you should split this patch into component parts and
-> resend -- only this time ensure you Cc all maintainers in the first
-> instance, rather than as as afterthought.
-
-OK, thanks for the suggestion.
-
-> 
->>> -config INT340X_THERMAL
->>> -	tristate "ACPI INT340X thermal drivers"
->>> -	depends on X86 && ACPI
->>> -	select THERMAL_GOV_USER_SPACE
->>> -	select ACPI_THERMAL_REL
->>> -	select ACPI_FAN
-> 
-> This patch also relies on backlight as well, no?
-
-Yes it does, will add it in next revision.
-
-Regards,
-Aaron
-
-> 
-> [...]
+> Yes definitely I can help with the testing. Are you looking for iperf
+> tests only or something else? iperf tests running for 12 or 24 hours 
+> will do? I will need a bit of time to set things up here, as I am away
+> from work, but, ya I will do them. 
 > 
 
+iperf for g_ncm or g_ether and bonnie++ for g_mass_storage if you can
+run, thanks.
+
+Peter
+
+> -Regards,
+> Sanchayan.
+> > 
+> > Peter
+> >>
+> >> This patchset is based off on Shawn Guo's for-next branch
+> >> https://git.kernel.org/cgit/linux/kernel/git/shawnguo/linux.git/tree/?h=for-next
+> >>
+> >> The credit for the patches and fix goes to Matthieu Castet and Peter Chen.
+> >> First two patches are by Peter Chen and the third patch which fixed the
+> >> bug we observed was reported by Matthieu Castet.
+> >>
+> >> The discussion of the problem and the relevant testing details can be found
+> >> at this link: http://www.spinics.net/lists/linux-usb/msg118544.html
+> >>
+> >> The first version of this patchset originally send by Peter Chen can be
+> >> found at this link: http://www.spinics.net/lists/linux-usb/msg118753.html
+> >>
+> >> Comments for review are welcome :).
+> >> Note: I am going on a vacation so will not be able to reply or do any further
+> >> tests till Monday. Will attend and take care of any comments/requests for 
+> >> further changes/testing from Tuesday. Apologize for the delay in advance.
+> >>
+> >> Sanchayan Maity (3):
+> >>   usb: chipidea: Add identification registers access APIs
+> >>   usb: chipidea: Add chipidea revision information
+> >>   usb: chipidea: Add errata for revision 2.40a
+> >>
+> >>  drivers/usb/chipidea/bits.h |   10 ++++++++
+> >>  drivers/usb/chipidea/ci.h   |   53 +++++++++++++++++++++++++++++++++++++++++++
+> >>  drivers/usb/chipidea/core.c |   23 +++++++++++++++++--
+> >>  drivers/usb/chipidea/udc.c  |   20 ++++++++++++++++
+> >>  4 files changed, 104 insertions(+), 2 deletions(-)
+> >>
+> >> -- 
+> >> 1.7.9.5
+> >>
+> > 
+
+-- 
+
+Best Regards,
+Peter Chen
