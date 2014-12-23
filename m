@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355AbaLWC0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 21:26:16 -0500
-Received: from ozlabs.org ([103.22.144.67]:32968 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695AbaLWC0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 21:26:14 -0500
-Date: Tue, 23 Dec 2014 13:26:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: linux-next: missing merge fix patch for the merge of the xen-tip
- tree with the arm-soc tree
-Message-ID: <20141223132605.02d81e01@canb.auug.org.au>
-In-Reply-To: <20141208103328.GE27367@arm.com>
-References: <20141208184908.27bfd605@canb.auug.org.au>
-	<20141208103328.GE27367@arm.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1754134AbaLWC0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 21:26:15 -0500
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:54991 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaLWC0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 21:26:13 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/QYtZIu3XwRWMpWpEXCkyZOj"; protocol="application/pgp-signature"
+In-Reply-To: <20141220022557.GA19822@blaptop>
+References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
+	<20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
+	<20141219233937.GA11975@blaptop>
+	<20141219154548.3aa4cc02b3322f926aa4c1d6@linux-foundation.org>
+	<20141219235852.GB11975@blaptop>
+	<20141219160648.5cea8a6b0c764caa6100a585@linux-foundation.org>
+	<20141220001043.GC11975@blaptop>
+	<20141219161756.bcf7421acb4bc7a286c1afa3@linux-foundation.org>
+	<20141220002303.GD11975@blaptop>
+	<CADAEsF-=RwwR2D_LzhVYKhfmfPCsQE73bJYyH=tjn4BtHVrdew@mail.gmail.com>
+	<20141220022557.GA19822@blaptop>
+Date: Tue, 23 Dec 2014 10:26:12 +0800
+Message-ID: <CADAEsF-Rtc00hP9Dd-Lx2pq9panQFyoUEi9U7eO1SOW6-zWJvw@mail.gmail.com>
+Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Nitin Gupta <ngupta@vflare.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/QYtZIu3XwRWMpWpEXCkyZOj
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hello Minchan
 
-Hi Linus,
+2014-12-20 10:25 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> Hey Ganesh,
+>
+> On Sat, Dec 20, 2014 at 09:43:34AM +0800, Ganesh Mahendran wrote:
+>> 2014-12-20 8:23 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+>> > On Fri, Dec 19, 2014 at 04:17:56PM -0800, Andrew Morton wrote:
+>> >> On Sat, 20 Dec 2014 09:10:43 +0900 Minchan Kim <minchan@kernel.org> wrote:
+>> >>
+>> >> > > It involves rehashing a lengthy argument with Greg.
+>> >> >
+>> >> > Okay. Then, Ganesh,
+>> >> > please add warn message about duplicaed name possibility althoug
+>> >> > it's unlikely as it is.
+>> >>
+>> >> Oh, getting EEXIST is easy with this patch.  Just create and destroy a
+>> >> pool 2^32 times and the counter wraps ;) It's hardly a serious issue
+>> >> for a debugging patch.
+>> >
+>> > I meant that I wanted to change from index to name passed from caller like this
+>> >
+>> > zram:
+>> >         zs_create_pool(GFP_NOIO | __GFP_HIGHMEM, zram->disk->first_minor);
+>> >
+>> > So, duplication should be rare. :)
+>>
+>> We still can not know whether the name is duplicated if we do not
+>> change the debugfs API.
+>> The API does not return the errno to us.
+>>
+>> How about just zsmalloc decides the name of the pool-id, like pool-x.
+>> When the pool-id reaches
+>> 0xffff.ffff, we print warn message about duplicated name, and stop
+>> creating the debugfs entry
+>> for the user.
+>
+> The idea is from the developer point of view to implement thing easy
+> but my point is we should take care of user(ie, admin) rather than
+> developer(ie, we).
 
-I have been carrying this merge fix patch for some time that is now
-needed in your tree:
+Yes. I got it.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 8 Dec 2014 18:46:59 +1100
-Subject: [PATCH] arm: introduce is_device_dma_coherent merge fix
+>
+> For user, /sys/kernel/debug/zsmalloc/zram0 would be more
+> straightforward and even it doesn't need zram to export
+> /sys/block/zram0/pool-id.
 
-The merge of the (linux-next) xen-tip tree got a conflict in
-arch/arm/include/asm/dma-mapping.h between commits a3a60f81ee6f
-("dma-mapping: replace set_arch_dma_coherent_ops with
-arch_setup_dma_ops") and 4bb25789ed28 ("arm: dma-mapping: plumb our
-iommu mapping ops into arch_setup_dma_ops") from the arm-soc tree and
-commit 3d5391ac6f5e ("arm: introduce is_device_dma_coherent") from the
-xen-tip tree.  It was fixed up, but also required this additional fix.
+BTW, If we add a new argument in zs_create_pool(). It seems we also need to
+add argument in zs_zpool_create(). So, zpool/zswap/zbud will be
+modified to support
+the new API.
+Is that acceptable?
 
-"Looks good to me"-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/arm/mm/dma-mapping.c | 1 +
- 1 file changed, 1 insertion(+)
+Thanks.
 
-diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-index 09645f00bd17..43064cbe58f9 100644
---- a/arch/arm/mm/dma-mapping.c
-+++ b/arch/arm/mm/dma-mapping.c
-@@ -2058,6 +2058,7 @@ void arch_setup_dma_ops(struct device *dev, u64 dma_b=
-ase, u64 size,
- 	else
- 		dma_ops =3D arm_get_dma_map_ops(coherent);
-=20
-+	dev->archdata.dma_coherent =3D coherent;
- 	set_dma_ops(dev, dma_ops);
- }
-=20
---=20
-2.1.3
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/QYtZIu3XwRWMpWpEXCkyZOj
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUmNLDAAoJEMDTa8Ir7ZwVBMkP/jNMLxNBOEL1OZAPi0U3azhT
-SQS4SMTBhGIsW2FqDLGn4Wj1mDXvMB5rG0OQDZi++wE3x8mIQrbKTsmTym3GnNFU
-273G3jM9/V7YFMo2b+iTGDA0xZxMtGBI7EqhXd+GH54qzQiT/U803/ejsgIWDzBK
-ZwoBDEtoi9zU7M81h8mrpYS9XDJByH6gjiiB7kDDFwJxhPtIsi6TpUagtf6lY/Fj
-GrY2neIWlIDClx+Fx0gpmiy3XIA1PL2xxcXgw70fc6oZSO6upDAR+9La0IdItiKY
-QyLBJHhTT+WM8OqBbnz7oyrw2SWC1Y4HXdrr26EqmUuNhsGotbFG/XG9nwuTfUpl
-0yU86iQCm7ov79xpQQjVmV3u1eN0620cXbSC4xEFQHeSnhuO1QLmWVsVgMHkJ53q
-yD/r35sJy4r/VAH6a/B5cnEW14FJ+n7mec14dSohxRbDwkNbXn//h9NTuhybESQF
-60l4dj0kRhY64LR4Klv0zj8omDe24mMrbbg8p8Gp1/PLQhidHS1ICXgeDZpGXcup
-N2Mzzc/CORQa4GPQxNiO49KfEWoLO76YPNv/Vf4waIT618HNkpCCUlrU+7cen3JB
-GcVhdo6iC4OV94Vp6boOdQRUGYbQUQL2ftb7PzgXI7nWAzPMCIYIYOOnPmIuCVTC
-idW5VOEzpw6T+eM4DjYz
-=+uGw
------END PGP SIGNATURE-----
-
---Sig_/QYtZIu3XwRWMpWpEXCkyZOj--
+>
+> Thanks.
+>
+>>
+>> Thanks.
