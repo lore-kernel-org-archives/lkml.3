@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652AbaLWDS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 22:18:29 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:33717 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521AbaLWDSW (ORCPT
+	id S1754738AbaLWDTd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 22:19:33 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:20492 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628AbaLWDS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 22:18:22 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-56-5498defbd6ca
+	Mon, 22 Dec 2014 22:18:28 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-69-5498defcc056
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com
 Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
@@ -17,37 +17,38 @@ Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCHv5 5/9] ARM: dts: Add PPMU dt node for Exynos3250 SoC
-Date: Tue, 23 Dec 2014 12:18:13 +0900
-Message-id: <1419304697-14789-6-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv5 9/9] ARM: dts: exynos: Add PPMU_CPU/DMC0/DMC1 node for
+ Exynos4412-based TRATS2 board
+Date: Tue, 23 Dec 2014 12:18:17 +0900
+Message-id: <1419304697-14789-10-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1419304697-14789-1-git-send-email-cw00.choi@samsung.com>
 References: <1419304697-14789-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42JZI2JSrPv73owQg6W/zS0er1nMZHH9y3NW
-	i/lHzrFaTLo/gcXi9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27xapdfxgd+D3WzFvD6LFz1l12j8V7XjJ5bF5S79G3ZRWjx+dNcgFsUVw2Kak5
-	mWWpRfp2CVwZH3bNYSp4IVbx68RrpgbGF4JdjJwcEgImElcaZ7BB2GISF+6tB7K5OIQEljJK
-	HP0wiR2mqP/NGSaIxCJGialTXrFDOE1MEn8PfWUCqWIT0JLY/+IG2CgRARmJqxu3s4AUMQs0
-	Mkt8WfYfrEhYwEWiYektZhCbRUBV4t3tFrAGXgFXib7Wd1DrFCSWLZ/JCmJzCrhJ/Jn3FMwW
-	AqqZ2HEd7AwJgVvsEt/332KEGCQg8W3yIaBtHEAJWYlNB5gh5khKHFxxg2UCo/ACRoZVjKKp
-	BckFxUnpRUZ6xYm5xaV56XrJ+bmbGIERdPrfs74djDcPWB9iFOBgVOLh/XluRogQa2JZcWXu
-	IUZToA0TmaVEk/OBcZpXEm9obGZkYWpiamxkbmmmJM6bIPUzWEggPbEkNTs1tSC1KL6oNCe1
-	+BAjEwenVANj786SMFNvv0eZKp0cJQ7fmtjnbdfcuMQm+MG1z18DJpyL1SziPS/UnD5FSnGD
-	6bTqiIvzXjVK5T3YwDTHfLv+zedX3aJ67sh4Lg47dtXr7OfGmLPblrJum7COh+Os7M/3Ff2y
-	N6Xefg/aGHJu1dMcK9lj0Wcmzlib1S76eKHB1xdzsvjdLu0IUmIpzkg01GIuKk4EAD2g5z6b	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jAd3f92aEGKx6qWfxeM1iJovrX56z
-	Wsw/co7VYtL9CSwWr18YWvQuuMpmcbbpDbvFpsfXWC0u75rDZvG59wijxYzz+5gsll6/yGRx
-	u3EFm8XjFW/ZLVbt+sPowO+xZt4aRo+ds+6yeyze85LJY/OSeo++LasYPT5vkgtgi2pgtMlI
-	TUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOllJoSwxpxQo
-	FJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmPFh1xymghdiFb9OvGZqYHwh2MXIySEh
-	YCLR/+YME4QtJnHh3nq2LkYuDiGBRYwSU6e8Yodwmpgk/h76ClbFJqAlsf/FDTYQW0RARuLq
-	xu0sIEXMAo3MEl+W/QcrEhZwkWhYeosZxGYRUJV4d7sFrIFXwFWir/UdO8Q6BYlly2eygtic
-	Am4Sf+Y9BbOFgGomdlxnmsDIu4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcHw+k97B
-	uKrB4hCjAAejEg/vgjMzQoRYE8uKK3MPMUpwMCuJ8Kq3AoV4UxIrq1KL8uOLSnNSiw8xmgJd
-	NZFZSjQ5H5g68kriDY1NzIwsjcwNLYyMzZXEeZXs20KEBNITS1KzU1MLUotg+pg4OKUaGKfo
-	u1ouLWPvVg+3fPvBa2pDqh/jVddK6R3cexRmzIyxM2ezfnLy5e/djVYSa11c5asf3nd8Inih
-	l+Gi23Jnhhd7LnCyJ6g++zpxr9IM7tCHZ0Q2/gu+2LdPlcmVvz39lcz7SxM1rLjZr/znXzRv
-	p0De/59y4XvUHPlsEmb9u35l+ZHTM1+vv63EUpyRaKjFXFScCAA0U+Pm5QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSrPvn3owQg8YPHBaP1yxmsrj+5Tmr
+	xfwj51gtJt2fwGLx+oWhRe+Cq2wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8li6fWLTBa3
+	G1ewWTxe8ZbdYtWuP4wO/B5r5q1h9Ng56y67x+I9L5k8Ni+p9+jbsorR4/MmuQC2KC6blNSc
+	zLLUIn27BK6MR0+WsRbs4qi4fvgEewPjE7YuRk4OCQETif//rzBB2GISF+6tB4pzcQgJLGWU
+	WN/2ihGm6Nvpb6wQiUWMEv+WbmGBcJqYJP4e+grWziagJbH/xQ2wsSICMhJXN24HK2IWaGSW
+	+LLsP1iRsECGxIQ/M8CKWARUJeZdm8sMYvMKuEks/vUM6g4FiWXLZ7KC2JxA8T/znoLZQgKu
+	EhM7rkPVXGKX2HqWB2KOgMS3yYeAlnEAxWUlNh1ghiiRlDi44gbLBEbhBYwMqxhFUwuSC4qT
+	0otM9IoTc4tL89L1kvNzNzEC4+f0v2cTdjDeO2B9iFGAg1GJh3fhmRkhQqyJZcWVuYcYTYE2
+	TGSWEk3OB0ZpXkm8obGZkYWpiamxkbmlmZI472upn8FCAumJJanZqakFqUXxRaU5qcWHGJk4
+	OKUaGIsr1t36/ImvtIgp+/d2kcqEL/5HZwSxzG6TsKtPy0nZnlc/b1/ptjmhnP0BrnprTN4l
+	Mi4RO50pknXFsGMeo/FS3hvPl2068CaJa+Vz4atlwr//Gz+Zbbq7OcJ1msmL/fLMX65xsk/r
+	FxFq8vuq0BUi/umWlP66W7P+3Fd+rjR/t+jHwowsFyWW4oxEQy3mouJEADkXJqOaAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jAd0/92aEGLwys3i8ZjGTxfUvz1kt
+	5h85x2ox6f4EFovXLwwtehdcZbM42/SG3WLT42usFpd3zWGz+Nx7hNFixvl9TBZLr19ksrjd
+	uILN4vGKt+wWq3b9YXTg91gzbw2jx85Zd9k9Fu95yeSxeUm9R9+WVYwenzfJBbBFNTDaZKQm
+	pqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gBdrKRQlphTChQK
+	SCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMePRkGWvBLo6K64dPsDcwPmHrYuTkkBAw
+	kfh2+hsrhC0mceHeeqA4F4eQwCJGiX9Lt7BAOE1MEn8PfWUCqWIT0JLY/+IGWLeIgIzE1Y3b
+	wYqYBRqZJb4s+w9WJCyQITHhzwywIhYBVYl51+Yyg9i8Am4Si389Y4JYpyCxbPlMsNWcQPE/
+	856C2UICrhITO64zTWDkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjODqfSe9gXNVg
+	cYhRgINRiYd3wZkZIUKsiWXFlbmHGCU4mJVEeNVbgUK8KYmVValF+fFFpTmpxYcYTYGumsgs
+	JZqcD0wceSXxhsYmZkaWRuaGFkbG5krivEr2bSFCAumJJanZqakFqUUwfUwcnFINjI2hQavD
+	21fPY9sQ3LtLtT+6XNHu7a2+5fl7roXp88yWmBvhdXatnpiSQU7HgmK7qk791mKvNdv08mZL
+	SDV/eGR+5feDBcctWa8a5y7rku9rOvKSN2xNxc2QaZHHN5kbTlwv+X+5bRCLzxsXR64tfz0u
+	HgoI0V51ptRXeE7Tk4ucSZamto+slFiKMxINtZiLihMBacf7d+QCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -55,112 +56,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add PPMU (Platform Performance Monitoring Unit) dt node
-to estimate the utilization of each IP in Exynos SoC throught DEVFREQ Event
-subsystem.
+This patch add dt node for PPMU_CPU/DMC0/DMC1 for exynos4412-trats2 board.
+Each PPMU dt node includes one event of 'PPMU Count 3'
 
-This patch adds following PPMU dt nodes:
-- PPMU_DMC0     0x106a0000
-- PPMU_DMC1     0x106b0000
-- PPMU_RIGHTBUS 0x112A0000
-- PPMU_LEFTBUS  0x116A0000
-- PPMU_CAMIF    0x11AC0000
-- PPMU_LCD0     0x11E40000
-- PPMU_FSYS     0x12630000
-- PPMU_3D       0x13220000
-- PPMU_MFC      0x13660000
-- PPMU_CPU      0x106c0000
-
-Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/boot/dts/exynos3250.dtsi | 72 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
+ arch/arm/boot/dts/exynos4412-trats2.dts | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index c743f60..f0322f2 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -529,6 +529,78 @@
- 			compatible = "arm,cortex-a7-pmu";
- 			interrupts = <0 18 0>, <0 19 0>;
- 		};
-+
-+		ppmu_dmc0: ppmu_dmc0@106a0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x106a0000 0x2000>;
-+			status = "disabled";
-+		};
-+
-+		ppmu_dmc1: ppmu_dmc1@106b0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x106b0000 0x2000>;
-+			status = "disabled";
-+		};
-+
-+		ppmu_cpu: ppmu_cpu@106c0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x106c0000 0x2000>;
-+			status = "disabled";
-+		};
-+
-+		ppmu_rightbus: ppmu_rightbus@112a0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x112a0000 0x2000>;
-+			clocks = <&cmu CLK_PPMURIGHT>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
-+
-+		ppmu_leftbus: ppmu_leftbus0@116a0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x116a0000 0x2000>;
-+			clocks = <&cmu CLK_PPMULEFT>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
-+
-+		ppmu_camif: ppmu_camif@11ac0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x11ac0000 0x2000>;
-+			clocks = <&cmu CLK_PPMUCAMIF>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
-+
-+		ppmu_lcd0: ppmu_lcd0@11e40000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x11e40000 0x2000>;
-+			clocks = <&cmu CLK_PPMULCD0>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
-+
-+		ppmu_fsys: ppmu_fsys@12630000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x12630000 0x2000>;
-+			status = "disabled";
-+		};
-+
-+		ppmu_g3d: ppmu_g3d@13220000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x13220000 0x2000>;
-+			clocks = <&cmu CLK_PPMUG3D>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
-+
-+		ppmu_mfc: ppmu_mfc@13660000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x13660000 0x2000>;
-+			clocks = <&cmu CLK_PPMUMFC_L>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index dd9ac66..9b98258 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -811,6 +811,36 @@
  	};
  };
  
++&ppmu_cpu {
++	status = "okay";
++
++	events {
++		ppmu_cpu_3: ppmu-event3-cpu {
++			event-name = "ppmu-event3-cpu";
++		};
++	};
++};
++
++&ppmu_dmc0 {
++	status = "okay";
++
++	events {
++		ppmu_dmc0_3: ppmu-event3-dmc0 {
++			event-name = "ppmu-event3-dmc0";
++		};
++	};
++};
++
++&ppmu_dmc1 {
++	status = "okay";
++
++	events {
++		ppmu_dmc1_3: ppmu-event3-dmc1 {
++			event-name = "ppmu-event3-dmc1";
++		};
++	};
++};
++
+ &pinctrl_0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sleep0>;
 -- 
 1.8.5.5
 
