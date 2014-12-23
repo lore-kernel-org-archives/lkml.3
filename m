@@ -1,90 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268AbaLWSs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 13:48:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaLWSsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 13:48:24 -0500
-Message-ID: <5499B8A2.4080008@redhat.com>
-Date: Tue, 23 Dec 2014 13:46:58 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756359AbaLWStO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 13:49:14 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:47085 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaLWStM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 13:49:12 -0500
 MIME-Version: 1.0
-To: Khalid Aziz <khalid.aziz@oracle.com>, Ingo Molnar <mingo@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, corbet@lwn.net,
-        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
-        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
-        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
-        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
-        daeseok.youn@gmail.com, keescook@chromium.org,
-        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
-        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH RESEND v4] sched/fair: Add advisory flag for borrowing
- a timeslice
-References: <1418928259-6311-1-git-send-email-khalid.aziz@oracle.com> <20141218222846.GH30905@twins.programming.kicks-ass.net> <54935842.5020507@oracle.com> <alpine.DEB.2.11.1412182355020.17382@nanos> <54936562.5070502@oracle.com> <alpine.DEB.2.11.1412190045590.17382@nanos> <54949BF0.8030403@oracle.com> <alpine.DEB.2.11.1412200041220.17382@nanos> <5498498B.90703@oracle.com> <20141223105251.GB22203@gmail.com> <5499867C.1010201@oracle.com>
-In-Reply-To: <5499867C.1010201@oracle.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141223091944.GB9112@gmail.com>
+References: <20141222200803.D316DA2A@viggo.jf.intel.com> <20141222200804.18A7A803@viggo.jf.intel.com>
+ <CALCETrWAgPjLTA-iSabFmqVKiOKGPGgDgSWdjz3wsncs1X+WOg@mail.gmail.com>
+ <54987D4F.3000908@sr71.net> <CALCETrXF11MeP8vc4eKqJz+2OOYQzmrK_erVEz=pZS3c=YWibw@mail.gmail.com>
+ <20141223091944.GB9112@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 23 Dec 2014 10:48:50 -0800
+Message-ID: <CALCETrWuG6kDeGAqMmw7EuSrLBJvU8xWbzMn+A0kjB5eMfEBuA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86, mpx: explicitly disable 32-bit MPX support on
+ 64-bit kernels
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Dave Hansen <dave@sr71.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, Dec 23, 2014 at 1:19 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Andy Lutomirski <luto@amacapital.net> wrote:
+>
+>> On Mon, Dec 22, 2014 at 12:21 PM, Dave Hansen <dave@sr71.net> wrote:
+>> > On 12/22/2014 12:17 PM, Andy Lutomirski wrote:
+>> >>> >         /*
+>> >>> > +        * 32-bit binaries on 64-bit kernels are currently
+>> >>> > +        * unsupported.
+>> >>> > +        */
+>> >>> > +       if (IS_ENABLED(CONFIG_X86_64) && test_thread_flag(TIF_IA32))
+>> >>> > +               return MPX_INVALID_BOUNDS_DIR;
+>> >> Should this check mm->ia32_compat instead?
+>> >
+>> > set_personality_64bit/ia32() seem to make that and TIF_IA32 awfully
+>> > equivalent.  Is there a specific reason for wanting it done this way?
+>>
+>> My general desire to remove various bogus TIF_IA32 references.
+>> [...]
+>
+> So we generally want to use mm->context.ia32_compat instead of
+> TIF_IA32, because in the end TIF_IA32 will go away altogether?
+>
+> Or do you just want to audit all TIF_IA32 places (because most of
+> them are wrong), and using mm->context.ia32_compat where it's
+> justified and eliminating TIF_IA32 use is a nice way to document
+> that ongoing audit without breaking stuff and such?
 
-On 12/23/2014 10:13 AM, Khalid Aziz wrote:
-> On 12/23/2014 03:52 AM, Ingo Molnar wrote:
->> 
->> 
->> to implement what Thomas suggested in the discussion: a proper 
->> futex like spin mechanism? That looks like a totally acceptable 
->> solution to me, without the disadvantages of your proposed 
->> solution.
-> 
-> Hi Ingo,
-> 
-> Thank you for taking the time to respond. It is indeed possible to 
-> implement a futex like spin mechanism. Futex like mechanism will
-> be clean and elegant. That is where I had started when I was given
-> this problem to solve. Trouble I run into is the primary
-> application I am looking at to help with this solution is Database
-> which implements its own locking mechanism without using POSIX
-> semaphore or futex. Since the locking is entirely in userspace,
-> kernel has no clue when the userspace has acquired one of these
-> locks. So I can see only two ways to solve this - find a solution
-> in userspace entirely, or have userspace tell the kernel when it
-> acquires one of these locks. I will spend more time on finding a
-> way to solve it in userspace and see if I can find a way to 
-> leverage futex mechanism without causing significant change to
-> database code. There may be a way to use priority inheritance to
-> avoid contention. Database performance people tell me that their
-> testing has shown the cost of making any system calls in this code
-> easily offsets any gains from optimizing for contention avoidance,
-> so that is one big challenge. Database rewriting their locking code
-> is extremely unlikely scenario. Am I missing a third option here?
+TBH, I haven't gotten that far.  But of the uses I've looked at, most
+seem to want TS_COMPAT instead (is_ia32_task, which is IMO terribly
+named), some are so buggier than just using a strange flag, and I
+suspect that the rest would make more sense using
+mm->context.ia32_compat.
 
-An uncontended futex is taken without ever going into kernel
-space. Adaptive spinning allows short duration futexes to be
-taken without going into kernel space.
+I was planning on sending some patches to incrementally improve the
+situation and then seeing where we end up.
 
-Only long held locks cause a thread to go into kernel space,
-where it goes to sleep, freeing up the cpu, and increasing
-the chance that the lock holder will run.
+>
+>> [...]  But this is only temporary, so I don't really care.
+>
+> New code that touches this area should better use new principles,
+> so I have no problem with requiring this, as long as it's well
+> explained and logical and desirable to everyone.
+>
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Given that this patch is a fix for 3.19, the code looks correct, and
+the check will go away in 3.20, I see no reason to worry about this
+particular patch.
 
-iQEcBAEBAgAGBQJUmbihAAoJEM553pKExN6DDlQH/1vvy9YYuP2dCAZSU3fz855e
-pj4796Qja929I2dStsbLl6Qhcg2ELtwtPkLoAePQ/4j2l7DCYgSNLXlC+RzQ32ay
-rbMIfwiriEVGp2hsvYTOCpnur19IHf7v726ivaDXVOM/nrRaHsB8wwspLQQyfSIE
-b7M7jxvT4S2pEELOGB6JQfEZZhbf5wBv9HBk+fkCBMaO4WZrnYczyD0/omiADm65
-xSm/8pCMK22u8Tzn9EpKpIVdIFrl9AlZ1uiRBV2Br1oqwaBTvJVknW4bvIk0DWZU
-ErwR/073UYKpl+xce3nbnixH8FeRP7/mq73Xd8e+iCgn6Dtzr1tANsu27EigMZ0=
-=WHb3
------END PGP SIGNATURE-----
+--Andy
+
+> Thanks,
+>
+>         Ingo
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
