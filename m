@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbaLWDna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 22:43:30 -0500
-Received: from mail-bl2on0139.outbound.protection.outlook.com ([65.55.169.139]:46432
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1754921AbaLWDni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 22:43:38 -0500
+Received: from mail-bn1bn0109.outbound.protection.outlook.com ([157.56.110.109]:62636
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754841AbaLWDnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 22:43:24 -0500
+	id S1754841AbaLWDnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 22:43:32 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -14,1193 +14,714 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v3 11/18] drm/bridge: Add Synopsys DesignWare MIPI DSI host controller driver
-Date: Tue, 23 Dec 2014 11:46:32 +0800
-Message-ID: <1419306399-9387-12-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v3 13/18] drm: panel: Add support for Himax HX8369A MIPI DSI panel
+Date: Tue, 23 Dec 2014 11:46:34 +0800
+Message-ID: <1419306399-9387-14-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419306399-9387-1-git-send-email-Ying.Liu@freescale.com>
 References: <1419306399-9387-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.168.50)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(479174004)(92566001)(107046002)(76176999)(120916001)(77156002)(229853001)(97736003)(2351001)(575784001)(99396003)(86362001)(6806004)(50986999)(85426001)(62966003)(110136001)(77096005)(104016003)(50466002)(87936001)(19580405001)(21056001)(2950100001)(84676001)(20776003)(64706001)(4396001)(50226001)(68736005)(106466001)(36756003)(105606002)(31966008)(89996001)(19580395003)(46102003)(48376002)(47776003)(2004002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0639;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(84676001)(31966008)(105606002)(6806004)(110136001)(50226001)(68736005)(4396001)(77096005)(575784001)(86362001)(106466001)(19580405001)(107046002)(36756003)(92566001)(104016003)(97736003)(76176999)(2351001)(229853001)(20776003)(89996001)(50986999)(99396003)(50466002)(120916001)(2950100001)(21056001)(19580395003)(47776003)(64706001)(46102003)(85426001)(62966003)(77156002)(48376002)(87936001)(2004002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0638;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0639;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0638;
 X-Forefront-PRVS: 04347F8039
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0639;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 03:43:20.8755
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 03:43:28.8577
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0639
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0638
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds Synopsys DesignWare MIPI DSI host controller driver support.
-Currently, the driver supports the burst with sync pulses mode only.
+This patch adds support for Himax HX8369A MIPI DSI panel.
 
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
 v2->v3:
- * Newly introduced in v3 to address Andy Yan's comment.  This is based on
-   the i.MX MIPI DSI driver in v2.  To make the Synopsys DesignWare MIPI DSI
-   host controller driver less platform-dependant, this patch places it at
-   the drm/bridge directory as a DRM bridge driver.
+ * Sort the included header files alphabetically.
 
- .../devicetree/bindings/drm/bridge/dw_mipi_dsi.txt |  72 ++
- drivers/gpu/drm/bridge/Kconfig                     |   5 +
- drivers/gpu/drm/bridge/Makefile                    |   1 +
- drivers/gpu/drm/bridge/dw_mipi_dsi.c               | 998 +++++++++++++++++++++
- include/drm/bridge/dw_mipi_dsi.h                   |  27 +
- 5 files changed, 1103 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
- create mode 100644 drivers/gpu/drm/bridge/dw_mipi_dsi.c
- create mode 100644 include/drm/bridge/dw_mipi_dsi.h
+v1->v2:
+ * Address almost all comments from Thierry Reding.
+ * Remove several DT properties as they can be implied by the compatible string.
+ * Add the HIMAX/himax prefixes to the driver's Kconfig name and driver name.
+ * Move the driver's Makefile entry place to sort the entries alphabetically.
+ * Reuse several standard DCS functions instead of inventing wheels.
+ * Move the panel resetting and power logics to the driver probe/remove stages.
+   This may simplify panel prepare/unprepare hooks. The power consumption should
+   not change a lot at DPMS since the panel enters sleep mode at that time.
+ * Add the module author.
+ * Other minor changes, such as coding style issues.
 
-diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
+ .../devicetree/bindings/panel/himax,hx8369a.txt    |  41 ++
+ drivers/gpu/drm/panel/Kconfig                      |   5 +
+ drivers/gpu/drm/panel/Makefile                     |   1 +
+ drivers/gpu/drm/panel/panel-himax-hx8369a.c        | 573 +++++++++++++++++++++
+ 4 files changed, 620 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/panel/himax,hx8369a.txt
+ create mode 100644 drivers/gpu/drm/panel/panel-himax-hx8369a.c
+
+diff --git a/Documentation/devicetree/bindings/panel/himax,hx8369a.txt b/Documentation/devicetree/bindings/panel/himax,hx8369a.txt
 new file mode 100644
-index 0000000..5dcbd9f
+index 0000000..36a2f11
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
-@@ -0,0 +1,72 @@
-+Device-Tree bindings for Synopsys DesignWare MIPI DSI host controller
++++ b/Documentation/devicetree/bindings/panel/himax,hx8369a.txt
+@@ -0,0 +1,41 @@
++Himax HX8369A WVGA 16.7M color TFT single chip driver with internal GRAM
 +
-+The controller is a digital core that implements all protocol functions
-+defined in the MIPI DSI specification, providing an interface between
-+the system and the MIPI DPHY, and allowing communication with a MIPI DSI
-+compliant display.
++Himax HX8369A is a WVGA resolution driving controller.
++It is designed to provide a single chip solution that combines a source
++driver and power supply circuits to drive a TFT dot matrix LCD with
++480RGBx864 dots at the maximum.
++
++The HX8369A supports several interface modes, including MPU MIPI DBI Type
++A/B mode, MIPI DPI/DBI Type C mode, MIPI DSI video mode, MIPI DSI command
++mode and MDDI mode. The interface mode is selected by the external hardware
++pins BS[3:0].
++
++Currently, only the MIPI DSI video mode is supported.
 +
 +Required properties:
-+ - #address-cells: Should be <1>.
-+ - #size-cells: Should be <0>.
-+ - compatible: The compatible string should be "fsl,imx6q-mipi-dsi" for
-+   i.MX6q/sdl SoCs.  For other SoCs, please refer to their specific
-+   device tree binding documentations.
-+ - reg: Represent the physical address range of the controller.
-+ - interrupts: Represent the controller's interrupt to the CPU(s).
-+ - clocks, clock-names: Phandles to the controller pll reference and
-+   core configuration clocks, as described in [1].
++  - compatible: should be a panel's compatible string
++  - reg: the virtual channel number of a DSI peripheral as described in [1]
++  - reset-gpios: a GPIO spec for the reset pin
 +
-+For more required properties, please refer to relevant device tree binding
-+documentations which describe the controller embedded in specific SoCs.
++Optional properties:
++  - vdd1-supply: I/O and interface power supply
++  - vdd2-supply: analog power supply
++  - vdd3-supply: logic power supply
++  - dsi-vcc-supply: DSI and MDDI power supply
++  - vpp-supply: OTP programming voltage
++  - bs0-gpios: a GPIO spec for the pin BS0
++  - bs1-gpios: a GPIO spec for the pin BS1
++  - bs2-gpios: a GPIO spec for the pin BS2
++  - bs3-gpios: a GPIO spec for the pin BS3
 +
-+Required sub-nodes:
-+ - A node to represent a DSI peripheral as described in [2].
++[1] Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt
 +
-+For more required sub-nodes, please refer to relevant device tree binding
-+documentations which describe the controller embedded in specific SoCs.
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+[2] Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt
-+
-+example:
-+	gpr: iomuxc-gpr@020e0000 {
-+		/* ... */
++Example:
++	panel {
++		compatible = "truly,tft480800-16-e-dsi";
++		reg = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_mipi_panel>;
++		reset-gpios = <&gpio6 11 GPIO_ACTIVE_LOW>;
++		bs2-gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
 +	};
-+
-+	mipi_dsi: mipi@021e0000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "fsl,imx6q-mipi-dsi";
-+		reg = <0x021e0000 0x4000>;
-+		interrupts = <0 102 IRQ_TYPE_LEVEL_HIGH>;
-+		gpr = <&gpr>;
-+		clocks = <&clks IMX6QDL_CLK_MIPI_CORE_CFG>,
-+			 <&clks IMX6QDL_CLK_MIPI_CORE_CFG>;
-+		clock-names = "pllref", "core_cfg";
-+
-+		ports {
-+			port@0 {
-+				reg = <0>;
-+				input-port;
-+
-+				mipi_mux_0: endpoint {
-+					remote-endpoint = <&ipu1_di0_mipi>;
-+				};
-+			};
-+
-+			port@1 {
-+				reg = <1>;
-+				input-port;
-+
-+				mipi_mux_1: endpoint {
-+					remote-endpoint = <&ipu1_di1_mipi>;
-+				};
-+			};
-+		};
-+
-+		panel {
-+			compatible = "truly,tft480800-16-e-dsi";
-+			reg = <0>;
-+			/* ... */
-+		};
-+	};
-diff --git a/drivers/gpu/drm/bridge/Kconfig b/drivers/gpu/drm/bridge/Kconfig
-index 884923f..8180477 100644
---- a/drivers/gpu/drm/bridge/Kconfig
-+++ b/drivers/gpu/drm/bridge/Kconfig
-@@ -1,3 +1,8 @@
-+config DRM_DW_MIPI_DSI
-+	bool "Synopsys DesignWare MIPI DSI host controller bridge"
-+	depends on DRM
-+	select DRM_KMS_HELPER
-+
- config DRM_PTN3460
- 	tristate "PTN3460 DP/LVDS bridge"
- 	depends on DRM
-diff --git a/drivers/gpu/drm/bridge/Makefile b/drivers/gpu/drm/bridge/Makefile
-index b4733e1..b326ad5 100644
---- a/drivers/gpu/drm/bridge/Makefile
-+++ b/drivers/gpu/drm/bridge/Makefile
-@@ -1,3 +1,4 @@
- ccflags-y := -Iinclude/drm
+diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
+index 024e98e..81b0bf0 100644
+--- a/drivers/gpu/drm/panel/Kconfig
++++ b/drivers/gpu/drm/panel/Kconfig
+@@ -16,6 +16,11 @@ config DRM_PANEL_SIMPLE
+ 	  that it can be automatically turned off when the panel goes into a
+ 	  low power state.
  
-+obj-$(CONFIG_DRM_DW_MIPI_DSI) += dw_mipi_dsi.o
- obj-$(CONFIG_DRM_PTN3460) += ptn3460.o
-diff --git a/drivers/gpu/drm/bridge/dw_mipi_dsi.c b/drivers/gpu/drm/bridge/dw_mipi_dsi.c
++config DRM_PANEL_HIMAX_HX8369A
++	tristate "Himax HX8369A panel"
++	depends on OF
++	select DRM_MIPI_DSI
++
+ config DRM_PANEL_LD9040
+ 	tristate "LD9040 RGB/SPI panel"
+ 	depends on OF && SPI
+diff --git a/drivers/gpu/drm/panel/Makefile b/drivers/gpu/drm/panel/Makefile
+index 4b2a043..d5dbe06 100644
+--- a/drivers/gpu/drm/panel/Makefile
++++ b/drivers/gpu/drm/panel/Makefile
+@@ -1,4 +1,5 @@
+ obj-$(CONFIG_DRM_PANEL_SIMPLE) += panel-simple.o
++obj-$(CONFIG_DRM_PANEL_HIMAX_HX8369A) += panel-himax-hx8369a.o
+ obj-$(CONFIG_DRM_PANEL_LD9040) += panel-ld9040.o
+ obj-$(CONFIG_DRM_PANEL_S6E8AA0) += panel-s6e8aa0.o
+ obj-$(CONFIG_DRM_PANEL_SHARP_LQ101R1SX01) += panel-sharp-lq101r1sx01.o
+diff --git a/drivers/gpu/drm/panel/panel-himax-hx8369a.c b/drivers/gpu/drm/panel/panel-himax-hx8369a.c
 new file mode 100644
-index 0000000..341cd6f
+index 0000000..6efce8e
 --- /dev/null
-+++ b/drivers/gpu/drm/bridge/dw_mipi_dsi.c
-@@ -0,0 +1,998 @@
++++ b/drivers/gpu/drm/panel/panel-himax-hx8369a.c
+@@ -0,0 +1,573 @@
 +/*
-+ * Synopsys DesignWare(DW) MIPI DSI Host Controller
++ * Himax HX8369A panel driver.
 + *
 + * Copyright (C) 2011-2014 Freescale Semiconductor, Inc.
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-+ * MA 02110-1301, USA.
++ * This driver is based on Samsung s6e8aa0 panel driver.
 + */
-+
-+#include <linux/clk.h>
-+#include <linux/math64.h>
-+#include <linux/module.h>
-+#include <drm/bridge/dw_mipi_dsi.h>
-+#include <drm/drm_crtc_helper.h>
-+#include <drm/drm_mipi_dsi.h>
-+#include <drm/drm_panel.h>
-+#include <video/mipi_display.h>
-+
-+#define DSI_VERSION			0x00
-+
-+#define DSI_PWR_UP			0x04
-+#define RESET				0
-+#define POWERUP				BIT(0)
-+
-+#define DSI_CLKMGR_CFG			0x08
-+#define TO_CLK_DIVIDSION(div)		(((div) & 0xff) << 8)
-+#define TX_ESC_CLK_DIVIDSION(div)	(((div) & 0xff) << 0)
-+
-+#define DSI_DPI_CFG			0x0c
-+#define EN18_LOOSELY			BIT(10)
-+#define COLORM_ACTIVE_LOW		BIT(9)
-+#define SHUTD_ACTIVE_LOW		BIT(8)
-+#define HSYNC_ACTIVE_LOW		BIT(7)
-+#define VSYNC_ACTIVE_LOW		BIT(6)
-+#define DATAEN_ACTIVE_LOW		BIT(5)
-+#define DPI_COLOR_CODING_16BIT_1	(0x0 << 2)
-+#define DPI_COLOR_CODING_16BIT_2	(0x1 << 2)
-+#define DPI_COLOR_CODING_16BIT_3	(0x2 << 2)
-+#define DPI_COLOR_CODING_18BIT_1	(0x3 << 2)
-+#define DPI_COLOR_CODING_18BIT_2	(0x4 << 2)
-+#define DPI_COLOR_CODING_24BIT		(0x5 << 2)
-+#define DPI_VID(vid)			(((vid) & 0x3) << 0)
-+
-+#define DSI_DBI_CFG			0x10
-+#define DSI_DBIS_CMDSIZE		0x14
-+
-+#define DSI_PCKHDL_CFG			0x18
-+#define GEN_VID_RX(vid)			(((vid) & 0x3) << 5)
-+#define EN_CRC_RX			BIT(4)
-+#define EN_ECC_RX			BIT(3)
-+#define EN_BTA				BIT(2)
-+#define EN_EOTN_RX			BIT(1)
-+#define EN_EOTP_TX			BIT(0)
-+
-+#define DSI_VID_MODE_CFG		0x1c
-+#define FRAME_BTA_ACK			BIT(11)
-+#define EN_NULL_PKT			BIT(10)
-+#define EN_NULL_PKT_MASK		BIT(10)
-+#define EN_MULTI_PKT			BIT(9)
-+#define ENABLE_LOW_POWER		(0x3f << 3)
-+#define ENABLE_LOW_POWER_MASK		(0x3f << 3)
-+#define VID_MODE_TYPE_NONBURST_SYNC_PULSES	(0x0 << 1)
-+#define VID_MODE_TYPE_NONBURST_SYNC_EVENTS	(0x1 << 1)
-+#define VID_MODE_TYPE_BURST_SYNC_PULSES		(0x3 << 1)
-+#define VID_MODE_TYPE_MASK			(0x3 << 1)
-+#define ENABLE_VIDEO_MODE			BIT(0)
-+#define DISABLE_VIDEO_MODE			0
-+#define ENABLE_VIDEO_MODE_MASK			BIT(0)
-+
-+#define DSI_VID_PKT_CFG			0x20
-+#define NULL_PKT_SIZE(b)		(((b) & 0x3f) << 21)
-+#define NUM_CHUNKS(n)			(((n) & 0x3f) << 11)
-+#define VID_PKT_SIZE(p)			(((p) & 0x7ff) << 0)
-+#define VID_PKT_MAX_SIZE		0x7ff
-+
-+#define DSI_CMD_MODE_CFG		0x24
-+#define EN_TEAR_FX			BIT(14)
-+#define EN_ACK_RQST			BIT(13)
-+#define DCS_LW_TX_LP			BIT(12)
-+#define GEN_LW_TX_LP			BIT(11)
-+#define MAX_RD_PKT_SIZE_LP		BIT(10)
-+#define DCS_SW_2P_TX_LP			BIT(9)
-+#define DCS_SW_1P_TX_LP			BIT(8)
-+#define DCS_SW_0P_TX_LP			BIT(7)
-+#define GEN_SR_2P_TX_LP			BIT(6)
-+#define GEN_SR_1P_TX_LP			BIT(5)
-+#define GEN_SR_0P_TX_LP			BIT(4)
-+#define GEN_SW_2P_TX_LP			BIT(3)
-+#define GEN_SW_1P_TX_LP			BIT(2)
-+#define GEN_SW_0P_TX_LP			BIT(1)
-+#define ENABLE_CMD_MODE			BIT(0)
-+#define DISABLE_CMD_MODE		0
-+#define ENABLE_CMD_MODE_MASK		BIT(0)
-+#define CMD_MODE_ALL_LP			(DCS_LW_TX_LP | \
-+					 GEN_LW_TX_LP | \
-+					 MAX_RD_PKT_SIZE_LP | \
-+					 DCS_SW_2P_TX_LP | \
-+					 DCS_SW_1P_TX_LP | \
-+					 DCS_SW_0P_TX_LP | \
-+					 GEN_SR_2P_TX_LP | \
-+					 GEN_SR_1P_TX_LP | \
-+					 GEN_SR_0P_TX_LP | \
-+					 GEN_SW_2P_TX_LP | \
-+					 GEN_SW_1P_TX_LP | \
-+					 GEN_SW_0P_TX_LP)
-+
-+#define DSI_TMR_LINE_CFG		0x28
-+#define HLINE_TIME(lbcc)		(((lbcc) & 0x3fff) << 18)
-+#define HBP_TIME(lbcc)			(((lbcc) & 0x1ff) << 9)
-+#define HSA_TIME(lbcc)			(((lbcc) & 0x1ff) << 0)
-+
-+#define DSI_VTIMING_CFG			0x2c
-+#define V_ACTIVE_LINES(line)		(((line) & 0x7ff) << 16)
-+#define VFP_LINES(line)			(((line) & 0x3f) << 10)
-+#define VBP_LINES(line)			(((line) & 0x3f) << 4)
-+#define VSA_LINES(line)			(((line) & 0xf) << 0)
-+
-+#define DSI_PHY_TMR_CFG			0x30
-+#define PHY_HS2LP_TIME(lbcc)		(((lbcc) & 0xff) << 20)
-+#define PHY_LP2HS_TIME(lbcc)		(((lbcc) & 0xff) << 12)
-+#define BTA_TIME(lbcc)			(((lbcc) & 0xfff) << 0)
-+
-+#define DSI_GEN_HDR			0x34
-+#define GEN_HDATA(data)			(((data) & 0xffff) << 8)
-+#define GEN_HDATA_MASK			(0xffff << 8)
-+#define GEN_HTYPE(type)			(((type) & 0xff) << 0)
-+#define GEN_HTYPE_MASK			0xff
-+
-+#define DSI_GEN_PLD_DATA		0x38
-+
-+#define DSI_CMD_PKT_STATUS		0x3c
-+#define GEN_CMD_EMPTY			BIT(0)
-+#define GEN_CMD_FULL			BIT(1)
-+#define GEN_PLD_W_EMPTY			BIT(2)
-+#define GEN_PLD_W_FULL			BIT(3)
-+#define GEN_PLD_R_EMPTY			BIT(4)
-+#define GEN_RD_CMD_BUSY			BIT(6)
-+
-+#define DSI_TO_CNT_CFG			0x40
-+#define DSI_ERROR_ST0			0x44
-+#define DSI_ERROR_ST1			0x48
-+#define DSI_ERROR_MSK0			0x4c
-+#define DSI_ERROR_MSK1			0x50
-+
-+#define DSI_PHY_RSTZ			0x54
-+#define PHY_DISABLECLK			0
-+#define PHY_ENABLECLK			BIT(2)
-+#define PHY_RSTZ			0
-+#define PHY_UNRSTZ			BIT(1)
-+#define PHY_SHUTDOWNZ			0
-+#define PHY_UNSHUTDOWNZ			BIT(0)
-+
-+#define DSI_PHY_IF_CFG			0x58
-+#define N_LANES(n)			((((n) - 1) & 0x3) << 0)
-+#define PHY_STOP_WAIT_TIME(cycle)	(((cycle) & 0x3ff) << 2)
-+
-+#define DSI_PHY_IF_CTRL			0x5c
-+#define PHY_IF_CTRL_RESET		0x0
-+#define TX_REQ_CLK_HS			BIT(0)
-+
-+#define DSI_PHY_STATUS			0x60
-+#define LOCK				BIT(0)
-+#define STOP_STATE_CLK_LANE		BIT(2)
-+
-+#define DSI_PHY_TST_CTRL0		0x64
-+#define PHY_TESTCLK			BIT(1)
-+#define PHY_UNTESTCLK			0
-+#define PHY_TESTCLR			BIT(0)
-+#define PHY_UNTESTCLR			0
-+
-+#define DSI_PHY_TST_CTRL1		0x68
-+#define PHY_TESTEN			BIT(16)
-+#define PHY_UNTESTEN			0
-+#define PHY_TESTDOUT(n)			(((n) & 0xff) << 8)
-+#define PHY_TESTDIN(n)			(((n) & 0xff) << 0)
-+
-+#define PHY_STATUS_TIMEOUT		10
-+#define CMD_PKT_STATUS_TIMEOUT		20
-+
-+struct dw_mipi_dsi {
-+	struct mipi_dsi_host dsi_host;
-+	struct drm_connector connector;
-+	struct drm_encoder *encoder;
-+	struct drm_bridge *bridge;
-+	struct drm_panel *panel;
-+	struct device *dev;
-+
-+	void __iomem *base;
-+
-+	struct clk *pllref_clk;
-+	struct clk *cfg_clk;
-+
-+	unsigned int lane_mbps; /* per lane */
-+	u32 channel;
-+	u32 lanes;
-+	u32 format;
-+	struct drm_display_mode *mode;
-+
-+	const struct dw_mipi_dsi_plat_data *pdata;
-+
-+	bool enabled;
-+};
-+
-+enum {
-+	STATUS_TO_CLEAR,
-+	STATUS_TO_SET,
-+};
-+
-+enum dw_mipi_dsi_mode {
-+	DW_MIPI_DSI_CMD_MODE,
-+	DW_MIPI_DSI_VID_MODE,
-+};
-+
-+struct dphy_pll_testdin_map {
-+	unsigned int max_mbps;
-+	u8 testdin;
-+};
-+
-+/* The table is based on 27MHz DPHY pll reference clock. */
-+static const struct dphy_pll_testdin_map dptdin_map[] = {
-+	{160, 0x04}, {180, 0x24}, {200, 0x44}, {210, 0x06},
-+	{240, 0x26}, {250, 0x46}, {270, 0x08}, {300, 0x28},
-+	{330, 0x48}, {360, 0x2a}, {400, 0x4a}, {450, 0x0c},
-+	{500, 0x2c}, {550, 0x0e}, {600, 0x2e}, {650, 0x10},
-+	{700, 0x30}, {750, 0x12}, {800, 0x32}, {850, 0x14},
-+	{900, 0x34}, {950, 0x54}, {1000, 0x74}
-+};
-+
-+static inline struct dw_mipi_dsi *host_to_dsi(struct mipi_dsi_host *host)
-+{
-+	return container_of(host, struct dw_mipi_dsi, dsi_host);
-+}
-+
-+static inline struct dw_mipi_dsi *con_to_dsi(struct drm_connector *con)
-+{
-+	return container_of(con, struct dw_mipi_dsi, connector);
-+}
-+
-+int dw_mipi_dsi_get_encoder_pixel_format(struct drm_encoder *encoder)
-+{
-+	struct dw_mipi_dsi *dsi = encoder->bridge->driver_private;
-+
-+	return dsi->format;
-+}
-+EXPORT_SYMBOL_GPL(dw_mipi_dsi_get_encoder_pixel_format);
-+
-+static int max_mbps_to_testdin(unsigned int max_mbps)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(dptdin_map); i++)
-+		if (dptdin_map[i].max_mbps == max_mbps)
-+			return dptdin_map[i].testdin;
-+
-+	return -EINVAL;
-+}
-+
-+static inline void dsi_write(struct dw_mipi_dsi *dsi, u32 reg, u32 val)
-+{
-+	writel(val, dsi->base + reg);
-+}
-+
-+static inline u32 dsi_read(struct dw_mipi_dsi *dsi, u32 reg)
-+{
-+	return readl(dsi->base + reg);
-+}
-+
-+static inline void dsi_modify(struct dw_mipi_dsi *dsi, u32 reg,
-+			      u32 mask, u32 val)
-+{
-+	u32 v = readl(dsi->base + reg);
-+	v &= ~mask;
-+	v |= val;
-+	writel(v, dsi->base + reg);
-+}
-+
-+static int check_status(struct dw_mipi_dsi *dsi, u32 reg, u32 status,
-+			unsigned int timeout, bool to_set)
-+{
-+	unsigned long expire;
-+	bool out;
-+	u32 val;
-+
-+	expire = jiffies + msecs_to_jiffies(timeout);
-+	for (;;) {
-+		val = dsi_read(dsi, reg);
-+		out = to_set ? ((val & status) == status) : !(val & status);
-+		if (out)
-+			break;
-+
-+		if (time_after(jiffies, expire))
-+			return -ETIMEDOUT;
-+
-+		cpu_relax();
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * The controller should generate 2 frames before
-+ * preparing the peripheral.
-+ */
-+static void dw_mipi_dsi_wait_for_two_frames(struct dw_mipi_dsi *dsi)
-+{
-+	unsigned long expire;
-+	int refresh, two_frames;
-+
-+	refresh = drm_mode_vrefresh(dsi->mode);
-+	two_frames = DIV_ROUND_UP(MSEC_PER_SEC, refresh) * 2;
-+
-+	expire = jiffies + msecs_to_jiffies(two_frames);
-+	while (time_before(jiffies, expire))
-+		cpu_relax();
-+}
-+
-+static int dw_mipi_dsi_config_testdin(struct dw_mipi_dsi *dsi)
-+{
-+	int ret, testdin;
-+
-+	testdin = max_mbps_to_testdin(dsi->lane_mbps);
-+	if (testdin < 0) {
-+		dev_err(dsi->dev, "failed to get testdin for %dmbps "
-+			"lane clock\n", dsi->lane_mbps);
-+		return testdin;
-+	}
-+
-+	dsi_write(dsi, DSI_PHY_IF_CTRL, PHY_IF_CTRL_RESET);
-+	dsi_write(dsi, DSI_PWR_UP, POWERUP);
-+
-+	dsi_write(dsi, DSI_PHY_TST_CTRL0, PHY_UNTESTCLK | PHY_UNTESTCLR);
-+	dsi_write(dsi, DSI_PHY_TST_CTRL1, PHY_TESTEN | PHY_TESTDOUT(0) |
-+					  PHY_TESTDIN(0x44));
-+	dsi_write(dsi, DSI_PHY_TST_CTRL0, PHY_TESTCLK | PHY_UNTESTCLR);
-+	dsi_write(dsi, DSI_PHY_TST_CTRL0, PHY_UNTESTCLK | PHY_UNTESTCLR);
-+	dsi_write(dsi, DSI_PHY_TST_CTRL1, PHY_UNTESTEN | PHY_TESTDOUT(0) |
-+					  PHY_TESTDIN(testdin));
-+	dsi_write(dsi, DSI_PHY_TST_CTRL0, PHY_TESTCLK | PHY_UNTESTCLR);
-+	dsi_write(dsi, DSI_PHY_TST_CTRL0, PHY_UNTESTCLK | PHY_UNTESTCLR);
-+	dsi_write(dsi, DSI_PHY_RSTZ,      PHY_ENABLECLK | PHY_UNRSTZ |
-+					  PHY_UNSHUTDOWNZ);
-+	ret = check_status(dsi, DSI_PHY_STATUS, LOCK,
-+			   PHY_STATUS_TIMEOUT, STATUS_TO_SET);
-+	if (ret < 0) {
-+		dev_err(dsi->dev, "failed to wait for phy lock state\n");
-+		return ret;
-+	}
-+	ret = check_status(dsi, DSI_PHY_STATUS, STOP_STATE_CLK_LANE,
-+			   PHY_STATUS_TIMEOUT, STATUS_TO_SET);
-+	if (ret < 0) {
-+		dev_err(dsi->dev, "failed to wait for phy clk lane stop state\n");
-+		return ret;
-+	}
-+
-+	return ret;
-+}
-+
-+static int dw_mipi_dsi_get_lane_bps(struct dw_mipi_dsi *dsi,
-+				    unsigned int *final_mbps)
-+{
-+	int bpp, i;
-+	unsigned int target_mbps, mpclk;
-+	unsigned long pllref;
-+
-+	bpp = mipi_dsi_pixel_format_to_bpp(dsi->format);
-+	if (bpp < 0) {
-+		dev_err(dsi->dev, "failed to get bpp for pixel format %d\n",
-+			dsi->format);
-+		return bpp;
-+	}
-+
-+	pllref = clk_get_rate(dsi->pllref_clk);
-+	if (pllref != 27000000)
-+		dev_warn(dsi->dev, "expect 27MHz DPHY pll reference clock\n");
-+
-+	mpclk = DIV_ROUND_UP(dsi->mode->clock, MSEC_PER_SEC);
-+	if (mpclk) {
-+		/* take 1/0.7 blanking overhead into consideration */
-+		target_mbps = (mpclk * (bpp / dsi->lanes) * 10) / 7;
-+	} else {
-+		dev_dbg(dsi->dev, "use default 1Gbps DPHY pll clock\n");
-+		target_mbps = 1000;
-+	}
-+
-+	dev_dbg(dsi->dev, "target DPHY pll clock frequency is %uMbps\n",
-+		target_mbps);
-+
-+	for (i = 0; i < ARRAY_SIZE(dptdin_map); i++) {
-+		if (target_mbps < dptdin_map[i].max_mbps) {
-+			*final_mbps = dptdin_map[i].max_mbps;
-+			dev_dbg(dsi->dev, "real DPHY pll clock frequency "
-+				 "is %uMbps\n", *final_mbps);
-+			return 0;
-+		}
-+	}
-+
-+	dev_err(dsi->dev, "DPHY clock frequency %uMbps is out of range\n",
-+						target_mbps);
-+
-+	return -EINVAL;
-+}
-+
-+static int dw_mipi_dsi_host_attach(struct mipi_dsi_host *host,
-+				   struct mipi_dsi_device *device)
-+{
-+	struct dw_mipi_dsi *dsi = host_to_dsi(host);
-+
-+	if (device->lanes > dsi->pdata->max_data_lanes) {
-+		dev_err(dsi->dev, "the number of data lanes(%d) is too many\n",
-+				device->lanes);
-+		return -EINVAL;
-+	}
-+
-+	if (!(device->mode_flags & MIPI_DSI_MODE_VIDEO_BURST) ||
-+	    !(device->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)) {
-+		dev_err(dsi->dev, "device mode is unsupported\n");
-+		return -EINVAL;
-+	}
-+
-+	if (device->format != MIPI_DSI_FMT_RGB888 &&
-+	    device->format != MIPI_DSI_FMT_RGB565) {
-+		dev_err(dsi->dev, "device pixel format is unsupported\n");
-+		return -EINVAL;
-+	}
-+
-+	dsi->lanes = device->lanes;
-+	dsi->channel = device->channel;
-+	dsi->format = device->format;
-+	dsi->panel = of_drm_find_panel(device->dev.of_node);
-+	drm_panel_attach(dsi->panel, &dsi->connector);
-+
-+	return 0;
-+}
-+
-+static int dw_mipi_dsi_host_detach(struct mipi_dsi_host *host,
-+				   struct mipi_dsi_device *device)
-+{
-+	struct dw_mipi_dsi *dsi = host_to_dsi(host);
-+
-+	drm_panel_detach(dsi->panel);
-+	dsi->panel = NULL;
-+
-+	return 0;
-+}
-+
-+static int dw_mipi_dsi_gen_pkt_hdr_write(struct dw_mipi_dsi *dsi, u32 val)
-+{
-+	int ret;
-+
-+	ret = check_status(dsi, DSI_CMD_PKT_STATUS, GEN_CMD_FULL,
-+			   CMD_PKT_STATUS_TIMEOUT, STATUS_TO_CLEAR);
-+	if (ret < 0) {
-+		dev_err(dsi->dev, "failed to get avaliable command FIFO\n");
-+		return ret;
-+	}
-+
-+	dsi_write(dsi, DSI_GEN_HDR, val);
-+
-+	ret = check_status(dsi, DSI_CMD_PKT_STATUS,
-+			   GEN_CMD_EMPTY | GEN_PLD_W_EMPTY,
-+			   CMD_PKT_STATUS_TIMEOUT, STATUS_TO_SET);
-+	if (ret < 0) {
-+		dev_err(dsi->dev, "failed to write command FIFO\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int dw_mipi_dsi_dcs_short_write(struct dw_mipi_dsi *dsi,
-+				       const struct mipi_dsi_msg *msg)
-+{
-+	const u16 *tx_buf = msg->tx_buf;
-+	u32 val = GEN_HDATA(*tx_buf) | GEN_HTYPE(msg->type);
-+
-+	if (msg->tx_len > 2) {
-+		dev_err(dsi->dev, "too long tx buf length %d for short write\n",
-+			msg->tx_len);
-+		return -EINVAL;
-+	}
-+
-+	return dw_mipi_dsi_gen_pkt_hdr_write(dsi, val);
-+}
-+
-+static int dw_mipi_dsi_dcs_long_write(struct dw_mipi_dsi *dsi,
-+				      const struct mipi_dsi_msg *msg)
-+{
-+	const u32 *tx_buf = msg->tx_buf;
-+	int len = msg->tx_len, pld_data_bytes = sizeof(*tx_buf), ret;
-+	u32 val = GEN_HDATA(msg->tx_len) | GEN_HTYPE(msg->type);
-+	u32 remainder = 0;
-+
-+	if (msg->tx_len < 3) {
-+		dev_err(dsi->dev, "wrong tx buf length %d for long write\n",
-+			msg->tx_len);
-+		return -EINVAL;
-+	}
-+
-+	while (DIV_ROUND_UP(len, pld_data_bytes)) {
-+		if (len < pld_data_bytes) {
-+			memcpy(&remainder, tx_buf, len);
-+			dsi_write(dsi, DSI_GEN_PLD_DATA, remainder);
-+			len = 0;
-+		} else {
-+			dsi_write(dsi, DSI_GEN_PLD_DATA, *tx_buf);
-+			tx_buf++;
-+			len -= pld_data_bytes;
-+		}
-+		ret = check_status(dsi, DSI_CMD_PKT_STATUS, GEN_PLD_W_FULL,
-+				   CMD_PKT_STATUS_TIMEOUT, STATUS_TO_CLEAR);
-+		if (ret < 0) {
-+			dev_err(dsi->dev, "failed to get avaliable "
-+					"write payload FIFO\n");
-+			return ret;
-+		}
-+	}
-+
-+	return dw_mipi_dsi_gen_pkt_hdr_write(dsi, val);
-+}
-+
-+static ssize_t dw_mipi_dsi_host_transfer(struct mipi_dsi_host *host,
-+					 const struct mipi_dsi_msg *msg)
-+{
-+	struct dw_mipi_dsi *dsi = host_to_dsi(host);
-+	int ret;
-+
-+	switch (msg->type) {
-+	case MIPI_DSI_DCS_SHORT_WRITE:
-+	case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
-+	case MIPI_DSI_SET_MAXIMUM_RETURN_PACKET_SIZE:
-+		ret = dw_mipi_dsi_dcs_short_write(dsi, msg);
-+		break;
-+	case MIPI_DSI_DCS_LONG_WRITE:
-+		ret = dw_mipi_dsi_dcs_long_write(dsi, msg);
-+		break;
-+	default:
-+		dev_err(dsi->dev, "unsupported message type\n");
-+		ret = -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+
-+static const struct mipi_dsi_host_ops dw_mipi_dsi_host_ops = {
-+	.attach = dw_mipi_dsi_host_attach,
-+	.detach = dw_mipi_dsi_host_detach,
-+	.transfer = dw_mipi_dsi_host_transfer,
-+};
-+
-+static enum drm_connector_status
-+dw_mipi_dsi_detect(struct drm_connector *connector, bool force)
-+{
-+	return connector_status_connected;
-+}
-+
-+static void dw_mipi_dsi_drm_connector_destroy(struct drm_connector *connector)
-+{
-+	drm_connector_unregister(connector);
-+	drm_connector_cleanup(connector);
-+}
-+
-+static struct drm_connector_funcs dw_mipi_dsi_connector_funcs = {
-+	.dpms = drm_helper_connector_dpms,
-+	.fill_modes = drm_helper_probe_single_connector_modes,
-+	.detect = dw_mipi_dsi_detect,
-+	.destroy = dw_mipi_dsi_drm_connector_destroy,
-+};
-+
-+static int dw_mipi_dsi_connector_get_modes(struct drm_connector *connector)
-+{
-+	struct dw_mipi_dsi *dsi = con_to_dsi(connector);
-+
-+	return drm_panel_get_modes(dsi->panel);
-+}
-+
-+static enum drm_mode_status dw_mipi_dsi_mode_valid(
-+					struct drm_connector *connector,
-+					struct drm_display_mode *mode)
-+{
-+	struct dw_mipi_dsi *dsi = con_to_dsi(connector);
-+
-+	enum drm_mode_status mode_status = MODE_OK;
-+
-+	if (dsi->pdata->mode_valid)
-+		mode_status = dsi->pdata->mode_valid(connector, mode);
-+
-+	return mode_status;
-+}
-+
-+static struct drm_encoder *dw_mipi_dsi_connector_best_encoder(
-+					struct drm_connector *connector)
-+{
-+	struct dw_mipi_dsi *dsi = con_to_dsi(connector);
-+
-+	return dsi->encoder;
-+}
-+
-+static struct drm_connector_helper_funcs dw_mipi_dsi_connector_helper_funcs = {
-+	.get_modes = dw_mipi_dsi_connector_get_modes,
-+	.mode_valid = dw_mipi_dsi_mode_valid,
-+	.best_encoder = dw_mipi_dsi_connector_best_encoder,
-+};
-+
-+static void dw_mipi_dsi_video_mode_config(struct dw_mipi_dsi *dsi)
-+{
-+	u32 val;
-+
-+	val = VID_MODE_TYPE_BURST_SYNC_PULSES | ENABLE_LOW_POWER;
-+
-+	dsi_write(dsi, DSI_VID_MODE_CFG, val);
-+}
-+
-+static void dw_mipi_dsi_set_mode(struct dw_mipi_dsi *dsi,
-+				 enum dw_mipi_dsi_mode mode)
-+{
-+	if (mode == DW_MIPI_DSI_CMD_MODE) {
-+		dsi_write(dsi, DSI_PWR_UP, RESET);
-+		dsi_modify(dsi, DSI_CMD_MODE_CFG,
-+			   ENABLE_CMD_MODE_MASK, ENABLE_CMD_MODE);
-+		dsi_modify(dsi, DSI_VID_MODE_CFG,
-+			   ENABLE_VIDEO_MODE_MASK, DISABLE_VIDEO_MODE);
-+		dsi_write(dsi, DSI_PWR_UP, POWERUP);
-+	} else {
-+		dsi_write(dsi, DSI_PWR_UP, RESET);
-+		dsi_modify(dsi, DSI_CMD_MODE_CFG,
-+			   ENABLE_CMD_MODE_MASK, DISABLE_CMD_MODE);
-+
-+		dw_mipi_dsi_video_mode_config(dsi);
-+
-+		dsi_modify(dsi, DSI_VID_MODE_CFG,
-+			   ENABLE_VIDEO_MODE_MASK, ENABLE_VIDEO_MODE);
-+		dsi_write(dsi, DSI_PWR_UP, POWERUP);
-+		dsi_write(dsi, DSI_PHY_IF_CTRL, TX_REQ_CLK_HS);
-+	}
-+}
-+
-+static void dw_mipi_dsi_disable(struct dw_mipi_dsi *dsi)
-+{
-+	dsi_write(dsi, DSI_PHY_IF_CTRL, PHY_IF_CTRL_RESET);
-+	dsi_write(dsi, DSI_PWR_UP, RESET);
-+	dsi_write(dsi, DSI_PHY_RSTZ, PHY_RSTZ);
-+}
-+
-+static void dw_mipi_dsi_bridge_enable(struct drm_bridge *bridge)
-+{
-+	struct dw_mipi_dsi *dsi = bridge->driver_private;
-+
-+	if (dsi->enabled)
-+		return;
-+
-+	clk_prepare_enable(dsi->cfg_clk);
-+	dw_mipi_dsi_config_testdin(dsi);
-+	dw_mipi_dsi_set_mode(dsi, DW_MIPI_DSI_VID_MODE);
-+	dw_mipi_dsi_wait_for_two_frames(dsi);
-+	dw_mipi_dsi_set_mode(dsi, DW_MIPI_DSI_CMD_MODE);
-+	drm_panel_prepare(dsi->panel);
-+	dw_mipi_dsi_set_mode(dsi, DW_MIPI_DSI_VID_MODE);
-+	clk_disable_unprepare(dsi->cfg_clk);
-+
-+	drm_panel_enable(dsi->panel);
-+
-+	dsi->enabled = true;
-+}
-+
-+static void dw_mipi_dsi_bridge_disable(struct drm_bridge *bridge)
-+{
-+	struct dw_mipi_dsi *dsi = bridge->driver_private;
-+	unsigned long expire;
-+
-+	if (!dsi->enabled)
-+		return;
-+
-+	drm_panel_disable(dsi->panel);
-+
-+	clk_prepare_enable(dsi->cfg_clk);
-+	dw_mipi_dsi_set_mode(dsi, DW_MIPI_DSI_CMD_MODE);
-+	drm_panel_unprepare(dsi->panel);
-+	dw_mipi_dsi_set_mode(dsi, DW_MIPI_DSI_VID_MODE);
-+
-+	/*
-+	 * This is necessary to make sure the peripheral
-+	 * will be driven normally when the display is
-+	 * enabled again later.
-+	 */
-+	expire = jiffies + msecs_to_jiffies(120);
-+	while (time_before(jiffies, expire))
-+		cpu_relax();
-+
-+	dw_mipi_dsi_set_mode(dsi, DW_MIPI_DSI_CMD_MODE);
-+	dw_mipi_dsi_disable(dsi);
-+	clk_disable_unprepare(dsi->cfg_clk);
-+
-+	dsi->enabled = false;
-+}
-+
-+static void dw_mipi_dsi_bridge_nope(struct drm_bridge *bridge)
-+{
-+	/* do nothing */
-+}
-+
-+static void dw_mipi_dsi_init(struct dw_mipi_dsi *dsi)
-+{
-+	dsi_write(dsi, DSI_PWR_UP, RESET);
-+	dsi_write(dsi, DSI_PHY_RSTZ, PHY_DISABLECLK | PHY_RSTZ | PHY_SHUTDOWNZ);
-+	dsi_write(dsi, DSI_CLKMGR_CFG, TO_CLK_DIVIDSION(1) | TX_ESC_CLK_DIVIDSION(7));
-+}
-+
-+static void dw_mipi_dsi_dpi_config(struct dw_mipi_dsi *dsi,
-+				   struct drm_display_mode *mode)
-+{
-+	u32 val = 0;
-+
-+	if (!(mode->flags & DRM_MODE_FLAG_PVSYNC))
-+		val |= VSYNC_ACTIVE_LOW;
-+	if (!(mode->flags & DRM_MODE_FLAG_PHSYNC))
-+		val |= HSYNC_ACTIVE_LOW;
-+
-+	switch (dsi->format) {
-+	case MIPI_DSI_FMT_RGB888:
-+		val |= DPI_COLOR_CODING_24BIT;
-+		break;
-+	case MIPI_DSI_FMT_RGB666:
-+		val |= DPI_COLOR_CODING_18BIT_2;
-+		val |= EN18_LOOSELY;
-+		break;
-+	case MIPI_DSI_FMT_RGB666_PACKED:
-+		val |= DPI_COLOR_CODING_18BIT_1;
-+		break;
-+	case MIPI_DSI_FMT_RGB565:
-+		val |= DPI_COLOR_CODING_16BIT_1;
-+		break;
-+	}
-+
-+	val |= DPI_VID(dsi->channel);
-+
-+	dsi_write(dsi, DSI_DPI_CFG, val);
-+}
-+
-+static void dw_mipi_dsi_packet_handler_config(struct dw_mipi_dsi *dsi)
-+{
-+	dsi_write(dsi, DSI_PCKHDL_CFG, EN_CRC_RX | EN_ECC_RX | EN_BTA);
-+}
-+
-+static void dw_mipi_dsi_video_packet_config(struct dw_mipi_dsi *dsi,
-+					    struct drm_display_mode *mode)
-+{
-+	dsi_write(dsi, DSI_VID_PKT_CFG, VID_PKT_SIZE(mode->hdisplay));
-+}
-+
-+static void dw_mipi_dsi_command_mode_config(struct dw_mipi_dsi *dsi)
-+{
-+	dsi_write(dsi, DSI_CMD_MODE_CFG, CMD_MODE_ALL_LP | ENABLE_CMD_MODE);
-+}
-+
-+/* Get lane byte clock cycles. */
-+static u64 dw_mipi_dsi_get_hcomponent_lbcc(struct dw_mipi_dsi *dsi,
-+					   u64 hcomponent)
-+{
-+	u64 frac, lbcc;
-+
-+	lbcc = hcomponent * dsi->lane_mbps * USEC_PER_SEC / 8;
-+	frac = do_div(lbcc, dsi->mode->clock * MSEC_PER_SEC);
-+	if (frac)
-+		lbcc++;
-+
-+	return lbcc;
-+}
-+
-+static void dw_mipi_dsi_line_timer_config(struct dw_mipi_dsi *dsi)
-+{
-+	u32 val = 0, htotal, hsa, hbp, lbcc;
-+	struct drm_display_mode *mode = dsi->mode;
-+
-+	htotal = mode->htotal;
-+	hsa = mode->hsync_end - mode->hsync_start;
-+	hbp = mode->htotal - mode->hsync_end;
-+
-+	lbcc = dw_mipi_dsi_get_hcomponent_lbcc(dsi, htotal);
-+	val |= HLINE_TIME(lbcc);
-+
-+	lbcc = dw_mipi_dsi_get_hcomponent_lbcc(dsi, hsa);
-+	val |= HSA_TIME(lbcc);
-+
-+	lbcc = dw_mipi_dsi_get_hcomponent_lbcc(dsi, hbp);
-+	val |= HBP_TIME(lbcc);
-+
-+	dsi_write(dsi, DSI_TMR_LINE_CFG, val);
-+}
-+
-+static void dw_mipi_dsi_vertical_timing_config(struct dw_mipi_dsi *dsi)
-+{
-+	u32 val, vactive, vsa, vfp, vbp;
-+	struct drm_display_mode *mode = dsi->mode;
-+
-+	vactive = mode->vdisplay;
-+	vsa = mode->vsync_end - mode->vsync_start;
-+	vfp = mode->vsync_start - mode->vdisplay;
-+	vbp = mode->vtotal - mode->vsync_end;
-+
-+	val = V_ACTIVE_LINES(vactive) | VSA_LINES(vsa) |
-+	      VFP_LINES(vfp) | VBP_LINES(vbp);
-+
-+	dsi_write(dsi, DSI_VTIMING_CFG, val);
-+}
-+
-+static void dw_mipi_dsi_dphy_timing_config(struct dw_mipi_dsi *dsi)
-+{
-+	u32 val;
-+
-+	val = PHY_HS2LP_TIME(0x40) | PHY_LP2HS_TIME(0x40) |
-+	      BTA_TIME(0xd00);
-+
-+	dsi_write(dsi, DSI_PHY_TMR_CFG, val);
-+}
-+
-+static void dw_mipi_dsi_dphy_interface_config(struct dw_mipi_dsi *dsi)
-+{
-+	dsi_write(dsi, DSI_PHY_IF_CFG, PHY_STOP_WAIT_TIME(0x20) |
-+						N_LANES(dsi->lanes));
-+}
-+
-+static void dw_mipi_dsi_clear_err(struct dw_mipi_dsi *dsi)
-+{
-+	dsi_read(dsi, DSI_ERROR_ST0);
-+	dsi_read(dsi, DSI_ERROR_ST1);
-+	dsi_write(dsi, DSI_ERROR_MSK0, 0);
-+	dsi_write(dsi, DSI_ERROR_MSK1, 0);
-+}
-+
-+static void dw_mipi_dsi_bridge_mode_set(struct drm_bridge *bridge,
-+					struct drm_display_mode *mode,
-+					struct drm_display_mode *adjusted_mode)
-+{
-+	struct dw_mipi_dsi *dsi = bridge->driver_private;
-+	int ret;
-+
-+	dsi->mode = mode;
-+
-+	ret = dw_mipi_dsi_get_lane_bps(dsi, &dsi->lane_mbps);
-+	if (ret < 0)
-+		return;
-+
-+	clk_prepare_enable(dsi->cfg_clk);
-+	dw_mipi_dsi_init(dsi);
-+	dw_mipi_dsi_dpi_config(dsi, mode);
-+	dw_mipi_dsi_packet_handler_config(dsi);
-+	dw_mipi_dsi_video_mode_config(dsi);
-+	dw_mipi_dsi_video_packet_config(dsi, mode);
-+	dw_mipi_dsi_command_mode_config(dsi);
-+	dw_mipi_dsi_line_timer_config(dsi);
-+	dw_mipi_dsi_vertical_timing_config(dsi);
-+	dw_mipi_dsi_dphy_timing_config(dsi);
-+	dw_mipi_dsi_dphy_interface_config(dsi);
-+	dw_mipi_dsi_clear_err(dsi);
-+	dw_mipi_dsi_config_testdin(dsi);
-+	dw_mipi_dsi_wait_for_two_frames(dsi);
-+	drm_panel_prepare(dsi->panel);
-+	clk_disable_unprepare(dsi->cfg_clk);
-+}
-+
-+static bool dw_mipi_dsi_bridge_mode_fixup(struct drm_bridge *bridge,
-+					  const struct drm_display_mode *mode,
-+					  struct drm_display_mode *adjusted_mode)
-+{
-+	return true;
-+}
-+
-+static void dw_mipi_dsi_bridge_destroy(struct drm_bridge *bridge)
-+{
-+	drm_bridge_cleanup(bridge);
-+	kfree(bridge);
-+}
-+
-+static struct drm_bridge_funcs dw_mipi_dsi_bridge_funcs = {
-+	.enable = dw_mipi_dsi_bridge_enable,
-+	.disable = dw_mipi_dsi_bridge_disable,
-+	.pre_enable = dw_mipi_dsi_bridge_nope,
-+	.post_disable = dw_mipi_dsi_bridge_nope,
-+	.mode_set = dw_mipi_dsi_bridge_mode_set,
-+	.mode_fixup = dw_mipi_dsi_bridge_mode_fixup,
-+	.destroy = dw_mipi_dsi_bridge_destroy,
-+};
-+
-+static int dw_mipi_dsi_register(struct drm_device *drm, struct dw_mipi_dsi *dsi)
-+{
-+	struct drm_encoder *encoder = dsi->encoder;
-+	struct drm_bridge *bridge;
-+	int ret;
-+
-+	bridge = devm_kzalloc(drm->dev, sizeof(*bridge), GFP_KERNEL);
-+	if (!bridge) {
-+		dev_err(drm->dev, "failed to allocate drm bridge\n");
-+		return -ENOMEM;
-+	}
-+
-+	dsi->bridge = bridge;
-+	bridge->driver_private = dsi;
-+
-+	ret = drm_bridge_init(drm, bridge, &dw_mipi_dsi_bridge_funcs);
-+	if (ret) {
-+		dev_err(drm->dev, "failed to initialize bridge with drm\n");
-+		return ret;
-+	}
-+
-+	encoder->bridge = bridge;
-+
-+	drm_connector_helper_add(&dsi->connector,
-+			&dw_mipi_dsi_connector_helper_funcs);
-+	drm_connector_init(drm, &dsi->connector, &dw_mipi_dsi_connector_funcs,
-+			   DRM_MODE_CONNECTOR_DSI);
-+
-+	drm_mode_connector_attach_encoder(&dsi->connector, dsi->encoder);
-+
-+	return 0;
-+}
-+
-+int dw_mipi_dsi_bind(struct device *dev, struct device *master, void *data,
-+		     struct drm_encoder *encoder, struct resource *res,
-+		     const struct dw_mipi_dsi_plat_data *pdata)
-+{
-+	struct drm_device *drm = data;
-+	struct dw_mipi_dsi *dsi;
-+	u32 val;
-+	int ret;
-+
-+	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
-+	if (!dsi)
-+		return -ENOMEM;
-+
-+	dsi->pdata = pdata;
-+	dsi->dev = dev;
-+	dsi->dsi_host.ops = &dw_mipi_dsi_host_ops;
-+	dsi->dsi_host.dev = dev;
-+	dsi->encoder = encoder;
-+
-+	dsi->base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(dsi->base))
-+		return PTR_ERR(dsi->base);
-+
-+	dsi->pllref_clk = devm_clk_get(dev, "pllref");
-+	if (IS_ERR(dsi->pllref_clk)) {
-+		ret = PTR_ERR(dsi->pllref_clk);
-+		dev_err(dev, "Unable to get pll reference clock: %d\n", ret);
-+		return ret;
-+	}
-+	clk_prepare_enable(dsi->pllref_clk);
-+
-+	dsi->cfg_clk = devm_clk_get(dev, "core_cfg");
-+	if (IS_ERR(dsi->cfg_clk)) {
-+		ret = PTR_ERR(dsi->cfg_clk);
-+		dev_err(dev, "Unable to get configuration clock: %d\n", ret);
-+		goto err_pllref;
-+	}
-+
-+	clk_prepare_enable(dsi->cfg_clk);
-+	val = dsi_read(dsi, DSI_VERSION);
-+	clk_disable_unprepare(dsi->cfg_clk);
-+
-+	dev_info(dev, "version number is 0x%08x\n", val);
-+
-+	ret = dw_mipi_dsi_register(drm, dsi);
-+	if (ret)
-+		goto err_pllref;
-+
-+	dev_set_drvdata(dev, dsi);
-+
-+	return mipi_dsi_host_register(&dsi->dsi_host);
-+
-+err_pllref:
-+	clk_disable_unprepare(dsi->pllref_clk);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(dw_mipi_dsi_bind);
-+
-+void dw_mipi_dsi_unbind(struct device *dev, struct device *master, void *data)
-+{
-+	struct dw_mipi_dsi *dsi = dev_get_drvdata(dev);
-+
-+	mipi_dsi_host_unregister(&dsi->dsi_host);
-+	clk_disable_unprepare(dsi->pllref_clk);
-+}
-+EXPORT_SYMBOL_GPL(dw_mipi_dsi_unbind);
-+
-+MODULE_DESCRIPTION("Synopsys DesignWare MIPI DSI host controller DRM bridge driver");
-+MODULE_AUTHOR("Liu Ying <Ying.Liu@freescale.com>");
-+MODULE_LICENSE("GPL");
-diff --git a/include/drm/bridge/dw_mipi_dsi.h b/include/drm/bridge/dw_mipi_dsi.h
-new file mode 100644
-index 0000000..e84e355
---- /dev/null
-+++ b/include/drm/bridge/dw_mipi_dsi.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef __DW_MIPI_DSI__
-+#define __DW_MIPI_DSI__
 +
 +#include <drm/drmP.h>
++#include <drm/drm_mipi_dsi.h>
++#include <drm/drm_panel.h>
 +
-+struct dw_mipi_dsi_plat_data {
-+	unsigned int max_data_lanes;
-+	enum drm_mode_status (*mode_valid)(struct drm_connector *connector,
-+					   struct drm_display_mode *mode);
++#include <linux/gpio/consumer.h>
++#include <linux/of_device.h>
++#include <linux/regulator/consumer.h>
++
++#include <video/mipi_display.h>
++#include <video/of_videomode.h>
++#include <video/videomode.h>
++
++#define WRDISBV		0x51
++#define WRCTRLD		0x53
++#define WRCABC		0x55
++#define SETPOWER	0xb1
++#define SETDISP		0xb2
++#define SETCYC		0xb4
++#define SETVCOM		0xb6
++#define SETEXTC		0xb9
++#define SETMIPI		0xba
++#define SETPANEL	0xcc
++#define SETGIP		0xd5
++#define SETGAMMA	0xe0
++
++#define HX8369A_MIN_BRIGHTNESS	0x00
++#define HX8369A_MAX_BRIGHTNESS	0xff
++
++enum hx8369a_mpu_interface {
++	HX8369A_DBI_TYPE_A_8BIT,
++	HX8369A_DBI_TYPE_A_9BIT,
++	HX8369A_DBI_TYPE_A_16BIT,
++	HX8369A_DBI_TYPE_A_18BIT,
++	HX8369A_DBI_TYPE_B_8BIT,
++	HX8369A_DBI_TYPE_B_9BIT,
++	HX8369A_DBI_TYPE_B_16BIT,
++	HX8369A_DBI_TYPE_B_18BIT,
++	HX8369A_DSI_CMD_MODE,
++	HX8369A_DBI_TYPE_B_24BIT,
++	HX8369A_DSI_VIDEO_MODE,
++	HX8369A_MDDI,
++	HX8369A_DPI_DBI_TYPE_C_OPT1,
++	HX8369A_DPI_DBI_TYPE_C_OPT2,
++	HX8369A_DPI_DBI_TYPE_C_OPT3
 +};
 +
-+int dw_mipi_dsi_get_encoder_pixel_format(struct drm_encoder *encoder);
++enum hx8369a_resolution {
++	HX8369A_RES_480_864,
++	HX8369A_RES_480_854,
++	HX8369A_RES_480_800,
++	HX8369A_RES_480_640,
++	HX8369A_RES_360_640,
++	HX8369A_RES_480_720,
++};
 +
-+int dw_mipi_dsi_bind(struct device *dev, struct device *master, void *data,
-+		     struct drm_encoder *encoder, struct resource *res,
-+		     const struct dw_mipi_dsi_plat_data *pdata);
-+void dw_mipi_dsi_unbind(struct device *dev, struct device *master, void *data);
-+#endif	/* __DW_MIPI_DSI__ */
++struct hx8369a_panel_desc {
++	const struct drm_display_mode *mode;
++
++	/* ms */
++	unsigned int power_on_delay;
++	unsigned int reset_delay;
++
++	unsigned int dsi_lanes;
++};
++
++struct hx8369a {
++	struct device *dev;
++	struct drm_panel panel;
++
++	const struct hx8369a_panel_desc *pd;
++
++	struct regulator_bulk_data supplies[5];
++	struct gpio_desc *reset_gpio;
++	struct gpio_desc *bs_gpio[4];
++	u8 res_sel;
++};
++
++static inline struct hx8369a *panel_to_hx8369a(struct drm_panel *panel)
++{
++	return container_of(panel, struct hx8369a, panel);
++}
++
++static void hx8369a_dcs_write(struct hx8369a *ctx, const char *func,
++			      const void *data, size_t len)
++{
++	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
++	ssize_t ret;
++
++	ret = mipi_dsi_dcs_write_buffer(dsi, data, len);
++	if (ret < 0)
++		dev_err(ctx->dev, "%s failed: %d\n", func, ret);
++}
++
++#define hx8369a_dcs_write_seq(ctx, seq...) \
++({ \
++	const u8 d[] = { seq }; \
++	BUILD_BUG_ON_MSG(ARRAY_SIZE(d) > 64, "DCS sequence too big for stack"); \
++	hx8369a_dcs_write(ctx, __func__, d, ARRAY_SIZE(d)); \
++})
++
++#define hx8369a_dcs_write_seq_static(ctx, seq...) \
++({ \
++	static const u8 d[] = { seq }; \
++	hx8369a_dcs_write(ctx, __func__, d, ARRAY_SIZE(d)); \
++})
++
++static void hx8369a_dsi_set_display_related_register(struct hx8369a *ctx)
++{
++	u8 sec_p = (ctx->res_sel << 4) | 0x03;
++
++	hx8369a_dcs_write_seq(ctx, SETDISP, 0x00, sec_p, 0x03,
++		0x03, 0x70, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00,
++		0x03, 0x03, 0x00, 0x01);
++}
++
++static void hx8369a_dsi_set_display_waveform_cycle(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, SETCYC, 0x00, 0x1d, 0x5f, 0x0e, 0x06);
++}
++
++static void hx8369a_dsi_set_gip(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, SETGIP, 0x00, 0x04, 0x03, 0x00, 0x01,
++				0x05, 0x1c, 0x70, 0x01, 0x03, 0x00, 0x00, 0x40,
++				0x06, 0x51, 0x07, 0x00, 0x00, 0x41, 0x06, 0x50,
++				0x07, 0x07, 0x0f, 0x04);
++}
++
++static void hx8369a_dsi_set_power(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, SETPOWER, 0x01, 0x00, 0x34, 0x06, 0x00,
++				0x0f, 0x0f, 0x2a, 0x32, 0x3f, 0x3f, 0x07, 0x3a,
++				0x01, 0xe6, 0xe6, 0xe6, 0xe6, 0xe6);
++}
++
++static void hx8369a_dsi_set_vcom_voltage(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, SETVCOM, 0x56, 0x56);
++}
++
++static void hx8369a_dsi_set_panel(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, SETPANEL, 0x02);
++}
++
++static void hx8369a_dsi_set_gamma_curve(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, SETGAMMA, 0x00, 0x1d, 0x22, 0x38, 0x3d,
++				0x3f, 0x2e, 0x4a, 0x06, 0x0d, 0x0f, 0x13, 0x15,
++				0x13, 0x16, 0x10, 0x19, 0x00, 0x1d, 0x22, 0x38,
++				0x3d, 0x3f, 0x2e, 0x4a, 0x06, 0x0d, 0x0f, 0x13,
++				0x15, 0x13, 0x16, 0x10, 0x19);
++}
++
++static void hx8369a_dsi_set_mipi(struct hx8369a *ctx)
++{
++	u8 eleventh_p = ctx->pd->dsi_lanes == 2 ? 0x11 : 0x10;
++
++	hx8369a_dcs_write_seq(ctx, SETMIPI, 0x00, 0xa0, 0xc6, 0x00, 0x0a, 0x00,
++			0x10, 0x30, 0x6f, 0x02, eleventh_p, 0x18, 0x40);
++}
++
++static void hx8369a_dsi_set_interface_pixel_fomat(struct hx8369a *ctx)
++{
++	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
++	u8 format;
++	int ret;
++
++	if (dsi->format == MIPI_DSI_FMT_RGB888)
++		format = 0x77;
++	else if (dsi->format == MIPI_DSI_FMT_RGB565)
++		format = 0x55;
++	else
++		format = 0x66;
++
++	ret = mipi_dsi_dcs_set_pixel_format(dsi, format);
++	if (ret < 0)
++		dev_err(ctx->dev, "%s failed: %d\n", __func__, ret);
++}
++
++static void hx8369a_dsi_set_column_address(struct hx8369a *ctx)
++{
++	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
++	const struct drm_display_mode *mode = ctx->pd->mode;
++	int ret;
++
++	ret = mipi_dsi_dcs_set_column_address(dsi, 0, mode->hdisplay - 1);
++	if (ret < 0)
++		dev_err(ctx->dev, "%s failed: %d\n", __func__, ret);
++}
++
++static void hx8369a_dsi_set_page_address(struct hx8369a *ctx)
++{
++	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
++	const struct drm_display_mode *mode = ctx->pd->mode;
++	int ret;
++
++	ret = mipi_dsi_dcs_set_page_address(dsi, 0, mode->vdisplay - 1);
++	if (ret < 0)
++		dev_err(ctx->dev, "%s failed: %d\n", __func__, ret);
++}
++
++static void hx8369a_dsi_write_display_brightness(struct hx8369a *ctx, u8 brightness)
++{
++	hx8369a_dcs_write_seq(ctx, WRDISBV, brightness);
++}
++
++static void hx8369a_dsi_write_cabc(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, WRCABC, 0x01);
++}
++
++static void hx8369a_dsi_write_control_display(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, WRCTRLD, 0x24);
++}
++
++static void hx8369a_dsi_panel_init(struct hx8369a *ctx)
++{
++	hx8369a_dsi_set_display_related_register(ctx);
++	hx8369a_dsi_set_display_waveform_cycle(ctx);
++	hx8369a_dsi_set_gip(ctx);
++	hx8369a_dsi_set_power(ctx);
++	hx8369a_dsi_set_vcom_voltage(ctx);
++	hx8369a_dsi_set_panel(ctx);
++	hx8369a_dsi_set_gamma_curve(ctx);
++	hx8369a_dsi_set_mipi(ctx);
++	hx8369a_dsi_set_interface_pixel_fomat(ctx);
++	hx8369a_dsi_set_column_address(ctx);
++	hx8369a_dsi_set_page_address(ctx);
++	hx8369a_dsi_write_cabc(ctx);
++	hx8369a_dsi_write_control_display(ctx);
++}
++
++static void hx8369a_dsi_set_extension_command(struct hx8369a *ctx)
++{
++	hx8369a_dcs_write_seq_static(ctx, SETEXTC, 0xff, 0x83, 0x69);
++}
++
++static void hx8369a_dsi_set_maximum_return_packet_size(struct hx8369a *ctx,
++						       u16 size)
++{
++	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
++	int ret;
++
++	ret = mipi_dsi_set_maximum_return_packet_size(dsi, size);
++	if (ret < 0)
++		dev_err(ctx->dev,
++			"error %d setting maximum return packet size to %d\n",
++			ret, size);
++}
++
++static int hx8369a_dsi_set_sequence(struct hx8369a *ctx)
++{
++	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
++	int ret;
++
++	hx8369a_dsi_set_extension_command(ctx);
++	hx8369a_dsi_set_maximum_return_packet_size(ctx, 4);
++	hx8369a_dsi_panel_init(ctx);
++
++	ret = mipi_dsi_dcs_exit_sleep_mode(dsi);
++	if (ret < 0) {
++		dev_err(ctx->dev, "failed to exit sleep mode: %d\n", ret);
++		return ret;
++	}
++
++	ret = mipi_dsi_dcs_set_display_on(dsi);
++	if (ret < 0) {
++		dev_err(ctx->dev, "failed to set display on: %d\n", ret);
++		return ret;
++	}
++
++	/*
++	 * It's necessary to wait 120msec after sending the Sleep Out
++	 * command before Sleep In command can be sent, according to
++	 * the HX8369A data sheet.
++	 */
++	msleep(120);
++
++	return 0;
++}
++
++static int hx8369a_dsi_disable(struct drm_panel *panel)
++{
++	struct hx8369a *ctx = panel_to_hx8369a(panel);
++	hx8369a_dsi_write_display_brightness(ctx, HX8369A_MIN_BRIGHTNESS);
++	return 0;
++}
++
++static int hx8369a_dsi_unprepare(struct drm_panel *panel)
++{
++	struct hx8369a *ctx = panel_to_hx8369a(panel);
++	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
++	int ret;
++
++	ret = mipi_dsi_dcs_enter_sleep_mode(dsi);
++	if (ret < 0) {
++		dev_err(ctx->dev, "failed to enter sleep mode: %d\n", ret);
++		return ret;
++	}
++
++	ret = mipi_dsi_dcs_set_display_off(dsi);
++	if (ret < 0) {
++		dev_err(ctx->dev, "failed to set display off: %d\n", ret);
++		return ret;
++	}
++
++	/*
++	 * This is to allow time for the supply voltages and clock
++	 * circuits to stablize, according to the HX8369A data sheet.
++	 */
++	msleep(5);
++
++	return ret;
++}
++
++static int hx8369a_dsi_prepare(struct drm_panel *panel)
++{
++	struct hx8369a *ctx = panel_to_hx8369a(panel);
++	return hx8369a_dsi_set_sequence(ctx);
++}
++
++static int hx8369a_dsi_enable(struct drm_panel *panel)
++{
++	struct hx8369a *ctx = panel_to_hx8369a(panel);
++	hx8369a_dsi_write_display_brightness(ctx, HX8369A_MAX_BRIGHTNESS);
++	return 0;
++}
++
++static int hx8369a_get_modes(struct drm_panel *panel)
++{
++	struct drm_connector *connector = panel->connector;
++	struct drm_device *drm = panel->drm;
++	struct hx8369a *ctx = panel_to_hx8369a(panel);
++	struct drm_display_mode *mode;
++	const struct drm_display_mode *m = ctx->pd->mode;
++
++	mode = drm_mode_duplicate(drm, m);
++	if (!mode) {
++		dev_err(drm->dev, "failed to add mode %ux%u@%u\n",
++			m->hdisplay, m->vdisplay, m->vrefresh);
++		return 0;
++	}
++
++	drm_mode_set_name(mode);
++	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
++
++	connector->display_info.bpc = 8;
++	connector->display_info.width_mm = mode->width_mm;
++	connector->display_info.height_mm = mode->height_mm;
++
++	drm_mode_probed_add(connector, mode);
++
++	return 1;
++}
++
++static const struct drm_panel_funcs hx8369a_dsi_drm_funcs = {
++	.disable = hx8369a_dsi_disable,
++	.unprepare = hx8369a_dsi_unprepare,
++	.prepare = hx8369a_dsi_prepare,
++	.enable = hx8369a_dsi_enable,
++	.get_modes = hx8369a_get_modes,
++};
++
++static int hx8369a_power_on(struct hx8369a *ctx)
++{
++	int ret;
++
++	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
++	if (ret < 0)
++		return ret;
++
++	msleep(ctx->pd->power_on_delay);
++
++	gpiod_set_value(ctx->reset_gpio, 1);
++	usleep_range(50, 60);
++	gpiod_set_value(ctx->reset_gpio, 0);
++
++	msleep(ctx->pd->reset_delay);
++
++	return 0;
++}
++
++static int hx8369a_power_off(struct hx8369a *ctx)
++{
++	return regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);;
++}
++
++static int hx8369a_vm_to_res_sel(struct hx8369a *ctx)
++{
++	const struct drm_display_mode *mode = ctx->pd->mode;
++
++	switch (mode->hdisplay) {
++	case 480:
++		switch (mode->vdisplay) {
++		case 864:
++			ctx->res_sel = HX8369A_RES_480_864;
++			break;
++		case 854:
++			ctx->res_sel = HX8369A_RES_480_854;
++			break;
++		case 800:
++			ctx->res_sel = HX8369A_RES_480_800;
++			break;
++		case 640:
++			ctx->res_sel = HX8369A_RES_480_640;
++			break;
++		case 720:
++			ctx->res_sel = HX8369A_RES_480_720;
++			break;
++		default:
++			break;
++		}
++		break;
++	case 360:
++		if (mode->vdisplay == 640)
++			ctx->res_sel = HX8369A_RES_360_640;
++		break;
++	default:
++		break;
++	}
++
++	return 0;
++}
++
++static const struct drm_display_mode truly_tft480800_16_e_mode = {
++	.clock = 26400,
++	.hdisplay = 480,
++	.hsync_start = 480 + 8,
++	.hsync_end = 480 + 8 + 8,
++	.htotal = 480 + 8 + 8 + 8,
++	.vdisplay = 800,
++	.vsync_start = 800 + 6,
++	.vsync_end = 800 + 6 + 6,
++	.vtotal = 800 + 6 + 6 + 6,
++	.vrefresh = 60,
++	.width_mm = 45,
++	.height_mm = 76,
++};
++
++static const struct hx8369a_panel_desc truly_tft480800_16_e_dsi = {
++	.mode = &truly_tft480800_16_e_mode,
++	.power_on_delay = 10,
++	.reset_delay = 10,
++	.dsi_lanes = 2,
++};
++
++static const struct of_device_id hx8369a_dsi_of_match[] = {
++	{
++		.compatible = "truly,tft480800-16-e-dsi",
++		.data = &truly_tft480800_16_e_dsi,
++	}, {
++		/* sentinel */
++	},
++};
++MODULE_DEVICE_TABLE(of, hx8369a_dsi_of_match);
++
++static int hx8369a_dsi_probe(struct mipi_dsi_device *dsi)
++{
++	struct device *dev = &dsi->dev;
++	const struct of_device_id *of_id =
++			of_match_device(hx8369a_dsi_of_match, dev);
++	struct hx8369a *ctx;
++	int ret, i;
++	char bs[4];
++
++	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
++	if (!ctx)
++		return -ENOMEM;
++
++	ctx->dev = dev;
++
++	if (of_id) {
++		ctx->pd = of_id->data;
++	} else {
++		dev_err(dev, "cannot find compatible device\n");
++		return -ENODEV;
++	}
++
++	ret = hx8369a_vm_to_res_sel(ctx);
++	if (ret < 0)
++		return ret;
++
++	ctx->supplies[0].supply = "vdd1";
++	ctx->supplies[1].supply = "vdd2";
++	ctx->supplies[2].supply = "vdd3";
++	ctx->supplies[3].supply = "dsi-vcc";
++	ctx->supplies[4].supply = "vpp";
++	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(ctx->supplies),
++				      ctx->supplies);
++	if (ret < 0) {
++		dev_err(dev, "failed to get regulators: %d\n", ret);
++		return ret;
++	}
++
++	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_LOW);
++	if (IS_ERR(ctx->reset_gpio)) {
++		dev_err(dev, "cannot get reset-gpios %ld\n",
++			PTR_ERR(ctx->reset_gpio));
++		return PTR_ERR(ctx->reset_gpio);
++	}
++
++	for (i = 0; i < 4; i++) {
++		snprintf(bs, sizeof(bs), "bs%d", i);
++		ctx->bs_gpio[i] = devm_gpiod_get(dev, bs, GPIOD_OUT_HIGH);
++
++		dev_dbg(dev, "bs%d-gpio is configured\n", i);
++	}
++
++	ret = hx8369a_power_on(ctx);
++	if (ret < 0) {
++		dev_err(dev, "cannot power on\n");
++		return ret;
++	}
++
++	drm_panel_init(&ctx->panel);
++	ctx->panel.dev = dev;
++	ctx->panel.funcs = &hx8369a_dsi_drm_funcs;
++
++	ret = drm_panel_add(&ctx->panel);
++	if (ret < 0)
++		return ret;
++
++	mipi_dsi_set_drvdata(dsi, ctx);
++
++	dsi->channel = 0;
++	dsi->lanes = ctx->pd->dsi_lanes;
++	dsi->format = MIPI_DSI_FMT_RGB888;
++	dsi->mode_flags = MIPI_DSI_MODE_VIDEO |
++			  MIPI_DSI_MODE_VIDEO_BURST |
++			  MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
++	ret = mipi_dsi_attach(dsi);
++	if (ret < 0)
++		drm_panel_remove(&ctx->panel);
++
++	return ret;
++}
++
++static int hx8369a_dsi_remove(struct mipi_dsi_device *dsi)
++{
++	struct hx8369a *ctx = mipi_dsi_get_drvdata(dsi);
++
++	mipi_dsi_detach(dsi);
++	drm_panel_remove(&ctx->panel);
++	return hx8369a_power_off(ctx);
++}
++
++static struct mipi_dsi_driver hx8369a_dsi_driver = {
++	.probe = hx8369a_dsi_probe,
++	.remove = hx8369a_dsi_remove,
++	.driver = {
++		.name = "panel-hx8369a-dsi",
++		.of_match_table = hx8369a_dsi_of_match,
++	},
++};
++module_mipi_dsi_driver(hx8369a_dsi_driver);
++
++MODULE_DESCRIPTION("Himax HX8369A panel driver");
++MODULE_AUTHOR("Liu Ying <Ying.Liu@freescale.com>");
++MODULE_LICENSE("GPL v2");
 -- 
 2.1.0
 
