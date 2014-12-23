@@ -1,41 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345AbaLWQTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 11:19:03 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:45451 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302AbaLWQTA (ORCPT
+	id S932367AbaLWQUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 11:20:19 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:54692 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215AbaLWQUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 11:19:00 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH 1/1] staging: skein: Delete a useless white space line
-From: Gmail <kroderia@gmail.com>
-In-Reply-To: <20141223161432.GA3820@kroah.com>
-Date: Wed, 24 Dec 2014 00:18:53 +0800
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+	Tue, 23 Dec 2014 11:20:17 -0500
+From: Dmitry Osipenko <digetx@gmail.com>
+To: digetx@gmail.com, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: <stable@vger.kernel.org>, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <271091CB-F384-492D-A681-19E1DC582FD5@gmail.com>
-References: <1419349696-6375-1-git-send-email-kroderia@gmail.com> <20141223160001.GD5021@mwanda> <071B5F11-D89C-4EF3-AFCD-1A0B3CC26AD4@gmail.com> <20141223161432.GA3820@kroah.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1993)
+Subject: [PATCH] soc: tegra: pmc: Use syscore PM ops
+Date: Tue, 23 Dec 2014 19:15:37 +0300
+Message-Id: <1419351358-6201-1-git-send-email-digetx@gmail.com>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found no one using the words like Chinese, Japanese here.
+Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed tegra_resume()
+location storing from late to early and as result broke suspend on Tegra20.
+PMC scratch register 41 is used by tegra LP1 resume code for retrieving stored
+physical memory address of common resume function and in the same time used by
+Tegra20 cpuidle driver for storing cpu1 "resettable" status, it implies strict
+order of scratch register use. Fix it by making PMC driver use syscore PM ops to
+ensure that tegra_resume() location is stored after cpuidle driver suspend and
+before resume respectively.
 
-> On Dec 24, 2014, at 12:14 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> 
-> On Wed, Dec 24, 2014 at 12:06:10AM +0800, Gmail wrote:
->> Thanks for your tip. People say this is not a legal name, but I really
->> use this for all my English profile. I create another name sound like
->> my real name and it cause this "From" display. So sorry bothering you.
->> I will really check it and send in the future.
-> 
-> What is wrong with using your legal name, there is no reason it has to
-> be "changed" into english at all.
-> 
-> greg k-h
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+Fixes: 7232398abc6a (ARM: tegra: Convert PMC to a driver)
+Cc: <stable@vger.kernel.org> # v3.17+
+---
+ drivers/soc/tegra/pmc.c | 37 +++++++++++++++++++------------------
+ 1 file changed, 19 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/soc/tegra/pmc.c b/drivers/soc/tegra/pmc.c
+index a2c0ceb..4ebd94a 100644
+--- a/drivers/soc/tegra/pmc.c
++++ b/drivers/soc/tegra/pmc.c
+@@ -33,6 +33,7 @@
+ #include <linux/reset.h>
+ #include <linux/seq_file.h>
+ #include <linux/spinlock.h>
++#include <linux/syscore_ops.h>
+ 
+ #include <soc/tegra/common.h>
+ #include <soc/tegra/fuse.h>
+@@ -703,6 +704,23 @@ static void tegra_pmc_init(struct tegra_pmc *pmc)
+ 	tegra_pmc_writel(value, PMC_CNTRL);
+ }
+ 
++static int tegra_pmc_suspend(void)
++{
++	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
++
++	return 0;
++}
++
++static void tegra_pmc_resume(void)
++{
++	tegra_pmc_writel(0x0, PMC_SCRATCH41);
++}
++
++static struct syscore_ops tegra_pmc_syscore_ops = {
++	.suspend = tegra_pmc_suspend,
++	.resume = tegra_pmc_resume,
++};
++
+ static int tegra_pmc_probe(struct platform_device *pdev)
+ {
+ 	void __iomem *base = pmc->base;
+@@ -736,27 +754,11 @@ static int tegra_pmc_probe(struct platform_device *pdev)
+ 			return err;
+ 	}
+ 
+-	return 0;
+-}
+-
+-#ifdef CONFIG_PM_SLEEP
+-static int tegra_pmc_suspend(struct device *dev)
+-{
+-	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
++	register_syscore_ops(&tegra_pmc_syscore_ops);
+ 
+ 	return 0;
+ }
+ 
+-static int tegra_pmc_resume(struct device *dev)
+-{
+-	tegra_pmc_writel(0x0, PMC_SCRATCH41);
+-
+-	return 0;
+-}
+-#endif
+-
+-static SIMPLE_DEV_PM_OPS(tegra_pmc_pm_ops, tegra_pmc_suspend, tegra_pmc_resume);
+-
+ static const char * const tegra20_powergates[] = {
+ 	[TEGRA_POWERGATE_CPU] = "cpu",
+ 	[TEGRA_POWERGATE_3D] = "3d",
+@@ -894,7 +896,6 @@ static struct platform_driver tegra_pmc_driver = {
+ 		.name = "tegra-pmc",
+ 		.suppress_bind_attrs = true,
+ 		.of_match_table = tegra_pmc_match,
+-		.pm = &tegra_pmc_pm_ops,
+ 	},
+ 	.probe = tegra_pmc_probe,
+ };
+-- 
+2.2.0
 
