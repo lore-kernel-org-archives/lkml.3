@@ -1,78 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaLWAiT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 19:38:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27764 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024AbaLWAiS convert rfc822-to-8bit (ORCPT
+	id S1753868AbaLWAkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 19:40:10 -0500
+Received: from mail.lysator.liu.se ([130.236.254.3]:46422 "EHLO
+	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664AbaLWAkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 19:38:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,627,1413270000"; 
-   d="scan'208";a="651905629"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, "Wu, Feng" <feng.wu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, "Gleb Natapov" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
-Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Topic: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Index: AQHQFiFw/2wcwNXVUk6mLzPIG8E78JyVcJswgAC8KvCAAAEAoIAAJl0AgAYPrcA=
-Date: Tue, 23 Dec 2014 00:37:46 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC06282@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
-	<1418397300-10870-7-git-send-email-feng.wu@intel.com>
-	<A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>
-	<E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>
- <54941326.4080405@redhat.com>
-In-Reply-To: <54941326.4080405@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 22 Dec 2014 19:40:08 -0500
+From: Peter Rosin <peda@lysator.liu.se>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Peter Rosin <peda@axentia.se>
+Subject: [PATCH] pm: at91: Workaround DDRSDRC self-refresh bug with LPDDR1 memories
+Date: Tue, 23 Dec 2014 01:39:47 +0100
+Message-Id: <1419295187-2081-1-git-send-email-peda@lysator.liu.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini wrote on 2014-12-19:
-> 
-> 
-> On 19/12/2014 02:46, Zhang, Yang Z wrote:
->>> If the IRQ is posted, its affinity is controlled by guest (irq
->>> <---> vCPU <----> pCPU), it has no effect when host changes its affinity.
->> 
->> That's the problem: User is able to changes it in host but it never
->> takes effect since it is actually controlled by guest. I guess it
->> will break the IRQ balance too.
-> 
-> I don't think that's a problem.
-> 
-> Controlling the affinity in the host affects which CPU in the host
-> takes care of signaling the guest.
-> 
-> If this signaling is done directly by the chipset, there is no need to
-> do anything in the host and thus the host affinity can be bypassed.
+From: Peter Rosin <peda@axentia.se>
 
-I don't quite understand it. If user set an interrupt's affinity to a CPU, but he still see the interrupt delivers to other CPUs in host. Do you think it is a right behavior?
+The DDRSDR controller (on the ATSAMA5D31) fails miserably to put LPDDR1
+memories in self-refresh. Force the controller to think it has DDR2
+memories during the self-refresh period, as the DDR2 self-refresh spec
+is equivalent to LPDDR1, and is correctly implemented in the controller.
 
-> 
-> Paolo
+Assume that the second controller has the same fault, and that other
+CPUs in the family has the same problem, but that is untested.
 
+Signed-off-by: Peter Rosin <peda@axentia.se>
+---
+ arch/arm/mach-at91/pm_slowclock.S  |   43 +++++++++++++++++++++++++++++++-----
+ include/soc/at91/at91sam9_ddrsdr.h |    2 +-
+ 2 files changed, 39 insertions(+), 6 deletions(-)
 
-Best regards,
-Yang
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index 20018779bae7..63a9e0b0a17d 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -143,6 +143,16 @@ ddr_sr_enable:
+ 	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
+ 	bne	sdr_sr_enable
+ 
++	/* LPDDR1 --> force DDR2 mode during self-refresh */
++	ldr	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
++	str	tmp1, .saved_sam9_mdr
++	bic	tmp1, tmp1, #~AT91_DDRSDRC_MD
++	cmp	tmp1, #AT91_DDRSDRC_MD_LOW_POWER_DDR
++	ldreq	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
++	biceq	tmp1, tmp1, #AT91_DDRSDRC_MD
++	orreq	tmp1, tmp1, #AT91_DDRSDRC_MD_DDR2
++	streq	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
++
+ 	/* prepare for DDRAM self-refresh mode */
+ 	ldr	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+ 	str	tmp1, .saved_sam9_lpr
+@@ -151,14 +161,26 @@ ddr_sr_enable:
+ 
+ 	/* figure out if we use the second ram controller */
+ 	cmp	ramc1, #0
+-	ldrne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+-	strne	tmp2, .saved_sam9_lpr1
+-	bicne	tmp2, #AT91_DDRSDRC_LPCB
+-	orrne	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
++	beq	ddr_no_2nd_ctrl
++
++	ldr	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
++	str	tmp2, .saved_sam9_mdr1
++	bic	tmp2, tmp2, #~AT91_DDRSDRC_MD
++	cmp	tmp2, #AT91_DDRSDRC_MD_LOW_POWER_DDR
++	ldreq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
++	biceq	tmp2, tmp2, #AT91_DDRSDRC_MD
++	orreq	tmp2, tmp2, #AT91_DDRSDRC_MD_DDR2
++	streq	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
++
++	ldr	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
++	str	tmp2, .saved_sam9_lpr1
++	bic	tmp2, #AT91_DDRSDRC_LPCB
++	orr	tmp2, #AT91_DDRSDRC_LPCB_SELF_REFRESH
+ 
+ 	/* Enable DDRAM self-refresh mode */
++	str	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
++ddr_no_2nd_ctrl:
+ 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+-	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+ 
+ 	b	sdr_sr_done
+ 
+@@ -289,12 +311,17 @@ sdr_sr_done:
+ 	 */
+ 	cmp	memctrl, #AT91_MEMCTRL_DDRSDR
+ 	bne	sdr_en_restore
++	/* Restore MDR in case of LPDDR1 */
++	ldr	tmp1, .saved_sam9_mdr
++	str	tmp1, [sdramc, #AT91_DDRSDRC_MDR]
+ 	/* Restore LPR on AT91 with DDRAM */
+ 	ldr	tmp1, .saved_sam9_lpr
+ 	str	tmp1, [sdramc, #AT91_DDRSDRC_LPR]
+ 
+ 	/* if we use the second ram controller */
+ 	cmp	ramc1, #0
++	ldrne	tmp2, .saved_sam9_mdr1
++	strne	tmp2, [ramc1, #AT91_DDRSDRC_MDR]
+ 	ldrne	tmp2, .saved_sam9_lpr1
+ 	strne	tmp2, [ramc1, #AT91_DDRSDRC_LPR]
+ 
+@@ -328,5 +355,11 @@ ram_restored:
+ .saved_sam9_lpr1:
+ 	.word 0
+ 
++.saved_sam9_mdr:
++	.word 0
++
++.saved_sam9_mdr1:
++	.word 0
++
+ ENTRY(at91_slow_clock_sz)
+ 	.word .-at91_slow_clock
+diff --git a/include/soc/at91/at91sam9_ddrsdr.h b/include/soc/at91/at91sam9_ddrsdr.h
+index 0210797abf2e..cd2c18787833 100644
+--- a/include/soc/at91/at91sam9_ddrsdr.h
++++ b/include/soc/at91/at91sam9_ddrsdr.h
+@@ -92,7 +92,7 @@
+ #define		AT91_DDRSDRC_UPD_MR	(3 << 20)	 /* Update load mode register and extended mode register */
+ 
+ #define AT91_DDRSDRC_MDR	0x20	/* Memory Device Register */
+-#define		AT91_DDRSDRC_MD		(3 << 0)		/* Memory Device Type */
++#define		AT91_DDRSDRC_MD		(7 << 0)		/* Memory Device Type */
+ #define			AT91_DDRSDRC_MD_SDR		0
+ #define			AT91_DDRSDRC_MD_LOW_POWER_SDR	1
+ #define			AT91_DDRSDRC_MD_LOW_POWER_DDR	3
+-- 
+1.7.10.4
 
