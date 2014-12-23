@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464AbaLWS6Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 13:58:24 -0500
-Received: from www.osadl.org ([62.245.132.105]:34167 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751451AbaLWS6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 13:58:23 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-usb@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH] gadget: cleanup on stack DECLARE_COMPLETIONs
-Date: Tue, 23 Dec 2014 19:50:14 +0100
-Message-Id: <1419360614-23898-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756328AbaLWS7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 13:59:48 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49656 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaLWS7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 13:59:47 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: cooloney@gmail.com, rpurdie@rpsys.net
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        j.anaszewski@samsung.com, kyungmin.park@samsung.com,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: [PATCH] leds: Don't allow brightness values greater than max_brightness
+Date: Tue, 23 Dec 2014 19:59:23 +0100
+Message-Id: <1419361163-4762-1-git-send-email-gabriele.mzt@gmail.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixups for incorrect use of DECLARE_COMPLETION. see also commit
-6e9a4738 ("completions: lockdep annotate on stack completions")
+Since commit 4d71a4a12b13 ("leds: Add support for setting brightness in
+a synchronous way") the value passed to brightness_set() is no longer
+limited to max_brightness and can be different from the internally saved
+brightness value.
 
-patch is against 3.18.0 linux-next
-
-This was only code reviewed and compile tested
-
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
 ---
- drivers/usb/gadget/udc/fsl_qe_udc.c   |    2 +-
- drivers/usb/gadget/udc/fsl_udc_core.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/leds/leds.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/udc/fsl_qe_udc.c b/drivers/usb/gadget/udc/fsl_qe_udc.c
-index 795c99c..e0822f1 100644
---- a/drivers/usb/gadget/udc/fsl_qe_udc.c
-+++ b/drivers/usb/gadget/udc/fsl_qe_udc.c
-@@ -2630,7 +2630,7 @@ static int qe_udc_remove(struct platform_device *ofdev)
- 	struct qe_udc *udc = platform_get_drvdata(ofdev);
- 	struct qe_ep *ep;
- 	unsigned int size;
--	DECLARE_COMPLETION(done);
-+	DECLARE_COMPLETION_ONSTACK(done);
-
- 	usb_del_gadget_udc(&udc->gadget);
-
-diff --git a/drivers/usb/gadget/udc/fsl_udc_core.c b/drivers/usb/gadget/udc/fsl_udc_core.c
-index 2df8074..c3830ad 100644
---- a/drivers/usb/gadget/udc/fsl_udc_core.c
-+++ b/drivers/usb/gadget/udc/fsl_udc_core.c
-@@ -2529,7 +2529,7 @@ static int __exit fsl_udc_remove(struct platform_device *pdev)
- 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	struct fsl_usb2_platform_data *pdata = dev_get_platdata(&pdev->dev);
-
--	DECLARE_COMPLETION(done);
-+	DECLARE_COMPLETION_ONSTACK(done);
-
- 	if (!udc_controller)
- 		return -ENODEV;
---
-1.7.10.4
+diff --git a/drivers/leds/leds.h b/drivers/leds/leds.h
+index 2348dbd..79efe57 100644
+--- a/drivers/leds/leds.h
++++ b/drivers/leds/leds.h
+@@ -20,7 +20,8 @@
+ static inline void led_set_brightness_async(struct led_classdev *led_cdev,
+ 					enum led_brightness value)
+ {
+-	led_cdev->brightness = min(value, led_cdev->max_brightness);
++	value = min(value, led_cdev->max_brightness);
++	led_cdev->brightness = value;
+ 
+ 	if (!(led_cdev->flags & LED_SUSPENDED))
+ 		led_cdev->brightness_set(led_cdev, value);
+-- 
+2.1.4
 
