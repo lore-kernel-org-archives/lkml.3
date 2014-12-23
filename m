@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322AbaLWVnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 16:43:01 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:60399 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaLWVm7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 16:42:59 -0500
-Date: Tue, 23 Dec 2014 22:42:53 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amir Vadai <amirv@mellanox.com>, Ariel Elior <ariel.elior@qlogic.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        David Miller <davem@davemloft.net>, Frank Li <Frank.Li@freescale.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Matthew Vick <matthew.vick@intel.com>,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tom Lendacky <thomas.lendacky@amd.com>
-Subject: Re: [PATCH net-next 08/11] net: ixgbe: convert to timecounter
- adjtime.
-Message-ID: <20141223214253.GA13937@localhost.localdomain>
-References: <cover.1418504883.git.richardcochran@gmail.com>
- <5d83679d541974c164cfc415c0bb171e2b363f16.1418504889.git.richardcochran@gmail.com>
- <1419368839.2470.32.camel@jtkirshe-mobl>
+	id S1756532AbaLWW0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 17:26:44 -0500
+Received: from ozlabs.org ([103.22.144.67]:48829 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752533AbaLWW0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 17:26:41 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] module: Remove double spaces in module verification taint message
+In-Reply-To: <1419269144-91285-1-git-send-email-marcel@holtmann.org>
+References: <1419269144-91285-1-git-send-email-marcel@holtmann.org>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 23 Dec 2014 15:11:26 +1030
+Message-ID: <8761d3t1u1.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419368839.2470.32.camel@jtkirshe-mobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 01:07:19PM -0800, Jeff Kirsher wrote:
-> Just for sanity sake, I will have Phillip test the changes, but there is
-> no need to hold this up from being committed in the mean time.
+Marcel Holtmann <marcel@holtmann.org> writes:
+> The warning message when loading modules with a wrong signature has
+> two spaces in it:
+>
+> "module verification failed: signature and/or  required key missing"
+>
+> Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 
-FYI, here is a test that may show the improved behavior when comparing
-before/after.
-
-1. Start ptp4l, let it run long enough to find the frequency offset.
-
-2. Stop ptp4l with ^C.
-
-3. Wait a bit, to let the clock drift away.
-
-4. Restart ptp4l, it will now start with the frequency offset learned
-   in step 1.
-
-5. Notice the the offsets in states s0 -> s1 -> s2.
-   There will likely be less offset error with the patches applied.
+Rather trivial, but I've applied it.
 
 Thanks,
-Richard
+Rusty.
+
+> ---
+>  kernel/module.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/module.c b/kernel/module.c
+> index e52a8739361a..57f786bae64d 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -3242,7 +3242,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
+>  	mod->sig_ok = info->sig_ok;
+>  	if (!mod->sig_ok) {
+>  		pr_notice_once("%s: module verification failed: signature "
+> -			       "and/or  required key missing - tainting "
+> +			       "and/or required key missing - tainting "
+>  			       "kernel\n", mod->name);
+>  		add_taint_module(mod, TAINT_UNSIGNED_MODULE, LOCKDEP_STILL_OK);
+>  	}
+> -- 
+> 2.1.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
