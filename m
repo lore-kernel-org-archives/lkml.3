@@ -1,171 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456AbaLWTz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 14:55:57 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60595 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417AbaLWTzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 14:55:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,633,1413270000"; 
-   d="scan'208";a="659196151"
-Date: Tue, 23 Dec 2014 11:57:09 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        baolu.lu@linux.intel.com
-Subject: Re: [RFC/PATCH] extcon: otg_gpio: add driver for USB OTG port
- controlled by GPIO(s)
-Message-ID: <20141223195709.GA19996@psi-dev26.jf.intel.com>
-References: <1419288217-19262-1-git-send-email-david.a.cohen@linux.intel.com>
- <549969D4.5020303@cogentembedded.com>
+	id S1756556AbaLWT6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 14:58:00 -0500
+Received: from mail-by2on0148.outbound.protection.outlook.com ([207.46.100.148]:50375
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754239AbaLWT56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 14:57:58 -0500
+X-WSS-ID: 0NH1W1O-07-L5W-02
+X-M-MSG: 
+Message-ID: <5499C57B.5030900@amd.com>
+Date: Tue, 23 Dec 2014 13:41:47 -0600
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549969D4.5020303@cogentembedded.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Borislav Petkov <bp@alien8.de>
+CC: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <tony.luck@intel.com>, <dougthompson@xmission.com>,
+        <mchehab@osg.samsung.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-edac@vger.kernel.org>,
+        <dave.hansen@linux.intel.com>, <mgorman@suse.de>, <bp@suse.de>,
+        <riel@redhat.com>, <jacob.w.shin@gmail.com>
+Subject: Re: [PATCH 0/3] Fix MCE handling for AMD multi-node processors
+References: <1419279012-4754-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20141222201542.GB1942@pd.tnic> <5498858F.1030209@amd.com>
+ <20141222231929.GC1942@pd.tnic>
+In-Reply-To: <20141222231929.GC1942@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(24454002)(164054003)(52314003)(377454003)(43544003)(189002)(479174004)(199003)(31966008)(76176999)(50986999)(87936001)(65956001)(99396003)(65806001)(64706001)(64126003)(50466002)(80316001)(84676001)(23676002)(83506001)(87266999)(20776003)(120886001)(65816999)(54356999)(77156002)(105586002)(47776003)(120916001)(36756003)(21056001)(110136001)(4396001)(97736003)(93886004)(59896002)(107046002)(106466001)(46102003)(2950100001)(33656002)(86362001)(62966003)(68736005)(77096005)(101416001)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB206;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB206;
+X-Forefront-PRVS: 04347F8039
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 19:41:50.8450
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CO1PR02MB206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+On 12/22/2014 5:19 PM, Borislav Petkov wrote:
+> On Mon, Dec 22, 2014 at 02:56:47PM -0600, Aravind Gopalakrishnan wrote:
+>> On 12/22/2014 2:15 PM, Borislav Petkov wrote:
+>>> On Mon, Dec 22, 2014 at 02:10:09PM -0600, Aravind Gopalakrishnan wrote:
+>>>> When a MCE happens that is to be logged onto bank 4 of AMD multi-node
+>>>> processors, they are reported only to corresponding node base core of
+>>>> the cpu on which the error occurred.
+>>>>
+>>>> Refer D18F3x44[NbMcaToMstCpuEn] on BKDGs of Fam10h and later for
+>>> Let me try to understand this correctly:
+>>>
+>>> Does that mean that we could fix this by simply doing:
+>>>
+>>> D18F3x44[NbMcaToMstCpuEn]=0b
+>>>
+>>> on each NB?
+>>>
+>> Not quite..
+>> When this field is 0, BKDG says the error may be reported to the core that
+>> originated the request *if applicable and known*
+>> Looking at the error signatures table for MC4 (Part 2),
+>> we can see only some errors have 'ErrCoreId' column as valid
+>>
+>> Besides, if IO originated the request, then it is reported only to NBC.
+>>
+>> So, to take care of all these cases, I am just following one approach here:
+>> and that is to look at NBC MSRs for any bank 4 errors.
+>> (It seems to be what the BKDG recommends anyway as BIOS by default should
+>> set D18F3x44[NbMcaToMstCpuEn])
+> Then in that case you have to check the case where
+> D18F3x44[NbMcaToMstCpuEn] is 0 for whatever reason (some BIOS forgot to
+> set it or whatever) and to set it again.
+Okay.
 
-On Tue, Dec 23, 2014 at 04:10:44PM +0300, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 12/23/2014 1:43 AM, David Cohen wrote:
-> 
-> >Some platforms have an USB OTG port fully (or partially) controlled by
-> >GPIOs:
-> 
-> >(1) USB ID is connected directly to GPIO
-> 
-> >Optionally:
-> >(2) VBUS is enabled by a GPIO (when ID is grounded)
-> 
->    Can't the host driver still control Vbus?
+> Then, upon a quick scan, your patches are adding a lot of vendor-specific
+> stuff which doesn't belong in the #MC handler, should probably be
+> wrapped or so, no good idea right now.
+>
+> Then, you're using rd/wrmsr_on_cpu which does smp_call_function_single()
+> which can deadlock in atomic context and #MC is one.
+>
+> Also, the math in amd_get_nbc_for_node() is too fragile and will break
+> the moment some BIOS renumbers cores to accomodate some other OS.
+>
+> In any case, I won't be able to take a detailed look soon with the
+> holidays coming up.
+>
+> Also, I'm wondering if this can't be solved much more elegantly
+> by detecting that condition (bank == 4) in the #MC handler and
+> issuing an IPI before exiting it using irq_work which will schedule
+> do_machine_check on the NBC. And that should be even easier to do since
+> we're moving the #MC handler out of the IST and to the normal kernel
+> stack for 3.20, which would make this endeavor pretty cheap.
 
-I can't a clean way for host driver to control VBUS considering it
-depends on USB ID.
+Ok. I'll look into this approach too over the holidays and we can 
+restart the discussion
+at a more convenient time.
 
-> 
-> >(3) Platform has 2 USB controllers connected to same port: one for
-> >     device and one for host role. D+/- are switched between phys
-> >     by GPIO.
-> 
-> >As per initial version, this driver has the duty to control whether
-> >USB-Host cable is plugged in or not:
-> >  - If yes, OTG port is configured for host role
-> >  - If no, by standard, the OTG port is configured for device role
-> 
-> >Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> >---
-> 
-> >Hi,
-> 
-> >Some Intel Bay Trail boards have an unusual way to handle the USB OTG port:
-> >  - The USB ID pin is connected directly to GPIO on SoC
-> >  - When in host role, VBUS is provided by enabling a GPIO
-> >  - Device and host roles are supported by 2 independent controllers with D+/-
-> >    pins from port switched between different phys according a GPIO level.
-> 
-> >The ACPI table describes this USB port as a (virtual) device with all the
-> >necessary GPIOs. This driver implements support to this virtual device as an
-> >extcon class driver. All drivers that depend on the USB OTG port state (USB phy,
-> >PMIC, charge detection) will listen to extcon events.
-> 
->    It's very close to my setup on R-Car R8A7791 based boards. :-)
-> I have already submitted Maxim MAX3355 OTG chip GPIO-based driver.
+> Anyway, just a couple of thoughts...
+>
 
-Hm. I'll look for it. Thanks for pointing.
-
-> 
-> >Comments are welcome.
-> 
-> >Br, David
-> >---
-> >
-> >  drivers/extcon/Kconfig           |   8 ++
-> >  drivers/extcon/Makefile          |   1 +
-> >  drivers/extcon/extcon-otg_gpio.c | 200 +++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 209 insertions(+)
-> >  create mode 100644 drivers/extcon/extcon-otg_gpio.c
-> >
-> >diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-> >index 6a1f7de6fa54..e8010cda4642 100644
-> >--- a/drivers/extcon/Kconfig
-> >+++ b/drivers/extcon/Kconfig
-> >@@ -93,4 +93,12 @@ config EXTCON_SM5502
-> >  	  Silicon Mitus SM5502. The SM5502 is a USB port accessory
-> >  	  detector and switch.
-> >
-> >+config EXTCON_OTG_GPIO
-> >+	tristate "VIRTUAL USB OTG PORT support"
-> >+	depends on GPIOLIB
-> >+	help
-> >+	  Say Y here to enable support for virtual USB OTG port device
-> >+	  controlled by GPIOs. This driver can be used when at least USB ID pin
-> >+	  is connected directly to GPIO.
-> >+
-> 
->    The entries in this file seem alphabetically sorted.
-
-I'll fix it.
-
-> 
-> >  endif # MULTISTATE_SWITCH
-> >diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-> >index 0370b42e5a27..9e81088c6584 100644
-> >--- a/drivers/extcon/Makefile
-> >+++ b/drivers/extcon/Makefile
-> >@@ -12,3 +12,4 @@ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
-> >  obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
-> >  obj-$(CONFIG_EXTCON_RT8973A)	+= extcon-rt8973a.o
-> >  obj-$(CONFIG_EXTCON_SM5502)	+= extcon-sm5502.o
-> >+obj-$(CONFIG_EXTCON_OTG_GPIO) += extcon-otg_gpio.o
-> 
->    The lines here are sorted too.
-
-Ditto.
-
-> 
-> >diff --git a/drivers/extcon/extcon-otg_gpio.c b/drivers/extcon/extcon-otg_gpio.c
-> >new file mode 100644
-> >index 000000000000..c5ee765a5f4f
-> >--- /dev/null
-> >+++ b/drivers/extcon/extcon-otg_gpio.c
-> >@@ -0,0 +1,200 @@
-> [...]
-> >+static irqreturn_t vuport_isr(int irq, void *priv)
-> >+{
-> >+	return IRQ_WAKE_THREAD;
-> >+}
-> 
->    It's the same as the default IRQ handler...
-> 
-> >+	ret = devm_request_threaded_irq(dev, gpiod_to_irq(vup->gpio_usb_id),
-> >+					vuport_isr, vuport_thread_isr,
-> 
->    ... so you probably can just pass NULL instead of vuport_isr, no?
-
-I'll review that.
-
-> 
-> [...]
-> 
-> >+static int __init vuport_init(void)
-> >+{
-> >+	return platform_driver_register(&vuport_driver);
-> >+}
-> >+subsys_initcall(vuport_init);
-> 
->    Hm, why?
-
-We have drivers that depend on this one during their probe.
-
-Br, David
-
-> 
-> WBR, Sergei
-> 
+Thanks,
+-Aravind.
