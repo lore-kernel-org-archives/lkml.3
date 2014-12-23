@@ -1,84 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166AbaLWKAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 05:00:13 -0500
-Received: from mail-by2on0109.outbound.protection.outlook.com ([207.46.100.109]:3615
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755918AbaLWJ7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:59:36 -0500
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <dri-devel@lists.freedesktop.org>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <kernel@pengutronix.de>,
-        <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
-        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
-        <andyshrk@gmail.com>, <stefan.wahren@i2se.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v4 20/21] ARM: imx_v6_v7_defconfig: Add support for MIPI DSI host controller
-Date: Tue, 23 Dec 2014 18:02:18 +0800
-Message-ID: <1419328939-22758-21-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1419328939-22758-1-git-send-email-Ying.Liu@freescale.com>
-References: <1419328939-22758-1-git-send-email-Ying.Liu@freescale.com>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(104016003)(77156002)(575784001)(84676001)(229853001)(50466002)(48376002)(107046002)(46102003)(106466001)(19580405001)(19580395003)(6806004)(47776003)(20776003)(64706001)(97736003)(62966003)(92566001)(50986999)(76176999)(86362001)(77096005)(68736005)(2950100001)(85426001)(87936001)(36756003)(21056001)(31966008)(120916001)(50226001)(2351001)(4396001)(110136001)(99396003)(105606002)(89996001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0627;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0627;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR0301MB0627;
-X-Forefront-PRVS: 04347F8039
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0627;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 09:59:33.9867
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0627
+	id S1755944AbaLWKAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 05:00:32 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:56578 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743AbaLWKA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 05:00:27 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-16-54993d395645
+From: Dmitry Safonov <d.safonov@partner.samsung.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        James Bottomley <JBottomley@parallels.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dyasly Sergey <s.dyasly@samsung.com>
+Subject: [RFC][PATCH RESEND] mm: vmalloc: remove ioremap align constraint
+Date: Tue, 23 Dec 2014 13:00:13 +0300
+Message-id: <1419328813-2211-1-git-send-email-d.safonov@partner.samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4VV1L25khBgfWiVnMWb+GzWJlj7fF
+	p5VP2SwO3vjGbnGpdwmrxabH11gtLu+aw2Zxb81/Vovbl3ktPj37x24xebaUxcuPJ1gceDzW
+	zFvD6NHS3MPmsenTJHaPO9f2sHmcmPGbxWPzknqPx3stPU7O+8nmcfDdHiaPvi2rGD0+b5IL
+	4I7isklJzcksSy3St0vgyljQ08BecE264mefTQPjCbEuRk4OCQETib5l31kgbDGJC/fWs4HY
+	QgJLGSUmfzPuYuQCsvuYJM5v/cHUxcjBwQbU8PJHIkiNCFD9xzOXmUFqmAUOMEu8WfeLESQh
+	LOAp0fV7NROIzSKgKnFsyyM2kF5eAR+J9b/SIXbJSZw8Npl1AiP3AkaGVYyiqaXJBcVJ6blG
+	esWJucWleel6yfm5mxghQfh1B+PSY1aHGAU4GJV4eC9+mxEixJpYVlyZe4hRgoNZSYT3pfjM
+	ECHelMTKqtSi/Pii0pzU4kOMTBycUg2MV47ctyuz7Puw24ybbZbbfw21yA+/Q9X4mW02RS3b
+	vvb1xBnHlrayR52vKaoyc9S//55NTzL+6N0m5+2qst//RGt+qQzuWDBz/gaj1ncenf0//I0O
+	GV5Ju8rmpFBryb52tXvPj6+s8YubQtub7ISPvWWet2a+kuyLFwv5V2g8kmzSaVFT6GJTYinO
+	SDTUYi4qTgQAORzgUyACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for MIPI DSI host controller.
+ioremap uses __get_vm_area_node which sets alignment to fls of requested size.
+I couldn't find any reason for such big align. Does it decrease TLB misses?
+I tested it on custom ARM board with 200+ Mb of ioremap and it works.
+What am I missing?
 
-The new imx_v6_v7_defconfig is generated in this way:
-* make ARCH=arm imx_v6_v7_defconfig
-* make ARCH=arm menuconfig and manually choose to build in
-  the MIPI DSI host controller driver
-* make ARCH=arm savedefconfig
-* cp defconfig arch/arm/configs/imx_v6_v7_defconfig
+Alignment restriction for ioremap region was introduced with the commit:
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+> Author: James Bottomley <jejb@mulgrave.(none)>
+> Date:   Wed Jun 30 11:11:14 2004 -0500
+> 
+>     Add vmalloc alignment constraints
+> 
+>     vmalloc is used by ioremap() to get regions for
+>     remapping I/O space.  To feed these regions back
+>     into a __get_free_pages() type memory allocator,
+>     they are expected to have more alignment than
+>     get_vm_area() proves.  So add additional alignment
+>     constraints for VM_IOREMAP.
+> 
+>     Signed-off-by: James Bottomley <James.Bottomley@SteelEye.com>
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: James Bottomley <JBottomley@parallels.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dyasly Sergey <s.dyasly@samsung.com>
+Signed-off-by: Dmitry Safonov <d.safonov@partner.samsung.com>
 ---
-v3->v4:
- * None.
+ arch/arm/include/asm/memory.h       | 5 -----
+ arch/unicore32/include/asm/memory.h | 5 -----
+ include/linux/vmalloc.h             | 8 --------
+ mm/vmalloc.c                        | 2 --
+ 4 files changed, 20 deletions(-)
 
-v2->v3:
- * None.
-
-v1->v2:
- * None.
-
- arch/arm/configs/imx_v6_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index 0dbd0c3..3e0e589 100644
---- a/arch/arm/configs/imx_v6_v7_defconfig
-+++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -199,6 +199,7 @@ CONFIG_DRM_IMX_TVE=y
- CONFIG_DRM_IMX_LDB=y
- CONFIG_DRM_IMX_IPUV3=y
- CONFIG_DRM_IMX_HDMI=y
-+CONFIG_DRM_IMX_MIPI_DSI=y
- CONFIG_LCD_CLASS_DEVICE=y
- CONFIG_LCD_L4F00242T03=y
- CONFIG_LCD_PLATFORM=y
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index 184def0..b333245 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -78,11 +78,6 @@
+  */
+ #define XIP_VIRT_ADDR(physaddr)  (MODULES_VADDR + ((physaddr) & 0x000fffff))
+ 
+-/*
+- * Allow 16MB-aligned ioremap pages
+- */
+-#define IOREMAP_MAX_ORDER	24
+-
+ #else /* CONFIG_MMU */
+ 
+ /*
+diff --git a/arch/unicore32/include/asm/memory.h b/arch/unicore32/include/asm/memory.h
+index debafc4..ffae189 100644
+--- a/arch/unicore32/include/asm/memory.h
++++ b/arch/unicore32/include/asm/memory.h
+@@ -46,11 +46,6 @@
+ #define MODULES_END		(PAGE_OFFSET)
+ 
+ /*
+- * Allow 16MB-aligned ioremap pages
+- */
+-#define IOREMAP_MAX_ORDER	24
+-
+-/*
+  * Physical vs virtual RAM address space conversion.  These are
+  * private definitions which should NOT be used outside memory.h
+  * files.  Use virt_to_phys/phys_to_virt/__pa/__va instead.
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index b87696f..2f428e8 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -18,14 +18,6 @@ struct vm_area_struct;		/* vma defining user mapping in mm_types.h */
+ #define VM_UNINITIALIZED	0x00000020	/* vm_struct is not fully initialized */
+ /* bits [20..32] reserved for arch specific ioremap internals */
+ 
+-/*
+- * Maximum alignment for ioremap() regions.
+- * Can be overriden by arch-specific value.
+- */
+-#ifndef IOREMAP_MAX_ORDER
+-#define IOREMAP_MAX_ORDER	(7 + PAGE_SHIFT)	/* 128 pages */
+-#endif
+-
+ struct vm_struct {
+ 	struct vm_struct	*next;
+ 	void			*addr;
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 39c3388..c4f480dd 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1313,8 +1313,6 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
+ 	struct vm_struct *area;
+ 
+ 	BUG_ON(in_interrupt());
+-	if (flags & VM_IOREMAP)
+-		align = 1ul << clamp(fls(size), PAGE_SHIFT, IOREMAP_MAX_ORDER);
+ 
+ 	size = PAGE_ALIGN(size);
+ 	if (unlikely(!size))
 -- 
-2.1.0
+1.9.1
 
