@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294AbaLWN6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 08:58:25 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:38047 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755861AbaLWN50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 08:57:26 -0500
-From: Andrew Jackson <andrew.jackson@arm.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 1/5] ASoC: dwc: Prepare clock before use
-Date: Tue, 23 Dec 2014 13:56:23 +0000
-Message-Id: <63becb5f356c25b226b9dbc5825357e894d0f08b.1419342218.git.Andrew.Jackson@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1419342218.git.Andrew.Jackson@arm.com>
-References: <cover.1419342218.git.Andrew.Jackson@arm.com>
-In-Reply-To: <cover.1419342218.git.Andrew.Jackson@arm.com>
-References: <cover.1419342218.git.Andrew.Jackson@arm.com>
+	id S1756001AbaLWOGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 09:06:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754155AbaLWOGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 09:06:49 -0500
+Date: Tue, 23 Dec 2014 10:28:26 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools: lib: traceevent: event-parse.c:  Remove some
+ unused functions
+Message-ID: <20141223132826.GM7644@kernel.org>
+References: <1419079541-32288-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141222145210.GA2188@redhat.com>
+ <20141223031450.GA14960@sejong>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141223031450.GA14960@sejong>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Jackson <Andrew.Jackson@arm.com>
+Em Tue, Dec 23, 2014 at 12:14:50PM +0900, Namhyung Kim escreveu:
+> Hi Arnaldo and Rickard,
+> 
+> On Mon, Dec 22, 2014 at 12:52:10PM -0200, Arnaldo Carvalho de Melo wrote:
+> > Em Sat, Dec 20, 2014 at 01:45:41PM +0100, Rickard Strandqvist escreveu:
+> > > Removes some functions that are not used anywhere:
+> > > pevent_get_any_field_val() pevent_get_common_field_val() pevent_event_fields() pevent_event_common_fields() pevent_list_events() pevent_print_event() pevent_data_event_from_type() pevent_register_trace_clock() pevent_pid_is_registered()
+> > > 
+> > > This was partially found by using a static code analysis program called cppcheck.
+> > 
+> > Steven, Namhyung, Jiri:
+> > 
+> > Are you ok with me applying this patch? I'm all for it, dead code better
+> > be removed, but I don't know what are your plans wrt synchronization
+> > with the trace-cmd repo.
+> 
+> They're used by trace-cmd..  Currently Steve backports changes in
+> libtraceevent to trace-cmd repo occasionally but it eventually will be
+> a generic standalone library so I'd like to keep the APIs.
 
-Some I2S clocks may require some time to get the clock ready
-for operation and so need to be prepared before they are enabled.
-So, prepare the clock as well as enabling it, but combine the
-two through clk_prepare_enable.
+So there are plans to use them in the near future, ok.
 
-Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
----
- sound/soc/dwc/designware_i2s.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
-index 06d3a34..9573ec7 100644
---- a/sound/soc/dwc/designware_i2s.c
-+++ b/sound/soc/dwc/designware_i2s.c
-@@ -411,7 +411,7 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 	if (IS_ERR(dev->clk))
- 		return  PTR_ERR(dev->clk);
- 
--	ret = clk_enable(dev->clk);
-+	ret = clk_prepare_enable(dev->clk);
- 	if (ret < 0)
- 		goto err_clk_put;
- 
--- 
-1.7.1
-
+- Arnaldo
