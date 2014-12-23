@@ -1,72 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaLWH7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 02:59:02 -0500
-Received: from mail-bn1on0137.outbound.protection.outlook.com ([157.56.110.137]:32592
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754869AbaLWH7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 02:59:00 -0500
-Message-ID: <1419321529.5581.181.camel@freescale.com>
-Subject: Re: Ask help about killing irqchip.irq_print_chip on PPC platforms
-From: Scott Wood <scottwood@freescale.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-CC: Tudor Laurentiu <b10716@freescale.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Date: Tue, 23 Dec 2014 01:58:49 -0600
-In-Reply-To: <5499204B.4040808@linux.intel.com>
-References: <54991DE5.5090805@linux.intel.com>
-	 <5499204B.4040808@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BLUPR11CA0079.namprd11.prod.outlook.com (10.141.30.47) To
- BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0728;
-X-Forefront-PRVS: 04347F8039
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(41574002)(24454002)(377424004)(46102003)(50226001)(23676002)(68736005)(92566001)(33646002)(47776003)(20776003)(64706001)(50466002)(76176999)(21056001)(89996001)(87976001)(36756003)(2950100001)(31966008)(101416001)(62966003)(103116003)(122386002)(107046002)(99396003)(106356001)(105586002)(77156002)(97736003)(120916001)(4396001)(110136001)(86362001)(40100003)(42186005)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 07:58:57.3651
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0728
+	id S932167AbaLWH7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 02:59:37 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:42136 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755442AbaLWH7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 02:59:31 -0500
+From: Baruch Siach <baruch@tkos.co.il>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, Baruch Siach <baruch@tkos.co.il>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/8] irqchip: Conexant CX92755 interrupts controller driver
+Date: Tue, 23 Dec 2014 09:58:42 +0200
+Message-Id: <7997c913e9f6debc09fd62c788b8ac6bd330d4f3.1419318109.git.baruch@tkos.co.il>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <cover.1419318109.git.baruch@tkos.co.il>
+References: <cover.1419318109.git.baruch@tkos.co.il>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-23 at 15:56 +0800, Jiang Liu wrote:
-> Hi Scott and Tudor,
-> 	Sorry, resend and Ccing the list.
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+---
+ drivers/irqchip/Makefile        |   1 +
+ drivers/irqchip/irq-digicolor.c | 135 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 136 insertions(+)
+ create mode 100644 drivers/irqchip/irq-digicolor.c
 
-Resending reply...
-
-> 	We are trying to clean up some irqchip interfaces, and
-> irqchip.irq_print_chip is a candidate for removal. After some
-> changes on x86 side, arch/powerpc/sysdev/fsl_msi.c may be the
-> last user of irqchip.irq_print_chip. So could you please help
-> to advice on whether we could kill irqchip.irq_print_chip
-> by using "fsl-msi" instead of "fsl-msi-%d" for irqchip name?
-> Will it break any userspace interfaces?
-> Thanks!
-> Gerry
-
-fsl-msi-%d was introduced to allow userspace to identify the cascade
-interrupt belonging to a particular MSI, for the purpose of setting
-affinity, as this cannot be done on the MSI itself due to hardware
-limitations.
-
-Removing it would not exactly eliminate a lot of code or complexity...
-
--Scott
-
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index 9516a324be6d..42965d2476bb 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -42,3 +42,4 @@ obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
+ obj-$(CONFIG_KEYSTONE_IRQ)		+= irq-keystone.o
+ obj-$(CONFIG_MIPS_GIC)			+= irq-mips-gic.o
+ obj-$(CONFIG_ARCH_MEDIATEK)		+= irq-mtk-sysirq.o
++obj-$(CONFIG_ARCH_DIGICOLOR)		+= irq-digicolor.o
+diff --git a/drivers/irqchip/irq-digicolor.c b/drivers/irqchip/irq-digicolor.c
+new file mode 100644
+index 000000000000..9970090821a9
+--- /dev/null
++++ b/drivers/irqchip/irq-digicolor.c
+@@ -0,0 +1,135 @@
++/*
++ * Conexant Digicolor SoCs IRQ chip driver
++ *
++ * Author: Baruch Siach <baruch@tkos.co.il>
++ *
++ * Copyright (C) 2014 Paradox Innovation Ltd.
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++
++#include <asm/exception.h>
++
++#include "irqchip.h"
++
++#define UC_IRQ_CONTROL		0x03a4
++
++#define IC_FLAG_CLEAR_LO	0x40
++#define IC_INT0ENABLE_LO	0x50
++#define IC_INT0ENABLE_XLO	0x54
++#define IC_INT0STATUS_LO	0x58
++#define IC_INT0STATUS_XLO	0x5c
++
++static void __iomem *digicolor_irq_base;
++static struct irq_domain *digicolor_irq_domain;
++
++static void __exception_irq_entry digicolor_handle_irq(struct pt_regs *regs)
++{
++	u32 status, hwirq;
++
++	do {
++		status = readl(digicolor_irq_base + IC_INT0STATUS_LO);
++		if (status) {
++			hwirq = ffs(status) - 1;
++		} else {
++			status = readl(digicolor_irq_base + IC_INT0STATUS_XLO);
++			if (status)
++				hwirq = ffs(status) - 1 + 32;
++			else
++				return;
++		}
++
++		handle_domain_irq(digicolor_irq_domain, hwirq, regs);
++	} while (1);
++}
++
++static void digicolor_irq_ack(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int irq_off = irq % 8;
++	int reg = irq / 8;
++
++	writeb(BIT(irq_off), digicolor_irq_base + IC_FLAG_CLEAR_LO + reg);
++}
++
++static void digicolor_irq_mask(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int irq_off = irq % 8;
++	int reg = irq / 8;
++	u8 val;
++
++	val = readb(digicolor_irq_base + IC_INT0ENABLE_LO + reg);
++	writeb(val & ~BIT(irq_off),
++	       digicolor_irq_base + IC_INT0ENABLE_LO + reg);
++}
++
++static void digicolor_irq_unmask(struct irq_data *irqd)
++{
++	unsigned int irq = irqd_to_hwirq(irqd);
++	unsigned int irq_off = irq % 8;
++	int reg = irq / 8;
++	u8 val;
++
++	val = readb(digicolor_irq_base + IC_INT0ENABLE_LO + reg);
++	writeb(val | BIT(irq_off),
++	       digicolor_irq_base + IC_INT0ENABLE_LO + reg);
++}
++
++static struct irq_chip digicolor_irq_chip = {
++	.name		= "digicolor_irq",
++	.irq_ack	= digicolor_irq_ack,
++	.irq_mask	= digicolor_irq_mask,
++	.irq_unmask	= digicolor_irq_unmask,
++};
++
++static int digicolor_irq_map(struct irq_domain *d, unsigned int virq,
++			 irq_hw_number_t hw)
++{
++	irq_set_chip_and_handler(virq, &digicolor_irq_chip, handle_level_irq);
++	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
++
++	return 0;
++}
++
++static struct irq_domain_ops digicolor_irq_ops = {
++	.map = digicolor_irq_map,
++	.xlate = irq_domain_xlate_onecell,
++};
++
++static int __init digicolor_of_init(struct device_node *node,
++				struct device_node *parent)
++{
++	digicolor_irq_base = of_iomap(node, 0);
++	if (!digicolor_irq_base) {
++		pr_err("%s: unable to map IC registers\n", node->full_name);
++		return -ENXIO;
++	}
++
++	/* disable all interrupts */
++	writel(0, digicolor_irq_base + IC_INT0ENABLE_LO);
++	writel(0, digicolor_irq_base + IC_INT0ENABLE_XLO);
++
++	/* channel 1, regular IRQs */
++	writeb(1, digicolor_irq_base + UC_IRQ_CONTROL);
++
++	digicolor_irq_domain = irq_domain_add_linear(node, 64,
++						     &digicolor_irq_ops, NULL);
++	if (!digicolor_irq_domain) {
++		pr_err("%s: unable to create IRQ domain\n", node->full_name);
++		return -ENOMEM;
++	}
++
++	set_handle_irq(digicolor_handle_irq);
++
++	return 0;
++}
++IRQCHIP_DECLARE(conexant_digicolor_ic, "cnxt,cx92755-ic", digicolor_of_init);
+-- 
+2.1.3
 
