@@ -1,152 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891AbaLWH1D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 02:27:03 -0500
-Received: from audible.transient.net ([24.143.126.66]:46516 "HELO
-	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751694AbaLWH1A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 02:27:00 -0500
-Date: Tue, 23 Dec 2014 07:26:59 +0000
-From: Jamie Heilman <jamie@audible.transient.net>
-To: "Chen, Tiejun" <tiejun.chen@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        luto@amacapital.net
-Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
-Message-ID: <20141223072659.GA4015@cucamonga.audible.transient.net>
-Mail-Followup-To: "Chen, Tiejun" <tiejun.chen@intel.com>,
-	Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	luto@amacapital.net
-References: <20141221124640.GA4059@cucamonga.audible.transient.net>
- <5497C882.4000108@intel.com>
- <20141222092358.GA3915@cucamonga.audible.transient.net>
- <5498CA50.8070906@intel.com>
- <5498CB62.3070901@intel.com>
+	id S1754867AbaLWHgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 02:36:13 -0500
+Received: from mail.kernel.org ([198.145.19.201]:50972 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751976AbaLWHgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 02:36:12 -0500
+Date: Mon, 22 Dec 2014 23:36:09 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
+Message-ID: <20141223073609.GA9946@jaegeuk-mac02.hsd1.ca.comcast.net>
+References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
+ <20141222020317.GB3335@lcm>
+ <000001d01db6$7d718770$78549650$@samsung.com>
+ <20141222231604.GC8287@jaegeuk-mac02.mot.com>
+ <002a01d01e5c$e2ba0250$a82e06f0$@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5498CB62.3070901@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <002a01d01e5c$e2ba0250$a82e06f0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen, Tiejun wrote:
-> On 2014/12/23 9:50, Chen, Tiejun wrote:
-> >On 2014/12/22 17:23, Jamie Heilman wrote:
-> >>Chen, Tiejun wrote:
-> >>>On 2014/12/21 20:46, Jamie Heilman wrote:
-> >>>>With v3.19-rc1 when I run qemu-system-x86_64 -machine pc,accel=kvm I
-> >>>>get:
-> >>>>
-> >>>>KVM: entry failed, hardware error 0x80000021
-> >>>
-> >>>Looks some MSR writing issues such a failed entry.
-> >>>
-> >>>>If you're running a guest on an Intel machine without unrestricted mode
-> >>>>support, the failure can be most likely due to the guest entering an
-> >>>>invalid
-> >>>>state for Intel VT. For example, the guest maybe running in big real
-> >>>>mode
-> >>>>which is not supported on less recent Intel processors.
-> >>>>
-> >>>>EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
-> >>>>ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
-> >>>>EIP=0000e05b EFL=00010002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
-> >>>>ES =0000 00000000 0000ffff 00009300
-> >>>>CS =f000 000f0000 0000ffff 00009b00
-> >>>>SS =0000 00000000 0000ffff 00009300
-> >>>>DS =0000 00000000 0000ffff 00009300
-> >>>>FS =0000 00000000 0000ffff 00009300
-> >>>>GS =0000 00000000 0000ffff 00009300
-> >>>>LDT=0000 00000000 0000ffff 00008200
-> >>>>TR =0000 00000000 0000ffff 00008b00
-> >>>>GDT=     00000000 0000ffff
-> >>>>IDT=     00000000 0000ffff
-> >>>>CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
-> >>>>DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
-> >>>>DR3=0000000000000000
-> >>>>DR6=00000000ffff0ff0 DR7=0000000000000400
-> >>>>EFER=0000000000000000
-> >>>
-> >>>And I don't see any obvious wrong as well. Any valuable info from dmesg?
-> >>
-> >>With the simple qemu command above, on 3.18.1 I see:
-> >>
-> >>kern.info: kvm: zapping shadow pages for mmio generation wraparound
-> >>
-> >>when I fire up a full guest that's actually useful I get:
-> >>
-> >>kern.info: kvm: zapping shadow pages for mmio generation wraparound
-> >>kern.err: kvm [4073]: vcpu0 disabled perfctr wrmsr: 0xc1 data 0xffff
-> >>
-> >>On 3.18.0-rc3-00042-g34a1cd6 nothing appears in the dmesg, just the
-> >>message I mention above to stderr.  Same thing with a stock
-> >>3.19.0-rc1.  Once I apply your patch the simple test command produces
-> >>the same zapping shadow pages messages as 3.18.1, and a test guest of
-> >>a Debian Jessie image (w/stock distro kernel) produces the same thing
-> >>with disabled perfctr wrmsr message.  However, it doesn't look like
-> >
-> >Sorry I'm not sure if I understood current status. Looks 3.19-rc1 & my
-> >patch just fix that error above,
-> >
-> >KVM: entry failed, hardware error 0x80000021
-> >...
-> >
-> >Right?
-> >
-> >>I'm entirely out of the woods, because one of my other guest VMs with a
-> >>custom kernel that works great under 3.18.1 now fails to run.  Nothing
-> >>in dmesg, but here's the stderr:
-> >
-> >But even you revert 34a1cd60d17 or just apply my patch, something else
-> >introduced between 3.18.1 and 3.19-rc1 led this error below, right?
-> >
-> >>
-> >>KVM internal error. Suberror: 1
-> >>emulation failure
-> >>EAX=000de494 EBX=00000000 ECX=00000000 EDX=00000cfd
-> >>ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fb4
-> >>EIP=000f15c1 EFL=00010016 [----AP-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-> >>ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
-> >>SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-> >>TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-> >>GDT=     000f6be8 00000037
-> >>IDT=     000f6c26 00000000
-> >>CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
-> >>DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
-> >>DR3=0000000000000000
-> >>DR6=00000000ffff0ff0 DR7=0000000000000400
-> >>EFER=0000000000000000
-> >>Code=e8 ae fc ff ff 89 f2 a8 10 89 d8 75 0a b9 41 15 ff ff ff d1 <5b>
-> >>5e c3 5b 5e e9 76 ff ff ff b0 11 e6 20 e6 a0 b0 08 e6 21 b0 70 e6 a1
-> >>b0 04 e6 21 b0 02
-> >>
-> >>FWIW, I get the same thing with 34a1cd60d17 reverted.  Maybe there are
-> >>two bugs, maybe there's more to this first one.  I can repro this
-> >
-> >So if my understanding is correct, this is probably another bug. And
-> >especially, I already saw the same log in another thread, "Cleaning up
-> >the KVM clock". Maybe you can continue to `git bisect` to locate that
-> >bad commit.
-> >
+Hi Chao,
+
+On Tue, Dec 23, 2014 at 11:01:39AM +0800, Chao Yu wrote:
+> Hi Jaegeuk,
 > 
-> Looks just now Andy found that commit,
-> 0e60b0799fedc495a5c57dbd669de3c10d72edd2 "kvm: change memslot sorting rule
-> from size to GFN", maybe you can try to revert this to try yours again.
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > Sent: Tuesday, December 23, 2014 7:16 AM
+> > To: Chao Yu
+> > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
+> > 
+> > Hi Chao,
+> > 
+> > On Mon, Dec 22, 2014 at 03:10:30PM +0800, Chao Yu wrote:
+> > > Hi Changman,
+> > >
+> > > > -----Original Message-----
+> > > > From: Changman Lee [mailto:cm224.lee@samsung.com]
+> > > > Sent: Monday, December 22, 2014 10:03 AM
+> > > > To: Chao Yu
+> > > > Cc: Jaegeuk Kim; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> > > > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
+> > > >
+> > > > Hi Yu,
+> > > >
+> > > > Good approach.
+> > >
+> > > Thank you. :)
+> > >
+> > > > As you know, however, f2fs breaks extent itself due to COW.
+> > >
+> > > Yes, and sometimes f2fs use IPU when override writing, in this condition,
+> > > by using this approach we can cache more contiguous mapping extent for better
+> > > performance.
+> > 
+> > Hmm. When f2fs faces with this case, there is no chance to make an extent itself
+> > at all.
+> 
+> With new implementation of this patch f2fs will build extent cache when readpage/readpages.
 
-That doesn't revert cleanly for me, and I don't have much time to
-fiddle with it until the 24th---so checked out the commit before it
-(d4ae84a0), applied your patch, built, and yes, everything works fine
-at that point.  I'll probably have time for another full bisection
-later, assuming things aren't ironed out already by then.
+I don't understand your points exactly. :(
+If there are no on-disk extents, it doesn't matter when the caches are built.
+Could you define what scenarios you're looking at?
 
--- 
-Jamie Heilman                     http://audible.transient.net/~jamie/
+> 
+> > 
+> > >
+> > > > Unlike other filesystem like btrfs, minimum extent of f2fs could have 4KB granularity.
+> > > > So we would have lots of extents per inode and it could lead to overhead
+> > > > to manage extents.
+> > >
+> > > Agree, the more number of extents are growing in one inode, the more memory
+> > > pressure and longer latency operating in rb-tree we are facing.
+> > > IMO, to solve this problem, we'd better to add limitation or shrink ability into
+> > > extent cache:
+> > > 1.limit extent number per inode with the value set from sysfs and discard extent
+> > > from inode's extent lru list if we touch the limitation; (e.g. in FAT, max number
+> > > of mapping extent per inode is fixed: 8)
+> > > 2.add all extents of inodes into a global lru list, we will try to shrink this list
+> > > if we're facing memory pressure.
+> > >
+> > > How do you think? or any better ideas are welcome. :)
+> > 
+> > Historically, the reason that I added only one small extent cache is that I
+> > wanted to avoid additional data structures having any overhead in critical data
+> > write path.
+> 
+> Thank you for telling me the history of original extent cache.
+> 
+> > Instead, I intended to use a well operating node page cache.
+> > 
+> > We need to consider what would be the benefit when using extent cache rather
+> > than existing node page cache.
+> 
+> IMO, node page cache belongs to system level cache, filesystem sub system can
+> not control it completely, cached uptodate node page will be invalidated by
+> using drop_caches from sysfs, or reclaimer of mm, result in more IO when we need
+> these node page next time.
+
+Yes, that's exactly what I wanted.
+
+> New extent cache belongs to filesystem level cache, it is completely controlled
+> by filesystem itself. What we can profit is: on the one hand, it is used as
+> first level cache above the node page cache, which can also increase the cache
+> hit ratio.
+
+I don't think so. The hit ratio depends on the cache policy. The node page
+cache is managed globally by kernel in LRU manner, so I think this can show
+affordable hit ratio.
+
+> On the other hand, it is more instable and controllable than node page
+> cache.
+
+It depends on how you can control the extent cache. But, I'm not sure that
+would be better than page cache managed by MM.
+
+So, my concerns are:
+
+1. Redundant memory overhead
+ : The extent cache is likely on top of the node page cache, which will consume 
+ memory redundantly.
+
+2. CPU overhead
+ : In every block address updates, it needs to traverse extent cache entries.
+
+3. Effectiveness
+ : We have a node page cache that is managed by MM in LRU order. I think this
+ provides good hit ratio, system-wide memory relciaming algorithms, and well-
+ defined locking mechanism.
+
+4. Cache reclaiming policy
+ a. global approach: it needs to consider lock contention, CPU overhead, and
+                     shrinker. I don't think it is better than page cache.
+ b. local approach: there still exists cold misses at the initial read
+                    operations. After then, how does the extent cache increase
+		    hit ratio more than giving node page cache?
+
+		    For example, in the case of pretty normal scenario like
+		    open -> read -> close -> open -> read ..., we can't get
+		    benefits form locally-managed extent cache, while node
+		    page cache serves many block addresses.
+
+This is my initial thought on the extent cache.
+Definitely, it is worth to discuss further in more details.
+
+Thanks,
+
+> 
+> Thanks,
+> Yu
+> 
+> > 
+> > Thanks,
+> > 
+> > >
+> > > >
+> > > > Anyway, mount option could be alternative for this patch.
+> > >
+> > > Yes, will do.
+> > >
+> > > Thanks,
+> > > Yu
+> > >
+> > > >
+> > > > On Fri, Dec 19, 2014 at 06:49:29PM +0800, Chao Yu wrote:
+> > > > > Now f2fs have page-block mapping cache which can cache only one extent mapping
+> > > > > between contiguous logical address and physical address.
+> > > > > Normally, this design will work well because f2fs will expand coverage area of
+> > > > > the mapping extent when we write forward sequentially. But when we write data
+> > > > > randomly in Out-Place-Update mode, the extent will be shorten and hardly be
+> > > > > expanded for most time as following reasons:
+> > > > > 1.The short part of extent will be discarded if we break contiguous mapping in
+> > > > > the middle of extent.
+> > > > > 2.The new mapping will be added into mapping cache only at head or tail of the
+> > > > > extent.
+> > > > > 3.We will drop the extent cache when the extent became very fragmented.
+> > > > > 4.We will not update the extent with mapping which we get from readpages or
+> > > > > readpage.
+> > > > >
+> > > > > To solve above problems, this patch adds extent cache base on rb-tree like other
+> > > > > filesystems (e.g.: ext4/btrfs) in f2fs. By this way, f2fs can support another
+> > > > > more effective cache between dnode page cache and disk. It will supply high hit
+> > > > > ratio in the cache with fewer memory when dnode page cache are reclaimed in
+> > > > > environment of low memory.
+> > > > >
+> > > > > Todo:
+> > > > > *introduce mount option for extent cache.
+> > > > > *add shrink ability for extent cache.
+> > > > >
+> > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > > > ---
