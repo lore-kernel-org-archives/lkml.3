@@ -1,115 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367AbaLWQUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 11:20:19 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:54692 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215AbaLWQUR (ORCPT
+	id S932392AbaLWQVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 11:21:15 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43644 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215AbaLWQVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 11:20:17 -0500
-From: Dmitry Osipenko <digetx@gmail.com>
-To: digetx@gmail.com, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: <stable@vger.kernel.org>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] soc: tegra: pmc: Use syscore PM ops
-Date: Tue, 23 Dec 2014 19:15:37 +0300
-Message-Id: <1419351358-6201-1-git-send-email-digetx@gmail.com>
-X-Mailer: git-send-email 2.2.0
+	Tue, 23 Dec 2014 11:21:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGVrzcZPODEbQBF8Z+_r-6H3A_S-4Mi=1ALBf87ZmEngWzDpyw@mail.gmail.com>
+References: <1419290863-19788-1-git-send-email-abrestic@chromium.org> <CAGVrzcZPODEbQBF8Z+_r-6H3A_S-4Mi=1ALBf87ZmEngWzDpyw@mail.gmail.com>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Tue, 23 Dec 2014 08:20:52 -0800
+Message-ID: <CAJiQ=7A0ZrNr0+mbHs1xJNDHEJMiG7v69XhEtCyWTYrBtX1zpw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] MIPS: Move device-trees into vendor sub-directories
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arend van Spriel <arend@broadcom.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed tegra_resume()
-location storing from late to early and as result broke suspend on Tegra20.
-PMC scratch register 41 is used by tegra LP1 resume code for retrieving stored
-physical memory address of common resume function and in the same time used by
-Tegra20 cpuidle driver for storing cpu1 "resettable" status, it implies strict
-order of scratch register use. Fix it by making PMC driver use syscore PM ops to
-ensure that tegra_resume() location is stored after cpuidle driver suspend and
-before resume respectively.
+On Tue, Dec 23, 2014 at 8:07 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2014-12-22 15:27 GMT-08:00 Andrew Bresticker <abrestic@chromium.org>:
+>> Move the MIPS device-trees into the appropriate vendor sub-directories.
+>>
+>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>> ---
+>>  arch/mips/Makefile                                 |  2 +-
+>>  arch/mips/boot/dts/Makefile                        | 33 ++++++++--------------
+>>  arch/mips/boot/dts/bcm/Makefile                    |  9 ++++++
+>>  arch/mips/boot/dts/{ => bcm}/bcm3384.dtsi          |  0
+>>  arch/mips/boot/dts/{ => bcm}/bcm93384wvg.dts       |  0
+>
+> Let's use brcm here, which is the DT vendor prefix, or go full name
+> with broadcom, there has been enough debate in the past about this ;)
 
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
-Fixes: 7232398abc6a (ARM: tegra: Convert PMC to a driver)
-Cc: <stable@vger.kernel.org> # v3.17+
----
- drivers/soc/tegra/pmc.c | 37 +++++++++++++++++++------------------
- 1 file changed, 19 insertions(+), 18 deletions(-)
+IOW we want to see:
 
-diff --git a/drivers/soc/tegra/pmc.c b/drivers/soc/tegra/pmc.c
-index a2c0ceb..4ebd94a 100644
---- a/drivers/soc/tegra/pmc.c
-+++ b/drivers/soc/tegra/pmc.c
-@@ -33,6 +33,7 @@
- #include <linux/reset.h>
- #include <linux/seq_file.h>
- #include <linux/spinlock.h>
-+#include <linux/syscore_ops.h>
- 
- #include <soc/tegra/common.h>
- #include <soc/tegra/fuse.h>
-@@ -703,6 +704,23 @@ static void tegra_pmc_init(struct tegra_pmc *pmc)
- 	tegra_pmc_writel(value, PMC_CNTRL);
- }
- 
-+static int tegra_pmc_suspend(void)
-+{
-+	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
-+
-+	return 0;
-+}
-+
-+static void tegra_pmc_resume(void)
-+{
-+	tegra_pmc_writel(0x0, PMC_SCRATCH41);
-+}
-+
-+static struct syscore_ops tegra_pmc_syscore_ops = {
-+	.suspend = tegra_pmc_suspend,
-+	.resume = tegra_pmc_resume,
-+};
-+
- static int tegra_pmc_probe(struct platform_device *pdev)
- {
- 	void __iomem *base = pmc->base;
-@@ -736,27 +754,11 @@ static int tegra_pmc_probe(struct platform_device *pdev)
- 			return err;
- 	}
- 
--	return 0;
--}
--
--#ifdef CONFIG_PM_SLEEP
--static int tegra_pmc_suspend(struct device *dev)
--{
--	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
-+	register_syscore_ops(&tegra_pmc_syscore_ops);
- 
- 	return 0;
- }
- 
--static int tegra_pmc_resume(struct device *dev)
--{
--	tegra_pmc_writel(0x0, PMC_SCRATCH41);
--
--	return 0;
--}
--#endif
--
--static SIMPLE_DEV_PM_OPS(tegra_pmc_pm_ops, tegra_pmc_suspend, tegra_pmc_resume);
--
- static const char * const tegra20_powergates[] = {
- 	[TEGRA_POWERGATE_CPU] = "cpu",
- 	[TEGRA_POWERGATE_3D] = "3d",
-@@ -894,7 +896,6 @@ static struct platform_driver tegra_pmc_driver = {
- 		.name = "tegra-pmc",
- 		.suppress_bind_attrs = true,
- 		.of_match_table = tegra_pmc_match,
--		.pm = &tegra_pmc_pm_ops,
- 	},
- 	.probe = tegra_pmc_probe,
- };
--- 
-2.2.0
+arch/mips/boot/dts/brcm/bcm3384.dtsi
+arch/mips/boot/dts/brcm/bcm93384wvg.dts
 
+right?  "brcm" for the vendor name, "bcmXXXX[X[X]]" for the chip
+names, just like the compatible strings.
+
+BTW, this will again create an ordering dependency with respect to my
+Generic BMIPS patch series.  If Ralf can take Andrew's updated patches
+ASAP (since they're straightforward renamings) it will make it easier
+to add/rename platforms without having to fix up merge conflicts.
