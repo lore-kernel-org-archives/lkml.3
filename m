@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093AbaLWLMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 06:12:55 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54876 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754639AbaLWLMx (ORCPT
+	id S1755782AbaLWLOu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 06:14:50 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:45516 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421AbaLWLOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 06:12:53 -0500
-Date: Tue, 23 Dec 2014 12:12:50 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [GIT PULL] fbdev fixes for 3.19
-Message-ID: <20141223111250.GA30284@amd>
-References: <54899F0E.4090309@ti.com>
- <20141220210125.GB16705@amd>
- <20141220212027.GC16705@amd>
- <20141220215718.GA25101@amd>
+	Tue, 23 Dec 2014 06:14:48 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+        joe@perches.com, ocfs2-devel@oss.oracle.com,
+        Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [Ocfs2-devel] [PATCH 1/1 linux-next] ocfs2: remove unnecessary sizeof(char)
+Organization: D03
+References: <1419275109-11641-1-git-send-email-fabf@skynet.be>
+	<20141222133501.916a0944e5f0719e60e2c4eb@linux-foundation.org>
+X-Hashcash: 1:20:141223:akpm@linux-foundation.org::cM6Lx7PU8xdMfuMt:0000000000000000000000000000000000000HXR
+X-Hashcash: 1:20:141223:mfasheh@suse.com::m4p9eNrdeCd5+eq9:01zAV
+X-Hashcash: 1:20:141223:linux-kernel@vger.kernel.org::mFrE8k6d8p6Kpq12:0000000000000000000000000000000002d4C
+X-Hashcash: 1:20:141223:ocfs2-devel@oss.oracle.com::IYRLdmlivFeTHMo+:000000000000000000000000000000000004LUD
+X-Hashcash: 1:20:141223:fabf@skynet.be::xb17i7Z7iZZlc6Mx:0005tZH
+X-Hashcash: 1:20:141223:joe@perches.com::uTvdwUEhUtMOZ5TU:00NyGO
+Date: Tue, 23 Dec 2014 12:14:44 +0100
+In-Reply-To: <20141222133501.916a0944e5f0719e60e2c4eb@linux-foundation.org>
+	(Andrew Morton's message of "Mon, 22 Dec 2014 13:35:01 -0800")
+Message-ID: <87k31ibot7.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141220215718.GA25101@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-12-20 22:57:18, Pavel Machek wrote:
-> On Sat 2014-12-20 22:20:27, Pavel Machek wrote:
-> > On Sat 2014-12-20 22:01:25, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > > Please pull fbdev changes for 3.19.
-> > > > 
-> > > >  Tomi
-> > > 
-> > > v3.19-rc0 breaks video on my n900.
-> > > 
-> > > > Archit Taneja (7):
-> > > >       OMAPDSS: DPI: Use DPI driver data
-> > > >       OMAPDSS: DPI: Allocate driver data
-> > > >       OMAPDSS: DPI: Store dpi_data pointer in the DT port's data
-> > > >       OMAPDSS: DSS: init dss ports cleanly
-> > > >       OMAPDSS: DT: Get source endpoint by matching reg-id
-> > > >       OMAPDSS: DPI: Add support for multiple instances
-> > > >       OMAPDSS: DSS: add a param to dpi_select_source which specifies
-> > > >       it's port number
-> > > 
-> > > And I have these in my tree, so I should have latest fixes. Any ideas
-> > > what I should try?
-> > 
-> > I test-merged 3315764efceaccfb02c7d4c99ef8eed6716cd861, and boom,
-> > video is gone.
-> 
-> I reverted
-> 4b4123f0c7b02f7cf1a3189f967f079197578c3a..9051909e451a0368c95ccf74562adb53fd2719f8
-> in 3.19, and voila, video is back.
+On Mon, Dec 22 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Tomi?
+> On Mon, 22 Dec 2014 20:05:09 +0100 Fabian Frederick <fabf@skynet.be> wrote:
+>
+>>  
+>> -	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) +
+>> -			     (osb->max_slots * sizeof(char)), GFP_KERNEL);
+>> +	replay_map = kzalloc(sizeof(struct ocfs2_replay_map) + osb->max_slots,
+>> +			     GFP_KERNEL);
+>>  
+>
+> I dunno.  The code at present isn't particularly idiomatic, but it has
+> some documentation value and says "I know what I'm doing".
+>
+> It would be better if it was
+>
+> 	kzalloc(sizeof(struct ocfs2_replay_map) *
+> 		sizeof(struct ocfs2_replay_map.rm_replay_slots[0]), ...);
+>
+> And it would be better if C permitted that ;)
+>
+> 	kzalloc(sizeof(struct ocfs2_replay_map) *
+> 		sizeof((struct ocfs2_replay_map *)0)->rm_replay_slots[0]), ...);
+>
+> yuk.
 
-Your merge causes regression on my hardware. I'd expect some
-communication from you. If you don't have time right now, can we
-revert the merge until its fixed?
+Well, the yuckiness could be hidden behind FIELD_SIZEOF. CodingStyle
+explicitly mentions that macro. No opinion on whether it's worth it in
+this case.
 
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Rasmus
