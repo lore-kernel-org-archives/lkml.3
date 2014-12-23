@@ -1,503 +1,1745 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007AbaLWNCA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 08:02:00 -0500
-Received: from 137-static-inova.u.inova.com.br ([177.154.132.137]:47484 "EHLO
-	r-sv6.v.inova.com.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754858AbaLWNB7 (ORCPT
+	id S1756140AbaLWNC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 08:02:26 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40107 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858AbaLWNCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 08:01:59 -0500
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Dec 2014 08:01:58 EST
-Date: Tue, 23 Dec 2014 10:56:24 -0200 (BRST)
-From: Francis Dube <julio-cesar@veloxmail.com.br>
-Reply-To: Francis Dube <francaisdube001@aol.co.uk>
-Message-ID: <906769065.2688679.1419339384582.JavaMail.root@r-zv3>
-Subject: READ ATTACHED BUSINESS PROPOSAL AND GET BACK TO ME
+	Tue, 23 Dec 2014 08:02:23 -0500
+Date: Tue, 23 Dec 2014 14:02:19 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: pavel@ucw.cz, pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
+        linux-bluetooth@vger.kernel.org, marcel@holtmann.org
+Subject: [PATCH] bluetooth: Add hci_h4p driver
+Message-ID: <20141223130219.GA5731@amd>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; 
-	boundary="----=_Part_2688677_1215449170.1419339384580"
-X-Originating-IP: [41.133.159.79]
-X-Mailer: Zimbra 7.1.4_GA_2568 (zclient/7.1.4_GA_2568)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_Part_2688677_1215449170.1419339384580
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+
+Add HCI driver for H4 with Nokia extensions. This device is used on
+Nokia N900 cell phone.
+
+Older version of this driver lived in staging, before being reverted
+in a4102f90e87cfaa3fdbed6fdf469b23f0eeb4bfd .
+ 
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Thanks-to: Sebastian Reichel <sre@debian.org>
+Thanks-to: Joe Perches <joe@perches.com>
+
+---
+
+Please apply,
+								Pavel
 
 
-------=_Part_2688677_1215449170.1419339384580
-Content-Type: application/pdf; name="Business Proposal.pdf"
-Content-Disposition: attachment; filename="Business Proposal.pdf"
-Content-Transfer-Encoding: base64
+ Kconfig      |   10 
+ Makefile     |    4 
+ nokia_core.c | 1149 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ nokia_fw.c   |   99 +++++
+ nokia_h4p.h  |  214 ++++++++++
+ nokia_uart.c |  171 ++++++++
+ 7 files changed, 1667 insertions(+)
+ 
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 4547dc2..a8b72dd 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -243,4 +243,14 @@ config BT_WILINK
+ 	  Say Y here to compile support for Texas Instrument's WiLink7 driver
+ 	  into the kernel or say M to compile it as module (btwilink).
+ 
++config BT_NOKIA_H4P
++	tristate "Nokia H4+ Extensions (H4P) driver"
++	help
++	  Bluetooth HCI driver with H4 extensions.  This driver provides
++	  support for H4+ Bluetooth chip with vendor-specific H4 extensions.
++	  It works on Broadcom based chip found in Nokia N900.
++
++	  Say Y here to compile support for h4 extended devices into the kernel
++	  or say M to compile it as module (nokia_h4p).
++
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 9fe8a87..f1cc580 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -31,4 +31,8 @@ hci_uart-$(CONFIG_BT_HCIUART_ATH3K)	+= hci_ath.o
+ hci_uart-$(CONFIG_BT_HCIUART_3WIRE)	+= hci_h5.o
+ hci_uart-objs				:= $(hci_uart-y)
+ 
++obj-$(CONFIG_BT_NOKIA_H4P)	+= nokia_h4p.o
++
++nokia_h4p-y			:= nokia_core.o nokia_fw.o nokia_uart.o
++
+ ccflags-y += -D__CHECK_ENDIAN__
+diff --git a/drivers/bluetooth/nokia_core.c b/drivers/bluetooth/nokia_core.c
+new file mode 100644
+index 0000000..1316ad2
+--- /dev/null
++++ b/drivers/bluetooth/nokia_core.c
+@@ -0,0 +1,1149 @@
++/*
++ * This file is part of Nokia H4P bluetooth driver
++ *
++ * Copyright (C) 2005-2008 Nokia Corporation.
++ * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ * Thanks to all the Nokia people that helped with this driver,
++ * including Ville Tervo and Roger Quadros.
++ *
++ * Power saving functionality was removed from this driver to make
++ * merging easier.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++#include <linux/spinlock.h>
++#include <linux/serial_reg.h>
++#include <linux/skbuff.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
++#include <linux/of_irq.h>
++#include <linux/timer.h>
++#include <linux/kthread.h>
++#include <linux/io.h>
++#include <linux/completion.h>
++#include <linux/sizes.h>
++
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++#include <net/bluetooth/hci.h>
++
++#include "nokia_h4p.h"
++
++/* This should be used in function that cannot release clocks */
++static void h4p_set_clk(struct h4p_info *info, int *clock, bool enable)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&info->clocks_lock, flags);
++	if (enable && !*clock) {
++		BT_DBG("Enabling %p", clock);
++		clk_prepare_enable(info->uart_fclk);
++		clk_prepare_enable(info->uart_iclk);
++		if (atomic_read(&info->clk_users) == 0)
++			h4p_restore_regs(info);
++		atomic_inc(&info->clk_users);
++	}
++
++	if (!enable && *clock) {
++		BT_DBG("Disabling %p", clock);
++		if (atomic_dec_and_test(&info->clk_users))
++			h4p_store_regs(info);
++		clk_disable_unprepare(info->uart_fclk);
++		clk_disable_unprepare(info->uart_iclk);
++	}
++
++	*clock = enable;
++	spin_unlock_irqrestore(&info->clocks_lock, flags);
++}
++
++static void h4p_lazy_clock_release(unsigned long data)
++{
++	struct h4p_info *info = (struct h4p_info *)data;
++	unsigned long flags;
++
++	spin_lock_irqsave(&info->lock, flags);
++	if (!info->tx_enabled)
++		h4p_set_clk(info, &info->tx_clocks_en, false);
++	spin_unlock_irqrestore(&info->lock, flags);
++}
++
++/* Power management functions */
++void h4p_smart_idle(struct h4p_info *info, bool enable)
++{
++	u8 v;
++
++	v = h4p_inb(info, UART_OMAP_SYSC);
++	v &= ~(UART_OMAP_SYSC_IDLEMASK);
++
++	if (enable)
++		v |= UART_OMAP_SYSC_SMART_IDLE;
++	else
++		v |= UART_OMAP_SYSC_NO_IDLE;
++
++	h4p_outb(info, UART_OMAP_SYSC, v);
++}
++
++static inline void h4p_schedule_pm(struct h4p_info *info)
++{
++}
++
++static void h4p_disable_tx(struct h4p_info *info)
++{
++	if (!info->pm_enabled)
++		return;
++
++	/* Re-enable smart-idle */
++	h4p_smart_idle(info, 1);
++
++	gpio_set_value(info->bt_wakeup_gpio, 0);
++	mod_timer(&info->lazy_release, jiffies + msecs_to_jiffies(100));
++	info->tx_enabled = false;
++}
++
++static void h4p_enable_tx_nopm(struct h4p_info *info)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&info->lock, flags);
++	h4p_outb(info, UART_IER,
++		 h4p_inb(info, UART_IER) | UART_IER_THRI);
++	spin_unlock_irqrestore(&info->lock, flags);
++}
++
++void h4p_enable_tx(struct h4p_info *info)
++{
++	unsigned long flags;
++
++	if (!info->pm_enabled)
++		return;
++
++	h4p_schedule_pm(info);
++
++	spin_lock_irqsave(&info->lock, flags);
++	del_timer(&info->lazy_release);
++	h4p_set_clk(info, &info->tx_clocks_en, true);
++	info->tx_enabled = true;
++	gpio_set_value(info->bt_wakeup_gpio, 1);
++	h4p_outb(info, UART_IER,
++		 h4p_inb(info, UART_IER) | UART_IER_THRI);
++
++	/* Disable smart-idle as UART TX interrupts
++	 * are not wake-up capable
++	 */
++	h4p_smart_idle(info, 0);
++
++	spin_unlock_irqrestore(&info->lock, flags);
++}
++
++static void h4p_disable_rx(struct h4p_info *info)
++{
++	if (!info->pm_enabled)
++		return;
++
++	info->rx_enabled = false;
++
++	if (h4p_inb(info, UART_LSR) & UART_LSR_DR)
++		return;
++
++	if (!(h4p_inb(info, UART_LSR) & UART_LSR_TEMT))
++		return;
++
++	__h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
++	info->autorts = 0;
++	h4p_set_clk(info, &info->rx_clocks_en, false);
++}
++
++static void h4p_enable_rx(struct h4p_info *info)
++{
++	if (!info->pm_enabled)
++		return;
++
++	h4p_schedule_pm(info);
++
++	h4p_set_clk(info, &info->rx_clocks_en, true);
++	info->rx_enabled = true;
++
++	if (!(h4p_inb(info, UART_LSR) & UART_LSR_TEMT))
++		return;
++
++	__h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
++	info->autorts = 1;
++}
++
++static void h4p_simple_send_frame(struct h4p_info *info, struct sk_buff *skb)
++{
++	skb_queue_tail(&info->txq, skb);
++	h4p_enable_tx_nopm(info);
++}
++
++/* Negotiation functions */
++static int h4p_send_alive_packet(struct h4p_info *info)
++{
++	struct h4p_alive_hdr *hdr;
++	struct h4p_alive_pkt *pkt;
++	struct sk_buff *skb;
++	int len;
++
++	BT_DBG("Sending alive packet");
++
++	len = H4_TYPE_SIZE + sizeof(*hdr) + sizeof(*pkt);
++	skb = bt_skb_alloc(len, GFP_KERNEL);
++	if (!skb)
++		return -ENOMEM;
++
++	memset(skb->data, 0x00, len);
++	*skb_put(skb, 1) = H4_ALIVE_PKT;
++	hdr = (struct h4p_alive_hdr *)skb_put(skb, sizeof(*hdr));
++	hdr->dlen = sizeof(*pkt);
++	pkt = (struct h4p_alive_pkt *)skb_put(skb, sizeof(*pkt));
++	pkt->mid = H4P_ALIVE_REQ;
++
++	h4p_simple_send_frame(info, skb);
++
++	BT_DBG("Alive packet sent");
++
++	return 0;
++}
++
++static void h4p_alive_packet(struct h4p_info *info, struct sk_buff *skb)
++{
++	struct h4p_alive_hdr *hdr;
++	struct h4p_alive_pkt *pkt;
++
++	BT_DBG("Received alive packet");
++	hdr = (struct h4p_alive_hdr *)skb->data;
++	if (hdr->dlen != sizeof(*pkt)) {
++		dev_err(info->dev, "Corrupted alive message\n");
++		info->init_error = -EIO;
++		goto finish_alive;
++	}
++
++	pkt = (struct h4p_alive_pkt *)skb_pull(skb, sizeof(*hdr));
++	if (pkt->mid != H4P_ALIVE_RESP) {
++		dev_err(info->dev, "Could not negotiate nokia_h4p settings\n");
++		info->init_error = -EINVAL;
++	}
++
++finish_alive:
++	complete(&info->init_completion);
++	kfree_skb(skb);
++}
++
++static int h4p_send_negotiation(struct h4p_info *info)
++{
++	struct h4p_neg_cmd *neg_cmd;
++	struct h4p_neg_hdr *neg_hdr;
++	struct sk_buff *skb;
++	int err, len;
++	u16 sysclk = 38400;
++
++	BT_DBG("Sending negotiation..");
++	len = sizeof(*neg_cmd) + sizeof(*neg_hdr) + H4_TYPE_SIZE;
++
++	skb = bt_skb_alloc(len, GFP_KERNEL);
++	if (!skb)
++		return -ENOMEM;
++
++	memset(skb->data, 0x00, len);
++	*skb_put(skb, 1) = H4_NEG_PKT;
++	neg_hdr = (struct h4p_neg_hdr *)skb_put(skb, sizeof(*neg_hdr));
++	neg_cmd = (struct h4p_neg_cmd *)skb_put(skb, sizeof(*neg_cmd));
++
++	neg_hdr->dlen = sizeof(*neg_cmd);
++	neg_cmd->ack = H4P_NEG_REQ;
++	neg_cmd->baud = cpu_to_le16(BT_BAUDRATE_DIVIDER/MAX_BAUD_RATE);
++	neg_cmd->proto = H4P_PROTO_BYTE;
++	neg_cmd->sys_clk = cpu_to_le16(sysclk);
++
++	h4p_change_speed(info, INIT_SPEED);
++
++	h4p_set_rts(info, 1);
++	info->init_error = 0;
++	init_completion(&info->init_completion);
++
++	h4p_simple_send_frame(info, skb);
++
++	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
++						       msecs_to_jiffies(1000))) {
++		BT_ERR("h4p: negotiation did not return\n");
++		return -ETIMEDOUT;
++	}
++
++	if (info->init_error < 0)
++		return info->init_error;
++
++	/* Change to operational settings */
++	h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
++	h4p_set_rts(info, 0);
++	h4p_change_speed(info, MAX_BAUD_RATE);
++
++	err = h4p_wait_for_cts(info, true, 100);
++	if (err < 0)
++		return err;
++
++	h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
++	init_completion(&info->init_completion);
++	err = h4p_send_alive_packet(info);
++	if (err < 0)
++		return err;
++
++	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
++						msecs_to_jiffies(1000)))
++		return -ETIMEDOUT;
++
++	if (info->init_error < 0)
++		return info->init_error;
++
++	BT_DBG("Negotiation successful\n");
++	return 0;
++}
++
++static void h4p_negotiation_packet(struct h4p_info *info, struct sk_buff *skb)
++{
++	struct h4p_neg_hdr *hdr;
++	struct h4p_neg_evt *evt;
++
++	hdr = (struct h4p_neg_hdr *)skb->data;
++	if (hdr->dlen != sizeof(*evt)) {
++		info->init_error = -EIO;
++		goto finish_neg;
++	}
++
++	evt = (struct h4p_neg_evt *)skb_pull(skb, sizeof(*hdr));
++
++	if (evt->ack != H4P_NEG_ACK) {
++		dev_err(info->dev, "Could not negotiate nokia_h4p settings\n");
++		info->init_error = -EINVAL;
++	}
++
++	info->man_id = evt->man_id;
++	info->ver_id = evt->ver_id;
++	BT_DBG("Negotiation finished.\n");
++
++finish_neg:
++	complete(&info->init_completion);
++	kfree_skb(skb);
++}
++
++/* H4 packet handling functions */
++static int h4p_get_hdr_len(struct h4p_info *info, u8 pkt_type)
++{
++	int retval;
++
++	switch (pkt_type) {
++	case H4_EVT_PKT:
++		retval = HCI_EVENT_HDR_SIZE;
++		break;
++	case H4_ACL_PKT:
++		retval = HCI_ACL_HDR_SIZE;
++		break;
++	case H4_SCO_PKT:
++		retval = HCI_SCO_HDR_SIZE;
++		break;
++	case H4_NEG_PKT:
++		retval = H4P_NEG_HDR_SIZE;
++		break;
++	case H4_ALIVE_PKT:
++		retval = H4P_ALIVE_HDR_SIZE;
++		break;
++	case H4_RADIO_PKT:
++		retval = H4_RADIO_HDR_SIZE;
++		break;
++	default:
++		dev_err(info->dev, "Unknown H4 packet type 0x%.2x\n", pkt_type);
++		retval = -1;
++		break;
++	}
++
++	return retval;
++}
++
++static unsigned int
++h4p_get_data_len(struct h4p_info *info, struct sk_buff *skb)
++{
++	struct hci_acl_hdr *acl_hdr;
++	struct hci_sco_hdr *sco_hdr;
++	struct hci_event_hdr *evt_hdr;
++	struct h4p_neg_hdr *neg_hdr;
++	struct h4p_alive_hdr *alive_hdr;
++	struct h4p_radio_hdr *radio_hdr;
++
++	switch (bt_cb(skb)->pkt_type) {
++	case H4_EVT_PKT:
++		evt_hdr = (struct hci_event_hdr *)skb->data;
++		return evt_hdr->plen;
++	case H4_ACL_PKT:
++		acl_hdr = (struct hci_acl_hdr *)skb->data;
++		return le16_to_cpu(acl_hdr->dlen);
++	case H4_SCO_PKT:
++		sco_hdr = (struct hci_sco_hdr *)skb->data;
++		return sco_hdr->dlen;
++	case H4_RADIO_PKT:
++		radio_hdr = (struct h4p_radio_hdr *)skb->data;
++		return radio_hdr->dlen;
++	case H4_NEG_PKT:
++		neg_hdr = (struct h4p_neg_hdr *)skb->data;
++		return neg_hdr->dlen;
++	case H4_ALIVE_PKT:
++		alive_hdr = (struct h4p_alive_hdr *)skb->data;
++		return alive_hdr->dlen;
++	default:
++		return ~0;
++	}
++}
++
++static inline void h4p_recv_frame(struct h4p_info *info, struct sk_buff *skb)
++{
++	if (info->init_phase) {
++		switch (bt_cb(skb)->pkt_type) {
++		case H4_NEG_PKT:
++			h4p_negotiation_packet(info, skb);
++			info->rx_state = WAIT_FOR_PKT_TYPE;
++			return;
++		case H4_ALIVE_PKT:
++			h4p_alive_packet(info, skb);
++			info->rx_state = WAIT_FOR_PKT_TYPE;
++			return;
++		}
++	}
++
++	hci_recv_frame(info->hdev, skb);
++	BT_DBG("Frame sent to upper layer");
++}
++
++static inline void h4p_handle_byte(struct h4p_info *info, u8 byte)
++{
++	switch (info->rx_state) {
++	case WAIT_FOR_PKT_TYPE:
++		bt_cb(info->rx_skb)->pkt_type = byte;
++		info->rx_count = h4p_get_hdr_len(info, byte);
++		if (info->rx_count < 0) {
++			info->hdev->stat.err_rx++;
++			kfree_skb(info->rx_skb);
++			info->rx_skb = NULL;
++		} else {
++			info->rx_state = WAIT_FOR_HEADER;
++		}
++		break;
++	case WAIT_FOR_HEADER:
++		info->rx_count--;
++		*skb_put(info->rx_skb, 1) = byte;
++		if (info->rx_count != 0)
++			break;
++		info->rx_count = h4p_get_data_len(info, info->rx_skb);
++		if (info->rx_count > skb_tailroom(info->rx_skb)) {
++			dev_err(info->dev, "frame too long\n");
++			info->garbage_bytes = info->rx_count
++				- skb_tailroom(info->rx_skb);
++			kfree_skb(info->rx_skb);
++			info->rx_skb = NULL;
++			break;
++		}
++		info->rx_state = WAIT_FOR_DATA;
++		break;
++	case WAIT_FOR_DATA:
++		info->rx_count--;
++		*skb_put(info->rx_skb, 1) = byte;
++		break;
++	default:
++		WARN_ON(1);
++		break;
++	}
++
++	if (info->rx_count == 0) {
++		/* H4+ devices should always send word aligned packets */
++		if (!(info->rx_skb->len % 2))
++			info->garbage_bytes++;
++		h4p_recv_frame(info, info->rx_skb);
++		info->rx_skb = NULL;
++	}
++}
++
++static void h4p_rx_tasklet(unsigned long data)
++{
++	struct h4p_info *info = (struct h4p_info *)data;
++	u8 byte;
++
++	BT_DBG("rx_tasklet woke up");
++
++	while (h4p_inb(info, UART_LSR) & UART_LSR_DR) {
++		byte = h4p_inb(info, UART_RX);
++		BT_DBG("[in: %02x]", byte);
++		if (info->garbage_bytes) {
++			info->garbage_bytes--;
++			continue;
++		}
++		if (!info->rx_skb) {
++			info->rx_skb = bt_skb_alloc(HCI_MAX_FRAME_SIZE,
++						    GFP_ATOMIC | GFP_DMA);
++			if (!info->rx_skb) {
++				dev_err(info->dev,
++					"No memory for new packet\n");
++				goto finish_rx;
++			}
++			info->rx_state = WAIT_FOR_PKT_TYPE;
++			info->rx_skb->dev = (void *)info->hdev;
++		}
++		info->hdev->stat.byte_rx++;
++		h4p_handle_byte(info, byte);
++	}
++
++	if (!info->rx_enabled) {
++		if ((h4p_inb(info, UART_LSR) & UART_LSR_TEMT) &&
++		    info->autorts) {
++			__h4p_set_auto_ctsrts(info, 0 , UART_EFR_RTS);
++			info->autorts = 0;
++		}
++		/* Flush posted write to avoid spurious interrupts */
++		h4p_inb(info, UART_OMAP_SCR);
++		h4p_set_clk(info, &info->rx_clocks_en, false);
++	}
++
++finish_rx:
++	BT_DBG("rx_ended");
++}
++
++static void h4p_tx_tasklet(unsigned long data)
++{
++	struct h4p_info *info = (struct h4p_info *)data;
++	struct sk_buff *skb;
++	unsigned int sent = 0;
++
++	BT_DBG("tx_tasklet woke up");
++
++	if (info->autorts != info->rx_enabled) {
++		if (h4p_inb(info, UART_LSR) & UART_LSR_TEMT) {
++			if (info->autorts && !info->rx_enabled) {
++				__h4p_set_auto_ctsrts(info, 0,
++						      UART_EFR_RTS);
++				info->autorts = 0;
++			}
++			if (!info->autorts && info->rx_enabled) {
++				__h4p_set_auto_ctsrts(info, 1,
++						      UART_EFR_RTS);
++				info->autorts = 1;
++			}
++		} else {
++			h4p_outb(info, UART_OMAP_SCR,
++				 h4p_inb(info, UART_OMAP_SCR)
++				 | UART_OMAP_SCR_EMPTY_THR);
++			goto finish_tx;
++		}
++	}
++
++	skb = skb_dequeue(&info->txq);
++	if (!skb) {
++		/* No data in buffer */
++		BT_DBG("skb ready");
++		if (h4p_inb(info, UART_LSR) & UART_LSR_TEMT) {
++			h4p_outb(info, UART_IER,
++				 h4p_inb(info, UART_IER) & ~UART_IER_THRI);
++			h4p_inb(info, UART_OMAP_SCR);
++			h4p_disable_tx(info);
++			return;
++		}
++		h4p_outb(info, UART_OMAP_SCR,
++			     h4p_inb(info, UART_OMAP_SCR) |
++			     UART_OMAP_SCR_EMPTY_THR);
++		goto finish_tx;
++	}
++
++	/* Copy data to tx fifo */
++	while (!(h4p_inb(info, UART_OMAP_SSR) & UART_OMAP_SSR_TXFULL) &&
++	       (sent < skb->len)) {
++		BT_DBG("%02x ", skb->data[sent]);
++		h4p_outb(info, UART_TX, skb->data[sent]);
++		sent++;
++	}
++
++	info->hdev->stat.byte_tx += sent;
++	if (skb->len == sent) {
++		kfree_skb(skb);
++	} else {
++		skb_pull(skb, sent);
++		skb_queue_head(&info->txq, skb);
++	}
++
++	h4p_outb(info, UART_OMAP_SCR,
++		 h4p_inb(info, UART_OMAP_SCR) & ~UART_OMAP_SCR_EMPTY_THR);
++	h4p_outb(info, UART_IER,
++		 h4p_inb(info, UART_IER) | UART_IER_THRI);
++
++finish_tx:
++	/* Flush posted write to avoid spurious interrupts */
++	h4p_inb(info, UART_OMAP_SCR);
++
++}
++
++static irqreturn_t h4p_interrupt(int irq, void *data)
++{
++	struct h4p_info *info = (struct h4p_info *)data;
++	u8 iir, msr;
++	int ret;
++
++	ret = IRQ_NONE;
++
++	iir = h4p_inb(info, UART_IIR);
++	if (iir & UART_IIR_NO_INT)
++		return IRQ_HANDLED;
++
++	iir &= UART_IIR_ID;
++
++	if (iir == UART_IIR_MSI) {
++		msr = h4p_inb(info, UART_MSR);
++		ret = IRQ_HANDLED;
++	}
++	if (iir == UART_IIR_RLSI) {
++		h4p_inb(info, UART_RX);
++		h4p_inb(info, UART_LSR);
++		ret = IRQ_HANDLED;
++	}
++
++	if (iir == UART_IIR_RDI) {
++		h4p_rx_tasklet((unsigned long)data);
++		ret = IRQ_HANDLED;
++	}
++
++	if (iir == UART_IIR_THRI) {
++		h4p_tx_tasklet((unsigned long)data);
++		ret = IRQ_HANDLED;
++	}
++
++	return ret;
++}
++
++static irqreturn_t h4p_wakeup_interrupt(int irq, void *dev_inst)
++{
++	struct h4p_info *info = dev_inst;
++	bool should_wakeup;
++
++	BT_DBG("[wakeup irq]");
++
++	if (!info->hdev)
++		return IRQ_HANDLED;
++
++	should_wakeup = !!gpio_get_value(info->host_wakeup_gpio);
++
++	if (info->init_phase) {
++		if (should_wakeup == 1)
++			complete_all(&info->test_completion);
++
++		BT_DBG("wakeup irq handled");
++
++		return IRQ_HANDLED;
++	}
++
++	BT_DBG("gpio interrupt %d", should_wakeup);
++
++	/* Check if we have missed some interrupts */
++	if (info->rx_enabled == should_wakeup)
++		return IRQ_HANDLED;
++
++	if (should_wakeup)
++		h4p_enable_rx(info);
++	else
++		h4p_disable_rx(info);
++
++	return IRQ_HANDLED;
++}
++
++static int h4p_reset(struct h4p_info *info)
++{
++	int err;
++
++	err = h4p_reset_uart(info);
++	if (err < 0) {
++		dev_err(info->dev, "Uart reset failed\n");
++		return err;
++	}
++	h4p_init_uart(info);
++	h4p_set_rts(info, 0);
++
++	gpio_set_value(info->reset_gpio, 0);
++	gpio_set_value(info->bt_wakeup_gpio, 1);
++	msleep(10);
++
++	if (gpio_get_value(info->host_wakeup_gpio) == 1) {
++		dev_err(info->dev, "host_wakeup_gpio not low\n");
++		return -EPROTO;
++	}
++
++	init_completion(&info->test_completion);
++	gpio_set_value(info->reset_gpio, 1);
++
++	if (!wait_for_completion_interruptible_timeout(&info->test_completion,
++						       msecs_to_jiffies(100))) {
++		dev_err(info->dev, "wakeup test timed out\n");
++		complete_all(&info->test_completion);
++		return -EPROTO;
++	}
++
++	err = h4p_wait_for_cts(info, true, 100);
++	if (err < 0) {
++		dev_err(info->dev, "No cts from bt chip\n");
++		return err;
++	}
++
++	h4p_set_rts(info, 1);
++
++	return 0;
++}
++
++/* hci callback functions */
++static int h4p_hci_flush(struct hci_dev *hdev)
++{
++	struct h4p_info *info = hci_get_drvdata(hdev);
++
++	skb_queue_purge(&info->txq);
++
++	return 0;
++}
++
++static int h4p_bt_wakeup_test(struct h4p_info *info)
++{
++	/*
++	 * Test Sequence:
++	 * Host de-asserts the BT_WAKE_UP line.
++	 * Host polls the UART_CTS line, waiting for it to be de-asserted.
++	 * Host asserts the BT_WAKE_UP line.
++	 * Host polls the UART_CTS line, waiting for it to be asserted.
++	 * Host de-asserts the BT_WAKE_UP line (allow the Bluetooth device to
++	 * sleep).
++	 * Host polls the UART_CTS line, waiting for it to be de-asserted.
++	 */
++	int err = 0;
++
++	if (!info)
++		return -EINVAL;
++
++	/* Disable wakeup interrupts */
++	disable_irq(gpio_to_irq(info->host_wakeup_gpio));
++
++	gpio_set_value(info->bt_wakeup_gpio, 0);
++	err = h4p_wait_for_cts(info, false, 100);
++	if (err) {
++		dev_warn(info->dev,
++			 "bt_wakeup_test: fail: CTS low timed out: %d\n", err);
++		goto out;
++	}
++
++	gpio_set_value(info->bt_wakeup_gpio, 1);
++	err = h4p_wait_for_cts(info, true, 100);
++	if (err) {
++		dev_warn(info->dev,
++			 "bt_wakeup_test: fail: CTS high timed out: %d\n",
++			 err);
++		goto out;
++	}
++
++	gpio_set_value(info->bt_wakeup_gpio, 0);
++	err = h4p_wait_for_cts(info, false, 100);
++	if (err) {
++		dev_warn(info->dev,
++			 "bt_wakeup_test: fail: CTS re-low timed out: %d\n",
++			 err);
++		goto out;
++	}
++
++out:
++	/* Re-enable wakeup interrupts */
++	enable_irq(gpio_to_irq(info->host_wakeup_gpio));
++
++	return err;
++}
++
++static int h4p_hci_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
++{
++	struct sk_buff *skb;
++	long ret;
++
++	BT_DBG("Set bdaddr... %pMR", bdaddr);
++
++	skb = __hci_cmd_sync(hdev, 0xfc01, 6, bdaddr, HCI_INIT_TIMEOUT);
++	if (IS_ERR(skb)) {
++		ret = PTR_ERR(skb);
++		BT_ERR("%s: BCM: Change address command failed (%ld)",
++		       hdev->name, ret);
++		return ret;
++	}
++	kfree_skb(skb);
++
++	return 0;
++}
++
++static void h4p_deinit(struct hci_dev *hdev)
++{
++	struct h4p_info *info = hci_get_drvdata(hdev);
++
++	h4p_hci_flush(hdev);
++	h4p_set_clk(info, &info->tx_clocks_en, true);
++	h4p_set_clk(info, &info->rx_clocks_en, true);
++	h4p_reset_uart(info);
++	del_timer_sync(&info->lazy_release);
++	h4p_set_clk(info, &info->tx_clocks_en, false);
++	h4p_set_clk(info, &info->rx_clocks_en, false);
++	gpio_set_value(info->reset_gpio, 0);
++	gpio_set_value(info->bt_wakeup_gpio, 0);
++	kfree_skb(info->rx_skb);
++	info->rx_skb = NULL;
++}
++
++static int h4p_hci_setup(struct hci_dev *hdev)
++{
++	struct h4p_info *info = hci_get_drvdata(hdev);
++	int err;
++	unsigned long flags;
++
++	h4p_set_clk(info, &info->tx_clocks_en, true);
++	h4p_set_clk(info, &info->rx_clocks_en, true);
++
++	h4p_set_auto_ctsrts(info, 1, UART_EFR_CTS | UART_EFR_RTS);
++	info->autorts = 1;
++
++	info->init_phase = true;
++	BT_DBG("hci_setup");
++
++	err = h4p_send_negotiation(info);
++	if (err < 0)
++		goto err_clean;
++
++	/* Disable smart-idle as UART TX interrupts
++	 * are not wake-up capable
++	 */
++	h4p_smart_idle(info, 0);
++
++	err = h4p_read_fw(info);
++	if (err < 0) {
++		dev_err(info->dev, "Cannot read firmware\n");
++		goto err_clean;
++	}
++
++	h4p_set_auto_ctsrts(info, 0, UART_EFR_RTS);
++	h4p_set_rts(info, 0);
++	h4p_change_speed(info, BC4_MAX_BAUD_RATE);
++	h4p_set_auto_ctsrts(info, 1, UART_EFR_RTS);
++
++	info->pm_enabled = true;
++
++	err = h4p_bt_wakeup_test(info);
++	if (err < 0) {
++		dev_err(info->dev, "BT wakeup test failed.\n");
++		goto err_clean;
++	}
++
++	spin_lock_irqsave(&info->lock, flags);
++	info->rx_enabled = !!gpio_get_value(info->host_wakeup_gpio);
++	h4p_set_clk(info, &info->rx_clocks_en, info->rx_enabled);
++	spin_unlock_irqrestore(&info->lock, flags);
++
++	h4p_set_clk(info, &info->tx_clocks_en, 0);
++
++	info->init_phase = false;
++	return 0;
++
++err_clean:
++	BT_ERR("hci_setup: something failed, should do the clean up");
++	h4p_hci_flush(hdev);
++	h4p_deinit(hdev);
++	return err;
++}
++
++static int h4p_boot(struct hci_dev *hdev)
++{
++	struct h4p_info *info = hci_get_drvdata(hdev);
++	int err;
++
++	info->rx_enabled = 1;
++	info->rx_state = WAIT_FOR_PKT_TYPE;
++	info->rx_count = 0;
++	info->garbage_bytes = 0;
++	info->rx_skb = NULL;
++	info->pm_enabled = false;
++	init_completion(&info->fw_completion);
++	h4p_set_clk(info, &info->tx_clocks_en, 1);
++	h4p_set_clk(info, &info->rx_clocks_en, 1);
++
++	err = h4p_reset(info);
++	return err;
++}
++
++static int h4p_hci_open(struct hci_dev *hdev)
++{
++	set_bit(HCI_RUNNING, &hdev->flags);
++	return 0;
++}
++
++static int h4p_hci_close(struct hci_dev *hdev)
++{
++	clear_bit(HCI_RUNNING, &hdev->flags);
++	return 0;
++}
++
++static int h4p_hci_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
++{
++	struct h4p_info *info = hci_get_drvdata(hdev);
++	int err = 0;
++
++	BT_DBG("hci_send_frame: dev %p, skb %p", hdev, skb);
++
++	if (!test_bit(HCI_RUNNING, &hdev->flags))
++		return -EBUSY;
++
++	switch (bt_cb(skb)->pkt_type) {
++	case HCI_COMMAND_PKT:
++		hdev->stat.cmd_tx++;
++		break;
++	case HCI_ACLDATA_PKT:
++		hdev->stat.acl_tx++;
++		break;
++	case HCI_SCODATA_PKT:
++		hdev->stat.sco_tx++;
++		break;
++	}
++
++	/* Push frame type to skb */
++	*skb_push(skb, 1) = bt_cb(skb)->pkt_type;
++	/* We should always send word aligned data to h4+ devices */
++	if (skb->len % 2) {
++		if (skb_pad(skb, 1))
++			return -ENOMEM;
++		*skb_put(skb, 1) = 0x00;
++	}
++	if (err)
++		return err;
++
++	skb_queue_tail(&info->txq, skb);
++	if (!info->init_phase)
++		h4p_enable_tx(info);
++	else
++		h4p_enable_tx_nopm(info);
++
++	return 0;
++}
++
++static int h4p_probe_dt(struct platform_device *pdev, struct h4p_info *info)
++{
++	struct device_node *node;
++	struct device_node *uart = pdev->dev.of_node;
++	u32 val;
++	struct resource *mem;
++
++	node = of_get_child_by_name(uart, "device");
++
++	if (!node)
++		return -ENODATA;
++
++	info->chip_type = 3;	/* Bcm2048 */
++
++	if (of_property_read_u32(node, "bt-sysclk", &val))
++		return -EINVAL;
++	info->bt_sysclk = val;
++
++	info->reset_gpio       = of_get_named_gpio(node, "reset-gpios", 0);
++	info->host_wakeup_gpio = of_get_named_gpio(node, "host-wakeup-gpios", 0);
++	info->bt_wakeup_gpio   = of_get_named_gpio(node, "bluetooth-wakeup-gpios", 0);
++
++	if (!uart) {
++		dev_err(&pdev->dev, "UART link not provided\n");
++		return -EINVAL;
++	}
++
++	info->irq = irq_of_parse_and_map(uart, 0);
++
++	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	info->uart_base = devm_ioremap_resource(&pdev->dev, mem);
++
++	info->uart_iclk = of_clk_get_by_name(uart, "ick");
++	info->uart_fclk = of_clk_get_by_name(uart, "fck");
++
++	BT_DBG("DT: have neccessary data");
++	return 0;
++}
++
++static int h4p_probe(struct platform_device *pdev)
++{
++	struct hci_dev *hdev;
++	struct h4p_info *info;
++	int err;
++
++	dev_info(&pdev->dev, "Registering HCI H4P device\n");
++	info = devm_kzalloc(&pdev->dev, sizeof(struct h4p_info),
++			    GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	info->dev = &pdev->dev;
++	info->tx_enabled = true;
++	info->rx_enabled = true;
++	spin_lock_init(&info->lock);
++	spin_lock_init(&info->clocks_lock);
++	skb_queue_head_init(&info->txq);
++
++	err = h4p_probe_dt(pdev, info);
++	if (err) {
++		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
++		return -ENODATA;
++	}
++
++	BT_DBG("base/irq gpio: %p/%d",
++	       info->uart_base, info->irq);
++	BT_DBG("RESET/BTWU/HOSTWU gpio: %d/%d/%d",
++	       info->reset_gpio, info->bt_wakeup_gpio, info->host_wakeup_gpio);
++	BT_DBG("chip type, sysclk: %d/%d", info->chip_type, info->bt_sysclk);
++	BT_DBG("clock i/f: %p/%p", info->uart_iclk, info->uart_fclk);
++
++	init_completion(&info->test_completion);
++	complete_all(&info->test_completion);
++
++	err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
++				    GPIOF_OUT_INIT_LOW, "bt_reset");
++	if (err < 0) {
++		dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
++			info->reset_gpio);
++		return err;
++	}
++
++	err = devm_gpio_request_one(&pdev->dev, info->bt_wakeup_gpio,
++				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
++	if (err < 0) {
++		dev_err(info->dev, "Cannot get GPIO line 0x%d",
++			info->bt_wakeup_gpio);
++		return err;
++	}
++
++	err = devm_gpio_request_one(&pdev->dev, info->host_wakeup_gpio,
++				    GPIOF_DIR_IN, "host_wakeup");
++	if (err < 0) {
++		dev_err(info->dev, "Cannot get GPIO line %d",
++		       info->host_wakeup_gpio);
++		return err;
++	}
++
++	err = devm_request_irq(&pdev->dev, info->irq, h4p_interrupt,
++				IRQF_DISABLED, "nokia_h4p", info);
++	if (err < 0) {
++		dev_err(info->dev, "nokia_h4p: unable to get IRQ %d\n",
++			info->irq);
++		return err;
++	}
++
++	err = devm_request_irq(&pdev->dev, gpio_to_irq(info->host_wakeup_gpio),
++			       h4p_wakeup_interrupt,  IRQF_TRIGGER_FALLING |
++			       IRQF_TRIGGER_RISING | IRQF_DISABLED,
++			       "h4p_wkup", info);
++	if (err < 0) {
++		dev_err(info->dev, "nokia_h4p: unable to get wakeup IRQ %d\n",
++			gpio_to_irq(info->host_wakeup_gpio));
++		return err;
++	}
++
++	err = irq_set_irq_wake(gpio_to_irq(info->host_wakeup_gpio), 1);
++	if (err < 0) {
++		dev_err(info->dev, "nokia_h4p: unable to set wakeup for IRQ %d\n",
++			gpio_to_irq(info->host_wakeup_gpio));
++		return err;
++	}
++
++	init_timer_deferrable(&info->lazy_release);
++	info->lazy_release.function = h4p_lazy_clock_release;
++	info->lazy_release.data = (unsigned long)info;
++	h4p_set_clk(info, &info->tx_clocks_en, 1);
++
++	err = h4p_reset_uart(info);
++	if (err < 0)
++		return err;
++
++	gpio_set_value(info->reset_gpio, 0);
++	h4p_set_clk(info, &info->tx_clocks_en, 0);
++
++	platform_set_drvdata(pdev, info);
++
++	/* Initialize and register HCI device */
++
++	hdev = hci_alloc_dev();
++	if (!hdev) {
++		dev_err(info->dev, "Can't allocate memory for device\n");
++		return -ENOMEM;
++	}
++	info->hdev = hdev;
++
++	hdev->bus = HCI_UART;
++	hci_set_drvdata(hdev, info);
++
++	hdev->open = h4p_hci_open;
++	hdev->setup = h4p_hci_setup;
++	hdev->close = h4p_hci_close;
++	hdev->flush = h4p_hci_flush;
++	hdev->send = h4p_hci_send_frame;
++	hdev->set_bdaddr = h4p_hci_set_bdaddr;
++
++	set_bit(HCI_QUIRK_INVALID_BDADDR, &hdev->quirks);
++	SET_HCIDEV_DEV(hdev, info->dev);
++
++	if (hci_register_dev(hdev) < 0)
++		goto err;
++	return h4p_boot(hdev);
++
++err:
++	dev_err(info->dev, "hci_register failed %s.\n", hdev->name);
++	hci_free_dev(info->hdev);
++	return -ENODEV;
++}
++
++static int h4p_remove(struct platform_device *pdev)
++{
++	struct h4p_info *info = platform_get_drvdata(pdev);
++
++	h4p_hci_close(info->hdev);
++	h4p_deinit(info->hdev);
++	hci_unregister_dev(info->hdev);
++	hci_free_dev(info->hdev);
++
++	return 0;
++}
++
++static const struct of_device_id h4p_of_match[] = {
++	{ .compatible = "brcm,uart,bcm2048" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, h4p_of_match);
++
++static struct platform_driver h4p_driver = {
++	.probe		= h4p_probe,
++	.remove		= h4p_remove,
++	.driver		= {
++		.name	= "nokia_h4p",
++		.owner  = THIS_MODULE,
++		.of_match_table = of_match_ptr(h4p_of_match),
++	},
++};
++
++module_platform_driver(h4p_driver);
++
++MODULE_ALIAS("platform:nokia_h4p");
++MODULE_DESCRIPTION("Bluetooth H4 driver with nokia extensions");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Ville Tervo");
+diff --git a/drivers/bluetooth/nokia_fw.c b/drivers/bluetooth/nokia_fw.c
+new file mode 100644
+index 0000000..4e910db
+--- /dev/null
++++ b/drivers/bluetooth/nokia_fw.c
+@@ -0,0 +1,99 @@
++/*
++ * This file is part of nokia_h4p bluetooth driver
++ *
++ * Copyright (C) 2005-2008 Nokia Corporation.
++ * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/skbuff.h>
++#include <linux/firmware.h>
++#include <linux/clk.h>
++
++#include <net/bluetooth/bluetooth.h>
++
++#include "nokia_h4p.h"
++
++#define FW_NAME_BCM2048		"nokia/bcmfw.bin"
++
++/* Read fw. Return length of the command. If no more commands in
++ * fw 0 is returned. In error case return value is negative.
++ */
++int h4p_read_fw(struct h4p_info *info)
++{
++	int num = 0;
++	int fw_pos = 0;
++	struct sk_buff *skb;
++	const struct firmware *fw_entry = NULL;
++	int err = -ENOENT;
++	unsigned int cmd_len = 0;
++
++	err = request_firmware(&fw_entry, FW_NAME_BCM2048, info->dev);
++	if (err != 0)
++		return err;
++
++	while (1) {
++		int cmd, len;
++
++		fw_pos += cmd_len;
++
++		if (fw_pos >= fw_entry->size)
++			break;
++
++		if (fw_pos + 2 > fw_entry->size) {
++			dev_err(info->dev, "Corrupted firmware image\n");
++			err = -EMSGSIZE;
++			break;
++		}
++
++		cmd_len = fw_entry->data[fw_pos++];
++		cmd_len += fw_entry->data[fw_pos++] << 8;
++		if (cmd_len == 0)
++			break;
++
++		if (fw_pos + cmd_len > fw_entry->size) {
++			dev_err(info->dev, "Corrupted firmware image\n");
++			err = -EMSGSIZE;
++			break;
++		}
++
++		/* Skip first two packets */
++		if (++num <= 2)
++			continue;
++
++		/* Note that this is timing-critical. If sending packets takes too
++		 * long, initialization will fail.
++		 */
++		cmd = fw_entry->data[fw_pos+1];
++		cmd += fw_entry->data[fw_pos+2] << 8;
++		len = fw_entry->data[fw_pos+3];
++
++		skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
++		if (IS_ERR(skb)) {
++			dev_err(info->dev, "...sending cmd %x len %d failed %ld\n",
++				cmd, len, PTR_ERR(skb));
++			err = -EIO;
++			break;
++		}
++	}
++
++	release_firmware(fw_entry);
++	return err;
++}
++
++MODULE_FIRMWARE(FW_NAME_BCM2048);
+diff --git a/drivers/bluetooth/nokia_h4p.h b/drivers/bluetooth/nokia_h4p.h
+new file mode 100644
+index 0000000..110123d
+--- /dev/null
++++ b/drivers/bluetooth/nokia_h4p.h
+@@ -0,0 +1,214 @@
++/*
++ * This file is part of Nokia H4P bluetooth driver
++ *
++ * Copyright (C) 2005-2008 Nokia Corporation.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#include <net/bluetooth/bluetooth.h>
++#include <net/bluetooth/hci_core.h>
++#include <net/bluetooth/hci.h>
++
++#include <linux/serial_reg.h>
++
++#define UART_SYSC_OMAP_RESET	0x03
++#define UART_SYSS_RESETDONE	0x01
++#define UART_OMAP_SCR_EMPTY_THR	0x08
++#define UART_OMAP_SCR_WAKEUP	0x10
++#define UART_OMAP_SSR_WAKEUP	0x02
++#define UART_OMAP_SSR_TXFULL	0x01
++
++#define UART_OMAP_SYSC_IDLEMODE		0x03
++#define UART_OMAP_SYSC_IDLEMASK		(3 << UART_OMAP_SYSC_IDLEMODE)
++
++#define UART_OMAP_SYSC_FORCE_IDLE	(0 << UART_OMAP_SYSC_IDLEMODE)
++#define UART_OMAP_SYSC_NO_IDLE		(1 << UART_OMAP_SYSC_IDLEMODE)
++#define UART_OMAP_SYSC_SMART_IDLE	(2 << UART_OMAP_SYSC_IDLEMODE)
++
++#define H4P_TRANSFER_MODE		1
++#define H4P_SCHED_TRANSFER_MODE		2
++#define H4P_ACTIVE_MODE			3
++
++struct h4p_info {
++	struct timer_list lazy_release;
++	struct hci_dev *hdev;
++	spinlock_t lock;
++
++	void __iomem *uart_base;
++	unsigned long uart_phys_base;
++	int irq;
++	struct device *dev;
++	u8 chip_type;
++	u8 bt_wakeup_gpio;
++	u8 host_wakeup_gpio;
++	u8 reset_gpio;
++	u8 reset_gpio_shared;
++	u8 bt_sysclk;
++	u8 man_id;
++	u8 ver_id;
++
++	struct sk_buff_head fw_queue;
++	struct sk_buff *alive_cmd_skb;
++	struct completion init_completion;
++	struct completion fw_completion;
++	struct completion test_completion;
++	int fw_error;
++	int init_error;
++
++	struct sk_buff_head txq;
++
++	struct sk_buff *rx_skb;
++	int rx_count;
++	unsigned int rx_state;
++	unsigned int garbage_bytes;
++
++	struct sk_buff_head *fw_q;
++
++	bool pm_enabled;
++	bool tx_enabled;
++	int autorts;
++	bool rx_enabled;
++	unsigned long pm_flags;
++
++	int tx_clocks_en;
++	int rx_clocks_en;
++	spinlock_t clocks_lock;
++	struct clk *uart_iclk;
++	struct clk *uart_fclk;
++	atomic_t clk_users;
++	u16 dll;
++	u16 dlh;
++	u16 ier;
++	u16 mdr1;
++	u16 efr;
++
++	bool init_phase;
++};
++
++struct h4p_radio_hdr {
++	u8 evt;
++	u8 dlen;
++} __packed;
++
++struct h4p_neg_hdr {
++	u8 dlen;
++} __packed;
++#define H4P_NEG_HDR_SIZE 1
++
++#define H4P_NEG_REQ	0x00
++#define H4P_NEG_ACK	0x20
++#define H4P_NEG_NAK	0x40
++
++#define H4P_PROTO_PKT	0x44
++#define H4P_PROTO_BYTE	0x4c
++
++#define H4P_ID_BCM2048	0x04
++
++struct h4p_neg_cmd {
++	u8	ack;
++	__le16	baud;
++	u16	unused1;
++	u8	proto;
++	__le16	sys_clk;
++	u16	unused2;
++} __packed;
++
++struct h4p_neg_evt {
++	u8	ack;
++	__le16	baud;
++	__le16	unused1;
++	u8	proto;
++	__le16	sys_clk;
++	u16	unused2;
++	u8	man_id;
++	u8	ver_id;
++} __packed;
++
++#define H4P_ALIVE_REQ	0x55
++#define H4P_ALIVE_RESP	0xcc
++
++struct h4p_alive_hdr {
++	u8	dlen;
++} __packed;
++#define H4P_ALIVE_HDR_SIZE 1
++
++struct h4p_alive_pkt {
++	u8	mid;
++	u8	unused;
++} __packed;
++
++#define MAX_BAUD_RATE		921600
++#define BC4_MAX_BAUD_RATE	3692300
++#define UART_CLOCK		48000000
++#define BT_INIT_DIVIDER		320
++#define BT_BAUDRATE_DIVIDER	384000000
++#define BT_SYSCLK_DIV		1000
++#define INIT_SPEED		120000
++
++#define H4_TYPE_SIZE		1
++#define H4_RADIO_HDR_SIZE	2
++
++/* H4+ packet types */
++#define H4_CMD_PKT		0x01
++#define H4_ACL_PKT		0x02
++#define H4_SCO_PKT		0x03
++#define H4_EVT_PKT		0x04
++#define H4_NEG_PKT		0x06
++#define H4_ALIVE_PKT		0x07
++#define H4_RADIO_PKT		0x08
++
++/* TX states */
++#define WAIT_FOR_PKT_TYPE	1
++#define WAIT_FOR_HEADER		2
++#define WAIT_FOR_DATA		3
++
++int h4p_read_fw(struct h4p_info *info);
++
++static inline void h4p_outb(struct h4p_info *info, unsigned int offset, u8 val)
++{
++	__raw_writeb(val, info->uart_base + (offset << 2));
++}
++
++static inline u8 h4p_inb(struct h4p_info *info, unsigned int offset)
++{
++	u8 val;
++	val = __raw_readb(info->uart_base + (offset << 2));
++	return val;
++}
++
++static inline void h4p_set_rts(struct h4p_info *info, int active)
++{
++	u8 b;
++
++	b = h4p_inb(info, UART_MCR);
++	if (active)
++		b |= UART_MCR_RTS;
++	else
++		b &= ~UART_MCR_RTS;
++	h4p_outb(info, UART_MCR, b);
++}
++
++int h4p_wait_for_cts(struct h4p_info *info, bool active, int timeout_ms);
++void __h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which);
++void h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which);
++void h4p_change_speed(struct h4p_info *info, unsigned long speed);
++int h4p_reset_uart(struct h4p_info *info);
++void h4p_init_uart(struct h4p_info *info);
++void h4p_enable_tx(struct h4p_info *info);
++void h4p_store_regs(struct h4p_info *info);
++void h4p_restore_regs(struct h4p_info *info);
++void h4p_smart_idle(struct h4p_info *info, bool enable);
+diff --git a/drivers/bluetooth/nokia_uart.c b/drivers/bluetooth/nokia_uart.c
+new file mode 100644
+index 0000000..3a27793
+--- /dev/null
++++ b/drivers/bluetooth/nokia_uart.c
+@@ -0,0 +1,171 @@
++/*
++ * This file is part of Nokia H4P bluetooth driver
++ *
++ * Copyright (C) 2005, 2006 Nokia Corporation.
++ * Copyright (C) 2014 Pavel Machek <pavel@ucw.cz>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
++ * 02110-1301 USA
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/clk.h>
++
++#include <linux/io.h>
++
++#include "nokia_h4p.h"
++
++int h4p_wait_for_cts(struct h4p_info *info, bool active, int timeout_ms)
++{
++	unsigned long timeout;
++	int state;
++
++	timeout = jiffies + msecs_to_jiffies(timeout_ms);
++	for (;;) {
++		state = h4p_inb(info, UART_MSR) & UART_MSR_CTS;
++		if (active == !!state)
++			return 0;
++		if (time_after(jiffies, timeout))
++			return -ETIMEDOUT;
++		msleep(1);
++	}
++}
++
++void __h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which)
++{
++	u8 lcr, b;
++
++	lcr = h4p_inb(info, UART_LCR);
++	h4p_outb(info, UART_LCR, 0xbf);
++	b = h4p_inb(info, UART_EFR);
++	if (on)
++		b |= which;
++	else
++		b &= ~which;
++	h4p_outb(info, UART_EFR, b);
++	h4p_outb(info, UART_LCR, lcr);
++}
++
++void h4p_set_auto_ctsrts(struct h4p_info *info, bool on, u8 which)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&info->lock, flags);
++	__h4p_set_auto_ctsrts(info, on, which);
++	spin_unlock_irqrestore(&info->lock, flags);
++}
++
++void h4p_change_speed(struct h4p_info *info, unsigned long speed)
++{
++	unsigned int divisor;
++	u8 lcr, mdr1;
++
++	BT_DBG("Setting speed %lu", speed);
++
++	if (speed >= 460800) {
++		divisor = UART_CLOCK / 13 / speed;
++		mdr1 = 3;
++	} else {
++		divisor = UART_CLOCK / 16 / speed;
++		mdr1 = 0;
++	}
++
++	/* Make sure UART mode is disabled */
++	h4p_outb(info, UART_OMAP_MDR1, 7);
++
++	lcr = h4p_inb(info, UART_LCR);
++	h4p_outb(info, UART_LCR, UART_LCR_DLAB);     /* Set DLAB */
++	h4p_outb(info, UART_DLL, divisor & 0xff);    /* Set speed */
++	h4p_outb(info, UART_DLM, divisor >> 8);
++	h4p_outb(info, UART_LCR, lcr);
++
++	/* Make sure UART mode is enabled */
++	h4p_outb(info, UART_OMAP_MDR1, mdr1);
++}
++
++int h4p_reset_uart(struct h4p_info *info)
++{
++	int count = 0;
++
++	/* Reset the UART */
++	h4p_outb(info, UART_OMAP_SYSC, UART_SYSC_OMAP_RESET);
++	while (!(h4p_inb(info, UART_OMAP_SYSS) & UART_SYSS_RESETDONE)) {
++		if (count++ > 100) {
++			dev_err(info->dev, "nokia_h4p: UART reset timeout\n");
++			return -ENODEV;
++		}
++		udelay(1);
++	}
++
++	return 0;
++}
++
++void h4p_store_regs(struct h4p_info *info)
++{
++	u16 lcr = 0;
++
++	lcr = h4p_inb(info, UART_LCR);
++	h4p_outb(info, UART_LCR, 0xBF);
++	info->dll = h4p_inb(info, UART_DLL);
++	info->dlh = h4p_inb(info, UART_DLM);
++	info->efr = h4p_inb(info, UART_EFR);
++	h4p_outb(info, UART_LCR, lcr);
++	info->mdr1 = h4p_inb(info, UART_OMAP_MDR1);
++	info->ier = h4p_inb(info, UART_IER);
++}
++
++void h4p_restore_regs(struct h4p_info *info)
++{
++	u16 lcr = 0;
++
++	h4p_init_uart(info);
++
++	h4p_outb(info, UART_OMAP_MDR1, 7);
++	lcr = h4p_inb(info, UART_LCR);
++	h4p_outb(info, UART_LCR, 0xBF);
++	h4p_outb(info, UART_DLL, info->dll);    /* Set speed */
++	h4p_outb(info, UART_DLM, info->dlh);
++	h4p_outb(info, UART_EFR, info->efr);
++	h4p_outb(info, UART_LCR, lcr);
++	h4p_outb(info, UART_OMAP_MDR1, info->mdr1);
++	h4p_outb(info, UART_IER, info->ier);
++}
++
++void h4p_init_uart(struct h4p_info *info)
++{
++	u8 mcr, efr;
++
++	/* Enable and setup FIFO */
++	h4p_outb(info, UART_OMAP_MDR1, 0x00);
++
++	h4p_outb(info, UART_LCR, 0xbf);
++	efr = h4p_inb(info, UART_EFR);
++	h4p_outb(info, UART_EFR, UART_EFR_ECB);
++	h4p_outb(info, UART_LCR, UART_LCR_DLAB);
++	mcr = h4p_inb(info, UART_MCR);
++	h4p_outb(info, UART_MCR, UART_MCR_TCRTLR);
++	h4p_outb(info, UART_FCR, UART_FCR_ENABLE_FIFO |
++			UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT |
++			(3 << 6) | (0 << 4));
++	h4p_outb(info, UART_LCR, 0xbf);
++	h4p_outb(info, UART_TI752_TLR, 0xed);
++	h4p_outb(info, UART_TI752_TCR, 0xef);
++	h4p_outb(info, UART_EFR, efr);
++	h4p_outb(info, UART_LCR, UART_LCR_DLAB);
++	h4p_outb(info, UART_MCR, 0x00);
++	h4p_outb(info, UART_LCR, UART_LCR_WLEN8);
++	h4p_outb(info, UART_IER, UART_IER_RDI);
++	h4p_outb(info, UART_OMAP_SYSC, (1 << 0) | (1 << 2) | (2 << 3));
++}
 
-JVBERi0xLjUNJeLjz9MNCjcgMCBvYmoNPDwvTGluZWFyaXplZCAxL0wgMjY2MDYvTyA5L0UgMjIz
-ODQvTiAxL1QgMjYzMTcvSCBbIDQ3OCAxNTFdPj4NZW5kb2JqDSAgICAgICAgICAgICAgICAgICAg
-DQoyMiAwIG9iag08PC9EZWNvZGVQYXJtczw8L0NvbHVtbnMgNC9QcmVkaWN0b3IgMTI+Pi9GaWx0
-ZXIvRmxhdGVEZWNvZGUvSURbPDhBNDM4QkUyRjBDRkI5RTgxN0VGOEFCODVDNjEzREZGPjwzODdF
-M0YyN0VERUY0ODQxOEE0M0FCQjcyQjJFQjZGMz5dL0luZGV4WzcgMjVdL0luZm8gNiAwIFIvTGVu
-Z3RoIDc4L1ByZXYgMjYzMTgvUm9vdCA4IDAgUi9TaXplIDMyL1R5cGUvWFJlZi9XWzEgMiAxXT4+
-c3RyZWFtDQpo3mJiZBBgYGJgSgUSDDZAgvEpkGB+CyRYlUCEA4hgBxH3QcRnEHEASEi8hSlmZQAS
-LB+BxC5jBiZGhmkgoxgYCRD/Ga/8BAgwABCeDRMNCmVuZHN0cmVhbQ1lbmRvYmoNc3RhcnR4cmVm
-DQowDQolJUVPRg0KICAgICAgICANCjMxIDAgb2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9JIDg3
-L0xlbmd0aCA3Mi9TIDM5Pj5zdHJlYW0NCmjeYmBg4GVgYJJiAIKQ/QyogBmIWRg4GtgykAR5oZiB
-4SmIbuKoct0kyP+i8fDtHQ4MHGYGJ1ThmlPPA2lGIP4PEGAAx6UM8g0KZW5kc3RyZWFtDWVuZG9i
-ag04IDAgb2JqDTw8L01ldGFkYXRhIDEgMCBSL1BhZ2VzIDUgMCBSL1R5cGUvQ2F0YWxvZz4+DWVu
-ZG9iag05IDAgb2JqDTw8L0NvbnRlbnRzWzExIDAgUiAxMiAwIFIgMTMgMCBSIDE0IDAgUiAxNSAw
-IFIgMTYgMCBSIDE5IDAgUiAyMCAwIFJdL0Nyb3BCb3hbMCAwIDU5NS4yMiA4NDJdL01lZGlhQm94
-WzAgMCA1OTUuMjIgODQyXS9QYXJlbnQgNSAwIFIvUmVzb3VyY2VzPDwvRXh0R1N0YXRlIDIzIDAg
-Ui9Gb250IDI0IDAgUi9Qcm9jU2V0Wy9QREYvVGV4dF0+Pi9Sb3RhdGUgMC9UeXBlL1BhZ2U+Pg1l
-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
-R63nGvSkWeg+aLM0nXYlrsQ5kP/rjCi6Vj//v7InX5W/y/L1uOWkK3OzHmnu9Oy/89eJW7ECb8On
-dlU1dzs8uU26Pzm/8UTfzXp8h7hT3IV7sUV3rJS5G36LuAdr+z7RKu7H+y9/siN9UDyg3zlFtAlV
-bBPbcSd3il2iXc//Xdu/ym/rzKsnMrvFQ+JhPCGPir3YaZ7AmzOPIPdYZ3afnqP4CfEkYq0XRU+L
-Z7BDPS9eEC+K/eIpRC/rn88iekUcEK+Jt6QF7lXxJT6PA+EeWzVr5ozp00r9Pm9J8ZSiyZMmThhf
-OK4gf2yeJzcne4w7a/TZmaNGjsgYPmxoev+01L7JSb1dvRzxMVE2q8UcHhZqCgkOMhqkSPW48sqc
-SnKZEpTsys9P02JXORLlJyXKFCdSeaf2UZxlejfnqT3d6Dn7tJ5u6uk+0VPanJkiMy3V6XE5lZdy
-Xc52WVrkg1+f6/I7lSO6n6D7oGQ9sCBITMQIpye+JtepyDKnR8lbXNPiKcvFfG3m8BxXTnV4Wqpo
-CzfDmuGUvq7aNtl3tNSNoa9nZJtBhFq0r1WMSZ7yKmVykc+Ta09M9Os5kaPPpYTkKCZ9Ludc7ZjF
-pc621L0tl7XbREVZSkSVq6p8uk8xlmNQi9HT0rJWiUpR+rlylX7LP4nHKVcrqa5cj5LiwmSFU058
-gVSCk2wuZ8sxgYN3Hfnm1Ex5ZyYkyXZMaFY7xROXCe3sBY4NR4jzS0zUjuXSdreoQKA0F/kodooK
-uyrc6Sl+xVCmtezllliv1tLMLSeGl7kStVvlKev8WVwTrzRXONNScfX1nyT8oN2pGJPLKiprNC2v
-bnHl5tJ1K/Ep7lwYd3nnuXraBqSjf3kZTmKudhmKfEq6q1aJcWVTBySc2j2YW+zTh3QOU2JyFFFW
-2TlKSffkasfl9LSU5dIBanO5iny7xeDAobYhTvu2wWKI8GvHocTl4KYke1p8VbMVR5m9Cs/nbKfP
-nqi4/bh8fpev2q/dJZdN6XcIX5eof6M+Cud2Wm/urJ25KSnU6TPYjX7tbiHhzMOHKzsTDTbcLj3U
-7mh2ptMn7YK74Vs6e2julHkQGJNy8rUmozY0J9+e6E+k198ckr3zmIKTlNCT5rIhceKY6Hv+7aFR
-b+2A+jk91bknHeApkwZ3HmDnbP/6OA3atej8YowI1W5nPjcZk7BykTNgGj2l3cV4pyImO32uapff
-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
-TMNG3cb+1OzglUrBhT6o7hPCcV0kF4hCUtZELQ/OdOjXwJu7sQQcYKKK0HMhSLN+WXZfuuZK6PEA
-xM4xel0/ieiv5csn2zsu+xUiIKL+9esB/taRyzLs1whhP7+T0+/U6CIXMMlYkFOAR+ezcoMYRmq+
-tlPAzyDV8I2a039G77n5Y7X66rumkb81Xe0gnHYrozm6Jrpm8aEANAUFJMWGpMdtWLndm9XQ31z+
-rnJ/WdmFS+WNiO2+Hea5cO1SebzMaTG2m7YqYDN2HsUnDyg/KHsCBZ1m9Roo7vPrIxdoWAdKbh9d
-XSSSfHx7ZeVUl0URTpOWXf7jKxm5dYTtXXMw6Yx/e8JbUnq2r9Rg0ZdwZWolaRcPyk9eeWQB4pkd
-2BLbeM7Bk76WauiiC7uO7jtScvbi0WbEKuuXz43MU8R+IcvYmLwteAfbjwPYd/FyAkU3gaIbPDjs
-oQGPj13W/KogBj/Rh4kcGbjWxeF0GtLh3l9coVaCk1rAzyLQpJGI6AfREfoRomf0+YZTB4ml17eD
-rMeHBk/yWHa2O5v4vX/B3tTSdefCf0ruJn7bvPsAE8HK8Q0eHRmzXrFadhyiRHCZFmeW8aUGipaX
-0crBPUOU3xobv9hjbEJR/wtuvoJcDQplbmRzdHJlYW0NZW5kb2JqDTEgMCBvYmoNPDwvTGVuZ3Ro
-IDM0NjIvU3VidHlwZS9YTUwvVHlwZS9NZXRhZGF0YT4+c3RyZWFtDQo8P3hwYWNrZXQgYmVnaW49
-Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/Pgo8eDp4bXBtZXRhIHhtbG5zOng9
-ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJBZG9iZSBYTVAgQ29yZSA1LjQtYzAwNSA3OC4xNDcz
-MjYsIDIwMTIvMDgvMjMtMTM6MDM6MDMgICAgICAgICI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0i
-aHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6
-RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVy
-bC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6eG1wPSJodHRwOi8vbnMu
-YWRvYmUuY29tL3hhcC8xLjAvIgogICAgICAgICAgICB4bWxuczpwZGY9Imh0dHA6Ly9ucy5hZG9i
-ZS5jb20vcGRmLzEuMy8iCiAgICAgICAgICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUu
-Y29tL3hhcC8xLjAvbW0vIj4KICAgICAgICAgPGRjOmZvcm1hdD5hcHBsaWNhdGlvbi9wZGY8L2Rj
-OmZvcm1hdD4KICAgICAgICAgPGRjOmNyZWF0b3I+CiAgICAgICAgICAgIDxyZGY6U2VxPgogICAg
-ICAgICAgICAgICA8cmRmOmxpPnVzZXI8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgog
-ICAgICAgICA8L2RjOmNyZWF0b3I+CiAgICAgICAgIDxkYzp0aXRsZT4KICAgICAgICAgICAgPHJk
-ZjpBbHQ+CiAgICAgICAgICAgICAgIDxyZGY6bGkgeG1sOmxhbmc9IngtZGVmYXVsdCI+TWljcm9z
-b2Z0IFdvcmQgLSBEb2N1bWVudDE8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6QWx0PgogICAg
-ICAgICA8L2RjOnRpdGxlPgogICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAxMi0wNy0xOFQwODo1
-NzoyNSswMjowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6Q3JlYXRvclRvb2w+UFNj
-cmlwdDUuZGxsIFZlcnNpb24gNS4yPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgICAgIDx4bXA6TW9k
-aWZ5RGF0ZT4yMDEzLTA2LTE0VDExOjQ3OjM4KzAyOjAwPC94bXA6TW9kaWZ5RGF0ZT4KICAgICAg
-ICAgPHhtcDpNZXRhZGF0YURhdGU+MjAxMy0wNi0xNFQxMTo0NzozOCswMjowMDwveG1wOk1ldGFk
-YXRhRGF0ZT4KICAgICAgICAgPHBkZjpQcm9kdWNlcj5HUEwgR2hvc3RzY3JpcHQgOC42NDwvcGRm
-OlByb2R1Y2VyPgogICAgICAgICA8eG1wTU06RG9jdW1lbnRJRD51dWlkOjg4Y2ViYmQ4LTM3MjYt
-NGY4MS05OWQwLWUzN2EwY2Q3NDZiYjwveG1wTU06RG9jdW1lbnRJRD4KICAgICAgICAgPHhtcE1N
-Okluc3RhbmNlSUQ+dXVpZDoyZTBkZjk2My1mNTExLTRlNDYtODk0MS1hYjE0MGU3ODkyNDc8L3ht
-cE1NOkluc3RhbmNlSUQ+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+Cjwv
-eDp4bXBtZXRhPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAK
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgCjw/eHBhY2tldCBlbmQ9InciPz4NCmVuZHN0cmVhbQ1lbmRvYmoNMiAwIG9iag08PC9G
-aWx0ZXIvRmxhdGVEZWNvZGUvRmlyc3QgNC9MZW5ndGggNDgvTiAxL1R5cGUvT2JqU3RtPj5zdHJl
-YW0NCmjeMlUwULCx0XfOL80rUTDU985MKY62BIoFxeqHVBak6gckpqcW29kBBBgA1ncLgA0KZW5k
-c3RyZWFtDWVuZG9iag0zIDAgb2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9GaXJzdCA0L0xlbmd0
-aCAxNjIvTiAxL1R5cGUvT2JqU3RtPj5zdHJlYW0NCmjeRMzRCoIwFIDhVzl3bkS6TacjRIgEbxKE
-oq5lLhTME2fz/ZOIuv//LwcBZZkc1zAisdU74smJXB8mXOo+OFYflJBKFNIIowuld0JFQkTfanu6
-i6XpFXQ8zDPcHPntBB0rnrQ4/IlU5DKTMitS8yM6wmG1jljTnaEZ0Qf/scDEecaT6xRmx9rJEnp8
-BLgjDbCHGu36dEuQvKreAgwA9n85Og0KZW5kc3RyZWFtDWVuZG9iag00IDAgb2JqDTw8L0RlY29k
-ZVBhcm1zPDwvQ29sdW1ucyAzL1ByZWRpY3RvciAxMj4+L0ZpbHRlci9GbGF0ZURlY29kZS9JRFs8
-OEE0MzhCRTJGMENGQjlFODE3RUY4QUI4NUM2MTNERkY+PDM4N0UzRjI3RURFRjQ4NDE4QTQzQUJC
-NzJCMkVCNkYzPl0vSW5mbyA2IDAgUi9MZW5ndGggMzcvUm9vdCA4IDAgUi9TaXplIDcvVHlwZS9Y
-UmVmL1dbMSAyIDBdPj5zdHJlYW0NCmjeYmJgYGBiDC9gYuC7zMTA0MPEwPifiXGWCZDNCBBgADWB
-BBQNCmVuZHN0cmVhbQ1lbmRvYmoNc3RhcnR4cmVmDQoxMTYNCiUlRU9GDQo=
-------=_Part_2688677_1215449170.1419339384580--
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
