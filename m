@@ -1,119 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaLWJhD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:37:03 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:52638 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaLWJhA (ORCPT
+	id S1755378AbaLWJhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:37:20 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:60201 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190AbaLWJhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:37:00 -0500
-Date: Tue, 23 Dec 2014 01:36:54 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: samuel kihahu <skihahu@gmail.com>
-Cc: gregkh@linuxfoundation.org, oleg.drokin@intel.com,
-        andreas.dilger@intel.com, devel@driverdev.osuosl.org,
+	Tue, 23 Dec 2014 04:37:16 -0500
+Date: Tue, 23 Dec 2014 01:37:10 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, Omar Sandoval <osandov@osandov.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: lustre: cleanup align switch and case
-Message-ID: <20141223093654.GA5208@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	samuel kihahu <skihahu@gmail.com>, gregkh@linuxfoundation.org,
-	oleg.drokin@intel.com, andreas.dilger@intel.com,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1419321466-8068-1-git-send-email-skihahu@gmail.com>
+Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
+Message-ID: <20141223093710.GA29096@infradead.org>
+References: <cover.1418618044.git.osandov@osandov.com>
+ <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
+ <20141215162705.GA23887@quack.suse.cz>
+ <20141215165615.GA19041@infradead.org>
+ <20141220065133.GC22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419321466-8068-1-git-send-email-skihahu@gmail.com>
+In-Reply-To: <20141220065133.GC22149@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-samuel,
-
-This patch is corrupt and won't apply.  I suspect it is due to missing
-spaces at the start of each line in the diff.
-
-I recommend using 'git send-email'.  But if you are using a different
-client have a look at Documentation/email-clients.txt for tips on how to
-avoid these problems.
-
-On Tue, Dec 23, 2014 at 10:57:46AM +0300, samuel kihahu wrote:
-> From: samuel kihahu <skihahu@gmail.com>
+On Sat, Dec 20, 2014 at 06:51:33AM +0000, Al Viro wrote:
+> > The problem is that the use of ->direct_IO by the swap code is a gross
+> > layering violation.  ->direct_IO is a callback for the filesystem, and
+> > the swap code need to call ->read_iter instead of ->readpage and
+> > ->write_tier instead of ->direct_IO, and leave the locking to the
+> > filesystem.
 > 
-> Align switch and case to be at the same indent.
-> 
-> Signed-off-by: samuel kihahu <skihahu@gmail.com>
-> ---
->  drivers/staging/lustre/lnet/selftest/module.c | 50 +++++++++++++--------------
->  1 file changed, 25 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/staging/lustre/lnet/selftest/module.c b/drivers/staging/lustre/lnet/selftest/module.c
-> index 6dd4309..b5f07fa 100644
-> --- a/drivers/staging/lustre/lnet/selftest/module.c
-> +++ b/drivers/staging/lustre/lnet/selftest/module.c
-> @@ -61,31 +61,31 @@ lnet_selftest_fini(void)
-> 	int	i;
-> 
-> 	switch (lst_init_step) {
-> -		case LST_INIT_CONSOLE:
-> -			lstcon_console_fini();
-> -		case LST_INIT_FW:
-> -			sfw_shutdown();
-> -		case LST_INIT_RPC:
-> -			srpc_shutdown();
-> -		case LST_INIT_WI_TEST:
-> -			for (i = 0;
-> -			     i < cfs_cpt_number(lnet_cpt_table()); i++) {
-> -				if (lst_sched_test[i] == NULL)
-> -					continue;
-> -				cfs_wi_sched_destroy(lst_sched_test[i]);
-> -			}
-> -			LIBCFS_FREE(lst_sched_test,
-> -				    sizeof(lst_sched_test[0]) *
-> -				    cfs_cpt_number(lnet_cpt_table()));
-> -			lst_sched_test = NULL;
-> -
-> -		case LST_INIT_WI_SERIAL:
-> -			cfs_wi_sched_destroy(lst_sched_serial);
-> -			lst_sched_serial = NULL;
-> -		case LST_INIT_NONE:
-> -			break;
-> -		default:
-> -			LBUG();
-> +	case LST_INIT_CONSOLE:
-> +		lstcon_console_fini();
-> +	case LST_INIT_FW:
-> +		sfw_shutdown();
-> +	case LST_INIT_RPC:
-> +		srpc_shutdown();
-> +	case LST_INIT_WI_TEST:
-> +		for (i = 0;
-> +		     i < cfs_cpt_number(lnet_cpt_table()); i++) {
-> +			if (lst_sched_test[i] == NULL)
-> +				continue;
-> +			cfs_wi_sched_destroy(lst_sched_test[i]);
-> +		}
-> +		LIBCFS_FREE(lst_sched_test,
-> +			    sizeof(lst_sched_test[0]) *
-> +			    cfs_cpt_number(lnet_cpt_table()));
-> +		lst_sched_test = NULL;
-> +
-> +	case LST_INIT_WI_SERIAL:
-> +		cfs_wi_sched_destroy(lst_sched_serial);
-> +		lst_sched_serial = NULL;
-> +	case LST_INIT_NONE:
-> +		break;
-> +	default:
-> +		LBUG();
-> 	}
-> 	return;
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> The thing is, ->read_iter() and ->write_iter() might decide to fall back to 
+> buffered IO path.  XFS is unusual in that respect - there O_DIRECT ends up
+> with short write in such case.  Other filesystems, OTOH...
 
--- 
-- Jeremiah Mahler
+We'll just need a ->swap_activate method that makes sure we really do
+direct I/O.  For all filesystems currently suporting swap just checking
+that all blocks are allocated (as the ->bmap path already does) should
+be enough.
