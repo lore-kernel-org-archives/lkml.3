@@ -1,144 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309AbaLWNKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 08:10:51 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:42846 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932288AbaLWNKt (ORCPT
+	id S1756055AbaLWNOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 08:14:31 -0500
+Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:44478 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755566AbaLWNOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 08:10:49 -0500
-Message-ID: <549969D4.5020303@cogentembedded.com>
-Date: Tue, 23 Dec 2014 16:10:44 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: David Cohen <david.a.cohen@linux.intel.com>, myungjoo.ham@samsung.com,
-        cw00.choi@samsung.com
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        baolu.lu@linux.intel.com
-Subject: Re: [RFC/PATCH] extcon: otg_gpio: add driver for USB OTG port controlled
- by GPIO(s)
-References: <1419288217-19262-1-git-send-email-david.a.cohen@linux.intel.com>
-In-Reply-To: <1419288217-19262-1-git-send-email-david.a.cohen@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Tue, 23 Dec 2014 08:14:30 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3868:3871:4321:5007:6261:10004:10400:10848:11232:11658:11914:12043:12114:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: glue07_44283bd19614b
+X-Filterd-Recvd-Size: 1372
+Message-ID: <1419340466.18020.7.camel@perches.com>
+Subject: Re: [PATCH] checkpatch: fix UNNECESSARY_KERN_LEVEL false positive
+From: Joe Perches <joe@perches.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Date: Tue, 23 Dec 2014 05:14:26 -0800
+In-Reply-To: <1419339763-24901-1-git-send-email-pbonzini@redhat.com>
+References: <1419339763-24901-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 2014-12-23 at 14:02 +0100, Paolo Bonzini wrote:
+> KERN_<LEVEL> is never redundant with printk_ratelimited.
+[]
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> @@ -4545,7 +4545,7 @@ sub process {
+>  		}
+>  
+>  # check for logging functions with KERN_<LEVEL>
+> -		if ($line !~ /printk\s*\(/ &&
+> +		if ($line !~ /printk(?:_ratelimited)?\s*\(/ &&
 
-On 12/23/2014 1:43 AM, David Cohen wrote:
+Seems sensible bu this should probably add _once too
 
-> Some platforms have an USB OTG port fully (or partially) controlled by
-> GPIOs:
+		if ($line !~ /printk(?:_ratelimited|_once)?\s*\(/ &&
 
-> (1) USB ID is connected directly to GPIO
+Please add and resubmit cc'ing Andrew Morton too.
 
-> Optionally:
-> (2) VBUS is enabled by a GPIO (when ID is grounded)
-
-    Can't the host driver still control Vbus?
-
-> (3) Platform has 2 USB controllers connected to same port: one for
->      device and one for host role. D+/- are switched between phys
->      by GPIO.
-
-> As per initial version, this driver has the duty to control whether
-> USB-Host cable is plugged in or not:
->   - If yes, OTG port is configured for host role
->   - If no, by standard, the OTG port is configured for device role
-
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
-
-> Hi,
-
-> Some Intel Bay Trail boards have an unusual way to handle the USB OTG port:
->   - The USB ID pin is connected directly to GPIO on SoC
->   - When in host role, VBUS is provided by enabling a GPIO
->   - Device and host roles are supported by 2 independent controllers with D+/-
->     pins from port switched between different phys according a GPIO level.
-
-> The ACPI table describes this USB port as a (virtual) device with all the
-> necessary GPIOs. This driver implements support to this virtual device as an
-> extcon class driver. All drivers that depend on the USB OTG port state (USB phy,
-> PMIC, charge detection) will listen to extcon events.
-
-    It's very close to my setup on R-Car R8A7791 based boards. :-)
-I have already submitted Maxim MAX3355 OTG chip GPIO-based driver.
-
-> Comments are welcome.
-
-> Br, David
-> ---
->
->   drivers/extcon/Kconfig           |   8 ++
->   drivers/extcon/Makefile          |   1 +
->   drivers/extcon/extcon-otg_gpio.c | 200 +++++++++++++++++++++++++++++++++++++++
->   3 files changed, 209 insertions(+)
->   create mode 100644 drivers/extcon/extcon-otg_gpio.c
->
-> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
-> index 6a1f7de6fa54..e8010cda4642 100644
-> --- a/drivers/extcon/Kconfig
-> +++ b/drivers/extcon/Kconfig
-> @@ -93,4 +93,12 @@ config EXTCON_SM5502
->   	  Silicon Mitus SM5502. The SM5502 is a USB port accessory
->   	  detector and switch.
->
-> +config EXTCON_OTG_GPIO
-> +	tristate "VIRTUAL USB OTG PORT support"
-> +	depends on GPIOLIB
-> +	help
-> +	  Say Y here to enable support for virtual USB OTG port device
-> +	  controlled by GPIOs. This driver can be used when at least USB ID pin
-> +	  is connected directly to GPIO.
-> +
-
-    The entries in this file seem alphabetically sorted.
-
->   endif # MULTISTATE_SWITCH
-> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
-> index 0370b42e5a27..9e81088c6584 100644
-> --- a/drivers/extcon/Makefile
-> +++ b/drivers/extcon/Makefile
-> @@ -12,3 +12,4 @@ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
->   obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
->   obj-$(CONFIG_EXTCON_RT8973A)	+= extcon-rt8973a.o
->   obj-$(CONFIG_EXTCON_SM5502)	+= extcon-sm5502.o
-> +obj-$(CONFIG_EXTCON_OTG_GPIO) += extcon-otg_gpio.o
-
-    The lines here are sorted too.
-
-> diff --git a/drivers/extcon/extcon-otg_gpio.c b/drivers/extcon/extcon-otg_gpio.c
-> new file mode 100644
-> index 000000000000..c5ee765a5f4f
-> --- /dev/null
-> +++ b/drivers/extcon/extcon-otg_gpio.c
-> @@ -0,0 +1,200 @@
-[...]
-> +static irqreturn_t vuport_isr(int irq, void *priv)
-> +{
-> +	return IRQ_WAKE_THREAD;
-> +}
-
-    It's the same as the default IRQ handler...
-
-> +	ret = devm_request_threaded_irq(dev, gpiod_to_irq(vup->gpio_usb_id),
-> +					vuport_isr, vuport_thread_isr,
-
-    ... so you probably can just pass NULL instead of vuport_isr, no?
-
-[...]
-
-> +static int __init vuport_init(void)
-> +{
-> +	return platform_driver_register(&vuport_driver);
-> +}
-> +subsys_initcall(vuport_init);
-
-    Hm, why?
-
-WBR, Sergei
 
