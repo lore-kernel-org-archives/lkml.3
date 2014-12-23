@@ -1,103 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421AbaLWStt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 13:49:49 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:47844 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097AbaLWSts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 13:49:48 -0500
-Date: Tue, 23 Dec 2014 12:48:58 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>,
-        David Cohen <david.a.cohen@linux.intel.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
-        <m.szyprowski@samsung.com>, <k.opasiak@samsung.com>,
-        <stern@rowland.harvard.edu>
-Subject: Re: [PATCH v5] usb: gadget: f_fs: add "no_disconnect" mode
-Message-ID: <20141223184858.GM9147@saruman>
-Reply-To: <balbi@ti.com>
-References: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
+	id S1756484AbaLWSuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 13:50:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43681 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512AbaLWSuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 13:50:39 -0500
+Date: Tue, 23 Dec 2014 10:50:33 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: Changman Lee <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [f2fs-dev][PATCH] f2fs: cleanup trace event of
+ f2fs_submit_page_{m,}bio with DECLARE_EVENT_CLASS
+Message-ID: <20141223185033.GA12880@jaegeuk-mac02>
+References: <003701d01e8b$883e0e00$98ba2a00$@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WuedheRyq6FDfQ9j"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <003701d01e8b$883e0e00$98ba2a00$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---WuedheRyq6FDfQ9j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Chao,
 
-On Thu, Dec 18, 2014 at 09:55:10AM +0100, Robert Baldyga wrote:
-> Since we can compose gadgets from many functions, there is the problem
-> related to gadget breakage while FunctionFS daemon being closed. FFS
-> function is userspace code so there is no way to know when it will close
-> files (it doesn't matter what is the reason of this situation, it can
-> be daemon logic, program breakage, process kill or any other). So when
-> we have another function in gadget which, for example, sends some amount
-> of data, does some software update or implements some real-time functiona=
-lity,
-> we may want to keep the gadget connected despite FFS function is no longer
-> functional.
->=20
-> We can't just remove one of functions from gadget since it has been
-> enumerated, so the only way to keep entire gadget working is to make
-> broken FFS function deactivated but still visible to host. For this
-> purpose this patch introduces "no_disconnect" mode. It can be enabled
-> by setting mount option "no_disconnect=3D1", and results with defering
-> function disconnect to the moment of reopen ep0 file or filesystem
-> unmount. After closing all endpoint files, FunctionFS is set to state
-> FFS_DEACTIVATED.
->=20
-> When ffs->state =3D=3D FFS_DEACTIVATED:
-> - function is still bound and visible to host,
-> - setup requests are automatically stalled,
-> - transfers on other endpoints are refused,
-> - epfiles, except ep0, are deleted from the filesystem,
-> - opening ep0 causes the function to be closed, and then FunctionFS
->   is ready for descriptors and string write,
-> - altsetting change causes the function to be closed - we want to keep
->   function alive until another functions are potentialy used, altsetting
->   change means that another configuration is being selected or USB cable
->   was unplugged, which indicates that we don't need to stay longer in
->   FFS_DEACTIVATED state
-> - unmounting of the FunctionFS instance causes the function to be closed.
->=20
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Is there a chance to use *fio* as one parameter?
 
-David, can you test it with your setup ?
+Thanks,
 
-cheers
-
---=20
-balbi
-
---WuedheRyq6FDfQ9j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUmbkaAAoJEIaOsuA1yqREMhwP/3098zk9U+rnPf46luxpIGX1
-o0jrmvClU7oYQf7jthk6flC7Uw33i5CiLUifJrxwzF7GxEy6CLxm8hQa8Uy5iCoY
-nYr+kbySBW5PmhJrKUu0Ywd8eMZor7kflkRjp4irWlom/FzeztvN1hH3Vy4PXQyf
-83/oZr9ETuFQxj7dfaB6aFe4bo2flvb3Lz0/dpxEZ2r4kdv+OOVL3FxphlkNHP6c
-Y9hO+ucImQT7RWXY4wF2u+ngddcn+uTMhBHEAub2wetGQN3Myqyf3P1AcojHLZPV
-iwFrMSHC42VOZhSMUPj9abAwOZOURBw1oHf2YBYhHo5lcCiqvg4fpN7O9gBvrZdz
-3Siw2UmAHRsPRpisv583jqHIYvTlQJCAdSb962iUc3c0wCYWPxkIfUyfKSpW/sow
-fpwvsGVS0lotrqId3/MGC5PPL8r6sdsL02sJjfYViGkO8Lez5ZGRzZD/Fu6YxhEW
-TKDpmt0gSAdZMPnVxnjC2+h/4259pe5blDDczUPIj9GQGaQWBpL6zCkvnUOQG8RE
-spLCLcRx84HTcdre+ug5QE5U1fPUpB2+EpqmJ25n20uOLdQUIBhQS8nXbfj5Rn1D
-BhQAYJpBz9A+RsxiwZtD+roB86sf5a7ug6o0djtKiC/2q1d+FSze8bSC+7M90YbC
-JWn0c6vhrF1aXH85nAYC
-=D75q
------END PGP SIGNATURE-----
-
---WuedheRyq6FDfQ9j--
+On Tue, Dec 23, 2014 at 04:35:21PM +0800, Chao Yu wrote:
+> This patch adds missing parameter _type_ for trace_f2fs_submit_page_bio, then
+> use DECLARE_EVENT_CLASS/DEFINE_EVENT_CONDITION pair to cleanup some trace event
+> code related to f2fs_submit_page_{m,}bio.
+> 
+> Additionally, after we remove redundant code, size of code can be reduced:
+>    text    data     bss     dec     hex filename
+>  176787    8712      56  185555   2d4d3 f2fs.ko.org
+>  174408    8648      56  183112   2cb48 f2fs.ko
+> 
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  fs/f2fs/data.c              |   4 +-
+>  include/trace/events/f2fs.h | 115 ++++++++++++++++++++------------------------
+>  2 files changed, 53 insertions(+), 66 deletions(-)
+> 
+> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> index 20aa3c3..7953bc2 100644
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -137,7 +137,7 @@ int f2fs_submit_page_bio(struct f2fs_sb_info *sbi, struct page *page,
+>  {
+>  	struct bio *bio;
+>  
+> -	trace_f2fs_submit_page_bio(page, fio->blk_addr, fio->rw);
+> +	trace_f2fs_submit_page_bio(page, fio->blk_addr, fio->rw, fio->type);
+>  	f2fs_trace_ios(page, fio, 0);
+>  
+>  	/* Allocate a new bio */
+> @@ -190,7 +190,7 @@ alloc_new:
+>  	f2fs_trace_ios(page, fio, 0);
+>  
+>  	up_write(&io->io_rwsem);
+> -	trace_f2fs_submit_page_mbio(page, fio->rw, fio->type, fio->blk_addr);
+> +	trace_f2fs_submit_page_mbio(page, fio->blk_addr, fio->rw, fio->type);
+>  }
+>  
+>  /*
+> diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+> index bbc4de9..553311f 100644
+> --- a/include/trace/events/f2fs.h
+> +++ b/include/trace/events/f2fs.h
+> @@ -440,38 +440,6 @@ TRACE_EVENT(f2fs_truncate_partial_nodes,
+>  		__entry->err)
+>  );
+>  
+> -TRACE_EVENT_CONDITION(f2fs_submit_page_bio,
+> -
+> -	TP_PROTO(struct page *page, sector_t blkaddr, int type),
+> -
+> -	TP_ARGS(page, blkaddr, type),
+> -
+> -	TP_CONDITION(page->mapping),
+> -
+> -	TP_STRUCT__entry(
+> -		__field(dev_t,	dev)
+> -		__field(ino_t,	ino)
+> -		__field(pgoff_t,	index)
+> -		__field(sector_t,	blkaddr)
+> -		__field(int,	type)
+> -	),
+> -
+> -	TP_fast_assign(
+> -		__entry->dev		= page->mapping->host->i_sb->s_dev;
+> -		__entry->ino		= page->mapping->host->i_ino;
+> -		__entry->index		= page->index;
+> -		__entry->blkaddr	= blkaddr;
+> -		__entry->type		= type;
+> -	),
+> -
+> -	TP_printk("dev = (%d,%d), ino = %lu, page_index = 0x%lx, "
+> -		"blkaddr = 0x%llx, bio_type = %s%s",
+> -		show_dev_ino(__entry),
+> -		(unsigned long)__entry->index,
+> -		(unsigned long long)__entry->blkaddr,
+> -		show_bio_type(__entry->type))
+> -);
+> -
+>  TRACE_EVENT(f2fs_get_data_block,
+>  	TP_PROTO(struct inode *inode, sector_t iblock,
+>  				struct buffer_head *bh, int ret),
+> @@ -680,6 +648,57 @@ TRACE_EVENT(f2fs_reserve_new_block,
+>  		__entry->ofs_in_node)
+>  );
+>  
+> +DECLARE_EVENT_CLASS(f2fs__submit_page_bio,
+> +
+> +	TP_PROTO(struct page *page, block_t blkaddr, int rw, int type),
+> +
+> +	TP_ARGS(page, blkaddr, rw, type),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(dev_t, dev)
+> +		__field(ino_t, ino)
+> +		__field(pgoff_t, index)
+> +		__field(block_t, blkaddr)
+> +		__field(int, rw)
+> +		__field(int, type)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->dev		= page->mapping->host->i_sb->s_dev;
+> +		__entry->ino		= page->mapping->host->i_ino;
+> +		__entry->index		= page->index;
+> +		__entry->blkaddr	= blkaddr;
+> +		__entry->rw		= rw;
+> +		__entry->type		= type;
+> +	),
+> +
+> +	TP_printk("dev = (%d,%d), ino = %lu, page_index = 0x%lx, "
+> +		"blkaddr = 0x%llx, rw = %s%s, type = %s",
+> +		show_dev_ino(__entry),
+> +		(unsigned long)__entry->index,
+> +		(unsigned long long)__entry->blkaddr,
+> +		show_bio_type(__entry->rw),
+> +		show_block_type(__entry->type))
+> +);
+> +
+> +DEFINE_EVENT_CONDITION(f2fs__submit_page_bio, f2fs_submit_page_bio,
+> +
+> +	TP_PROTO(struct page *page, block_t blkaddr, int rw, int type),
+> +
+> +	TP_ARGS(page, blkaddr, rw, type),
+> +
+> +	TP_CONDITION(page->mapping)
+> +);
+> +
+> +DEFINE_EVENT_CONDITION(f2fs__submit_page_bio, f2fs_submit_page_mbio,
+> +
+> +	TP_PROTO(struct page *page, block_t blkaddr, int rw, int type),
+> +
+> +	TP_ARGS(page, blkaddr, rw, type),
+> +
+> +	TP_CONDITION(page->mapping)
+> +);
+> +
+>  DECLARE_EVENT_CLASS(f2fs__submit_bio,
+>  
+>  	TP_PROTO(struct super_block *sb, int rw, int type, struct bio *bio),
+> @@ -916,38 +935,6 @@ TRACE_EVENT(f2fs_writepages,
+>  		__entry->for_sync)
+>  );
+>  
+> -TRACE_EVENT(f2fs_submit_page_mbio,
+> -
+> -	TP_PROTO(struct page *page, int rw, int type, block_t blk_addr),
+> -
+> -	TP_ARGS(page, rw, type, blk_addr),
+> -
+> -	TP_STRUCT__entry(
+> -		__field(dev_t,	dev)
+> -		__field(ino_t,	ino)
+> -		__field(int, rw)
+> -		__field(int, type)
+> -		__field(pgoff_t, index)
+> -		__field(block_t, block)
+> -	),
+> -
+> -	TP_fast_assign(
+> -		__entry->dev	= page->mapping->host->i_sb->s_dev;
+> -		__entry->ino	= page->mapping->host->i_ino;
+> -		__entry->rw	= rw;
+> -		__entry->type	= type;
+> -		__entry->index	= page->index;
+> -		__entry->block	= blk_addr;
+> -	),
+> -
+> -	TP_printk("dev = (%d,%d), ino = %lu, %s%s, %s, index = %lu, blkaddr = 0x%llx",
+> -		show_dev_ino(__entry),
+> -		show_bio_type(__entry->rw),
+> -		show_block_type(__entry->type),
+> -		(unsigned long)__entry->index,
+> -		(unsigned long long)__entry->block)
+> -);
+> -
+>  TRACE_EVENT(f2fs_write_checkpoint,
+>  
+>  	TP_PROTO(struct super_block *sb, int reason, char *msg),
+> -- 
+> 2.2.1
