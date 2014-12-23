@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766AbaLWJ6s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:58:48 -0500
-Received: from mail-bl2on0139.outbound.protection.outlook.com ([65.55.169.139]:31310
+	id S1755729AbaLWJ6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:58:43 -0500
+Received: from mail-bl2on0108.outbound.protection.outlook.com ([65.55.169.108]:44728
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755711AbaLWJ6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:58:45 -0500
+	id S1755702AbaLWJ6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 04:58:41 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,40 +15,39 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v4 07/21] ARM: imx6q: clk: Change hsi_tx clock to be a shared clock gate
-Date: Tue, 23 Dec 2014 18:02:05 +0800
-Message-ID: <1419328939-22758-8-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v4 06/21] ARM: imx6q: clk: Change hdmi_isfr clock's parent to be video_27m clock
+Date: Tue, 23 Dec 2014 18:02:04 +0800
+Message-ID: <1419328939-22758-7-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419328939-22758-1-git-send-email-Ying.Liu@freescale.com>
 References: <1419328939-22758-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.168.50)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(77096005)(50986999)(50226001)(89996001)(92566001)(2950100001)(76176999)(87936001)(64706001)(48376002)(77156002)(68736005)(47776003)(20776003)(31966008)(36756003)(97736003)(4396001)(62966003)(50466002)(6806004)(19580405001)(19580395003)(104016003)(46102003)(84676001)(110136001)(85426001)(105606002)(229853001)(99396003)(120916001)(86362001)(21056001)(107046002)(2351001)(106466001)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0629;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(77096005)(2950100001)(99396003)(19580405001)(31966008)(87936001)(76176999)(84676001)(19580395003)(120916001)(62966003)(77156002)(110136001)(50986999)(6806004)(64706001)(46102003)(21056001)(85426001)(4396001)(50226001)(68736005)(86362001)(50466002)(106466001)(89996001)(105606002)(229853001)(107046002)(48376002)(20776003)(47776003)(97736003)(2351001)(104016003)(92566001)(36756003)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0637;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0629;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0637;
 X-Forefront-PRVS: 04347F8039
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 09:58:40.8779
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 23 Dec 2014 09:58:36.9150
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0629
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0637
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CG8 field of the CCM CCGR3 register is named as 'mipi_core_cfg'
-clock, according to the i.MX6q/sdl reference manuals.  This clock is
-actually the gate for several clocks, including the hsi_tx_sel clock's
-output and the video_27m clock's output.  So, this patch changes the
-hsi_tx clock to be a shared clock gate.
+According to the table 33-1 in the i.MX6Q reference manual, the hdmi_isfr
+clock's parent should be the video_27m clock.  The i.MX6DL reference manual
+has the same statement.  This patch changes the hdmi_isfr clock's parent
+from the pll3_pfd1_540m clock to the video_27m clock.
 
 Suggested-by: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
@@ -59,30 +58,22 @@ v3->v4:
 v2->v3:
  * Newly introduced in v3.
 
- arch/arm/mach-imx/clk-imx6q.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-imx/clk-imx6q.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
-index f19472a..080d5b7 100644
+index 9470df3..f19472a 100644
 --- a/arch/arm/mach-imx/clk-imx6q.c
 +++ b/arch/arm/mach-imx/clk-imx6q.c
-@@ -119,6 +119,7 @@ static unsigned int share_count_asrc;
- static unsigned int share_count_ssi1;
- static unsigned int share_count_ssi2;
- static unsigned int share_count_ssi3;
-+static unsigned int share_count_mipi_core_cfg;
- 
- static void __init imx6q_clocks_init(struct device_node *ccm_node)
- {
-@@ -416,7 +417,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
- 	clk[IMX6QDL_CLK_LDB_DI0]      = imx_clk_gate2("ldb_di0",       "ldb_di0_podf",      base + 0x74, 12);
- 	clk[IMX6QDL_CLK_LDB_DI1]      = imx_clk_gate2("ldb_di1",       "ldb_di1_podf",      base + 0x74, 14);
- 	clk[IMX6QDL_CLK_IPU2_DI1]     = imx_clk_gate2("ipu2_di1",      "ipu2_di1_sel",      base + 0x74, 10);
--	clk[IMX6QDL_CLK_HSI_TX]       = imx_clk_gate2("hsi_tx",        "hsi_tx_podf",       base + 0x74, 16);
-+	clk[IMX6QDL_CLK_HSI_TX]       = imx_clk_gate2_shared("hsi_tx", "hsi_tx_podf",       base + 0x74, 16, &share_count_mipi_core_cfg);
- 	if (cpu_is_imx6dl())
- 		/*
- 		 * The multiplexer and divider of the imx6q clock gpu2d get
+@@ -401,7 +401,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+ 		clk[IMX6QDL_CLK_GPU2D_CORE] = imx_clk_gate2("gpu2d_core", "gpu2d_core_podf", base + 0x6c, 24);
+ 	clk[IMX6QDL_CLK_GPU3D_CORE]   = imx_clk_gate2("gpu3d_core",    "gpu3d_core_podf",   base + 0x6c, 26);
+ 	clk[IMX6QDL_CLK_HDMI_IAHB]    = imx_clk_gate2("hdmi_iahb",     "ahb",               base + 0x70, 0);
+-	clk[IMX6QDL_CLK_HDMI_ISFR]    = imx_clk_gate2("hdmi_isfr",     "pll3_pfd1_540m",    base + 0x70, 4);
++	clk[IMX6QDL_CLK_HDMI_ISFR]    = imx_clk_gate2("hdmi_isfr",     "video_27m",         base + 0x70, 4);
+ 	clk[IMX6QDL_CLK_I2C1]         = imx_clk_gate2("i2c1",          "ipg_per",           base + 0x70, 6);
+ 	clk[IMX6QDL_CLK_I2C2]         = imx_clk_gate2("i2c2",          "ipg_per",           base + 0x70, 8);
+ 	clk[IMX6QDL_CLK_I2C3]         = imx_clk_gate2("i2c3",          "ipg_per",           base + 0x70, 10);
 -- 
 2.1.0
 
