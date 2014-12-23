@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089AbaLWJLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:11:06 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:39551 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369AbaLWJLD (ORCPT
+	id S1754500AbaLWJOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:14:19 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:55671 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaLWJOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:11:03 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: jay.xu@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <e9a013e9e1f62e3f08bde1391056739b>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Jianqun Xu <jay.xu@rock-chips.com>
-To: lgirdwood@gmail.com, heiko@sntech.de, broonie@kernel.org, perex@perex.cz,
-        tiwai@suse.de, sonnyrao@chromium.org
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Jianqun Xu <jay.xu@rock-chips.com>
-Subject: [PATCH 2/2] ASoC: rockchip: i2s: set TDL and RDL to 16 bits
-Date: Tue, 23 Dec 2014 17:08:29 +0800
-Message-Id: <1419325709-15374-3-git-send-email-jay.xu@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419325709-15374-1-git-send-email-jay.xu@rock-chips.com>
-References: <1419325709-15374-1-git-send-email-jay.xu@rock-chips.com>
+	Tue, 23 Dec 2014 04:14:16 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        =?ISO-8859-1?Q?J=FCrg?= Billeter <j@bitron.ch>,
+        Magnus Damm <damm+renesas@opensource.se>,
+        Phil Edworthy <phil.edworthy@renesas.com>,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor allocation failure
+Date: Tue, 23 Dec 2014 11:14:21 +0200
+Message-ID: <3101076.RYFhQ4RW4Z@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141222150219.GI16827@intel.com>
+References: <1416924617-15939-1-git-send-email-j@bitron.ch> <20141217125406.GD16827@intel.com> <20141222150219.GI16827@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set Transmit Data Level(TDL) and Receive Data Level(RDL) to 16 bits.
-Without this setting, the TDL is default to be 0x00 (means 1 bit),
-and the RDL is default to be 0x1f (means 16 bits).
+Hi Vinod,
 
-This patch is helpful to fix pop sound, tested on rk3288 board.
+On Monday 22 December 2014 20:32:19 Vinod Koul wrote:
+> On Wed, Dec 17, 2014 at 06:24:06PM +0530, Vinod Koul wrote:
+> > On Wed, Dec 17, 2014 at 01:57:30AM +0200, Laurent Pinchart wrote:
+> >> Do you mean that every Intel employee needs to resubscribe to all vger
+> >> mailing list once a year ? :-o
+> > 
+> > Unfortuntely yes... :( I need to set my infradead account up again now for
+> > backup..
+> > 
+> >>>> I suppose I have no choice anyway. Please provide me with a v3.20
+> >>>> development branch on which I can rebase the patch set, I don't want
+> >>>> to rebase it twice.
+> >>> 
+> >>> Please use topic/slave_caps_device_control_fix. I am going to rebase
+> >>> this once rc1 is declared (eow i guess). It would plain git rebase, so
+> >>> shouldn't impact you.
+> >> 
+> >> Done. I'll rebase it once again when you will have rebased your branch,
+> >> and will then send a pull request. Could you please rebase your branch
+> >> early after the -rc1 release ?
+> > 
+> > Sure, within a day or so of its release it should be done.
+> > 
+> > Do note that am out during Christmas and the weekend with no email access,
+> > will be lucky if my phone works, email very unlikely and I think you guys
+> > will be out too.
+> > 
+> > But if your patches are done, feel free to send them
+> 
+> And I have rebased and pushed. These should be linux-next for tomorrow
 
-Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
----
- sound/soc/rockchip/rockchip_i2s.c | 4 ++++
- 1 file changed, 4 insertions(+)
+Thank you. I've rebased my branch, I'm testing it, and will send you a pull 
+request right afterwards.
 
-diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
-index c74ba37..1cd7efc 100644
---- a/sound/soc/rockchip/rockchip_i2s.c
-+++ b/sound/soc/rockchip/rockchip_i2s.c
-@@ -247,6 +247,10 @@ static int rockchip_i2s_hw_params(struct snd_pcm_substream *substream,
- 
- 	regmap_update_bits(i2s->regmap, I2S_TXCR, I2S_TXCR_VDW_MASK, val);
- 	regmap_update_bits(i2s->regmap, I2S_RXCR, I2S_RXCR_VDW_MASK, val);
-+	regmap_update_bits(i2s->regmap, I2S_DMACR, I2S_DMACR_TDL_MASK,
-+			   I2S_DMACR_TDL(16));
-+	regmap_update_bits(i2s->regmap, I2S_DMACR, I2S_DMACR_RDL_MASK,
-+			   I2S_DMACR_RDL(16));
- 
- 	return 0;
- }
 -- 
-1.9.1
+Regards,
 
+Laurent Pinchart
 
