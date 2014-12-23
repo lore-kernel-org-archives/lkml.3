@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706AbaLWJ3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:29:19 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:44747 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800AbaLWJ3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:29:16 -0500
-Date: Tue, 23 Dec 2014 10:29:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Kirill Smelkov <kirr@nexedi.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL] liblockdep fixes for v3.19
-Message-ID: <20141223092911.GA9246@gmail.com>
-References: <549781C3.50407@oracle.com>
+	id S1754594AbaLWJez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:34:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997AbaLWJew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 04:34:52 -0500
+Message-ID: <5499370D.8000703@redhat.com>
+Date: Tue, 23 Dec 2014 10:34:05 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549781C3.50407@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Wu, Feng" <feng.wu@intel.com>, "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
+Subject: Re: [v3 06/26] iommu, x86: No need to migrating irq for VT-d Posted-Interrupts
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>	<1418397300-10870-7-git-send-email-feng.wu@intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>	<E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>	<54941326.4080405@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC06282@SHSMSX104.ccr.corp.intel.com> <54992C2C.5030305@redhat.com> <E959C4978C3B6342920538CF579893F002314236@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F002314236@SHSMSX104.ccr.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-> Hi Ingo,
+On 23/12/2014 10:07, Wu, Feng wrote:
+>> On 23/12/2014 01:37, Zhang, Yang Z wrote:
+>>> I don't quite understand it. If user set an interrupt's affinity to a
+>>> CPU, but he still see the interrupt delivers to other CPUs in host.
+>>> Do you think it is a right behavior?
+>>
+>> No, the interrupt is not delivered at all in the host.  Normally you'd have:
+>>
+>> - interrupt delivered to CPU from host affinity
+>>
+>> - VFIO interrupt handler writes to irqfd
+>>
+>> - interrupt delivered to vCPU from guest affinity
+>>
+>> Here, you just skip the first two steps.  The interrupt is delivered to
+>> the thread that is running the vCPU directly, so the host affinity is
+>> bypassed entirely.
+>>
+>> ... unless you are considering the case where the vCPU is blocked and
+>> the host is processing the posted interrupt wakeup vector.  In that case
+>> yes, it would be better to set NDST to a CPU matching the host affinity.
 > 
-> A small (but important) fix to the way we detect freeing live locks. We would
-> pass a wrong memory region when testing for locks inside freed memory spaces,
-> which would trigger false positives.
-> 
-> 
-> Thanks,
-> Sasha
-> 
-> The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d71d:
-> 
->   Linux 3.18 (2014-12-07 14:21:05 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/sashal/linux.git liblockdep-fixes-3.19
-> 
-> for you to fetch changes up to 95bfdf23e4d59099340c01064f39e7f6875c02bc:
-> 
->   tools/liblockdep: Fix debug_check thinko in mutex destroy (2014-12-19 15:50:55 -0500)
-> 
-> ----------------------------------------------------------------
-> Kirill Smelkov (1):
->       tools/liblockdep: Fix debug_check thinko in mutex destroy
-> 
->  tools/lib/lockdep/preload.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> In my understanding, wakeup vector should have no relationship with the
+> host affinity of the irq. Wakeup notification event should be delivered to
+> the pCPU which the vCPU was blocked on. And in kernel's point of view,
+> the irq is not associated with the wakeup vector, right?
 
-Pulled, thanks Sasha!
+That is correct indeed.  It is not associated to the wakeup vector,
+hence this patch is right, I think.
 
-	Ingo
+However, the wakeup vector has the same function as the VFIO interrupt
+handler, so you could argue that it is tied to the host affinity rather
+than the guest.  Let's wait for Yang to answer.
+
+Paolo
