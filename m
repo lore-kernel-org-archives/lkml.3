@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849AbaLWKXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 05:23:47 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:59408 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaLWKXp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 05:23:45 -0500
-Date: Tue, 23 Dec 2014 02:23:45 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Dongsu Park <dongsu.park@profitbricks.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Kent Overstreet <kmo@daterainc.com>, Ming Lin <mlin@minggr.net>
-Subject: Re: [RFC PATCH 03/17] block: simplify issueing discard, write_same,
- zeroout
-Message-ID: <20141223102345.GC13138@infradead.org>
-References: <cover.1419241597.git.dongsu.park@profitbricks.com>
- <fe96db02d805ca6191dd605d03dac0d04c926fc1.1419241597.git.dongsu.park@profitbricks.com>
+	id S1755906AbaLWKZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 05:25:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754844AbaLWKZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 05:25:18 -0500
+Message-ID: <54994304.1060808@redhat.com>
+Date: Tue, 23 Dec 2014 11:25:08 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <fe96db02d805ca6191dd605d03dac0d04c926fc1.1419241597.git.dongsu.park@profitbricks.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Santosh Shukla <sshukla@mvista.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Cleaning up the KVM clock
+References: <CALCETrV4Bhc=pwjJR-S7dfgcR7n0xKtj0o=ofOxCfJmnVFcjGw@mail.gmail.com>	<20141222133430.GA23631@amt.cnet>	<CALCETrXU+Z_t3qon+DR1hUiqSgpWLe9w74guBxbDG68ytM0icg@mail.gmail.com>	<54989FF0.3090300@redhat.com> <CAAyOgsbNsDmPGzJcEuYExaswWaQoLHzkMVd+r6r-8jnGc00yTA@mail.gmail.com>
+In-Reply-To: <CAAyOgsbNsDmPGzJcEuYExaswWaQoLHzkMVd+r6r-8jnGc00yTA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 12:48:30PM +0100, Dongsu Park wrote:
-> From: Kent Overstreet <kmo@daterainc.com>
-> 
-> Simplify special cases for issueing discard, write_same, and zeroout,
-> replacing bio_batch completions with submit_bio_wait(). This conversion
-> is possible because generic_make_request() will now do for us what the
-> code in blk-lib.c was doing manually, with the bio_batch stuff. So we
-> still need some looping in case we're trying to discard/zeroout more
-> than around a gigabyte, but when we can submit that much at a time
-> doing the submissions in parallel really shouldn't matter.
 
-Unless there this makes later patches simpler I don't see a good reason
-to remove this parallel submission for the gain of only about 100 less
-lines of code.
+
+On 23/12/2014 11:23, Santosh Shukla wrote:
+> 
+> 
+>     No.  kvm_guest_time_update is called by vcpu_enter_guest, while the vCPU
+>     is not running, so it's entirely atomic from the point of view of
+>     the guest.
+> 
+>  
+> Then checking odd value for version field (at guest side: function
+> pvclock_clocksource_read / pvclock_read_flag) is redundant considering
+> that  kvm_guest_time_update incremented by 2. 
+
+The code is common to Xen and KVM.  Xen uses seqlock semantics.  The
+cost of one AND is not detectable.
+
+Paolo
