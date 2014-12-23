@@ -1,101 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575AbaLWQde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 11:33:34 -0500
-Received: from tex.lwn.net ([70.33.254.29]:51380 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756270AbaLWQcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 11:32:20 -0500
-From: Jonathan Corbet <corbet@lwn.net>
-To: linux-kernel@vger.kernel.org
-Cc: Randy Dunlap <rdunlap@infradead.org>, Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH 4/7] Docs: SubmittingPatches: update follow-through instructions
-Date: Tue, 23 Dec 2014 09:32:04 -0700
-Message-Id: <1419352327-4517-5-git-send-email-corbet@lwn.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1419352327-4517-1-git-send-email-corbet@lwn.net>
-References: <1419352327-4517-1-git-send-email-corbet@lwn.net>
+	id S932347AbaLWQjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 11:39:33 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:48169 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932305AbaLWQjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 11:39:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <1419331204-26679-9-git-send-email-vinceh@nvidia.com>
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
+	<1419331204-26679-9-git-send-email-vinceh@nvidia.com>
+Date: Tue, 23 Dec 2014 11:39:30 -0500
+X-Google-Sender-Auth: sJS2Aq_bmPSLSRhkEZ7zfbdyyyI
+Message-ID: <CAKb7UvgCizkaK2aZeWp=mgH34Ur3hi0hSFghopkpkkBeuqzsoQ@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH nouveau 08/11] instmem: add dummy support for GK20A
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Vince Hsu <vinceh@nvidia.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Ben Skeggs <bskeggs@redhat.com>,
+        Martin Peres <martin.peres@free.fr>,
+        Roy Spliet <seven@nimrod-online.com>,
+        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SubmittingPatches was written in the "keep sending to Linus until something
-shows up in a release" era.  Given that we don't do things that way anymore
-and the system is far less lossy, update this information and add some
-hints on responding to reviewer comments.
+On Tue, Dec 23, 2014 at 5:40 AM, Vince Hsu <vinceh@nvidia.com> wrote:
+> This is a workaround to avoid the instmem backup/restore during the suspend
+> and resume process in nv50 instemem driver.
+>
+> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+> ---
+>  drm/Kbuild                    |  1 +
+>  nvkm/engine/device/nve0.c     |  2 +-
+>  nvkm/include/subdev/instmem.h |  1 +
+>  nvkm/subdev/instmem/gk20a.c   | 70 +++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 73 insertions(+), 1 deletion(-)
+>  create mode 100644 nvkm/subdev/instmem/gk20a.c
+>
+> diff --git a/drm/Kbuild b/drm/Kbuild
+> index 6461e3565afe..ea40cd653c7c 100644
+> --- a/drm/Kbuild
+> +++ b/drm/Kbuild
+> @@ -176,6 +176,7 @@ nouveau-y += core/subdev/instmem/base.o
+>  nouveau-y += core/subdev/instmem/nv04.o
+>  nouveau-y += core/subdev/instmem/nv40.o
+>  nouveau-y += core/subdev/instmem/nv50.o
+> +nouveau-y += core/subdev/instmem/gk20a.o
+>  nouveau-y += core/subdev/ltc/base.o
+>  nouveau-y += core/subdev/ltc/gf100.o
+>  nouveau-y += core/subdev/ltc/gk104.o
+> diff --git a/nvkm/engine/device/nve0.c b/nvkm/engine/device/nve0.c
+> index 732922690653..fcbdc5259c7c 100644
+> --- a/nvkm/engine/device/nve0.c
+> +++ b/nvkm/engine/device/nve0.c
+> @@ -170,7 +170,7 @@ nve0_identify(struct nouveau_device *device)
+>                 device->oclass[NVDEV_SUBDEV_FB     ] =  gk20a_fb_oclass;
+>                 device->oclass[NVDEV_SUBDEV_LTC    ] =  gk104_ltc_oclass;
+>                 device->oclass[NVDEV_SUBDEV_IBUS   ] = &gk20a_ibus_oclass;
+> -               device->oclass[NVDEV_SUBDEV_INSTMEM] = nv50_instmem_oclass;
+> +               device->oclass[NVDEV_SUBDEV_INSTMEM] = gk20a_instmem_oclass;
+>                 device->oclass[NVDEV_SUBDEV_VM     ] = &nvc0_vmmgr_oclass;
+>                 device->oclass[NVDEV_SUBDEV_BAR    ] = &gk20a_bar_oclass;
+>                 device->oclass[NVDEV_ENGINE_DMAOBJ ] =  nvd0_dmaeng_oclass;
+> diff --git a/nvkm/include/subdev/instmem.h b/nvkm/include/subdev/instmem.h
+> index c1df26f3230c..6264660bedce 100644
+> --- a/nvkm/include/subdev/instmem.h
+> +++ b/nvkm/include/subdev/instmem.h
+> @@ -48,5 +48,6 @@ nouveau_instmem(void *obj)
+>  extern struct nouveau_oclass *nv04_instmem_oclass;
+>  extern struct nouveau_oclass *nv40_instmem_oclass;
+>  extern struct nouveau_oclass *nv50_instmem_oclass;
+> +extern struct nouveau_oclass *gk20a_instmem_oclass;
+>
+>  #endif
+> diff --git a/nvkm/subdev/instmem/gk20a.c b/nvkm/subdev/instmem/gk20a.c
+> new file mode 100644
+> index 000000000000..5e072d6e743f
+> --- /dev/null
+> +++ b/nvkm/subdev/instmem/gk20a.c
+> @@ -0,0 +1,70 @@
+> +/*
+> + * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a
+> + * copy of this software and associated documentation files (the "Software"),
+> + * to deal in the Software without restriction, including without limitation
+> + * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+> + * and/or sell copies of the Software, and to permit persons to whom the
+> + * Software is furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+> + * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+> + * DEALINGS IN THE SOFTWARE.
+> + *
+> + */
+> +
+> +#include "nv50.h"
 
-Signed-off-by: Jonathan Corbet <corbet@lwn.net>
----
- Documentation/SubmittingPatches | 50 ++++++++++++++++++-----------------------
- 1 file changed, 22 insertions(+), 28 deletions(-)
+I'm confused... what exactly depends on nv50_instmem_priv here? Why
+not just create a gk20a_instmem_priv and leave the nv50 one alone?
 
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index e169c6ca5243..a8308401a048 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -354,40 +354,34 @@ server, and provide instead a URL (link) pointing to your patch.
- 
- 
- 
--8) Name your kernel version.
--
--It is important to note, either in the subject line or in the patch
--description, the kernel version to which this patch applies.
--
--If the patch does not apply cleanly to the latest kernel version,
--Linus will not apply it.
--
--
-+8) Respond to review comments.
-+------------------------------
- 
--9) Don't get discouraged.  Re-submit.
-+Your patch will almost certainly get comments from reviewers on ways in
-+which the patch can be improved.  You must respond to those comments;
-+ignoring reviewers is a good way to get ignored in return.  Review comments
-+or questions that do not lead to a code change should almost certainly
-+bring about a comment or changelog entry so that the next reviewer better
-+understands what is going on.
- 
--After you have submitted your change, be patient and wait.  If Linus
--likes your change and applies it, it will appear in the next version
--of the kernel that he releases.
-+Be sure to tell the reviewers what changes you are making and to thank them
-+for their time.  Code review is a tiring and time-consuming process, and
-+reviewers sometimes get grumpy.  Even in that case, though, respond
-+politely and address the problems they have pointed out.
- 
--However, if your change doesn't appear in the next version of the
--kernel, there could be any number of reasons.  It's YOUR job to
--narrow down those reasons, correct what was wrong, and submit your
--updated change.
- 
--It is quite common for Linus to "drop" your patch without comment.
--That's the nature of the system.  If he drops your patch, it could be
--due to
--* Your patch did not apply cleanly to the latest kernel version.
--* Your patch was not sufficiently discussed on linux-kernel.
--* A style issue (see section 2).
--* An e-mail formatting issue (re-read this section).
--* A technical problem with your change.
--* He gets tons of e-mail, and yours got lost in the shuffle.
--* You are being annoying.
-+9) Don't get discouraged - or impatient.
-+----------------------------------------
- 
--When in doubt, solicit comments on linux-kernel mailing list.
-+After you have submitted your change, be patient and wait.  Reviewers are
-+busy people and may not get to your patch right away.
- 
-+Once upon a time, patches used to disappear into the void without comment,
-+but the development process works more smoothly than that now.  You should
-+receive comments within a week or so; if that does not happen, make sure
-+that you have sent your patches to the right place.  Wait for a minimum of
-+one week before resubmitting or pinging reviewers - possibly longer during
-+busy times like merge windows.
- 
- 
- 10) Include PATCH in the subject
--- 
-2.1.0
+> +#include "priv.h"
+> +
+> +static int
+> +gk20a_instmem_fini(struct nouveau_object *object, bool suspend)
+> +{
+> +       struct nouveau_instmem *imem = (void *)object;
+> +
+> +       return nouveau_subdev_fini(&imem->base, suspend);
+> +}
+> +
+> +static int
+> +gk20a_instmem_init(struct nouveau_object *object)
+> +{
+> +       struct nouveau_instmem *imem = (void *)object;
+> +
+> +       return nouveau_subdev_init(&imem->base);
+> +}
 
+I think the style is to just link those up directly in the class
+definition when they're trivial like that, i.e. point them at
+_nouveau_subdev_init and such.
+
+> +
+> +static int
+> +gk20a_instmem_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+> +                 struct nouveau_oclass *oclass, void *data, u32 size,
+> +                 struct nouveau_object **pobject)
+> +{
+> +       struct nv50_instmem_priv *priv;
+> +       int ret;
+> +
+> +       ret = nouveau_instmem_create(parent, engine, oclass, &priv);
+> +       *pobject = nv_object(priv);
+> +       if (ret)
+> +               return ret;
+> +
+> +       spin_lock_init(&priv->lock);
+> +       return 0;
+> +}
+> +
+> +struct nouveau_oclass *
+> +gk20a_instmem_oclass = &(struct nouveau_instmem_impl) {
+> +       .base.handle = NV_SUBDEV(INSTMEM, 0x50),
+> +       .base.ofuncs = &(struct nouveau_ofuncs) {
+> +               .ctor = gk20a_instmem_ctor,
+> +               .dtor = _nouveau_instmem_dtor,
+> +               .init = gk20a_instmem_init,
+> +               .fini = gk20a_instmem_fini,
+> +       },
+> +       .instobj = &nv50_instobj_oclass.base,
+> +}.base;
+> --
+> 1.9.1
+>
+> _______________________________________________
+> Nouveau mailing list
+> Nouveau@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/nouveau
