@@ -1,138 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252AbaLWByr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 20:54:47 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10439 "EHLO mga02.intel.com"
+	id S1754124AbaLWCSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 21:18:01 -0500
+Received: from ozlabs.org ([103.22.144.67]:39035 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752054AbaLWByp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 20:54:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,628,1413270000"; 
-   d="scan'208";a="627983959"
-Message-ID: <5498CB62.3070901@intel.com>
-Date: Tue, 23 Dec 2014 09:54:42 +0800
-From: "Chen, Tiejun" <tiejun.chen@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751241AbaLWCR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 21:17:59 -0500
+Date: Tue, 23 Dec 2014 13:17:49 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: missing merge fix for the access_once tree
+Message-ID: <20141223131749.78087632@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        luto@amacapital.net, jamie@audible.transient.net
-Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
-References: <20141221124640.GA4059@cucamonga.audible.transient.net> <5497C882.4000108@intel.com> <20141222092358.GA3915@cucamonga.audible.transient.net> <5498CA50.8070906@intel.com>
-In-Reply-To: <5498CA50.8070906@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/qLiucl.aJ_LaTPkYLOkWgQW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/23 9:50, Chen, Tiejun wrote:
-> On 2014/12/22 17:23, Jamie Heilman wrote:
->> Chen, Tiejun wrote:
->>> On 2014/12/21 20:46, Jamie Heilman wrote:
->>>> With v3.19-rc1 when I run qemu-system-x86_64 -machine pc,accel=kvm I
->>>> get:
->>>>
->>>> KVM: entry failed, hardware error 0x80000021
->>>
->>> Looks some MSR writing issues such a failed entry.
->>>
->>>> If you're running a guest on an Intel machine without unrestricted mode
->>>> support, the failure can be most likely due to the guest entering an
->>>> invalid
->>>> state for Intel VT. For example, the guest maybe running in big real
->>>> mode
->>>> which is not supported on less recent Intel processors.
->>>>
->>>> EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
->>>> ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
->>>> EIP=0000e05b EFL=00010002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
->>>> ES =0000 00000000 0000ffff 00009300
->>>> CS =f000 000f0000 0000ffff 00009b00
->>>> SS =0000 00000000 0000ffff 00009300
->>>> DS =0000 00000000 0000ffff 00009300
->>>> FS =0000 00000000 0000ffff 00009300
->>>> GS =0000 00000000 0000ffff 00009300
->>>> LDT=0000 00000000 0000ffff 00008200
->>>> TR =0000 00000000 0000ffff 00008b00
->>>> GDT=     00000000 0000ffff
->>>> IDT=     00000000 0000ffff
->>>> CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
->>>> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
->>>> DR3=0000000000000000
->>>> DR6=00000000ffff0ff0 DR7=0000000000000400
->>>> EFER=0000000000000000
->>>
->>> And I don't see any obvious wrong as well. Any valuable info from dmesg?
->>
->> With the simple qemu command above, on 3.18.1 I see:
->>
->> kern.info: kvm: zapping shadow pages for mmio generation wraparound
->>
->> when I fire up a full guest that's actually useful I get:
->>
->> kern.info: kvm: zapping shadow pages for mmio generation wraparound
->> kern.err: kvm [4073]: vcpu0 disabled perfctr wrmsr: 0xc1 data 0xffff
->>
->> On 3.18.0-rc3-00042-g34a1cd6 nothing appears in the dmesg, just the
->> message I mention above to stderr.  Same thing with a stock
->> 3.19.0-rc1.  Once I apply your patch the simple test command produces
->> the same zapping shadow pages messages as 3.18.1, and a test guest of
->> a Debian Jessie image (w/stock distro kernel) produces the same thing
->> with disabled perfctr wrmsr message.  However, it doesn't look like
->
-> Sorry I'm not sure if I understood current status. Looks 3.19-rc1 & my
-> patch just fix that error above,
->
-> KVM: entry failed, hardware error 0x80000021
-> ...
->
-> Right?
->
->> I'm entirely out of the woods, because one of my other guest VMs with a
->> custom kernel that works great under 3.18.1 now fails to run.  Nothing
->> in dmesg, but here's the stderr:
->
-> But even you revert 34a1cd60d17 or just apply my patch, something else
-> introduced between 3.18.1 and 3.19-rc1 led this error below, right?
->
->>
->> KVM internal error. Suberror: 1
->> emulation failure
->> EAX=000de494 EBX=00000000 ECX=00000000 EDX=00000cfd
->> ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fb4
->> EIP=000f15c1 EFL=00010016 [----AP-] CPL=0 II=0 A20=1 SMM=0 HLT=0
->> ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
->> SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->> LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
->> TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
->> GDT=     000f6be8 00000037
->> IDT=     000f6c26 00000000
->> CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
->> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
->> DR3=0000000000000000
->> DR6=00000000ffff0ff0 DR7=0000000000000400
->> EFER=0000000000000000
->> Code=e8 ae fc ff ff 89 f2 a8 10 89 d8 75 0a b9 41 15 ff ff ff d1 <5b>
->> 5e c3 5b 5e e9 76 ff ff ff b0 11 e6 20 e6 a0 b0 08 e6 21 b0 70 e6 a1
->> b0 04 e6 21 b0 02
->>
->> FWIW, I get the same thing with 34a1cd60d17 reverted.  Maybe there are
->> two bugs, maybe there's more to this first one.  I can repro this
->
-> So if my understanding is correct, this is probably another bug. And
-> especially, I already saw the same log in another thread, "Cleaning up
-> the KVM clock". Maybe you can continue to `git bisect` to locate that
-> bad commit.
->
+--Sig_/qLiucl.aJ_LaTPkYLOkWgQW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Looks just now Andy found that commit, 
-0e60b0799fedc495a5c57dbd669de3c10d72edd2 "kvm: change memslot sorting 
-rule from size to GFN", maybe you can try to revert this to try yours again.
+Hi Linus,
 
-Thanks
-Tiejun
+I have been carrying this merge fix patch for some time.  It should
+have gone into the merge of the access_once tree.
+
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+Date: Sun, 7 Dec 2014 22:01:59 +0100
+Subject: [PATCH] x86/xen/p2m: Replace ACCESS_ONCE with READ_ONCE
+
+ACCESS_ONCE does not work reliably on non-scalar types. For
+example gcc 4.6 and 4.7 might remove the volatile tag for such
+accesses during the SRA (scalar replacement of aggregates) step
+(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=3D58145)
+
+Change the p2m code to replace ACCESS_ONCE with READ_ONCE.
+
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+---
+ arch/x86/xen/p2m.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 8b5db51..08ddf91 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -554,7 +554,7 @@ static bool alloc_p2m(unsigned long pfn)
+ 		mid_mfn =3D NULL;
+ 	}
+=20
+-	p2m_pfn =3D pte_pfn(ACCESS_ONCE(*ptep));
++	p2m_pfn =3D pte_pfn(READ_ONCE(*ptep));
+ 	if (p2m_pfn =3D=3D PFN_DOWN(__pa(p2m_identity)) ||
+ 	    p2m_pfn =3D=3D PFN_DOWN(__pa(p2m_missing))) {
+ 		/* p2m leaf page is missing */
+--=20
+1.8.5.5
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/qLiucl.aJ_LaTPkYLOkWgQW
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUmNDSAAoJEMDTa8Ir7ZwVAf4P/2f3c2K4almHPEGFn0tHrMFP
+EY3wBiuUh1qgdxW5MGritGm3WlrsfN50uBxYR5Vil+HF1BnU4rw49PGz9A+F+M96
+enC2Xg8FcUgfTFj5Efwg+U4MEfbV6JMHtlYMlDDypNvcY8r09lmHBkyh0GM3nn4x
+q50UMQ7AC0knMO1ExGSys/rNuB0NgICF4vnegbirzHScwcFyquu9Z621HFECDR1o
+IVOxN8Yqs3sbYEncF8KaYWClJVQ0zlM1Fuysr/rMxjU0L31GoLFPGcNhMFDt1c5W
+qaXNMOd8e7qZ1jQJqPCg+KsR1mqcqjNGLCxmdH+PBhFd3tLIoUacXyQG3i0CjT4Y
+6WMJje4QTTfLAO2+W1l8Ks5cOThY8h0QqjEfIi+mXEWz9u6mtyqmBmaOy0dX/q3/
+VCVb1pn/KM0Os9nBMxFAYIiyjV4kfjWWK86xRRIUWDWZYeT6nbFEOvbOFuAUh9SZ
+K3bumluc2PsyMgpyuL0Hbd6fhvxNvXn80MXEZWNJfBUHQT3b8qQYb2tcNF5FOfqk
+i/nvFLSysmNUheafzeXs2mRQkQUhleCbPelTzOyszWTg3AfhWetz8LCabr2T1iWQ
+3OYeqFC/ddBnZncNhD2zcSH+ttOx8sTJmZLkT4KhbyZJBjKcro1XT57jFobX/8oH
+e+C6LDxlQJJSWx/aKr+l
+=1yAo
+-----END PGP SIGNATURE-----
+
+--Sig_/qLiucl.aJ_LaTPkYLOkWgQW--
