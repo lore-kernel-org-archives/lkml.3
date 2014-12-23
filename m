@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaLWNCx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 08:02:53 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:51234 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858AbaLWNCv (ORCPT
+	id S1756196AbaLWNEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 08:04:34 -0500
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:62325 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858AbaLWNEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 08:02:51 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
-Subject: [PATCH] checkpatch: fix UNNECESSARY_KERN_LEVEL false positive
-Date: Tue, 23 Dec 2014 14:02:43 +0100
-Message-Id: <1419339763-24901-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 23 Dec 2014 08:04:33 -0500
+From: Walter Lozano <walter@vanguardiasur.com.ar>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Walter Lozano <walter@vanguardiasur.com.ar>
+Subject: [PATCH] ARM: socfpga: dts: Add adxl34x
+Date: Tue, 23 Dec 2014 10:04:22 -0300
+Message-Id: <1419339862-29852-1-git-send-email-walter@vanguardiasur.com.ar>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KERN_<LEVEL> is never redundant with printk_ratelimited.
+This patch adds the DTS bindings for the adxl34x digital
+accelerometer.
 
-Cc: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
 ---
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/socfpga_cyclone5_sockit.dts |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index f0bb6d60c07b..6b3afe6a3dd3 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -4545,7 +4545,7 @@ sub process {
- 		}
- 
- # check for logging functions with KERN_<LEVEL>
--		if ($line !~ /printk\s*\(/ &&
-+		if ($line !~ /printk(?:_ratelimited)?\s*\(/ &&
- 		    $line =~ /\b$logFunctions\s*\(.*\b(KERN_[A-Z]+)\b/) {
- 			my $level = $1;
- 			if (WARN("UNNECESSARY_KERN_LEVEL",
+diff --git a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
+index 16ea6f5..f99d7dec 100644
+--- a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
++++ b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
+@@ -68,3 +68,20 @@
+ &usb1 {
+ 	status = "okay";
+ };
++
++&gpio2 {
++	status = "okay";
++};
++
++&i2c1{
++	status = "okay";
++
++	accel1: accel1@53{
++		compatible = "adxl34x";
++		reg = <0x53>;
++
++		interrupt-parent = < &portc >;
++		interrupts = <3 2>;
++
++	};
++};
 -- 
-1.8.3.1
+1.7.10.4
 
