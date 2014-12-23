@@ -1,69 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaLWJTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:19:51 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:48752 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaLWJTt (ORCPT
+	id S1754846AbaLWJVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:21:08 -0500
+Received: from inca-roads.misterjones.org ([213.251.177.50]:37997 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751845AbaLWJVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:19:49 -0500
-Date: Tue, 23 Dec 2014 10:19:44 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Dave Hansen <dave@sr71.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Subject: Re: [PATCH 1/2] x86, mpx: explicitly disable 32-bit MPX support on
- 64-bit kernels
-Message-ID: <20141223091944.GB9112@gmail.com>
-References: <20141222200803.D316DA2A@viggo.jf.intel.com>
- <20141222200804.18A7A803@viggo.jf.intel.com>
- <CALCETrWAgPjLTA-iSabFmqVKiOKGPGgDgSWdjz3wsncs1X+WOg@mail.gmail.com>
- <54987D4F.3000908@sr71.net>
- <CALCETrXF11MeP8vc4eKqJz+2OOYQzmrK_erVEz=pZS3c=YWibw@mail.gmail.com>
+	Tue, 23 Dec 2014 04:21:05 -0500
+X-Greylist: delayed 2218 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Dec 2014 04:21:04 EST
+To: Eddie Huang <eddie.huang@mediatek.com>
+Subject: Re: [PATCH v2 3/4] arm64: dts: Add mediatek MT8173 SoC and  evaluation board dts and Makefile
+X-PHP-Originating-Script: 0:main.inc
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXF11MeP8vc4eKqJz+2OOYQzmrK_erVEz=pZS3c=YWibw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Tue, 23 Dec 2014 08:43:55 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Brown <broonie@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        <linux-kernel@vger.kernel.org>, <yh.chen@mediatek.com>,
+        Robert Richter <rrichter@cavium.com>, <srv_heupstream@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Organization: ARM Ltd
+In-Reply-To: <1419321723.14341.38.camel@mtksdaap41>
+References: <1418825853-10934-1-git-send-email-eddie.huang@mediatek.com>
+ <20141217143305.GC8942@leverpostej> <54919AC9.2090306@arm.com>
+ <3669965.zfJEHTFEBI@wuerfel> <5497DF4C.4000104@arm.com>
+ <1419321723.14341.38.camel@mtksdaap41>
+Message-ID: <72aa7f4069a000c6e39c53e328015aa3@www.loen.fr>
+User-Agent: Roundcube Webmail/0.7.2
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: eddie.huang@mediatek.com, mark.rutland@arm.com, devicetree@vger.kernel.org, arnd@arndb.de, pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, catalin.marinas@arm.com, broonie@linaro.org, will.deacon@arm.com, linux-kernel@vger.kernel.org, yh.chen@mediatek.com, rrichter@cavium.com, srv_heupstream@mediatek.com, robh+dt@kernel.org, matthias.bgg@gmail.com, kernel@pengutronix.de, galak@codeaurora.org, olof@lixom.net, yingjoe.chen@mediatek.com, tglx@linutronix.de, linux-arm-kernel@lists.infradead.org, jason@lakedaemon.net
+X-SA-Exim-Mail-From: marc.zyngier@arm.com
+X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Eddie,
 
-* Andy Lutomirski <luto@amacapital.net> wrote:
+On 2014-12-23 08:02, Eddie Huang wrote:
+> Hi,
+>
+> On Mon, 2014-12-22 at 09:07 +0000, Marc Zyngier wrote:
+>> On 20/12/14 20:07, Arnd Bergmann wrote:
+>> > On Wednesday 17 December 2014 15:01:29 Marc Zyngier wrote:
+>> >>
+>> >> Indeed, as described in the documentation:
+>> >> 
+>> http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0471b/CHDIFAEE.html
+>> >>
+>> >> Also it is worth noticing that given how GICV is placed, it will 
+>> never
+>> >> work with 64K pages and virtualization. Pretty sad.
+>> >
+>> > Does this mean no VGIC support on this platform so you have to 
+>> emulate it
+>> > in order to run virtual machines with 64K pages, or does it mean 
+>> that
+>> > it's impossible to use that way because you can't emulate it?
+>>
+>> As Peter said, this is not a configuration we're willing to support:
+>> - we don't have a API to tell userspace emulation about interrupts
+>> generated by the generic timers
+>> - we could move the whole GIC emulation into the kernel (at the 
+>> moment,
+>> only the distributor is there), but that would be a complete 
+>> nightmare
+>>
+>> It really looks like a case of "let's drop a bunch of 64bit cores 
+>> into
+>> an existing SoC". Shame people can't read integration guidelines...
+>>
+>> 	M.
+>
+> MT8173 use GIC-400. We check GIC-400 TRM that VGIC address is not 
+> 64KB
+> alignment. but GIC-500 (GICv3) VGIC base address is. We also check
+> 3.19-rc1 arm64 device tree, amd-seattle-soc.dtsi VGIC is 64KB 
+> alignment,
+> but arm juno.dts is not, they are both GIC-400. So we are a little
+> confused, and still try to figure out what is the correct address.
 
-> On Mon, Dec 22, 2014 at 12:21 PM, Dave Hansen <dave@sr71.net> wrote:
-> > On 12/22/2014 12:17 PM, Andy Lutomirski wrote:
-> >>> >         /*
-> >>> > +        * 32-bit binaries on 64-bit kernels are currently
-> >>> > +        * unsupported.
-> >>> > +        */
-> >>> > +       if (IS_ENABLED(CONFIG_X86_64) && test_thread_flag(TIF_IA32))
-> >>> > +               return MPX_INVALID_BOUNDS_DIR;
-> >> Should this check mm->ia32_compat instead?
-> >
-> > set_personality_64bit/ia32() seem to make that and TIF_IA32 awfully
-> > equivalent.  Is there a specific reason for wanting it done this way?
-> 
-> My general desire to remove various bogus TIF_IA32 references. 
-> [...]
+I'm afraid you're missing the point.
 
-So we generally want to use mm->context.ia32_compat instead of 
-TIF_IA32, because in the end TIF_IA32 will go away altogether?
+It is not a matter of alignment, but a matter of having put the GICV
+region in the same 64K page as the rest of the GIC. Which means that
+if the hypervisor (KVM or Xen) wants to map the GICV region inside the
+guest, it will also be forced to give it access to GICC, GICD, and 
+GICH.
 
-Or do you just want to audit all TIF_IA32 places (because most of 
-them are wrong), and using mm->context.ia32_compat where it's 
-justified and eliminating TIF_IA32 use is a nice way to document 
-that ongoing audit without breaking stuff and such?
+Goodbye isolation, see your hypervisor going down at the first buggy 
+guest,
+not to mention all kind of other nice hacks...
 
-> [...]  But this is only temporary, so I don't really care.
+I could understand the need to tightly pack everything on a 32bit 
+system,
+but doing so on a 64bit system without consideration of the page size
+is a bit of a bummer.
 
-New code that touches this area should better use new principles, 
-so I have no problem with requiring this, as long as it's well 
-explained and logical and desirable to everyone.
+> Neverthless, MT8173 SoC already use 0x10224000 and 0x10225000 as VGIC
+> base address.
+
+Then its fate is sealed virtualization wise.
 
 Thanks,
 
-	Ingo
+         M.
+-- 
+Fast, cheap, reliable. Pick two.
