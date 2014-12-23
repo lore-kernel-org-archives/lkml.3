@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaLWVEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 16:04:41 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29384 "EHLO mga11.intel.com"
+	id S1756569AbaLWVH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 16:07:27 -0500
+Received: from mga11.intel.com ([192.55.52.93]:45565 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756637AbaLWVEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 16:04:38 -0500
+	id S1751542AbaLWVHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 16:07:21 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="432721728"
-Message-ID: <1419368676.2470.30.camel@jtkirshe-mobl>
-Subject: Re: [PATCH net-next 07/11] net: igb: convert to timecounter adjtime.
+X-IronPort-AV: E=Sophos;i="5.07,633,1413270000"; 
+   d="asc'?scan'208";a="659222963"
+Message-ID: <1419368839.2470.32.camel@jtkirshe-mobl>
+Subject: Re: [PATCH net-next 08/11] net: ixgbe: convert to timecounter
+ adjtime.
 From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 To: Richard Cochran <richardcochran@gmail.com>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -24,12 +25,12 @@ Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Or Gerlitz <ogerlitz@mellanox.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Tom Lendacky <thomas.lendacky@amd.com>
-Date: Tue, 23 Dec 2014 13:04:36 -0800
-In-Reply-To: <bb15b44a539ec6da39812229b5fb0718bd6859f0.1418504889.git.richardcochran@gmail.com>
+Date: Tue, 23 Dec 2014 13:07:19 -0800
+In-Reply-To: <5d83679d541974c164cfc415c0bb171e2b363f16.1418504889.git.richardcochran@gmail.com>
 References: <cover.1418504883.git.richardcochran@gmail.com>
-	 <bb15b44a539ec6da39812229b5fb0718bd6859f0.1418504889.git.richardcochran@gmail.com>
+	 <5d83679d541974c164cfc415c0bb171e2b363f16.1418504889.git.richardcochran@gmail.com>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-u6O/xNMkX1GA7XxnZ2x9"
+	protocol="application/pgp-signature"; boundary="=-4HNh19mthAor9npeNqbT"
 X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,7 +38,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-u6O/xNMkX1GA7XxnZ2x9
+--=-4HNh19mthAor9npeNqbT
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
@@ -45,17 +46,21 @@ On Sun, 2014-12-21 at 19:47 +0100, Richard Cochran wrote:
 > This patch changes the driver to use the new and improved method
 > for adjusting the offset of a timecounter.
 >=20
+> Compile tested only.
+>=20
 > Signed-off-by: Richard Cochran <richardcochran@gmail.com>
 
 Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Just for sanity sake, I will have Phillip test the changes, but there is
+no need to hold this up from being committed in the mean time.
 
 > ---
->  drivers/net/ethernet/intel/igb/igb_ptp.c |    7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_ptp.c |   11 +----------
+>  1 file changed, 1 insertion(+), 10 deletions(-)
 
 
 
---=-u6O/xNMkX1GA7XxnZ2x9
+--=-4HNh19mthAor9npeNqbT
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 Content-Transfer-Encoding: 7bit
@@ -63,20 +68,20 @@ Content-Transfer-Encoding: 7bit
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAABCgAGBQJUmdjkAAoJEOVv75VaS+3OecQP/1R/DmPdwPeHxK1aZHnyQWXK
-JhmVB9qpZPluMIXHa5KEIPN4wb31HXv7oRG/pVTWcVOVHruz/kglP+42d8zqtB1k
-0MaXJoh2qSePOwFQj7NHwjr+SWmPsWjAwdZTuvaJ7D/QcKz1qNlsN4Ou6Qgcvfwi
-4BGlxaC5w9sKlDyO6XnozCf6UWQrxVdzCvMo41jWC9/1zhgqRkdYRmOIyT7DzBd7
-JeZE6GfzbbIbINlGEHdY2SgeVJnT5+ukC2QyF3QSEmNkpPURvDnrd1cXmJRUBCGd
-hb7sjCvLmL+cx4DuM1nsplSYWh+xgJlnw6fSi58cHLjOINy6TxzqWmzFbgeTOsie
-AJqsymS077y/mGScwiIsGZU9GUcNeVW2NAf1H3vP97e8Qce5UNFuq5Hr2jro4x8B
-dOxIh08T/uAM7mM37bksdxN2ksb+FQCIt3aCRcXdyc0o/1W6gMM+2BLZwYRh7G51
-byDAdOMqDQJwrb2iRXX0I+VFMJMCZXwbTENyqlISz7bsW5RgRX0jWHDwLc8V9r8G
-7qZnai99RaFFyGehCJ7bcXM5US7OmX/MwSDslaEZyFsHFvmN/7Ozder5uNgX+FHz
-pHVVi3f/mlxOpCE8lCkd1DJyklTQGrkOoQXSwqrXpKj/brButjL5HuOrNT/9w7J4
-Eao3BChLQNopD+If9xAs
-=pPzT
+iQIcBAABCgAGBQJUmdmHAAoJEOVv75VaS+3ORbIP/0Pp1dJl2Ik1fRxwpWN1SVD7
+5sRN79OINPvPx8iP/yYU2DstZR+ylBHaiqq9GjSqOScVlVBx7/e44LjFn8WSe0si
+Te7zJDrL6VFTrNt/xUM6Cwb3wWOcPiym3nY/QRaTKn9YdbVonQe9AchDXW/F+F6l
+Gm0oRhjXCGbdAYXDMe6A3mGq5YIE/0ZWfR/K5cjcvqs9FUvH+Z3YQ6ZSMhzsCGVD
+12pBoaYH2Oty7A/RR7cUCzcF1rK1zwNxVAHUb9FFrXzYTzm/cOQ7H9MDh3837Myc
+UfJ8C3HF5RFiB4eh4aaORTW30BbQRnwsmUhaX/0lh/cUQq0+exPIOO00/VD67z9D
+yWEechjKDoB/vVhBgjdNbPQ/FdE+m0W9Qf8xp4KT2+SuXgiJH5DtGxuhGC/yF0IL
+hE5nlYQ7ZSWprExjmFyNFM7Hkn8EM8J9YAvw4kjx4yr5wD1HcZrCntLPp3dBK/jM
+8Q2TNPomvAfjjiI82YeXjaYULGvKDd6Qzc7cAYEayTWg0K6bcKcJxH8+jMxoSnpj
+cTkBhohIGfVXAC4qukzEeUZnyznnhwp8cH5RsjSOTSY58nOsDlV676/86hW8PJeP
+wmezQ01M1AFfZbHi4scLT/80acXhEN/3hff+NfZQK2z9xHsuQD825JTbLmoi1PlG
+exwDP64GV1TMXnstJZfP
+=NvtK
 -----END PGP SIGNATURE-----
 
---=-u6O/xNMkX1GA7XxnZ2x9--
+--=-4HNh19mthAor9npeNqbT--
 
