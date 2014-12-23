@@ -1,253 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817AbaLWLcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 06:32:54 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:49812 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755566AbaLWLcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 06:32:52 -0500
-Date: Tue, 23 Dec 2014 12:31:28 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Evgeni Dobrev <evgeni@studio-punkt.com>
-Cc: devicetree@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/1] add support for Seagate BlackArmor NAS220
-Message-ID: <20141223113128.GN32716@lunn.ch>
-References: <20141215203855.GA28940@anne>
- <20141222125750.GA29163@anne>
+	id S1755890AbaLWLhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 06:37:55 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:32975 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755726AbaLWLhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 06:37:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141222125750.GA29163@anne>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141223194809.57dd6f6e@notabene.brown>
+References: <20141219230732.7511.28103.stgit@notabene.brown>
+	<CAPDyKFot3ZyeoVf5wWSizw==7bitLAb7btg3ngH6aMWHFdAekw@mail.gmail.com>
+	<20141223194809.57dd6f6e@notabene.brown>
+Date: Tue, 23 Dec 2014 12:37:52 +0100
+Message-ID: <CAPDyKFqxYnB0t3Soo2nVGoN=+RfQPAN=3ykOnFcso5JKS5ZgKA@mail.gmail.com>
+Subject: Re: [PATCH 2a/3] mmc: core: Allow host driver to provide isr for
+ card-detect interrupts.
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Chris Ball <chris@printf.net>, GTA04 owners <gta04-owner@goldelico.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 01:57:50PM +0100, Evgeni Dobrev wrote:
-> This patch adds support for Seagate BlackArmor NAS220.
-> 
-> The Seagate BlackArmor NAS 220 is a NAS system based on Marvell 88f6192. It has
-> 32MB NAND and 128MB DRAM. It has two SATA slots, one Gigabit Ethernet port, two
-> USB 2.0 ports, two buttons and three LEDs. There is a serial port available on
-> the CN5 connector on the board (1 - TX, 4 - RX, 6 - GND).
-> 
-> The only functionality still not implemented is the bi-color led on the front
-> panel (status). Pins mpp22 and mpp23 control this led. Setting mpp22 to high and
-> mpp23 to low results in orange color. Setting mpp22 to low and mpp23 to high
-> results in blue color.
-> 
-> The third led is wired to show the SATA activity on the two drives.
+On 23 December 2014 at 09:48, NeilBrown <neilb@suse.de> wrote:
+> On Mon, 22 Dec 2014 16:35:40 +0100 Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>
+>> On 20 December 2014 at 00:07, NeilBrown <neilb@suse.de> wrote:
+>> > One of the reasons omap_hsmmc doesn't use the slot-gpio library
+>> > is that it has some non-standard functionality in the card-detect
+>> > interrupt service routine.
+>> >
+>> > To make it possible for omap_hsmmc (and maybe others) to be converted
+>> > to use slot-gpio, add 'mmc_gpio_request_cd_isr' which provide an
+>> > alternate isr to be register by the slot-gpio code.
+>> >
+>> > Signed-off-by: NeilBrown <neilb@suse.de>
+>> > ---
+>> >  drivers/mmc/core/slot-gpio.c  |   24 +++++++++++++++++++++++-
+>> >  include/linux/mmc/slot-gpio.h |    2 ++
+>> >  2 files changed, 25 insertions(+), 1 deletion(-)
+>> >
+>> > This and following are the result of splitting the previous
+>> > '2/3' into to patches: core and omap_hsmmc as requested.
+>> >
+>> > NeilBrown
+>> >
+>> >
+>> > diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+>> > index 69bbf2adb329..f56323f5a996 100644
+>> > --- a/drivers/mmc/core/slot-gpio.c
+>> > +++ b/drivers/mmc/core/slot-gpio.c
+>> > @@ -23,6 +23,7 @@ struct mmc_gpio {
+>> >         struct gpio_desc *cd_gpio;
+>> >         bool override_ro_active_level;
+>> >         bool override_cd_active_level;
+>> > +       irqreturn_t (*cd_gpio_isr)(int irq, void *dev_id);
+>> >         char *ro_label;
+>> >         char cd_label[0];
+>> >  };
+>> > @@ -156,8 +157,10 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
+>> >                 irq = -EINVAL;
+>> >
+>> >         if (irq >= 0) {
+>> > +               if (ctx->cd_gpio_isr == NULL)
+>>
+>> Please change to:
+>> if (!ctx->cd_gpio_isr)
+>
+> will do (though I personally prefer the explicit "NULL" :-).
+>
+>>
+>> > +                       ctx->cd_gpio_isr = mmc_gpio_cd_irqt;
+>> >                 ret = devm_request_threaded_irq(&host->class_dev, irq,
+>> > -                       NULL, mmc_gpio_cd_irqt,
+>> > +                       NULL, ctx->cd_gpio_isr,
+>> >                         IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>> >                         ctx->cd_label, host);
+>> >                 if (ret < 0)
+>> > @@ -171,6 +174,25 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
+>> >  }
+>> >  EXPORT_SYMBOL(mmc_gpiod_request_cd_irq);
+>> >
+>> > +/* Register an alternate interrupt service routine for
+>> > + * the card-detect GPIO.
+>> > + */
+>> > +int mmc_gpio_request_cd_isr(struct mmc_host *host,
+>> > +                           irqreturn_t (*isr)(int irq, void *dev_id))
+>> > +{
+>> > +       struct mmc_gpio *ctx;
+>> > +       int ret;
+>> > +
+>> > +       ret = mmc_gpio_alloc(host);
+>> > +       if (ret < 0)
+>> > +               return ret;
+>> > +       ctx = host->slot.handler_priv;
+>> > +       if (ctx->cd_gpio_isr)
+>> > +               return -EBUSY;
+>> > +       ctx->cd_gpio_isr = isr;
+>> > +       return 0;
+>> > +}
+>>
+>> I decided to queue those patchsets I recently posted which simplifies
+>> the slot-gpio API. Please re-base this patch on top of my next branch.
+>
+> OK.
+>
+>>
+>> Moreover, I actually wonder whether we need to add this API at all.
+>> After my changes, all you need to do from your host driver ->probe(),
+>> is to assign your isr routine to ctx->cd_gpio_isr.
+>
+> 'struct mmc_gpio' is local to slot-gpio.c, so code in other files cannot
+> access the members directly.
 
-H Evgeni
+You are right. I don't think they should.
 
-This is looking good now. I will wait a few days to see if anybody
-else has any comments, and it not, pull it into mvebu/dt.
+Let's add the API instead, but rename it to something like
+mmc_gpio_set_cd_isr().
 
-Thanks
-	Andrew
+Kind regards
+Uffe
 
-
-> 
-> Signed-off-by: Evgeni Dobrev <evgeni@studio-punkt.com>
-> ---
->  arch/arm/boot/dts/Makefile            |    1 +
->  arch/arm/boot/dts/kirkwood-nas220.dts |  166 +++++++++++++++++++++++++++++++++
->  2 files changed, 167 insertions(+)
->  create mode 100644 arch/arm/boot/dts/kirkwood-nas220.dts
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 38c89ca..8b9ad1d 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -132,6 +132,7 @@ dtb-$(CONFIG_MACH_KIRKWOOD) += kirkwood-b3.dtb \
->  	kirkwood-lsxhl.dtb \
->  	kirkwood-mplcec4.dtb \
->  	kirkwood-mv88f6281gtw-ge.dtb \
-> +	kirkwood-nas220.dtb \
->  	kirkwood-net2big.dtb \
->  	kirkwood-net5big.dtb \
->  	kirkwood-netgear_readynas_duo_v2.dtb \
-> diff --git a/arch/arm/boot/dts/kirkwood-nas220.dts b/arch/arm/boot/dts/kirkwood-nas220.dts
-> new file mode 100644
-> index 0000000..8175f3d
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/kirkwood-nas220.dts
-> @@ -0,0 +1,166 @@
-> +/*
-> + * Device Tree file for Seagate BlackArmor NAS220
-> + *
-> + * Copyright (C) 2014 Evgeni Dobrev <evgeni@studio-punkt.com>
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +
-> +/dts-v1/;
-> +
-> +#include <dt-bindings/gpio/gpio.h>
-> +#include <dt-bindings/input/input.h>
-> +#include "kirkwood.dtsi"
-> +#include "kirkwood-6192.dtsi"
-> +
-> +/ {
-> +	model = "Seagate NAS 220";
-> +	compatible = "seagate,nas220","marvell,kirkwood-88f6192","marvell,kirkwood";
-> +
-> +	memory { /* 128 MB */
-> +		device_type = "memory";
-> +		reg = <0x00000000 0x8000000>;
-> +	};
-> +
-> +	chosen {
-> +		bootargs = "console=ttyS0,115200n8";
-> +		stdout-path = &uart0;
-> +	};
-> +
-> +	ocp@f1000000 {
-> +		pinctrl: pin-controller@10000 {
-> +			pinctrl-0 = <&pmx_uart0
-> +				     &pmx_button_reset
-> +				     &pmx_button_power>;
-> +			pinctrl-names = "default";
-> +
-> +			pmx_act_sata0: pmx-act-sata0 {
-> +				marvell,pins = "mpp15";
-> +				marvell,function = "sata0";
-> +			};
-> +			pmx_act_sata1: pmx-act-sata1 {
-> +				marvell,pins = "mpp16";
-> +				marvell,function = "sata1";
-> +			};
-> +			pmx_power_sata0: pmx-power-sata0 {
-> +				marvell,pins = "mpp24";
-> +				marvell,function = "gpio";
-> +			};
-> +			pmx_power_sata1: pmx-power-sata1 {
-> +				marvell,pins = "mpp28";
-> +				marvell,function = "gpio";
-> +			};
-> +			pmx_button_reset: pmx-button-reset {
-> +				marvell,pins = "mpp29";
-> +				marvell,function = "gpio";
-> +			};
-> +			pmx_button_power: pmx-button-power {
-> +				marvell,pins = "mpp26";
-> +				marvell,function = "gpio";
-> +			};
-> +		};
-> +
-> +
-> +		/*
-> +		 * Serial port routed to connector CN5
-> +		 *
-> +		 * pin 1 - TX
-> +		 * pin 4 - RX
-> +		 * pin 6 - GND
-> +		 */
-> +		serial@12000 {
-> +			status = "okay";
-> +		};
-> +
-> +		sata@80000 {
-> +			status = "okay";
-> +			nr-ports = <2>;
-> +		};
-> +
-> +		i2c@11000 {
-> +			status = "okay";
-> +			adt7476: adt7476a@2e {
-> +				compatible = "adi,adt7476";
-> +				reg = <0x2e>;
-> +			};
-> +		};
-> +	};
-> +
-> +	gpio_poweroff {
-> +		compatible = "gpio-poweroff";
-> +		gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
-> +	};
-> +
-> +	gpio_keys {
-> +		compatible = "gpio-keys";
-> +		button@1{
-> +			label = "Reset push button";
-> +			linux,code = <KEY_POWER>;
-> +			gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
-> +		};
-> +		button@2{
-> +			label = "Power push button";
-> +			linux,code = <KEY_SLEEP>;
-> +			gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
-> +		};
-> +	};
-> +
-> +	gpio-leds {
-> +		compatible = "gpio-leds";
-> +		blue-power {
-> +			label = "nas220:blue:power";
-> +			gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
-> +			linux,default-trigger = "default-on";
-> +		};
-> +	};
-> +
-> +	regulators {
-> +		compatible = "simple-bus";
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		pinctrl-0 = <&pmx_power_sata0 &pmx_power_sata1>;
-> +		pinctrl-names = "default";
-> +
-> +		sata0_power: regulator@1 {
-> +			compatible = "regulator-fixed";
-> +			reg = <1>;
-> +			regulator-name = "SATA0 Power";
-> +			regulator-min-microvolt = <5000000>;
-> +			regulator-max-microvolt = <5000000>;
-> +			enable-active-high;
-> +			regulator-always-on;
-> +			regulator-boot-on;
-> +			gpio = <&gpio0 24 0>;
-> +		};
-> +
-> +		sata1_power: regulator@2 {
-> +			compatible = "regulator-fixed";
-> +			reg = <2>;
-> +			regulator-name = "SATA1 Power";
-> +			regulator-min-microvolt = <5000000>;
-> +			regulator-max-microvolt = <5000000>;
-> +			enable-active-high;
-> +			regulator-always-on;
-> +			regulator-boot-on;
-> +			gpio = <&gpio0 28 0>;
-> +		};
-> +	};
-> +};
-> +
-> +&nand {
-> +	status = "okay";
-> +};
-> +
-> +&mdio {
-> +	status = "okay";
-> +	ethphy0: ethernet-phy@8 {
-> +		 reg = <8>;
-> +	 };
-> +};
-> +
-> +&eth0 {
-> +	status = "okay";
-> +	ethernet0-port@0 {
-> +		phy-handle = <&ethphy0>;
-> +	};
-> +};
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
+> If you want to move it to include/linux/mmc/host.h and change
+>   void *handler_priv;
+> to
+>   struct mmc_gpio *gpios;
+>
+> or similar, then I'll happily update it directly.
+> What do you think?
+>
+> NeilBrown
+>
+>
+>>
+>> > +
+>> >  /**
+>> >   * mmc_gpio_request_cd - request a gpio for card-detection
+>> >   * @host: mmc host
+>> > diff --git a/include/linux/mmc/slot-gpio.h b/include/linux/mmc/slot-gpio.h
+>> > index e56fa24c9322..9e55db60deb0 100644
+>> > --- a/include/linux/mmc/slot-gpio.h
+>> > +++ b/include/linux/mmc/slot-gpio.h
+>> > @@ -28,6 +28,8 @@ int mmc_gpiod_request_cd(struct mmc_host *host, const char *con_id,
+>> >  int mmc_gpiod_request_ro(struct mmc_host *host, const char *con_id,
+>> >                          unsigned int idx, bool override_active_level,
+>> >                          unsigned int debounce, bool *gpio_invert);
+>> > +int mmc_gpio_request_cd_isr(struct mmc_host *host,
+>> > +                           irqreturn_t (*isr)(int irq, void *dev_id));
+>> >  void mmc_gpiod_free_cd(struct mmc_host *host);
+>> >  void mmc_gpiod_request_cd_irq(struct mmc_host *host);
+>> >
+>> >
+>> >
+>>
+>> Kind regards
+>> Uffe
+>
