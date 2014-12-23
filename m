@@ -1,116 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbaLWHkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 02:40:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:51042 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755108AbaLWHkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 02:40:43 -0500
-Date: Mon, 22 Dec 2014 23:40:41 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 6/6] f2fs: avoid double lock for cp_rwsem
-Message-ID: <20141223074041.GB9946@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1419179723-3234-1-git-send-email-jaegeuk@kernel.org>
- <1419179723-3234-6-git-send-email-jaegeuk@kernel.org>
- <003201d01e7e$66126ae0$323740a0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <003201d01e7e$66126ae0$323740a0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754900AbaLWHka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 02:40:30 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:58515 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976AbaLWHk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 02:40:28 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-46-54991c6a3936
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
+Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com, inki.dae@samsung.com,
+        cw00.choi@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3]  clk: samsung: Use samsung_cmu_register_one() to simplify
+ code
+Date: Tue, 23 Dec 2014 16:40:20 +0900
+Message-id: <1419320423-19228-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsWyRsSkQDdLZmaIwe8NyhbXvzxntZh0fwKL
+	Re+Cq2wWZ5vesFtc3jWHzWLG+X1MFofftLNarNr1h9GBw2PnrLvsHn1bVjF6fN4kF8AcxWWT
+	kpqTWZZapG+XwJVx4p5wwQm2ilV7HrA1MO5k7WLk5JAQMJH4smYnM4QtJnHh3nq2LkYuDiGB
+	pYwSHx+tY4Qp6n77hBkisYhR4veNWWAdQgJNTBLPn6iC2GwCWhL7X9wA6ubgEBEwlLh5SAmk
+	nllgGaPE0w03mEBqhAVCJRZ1bwezWQRUJeYcmwq2gFfAVWLS1wfsEMsUJJYtn8kK0iwh8JtN
+	YvruC1ANAhLfJh9iAVkgISArsekA1NWSEgdX3GCZwCi4gJFhFaNoakFyQXFSepGpXnFibnFp
+	Xrpecn7uJkZgqJ7+92ziDsb7B6wPMQpwMCrx8C44MyNEiDWxrLgy9xCjKdCGicxSosn5wIjI
+	K4k3NDYzsjA1MTU2Mrc0UxLn1ZH+GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBMT/vfIp4
+	f6Csh07vv2Xd+9dc/ncyqivmt9dW3bpAN8/5t676FOXm6jvf3CkwfbLSPQ7Ok67lU4+/NXr+
+	WiXpi3BgYPuBchcZM5Nlj45ufTuxS+TlIeZTKRaaZQ8trnZN9J1QdqRu/vWS+afKGJMdGRMW
+	TviZb7f/zIEFayb82zrnid6uG3nK15RYijMSDbWYi4oTAdMmI4tQAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+xgG6WzMwQgx3tMhbXvzxntZh0fwKL
+	Re+Cq2wWZ5vesFtc3jWHzWLG+X1MFofftLNarNr1h9GBw2PnrLvsHn1bVjF6fN4kF8Ac1cBo
+	k5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0gpJCWWJO
+	KVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx48Q94YITbBWr9jxga2DcydrFyMkh
+	IWAi0f32CTOELSZx4d56ti5GLg4hgUWMEr9vzAJLCAk0MUk8f6IKYrMJaEnsf3EDqIiDQ0TA
+	UOLmISWQemaBZYwSTzfcYAKpERYIlVjUvR3MZhFQlZhzbCojiM0r4Cox6esDdohlChLLls9k
+	ncDIvYCRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcCQ8k9rBuLLB4hCjAAejEg/vgjMz
+	QoRYE8uKK3MPMUpwMCuJ8L4UnxkixJuSWFmVWpQfX1Sak1p8iNEUaPtEZinR5HxglOaVxBsa
+	m5gZWRqZG1oYGZsrifMq2beFCAmkJ5akZqemFqQWwfQxcXBKNTCG21msXSjbPcO7tvVzm0H0
+	Z/v19VXmh+4w/dZlzg5cvHgHt2iI0q+lz5+zsDw75HXo8NXT3d11Zc0y4UvZM4ur+X8ePZw2
+	c9bkpQdqnz6rz+bmT1ou3rrlQGhhahGD99Scq3vaDJdOaTEsVraxPLLlfbT1u4/PkxaJLtfl
+	cXKs3fhlavOTc1ZKLMUZiYZazEXFiQDlSBZYmgIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch-set uses the samsung_cmu_register_one() function to simplify the
+clock driver for Exynos3250/Exynos4415 SoC and change return value of
+samsung_cmu_register_one() because some clock driver may need the instance
+of samsung_clk_provider structure.
 
-On Tue, Dec 23, 2014 at 03:01:36PM +0800, Chao Yu wrote:
-> Hi Jaegeuk,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Monday, December 22, 2014 12:35 AM
-> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Cc: Jaegeuk Kim
-> > Subject: [f2fs-dev] [PATCH 6/6] f2fs: avoid double lock for cp_rwsem
-> > 
-> > The __f2fs_add_link is covered by cp_rwsem all the time.
-> > This calls init_inode_metadata, which conducts some acl operations including
-> > memory allocation with GFP_KERNEL previously.
-> > But, under memory pressure, f2fs_write_data_page can be called, which also
-> > grabs cp_mutex too.
-> 
-> grabs cp_rwsem.
+Chanwoo Choi (3):
+  clk: samsung: Changes the return value of samsung_cmu_register_one()
+  clk: samsung: exynos3250: Use samsung_cmu_register_one() to simplify code
+  clk: samsung: exynos4415: Use samsung_cmu_register_one() to simplify code
 
-Got it.
+ drivers/clk/samsung/clk-exynos3250.c | 217 ++++++++---------------------------
+ drivers/clk/samsung/clk-exynos4415.c | 216 ++++++++--------------------------
+ drivers/clk/samsung/clk.c            |  13 ++-
+ drivers/clk/samsung/clk.h            |   3 +-
+ 4 files changed, 107 insertions(+), 342 deletions(-)
 
-> 
-> > Basically, it's safe since down_read was used in both of cases, but it'd
-> > better avoid this situation in advance.
-> 
-> If checkpoint intend to hold down_write in the middle of the two down_read
-> caller, it will cause a deadlock, so it's not safe.
+-- 
+1.8.5.5
 
-What I meant was like this.
-- down_read
-  - down_read
-  - up_read
-- up_read
-
-This should be safe, right?
-Thanks,
-
-> 
-> Could you update the comments?
-> 
-> > 
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> 
-> Anyway, Nice catch and please add:
-> 
-> Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-> 
-> > ---
-> >  fs/f2fs/acl.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
-> > index 1ccb26b..7f12d28 100644
-> > --- a/fs/f2fs/acl.c
-> > +++ b/fs/f2fs/acl.c
-> > @@ -62,7 +62,7 @@ static struct posix_acl *f2fs_acl_from_disk(const char *value, size_t size)
-> >  	if (count == 0)
-> >  		return NULL;
-> > 
-> > -	acl = posix_acl_alloc(count, GFP_KERNEL);
-> > +	acl = posix_acl_alloc(count, GFP_NOFS);
-> >  	if (!acl)
-> >  		return ERR_PTR(-ENOMEM);
-> > 
-> > @@ -116,7 +116,7 @@ static void *f2fs_acl_to_disk(const struct posix_acl *acl, size_t *size)
-> >  	int i;
-> > 
-> >  	f2fs_acl = kmalloc(sizeof(struct f2fs_acl_header) + acl->a_count *
-> > -			sizeof(struct f2fs_acl_entry), GFP_KERNEL);
-> > +			sizeof(struct f2fs_acl_entry), GFP_NOFS);
-> >  	if (!f2fs_acl)
-> >  		return ERR_PTR(-ENOMEM);
-> > 
-> > --
-> > 2.1.1
-> > 
-> > 
-> > ------------------------------------------------------------------------------
-> > Download BIRT iHub F-Type - The Free Enterprise-Grade BIRT Server
-> > from Actuate! Instantly Supercharge Your Business Reports and Dashboards
-> > with Interactivity, Sharing, Native Excel Exports, App Integration & more
-> > Get technology previously reserved for billion-dollar corporations, FREE
-> > http://pubads.g.doubleclick.net/gampad/clk?id=164703151&iu=/4140/ostg.clktrk
-> > _______________________________________________
-> > Linux-f2fs-devel mailing list
-> > Linux-f2fs-devel@lists.sourceforge.net
-> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
