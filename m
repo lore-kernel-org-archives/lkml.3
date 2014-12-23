@@ -1,126 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863AbaLWMMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 07:12:54 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:51343 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaLWMMw (ORCPT
+	id S1754800AbaLWMSV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 07:18:21 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:44287 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744AbaLWMSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 07:12:52 -0500
-Date: Tue, 23 Dec 2014 17:42:46 +0530
-From: Vaishali Thakkar <vthakkar1994@gmail.com>
-To: willy@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
-Subject: [PATCH] Drivers: block: Introduce use of put_unaligned_be64
-Message-ID: <20141223121246.GA3032@vaishali-Ideapad-Z570>
+	Tue, 23 Dec 2014 07:18:20 -0500
+Date: Tue, 23 Dec 2014 13:18:15 +0100
+From: Dongsu Park <dongsu.park@profitbricks.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Kent Overstreet <kmo@daterainc.com>, Ming Lin <mlin@minggr.net>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [RFC PATCH 07/17] block: replace sg_iovec with iov_iter
+Message-ID: <20141223121815.GE15080@gmail.com>
+References: <cover.1419241597.git.dongsu.park@profitbricks.com>
+ <fc859b23b383f6f4c1e81f4210aa62cb1bdc935f.1419241597.git.dongsu.park@profitbricks.com>
+ <20141223104401.GB27600@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141223104401.GB27600@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of function put_unaligned_be64.
+On 23.12.2014 02:44, Christoph Hellwig wrote:
+> Does this and the next three patches really depend on the earlier ones?
+> Unless I'm missing something they are cleanups on their own.
+> 
+> It might make sense to get all these cleanups out as a preparatory
+> series first.
 
-This is done using Coccinelle and semantic patch used for this is
-as follows:
+I think so too. Patches #07-10 can be split into a separate patchset.
+I guess they are included just because Kent tried to follow up
+suggestions in the previous discussion.
+I don't care about either way. So I'll split them up.
 
-// <smpl>
-@sizeb64@
-typedef u64, __be64, uint64_t;
-{u64,__be64,uint64_t} e64;
-position p,p64;
-expression len,e;
-@@
-
-len = \(8\|sizeof(u64)\|sizeof(__be64)\|sizeof(uint64_t)\|sizeof(e64)\)
-... when != len = e
-memcpy@p64(...,len)
-
-@othersizeb64 exists@
-position p != sizeb64.p,pbad;
-expression len,e,e1;
-@@
-
-len@p = e1
-... when != len = e
-memcpy@pbad(...,len)
-
-@o@
-identifier tmp;
-expression ptr;
-expression y,e;
-{u64,__be64,uint64_t} e64;
-type T;
-position p,sizeb64.p64,p1 != othersizeb64.pbad;
-@@
-
-- tmp = cpu_to_be64(y);
-
-  <+... when != tmp
-(
-- memcpy(ptr, (T)&tmp, \(8\|sizeof(u64)\|sizeof(__be64)\|sizeof(uint64_t)\|sizeof(e64)\));
-+ put_unaligned_be64(y,ptr);
-|
-- memcpy@p64@p1(ptr, (T)&tmp, ...);
-+ put_unaligned_be64(y,ptr);
-|
-- memcpy@p(ptr, (T)&tmp, ...);
-+ put_unaligned_be64(y,ptr);
-)
-  ...+>
-? tmp = e
-
-@script:python@
-p << o.p;
-@@
-
-print "dangerous second argument in %s:%s" % (p[0].file,p[0].line)
-
-@@ type T; identifier o.tmp; @@
-
-- T tmp;
-...when != tmp
-//</smpl>
-
-Signed-off-by: Vaishali Thakkar <vthakkar1994@gmail.com>
----
- drivers/block/nvme-scsi.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
-index a4cd6d6..94abb8a 100644
---- a/drivers/block/nvme-scsi.c
-+++ b/drivers/block/nvme-scsi.c
-@@ -43,7 +43,7 @@
- #include <linux/types.h>
- #include <scsi/sg.h>
- #include <scsi/scsi.h>
--
-+#include <linux/unaligned/access_ok.h>
- 
- static int sg_version_num = 30534;	/* 2 digits for each component */
- 
-@@ -1417,7 +1417,6 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
- 	u64 rlba;
- 	u8 prot_en;
- 	u8 p_type_lut[4] = {0, 0, 1, 2};
--	__be64 tmp_rlba;
- 	__be32 tmp_rlba_32;
- 	__be32 tmp_len;
- 
-@@ -1434,9 +1433,8 @@ static void nvme_trans_fill_read_cap(u8 *response, struct nvme_id_ns *id_ns,
- 		memcpy(response, &tmp_rlba_32, sizeof(u32));
- 		memcpy(&response[4], &tmp_len, sizeof(u32));
- 	} else {
--		tmp_rlba = cpu_to_be64(rlba);
- 		tmp_len = cpu_to_be32(lba_length);
--		memcpy(response, &tmp_rlba, sizeof(u64));
-+		put_unaligned_be64(rlba, response);
- 		memcpy(&response[8], &tmp_len, sizeof(u32));
- 		response[12] = (p_type_lut[id_ns->dps & 0x3] << 1) | prot_en;
- 		/* P_I_Exponent = 0x0 | LBPPBE = 0x0 */
--- 
-1.9.1
-
+Thanks,
+Dongsu
