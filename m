@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433AbaLWQlW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 11:41:22 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:61754 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262AbaLWQlV (ORCPT
+	id S1756476AbaLWQl2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 11:41:28 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:39647 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444AbaLWQlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 11:41:21 -0500
+	Tue, 23 Dec 2014 11:41:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141223155714.GC21816@e104818-lin.cambridge.arm.com>
-References: <CAHkaATRdNgcZnAvgKFRmiMEhLOPxFEPpjTu+XNkDk9DxG+4Fpg@mail.gmail.com>
-	<20141223155714.GC21816@e104818-lin.cambridge.arm.com>
-Date: Wed, 24 Dec 2014 00:41:20 +0800
-Message-ID: <CAHkaATSC9OZB=XcOhOR-259RUpoFX9HOkGrU6PR7ae7WBmOc_A@mail.gmail.com>
-Subject: Re: [PATCH] arm64: setup return path for el1_undef
-From: Min-Hua Chen <orca.chen@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Larry Bassel <larry.bassel@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        "zhangwm@marvell.com" <zhangwm@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAJiQ=7A0ZrNr0+mbHs1xJNDHEJMiG7v69XhEtCyWTYrBtX1zpw@mail.gmail.com>
+References: <1419290863-19788-1-git-send-email-abrestic@chromium.org>
+	<CAGVrzcZPODEbQBF8Z+_r-6H3A_S-4Mi=1ALBf87ZmEngWzDpyw@mail.gmail.com>
+	<CAJiQ=7A0ZrNr0+mbHs1xJNDHEJMiG7v69XhEtCyWTYrBtX1zpw@mail.gmail.com>
+Date: Tue, 23 Dec 2014 08:41:23 -0800
+X-Google-Sender-Auth: QlS3OHr9bGN1_JoKnptf2YF-kAE
+Message-ID: <CAL1qeaH6d5DSU9UgnS4eGvFcAJXEw2iXX8czkCFd8ogdNDLEvQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] MIPS: Move device-trees into vendor sub-directories
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arend van Spriel <arend@broadcom.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 11:57 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Tue, Dec 23, 2014 at 03:15:10PM +0000, Min-Hua Chen wrote:
->> Setup return path for el1_undef since el1_undef may
->> be handled by handlers.
+On Tue, Dec 23, 2014 at 8:20 AM, Kevin Cernekee <cernekee@gmail.com> wrote:
+> On Tue, Dec 23, 2014 at 8:07 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>> 2014-12-22 15:27 GMT-08:00 Andrew Bresticker <abrestic@chromium.org>:
+>>> Move the MIPS device-trees into the appropriate vendor sub-directories.
+>>>
+>>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>>> ---
+>>>  arch/mips/Makefile                                 |  2 +-
+>>>  arch/mips/boot/dts/Makefile                        | 33 ++++++++--------------
+>>>  arch/mips/boot/dts/bcm/Makefile                    |  9 ++++++
+>>>  arch/mips/boot/dts/{ => bcm}/bcm3384.dtsi          |  0
+>>>  arch/mips/boot/dts/{ => bcm}/bcm93384wvg.dts       |  0
+>>
+>> Let's use brcm here, which is the DT vendor prefix, or go full name
+>> with broadcom, there has been enough debate in the past about this ;)
 >
-> Did you find a real issue or it was just code inspection.
+> IOW we want to see:
+>
+> arch/mips/boot/dts/brcm/bcm3384.dtsi
+> arch/mips/boot/dts/brcm/bcm93384wvg.dts
+>
+> right?  "brcm" for the vendor name, "bcmXXXX[X[X]]" for the chip
+> names, just like the compatible strings.
 
-Thanks for your reply. It was just a code inspection.
+Ok, I've renamed the "bcm" directory to "brcm" as you've described above.
 
-Min-Hua
+> BTW, this will again create an ordering dependency with respect to my
+> Generic BMIPS patch series.  If Ralf can take Andrew's updated patches
+> ASAP (since they're straightforward renamings) it will make it easier
+> to add/rename platforms without having to fix up merge conflicts.
 
->
->> asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
->> {
->>     siginfo_t info;
->>     void __user *pc = (void __user *)instruction_pointer(regs);
->>
->>     /* check for AArch32 breakpoint instructions */
->>     if (!aarch32_break_handler(regs))
->>         return;
->>
->>     if (call_undef_hook(regs) == 0)
->>         return;
->>
->>     ...
->> }
->> Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
->> ---
->>  arch/arm64/kernel/entry.S |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
->> index fd4fa37..86ebec5 100644
->> --- a/arch/arm64/kernel/entry.S
->> +++ b/arch/arm64/kernel/entry.S
->> @@ -313,7 +313,8 @@ el1_undef:
->>       */
->>      enable_dbg
->>      mov    x0, sp
->> -    b    do_undefinstr
->> +    bl    do_undefinstr
->> +    kernel_exit 1
->>  el1_dbg:
->>      /*
->>       * Debug exception handling
->
-> I don't think this is needed. The code is pretty convoluted but for an
-> EL1 undefined exception we should never return from do_undefinstr(). The
-> call_undef_hook() function returns 1 if !user_mode(regs) and this should
-> cause a kernel panic. Basically we do not allow any kind of undefined
-> instructions in the arm64 kernel.
->
-> --
-> Catalin
+Yes, I'd like to get these in -next ASAP as I have work based on them
+as well.  V2 incoming...
