@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252AbaLWP15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 10:27:57 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:34989 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756149AbaLWP1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 10:27:55 -0500
-Date: Tue, 23 Dec 2014 20:57:47 +0530
-From: Vaishali Thakkar <vthakkar1994@gmail.com>
-To: linux-wireless@vger.kernel.org
-Cc: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] NFC: port100: Introduce the use of function
- put_unaligned_le16
-Message-ID: <20141223152747.GA14667@vaishali-Ideapad-Z570>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932224AbaLWPcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 10:32:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:38161 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983AbaLWPcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 10:32:50 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/3] perf/urgent fixes and improvements
+Date: Tue, 23 Dec 2014 12:32:40 -0300
+Message-Id: <1419348763-29118-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the use of function put_unaligned_le16.
+Hi Ingo,
 
-This is done using Coccinelle and semantic patch used is as follows:
+	Please consider pulling,
 
-@a@
-typedef u16, __le16;
-{u16,__le16} e16;
-identifier tmp;
-expression ptr;
-expression y,e;
-type T;
-@@
+- Arnaldo
 
-- tmp = cpu_to_le16(y);
+The following changes since commit ac931f87a647ca156f65a4c00e7297165e4fa2d8:
 
-  <+... when != tmp
-(
-- memcpy(ptr, (T)&tmp, \(2\|sizeof(u16)\|sizeof(__le16)\|sizeof(e16)\));
-+ put_unaligned_le16(y,ptr);
-|
-- memcpy(ptr, (T)&tmp, ...);
-+ put_unaligned_le16(y,ptr);
-)
-  ...+>
-? tmp = e
+  perf: Fix building warning on ARM 32 (2014-12-19 13:09:43 +0100)
 
-@@ type T; identifier a.tmp; @@
+are available in the git repository at:
 
-- T tmp;
-...when != tmp
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
 
-Signed-off-by: Vaishali Thakkar <vthakkar1994@gmail.com>
----
- drivers/nfc/port100.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+for you to fetch changes up to 82aa019e0098a1e0801df94345c0297448323126:
 
-diff --git a/drivers/nfc/port100.c b/drivers/nfc/port100.c
-index 4ac4d31..f7cbca8 100644
---- a/drivers/nfc/port100.c
-+++ b/drivers/nfc/port100.c
-@@ -18,6 +18,7 @@
- #include <linux/module.h>
- #include <linux/usb.h>
- #include <net/nfc/digital.h>
-+#include <linux/unaligned/access_ok.h>
- 
- #define VERSION "0.1"
- 
-@@ -1136,7 +1137,6 @@ static int port100_in_send_cmd(struct nfc_digital_dev *ddev,
- {
- 	struct port100 *dev = nfc_digital_get_drvdata(ddev);
- 	struct port100_cb_arg *cb_arg;
--	__le16 timeout;
- 
- 	cb_arg = kzalloc(sizeof(struct port100_cb_arg), GFP_KERNEL);
- 	if (!cb_arg)
-@@ -1145,9 +1145,7 @@ static int port100_in_send_cmd(struct nfc_digital_dev *ddev,
- 	cb_arg->complete_cb = cb;
- 	cb_arg->complete_arg = arg;
- 
--	timeout = cpu_to_le16(_timeout * 10);
--
--	memcpy(skb_push(skb, sizeof(__le16)), &timeout, sizeof(__le16));
-+	put_unaligned_le16(_timeout * 10, skb_push(skb, sizeof(__le16)));
- 
- 	return port100_send_cmd_async(dev, PORT100_CMD_IN_COMM_RF, skb,
- 				      port100_in_comm_rf_complete, cb_arg);
--- 
-1.9.1
+  perf callchain: Append callchains only when requested (2014-12-23 12:06:39 -0300)
 
+----------------------------------------------------------------
+perf/urgent fixes and improvements:
+
+User visible:
+
+- Show progress bar in more places while doing histogram processing
+  in the hists browser (Namhyung Kim)
+
+- Print backtrace symbols when segfault occurs in 'report' (Namhyung Kim)
+
+Infrastructure:
+
+- Append callchains only when requested (Namhyung Kim)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Namhyung Kim (3):
+      perf report: Show progress bar for output resorting
+      perf ui/tui: Print backtrace symbols when segfault occurs
+      perf callchain: Append callchains only when requested
+
+ tools/perf/builtin-annotate.c     |  2 +-
+ tools/perf/builtin-diff.c         |  2 +-
+ tools/perf/builtin-report.c       | 24 ++++++++++++++++++++++--
+ tools/perf/builtin-top.c          |  4 ++--
+ tools/perf/tests/hists_cumulate.c |  2 +-
+ tools/perf/tests/hists_filter.c   |  2 +-
+ tools/perf/tests/hists_output.c   | 10 +++++-----
+ tools/perf/ui/tui/setup.c         | 26 ++++++++++++++++++++++++--
+ tools/perf/util/hist.c            | 17 +++++++++++++----
+ tools/perf/util/hist.h            |  2 +-
+ 10 files changed, 71 insertions(+), 20 deletions(-)
