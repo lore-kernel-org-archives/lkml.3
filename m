@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaLWJHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:07:49 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63771 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753998AbaLWJHp convert rfc822-to-8bit (ORCPT
+	id S1754752AbaLWJKN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:10:13 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:26114 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369AbaLWJKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:07:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,630,1413270000"; 
-   d="scan'208";a="641826558"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Topic: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Index: AQHQHo0zCIPBFdpFuEmLUQfVNyledpyc4SAw
-Date: Tue, 23 Dec 2014 09:07:39 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F002314236@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
-	<1418397300-10870-7-git-send-email-feng.wu@intel.com>
-	<A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>
-	<E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
-	<A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>
-	<54941326.4080405@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC06282@SHSMSX104.ccr.corp.intel.com>
- <54992C2C.5030305@redhat.com>
-In-Reply-To: <54992C2C.5030305@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Dec 2014 04:10:10 -0500
+From: Qais Yousef <qais.yousef@imgtec.com>
+To: <alsa-devel@alsa-project.org>
+CC: Qais Yousef <qais.yousef@imgtec.com>, Vinod Koul <vinod.koul@intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ALSA: ASoC: soc-compress.c: fix NULL dereference
+Date: Tue, 23 Dec 2014 09:09:27 +0000
+Message-ID: <1419325767-30602-1-git-send-email-qais.yousef@imgtec.com>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In soc_new_compress() when rtd->dai_link->daynmic is set, we create the pcm
+substreams with this call:
 
+   ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
+                                   1, 0, &be_pcm);
 
-> -----Original Message-----
-> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of Paolo
-> Bonzini
-> Sent: Tuesday, December 23, 2014 4:48 PM
-> To: Zhang, Yang Z; Paolo Bonzini; Wu, Feng; Thomas Gleixner; Ingo Molnar; H.
-> Peter Anvin; x86@kernel.org; Gleb Natapov; dwmw2@infradead.org;
-> joro@8bytes.org; Alex Williamson; Jiang Liu
-> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org; KVM list;
-> Eric Auger
-> Subject: Re: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
-> Posted-Interrupts
-> 
-> 
-> 
-> On 23/12/2014 01:37, Zhang, Yang Z wrote:
-> > I don't quite understand it. If user set an interrupt's affinity to a
-> > CPU, but he still see the interrupt delivers to other CPUs in host.
-> > Do you think it is a right behavior?
-> 
-> No, the interrupt is not delivered at all in the host.  Normally you'd have:
-> 
-> - interrupt delivered to CPU from host affinity
-> 
-> - VFIO interrupt handler writes to irqfd
-> 
-> - interrupt delivered to vCPU from guest affinity
-> 
-> Here, you just skip the first two steps.  The interrupt is delivered to
-> the thread that is running the vCPU directly, so the host affinity is
-> bypassed entirely.
-> 
-> ... unless you are considering the case where the vCPU is blocked and
-> the host is processing the posted interrupt wakeup vector.  In that case
-> yes, it would be better to set NDST to a CPU matching the host affinity.
+which passes 0 as capture_count leading to
 
-In my understanding, wakeup vector should have no relationship with the
-host affinity of the irq. Wakeup notification event should be delivered to
-the pCPU which the vCPU was blocked on. And in kernel's point of view,
-the irq is not associated with the wakeup vector, right?
+   be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream
 
-Thanks,
-Feng
+being NULL, hence when trying to set rtd a few lines below we get an oops.
+Fix by removing this line of code since CAPTURE substream will always be NULL.
 
->  But it would be handled in patch 24.  We also have the same problem
-> with lowest-priority interrupts; likely the host has configured the
-> interrupt affinity for any CPU.  So we can do it later when we add
-> vector hashing support.  In the meanwhile, Feng, please add a FIXME
-> comment.
-> 
-> Does this make sense?
-> 
-> Paolo
+Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
+---
+Not sure if this is the correct fix but that's what I could come up with my
+limited knowledge.
+
+I think the more correct solution would be to use the value of
+rtd->dai_link->dpcm_playback and rtd->dai_link->dpcm_capture in the args of
+snd_pcm_new_internal() for playback_count and capture_count.
+
+ sound/soc/soc-compress.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/sound/soc/soc-compress.c b/sound/soc/soc-compress.c
+index 590a82f01d0b..7ab39f65384c 100644
+--- a/sound/soc/soc-compress.c
++++ b/sound/soc/soc-compress.c
+@@ -669,7 +669,6 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
+ 		rtd->pcm = be_pcm;
+ 		rtd->fe_compr = 1;
+ 		be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
+-		be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
+ 		memcpy(compr->ops, &soc_compr_dyn_ops, sizeof(soc_compr_dyn_ops));
+ 	} else
+ 		memcpy(compr->ops, &soc_compr_ops, sizeof(soc_compr_ops));
+-- 
+2.1.0
+
