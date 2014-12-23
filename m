@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaLWJOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 04:14:19 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:55671 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaLWJOQ (ORCPT
+	id S1755493AbaLWJOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 04:14:47 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:62217 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628AbaLWJOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 04:14:16 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        =?ISO-8859-1?Q?J=FCrg?= Billeter <j@bitron.ch>,
-        Magnus Damm <damm+renesas@opensource.se>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor allocation failure
-Date: Tue, 23 Dec 2014 11:14:21 +0200
-Message-ID: <3101076.RYFhQ4RW4Z@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141222150219.GI16827@intel.com>
-References: <1416924617-15939-1-git-send-email-j@bitron.ch> <20141217125406.GD16827@intel.com> <20141222150219.GI16827@intel.com>
+	Tue, 23 Dec 2014 04:14:45 -0500
+Date: Tue, 23 Dec 2014 10:14:40 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, x86@kernel.org,
+        dave.hansen@linux.intel.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] x86 mpx: fix potential performance issue on unmaps
+Message-ID: <20141223091440.GA9112@gmail.com>
+References: <20141222200803.D316DA2A@viggo.jf.intel.com>
+ <20141222200805.13639956@viggo.jf.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141222200805.13639956@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
 
-On Monday 22 December 2014 20:32:19 Vinod Koul wrote:
-> On Wed, Dec 17, 2014 at 06:24:06PM +0530, Vinod Koul wrote:
-> > On Wed, Dec 17, 2014 at 01:57:30AM +0200, Laurent Pinchart wrote:
-> >> Do you mean that every Intel employee needs to resubscribe to all vger
-> >> mailing list once a year ? :-o
-> > 
-> > Unfortuntely yes... :( I need to set my infradead account up again now for
-> > backup..
-> > 
-> >>>> I suppose I have no choice anyway. Please provide me with a v3.20
-> >>>> development branch on which I can rebase the patch set, I don't want
-> >>>> to rebase it twice.
-> >>> 
-> >>> Please use topic/slave_caps_device_control_fix. I am going to rebase
-> >>> this once rc1 is declared (eow i guess). It would plain git rebase, so
-> >>> shouldn't impact you.
-> >> 
-> >> Done. I'll rebase it once again when you will have rebased your branch,
-> >> and will then send a pull request. Could you please rebase your branch
-> >> early after the -rc1 release ?
-> > 
-> > Sure, within a day or so of its release it should be done.
-> > 
-> > Do note that am out during Christmas and the weekend with no email access,
-> > will be lucky if my phone works, email very unlikely and I think you guys
-> > will be out too.
-> > 
-> > But if your patches are done, feel free to send them
+* Dave Hansen <dave@sr71.net> wrote:
+
 > 
-> And I have rebased and pushed. These should be linux-next for tomorrow
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> The 3.19 release window saw some TLB modifications merged which
+> caused a performance regression.  They were fixed in commit
+> 045bbb9fa.
+> 
+> Once that fix was applied, I also noticed that there was a small
+> but intermittent regression still present.  It was not present
+> consistently enough to bisect reliably, but I'm fairly confident
+> that it came from (my own) MPX patches.  The source was reading
+> a relatively unused field in the mm_struct via arch_unmap.
+> 
+> I also noted that this code was in the main instruction flow of
+> do_munmap() and probably had more icache impact than we want.
+> 
+> This patch does two things:
+> 1. Adds a static (via Kconfig) and dynamic (via cpuid) check
+>    for MPX with cpu_feature_enabled().  This keeps us from
+>    reading that cacheline in the mm and trades it for a check
+>    of the global CPUID variables at least on CPUs without MPX.
+> 2. Adds an unlikely() to ensure that the MPX call ends up out
+>    of the main instruction flow in do_munmap().  I've added
+>    a detailed comment about why this was done and why we want
+>    it even on systems where MPX is present.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> ---
+> 
+>  b/arch/x86/include/asm/mmu_context.h |   20 +++++++++++++++++++-
+>  1 file changed, 19 insertions(+), 1 deletion(-)
+> 
+> diff -puN arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap arch/x86/include/asm/mmu_context.h
+> --- a/arch/x86/include/asm/mmu_context.h~fix-mpx-regression-on-unmap	2014-12-22 12:06:18.677928330 -0800
+> +++ b/arch/x86/include/asm/mmu_context.h	2014-12-22 12:06:18.680928465 -0800
+> @@ -130,7 +130,25 @@ static inline void arch_bprm_mm_init(str
+>  static inline void arch_unmap(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			      unsigned long start, unsigned long end)
+>  {
+> -	mpx_notify_unmap(mm, vma, start, end);
+> +	/*
+> +	 * mpx_notify_unmap() goes and reads a rarely-hot
+> +	 * cacheline in the mm_struct.  That can be expensive
+> +	 * enough to be seen in profiles.
+> +	 *
+> +	 * The mpx_notify_unmap() call and its contents have been
+> +	 * observed to affect munmap() performance on hardware
+> +	 * where MPX is not present.
+> +	 *
+> +	 * The unlikely() optimizes for the fast case: no MPX
+> +	 * in the CPU, or no MPX use in the process.  Even if
+> +	 * we get this wrong (in the unlikely event that MPX
+> +	 * is widely enabled on some system) the overhead of
+> +	 * MPX itself (reading bounds tables) is expected to
+> +	 * overwhelm the overhead of getting this unlikely()
+> +	 * consistently wrong.
+> +	 */
+> +	if (unlikely(cpu_feature_enabled(X86_FEATURE_MPX)))
+> +		mpx_notify_unmap(mm, vma, start, end);
+>  }
 
-Thank you. I've rebased my branch, I'm testing it, and will send you a pull 
-request right afterwards.
+Hm, so this patch still does not help people who have an MPX 
+capable CPU but don't have (or don't have many) MPX using apps. 
+What about them?
 
--- 
-Regards,
+Thanks,
 
-Laurent Pinchart
-
+	Ingo
