@@ -1,42 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbaLWEYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 23:24:46 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44710 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753728AbaLWEYp (ORCPT
+	id S1754552AbaLWEad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 23:30:33 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:55312 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728AbaLWEac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 23:24:45 -0500
+	Mon, 22 Dec 2014 23:30:32 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
-Date: Tue, 23 Dec 2014 13:25:25 +0900
 From: Namhyung Kim <namhyung@kernel.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tools: lib: traceevent: kbuffer-parse.c:  Remove some
- unused functions
-Message-ID: <20141223042525.GE14960@sejong>
-References: <1419093600-8306-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1419093600-8306-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH] perf hists: Fix children sort key behavior
+Date: Tue, 23 Dec 2014 13:31:12 +0900
+Message-Id: <1419309072-1910-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 05:40:00PM +0100, Rickard Strandqvist wrote:
-> Removes some functions that are not used anywhere:
-> kbuffer_set_old_format() kbuffer_missed_events() kbuffer_curr_size()
-> kbuffer_event_size() kbuffer_curr_offset() kbuffer_curr_index()
-> kbuffer_subbuffer_size() kbuffer_read_at_offset() kbuffer_timestamp()
-> kbuffer_read_event() kbuffer_translate_data() kbuffer_free() kbuffer_alloc()
-> 
-> This was partially found by using a static code analysis program called cppcheck.
+When perf report --children resorts output fields, it tries to put
+caller above the callee.  But this was only meaningful for a same
+thread and doing this requires callchain enabled.  So fix its check
+before comparing the callchain depth.
 
-This kbuffer API will be used by other (out-of-tree currently) tools..
-And I have a plan to add an in-kernel user (perf-ftrace command) later.
+This also changes the hist accumulation tests: In test 3, xmalloc in
+bash thread should be above than other perf threads due to
+alphabetical order of comm string.  Also it's under page_fault in bash
+thread since alphabetical order of dso name.  The sys_perf_event_open
+in perf thread is put on the last line since it's self overhead is 0.
 
-Thanks,
-Namhyung
+In test 4, the sys_perf_event_open is put above other perf entries
+that have same children overhead since its callchain depth is smaller.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/tests/hists_cumulate.c | 64 +++++++++++++++++++--------------------
+ tools/perf/ui/hist.c              |  5 ++-
+ 2 files changed, 36 insertions(+), 33 deletions(-)
+
+diff --git a/tools/perf/tests/hists_cumulate.c b/tools/perf/tests/hists_cumulate.c
+index b1a2bed721a8..9fcf27efd6c8 100644
+--- a/tools/perf/tests/hists_cumulate.c
++++ b/tools/perf/tests/hists_cumulate.c
+@@ -454,12 +454,12 @@ static int test3(struct perf_evsel *evsel, struct machine *machine)
+ 	 *   30.00%    10.00%     perf  perf           [.] cmd_record
+ 	 *   20.00%     0.00%     bash  libc           [.] malloc
+ 	 *   10.00%    10.00%     bash  [kernel]       [k] page_fault
+-	 *   10.00%    10.00%     perf  [kernel]       [k] schedule
+-	 *   10.00%     0.00%     perf  [kernel]       [k] sys_perf_event_open
++	 *   10.00%    10.00%     bash  bash           [.] xmalloc
+ 	 *   10.00%    10.00%     perf  [kernel]       [k] page_fault
+-	 *   10.00%    10.00%     perf  libc           [.] free
+ 	 *   10.00%    10.00%     perf  libc           [.] malloc
+-	 *   10.00%    10.00%     bash  bash           [.] xmalloc
++	 *   10.00%    10.00%     perf  [kernel]       [k] schedule
++	 *   10.00%    10.00%     perf  libc           [.] free
++	 *   10.00%     0.00%     perf  [kernel]       [k] sys_perf_event_open
+ 	 */
+ 	struct result expected[] = {
+ 		{ 7000, 2000, "perf", "perf",     "main" },
+@@ -468,12 +468,12 @@ static int test3(struct perf_evsel *evsel, struct machine *machine)
+ 		{ 3000, 1000, "perf", "perf",     "cmd_record" },
+ 		{ 2000,    0, "bash", "libc",     "malloc" },
+ 		{ 1000, 1000, "bash", "[kernel]", "page_fault" },
+-		{ 1000, 1000, "perf", "[kernel]", "schedule" },
+-		{ 1000,    0, "perf", "[kernel]", "sys_perf_event_open" },
++		{ 1000, 1000, "bash", "bash",     "xmalloc" },
+ 		{ 1000, 1000, "perf", "[kernel]", "page_fault" },
++		{ 1000, 1000, "perf", "[kernel]", "schedule" },
+ 		{ 1000, 1000, "perf", "libc",     "free" },
+ 		{ 1000, 1000, "perf", "libc",     "malloc" },
+-		{ 1000, 1000, "bash", "bash",     "xmalloc" },
++		{ 1000,    0, "perf", "[kernel]", "sys_perf_event_open" },
+ 	};
+ 
+ 	symbol_conf.use_callchain = false;
+@@ -537,10 +537,13 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
+ 	 *                  malloc
+ 	 *                  main
+ 	 *
+-	 *   10.00%    10.00%     perf  [kernel]       [k] schedule
++	 *   10.00%    10.00%     bash  bash           [.] xmalloc
+ 	 *              |
+-	 *              --- schedule
+-	 *                  run_command
++	 *              --- xmalloc
++	 *                  malloc
++	 *                  xmalloc     <--- NOTE: there's a cycle
++	 *                  malloc
++	 *                  xmalloc
+ 	 *                  main
+ 	 *
+ 	 *   10.00%     0.00%     perf  [kernel]       [k] sys_perf_event_open
+@@ -556,6 +559,12 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
+ 	 *                  run_command
+ 	 *                  main
+ 	 *
++	 *   10.00%    10.00%     perf  [kernel]       [k] schedule
++	 *              |
++	 *              --- schedule
++	 *                  run_command
++	 *                  main
++	 *
+ 	 *   10.00%    10.00%     perf  libc           [.] free
+ 	 *              |
+ 	 *              --- free
+@@ -570,15 +579,6 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
+ 	 *                  run_command
+ 	 *                  main
+ 	 *
+-	 *   10.00%    10.00%     bash  bash           [.] xmalloc
+-	 *              |
+-	 *              --- xmalloc
+-	 *                  malloc
+-	 *                  xmalloc     <--- NOTE: there's a cycle
+-	 *                  malloc
+-	 *                  xmalloc
+-	 *                  main
+-	 *
+ 	 */
+ 	struct result expected[] = {
+ 		{ 7000, 2000, "perf", "perf",     "main" },
+@@ -587,12 +587,12 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
+ 		{ 3000, 1000, "perf", "perf",     "cmd_record" },
+ 		{ 2000,    0, "bash", "libc",     "malloc" },
+ 		{ 1000, 1000, "bash", "[kernel]", "page_fault" },
+-		{ 1000, 1000, "perf", "[kernel]", "schedule" },
++		{ 1000, 1000, "bash", "bash",     "xmalloc" },
+ 		{ 1000,    0, "perf", "[kernel]", "sys_perf_event_open" },
+ 		{ 1000, 1000, "perf", "[kernel]", "page_fault" },
++		{ 1000, 1000, "perf", "[kernel]", "schedule" },
+ 		{ 1000, 1000, "perf", "libc",     "free" },
+ 		{ 1000, 1000, "perf", "libc",     "malloc" },
+-		{ 1000, 1000, "bash", "bash",     "xmalloc" },
+ 	};
+ 	struct callchain_result expected_callchain[] = {
+ 		{
+@@ -622,9 +622,12 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
+ 				{ "bash",     "main" }, },
+ 		},
+ 		{
+-			3, {	{ "[kernel]", "schedule" },
+-				{ "perf",     "run_command" },
+-				{ "perf",     "main" }, },
++			6, {	{ "bash",     "xmalloc" },
++				{ "libc",     "malloc" },
++				{ "bash",     "xmalloc" },
++				{ "libc",     "malloc" },
++				{ "bash",     "xmalloc" },
++				{ "bash",     "main" }, },
+ 		},
+ 		{
+ 			3, {	{ "[kernel]", "sys_perf_event_open" },
+@@ -638,6 +641,11 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
+ 				{ "perf",     "main" }, },
+ 		},
+ 		{
++			3, {	{ "[kernel]", "schedule" },
++				{ "perf",     "run_command" },
++				{ "perf",     "main" }, },
++		},
++		{
+ 			4, {	{ "libc",     "free" },
+ 				{ "perf",     "cmd_record" },
+ 				{ "perf",     "run_command" },
+@@ -649,14 +657,6 @@ static int test4(struct perf_evsel *evsel, struct machine *machine)
+ 				{ "perf",     "run_command" },
+ 				{ "perf",     "main" }, },
+ 		},
+-		{
+-			6, {	{ "bash",     "xmalloc" },
+-				{ "libc",     "malloc" },
+-				{ "bash",     "xmalloc" },
+-				{ "libc",     "malloc" },
+-				{ "bash",     "xmalloc" },
+-				{ "bash",     "main" }, },
+-		},
+ 	};
+ 
+ 	symbol_conf.use_callchain = true;
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 2af18376b077..94536a65bd44 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -204,7 +204,10 @@ static int __hpp__sort_acc(struct hist_entry *a, struct hist_entry *b,
+ 		if (ret)
+ 			return ret;
+ 
+-		ret = b->callchain->max_depth - a->callchain->max_depth;
++		if (a->thread != b->thread || !symbol_conf.use_callchain)
++			return 0;
++
++		ret = a->callchain->max_depth > b->callchain->max_depth ? -1 : 1;
+ 	}
+ 	return ret;
+ }
+-- 
+2.1.3
+
