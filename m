@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966AbaLWMA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 07:00:28 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:41575 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755542AbaLWMA1 (ORCPT
+	id S1756021AbaLWMAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 07:00:53 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:32995 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755845AbaLWMAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 07:00:27 -0500
-From: Johan Hovold <johan@kernel.org>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bruno Thomsen <bth@kamstrup.dk>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH] net: phy: micrel: use generic config_init for KSZ8021/KSZ8031
-Date: Tue, 23 Dec 2014 12:59:17 +0100
-Message-Id: <1419335957-18020-1-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.5
+	Tue, 23 Dec 2014 07:00:51 -0500
+Date: Tue, 23 Dec 2014 13:00:48 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH]  bluetooth: Add hci_h4p driver
+Message-ID: <20141223120048.GA848@amd>
+References: <20141213223727.GA13894@amd>
+ <20141220202314.GA8484@amd>
+ <D5E3AD8F-9122-49FE-B932-F9DDBB89840F@holtmann.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D5E3AD8F-9122-49FE-B932-F9DDBB89840F@holtmann.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use generic config_init callback also for KSZ8021 and KSZ8031.
+Hi!
 
-This has been avoided this far due to commit b838b4aced99 ("phy/micrel:
-KSZ8031RNL RMII clock reconfiguration bug"), which claims that the PHY
-becomes unresponsive if the broadcast-disable flag is set before
-configuring the clock mode.
+> > +	/* We should always send word aligned data to h4+ devices */
+> > +	if (skb->len % 2) {
+> > +		err = skb_pad(skb, 1);
+> > +		if (!err)
+> > +			*skb_put(skb, 1) = 0x00;
+> > +	}
+> > +	if (err)
+> > +		return err;
+> 
+> This is crazy code.
+> 
+> 	if (skb->len % 2) {
+> 		if (!skb_pad(skb, 1)
+> 			return -ENOMEM;
+> 		*skb_put(skb, 1) = 0x00;
+> 	}
 
-Turns out that the problem seemingly worked-around by the above
-mentioned commit was really due to a hardware-configuration issue, where
-the PHY was in fact strapped to address 3 rather than 0.
-
-Tested-by: Bruno Thomsen <bth@kamstrup.dk>
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
- drivers/net/phy/micrel.c | 18 +++---------------
- 1 file changed, 3 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-index c530de1e63f5..3ad8ca76196d 100644
---- a/drivers/net/phy/micrel.c
-+++ b/drivers/net/phy/micrel.c
-@@ -88,6 +88,7 @@ struct kszphy_priv {
- 
- static const struct kszphy_type ksz8021_type = {
- 	.led_mode_reg		= MII_KSZPHY_CTRL_2,
-+	.has_broadcast_disable	= true,
- 	.has_rmii_ref_clk_sel	= true,
- };
- 
-@@ -258,19 +259,6 @@ static int kszphy_config_init(struct phy_device *phydev)
- 	return 0;
- }
- 
--static int ksz8021_config_init(struct phy_device *phydev)
--{
--	int rc;
--
--	rc = kszphy_config_init(phydev);
--	if (rc)
--		return rc;
--
--	rc = kszphy_broadcast_disable(phydev);
--
--	return rc < 0 ? rc : 0;
--}
--
- static int ksz9021_load_values_from_of(struct phy_device *phydev,
- 				       struct device_node *of_node, u16 reg,
- 				       char *field1, char *field2,
-@@ -584,7 +572,7 @@ static struct phy_driver ksphy_driver[] = {
- 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
- 	.driver_data	= &ksz8021_type,
- 	.probe		= kszphy_probe,
--	.config_init	= ksz8021_config_init,
-+	.config_init	= kszphy_config_init,
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= genphy_read_status,
- 	.ack_interrupt	= kszphy_ack_interrupt,
-@@ -601,7 +589,7 @@ static struct phy_driver ksphy_driver[] = {
- 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
- 	.driver_data	= &ksz8021_type,
- 	.probe		= kszphy_probe,
--	.config_init	= ksz8021_config_init,
-+	.config_init	= kszphy_config_init,
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= genphy_read_status,
- 	.ack_interrupt	= kszphy_ack_interrupt,
+This does not work, it needs to be if (skb_pad())... and it does not
+propagate error value. Took me few boots to debug, as I still can't
+scroll back after kernel crash...
+								Pavel
 -- 
-2.0.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
