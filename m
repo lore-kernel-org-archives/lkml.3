@@ -1,165 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756555AbaLWXVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 18:21:23 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:33699 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaLWXVW (ORCPT
+	id S1756567AbaLWXcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 18:32:05 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:22176 "EHLO
+	imgpgp01.kl.imgtec.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751411AbaLWXcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 18:21:22 -0500
-Date: Wed, 24 Dec 2014 01:21:11 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Paul Burton <paul.burton@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+	Tue, 23 Dec 2014 18:32:03 -0500
+X-PGP-Universal: processed;
+	by imgpgp01.kl.imgtec.org on Tue, 23 Dec 2014 23:32:00 +0000
+Date: Tue, 23 Dec 2014 23:31:54 +0000
+From: James Hogan <james.hogan@imgtec.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: Paul Burton <paul.burton@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>,
+        <linux-mips@linux-mips.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 07/10] MIPS: support for hybrid FPRs
-Message-ID: <20141223232111.GA593@fuloong-minipc.musicnaut.iki.fi>
+Message-ID: <20141223233154.GA4171@jhogan-linux.le.imgtec.org>
 References: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
  <1410420623-11691-8-git-send-email-paul.burton@imgtec.com>
+ <20141223232111.GA593@fuloong-minipc.musicnaut.iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
 Content-Disposition: inline
-In-Reply-To: <1410420623-11691-8-git-send-email-paul.burton@imgtec.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141223232111.GA593@fuloong-minipc.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-Originating-IP: [192.168.154.101]
+X-ESG-ENCRYPT-TAG: b93fcccb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Sep 11, 2014 at 08:30:20AM +0100, Paul Burton wrote:
-> Hybrid FPRs is a scheme where scalar FP registers are 64b wide, but
-> accesses to odd indexed single registers use bits 63:32 of the
-> preceeding even indexed 64b register. In this mode all FP code
-> except that built for the plain FP64 ABI can execute correctly. Most
-> notably a combination of FP64A & FP32 code can execute correctly,
-> allowing for existing FP32 binaries to be linked with new FP64A binaries
-> that can make use of 64 bit FP & MSA.
+On Wed, Dec 24, 2014 at 01:21:11AM +0200, Aaro Koskinen wrote:
+> Hi,
+>=20
+> On Thu, Sep 11, 2014 at 08:30:20AM +0100, Paul Burton wrote:
+> > Hybrid FPRs is a scheme where scalar FP registers are 64b wide, but
+> > accesses to odd indexed single registers use bits 63:32 of the
+> > preceeding even indexed 64b register. In this mode all FP code
+> > except that built for the plain FP64 ABI can execute correctly. Most
+> > notably a combination of FP64A & FP32 code can execute correctly,
+> > allowing for existing FP32 binaries to be linked with new FP64A binaries
+> > that can make use of 64 bit FP & MSA.
+>=20
+> This commit (4227a2d4efc9c84f35826dc4d1e6dc183f6c1c05, bisected)
+> in 3.19-rc1 breaks my Loongson-2F system. I get endless amount
+> of "Reserved instruction in kernel code" exceptions when booting.
+> See some examples below. Nothing crashes, and there is some forward
+> progress, but obviously it's completely unusable.
+>=20
+> Any ideas?
+>=20
+> [    2.872000] Reserved instruction in kernel code[#1]:
+=2E..
+> Code: 30420001  2c420001  0040202d <40038005> 2405feff  00651824  4083800=
+5  3c032000  3c052400=20
 
-This commit (4227a2d4efc9c84f35826dc4d1e6dc183f6c1c05, bisected)
-in 3.19-rc1 breaks my Loongson-2F system. I get endless amount
-of "Reserved instruction in kernel code" exceptions when booting.
-See some examples below. Nothing crashes, and there is some forward
-progress, but obviously it's completely unusable.
+0x40038005 =3D mfc0 v1,$16,5 =3D mfc0 v1,Config5
 
-Any ideas?
+Does this help (in linux-next)?:
+http://git.linux-mips.org/cgit/ralf/upstream-sfr.git/commit/?id=3D5bba8dec7=
+35f18fe7a2fcd8327f28ef095337ff2
 
-[    2.872000] Reserved instruction in kernel code[#1]:
-[    2.872000] CPU: 0 PID: 231 Comm: hotplug Not tainted 3.18.0-lemote-los_7f08-09423-g988adfd #1
-[    2.872000] task: 980000009f1c7480 ti: 980000009a2e8000 task.ti: 980000009a2e8000
-[    2.872000] $ 0   : 0000000000000000 0000000077d32c14 0000000000000000 0000000000000001
-[    2.872000] $ 4   : 0000000000000000 000000001000802c 980000009a2ebeb0 0000000000000002
-[    2.872000] $ 8   : 0000000000000010 000000007efefeff 0000000024242424 ffffffff81010100
-[    2.872000] $12   : 00000000100044e1 000000001000001f 0000000000000000 0000000000000000
-[    2.872000] $16   : 0000000000400164 000000007fdb3ee0 0000000077d62cf8 0000000000000000
-[    2.872000] $20   : 0000000000000000 0000000077d61ed0 0000000077d61ed0 00000000004022d8
-[    2.872000] $24   : 0000000000000005 0000000077d4ba80                                  
-[    2.872000] $28   : 980000009a2e8000 980000009a2ebe70 000000007fdb3ee8 ffffffff802077e0
-[    2.872000] Hi    : 000000000000002c
-[    2.872000] Lo    : 000000000000000b
-[    2.872000] epc   : ffffffff8020e8d4 do_cpu+0x304/0x4f0
-[    2.872000]     Not tainted
-[    2.872000] ra    : ffffffff802077e0 ret_from_exception+0x0/0x1c
-[    2.872000] Status: 100044e3	KX SX UX KERNEL EXL IE 
-[    2.872000] Cause : 10008028
-[    2.872000] PrId  : 00006303 (ICT Loongson-2)
-[    2.872000] Modules linked in:
-[    2.872000] Process hotplug (pid: 231, threadinfo=980000009a2e8000, task=980000009f1c7480, tls=0000000000000000)
-[    2.872000] Stack : 0000000077d50000 0000000077d62c10 ffffffffffffc000 0000000077d61ed0
-	  0000000077d622d8 0000000000400164 000000007fdb3ee0 ffffffff802077e0
-	  0000000000000000 0000000077d32c14 000000007fdb3da8 0000000077d62bf0
-	  000000007fdb3db8 0000000000000000 000000007fdb3d90 000000007fdb3ee8
-	  ffffffffbba0ffce 000000007efefeff 0000000024242424 ffffffff81010100
-	  0000000000000000 0000000000000fc1 0000000000000000 0000000000000000
-	  0000000000400164 000000007fdb3ee0 0000000077d62cf8 0000000000000000
-	  0000000000000000 0000000077d61ed0 0000000077d61ed0 00000000004022d8
-	  0000000000000005 0000000077d4ba80 000000006474e552 0000000000000000
-	  0000000077d6a000 000000007fdb3d90 000000007fdb3ee8 0000000077d41038
-	  ...
-[    2.872000] Call Trace:
-[    2.872000] [<ffffffff8020e8d4>] do_cpu+0x304/0x4f0
-[    2.872000] [<ffffffff802077e0>] ret_from_exception+0x0/0x1c
-[    2.872000] 
-[    2.872000] 
-Code: 30420001  2c420001  0040202d <40038005> 2405feff  00651824  40838005  3c032000  3c052400 
-[    2.876000] ---[ end trace 71c7b14ce7da936f ]---
-[    2.880000] Reserved instruction in kernel code[#2]:
-[    2.880000] CPU: 0 PID: 232 Comm: hotplug Tainted: G      D        3.18.0-lemote-los_7f08-09423-g988adfd #1
-[    2.880000] task: 980000009f1c5ea8 ti: 980000009a2e4000 task.ti: 980000009a2e4000
-[    2.880000] $ 0   : 0000000000000000 0000000077832c14 0000000000000000 0000000000000001
-[    2.880000] $ 4   : 0000000000000000 000000001000802c 980000009a2e7eb0 0000000000000002
-[    2.880000] $ 8   : 0000000000000010 000000007efefeff 0000000024242424 ffffffff81010100
-[    2.880000] $12   : 00000000100044e1 000000001000001f 0000000000000000 0000000000000000
-[    2.880000] $16   : 0000000000400164 000000007fd876e0 0000000077862cf8 0000000000000000
-[    2.880000] $20   : 0000000000000000 0000000077861ed0 0000000077861ed0 00000000004022d8
-[    2.880000] $24   : 0000000000000005 000000007784ba80                                  
-[    2.880000] $28   : 980000009a2e4000 980000009a2e7e70 000000007fd876e8 ffffffff802077e0
-[    2.880000] Hi    : 000000000000002c
-[    2.880000] Lo    : 000000000000000b
-[    2.880000] epc   : ffffffff8020e8d4 do_cpu+0x304/0x4f0
-[    2.880000]     Tainted: G      D       
-[    2.880000] ra    : ffffffff802077e0 ret_from_exception+0x0/0x1c
-[    2.880000] Status: 100044e3	KX SX UX KERNEL EXL IE 
-[    2.880000] Cause : 10008028
-[    2.880000] PrId  : 00006303 (ICT Loongson-2)
-[    2.880000] Modules linked in:
-[    2.880000] Process hotplug (pid: 232, threadinfo=980000009a2e4000, task=980000009f1c5ea8, tls=0000000000000000)
-[    2.880000] Stack : 0000000077850000 0000000077862c10 ffffffffffffc000 0000000077861ed0
-	  00000000778622d8 0000000000400164 000000007fd876e0 ffffffff802077e0
-	  0000000000000000 0000000077832c14 000000007fd875a8 0000000077862bf0
-	  000000007fd875b8 0000000000000000 000000007fd87590 000000007fd876e8
-	  ffffffffbba0ffce 000000007efefeff 0000000024242424 ffffffff81010100
-	  0000000000000000 0000000000000fc1 0000000000000000 0000000000000000
-	  0000000000400164 000000007fd876e0 0000000077862cf8 0000000000000000
-	  0000000000000000 0000000077861ed0 0000000077861ed0 00000000004022d8
-	  0000000000000005 000000007784ba80 000000006474e552 0000000000000000
-	  000000007786a000 000000007fd87590 000000007fd876e8 0000000077841038
-	  ...
-[    2.880000] Call Trace:
-[    2.880000] [<ffffffff8020e8d4>] do_cpu+0x304/0x4f0
-[    2.880000] [<ffffffff802077e0>] ret_from_exception+0x0/0x1c
-[    2.880000] 
-[    2.880000] 
-Code: 30420001  2c420001  0040202d <40038005> 2405feff  00651824  40838005  3c032000  3c052400 
-[    2.884000] ---[ end trace 71c7b14ce7da9370 ]---
-[    2.888000] Reserved instruction in kernel code[#3]:
-[    2.888000] CPU: 0 PID: 233 Comm: hotplug Tainted: G      D        3.18.0-lemote-los_7f08-09423-g988adfd #1
-[    2.888000] task: 980000009f1c48d0 ti: 980000009a2e0000 task.ti: 980000009a2e0000
-[    2.888000] $ 0   : 0000000000000000 0000000077d5ec14 0000000000000000 0000000000000001
-[    2.888000] $ 4   : 0000000000000000 000000001000802c 980000009a2e3eb0 0000000000000002
-[    2.888000] $ 8   : 0000000000000010 000000007efefeff 0000000024242424 ffffffff81010100
-[    2.888000] $12   : 00000000100044e1 000000001000001f 0000000000000000 0000000000000000
-[    2.888000] $16   : 0000000000400164 000000007f9b0ad0 0000000077d8ecf8 0000000000000000
-[    2.888000] $20   : 0000000000000000 0000000077d8ded0 0000000077d8ded0 00000000004022d8
-[    2.888000] $24   : 0000000000000005 0000000077d77a80                                  
-[    2.888000] $28   : 980000009a2e0000 980000009a2e3e70 000000007f9b0ad8 ffffffff802077e0
-[    2.888000] Hi    : 000000000000002c
-[    2.888000] Lo    : 000000000000000b
-[    2.888000] epc   : ffffffff8020e8d4 do_cpu+0x304/0x4f0
-[    2.888000]     Tainted: G      D       
-[    2.888000] ra    : ffffffff802077e0 ret_from_exception+0x0/0x1c
-[    2.888000] Status: 100044e3	KX SX UX KERNEL EXL IE 
-[    2.888000] Cause : 10008028
-[    2.888000] PrId  : 00006303 (ICT Loongson-2)
-[    2.888000] Modules linked in:
-[    2.888000] Process hotplug (pid: 233, threadinfo=980000009a2e0000, task=980000009f1c48d0, tls=0000000000000000)
-[    2.888000] Stack : 0000000077d7c000 0000000077d8ec10 ffffffffffffc000 0000000077d8ded0
-	  0000000077d8e2d8 0000000000400164 000000007f9b0ad0 ffffffff802077e0
-	  0000000000000000 0000000077d5ec14 000000007f9b0998 0000000077d8ebf0
-	  000000007f9b09a8 0000000000000000 000000007f9b0980 000000007f9b0ad8
-	  ffffffffbba0ffce 000000007efefeff 0000000024242424 ffffffff81010100
-	  0000000000000000 0000000000000fc1 0000000000000000 0000000000000000
-	  0000000000400164 000000007f9b0ad0 0000000077d8ecf8 0000000000000000
-	  0000000000000000 0000000077d8ded0 0000000077d8ded0 00000000004022d8
-	  0000000000000005 0000000077d77a80 000000006474e552 0000000000000000
-	  0000000077d96000 000000007f9b0980 000000007f9b0ad8 0000000077d6d038
-	  ...
-[    2.888000] Call Trace:
-[    2.888000] [<ffffffff8020e8d4>] do_cpu+0x304/0x4f0
-[    2.888000] [<ffffffff802077e0>] ret_from_exception+0x0/0x1c
-[    2.888000] 
-[    2.888000] 
-Code: 30420001  2c420001  0040202d <40038005> 2405feff  00651824  40838005  3c032000  3c052400 
-[    2.892000] ---[ end trace 71c7b14ce7da9371 ]---
+Cheers
+James
 
-A.
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUmftqAAoJEGwLaZPeOHZ6ZEAQAIU3oztbgEbp3Zt57RaJWrAe
+aKMNiPToXqsP9qE5F5W/g+Y/Dj6LrIM2PF1ffITG1LI70qitR6izPCM9vrqG36Dg
+QXyWRdK+lglGCwVzD2LH/C08cp2r/dL3OC0iXwoABJA64WtzJ05xs1L8CFED4uhT
+gc0ztumDMpkIYdUo95NM/8+d5Uf2ewfUn1/Nw6iqARZjlDHEGhLrOZitB8cOO3tY
+w3UWcvgPovJ//tbygIs5apOz/X8F7lnU9Io6fqgUw4WirkMTDVRJbn2LbVXWD22u
+c3TDhHB+enF3zYk8mrGQ6XXUKgAaDVd0UnBo2maiM8N0W50BZcAOJ/qHPxH2Zs1k
+3GY7eOoHvaJDDel0ci+h5G2LWFtWvJK3nRvlg80VHCcxspWFaUfAhDr7uJaajq0X
+j58q01hMQ+ejS5pxYD1jqCmS8H/dezVOkneewYmBJOX4hkKbZLvTb0MmNzWeC2sU
+j7lpUecpR8PJXjZPCMUJXKdVH44ReZrMiqAxZdwRSdPDP+jR0BVVHSY7qooGJLU/
+STqBKqDdpHrTtAcjRYKE23PFOj8j5PHgXES4i1NaZZkcOqrdGJeGmOP2Zod5Cm7W
+Yo3uU5EpJPc64GzjTYZHSWGC/OnRj5BUWjK0iaAOt4iFHyg7xc3TpDAWZX8Qy+e4
+aKuJyGSy57cWpMfFOPxm
+=6uMX
+-----END PGP SIGNATURE-----
+
+--J/dobhs11T7y2rNN--
