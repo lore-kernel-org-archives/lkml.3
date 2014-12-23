@@ -1,117 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793AbaLWFkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 00:40:32 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:43314 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713AbaLWFka (ORCPT
+	id S1754849AbaLWFkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 00:40:43 -0500
+Received: from mga02.intel.com ([134.134.136.20]:58837 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754294AbaLWFkk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 00:40:30 -0500
-Subject: [PATCH 5/5] hwrng: core - Move hwrng_init call into set_current_rng
-References: <20141223053909.GA28001@gondor.apana.org.au>
-To: Fengguang Wu <fengguang.wu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, LKP <lkp@01.org>,
-        linux-kernel@vger.kernel.org,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Amos Kong <akong@redhat.com>, m@bues.ch, mpm@selenic.com,
-        amit.shah@redhat.com
-Message-Id: <E1Y3ICk-0007dg-OB@gondolin.me.apana.org.au>
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Tue, 23 Dec 2014 16:40:22 +1100
+	Tue, 23 Dec 2014 00:40:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,629,1413270000"; 
+   d="scan'208";a="628046380"
+From: "Du, Changbin" <changbin.du@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wu, Hao" <hao.wu@intel.com>
+Subject: RE: [DISCUSSION] USB device remote wakeup is not working for S3 case
+Thread-Topic: [DISCUSSION] USB device remote wakeup is not working for S3
+ case
+Thread-Index: AdAaujexwQVjoEsORCWW3pR7AJbQmf//tgsA//6C/XCAAwx5gP/52Muw
+Date: Tue, 23 Dec 2014 05:40:37 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01C43756@SHSMSX103.ccr.corp.intel.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A01C42A57@SHSMSX103.ccr.corp.intel.com>
+ <Pine.LNX.4.44L0.1412191020320.1599-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1412191020320.1599-100000@iolanthe.rowland.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We always do hwrng_init in set_current_rng.  In fact, our current
-reference count system relies on this.  So make this explicit by
-moving hwrng_init into set_current_rng.
+> You have to make sure that wakeup is also enabled for the host
+> controller the device is attached to.  For some host controllers, it
+> may also be necessary to enable wakeup for the root hub.
+> 
+Yes, the root-hub is not wakeup enabled by default, actually hub
+devices are not enabled. It works after I enable it via sysfs interface.
 
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
----
+> > Could we also enable wakeup for usb mouse? Or is there any concern to
+> enable it?
+> > Per my opinion, most people may expect clicking mouse can awake system.
+> 
+> It doesn't matter to me, but you should ask the people on the
+> linux-input mailing list.
+> 
+> Also, what about wakeup for a non-USB mouse?  Shouldn't that be enabled
+> as well?
+Unfortunately the mouse I found are all of usb so cannot confirm it. The
+concern is if we want usb keyboard/mouse wakeup work by default, it does
+make sense only if the parent hubs are also enabled by default.  This is a policy
+issue and may be better place it on userspace. I have no better idea :) .
 
- drivers/char/hw_random/core.c |   30 ++++++++++++++++--------------
- 1 file changed, 16 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-index 787ef42..32a8a86 100644
---- a/drivers/char/hw_random/core.c
-+++ b/drivers/char/hw_random/core.c
-@@ -71,6 +71,7 @@ MODULE_PARM_DESC(default_quality,
- 		 "default entropy content of hwrng per mill");
- 
- static void drop_current_rng(void);
-+static int hwrng_init(struct hwrng *rng);
- static void start_khwrngd(void);
- 
- static inline int rng_get_data(struct hwrng *rng, u8 *buffer, size_t size,
-@@ -103,11 +104,20 @@ static inline void cleanup_rng(struct kref *kref)
- 	complete(&rng->cleanup_done);
- }
- 
--static void set_current_rng(struct hwrng *rng)
-+static int set_current_rng(struct hwrng *rng)
- {
-+	int err;
-+
- 	BUG_ON(!mutex_is_locked(&rng_mutex));
-+
-+	err = hwrng_init(rng);
-+	if (err)
-+		return err;
-+
- 	drop_current_rng();
- 	current_rng = rng;
-+
-+	return 0;
- }
- 
- static void drop_current_rng(void)
-@@ -149,7 +159,7 @@ static void put_rng(struct hwrng *rng)
- 	mutex_unlock(&rng_mutex);
- }
- 
--static inline int hwrng_init(struct hwrng *rng)
-+static int hwrng_init(struct hwrng *rng)
- {
- 	if (kref_get_unless_zero(&rng->ref))
- 		goto skip_init;
-@@ -310,15 +320,9 @@ static ssize_t hwrng_attr_current_store(struct device *dev,
- 	err = -ENODEV;
- 	list_for_each_entry(rng, &rng_list, list) {
- 		if (strcmp(rng->name, buf) == 0) {
--			if (rng == current_rng) {
--				err = 0;
--				break;
--			}
--			err = hwrng_init(rng);
--			if (err)
--				break;
--			set_current_rng(rng);
- 			err = 0;
-+			if (rng != current_rng)
-+				err = set_current_rng(rng);
- 			break;
- 		}
- 	}
-@@ -481,10 +485,9 @@ int hwrng_register(struct hwrng *rng)
- 	old_rng = current_rng;
- 	err = 0;
- 	if (!old_rng) {
--		err = hwrng_init(rng);
-+		err = set_current_rng(rng);
- 		if (err)
- 			goto out_unlock;
--		set_current_rng(rng);
- 	}
- 	list_add_tail(&rng->list, &rng_list);
- 
-@@ -518,8 +521,7 @@ void hwrng_unregister(struct hwrng *rng)
- 
- 			tail = list_entry(rng_list.prev, struct hwrng, list);
- 
--			if (hwrng_init(tail) == 0)
--				set_current_rng(tail);
-+			set_current_rng(tail);
- 		}
- 	}
- 
+> 
+> Alan Stern
+Regards
+Du, Changbin
