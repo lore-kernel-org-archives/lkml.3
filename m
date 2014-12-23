@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaLWA0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 19:26:23 -0500
-Received: from ozlabs.org ([103.22.144.67]:53333 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024AbaLWA0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 19:26:22 -0500
-Message-ID: <1419294380.30550.1.camel@ellerman.id.au>
-Subject: Re: [PATCH] arch: powerpc: platforms: ps3: repository.c:  Remove
- unused function
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Geoff Levand <geoff@infradead.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Andre Heider <a.heider@gmail.com>,
-        Nathan Whitehorn <nwhitehorn@freebsd.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Tue, 23 Dec 2014 11:26:20 +1100
-In-Reply-To: <1419269161.3786.4.camel@infradead.org>
-References: <1419087601-4889-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	 <1419269161.3786.4.camel@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753836AbaLWA2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 19:28:33 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:45047 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaLWA2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 19:28:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAEUmHyYbPbeWzHEaPYFAV+wTGYqhz7pps6XEzNrK_jQm_HPKpg@mail.gmail.com>
+References: <1419286616-9893-1-git-send-email-wsa@the-dreams.de>
+	<1419286616-9893-3-git-send-email-wsa@the-dreams.de>
+	<CAEUmHyYbPbeWzHEaPYFAV+wTGYqhz7pps6XEzNrK_jQm_HPKpg@mail.gmail.com>
+Date: Tue, 23 Dec 2014 05:58:29 +0530
+Message-ID: <CAEUmHyaSo+rtfobH8jHidcX1e=5fRiCxHKDF=sEEKXPDcD7WeQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] net: ieee802154: don't use devm_pinctrl_get_select_default()
+ in probe
+From: Varka Bhadram <varkabhadram@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wpan - ML <linux-wpan@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-22 at 09:26 -0800, Geoff Levand wrote:
-> On Sat, 2014-12-20 at 16:00 +0100, Rickard Strandqvist wrote:
-> > Remove the function ps3_repository_write_highmem_info() that is not used anywhere.
-> 
-> NAK
-> 
-> ps3_repository_write_highmem_info() is needed by otheros++.  What we
-> need is a kernel patch to add the highmem info to the repository once it
-> is known.
+Thanks for the patch.
 
-OK so where's that patch?
+Acked-by: Varka Bhadram <varkabhadram@gmail.com>
 
-> These ps3_repository_write_highmem routines are also the only
-> documentation the freeBSD port has as to how the highmem info is (should
-> be) saved in the repository.
+On Tue, Dec 23, 2014 at 5:40 AM, Varka Bhadram <varkabhadram@gmail.com> wrote:
+>
+> Thanks for the patch.
+>
+> Acked-by: Varka Bhadram <varkabhadram@gmail.com>
+>
+> On Tue, Dec 23, 2014 at 3:46 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>>
+>> Since commit ab78029ecc34 (drivers/pinctrl: grab default handles from device
+>> core), we can rely on device core for setting the default pins.
+>>
+>> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+>> ---
+>>  drivers/net/ieee802154/cc2520.c | 7 -------
+>>  1 file changed, 7 deletions(-)
+>>
+>> diff --git a/drivers/net/ieee802154/cc2520.c b/drivers/net/ieee802154/cc2520.c
+>> index c2b7da3da183..033473448d9f 100644
+>> --- a/drivers/net/ieee802154/cc2520.c
+>> +++ b/drivers/net/ieee802154/cc2520.c
+>> @@ -19,7 +19,6 @@
+>>  #include <linux/workqueue.h>
+>>  #include <linux/interrupt.h>
+>>  #include <linux/skbuff.h>
+>> -#include <linux/pinctrl/consumer.h>
+>>  #include <linux/of_gpio.h>
+>>  #include <linux/ieee802154.h>
+>>
+>> @@ -841,7 +840,6 @@ done:
+>>  static int cc2520_probe(struct spi_device *spi)
+>>  {
+>>         struct cc2520_private *priv;
+>> -       struct pinctrl *pinctrl;
+>>         struct cc2520_platform_data *pdata;
+>>         int ret;
+>>
+>> @@ -854,11 +852,6 @@ static int cc2520_probe(struct spi_device *spi)
+>>
+>>         spi_set_drvdata(spi, priv);
+>>
+>> -       pinctrl = devm_pinctrl_get_select_default(&spi->dev);
+>> -       if (IS_ERR(pinctrl))
+>> -               dev_warn(&spi->dev,
+>> -                        "pinctrl pins are not configured\n");
+>> -
+>>         pdata = cc2520_get_platform_data(spi);
+>>         if (!pdata) {
+>>                 dev_err(&spi->dev, "no platform data\n");
+>> --
+>> 2.1.3
+>>
+>
+>
+>
+> --
+> Thanks and Regards,
+> Varka Bhadram.
 
-We don't carry dead code as documentation for BSD.
-
-cheers
 
 
+
+-- 
+Thanks and Regards,
+Varka Bhadram.
