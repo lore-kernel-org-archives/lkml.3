@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504AbaLWUqz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 15:46:55 -0500
-Received: from mga03.intel.com ([134.134.136.65]:30573 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520AbaLWUqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 15:46:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,633,1413270000"; 
-   d="scan'208";a="642091244"
-Date: Tue, 23 Dec 2014 12:47:55 -0800
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Robert Baldyga <r.baldyga@samsung.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mina86@mina86.com, m.szyprowski@samsung.com, k.opasiak@samsung.com,
-        stern@rowland.harvard.edu
-Subject: Re: [PATCH v5] usb: gadget: f_fs: add "no_disconnect" mode
-Message-ID: <20141223204755.GC19996@psi-dev26.jf.intel.com>
-References: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
- <20141223184858.GM9147@saruman>
+	id S1756577AbaLWUtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 15:49:10 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40894 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542AbaLWUtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 15:49:08 -0500
+Date: Tue, 23 Dec 2014 21:49:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, freemangordon@abv.bg, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        bcousson@baylibre.com, sakari.ailus@iki.fi, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, j.anaszewski@samsung.com,
+        apw@canonical.com, joe@perches.com
+Subject: Re: [PATCH] media: i2c/adp1653: devicetree support for adp1653
+Message-ID: <20141223204903.GA1780@amd>
+References: <20141203214641.GA1390@amd>
+ <20141223152325.75e8cb4a@concha.lan.sisa.samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141223184858.GM9147@saruman>
+In-Reply-To: <20141223152325.75e8cb4a@concha.lan.sisa.samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 12:48:58PM -0600, Felipe Balbi wrote:
-> On Thu, Dec 18, 2014 at 09:55:10AM +0100, Robert Baldyga wrote:
-> > Since we can compose gadgets from many functions, there is the problem
-> > related to gadget breakage while FunctionFS daemon being closed. FFS
-> > function is userspace code so there is no way to know when it will close
-> > files (it doesn't matter what is the reason of this situation, it can
-> > be daemon logic, program breakage, process kill or any other). So when
-> > we have another function in gadget which, for example, sends some amount
-> > of data, does some software update or implements some real-time functionality,
-> > we may want to keep the gadget connected despite FFS function is no longer
-> > functional.
-> > 
-> > We can't just remove one of functions from gadget since it has been
-> > enumerated, so the only way to keep entire gadget working is to make
-> > broken FFS function deactivated but still visible to host. For this
-> > purpose this patch introduces "no_disconnect" mode. It can be enabled
-> > by setting mount option "no_disconnect=1", and results with defering
-> > function disconnect to the moment of reopen ep0 file or filesystem
-> > unmount. After closing all endpoint files, FunctionFS is set to state
-> > FFS_DEACTIVATED.
-> > 
-> > When ffs->state == FFS_DEACTIVATED:
-> > - function is still bound and visible to host,
-> > - setup requests are automatically stalled,
-> > - transfers on other endpoints are refused,
-> > - epfiles, except ep0, are deleted from the filesystem,
-> > - opening ep0 causes the function to be closed, and then FunctionFS
-> >   is ready for descriptors and string write,
-> > - altsetting change causes the function to be closed - we want to keep
-> >   function alive until another functions are potentialy used, altsetting
-> >   change means that another configuration is being selected or USB cable
-> >   was unplugged, which indicates that we don't need to stay longer in
-> >   FFS_DEACTIVATED state
-> > - unmounting of the FunctionFS instance causes the function to be closed.
-> > 
-> > Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+On Tue 2014-12-23 15:23:25, Mauro Carvalho Chehab wrote:
+> Em Wed, 3 Dec 2014 22:46:41 +0100
+> Pavel Machek <pavel@ucw.cz> escreveu:
 > 
-> David, can you test it with your setup ?
-
-Works fine on my side.
-Tested-by: David Cohen <david.a.cohen@linux.intel.com>
-
+> > 
+> > We are moving to device tree support on OMAP3, but that currently
+> > breaks ADP1653 driver. This adds device tree support, plus required
+> > documentation.
+> > 
+> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
 > 
-> cheers
-> 
-> -- 
-> balbi
+> Please be sure to check your patch with checkpatch. There are several
+> issues on it:
 
+> WARNING: DT compatible string "adi,adp1653" appears un-documented -- check ./Documentation/devicetree/bindings/
+> #78: FILE: arch/arm/boot/dts/omap3-n900.dts:572:
+> +		compatible = "adi,adp1653";
 
+Hmm. Take a look at part quoted below. Someone needs to fix
+checkpatch. Ccing authors.
+
+> ERROR: trailing whitespace
+> WARNING: line over 80 characters
+
+Will fix.
+
+> ERROR: trailing statements should be on next line
+> #177: FILE: drivers/media/i2c/adp1653.c:454:
+> +	if (!child) return -EINVAL;
+
+I actually did these on purporse... the function is trivial, and by
+keeping returns on one line it fits into screen. I see you want it
+fixed below, so I'll do that for next version.
+
+								Pavel
+
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/media/i2c/adp1653.txt
+> > @@ -0,0 +1,38 @@
+> > +* Analog Devices ADP1653 flash LED driver
+> > +
+> > +Required Properties:
+> > +
+> > +  - compatible: Must contain one of the following
+> > +    - "adi,adp1653"
+> > +
+> > +  - reg: I2C slave address
+> > +
+> > +  - gpios: References to the GPIO that controls the power for the chip.
+> > +
+> > +There are two led outputs available - flash and indicator. One led is
+> > +represented by one child node, nodes need to be named "flash" and "indicator".
+> > +
+> > +Required properties of the LED child node:
+> > +- max-microamp : see Documentation/devicetree/bindings/leds/common.txt
+> > +
+> > +Required properties of the flash LED child node:
+> > +
+> > +- flash-max-microamp : see Documentation/devicetree/bindings/leds/common.txt
+> > +- flash-timeout-microsec : see Documentation/devicetree/bindings/leds/common.txt
+> > +
+> > +Example:
+> > +
+> > +        adp1653: led-controller@30 {
+> > +                compatible = "adi,adp1653";
+> > +		reg = <0x30>;
+> > +                gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
+> > +
+> > +		flash {
+> > +                        flash-timeout-microsec = <500000>;
+> > +                        flash-max-microamp = <320000>;
+> > +                        max-microamp = <50000>;
+> > +		};
+> > +                indicator {
+> > +                        max-microamp = <17500>;
+> > +		};
+> > +        };
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
