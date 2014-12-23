@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146AbaLWMaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 07:30:07 -0500
-Received: from nivc-ms1.auriga.com ([80.240.102.146]:36354 "EHLO
+	id S1756160AbaLWMaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 07:30:16 -0500
+Received: from nivc-ms1.auriga.com ([80.240.102.146]:36358 "EHLO
 	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285AbaLWMaF (ORCPT
+	with ESMTP id S1755285AbaLWMaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 07:30:05 -0500
+	Tue, 23 Dec 2014 07:30:14 -0500
 From: Aleksey Makarov <aleksey.makarov@auriga.com>
 To: <linux-mips@linux-mips.org>
 CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
         Aleksey Makarov <aleksey.makarov@auriga.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 2/3] MIPS: OCTEON: Protect accesses to bootbus flash with octeon_bootbus_sem.
-Date: Tue, 23 Dec 2014 15:27:00 +0300
-Message-ID: <1419337623-16101-3-git-send-email-aleksey.makarov@auriga.com>
+        Ralf Baechle <ralf@linux-mips.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
+Subject: [PATCH 3/3] MIPS: OCTEON: Use device tree to probe for flash chips.
+Date: Tue, 23 Dec 2014 15:27:01 +0300
+Message-ID: <1419337623-16101-4-git-send-email-aleksey.makarov@auriga.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419337623-16101-1-git-send-email-aleksey.makarov@auriga.com>
 References: <1419337623-16101-1-git-send-email-aleksey.makarov@auriga.com>
@@ -27,94 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Without this, we get bus errors.
+Don't assume they are there, the device tree will tell us.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
 Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
 ---
- arch/mips/Kconfig                     |  1 +
- arch/mips/cavium-octeon/flash_setup.c | 42 ++++++++++++++++++++++++++++++++++-
- 2 files changed, 42 insertions(+), 1 deletion(-)
+ arch/mips/cavium-octeon/flash_setup.c | 42 ++++++++++++++++++++++++++++++-----
+ 1 file changed, 37 insertions(+), 5 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 3289969..94f6012 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -790,6 +790,7 @@ config CAVIUM_OCTEON_SOC
- 	select SYS_SUPPORTS_SMP
- 	select NR_CPUS_DEFAULT_16
- 	select BUILTIN_DTB
-+	select MTD_COMPLEX_MAPPINGS
- 	help
- 	  This option supports all of the Octeon reference boards from Cavium
- 	  Networks. It builds a kernel that dynamically determines the Octeon
 diff --git a/arch/mips/cavium-octeon/flash_setup.c b/arch/mips/cavium-octeon/flash_setup.c
-index 237e5b1..39e26df 100644
+index 39e26df..8eb81e2 100644
 --- a/arch/mips/cavium-octeon/flash_setup.c
 +++ b/arch/mips/cavium-octeon/flash_setup.c
-@@ -9,6 +9,7 @@
+@@ -8,10 +8,11 @@
+  * Copyright (C) 2007, 2008 Cavium Networks
   */
  #include <linux/kernel.h>
- #include <linux/export.h>
-+#include <linux/semaphore.h>
+-#include <linux/export.h>
++#include <linux/module.h>
+ #include <linux/semaphore.h>
  #include <linux/mtd/mtd.h>
  #include <linux/mtd/map.h>
++#include <linux/of_platform.h>
  #include <linux/mtd/partitions.h>
-@@ -25,6 +26,41 @@ static const char *part_probe_types[] = {
- 	NULL
- };
  
-+static map_word octeon_flash_map_read(struct map_info *map, unsigned long ofs)
-+{
-+	map_word r;
-+
-+	down(&octeon_bootbus_sem);
-+	r = inline_map_read(map, ofs);
-+	up(&octeon_bootbus_sem);
-+
-+	return r;
-+}
-+
-+static void octeon_flash_map_write(struct map_info *map, const map_word datum,
-+				   unsigned long ofs)
-+{
-+	down(&octeon_bootbus_sem);
-+	inline_map_write(map, datum, ofs);
-+	up(&octeon_bootbus_sem);
-+}
-+
-+static void octeon_flash_map_copy_from(struct map_info *map, void *to,
-+				       unsigned long from, ssize_t len)
-+{
-+	down(&octeon_bootbus_sem);
-+	inline_map_copy_from(map, to, from, len);
-+	up(&octeon_bootbus_sem);
-+}
-+
-+static void octeon_flash_map_copy_to(struct map_info *map, unsigned long to,
-+				     const void *from, ssize_t len)
-+{
-+	down(&octeon_bootbus_sem);
-+	inline_map_copy_to(map, to, from, len);
-+	up(&octeon_bootbus_sem);
-+}
-+
- /**
-  * Module/ driver initialization.
+ #include <asm/octeon/octeon.h>
+@@ -66,14 +67,22 @@ static void octeon_flash_map_copy_to(struct map_info *map, unsigned long to,
   *
-@@ -56,7 +92,11 @@ static int __init flash_init(void)
- 		flash_map.virt = ioremap(flash_map.phys, flash_map.size);
- 		pr_notice("Bootbus flash: Setting flash for %luMB flash at "
- 			  "0x%08llx\n", flash_map.size >> 20, flash_map.phys);
--		simple_map_init(&flash_map);
-+		WARN_ON(!map_bankwidth_supported(flash_map.bankwidth));
-+		flash_map.read = octeon_flash_map_read;
-+		flash_map.write = octeon_flash_map_write;
-+		flash_map.copy_from = octeon_flash_map_copy_from;
-+		flash_map.copy_to = octeon_flash_map_copy_to;
- 		mymtd = do_map_probe("cfi_probe", &flash_map);
- 		if (mymtd) {
- 			mymtd->owner = THIS_MODULE;
+  * Returns Zero on success
+  */
+-static int __init flash_init(void)
++static int octeon_flash_probe(struct platform_device *pdev)
+ {
++	union cvmx_mio_boot_reg_cfgx region_cfg;
++	u32 cs;
++	int r;
++	struct device_node *np = pdev->dev.of_node;
++
++	r = of_property_read_u32(np, "reg", &cs);
++	if (r)
++		return r;
++
+ 	/*
+ 	 * Read the bootbus region 0 setup to determine the base
+ 	 * address of the flash.
+ 	 */
+-	union cvmx_mio_boot_reg_cfgx region_cfg;
+-	region_cfg.u64 = cvmx_read_csr(CVMX_MIO_BOOT_REG_CFGX(0));
++	region_cfg.u64 = cvmx_read_csr(CVMX_MIO_BOOT_REG_CFGX(cs));
+ 	if (region_cfg.s.en) {
+ 		/*
+ 		 * The bootloader always takes the flash and sets its
+@@ -109,4 +118,27 @@ static int __init flash_init(void)
+ 	return 0;
+ }
+ 
+-late_initcall(flash_init);
++static struct of_device_id of_flash_match[] = {
++	{
++		.compatible	= "cfi-flash",
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_flash_match);
++
++static struct platform_driver of_flash_driver = {
++	.driver = {
++		.name = "octeon-of-flash",
++		.owner = THIS_MODULE,
++		.of_match_table = of_flash_match,
++	},
++	.probe		= octeon_flash_probe,
++};
++
++static int octeon_flash_init(void)
++{
++	return platform_driver_register(&of_flash_driver);
++}
++late_initcall(octeon_flash_init);
++
++MODULE_LICENSE("GPL");
 -- 
 2.1.3
 
