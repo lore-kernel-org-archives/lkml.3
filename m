@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbaLWArA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Dec 2014 19:47:00 -0500
-Received: from mga03.intel.com ([134.134.136.65]:56668 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421AbaLWAqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Dec 2014 19:46:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,627,1413270000"; 
-   d="scan'208";a="641667695"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>,
-        "yong.y.wang@linux.intel.com" <yong.y.wang@linux.intel.com>
-CC: "Wu, Feng" <feng.wu@intel.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "hpa@linux.intel.com" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu-VuQAYsv1563Yd54FQh9/CA@public.gmane.org" 
-	<jiang.liu-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>
-Subject: RE: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-Thread-Topic: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu()
- for VT-d PI
-Thread-Index: AdAeSev6JAZ1DRo1S4ebIhUdqD2+fg==
-Date: Tue, 23 Dec 2014 00:46:44 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC06468@SHSMSX104.ccr.corp.intel.com>
-References: <1415059685.1337085.1419266271242.JavaMail.zimbra@zmail13.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1415059685.1337085.1419266271242.JavaMail.zimbra@zmail13.collab.prod.int.phx2.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1754317AbaLWBUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Dec 2014 20:20:32 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:47935 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664AbaLWBUY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Dec 2014 20:20:24 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID sBN1Jvsa023456, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <chris@printf.net>, <ulf.hansson@linaro.org>, <sameo@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH v5 2/6] mmc: rtsx: add dump_reg_range to simplify dump register
+Date: Tue, 23 Dec 2014 09:19:42 +0800
+Message-ID: <dcd9add1d29623726bdde4819c7e5267966d2f4f.1419297154.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1419297154.git.micky_ching@realsil.com.cn>
+References: <cover.1419297154.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBN0lH50000505
 
-Paolo Bonzini wrote on 2014-12-23:
->> The problem is we still need to support PI with lowest priority
->> delivery mode
-> even if guest does not configure irq affinity via /proc/irq/. Don't we?
-> 
-> Yes, but we can get the basic support working first.
-> 
-> I and Feng talked on irc and agreed to start with a simple
-> implementation. Then he can add support for vector hashing for all
-> interrupts, both vt-d pi and normal LAPIC interrupts.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Agree. Obviously, current PI has some limitations to achieve highest performance. We can start with a simple implementation but must ensure we don't change hardware's behavior(From guest's point). Feng's current implementation or use the way I suggested are both ok since both of them cannot solve the problem well.
+Add a new function to dump register within a range.
+We print 1 register a line before this patch,
+this may make debug info too long when we add more register to dump.
 
-> 
-> Paolo
->
+The new dump_reg_range() dump to 8 register a line,
+and it is easy to use.
 
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+---
+ drivers/mmc/host/rtsx_pci_sdmmc.c | 38 +++++++++++++++++++++-----------------
+ 1 file changed, 21 insertions(+), 17 deletions(-)
 
-Best regards,
-Yang
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index c70b602..b1390f0 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -71,25 +71,29 @@ static inline void sd_clear_error(struct realtek_pci_sdmmc *host)
+ }
+ 
+ #ifdef DEBUG
+-static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
++static void dump_reg_range(struct realtek_pci_sdmmc *host, u16 start, u16 end)
+ {
+-	struct rtsx_pcr *pcr = host->pcr;
+-	u16 i;
+-	u8 *ptr;
++	u16 len = end - start + 1;
++	int i;
++	u8 data[8];
++
++	for (i = 0; i < len; i += 8) {
++		int j;
++		int n = min(8, len - i);
++
++		memset(&data, 0, sizeof(data));
++		for (j = 0; j < n; j++)
++			rtsx_pci_read_register(host->pcr, start + i + j,
++				data + j);
++		dev_dbg(sdmmc_dev(host), "0x%04X(%d): %8ph\n",
++			start + i, n, data);
++	}
++}
+ 
+-	/* Print SD host internal registers */
+-	rtsx_pci_init_cmd(pcr);
+-	for (i = 0xFDA0; i <= 0xFDAE; i++)
+-		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+-	for (i = 0xFD52; i <= 0xFD69; i++)
+-		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+-	rtsx_pci_send_cmd(pcr, 100);
+-
+-	ptr = rtsx_pci_get_cmd_data(pcr);
+-	for (i = 0xFDA0; i <= 0xFDAE; i++)
+-		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
+-	for (i = 0xFD52; i <= 0xFD69; i++)
+-		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
++static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
++{
++	dump_reg_range(host, 0xFDA0, 0xFDB3);
++	dump_reg_range(host, 0xFD52, 0xFD69);
+ }
+ #else
+ #define sd_print_debug_regs(host)
+-- 
+1.9.1
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
