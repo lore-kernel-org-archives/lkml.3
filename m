@@ -1,116 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577AbaLWUtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 15:49:10 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40894 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542AbaLWUtI (ORCPT
+	id S1756603AbaLWUtc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 15:49:32 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20718 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542AbaLWUta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 15:49:08 -0500
-Date: Tue, 23 Dec 2014 21:49:04 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        bcousson@baylibre.com, sakari.ailus@iki.fi, devicetree@vger.kernel.org,
-        linux-media@vger.kernel.org, j.anaszewski@samsung.com,
-        apw@canonical.com, joe@perches.com
-Subject: Re: [PATCH] media: i2c/adp1653: devicetree support for adp1653
-Message-ID: <20141223204903.GA1780@amd>
-References: <20141203214641.GA1390@amd>
- <20141223152325.75e8cb4a@concha.lan.sisa.samsung.com>
+	Tue, 23 Dec 2014 15:49:30 -0500
+Message-ID: <5499D4D7.90109@oracle.com>
+Date: Tue, 23 Dec 2014 13:47:19 -0700
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141223152325.75e8cb4a@concha.lan.sisa.samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, corbet@lwn.net,
+        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
+        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
+        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
+        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
+        daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH RESEND v4] sched/fair: Add advisory flag for borrowing
+ a timeslice
+References: <1418928259-6311-1-git-send-email-khalid.aziz@oracle.com> <20141218222846.GH30905@twins.programming.kicks-ass.net> <54935842.5020507@oracle.com> <alpine.DEB.2.11.1412182355020.17382@nanos> <54936562.5070502@oracle.com> <alpine.DEB.2.11.1412190045590.17382@nanos> <54949BF0.8030403@oracle.com> <alpine.DEB.2.11.1412200041220.17382@nanos> <5498498B.90703@oracle.com> <20141223105251.GB22203@gmail.com> <5499867C.1010201@oracle.com> <5499B8A2.4080008@redhat.com>
+In-Reply-To: <5499B8A2.4080008@redhat.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-12-23 15:23:25, Mauro Carvalho Chehab wrote:
-> Em Wed, 3 Dec 2014 22:46:41 +0100
-> Pavel Machek <pavel@ucw.cz> escreveu:
-> 
-> > 
-> > We are moving to device tree support on OMAP3, but that currently
-> > breaks ADP1653 driver. This adds device tree support, plus required
-> > documentation.
-> > 
-> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> 
-> Please be sure to check your patch with checkpatch. There are several
-> issues on it:
+On 12/23/2014 11:46 AM, Rik van Riel wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> On 12/23/2014 10:13 AM, Khalid Aziz wrote:
+>> On 12/23/2014 03:52 AM, Ingo Molnar wrote:
+>>>
+>>>
+>>> to implement what Thomas suggested in the discussion: a proper
+>>> futex like spin mechanism? That looks like a totally acceptable
+>>> solution to me, without the disadvantages of your proposed
+>>> solution.
+>>
+>> Hi Ingo,
+>>
+>> Thank you for taking the time to respond. It is indeed possible to
+>> implement a futex like spin mechanism. Futex like mechanism will
+>> be clean and elegant. That is where I had started when I was given
+>> this problem to solve. Trouble I run into is the primary
+>> application I am looking at to help with this solution is Database
+>> which implements its own locking mechanism without using POSIX
+>> semaphore or futex. Since the locking is entirely in userspace,
+>> kernel has no clue when the userspace has acquired one of these
+>> locks. So I can see only two ways to solve this - find a solution
+>> in userspace entirely, or have userspace tell the kernel when it
+>> acquires one of these locks. I will spend more time on finding a
+>> way to solve it in userspace and see if I can find a way to
+>> leverage futex mechanism without causing significant change to
+>> database code. There may be a way to use priority inheritance to
+>> avoid contention. Database performance people tell me that their
+>> testing has shown the cost of making any system calls in this code
+>> easily offsets any gains from optimizing for contention avoidance,
+>> so that is one big challenge. Database rewriting their locking code
+>> is extremely unlikely scenario. Am I missing a third option here?
+>
+> An uncontended futex is taken without ever going into kernel
+> space. Adaptive spinning allows short duration futexes to be
+> taken without going into kernel space.
 
-> WARNING: DT compatible string "adi,adp1653" appears un-documented -- check ./Documentation/devicetree/bindings/
-> #78: FILE: arch/arm/boot/dts/omap3-n900.dts:572:
-> +		compatible = "adi,adp1653";
+You are right. Uncontended futex is very fast since it never goes into 
+kernel. Queuing problem happens when the lock holder has been 
+pre-empted. Adaptive spinning does the smart thing os spin-waiting only 
+if the lock holder is still running on another core. If lock holder is 
+not scheduled on any core, even adaptive spinning has to go into the 
+kernel to be put on wait queue. What would avoid queuing problem and 
+reduce the cost of contention is a combination of adaptive spinning, and 
+a way to keep the lock holder running on one of the cores just a little 
+longer so it can release the lock. Without creating special case and a 
+new API in kernel, one way I can think of accomplishing the second part 
+is to boost the priority of lock holder when contention happens and 
+priority ceiling is meant to do exactly that. Priority ceiling 
+implementation in glibc boosts the priority by calling into scheduler 
+which does incur the cost of a system call. Priority boost is a reliable 
+solution that does not change scheduling semantics. The solution 
+allowing lock holder to use one extra timeslice is not a definitive 
+solution but tpcc workload shows it does work and it works without 
+requiring changes to database locking code.
 
-Hmm. Take a look at part quoted below. Someone needs to fix
-checkpatch. Ccing authors.
+Theoretically a new locking library that uses both these techniques will 
+help solve the problem but being a new locking library, there is a big 
+unknown of what new problems, performance and otherwise, it will bring 
+and database has to recode to this new library. Nevertheless this is the 
+path I am exploring now. The challenge being how to do this without 
+requiring changes to database code or the kernel. The hooks available to 
+me into current database code are schedctl_init(), schedctl_start() and 
+schedctl_stop() which are no-op on Linux at this time. Database folks 
+can replace these no-ops with real code in their library to solve the 
+queuing problem. schedctl_start() and schedctl_stop() are called only 
+when one of the highly contended locks is acquired or released. 
+schedctl_start() is called after the lock has been acquired which means 
+I can not rely upon it to solve contention issue. schedctl_stop() is 
+called after the lock has been released.
 
-> ERROR: trailing whitespace
-> WARNING: line over 80 characters
+Thanks,
+Khalid
 
-Will fix.
+>
+> Only long held locks cause a thread to go into kernel space,
+> where it goes to sleep, freeing up the cpu, and increasing
+> the chance that the lock holder will run.
+>
+> - --
+> All rights reversed
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1
+>
+> iQEcBAEBAgAGBQJUmbihAAoJEM553pKExN6DDlQH/1vvy9YYuP2dCAZSU3fz855e
+> pj4796Qja929I2dStsbLl6Qhcg2ELtwtPkLoAePQ/4j2l7DCYgSNLXlC+RzQ32ay
+> rbMIfwiriEVGp2hsvYTOCpnur19IHf7v726ivaDXVOM/nrRaHsB8wwspLQQyfSIE
+> b7M7jxvT4S2pEELOGB6JQfEZZhbf5wBv9HBk+fkCBMaO4WZrnYczyD0/omiADm65
+> xSm/8pCMK22u8Tzn9EpKpIVdIFrl9AlZ1uiRBV2Br1oqwaBTvJVknW4bvIk0DWZU
+> ErwR/073UYKpl+xce3nbnixH8FeRP7/mq73Xd8e+iCgn6Dtzr1tANsu27EigMZ0=
+> =WHb3
+> -----END PGP SIGNATURE-----
+>
 
-> ERROR: trailing statements should be on next line
-> #177: FILE: drivers/media/i2c/adp1653.c:454:
-> +	if (!child) return -EINVAL;
-
-I actually did these on purporse... the function is trivial, and by
-keeping returns on one line it fits into screen. I see you want it
-fixed below, so I'll do that for next version.
-
-								Pavel
-
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/media/i2c/adp1653.txt
-> > @@ -0,0 +1,38 @@
-> > +* Analog Devices ADP1653 flash LED driver
-> > +
-> > +Required Properties:
-> > +
-> > +  - compatible: Must contain one of the following
-> > +    - "adi,adp1653"
-> > +
-> > +  - reg: I2C slave address
-> > +
-> > +  - gpios: References to the GPIO that controls the power for the chip.
-> > +
-> > +There are two led outputs available - flash and indicator. One led is
-> > +represented by one child node, nodes need to be named "flash" and "indicator".
-> > +
-> > +Required properties of the LED child node:
-> > +- max-microamp : see Documentation/devicetree/bindings/leds/common.txt
-> > +
-> > +Required properties of the flash LED child node:
-> > +
-> > +- flash-max-microamp : see Documentation/devicetree/bindings/leds/common.txt
-> > +- flash-timeout-microsec : see Documentation/devicetree/bindings/leds/common.txt
-> > +
-> > +Example:
-> > +
-> > +        adp1653: led-controller@30 {
-> > +                compatible = "adi,adp1653";
-> > +		reg = <0x30>;
-> > +                gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
-> > +
-> > +		flash {
-> > +                        flash-timeout-microsec = <500000>;
-> > +                        flash-max-microamp = <320000>;
-> > +                        max-microamp = <50000>;
-> > +		};
-> > +                indicator {
-> > +                        max-microamp = <17500>;
-> > +		};
-> > +        };
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
