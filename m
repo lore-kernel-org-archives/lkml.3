@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548AbaLWUTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 15:19:51 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:51648 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756521AbaLWUTs (ORCPT
+	id S1756587AbaLWUUr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 15:20:47 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:56462 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559AbaLWUUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 15:19:48 -0500
-Date: Tue, 23 Dec 2014 15:19:47 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Du, Changbin" <changbin.du@intel.com>
-cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wu, Hao" <hao.wu@intel.com>
-Subject: RE: [DISCUSSION] USB device remote wakeup is not working for S3 case
-In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A01C43756@SHSMSX103.ccr.corp.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1412231516060.29466-100000@netrider.rowland.org>
+	Tue, 23 Dec 2014 15:20:45 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20141223184407.GK9147@saruman>
+References: <1417182662-7405-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1417182662-7405-7-git-send-email-ricardo.ribalda@gmail.com>
+ <54788AC3.9090808@cogentembedded.com> <CAPybu_1R+L91kGTG1sHhKiChd3v7=wa70v2VWDrQ-TH1FYyxSQ@mail.gmail.com>
+ <5478D810.3060101@cogentembedded.com> <20141223184407.GK9147@saruman>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 23 Dec 2014 21:20:23 +0100
+Message-ID: <CAPybu_2gkQ0TzkO+twAnvp8WJzdWsPkdCvALoHauB223V0-yWQ@mail.gmail.com>
+Subject: Re: [PATCH 06/17] net2280: Remove restart_dma inline function definition
+To: "balbi@ti.com" <balbi@ti.com>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Chen <peter.chen@freescale.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Dec 2014, Du, Changbin wrote:
+Hello Felipe
 
-> > You have to make sure that wakeup is also enabled for the host
-> > controller the device is attached to.  For some host controllers, it
-> > may also be necessary to enable wakeup for the root hub.
-> > 
-> Yes, the root-hub is not wakeup enabled by default, actually hub
-> devices are not enabled. It works after I enable it via sysfs interface.
+I was waiting for more comments for the other patches and I forgot to
+resend this patch.
 
-On some hardware, device wakeup requests can work even when root-hub 
-wakeup is disabled -- it varies.
+I am on holidays and without access to a computer with the right
+tools, nevertheless , since the changes are only on the commit message
+I have modified the patch with vi.
 
-In general we do not want hubs to be enabled for wakeup.  If they were, 
-then your computer would wake up the moment you unplugged a USB device.  
-You would not be able to (for example) to put your laptop to sleep, 
-unplug a USB mouse, and put the laptop in its case.
+I have been very careful, but I cannot try to apply it. If it does not
+work, please feel free to modify it yourself (if you want) or wait
+until I am back
 
-> > > Could we also enable wakeup for usb mouse? Or is there any concern to
-> > enable it?
-> > > Per my opinion, most people may expect clicking mouse can awake system.
-> > 
-> > It doesn't matter to me, but you should ask the people on the
-> > linux-input mailing list.
-> > 
-> > Also, what about wakeup for a non-USB mouse?  Shouldn't that be enabled
-> > as well?
-> Unfortunately the mouse I found are all of usb so cannot confirm it. The
-> concern is if we want usb keyboard/mouse wakeup work by default, it does
-> make sense only if the parent hubs are also enabled by default.  This is a policy
-> issue and may be better place it on userspace. I have no better idea :) .
 
-As mentioned above, it depends on the hardware.
+Thanks!!!
 
-Alan Stern
+On Tue, Dec 23, 2014 at 7:44 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Fri, Nov 28, 2014 at 11:16:16PM +0300, Sergei Shtylyov wrote:
+>> On 11/28/2014 06:21 PM, Ricardo Ribalda Delgado wrote:
+>>
+>> >Thanks for reviewing. I will fix it and resend it on the next version
+>> >of the patchset to avoid spamming the ML
+>>
+>> >I guess it is ok to add your Reviewed-by
+>>
+>>    Yes, if you like.
+>>
+>> >Thanks!
+>>
+>>    Not at all. :-)
+>>
+>> [...]
+>>
+>> >>On 11/28/2014 04:50 PM, Ricardo Ribalda Delgado wrote:
+>>
+>> >>>restart_dma is not used before it is declaration. Therefore we can
+>>
+>> >>    s/it is/its/.
+>>
+>>    Also s/declaration/definition/.
+>>
+>> >>>remove this definition.
+>>
+>> >>    You're removing the declaration, not definition.
+>
+> do I get a new version of this patch ?
+>
+> --
+> balbi
 
+
+
+-- 
+Ricardo Ribalda
