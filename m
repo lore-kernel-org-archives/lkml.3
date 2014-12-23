@@ -1,124 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273AbaLWNJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 08:09:59 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42062 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711AbaLWNJZ (ORCPT
+	id S932309AbaLWNKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 08:10:51 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:42846 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932288AbaLWNKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 08:09:25 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        David Airlie <airlied@linux.ie>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v7 3/3] of: Add of_graph_get_port_by_id function
-Date: Tue, 23 Dec 2014 14:09:18 +0100
-Message-Id: <1419340158-20567-4-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419340158-20567-1-git-send-email-p.zabel@pengutronix.de>
-References: <1419340158-20567-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 23 Dec 2014 08:10:49 -0500
+Message-ID: <549969D4.5020303@cogentembedded.com>
+Date: Tue, 23 Dec 2014 16:10:44 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: David Cohen <david.a.cohen@linux.intel.com>, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        baolu.lu@linux.intel.com
+Subject: Re: [RFC/PATCH] extcon: otg_gpio: add driver for USB OTG port controlled
+ by GPIO(s)
+References: <1419288217-19262-1-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1419288217-19262-1-git-send-email-david.a.cohen@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a function to get a port device tree node by port id,
-or reg property value.
+Hello.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
----
-Changes since v6:
- - Fixed of_graph_get_port_by_id to handle the optional 'ports' node
-   and synchronize documentation and parameter names in the process,
-   spotted by Andrzej Hajda.
----
- drivers/of/base.c        | 32 ++++++++++++++++++++++++++++++++
- include/linux/of_graph.h |  7 +++++++
- 2 files changed, 39 insertions(+)
+On 12/23/2014 1:43 AM, David Cohen wrote:
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index aac66df..8389215 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -2080,6 +2080,38 @@ int of_graph_parse_endpoint(const struct device_node *node,
- EXPORT_SYMBOL(of_graph_parse_endpoint);
- 
- /**
-+ * of_graph_get_port_by_id() - get the port matching a given id
-+ * @parent: pointer to the parent device node
-+ * @id: id of the port
-+ *
-+ * Return: A 'port' node pointer with refcount incremented. The caller
-+ * has to use of_node_put() on it when done.
-+ */
-+struct device_node *of_graph_get_port_by_id(struct device_node *parent, u32 id)
-+{
-+	struct device_node *node, *port;
-+
-+	node = of_get_child_by_name(parent, "ports");
-+	if (node)
-+		parent = node;
-+
-+	for_each_child_of_node(parent, port) {
-+		u32 port_id = 0;
-+
-+		if (of_node_cmp(port->name, "port") != 0)
-+			continue;
-+		of_property_read_u32(port, "reg", &port_id);
-+		if (id == port_id)
-+			break;
-+	}
-+
-+	of_node_put(node);
-+
-+	return port;
-+}
-+EXPORT_SYMBOL(of_graph_get_port_by_id);
-+
-+/**
-  * of_graph_get_next_endpoint() - get next endpoint node
-  * @parent: pointer to the parent device node
-  * @prev: previous endpoint node, or NULL to get first
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-index e43442e..3c1c95a 100644
---- a/include/linux/of_graph.h
-+++ b/include/linux/of_graph.h
-@@ -40,6 +40,7 @@ struct of_endpoint {
- #ifdef CONFIG_OF
- int of_graph_parse_endpoint(const struct device_node *node,
- 				struct of_endpoint *endpoint);
-+struct device_node *of_graph_get_port_by_id(struct device_node *node, u32 id);
- struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 					struct device_node *previous);
- struct device_node *of_graph_get_remote_port_parent(
-@@ -53,6 +54,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
- 	return -ENOSYS;
- }
- 
-+static inline struct device_node *of_graph_get_port_by_id(
-+					struct device_node *node, u32 id)
-+{
-+	return NULL;
-+}
-+
- static inline struct device_node *of_graph_get_next_endpoint(
- 					const struct device_node *parent,
- 					struct device_node *previous)
--- 
-2.1.4
+> Some platforms have an USB OTG port fully (or partially) controlled by
+> GPIOs:
+
+> (1) USB ID is connected directly to GPIO
+
+> Optionally:
+> (2) VBUS is enabled by a GPIO (when ID is grounded)
+
+    Can't the host driver still control Vbus?
+
+> (3) Platform has 2 USB controllers connected to same port: one for
+>      device and one for host role. D+/- are switched between phys
+>      by GPIO.
+
+> As per initial version, this driver has the duty to control whether
+> USB-Host cable is plugged in or not:
+>   - If yes, OTG port is configured for host role
+>   - If no, by standard, the OTG port is configured for device role
+
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+
+> Hi,
+
+> Some Intel Bay Trail boards have an unusual way to handle the USB OTG port:
+>   - The USB ID pin is connected directly to GPIO on SoC
+>   - When in host role, VBUS is provided by enabling a GPIO
+>   - Device and host roles are supported by 2 independent controllers with D+/-
+>     pins from port switched between different phys according a GPIO level.
+
+> The ACPI table describes this USB port as a (virtual) device with all the
+> necessary GPIOs. This driver implements support to this virtual device as an
+> extcon class driver. All drivers that depend on the USB OTG port state (USB phy,
+> PMIC, charge detection) will listen to extcon events.
+
+    It's very close to my setup on R-Car R8A7791 based boards. :-)
+I have already submitted Maxim MAX3355 OTG chip GPIO-based driver.
+
+> Comments are welcome.
+
+> Br, David
+> ---
+>
+>   drivers/extcon/Kconfig           |   8 ++
+>   drivers/extcon/Makefile          |   1 +
+>   drivers/extcon/extcon-otg_gpio.c | 200 +++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 209 insertions(+)
+>   create mode 100644 drivers/extcon/extcon-otg_gpio.c
+>
+> diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+> index 6a1f7de6fa54..e8010cda4642 100644
+> --- a/drivers/extcon/Kconfig
+> +++ b/drivers/extcon/Kconfig
+> @@ -93,4 +93,12 @@ config EXTCON_SM5502
+>   	  Silicon Mitus SM5502. The SM5502 is a USB port accessory
+>   	  detector and switch.
+>
+> +config EXTCON_OTG_GPIO
+> +	tristate "VIRTUAL USB OTG PORT support"
+> +	depends on GPIOLIB
+> +	help
+> +	  Say Y here to enable support for virtual USB OTG port device
+> +	  controlled by GPIOs. This driver can be used when at least USB ID pin
+> +	  is connected directly to GPIO.
+> +
+
+    The entries in this file seem alphabetically sorted.
+
+>   endif # MULTISTATE_SWITCH
+> diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+> index 0370b42e5a27..9e81088c6584 100644
+> --- a/drivers/extcon/Makefile
+> +++ b/drivers/extcon/Makefile
+> @@ -12,3 +12,4 @@ obj-$(CONFIG_EXTCON_MAX8997)	+= extcon-max8997.o
+>   obj-$(CONFIG_EXTCON_PALMAS)	+= extcon-palmas.o
+>   obj-$(CONFIG_EXTCON_RT8973A)	+= extcon-rt8973a.o
+>   obj-$(CONFIG_EXTCON_SM5502)	+= extcon-sm5502.o
+> +obj-$(CONFIG_EXTCON_OTG_GPIO) += extcon-otg_gpio.o
+
+    The lines here are sorted too.
+
+> diff --git a/drivers/extcon/extcon-otg_gpio.c b/drivers/extcon/extcon-otg_gpio.c
+> new file mode 100644
+> index 000000000000..c5ee765a5f4f
+> --- /dev/null
+> +++ b/drivers/extcon/extcon-otg_gpio.c
+> @@ -0,0 +1,200 @@
+[...]
+> +static irqreturn_t vuport_isr(int irq, void *priv)
+> +{
+> +	return IRQ_WAKE_THREAD;
+> +}
+
+    It's the same as the default IRQ handler...
+
+> +	ret = devm_request_threaded_irq(dev, gpiod_to_irq(vup->gpio_usb_id),
+> +					vuport_isr, vuport_thread_isr,
+
+    ... so you probably can just pass NULL instead of vuport_isr, no?
+
+[...]
+
+> +static int __init vuport_init(void)
+> +{
+> +	return platform_driver_register(&vuport_driver);
+> +}
+> +subsys_initcall(vuport_init);
+
+    Hm, why?
+
+WBR, Sergei
 
