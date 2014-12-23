@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249AbaLWPh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 10:37:26 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:21987 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756087AbaLWPhY (ORCPT
+	id S1756272AbaLWPhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 10:37:55 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:47632 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756234AbaLWPhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 10:37:24 -0500
-X-IronPort-AV: E=Sophos;i="5.07,632,1413270000"; 
-   d="scan'208";a="53821601"
-Message-ID: <54998C31.9090500@broadcom.com>
-Date: Tue, 23 Dec 2014 16:37:21 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Tue, 23 Dec 2014 10:37:53 -0500
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: <linux-wireless@vger.kernel.org>, Brett Rudley <brudley@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        Kalle Valo <kvalo@codeaurora.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Christophe Prigent <christophe.prigent@intel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] brcmfmac: Do not crash if platform data is not populated
-References: <1419346112-173303-1-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1419346112-173303-1-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1419286616-9893-2-git-send-email-wsa@the-dreams.de>
+References: <1419286616-9893-1-git-send-email-wsa@the-dreams.de>
+	<1419286616-9893-2-git-send-email-wsa@the-dreams.de>
+Date: Tue, 23 Dec 2014 16:37:52 +0100
+Message-ID: <CAPDyKFrroxHw4qm4GRE2C1iWgf5_-P4W3O9Mxf-7vgg7pXiGqA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mmc: host: don't use devm_pinctrl_get_select_default()
+ in probe
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Chris Ball <chris@printf.net>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/14 15:48, Mika Westerberg wrote:
-> The driver looks for pdata->oob_irq_supported to find out if wowl can be
-> supported. However, not all platforms populate pdata in which case we crash
-> the kernel because of NULL pointer dereference.
+On 22 December 2014 at 23:16, Wolfram Sang <wsa@the-dreams.de> wrote:
+> Since commit ab78029ecc34 (drivers/pinctrl: grab default handles from device
+> core), we can rely on device core for setting the default pins.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-Thanks, Mika
+Thanks! Applied for next, with an updated prefix of the commit header
+to "mmc: mvsdio:".
 
-However, this was already reported by Dan Carpenter and I submitted a 
-patch for that a couple of days ago: "[PATCH 02/10] brcmfmac: Fix 
-possible dereference of NULL pointer." [1].
+Kind regards
+Uffe
 
-Regards,
-Arend
-
-[1] 
-http://mid.gmane.org/1419162233-19492-3-git-send-email-arend@broadcom.com
-
-> Fixes: 330b4e4be937 ("brcmfmac: Add wowl support for SDIO devices.")
-> Reported-by: Christophe Prigent<christophe.prigent@intel.com>
-> Signed-off-by: Mika Westerberg<mika.westerberg@linux.intel.com>
 > ---
->   drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
+>  drivers/mmc/host/mvsdio.c | 6 ------
+>  1 file changed, 6 deletions(-)
 >
-> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> index 3c06e9365949..9880dae2a569 100644
-> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-> @@ -1070,7 +1070,7 @@ static int brcmf_ops_sdio_probe(struct sdio_func *func,
->   	 */
->   	if ((sdio_get_host_pm_caps(sdiodev->func[1])&  MMC_PM_KEEP_POWER)&&
->   	((sdio_get_host_pm_caps(sdiodev->func[1])&  MMC_PM_WAKE_SDIO_IRQ) ||
-> -	     (sdiodev->pdata->oob_irq_supported)))
-> +	     (sdiodev->pdata&&  sdiodev->pdata->oob_irq_supported)))
->   		bus_if->wowl_supported = true;
->   #endif
+> diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+> index 4f8618f4522d..a2cb92851f1f 100644
+> --- a/drivers/mmc/host/mvsdio.c
+> +++ b/drivers/mmc/host/mvsdio.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/of_irq.h>
+>  #include <linux/mmc/host.h>
+>  #include <linux/mmc/slot-gpio.h>
+> -#include <linux/pinctrl/consumer.h>
 >
-> @@ -1167,7 +1167,7 @@ static int brcmf_ops_sdio_resume(struct device *dev)
->   	struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
+>  #include <asm/sizes.h>
+>  #include <asm/unaligned.h>
+> @@ -704,7 +703,6 @@ static int mvsd_probe(struct platform_device *pdev)
+>         const struct mbus_dram_target_info *dram;
+>         struct resource *r;
+>         int ret, irq;
+> -       struct pinctrl *pinctrl;
 >
->   	brcmf_dbg(SDIO, "Enter\n");
-> -	if (sdiodev->pdata->oob_irq_supported)
-> +	if (sdiodev->pdata&&  sdiodev->pdata->oob_irq_supported)
->   		disable_irq_wake(sdiodev->pdata->oob_irq_nr);
->   	brcmf_sdio_wd_timer(sdiodev->bus, BRCMF_WD_POLL_MS);
->   	atomic_set(&sdiodev->suspend, false);
-
+>         r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>         irq = platform_get_irq(pdev, 0);
+> @@ -721,10 +719,6 @@ static int mvsd_probe(struct platform_device *pdev)
+>         host->mmc = mmc;
+>         host->dev = &pdev->dev;
+>
+> -       pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> -       if (IS_ERR(pinctrl))
+> -               dev_warn(&pdev->dev, "no pins associated\n");
+> -
+>         /*
+>          * Some non-DT platforms do not pass a clock, and the clock
+>          * frequency is passed through platform_data. On DT platforms,
+> --
+> 2.1.3
+>
