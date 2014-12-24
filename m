@@ -1,369 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaLXEM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 23:12:27 -0500
-Received: from mail-bl2on0055.outbound.protection.outlook.com ([65.55.169.55]:54736
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1751470AbaLXEb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 23:31:59 -0500
+Received: from mail-by2on0131.outbound.protection.outlook.com ([207.46.100.131]:9184
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750860AbaLXEMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 23:12:25 -0500
-X-Greylist: delayed 2015 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Dec 2014 23:12:24 EST
-From: Aaron Wu <Aaron.wu@analog.com>
-To: <adi-buildroot-devel@lists.sourceforge.net>, <wg@grandegger.com>,
-        <mkl@pengutronix.de>, <linux-can@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Aaron Wu <Aaron.wu@analog.com>
-Subject: [PATCH] bfin_can: rewrite the blackfin CAN driver into arch independent style
-Date: Wed, 24 Dec 2014 11:30:28 +0800
-Message-ID: <1419391828-21105-1-git-send-email-Aaron.wu@analog.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751245AbaLXEb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 23:31:58 -0500
+Date: Wed, 24 Dec 2014 11:08:52 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: David Cohen <david.a.cohen@linux.intel.com>
+CC: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <baolu.lu@linux.intel.com>
+Subject: Re: [RFC/PATCH] extcon: otg_gpio: add driver for USB OTG port
+ controlled by GPIO(s)
+Message-ID: <20141224030835.GA31424@shlinux2>
+References: <1419288217-19262-1-git-send-email-david.a.cohen@linux.intel.com>
+ <20141223012517.GC11551@shlinux2>
+ <20141223194022.GA13792@psi-dev26.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141223194022.GA13792@psi-dev26.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 137.71.25.57)
- smtp.mailfrom=Aaron.Wu@analog.com; 
-X-Forefront-Antispam-Report: CIP:137.71.25.57;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(31966008)(99396003)(50986999)(89996001)(120916001)(64706001)(19580405001)(62966003)(19580395003)(21056001)(87936001)(6806004)(46102003)(77156002)(4396001)(86362001)(50226001)(48376002)(229853001)(107046002)(106466001)(77096005)(2201001)(20776003)(50466002)(36756003)(47776003)(92566001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB0852;H:nwd2mta2.analog.com;FPR:;SPF:Pass;MLV:sfv;PTR:nwd2mail11.analog.com;A:1;MX:1;LANG:en;
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(51704005)(51914003)(24454002)(189002)(199003)(85426001)(97756001)(83506001)(105606002)(46406003)(99396003)(104016003)(6806004)(84676001)(110136001)(46102003)(107046002)(120916001)(106466001)(21056001)(86362001)(50466002)(50986999)(54356999)(76176999)(87936001)(92566001)(2950100001)(77096005)(33656002)(23726002)(4396001)(31966008)(33716001)(62966003)(64706001)(47776003)(20776003)(97736003)(77156002)(68736005)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0629;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0852;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB0852;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0629;
 X-Forefront-PRVS: 04359FAD81
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0852;
-X-OriginatorOrg: analog.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 03:38:45.2684
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 04:17:42.4879
  (UTC)
-X-MS-Exchange-CrossTenant-Id: eaa689b4-8f87-40e0-9c6f-7228de4d754a
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=eaa689b4-8f87-40e0-9c6f-7228de4d754a;Ip=[137.71.25.57]
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB0852
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0629
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rewrite the blackfin CAN driver into arch independent style
+On Tue, Dec 23, 2014 at 11:40:23AM -0800, David Cohen wrote:
+> Hi Peter,
+> 
+> Thanks for the review.
+> 
+> On Tue, Dec 23, 2014 at 09:25:18AM +0800, Peter Chen wrote:
+> > On Mon, Dec 22, 2014 at 02:43:37PM -0800, David Cohen wrote:
+> > > Some platforms have an USB OTG port fully (or partially) controlled by
+> > > GPIOs:
+> > > 
+> > > (1) USB ID is connected directly to GPIO
+> > > 
+> > > Optionally:
+> > > (2) VBUS is enabled by a GPIO (when ID is grounded)
+> > > (3) Platform has 2 USB controllers connected to same port: one for
+> > >     device and one for host role. D+/- are switched between phys
+> > >     by GPIO.
+> > 
+> > Would you explain how it works? Choosing controller runtime?
+> 
+> Both controllers are (indirectly) connected to the same micro B port.
+> The D+/- goes from the port to a switch operated by a GPIO. From the
+> switch, D+/- may go to Host controller's phy or Device controller's phy.
+> Depends on the GPIO level.
+> 
 
-Signed-off-by: Aaron Wu <Aaron.wu@analog.com>
----
- drivers/net/can/bfin_can.c |  145 ++++++++++++++++++++++----------------------
- 1 file changed, 72 insertions(+), 73 deletions(-)
+Get it, why the design like that? If your controller supports both
+roles, the software can do role switch by ID pin (through gpio in your
+case).
 
-diff --git a/drivers/net/can/bfin_can.c b/drivers/net/can/bfin_can.c
-index 417d5099..34c6607 100644
---- a/drivers/net/can/bfin_can.c
-+++ b/drivers/net/can/bfin_can.c
-@@ -78,8 +78,8 @@ static int bfin_can_set_bittiming(struct net_device *dev)
- 	if (priv->can.ctrlmode & CAN_CTRLMODE_3_SAMPLES)
- 		timing |= SAM;
- 
--	bfin_write(&reg->clock, clk);
--	bfin_write(&reg->timing, timing);
-+	writew(clk, &reg->clock);
-+	writew(timing, &reg->timing);
- 
- 	netdev_info(dev, "setting CLOCK=0x%04x TIMING=0x%04x\n", clk, timing);
- 
-@@ -94,16 +94,14 @@ static void bfin_can_set_reset_mode(struct net_device *dev)
- 	int i;
- 
- 	/* disable interrupts */
--	bfin_write(&reg->mbim1, 0);
--	bfin_write(&reg->mbim2, 0);
--	bfin_write(&reg->gim, 0);
-+	writew(0, &reg->mbim1);
-+	writew(0, &reg->mbim2);
-+	writew(0, &reg->gim);
- 
- 	/* reset can and enter configuration mode */
--	bfin_write(&reg->control, SRS | CCR);
--	SSYNC();
--	bfin_write(&reg->control, CCR);
--	SSYNC();
--	while (!(bfin_read(&reg->control) & CCA)) {
-+	writew(SRS | CCR, &reg->control);
-+	writew(CCR, &reg->control);
-+	while (!(readw(&reg->control) & CCA)) {
- 		udelay(10);
- 		if (--timeout == 0) {
- 			netdev_err(dev, "fail to enter configuration mode\n");
-@@ -116,34 +114,33 @@ static void bfin_can_set_reset_mode(struct net_device *dev)
- 	 * by writing to CAN Mailbox Configuration Registers 1 and 2
- 	 * For all bits: 0 - Mailbox disabled, 1 - Mailbox enabled
- 	 */
--	bfin_write(&reg->mc1, 0);
--	bfin_write(&reg->mc2, 0);
-+	writew(0, &reg->mc1);
-+	writew(0, &reg->mc2);
- 
- 	/* Set Mailbox Direction */
--	bfin_write(&reg->md1, 0xFFFF);   /* mailbox 1-16 are RX */
--	bfin_write(&reg->md2, 0);   /* mailbox 17-32 are TX */
-+	writew(0xFFFF, &reg->md1);   /* mailbox 1-16 are RX */
-+	writew(0, &reg->md2);   /* mailbox 17-32 are TX */
- 
- 	/* RECEIVE_STD_CHL */
- 	for (i = 0; i < 2; i++) {
--		bfin_write(&reg->chl[RECEIVE_STD_CHL + i].id0, 0);
--		bfin_write(&reg->chl[RECEIVE_STD_CHL + i].id1, AME);
--		bfin_write(&reg->chl[RECEIVE_STD_CHL + i].dlc, 0);
--		bfin_write(&reg->msk[RECEIVE_STD_CHL + i].amh, 0x1FFF);
--		bfin_write(&reg->msk[RECEIVE_STD_CHL + i].aml, 0xFFFF);
-+		writew(0, &reg->chl[RECEIVE_STD_CHL + i].id0);
-+		writew(AME, &reg->chl[RECEIVE_STD_CHL + i].id1);
-+		writew(0, &reg->chl[RECEIVE_STD_CHL + i].dlc);
-+		writew(0x1FFF, &reg->msk[RECEIVE_STD_CHL + i].amh);
-+		writew(0xFFFF, &reg->msk[RECEIVE_STD_CHL + i].aml);
- 	}
- 
- 	/* RECEIVE_EXT_CHL */
- 	for (i = 0; i < 2; i++) {
--		bfin_write(&reg->chl[RECEIVE_EXT_CHL + i].id0, 0);
--		bfin_write(&reg->chl[RECEIVE_EXT_CHL + i].id1, AME | IDE);
--		bfin_write(&reg->chl[RECEIVE_EXT_CHL + i].dlc, 0);
--		bfin_write(&reg->msk[RECEIVE_EXT_CHL + i].amh, 0x1FFF);
--		bfin_write(&reg->msk[RECEIVE_EXT_CHL + i].aml, 0xFFFF);
-+		writew(0, &reg->chl[RECEIVE_EXT_CHL + i].id0);
-+		writew(AME | IDE, &reg->chl[RECEIVE_EXT_CHL + i].id1);
-+		writew(0, &reg->chl[RECEIVE_EXT_CHL + i].dlc);
-+		writew(0x1FFF, &reg->msk[RECEIVE_EXT_CHL + i].amh);
-+		writew(0xFFFF, &reg->msk[RECEIVE_EXT_CHL + i].aml);
- 	}
- 
--	bfin_write(&reg->mc2, BIT(TRANSMIT_CHL - 16));
--	bfin_write(&reg->mc1, BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL));
--	SSYNC();
-+	writew(BIT(TRANSMIT_CHL - 16), &reg->mc2);
-+	writew(BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL), &reg->mc1);
- 
- 	priv->can.state = CAN_STATE_STOPPED;
- }
-@@ -157,9 +154,9 @@ static void bfin_can_set_normal_mode(struct net_device *dev)
- 	/*
- 	 * leave configuration mode
- 	 */
--	bfin_write(&reg->control, bfin_read(&reg->control) & ~CCR);
-+	writew(readw(&reg->control) & ~CCR, &reg->control);
- 
--	while (bfin_read(&reg->status) & CCA) {
-+	while (readw(&reg->status) & CCA) {
- 		udelay(10);
- 		if (--timeout == 0) {
- 			netdev_err(dev, "fail to leave configuration mode\n");
-@@ -170,26 +167,25 @@ static void bfin_can_set_normal_mode(struct net_device *dev)
- 	/*
- 	 * clear _All_  tx and rx interrupts
- 	 */
--	bfin_write(&reg->mbtif1, 0xFFFF);
--	bfin_write(&reg->mbtif2, 0xFFFF);
--	bfin_write(&reg->mbrif1, 0xFFFF);
--	bfin_write(&reg->mbrif2, 0xFFFF);
-+	writew(0xFFFF, &reg->mbtif1);
-+	writew(0xFFFF, &reg->mbtif2);
-+	writew(0xFFFF, &reg->mbrif1);
-+	writew(0xFFFF, &reg->mbrif2);
- 
- 	/*
- 	 * clear global interrupt status register
- 	 */
--	bfin_write(&reg->gis, 0x7FF); /* overwrites with '1' */
-+	writew(0x7FF, &reg->gis); /* overwrites with '1' */
- 
- 	/*
- 	 * Initialize Interrupts
- 	 * - set bits in the mailbox interrupt mask register
- 	 * - global interrupt mask
- 	 */
--	bfin_write(&reg->mbim1, BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL));
--	bfin_write(&reg->mbim2, BIT(TRANSMIT_CHL - 16));
-+	writew(BIT(RECEIVE_STD_CHL) + BIT(RECEIVE_EXT_CHL), &reg->mbim1);
-+	writew(BIT(TRANSMIT_CHL - 16), &reg->mbim2);
- 
--	bfin_write(&reg->gim, EPIM | BOIM | RMLIM);
--	SSYNC();
-+	writew(EPIM | BOIM | RMLIM, &reg->gim);
- }
- 
- static void bfin_can_start(struct net_device *dev)
-@@ -226,7 +222,7 @@ static int bfin_can_get_berr_counter(const struct net_device *dev,
- 	struct bfin_can_priv *priv = netdev_priv(dev);
- 	struct bfin_can_regs __iomem *reg = priv->membase;
- 
--	u16 cec = bfin_read(&reg->cec);
-+	u16 cec = readw(&reg->cec);
- 
- 	bec->txerr = cec >> 8;
- 	bec->rxerr = cec;
-@@ -252,28 +248,28 @@ static int bfin_can_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	/* fill id */
- 	if (id & CAN_EFF_FLAG) {
--		bfin_write(&reg->chl[TRANSMIT_CHL].id0, id);
-+		writew(id, &reg->chl[TRANSMIT_CHL].id0);
- 		val = ((id & 0x1FFF0000) >> 16) | IDE;
- 	} else
- 		val = (id << 2);
- 	if (id & CAN_RTR_FLAG)
- 		val |= RTR;
--	bfin_write(&reg->chl[TRANSMIT_CHL].id1, val | AME);
-+	writew(val | AME, &reg->chl[TRANSMIT_CHL].id1);
- 
- 	/* fill payload */
- 	for (i = 0; i < 8; i += 2) {
- 		val = ((7 - i) < dlc ? (data[7 - i]) : 0) +
- 			((6 - i) < dlc ? (data[6 - i] << 8) : 0);
--		bfin_write(&reg->chl[TRANSMIT_CHL].data[i], val);
-+		writew(val, &reg->chl[TRANSMIT_CHL].data[i]);
- 	}
- 
- 	/* fill data length code */
--	bfin_write(&reg->chl[TRANSMIT_CHL].dlc, dlc);
-+	writew(dlc, &reg->chl[TRANSMIT_CHL].dlc);
- 
- 	can_put_echo_skb(skb, dev, 0);
- 
- 	/* set transmit request */
--	bfin_write(&reg->trs2, BIT(TRANSMIT_CHL - 16));
-+	writew(BIT(TRANSMIT_CHL - 16), &reg->trs2);
- 
- 	return 0;
- }
-@@ -296,26 +292,26 @@ static void bfin_can_rx(struct net_device *dev, u16 isrc)
- 	/* get id */
- 	if (isrc & BIT(RECEIVE_EXT_CHL)) {
- 		/* extended frame format (EFF) */
--		cf->can_id = ((bfin_read(&reg->chl[RECEIVE_EXT_CHL].id1)
-+		cf->can_id = ((readw(&reg->chl[RECEIVE_EXT_CHL].id1)
- 			     & 0x1FFF) << 16)
--			     + bfin_read(&reg->chl[RECEIVE_EXT_CHL].id0);
-+			     + readw(&reg->chl[RECEIVE_EXT_CHL].id0);
- 		cf->can_id |= CAN_EFF_FLAG;
- 		obj = RECEIVE_EXT_CHL;
- 	} else {
- 		/* standard frame format (SFF) */
--		cf->can_id = (bfin_read(&reg->chl[RECEIVE_STD_CHL].id1)
-+		cf->can_id = (readw(&reg->chl[RECEIVE_STD_CHL].id1)
- 			     & 0x1ffc) >> 2;
- 		obj = RECEIVE_STD_CHL;
- 	}
--	if (bfin_read(&reg->chl[obj].id1) & RTR)
-+	if (readw(&reg->chl[obj].id1) & RTR)
- 		cf->can_id |= CAN_RTR_FLAG;
- 
- 	/* get data length code */
--	cf->can_dlc = get_can_dlc(bfin_read(&reg->chl[obj].dlc) & 0xF);
-+	cf->can_dlc = get_can_dlc(readw(&reg->chl[obj].dlc) & 0xF);
- 
- 	/* get payload */
- 	for (i = 0; i < 8; i += 2) {
--		val = bfin_read(&reg->chl[obj].data[i]);
-+		val = readw(&reg->chl[obj].data[i]);
- 		cf->data[7 - i] = (7 - i) < cf->can_dlc ? val : 0;
- 		cf->data[6 - i] = (6 - i) < cf->can_dlc ? (val >> 8) : 0;
- 	}
-@@ -368,7 +364,7 @@ static int bfin_can_err(struct net_device *dev, u16 isrc, u16 status)
- 
- 	if (state != priv->can.state && (state == CAN_STATE_ERROR_WARNING ||
- 				state == CAN_STATE_ERROR_PASSIVE)) {
--		u16 cec = bfin_read(&reg->cec);
-+		u16 cec = readw(&reg->cec);
- 		u8 rxerr = cec;
- 		u8 txerr = cec >> 8;
- 
-@@ -419,23 +415,23 @@ static irqreturn_t bfin_can_interrupt(int irq, void *dev_id)
- 	struct net_device_stats *stats = &dev->stats;
- 	u16 status, isrc;
- 
--	if ((irq == priv->tx_irq) && bfin_read(&reg->mbtif2)) {
-+	if ((irq == priv->tx_irq) && readw(&reg->mbtif2)) {
- 		/* transmission complete interrupt */
--		bfin_write(&reg->mbtif2, 0xFFFF);
-+		writew(0xFFFF, &reg->mbtif2);
- 		stats->tx_packets++;
--		stats->tx_bytes += bfin_read(&reg->chl[TRANSMIT_CHL].dlc);
-+		stats->tx_bytes += readw(&reg->chl[TRANSMIT_CHL].dlc);
- 		can_get_echo_skb(dev, 0);
- 		netif_wake_queue(dev);
--	} else if ((irq == priv->rx_irq) && bfin_read(&reg->mbrif1)) {
-+	} else if ((irq == priv->rx_irq) && readw(&reg->mbrif1)) {
- 		/* receive interrupt */
--		isrc = bfin_read(&reg->mbrif1);
--		bfin_write(&reg->mbrif1, 0xFFFF);
-+		isrc = readw(&reg->mbrif1);
-+		writew(0xFFFF, &reg->mbrif1);
- 		bfin_can_rx(dev, isrc);
--	} else if ((irq == priv->err_irq) && bfin_read(&reg->gis)) {
-+	} else if ((irq == priv->err_irq) && readw(&reg->gis)) {
- 		/* error interrupt */
--		isrc = bfin_read(&reg->gis);
--		status = bfin_read(&reg->esr);
--		bfin_write(&reg->gis, 0x7FF);
-+		isrc = readw(&reg->gis);
-+		status = readw(&reg->esr);
-+		writew(0x7FF, &reg->gis);
- 		bfin_can_err(dev, isrc, status);
- 	} else {
- 		return IRQ_NONE;
-@@ -547,6 +543,11 @@ static int bfin_can_probe(struct platform_device *pdev)
- 	}
- 
- 	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res_mem == NULL) {
-+		dev_err(&pdev->dev, "Cannot get IORESOURCE_MEM\n");
-+		return -ENOENT;
-+	}
-+
- 	rx_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	tx_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
- 	err_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
-@@ -555,12 +556,6 @@ static int bfin_can_probe(struct platform_device *pdev)
- 		goto exit;
- 	}
- 
--	if (!request_mem_region(res_mem->start, resource_size(res_mem),
--				dev_name(&pdev->dev))) {
--		err = -EBUSY;
--		goto exit;
--	}
--
- 	/* request peripheral pins */
- 	err = peripheral_request_list(pdata, dev_name(&pdev->dev));
- 	if (err)
-@@ -573,7 +568,13 @@ static int bfin_can_probe(struct platform_device *pdev)
- 	}
- 
- 	priv = netdev_priv(dev);
--	priv->membase = (void __iomem *)res_mem->start;
-+
-+	priv->membase = devm_ioremap_resource(&pdev->dev, res_mem);
-+	if (IS_ERR((void *)priv->membase)) {
-+		dev_err(&pdev->dev, "Cannot map IO\n");
-+		return PTR_ERR((void *)priv->membase);
-+	}
-+
- 	priv->rx_irq = rx_irq->start;
- 	priv->tx_irq = tx_irq->start;
- 	priv->err_irq = err_irq->start;
-@@ -640,9 +641,8 @@ static int bfin_can_suspend(struct platform_device *pdev, pm_message_t mesg)
- 
- 	if (netif_running(dev)) {
- 		/* enter sleep mode */
--		bfin_write(&reg->control, bfin_read(&reg->control) | SMR);
--		SSYNC();
--		while (!(bfin_read(&reg->intr) & SMACK)) {
-+		writew(readw(&reg->control) | SMR, &reg->control);
-+		while (!(readw(&reg->intr) & SMACK)) {
- 			udelay(10);
- 			if (--timeout == 0) {
- 				netdev_err(dev, "fail to enter sleep mode\n");
-@@ -662,8 +662,7 @@ static int bfin_can_resume(struct platform_device *pdev)
- 
- 	if (netif_running(dev)) {
- 		/* leave sleep mode */
--		bfin_write(&reg->intr, 0);
--		SSYNC();
-+		writew(0, &reg->intr);
- 	}
- 
- 	return 0;
+> > 
+> > > 
+> > > As per initial version, this driver has the duty to control whether
+> > > USB-Host cable is plugged in or not:
+> > 
+> > You mean Micro-AB cable, right?
+> 
+> > > +
+> > > +	vup->gpio_usb_mux = devm_gpiod_get_index(dev, "usb mux",
+> > > +						 VUPORT_GPIO_USB_MUX);
+> > > +	if (IS_ERR(vup->gpio_usb_mux))
+> > > +		dev_info(dev, "cannot request USB USB MUX, skipping it.\n");
+> > 
+> > Using dev_err
+> 
+> That's not really an error, although the IS_ERR() suggests otherwise.
+> The driver works well if a board doesn't need this mux (I'll add a
+> comment to state that clear). IMHO either keep dev_info or use dev_dgb
+> instead?
+> 
+
+If that, dev_dbg may be suitable.
+
+
 -- 
-1.7.9.5
 
+Best Regards,
+Peter Chen
