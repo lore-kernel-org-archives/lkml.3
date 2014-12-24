@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaLXM4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 07:56:19 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47234 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623AbaLXM4S (ORCPT
+	id S1751927AbaLXNGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 08:06:05 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:41734 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaLXNGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 07:56:18 -0500
-Date: Wed, 24 Dec 2014 12:56:00 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        lgirdwood@gmail.com, cw00.choi@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com
-Message-ID: <20141224125600.GB17800@sirena.org.uk>
-References: <1418901216-19030-1-git-send-email-beomho.seo@samsung.com>
- <20141222151025.GY17800@sirena.org.uk>
- <54992212.8050707@samsung.com>
+	Wed, 24 Dec 2014 08:06:03 -0500
+Date: Wed, 24 Dec 2014 18:35:54 +0530
+From: Vaishali Thakkar <vthakkar1994@gmail.com>
+To: linux-wireless@vger.kernel.org
+Cc: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        johannes.berg@intel.com, arend@broadcom.com
+Subject: [PATCH v2] NFC: port100: Introduce the use of function
+ put_unaligned_le16ameo@linux.intel.com,
+Message-ID: <20141224130554.GA2301@vaishali-Ideapad-Z570>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5O+LjL9oTw7vAELi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54992212.8050707@samsung.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 86.173.220.131
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: rt5033-regulator: Use
- regulator_nodes/of_match in the descriptor
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch introduces the use of function put_unaligned_le16.
 
---5O+LjL9oTw7vAELi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is done using Coccinelle and semantic patch used is as follows:
 
-On Tue, Dec 23, 2014 at 05:04:34PM +0900, Beomho Seo wrote:
-> On 12/23/2014 12:10 AM, Mark Brown wrote:
+@a@
+typedef u16, __le16;
+{u16,__le16} e16;
+identifier tmp;
+expression ptr;
+expression y,e;
+type T;
+@@
 
-> > This isn't replacing existing code with use of the framework, it's
-> > adding new bindings where there were none before so it needs to add a
-> > binding document too.
+- tmp = cpu_to_le16(y);
 
-> Actually, RT5033 device tree binding document sent at mainling list already.
-> link is below,
-> http://marc.info/?l=linux-pm&m=141890859525642&w=2
-> It include regulator device node but above patch not applied yet.
-> If you want, I will revise dt binding document patch and send to mailing list.
+  <+... when != tmp
+(
+- memcpy(ptr, (T)&tmp, \(2\|sizeof(u16)\|sizeof(__le16)\|sizeof(e16)\));
++ put_unaligned_le16(y,ptr);
+|
+- memcpy(ptr, (T)&tmp, ...);
++ put_unaligned_le16(y,ptr);
+)
+  ...+>
+? tmp = e
 
-OK, I've applied this but please in future send the code and binding
-documentation together to avoid such confusion.
+@@ type T; identifier a.tmp; @@
 
---5O+LjL9oTw7vAELi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+- T tmp;
+...when != tmp
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Signed-off-by: Vaishali Thakkar <vthakkar1994@gmail.com>
+---
+Changes since v1:
+	<asm/unaligned.h>  has arch-specific knowlege of which of
+	the implementations needs to be used. So, include it instaed
+	of <linux/unaligned/access_ok.h>.
 
-iQEcBAEBAgAGBQJUmrfgAAoJECTWi3JdVIfQ5wsH/Au5IVLShw44GaOvb5kM8Xh5
-qoT0WC4zTJ8TMF/IDrXso52MNq6SJip6XIZNTyDvJ8Sh90FtMf8221yuqaaua2Cy
-/0fGPCPM1QdOIsPBs3UcoV0gatN3ivFbhUHXrqkKe+VoxruzUaOFEc88uJw+bLPV
-kh+r71McMbOAJpeAtxrk362DKF4SfqDZR0wynzuu8NqVY970a1Ds63Mwk5KGh383
-x3dG0mnqcYNYENcvsCWSM8hSQNCnG2/4dN1NvlpgbFWmOInyIYX8dHfDM6JX5San
-HZ1MPQcwqK6y36lHC8R5aXqhjT6ApmrMHE+S7J+g4Qw7EB4NRzg7dB4MMc6X0rM=
-=SD5D
------END PGP SIGNATURE-----
+ drivers/nfc/port100.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---5O+LjL9oTw7vAELi--
+diff --git a/drivers/nfc/port100.c b/drivers/nfc/port100.c
+index 4ac4d31..440f0f3 100644
+--- a/drivers/nfc/port100.c
++++ b/drivers/nfc/port100.c
+@@ -18,6 +18,7 @@
+ #include <linux/module.h>
+ #include <linux/usb.h>
+ #include <net/nfc/digital.h>
++#include <asm/unaligned.h>
+ 
+ #define VERSION "0.1"
+ 
+@@ -1136,7 +1137,6 @@ static int port100_in_send_cmd(struct nfc_digital_dev *ddev,
+ {
+ 	struct port100 *dev = nfc_digital_get_drvdata(ddev);
+ 	struct port100_cb_arg *cb_arg;
+-	__le16 timeout;
+ 
+ 	cb_arg = kzalloc(sizeof(struct port100_cb_arg), GFP_KERNEL);
+ 	if (!cb_arg)
+@@ -1145,9 +1145,7 @@ static int port100_in_send_cmd(struct nfc_digital_dev *ddev,
+ 	cb_arg->complete_cb = cb;
+ 	cb_arg->complete_arg = arg;
+ 
+-	timeout = cpu_to_le16(_timeout * 10);
+-
+-	memcpy(skb_push(skb, sizeof(__le16)), &timeout, sizeof(__le16));
++	put_unaligned_le16(_timeout * 10, skb_push(skb, sizeof(__le16)));
+ 
+ 	return port100_send_cmd_async(dev, PORT100_CMD_IN_COMM_RF, skb,
+ 				      port100_in_comm_rf_complete, cb_arg);
+-- 
+1.9.1
+
