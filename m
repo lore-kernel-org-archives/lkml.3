@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaLXM3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 07:29:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55472 "EHLO mga09.intel.com"
+	id S1752813AbaLXM3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 07:29:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:11489 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071AbaLXMXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752072AbaLXMXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Dec 2014 07:23:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,638,1413270000"; 
-   d="scan'208";a="642376387"
+   d="scan'208";a="652662023"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: akpm@linux-foundation.org
 Cc: peterz@infradead.org, mingo@kernel.org, davej@redhat.com,
         sasha.levin@oracle.com, hughd@google.com, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 21/38] m68k: drop _PAGE_FILE and pte_file()-related helpers
-Date: Wed, 24 Dec 2014 14:22:29 +0200
-Message-Id: <1419423766-114457-22-git-send-email-kirill.shutemov@linux.intel.com>
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 22/38] metag: drop _PAGE_FILE and pte_file()-related helpers
+Date: Wed, 24 Dec 2014 14:22:30 +0200
+Message-Id: <1419423766-114457-23-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -30,151 +30,42 @@ We've replaced remap_file_pages(2) implementation with emulation.
 Nobody creates non-linear mapping anymore.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: James Hogan <james.hogan@imgtec.com>
 ---
- arch/m68k/include/asm/mcf_pgtable.h      | 17 -----------------
- arch/m68k/include/asm/motorola_pgtable.h | 15 ---------------
- arch/m68k/include/asm/pgtable_no.h       |  2 --
- arch/m68k/include/asm/sun3_pgtable.h     | 15 ---------------
- 4 files changed, 49 deletions(-)
+ arch/metag/include/asm/pgtable.h | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/arch/m68k/include/asm/mcf_pgtable.h b/arch/m68k/include/asm/mcf_pgtable.h
-index 3c793682e5d9..7a4d8ee0b161 100644
---- a/arch/m68k/include/asm/mcf_pgtable.h
-+++ b/arch/m68k/include/asm/mcf_pgtable.h
-@@ -35,7 +35,6 @@
-  * hitting hardware.
+diff --git a/arch/metag/include/asm/pgtable.h b/arch/metag/include/asm/pgtable.h
+index 0d9dc5487296..d0604c0a8702 100644
+--- a/arch/metag/include/asm/pgtable.h
++++ b/arch/metag/include/asm/pgtable.h
+@@ -47,7 +47,6 @@
   */
- #define CF_PAGE_DIRTY		0x00000001
--#define CF_PAGE_FILE		0x00000200
- #define CF_PAGE_ACCESSED	0x00001000
+ #define _PAGE_ACCESSED		_PAGE_ALWAYS_ZERO_1
+ #define _PAGE_DIRTY		_PAGE_ALWAYS_ZERO_2
+-#define _PAGE_FILE		_PAGE_ALWAYS_ZERO_3
  
- #define _PAGE_CACHE040		0x020   /* 68040 cache mode, cachable, copyback */
-@@ -243,11 +242,6 @@ static inline int pte_young(pte_t pte)
- 	return pte_val(pte) & CF_PAGE_ACCESSED;
- }
+ /* Pages owned, and protected by, the kernel. */
+ #define _PAGE_KERNEL		_PAGE_PRIV
+@@ -219,7 +218,6 @@ extern unsigned long empty_zero_page;
+ static inline int pte_write(pte_t pte)   { return pte_val(pte) & _PAGE_WRITE; }
+ static inline int pte_dirty(pte_t pte)   { return pte_val(pte) & _PAGE_DIRTY; }
+ static inline int pte_young(pte_t pte)   { return pte_val(pte) & _PAGE_ACCESSED; }
+-static inline int pte_file(pte_t pte)    { return pte_val(pte) & _PAGE_FILE; }
+ static inline int pte_special(pte_t pte) { return 0; }
  
--static inline int pte_file(pte_t pte)
--{
--	return pte_val(pte) & CF_PAGE_FILE;
--}
+ static inline pte_t pte_wrprotect(pte_t pte) { pte_val(pte) &= (~_PAGE_WRITE); return pte; }
+@@ -327,10 +325,6 @@ static inline void update_mmu_cache(struct vm_area_struct *vma,
+ #define __pte_to_swp_entry(pte)		((swp_entry_t) { pte_val(pte) })
+ #define __swp_entry_to_pte(x)		((pte_t) { (x).val })
+ 
+-#define PTE_FILE_MAX_BITS	22
+-#define pte_to_pgoff(x)		(pte_val(x) >> 10)
+-#define pgoff_to_pte(x)		__pte(((x) << 10) | _PAGE_FILE)
 -
- static inline int pte_special(pte_t pte)
- {
- 	return 0;
-@@ -391,19 +385,8 @@ static inline void cache_page(void *vaddr)
- 	*ptep = pte_mkcache(*ptep);
- }
+ #define kern_addr_valid(addr)	(1)
  
--#define PTE_FILE_MAX_BITS	21
- #define PTE_FILE_SHIFT		11
- 
--static inline unsigned long pte_to_pgoff(pte_t pte)
--{
--	return pte_val(pte) >> PTE_FILE_SHIFT;
--}
--
--static inline pte_t pgoff_to_pte(unsigned pgoff)
--{
--	return __pte((pgoff << PTE_FILE_SHIFT) + CF_PAGE_FILE);
--}
--
  /*
-  * Encode and de-code a swap entry (must be !pte_none(e) && !pte_present(e))
-  */
-diff --git a/arch/m68k/include/asm/motorola_pgtable.h b/arch/m68k/include/asm/motorola_pgtable.h
-index e0fdd4d08075..0085aab80e5a 100644
---- a/arch/m68k/include/asm/motorola_pgtable.h
-+++ b/arch/m68k/include/asm/motorola_pgtable.h
-@@ -28,7 +28,6 @@
- #define _PAGE_CHG_MASK  (PAGE_MASK | _PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_NOCACHE)
- 
- #define _PAGE_PROTNONE	0x004
--#define _PAGE_FILE	0x008	/* pagecache or swap? */
- 
- #ifndef __ASSEMBLY__
- 
-@@ -168,7 +167,6 @@ static inline void pgd_set(pgd_t *pgdp, pmd_t *pmdp)
- static inline int pte_write(pte_t pte)		{ return !(pte_val(pte) & _PAGE_RONLY); }
- static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & _PAGE_DIRTY; }
- static inline int pte_young(pte_t pte)		{ return pte_val(pte) & _PAGE_ACCESSED; }
--static inline int pte_file(pte_t pte)		{ return pte_val(pte) & _PAGE_FILE; }
- static inline int pte_special(pte_t pte)	{ return 0; }
- 
- static inline pte_t pte_wrprotect(pte_t pte)	{ pte_val(pte) |= _PAGE_RONLY; return pte; }
-@@ -266,19 +264,6 @@ static inline void cache_page(void *vaddr)
- 	}
- }
- 
--#define PTE_FILE_MAX_BITS	28
--
--static inline unsigned long pte_to_pgoff(pte_t pte)
--{
--	return pte.pte >> 4;
--}
--
--static inline pte_t pgoff_to_pte(unsigned off)
--{
--	pte_t pte = { (off << 4) + _PAGE_FILE };
--	return pte;
--}
--
- /* Encode and de-code a swap entry (must be !pte_none(e) && !pte_present(e)) */
- #define __swp_type(x)		(((x).val >> 4) & 0xff)
- #define __swp_offset(x)		((x).val >> 12)
-diff --git a/arch/m68k/include/asm/pgtable_no.h b/arch/m68k/include/asm/pgtable_no.h
-index 11859b86b1f9..ac7d87a02335 100644
---- a/arch/m68k/include/asm/pgtable_no.h
-+++ b/arch/m68k/include/asm/pgtable_no.h
-@@ -37,8 +37,6 @@ extern void paging_init(void);
- #define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
- #define __swp_entry_to_pte(x)	((pte_t) { (x).val })
- 
--static inline int pte_file(pte_t pte) { return 0; }
--
- /*
-  * ZERO_PAGE is a global shared page that is always zero: used
-  * for zero-mapped memory areas etc..
-diff --git a/arch/m68k/include/asm/sun3_pgtable.h b/arch/m68k/include/asm/sun3_pgtable.h
-index f55aa04161e8..48657f9fdece 100644
---- a/arch/m68k/include/asm/sun3_pgtable.h
-+++ b/arch/m68k/include/asm/sun3_pgtable.h
-@@ -38,8 +38,6 @@
- #define _PAGE_PRESENT	(SUN3_PAGE_VALID)
- #define _PAGE_ACCESSED	(SUN3_PAGE_ACCESSED)
- 
--#define PTE_FILE_MAX_BITS 28
--
- /* Compound page protection values. */
- //todo: work out which ones *should* have SUN3_PAGE_NOCACHE and fix...
- // is it just PAGE_KERNEL and PAGE_SHARED?
-@@ -168,7 +166,6 @@ static inline void pgd_clear (pgd_t *pgdp) {}
- static inline int pte_write(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_WRITEABLE; }
- static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_MODIFIED; }
- static inline int pte_young(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_ACCESSED; }
--static inline int pte_file(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_ACCESSED; }
- static inline int pte_special(pte_t pte)	{ return 0; }
- 
- static inline pte_t pte_wrprotect(pte_t pte)	{ pte_val(pte) &= ~SUN3_PAGE_WRITEABLE; return pte; }
-@@ -202,18 +199,6 @@ static inline pmd_t *pmd_offset (pgd_t *pgd, unsigned long address)
- 	return (pmd_t *) pgd;
- }
- 
--static inline unsigned long pte_to_pgoff(pte_t pte)
--{
--	return pte.pte & SUN3_PAGE_PGNUM_MASK;
--}
--
--static inline pte_t pgoff_to_pte(unsigned off)
--{
--	pte_t pte = { off + SUN3_PAGE_ACCESSED };
--	return pte;
--}
--
--
- /* Find an entry in the third-level pagetable. */
- #define pte_index(address) ((address >> PAGE_SHIFT) & (PTRS_PER_PTE-1))
- #define pte_offset_kernel(pmd, address) ((pte_t *) __pmd_page(*pmd) + pte_index(address))
 -- 
 2.1.3
 
