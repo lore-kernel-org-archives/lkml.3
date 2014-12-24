@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaLXHSm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:18:42 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40243 "EHLO
+	id S1751901AbaLXHTV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:19:21 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40208 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaLXHPl (ORCPT
+	with ESMTP id S1752171AbaLXHPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:15:41 -0500
+	Wed, 24 Dec 2014 02:15:40 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 29/37] perf top: Always creates thread in the current task tree.
-Date: Wed, 24 Dec 2014 16:15:25 +0900
-Message-Id: <1419405333-27952-30-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 26/37] perf tools: Move BUILD_ID_SIZE definition to perf.h
+Date: Wed, 24 Dec 2014 16:15:22 +0900
+Message-Id: <1419405333-27952-27-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
@@ -27,104 +27,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When machine__findnew_thread_time() creates a new thread, it puts the
-thread in the missing_threads tree assuming it's rare case that missed
-related task/mmap events during the recorded header file.
-
-However this is not the case of live profiling - so it should be
-treated differently.  This patch fixes NULL thread->mg reference in
-case of missing threads in live profiling.
+The util/event.h includes util/build-id.h only for BUILD_ID_SIZE.
+This is a problem when I include util/event.h from util/tool.h which
+is also included by util/build-id.h since it now makes a circular
+dependency resulting in incomplete type error.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-top.c |  5 ++++-
- tools/perf/util/event.c  | 24 ++++++++++++++++++------
- tools/perf/util/event.h  |  5 +++++
- 3 files changed, 27 insertions(+), 7 deletions(-)
+ tools/perf/perf.h          | 1 +
+ tools/perf/util/build-id.h | 2 --
+ tools/perf/util/dso.h      | 1 +
+ tools/perf/util/event.h    | 1 -
+ 4 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 818ae35cbd7b..2d75a7fab470 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -699,6 +699,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- {
- 	struct perf_top *top = container_of(tool, struct perf_top, tool);
- 	struct addr_location al;
-+	struct thread *thread;
- 	int err;
- 
- 	if (!machine && perf_guest) {
-@@ -724,7 +725,9 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 	if (event->header.misc & PERF_RECORD_MISC_EXACT_IP)
- 		top->exact_samples++;
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0)
-+	/* Always use current thread tree for live profiling */
-+	thread = machine__findnew_thread(machine, sample->pid, sample->tid);
-+	if (__perf_event__preprocess_sample(event, machine, thread, &al, sample) < 0)
- 		return;
- 
- 	if (!top->kptr_restrict_warned &&
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 3bb186a26314..452af8f4b0f3 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -863,14 +863,13 @@ void thread__find_addr_location_time(struct thread *thread, u8 cpumode,
- 		al->sym = NULL;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 37284eb47b56..56ce258314fc 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -30,6 +30,7 @@ static inline unsigned long long rdclock(void)
  }
  
--int perf_event__preprocess_sample(const union perf_event *event,
--				  struct machine *machine,
--				  struct addr_location *al,
--				  struct perf_sample *sample)
-+int __perf_event__preprocess_sample(const union perf_event *event,
-+				    struct machine *machine,
-+				    struct thread *thread,
-+				    struct addr_location *al,
-+				    struct perf_sample *sample)
- {
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	struct thread *thread = machine__findnew_thread_time(machine, sample->pid,
--							     sample->tid, sample->time);
+ #define MAX_NR_CPUS			256
++#define BUILD_ID_SIZE			20
  
- 	if (thread == NULL)
- 		return -1;
-@@ -928,6 +927,19 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 	return 0;
- }
+ extern const char *input_name;
+ extern bool perf_host, perf_guest;
+diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
+index 8236319514d5..8f31545edc5b 100644
+--- a/tools/perf/util/build-id.h
++++ b/tools/perf/util/build-id.h
+@@ -1,8 +1,6 @@
+ #ifndef PERF_BUILD_ID_H_
+ #define PERF_BUILD_ID_H_ 1
  
-+int perf_event__preprocess_sample(const union perf_event *event,
-+				  struct machine *machine,
-+				  struct addr_location *al,
-+				  struct perf_sample *sample)
-+{
-+	struct thread *thread;
-+
-+	thread = machine__findnew_thread_time(machine, sample->pid,
-+					      sample->tid, sample->time);
-+	return __perf_event__preprocess_sample(event, machine, thread,
-+					       al, sample);
-+}
-+
- bool is_bts_event(struct perf_event_attr *attr)
- {
- 	return attr->type == PERF_TYPE_HARDWARE &&
+-#define BUILD_ID_SIZE 20
+-
+ #include "tool.h"
+ #include <linux/types.h>
+ 
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index ac753594a469..c18fcc0e8081 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -7,6 +7,7 @@
+ #include <linux/types.h>
+ #include <linux/bitops.h>
+ #include "map.h"
++#include "perf.h"
+ #include "build-id.h"
+ 
+ enum dso_binary_type {
 diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 5f66abfa61ca..1fbd37864241 100644
+index 09b9e8d3fcf7..5f66abfa61ca 100644
 --- a/tools/perf/util/event.h
 +++ b/tools/perf/util/event.h
-@@ -352,6 +352,11 @@ int perf_event__process(struct perf_tool *tool,
+@@ -6,7 +6,6 @@
  
- struct addr_location;
+ #include "../perf.h"
+ #include "map.h"
+-#include "build-id.h"
+ #include "perf_regs.h"
  
-+int __perf_event__preprocess_sample(const union perf_event *event,
-+				    struct machine *machine,
-+				    struct thread *thread,
-+				    struct addr_location *al,
-+				    struct perf_sample *sample);
- int perf_event__preprocess_sample(const union perf_event *event,
- 				  struct machine *machine,
- 				  struct addr_location *al,
+ struct mmap_event {
 -- 
 2.1.3
 
