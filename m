@@ -1,178 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512AbaLXHsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:48:50 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:35496 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaLXHss (ORCPT
+	id S1751625AbaLXHvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:51:35 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38457 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564AbaLXHvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:48:48 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 1/7] input: alps: Set correct name of psmouse device in alps_init()
-Date: Wed, 24 Dec 2014 08:48:42 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Hans de Goede <hdegoede@redhat.com>, Vadim Klishko <vadim@cirque.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com> <201412161258.20925@pali> <201412200953.38259@pali>
-In-Reply-To: <201412200953.38259@pali>
+	Wed, 24 Dec 2014 02:51:33 -0500
+Message-ID: <549A7057.3030406@gmail.com>
+Date: Wed, 24 Dec 2014 13:20:47 +0530
+From: Sanchayan Maity <maitysanchayan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1637699.grCxpWYToH";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Peter Chen <peter.chen@freescale.com>
+CC: stefan@agner.ch, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] usb: chipidea: add one errata for revision 2.40a
+References: <cover.1418981438.git.maitysanchayan@gmail.com> <20141222011840.GB9242@shlinux2> <54981816.4010708@gmail.com> <20141223000940.GA11551@shlinux2>
+In-Reply-To: <20141223000940.GA11551@shlinux2>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Message-Id: <201412240848.43326@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1637699.grCxpWYToH
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Saturday 20 December 2014 09:53:38 Pali Roh=C3=A1r wrote:
-> On Tuesday 16 December 2014 12:58:20 Pali Roh=C3=A1r wrote:
-> > On Tuesday 16 December 2014 06:02:34 Dmitry Torokhov wrote:
-> > > Hi Pali,
-> > >=20
-> > > On Fri, Nov 14, 2014 at 08:38:20PM +0100, Pali Roh=C3=A1r wrote:
-> > > > On some laptops after starting them from off state (not
-> > > > after reboot), function alps_probe_trackstick_v3()
-> > > > (called from function alps_identify()) does not detect
-> > > > trackstick. To fix this problem we need to reset
-> > > > device. But function alps_identify() is called also
-> > > > from alps_detect() and we do not want to reset device
-> > > > in detect function because it will slow down
-> > > > initialization of all other non alps devices.
-> > > >=20
-> > > > This patch moves code for setting correct device name &
-> > > > protocol from function alps_detect() to alps_init()
-> > > > which already doing full device reset.
-> > > >=20
-> > > > So this patch removes need to do trackstick detection in
-> > > > alps_detect() function.
-> > > >=20
-> > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > > > ---
-> > > >=20
-> > > >  drivers/input/mouse/alps.c |   17 ++++++++++++++---
-> > > >  1 file changed, 14 insertions(+), 3 deletions(-)
-> > > >=20
-> > > > diff --git a/drivers/input/mouse/alps.c
-> > > > b/drivers/input/mouse/alps.c index 8d85c79..9ffa98d
-> > > > 100644 --- a/drivers/input/mouse/alps.c
-> > > > +++ b/drivers/input/mouse/alps.c
-> > > > @@ -2392,6 +2392,10 @@ int alps_init(struct psmouse
-> > > > *psmouse)
-> > > >=20
-> > > >  	if (input_register_device(priv->dev2))
-> > > >  =09
-> > > >  		goto init_fail;
-> > > >=20
-> > > > +	if (!(priv->flags & ALPS_DUALPOINT))
-> > > > +		psmouse->name =3D "GlidePoint TouchPad";
-> > > > +	psmouse->model =3D priv->proto_version;
-> > > > +
-> > > >=20
-> > > >  	psmouse->protocol_handler =3D alps_process_byte;
-> > > >  	psmouse->poll =3D alps_poll;
-> > > >  	psmouse->disconnect =3D alps_disconnect;
-> > > >=20
-> > > > @@ -2422,11 +2426,18 @@ int alps_detect(struct psmouse
-> > > > *psmouse, bool set_properties)
-> > > >=20
-> > > >  		return -1;
-> > > >  =09
-> > > >  	if (set_properties) {
-> > > >=20
-> > > > +		/*
-> > > > +		 * NOTE: To detect model and trackstick presence we
-> >=20
-> > need
-> >=20
-> > > > to do +		 *       full device reset. To speed up
-> >=20
-> > detection
-> >=20
-> > > > and prevent +		 *       calling duplicate
->=20
-> initialization
->=20
-> > > > sequence (both in +		 *       alps_detect() and
-> > > > alps_init()) we set model/protocol +		 *       version
->=20
-> and
->=20
-> > > > correct name in alps_init() (which will +		 *      =20
-do
-> >=20
-> > full
-> >=20
-> > > > device reset). For now set name to DualPoint. +		 */
-> > > >=20
-> > > >  		psmouse->vendor =3D "ALPS";
-> > > >=20
-> > > > -		psmouse->name =3D dummy.flags & ALPS_DUALPOINT ?
-> > > > -				"DualPoint TouchPad" : "GlidePoint";
-> > > > -		psmouse->model =3D dummy.proto_version << 8;
-> > > > +		psmouse->name =3D "DualPoint TouchPad";
-> > > >=20
-> > > >  	}
-> > > >=20
-> > > > +
-> > >=20
-> > > I do not quite like the way we change the device
-> > > description back and forth. Do you think we could
-> > > allocate the "real" priv structure in alps_detect() and
-> > > have alps_init() expect to find it (and free it if
-> > > set_properties is false). This way we'd go through
-> > > initialization once in detect, it will be authoritative,
-> > > and we would set the name of the device properly from the
-> > > beginning.
-> > >=20
-> > > Thanks.
-> >=20
-> > No without introducing another psmouse_reset call. I want to
-> > reduce time of loading driver, so I think this is better.
->=20
-> Also psmouse-base.c call psmouse_reset between alps_detect()
-> and alps_init(). We must do trackstick detection after
-> psmouse_reset, but intorducing another psmouse_reset in
-> alps_detect() will slow down initialization for ALPS devices.
-> Also do not remember that psmouse_reset will lock both
-> keyboard & mouse for one second (sometimes for two) on my
-> laptop. I played with this and I think my patch is good
-> approach how to do trackstick detection without slowdown or
-> other side effects.
->=20
-> Also we do not need to know if ALPS touchpad has trackstick
-> device in alps_detect() phase. In alps_detect() we just need
-> to know if PS/2 device is ALPS or not. From psmouse/serio
-> point of view there is only one ALPS device on PS/2/i8042
-> bus. Just alps.ko driver parse PS/2 packets and detect which
-> packet has touchpad header and which trackpoint. So we really
-> do not need to know if trackstick is there or not in
-> alps_detect() function.
+On 12/23/2014 05:39 AM, Peter Chen wrote:
+> On Mon, Dec 22, 2014 at 06:39:42PM +0530, Sanchayan Maity wrote:
+>> On 12/22/2014 06:48 AM, Peter Chen wrote:
+>>> On Fri, Dec 19, 2014 at 03:25:26PM +0530, Sanchayan Maity wrote:
+>>>> The first two patches add identification register API's. These can
+>>>> be used to get controller's revision. 
+>>>>
+>>>> The third patch implements an errata for revision 2.40a. Not sure
+>>>> which other SOCs implement this version of the Chipidea core but
+>>>> this fixes the usb client issue observed on Vybrids. The patch was
+>>>> tested on a Toradex Colibri VF61 module with the 3.18 kernel. iperf
+>>>> tests ran for three hours plus, with these patches applied have found
+>>>> the USB client connection to be now reliable.
+>>>
+>>> Would you help do a overnight test? It is passed, I will queue them,
+>>> thanks.
+>>
+>> Yes definitely I can help with the testing. Are you looking for iperf
+>> tests only or something else? iperf tests running for 12 or 24 hours 
+>> will do? I will need a bit of time to set things up here, as I am away
+>> from work, but, ya I will do them. 
+>>
+> 
+> iperf for g_ncm or g_ether and bonnie++ for g_mass_storage if you can
+> run, thanks.
 
-Dmitry ping, can you finally review this patch series? I it there=20
-for more then month...
+The tests were run on a Toradex Colibri Vybrid VF61 module having 256MB RAM
+with the 3.18 kernel.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+The iperf tests ran for around 19 hours before I stopped it. A snip of 
+the iperf tests is below. Used the Ethernet Gadget class for this.
 
---nextPart1637699.grCxpWYToH
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+[  4] 70453.0-70453.5 sec  6.89 MBytes   116 Mbits/sec
+[  4] 70453.5-70454.0 sec  6.83 MBytes   115 Mbits/sec
+[  4] 70454.0-70454.5 sec  6.84 MBytes   115 Mbits/sec
+[  4] 70454.5-70455.0 sec  6.89 MBytes   116 Mbits/sec
+[  4] 70455.0-70455.5 sec  6.90 MBytes   116 Mbits/sec
+[  4] 70455.5-70456.0 sec  6.90 MBytes   116 Mbits/sec
+[  4] 70456.0-70456.5 sec  6.82 MBytes   114 Mbits/sec
+[  4] 70456.5-70457.0 sec  6.80 MBytes   114 Mbits/sec
+[  4] 70457.0-70457.5 sec  6.89 MBytes   116 Mbits/sec
+[  4] 70457.5-70458.0 sec  6.85 MBytes   115 Mbits/sec
+[  4] 70458.0-70458.5 sec  6.82 MBytes   114 Mbits/sec
+[  4] 70458.5-70459.0 sec  6.82 MBytes   114 Mbits/sec
+[  4]  0.0-70459.2 sec   946 GBytes   115 Mbits/sec
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Ran bonnie++ on gadget mass storage. CPU usage around the time of running
+this test was mostly around the 90% mark with the minimum at 60% plus.
+The storage directory was formatted with ext4. bonnie++ version used is
+1.97 and was installed from the Arch repositories with pacman.
 
-iEYEABECAAYFAlSab9sACgkQi/DJPQPkQ1I+gACfbjozrilyTpRNFgiy/pJvKxtD
-28EAni/eMgc9W6/vQJEN2mEzoZZZzIao
-=Cfap
------END PGP SIGNATURE-----
+The size of the file being specified for "lun" storage is 512MB. I have specified
+128MB RAM in the below run with the size of file for IO performance as 256MB.
+Without this bonnie++ was giving me an error around the "Writing intelligently"
+point. I assume this has to do with the file size bonnie++ uses for testing.
 
---nextPart1637699.grCxpWYToH--
+[sanchayan@Sanchayan-Arch ~]$ sudo /usr/bin/bonnie++ -m Vybrid -r 128 -d /var/run/media/sanchayan/Vybrid/ -x 5 -u root -n 0 -s 256
+Using uid:0, gid:0.
+format_version,bonnie_version,name,concurrency,seed,file_size,io_chunk_size,putc,putc_cpu,put_block,put_block_cpu,rewrite,rewrite_cpu,getc,getc_cpu,get_block,get_block_cpu,seeks,seeks_cpu,num_files,max_size,min_size,num_dirs,file_chunk_size,seq_create,seq_create_cpu,seq_stat,seq_stat_cpu,seq_del,seq_del_cpu,ran_create,ran_create_cpu,ran_stat,ran_stat_cpu,ran_del,ran_del_cpu,putc_latency,put_block_latency,rewrite_latency,getc_latency,get_block_latency,seeks_latency,seq_create_latency,seq_stat_latency,seq_del_latency,ran_create_latency,ran_stat_latency,ran_del_latency
+Writing a byte at a time...done
+Writing intelligently...done
+Rewriting...done
+Reading a byte at a time...done
+Reading intelligently...done
+start 'em...done...done...done...done...done...
+1.97,1.97,Vybrid,1,1419409300,256M,,659,87,8341,1,9401,0,4222,98,+++++,+++,3539,19,,,,,,,,,,,,,,,,,,23042us,66us,59us,4482us,79us,475us,,,,,,
+Writing a byte at a time...done
+Writing intelligently...done
+Rewriting...done
+Reading a byte at a time...done
+Reading intelligently...done
+start 'em...done...done...done...done...done...
+1.97,1.97,Vybrid,1,1419409300,256M,,661,90,7689,1,9071,0,4011,99,+++++,+++,3426,20,,,,,,,,,,,,,,,,,,15406us,64us,62us,4667us,23us,10030us,,,,,,
+Writing a byte at a time...done
+Writing intelligently...done
+Rewriting...done
+Reading a byte at a time...done
+Reading intelligently...done
+start 'em...done...done...done...done...done...
+1.97,1.97,Vybrid,1,1419409300,256M,,673,89,8117,1,9451,0,3879,98,+++++,+++,3355,22,,,,,,,,,,,,,,,,,,14210us,45us,69us,5069us,21us,10052us,,,,,,
+Writing a byte at a time...done
+Writing intelligently...done
+Rewriting...done
+Reading a byte at a time...done
+Reading intelligently...done
+start 'em...done...done...done...done...done...
+1.97,1.97,Vybrid,1,1419409300,256M,,668,89,7801,1,9343,0,4099,98,+++++,+++,3336,16,,,,,,,,,,,,,,,,,,17019us,44us,75us,4920us,20us,10234us,,,,,,
+Writing a byte at a time...done
+Writing intelligently...done
+Rewriting...done
+Reading a byte at a time...done
+Reading intelligently...done
+start 'em...done...done...done...done...done...
+1.97,1.97,Vybrid,1,1419409300,256M,,676,89,7953,1,9494,0,3878,98,+++++,+++,3396,22,,,,,,,,,,,,,,,,,,14080us,56us,42us,5177us,23us,12224us,,,,,,
+
+Let me know if this is OK.
+
+Thanks.
+
+-Regards,
+Sanchayan.
+
+> 
+> Peter
+> 
+>> -Regards,
+>> Sanchayan.
+>>>
+>>> Peter
+>>>>
+>>>> This patchset is based off on Shawn Guo's for-next branch
+>>>> https://git.kernel.org/cgit/linux/kernel/git/shawnguo/linux.git/tree/?h=for-next
+>>>>
+>>>> The credit for the patches and fix goes to Matthieu Castet and Peter Chen.
+>>>> First two patches are by Peter Chen and the third patch which fixed the
+>>>> bug we observed was reported by Matthieu Castet.
+>>>>
+>>>> The discussion of the problem and the relevant testing details can be found
+>>>> at this link: http://www.spinics.net/lists/linux-usb/msg118544.html
+>>>>
+>>>> The first version of this patchset originally send by Peter Chen can be
+>>>> found at this link: http://www.spinics.net/lists/linux-usb/msg118753.html
+>>>>
+>>>> Comments for review are welcome :).
+>>>> Note: I am going on a vacation so will not be able to reply or do any further
+>>>> tests till Monday. Will attend and take care of any comments/requests for 
+>>>> further changes/testing from Tuesday. Apologize for the delay in advance.
+>>>>
+>>>> Sanchayan Maity (3):
+>>>>   usb: chipidea: Add identification registers access APIs
+>>>>   usb: chipidea: Add chipidea revision information
+>>>>   usb: chipidea: Add errata for revision 2.40a
+>>>>
+>>>>  drivers/usb/chipidea/bits.h |   10 ++++++++
+>>>>  drivers/usb/chipidea/ci.h   |   53 +++++++++++++++++++++++++++++++++++++++++++
+>>>>  drivers/usb/chipidea/core.c |   23 +++++++++++++++++--
+>>>>  drivers/usb/chipidea/udc.c  |   20 ++++++++++++++++
+>>>>  4 files changed, 104 insertions(+), 2 deletions(-)
+>>>>
+>>>> -- 
+>>>> 1.7.9.5
+>>>>
+>>>
+> 
