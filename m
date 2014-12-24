@@ -1,117 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840AbaLXI4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 03:56:22 -0500
-Received: from mail-by2on0088.outbound.protection.outlook.com ([207.46.100.88]:42315
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1751785AbaLXJAq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 04:00:46 -0500
+Received: from mail-bl2on0134.outbound.protection.outlook.com ([65.55.169.134]:24177
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751790AbaLXI4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 03:56:20 -0500
-X-Greylist: delayed 1125 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Dec 2014 03:56:19 EST
-From: <thloh@altera.com>
-To: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Antti Palosaari <crope@iki.fi>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>
-CC: Dinh Nguyen <dinguyen@altera.com>, Tien Hock Loh <thloh@altera.com>
-Subject: [PATCH v8 1/2] drivers/gpio: Altera soft IP GPIO driver device tree binding
-Date: Wed, 24 Dec 2014 00:22:24 -0800
-Message-ID: <1419409345-8297-2-git-send-email-thloh@altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1419409345-8297-1-git-send-email-thloh@altera.com>
-References: <1419409345-8297-1-git-send-email-thloh@altera.com>
+	id S1751581AbaLXJAo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 04:00:44 -0500
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Sanchayan Maity <maitysanchayan@gmail.com>
+CC: "stefan@agner.ch" <stefan@agner.ch>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/3] usb: chipidea: add one errata for revision 2.40a
+Thread-Topic: [PATCH 0/3] usb: chipidea: add one errata for revision 2.40a
+Thread-Index: AQHQG3H2K/IPzULf4EOj7QE41MjqNpybWagAgABAjQCAAT6DAIABjQuAgAASYUA=
+Date: Wed, 24 Dec 2014 09:00:41 +0000
+Message-ID: <BN3PR0301MB084931C32ABB2549E6A73CF581540@BN3PR0301MB0849.namprd03.prod.outlook.com>
+References: <cover.1418981438.git.maitysanchayan@gmail.com>
+ <20141222011840.GB9242@shlinux2> <54981816.4010708@gmail.com>
+ <20141223000940.GA11551@shlinux2> <549A7057.3030406@gmail.com>
+In-Reply-To: <549A7057.3030406@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.211]
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0852;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0852;
+x-forefront-prvs: 04359FAD81
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(52604005)(51704005)(189002)(479174004)(199003)(377454003)(24454002)(107046002)(2900100001)(102836002)(54356999)(66066001)(106116001)(68736005)(86362001)(4396001)(99286002)(1411001)(54206007)(76576001)(2950100001)(92566001)(74316001)(122556002)(106356001)(2656002)(20776003)(97736003)(19580405001)(99396003)(50986999)(31966008)(64706001)(120916001)(93886004)(33656002)(87936001)(40100003)(54606007)(77156002)(46102003)(101416001)(110136001)(105586002)(76176999)(62966003)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB0852;H:BN3PR0301MB0849.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=thloh@altera.com; 
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(64706001)(46102003)(89996001)(105596002)(48376002)(47776003)(33646002)(62966003)(87936001)(19580405001)(50466002)(106466001)(120916001)(42186005)(20776003)(77156002)(6806004)(31966008)(19580395003)(4396001)(2950100001)(92566001)(2201001)(76176999)(50226001)(107046002)(86152002)(68736005)(84676001)(36756003)(229853001)(86362001)(21056001)(97736003)(50986999)(99396003)(7099022)(921003)(1121003);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB213;H:sj-itexedge03.altera.priv.altera.com;FPR:;SPF:SoftFail;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB213;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB213;
-X-Forefront-PRVS: 04359FAD81
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB213;
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 08:22:45.1640
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 24 Dec 2014 09:00:41.6206
  (UTC)
-X-MS-Exchange-CrossTenant-Id: fbd72e03-d4a5-4110-adce-614d51f2077a
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fbd72e03-d4a5-4110-adce-614d51f2077a;Ip=[66.35.236.227]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB213
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB519;
-X-OriginatorOrg: altera.com
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB0852
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tien Hock Loh <thloh@altera.com>
+ 
+> 
+> On 12/23/2014 05:39 AM, Peter Chen wrote:
+> > On Mon, Dec 22, 2014 at 06:39:42PM +0530, Sanchayan Maity wrote:
+> >> On 12/22/2014 06:48 AM, Peter Chen wrote:
+> >>> On Fri, Dec 19, 2014 at 03:25:26PM +0530, Sanchayan Maity wrote:
+> >>>> The first two patches add identification register API's. These can
+> >>>> be used to get controller's revision.
+> >>>>
+> >>>> The third patch implements an errata for revision 2.40a. Not sure
+> >>>> which other SOCs implement this version of the Chipidea core but
+> >>>> this fixes the usb client issue observed on Vybrids. The patch was
+> >>>> tested on a Toradex Colibri VF61 module with the 3.18 kernel. iperf
+> >>>> tests ran for three hours plus, with these patches applied have
+> >>>> found the USB client connection to be now reliable.
+> >>>
+> >>> Would you help do a overnight test? It is passed, I will queue them,
+> >>> thanks.
+> >>
+> >> Yes definitely I can help with the testing. Are you looking for iperf
+> >> tests only or something else? iperf tests running for 12 or 24 hours
+> >> will do? I will need a bit of time to set things up here, as I am
+> >> away from work, but, ya I will do them.
+> >>
+> >
+> > iperf for g_ncm or g_ether and bonnie++ for g_mass_storage if you can
+> > run, thanks.
+> 
+> The tests were run on a Toradex Colibri Vybrid VF61 module having 256MB
+> RAM with the 3.18 kernel.
+> 
+> The iperf tests ran for around 19 hours before I stopped it. A snip of the iperf
+> tests is below. Used the Ethernet Gadget class for this.
+> 
+> [  4] 70453.0-70453.5 sec  6.89 MBytes   116 Mbits/sec
+> [  4] 70453.5-70454.0 sec  6.83 MBytes   115 Mbits/sec
+> [  4] 70454.0-70454.5 sec  6.84 MBytes   115 Mbits/sec
+> [  4] 70454.5-70455.0 sec  6.89 MBytes   116 Mbits/sec
+> [  4] 70455.0-70455.5 sec  6.90 MBytes   116 Mbits/sec
+> [  4] 70455.5-70456.0 sec  6.90 MBytes   116 Mbits/sec
+> [  4] 70456.0-70456.5 sec  6.82 MBytes   114 Mbits/sec
+> [  4] 70456.5-70457.0 sec  6.80 MBytes   114 Mbits/sec
+> [  4] 70457.0-70457.5 sec  6.89 MBytes   116 Mbits/sec
+> [  4] 70457.5-70458.0 sec  6.85 MBytes   115 Mbits/sec
+> [  4] 70458.0-70458.5 sec  6.82 MBytes   114 Mbits/sec
+> [  4] 70458.5-70459.0 sec  6.82 MBytes   114 Mbits/sec
+> [  4]  0.0-70459.2 sec   946 GBytes   115 Mbits/sec
+> 
+> Ran bonnie++ on gadget mass storage. CPU usage around the time of running
+> this test was mostly around the 90% mark with the minimum at 60% plus.
+> The storage directory was formatted with ext4. bonnie++ version used is
+> 1.97 and was installed from the Arch repositories with pacman.
+> 
+> The size of the file being specified for "lun" storage is 512MB. I have specified
+> 128MB RAM in the below run with the size of file for IO performance as 256MB.
+> Without this bonnie++ was giving me an error around the "Writing intelligently"
+> point. I assume this has to do with the file size bonnie++ uses for testing.
+> 
 
-Adds a new driver device tree binding for Altera soft GPIO IP
+What's your backfile for mass storage, mmc?
+You mean without this errata, running bonnie++ will meet error?
 
-Signed-off-by: Tien Hock Loh <thloh@altera.com>
----
- .../devicetree/bindings/gpio/gpio-altera.txt       |   43 ++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-altera.txt
+> [sanchayan@Sanchayan-Arch ~]$ sudo /usr/bin/bonnie++ -m Vybrid -r 128 -d
+> /var/run/media/sanchayan/Vybrid/ -x 5 -u root -n 0 -s 256 Using uid:0, gid:0.
+> format_version,bonnie_version,name,concurrency,seed,file_size,io_chunk_si
+> ze,putc,putc_cpu,put_block,put_block_cpu,rewrite,rewrite_cpu,getc,getc_cp
+> u,get_block,get_block_cpu,seeks,seeks_cpu,num_files,max_size,min_size,nu
+> m_dirs,file_chunk_size,seq_create,seq_create_cpu,seq_stat,seq_stat_cpu,se
+> q_del,seq_del_cpu,ran_create,ran_create_cpu,ran_stat,ran_stat_cpu,ran_del
+> ,ran_del_cpu,putc_latency,put_block_latency,rewrite_latency,getc_latency,ge
+> t_block_latency,seeks_latency,seq_create_latency,seq_stat_latency,seq_del_
+> latency,ran_create_latency,ran_stat_latency,ran_del_latency
+> Writing a byte at a time...done
+> Writing intelligently...done
+> Rewriting...done
+> Reading a byte at a time...done
+> Reading intelligently...done
+> start 'em...done...done...done...done...done...
+> 1.97,1.97,Vybrid,1,1419409300,256M,,659,87,8341,1,9401,0,4222,98,+++++,+++,
+> 3539,19,,,,,,,,,,,,,,,,,,23042us,66us,59us,4482us,79us,475us,,,,,,
+> Writing a byte at a time...done
+> Writing intelligently...done
+> Rewriting...done
+> Reading a byte at a time...done
+> Reading intelligently...done
+> start 'em...done...done...done...done...done...
+> 1.97,1.97,Vybrid,1,1419409300,256M,,661,90,7689,1,9071,0,4011,99,+++++,+++,
+> 3426,20,,,,,,,,,,,,,,,,,,15406us,64us,62us,4667us,23us,10030us,,,,,,
+> Writing a byte at a time...done
+> Writing intelligently...done
+> Rewriting...done
+> Reading a byte at a time...done
+> Reading intelligently...done
+> start 'em...done...done...done...done...done...
+> 1.97,1.97,Vybrid,1,1419409300,256M,,673,89,8117,1,9451,0,3879,98,+++++,+++,
+> 3355,22,,,,,,,,,,,,,,,,,,14210us,45us,69us,5069us,21us,10052us,,,,,,
+> Writing a byte at a time...done
+> Writing intelligently...done
+> Rewriting...done
+> Reading a byte at a time...done
+> Reading intelligently...done
+> start 'em...done...done...done...done...done...
+> 1.97,1.97,Vybrid,1,1419409300,256M,,668,89,7801,1,9343,0,4099,98,+++++,+++,
+> 3336,16,,,,,,,,,,,,,,,,,,17019us,44us,75us,4920us,20us,10234us,,,,,,
+> Writing a byte at a time...done
+> Writing intelligently...done
+> Rewriting...done
+> Reading a byte at a time...done
+> Reading intelligently...done
+> start 'em...done...done...done...done...done...
+> 1.97,1.97,Vybrid,1,1419409300,256M,,676,89,7953,1,9494,0,3878,98,+++++,+++,
+> 3396,22,,,,,,,,,,,,,,,,,,14080us,56us,42us,5177us,23us,12224us,,,,,,
+> 
+> Let me know if this is OK.
+ 
+Thanks for making and testing the patch, it is really a good job.
+I will queue this patch in my chipidea tree.
 
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-altera.txt b/Documentation/devicetree/bindings/gpio/gpio-altera.txt
-new file mode 100644
-index 0000000..649fa02
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-altera.txt
-@@ -0,0 +1,43 @@
-+Altera GPIO controller bindings
-+
-+Required properties:
-+- compatible:
-+  - "altr,pio-1.0"
-+- reg: Physical base address and length of the controller's registers.
-+- #gpio-cells : Should be 2
-+  - The first cell is the gpio offset number.
-+  - The second cell is reserved and is currently unused.
-+- gpio-controller : Marks the device node as a GPIO controller.
-+- interrupt-controller: Mark the device node as an interrupt controller
-+- #interrupt-cells : Should be 1. The interrupt type is fixed in the hardware.
-+  - The first cell is the GPIO offset number within the GPIO controller.
-+- interrupts: Specify the interrupt.
-+- altr,interrupt-trigger: Specifies the interrupt trigger type the GPIO
-+  hardware is synthesized. This field is required if the Altera GPIO controller
-+  used has IRQ enabled as the interrupt type is not software controlled,
-+  but hardware synthesized. Required if GPIO is used as an interrupt
-+  controller. The value is defined in <dt-bindings/interrupt-controller/irq.h>
-+  Only the following flags are supported:
-+    IRQ_TYPE_EDGE_RISING
-+    IRQ_TYPE_EDGE_FALLING
-+    IRQ_TYPE_EDGE_BOTH
-+    IRQ_TYPE_LEVEL_HIGH
-+
-+Optional properties:
-+- altr,ngpio: Width of the GPIO bank. This defines how many pins the
-+  GPIO device has. Ranges between 1-32. Optional and defaults to 32 is not
-+  specified.
-+
-+Example:
-+
-+gpio_altr: gpio@0xff200000 {
-+	compatible = "altr,pio-1.0";
-+	reg = <0xff200000 0x10>;
-+	interrupts = <0 45 4>;
-+	altr,ngpio = <32>;
-+	altr,interrupt_trigger = <IRQ_TYPE_EDGE_RISING>;
-+	#gpio-cells = <1>;
-+	gpio-controller;
-+	#interrupt-cells = <1>;
-+	interrupt-controller;
-+};
--- 
-1.7.1
-
+Peter  
