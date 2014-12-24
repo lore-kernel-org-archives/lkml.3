@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaLXN3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 08:29:23 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51121 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaLXN3W (ORCPT
+	id S1751993AbaLXNla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 08:41:30 -0500
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:1518 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751641AbaLXNl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 08:29:22 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-wireless@vger.kernel.org, Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Christophe Prigent <christophe.prigent@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] brcmfmac: Do not crash if platform data is not populated
-References: <1419346112-173303-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Wed, 24 Dec 2014 15:29:13 +0200
-In-Reply-To: <1419346112-173303-1-git-send-email-mika.westerberg@linux.intel.com>
-	(Mika Westerberg's message of "Tue, 23 Dec 2014 16:48:32 +0200")
-Message-ID: <87mw6d9nx2.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 24 Dec 2014 08:41:28 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArsSAIjBmlRXQ7BL/2dsb2JhbABbgwaBKrQTBQEBAQEBAQUBd5crBAKBEhcBAQEBAX2EaSOBGjeIMAG8Go9+hgCJDmQdhBMFlwiJZ4dpIoFFAYIpPTGBA4FAAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org
+Subject: [PATCH 1/1 linux-next] pinctrl: use ERR_CAST instead of ERR_PTR/PTR_ERR
+Date: Wed, 24 Dec 2014 14:40:49 +0100
+Message-Id: <1419428449-22413-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mika Westerberg <mika.westerberg@linux.intel.com> writes:
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ include/linux/pinctrl/consumer.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> The driver looks for pdata->oob_irq_supported to find out if wowl can be
-> supported. However, not all platforms populate pdata in which case we crash
-> the kernel because of NULL pointer dereference.
->
-> Fixes: 330b4e4be937 ("brcmfmac: Add wowl support for SDIO devices.")
-> Reported-by: Christophe Prigent <christophe.prigent@intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-
-Thanks, applied to wireless-drivers.git.
-
+diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
+index 18eccef..d7e5d60 100644
+--- a/include/linux/pinctrl/consumer.h
++++ b/include/linux/pinctrl/consumer.h
+@@ -142,7 +142,7 @@ static inline struct pinctrl * __must_check pinctrl_get_select(
+ 	s = pinctrl_lookup_state(p, name);
+ 	if (IS_ERR(s)) {
+ 		pinctrl_put(p);
+-		return ERR_PTR(PTR_ERR(s));
++		return ERR_CAST(s);
+ 	}
+ 
+ 	ret = pinctrl_select_state(p, s);
 -- 
-Kalle Valo
+1.9.1
+
