@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaLXM3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 07:29:06 -0500
-Received: from mga11.intel.com ([192.55.52.93]:11489 "EHLO mga11.intel.com"
+	id S1752794AbaLXM3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 07:29:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39291 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072AbaLXMXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752073AbaLXMXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Dec 2014 07:23:11 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,638,1413270000"; 
-   d="scan'208";a="652662023"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="432964937"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: akpm@linux-foundation.org
 Cc: peterz@infradead.org, mingo@kernel.org, davej@redhat.com,
         sasha.levin@oracle.com, hughd@google.com, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 22/38] metag: drop _PAGE_FILE and pte_file()-related helpers
-Date: Wed, 24 Dec 2014 14:22:30 +0200
-Message-Id: <1419423766-114457-23-git-send-email-kirill.shutemov@linux.intel.com>
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Subject: [PATCH 25/38] mn10300: drop _PAGE_FILE and pte_file()-related helpers
+Date: Wed, 24 Dec 2014 14:22:33 +0200
+Message-Id: <1419423766-114457-26-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -29,43 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 We've replaced remap_file_pages(2) implementation with emulation.
 Nobody creates non-linear mapping anymore.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: James Hogan <james.hogan@imgtec.com>
----
- arch/metag/include/asm/pgtable.h | 6 ------
- 1 file changed, 6 deletions(-)
+This patch also increase number of bits availble for swap offset.
 
-diff --git a/arch/metag/include/asm/pgtable.h b/arch/metag/include/asm/pgtable.h
-index 0d9dc5487296..d0604c0a8702 100644
---- a/arch/metag/include/asm/pgtable.h
-+++ b/arch/metag/include/asm/pgtable.h
-@@ -47,7 +47,6 @@
-  */
- #define _PAGE_ACCESSED		_PAGE_ALWAYS_ZERO_1
- #define _PAGE_DIRTY		_PAGE_ALWAYS_ZERO_2
--#define _PAGE_FILE		_PAGE_ALWAYS_ZERO_3
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+---
+ arch/mn10300/include/asm/pgtable.h | 17 +++--------------
+ 1 file changed, 3 insertions(+), 14 deletions(-)
+
+diff --git a/arch/mn10300/include/asm/pgtable.h b/arch/mn10300/include/asm/pgtable.h
+index 2ddaa67e7983..629181ae111e 100644
+--- a/arch/mn10300/include/asm/pgtable.h
++++ b/arch/mn10300/include/asm/pgtable.h
+@@ -134,7 +134,6 @@ extern pte_t kernel_vmalloc_ptes[(VMALLOC_END - VMALLOC_START) / PAGE_SIZE];
+ #define _PAGE_NX		0			/* no-execute bit */
  
- /* Pages owned, and protected by, the kernel. */
- #define _PAGE_KERNEL		_PAGE_PRIV
-@@ -219,7 +218,6 @@ extern unsigned long empty_zero_page;
- static inline int pte_write(pte_t pte)   { return pte_val(pte) & _PAGE_WRITE; }
- static inline int pte_dirty(pte_t pte)   { return pte_val(pte) & _PAGE_DIRTY; }
- static inline int pte_young(pte_t pte)   { return pte_val(pte) & _PAGE_ACCESSED; }
--static inline int pte_file(pte_t pte)    { return pte_val(pte) & _PAGE_FILE; }
- static inline int pte_special(pte_t pte) { return 0; }
+ /* If _PAGE_VALID is clear, we use these: */
+-#define _PAGE_FILE		xPTEL2_C	/* set:pagecache unset:swap */
+ #define _PAGE_PROTNONE		0x000		/* If not present */
  
- static inline pte_t pte_wrprotect(pte_t pte) { pte_val(pte) &= (~_PAGE_WRITE); return pte; }
-@@ -327,10 +325,6 @@ static inline void update_mmu_cache(struct vm_area_struct *vma,
- #define __pte_to_swp_entry(pte)		((swp_entry_t) { pte_val(pte) })
- #define __swp_entry_to_pte(x)		((pte_t) { (x).val })
+ #define __PAGE_PROT_UWAUX	0x010
+@@ -241,11 +240,6 @@ static inline int pte_young(pte_t pte)	{ return pte_val(pte) & _PAGE_ACCESSED; }
+ static inline int pte_write(pte_t pte)	{ return pte_val(pte) & __PAGE_PROT_WRITE; }
+ static inline int pte_special(pte_t pte){ return 0; }
  
--#define PTE_FILE_MAX_BITS	22
--#define pte_to_pgoff(x)		(pte_val(x) >> 10)
--#define pgoff_to_pte(x)		__pte(((x) << 10) | _PAGE_FILE)
+-/*
+- * The following only works if pte_present() is not true.
+- */
+-static inline int pte_file(pte_t pte)	{ return pte_val(pte) & _PAGE_FILE; }
 -
- #define kern_addr_valid(addr)	(1)
+ static inline pte_t pte_rdprotect(pte_t pte)
+ {
+ 	pte_val(pte) &= ~(__PAGE_PROT_USER|__PAGE_PROT_UWAUX); return pte;
+@@ -338,16 +332,11 @@ static inline int pte_exec_kernel(pte_t pte)
+ 	return 1;
+ }
  
- /*
+-#define PTE_FILE_MAX_BITS	30
+-
+-#define pte_to_pgoff(pte)	(pte_val(pte) >> 2)
+-#define pgoff_to_pte(off)	__pte((off) << 2 | _PAGE_FILE)
+-
+ /* Encode and de-code a swap entry */
+-#define __swp_type(x)			(((x).val >> 2) & 0x3f)
+-#define __swp_offset(x)			((x).val >> 8)
++#define __swp_type(x)			(((x).val >> 1) & 0x3f)
++#define __swp_offset(x)			((x).val >> 7)
+ #define __swp_entry(type, offset) \
+-	((swp_entry_t) { ((type) << 2) | ((offset) << 8) })
++	((swp_entry_t) { ((type) << 1) | ((offset) << 7) })
+ #define __pte_to_swp_entry(pte)		((swp_entry_t) { pte_val(pte) })
+ #define __swp_entry_to_pte(x)		__pte((x).val)
+ 
 -- 
 2.1.3
 
