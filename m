@@ -1,91 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314AbaLXBPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 20:15:14 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2121 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaLXBPN (ORCPT
+	id S1751119AbaLXBmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 20:42:00 -0500
+Received: from mga09.intel.com ([134.134.136.24]:10733 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750740AbaLXBl6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 20:15:13 -0500
-Message-ID: <549A138D.50204@atmel.com>
-Date: Wed, 24 Dec 2014 09:14:53 +0800
-From: "Wu, Songjun" <songjun.wu@atmel.com>
-Organization: ATMEL
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 23 Dec 2014 20:41:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="503400566"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, "Wu, Feng" <feng.wu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, "Gleb Natapov" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
+Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
+ Posted-Interrupts
+Thread-Topic: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
+ Posted-Interrupts
+Thread-Index: AQHQFiFw/2wcwNXVUk6mLzPIG8E78JyVcJswgAC8KvCAAAEAoIAAJl0AgAYPrcCAAAQJAIAABZWAgAAHY4CAAYvvcA==
+Date: Wed, 24 Dec 2014 01:38:18 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC06DF9@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-7-git-send-email-feng.wu@intel.com>
+	<A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>
+	<E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
+	<A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>
+	<54941326.4080405@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC06282@SHSMSX104.ccr.corp.intel.com>
+ <54992C2C.5030305@redhat.com>
+ <E959C4978C3B6342920538CF579893F002314236@SHSMSX104.ccr.corp.intel.com>
+ <5499370D.8000703@redhat.com>
+In-Reply-To: <5499370D.8000703@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nicolas.ferre@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: gadget: udc: atmel: fix possible oops when unloading
- module
-References: <1419240374-12179-1-git-send-email-songjun.wu@atmel.com> <20141223162419.GB9147@saruman>
-In-Reply-To: <20141223162419.GB9147@saruman>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Paolo Bonzini wrote on 2014-12-23:
+> 
+> 
+> On 23/12/2014 10:07, Wu, Feng wrote:
+>>> On 23/12/2014 01:37, Zhang, Yang Z wrote:
+>>>> I don't quite understand it. If user set an interrupt's affinity
+>>>> to a CPU, but he still see the interrupt delivers to other CPUs in host.
+>>>> Do you think it is a right behavior?
+>>> 
+>>> No, the interrupt is not delivered at all in the host.  Normally you'd have:
+>>> 
+>>> - interrupt delivered to CPU from host affinity
+>>> 
+>>> - VFIO interrupt handler writes to irqfd
+>>> 
+>>> - interrupt delivered to vCPU from guest affinity
+>>> 
+>>> Here, you just skip the first two steps.  The interrupt is
+>>> delivered to the thread that is running the vCPU directly, so the
+>>> host affinity is bypassed entirely.
+>>> 
+>>> ... unless you are considering the case where the vCPU is blocked
+>>> and the host is processing the posted interrupt wakeup vector.  In
+>>> that case yes, it would be better to set NDST to a CPU matching the host affinity.
+>> 
+>> In my understanding, wakeup vector should have no relationship with
+>> the host affinity of the irq. Wakeup notification event should be
+>> delivered to the pCPU which the vCPU was blocked on. And in kernel's
+>> point of view, the irq is not associated with the wakeup vector, right?
+> 
+> That is correct indeed.  It is not associated to the wakeup vector,
+> hence this patch is right, I think.
+> 
+> However, the wakeup vector has the same function as the VFIO interrupt
+> handler, so you could argue that it is tied to the host affinity
+> rather than the guest.  Let's wait for Yang to answer.
 
-在 12/24/2014 00:24, Felipe Balbi 写道:
-> On Mon, Dec 22, 2014 at 05:26:14PM +0800, Songjun Wu wrote:
->> When unloading the module, the urb request will be dequeued
->> and the completion routine will be excuted.
->> If no urb packet, the urb request will not be added to the endpoint queue
->> and the completion routine pointer in urb request is NULL.
->> Accessing to the NULL function pointer will cause the oops issue.
->> Add the code to check the urb request is in the endpoint queue or not.
->> If the urb request is not in the endpoint queue, a negative error code
->> will be returned.
->
-> have you triggered the NULL pointer oops ? Care to add it to the commit
-> log.
+Actually, that's my original question too. I am wondering what happens if the user changes the assigned device's affinity in host's /proc/irq/? If ignore it is acceptable, then this patch is ok. But it seems the discussion out of my scope, need some experts to tell us their idea since it will impact the user experience. 
 
-Executing the 'insmod g_hid.ko', then executing the 'rmmod g_hid.ko', 
-the NULL pointer oops will be triggered.
+> 
+> Paolo
 
->
-> Also, which commit is this fixing ? Does this need to be backported ?
-> When was the bug introduced ?
->
->> Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
->> ---
->>   drivers/usb/gadget/udc/atmel_usba_udc.c |   12 +++++++++++-
->>   1 file changed, 11 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
->> index ce88237..48629cc 100644
->> --- a/drivers/usb/gadget/udc/atmel_usba_udc.c
->> +++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
->> @@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
->>   {
->>   	struct usba_ep *ep = to_usba_ep(_ep);
->>   	struct usba_udc *udc = ep->udc;
->> -	struct usba_request *req = to_usba_req(_req);
->> +	struct usba_request *req;
->>   	unsigned long flags;
->>   	u32 status;
->>
->> @@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
->>
->>   	spin_lock_irqsave(&udc->lock, flags);
->>
->> +	list_for_each_entry(req, &ep->queue, queue) {
->> +		if (&req->req == _req)
->> +			break;
->> +	}
->> +
->> +	if (&req->req != _req) {
->> +		spin_unlock_irqrestore(&udc->lock, flags);
->> +		return -EINVAL;
->> +	}
->> +
->>   	if (req->using_dma) {
->>   		/*
->>   		 * If this request is currently being transferred,
->> --
->> 1.7.9.5
->>
->
+
+Best regards,
+Yang
+
+
