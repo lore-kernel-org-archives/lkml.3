@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaLXIrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 03:47:48 -0500
-Received: from inca-roads.misterjones.org ([213.251.177.50]:59235 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751063AbaLXIrq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 03:47:46 -0500
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 3/4] arm64: dts: Add mediatek MT8173 SoC and  evaluation board dts and Makefile
-X-PHP-Originating-Script: 0:main.inc
+	id S1751689AbaLXIyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 03:54:40 -0500
+Received: from mail.eperm.de ([89.247.134.16]:51021 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751427AbaLXIyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 03:54:38 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v5 3/8] crypto: AF_ALG: add AEAD support
+Date: Wed, 24 Dec 2014 09:54:33 +0100
+Message-ID: <2159528.zCJB0y2Cap@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141223202401.GA2474@gondor.apana.org.au>
+References: <56740432.V2v4gLHrzS@tachyon.chronox.de> <4537021.IXSvIIgcH4@tachyon.chronox.de> <20141223202401.GA2474@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Wed, 24 Dec 2014 08:47:36 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        <srv_heupstream@mediatek.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mark Brown <broonie@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        <linux-kernel@vger.kernel.org>, Robert Richter <rrichter@cavium.com>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        <linux-arm-kernel@lists.infradead.org>, <yh.chen@mediatek.com>
-Organization: ARM Ltd
-In-Reply-To: <1947751.D0rZorCFoT@wuerfel>
-References: <1418825853-10934-1-git-send-email-eddie.huang@mediatek.com>
- <1419321723.14341.38.camel@mtksdaap41>
- <72aa7f4069a000c6e39c53e328015aa3@www.loen.fr> <1947751.D0rZorCFoT@wuerfel>
-Message-ID: <823671a45699c6b7ca6db5243f111d0b@www.loen.fr>
-User-Agent: Roundcube Webmail/0.7.2
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: arnd@arndb.de, mark.rutland@arm.com, devicetree@vger.kernel.org, srv_heupstream@mediatek.com, pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, catalin.marinas@arm.com, broonie@linaro.org, will.deacon@arm.com, linux-kernel@vger.kernel.org, rrichter@cavium.com, olof@lixom.net, robh+dt@kernel.org, kernel@pengutronix.de, galak@codeaurora.org, matthias.bgg@gmail.com, yingjoe.chen@mediatek.com, tglx@linutronix.de, eddie.huang@mediatek.com, jason@lakedaemon.net, linux-arm-kernel@lists.infradead.org, yh.chen@mediatek.com
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-12-23 21:07, Arnd Bergmann wrote:
-> On Tuesday 23 December 2014 08:43:55 Marc Zyngier wrote:
->>
->> > Neverthless, MT8173 SoC already use 0x10224000 and 0x10225000 as 
->> VGIC
->> > base address.
->>
->> Then its fate is sealed virtualization wise.
->
-> It should still work with 4kb pages on the host, right? Would that 
-> still
-> allow you to have 64kb pages on the guest, or does the guest page 
-> size
-> have to be smaller or equal to the host?
+Am Mittwoch, 24. Dezember 2014, 07:24:01 schrieb Herbert Xu:
 
-Of course, it will still work with 4kB pages, and the guest can still 
-use
-whatever page size it wants, including 64kB. Not very good from a 
-performance
-point of view, but it will work.
+Hi Herbert,
 
-My main worry is that we're already starting to see more and more 
-platforms
-having divergent requirements in their MM setup, and distributions are 
-going
-to struggle to provide a full-featured single kernel image, specially 
-as some
-feel the need to push 64kB pages down to everybody's throat.
+> On Tue, Dec 23, 2014 at 03:52:27PM +0100, Stephan Mueller wrote:
+> > Am Dienstag, 23. Dezember 2014, 22:56:26 schrieb Herbert Xu:
+> > > In fact AEAD is rather awkward because you need to do everything
+> > > in one go.  Perhaps we could adapt our kernel interface to allow
+> > > partial AEAD operations?
+> > 
+> > I am not sure what you are referring to. The invocation does not need to
+> > be in one go. You can have arbitrary number of sendmsg calls. But all
+> > input data needs to be supplied before you call recvmsg.
+> 
+> What I mean is that unlike skcipher we cannot precede until we
+> have the complete input.  So you cannot begin recvmsg until all
+> input has been sent.
 
-Thanks,
+That is right, but isn't that the nature of AEAD ciphers in general? Even if 
+you are in the kernel, you need to have all scatter lists together for one 
+invocation of the AEAD cipher.
 
-         M.
+In case of a threaded application, the recvmsg does not start until all data 
+is in, marked with the missing MSG_MORE -- see aead_readable.
+
+All we can do is allow the user to use multiple system calls to collect all 
+data before the AEAD operation takes place.
+
+Or do you see another way on how to invoke the AEAD operation in a different 
+manner?
+
+The only item that I see that could be made better is the output side: 
+currently the code allows only one and exactly one iovec to point to the 
+output buffer. I would like to allow multiple iovec buffers that are filled 
+with the output of one invocation of the AEAD operation. However, to avoid 
+making a kernel-internal scratch buffer, I would need to somehow link the 
+kernel-internal scatter lists with the iovec buffers. That only works when 
+walking the iovec lists first and call af_alg_make_sg with every iovec entry 
+and create the kernel-internal scatterlist representation. That is followed by 
+the AEAD operation on the scatterlist.
+
+If we agree on walking the iovec list first, then the question arises how many 
+iovec list entries we allow at max. Is 16 entries a sensible value?
+
 -- 
-Fast, cheap, reliable. Pick two.
+Ciao
+Stephan
