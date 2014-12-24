@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244AbaLXAGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 19:06:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46042 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755082AbaLXAGQ (ORCPT
+	id S1756610AbaLXALt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 19:11:49 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:62424 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaLXALs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 19:06:16 -0500
-Date: Tue, 23 Dec 2014 16:06:15 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB patches
-Message-ID: <20141224000615.GA16974@kroah.com>
-References: <1419353591-10300-1-git-send-email-balbi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419353591-10300-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 23 Dec 2014 19:11:48 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: Heiko Stuebner <heiko@sntech.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Zhong <zyw@rock-chips.com>, linux-arm-kernel@lists.infradead.org,
+        Sonny Rao <sonnyrao@chromium.org>, Dylan Reid <dgreid@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cpufreq: suspend cpufreq governors on shutdown
+Date: Tue, 23 Dec 2014 16:11:41 -0800
+Message-Id: <1419379901-17182-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 10:53:11AM -0600, Felipe Balbi wrote:
-> Hi Greg,
-> 
-> Here's my first set of fixes for v3.19-rc cycle. An early
-> Winter Solstice gift for you.
-> 
-> All patches have gone through my 300 randconfigs (no build
-> breakages or new warnings found) and I boot tested with
-> AM437x SK, AM437x IDK, Beagle x15 and Beagle Bone Black.
-> 
-> cheers
-> 
-> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
-> 
->   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.19-rc2
+We should stop cpufreq governors when we shut down the system.  If we
+don't do this, we can end up with this deadlock:
 
-Pulled and pushed out, thanks.
+1. cpufreq governor may be running on a CPU other than CPU0.
+2. In machine_restart() we call smp_send_stop() which stops CPUs.
+   If one of these CPUs was actively running a cpufreq governor
+   then it may have the mutex / spinlock needed to access the main
+   PMIC in the system (perhaps over I2C)
+3. If a machine needs access to the main PMIC in order to shutdown
+   then it will never get it since the mutex was lost when the other
+   CPU stopped.
 
-greg k-h
+Let's avoid the race by stopping the cpufreq governor at shutdown,
+which is a sensible thing to do anyway.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+NOTE: This was developed / tested / on a 3.14 kernel with backports.
+I have confirmed that it compiles on a mainline kernel and doesn't
+crash, but I haven't verified that there isn't some other fix in
+mainline that also fixes this problem.  If you are aware of such a fix
+then please drop this patch.
+
+ drivers/cpufreq/cpufreq.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index a09a29c..bd89721 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -27,6 +27,7 @@
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
++#include <linux/syscore_ops.h>
+ #include <linux/tick.h>
+ #include <trace/events/power.h>
+ 
+@@ -2550,6 +2551,15 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
+ }
+ EXPORT_SYMBOL_GPL(cpufreq_unregister_driver);
+ 
++static void cpufreq_shutdown(void)
++{
++	cpufreq_suspend();
++}
++
++static struct syscore_ops cpufreq_syscore_ops = {
++	.shutdown = cpufreq_shutdown,
++};
++
+ static int __init cpufreq_core_init(void)
+ {
+ 	if (cpufreq_disabled())
+@@ -2558,6 +2568,8 @@ static int __init cpufreq_core_init(void)
+ 	cpufreq_global_kobject = kobject_create();
+ 	BUG_ON(!cpufreq_global_kobject);
+ 
++	register_syscore_ops(&cpufreq_syscore_ops);
++
+ 	return 0;
+ }
+ core_initcall(cpufreq_core_init);
+-- 
+2.2.0.rc0.207.ga3a616c
+
