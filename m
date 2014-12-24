@@ -1,83 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaLXDQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 22:16:20 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:7425 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaLXDOA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 22:14:00 -0500
-From: Wang Long <long.wanglong@huawei.com>
-To: <xuwei5@hisilicon.com>
-CC: <arnd@arndb.de>, <yanhaifeng@gmail.com>, <zhangfei.gao@linaro.org>,
-        <haojian.zhuang@linaro.org>, <khilman@linaro.org>,
-        <lee.jones@linaro.org>, <linux@arm.linux.org.uk>,
-        <long.wanglong@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>,
-        <huxinwei@huawei.com>
-Subject: [PATCH 1/7] ARM: debug: add HiP01 debug uart
-Date: Wed, 24 Dec 2014 03:09:56 +0000
-Message-ID: <1419390602-193123-2-git-send-email-long.wanglong@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
-References: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
+	id S1751501AbaLXDSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 22:18:39 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:49386 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160AbaLXDSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 22:18:37 -0500
+Date: Wed, 24 Dec 2014 03:18:34 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1412240317120.8488@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.200]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.549A2F3B.0036,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 3e1854f0b912ea7066c37f1658ae61a9
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the support of Hisilicon HiP01 debug uart.
-The uart of hip01 is 8250 compatible.
 
-Signed-off-by: Wang Long <long.wanglong@huawei.com>
----
- arch/arm/Kconfig.debug | 10 ++++++++++
- 1 file changed, 10 insertions(+)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 5ddd490..e0cf6ce 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -272,6 +272,14 @@ choice
- 		  Say Y here if you want the debug print routines to direct
- 		  their output to the UART on Highbank based devices.
- 
-+	config DEBUG_HIP01_UART
-+		bool "Hisilicon Hip01 Debug UART"
-+		depends on ARCH_HIP01
-+		select DEBUG_UART_8250
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on HIP01 UART.
-+
- 	config DEBUG_HIP04_UART
- 		bool "Hisilicon HiP04 Debug UART"
- 		depends on ARCH_HIP04
-@@ -1252,6 +1260,7 @@ config DEBUG_UART_PHYS
- 	default 0x16000000 if ARCH_INTEGRATOR
- 	default 0x18000300 if DEBUG_BCM_5301X
- 	default 0x1c090000 if DEBUG_VEXPRESS_UART0_RS1
-+	default 0x20001000 if DEBUG_HIP01_UART
- 	default 0x20060000 if DEBUG_RK29_UART0
- 	default 0x20064000 if DEBUG_RK29_UART1 || DEBUG_RK3X_UART2
- 	default 0x20068000 if DEBUG_RK29_UART2 || DEBUG_RK3X_UART3
-@@ -1394,6 +1403,7 @@ config DEBUG_UART_VIRT
- 	default 0xfef36000 if DEBUG_HIGHBANK_UART
- 	default 0xfefff700 if ARCH_IOP33X
- 	default 0xff003000 if DEBUG_U300_UART
-+	default 0xffd01000 if DEBUG_HIP01_UART
- 	default DEBUG_UART_PHYS if !MMU
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
- 		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_MESON_UARTAO || \
--- 
-1.8.3.4
+Hi Linus,
 
+Xmas fixes pull:
+
+core: one atomic fix, revert the WARN_ON dumb buffers patch.
+agp: fixup Dave J.
+nouveau: fix 3.18 regression for old userspace
+tegra fixes: vblank and iommu fixes
+amdkfd: fix bugs shown by testing with userspace, init apertures once
+msm:  hdmi fixes and cleanup
+i915: misc fixes
+
+There is also a link ordering fix that I've asked to be cc'ed to you,
+putting iommu before gpu, it fixes an issue with amdkfd when things are 
+all in the kernel, but I didn't like sending it via my tree without 
+discussion.
+
+I'll probably be a bit on/off for a few weeks with pulls now, due to
+holidays and LCA, so don't be surprised if stuff gets a bit backed up,
+and things end up a bit large due to lag.
+
+Dave.
+
+The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+
+  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to da6b51d007da17fd394405055e2f0109ec5f05f4:
+
+  Revert "drm/gem: Warn on illegal use of the dumb buffer interface v2" (2014-12-24 13:13:22 +1000)
+
+----------------------------------------------------------------
+Alexey Skidanov (1):
+      amdkfd: init aperture once per process
+
+Chris Wilson (3):
+      drm/i915: Invalidate media caches on gen7
+      drm/i915: Force the CS stall for invalidate flushes
+      drm/i915: Disable PSMI sleep messages on all rings around context switches
+
+Dave Airlie (7):
+      nouveau: bring back legacy mmap handler
+      Merge branch 'msm-fixes-3.19' of git://people.freedesktop.org/~robclark/linux into drm-fixes
+      Merge tag 'topic/atomic-fixes-2014-12-17' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge tag 'drm-intel-next-fixes-2014-12-17' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge tag 'drm/tegra/for-3.19-rc1-fixes' of git://people.freedesktop.org/~tagr/linux into drm-fixes
+      Merge tag 'amdkfd-fixes-2014-12-23' of git://people.freedesktop.org/~gabbayo/linux into drm-fixes
+      Revert "drm/gem: Warn on illegal use of the dumb buffer interface v2"
+
+Dave Jones (1):
+      agp: Fix up email address & attributions in AGP MODULE_AUTHOR tags
+
+Imre Deak (3):
+      drm/i915: vlv: fix IRQ masking when uninstalling interrupts
+      drm/i915: move RPS PM_IER enabling to gen6_enable_rps_interrupts
+      drm/i915: sanitize RPS resetting during GPU reset
+
+Jilai Wang (2):
+      drm/msm/hdmi: enable regulators before clocks to avoid warnings
+      drm/msm/hdmi: rework HDMI IRQ handler
+
+Markus Elfring (2):
+      drm/msm: Deletion of unnecessary checks before two function calls
+      drm/msm: Deletion of unnecessary checks before the function call "release_firmware"
+
+Oded Gabbay (3):
+      drm/amd: Add get_fw_version to kfd-->kgd interface
+      drm/radeon: Add implementation of get_fw_version
+      amdkfd: Display MEC fw version in topology node
+
+Rob Clark (3):
+      drm/atomic: fix potential null ptr on plane enable
+      drm/msm: block incoming update on pending updates
+      drm/msm/mdp5: update irqs on crtc<->encoder link change
+
+Sean Paul (1):
+      drm/tegra: dc: Select root window for event dispatch
+
+Thierry Reding (7):
+      drm/irq: Add drm_crtc_send_vblank_event()
+      drm/irq: Add drm_crtc_handle_vblank()
+      drm/irq: Add drm_crtc_vblank_count()
+      drm/tegra: dc: Consistently use the same pipe
+      drm/tegra: dc: Fix a potential race on page-flip completion
+      drm/tegra: gem: Flush buffer objects upon allocation
+      drm/tegra: gem: Use the proper size for GEM objects
+
+ drivers/char/agp/ali-agp.c                      |  2 +-
+ drivers/char/agp/amd64-agp.c                    |  2 +-
+ drivers/char/agp/ati-agp.c                      |  2 +-
+ drivers/char/agp/backend.c                      |  2 +-
+ drivers/char/agp/intel-agp.c                    |  2 +-
+ drivers/char/agp/intel-gtt.c                    |  2 +-
+ drivers/char/agp/nvidia-agp.c                   |  2 +-
+ drivers/char/agp/via-agp.c                      |  2 +-
+ drivers/gpu/drm/amd/amdkfd/kfd_chardev.c        |  4 --
+ drivers/gpu/drm/amd/amdkfd/kfd_flat_memory.c    |  6 +--
+ drivers/gpu/drm/amd/amdkfd/kfd_process.c        |  9 ++++
+ drivers/gpu/drm/amd/amdkfd/kfd_topology.c       |  8 ++-
+ drivers/gpu/drm/amd/include/kgd_kfd_interface.h | 15 ++++++
+ drivers/gpu/drm/drm_atomic_helper.c             |  2 +-
+ drivers/gpu/drm/drm_irq.c                       | 60 +++++++++++++++++++++
+ drivers/gpu/drm/i915/i915_drv.c                 |  6 ++-
+ drivers/gpu/drm/i915/i915_drv.h                 |  5 +-
+ drivers/gpu/drm/i915/i915_gem.c                 | 28 ++--------
+ drivers/gpu/drm/i915/i915_gem_context.c         | 48 ++++++++++++++---
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c      |  3 --
+ drivers/gpu/drm/i915/i915_irq.c                 | 18 +++++--
+ drivers/gpu/drm/i915/i915_reg.h                 |  3 ++
+ drivers/gpu/drm/i915/intel_pm.c                 | 28 ++++++----
+ drivers/gpu/drm/i915/intel_ringbuffer.c         |  3 ++
+ drivers/gpu/drm/msm/adreno/adreno_gpu.c         |  6 +--
+ drivers/gpu/drm/msm/hdmi/hdmi_connector.c       | 53 ++++++++-----------
+ drivers/gpu/drm/msm/mdp/mdp4/mdp4_crtc.c        | 11 +---
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c        | 12 +----
+ drivers/gpu/drm/msm/mdp/mdp5/mdp5_kms.c         | 12 +----
+ drivers/gpu/drm/msm/mdp/mdp_kms.c               |  9 ++--
+ drivers/gpu/drm/msm/mdp/mdp_kms.h               |  2 +-
+ drivers/gpu/drm/msm/msm_atomic.c                | 69 ++++++++++++++++++++++++-
+ drivers/gpu/drm/msm/msm_drv.c                   |  1 +
+ drivers/gpu/drm/msm/msm_drv.h                   |  4 ++
+ drivers/gpu/drm/msm/msm_fbdev.c                 |  3 +-
+ drivers/gpu/drm/msm/msm_gem.c                   |  3 +-
+ drivers/gpu/drm/nouveau/nouveau_display.c       |  9 ----
+ drivers/gpu/drm/nouveau/nouveau_gem.c           |  3 --
+ drivers/gpu/drm/nouveau/nouveau_ttm.c           |  3 +-
+ drivers/gpu/drm/radeon/radeon_gem.c             | 26 ++--------
+ drivers/gpu/drm/radeon/radeon_kfd.c             | 53 +++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_object.c          |  3 --
+ drivers/gpu/drm/tegra/dc.c                      | 48 ++++++++++++-----
+ drivers/gpu/drm/tegra/drm.c                     | 16 +++---
+ drivers/gpu/drm/tegra/gem.c                     | 52 ++++++++++++++-----
+ include/drm/drmP.h                              |  4 ++
+ include/drm/drm_gem.h                           |  7 ---
+ 47 files changed, 450 insertions(+), 221 deletions(-)
