@@ -1,121 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551AbaLXRot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 12:44:49 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:55642 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaLXRor (ORCPT
+	id S1751596AbaLXRun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 12:50:43 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41670 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaLXRum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 12:44:47 -0500
+	Wed, 24 Dec 2014 12:50:42 -0500
+Date: Wed, 24 Dec 2014 18:50:40 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: DRAM unreliable under specific access patern
+Message-ID: <20141224175040.GA28791@amd>
+References: <20141224163823.GA17035@amd>
+ <CALCETrW8nrKSZ800C+WaHMK4DCuWnD9TG3dYo7cZwm5j4CpNJQ@mail.gmail.com>
+ <20141224172506.GA23683@amd>
+ <CALCETrVP2PtB82x4JFFsXDomNKgRTk_3LoMyyk5KCXN=f8_DJw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <549AF9C0.7010602@ti.com>
-References: <1418771379-24369-1-git-send-email-dtor@chromium.org>
-	<1418771379-24369-4-git-send-email-dtor@chromium.org>
-	<549AEE52.9080607@ti.com>
-	<CAE_wzQ92VK6Jv+j-LDTupMJzJj_AZyAqUe2Vxo5YRhkFEFF=sw@mail.gmail.com>
-	<549AF4F3.1090600@ti.com>
-	<CAE_wzQ-WQE1q4njE4TRFz55zs1+6SH7XZqXrk2tToyX-hRz+Fg@mail.gmail.com>
-	<549AF9C0.7010602@ti.com>
-Date: Wed, 24 Dec 2014 09:44:45 -0800
-Message-ID: <CAE_wzQ_djUapN-hwHUttcrfzUiWPHvW9OxV7zqrwidtYh8_FZg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] PM / OPP: take RCU lock in dev_pm_opp_get_opp_count
-From: Dmitry Torokhov <dtor@chromium.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Dmitry Torokhov <dtor@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Stefan Wahren <stefan.wahren@i2se.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVP2PtB82x4JFFsXDomNKgRTk_3LoMyyk5KCXN=f8_DJw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 9:37 AM, Nishanth Menon <nm@ti.com> wrote:
-> On 12/24/2014 11:31 AM, Dmitry Torokhov wrote:
->> On Wed, Dec 24, 2014 at 9:16 AM, Nishanth Menon <nm@ti.com> wrote:
->>> On 12/24/2014 11:09 AM, Dmitry Torokhov wrote:
->>>> On Wed, Dec 24, 2014 at 8:48 AM, Nishanth Menon <nm@ti.com> wrote:
->>>>> On 12/16/2014 05:09 PM, Dmitry Torokhov wrote:
->>>>>> A lot of callers are missing the fact that dev_pm_opp_get_opp_count
->>>>>> needs to be called under RCU lock. Given that RCU locks can safely be
->>>>>> nested, instead of providing *_locked() API, let's take RCU lock inside
->>>>>> dev_pm_opp_get_opp_count() and leave callers as is.
->>>>>
->>>>> While it is true that we can safely do nested RCU locks, This also
->>>>> encourages wrong usage.
->>>>>
->>>>> count = dev_pm_opp_get_opp_count(dev)
->>>>> ^^ point A
->>>>> array   = kzalloc(count * sizeof (*array));
->>>>> rcu_read_lock();
->>>>> ^^ point B
->>>>> .. work down the list and add OPPs..
->>>>> ...
->>>>>
->>>>> Between A and B, we might have had list modification (dynamic OPP
->>>>> addition or deletion) - which implies that the count is no longer
->>>>> accurate between point A and B. instead, enforcing callers to have the
->>>>> responsibility of rcu_lock is exactly what we have to do since the OPP
->>>>> library has no clue how to enforce pointer or data accuracy.
->>>>
->>>> No, you seem to have a misconception that rcu_lock protects you past
->>>> the point B, but that is also wrong. The only thing rcu "lock"
->>>> provides is safe traversing the list and guarantee that elements will
->>>> not disappear while you are referencing them, but list can both
->>>> contract and expand under you. In that regard code in
->>>> drivers/cpufreq/cpufreq_opp.c is utterly wrong. If you want to count
->>>> the list and use number of elements you should be taking a mutex.
->>>> Luckily all cpufreq drivers at the moment only want to see if OPP
->>>> table is empty or not, so as a stop-gap we can take rcu_lock
->>>> automatically as we are getting count. We won't get necessarily
->>>> accurate result, but at least we will be safe traversing the list.
->>>
->>> So, instead of a half solution, lets consider this in the realm of
->>> dynamic OPPs as well. agreed to the point that we only have safe
->>> traversal and pointer validity. the real problem however is with
->>> "dynamic OPPs" (one of the original reasons why i did not add dynamic
->>> OPPs in the original version was to escape from it's complexity for
->>> users - anyways.. we are beyond that now). if OPPs can be removed on
->>> the fly, we need the following:
->>> a) use OPP notifiers to adequately handle list modification
->>> b) lock down list modification (and associated APIs) to ensure that
->>> the original cpufreq /devfreq list is correct.
->>>
->>> I still dont see the need to do this half solution.
->>
->> The need for half solution at the moment is that you can't safely
->> travel the lists and may crash on an invalid pointer.
->
-> So, fix the cpufreq-dt instead of moving the hack inside OPP driver.
+On Wed 2014-12-24 09:38:22, Andy Lutomirski wrote:
+> On Wed, Dec 24, 2014 at 9:25 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> > On Wed 2014-12-24 09:13:32, Andy Lutomirski wrote:
+> >> On Wed, Dec 24, 2014 at 8:38 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> >> > Hi!
+> >> >
+> >> > It seems that it is easy to induce DRAM bit errors by doing repeated
+> >> > reads from adjacent memory cells on common hw. Details are at
+> >> >
+> >> > https://www.ece.cmu.edu/~safari/pubs/kim-isca14.pdf
+> >> >
+> >> > . Older memory modules seem to work better, and ECC should detect
+> >> > this. Paper has inner loop that should trigger this.
+> >> >
+> >> > Workarounds seem to be at hardware level, and tricky, too.
+> >>
+> >> One mostly-effective solution would be to stop buying computers
+> >> without ECC.  Unfortunately, no one seems to sell non-server chips
+> >> that can do ECC.
+> >
+> > Or keep using old computers :-).
+> >
+> >> > Does anyone have implementation of detector? Any ideas how to work
+> >> > around it in software?
+> >> >
+> >>
+> >> Platform-dependent page coloring with very strict, and impossible to
+> >> implement fully correctly, page allocation constraints?
+> >
+> > This seems to be at cacheline level, not at page level, if I
+> > understand it correctly.
+> >
+> > So the problem would is: I have something mapped read-only, and I can
+> > still cause bitflips in it.
+> >
+> > Hmm. So it is pretty obviously a security problem, no need for
+> > java. Just do some bit flips in binary root is going to run, and it
+> > will crash for him. You can map binaries read-only, so you have enough
+> > access.
 
-I started there, but it is not only cpufreq-dt that got it wrong. I
-considered changing individual drivers (Viresh also suggested adding
-_locked() variant API), but decided patching opp was less invasive for
-now.
+> Right.  So we're mostly screwed.
 
->
->>
->> Going forward I think (I mentioned that in my other email) that we
->> should rework the OPP API so that callers fetch OPP table object for a
->> device at init/probe time and then use it to get OPPs. This way won't
->> have to travel two lists any time we want to reference an OPP.
->>
->> And instead of relying notifiers, maybe look into using OPP tables
->> directly in cpufreq drivers instead of converting OPP into static-ish
->> cpufreq tables.
->>
->
-> If you'd like a proper fix for OPP usage, I am all open to see such a
-> proposal that works not just for cpufreq, but also for devfreq as well.
+Well... We could periodically scrub (every few miliseconds) pages
+mapped to userspace. We might be able to do some magic and disallow
+cache flushes to userspace programs. We might be able to use
+performance metrics to detect heavy readers.
 
-Yeah, let's see what kind of time I have ;)
+We might be able to reprogram DRAM controller to refresh more often.
 
-Thanks.
-
+Or we may switch to AMD systems as they seem to be less suspectible
+:-).
+								Pavel
 -- 
-Dmitry
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
