@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaLXMXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 07:23:10 -0500
-Received: from mga14.intel.com ([192.55.52.115]:42326 "EHLO mga14.intel.com"
+	id S1752539AbaLXMal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 07:30:41 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39291 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602AbaLXMXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 07:23:03 -0500
+	id S1752029AbaLXMXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 07:23:09 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,638,1413270000"; 
-   d="scan'208";a="628669807"
+   d="scan'208";a="659523457"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: akpm@linux-foundation.org
 Cc: peterz@infradead.org, mingo@kernel.org, davej@redhat.com,
         sasha.levin@oracle.com, hughd@google.com, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 07/38] mm: remove rest usage of VM_NONLINEAR and pte_file()
-Date: Wed, 24 Dec 2014 14:22:15 +0200
-Message-Id: <1419423766-114457-8-git-send-email-kirill.shutemov@linux.intel.com>
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Richard Kuo <rkuo@codeaurora.org>
+Subject: [PATCH 18/38] hexagon: drop _PAGE_FILE and pte_file()-related helpers
+Date: Wed, 24 Dec 2014 14:22:26 +0200
+Message-Id: <1419423766-114457-19-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -25,316 +26,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One bit in ->vm_flags is unused now!
+We've replaced remap_file_pages(2) implementation with emulation.
+Nobody creates non-linear mapping anymore.
+
+This patch also increase number of bits availble for swap offset.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Richard Kuo <rkuo@codeaurora.org>
 ---
- drivers/gpu/drm/drm_vma_manager.c |  3 +-
- include/linux/mm.h                |  1 -
- include/linux/swapops.h           |  4 +-
- mm/debug.c                        |  1 -
- mm/gup.c                          |  2 +-
- mm/ksm.c                          |  2 +-
- mm/madvise.c                      |  4 +-
- mm/memcontrol.c                   |  4 +-
- mm/memory.c                       | 78 +++++++++++++++++++--------------------
- mm/mincore.c                      |  5 +--
- mm/mprotect.c                     |  2 +-
- mm/mremap.c                       |  2 -
- mm/msync.c                        |  5 +--
- 13 files changed, 47 insertions(+), 66 deletions(-)
+ arch/hexagon/include/asm/pgtable.h | 60 ++++++++++----------------------------
+ 1 file changed, 16 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_vma_manager.c b/drivers/gpu/drm/drm_vma_manager.c
-index 63b471205072..68c1f32fb086 100644
---- a/drivers/gpu/drm/drm_vma_manager.c
-+++ b/drivers/gpu/drm/drm_vma_manager.c
-@@ -50,8 +50,7 @@
+diff --git a/arch/hexagon/include/asm/pgtable.h b/arch/hexagon/include/asm/pgtable.h
+index d8bd54fa431e..6e35e71d2aea 100644
+--- a/arch/hexagon/include/asm/pgtable.h
++++ b/arch/hexagon/include/asm/pgtable.h
+@@ -62,13 +62,6 @@ extern unsigned long zero_page_mask;
+ #define _PAGE_ACCESSED	(1<<2)
+ 
+ /*
+- * _PAGE_FILE is only meaningful if _PAGE_PRESENT is false, while
+- * _PAGE_DIRTY is only meaningful if _PAGE_PRESENT is true.
+- * So we can overload the bit...
+- */
+-#define _PAGE_FILE	_PAGE_DIRTY /* set:  pagecache, unset = swap */
+-
+-/*
+  * For now, let's say that Valid and Present are the same thing.
+  * Alternatively, we could say that it's the "or" of R, W, and X
+  * permissions.
+@@ -456,57 +449,36 @@ static inline int pte_exec(pte_t pte)
+ #define pgtable_cache_init()    do { } while (0)
+ 
+ /*
+- * Swap/file PTE definitions.  If _PAGE_PRESENT is zero, the rest of the
+- * PTE is interpreted as swap information.  Depending on the _PAGE_FILE
+- * bit, the remaining free bits are eitehr interpreted as a file offset
+- * or a swap type/offset tuple.  Rather than have the TLB fill handler
+- * test _PAGE_PRESENT, we're going to reserve the permissions bits
+- * and set them to all zeros for swap entries, which speeds up the
+- * miss handler at the cost of 3 bits of offset.  That trade-off can
+- * be revisited if necessary, but Hexagon processor architecture and
+- * target applications suggest a lot of TLB misses and not much swap space.
++ * Swap/file PTE definitions.  If _PAGE_PRESENT is zero, the rest of the PTE is
++ * interpreted as swap information.  The remaining free bits are interpreted as
++ * swap type/offset tuple.  Rather than have the TLB fill handler test
++ * _PAGE_PRESENT, we're going to reserve the permissions bits and set them to
++ * all zeros for swap entries, which speeds up the miss handler at the cost of
++ * 3 bits of offset.  That trade-off can be revisited if necessary, but Hexagon
++ * processor architecture and target applications suggest a lot of TLB misses
++ * and not much swap space.
   *
-  * You must not use multiple offset managers on a single address_space.
-  * Otherwise, mm-core will be unable to tear down memory mappings as the VM will
-- * no longer be linear. Please use VM_NONLINEAR in that case and implement your
-- * own offset managers.
-+ * no longer be linear.
+  * Format of swap PTE:
+  *	bit	0:	Present (zero)
+- *	bit	1:	_PAGE_FILE (zero)
+- *	bits	2-6:	swap type (arch independent layer uses 5 bits max)
+- *	bits	7-9:	bits 2:0 of offset
+- *	bits 10-12:	effectively _PAGE_PROTNONE (all zero)
+- *	bits 13-31:  bits 21:3 of swap offset
+- *
+- * Format of file PTE:
+- *	bit	0:	Present (zero)
+- *	bit	1:	_PAGE_FILE (zero)
+- *	bits	2-9:	bits 7:0 of offset
+- *	bits 10-12:	effectively _PAGE_PROTNONE (all zero)
+- *	bits 13-31:  bits 26:8 of swap offset
++ *	bits	1-5:	swap type (arch independent layer uses 5 bits max)
++ *	bits	6-9:	bits 3:0 of offset
++ *	bits	10-12:	effectively _PAGE_PROTNONE (all zero)
++ *	bits	13-31:  bits 22:4 of swap offset
   *
-  * This offset manager works on page-based addresses. That is, every argument
-  * and return code (with the exception of drm_vma_node_offset_addr()) is given
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 6840c0dc8a06..43338946cb83 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -138,7 +138,6 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_ACCOUNT	0x00100000	/* Is a VM accounted object */
- #define VM_NORESERVE	0x00200000	/* should the VM suppress accounting */
- #define VM_HUGETLB	0x00400000	/* Huge TLB Page VM */
--#define VM_NONLINEAR	0x00800000	/* Is non-linear (remap_file_pages) */
- #define VM_ARCH_1	0x01000000	/* Architecture-specific flag */
- #define VM_ARCH_2	0x02000000
- #define VM_DONTDUMP	0x04000000	/* Do not include in the core dump */
-diff --git a/include/linux/swapops.h b/include/linux/swapops.h
-index 6adfb7bfbf44..50cbc876be56 100644
---- a/include/linux/swapops.h
-+++ b/include/linux/swapops.h
-@@ -54,7 +54,7 @@ static inline pgoff_t swp_offset(swp_entry_t entry)
- /* check whether a pte points to a swap entry */
- static inline int is_swap_pte(pte_t pte)
- {
--	return !pte_none(pte) && !pte_present_nonuma(pte) && !pte_file(pte);
-+	return !pte_none(pte) && !pte_present_nonuma(pte);
- }
- #endif
+  * The split offset makes some of the following macros a little gnarly,
+  * but there's plenty of precedent for this sort of thing.
+  */
+-#define PTE_FILE_MAX_BITS     27
  
-@@ -66,7 +66,6 @@ static inline swp_entry_t pte_to_swp_entry(pte_t pte)
- {
- 	swp_entry_t arch_entry;
+ /* Used for swap PTEs */
+-#define __swp_type(swp_pte)		(((swp_pte).val >> 2) & 0x1f)
++#define __swp_type(swp_pte)		(((swp_pte).val >> 1) & 0x1f)
  
--	BUG_ON(pte_file(pte));
- 	if (pte_swp_soft_dirty(pte))
- 		pte = pte_swp_clear_soft_dirty(pte);
- 	arch_entry = __pte_to_swp_entry(pte);
-@@ -82,7 +81,6 @@ static inline pte_t swp_entry_to_pte(swp_entry_t entry)
- 	swp_entry_t arch_entry;
+ #define __swp_offset(swp_pte) \
+-	((((swp_pte).val >> 7) & 0x7) | (((swp_pte).val >> 10) & 0x003ffff8))
++	((((swp_pte).val >> 6) & 0xf) | (((swp_pte).val >> 9) & 0x7ffff0))
  
- 	arch_entry = __swp_entry(swp_type(entry), swp_offset(entry));
--	BUG_ON(pte_file(__swp_entry_to_pte(arch_entry)));
- 	return __swp_entry_to_pte(arch_entry);
- }
- 
-diff --git a/mm/debug.c b/mm/debug.c
-index 0e58f3211f89..d69cb5a7ba9a 100644
---- a/mm/debug.c
-+++ b/mm/debug.c
-@@ -130,7 +130,6 @@ static const struct trace_print_flags vmaflags_names[] = {
- 	{VM_ACCOUNT,			"account"	},
- 	{VM_NORESERVE,			"noreserve"	},
- 	{VM_HUGETLB,			"hugetlb"	},
--	{VM_NONLINEAR,			"nonlinear"	},
- #if defined(CONFIG_X86)
- 	{VM_PAT,			"pat"		},
- #elif defined(CONFIG_PPC)
-diff --git a/mm/gup.c b/mm/gup.c
-index a900759cc807..f8b2838c88fa 100644
---- a/mm/gup.c
-+++ b/mm/gup.c
-@@ -55,7 +55,7 @@ retry:
- 		 */
- 		if (likely(!(flags & FOLL_MIGRATION)))
- 			goto no_page;
--		if (pte_none(pte) || pte_file(pte))
-+		if (pte_none(pte))
- 			goto no_page;
- 		entry = pte_to_swp_entry(pte);
- 		if (!is_migration_entry(entry))
-diff --git a/mm/ksm.c b/mm/ksm.c
-index d247efab5073..2d12da1fda05 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1748,7 +1748,7 @@ int ksm_madvise(struct vm_area_struct *vma, unsigned long start,
- 		 */
- 		if (*vm_flags & (VM_MERGEABLE | VM_SHARED  | VM_MAYSHARE   |
- 				 VM_PFNMAP    | VM_IO      | VM_DONTEXPAND |
--				 VM_HUGETLB | VM_NONLINEAR | VM_MIXEDMAP))
-+				 VM_HUGETLB | VM_MIXEDMAP))
- 			return 0;		/* just ignore the advice */
- 
- #ifdef VM_SAO
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 8d74d7617598..d03e1bbd3af3 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -164,7 +164,7 @@ static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
- 		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
- 		pte_unmap_unlock(orig_pte, ptl);
- 
--		if (pte_present(pte) || pte_none(pte) || pte_file(pte))
-+		if (pte_present(pte) || pte_none(pte))
- 			continue;
- 		entry = pte_to_swp_entry(pte);
- 		if (unlikely(non_swap_entry(entry)))
-@@ -437,7 +437,7 @@ static long madvise_remove(struct vm_area_struct *vma,
- 
- 	*prev = NULL;	/* tell sys_madvise we drop mmap_sem */
- 
--	if (vma->vm_flags & (VM_LOCKED|VM_NONLINEAR|VM_HUGETLB))
-+	if (vma->vm_flags & (VM_LOCKED | VM_HUGETLB))
- 		return -EINVAL;
- 
- 	f = vma->vm_file;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index ef91e856c7e4..408f189d24eb 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4937,8 +4937,6 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
- 	mapping = vma->vm_file->f_mapping;
- 	if (pte_none(ptent))
- 		pgoff = linear_page_index(vma, addr);
--	else /* pte_file(ptent) is true */
--		pgoff = pte_to_pgoff(ptent);
- 
- 	/* page is moved even if it's not RSS of this task(page-faulted). */
- #ifdef CONFIG_SWAP
-@@ -4970,7 +4968,7 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
- 		page = mc_handle_present_pte(vma, addr, ptent);
- 	else if (is_swap_pte(ptent))
- 		page = mc_handle_swap_pte(vma, addr, ptent, &ent);
--	else if (pte_none(ptent) || pte_file(ptent))
-+	else if (pte_none(ptent))
- 		page = mc_handle_file_pte(vma, addr, ptent, &ent);
- 
- 	if (!page && !ent.val)
-diff --git a/mm/memory.c b/mm/memory.c
-index 587522630b10..f70c9568ea31 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -811,42 +811,40 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 
- 	/* pte contains position in swap or file, so copy. */
- 	if (unlikely(!pte_present(pte))) {
--		if (!pte_file(pte)) {
--			swp_entry_t entry = pte_to_swp_entry(pte);
+ #define __swp_entry(type, offset) \
+ 	((swp_entry_t)	{ \
+-		((type << 2) | \
+-		 ((offset & 0x3ffff8) << 10) | ((offset & 0x7) << 7)) })
 -
--			if (likely(!non_swap_entry(entry))) {
--				if (swap_duplicate(entry) < 0)
--					return entry.val;
+-/* Used for file PTEs */
+-#define pte_file(pte) \
+-	((pte_val(pte) & (_PAGE_FILE | _PAGE_PRESENT)) == _PAGE_FILE)
 -
--				/* make sure dst_mm is on swapoff's mmlist. */
--				if (unlikely(list_empty(&dst_mm->mmlist))) {
--					spin_lock(&mmlist_lock);
--					if (list_empty(&dst_mm->mmlist))
--						list_add(&dst_mm->mmlist,
--							 &src_mm->mmlist);
--					spin_unlock(&mmlist_lock);
--				}
--				rss[MM_SWAPENTS]++;
--			} else if (is_migration_entry(entry)) {
--				page = migration_entry_to_page(entry);
+-#define pte_to_pgoff(pte) \
+-	(((pte_val(pte) >> 2) & 0xff) | ((pte_val(pte) >> 5) & 0x07ffff00))
 -
--				if (PageAnon(page))
--					rss[MM_ANONPAGES]++;
--				else
--					rss[MM_FILEPAGES]++;
--
--				if (is_write_migration_entry(entry) &&
--				    is_cow_mapping(vm_flags)) {
--					/*
--					 * COW mappings require pages in both
--					 * parent and child to be set to read.
--					 */
--					make_migration_entry_read(&entry);
--					pte = swp_entry_to_pte(entry);
--					if (pte_swp_soft_dirty(*src_pte))
--						pte = pte_swp_mksoft_dirty(pte);
--					set_pte_at(src_mm, addr, src_pte, pte);
--				}
-+		swp_entry_t entry = pte_to_swp_entry(pte);
-+
-+		if (likely(!non_swap_entry(entry))) {
-+			if (swap_duplicate(entry) < 0)
-+				return entry.val;
-+
-+			/* make sure dst_mm is on swapoff's mmlist. */
-+			if (unlikely(list_empty(&dst_mm->mmlist))) {
-+				spin_lock(&mmlist_lock);
-+				if (list_empty(&dst_mm->mmlist))
-+					list_add(&dst_mm->mmlist,
-+							&src_mm->mmlist);
-+				spin_unlock(&mmlist_lock);
-+			}
-+			rss[MM_SWAPENTS]++;
-+		} else if (is_migration_entry(entry)) {
-+			page = migration_entry_to_page(entry);
-+
-+			if (PageAnon(page))
-+				rss[MM_ANONPAGES]++;
-+			else
-+				rss[MM_FILEPAGES]++;
-+
-+			if (is_write_migration_entry(entry) &&
-+					is_cow_mapping(vm_flags)) {
-+				/*
-+				 * COW mappings require pages in both
-+				 * parent and child to be set to read.
-+				 */
-+				make_migration_entry_read(&entry);
-+				pte = swp_entry_to_pte(entry);
-+				if (pte_swp_soft_dirty(*src_pte))
-+					pte = pte_swp_mksoft_dirty(pte);
-+				set_pte_at(src_mm, addr, src_pte, pte);
- 			}
- 		}
- 		goto out_set_pte;
-@@ -1020,11 +1018,9 @@ int copy_page_range(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 	 * readonly mappings. The tradeoff is that copy_page_range is more
- 	 * efficient than faulting.
- 	 */
--	if (!(vma->vm_flags & (VM_HUGETLB | VM_NONLINEAR |
--			       VM_PFNMAP | VM_MIXEDMAP))) {
--		if (!vma->anon_vma)
--			return 0;
--	}
-+	if (!(vma->vm_flags & (VM_HUGETLB | VM_PFNMAP | VM_MIXEDMAP)) &&
-+			!vma->anon_vma)
-+		return 0;
+-#define pgoff_to_pte(off) \
+-	((pte_t) { ((((off) & 0x7ffff00) << 5) | (((off) & 0xff) << 2)\
+-	| _PAGE_FILE) })
++		((type << 1) | \
++		 ((offset & 0x7ffff0) << 9) | ((offset & 0xf) << 6)) })
  
- 	if (is_vm_hugetlb_page(vma))
- 		return copy_hugetlb_page_range(dst_mm, src_mm, vma);
-diff --git a/mm/mincore.c b/mm/mincore.c
-index c8c528b36641..e5f8c032dc72 100644
---- a/mm/mincore.c
-+++ b/mm/mincore.c
-@@ -131,10 +131,7 @@ static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 			mincore_unmapped_range(vma, addr, next, vec);
- 		else if (pte_present(pte))
- 			*vec = 1;
--		else if (pte_file(pte)) {
--			pgoff = pte_to_pgoff(pte);
--			*vec = mincore_page(vma->vm_file->f_mapping, pgoff);
--		} else { /* pte is a swap entry */
-+		else { /* pte is a swap entry */
- 			swp_entry_t entry = pte_to_swp_entry(pte);
- 
- 			if (non_swap_entry(entry)) {
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index ace93454ce8e..33121662f08b 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -105,7 +105,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 			}
- 			if (updated)
- 				pages++;
--		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
-+		} else if (IS_ENABLED(CONFIG_MIGRATION)) {
- 			swp_entry_t entry = pte_to_swp_entry(oldpte);
- 
- 			if (is_write_migration_entry(entry)) {
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 17fa018f5f39..57dadc025c64 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -81,8 +81,6 @@ static pte_t move_soft_dirty_pte(pte_t pte)
- 		pte = pte_mksoft_dirty(pte);
- 	else if (is_swap_pte(pte))
- 		pte = pte_swp_mksoft_dirty(pte);
--	else if (pte_file(pte))
--		pte = pte_file_mksoft_dirty(pte);
- #endif
- 	return pte;
- }
-diff --git a/mm/msync.c b/mm/msync.c
-index 992a1673d488..bb04d53ae852 100644
---- a/mm/msync.c
-+++ b/mm/msync.c
-@@ -86,10 +86,7 @@ SYSCALL_DEFINE3(msync, unsigned long, start, size_t, len, int, flags)
- 				(vma->vm_flags & VM_SHARED)) {
- 			get_file(file);
- 			up_read(&mm->mmap_sem);
--			if (vma->vm_flags & VM_NONLINEAR)
--				error = vfs_fsync(file, 1);
--			else
--				error = vfs_fsync_range(file, fstart, fend, 1);
-+			error = vfs_fsync_range(file, fstart, fend, 1);
- 			fput(file);
- 			if (error || start >= end)
- 				goto out;
+ /*  Oh boy.  There are a lot of possible arch overrides found in this file.  */
+ #include <asm-generic/pgtable.h>
 -- 
 2.1.3
 
