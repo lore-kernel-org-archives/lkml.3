@@ -1,157 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaLXVbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 16:31:04 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:39119 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaLXVbB (ORCPT
+	id S1751692AbaLXVkw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 16:40:52 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504AbaLXVkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 16:31:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
-References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
-From: David Matlack <dmatlack@google.com>
-Date: Wed, 24 Dec 2014 13:30:40 -0800
-Message-ID: <CALzav=fuOieDmkWviyzLFyTuyray0=oZWTaOUCBUHRAmiKynmg@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
- pvclock reader
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Dec 2014 16:40:51 -0500
+From: Richard Weinberger <richard@nod.at>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, rientjes@google.com, atomlin@redhat.com,
+        keescook@chromium.org, daeseok.youn@gmail.com, tglx@linutronix.de,
+        vdavydov@parallels.com, riel@redhat.com, oleg@redhat.com,
+        akpm@linux-foundation.org, peterz@infradead.org, mingo@redhat.com,
+        viro@zeniv.linux.org.uk, luto@amacapital.net,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] [RFC] Deter exploit bruteforcing
+Date: Wed, 24 Dec 2014 22:39:27 +0100
+Message-Id: <1419457167-15042-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 4:39 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> The pvclock vdso code was too abstracted to understand easily and
-> excessively paranoid.  Simplify it for a huge speedup.
->
-> This opens the door for additional simplifications, as the vdso no
-> longer accesses the pvti for any vcpu other than vcpu 0.
->
-> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
-> With this change, it takes 19ns, which is almost as fast as the pure TSC
-> implementation.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
->  1 file changed, 47 insertions(+), 35 deletions(-)
->
-> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-> index 9793322751e0..f2e0396d5629 100644
-> --- a/arch/x86/vdso/vclock_gettime.c
-> +++ b/arch/x86/vdso/vclock_gettime.c
-> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
->
->  static notrace cycle_t vread_pvclock(int *mode)
->  {
-> -       const struct pvclock_vsyscall_time_info *pvti;
-> +       const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
->         cycle_t ret;
-> -       u64 last;
-> -       u32 version;
-> -       u8 flags;
-> -       unsigned cpu, cpu1;
-> -
-> +       u64 tsc, pvti_tsc;
-> +       u64 last, delta, pvti_system_time;
-> +       u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
->
->         /*
-> -        * Note: hypervisor must guarantee that:
-> -        * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
-> -        * 2. that per-CPU pvclock time info is updated if the
-> -        *    underlying CPU changes.
-> -        * 3. that version is increased whenever underlying CPU
-> -        *    changes.
-> +        * Note: The kernel and hypervisor must guarantee that cpu ID
-> +        * number maps 1:1 to per-CPU pvclock time info.
-> +        *
-> +        * Because the hypervisor is entirely unaware of guest userspace
-> +        * preemption, it cannot guarantee that per-CPU pvclock time
-> +        * info is updated if the underlying CPU changes or that that
-> +        * version is increased whenever underlying CPU changes.
-> +        *
-> +        * On KVM, we are guaranteed that pvti updates for any vCPU are
-> +        * atomic as seen by *all* vCPUs.  This is an even stronger
-> +        * guarantee than we get with a normal seqlock.
->          *
-> +        * On Xen, we don't appear to have that guarantee, but Xen still
-> +        * supplies a valid seqlock using the version field.
-> +
+While exploring the offset2lib attack I remembered that
+grsecurity has an interesting feature to make such attacks
+much harder. Exploits can brute stack canaries often very easily
+if the target is a forking server like sshd or Apache httpd.
+The problem is that after fork() the child has by definition
+exactly the same memory as the parent and therefore also the same
+stack canaries.
+The attacker can guess the stack canaries byte by byte.
+After 256 times 7 forks() a good exploit can find the correct
+canary value.
 
-Forgotten * here?
+The basic idea behind this patch is to delay fork() if a child died
+due to a fatal error.
+Currently it delays fork() by 30 seconds if the parent tries to fork()
+within 60 seconds after a child died due to a fatal error.
 
-> +        * We only do pvclock vdso timing at all if
-> +        * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
-> +        * mean that all vCPUs have matching pvti and that the TSC is
-> +        * synced, so we can just look at vCPU 0's pvti.
->          */
-> -       do {
-> -               cpu = __getcpu() & VGETCPU_CPU_MASK;
-> -               /* TODO: We can put vcpu id into higher bits of pvti.version.
-> -                * This will save a couple of cycles by getting rid of
-> -                * __getcpu() calls (Gleb).
-> -                */
-> -
-> -               pvti = get_pvti(cpu);
-> -
-> -               version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
-> -
-> -               /*
-> -                * Test we're still on the cpu as well as the version.
-> -                * We could have been migrated just after the first
-> -                * vgetcpu but before fetching the version, so we
-> -                * wouldn't notice a version change.
-> -                */
-> -               cpu1 = __getcpu() & VGETCPU_CPU_MASK;
-> -       } while (unlikely(cpu != cpu1 ||
-> -                         (pvti->pvti.version & 1) ||
-> -                         pvti->pvti.version != version));
-> -
-> -       if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
-> +
-> +       if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
->                 *mode = VCLOCK_NONE;
-> +               return 0;
-> +       }
-> +
-> +       do {
-> +               version = pvti->version;
-> +
-> +               /* This is also a read barrier, so we'll read version first. */
-> +               rdtsc_barrier();
-> +               tsc = __native_read_tsc();
+I'm sure you'll hate this patch but I want to find out how much you hate it
+and whether there is a little chance to get it mainline in a modified form.
+Later I'd make it depend on a new Kconfig option and off by default
+and the timing constants changeable via sysctl.
 
-Is there a reason why you read the tsc inside the loop rather than once
-after the loop?
+Credit for the concept goes to grsecurity folks, I'll take the flames.
 
-> +
-> +               pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
-> +               pvti_tsc_shift = pvti->tsc_shift;
-> +               pvti_system_time = pvti->system_time;
-> +               pvti_tsc = pvti->tsc_timestamp;
-> +
-> +               /* Make sure that the version double-check is last. */
-> +               smp_rmb();
-> +       } while (unlikely((version & 1) || version != pvti->version));
-> +
-> +       delta = tsc - pvti_tsc;
-> +       ret = pvti_system_time +
-> +               pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
-> +                                   pvti_tsc_shift);
->
->         /* refer to tsc.c read_tsc() comment for rationale */
->         last = gtod->cycle_last;
-> --
-> 2.1.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ fs/coredump.c         | 10 ++++++++++
+ include/linux/sched.h |  1 +
+ kernel/fork.c         |  7 +++++++
+ 3 files changed, 18 insertions(+)
+
+diff --git a/fs/coredump.c b/fs/coredump.c
+index b5c86ff..d7730c8 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -512,6 +512,7 @@ void do_coredump(const siginfo_t *siginfo)
+ 	bool need_nonrelative = false;
+ 	bool core_dumped = false;
+ 	static atomic_t core_dump_count = ATOMIC_INIT(0);
++	int sig = siginfo->si_signo;
+ 	struct coredump_params cprm = {
+ 		.siginfo = siginfo,
+ 		.regs = signal_pt_regs(),
+@@ -526,6 +527,15 @@ void do_coredump(const siginfo_t *siginfo)
+ 
+ 	audit_core_dumps(siginfo->si_signo);
+ 
++	if (sig == SIGSEGV || sig == SIGBUS || sig == SIGKILL || sig == SIGILL) {
++		rcu_read_lock();
++		read_lock(&tasklist_lock);
++		if (current->real_parent && (current->flags & PF_FORKNOEXEC))
++			current->real_parent->brute_expires = get_seconds() + (30 * 60);
++		read_unlock(&tasklist_lock);
++		rcu_read_unlock();
++	}
++
+ 	binfmt = mm->binfmt;
+ 	if (!binfmt || !binfmt->core_dump)
+ 		goto fail;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8db31ef..c616735 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1701,6 +1701,7 @@ struct task_struct {
+ #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+ 	unsigned long	task_state_change;
+ #endif
++	unsigned long brute_expires;
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 4dc2dda..178c80e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -74,6 +74,7 @@
+ #include <linux/uprobes.h>
+ #include <linux/aio.h>
+ #include <linux/compiler.h>
++#include <linux/delay.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -352,6 +353,8 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ 	tsk->splice_pipe = NULL;
+ 	tsk->task_frag.page = NULL;
+ 
++	tsk->brute_expires = 0;
++
+ 	account_kernel_stack(ti, 1);
+ 
+ 	return tsk;
+@@ -1669,6 +1672,10 @@ long do_fork(unsigned long clone_flags,
+ 		if (clone_flags & CLONE_PARENT_SETTID)
+ 			put_user(nr, parent_tidptr);
+ 
++		if (unlikely(current->brute_expires) && time_before(get_seconds(),
++		    current->brute_expires))
++			msleep(30 * 1000);
++
+ 		if (clone_flags & CLONE_VFORK) {
+ 			p->vfork_done = &vfork;
+ 			init_completion(&vfork);
+-- 
+2.1.0
+
