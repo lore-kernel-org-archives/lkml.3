@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225AbaLXBNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 20:13:34 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:50287 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaLXBNd (ORCPT
+	id S1751314AbaLXBPO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 20:15:14 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:2121 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaLXBPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 20:13:33 -0500
-Message-ID: <549A1335.20607@hitachi.com>
-Date: Wed, 24 Dec 2014 10:13:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 23 Dec 2014 20:15:13 -0500
+Message-ID: <549A138D.50204@atmel.com>
+Date: Wed, 24 Dec 2014 09:14:53 +0800
+From: "Wu, Songjun" <songjun.wu@atmel.com>
+Organization: ATMEL
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Aaron Fabbri <aaronx.j.fabbri@intel.com>, linux-kernel@vger.kernel.org,
-        Divya Vyas <edivya.vyas@gmail.com>
-Subject: Re: Re: [PATCH trace-cmd V5 0/6] perf-probe: Bugfix and add new
- options for cache
-References: <20141222174736.10068.90306.stgit@localhost.localdomain> <20141222114544.236d59ee@gandalf.local.home>
-In-Reply-To: <20141222114544.236d59ee@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: <balbi@ti.com>
+CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nicolas.ferre@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] USB: gadget: udc: atmel: fix possible oops when unloading
+ module
+References: <1419240374-12179-1-git-send-email-songjun.wu@atmel.com> <20141223162419.GB9147@saruman>
+In-Reply-To: <20141223162419.GB9147@saruman>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/23 1:45), Steven Rostedt wrote:
-> On Mon, 22 Dec 2014 12:47:36 -0500
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> Hi,
+
+在 12/24/2014 00:24, Felipe Balbi 写道:
+> On Mon, Dec 22, 2014 at 05:26:14PM +0800, Songjun Wu wrote:
+>> When unloading the module, the urb request will be dequeued
+>> and the completion routine will be excuted.
+>> If no urb packet, the urb request will not be added to the endpoint queue
+>> and the completion routine pointer in urb request is NULL.
+>> Accessing to the NULL function pointer will cause the oops issue.
+>> Add the code to check the urb request is in the endpoint queue or not.
+>> If the urb request is not in the endpoint queue, a negative error code
+>> will be returned.
+>
+> have you triggered the NULL pointer oops ? Care to add it to the commit
+> log.
+
+Executing the 'insmod g_hid.ko', then executing the 'rmmod g_hid.ko', 
+the NULL pointer oops will be triggered.
+
+>
+> Also, which commit is this fixing ? Does this need to be backported ?
+> When was the bug introduced ?
+>
+>> Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
+>> ---
+>>   drivers/usb/gadget/udc/atmel_usba_udc.c |   12 +++++++++++-
+>>   1 file changed, 11 insertions(+), 1 deletion(-)
 >>
->> This is the version 5 series of virtio-trace for trace-cmd.
->> The previous series is here; https://lkml.org/lkml/2014/7/10/747 
-> 
-> Thanks, I'll take a look at this.
-> 
-> I don't think you wanted the cover subject. Also, the date on this
-> email is still over an hour in the future from this reply.
-
-Oops, sorry forgot to update it... :(
-I missed to set up time-related things on my development machine,
-it was fixed now.
-
-Thanks,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>> diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
+>> index ce88237..48629cc 100644
+>> --- a/drivers/usb/gadget/udc/atmel_usba_udc.c
+>> +++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
+>> @@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
+>>   {
+>>   	struct usba_ep *ep = to_usba_ep(_ep);
+>>   	struct usba_udc *udc = ep->udc;
+>> -	struct usba_request *req = to_usba_req(_req);
+>> +	struct usba_request *req;
+>>   	unsigned long flags;
+>>   	u32 status;
+>>
+>> @@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
+>>
+>>   	spin_lock_irqsave(&udc->lock, flags);
+>>
+>> +	list_for_each_entry(req, &ep->queue, queue) {
+>> +		if (&req->req == _req)
+>> +			break;
+>> +	}
+>> +
+>> +	if (&req->req != _req) {
+>> +		spin_unlock_irqrestore(&udc->lock, flags);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>>   	if (req->using_dma) {
+>>   		/*
+>>   		 * If this request is currently being transferred,
+>> --
+>> 1.7.9.5
+>>
+>
