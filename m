@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaLXDOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 22:14:01 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:7415 "EHLO
+	id S1751568AbaLXDPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 22:15:06 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:7428 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaLXDN7 (ORCPT
+	with ESMTP id S1751235AbaLXDOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 22:13:59 -0500
+	Tue, 23 Dec 2014 22:14:00 -0500
 From: Wang Long <long.wanglong@huawei.com>
 To: <xuwei5@hisilicon.com>
 CC: <arnd@arndb.de>, <yanhaifeng@gmail.com>, <zhangfei.gao@linaro.org>,
@@ -15,180 +15,61 @@ CC: <arnd@arndb.de>, <yanhaifeng@gmail.com>, <zhangfei.gao@linaro.org>,
         <long.wanglong@huawei.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>,
         <huxinwei@huawei.com>
-Subject: [PATCH 7/7] ARM: hisi: enable smp for HiP01
-Date: Wed, 24 Dec 2014 03:10:02 +0000
-Message-ID: <1419390602-193123-8-git-send-email-long.wanglong@huawei.com>
+Subject: [PATCH 0/7] ARM: hisi: enable HiP01 SoC
+Date: Wed, 24 Dec 2014 03:09:55 +0000
+Message-ID: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
 X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
-References: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.200]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.549A2F3E.008A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020202.549A2F47.0145,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: d5bbd4a53ca969cd808aea4cab6c81a3
+X-Mirapoint-Loop-Id: 9b67a183f8ec7345f0dd7937022258f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enable smp for HiP01 board.
+Hi, Xu Wei
 
-Signed-off-by: Wang Long <long.wanglong@huawei.com>
----
- arch/arm/boot/dts/hip01-ca9x2.dts |  1 +
- arch/arm/mach-hisi/core.h         |  3 +++
- arch/arm/mach-hisi/hotplug.c      | 31 ++++++++++++++++++++++++
- arch/arm/mach-hisi/platsmp.c      | 50 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 85 insertions(+)
+This series patch enable Hisilicon HiP01 SoC. The HiP01 SoC series
+chip is designed for networking product, it integrates a rich peripheral
+interfaces to support network applications and supports both one 
+core or dual cores and quad cores. The core is Cortex A9. 
 
-diff --git a/arch/arm/boot/dts/hip01-ca9x2.dts b/arch/arm/boot/dts/hip01-ca9x2.dts
-index 3f157ae..eca5e42 100644
---- a/arch/arm/boot/dts/hip01-ca9x2.dts
-+++ b/arch/arm/boot/dts/hip01-ca9x2.dts
-@@ -25,6 +25,7 @@
- 	cpus {
- 		#address-cells = <1>;
- 		#size-cells = <0>;
-+		enable-method = "hisilicon,hip01-smp";
- 
- 		cpu@0 {
- 			device_type = "cpu";
-diff --git a/arch/arm/mach-hisi/core.h b/arch/arm/mach-hisi/core.h
-index 75520b0..92a682d 100644
---- a/arch/arm/mach-hisi/core.h
-+++ b/arch/arm/mach-hisi/core.h
-@@ -17,4 +17,7 @@ extern struct smp_operations hix5hd2_smp_ops;
- extern void hix5hd2_set_cpu(int cpu, bool enable);
- extern void hix5hd2_cpu_die(unsigned int cpu);
- 
-+extern struct smp_operations hip01_smp_ops;
-+extern void hip01_set_cpu(int cpu, bool enable);
-+extern void hip01_cpu_die(unsigned int cpu);
- #endif
-diff --git a/arch/arm/mach-hisi/hotplug.c b/arch/arm/mach-hisi/hotplug.c
-index 84e6919..a129aae 100644
---- a/arch/arm/mach-hisi/hotplug.c
-+++ b/arch/arm/mach-hisi/hotplug.c
-@@ -65,6 +65,9 @@
- #define PMC0_CPU1_PMC_ENABLE		(1 << 7)
- #define PMC0_CPU1_POWERDOWN		(1 << 3)
- 
-+#define HIP01_PERI9                    0x50
-+#define PERI9_CPU1_RESET               (1 << 1)
-+
- enum {
- 	HI3620_CTRL,
- 	ERROR_CTRL,
-@@ -209,6 +212,34 @@ void hix5hd2_set_cpu(int cpu, bool enable)
- 	}
- }
- 
-+void hip01_set_cpu(int cpu, bool enable)
-+{
-+	unsigned int temp;
-+	struct device_node *np;
-+
-+	if (!ctrl_base) {
-+		np = of_find_compatible_node(NULL, NULL, "hisilicon,hip01-sysctrl");
-+		if (np)
-+			ctrl_base = of_iomap(np, 0);
-+		else
-+			BUG();
-+	}
-+
-+	if (enable) {
-+		/* reset on CPU1  */
-+		temp = readl_relaxed(ctrl_base + HIP01_PERI9);
-+		temp |= PERI9_CPU1_RESET;
-+		writel_relaxed(temp, ctrl_base + HIP01_PERI9);
-+
-+		udelay(50);
-+
-+		/* unreset on CPU1 */
-+		temp = readl_relaxed(ctrl_base + HIP01_PERI9);
-+		temp &= ~PERI9_CPU1_RESET;
-+		writel_relaxed(temp, ctrl_base + HIP01_PERI9);
-+	}
-+}
-+
- static inline void cpu_enter_lowpower(void)
- {
- 	unsigned int v;
-diff --git a/arch/arm/mach-hisi/platsmp.c b/arch/arm/mach-hisi/platsmp.c
-index 4a70f56..8880c8e 100644
---- a/arch/arm/mach-hisi/platsmp.c
-+++ b/arch/arm/mach-hisi/platsmp.c
-@@ -10,10 +10,12 @@
- #include <linux/smp.h>
- #include <linux/io.h>
- #include <linux/of_address.h>
-+#include <linux/delay.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/smp_plat.h>
- #include <asm/smp_scu.h>
-+#include <asm/mach/map.h>
- 
- #include "core.h"
- 
-@@ -132,5 +134,53 @@ struct smp_operations hix5hd2_smp_ops __initdata = {
- #endif
- };
- 
-+
-+#define SC_SCTL_REMAP_CLR      0x00000100
-+#define HIP01_BOOT_ADDRESS     0x80000000
-+#define REG_SC_CTRL            0x000
-+
-+void hip01_set_boot_addr(phys_addr_t start_addr, phys_addr_t jump_addr)
-+{
-+	void __iomem *virt;
-+
-+	virt = phys_to_virt(start_addr);
-+
-+	writel_relaxed(0xe51ff004, virt);
-+	writel_relaxed(jump_addr, virt + 4);
-+}
-+
-+static int hip01_boot_secondary(unsigned int cpu, struct task_struct *idle)
-+{
-+	phys_addr_t jumpaddr;
-+	unsigned int remap_reg_value = 0;
-+	struct device_node *node;
-+
-+
-+	jumpaddr = virt_to_phys(hisi_secondary_startup);
-+	hip01_set_boot_addr(HIP01_BOOT_ADDRESS, jumpaddr);
-+
-+	node = of_find_compatible_node(NULL, NULL, "hisilicon,hip01-sysctrl");
-+	if (WARN_ON(!node))
-+		return -1;
-+	ctrl_base = of_iomap(node, 0);
-+
-+	/* set the secondary core boot from DDR */
-+	remap_reg_value = readl_relaxed(ctrl_base + REG_SC_CTRL);
-+	barrier();
-+	remap_reg_value |= SC_SCTL_REMAP_CLR;
-+	barrier();
-+	writel_relaxed(remap_reg_value, ctrl_base + REG_SC_CTRL);
-+
-+	hip01_set_cpu(cpu, true);
-+
-+	return 0;
-+}
-+
-+struct smp_operations hip01_smp_ops __initdata = {
-+	.smp_prepare_cpus       = hisi_common_smp_prepare_cpus,
-+	.smp_boot_secondary     = hip01_boot_secondary,
-+};
-+
- CPU_METHOD_OF_DECLARE(hi3xxx_smp, "hisilicon,hi3620-smp", &hi3xxx_smp_ops);
- CPU_METHOD_OF_DECLARE(hix5hd2_smp, "hisilicon,hix5hd2-smp", &hix5hd2_smp_ops);
-+CPU_METHOD_OF_DECLARE(hip01_smp, "hisilicon,hip01-smp", &hip01_smp_ops);
+This series patch rebased on Linux 3.19-rc1.
+
+Best Regards
+
+Wang Long (7):
+  ARM: debug: add HiP01 debug uart
+  ARM: hisi: enable HiP01 SoC
+  ARM: dts: Add hip01-ca9x2 dts file
+  ARM: config: enable ARCH_HIP01
+  ARM: hisi: add a common smp_prepares_cpus function
+  ARM: hisi: rename secondary_startup function
+  ARM: hisi: enable smp for HiP01
+
+ .../bindings/arm/hisilicon/hisilicon.txt           |  25 +++++
+ arch/arm/Kconfig.debug                             |  10 ++
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/hip01-ca9x2.dts                  |  51 ++++++++++
+ arch/arm/boot/dts/hip01.dtsi                       | 110 +++++++++++++++++++++
+ arch/arm/configs/hisi_defconfig                    |   1 +
+ arch/arm/configs/multi_v7_defconfig                |   1 +
+ arch/arm/mach-hisi/Kconfig                         |   8 ++
+ arch/arm/mach-hisi/core.h                          |   5 +-
+ arch/arm/mach-hisi/headsmp.S                       |   2 +-
+ arch/arm/mach-hisi/hisilicon.c                     |  10 ++
+ arch/arm/mach-hisi/hotplug.c                       |  31 ++++++
+ arch/arm/mach-hisi/platsmp.c                       |  56 ++++++++++-
+ 13 files changed, 306 insertions(+), 5 deletions(-)
+ create mode 100644 arch/arm/boot/dts/hip01-ca9x2.dts
+ create mode 100644 arch/arm/boot/dts/hip01.dtsi
+
 -- 
 1.8.3.4
 
