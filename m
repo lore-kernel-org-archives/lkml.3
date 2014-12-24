@@ -1,62 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721AbaLXKQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 05:16:28 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6106 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaLXKQ0 (ORCPT
+	id S1751887AbaLXKWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 05:22:38 -0500
+Received: from regular1.263xmail.com ([211.150.99.140]:59043 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbaLXKWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 05:16:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 24 Dec 2014 02:11:07 -0800
-From: Vince Hsu <vinceh@nvidia.com>
-To: stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
-CC: linux-usb@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vince Hsu <vinceh@nvidia.com>
-Subject: [PATCH] usb: host: ehci-tegra: request deferred probe when failing to get phy
-Date: Wed, 24 Dec 2014 18:16:30 +0800
-Message-ID: <1419416190-4321-1-git-send-email-vinceh@nvidia.com>
-X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 24 Dec 2014 05:22:35 -0500
+X-Greylist: delayed 171946 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Dec 2014 05:22:34 EST
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-ADDR-CHECKED: 0
+X-RL-SENDER: wulf@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wulf@rock-chips.com
+X-UNIQUE-TAG: <b5eb1583d3089a985eb8e25fce62d0f4>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Wu Liang feng <wulf@rock-chips.com>
+To: heiko@sntech.de
+Cc: huangtao@rock-chips.com, kever.yang@rock-chips.com,
+        eddie.cai@rock-chips.com, roy.li@rock-chips.com, zyw@rock-chips.com,
+        jwerner@google.com, dianders@google.com, posciak@google.com,
+        tfiga@google.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Wu Liang feng <wulf@rock-chips.com>
+Subject: [PATCH 2/2] USB: ehci-platform: Support ehci reset after resume quirk
+Date: Wed, 24 Dec 2014 18:22:19 +0800
+Message-Id: <1419416539-3830-3-git-send-email-wulf@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1419416539-3830-1-git-send-email-wulf@rock-chips.com>
+References: <1419416539-3830-1-git-send-email-wulf@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 1290a958d48e ("usb: phy: propagate __of_usb_find_phy()'s error on
-failure") changed the condition to return -EPROBE_DEFER to host driver.
-Originally the Tegra host driver depended on the returned -EPROBE_DEFER to
-get the phy device later when booting. Now we have to do that explicitly.
+The Rockchip rk3288 EHCI controller doesn't properly detect
+the case when a device is removed during suspend. Specifically,
+when usb resume from suspend, the EHCI controller maintaining
+the USB state (FLAG_CF is 1, Current Connect Status is 1),
+but a USB device (like a USB camera on rk3288) may have been
+disconnected actually.
 
-Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+Let's add a quirk to force ehci to go into the
+usb_root_hub_lost_power() path and reset after resume.
+This should generally reset the whole controller and all
+ports and initialize everything cleanly again, and bring
+the devices back up.
+
+As part of this, rename the "hibernation" paramter of
+ehci_resume() to force_reset since hibernation is simply
+another case where we can't trust the autodetected status
+and need to force a reset of devices.
+
+Signed-off-by: Wu Liang feng <wulf@rock-chips.com>
+Reviewed-by: Julius Werner <jwerner@google.com>
+Reviewed-by: Doug Anderson <dianders@google.com>
+Reviewed-by: Tomasz Figa <tfiga@google.com>
+Reviewed-by: Pawel Osciak <posciak@google.com>
+Reviewed-by: Sonny Rao <sonnyrao@google.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Doug Anderson <dianders@google.com>
 ---
-Hi,
+ drivers/usb/host/ehci-hcd.c      | 6 +++---
+ drivers/usb/host/ehci-platform.c | 6 +++++-
+ drivers/usb/host/ehci.h          | 2 +-
+ include/linux/usb/ehci_pdriver.h | 3 +++
+ 4 files changed, 12 insertions(+), 5 deletions(-)
 
-This fixes a regression found on 3.19-rc1. The USB host can't be probed and
-the USB failed on Jetson TK1.
-
-Thanks,
-Vince
-
-
- drivers/usb/host/ehci-tegra.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index 19a9af1b4d74..ff9af29b4e9f 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -451,7 +451,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 38bfeed..85e56d1 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1110,7 +1110,7 @@ int ehci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+ EXPORT_SYMBOL_GPL(ehci_suspend);
  
- 	u_phy = devm_usb_get_phy_by_phandle(&pdev->dev, "nvidia,phy", 0);
- 	if (IS_ERR(u_phy)) {
--		err = PTR_ERR(u_phy);
-+		err = -EPROBE_DEFER;
- 		goto cleanup_clk_en;
+ /* Returns 0 if power was preserved, 1 if power was lost */
+-int ehci_resume(struct usb_hcd *hcd, bool hibernated)
++int ehci_resume(struct usb_hcd *hcd, bool force_reset)
+ {
+ 	struct ehci_hcd		*ehci = hcd_to_ehci(hcd);
+ 
+@@ -1124,12 +1124,12 @@ int ehci_resume(struct usb_hcd *hcd, bool hibernated)
+ 		return 0;		/* Controller is dead */
+ 
+ 	/*
+-	 * If CF is still set and we aren't resuming from hibernation
++	 * If CF is still set and reset isn't forced
+ 	 * then we maintained suspend power.
+ 	 * Just undo the effect of ehci_suspend().
+ 	 */
+ 	if (ehci_readl(ehci, &ehci->regs->configured_flag) == FLAG_CF &&
+-			!hibernated) {
++			!force_reset) {
+ 		int	mask = INTR_MASK;
+ 
+ 		ehci_prepare_ports_for_controller_resume(ehci);
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index 8557803..db5c29e 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -185,6 +185,10 @@ static int ehci_platform_probe(struct platform_device *dev)
+ 		if (of_property_read_bool(dev->dev.of_node, "big-endian"))
+ 			ehci->big_endian_mmio = ehci->big_endian_desc = 1;
+ 
++		if (of_property_read_bool(dev->dev.of_node,
++					  "needs-reset-on-resume"))
++			pdata->reset_on_resume = 1;
++
+ 		priv->phy = devm_phy_get(&dev->dev, "usb");
+ 		if (IS_ERR(priv->phy)) {
+ 			err = PTR_ERR(priv->phy);
+@@ -340,7 +344,7 @@ static int ehci_platform_resume(struct device *dev)
+ 			return err;
  	}
- 	hcd->usb_phy = u_phy;
+ 
+-	ehci_resume(hcd, false);
++	ehci_resume(hcd, pdata->reset_on_resume);
+ 	return 0;
+ }
+ #endif /* CONFIG_PM_SLEEP */
+diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
+index 6f0577b..52ef084 100644
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -871,7 +871,7 @@ extern int	ehci_handshake(struct ehci_hcd *ehci, void __iomem *ptr,
+ 
+ #ifdef CONFIG_PM
+ extern int	ehci_suspend(struct usb_hcd *hcd, bool do_wakeup);
+-extern int	ehci_resume(struct usb_hcd *hcd, bool hibernated);
++extern int	ehci_resume(struct usb_hcd *hcd, bool force_reset);
+ #endif	/* CONFIG_PM */
+ 
+ extern int	ehci_hub_control(struct usb_hcd	*hcd, u16 typeReq, u16 wValue,
+diff --git a/include/linux/usb/ehci_pdriver.h b/include/linux/usb/ehci_pdriver.h
+index 7eb4dcd..6287b39 100644
+--- a/include/linux/usb/ehci_pdriver.h
++++ b/include/linux/usb/ehci_pdriver.h
+@@ -34,6 +34,8 @@ struct usb_hcd;
+  *			after initialization.
+  * @no_io_watchdog:	set to 1 if the controller does not need the I/O
+  *			watchdog to run.
++ * @reset_on_resume:	set to 1 if the controller needs to be reset after
++ * 			a suspend / resume cycle (but can't detect that itself).
+  *
+  * These are general configuration options for the EHCI controller. All of
+  * these options are activating more or less workarounds for some hardware.
+@@ -45,6 +47,7 @@ struct usb_ehci_pdata {
+ 	unsigned	big_endian_desc:1;
+ 	unsigned	big_endian_mmio:1;
+ 	unsigned	no_io_watchdog:1;
++	unsigned	reset_on_resume:1;
+ 
+ 	/* Turn on all power and clocks */
+ 	int (*power_on)(struct platform_device *pdev);
 -- 
-1.9.1
+1.8.3.2
+
 
