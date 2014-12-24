@@ -1,115 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaLXQ3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:29:03 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49336 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868AbaLXQ3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:29:00 -0500
-Message-ID: <549AE9BA.2050308@ti.com>
-Date: Wed, 24 Dec 2014 10:28:42 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dtor@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Stefan Wahren <stefan.wahren@i2se.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] PM / OPP: add some lockdep annotations
-References: <1418771379-24369-1-git-send-email-dtor@chromium.org> <1418771379-24369-2-git-send-email-dtor@chromium.org>
-In-Reply-To: <1418771379-24369-2-git-send-email-dtor@chromium.org>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1752130AbaLXQ30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:29:26 -0500
+Received: from resqmta-po-10v.sys.comcast.net ([96.114.154.169]:39300 "EHLO
+	resqmta-po-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751927AbaLXQ2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 11:28:20 -0500
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
+        keescook@chromium.org, tranmanphong@gmail.com, mpe@ellerman.id.au,
+        cov@codeaurora.org, dh.herrmann@gmail.com, hughd@google.com,
+        bobby.prani@gmail.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v3 19/20] selftests: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:55 -0700
+Message-Id: <ab170b7a08109f313199baa59da42e829a9ddd69.1419387513.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
+References: <cover.1419387513.git.shuahkh@osg.samsung.com>
+In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
+References: <cover.1419387513.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2014 05:09 PM, Dmitry Torokhov wrote:
-> Certain OPP APIs need to be called under RCU lock; let's add a few
-> rcu_lockdep_assert() calls to warn about potential misuse.
-> 
-> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-> ---
->  drivers/base/power/opp.c | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index d24dd614a..b78c14d 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -108,6 +108,14 @@ static LIST_HEAD(dev_opp_list);
->  /* Lock to allow exclusive modification to the device and opp lists */
->  static DEFINE_MUTEX(dev_opp_list_lock);
->  
-> +#define opp_rcu_lockdep_assert()					\
-> +do {									\
-> +	rcu_lockdep_assert(rcu_read_lock_held() ||			\
-> +				lockdep_is_held(&dev_opp_list_lock),	\
-> +			   "Missing rcu_read_lock() or "		\
-> +			   "dev_opp_list_lock protection");		\
-> +} while (0)
-> +
->  /**
->   * find_device_opp() - find device_opp struct using device pointer
->   * @dev:	device pointer used to lookup device OPPs
-> @@ -218,6 +226,8 @@ int dev_pm_opp_get_opp_count(struct device *dev)
->  	struct dev_pm_opp *temp_opp;
->  	int count = 0;
->  
-> +	opp_rcu_lockdep_assert();
-> +
->  	dev_opp = find_device_opp(dev);
->  	if (IS_ERR(dev_opp)) {
->  		int r = PTR_ERR(dev_opp);
-> @@ -267,6 +277,8 @@ struct dev_pm_opp *dev_pm_opp_find_freq_exact(struct device *dev,
->  	struct device_opp *dev_opp;
->  	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
->  
-> +	opp_rcu_lockdep_assert();
-> +
->  	dev_opp = find_device_opp(dev);
->  	if (IS_ERR(dev_opp)) {
->  		int r = PTR_ERR(dev_opp);
-> @@ -313,6 +325,8 @@ struct dev_pm_opp *dev_pm_opp_find_freq_ceil(struct device *dev,
->  	struct device_opp *dev_opp;
->  	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
->  
-> +	opp_rcu_lockdep_assert();
-> +
->  	if (!dev || !freq) {
->  		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
->  		return ERR_PTR(-EINVAL);
-> @@ -361,6 +375,8 @@ struct dev_pm_opp *dev_pm_opp_find_freq_floor(struct device *dev,
->  	struct device_opp *dev_opp;
->  	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
->  
-> +	opp_rcu_lockdep_assert();
-> +
->  	if (!dev || !freq) {
->  		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
->  		return ERR_PTR(-EINVAL);
-> 
+Add a new make target to enable installing selftests. This
+new target will call install targets for the tests that are
+specified in INSTALL_TARGETS. During install, a script is
+generated to run tests that are installed. This script will
+be installed in the selftest install directory. Individual
+test Makefiles are changed to add to the script. This will
+allow new tests to add install and run test commands to the
+generated kselftest script. run_tests target runs the
+generated kselftest script to run tests when it is initiated
+from from "make kselftest" from top level source directory.
 
-You should also add opp_rcu_lockdep_assert to the following functions:
-dev_pm_opp_get_voltage and dev_pm_opp_get_freq - both of which must be
-used under rcu read lock.
+Approach:
 
-dev_pm_opp_get_notifier references the RCU protected dev_opp list ->
-so that must also be under rcu read lock.
+Add a new kselftest_install target:
+-- exports kselftest INSTALL_KSFT_PATH
+   default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
+-- exports INSTALL_KSFT_PATH
+-- runs selftests make kselftest_install target:
 
+selftests make install target
+-- Sets up environment for sub-makefiles
+-- creates kselftest.sh script in install install dir
+-- runs install targets for INSTALL_TARGETS
+-- install target can be run only from top level source dir.
 
-love the concept, and I suggest splitting this into the following:
+Individual test make install targets:
+-- install test programs and/or scripts in install dir
+-- append to the ksefltest.sh file to add commands to run test
+-- install target can be run only from top level source dir.
 
-RCU readers: trivial as rcu_read_lock_help dumps
-RCU updates: (adding, updating, removing): for the helper functions
-ensure mutex_lock held assertion.
+Adds the following new ways to initiate selftests:
+-- Installing and running kselftest from install directory
+   by running  "make kselftest"
+-- Running kselftest script from install directory
 
+Maintains the following ways to run tests:
+-- make TARGETS=net kselftest
+-- make -C tools/testing/selftests run_tests
+-- make -C tools/testing/selftests TARGETS=target run_tests
+   Ability specify targets: e.g TARGETS=net
+-- make run_tests from tools/testing/selftests
+-- make run_tests from individual test directories:
+   e.g: make run_tests in tools/testing/selftests/net
 
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+---
+ tools/testing/selftests/Makefile | 54 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 53 insertions(+), 1 deletion(-)
 
+diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
+index 4e51122..e70cdc9 100644
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -22,15 +22,67 @@ TARGETS += vm
+ TARGETS_HOTPLUG = cpu-hotplug
+ TARGETS_HOTPLUG += memory-hotplug
+ 
++# Used in only run_tests target when make kselftest is run in
++# top level source directory
++ifeq "$(origin TARGETS)" "command line"
++no_install_run=1
++endif
++
++ifdef INSTALL_KSFT_PATH
++KSELFTEST=$(INSTALL_KSFT_PATH)/kselftest.sh
++export KSELFTEST
++# TODO add install target for SKIP_INSTALL_TARGETS
++SKIP_INSTALL_TARGETS = exec powerpc
++INSTALL_TARGETS = $(filter-out $(SKIP_INSTALL_TARGETS),$(TARGETS)) ipc
++else
++no_install_run=1
++endif
++
++INSTALL_KSFT_ERR = Run make kselftest_install in top level source directory
++
+ all:
+ 	for TARGET in $(TARGETS); do \
+ 		make -C $$TARGET; \
+ 	done;
+ 
+-run_tests: all
++install:
++ifdef INSTALL_KSFT_PATH
++	rm -rf $(INSTALL_KSFT_PATH)
++	mkdir -p $(INSTALL_KSFT_PATH)
++
++	make all
++	@echo "#!/bin/sh\n# Kselftest Run Tests ...." >> $(KSELFTEST)
++	@echo "# This file is generated by kselftest_install" >> $(KSELFTEST)
++	@echo "# Please don't change it !!\n"  >> $(KSELFTEST)
++	@echo echo ============================== >> $(KSELFTEST)
++	for TARGET in $(INSTALL_TARGETS); do \
++		echo Installing $$TARGET; \
++		echo echo Start $$TARGET test .... >> $(KSELFTEST); \
++		make -C $$TARGET install; \
++		echo echo End $$TARGET test .... >> $(KSELFTEST); \
++		echo echo ============================== >> $(KSELFTEST); \
++	done;
++	chmod +x $(KSELFTEST)
++else
++	@echo $(INSTALL_KSFT_ERR)
++endif
++
++run_tests:
++ifndef no_install_run
++# ifdef INSTALL_KSFT_PATH
++	make install
++	@cd $(INSTALL_KSFT_PATH); ./kselftest.sh; cd -
++# invoke run_tests for SKIP_INSTALL_TARGETS
++	for TARGET in $(SKIP_INSTALL_TARGETS); do \
++		make -C $$TARGET run_tests; \
++	done;
++# endif
++else
++	make all
+ 	for TARGET in $(TARGETS); do \
+ 		make -C $$TARGET run_tests; \
+ 	done;
++endif
+ 
+ hotplug:
+ 	for TARGET in $(TARGETS_HOTPLUG); do \
 -- 
-Regards,
-Nishanth Menon
+2.1.0
+
