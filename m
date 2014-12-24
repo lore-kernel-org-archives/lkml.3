@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaLXHTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:19:21 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40208 "EHLO
+	id S1752167AbaLXHPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:15:38 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40100 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171AbaLXHPk (ORCPT
+	with ESMTP id S1752107AbaLXHPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:15:40 -0500
+	Wed, 24 Dec 2014 02:15:35 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 26/37] perf tools: Move BUILD_ID_SIZE definition to perf.h
-Date: Wed, 24 Dec 2014 16:15:22 +0900
-Message-Id: <1419405333-27952-27-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 21/37] perf tools: Protect dso symbol loading using a mutex
+Date: Wed, 24 Dec 2014 16:15:17 +0900
+Message-Id: <1419405333-27952-22-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
@@ -27,68 +27,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The util/event.h includes util/build-id.h only for BUILD_ID_SIZE.
-This is a problem when I include util/event.h from util/tool.h which
-is also included by util/build-id.h since it now makes a circular
-dependency resulting in incomplete type error.
+When multi-thread support for perf report is enabled, it's possible to
+access a dso concurrently.  Add a new pthread_mutex to protect it from
+concurrent dso__load().
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/perf.h          | 1 +
- tools/perf/util/build-id.h | 2 --
- tools/perf/util/dso.h      | 1 +
- tools/perf/util/event.h    | 1 -
- 4 files changed, 2 insertions(+), 3 deletions(-)
+ tools/perf/util/dso.c    |  2 ++
+ tools/perf/util/dso.h    |  1 +
+ tools/perf/util/symbol.c | 34 ++++++++++++++++++++++++----------
+ 3 files changed, 27 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 37284eb47b56..56ce258314fc 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -30,6 +30,7 @@ static inline unsigned long long rdclock(void)
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 45be944d450a..3da75816b8f8 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -888,6 +888,7 @@ struct dso *dso__new(const char *name)
+ 		RB_CLEAR_NODE(&dso->rb_node);
+ 		INIT_LIST_HEAD(&dso->node);
+ 		INIT_LIST_HEAD(&dso->data.open_entry);
++		pthread_mutex_init(&dso->lock, NULL);
+ 	}
+ 
+ 	return dso;
+@@ -917,6 +918,7 @@ void dso__delete(struct dso *dso)
+ 	dso_cache__free(&dso->data.cache);
+ 	dso__free_a2l(dso);
+ 	zfree(&dso->symsrc_filename);
++	pthread_mutex_destroy(&dso->lock);
+ 	free(dso);
  }
  
- #define MAX_NR_CPUS			256
-+#define BUILD_ID_SIZE			20
- 
- extern const char *input_name;
- extern bool perf_host, perf_guest;
-diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
-index 8236319514d5..8f31545edc5b 100644
---- a/tools/perf/util/build-id.h
-+++ b/tools/perf/util/build-id.h
-@@ -1,8 +1,6 @@
- #ifndef PERF_BUILD_ID_H_
- #define PERF_BUILD_ID_H_ 1
- 
--#define BUILD_ID_SIZE 20
--
- #include "tool.h"
- #include <linux/types.h>
- 
 diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index ac753594a469..c18fcc0e8081 100644
+index 3782c82c6e44..ac753594a469 100644
 --- a/tools/perf/util/dso.h
 +++ b/tools/perf/util/dso.h
-@@ -7,6 +7,7 @@
- #include <linux/types.h>
- #include <linux/bitops.h>
- #include "map.h"
-+#include "perf.h"
- #include "build-id.h"
+@@ -102,6 +102,7 @@ struct dsos {
+ };
  
- enum dso_binary_type {
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 09b9e8d3fcf7..5f66abfa61ca 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -6,7 +6,6 @@
+ struct dso {
++	pthread_mutex_t	 lock;
+ 	struct list_head node;
+ 	struct rb_node	 rb_node;	/* rbtree node sorted by long name */
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index c24c5b83156c..6c764a5b3464 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1332,12 +1332,22 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	struct symsrc *syms_ss = NULL, *runtime_ss = NULL;
+ 	bool kmod;
  
- #include "../perf.h"
- #include "map.h"
--#include "build-id.h"
- #include "perf_regs.h"
+-	dso__set_loaded(dso, map->type);
++	pthread_mutex_lock(&dso->lock);
++
++	/* check again under the dso->lock */
++	if (dso__loaded(dso, map->type)) {
++		ret = 1;
++		goto out;
++	}
++
++	if (dso->kernel) {
++		if (dso->kernel == DSO_TYPE_KERNEL)
++			ret = dso__load_kernel_sym(dso, map, filter);
++		else if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
++			ret = dso__load_guest_kernel_sym(dso, map, filter);
  
- struct mmap_event {
+-	if (dso->kernel == DSO_TYPE_KERNEL)
+-		return dso__load_kernel_sym(dso, map, filter);
+-	else if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
+-		return dso__load_guest_kernel_sym(dso, map, filter);
++		goto out;
++	}
+ 
+ 	if (map->groups && map->groups->machine)
+ 		machine = map->groups->machine;
+@@ -1350,18 +1360,18 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 		struct stat st;
+ 
+ 		if (lstat(dso->name, &st) < 0)
+-			return -1;
++			goto out;
+ 
+ 		if (st.st_uid && (st.st_uid != geteuid())) {
+ 			pr_warning("File %s not owned by current user or root, "
+ 				"ignoring it.\n", dso->name);
+-			return -1;
++			goto out;
+ 		}
+ 
+ 		ret = dso__load_perf_map(dso, map, filter);
+ 		dso->symtab_type = ret > 0 ? DSO_BINARY_TYPE__JAVA_JIT :
+ 					     DSO_BINARY_TYPE__NOT_FOUND;
+-		return ret;
++		goto out;
+ 	}
+ 
+ 	if (machine)
+@@ -1369,7 +1379,7 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 
+ 	name = malloc(PATH_MAX);
+ 	if (!name)
+-		return -1;
++		goto out;
+ 
+ 	kmod = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
+ 		dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE_COMP ||
+@@ -1450,7 +1460,11 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ out_free:
+ 	free(name);
+ 	if (ret < 0 && strstr(dso->name, " (deleted)") != NULL)
+-		return 0;
++		ret = 0;
++out:
++	dso__set_loaded(dso, map->type);
++	pthread_mutex_unlock(&dso->lock);
++
+ 	return ret;
+ }
+ 
 -- 
 2.1.3
 
