@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaLXQe7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:34:59 -0500
-Received: from resqmta-po-08v.sys.comcast.net ([96.114.154.167]:49194 "EHLO
-	resqmta-po-08v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751522AbaLXQ2F (ORCPT
+	id S1752657AbaLXQfd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:35:33 -0500
+Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:36929 "EHLO
+	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751496AbaLXQ2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:05 -0500
+	Wed, 24 Dec 2014 11:28:04 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 04/20] selftests/firmware: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:40 -0700
-Message-Id: <cbae2a6a11f9c3c5a33343dfac7f86b8f39dc59f.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 03/20] selftests/efivarfs: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:39 -0700
+Message-Id: <5ec69d133b16dfdaca04fcbd8f4193c675415f61.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -36,65 +36,38 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/firmware/Makefile | 43 +++++++++++++++++++------------
- 1 file changed, 26 insertions(+), 17 deletions(-)
+ tools/testing/selftests/efivarfs/Makefile | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/tools/testing/selftests/firmware/Makefile b/tools/testing/selftests/firmware/Makefile
-index e23cce0..7ac1cf3 100644
---- a/tools/testing/selftests/firmware/Makefile
-+++ b/tools/testing/selftests/firmware/Makefile
-@@ -1,25 +1,34 @@
- # Makefile for firmware loading selftests
+diff --git a/tools/testing/selftests/efivarfs/Makefile b/tools/testing/selftests/efivarfs/Makefile
+index 29e8c6b..aaf404b 100644
+--- a/tools/testing/selftests/efivarfs/Makefile
++++ b/tools/testing/selftests/efivarfs/Makefile
+@@ -3,10 +3,22 @@ CFLAGS = -Wall
  
- # No binaries, but make sure arg-less "make" doesn't trigger "run_tests"
-+
-+__fw_filesystem:
-+fw_filesystem  = if /bin/sh ./fw_filesystem.sh ; then
-+fw_filesystem += echo fw_filesystem: ok;
-+fw_filesystem += else echo fw_filesystem: [FAIL];
-+fw_filesystem += fi
-+
-+__fw_userhelper:
-+fw_userhelper  = if /bin/sh ./fw_userhelper.sh ; then
-+fw_userhelper += echo fw_userhelper: ok;
-+fw_userhelper += else
-+fw_userhelper += echo fw_userhelper: [FAIL];
-+fw_userhelper += fi
-+
- all:
+ test_objs = open-unlink create-read
  
--fw_filesystem:
--	@if /bin/sh ./fw_filesystem.sh ; then \
--                echo "fw_filesystem: ok"; \
--        else \
--                echo "fw_filesystem: [FAIL]"; \
--                exit 1; \
--        fi
--
--fw_userhelper:
--	@if /bin/sh ./fw_userhelper.sh ; then \
--                echo "fw_userhelper: ok"; \
--        else \
--                echo "fw_userhelper: [FAIL]"; \
--                exit 1; \
--        fi
--
--run_tests: all fw_filesystem fw_userhelper
+-all: $(test_objs)
++TEST_STR = /bin/bash ./efivarfs.sh || echo efivarfs selftests: [FAIL]
++
++all:
++	gcc open-unlink.c -o open-unlink
++	gcc create-read.c -o create-read
++
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install ./fw_filesystem.sh ./fw_userhelper.sh $(INSTALL_KSFT_PATH)
-+	@echo "$(fw_filesystem)" >> $(KSELFTEST)
-+	@echo "$(fw_userhelper)" >> $(KSELFTEST)
++	install ./efivarfs.sh $(test_objs) $(INSTALL_KSFT_PATH)
++	@echo "$(TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo Run make kselftest_install in top level source directory
 +endif
-+
-+run_tests:
-+	@$(fw_filesystem)
-+	@$(fw_userhelper)
  
- # Nothing to clean up.
+ run_tests: all
+-	@/bin/bash ./efivarfs.sh || echo "efivarfs selftests: [FAIL]"
++	@$(TEST_STR)
+ 
  clean:
+ 	rm -f $(test_objs)
 -- 
 2.1.0
 
