@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaLXHGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:06:12 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33131 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576AbaLXHF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:05:56 -0500
+	id S1751817AbaLXHG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:06:29 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:45367 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaLXHGX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 02:06:23 -0500
 From: Vignesh R <vigneshr@ti.com>
 To: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
@@ -28,9 +29,9 @@ CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
         <linux-input@vger.kernel.org>, Vignesh R <vigneshr@ti.com>
-Subject: [PATCH v5 4/6] ARM: dts: AM335x: Make charge delay a DT parameter for TSC
-Date: Wed, 24 Dec 2014 12:33:37 +0530
-Message-ID: <1419404619-10744-5-git-send-email-vigneshr@ti.com>
+Subject: [PATCH v5 6/6] input: touchscreen: ti_am335x_tsc: Replace delta filtering with median filtering
+Date: Wed, 24 Dec 2014 12:33:39 +0530
+Message-ID: <1419404619-10744-7-git-send-email-vigneshr@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1419404619-10744-1-git-send-email-vigneshr@ti.com>
 References: <1419404619-10744-1-git-send-email-vigneshr@ti.com>
@@ -40,68 +41,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The charge delay value is by default 0x400. But it can be set to lower
-values on some boards, as long as false pen-ups are avoided. Lowering the
-value increases the sampling rate (though current sampling rate is
-sufficient for TSC operation). In some boards, the value has to be
-increased to avoid false pen-up events. Hence, charge delay has been
-made a DT parameter.
+Previously, delta filtering was applied TSC co-ordinate readouts before
+reporting a single value to user space. This patch replaces delta filtering
+with median filtering. Median filtering sorts co-ordinate readouts, drops min
+and max values, and reports the average of remaining values. This method is
+more sensible than delta filering. Median filtering is applied only if number
+of readouts is greater than 3 else just average of co-ordinate readouts is
+reported.
 
 Signed-off-by: Vignesh R <vigneshr@ti.com>
 ---
-v4:
- - Set charge delay to 0x400 as default. Most devices function normally
-   at this value
+ drivers/input/touchscreen/ti_am335x_tsc.c | 91 +++++++++++++++++--------------
+ 1 file changed, 51 insertions(+), 40 deletions(-)
 
- .../devicetree/bindings/input/touchscreen/ti-tsc-adc.txt  | 15 +++++++++++++++
- arch/arm/boot/dts/am335x-evm.dts                          |  1 +
- 2 files changed, 16 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt b/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt
-index 878549ba814d..6df5028a4ad3 100644
---- a/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt
-+++ b/Documentation/devicetree/bindings/input/touchscreen/ti-tsc-adc.txt
-@@ -28,6 +28,20 @@ Required properties:
- 	ti,adc-channels: List of analog inputs available for ADC.
- 			 AIN0 = 0, AIN1 = 1 and so on till AIN7 = 7.
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 9cb8b4a01dca..504b85db6425 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -26,6 +26,7 @@
+ #include <linux/delay.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/sort.h>
  
-+Optional properties:
-+- child "tsc"
-+	ti,charge-delay: Length of touch screen charge delay step in terms of
-+			 ADC clock cycles. Charge delay value should be large
-+			 in order to avoid false pen-up events. This value
-+			 affects the overall sampling speed, hence need to be
-+			 kept as low as possible, while avoiding false pen-up
-+			 event. Start from a lower value, say 0x400, and
-+			 increase value until false pen-up events are avoided.
-+			 The pen-up detection happens immediately after the
-+			 charge step, so this does in fact function as a
-+			 hardware knob for adjusting the amount of "settling
-+			 time".
+ #include <linux/mfd/ti_am335x_tscadc.h>
+ 
+@@ -204,56 +205,61 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 	am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
+ }
+ 
++static int titsc_cmp_coord(const void *a, const void *b)
++{
++	return *(int *)a - *(int *)b;
++}
 +
- Example:
- 	tscadc: tscadc@44e0d000 {
- 		compatible = "ti,am3359-tscadc";
-@@ -36,6 +50,7 @@ Example:
- 			ti,x-plate-resistance = <200>;
- 			ti,coordiante-readouts = <5>;
- 			ti,wire-config = <0x00 0x11 0x22 0x33>;
-+			ti,charge-delay = <0x400>;
- 		};
+ static void titsc_read_coordinates(struct titsc *ts_dev,
+ 		u32 *x, u32 *y, u32 *z1, u32 *z2)
+ {
+-	unsigned int fifocount = titsc_readl(ts_dev, REG_FIFO0CNT);
+-	unsigned int prev_val_x = ~0, prev_val_y = ~0;
+-	unsigned int prev_diff_x = ~0, prev_diff_y = ~0;
+-	unsigned int read, diff;
+-	unsigned int i, channel;
++	unsigned int yvals[7], xvals[7];
++	unsigned int i, xsum = 0, ysum = 0;
+ 	unsigned int creads = ts_dev->coordinate_readouts;
+-	unsigned int first_step = TOTAL_STEPS - (creads * 2 + 2);
  
- 		adc {
-diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
-index 54f118c08db8..66342515df20 100644
---- a/arch/arm/boot/dts/am335x-evm.dts
-+++ b/arch/arm/boot/dts/am335x-evm.dts
-@@ -648,6 +648,7 @@
- 		ti,x-plate-resistance = <200>;
- 		ti,coordinate-readouts = <5>;
- 		ti,wire-config = <0x00 0x11 0x22 0x33>;
-+		ti,charge-delay = <0x400>;
- 	};
+-	*z1 = *z2 = 0;
+-	if (fifocount % (creads * 2 + 2))
+-		fifocount -= fifocount % (creads * 2 + 2);
+-	/*
+-	 * Delta filter is used to remove large variations in sampled
+-	 * values from ADC. The filter tries to predict where the next
+-	 * coordinate could be. This is done by taking a previous
+-	 * coordinate and subtracting it form current one. Further the
+-	 * algorithm compares the difference with that of a present value,
+-	 * if true the value is reported to the sub system.
+-	 */
+-	for (i = 0; i < fifocount; i++) {
+-		read = titsc_readl(ts_dev, REG_FIFO0);
+-
+-		channel = (read & 0xf0000) >> 16;
+-		read &= 0xfff;
+-		if (channel > first_step + creads + 2) {
+-			diff = abs(read - prev_val_x);
+-			if (diff < prev_diff_x) {
+-				prev_diff_x = diff;
+-				*x = read;
+-			}
+-			prev_val_x = read;
++	for (i = 0; i < creads; i++) {
++		yvals[i] = titsc_readl(ts_dev, REG_FIFO0);
++		yvals[i] &= 0xfff;
++	}
  
- 	adc {
+-		} else if (channel == first_step + creads + 1) {
+-			*z1 = read;
++	*z1 = titsc_readl(ts_dev, REG_FIFO0);
++	*z1 &= 0xfff;
++	*z2 = titsc_readl(ts_dev, REG_FIFO0);
++	*z2 &= 0xfff;
+ 
+-		} else if (channel == first_step + creads + 2) {
+-			*z2 = read;
++	for (i = 0; i < creads; i++) {
++		xvals[i] = titsc_readl(ts_dev, REG_FIFO0);
++		xvals[i] &= 0xfff;
++	}
+ 
+-		} else if (channel > first_step) {
+-			diff = abs(read - prev_val_y);
+-			if (diff < prev_diff_y) {
+-				prev_diff_y = diff;
+-				*y = read;
+-			}
+-			prev_val_y = read;
++	/*
++	 * If co-ordinates readouts is less than 4 then
++	 * report the average. In case of 4 or more
++	 * readouts, sort the co-ordinate samples, drop
++	 * min and max values and report the average of
++	 * remaining values.
++	 */
++	if (creads <=  3) {
++		for (i = 0; i < creads; i++) {
++			ysum += yvals[i];
++			xsum += xvals[i];
+ 		}
++		ysum /= creads;
++		xsum /= creads;
++	} else {
++		sort(yvals, creads, sizeof(unsigned int),
++		     titsc_cmp_coord, NULL);
++		sort(xvals, creads, sizeof(unsigned int),
++		     titsc_cmp_coord, NULL);
++		for (i = 1; i < creads - 1; i++) {
++			ysum += yvals[i];
++			xsum += xvals[i];
++		}
++		ysum /= creads - 2;
++		xsum /= creads - 2;
+ 	}
++	*y = ysum;
++	*x = xsum;
+ }
+ 
+ static irqreturn_t titsc_irq(int irq, void *dev)
+@@ -369,6 +375,11 @@ static int titsc_parse_dt(struct platform_device *pdev,
+ 	if (err < 0)
+ 		return err;
+ 
++	if (ts_dev->coordinate_readouts <= 0) {
++		dev_warn(&pdev->dev, "invalid co-ordinate readouts, resetting it to 5\n");
++		ts_dev->coordinate_readouts = 5;
++	}
++
+ 	err = of_property_read_u32(node, "ti,charge-delay",
+ 				   &ts_dev->charge_delay);
+ 	/*
 -- 
 1.9.1
 
