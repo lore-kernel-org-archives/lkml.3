@@ -1,88 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaLXQ2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:28:49 -0500
-Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:36923 "EHLO
-	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751845AbaLXQ2V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:21 -0500
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, mpe@ellerman.id.au,
-        cov@codeaurora.org, dh.herrmann@gmail.com, hughd@google.com,
-        bobby.prani@gmail.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v3 20/20] kbuild: add a new kselftest_install make target to install selftests
-Date: Wed, 24 Dec 2014 09:27:56 -0700
-Message-Id: <05d750bb46f4f20c668b13c312c520c1e56f7ba1.1419387513.git.shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
-References: <cover.1419387513.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
-References: <cover.1419387513.git.shuahkh@osg.samsung.com>
+	id S1752090AbaLXQ3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:29:03 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49336 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868AbaLXQ3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 11:29:00 -0500
+Message-ID: <549AE9BA.2050308@ti.com>
+Date: Wed, 24 Dec 2014 10:28:42 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dtor@chromium.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Stefan Wahren <stefan.wahren@i2se.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] PM / OPP: add some lockdep annotations
+References: <1418771379-24369-1-git-send-email-dtor@chromium.org> <1418771379-24369-2-git-send-email-dtor@chromium.org>
+In-Reply-To: <1418771379-24369-2-git-send-email-dtor@chromium.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new make target to install to install kernel selftests.
-This new target will build and install selftests. kselftest
-target now depends on kselftest_install and runs the generated
-kselftest script to reduce duplicate work and for common look
-and feel when running tests.
+On 12/16/2014 05:09 PM, Dmitry Torokhov wrote:
+> Certain OPP APIs need to be called under RCU lock; let's add a few
+> rcu_lockdep_assert() calls to warn about potential misuse.
+> 
+> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+> ---
+>  drivers/base/power/opp.c | 16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> index d24dd614a..b78c14d 100644
+> --- a/drivers/base/power/opp.c
+> +++ b/drivers/base/power/opp.c
+> @@ -108,6 +108,14 @@ static LIST_HEAD(dev_opp_list);
+>  /* Lock to allow exclusive modification to the device and opp lists */
+>  static DEFINE_MUTEX(dev_opp_list_lock);
+>  
+> +#define opp_rcu_lockdep_assert()					\
+> +do {									\
+> +	rcu_lockdep_assert(rcu_read_lock_held() ||			\
+> +				lockdep_is_held(&dev_opp_list_lock),	\
+> +			   "Missing rcu_read_lock() or "		\
+> +			   "dev_opp_list_lock protection");		\
+> +} while (0)
+> +
+>  /**
+>   * find_device_opp() - find device_opp struct using device pointer
+>   * @dev:	device pointer used to lookup device OPPs
+> @@ -218,6 +226,8 @@ int dev_pm_opp_get_opp_count(struct device *dev)
+>  	struct dev_pm_opp *temp_opp;
+>  	int count = 0;
+>  
+> +	opp_rcu_lockdep_assert();
+> +
+>  	dev_opp = find_device_opp(dev);
+>  	if (IS_ERR(dev_opp)) {
+>  		int r = PTR_ERR(dev_opp);
+> @@ -267,6 +277,8 @@ struct dev_pm_opp *dev_pm_opp_find_freq_exact(struct device *dev,
+>  	struct device_opp *dev_opp;
+>  	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+>  
+> +	opp_rcu_lockdep_assert();
+> +
+>  	dev_opp = find_device_opp(dev);
+>  	if (IS_ERR(dev_opp)) {
+>  		int r = PTR_ERR(dev_opp);
+> @@ -313,6 +325,8 @@ struct dev_pm_opp *dev_pm_opp_find_freq_ceil(struct device *dev,
+>  	struct device_opp *dev_opp;
+>  	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+>  
+> +	opp_rcu_lockdep_assert();
+> +
+>  	if (!dev || !freq) {
+>  		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
+>  		return ERR_PTR(-EINVAL);
+> @@ -361,6 +375,8 @@ struct dev_pm_opp *dev_pm_opp_find_freq_floor(struct device *dev,
+>  	struct device_opp *dev_opp;
+>  	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+>  
+> +	opp_rcu_lockdep_assert();
+> +
+>  	if (!dev || !freq) {
+>  		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
+>  		return ERR_PTR(-EINVAL);
+> 
 
-make kselftest_target:
--- exports kselftest INSTALL_KSFT_PATH
-   default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
--- exports INSTALL_KSFT_PATH
--- runs selftests make install target:
+You should also add opp_rcu_lockdep_assert to the following functions:
+dev_pm_opp_get_voltage and dev_pm_opp_get_freq - both of which must be
+used under rcu read lock.
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
----
- Makefile | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+dev_pm_opp_get_notifier references the RCU protected dev_opp list ->
+so that must also be under rcu read lock.
 
-diff --git a/Makefile b/Makefile
-index b1c3254..99fac47 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1072,12 +1072,21 @@ headers_check: headers_install
- 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
- 
- # ---------------------------------------------------------------------------
--# Kernel selftest
-+# Kernel selftest targets
-+
-+# Default base path for kselftest install
-+INSTALL_KSFT_PATH = $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
-+export INSTALL_KSFT_PATH
- 
- PHONY += kselftest
- kselftest:
- 	$(Q)$(MAKE) -C tools/testing/selftests run_tests
- 
-+# Kernel selftest install
-+PHONY += kselftest_install
-+kselftest_install:
-+	$(Q)$(MAKE) -C tools/testing/selftests install
-+
- # ---------------------------------------------------------------------------
- # Modules
- 
-@@ -1286,6 +1295,9 @@ help:
- 	@echo  '                    Build, install, and boot kernel before'
- 	@echo  '                    running kselftest on it'
- 	@echo  ''
-+	@echo  '  kselftest_install - Install Kselftests to INSTALL_KSFT_PATH'
-+	@echo  '                      default: $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)'
-+	@echo  ''
- 	@echo  'Kernel packaging:'
- 	@$(MAKE) $(build)=$(package-dir) help
- 	@echo  ''
+
+love the concept, and I suggest splitting this into the following:
+
+RCU readers: trivial as rcu_read_lock_help dumps
+RCU updates: (adding, updating, removing): for the helper functions
+ensure mutex_lock held assertion.
+
+
+
 -- 
-2.1.0
-
+Regards,
+Nishanth Menon
