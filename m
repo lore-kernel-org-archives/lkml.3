@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaLXQ2X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:28:23 -0500
-Received: from resqmta-po-09v.sys.comcast.net ([96.114.154.168]:41179 "EHLO
-	resqmta-po-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751894AbaLXQ2T (ORCPT
+	id S1751823AbaLXQ2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:28:49 -0500
+Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:36923 "EHLO
+	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751845AbaLXQ2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:19 -0500
+	Wed, 24 Dec 2014 11:28:21 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 18/20] selftests/vm: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:54 -0700
-Message-Id: <ba61de2dec95fffd8ec25947187b7ac95c55767a.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 20/20] kbuild: add a new kselftest_install make target to install selftests
+Date: Wed, 24 Dec 2014 09:27:56 -0700
+Message-Id: <05d750bb46f4f20c668b13c312c520c1e56f7ba1.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -29,44 +29,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new make target to enable installing test. This target
-installs test in the kselftest install location and add to the
-kselftest script to run the test. Install target can be run
-only from top level kernel source directory.
+Add a new make target to install to install kernel selftests.
+This new target will build and install selftests. kselftest
+target now depends on kselftest_install and runs the generated
+kselftest script to reduce duplicate work and for common look
+and feel when running tests.
+
+make kselftest_target:
+-- exports kselftest INSTALL_KSFT_PATH
+   default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
+-- exports INSTALL_KSFT_PATH
+-- runs selftests make install target:
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/vm/Makefile | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ Makefile | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/vm/Makefile b/tools/testing/selftests/vm/Makefile
-index 4c4b1f6..761d17d 100644
---- a/tools/testing/selftests/vm/Makefile
-+++ b/tools/testing/selftests/vm/Makefile
-@@ -4,13 +4,22 @@ CC = $(CROSS_COMPILE)gcc
- CFLAGS = -Wall
- BINARIES = hugepage-mmap hugepage-shm map_hugetlb thuge-gen hugetlbfstest
- BINARIES += transhuge-stress
-+TEST_STR = /bin/sh ./run_vmtests || echo vmtests: [FAIL]
+diff --git a/Makefile b/Makefile
+index b1c3254..99fac47 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1072,12 +1072,21 @@ headers_check: headers_install
+ 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
  
- all: $(BINARIES)
- %: %.c
- 	$(CC) $(CFLAGS) -o $@ $^
- 
-+install:
-+ifdef INSTALL_KSFT_PATH
-+	install run_vmtests $(BINARIES) $(INSTALL_KSFT_PATH)
-+	@echo "$(TEST_STR)" >> $(KSELFTEST)
-+else
-+	@echo Run make kselftest_install in top level source directory
-+endif
+ # ---------------------------------------------------------------------------
+-# Kernel selftest
++# Kernel selftest targets
 +
- run_tests: all
--	@/bin/sh ./run_vmtests || (echo "vmtests: [FAIL]"; exit 1)
-+	@$(TEST_STR)
++# Default base path for kselftest install
++INSTALL_KSFT_PATH = $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
++export INSTALL_KSFT_PATH
  
- clean:
- 	$(RM) $(BINARIES)
+ PHONY += kselftest
+ kselftest:
+ 	$(Q)$(MAKE) -C tools/testing/selftests run_tests
+ 
++# Kernel selftest install
++PHONY += kselftest_install
++kselftest_install:
++	$(Q)$(MAKE) -C tools/testing/selftests install
++
+ # ---------------------------------------------------------------------------
+ # Modules
+ 
+@@ -1286,6 +1295,9 @@ help:
+ 	@echo  '                    Build, install, and boot kernel before'
+ 	@echo  '                    running kselftest on it'
+ 	@echo  ''
++	@echo  '  kselftest_install - Install Kselftests to INSTALL_KSFT_PATH'
++	@echo  '                      default: $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)'
++	@echo  ''
+ 	@echo  'Kernel packaging:'
+ 	@$(MAKE) $(build)=$(package-dir) help
+ 	@echo  ''
 -- 
 2.1.0
 
