@@ -1,177 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaLXI3l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 03:29:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14115 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750740AbaLXI3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 03:29:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,637,1413270000"; 
-   d="scan'208";a="628602768"
-Message-ID: <549A796C.50801@intel.com>
-Date: Wed, 24 Dec 2014 16:29:32 +0800
-From: "Chen, Tiejun" <tiejun.chen@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751681AbaLXIft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 03:35:49 -0500
+Received: from mail-by2on0107.outbound.protection.outlook.com ([207.46.100.107]:33376
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751464AbaLXIfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 03:35:47 -0500
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <dri-devel@lists.freedesktop.org>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <kernel@pengutronix.de>,
+        <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
+        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
+        <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH RFC v5 00/21] Add support for i.MX MIPI DSI DRM driver
+Date: Wed, 24 Dec 2014 16:39:22 +0800
+Message-ID: <1419410383-6359-1-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 2.1.0
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(243025005)(189002)(2351001)(87936001)(229853001)(110136001)(92566001)(86362001)(105606002)(68736005)(106466001)(36756003)(107046002)(15975445007)(77096005)(97736003)(104016003)(89996001)(19580395003)(6806004)(120916001)(85426001)(50986999)(62966003)(77156002)(31966008)(4396001)(84676001)(50466002)(48376002)(64706001)(50226001)(21056001)(99396003)(46102003)(47776003)(20776003)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0633;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-To: jamie@audible.transient.net
-CC: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        luto@amacapital.net
-Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
-References: <20141221124640.GA4059@cucamonga.audible.transient.net> <5497C882.4000108@intel.com> <20141222092358.GA3915@cucamonga.audible.transient.net> <5498CA50.8070906@intel.com> <5498CB62.3070901@intel.com> <20141223072659.GA4015@cucamonga.audible.transient.net>
-In-Reply-To: <20141223072659.GA4015@cucamonga.audible.transient.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0633;
+X-Forefront-PRVS: 04359FAD81
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 08:35:43.2877
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0633
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/23 15:26, Jamie Heilman wrote:
-> Chen, Tiejun wrote:
->> On 2014/12/23 9:50, Chen, Tiejun wrote:
->>> On 2014/12/22 17:23, Jamie Heilman wrote:
->>>> Chen, Tiejun wrote:
->>>>> On 2014/12/21 20:46, Jamie Heilman wrote:
->>>>>> With v3.19-rc1 when I run qemu-system-x86_64 -machine pc,accel=kvm I
->>>>>> get:
->>>>>>
->>>>>> KVM: entry failed, hardware error 0x80000021
->>>>>
->>>>> Looks some MSR writing issues such a failed entry.
->>>>>
->>>>>> If you're running a guest on an Intel machine without unrestricted mode
->>>>>> support, the failure can be most likely due to the guest entering an
->>>>>> invalid
->>>>>> state for Intel VT. For example, the guest maybe running in big real
->>>>>> mode
->>>>>> which is not supported on less recent Intel processors.
->>>>>>
->>>>>> EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000663
->>>>>> ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
->>>>>> EIP=0000e05b EFL=00010002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
->>>>>> ES =0000 00000000 0000ffff 00009300
->>>>>> CS =f000 000f0000 0000ffff 00009b00
->>>>>> SS =0000 00000000 0000ffff 00009300
->>>>>> DS =0000 00000000 0000ffff 00009300
->>>>>> FS =0000 00000000 0000ffff 00009300
->>>>>> GS =0000 00000000 0000ffff 00009300
->>>>>> LDT=0000 00000000 0000ffff 00008200
->>>>>> TR =0000 00000000 0000ffff 00008b00
->>>>>> GDT=     00000000 0000ffff
->>>>>> IDT=     00000000 0000ffff
->>>>>> CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
->>>>>> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
->>>>>> DR3=0000000000000000
->>>>>> DR6=00000000ffff0ff0 DR7=0000000000000400
->>>>>> EFER=0000000000000000
->>>>>
->>>>> And I don't see any obvious wrong as well. Any valuable info from dmesg?
->>>>
->>>> With the simple qemu command above, on 3.18.1 I see:
->>>>
->>>> kern.info: kvm: zapping shadow pages for mmio generation wraparound
->>>>
->>>> when I fire up a full guest that's actually useful I get:
->>>>
->>>> kern.info: kvm: zapping shadow pages for mmio generation wraparound
->>>> kern.err: kvm [4073]: vcpu0 disabled perfctr wrmsr: 0xc1 data 0xffff
->>>>
->>>> On 3.18.0-rc3-00042-g34a1cd6 nothing appears in the dmesg, just the
->>>> message I mention above to stderr.  Same thing with a stock
->>>> 3.19.0-rc1.  Once I apply your patch the simple test command produces
->>>> the same zapping shadow pages messages as 3.18.1, and a test guest of
->>>> a Debian Jessie image (w/stock distro kernel) produces the same thing
->>>> with disabled perfctr wrmsr message.  However, it doesn't look like
->>>
->>> Sorry I'm not sure if I understood current status. Looks 3.19-rc1 & my
->>> patch just fix that error above,
->>>
->>> KVM: entry failed, hardware error 0x80000021
->>> ...
->>>
->>> Right?
->>>
->>>> I'm entirely out of the woods, because one of my other guest VMs with a
->>>> custom kernel that works great under 3.18.1 now fails to run.  Nothing
->>>> in dmesg, but here's the stderr:
->>>
->>> But even you revert 34a1cd60d17 or just apply my patch, something else
->>> introduced between 3.18.1 and 3.19-rc1 led this error below, right?
->>>
->>>>
->>>> KVM internal error. Suberror: 1
->>>> emulation failure
->>>> EAX=000de494 EBX=00000000 ECX=00000000 EDX=00000cfd
->>>> ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fb4
->>>> EIP=000f15c1 EFL=00010016 [----AP-] CPL=0 II=0 A20=1 SMM=0 HLT=0
->>>> ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->>>> CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
->>>> SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->>>> DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->>>> FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->>>> GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
->>>> LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
->>>> TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
->>>> GDT=     000f6be8 00000037
->>>> IDT=     000f6c26 00000000
->>>> CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
->>>> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
->>>> DR3=0000000000000000
->>>> DR6=00000000ffff0ff0 DR7=0000000000000400
->>>> EFER=0000000000000000
->>>> Code=e8 ae fc ff ff 89 f2 a8 10 89 d8 75 0a b9 41 15 ff ff ff d1 <5b>
->>>> 5e c3 5b 5e e9 76 ff ff ff b0 11 e6 20 e6 a0 b0 08 e6 21 b0 70 e6 a1
->>>> b0 04 e6 21 b0 02
->>>>
->>>> FWIW, I get the same thing with 34a1cd60d17 reverted.  Maybe there are
->>>> two bugs, maybe there's more to this first one.  I can repro this
->>>
->>> So if my understanding is correct, this is probably another bug. And
->>> especially, I already saw the same log in another thread, "Cleaning up
->>> the KVM clock". Maybe you can continue to `git bisect` to locate that
->>> bad commit.
->>>
->>
->> Looks just now Andy found that commit,
->> 0e60b0799fedc495a5c57dbd669de3c10d72edd2 "kvm: change memslot sorting rule
->> from size to GFN", maybe you can try to revert this to try yours again.
->
-> That doesn't revert cleanly for me, and I don't have much time to
-> fiddle with it until the 24th---so checked out the commit before it
-> (d4ae84a0), applied your patch, built, and yes, everything works fine
-> at that point.  I'll probably have time for another full bisection
-> later, assuming things aren't ironed out already by then.
+Hi,
 
-Could you try this to fix your last error?
+This series addresses comments from Andrzej Hajda on v4.
+Most comments are about the Himax HX8369A DRM panel driver.
+And, a single comment is about the Synopsys DesignWare MIPI DSI host
+controller DRM bridge driver.
 
-Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
----
-  virt/kvm/kvm_main.c | 3 ++-
-  1 file changed, 2 insertions(+), 1 deletion(-)
+The i.MX MIPI DSI is a Synopsys DesignWare MIPI DSI host controller IP.
+This series adds support for a Synopsys DesignWare MIPI DSI host controller
+DRM bridge driver and a i.MX MIPI DSI specific DRM driver.
+Currently, the MIPI DSI drivers only support the burst with sync pulse mode.
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index f528343..a2d928c 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -672,6 +672,7 @@ static void update_memslots(struct kvm_memslots *slots,
-         WARN_ON(mslots[i].id != id);
-         if (!new->npages) {
-                 new->base_gfn = 0;
-+               new->flags = 0;
-                 if (mslots[i].npages)
-                         slots->used_slots--;
-         } else {
-@@ -688,7 +689,7 @@ static void update_memslots(struct kvm_memslots *slots,
-                 i++;
-         }
-         while (i > 0 &&
--              new->base_gfn > mslots[i - 1].base_gfn) {
-+              new->base_gfn >= mslots[i - 1].base_gfn) {
-                 mslots[i] = mslots[i - 1];
-                 slots->id_to_index[mslots[i].id] = i;
-                 i--;
+This series also includes a DRM panel driver for the Truly TFT480800-16-E panel
+which is driven by the Himax HX8369A driver IC.  The driver IC data sheet could
+be found at [1].  As mentioned by the data sheet, the driver IC supports several
+interface modes.  Currently, the DRM panel driver only supports the MIPI DSI video
+mode.  New interface modes could be added later(perhaps, just like the way the DRM
+simple panel driver supports both MIPI DSI interface panels and simple(parallel)
+interface panels).
+
+The MIPI DSI feature is tested on i.MX6Q SabreSD board and i.MX6DL SabreSD board.
+The MIPI DSI display could be enabled directly on i.MX6Q SabreSD board after
+applying this series, because the 26.4MHz pixel clock the panel requires could be
+derived from the IPU HSP clock(264MHz) with an integer divider.
+On i.MX6DL SabreSD board, we need to manually disable the LVDS and HDMI displays in
+the device tree blob, since the i.MX6DL IPU HSP clock is 198MHz at present, which
+makes the pixel clock share the PLL5 video clock source with the LVDS and HDMI,
+thus, the panel cannot get the pixel clock rate it wants.
+
+Patch 01/21 is needed to get a precise pixel clock rate(26.4MHz) from the PLL5 video
+clock.  If we don't have this patch, the pixel clock rate is about 20MHz, which
+causes a horitonal shift on the display image.
+
+This series can be applied on the drm-next branch.
+
+[1] http://www.allshore.com/pdf/Himax_HX8369-A.pdf
+
+Liu Ying (21):
+  clk: divider: Correct parent clk round rate if no bestdiv is normally
+    found
+  of: Add vendor prefix for Himax Technologies Inc.
+  of: Add vendor prefix for Truly Semiconductors Limited
+  ARM: imx6q: Add GPR3 MIPI muxing control register field shift bits
+    definition
+  ARM: imx6q: clk: Add the video_27m clock
+  ARM: imx6q: clk: Change hdmi_isfr clock's parent to be video_27m clock
+  ARM: imx6q: clk: Change hsi_tx clock to be a shared clock gate
+  ARM: imx6q: clk: Add support for mipi_core_cfg clock as a shared clock
+    gate
+  ARM: dts: imx6qdl: Move existing MIPI DSI ports into a new 'ports'
+    node
+  drm/dsi: Add a helper to get bits per pixel of MIPI DSI pixel format
+  Documentation: dt-bindings: Add bindings for Synopsys DW MIPI DSI DRM
+    bridge driver
+  drm/bridge: Add Synopsys DesignWare MIPI DSI host controller driver
+  Documentation: dt-bindings: Add bindings for i.MX specific Synopsys DW
+    MIPI DSI driver
+  drm: imx: Support Synopsys DesignWare MIPI DSI host controller
+  Documentation: dt-bindings: Add bindings for Himax HX8369A DRM panel
+    driver
+  drm: panel: Add support for Himax HX8369A MIPI DSI panel
+  ARM: dtsi: imx6qdl: Add support for MIPI DSI host controller
+  ARM: dts: imx6qdl-sabresd: Add support for TRULY TFT480800-16-E MIPI
+    DSI panel
+  ARM: imx_v6_v7_defconfig: Cleanup for imx drm being moved out of
+    staging
+  ARM: imx_v6_v7_defconfig: Add support for MIPI DSI host controller
+  ARM: imx_v6_v7_defconfig: Add support for Himax HX8369A panel
+
+ .../devicetree/bindings/drm/bridge/dw_mipi_dsi.txt |  72 ++
+ .../devicetree/bindings/drm/imx/mipi_dsi.txt       |  75 ++
+ .../devicetree/bindings/panel/himax,hx8369a.txt    |  39 +
+ .../devicetree/bindings/vendor-prefixes.txt        |   2 +
+ arch/arm/boot/dts/imx6q.dtsi                       |  20 +-
+ arch/arm/boot/dts/imx6qdl-sabresd.dtsi             |  20 +
+ arch/arm/boot/dts/imx6qdl.dtsi                     |  29 +-
+ arch/arm/configs/imx_v6_v7_defconfig               |  17 +-
+ arch/arm/mach-imx/clk-imx6q.c                      |   7 +-
+ drivers/clk/clk-divider.c                          |   3 +-
+ drivers/gpu/drm/bridge/Kconfig                     |   5 +
+ drivers/gpu/drm/bridge/Makefile                    |   1 +
+ drivers/gpu/drm/bridge/dw_mipi_dsi.c               | 997 +++++++++++++++++++++
+ drivers/gpu/drm/imx/Kconfig                        |   7 +
+ drivers/gpu/drm/imx/Makefile                       |   1 +
+ drivers/gpu/drm/imx/dw_mipi_dsi-imx.c              | 226 +++++
+ drivers/gpu/drm/panel/Kconfig                      |   5 +
+ drivers/gpu/drm/panel/Makefile                     |   1 +
+ drivers/gpu/drm/panel/panel-himax-hx8369a.c        | 608 +++++++++++++
+ include/drm/bridge/dw_mipi_dsi.h                   |  27 +
+ include/drm/drm_mipi_dsi.h                         |  14 +
+ include/dt-bindings/clock/imx6qdl-clock.h          |   4 +-
+ include/linux/mfd/syscon/imx6q-iomuxc-gpr.h        |   1 +
+ 23 files changed, 2151 insertions(+), 30 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
+ create mode 100644 Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
+ create mode 100644 Documentation/devicetree/bindings/panel/himax,hx8369a.txt
+ create mode 100644 drivers/gpu/drm/bridge/dw_mipi_dsi.c
+ create mode 100644 drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
+ create mode 100644 drivers/gpu/drm/panel/panel-himax-hx8369a.c
+ create mode 100644 include/drm/bridge/dw_mipi_dsi.h
+
 -- 
-1.9.1
+2.1.0
 
-Tiejun
