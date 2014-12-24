@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaLXMAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 07:00:31 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14977 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427AbaLXMA3 (ORCPT
+	id S1751899AbaLXMGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 07:06:24 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:49764 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427AbaLXMGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 07:00:29 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 24 Dec 2014 03:55:10 -0800
-From: Rohith Seelaboyina <rseelaboyina@nvidia.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <mina86@mina86.com>,
-        <r.baldyga@samsung.com>, <andrzej.p@samsung.com>
-CC: <joe@perches.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Rohith Seelaboyina <rseelaboyina@nvidia.com>
-Subject: [PATCH v3] usb: gadget: ffs: Fix sparse error
-Date: Wed, 24 Dec 2014 17:30:01 +0530
-Message-ID: <1419422401-8401-1-git-send-email-rseelaboyina@nvidia.com>
-X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
+	Wed, 24 Dec 2014 07:06:23 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Linux 3.19-rc1: i915.ko error messages at boot
+Date: Wed, 24 Dec 2014 13:06:19 +0100
+User-Agent: KMail/1.13.7 (Linux/3.19.0-031900rc1-generic; KDE/4.14.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed;
+  boundary="nextPart1547634.xRJP02Oadi";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412241306.19359@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the sparse error in functionfs
-driver.
+--nextPart1547634.xRJP02Oadi
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-drivers/usb/gadget/function/f_fs.c:400:44: error: bad
-constant experssion.
+lspci output:
+00:02.0 VGA compatible controller [0300]: Intel Corporation 4th Gen Core Pr=
+ocessor Integrated Graphics=20
+Controller [8086:0416] (rev 06)
 
-Dynamic memory allocation through kcalloc is more safer
-than declaring variable array size, Fix this error by
-using kcalloc for memory allocation, Check if memory
-allocation is successful and return -ENOMEM on failure.
+dmesg output:
+[    2.379847] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.
+[    2.379847] [drm:intel_uncore_check_errors [i915]] *ERROR* Unclaimed reg=
+ister before interrupt
+[    2.379868] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.
+[    2.379869] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.
+[    2.430637] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.<3>[    2.430649] [drm:intel_unco=
+re_check_errors [i915]] *ERROR*=20
+Unclaimed register before interrupt
+[    2.430756] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.
+[    2.430817] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.[drm:hsw_unclaimed_reg_detect.isr=
+a.6 [i915]] *ERROR* Unclaimed register=20
+detected. Please use the i915.mmio_debug=3D1 to debug this problem.
+[    2.430948] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.[drm:hsw_unclaimed_reg_detect.isr=
+a.6 [i915]] *ERROR* Unclaimed register=20
+detected. Please use the i915.mmio_debug=3D1 to debug this problem.
+[    2.619114] [drm:intel_uncore_check_errors [i915]] *ERROR* Unclaimed reg=
+ister before interrupt
+[    2.619213] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.
+[    2.619275] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.[drm:hsw_unclaimed_reg_detect.isr=
+a.6 [i915]] *ERROR* Unclaimed register=20
+detected. Please use the i915.mmio_debug=3D1 to debug this problem.
+[    2.626522] [drm:intel_uncore_check_errors [i915]] *ERROR* Unclaimed reg=
+ister before interrupt
+[    2.626616] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.
+[    2.626678] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
+ed register detected. Please use the=20
+i915.mmio_debug=3D1 to debug this problem.<6>[    2.633412] AVX2 version of=
+ gcm_enc/dec engaged.
 
-Signed-off-by: Rohith Seelaboyina <rseelaboyina@nvidia.com>
----
-Changes in v3:
-   - Follow kernel coding style to seperate variable
-     declaration and assignment.
-Changes in v2:
-   - Use kcalloc to allocate memory instead of using 
-     kmalloc and memset.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
- drivers/usb/gadget/function/f_fs.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+--nextPart1547634.xRJP02Oadi
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index 63314ede7ba6..8af3f7906c83 100644
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -397,10 +397,13 @@ static ssize_t __ffs_ep0_read_events(struct ffs_data *ffs, char __user *buf,
- 	 * We are holding ffs->ev.waitq.lock and ffs->mutex and we need
- 	 * to release them.
- 	 */
--	struct usb_functionfs_event events[n];
- 	unsigned i = 0;
-+	int ret;
-+	struct usb_functionfs_event *events;
- 
--	memset(events, 0, sizeof events);
-+	events = kcalloc(n, sizeof(*events), GFP_KERNEL);
-+	if (!events)
-+		return -ENOMEM;
- 
- 	do {
- 		events[i].type = ffs->ev.types[i];
-@@ -421,8 +424,10 @@ static ssize_t __ffs_ep0_read_events(struct ffs_data *ffs, char __user *buf,
- 	spin_unlock_irq(&ffs->ev.waitq.lock);
- 	mutex_unlock(&ffs->mutex);
- 
--	return unlikely(__copy_to_user(buf, events, sizeof events))
--		? -EFAULT : sizeof events;
-+	ret = unlikely(__copy_to_user(buf, events, n * sizeof(*events)))
-+		? -EFAULT : n * sizeof(*events);
-+	kfree(events);
-+	return ret;
- }
- 
- static ssize_t ffs_ep0_read(struct file *file, char __user *buf,
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlSarDsACgkQi/DJPQPkQ1IOjgCgmLqwtv8TUhj/sE5MqH76XU1o
+pwgAn2JeqYc0HpRQWlV77OHHIyGKymAr
+=uVdy
+-----END PGP SIGNATURE-----
+
+--nextPart1547634.xRJP02Oadi--
