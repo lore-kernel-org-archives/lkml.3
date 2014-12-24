@@ -1,85 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512AbaLXP6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 10:58:25 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48349 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086AbaLXP6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 10:58:23 -0500
-Message-ID: <549AE273.1040407@ti.com>
-Date: Wed, 24 Dec 2014 10:57:39 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751551AbaLXQA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:00:27 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:35771 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261AbaLXQA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 11:00:26 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <will.deacon@arm.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>, <bhelgaas@google.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [RFC v1 PATCH 1/2] of/pci: add of_pci_dma_configure() update
- dma configuration
-References: <1418940425-2017-1-git-send-email-m-karicheri2@ti.com> <5090769.jqAkiDgYu7@wuerfel> <5499A96D.4010704@ti.com> <4513569.xuD4xkPOuC@wuerfel>
-In-Reply-To: <4513569.xuD4xkPOuC@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+Date: Wed, 24 Dec 2014 17:00:05 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Sanchayan Maity <maitysanchayan@gmail.com>
+Cc: Peter.Chen@freescale.com, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] usb: chipidea: Add identification registers access
+ APIs
+In-Reply-To: <72124df17c0f40f8a7ae02faa9664b9d51743584.1418981438.git.maitysanchayan@gmail.com>
+References: <cover.1418981438.git.maitysanchayan@gmail.com>
+ <72124df17c0f40f8a7ae02faa9664b9d51743584.1418981438.git.maitysanchayan@gmail.com>
+Message-ID: <4f5efe169ed3ab16ffcbee52dd6b7661@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Dec 24 16:59:14 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 549ae2d212817215486914
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2014 05:42 PM, Arnd Bergmann wrote:
-> On Tuesday 23 December 2014 12:42:05 Murali Karicheri wrote:
->>> here.
->>
->> Arnd,
->>
->> I guess so. Besides we need to keep the default coherent dma mask to
->> 32bit 0xffffffffull as well to work on Keystone and also in sync with
->> current defaults used in pci_device_add() so that we don't break this
->> behavior.
->>
->> Here is the summary of changes need to make on top of my existing patch.
->>
->> 1. of_dma_configure() - change size = dev->coherent_dma_mask to size =
->> dev->coherent_dma_mask + 1. This is a new patch to fix existing code.
->
-> ok
->
->> 2. Do the above change to of_pci_dma_configure() as well.
->
-> ok
->
->> 3. in arch_setup_dma_ops() update the DMA mask to min((*dev->dma_mask),
->> dma_base + size - 1) as
->>
->>
->> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
->> index c17f6a9..88b4769 100644
->> --- a/arch/arm/mm/dma-mapping.c
->> +++ b/arch/arm/mm/dma-mapping.c
->> @@ -2053,8 +2053,13 @@ void arch_setup_dma_ops(struct device *dev, u64
->> dma_base, u64 size,
->>    {
->>           struct dma_map_ops *dma_ops;
->>
->> +
->> +       *dev->dma_mask = min((*dev->dma_mask), (dma_base + size - 1));
->>
->> I have tested this on keystone and it works fine with rootfs on PCI SATA
->> harddisk. I will be doing more tests with this change. If you are in
->> agreement with the above changes, I will re-spin the patch to accomodate
->> them and send v1 of the same.
->
-> Ok, sounds good. I noticed that you did not put Russell into the Cc list
-> for the emails. Please do so when you send it again, as he may have some
-> additional comments.
->
-> 	Arnd
-Arnd,
+On 2014-12-19 10:55, Sanchayan Maity wrote:
+> Using hw_write_id_reg and hw_read_id_reg to write and read
+> identification registers contents. This can be used to get
+> controller information, change some system configurations
+> and so on.
 
-Can I add "Reviewed-by: Arnd Bergmann <arnd@arndb.de>" when I send the 
-v2 of the patch? I want to send this today. So please respond.
+Checkpatch is complaining about DOS line endings and some trailing
+whitespace. This applies to all three patches.
 
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+> 
+> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
+> ---
+>  drivers/usb/chipidea/ci.h |   53 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 53 insertions(+)
+> 
+> diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+> index ea40626..94db636 100644
+> --- a/drivers/usb/chipidea/ci.h
+> +++ b/drivers/usb/chipidea/ci.h
+> @@ -29,6 +29,15 @@
+>  /******************************************************************************
+>   * REGISTERS
+>   *****************************************************************************/
+> +/* Identification Registers */
+> +#define ID_ID				0x0
+> +#define ID_HWGENERAL			0x4
+> +#define ID_HWHOST			0x8
+> +#define ID_HWDEVICE			0xc
+> +#define ID_HWTXBUF			0x10
+> +#define ID_HWRXBUF			0x14
+> +#define ID_SBUSCFG			0x90
+> +
+>  /* register indices */
+>  enum ci_hw_regs {
+>  	CAP_CAPLENGTH,
+> @@ -97,6 +106,18 @@ enum ci_role {
+>  	CI_ROLE_END,
+>  };
+>  
+> +enum CI_REVISION {
+
+Usually the enum names are small caps, only the labels are capitalized.
+I would suggest use ci_revision here (similar to the enum above).
+
+> +	CI_REVISION_1X = 10,	/* Revision 1.x */
+> +	CI_REVISION_20 = 20, /* Revision 2.0 */
+> +	CI_REVISION_21, /* Revision 2.1 */
+> +	CI_REVISION_22, /* Revision 2.2 */
+> +	CI_REVISION_23, /* Revision 2.3 */
+> +	CI_REVISION_24, /* Revision 2.4 */
+> +	CI_REVISION_25, /* Revision 2.5 */
+> +	CI_REVISION_25_PLUS, /* Revision above than 2.5 */
+> +	CI_REVISION_UNKNOWN = 99, /* Unknown Revision */
+> +};
+> +
+>  /**
+>   * struct ci_role_driver - host/gadget role driver
+>   * @start: start this role
+> @@ -168,6 +189,7 @@ struct hw_bank {
+>   * @b_sess_valid_event: indicates there is a vbus event, and handled
+>   * at ci_otg_work
+>   * @imx28_write_fix: Freescale imx28 needs swp instruction for writing
+> + * @rev: The revision number for controller
+>   */
+>  struct ci_hdrc {
+>  	struct device			*dev;
+> @@ -207,6 +229,7 @@ struct ci_hdrc {
+>  	bool				id_event;
+>  	bool				b_sess_valid_event;
+>  	bool				imx28_write_fix;
+> +	enum CI_REVISION		rev;
+>  };
+>  
+>  static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci)
+> @@ -244,6 +267,36 @@ static inline void ci_role_stop(struct ci_hdrc *ci)
+>  }
+>  
+>  /**
+> + * hw_read_id_reg: reads from a identification register
+> + * @ci: the controller
+> + * @offset: offset from the beginning of identification registers region
+> + * @mask: bitfield mask
+> + *
+> + * This function returns register contents
+> + */
+> +static inline u32 hw_read_id_reg(struct ci_hdrc *ci, u32 offset, u32 mask)
+> +{
+> +	return ioread32(ci->hw_bank.abs + offset) & mask;
+> +}
+> +
+> +/**
+> + * hw_write_id_reg: writes to a identification register
+> + * @ci: the controller
+> + * @offset: offset from the beginning of identification registers region
+> + * @mask: bitfield mask
+> + * @data: new value
+> + */
+> +static inline void hw_write_id_reg(struct ci_hdrc *ci, u32 offset,
+> +			    u32 mask, u32 data)
+> +{
+> +	if (~mask)
+> +		data = (ioread32(ci->hw_bank.abs + offset) & ~mask)
+> +			| (data & mask);
+> +
+> +	iowrite32(data, ci->hw_bank.abs + offset);
+> +}
+
+This function isn't used anywhere, does it make sense to write an ID
+register? The ones I see in Vybrid's RM are read-only anyway..
+
+--
+Stefan
+
+> +
+> +/**
+>   * hw_read: reads from a hw register
+>   * @ci: the controller
+>   * @reg:  register index
+
