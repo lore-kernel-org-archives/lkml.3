@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611AbaLXRPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 12:15:19 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:34071 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280AbaLXRPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 12:15:17 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: 3.19-rc1 refuse connection from bluetooth headset
-Date: Wed, 24 Dec 2014 18:15:12 +0100
-User-Agent: KMail/1.13.7 (Linux/3.19.0-031900rc1-generic; KDE/4.14.2; x86_64; ; )
+	id S1751910AbaLXRQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 12:16:53 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51788 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbaLXRQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 12:16:51 -0500
+Message-ID: <549AF4F3.1090600@ti.com>
+Date: Wed, 24 Dec 2014 11:16:35 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2208885.mAYkt4clhk";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Dmitry Torokhov <dtor@chromium.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Stefan Wahren <stefan.wahren@i2se.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] PM / OPP: take RCU lock in dev_pm_opp_get_opp_count
+References: <1418771379-24369-1-git-send-email-dtor@chromium.org>	<1418771379-24369-4-git-send-email-dtor@chromium.org>	<549AEE52.9080607@ti.com> <CAE_wzQ92VK6Jv+j-LDTupMJzJj_AZyAqUe2Vxo5YRhkFEFF=sw@mail.gmail.com>
+In-Reply-To: <CAE_wzQ92VK6Jv+j-LDTupMJzJj_AZyAqUe2Vxo5YRhkFEFF=sw@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201412241815.12922@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2208885.mAYkt4clhk
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 12/24/2014 11:09 AM, Dmitry Torokhov wrote:
+> On Wed, Dec 24, 2014 at 8:48 AM, Nishanth Menon <nm@ti.com> wrote:
+>> On 12/16/2014 05:09 PM, Dmitry Torokhov wrote:
+>>> A lot of callers are missing the fact that dev_pm_opp_get_opp_count
+>>> needs to be called under RCU lock. Given that RCU locks can safely be
+>>> nested, instead of providing *_locked() API, let's take RCU lock inside
+>>> dev_pm_opp_get_opp_count() and leave callers as is.
+>>
+>> While it is true that we can safely do nested RCU locks, This also
+>> encourages wrong usage.
+>>
+>> count = dev_pm_opp_get_opp_count(dev)
+>> ^^ point A
+>> array   = kzalloc(count * sizeof (*array));
+>> rcu_read_lock();
+>> ^^ point B
+>> .. work down the list and add OPPs..
+>> ...
+>>
+>> Between A and B, we might have had list modification (dynamic OPP
+>> addition or deletion) - which implies that the count is no longer
+>> accurate between point A and B. instead, enforcing callers to have the
+>> responsibility of rcu_lock is exactly what we have to do since the OPP
+>> library has no clue how to enforce pointer or data accuracy.
+> 
+> No, you seem to have a misconception that rcu_lock protects you past
+> the point B, but that is also wrong. The only thing rcu "lock"
+> provides is safe traversing the list and guarantee that elements will
+> not disappear while you are referencing them, but list can both
+> contract and expand under you. In that regard code in
+> drivers/cpufreq/cpufreq_opp.c is utterly wrong. If you want to count
+> the list and use number of elements you should be taking a mutex.
+> Luckily all cpufreq drivers at the moment only want to see if OPP
+> table is empty or not, so as a stop-gap we can take rcu_lock
+> automatically as we are getting count. We won't get necessarily
+> accurate result, but at least we will be safe traversing the list.
 
-Hello,
+So, instead of a half solution, lets consider this in the realm of
+dynamic OPPs as well. agreed to the point that we only have safe
+traversal and pointer validity. the real problem however is with
+"dynamic OPPs" (one of the original reasons why i did not add dynamic
+OPPs in the original version was to escape from it's complexity for
+users - anyways.. we are beyond that now). if OPPs can be removed on
+the fly, we need the following:
+a) use OPP notifiers to adequately handle list modification
+b) lock down list modification (and associated APIs) to ensure that
+the original cpufreq /devfreq list is correct.
 
-now I installed 3.19-rc1 kernel and my bluetooth headset was refused to con=
-nect automatically. I need to start=20
-connection manually from laptop (and then it working). Before when I starte=
-d bluetooth headset it automatically=20
-connected and I did not have to do anything. Now with 3.19-rc1 kernel I nee=
-d to do connection manually and I see=20
-error messages in hcidump:
+I still dont see the need to do this half solution.
 
- $ sudo hcidump=20
- HCI sniffer - Bluetooth packet analyzer ver 2.2
- device: hci0 snap_len: 1028 filter: 0xffffffffffffffff
- > HCI Event: Connect Request (0x04) plen 10
-     bdaddr <HEADSET_ADDRESS> class 0x240404 type ACL
- < HCI Command: Reject Connection Request (0x01|0x000a) plen 7
-     bdaddr <HEADSET_ADDRESS> reason 0x0f
-     Reason: Connection Rejected due to Unacceptable BD_ADDR
- > HCI Event: Command Status (0x0f) plen 4
-     Reject Connection Request (0x01|0x000a) status 0x00 ncmd 1
- > HCI Event: Connect Complete (0x03) plen 11
-     status 0x0f handle 34 bdaddr <HEADSET_ADDRESS> type ACL encrypt 0x00
-     Error: Connection Rejected due to Unacceptable BD_ADDR
- > HCI Event: Connect Request (0x04) plen 10
-     bdaddr <HEADSET_ADDRESS> class 0x240404 type ACL
- < HCI Command: Reject Connection Request (0x01|0x000a) plen 7
-     bdaddr <HEADSET_ADDRESS> reason 0x0f
-     Reason: Connection Rejected due to Unacceptable BD_ADDR
- > HCI Event: Command Status (0x0f) plen 4
-     Reject Connection Request (0x01|0x000a) status 0x00 ncmd 1
- > HCI Event: Connect Complete (0x03) plen 11
-    status 0x0f handle 35 bdaddr <HEADSET_ADDRESS> type ACL encrypt 0x00
-    Error: Connection Rejected due to Unacceptable BD_ADDR
 
-(real address of my bluetooth headset was replaced by <HEADSET_ADDRESS>)
-
-Can you inspect why new kernel refuse connection from my bluetooth headset?
-
-I'm still using bluez 4.98 (which is in Ubuntu 12.04), I did not do any upd=
-ate.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart2208885.mAYkt4clhk
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSa9KAACgkQi/DJPQPkQ1J5eQCfRwRIieQReU8tMzqwBtMzCCSl
-WCEAoKCy/wdc/dsO+bsRvAbXCQmEl5+2
-=BqDw
------END PGP SIGNATURE-----
-
---nextPart2208885.mAYkt4clhk--
+-- 
+Regards,
+Nishanth Menon
