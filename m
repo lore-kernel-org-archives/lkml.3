@@ -1,82 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaLXEvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 23:51:40 -0500
-Received: from smtp.mei.co.jp ([133.183.100.20]:39195 "EHLO smtp.mei.co.jp"
+	id S1751530AbaLXEyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 23:54:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35822 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359AbaLXEvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 23:51:39 -0500
-Date: Wed, 24 Dec 2014 13:51:13 +0900
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 2/2] merge_config.sh: add -? for help
-Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
-        dvhart@linux.intel.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1418331304-4821-2-git-send-email-olof@lixom.net>
-References: <1418331304-4821-1-git-send-email-olof@lixom.net> <1418331304-4821-2-git-send-email-olof@lixom.net>
-X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
-Message-Id: <20141224135113.1D3B.AA925319@jp.panasonic.com>
+	id S1751104AbaLXEyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 23:54:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="503448454"
+Message-ID: <549A4708.90808@linux.intel.com>
+Date: Wed, 24 Dec 2014 12:54:32 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, "Wu, Feng" <feng.wu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
+Subject: Re: [v3 06/26] iommu, x86: No need to migrating irq for VT-d Posted-Interrupts
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>	<1418397300-10870-7-git-send-email-feng.wu@intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>	<E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>	<54941326.4080405@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC06282@SHSMSX104.ccr.corp.intel.com> <54992C2C.5030305@redhat.com> <E959C4978C3B6342920538CF579893F002314236@SHSMSX104.ccr.corp.intel.com> <5499370D.8000703@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC06DF9@SHSMSX104.ccr.corp.intel.com> <549A211A.30508@linux.intel.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC06E9B@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC06E9B@SHSMSX104.ccr.corp.intel.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Olof
-
-Not that I care, but what does this patch improve?
-
-
-
-
-On Thu, 11 Dec 2014 12:55:04 -0800
-Olof Johansson <olof@lixom.net> wrote:
-
-> It's usual enough for help text that it makes sense to support it.
+On 2014/12/24 10:32, Zhang, Yang Z wrote:
+> Jiang Liu wrote on 2014-12-24:
+>> On 2014/12/24 9:38, Zhang, Yang Z wrote:
+>>> Paolo Bonzini wrote on 2014-12-23:
+>>>>
+>>>>
+>>>> On 23/12/2014 10:07, Wu, Feng wrote:
+>>>>>> On 23/12/2014 01:37, Zhang, Yang Z wrote:
+>>>>>>> I don't quite understand it. If user set an interrupt's affinity
+>>>>>>> to a CPU, but he still see the interrupt delivers to other CPUs in host.
+>>>>>>> Do you think it is a right behavior?
+>>>>>>
+>>>>>> No, the interrupt is not delivered at all in the host.  Normally you'd have:
+>>>>>>
+>>>>>> - interrupt delivered to CPU from host affinity
+>>>>>>
+>>>>>> - VFIO interrupt handler writes to irqfd
+>>>>>>
+>>>>>> - interrupt delivered to vCPU from guest affinity
+>>>>>>
+>>>>>> Here, you just skip the first two steps.  The interrupt is
+>>>>>> delivered to the thread that is running the vCPU directly, so the
+>>>>>> host affinity is bypassed entirely.
+>>>>>>
+>>>>>> ... unless you are considering the case where the vCPU is blocked
+>>>>>> and the host is processing the posted interrupt wakeup vector.
+>>>>>> In that case yes, it would be better to set NDST to a CPU
+>>>>>> matching the host
+>> affinity.
+>>>>>
+>>>>> In my understanding, wakeup vector should have no relationship
+>>>>> with the host affinity of the irq. Wakeup notification event
+>>>>> should be delivered to the pCPU which the vCPU was blocked on. And
+>>>>> in kernel's point of view, the irq is not associated with the wakeup vector, right?
+>>>>
+>>>> That is correct indeed.  It is not associated to the wakeup vector,
+>>>> hence this patch is right, I think.
+>>>>
+>>>> However, the wakeup vector has the same function as the VFIO
+>>>> interrupt handler, so you could argue that it is tied to the host
+>>>> affinity rather than the guest.  Let's wait for Yang to answer.
+>>>
+>>> Actually, that's my original question too. I am wondering what
+>>> happens if the
+>> user changes the assigned device's affinity in host's /proc/irq/? If
+>> ignore it is acceptable, then this patch is ok. But it seems the
+>> discussion out of my scope, need some experts to tell us their idea since it will impact the user experience.
+>> Hi Yang,
 > 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
->  scripts/kconfig/merge_config.sh |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
+> Hi Jiang,
 > 
-> diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
-> index 2ab91b9..0c89537 100755
-> --- a/scripts/kconfig/merge_config.sh
-> +++ b/scripts/kconfig/merge_config.sh
-> @@ -28,11 +28,11 @@ trap clean_up HUP INT TERM
->  
->  usage() {
->  	echo "Usage: $0 [OPTIONS] [CONFIG [...]]"
-> -	echo "  -h    display this help text"
-> -	echo "  -m    only merge the fragments, do not execute the make command"
-> -	echo "  -n    use allnoconfig instead of alldefconfig"
-> -	echo "  -r    list redundant entries when merging fragments"
-> -	echo "  -O    dir to put generated output files"
-> +	echo "  -h or -? display this help text"
-> +	echo "  -m       only merge the fragments, do not execute the make command"
-> +	echo "  -n       use allnoconfig instead of alldefconfig"
-> +	echo "  -r       list redundant entries when merging fragments"
-> +	echo "  -O       dir to put generated output files"
->  }
->  
->  MAKE=true
-> @@ -52,7 +52,7 @@ while true; do
->  		shift
->  		continue
->  		;;
-> -	"-h")
-> +	"-h"|"-?")
->  		usage
->  		exit
->  		;;
-> -- 
-> 1.7.10.4
+>> 	Originally we have a proposal to return failure when user sets IRQ
+>> affinity through native OS interfaces if an IRQ is in PI mode. But
+>> that proposal will break CPU hot-removal because OS needs to migrate
+>> away all IRQs binding to the CPU to be offlined. Then we propose
+>> saving user IRQ affinity setting without changing hardware
+>> configuration (keeping PI configuration). Later when PI mode is
+>> disabled, the cached affinity setting will be used to setup IRQ
+>> destination for native OS. On the other hand, for IRQ in PI mode, it
+>> won't be delivered to native OS, so user may not sense that the IRQ is delivered to CPUs other than those in the affinity set.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> The IRQ is still there but will be delivered to host in the form of PI event(if the VCPU is running in root-mode). I am not sure whether those interrupts should be reflected in /proc/interrupts? If the answer is yes, then which entries should be used, a new PI entry or use the original IRQ entry?
 
+You are right, the native interrupt statistics will become inaccurate.
+Maybe some document about this behavior is preferred.
 
+> 
+>> In that aspect, I think it's acceptable:) Regards!
+> 
+> Yes, if all of you guys(especially the IRQ maintainer) are think it is acceptable then we can follow current implementation and document it.
+Good suggestion, we will send an email to Thomas for advice after New
+Year.
+> 
+>> Gerry
+>>>
+>>>>
+>>>> Paolo
+>>>
+>>>
+>>> Best regards,
+>>> Yang
+>>>
+>>>
+> 
+> 
+> Best regards,
+> Yang
+> 
+> 
