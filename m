@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaLXJjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 04:39:32 -0500
-Received: from regular1.263xmail.com ([211.150.99.135]:38447 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336AbaLXJjO (ORCPT
+	id S1751910AbaLXJoZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 04:44:25 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:43321 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563AbaLXJoG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 04:39:14 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: jay.xu@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <831b366dd1790ec23fae64f6a3ae4d60>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Jianqun Xu <jay.xu@rock-chips.com>
-To: lgirdwood@gmail.com, heiko@sntech.de, broonie@kernel.org, perex@perex.cz,
-        tiwai@suse.de, sonnyrao@chromium.org
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, Jianqun Xu <jay.xu@rock-chips.com>
-Subject: [PATCH v2 3/3] ASoC: rockchip: i2s: fix maxburst of dma data to 4
-Date: Wed, 24 Dec 2014 17:37:02 +0800
-Message-Id: <1419413822-11539-4-git-send-email-jay.xu@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419413822-11539-1-git-send-email-jay.xu@rock-chips.com>
-References: <1419325709-15374-1-git-send-email-jay.xu@rock-chips.com>
- <1419413822-11539-1-git-send-email-jay.xu@rock-chips.com>
+	Wed, 24 Dec 2014 04:44:06 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] Drivers: bcma: Fix three coding style issues, more than 80 characters per line.
+From: =?iso-8859-1?Q?=D2scar_Forner_Mart=EDnez?= 
+	<oscar.forner.martinez@gmail.com>
+In-Reply-To: <877fxhbjj8.fsf@kamboji.qca.qualcomm.com>
+Date: Wed, 24 Dec 2014 09:44:02 +0000
+Cc: zajec5@gmail.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4E065003-D723-47FD-B463-C1C0C4C238E2@gmail.com>
+References: <1419378909-14414-1-git-send-email-oscar.forner.martinez@gmail.com> <877fxhbjj8.fsf@kamboji.qca.qualcomm.com>
+To: Kalle Valo <kvalo@codeaurora.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since RK3288 DMAC's burst length only support max to 4, here
-set maxburst of playback and capture dma data to 4.
+Hi Kalle,
 
-Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
----
-changes since v1:
-- new patch since v1
+I am doing it from London with the timezone of Spain, maybe is that the odd stuff? I can change it and do the patch again. I will check the style guide to do the changes properly this time. I have a couple of questions, as it is my first patch I am not sure how to do them.
 
- sound/soc/rockchip/rockchip_i2s.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Do I have to sent the V2 of the patch as the previous one? or I have to do something to follow that one?
 
-diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
-index 1cd7efc..59aeec4 100644
---- a/sound/soc/rockchip/rockchip_i2s.c
-+++ b/sound/soc/rockchip/rockchip_i2s.c
-@@ -458,11 +458,11 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
- 
- 	i2s->playback_dma_data.addr = res->start + I2S_TXDR;
- 	i2s->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	i2s->playback_dma_data.maxburst = 16;
-+	i2s->playback_dma_data.maxburst = 4;
- 
- 	i2s->capture_dma_data.addr = res->start + I2S_RXDR;
- 	i2s->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	i2s->capture_dma_data.maxburst = 16;
-+	i2s->capture_dma_data.maxburst = 4;
- 
- 	i2s->dev = &pdev->dev;
- 	dev_set_drvdata(&pdev->dev, i2s);
--- 
-1.9.1
+Regards,
 
+Oscar
+
+On 24 Dec 2014, at 07:20, Kalle Valo <kvalo@codeaurora.org> wrote:
+
+> Oscar Forner Martinez <oscar.forner.martinez@gmail.com> writes:
+> 
+>> Three lines with more than 80 characters per line have been split in several lines.
+>> 
+>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+>> ---
+>> drivers/bcma/driver_chipcommon.c | 10 +++++++---
+>> 1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> Just to handle the bureaucracy before v2 is submitted:
+> 
+> To which tree should this go to? I see that earlier John has applied
+> patches to drivers/bcma/, but what about now? Should I take these? John,
+> any suggestions?
+> 
+> Oscar, the patchwork entry for this patch looked odd. I'm guessing it
+> was because your time (or timezone) is wrong:
+> 
+> https://patchwork.kernel.org/patch/5535751/
+> 
+> -- 
+> Kalle Valo
 
