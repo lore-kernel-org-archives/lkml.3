@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaLXQcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:32:46 -0500
-Received: from resqmta-po-07v.sys.comcast.net ([96.114.154.166]:46986 "EHLO
-	resqmta-po-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751590AbaLXQ2G (ORCPT
+	id S1752520AbaLXQco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:32:44 -0500
+Received: from resqmta-po-10v.sys.comcast.net ([96.114.154.169]:39228 "EHLO
+	resqmta-po-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751543AbaLXQ2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:06 -0500
+	Wed, 24 Dec 2014 11:28:07 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 05/20] selftests/ftrace: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:41 -0700
-Message-Id: <e84eeeecde70ecb3ab82c5f825fec359f9e967ff.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 06/20] selftests/ipc: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:42 -0700
+Message-Id: <a813eb98c9e6ae6faac3cad6d3e36472e84c54ad.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -36,31 +36,47 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/ftrace/Makefile | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ tools/testing/selftests/ipc/Makefile | 19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/ftrace/Makefile b/tools/testing/selftests/ftrace/Makefile
-index 76cc9f1..7c7cf42 100644
---- a/tools/testing/selftests/ftrace/Makefile
-+++ b/tools/testing/selftests/ftrace/Makefile
-@@ -1,7 +1,16 @@
-+TEST_STR = /bin/sh ./ftracetest || echo ftrace selftests: [FAIL]
+diff --git a/tools/testing/selftests/ipc/Makefile b/tools/testing/selftests/ipc/Makefile
+index 74bbefd..b43e8e8 100644
+--- a/tools/testing/selftests/ipc/Makefile
++++ b/tools/testing/selftests/ipc/Makefile
+@@ -11,6 +11,8 @@ endif
+ 
+ CFLAGS += -I../../../../usr/include/
+ 
++TEST_STR = ./msgque_test || echo ipc msgque test: [FAIL]
 +
  all:
+ ifeq ($(ARCH),x86)
+ 	gcc $(CFLAGS) msgque.c -o msgque_test
+@@ -18,8 +20,23 @@ else
+ 	echo "Not an x86 target, can't build msgque selftest"
+ endif
  
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install ./ftracetest $(INSTALL_KSFT_PATH)
-+	@cp -r test.d $(INSTALL_KSFT_PATH)
-+	echo "$(TEST_STR)" >> $(KSELFTEST)
++ifeq ($(ARCH),x86)
++	make all
++	install ./msgque_test $(INSTALL_KSFT_PATH)
++	@echo "$(TEST_STR)" >> $(KSELFTEST)
++else
++	@echo Not an x86 target, unable to install ipc msgque selftests
++endif
++else
++	@echo Run make kselftest_install in top level source directory
 +endif
 +
- run_tests:
--	@/bin/sh ./ftracetest || echo "ftrace selftests: [FAIL]"
+ run_tests: all
+-	./msgque_test
++ifeq ($(ARCH),x86)
 +	@$(TEST_STR)
++endif
  
  clean:
- 	rm -rf logs/*
+ 	rm -fr ./msgque_test
 -- 
 2.1.0
 
