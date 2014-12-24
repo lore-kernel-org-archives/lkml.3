@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaLXQa6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:30:58 -0500
-Received: from resqmta-po-12v.sys.comcast.net ([96.114.154.171]:45617 "EHLO
-	resqmta-po-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751783AbaLXQ2N (ORCPT
+	id S1752354AbaLXQbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:31:19 -0500
+Received: from resqmta-po-05v.sys.comcast.net ([96.114.154.164]:54100 "EHLO
+	resqmta-po-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751639AbaLXQ2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:13 -0500
+	Wed, 24 Dec 2014 11:28:11 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 13/20] selftests/ptrace: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:49 -0700
-Message-Id: <aa8cd8752e3b0df7a551ef73ed270da99d9d4bd6.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 10/20] selftests/mount: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:46 -0700
+Message-Id: <79fc8be2721f4b035bee4610ff5ba08da4422d7d.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -36,37 +36,38 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/ptrace/Makefile | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ tools/testing/selftests/mount/Makefile | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/ptrace/Makefile b/tools/testing/selftests/ptrace/Makefile
-index 47ae2d3..f238212 100644
---- a/tools/testing/selftests/ptrace/Makefile
-+++ b/tools/testing/selftests/ptrace/Makefile
-@@ -1,10 +1,20 @@
- CFLAGS += -iquote../../../../include/uapi -Wall
--peeksiginfo: peeksiginfo.c
+diff --git a/tools/testing/selftests/mount/Makefile b/tools/testing/selftests/mount/Makefile
+index 337d853..607de4c 100644
+--- a/tools/testing/selftests/mount/Makefile
++++ b/tools/testing/selftests/mount/Makefile
+@@ -1,5 +1,7 @@
+ # Makefile for mount selftests.
  
--all: peeksiginfo
-+TEST_STR = ./peeksiginfo || echo peeksiginfo selftests: [FAIL]
++TEST_STR = if [ -f /proc/self/uid_map ] ; then ./unprivileged-remount-test ; fi
 +
-+all:
-+	gcc peeksiginfo.c -o peeksiginfo
+ all: unprivileged-remount-test
+ 
+ unprivileged-remount-test: unprivileged-remount-test.c
+@@ -7,7 +9,15 @@ unprivileged-remount-test: unprivileged-remount-test.c
+ 
+ # Allow specific tests to be selected.
+ test_unprivileged_remount: unprivileged-remount-test
+-	@if [ -f /proc/self/uid_map ] ; then ./unprivileged-remount-test ; fi
++	@$(TEST_STR)
 +
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install ./peeksiginfo $(INSTALL_KSFT_PATH)
++	install ./unprivileged-remount-test $(INSTALL_KSFT_PATH)
 +	@echo "$(TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo Run make kselftest_install in top level source directory
 +endif
  
- clean:
- 	rm -f peeksiginfo
+ run_tests: all test_unprivileged_remount
  
- run_tests: all
--	@./peeksiginfo || echo "peeksiginfo selftests: [FAIL]"
-+	@$(TEST_STR)
 -- 
 2.1.0
 
