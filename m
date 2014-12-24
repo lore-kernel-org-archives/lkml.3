@@ -1,66 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328AbaLXPGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 10:06:11 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46869 "EHLO arroyo.ext.ti.com"
+	id S1752240AbaLXPNB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 10:13:01 -0500
+Received: from mail.eperm.de ([89.247.134.16]:51031 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867AbaLXPGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 10:06:10 -0500
-Message-ID: <549AD65D.4010000@ti.com>
-Date: Wed, 24 Dec 2014 09:06:05 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751990AbaLXPM7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 10:12:59 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: leroy christophe <christophe.leroy@c-s.fr>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: algif_hash: splice of data > 2**16
+Date: Wed, 24 Dec 2014 16:12:53 +0100
+Message-ID: <1444883.Oc8SnflNUU@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <549AC946.2000909@c-s.fr>
+References: <8707521.TbV00HIEUx@tauon> <11733044.fQnf94a6to@tachyon.chronox.de> <549AC946.2000909@c-s.fr>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: Kevin Hilman <khilman@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: Stop BUGing the system
-References: <1418831495-26958-1-git-send-email-nm@ti.com> <20141218144915.GA29004@kahuna> <CAKohponxz0=n5g9uBOt=JqBMdtdi9mnsrh34emxZDO=PJikVaw@mail.gmail.com> <3146996.LXve8MJFme@vostro.rjw.lan>
-In-Reply-To: <3146996.LXve8MJFme@vostro.rjw.lan>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2014 08:08 PM, Rafael J. Wysocki wrote:
-> On Friday, December 19, 2014 07:11:19 AM Viresh Kumar wrote:
->> On 18 December 2014 at 20:19, Nishanth Menon <nm@ti.com> wrote:
->>> I can add "could be unstable" -> the point being there can be psuedo
->>> errors reported in the system - example - clock framework bugs. Dont
->>> just stop the boot. example: what if cpufreq was a driver module - it
->>> would not have rescued the system because cpufreq had'nt detected the
->>> logic - if we are going to force this on the system, we should probably
->>> not do this in cpufreq code, instead should be somewhere generic.
->>>
->>> While I do empathise (and had infact advocated in the past) of not
->>> favouring system attempting to continue at an invalid configuration and
->>> our attempt to rescue has failed - given that we cannot provide a
->>> consistent behavior (it is not a core system behavior) and potential of
->>> a false-postive (example clk framework or underlying bug), it should be
->>> good enough to "enhance" WARN to be "severe sounding enough" to
->>> flag it for developer and continue while keeping the system alive as
->>> much as possible.
->>
->> There is no way out for the kernel to know if its a false positive or a real
->> bug. And in the worst case, it can screw up a platform completely.
->>
->> I am still not sure if changing it to a WARN would be good idea.
->>
->> @Rafael: Thoughts ?
-> 
-> I'm a bit divided here.  On the one hand I don't like BUG_ON() as a rule and it
-> is used in too many places where it doesn't have to be used.
-> 
-> On the other hand, in this particular case, I'm not sure if allowing the system
-> to run without cpufreq when it might rely on it for CPU cooling, for one example,
-> is a good idea.
+Am Mittwoch, 24. Dezember 2014, 15:10:14 schrieb leroy christophe:
 
-but then, CPUFReq is not a mandatory feature - we could as well do the
-same with CPU_FREQ disabled.
+Hi leroy,
+
+> Le 24/12/2014 10:03, Stephan Mueller a écrit :
+> > Am Dienstag, 23. Dezember 2014, 18:16:01 schrieb leroy christophe:
+> > 
+> > Hi leroy,
+> > 
+> >> Le 20/12/2014 07:37, Stephan Mueller a écrit :
+> >>> Am Donnerstag, 18. Dezember 2014, 13:22:20 schrieb leroy christophe:
+> >>> 
+> >>> Hi Christophe,
+> >>> 
+> >>>> Le 18/12/2014 13:15, Stephan Mueller a écrit :
+> >>>>> Hi Herbert,
+> >>>>> 
+> >>>>> While testing the vmsplice/splice interface of algif_hash I was made
+> >>>>> aware of the problem that data blobs larger than 16 pages do not seem
+> >>>>> to
+> >>>>> be hashed properly.
+> >>>>> 
+> >>>>> For testing, a file is mmap()ed and handed to vmsplice / splice. If
+> >>>>> the
+> >>>>> file is smaller than 2**16, the interface returns the proper hash.
+> >>>>> However, when the file is larger, only the first 2**16 bytes seem to
+> >>>>> be
+> >>>>> used.
+> >>>>> 
+> >>>>> When adding printk's to hash_sendpage, I see that this function is
+> >>>>> invoked exactly 16 times where the first 15 invocations have the
+> >>>>> MSG_MORE flag set and the last invocation does not have MSG_MORE.
+> >>>> 
+> >>>> Hi Stephan,
+> >>>> 
+> >>>> I have already noticed the same issue and proposed a patch, but I never
+> >>>> got any feedback and it has never been merged, allthought I pinged it a
+> >>>> few times.
+> >>>> 
+> >>>> See https://lkml.org/lkml/2014/4/18/276
+> >>> 
+> >>> After testing, this patch does not work for me. The operation still
+> >>> stops
+> >>> after 16 pages.
+> >> 
+> >> Yes, it looks like the function I fixed is exclusively used by
+> >> sendfile() system call.
+> >> So there is probably the same kind of fix to be done in another function.
+> > 
+> > I do not believe that is the case. IMHO the blocking issue is found in the
+> > following code:
+> > 
+> > splice_from_pipe_feed walks the pipe->nrbufs. And vmsplice_to_pipe defines
+> > the maximum number of nrbufs as PIPE_DEF_BUFFERS -- which is 16. As
+> > subsequent functions allocate memory based on PIPE_DEF_BUFFERS, there is
+> > no trivial way to increase the number of pages to be processed.
+> > 
+> > Thus I see that the vmsplice/splice combo can at most operate on a chunk
+> > of 16 pages. Thus, you have to segment your input buffer into chunks of
+> > that size and invoke the vmsplice/splice syscalls for each segment.
+> 
+> Yes your are probably right. There splice needs to be called with
+> SPLICE_F_MORE flag, hope that works.
+
+That is not the only one. Vmsplice works on a pipe. A pipe is backed by 16 
+pages max. Thus, you have to call vmsplice once per 16 pages. The current code 
+I am testing which seems to work is the following:
+
+	while (inlen) {
+		size_t datalen = (inlen > MAXLEN) ? MAXLEN : inlen;
+
+		iov.iov_len = datalen;
+		ret = _kcapi_common_vmsplice_data(handle, &iov, 1, datalen, 
+1);
+		if (0 > ret)
+			return ret;
+		processed += ret;
+		iov.iov_base = (void*)(uintptr_t)(in + processed);
+		inlen -= ret;
+	}
+	return _kcapi_common_read_data(handle, out, outlen);
+
 
 -- 
-Regards,
-Nishanth Menon
+Ciao
+Stephan
