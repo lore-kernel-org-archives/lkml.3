@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaLXWfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 17:35:21 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41455 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542AbaLXWfT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 17:35:19 -0500
-Date: Wed, 24 Dec 2014 23:35:16 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, freemangordon@abv.bg, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        bcousson@baylibre.com, sakari.ailus@iki.fi, devicetree@vger.kernel.org,
-        linux-media@vger.kernel.org, j.anaszewski@samsung.com,
-        apw@canonical.com, joe@perches.com
-Subject: Re: [PATCH] media: i2c/adp1653: devicetree support for adp1653
-Message-ID: <20141224223516.GB20669@amd>
-References: <20141203214641.GA1390@amd>
- <20141223152325.75e8cb4a@concha.lan.sisa.samsung.com>
- <20141223204903.GA1780@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141223204903.GA1780@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752074AbaLXWjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 17:39:13 -0500
+Received: from mga14.intel.com ([192.55.52.115]:59309 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751512AbaLXWjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 17:39:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="503758175"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        <stable@vger.kernel.org>, Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc 3.19] mei: clean reset bit before reset
+Date: Thu, 25 Dec 2014 00:37:46 +0200
+Message-Id: <1419460666-10251-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-12-23 21:49:04, Pavel Machek wrote:
-> On Tue 2014-12-23 15:23:25, Mauro Carvalho Chehab wrote:
-> > Em Wed, 3 Dec 2014 22:46:41 +0100
-> > Pavel Machek <pavel@ucw.cz> escreveu:
-> > 
-> > > 
-> > > We are moving to device tree support on OMAP3, but that currently
-> > > breaks ADP1653 driver. This adds device tree support, plus required
-> > > documentation.
-> > > 
-> > > Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> > 
-> > Please be sure to check your patch with checkpatch. There are several
-> > issues on it:
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-Ok, you should have fixed version in your inbox.
+H_RST bit in H_CSR register may be found lit before reset is started,
+for example if preceding reset flow hasn't completed.
+In that case asserting H_RST will be ignored, therefore we need to clean
+H_RST bit to start a successful reset sequence.
 
-Happy holidays!
-									Pavel
+Cc: <stable@vger.kernel.org> #3.10+
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/hw-me.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index ff2755062b44..06ff0a2ec960 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -234,6 +234,18 @@ static int mei_me_hw_reset(struct mei_device *dev, bool intr_enable)
+ 	struct mei_me_hw *hw = to_me_hw(dev);
+ 	u32 hcsr = mei_hcsr_read(hw);
+ 
++	/* H_RST may be found lit before reset is started,
++	 * for example if preceding reset flow hasn't completed.
++	 * In that case asserting H_RST will be ignored, therefore
++	 * we need to clean H_RST bit to start a successful reset sequence.
++	 */
++	if ((hcsr & H_RST) == H_RST) {
++		dev_warn(dev->dev, "H_RST is set = 0x%08X", hcsr);
++		hcsr &= ~H_RST;
++		mei_me_reg_write(hw, H_CSR, hcsr);
++		hcsr = mei_hcsr_read(hw);
++	}
++
+ 	hcsr |= H_RST | H_IG | H_IS;
+ 
+ 	if (intr_enable)
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.3
+
