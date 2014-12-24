@@ -1,143 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaLYBb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 20:31:58 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58129 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaLYBb5 (ORCPT
+	id S1752008AbaLYB5F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 20:57:05 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:58910 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbaLYB5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 20:31:57 -0500
-Date: Wed, 24 Dec 2014 17:31:47 -0800
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 v3.18
-Message-ID: <20141224173147.5a4ad22a@urahara>
+	Wed, 24 Dec 2014 20:57:02 -0500
+Date: Thu, 25 Dec 2014 01:56:44 +0200
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux-stable <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/4] can: kvaser_usb: Don't free packets when tight on URBs
+Message-ID: <20141224235644.GA3778@vivalin-002>
+References: <20141223154654.GB6460@vivalin-002>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141223154654.GB6460@vivalin-002>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just in time for those last minute gifts!
-Update to iproute2 for 3.18
+From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 
-Lots of activity around switching, ss command output and usual
-set of documentation fixes. Vadim has also revived the long ignored
-tests.
+Flooding the Kvaser CAN to USB dongle with multiple reads and
+writes in high frequency caused seemingly-random panics in the
+kernel.
 
-Source:
-  http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.18.0.tar.gz
+On further inspection, it seems the driver erroneously freed the
+to-be-transmitted packet upon getting tight on URBs and returning
+NETDEV_TX_BUSY, leading to invalid memory writes and double frees
+at a later point in time.
 
-Repository:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+Note:
 
-Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
+Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
+is a driver bug in and out of itself: it means that our start/stop
+queue flow control is broken.
 
+This patch only fixes the (buggy) error handling code; the root
+cause shall be fixed in a later commit.
+
+Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 ---
-Alexey Andriyanov (1):
-      iproute2: ip6_tunnel mode bugfixes: any,vti6
+ drivers/net/can/usb/kvaser_usb.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Christian Hesse (3):
-      ip-link: add switch to show human readable output
-      ip-link: fix column alignment
-      ip-link: in human readable output use dynamic precision length
+ (Marc, Greg, I believe this should also be added to -stable?)
 
-Daniel Borkmann (1):
-      ss: output dctcp diag information
-
-Dave Taht (1):
-      iproute2: Add support for babel protocol table entry
-
-Eric Dumazet (2):
-      netlink: extend buffers to 16K
-      iproute2/nstat: Bug in displaying icmp stats
-
-Florian Westphal (1):
-      utils: relax strtoX checking in get_time_rtt
-
-Heiner Kallweit (1):
-      ip: allow ip address show to list addresses with certain flags not being set
-
-Jiri Pirko (2):
-      add bridge_slave device support
-      add bridge master device support
-
-Masatake YAMATO (1):
-      man: ip-link: fix a typo
-
-Nicolas Dichtel (2):
-      man: update doc after support of ESN and anti-replay window
-      ipaddress: enable -details option
-
-Nikita Edward Baruzdin (1):
-      iproute2: Add support for CAN presume-ack feature
-
-Or Gerlitz (1):
-      ip-link: Document IPoIB link type in the man page
-
-Pavel Simerda (1):
-      ip route: don't assume default route
-
-Scott Feldman (1):
-      bridge/fdb: fix statistics output spacing
-
-Stephen Hemminger (15):
-      update headers to 3.17.0 net-next
-      Update kernel headers to 3.18-rc2
-      ip: add iec formatted option and cleanup code
-      update if_bridge
-      rt_dsfield: fix Expedited Forwarding PHB
-      tunnel: decode ESP tunnel type
-      tc: minor spelling fixes
-      ip-link: fix unterminated string in manpage
-      add local version of linux/in6.h
-      need libc-compat.h for new in6.h
-      if_bridge: remove in6.h
-      rt_names can't be const
-      resolve header file conflict betwen linux/in6.h and netinet/in.h
-      whitespace cleanup
-      v3.18.0
-
-Tom Herbert (5):
-      ip fou: Support to configure foo-over-udp RX
-      ip link ipip: Add support to configure FOU and GUE
-      ip link gre: Add support to configure FOU and GUE
-      iproute2: Man pages for fou and gue
-      vxlan: Add support for enabling UDP checksums
-
-Vadim Kochan (4):
-      ip link: Allow to filter devices by master dev
-      ss: Dont show netlink and packet sockets by default
-      ip lib: Added shorter timestamp option
-      ip link: Show devices by type
-
-dingzhi (1):
-      xfrm: add support of ESN and anti-replay window
-
-vadimk (24):
-      man ip-link: Fixed missing 'up' option in 'ip link show' synopsis
-      doc make: Add *.pdf files to the 'clean' target
-      gitignore: Ignore 'doc' files generated at runtime
-      man ip: Add missing '-details' option
-      tests: Skip cls-testbed.t if tests/cls dir does not exist
-      tests: Allow to run tests recursively
-      doc ip-cref: Added missing ip options
-      ss: Identify more netlink protocol names
-      ip monitor: Allow to filter events by dev
-      tests: Move tc related tests to testsuite/tests/tc folder
-      ip netns: Identify netns for the current process
-      ss: Remove checking SS_CLOSE state for packet and netlink
-      ss: Fixed broken output for Netlink 'Peer Address:Port' column
-      ss: Refactor to use macro for define diag nl request
-      man ip-link: Add description for 'help' command
-      ss: Use generic handle_netlink_request for packet
-      configure: Add check for the doc tools
-      man ip-link: Fix indentation for 'ip link show' options
-      ip monitor: Fix issue when timestamp is printed w/o msg
-      ss: Fix layout/output issues introduced by regression
-      lib names: Use CONFDIR for specify 'group' file path
-      lib names: Add helper func for parse id and name from file
-      ss: Use nl_proto_a2n for filtering by netlink proto
-      ss: Use rtnl_dump_filter in handle_netlink_request
-
+diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
+index 541fb7a..6479a2b 100644
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -1294,12 +1294,14 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
+ 	if (!urb) {
+ 		netdev_err(netdev, "No memory left for URBs\n");
+ 		stats->tx_dropped++;
+-		goto nourbmem;
++		dev_kfree_skb(skb);
++		return NETDEV_TX_OK;
+ 	}
+ 
+ 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
+ 	if (!buf) {
+ 		stats->tx_dropped++;
++		dev_kfree_skb(skb);
+ 		goto nobufmem;
+ 	}
+ 
+@@ -1334,6 +1336,9 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
+ 		}
+ 	}
+ 
++	/*
++	 * This should never happen; it implies a flow control bug.
++	 */
+ 	if (!context) {
+ 		netdev_warn(netdev, "cannot find free context\n");
+ 		ret =  NETDEV_TX_BUSY;
+@@ -1364,9 +1369,6 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
+ 	if (unlikely(err)) {
+ 		can_free_echo_skb(netdev, context->echo_index);
+ 
+-		skb = NULL; /* set to NULL to avoid double free in
+-			     * dev_kfree_skb(skb) */
+-
+ 		atomic_dec(&priv->active_tx_urbs);
+ 		usb_unanchor_urb(urb);
+ 
+@@ -1388,8 +1390,6 @@ releasebuf:
+ 	kfree(buf);
+ nobufmem:
+ 	usb_free_urb(urb);
+-nourbmem:
+-	dev_kfree_skb(skb);
+ 	return ret;
+ }
+ 
