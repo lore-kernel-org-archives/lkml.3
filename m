@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751205AbaLXFdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 00:33:00 -0500
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:18635 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaLXFc7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 00:32:59 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 23 Dec 2014 21:27:42 -0800
-From: Rohith Seelaboyina <rseelaboyina@nvidia.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <mina86@mina86.com>,
-        <r.baldyga@samsung.com>, <andrzej.p@samsung.com>,
-        <david.a.cohen@linux.intel.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Rohith Seelaboyina <rseelaboyina@nvidia.com>
-Subject: [PATCH] usb: gadget: ffs: Fix sparse error
-Date: Wed, 24 Dec 2014 10:59:48 +0530
-Message-ID: <1419398988-14576-1-git-send-email-rseelaboyina@nvidia.com>
+	id S1751386AbaLXFiq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 00:38:46 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:42762 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746AbaLXFio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 00:38:44 -0500
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Daniel Mack <daniel@zonque.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Michal Nazarewicz <mina86@mina86.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Joe Perches <joe@perches.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alex Elder <alex.elder@linaro.org>, Daniel Walter <dwalter@google.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        linux-arm-kernel@lists.infradead.org, linux-gpio@vger.kernel.org
+Subject: [PATCH] linux/kernel.h: merge ARRAY_AND_SIZE defines
+Date: Wed, 24 Dec 2014 14:38:16 +0900
+Message-Id: <1419399496-5955-1-git-send-email-yamada.m@jp.panasonic.com>
 X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the sparse error in functionfs
-driver.
+ARRAY_AND_SIZE is a useful macro.  Its definition is already
+duplicated in some headers.  Move it to include/linux/kernel.h.
 
-drivers/usb/gadget/function/f_fs.c:400:44: error: bad
-constant experssion.
-
-Dynamic memory allocation through kmalloc is more safer
-than declaring variable array size, Fix this error by
-using kmalloc for memory allocation, Check if memory
-allocation is successful and return -ENOMEM on failure.
-
-Signed-off-by: Rohith Seelaboyina <rseelaboyina@nvidia.com>
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 ---
- drivers/usb/gadget/function/f_fs.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index 63314ede7ba6..6ac50891b697 100644
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -397,10 +397,15 @@ static ssize_t __ffs_ep0_read_events(struct ffs_data *ffs, char __user *buf,
- 	 * We are holding ffs->ev.waitq.lock and ffs->mutex and we need
- 	 * to release them.
- 	 */
--	struct usb_functionfs_event events[n];
- 	unsigned i = 0;
-+	int ret;
-+	struct usb_functionfs_event *events = kmalloc(n *
-+			sizeof(struct usb_functionfs_event), GFP_KERNEL);
-+
-+	if (unlikely(!events))
-+		return -ENOMEM;
+ arch/arm/mach-mmp/common.h        | 1 -
+ arch/arm/mach-pxa/generic.h       | 2 --
+ arch/arm/mach-ux500/db8500-regs.h | 2 --
+ drivers/pinctrl/pinctrl-lantiq.h  | 2 --
+ include/linux/kernel.h            | 1 +
+ 5 files changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-mmp/common.h b/arch/arm/mach-mmp/common.h
+index cf445ba..e503f63 100644
+--- a/arch/arm/mach-mmp/common.h
++++ b/arch/arm/mach-mmp/common.h
+@@ -1,5 +1,4 @@
+ #include <linux/reboot.h>
+-#define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
  
--	memset(events, 0, sizeof events);
-+	memset(events, 0, n * sizeof(*events));
+ extern void timer_init(int irq);
  
- 	do {
- 		events[i].type = ffs->ev.types[i];
-@@ -421,8 +426,10 @@ static ssize_t __ffs_ep0_read_events(struct ffs_data *ffs, char __user *buf,
- 	spin_unlock_irq(&ffs->ev.waitq.lock);
- 	mutex_unlock(&ffs->mutex);
+diff --git a/arch/arm/mach-pxa/generic.h b/arch/arm/mach-pxa/generic.h
+index 7a9fa1a..da11977 100644
+--- a/arch/arm/mach-pxa/generic.h
++++ b/arch/arm/mach-pxa/generic.h
+@@ -23,8 +23,6 @@ extern void pxa_timer_init(void);
+ 	mi->bank[__nr].start = (__start), \
+ 	mi->bank[__nr].size = (__size)
  
--	return unlikely(__copy_to_user(buf, events, sizeof events))
--		? -EFAULT : sizeof events;
-+	ret = unlikely(__copy_to_user(buf, events, n * sizeof(*events)))
-+		? -EFAULT : n * sizeof(*events);
-+	kfree(events);
-+	return ret;
- }
+-#define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
+-
+ #define pxa25x_handle_irq icip_handle_irq
+ extern void __init pxa25x_init_irq(void);
+ extern void __init pxa25x_map_io(void);
+diff --git a/arch/arm/mach-ux500/db8500-regs.h b/arch/arm/mach-ux500/db8500-regs.h
+index 2739955..80a6deb 100644
+--- a/arch/arm/mach-ux500/db8500-regs.h
++++ b/arch/arm/mach-ux500/db8500-regs.h
+@@ -195,6 +195,4 @@
+ /* Used by some plat-nomadik code */
+ #define io_p2v(n)		__io_address(n)
  
- static ssize_t ffs_ep0_read(struct file *file, char __user *buf,
+-#define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
+-
+ #endif
+diff --git a/drivers/pinctrl/pinctrl-lantiq.h b/drivers/pinctrl/pinctrl-lantiq.h
+index c7cfad5..508d205 100644
+--- a/drivers/pinctrl/pinctrl-lantiq.h
++++ b/drivers/pinctrl/pinctrl-lantiq.h
+@@ -21,8 +21,6 @@
+ 
+ #include "core.h"
+ 
+-#define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
+-
+ #define LTQ_MAX_MUX		4
+ #define MFPR_FUNC_MASK		0x3
+ 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 049d43b..4e8fc3d 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -59,6 +59,7 @@ void printch(int c);
+ #define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
+ 
+ #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
++#define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
+ 
+ /*
+  * This looks more complex than it should be. But we need to
 -- 
 1.9.1
 
