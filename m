@@ -1,124 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaLXPm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 10:42:27 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:35751 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaLXPmZ (ORCPT
+	id S1751565AbaLXPo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 10:44:28 -0500
+Received: from domu-toccata.ens-lyon.fr ([140.77.166.138]:54354 "EHLO
+	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaLXPo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 10:42:25 -0500
+	Wed, 24 Dec 2014 10:44:27 -0500
+Date: Wed, 24 Dec 2014 16:44:23 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: "Panir.Nyan" <panir.nyan@gmail.com>
+Cc: gregkh@linuxfoundation.org, w.d.hubbs@gmail.com, chris@the-brannons.com,
+        kirk@reisers.ca, speakup@linux-speakup.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: speakup: Combine the consecutive string
+Message-ID: <20141224154423.GT3060@type>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	"Panir.Nyan" <panir.nyan@gmail.com>, gregkh@linuxfoundation.org,
+	w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@reisers.ca,
+	speakup@linux-speakup.org, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1419394052-6551-1-git-send-email-Panir.Nyan@gmail.com>
+ <1419394052-6551-2-git-send-email-Panir.Nyan@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Date: Wed, 24 Dec 2014 16:42:04 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: Sanchayan Maity <maitysanchayan@gmail.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] usb: chipidea: add one errata for revision 2.40a
-In-Reply-To: <20141222011840.GB9242@shlinux2>
-References: <cover.1418981438.git.maitysanchayan@gmail.com>
- <20141222011840.GB9242@shlinux2>
-Message-ID: <5f3945e8a47cc7c2e74a758671df4dea@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Dec 24 16:41:14 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 549ade9a12812103916489
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1419394052-6551-2-git-send-email-Panir.Nyan@gmail.com>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-12-22 02:18, Peter Chen wrote:
-> On Fri, Dec 19, 2014 at 03:25:26PM +0530, Sanchayan Maity wrote:
->> The first two patches add identification register API's. These can
->> be used to get controller's revision.
->>
->> The third patch implements an errata for revision 2.40a. Not sure
->> which other SOCs implement this version of the Chipidea core but
->> this fixes the usb client issue observed on Vybrids. The patch was
->> tested on a Toradex Colibri VF61 module with the 3.18 kernel. iperf
->> tests ran for three hours plus, with these patches applied have found
->> the USB client connection to be now reliable.
+Panir.Nyan, le Wed 24 Dec 2014 04:07:32 +0000, a écrit :
+> Combine the consecutive string
 > 
-> Would you help do a overnight test? It is passed, I will queue them,
-> thanks.
+> Signed-off-by: Panir Nyan <Panir.Nyan@gmail.com>
+
+Acked-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+
+> ---
+>  drivers/staging/speakup/kobjects.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
+> index b12c76d..3708bc1 100644
+> --- a/drivers/staging/speakup/kobjects.c
+> +++ b/drivers/staging/speakup/kobjects.c
+> @@ -566,7 +566,7 @@ ssize_t spk_var_show(struct kobject *kobj, struct kobj_attribute *attr,
+>  				if (ch >= ' ' && ch < '~')
+>  					*cp1++ = ch;
+>  				else
+> -					cp1 += sprintf(cp1, "\\""x%02x", ch);
+> +					cp1 += sprintf(cp1, "\\x%02x", ch);
+>  			}
+>  			*cp1++ = '"';
+>  			*cp1++ = '\n';
+> --
+> 1.7.10.4
 > 
 
-Hi Peter,
-
-Also did a short test on 3.19-rc1 here:
-# iperf -s
-------------------------------------------------------------
-Server listening on TCP port 5001
-TCP window size: 85.3 KByte (default)
-------------------------------------------------------------
-[  4] local 192.168.1.10 port 5001 connected with 192.168.1.1 port 53241
-[ ID] Interval       Transfer     Bandwidth
-[  4]  0.0-10.0 sec   152 MBytes   127 Mbits/sec
-[  5] local 192.168.1.10 port 5001 connected with 192.168.1.1 port 53243
-[  8] local 192.168.1.10 port 5001 connected with 192.168.1.1 port 53247
-[  7] local 192.168.1.10 port 5001 connected with 192.168.1.1 port 53246
-[  6] local 192.168.1.10 port 5001 connected with 192.168.1.1 port 53245
-[  4] local 192.168.1.10 port 5001 connected with 192.168.1.1 port 53244
-[  6]  0.0-10.1 sec  30.9 MBytes  25.7 Mbits/sec
-[  5]  0.0-10.1 sec  30.9 MBytes  25.7 Mbits/sec
-[  7]  0.0-10.1 sec  30.9 MBytes  25.7 Mbits/sec
-[  8]  0.0-10.1 sec  30.9 MBytes  25.6 Mbits/sec
-[  4]  0.0-10.1 sec  30.9 MBytes  25.7 Mbits/sec
-[SUM]  0.0-10.1 sec   154 MBytes   128 Mbits/sec
-
-Tried also UDP mode and scp copies as well as adding some kernel level
-latencies by pluging and unpluging a USB mass storage device. Looks good
-to me as well:
-Tested-by: Stefan Agner <stefan@agner.ch>
-
-Btw, this was and solves now the error I was mentioning in my patchset
-enabling Vybrid support:
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/274342.html
-
-@Sanchayan/Peter:
-Minor nits as reply to the actual patch emails.
-
---
-Stefan
-
-
-
-> Peter
->>
->> This patchset is based off on Shawn Guo's for-next branch
->> https://git.kernel.org/cgit/linux/kernel/git/shawnguo/linux.git/tree/?h=for-next
->>
->> The credit for the patches and fix goes to Matthieu Castet and Peter Chen.
->> First two patches are by Peter Chen and the third patch which fixed the
->> bug we observed was reported by Matthieu Castet.
->>
->> The discussion of the problem and the relevant testing details can be found
->> at this link: http://www.spinics.net/lists/linux-usb/msg118544.html
->>
->> The first version of this patchset originally send by Peter Chen can be
->> found at this link: http://www.spinics.net/lists/linux-usb/msg118753.html
->>
->> Comments for review are welcome :).
->> Note: I am going on a vacation so will not be able to reply or do any further
->> tests till Monday. Will attend and take care of any comments/requests for
->> further changes/testing from Tuesday. Apologize for the delay in advance.
->>
->> Sanchayan Maity (3):
->>   usb: chipidea: Add identification registers access APIs
->>   usb: chipidea: Add chipidea revision information
->>   usb: chipidea: Add errata for revision 2.40a
->>
->>  drivers/usb/chipidea/bits.h |   10 ++++++++
->>  drivers/usb/chipidea/ci.h   |   53 +++++++++++++++++++++++++++++++++++++++++++
->>  drivers/usb/chipidea/core.c |   23 +++++++++++++++++--
->>  drivers/usb/chipidea/udc.c  |   20 ++++++++++++++++
->>  4 files changed, 104 insertions(+), 2 deletions(-)
->>
->> --
->> 1.7.9.5
->>
-
+-- 
+Samuel
+"...Unix, MS-DOS, and Windows NT (also known as the Good, the Bad, and
+the Ugly)."
+(By Matt Welsh)
