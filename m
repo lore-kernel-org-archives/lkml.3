@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaLXQ2S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:28:18 -0500
-Received: from resqmta-po-08v.sys.comcast.net ([96.114.154.167]:49186 "EHLO
-	resqmta-po-08v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751739AbaLXQ2M (ORCPT
+	id S1751998AbaLXQ2Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:28:25 -0500
+Received: from resqmta-po-05v.sys.comcast.net ([96.114.154.164]:54128 "EHLO
+	resqmta-po-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751875AbaLXQ2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:12 -0500
+	Wed, 24 Dec 2014 11:28:18 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 12/20] selftests/net: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:48 -0700
-Message-Id: <a9e90a4ce816013dc701684feb2bfc29c04064c8.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 17/20] selftests/user: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:53 -0700
+Message-Id: <5b8336fbe252deff25978dee99cb58e90e8ccd34.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -36,45 +36,32 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/net/Makefile | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ tools/testing/selftests/user/Makefile | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/net/Makefile b/tools/testing/selftests/net/Makefile
-index 62f22cc..2ffc96f 100644
---- a/tools/testing/selftests/net/Makefile
-+++ b/tools/testing/selftests/net/Makefile
-@@ -6,14 +6,28 @@ CFLAGS = -Wall -O2 -g
- CFLAGS += -I../../../../usr/include/
+diff --git a/tools/testing/selftests/user/Makefile b/tools/testing/selftests/user/Makefile
+index 12c9d15..218c5aa 100644
+--- a/tools/testing/selftests/user/Makefile
++++ b/tools/testing/selftests/user/Makefile
+@@ -1,7 +1,17 @@
+ # Makefile for user memory selftests
  
- NET_PROGS = socket psock_fanout psock_tpacket
-+INSTALL_PROGS = run_netsocktests run_afpackettests test_bpf.sh $(NET_PROGS)
-+NETSOCK_TEST_STR = /bin/sh ./run_netsocktests || echo sockettests: [FAIL]
-+AFPKT_TEST_STR = /bin/sh ./run_afpackettests || echo afpackettests: [FAIL]
-+BFP_TEST_STR = ./test_bpf.sh
- 
- all: $(NET_PROGS)
- %: %.c
- 	$(CC) $(CFLAGS) -o $@ $^
++TEST_STR = ./test_user_copy.sh
++
+ # No binaries, but make sure arg-less "make" doesn't trigger "run_tests"
+ all:
  
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
-+	@echo "$(NETSOCK_TEST_STR)" >> $(KSELFTEST)
-+	@echo "$(AFPKT_TEST_STR)" >> $(KSELFTEST)
-+	@echo "$(BFP_TEST_STR)" >> $(KSELFTEST)
++	install ./test_user_copy.sh $(INSTALL_KSFT_PATH)
++	@echo "$(TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo Run make kselftest_install in top level source directory
 +endif
 +
  run_tests: all
--	@/bin/sh ./run_netsocktests || echo "sockettests: [FAIL]"
--	@/bin/sh ./run_afpackettests || echo "afpackettests: [FAIL]"
--	./test_bpf.sh
-+	@$(NETSOCK_TEST_STR)
-+	@$(AFPKT_TEST_STR)
-+	@$(BFP_TEST_STR)
- clean:
- 	$(RM) $(NET_PROGS)
+-	./test_user_copy.sh
++	@$(TEST_STR)
 -- 
 2.1.0
 
