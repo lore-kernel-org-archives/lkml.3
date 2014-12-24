@@ -1,90 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaLXLLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 06:11:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48313 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751165AbaLXLLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 06:11:22 -0500
-Message-ID: <549A9F4F.4020803@redhat.com>
-Date: Wed, 24 Dec 2014 12:11:11 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751876AbaLXLkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 06:40:42 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:34877 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645AbaLXLkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 06:40:40 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Alex Hung <alex.hung@canonical.com>
+Cc: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Darren Hart <dvhart@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
+Date: Wed, 24 Dec 2014 12:40:37 +0100
+Message-ID: <5019255.GNGyxISxsX@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.19.0-rc1+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <CAJ=jquawd2u4eFfA+8ytA9Na18vs-t1dPUJ-huMQmhPZ_tcGyA@mail.gmail.com>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <1675821.m9zcYReJQs@xps13> <CAJ=jquawd2u4eFfA+8ytA9Na18vs-t1dPUJ-huMQmhPZ_tcGyA@mail.gmail.com>
 MIME-Version: 1.0
-To: "Chen, Tiejun" <tiejun.chen@intel.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        luto@amacapital.net
-Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
-References: <20141221124640.GA4059@cucamonga.audible.transient.net> <5497C882.4000108@intel.com> <20141222092358.GA3915@cucamonga.audible.transient.net> <5498CA50.8070906@intel.com> <5498CB62.3070901@intel.com> <20141223072659.GA4015@cucamonga.audible.transient.net> <549A796C.50801@intel.com> <20141224110239.GA3908@cucamonga.audible.transient.net>
-In-Reply-To: <20141224110239.GA3908@cucamonga.audible.transient.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 24/12/2014 12:02, Jamie Heilman wrote:
-> Running qemu-system-x86_64 -machine pc,accel=kvm -nodefaults works,
-> my real (headless) kvm guests work, but this new patch makes running
-> "qemu-system-x86_64 -machine pc,accel=kvm" fail again, this time with
-> errors in the host to the tune of:
+On Wednesday 24 December 2014 17:13:45 Alex Hung wrote:
+> I uploaded acpidump files [1] (except for XPS 13 which is not
+> available), and this should help clarify what has been tested.
 > 
-> ------------[ cut here ]------------
-> WARNING: CPU: 1 PID: 3901 at arch/x86/kvm/x86.c:6575 kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]()
-> Modules linked in: nfsv4 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative autofs4 fan nfsd auth_rpcgss nfs lockd grace fscache sunrpc bridge stp llc vhost_net tun vhost macvtap macvlan fuse cbc dm_crypt usb_storage snd_hda_codec_analog snd_hda_codec_generic kvm_intel kvm tg3 ptp pps_core sr_mod snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_timer snd sg dcdbas cdrom psmouse soundcore floppy evdev xfs dm_mod raid1 md_mod
-> CPU: 1 PID: 3901 Comm: qemu-system-x86 Not tainted 3.19.0-rc1-00011-g53262d1-dirty #1
-> Hardware name: Dell Inc. Precision WorkStation T3400  /0TP412, BIOS A14 04/30/2012
->  0000000000000000 000000007e052328 ffff8800c25ffcf8 ffffffff813defbe
->  0000000000000000 0000000000000000 ffff8800c25ffd38 ffffffff8103b517
->  ffff8800c25ffd28 ffffffffa019bdec ffff8800caf1d000 ffff8800c2774800
-> Call Trace:
->  [<ffffffff813defbe>] dump_stack+0x4c/0x6e
->  [<ffffffff8103b517>] warn_slowpath_common+0x97/0xb1
->  [<ffffffffa019bdec>] ? kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
->  [<ffffffff8103b60b>] warn_slowpath_null+0x15/0x17
->  [<ffffffffa019bdec>] kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
->  [<ffffffffa02308b9>] ? vmcs_load+0x20/0x62 [kvm_intel]
->  [<ffffffffa0231e03>] ? vmx_vcpu_load+0x140/0x16a [kvm_intel]
->  [<ffffffffa0196ba3>] ? kvm_arch_vcpu_load+0x15c/0x161 [kvm]
->  [<ffffffffa018d8b1>] kvm_vcpu_ioctl+0x189/0x4bd [kvm]
->  [<ffffffff8104647a>] ? do_sigtimedwait+0x12f/0x189
->  [<ffffffff810ea316>] do_vfs_ioctl+0x370/0x436
->  [<ffffffff810f24f2>] ? __fget+0x67/0x72
->  [<ffffffff810ea41b>] SyS_ioctl+0x3f/0x5e
->  [<ffffffff813e34d2>] system_call_fastpath+0x12/0x17
-> ---[ end trace 46abac932fb3b4a1 ]---
-> ------------[ cut here ]------------
-> WARNING: CPU: 1 PID: 3901 at arch/x86/kvm/x86.c:6575 kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]()
-> Modules linked in: nfsv4 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative autofs4 fan nfsd auth_rpcgss nfs lockd grace fscache sunrpc bridge stp llc vhost_net tun vhost macvtap macvlan fuse cbc dm_crypt usb_storage snd_hda_codec_analog snd_hda_codec_generic kvm_intel kvm tg3 ptp pps_core sr_mod snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_timer snd sg dcdbas cdrom psmouse soundcore floppy evdev xfs dm_mod raid1 md_mod
-> CPU: 1 PID: 3901 Comm: qemu-system-x86 Tainted: G        W      3.19.0-rc1-00011-g53262d1-dirty #1
-> Hardware name: Dell Inc. Precision WorkStation T3400  /0TP412, BIOS A14 04/30/2012
->  0000000000000000 000000007e052328 ffff8800c25ffcf8 ffffffff813defbe
->  0000000000000000 0000000000000000 ffff8800c25ffd38 ffffffff8103b517
->  ffff8800c25ffd28 ffffffffa019bdec ffff8800caf1d000 ffff8800c2774800
-> Call Trace:
->  [<ffffffff813defbe>] dump_stack+0x4c/0x6e
->  [<ffffffff8103b517>] warn_slowpath_common+0x97/0xb1
->  [<ffffffffa019bdec>] ? kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
->  [<ffffffff8103b60b>] warn_slowpath_null+0x15/0x17
->  [<ffffffffa019bdec>] kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
->  [<ffffffffa02308b9>] ? vmcs_load+0x20/0x62 [kvm_intel]
->  [<ffffffffa0231e03>] ? vmx_vcpu_load+0x140/0x16a [kvm_intel]
->  [<ffffffffa0196ba3>] ? kvm_arch_vcpu_load+0x15c/0x161 [kvm]
->  [<ffffffffa018d8b1>] kvm_vcpu_ioctl+0x189/0x4bd [kvm]
->  [<ffffffff8104647a>] ? do_sigtimedwait+0x12f/0x189
->  [<ffffffff810ea316>] do_vfs_ioctl+0x370/0x436
->  [<ffffffff810f24f2>] ? __fget+0x67/0x72
->  [<ffffffff810ea41b>] SyS_ioctl+0x3f/0x5e
->  [<ffffffff813e34d2>] system_call_fastpath+0x12/0x17
-> ---[ end trace 46abac932fb3b4a2 ]---
+> Does Inspirion 5721 does not have either DELLABCE or DELRBTN. It is
+> used for comparison. My apologies that I did not point this out in
+> previous email.
 > 
-> over and over and over ad nauseum, or until I kill the qemu command,
-> it also eats a core's worth of cpu.
+> When calling ARBT(1), BIOS will no longer issue scancode and will not
+> pull low hardware pin "W_DISABLE#" on mini card. This essentially
+> gives all wireless control to OS. This is likely the answer to
+> Microsoft's Windows Certification Program
+> System.Client.RadioManagement.HardwareButton [2] as below:
+> 
+> =============================================
+> If a PC has a physical (hardware) button switch on a PC that turns
+> wireless radios on and off, it must be software controllable and
+> interact appropriately with the Radio Management UI
+> =============================================
+> 
+> Dell's BIOS does issue a notify(RBTN, 0x80). This is done purposely to
+> re-enumerate the state of radio switch which may be changed when
+> system is in S3 or S4. I think this should not occur when CRBT returns
+> 0 or 1 (for hotkey that cannot be changed during S3 or S4), but that's
+> how it is done currently.
 
-Yeah, I'm fairly sure that the second hunk of Tiejun's patch is not
-correct, but he's on the right track.  I hope to post a fix today, else
-on the 27th or 29th.
+The notification is sent on my XPS13 (CRBT returns 0), toggling the WiFi
+state on resume.
 
-Paolo
+> dell-wireless does not handle this notification in S3 or S4 for
+> following reasons:
+> 
+> 1. dell-wireless does not handle slider (i.e. CRBT = 2 or 3). Device
+> drivers should read the hardware pin, "W_DISABLE#" on mini spec and
+> change hard block accordingly. This pin is commonly used by OEM today.
+> 
+> 2. it is not possible to distinguish the notification (0x80) from
+> hotkey press or S3/S4. I also concerned this may mis-trigger state
+> change when resuming from S3 or S4, but it does not. Does any know how
+> to ignore this notification during resume only?
+> 
+> dell-rbtn can use this notification + method (GRBT) [2] to solve the
+> problem that slider state.
+
+Unfortunately this won't solve the problem for me. After ARBT is called
+with 1 as parameter, it seems that GRBT always returns 1.
+
+I don't know how to ignore the notification on resume, if not through
+a flag set by a PM callback.
+
+Given that all the tested laptops reported a keypress on the i8042
+bus, isn't it better to rely on that instead?
+
+> [1] http://people.canonical.com/~alexhung/dell-acpidump/
+> [2] http://msdn.microsoft.com/en-us/library/windows/hardware/jj128256.aspx
+> [3] It seems GRBT may not always be implemented...
+> 
+> I'd love to do more tests and share the results on any particular
+> systems, but I may need some more detailed instructions.
+> 
+> 
+> 
+> On Tue, Dec 23, 2014 at 3:16 AM, Gabriele Mazzotta
+> <gabriele.mzt@gmail.com> wrote:
+> > On Monday 22 December 2014 15:27:57 Alex Hung wrote:
+> >> = Testing =
+> >>
+> >> I tested six Dell systems for two sets of patches for dell radio
+> >> button - two system with radio slider and four with radio hotkey.
+> >> There are also two systems with working ARBT method.
+> >>
+> >> == Basic Information ==
+> >> Based OS: Ubuntu 14.10 (kernel 3.16 [1]) and kernel 3.18 [2]
+> >>
+> >> Patches:
+> >> 1. dell-wireless v3 = original v2 + Gabriele's suggestion [3]
+> >> 2. dell-rbtn [4]
+> >>
+> >> Method:
+> >> 1. run "rfkill list" and press hotkey / toggle slider during runtime
+> >> 2. run "rfkill list" and toggle slider during S3
+> >>
+> >> == Results ==
+> >>
+> >> I summarized the tests in Google sheet as below. Please advise if
+> >> anyone has problem reading it.
+> >>
+> >> https://docs.google.com/spreadsheets/d/1voffS6dNglwAExSGh3UmG__UAO2qfZ829CkJLPo06aI/edit?usp=sharing
+> >>
+> >> PS. The document will stay as long as possible for future references.
+> >>
+> >> == Summary ==
+> >>
+> >> 1. I did not observed a duplicated event. However, keycode 240
+> >> (unknown) is generated on many UUT. It is not issued by dell-laptop or
+> >> del-wmi. I am suspecting it is the other event Pali observes but it
+> >> can be the result of different distro.
+> >>
+> >> 2. Some system issues scancode "0xe0 0x73 0xe0 0xf3". It can also be
+> >> used toggle wireless state but this can also be distro-dependent. This
+> >> scancode does nothing on Ubuntu 14.10.
+> >>
+> >> 2. There are two systems with working ARBT (XPS 13 9333 and Inspiron
+> >> 7447). Calling ARBT(1) changes BIOS behaviours, and this matches to
+> >> Dell's document. We should include it in the patch for maximum
+> >> capability.
+> >>
+> >>
+> >> [1] dell-wireless is only tested 3.16.
+> >> [2] dell-rbtn is tested on 3.16 and 3.18, but no differences are observed.
+> >> [3] http://people.canonical.com/~alexhung/dell-wireless/
+> >> [4] http://people.canonical.com/~alexhung/dell-rbtn/
+> >
+> > I've just tried the last revision of dell-wireless and noticed that a
+> > notification (0x80) is sent to DELLABCE after a transition from S3 to
+> > S0, causing dell-wireless to send KEY_RFKILL. This shouldn't happen.
+> > Same thing for transitions from S4 to S0.
+> >
+> > Gabriele
+> 
+> 
+> 
+> 
