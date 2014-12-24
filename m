@@ -1,282 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbaLXRYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 12:24:06 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50977 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813AbaLXRXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 12:23:02 -0500
-From: Nishanth Menon <nm@ti.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH 2/3] PM / OPP: Ensure consistent naming of static functions
-Date: Wed, 24 Dec 2014 11:22:56 -0600
-Message-ID: <1419441777-25651-3-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1419441777-25651-1-git-send-email-nm@ti.com>
-References: <1419441777-25651-1-git-send-email-nm@ti.com>
+	id S1752136AbaLXRZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 12:25:09 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39201 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaLXRZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 12:25:08 -0500
+Date: Wed, 24 Dec 2014 18:25:06 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: DRAM unreliable under specific access patern
+Message-ID: <20141224172506.GA23683@amd>
+References: <20141224163823.GA17035@amd>
+ <CALCETrW8nrKSZ800C+WaHMK4DCuWnD9TG3dYo7cZwm5j4CpNJQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/mixed; boundary="6TrnltStXW4iwmi0"
+Content-Disposition: inline
+In-Reply-To: <CALCETrW8nrKSZ800C+WaHMK4DCuWnD9TG3dYo7cZwm5j4CpNJQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All exported functions use dev_pm_* prefix and all static functions
-are now standardized with _ prefix. This is better than having to deal
-with multiple function naming styles within the same file.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/base/power/opp.c |   62 +++++++++++++++++++++++-----------------------
- 1 file changed, 31 insertions(+), 31 deletions(-)
+--6TrnltStXW4iwmi0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-index 1b385e4..8ff78c7 100644
---- a/drivers/base/power/opp.c
-+++ b/drivers/base/power/opp.c
-@@ -109,7 +109,7 @@ static LIST_HEAD(dev_opp_list);
- static DEFINE_MUTEX(dev_opp_list_lock);
- 
- /**
-- * find_device_opp() - find device_opp struct using device pointer
-+ * _find_device_opp() - find device_opp struct using device pointer
-  * @dev:	device pointer used to lookup device OPPs
-  *
-  * Search list of device OPPs for one containing matching device. Does a RCU
-@@ -122,7 +122,7 @@ static DEFINE_MUTEX(dev_opp_list_lock);
-  * is a RCU protected pointer. This means that device_opp is valid as long
-  * as we are under RCU lock.
-  */
--static struct device_opp *find_device_opp(struct device *dev)
-+static struct device_opp *_find_device_opp(struct device *dev)
- {
- 	struct device_opp *tmp_dev_opp, *dev_opp = ERR_PTR(-ENODEV);
- 
-@@ -218,7 +218,7 @@ int dev_pm_opp_get_opp_count(struct device *dev)
- 	struct dev_pm_opp *temp_opp;
- 	int count = 0;
- 
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (IS_ERR(dev_opp)) {
- 		int r = PTR_ERR(dev_opp);
- 		dev_err(dev, "%s: device OPP not found (%d)\n", __func__, r);
-@@ -267,7 +267,7 @@ struct dev_pm_opp *dev_pm_opp_find_freq_exact(struct device *dev,
- 	struct device_opp *dev_opp;
- 	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
- 
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (IS_ERR(dev_opp)) {
- 		int r = PTR_ERR(dev_opp);
- 		dev_err(dev, "%s: device OPP not found (%d)\n", __func__, r);
-@@ -318,7 +318,7 @@ struct dev_pm_opp *dev_pm_opp_find_freq_ceil(struct device *dev,
- 		return ERR_PTR(-EINVAL);
- 	}
- 
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (IS_ERR(dev_opp))
- 		return ERR_CAST(dev_opp);
- 
-@@ -366,7 +366,7 @@ struct dev_pm_opp *dev_pm_opp_find_freq_floor(struct device *dev,
- 		return ERR_PTR(-EINVAL);
- 	}
- 
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (IS_ERR(dev_opp))
- 		return ERR_CAST(dev_opp);
- 
-@@ -386,7 +386,7 @@ struct dev_pm_opp *dev_pm_opp_find_freq_floor(struct device *dev,
- }
- EXPORT_SYMBOL_GPL(dev_pm_opp_find_freq_floor);
- 
--static struct device_opp *add_device_opp(struct device *dev)
-+static struct device_opp *_add_device_opp(struct device *dev)
- {
- 	struct device_opp *dev_opp;
- 
-@@ -407,8 +407,8 @@ static struct device_opp *add_device_opp(struct device *dev)
- 	return dev_opp;
- }
- 
--static int dev_pm_opp_add_dynamic(struct device *dev, unsigned long freq,
--				  unsigned long u_volt, bool dynamic)
-+static int _opp_add_dynamic(struct device *dev, unsigned long freq,
-+			    long u_volt, bool dynamic)
- {
- 	struct device_opp *dev_opp = NULL;
- 	struct dev_pm_opp *opp, *new_opp;
-@@ -432,9 +432,9 @@ static int dev_pm_opp_add_dynamic(struct device *dev, unsigned long freq,
- 	new_opp->dynamic = dynamic;
- 
- 	/* Check for existing list for 'dev' */
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (IS_ERR(dev_opp)) {
--		dev_opp = add_device_opp(dev);
-+		dev_opp = _add_device_opp(dev);
- 		if (!dev_opp) {
- 			ret = -ENOMEM;
- 			goto free_opp;
-@@ -510,26 +510,26 @@ free_opp:
-  */
- int dev_pm_opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
- {
--	return dev_pm_opp_add_dynamic(dev, freq, u_volt, true);
-+	return _opp_add_dynamic(dev, freq, u_volt, true);
- }
- EXPORT_SYMBOL_GPL(dev_pm_opp_add);
- 
--static void kfree_opp_rcu(struct rcu_head *head)
-+static void _kfree_opp_rcu(struct rcu_head *head)
- {
- 	struct dev_pm_opp *opp = container_of(head, struct dev_pm_opp, rcu_head);
- 
- 	kfree_rcu(opp, rcu_head);
- }
- 
--static void kfree_device_rcu(struct rcu_head *head)
-+static void _kfree_device_rcu(struct rcu_head *head)
- {
- 	struct device_opp *device_opp = container_of(head, struct device_opp, rcu_head);
- 
- 	kfree_rcu(device_opp, rcu_head);
- }
- 
--static void __dev_pm_opp_remove(struct device_opp *dev_opp,
--				struct dev_pm_opp *opp)
-+static void _opp_remove(struct device_opp *dev_opp,
-+			struct dev_pm_opp *opp)
- {
- 	/*
- 	 * Notify the changes in the availability of the operable
-@@ -537,12 +537,12 @@ static void __dev_pm_opp_remove(struct device_opp *dev_opp,
- 	 */
- 	srcu_notifier_call_chain(&dev_opp->srcu_head, OPP_EVENT_REMOVE, opp);
- 	list_del_rcu(&opp->node);
--	call_srcu(&dev_opp->srcu_head.srcu, &opp->rcu_head, kfree_opp_rcu);
-+	call_srcu(&dev_opp->srcu_head.srcu, &opp->rcu_head, _kfree_opp_rcu);
- 
- 	if (list_empty(&dev_opp->opp_list)) {
- 		list_del_rcu(&dev_opp->node);
- 		call_srcu(&dev_opp->srcu_head.srcu, &dev_opp->rcu_head,
--			  kfree_device_rcu);
-+			  _kfree_device_rcu);
- 	}
- }
- 
-@@ -562,7 +562,7 @@ void dev_pm_opp_remove(struct device *dev, unsigned long freq)
- 	/* Hold our list modification lock here */
- 	mutex_lock(&dev_opp_list_lock);
- 
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (IS_ERR(dev_opp))
- 		goto unlock;
- 
-@@ -579,14 +579,14 @@ void dev_pm_opp_remove(struct device *dev, unsigned long freq)
- 		goto unlock;
- 	}
- 
--	__dev_pm_opp_remove(dev_opp, opp);
-+	_opp_remove(dev_opp, opp);
- unlock:
- 	mutex_unlock(&dev_opp_list_lock);
- }
- EXPORT_SYMBOL_GPL(dev_pm_opp_remove);
- 
- /**
-- * opp_set_availability() - helper to set the availability of an opp
-+ * _opp_set_availability() - helper to set the availability of an opp
-  * @dev:		device for which we do this operation
-  * @freq:		OPP frequency to modify availability
-  * @availability_req:	availability status requested for this opp
-@@ -604,8 +604,8 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_remove);
-  * that this function is *NOT* called under RCU protection or in contexts where
-  * mutex locking or synchronize_rcu() blocking calls cannot be used.
-  */
--static int opp_set_availability(struct device *dev, unsigned long freq,
--		bool availability_req)
-+static int _opp_set_availability(struct device *dev, unsigned long freq,
-+				 bool availability_req)
- {
- 	struct device_opp *dev_opp;
- 	struct dev_pm_opp *new_opp, *tmp_opp, *opp = ERR_PTR(-ENODEV);
-@@ -621,7 +621,7 @@ static int opp_set_availability(struct device *dev, unsigned long freq,
- 	mutex_lock(&dev_opp_list_lock);
- 
- 	/* Find the device_opp */
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (IS_ERR(dev_opp)) {
- 		r = PTR_ERR(dev_opp);
- 		dev_warn(dev, "%s: Device OPP not found (%d)\n", __func__, r);
-@@ -651,7 +651,7 @@ static int opp_set_availability(struct device *dev, unsigned long freq,
- 
- 	list_replace_rcu(&opp->node, &new_opp->node);
- 	mutex_unlock(&dev_opp_list_lock);
--	call_srcu(&dev_opp->srcu_head.srcu, &opp->rcu_head, kfree_opp_rcu);
-+	call_srcu(&dev_opp->srcu_head.srcu, &opp->rcu_head, _kfree_opp_rcu);
- 
- 	/* Notify the change of the OPP availability */
- 	if (availability_req)
-@@ -686,7 +686,7 @@ unlock:
-  */
- int dev_pm_opp_enable(struct device *dev, unsigned long freq)
- {
--	return opp_set_availability(dev, freq, true);
-+	return _opp_set_availability(dev, freq, true);
- }
- EXPORT_SYMBOL_GPL(dev_pm_opp_enable);
- 
-@@ -708,7 +708,7 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_enable);
-  */
- int dev_pm_opp_disable(struct device *dev, unsigned long freq)
- {
--	return opp_set_availability(dev, freq, false);
-+	return _opp_set_availability(dev, freq, false);
- }
- EXPORT_SYMBOL_GPL(dev_pm_opp_disable);
- 
-@@ -718,7 +718,7 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_disable);
-  */
- struct srcu_notifier_head *dev_pm_opp_get_notifier(struct device *dev)
- {
--	struct device_opp *dev_opp = find_device_opp(dev);
-+	struct device_opp *dev_opp = _find_device_opp(dev);
- 
- 	if (IS_ERR(dev_opp))
- 		return ERR_CAST(dev_opp); /* matching type */
-@@ -761,7 +761,7 @@ int of_init_opp_table(struct device *dev)
- 		unsigned long freq = be32_to_cpup(val++) * 1000;
- 		unsigned long volt = be32_to_cpup(val++);
- 
--		if (dev_pm_opp_add_dynamic(dev, freq, volt, false))
-+		if (_opp_add_dynamic(dev, freq, volt, false))
- 			dev_warn(dev, "%s: Failed to add OPP %ld\n",
- 				 __func__, freq);
- 		nr -= 2;
-@@ -783,7 +783,7 @@ void of_free_opp_table(struct device *dev)
- 	struct dev_pm_opp *opp, *tmp;
- 
- 	/* Check for existing list for 'dev' */
--	dev_opp = find_device_opp(dev);
-+	dev_opp = _find_device_opp(dev);
- 	if (WARN(IS_ERR(dev_opp), "%s: dev_opp: %ld\n", dev_name(dev),
- 		 PTR_ERR(dev_opp)))
- 		return;
-@@ -794,7 +794,7 @@ void of_free_opp_table(struct device *dev)
- 	/* Free static OPPs */
- 	list_for_each_entry_safe(opp, tmp, &dev_opp->opp_list, node) {
- 		if (!opp->dynamic)
--			__dev_pm_opp_remove(dev_opp, opp);
-+			_opp_remove(dev_opp, opp);
- 	}
- 
- 	mutex_unlock(&dev_opp_list_lock);
+On Wed 2014-12-24 09:13:32, Andy Lutomirski wrote:
+> On Wed, Dec 24, 2014 at 8:38 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
+> >
+> > It seems that it is easy to induce DRAM bit errors by doing repeated
+> > reads from adjacent memory cells on common hw. Details are at
+> >
+> > https://www.ece.cmu.edu/~safari/pubs/kim-isca14.pdf
+> >
+> > . Older memory modules seem to work better, and ECC should detect
+> > this. Paper has inner loop that should trigger this.
+> >
+> > Workarounds seem to be at hardware level, and tricky, too.
+> 
+> One mostly-effective solution would be to stop buying computers
+> without ECC.  Unfortunately, no one seems to sell non-server chips
+> that can do ECC.
+
+Or keep using old computers :-).
+
+> > Does anyone have implementation of detector? Any ideas how to work
+> > around it in software?
+> >
+> 
+> Platform-dependent page coloring with very strict, and impossible to
+> implement fully correctly, page allocation constraints?
+
+This seems to be at cacheline level, not at page level, if I
+understand it correctly.
+
+So the problem would is: I have something mapped read-only, and I can
+still cause bitflips in it.
+
+Hmm. So it is pretty obviously a security problem, no need for
+java. Just do some bit flips in binary root is going to run, and it
+will crash for him. You can map binaries read-only, so you have enough
+access.
+
+As far as I understand it, attached program could reproduce it on
+affected machines?
+									Pavel
 -- 
-1.7.9.5
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
 
+--6TrnltStXW4iwmi0
+Content-Type: text/x-csrc; charset=us-ascii
+Content-Disposition: attachment; filename="disturb.c"
+
+/* -*- linux-c -*-
+ * 
+ * Try to trigger DRAM disturbance errors, as described in
+ *
+ * https://www.ece.cmu.edu/~safari/pubs/kim-isca14.pdf
+ *
+ * Copyright 2014 Pavel Machek <pavel@ucw.cz>, GPLv2+.
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+void disturb(char *where)
+{
+	unsigned int i;
+	for (i=0; i<0x1000000; i++) {
+		__asm__ __volatile__(
+			"movl 0(%0), %%eax 		\n"	\
+			"movl 64(%0), %%eax		\n"	\
+			"clflush 0(%0)			\n"	\
+			"clflush 64(%0)			\n"	\
+			"mfence"
+			:: "r" (where)
+			: "eax"
+			);
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	long size = 1*1024*1024;
+	long i;
+	unsigned char *mem;
+	
+	mem = malloc(size);
+	memset(mem, 0xff, size);
+
+	for (i=0; i<128; i+=4)
+		disturb(mem+i);
+
+	for (i=0; i<size; i++)
+		if (mem[i] != 0xff)
+			printf("At %lx, got %x\n", i, mem[i]);
+}
+
+--6TrnltStXW4iwmi0--
