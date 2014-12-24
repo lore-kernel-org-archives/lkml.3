@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaLXJp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 04:45:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43502 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaLXJp4 (ORCPT
+	id S1751837AbaLXJvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 04:51:53 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:10112 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751618AbaLXJvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 04:45:56 -0500
-Date: Wed, 24 Dec 2014 10:45:17 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Walter Lozano <walter@vanguardiasur.com.ar>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: socfpga: dts: Add adxl34x
-Message-ID: <20141224094516.GI13070@pengutronix.de>
-References: <1419339862-29852-1-git-send-email-walter@vanguardiasur.com.ar>
+	Wed, 24 Dec 2014 04:51:52 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="46357946"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        =?UTF-8?q?=E8=94=A1=E6=AD=A3=E9=BE=99?= <zhenglong.cai@cs2c.com.cn>,
+        Bertrand Jacquin <beber@meleeweb.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Peter Foley <pefoley2@pefoley.com>, Mel Gorman <mgorman@suse.de>,
+        Clark Williams <clark.williams@gmail.com>
+Subject: [PATCH] rcu: remove "select IRQ_WORK" from config TREE_RCU
+Date: Wed, 24 Dec 2014 17:55:28 +0800
+Message-ID: <1419414940-5082-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419339862-29852-1-git-send-email-walter@vanguardiasur.com.ar>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:27:23 up 69 days, 20:41, 62 users,  load average: 0,05, 0,09,
- 0,06
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+The 48a7639ce80c ("rcu: Make callers awaken grace-period kthread")
+removed the irq_work_queue(), so the TREE_RCU doesn't need
+irq work any more.
 
-On Tue, Dec 23, 2014 at 10:04:22AM -0300, Walter Lozano wrote:
-> This patch adds the DTS bindings for the adxl34x digital
-> accelerometer.
-> 
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ init/Kconfig      |    2 --
+ kernel/rcu/tree.h |    1 -
+ 2 files changed, 0 insertions(+), 3 deletions(-)
 
-Thanks for doing this. Does the ADXL34 work now? Last time I
-tried it, I didn't get any interrupts, but as I didn't really
-care for the accelerometer I didn't dig deeper.
-
-> Signed-off-by: Walter Lozano <walter@vanguardiasur.com.ar>
-> ---
->  arch/arm/boot/dts/socfpga_cyclone5_sockit.dts |   17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
-> index 16ea6f5..f99d7dec 100644
-> --- a/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
-> +++ b/arch/arm/boot/dts/socfpga_cyclone5_sockit.dts
-> @@ -68,3 +68,20 @@
->  &usb1 {
->  	status = "okay";
->  };
-> +
-> +&gpio2 {
-> +	status = "okay";
-> +};
-> +
-> +&i2c1{
-       ^^^
-
-Add a space here and ...
-
-> +	status = "okay";
-> +
-> +	accel1: accel1@53{
-			^^^
-here. Also, this should be accelerometer@53.
-
-> +		compatible = "adxl34x";
-> +		reg = <0x53>;
-> +
-> +		interrupt-parent = < &portc >;
-				   ^^^    ^^^
-Please remove the spaces here.
-> +		interrupts = <3 2>;
-> +
-> +	};
-> +};
-
-Finally, please sort the nodes alphabetically and not just append them.
-
-Regards,
-Steffen
-
+diff --git a/init/Kconfig b/init/Kconfig
+index 9afb971..39b4313 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -470,7 +470,6 @@ choice
+ config TREE_RCU
+ 	bool "Tree-based hierarchical RCU"
+ 	depends on !PREEMPT && SMP
+-	select IRQ_WORK
+ 	help
+ 	  This option selects the RCU implementation that is
+ 	  designed for very large SMP system with hundreds or
+@@ -480,7 +479,6 @@ config TREE_RCU
+ config PREEMPT_RCU
+ 	bool "Preemptible tree-based hierarchical RCU"
+ 	depends on PREEMPT
+-	select IRQ_WORK
+ 	help
+ 	  This option selects the RCU implementation that is
+ 	  designed for very large SMP systems with hundreds or
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 8e7b184..a47a13c 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -27,7 +27,6 @@
+ #include <linux/threads.h>
+ #include <linux/cpumask.h>
+ #include <linux/seqlock.h>
+-#include <linux/irq_work.h>
+ 
+ /*
+  * Define shape of hierarchy based on NR_CPUS, CONFIG_RCU_FANOUT, and
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.4.4
+
