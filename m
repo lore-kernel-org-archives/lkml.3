@@ -1,103 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaLXMbp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 07:31:45 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:63214 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752161AbaLXMbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 07:31:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141223154654.GB6460@vivalin-002>
-References: <20141223154654.GB6460@vivalin-002>
-From: Olivier Sobrie <olivier@sobrie.be>
-Date: Wed, 24 Dec 2014 13:31:20 +0100
-X-Google-Sender-Auth: JotjjYrFXusE1qWjhQnJPk9_6EY
-Message-ID: <CAEM=fMqwt+=1Du74qu3dLJ7-OLnypkhJZ_N8uSWAAtzTLazmOg@mail.gmail.com>
-Subject: Re: [PATCH] can: kvaser_usb: Don't free packets when tight on URBs
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752019AbaLXMXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 07:23:08 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50935 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751893AbaLXMXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 07:23:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,638,1413270000"; 
+   d="scan'208";a="642376346"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: akpm@linux-foundation.org
+Cc: peterz@infradead.org, mingo@kernel.org, davej@redhat.com,
+        sasha.levin@oracle.com, hughd@google.com, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH 06/38] mm: replace vma->sharead.linear with vma->shared
+Date: Wed, 24 Dec 2014 14:22:14 +0200
+Message-Id: <1419423766-114457-7-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ahmed,
+After removing vma->shared.nonlinear we have only one member of
+vma->shared union, which doesn't make much sense.
 
-On Tue, Dec 23, 2014 at 05:46:54PM +0200, Ahmed S. Darwish wrote:
-> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
->
-> Flooding the Kvaser CAN to USB dongle with multiple reads and
-> writes in high frequency caused seemingly-random panics in the
-> kernel.
->
-> On further inspection, it seems the driver erroneously freed the
-> to-be-transmitted packet upon getting tight on URBs and returning
-> NETDEV_TX_BUSY, leading to invalid memory writes and double frees
-> at a later point in time.
->
-> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+This patch drops the union and move struct vma->shared.linear to
+vma->shared.
 
-Thank you for the fix.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ include/linux/mm_types.h |  8 +++-----
+ mm/interval_tree.c       | 34 +++++++++++++++++-----------------
+ 2 files changed, 20 insertions(+), 22 deletions(-)
 
-> ---
->  drivers/net/can/usb/kvaser_usb.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
->  (Generated over 3.19.0-rc1)
->
-> diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
-> index 541fb7a..34c35d8 100644
-> --- a/drivers/net/can/usb/kvaser_usb.c
-> +++ b/drivers/net/can/usb/kvaser_usb.c
-> @@ -1286,6 +1286,7 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
->   struct kvaser_msg *msg;
->   int i, err;
->   int ret = NETDEV_TX_OK;
-> + bool kfree_skb_on_error = true;
->
->   if (can_dropped_invalid_skb(netdev, skb))
->   return NETDEV_TX_OK;
-> @@ -1336,6 +1337,7 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
->
->   if (!context) {
->   netdev_warn(netdev, "cannot find free context\n");
-> + kfree_skb_on_error = false;
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 3b1d20fb0848..07c8bd3f7b48 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -275,11 +275,9 @@ struct vm_area_struct {
+ 	 * For areas with an address space and backing store,
+ 	 * linkage into the address_space->i_mmap interval tree.
+ 	 */
+-	union {
+-		struct {
+-			struct rb_node rb;
+-			unsigned long rb_subtree_last;
+-		} linear;
++	struct {
++		struct rb_node rb;
++		unsigned long rb_subtree_last;
+ 	} shared;
+ 
+ 	/*
+diff --git a/mm/interval_tree.c b/mm/interval_tree.c
+index 8da581fa9060..f2c2492681bf 100644
+--- a/mm/interval_tree.c
++++ b/mm/interval_tree.c
+@@ -21,8 +21,8 @@ static inline unsigned long vma_last_pgoff(struct vm_area_struct *v)
+ 	return v->vm_pgoff + ((v->vm_end - v->vm_start) >> PAGE_SHIFT) - 1;
+ }
+ 
+-INTERVAL_TREE_DEFINE(struct vm_area_struct, shared.linear.rb,
+-		     unsigned long, shared.linear.rb_subtree_last,
++INTERVAL_TREE_DEFINE(struct vm_area_struct, shared.rb,
++		     unsigned long, shared.rb_subtree_last,
+ 		     vma_start_pgoff, vma_last_pgoff,, vma_interval_tree)
+ 
+ /* Insert node immediately after prev in the interval tree */
+@@ -36,26 +36,26 @@ void vma_interval_tree_insert_after(struct vm_area_struct *node,
+ 
+ 	VM_BUG_ON_VMA(vma_start_pgoff(node) != vma_start_pgoff(prev), node);
+ 
+-	if (!prev->shared.linear.rb.rb_right) {
++	if (!prev->shared.rb.rb_right) {
+ 		parent = prev;
+-		link = &prev->shared.linear.rb.rb_right;
++		link = &prev->shared.rb.rb_right;
+ 	} else {
+-		parent = rb_entry(prev->shared.linear.rb.rb_right,
+-				  struct vm_area_struct, shared.linear.rb);
+-		if (parent->shared.linear.rb_subtree_last < last)
+-			parent->shared.linear.rb_subtree_last = last;
+-		while (parent->shared.linear.rb.rb_left) {
+-			parent = rb_entry(parent->shared.linear.rb.rb_left,
+-				struct vm_area_struct, shared.linear.rb);
+-			if (parent->shared.linear.rb_subtree_last < last)
+-				parent->shared.linear.rb_subtree_last = last;
++		parent = rb_entry(prev->shared.rb.rb_right,
++				  struct vm_area_struct, shared.rb);
++		if (parent->shared.rb_subtree_last < last)
++			parent->shared.rb_subtree_last = last;
++		while (parent->shared.rb.rb_left) {
++			parent = rb_entry(parent->shared.rb.rb_left,
++				struct vm_area_struct, shared.rb);
++			if (parent->shared.rb_subtree_last < last)
++				parent->shared.rb_subtree_last = last;
+ 		}
+-		link = &parent->shared.linear.rb.rb_left;
++		link = &parent->shared.rb.rb_left;
+ 	}
+ 
+-	node->shared.linear.rb_subtree_last = last;
+-	rb_link_node(&node->shared.linear.rb, &parent->shared.linear.rb, link);
+-	rb_insert_augmented(&node->shared.linear.rb, root,
++	node->shared.rb_subtree_last = last;
++	rb_link_node(&node->shared.rb, &parent->shared.rb, link);
++	rb_insert_augmented(&node->shared.rb, root,
+ 			    &vma_interval_tree_augment);
+ }
+ 
+-- 
+2.1.3
 
-Instead of using an extra variable, you can also set skb to NULL here.
-Or maybe better, you can move the dev_kfree_skb() in the two previous
-tests (in the check of variables urb and buf).
-
-Thank you,
-
-Olivier
-
->   ret =  NETDEV_TX_BUSY;
->   goto releasebuf;
->   }
-> @@ -1364,8 +1366,7 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
->   if (unlikely(err)) {
->   can_free_echo_skb(netdev, context->echo_index);
->
-> - skb = NULL; /* set to NULL to avoid double free in
-> -     * dev_kfree_skb(skb) */
-> + kfree_skb_on_error = false;
->
->   atomic_dec(&priv->active_tx_urbs);
->   usb_unanchor_urb(urb);
-> @@ -1389,7 +1390,8 @@ releasebuf:
->  nobufmem:
->   usb_free_urb(urb);
->  nourbmem:
-> - dev_kfree_skb(skb);
-> + if (kfree_skb_on_error)
-> + dev_kfree_skb(skb);
->   return ret;
->  }
->
