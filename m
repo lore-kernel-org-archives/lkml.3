@@ -1,137 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaLXN0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 08:26:14 -0500
-Received: from ns.lynxeye.de ([87.118.118.114]:50818 "EHLO lynxeye.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751641AbaLXN0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 08:26:13 -0500
-Message-ID: <1419426990.2179.7.camel@lynxeye.de>
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-From: Lucas Stach <dev@lynxeye.de>
-To: Vince Hsu <vinceh@nvidia.com>
-Cc: thierry.reding@gmail.com, swarren@wwwdotorg.org, gnurou@gmail.com,
-        bskeggs@redhat.com, martin.peres@free.fr, seven@nimrod-online.com,
-        samuel.pitoiset@gmail.com, nouveau@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 24 Dec 2014 14:16:30 +0100
-In-Reply-To: <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
-	 <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.8 (3.12.8-1.fc21) 
-Mime-Version: 1.0
+	id S1752064AbaLXN2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 08:28:49 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:49577 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641AbaLXN2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 08:28:47 -0500
+Message-ID: <549ABF87.8060905@elis.ugent.be>
+Date: Wed, 24 Dec 2014 14:28:39 +0100
+From: Stijn Volckaert <Stijn.Volckaert@elis.ugent.be>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Roland McGrath <roland@hack.frob.com>, Oleg Nesterov <oleg@redhat.com>,
+        Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] Allow introspection to already attached ptracer in __ptrace_may_access
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Antivirus: avast! (VPS 141224-0, 24/12/2014), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
-> The Tegra124 and later Tegra SoCs have a sepatate rail gating register
-> to enable/disable the clamp. The original function
-> tegra_powergate_remove_clamping() is not sufficient for the enable
-> function. So add a new function which is dedicated to the GPU rail
-> gating. Also don't refer to the powergate ID since the GPU ID makes no
-> sense here.
-> 
-> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+Hello,
 
-To be honest I don't see the point of this patch.
-You are bloating the PMC interface by introducing another exported
-function that does nothing different than what the current function
-already does.
+I ran across the following problem recently but I'm not entirely sure 
+whether this should be fixed in ptrace or in Yama. I'm working on a 
+ptrace-based monitor that forks off its own tracee during startup. The 
+monitor attaches to the tracee and then lets the tracee perform an 
+execve call. This is much like running a program in gdb.
 
-If you need a way to assert the clamp I would have expected you to
-introduce a common function to do this for all power partitions.
+My monitor is multi-threaded and uses one monitor thread for every 
+tracee thread so whenever the tracee forks/vforks/clones, I fire up a 
+new monitor thread, detach the old monitor thread from the tracee thread 
+and attach the new monitor thread to the tracee thread.
 
-Other comments inline.
+I have recently stumbled upon several applications in which the main 
+process A forks off process B and then immediately exits. Under normal 
+circumstances the following would happen:
+
+Monitor[0]  ---   FORKS OFF   ---> Monitor[0]'
+Monitor[0]  --- PTRACE_ATTACH ---> Monitor[0]'
+Monitor[0]' ---    EXECVE     ---> Process A
+
+Process A   ---   FORKS OFF   ---> Process B
+Monitor[0]  --- PTRACE_DETACH ---> Process B
+Monitor[1]  --- PTRACE_ATTACH ---> Process B
+
+With Yama enabled (and the scope set to YAMA_SCOPE_RELATIONAL) however, 
+a few interesting things can (and usually do) happen:
+
+1) If Process A dies before Monitor[1] is attached to Process B, the 
+attach will fail since from Yama's point of view, Process B is no longer 
+a descendant of Monitor[1]. This problem is probably hard to fix
+but I've circumvented it by delaying the death of Process A until 
+Process B is attached to Monitor[1].
+
+2) More interestingly though, even if Process B does get attached to 
+Monitor[1], as soon as Process A dies, all process_vm_readv and 
+process_vm_writev calls on Process B start failing. Any other ptrace 
+operations peformed on Process B do succeed.
+
+process_vm_readv|writev use __ptrace_may_access to check whether the 
+operation is permitted, whereas other ptrace operations (with the 
+exception of PTRACE_ATTACH) use ptrace_check_attach.
+
+To fix this problem, __ptrace_may_access should be forced to return 0 if 
+the calling process is already attached to the target process.
+
+The question now is whether or not it's the security module's 
+responsibility to check whether a tracee relationship is already in 
+place or if ptrace itself should do it. For the latter case, which seems 
+more logical to me, you could use the patch below.
+
+What do you guys think?
 
 Regards,
-Lucas
+Stijn Volckaert
 
-> ---
->  drivers/soc/tegra/pmc.c | 34 +++++++++++++++++++++++-----------
->  include/soc/tegra/pmc.h |  2 ++
->  2 files changed, 25 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/soc/tegra/pmc.c b/drivers/soc/tegra/pmc.c
-> index a2c0ceb95f8f..7798c530ead1 100644
-> --- a/drivers/soc/tegra/pmc.c
-> +++ b/drivers/soc/tegra/pmc.c
-> @@ -225,17 +225,6 @@ int tegra_powergate_remove_clamping(int id)
->  		return -EINVAL;
->  
->  	/*
-> -	 * The Tegra124 GPU has a separate register (with different semantics)
-> -	 * to remove clamps.
-> -	 */
-> -	if (tegra_get_chip_id() == TEGRA124) {
-> -		if (id == TEGRA_POWERGATE_3D) {
-> -			tegra_pmc_writel(0, GPU_RG_CNTRL);
-> -			return 0;
-> -		}
-> -	}
-> -
-> -	/*
->  	 * Tegra 2 has a bug where PCIE and VDE clamping masks are
->  	 * swapped relatively to the partition ids
->  	 */
-> @@ -253,6 +242,29 @@ int tegra_powergate_remove_clamping(int id)
->  EXPORT_SYMBOL(tegra_powergate_remove_clamping);
->  
->  /**
-> + * tegra_powergate_gpu_set_clamping - control GPU-SOC clamps
-> + *
-> + * The post-Tegra114 chips have a separate rail gating register to configure
-> + * clamps.
-> + *
-> + * @assert: true to assert clamp, and false to remove
-> + */
-> +int tegra_powergate_gpu_set_clamping(bool assert)
+--
 
-Those functions with a bool parameter to set/unset something are really
-annoying. Please avoid this pattern. The naming of the original function
-is much more intuitive.
+Signed-off-by: Stijn Volckaert <Stijn.Volckaert@elis.ugent.be>
 
-> +{
-> +	if (!pmc->soc)
-> +		return -EINVAL;
-> +
-> +	if (tegra_get_chip_id() == TEGRA124) {
-> +		tegra_pmc_writel(assert ? 1 : 0, GPU_RG_CNTRL);
-> +		tegra_pmc_readl(GPU_RG_CNTRL);
-
-You are reading the register back here, which to me seems like you are
-trying to make sure that the write is flushed. Why is this needed?
-I also observed the need to do this while working on Tegra124 PCIe in
-Barebox, otherwise the partition wouldn't power up. I didn't have time
-to follow up on this yet, so it would be nice if you could explain why
-this is needed, or if you don't know ask HW about it.
-
-> +		return 0;
-> +	}
-> +
-> +	return -EINVAL;
-> +}
-> +EXPORT_SYMBOL(tegra_powergate_gpu_set_clamping);
-> +
-> +/**
->   * tegra_powergate_sequence_power_up() - power up partition
->   * @id: partition ID
->   * @clk: clock for partition
-> diff --git a/include/soc/tegra/pmc.h b/include/soc/tegra/pmc.h
-> index 65a93273e72f..53d620525a9e 100644
-> --- a/include/soc/tegra/pmc.h
-> +++ b/include/soc/tegra/pmc.h
-> @@ -109,6 +109,8 @@ int tegra_powergate_is_powered(int id);
->  int tegra_powergate_power_on(int id);
->  int tegra_powergate_power_off(int id);
->  int tegra_powergate_remove_clamping(int id);
-> +/* Only for Tegra124 and later */
-> +int tegra_powergate_gpu_set_clamping(bool assert);
->  
->  /* Must be called with clk disabled, and returns with clk enabled */
->  int tegra_powergate_sequence_power_up(int id, struct clk *clk,
-
+--- a/kernel/ptrace.c	2014-12-24 13:53:23.055346526 +0100
++++ b/kernel/ptrace.c	2014-12-24 14:17:20.617824840 +0100
+@@ -232,6 +232,9 @@ static int __ptrace_may_access(struct ta
+  	/* Don't let security modules deny introspection */
+  	if (same_thread_group(task, current))
+  		return 0;
++	/* Don't deny introspection to already attached ptracer */
++	if (!ptrace_check_attach(task, true))
++	        return 0;
+  	rcu_read_lock();
+  	tcred = __task_cred(task);
+  	if (uid_eq(cred->uid, tcred->euid) &&
 
