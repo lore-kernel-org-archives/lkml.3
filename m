@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaLXQeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:34:16 -0500
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:49665 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920AbaLXQeM (ORCPT
+	id S1752644AbaLXQe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:34:59 -0500
+Received: from resqmta-po-08v.sys.comcast.net ([96.114.154.167]:49194 "EHLO
+	resqmta-po-08v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751522AbaLXQ2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:34:12 -0500
-From: Steve Pennington <sgpenn@gmail.com>
-X-Google-Original-From: Steve Pennington < sgpenn@gmail.com >
-To: gregkh@linuxfoundation.org, john.stultz@linaro.org,
-        maarten.lankhorst@canonical.com, daniel@ffwll.ch,
-        sumit.semwal@linaro.org, tapaswenipathak@gmail.com,
-        peter.senna@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Steve Pennington <sgpenn@gmail.com>
-Subject: [PATCH] Staging: android: fix line length coding style issue in sync_debug.c
-Date: Wed, 24 Dec 2014 09:33:02 -0600
-Message-Id: <1419435182-27322-1-git-send-email-sgpenn@gmail.com>
-X-Mailer: git-send-email 2.2.1
+	Wed, 24 Dec 2014 11:28:05 -0500
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
+        keescook@chromium.org, tranmanphong@gmail.com, mpe@ellerman.id.au,
+        cov@codeaurora.org, dh.herrmann@gmail.com, hughd@google.com,
+        bobby.prani@gmail.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v3 04/20] selftests/firmware: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:40 -0700
+Message-Id: <cbae2a6a11f9c3c5a33343dfac7f86b8f39dc59f.1419387513.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
+References: <cover.1419387513.git.shuahkh@osg.samsung.com>
+In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
+References: <cover.1419387513.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steve Pennington <sgpenn@gmail.com>
+Add a new make target to enable installing test. This target
+installs test in the kselftest install location and add to the
+kselftest script to run the test. Install target can be run
+only from top level kernel source directory.
 
-This is a patch to sync_debug.c that fixes an over 80 character warning found by the checkpatch.pl tool
-Signed-off-by: Steve Pennington <sgpenn@gmail.com>
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- drivers/staging/android/sync_debug.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/testing/selftests/firmware/Makefile | 43 +++++++++++++++++++------------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/android/sync_debug.c b/drivers/staging/android/sync_debug.c
-index 1532a86..91ed2c4 100644
---- a/drivers/staging/android/sync_debug.c
-+++ b/drivers/staging/android/sync_debug.c
-@@ -96,7 +96,8 @@ static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
- 		   sync_status_str(status));
+diff --git a/tools/testing/selftests/firmware/Makefile b/tools/testing/selftests/firmware/Makefile
+index e23cce0..7ac1cf3 100644
+--- a/tools/testing/selftests/firmware/Makefile
++++ b/tools/testing/selftests/firmware/Makefile
+@@ -1,25 +1,34 @@
+ # Makefile for firmware loading selftests
  
- 	if (status <= 0) {
--		struct timespec64 ts64 = ktime_to_timespec64(pt->base.timestamp);
-+		struct timespec64 ts64 =
-+			ktime_to_timespec64(pt->base.timestamp);
+ # No binaries, but make sure arg-less "make" doesn't trigger "run_tests"
++
++__fw_filesystem:
++fw_filesystem  = if /bin/sh ./fw_filesystem.sh ; then
++fw_filesystem += echo fw_filesystem: ok;
++fw_filesystem += else echo fw_filesystem: [FAIL];
++fw_filesystem += fi
++
++__fw_userhelper:
++fw_userhelper  = if /bin/sh ./fw_userhelper.sh ; then
++fw_userhelper += echo fw_userhelper: ok;
++fw_userhelper += else
++fw_userhelper += echo fw_userhelper: [FAIL];
++fw_userhelper += fi
++
+ all:
  
- 		seq_printf(s, "@%lld.%09ld", (s64)ts64.tv_sec, ts64.tv_nsec);
- 	}
+-fw_filesystem:
+-	@if /bin/sh ./fw_filesystem.sh ; then \
+-                echo "fw_filesystem: ok"; \
+-        else \
+-                echo "fw_filesystem: [FAIL]"; \
+-                exit 1; \
+-        fi
+-
+-fw_userhelper:
+-	@if /bin/sh ./fw_userhelper.sh ; then \
+-                echo "fw_userhelper: ok"; \
+-        else \
+-                echo "fw_userhelper: [FAIL]"; \
+-                exit 1; \
+-        fi
+-
+-run_tests: all fw_filesystem fw_userhelper
++install:
++ifdef INSTALL_KSFT_PATH
++	install ./fw_filesystem.sh ./fw_userhelper.sh $(INSTALL_KSFT_PATH)
++	@echo "$(fw_filesystem)" >> $(KSELFTEST)
++	@echo "$(fw_userhelper)" >> $(KSELFTEST)
++else
++	@echo Run make kselftest_install in top level source directory
++endif
++
++run_tests:
++	@$(fw_filesystem)
++	@$(fw_userhelper)
+ 
+ # Nothing to clean up.
+ clean:
 -- 
-2.2.1
+2.1.0
 
