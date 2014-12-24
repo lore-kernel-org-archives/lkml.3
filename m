@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751771AbaLXHGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:06:10 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:47004 "EHLO bear.ext.ti.com"
+	id S1751734AbaLXHGI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:06:08 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47003 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522AbaLXHFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751520AbaLXHFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Dec 2014 02:05:51 -0500
 From: Vignesh R <vigneshr@ti.com>
 To: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
@@ -28,89 +28,174 @@ CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
         <linux-input@vger.kernel.org>, Vignesh R <vigneshr@ti.com>
-Subject: [PATCH v5 3/6] mfd: ti_am335x_tscadc: Remove unwanted reg_se_cache save
-Date: Wed, 24 Dec 2014 12:33:36 +0530
-Message-ID: <1419404619-10744-4-git-send-email-vigneshr@ti.com>
+Subject: [PATCH v5 1/6] input: touchscreen: ti_am335x_tsc Interchange touchscreen and ADC steps
+Date: Wed, 24 Dec 2014 12:33:34 +0530
+Message-ID: <1419404619-10744-2-git-send-email-vigneshr@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1419404619-10744-1-git-send-email-vigneshr@ti.com>
 References: <1419404619-10744-1-git-send-email-vigneshr@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In one shot mode, sequencer automatically disables all enabled steps at
-the end of each cycle. (both ADC steps and TSC steps) Hence these steps
-need not be saved in reg_se_cache for clearing these steps at a later
-stage.
-Also, when ADC wakes up Sequencer should not be busy executing any of the
-config steps except for the charge step. Previously charge step was 1 ADC
-clock cycle and hence it was ignored.
-TSC steps are always disabled at the end of each conversion cycle, hence
-there is no need to explicitly disable TSC steps by writing 0 to REG_SE.
+From: Brad Griffis <bgriffis@ti.com>
+
+This patch makes the initial changes required to workaround TSC-false
+pen-up interrupts. It is required to implement these changes in order to
+remove udelay in the TSC interrupt handler and false pen-up events.
+The charge step is to be executed immediately after sampling X+. Hence
+TSC is made to use higher numbered steps (steps 5 to 16 for 5 co-ordinate
+readouts, 4 wire TSC configuration) and ADC to use lower ones. Further
+X co-ordinate readouts must be the last to be sampled, thus co-ordinates
+are sampled in the order Y-Z-X.
+
+Signed-off-by: Brad Griffis <bgriffis@ti.com>
+[vigneshr@ti.com: Ported the patch from v3.12 to v3.19rc1]
 
 Signed-off-by: Vignesh R <vigneshr@ti.com>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
 ---
+ drivers/iio/adc/ti_am335x_adc.c           |  5 ++--
+ drivers/input/touchscreen/ti_am335x_tsc.c | 42 ++++++++++++++++++-------------
+ 2 files changed, 26 insertions(+), 21 deletions(-)
 
-v5:
- - Remove unnecessary clearing of REG_SE
-
- drivers/mfd/ti_am335x_tscadc.c       | 13 +++++--------
- include/linux/mfd/ti_am335x_tscadc.h |  1 +
- 2 files changed, 6 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
-index 467c80e1c4ae..e4e4b22eebc9 100644
---- a/drivers/mfd/ti_am335x_tscadc.c
-+++ b/drivers/mfd/ti_am335x_tscadc.c
-@@ -68,12 +68,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
- 	DEFINE_WAIT(wait);
- 	u32 reg;
- 
--	/*
--	 * disable TSC steps so it does not run while the ADC is using it. If
--	 * write 0 while it is running (it just started or was already running)
--	 * then it completes all steps that were enabled and stops then.
--	 */
--	tscadc_writel(tsadc, REG_SE, 0);
- 	reg = tscadc_readl(tsadc, REG_ADCFSM);
- 	if (reg & SEQ_STATUS) {
- 		tsadc->adc_waiting = true;
-@@ -86,8 +80,12 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
- 		spin_lock_irq(&tsadc->reg_lock);
- 		finish_wait(&tsadc->reg_se_wait, &wait);
- 
-+		/*
-+		 * Sequencer should either be idle or
-+		 * busy applying the charge step.
-+		 */
- 		reg = tscadc_readl(tsadc, REG_ADCFSM);
--		WARN_ON(reg & SEQ_STATUS);
-+		WARN_ON((reg & SEQ_STATUS) && !(reg & CHARGE_STEP));
- 		tsadc->adc_waiting = false;
- 	}
- 	tsadc->adc_in_use = true;
-@@ -96,7 +94,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
- void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index b730864731e8..adba23246474 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -86,19 +86,18 @@ static void tiadc_step_config(struct iio_dev *indio_dev)
  {
- 	spin_lock_irq(&tsadc->reg_lock);
--	tsadc->reg_se_cache |= val;
- 	am335x_tscadc_need_adc(tsadc);
+ 	struct tiadc_device *adc_dev = iio_priv(indio_dev);
+ 	unsigned int stepconfig;
+-	int i, steps;
++	int i, steps = 0;
  
- 	tscadc_writel(tsadc, REG_SE, val);
-diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-index 3f4e994ace2b..1fd50dcfe47c 100644
---- a/include/linux/mfd/ti_am335x_tscadc.h
-+++ b/include/linux/mfd/ti_am335x_tscadc.h
-@@ -128,6 +128,7 @@
+ 	/*
+ 	 * There are 16 configurable steps and 8 analog input
+ 	 * lines available which are shared between Touchscreen and ADC.
+ 	 *
+-	 * Steps backwards i.e. from 16 towards 0 are used by ADC
++	 * Steps forwards i.e. from 0 towards 16 are used by ADC
+ 	 * depending on number of input lines needed.
+ 	 * Channel would represent which analog input
+ 	 * needs to be given to ADC to digitalize data.
+ 	 */
  
- /* Sequencer Status */
- #define SEQ_STATUS BIT(5)
-+#define CHARGE_STEP		0x11
+-	steps = TOTAL_STEPS - adc_dev->channels;
+ 	if (iio_buffer_enabled(indio_dev))
+ 		stepconfig = STEPCONFIG_AVG_16 | STEPCONFIG_FIFO1
+ 					| STEPCONFIG_MODE_SWCNT;
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 004f1346a957..dfbb9fe6a270 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -121,7 +121,7 @@ static void titsc_step_config(struct titsc *ts_dev)
+ {
+ 	unsigned int	config;
+ 	int i;
+-	int end_step;
++	int end_step, first_step, tsc_steps;
+ 	u32 stepenable;
  
- #define ADC_CLK			3000000
- #define TOTAL_STEPS		16
+ 	config = STEPCONFIG_MODE_HWSYNC |
+@@ -140,9 +140,11 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 		break;
+ 	}
+ 
+-	/* 1 … coordinate_readouts is for X */
+-	end_step = ts_dev->coordinate_readouts;
+-	for (i = 0; i < end_step; i++) {
++	tsc_steps = ts_dev->coordinate_readouts * 2 + 2;
++	first_step = TOTAL_STEPS - tsc_steps;
++	/* Steps 16 to 16-coordinate_readouts is for X */
++	end_step = first_step + tsc_steps;
++	for (i = end_step - ts_dev->coordinate_readouts; i < end_step; i++) {
+ 		titsc_writel(ts_dev, REG_STEPCONFIG(i), config);
+ 		titsc_writel(ts_dev, REG_STEPDELAY(i), STEPCONFIG_OPENDLY);
+ 	}
+@@ -164,9 +166,9 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 		break;
+ 	}
+ 
+-	/* coordinate_readouts … coordinate_readouts * 2 is for Y */
+-	end_step = ts_dev->coordinate_readouts * 2;
+-	for (i = ts_dev->coordinate_readouts; i < end_step; i++) {
++	/* 1 ... coordinate_readouts is for Y */
++	end_step = first_step + ts_dev->coordinate_readouts;
++	for (i = first_step; i < end_step; i++) {
+ 		titsc_writel(ts_dev, REG_STEPCONFIG(i), config);
+ 		titsc_writel(ts_dev, REG_STEPDELAY(i), STEPCONFIG_OPENDLY);
+ 	}
+@@ -179,7 +181,7 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 	titsc_writel(ts_dev, REG_CHARGECONFIG, config);
+ 	titsc_writel(ts_dev, REG_CHARGEDELAY, CHARGEDLY_OPENDLY);
+ 
+-	/* coordinate_readouts * 2 … coordinate_readouts * 2 + 2 is for Z */
++	/* coordinate_readouts + 1 ... coordinate_readouts + 2 is for Z */
+ 	config = STEPCONFIG_MODE_HWSYNC |
+ 			STEPCONFIG_AVG_16 | ts_dev->bit_yp |
+ 			ts_dev->bit_xn | STEPCONFIG_INM_ADCREFM |
+@@ -194,8 +196,11 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 	titsc_writel(ts_dev, REG_STEPDELAY(end_step),
+ 			STEPCONFIG_OPENDLY);
+ 
+-	/* The steps1 … end and bit 0 for TS_Charge */
+-	stepenable = (1 << (end_step + 2)) - 1;
++	/* The steps end ... end - readouts * 2 + 2 and bit 0 for TS_Charge */
++	stepenable = 1;
++	for (i = 0; i < tsc_steps; i++)
++		stepenable |= 1 << (first_step + i + 1);
++
+ 	ts_dev->step_mask = stepenable;
+ 	am335x_tsc_se_set_cache(ts_dev->mfd_tscadc, ts_dev->step_mask);
+ }
+@@ -209,6 +214,7 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
+ 	unsigned int read, diff;
+ 	unsigned int i, channel;
+ 	unsigned int creads = ts_dev->coordinate_readouts;
++	unsigned int first_step = TOTAL_STEPS - (creads * 2 + 2);
+ 
+ 	*z1 = *z2 = 0;
+ 	if (fifocount % (creads * 2 + 2))
+@@ -226,7 +232,7 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
+ 
+ 		channel = (read & 0xf0000) >> 16;
+ 		read &= 0xfff;
+-		if (channel < creads) {
++		if (channel > first_step + creads + 2) {
+ 			diff = abs(read - prev_val_x);
+ 			if (diff < prev_diff_x) {
+ 				prev_diff_x = diff;
+@@ -234,19 +240,19 @@ static void titsc_read_coordinates(struct titsc *ts_dev,
+ 			}
+ 			prev_val_x = read;
+ 
+-		} else if (channel < creads * 2) {
++		} else if (channel == first_step + creads + 1) {
++			*z1 = read;
++
++		} else if (channel == first_step + creads + 2) {
++			*z2 = read;
++
++		} else if (channel > first_step) {
+ 			diff = abs(read - prev_val_y);
+ 			if (diff < prev_diff_y) {
+ 				prev_diff_y = diff;
+ 				*y = read;
+ 			}
+ 			prev_val_y = read;
+-
+-		} else if (channel < creads * 2 + 1) {
+-			*z1 = read;
+-
+-		} else if (channel < creads * 2 + 2) {
+-			*z2 = read;
+ 		}
+ 	}
+ }
 -- 
 1.9.1
 
