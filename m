@@ -1,157 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaLXQQY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:16:24 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:59294 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaLXQQW (ORCPT
+	id S1751448AbaLXQXF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:23:05 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:35793 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaLXQXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:16:22 -0500
-Message-ID: <549AE6A3.3060009@gmail.com>
-Date: Wed, 24 Dec 2014 21:45:31 +0530
-From: Sanchayan Maity <maitysanchayan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 24 Dec 2014 11:23:02 -0500
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>
-CC: Peter.Chen@freescale.com, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] usb: chipidea: Add identification registers access
- APIs
-References: <cover.1418981438.git.maitysanchayan@gmail.com> <72124df17c0f40f8a7ae02faa9664b9d51743584.1418981438.git.maitysanchayan@gmail.com> <4f5efe169ed3ab16ffcbee52dd6b7661@agner.ch>
-In-Reply-To: <4f5efe169ed3ab16ffcbee52dd6b7661@agner.ch>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+Date: Wed, 24 Dec 2014 17:22:44 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Sanchayan Maity <maitysanchayan@gmail.com>
+Cc: Peter.Chen@freescale.com, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] usb: chipidea: Add chipidea revision information
+In-Reply-To: <1da552d2284380f8606bd16d1d3c0cf51caa60ff.1418981438.git.maitysanchayan@gmail.com>
+References: <cover.1418981438.git.maitysanchayan@gmail.com>
+ <1da552d2284380f8606bd16d1d3c0cf51caa60ff.1418981438.git.maitysanchayan@gmail.com>
+Message-ID: <e7c92089fe1938c9f7f97bde12c6d8bc@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Dec 24 17:21:53 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 549ae82112817902214973
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2014 09:30 PM, Stefan Agner wrote:
-> On 2014-12-19 10:55, Sanchayan Maity wrote:
->> Using hw_write_id_reg and hw_read_id_reg to write and read
->> identification registers contents. This can be used to get
->> controller information, change some system configurations
->> and so on.
+On 2014-12-19 10:55, Sanchayan Maity wrote:
+> Define ci_get_revision API to know the controller revision
+> information according to chipidea 1.1a, 2.0a, 2.4 and 2.5a
+> spec. Besides, add one entry in struct ci_hdrc to indicate
+> revision information. This can be used for adding different
+> code for revisions, implementing erratas.
 > 
-> Checkpatch is complaining about DOS line endings and some trailing
-> whitespace. This applies to all three patches.
+> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
+> ---
+>  drivers/usb/chipidea/bits.h |   10 ++++++++++
+>  drivers/usb/chipidea/core.c |   23 +++++++++++++++++++++--
+>  2 files changed, 31 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/chipidea/bits.h b/drivers/usb/chipidea/bits.h
+> index ca57e3d..e935ccc 100644
+> --- a/drivers/usb/chipidea/bits.h
+> +++ b/drivers/usb/chipidea/bits.h
+> @@ -15,6 +15,16 @@
+>  
+>  #include <linux/usb/ehci_def.h>
+>  
+> +/*
+> + * ID
+> + * For 1.x revision, bit24 - bit31 are reserved
+> + * For 2.x revision, bit25 - bit28 are 0x2
+> + */
+> +#define TAG			(0x1F << 16)
+> +#define REVISION		(0xF << 21)
+> +#define VERSION			(0xF << 25)
+> +#define CIVERSION		(0x7 << 29)
+> +
 
-Hmm... that's surprising. I did run checkpatch at my end before sending.
-I do not have the original patchset on my laptop which I have right now
-but downloading diffs back from lkml and running checkpatch on them back,
-only gives me signed off errors as it should. 
+Hm, the other defines use spaces in this file, I like tabs more too, but
+I guess uniformity wins here.. Peter?
 
-I will resend if somehow errors crept in with my earlier patches.
+>  /* HCCPARAMS */
+>  #define HCCPARAMS_LEN         BIT(17)
+>  
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index 9bdc6bd..33a8c4a 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -136,6 +136,22 @@ static int hw_alloc_regmap(struct ci_hdrc *ci, bool is_lpm)
+>  	return 0;
+>  }
+>  
+> +static enum CI_REVISION ci_get_revision(struct ci_hdrc *ci)
+> +{
+> +	int ver = hw_read_id_reg(ci, ID_ID, VERSION) >> __ffs(VERSION);
+> +	enum CI_REVISION rev = CI_REVISION_UNKNOWN;
+> +
+> +	if (ver == 0x2) {
+> +		int rev_reg = hw_read_id_reg
+> +			(ci, ID_ID, REVISION) >> __ffs(REVISION);
 
--Sanchayan
+This line break is somewhat awkward, doesn't help for good readability.
 
-> 
->>
->> Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
->> ---
->>  drivers/usb/chipidea/ci.h |   53 +++++++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 53 insertions(+)
->>
->> diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
->> index ea40626..94db636 100644
->> --- a/drivers/usb/chipidea/ci.h
->> +++ b/drivers/usb/chipidea/ci.h
->> @@ -29,6 +29,15 @@
->>  /******************************************************************************
->>   * REGISTERS
->>   *****************************************************************************/
->> +/* Identification Registers */
->> +#define ID_ID				0x0
->> +#define ID_HWGENERAL			0x4
->> +#define ID_HWHOST			0x8
->> +#define ID_HWDEVICE			0xc
->> +#define ID_HWTXBUF			0x10
->> +#define ID_HWRXBUF			0x14
->> +#define ID_SBUSCFG			0x90
->> +
->>  /* register indices */
->>  enum ci_hw_regs {
->>  	CAP_CAPLENGTH,
->> @@ -97,6 +106,18 @@ enum ci_role {
->>  	CI_ROLE_END,
->>  };
->>  
->> +enum CI_REVISION {
-> 
-> Usually the enum names are small caps, only the labels are capitalized.
-> I would suggest use ci_revision here (similar to the enum above).
-> 
->> +	CI_REVISION_1X = 10,	/* Revision 1.x */
->> +	CI_REVISION_20 = 20, /* Revision 2.0 */
->> +	CI_REVISION_21, /* Revision 2.1 */
->> +	CI_REVISION_22, /* Revision 2.2 */
->> +	CI_REVISION_23, /* Revision 2.3 */
->> +	CI_REVISION_24, /* Revision 2.4 */
->> +	CI_REVISION_25, /* Revision 2.5 */
->> +	CI_REVISION_25_PLUS, /* Revision above than 2.5 */
->> +	CI_REVISION_UNKNOWN = 99, /* Unknown Revision */
->> +};
->> +
->>  /**
->>   * struct ci_role_driver - host/gadget role driver
->>   * @start: start this role
->> @@ -168,6 +189,7 @@ struct hw_bank {
->>   * @b_sess_valid_event: indicates there is a vbus event, and handled
->>   * at ci_otg_work
->>   * @imx28_write_fix: Freescale imx28 needs swp instruction for writing
->> + * @rev: The revision number for controller
->>   */
->>  struct ci_hdrc {
->>  	struct device			*dev;
->> @@ -207,6 +229,7 @@ struct ci_hdrc {
->>  	bool				id_event;
->>  	bool				b_sess_valid_event;
->>  	bool				imx28_write_fix;
->> +	enum CI_REVISION		rev;
->>  };
->>  
->>  static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci)
->> @@ -244,6 +267,36 @@ static inline void ci_role_stop(struct ci_hdrc *ci)
->>  }
->>  
->>  /**
->> + * hw_read_id_reg: reads from a identification register
->> + * @ci: the controller
->> + * @offset: offset from the beginning of identification registers region
->> + * @mask: bitfield mask
->> + *
->> + * This function returns register contents
->> + */
->> +static inline u32 hw_read_id_reg(struct ci_hdrc *ci, u32 offset, u32 mask)
->> +{
->> +	return ioread32(ci->hw_bank.abs + offset) & mask;
->> +}
->> +
->> +/**
->> + * hw_write_id_reg: writes to a identification register
->> + * @ci: the controller
->> + * @offset: offset from the beginning of identification registers region
->> + * @mask: bitfield mask
->> + * @data: new value
->> + */
->> +static inline void hw_write_id_reg(struct ci_hdrc *ci, u32 offset,
->> +			    u32 mask, u32 data)
->> +{
->> +	if (~mask)
->> +		data = (ioread32(ci->hw_bank.abs + offset) & ~mask)
->> +			| (data & mask);
->> +
->> +	iowrite32(data, ci->hw_bank.abs + offset);
->> +}
-> 
-> This function isn't used anywhere, does it make sense to write an ID
-> register? The ones I see in Vybrid's RM are read-only anyway..
-> 
-> --
-> Stefan
-> 
->> +
->> +/**
->>   * hw_read: reads from a hw register
->>   * @ci: the controller
->>   * @reg:  register index
-> 
+Is the local integer variable necessary at all? Enums are arithmetic
+types, so afaik this should be fine too:
+		rev = CI_REVISION_20;
+		rev += hw_read_id_reg(ci, ID_ID, REVISION) >> __ffs(REVISION);
+
+> +		rev = rev_reg + CI_REVISION_20;
+> +	} else if (ver == 0x0) {
+> +		rev = CI_REVISION_1X;
+> +	}
+> +
+> +	return rev;
+> +}
+> +
+>  /**
+>   * hw_read_intr_enable: returns interrupt enable register
+>   *
+> @@ -245,8 +261,11 @@ static int hw_device_init(struct ci_hdrc *ci,
+> void __iomem *base)
+>  	/* Clear all interrupts status bits*/
+>  	hw_write(ci, OP_USBSTS, 0xffffffff, 0xffffffff);
+>  
+> -	dev_dbg(ci->dev, "ChipIdea HDRC found, lpm: %d; cap: %p op: %p\n",
+> -		ci->hw_bank.lpm, ci->hw_bank.cap, ci->hw_bank.op);
+> +	ci->rev = ci_get_revision(ci);
+> +
+> +	dev_dbg(ci->dev,
+> +		"ChipIdea HDRC found, revision: %d, lpm: %d; cap: %p op: %p\n",
+> +		ci->rev, ci->hw_bank.lpm, ci->hw_bank.cap, ci->hw_bank.op);
+>  
+>  	/* setup lock mode ? */
+
