@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaLXQ2L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:28:11 -0500
-Received: from resqmta-po-02v.sys.comcast.net ([96.114.154.161]:48196 "EHLO
-	resqmta-po-02v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751340AbaLXQ2D (ORCPT
+	id S1751722AbaLXQ2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:28:15 -0500
+Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:36949 "EHLO
+	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751726AbaLXQ2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:03 -0500
+	Wed, 24 Dec 2014 11:28:12 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 02/20] selftests/cpu-hotplug: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:38 -0700
-Message-Id: <7c68362e79fa107dea168d94255228280114689e.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 11/20] selftests/mqueue: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:47 -0700
+Message-Id: <1e4aa40c42e886d36ae1bfcb93e4b8d696fa6c39.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -36,41 +36,39 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/cpu-hotplug/Makefile               | 14 ++++++++++++--
- .../cpu-hotplug/{on-off-test.sh => cpu-on-off-test.sh}     |  0
- 2 files changed, 12 insertions(+), 2 deletions(-)
- rename tools/testing/selftests/cpu-hotplug/{on-off-test.sh => cpu-on-off-test.sh} (100%)
+ tools/testing/selftests/mqueue/Makefile | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/tools/testing/selftests/cpu-hotplug/Makefile b/tools/testing/selftests/cpu-hotplug/Makefile
-index e9c28d8..c9e15ee 100644
---- a/tools/testing/selftests/cpu-hotplug/Makefile
-+++ b/tools/testing/selftests/cpu-hotplug/Makefile
-@@ -1,9 +1,19 @@
-+TEST_STR=/bin/bash ./cpu-on-off-test.sh || echo cpu-hotplug selftests: [FAIL]
+diff --git a/tools/testing/selftests/mqueue/Makefile b/tools/testing/selftests/mqueue/Makefile
+index 8056e2e..27757b9 100644
+--- a/tools/testing/selftests/mqueue/Makefile
++++ b/tools/testing/selftests/mqueue/Makefile
+@@ -1,10 +1,22 @@
++MQ_OPEN_TEST_STR = ./mq_open_tests /test1 || echo mq_open_tests: [FAIL]
++MQ_PERF_TEST_STR = ./mq_perf_tests || echo mq_perf_tests: [FAIL]
 +
  all:
+ 	gcc -O2 mq_open_tests.c -o mq_open_tests -lrt
+ 	gcc -O2 -o mq_perf_tests mq_perf_tests.c -lrt -lpthread -lpopt
  
+-run_tests:
+-	@./mq_open_tests /test1 || echo "mq_open_tests: [FAIL]"
+-	@./mq_perf_tests || echo "mq_perf_tests: [FAIL]"
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install ./cpu-on-off-test.sh $(INSTALL_KSFT_PATH)/cpu-on-off-test.sh
-+	@echo "$(TEST_STR)" >> $(KSELFTEST)
++	install ./mq_open_tests ./mq_perf_tests $(INSTALL_KSFT_PATH)
++	@echo "$(MQ_OPEN_TEST_STR)" >> $(KSELFTEST)
++	@echo "$(MQ_PERF_TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo Run make kselftest_install in top level source directory
 +endif
 +
- run_tests:
--	@/bin/bash ./on-off-test.sh || echo "cpu-hotplug selftests: [FAIL]"
-+	@$(TEST_STR)
- 
- run_full_test:
--	@/bin/bash ./on-off-test.sh -a || echo "cpu-hotplug selftests: [FAIL]"
-+	@/bin/bash ./cpu-on-off-test.sh -a || echo "cpu-hotplug selftests: [FAIL]"
++run_tests: all
++	@$(MQ_OPEN_TEST_STR)
++	@$(MQ_PERF_TEST_STR)
  
  clean:
-diff --git a/tools/testing/selftests/cpu-hotplug/on-off-test.sh b/tools/testing/selftests/cpu-hotplug/cpu-on-off-test.sh
-similarity index 100%
-rename from tools/testing/selftests/cpu-hotplug/on-off-test.sh
-rename to tools/testing/selftests/cpu-hotplug/cpu-on-off-test.sh
+ 	rm -f mq_open_tests mq_perf_tests
 -- 
 2.1.0
 
