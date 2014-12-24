@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaLXHW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:22:57 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39623 "EHLO
+	id S1751940AbaLXHOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:14:52 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39498 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaLXHOx (ORCPT
+	with ESMTP id S1751518AbaLXHOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:14:53 -0500
+	Wed, 24 Dec 2014 02:14:50 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 09/37] perf record: Add -M/--multi option for multi file recording
-Date: Wed, 24 Dec 2014 16:15:05 +0900
-Message-Id: <1419405333-27952-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 01/37] perf tools: Set attr.task bit for a tracking event
+Date: Wed, 24 Dec 2014 16:14:57 +0900
+Message-Id: <1419405333-27952-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
@@ -27,106 +27,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new -M/--multi option enables multi file storage recording.  Now
-sample data in separate mmap are saved in different files and other
-events will be recorded in the perf.header file.
+The perf_event_attr.task bit is to track task (fork and exit) events
+but it missed to be set by perf_evsel__config().  While it was not a
+problem in practice since setting other bits (comm/mmap) ended up
+being in same result, it'd be good to set it explicitly anyway.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-record.txt |  5 +++++
- tools/perf/builtin-record.c              | 27 ++++++++++++++++++++++++---
- 2 files changed, 29 insertions(+), 3 deletions(-)
+ tools/perf/util/evsel.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index af9a54ece024..14247ccd7965 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -220,6 +220,11 @@ Capture machine state (registers) at interrupt, i.e., on counter overflows for
- each sample. List of captured registers depends on the architecture. This option
- is off by default.
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 1e90c8557ede..e17d2b1624bc 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -709,6 +709,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 	if (opts->sample_weight)
+ 		perf_evsel__set_sample_bit(evsel, WEIGHT);
  
-+-M::
-+--multi::
-+Record data in multi-file storage instead of a single data file (perf.data).
-+This will speed up perf report by parallel processing.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 4f97657f14e7..7f7a4725d080 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -58,6 +58,19 @@ static int record__write(struct record *rec, void *bf, size_t size)
- 	return 0;
- }
- 
-+static int record__write_multi(struct record *rec, void *bf, size_t size, int idx)
-+{
-+	if (rec->file.is_multi && idx >= 0) {
-+		int ret = perf_data_file__write_multi(rec->session->file,
-+						      bf, size, idx);
-+		if (ret < 0)
-+			pr_err("failed to write perf data, error: %m\n");
-+
-+		return ret;
-+	}
-+	return record__write(rec, bf, size);
-+}
-+
- static int process_synthesized_event(struct perf_tool *tool,
- 				     union perf_event *event,
- 				     struct perf_sample *sample __maybe_unused,
-@@ -89,7 +102,7 @@ static int record__mmap_read(struct record *rec, int idx)
- 		size = md->mask + 1 - (old & md->mask);
- 		old += size;
- 
--		if (record__write(rec, buf, size) < 0) {
-+		if (record__write_multi(rec, buf, size, idx) < 0) {
- 			rc = -1;
- 			goto out;
- 		}
-@@ -99,7 +112,7 @@ static int record__mmap_read(struct record *rec, int idx)
- 	size = head - old;
- 	old += size;
- 
--	if (record__write(rec, buf, size) < 0) {
-+	if (record__write_multi(rec, buf, size, idx) < 0) {
- 		rc = -1;
- 		goto out;
- 	}
-@@ -186,6 +199,10 @@ static int record__open(struct record *rec)
- 		goto out;
- 	}
- 
-+	rc = perf_data_file__prepare_write(session->file, evlist->nr_mmaps);
-+	if (rc < 0)
-+		goto out;
-+
- 	session->evlist = evlist;
- 	perf_session__set_id_hdr_size(session);
- out:
-@@ -822,6 +839,8 @@ struct option __record_options[] = {
- 		    "use per-thread mmaps"),
- 	OPT_BOOLEAN('I', "intr-regs", &record.opts.sample_intr_regs,
- 		    "Sample machine registers on interrupt"),
-+	OPT_BOOLEAN('M', "multi", &record.opts.multi_file,
-+		    "use multi-file storage"),
- 	OPT_END()
- };
- 
-@@ -871,8 +890,10 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- 		goto out_symbol_exit;
- 	}
- 
--	if (rec->opts.multi_file)
-+	if (rec->opts.multi_file) {
-+		rec->file.is_multi = true;
- 		perf_evlist__prepend_dummy(rec->evlist);
-+	}
- 
- 	if (rec->opts.target.tid && !rec->opts.no_inherit_set)
- 		rec->opts.no_inherit = true;
++	attr->task  = track;
+ 	attr->mmap  = track;
+ 	attr->mmap2 = track && !perf_missing_features.mmap2;
+ 	attr->comm  = track;
 -- 
 2.1.3
 
