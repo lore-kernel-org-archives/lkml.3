@@ -1,108 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661AbaLXAm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 19:42:29 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:34659 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755962AbaLXAm1 (ORCPT
+	id S1750997AbaLXA4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 19:56:05 -0500
+Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:34921 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750708AbaLXA4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 19:42:27 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux@arm.linux.org.uk, Jason Wessel <jason.wessel@windriver.com>
-Cc: Kevin Hilman <khilman@linaro.org>, osandov@osandov.com,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, nico@linaro.org,
-        will.deacon@arm.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] arm: kgdb: Fix registers on sleeping tasks
-Date: Tue, 23 Dec 2014 16:42:06 -0800
-Message-Id: <1419381727-29046-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	Tue, 23 Dec 2014 19:56:03 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:69:152:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2393:2553:2559:2562:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3872:4250:4321:4605:5007:6261:7514:10004:10400:10848:11026:11232:11473:11658:11914:12043:12291:12438:12517:12519:12555:12683:12740:13255:13894:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: lip87_51939fb1e2125
+X-Filterd-Recvd-Size: 4307
+Message-ID: <1419382559.6157.1.camel@perches.com>
+Subject: Re: [PATCH] Drivers: bcma: Fix three coding style issues, more than
+ 80 characters per line.
+From: Joe Perches <joe@perches.com>
+To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
+Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Tue, 23 Dec 2014 16:55:59 -0800
+In-Reply-To: <CACna6rwTwrZurN+bgerQu_UPsTTv=1iB-C3_MeMiQN0GSyDoMg@mail.gmail.com>
+References: <1419378909-14414-1-git-send-email-oscar.forner.martinez@gmail.com>
+	 <CACna6rwTwrZurN+bgerQu_UPsTTv=1iB-C3_MeMiQN0GSyDoMg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dumping registers from other sleeping tasks in KGDB was totally
-failing for me.  All registers were reported as 0.
+On Wed, 2014-12-24 at 00:46 +0100, Rafał Miłecki wrote:
+> On 24 December 2014 at 00:55, Oscar Forner Martinez
+> <oscar.forner.martinez@gmail.com> wrote:
+> > Three lines with more than 80 characters per line have been split in several lines.
+> >
+> > Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+> > ---
+> >  drivers/bcma/driver_chipcommon.c | 10 +++++++---
+> >  1 file changed, 7 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/drivers/bcma/driver_chipcommon.c b/drivers/bcma/driver_chipcommon.c
+[]
+> > -               bcma_err(cc->core->bus, "serial not supported on this device ccrev: 0x%x\n", ccrev);
+> > +               bcma_err(cc->core->bus,
+> > +                        "serial not supported on this device ccrev: 0x%x\n",
+> > +                        ccrev);
+> 
+> I think some subsystems agreed to keep dev/bus pointed and string in
+> the one line. It makes more sense for me too.
 
-It looks as if the code was looking at at "task_pt_regs(task)" for the
-sleeping task and they were all 0.  I'm not exactly sure why this
-structure was used and why it wasn't filled in.
+And it would probably be better to invert the test above
+and error out immediately to reduce the indentation.
 
-There is a more reliable place to look for all of the important
-registers for a sleeping task: the task_thread_info.  This is the same
-place that is referred to when doing a dump of all sleeping task
-stacks (kdb_show_stack() -> show_stack() -> dump_backtrace() ->
-unwind_backtrace() -> thread_saved_sp()).
+Something like:
 
-Let's use the more reliable place for all registers that are saved
-there.  We'll fall back to the task_pt_regs() for registers that we
-don't have.
+ drivers/bcma/driver_chipcommon.c | 42 +++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- arch/arm/kernel/kgdb.c | 33 ++++++++++++++++++++++-----------
- 1 file changed, 22 insertions(+), 11 deletions(-)
-
-diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
-index 07db2f8..bab69db 100644
---- a/arch/arm/kernel/kgdb.c
-+++ b/arch/arm/kernel/kgdb.c
-@@ -75,6 +75,7 @@ int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
- void
- sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *task)
- {
-+	struct thread_info *ti;
- 	struct pt_regs *thread_regs;
- 	int regno;
+diff --git a/drivers/bcma/driver_chipcommon.c b/drivers/bcma/driver_chipcommon.c
+index 19f6796..e63fabfc 100644
+--- a/drivers/bcma/driver_chipcommon.c
++++ b/drivers/bcma/driver_chipcommon.c
+@@ -316,29 +316,31 @@ void bcma_chipco_serial_init(struct bcma_drv_cc *cc)
+ 	unsigned int ccrev = cc->core->id.rev;
+ 	struct bcma_serial_port *ports = cc->serial_ports;
  
-@@ -86,24 +87,34 @@ sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *task)
- 	for (regno = 0; regno < GDB_MAX_REGS; regno++)
- 		gdb_regs[regno] = 0;
+-	if (ccrev >= 11 && ccrev != 15) {
+-		baud_base = bcma_chipco_get_alp_clock(cc);
+-		if (ccrev >= 21) {
+-			/* Turn off UART clock before switching clocksource. */
+-			bcma_cc_write32(cc, BCMA_CC_CORECTL,
+-				       bcma_cc_read32(cc, BCMA_CC_CORECTL)
+-				       & ~BCMA_CC_CORECTL_UARTCLKEN);
+-		}
+-		/* Set the override bit so we don't divide it */
+-		bcma_cc_write32(cc, BCMA_CC_CORECTL,
+-			       bcma_cc_read32(cc, BCMA_CC_CORECTL)
+-			       | BCMA_CC_CORECTL_UARTCLK0);
+-		if (ccrev >= 21) {
+-			/* Re-enable the UART clock. */
+-			bcma_cc_write32(cc, BCMA_CC_CORECTL,
+-				       bcma_cc_read32(cc, BCMA_CC_CORECTL)
+-				       | BCMA_CC_CORECTL_UARTCLKEN);
+-		}
+-	} else {
+-		bcma_err(cc->core->bus, "serial not supported on this device ccrev: 0x%x\n", ccrev);
++	if (ccrev < 11 || ccrev == 15) {
++		bcma_err(cc->core->bus,
++			 "serial not supported on this device ccrev: 0x%x\n",
++			 ccrev);
+ 		return;
+ 	}
  
--	/* Otherwise, we have only some registers from switch_to() */
-+	/*
-+	 * Try to get as much as we can from the thread_info since the
-+	 * pt_regs structure doesn't seem right in most cases.
-+	 */
-+	ti			= task_thread_info(task);
-+	gdb_regs[_R4]		= ti->cpu_context.r4;
-+	gdb_regs[_R5]		= ti->cpu_context.r5;
-+	gdb_regs[_R6]		= ti->cpu_context.r6;
-+	gdb_regs[_R7]		= ti->cpu_context.r7;
-+	gdb_regs[_R8]		= ti->cpu_context.r8;
-+	gdb_regs[_R9]		= ti->cpu_context.r9;
-+	gdb_regs[_R10]		= ti->cpu_context.sl;
-+	gdb_regs[_FP]		= ti->cpu_context.fp;
-+	gdb_regs[_SPT]		= ti->cpu_context.sp;
-+	gdb_regs[_PC]		= ti->cpu_context.pc;
++	baud_base = bcma_chipco_get_alp_clock(cc);
++	if (ccrev >= 21) {
++		/* Turn off UART clock before switching clocksource */
++		bcma_cc_write32(cc, BCMA_CC_CORECTL,
++				bcma_cc_read32(cc, BCMA_CC_CORECTL)
++				& ~BCMA_CC_CORECTL_UARTCLKEN);
++	}
++	/* Set the override bit so we don't divide it */
++	bcma_cc_write32(cc, BCMA_CC_CORECTL,
++			bcma_cc_read32(cc, BCMA_CC_CORECTL) |
++			BCMA_CC_CORECTL_UARTCLK0);
++	if (ccrev >= 21) {
++		/* Re-enable the UART clock */
++		bcma_cc_write32(cc, BCMA_CC_CORECTL,
++				bcma_cc_read32(cc, BCMA_CC_CORECTL)
++				| BCMA_CC_CORECTL_UARTCLKEN);
++	}
 +
-+	/*
-+	 * task_thread_info() doesn't store callee-saved registers so we'll
-+	 * give task_pt_regs() a shot here.  I've never actually seen that be
-+	 * valid, though
-+	 */
- 	thread_regs		= task_pt_regs(task);
- 	gdb_regs[_R0]		= thread_regs->ARM_r0;
- 	gdb_regs[_R1]		= thread_regs->ARM_r1;
- 	gdb_regs[_R2]		= thread_regs->ARM_r2;
- 	gdb_regs[_R3]		= thread_regs->ARM_r3;
--	gdb_regs[_R4]		= thread_regs->ARM_r4;
--	gdb_regs[_R5]		= thread_regs->ARM_r5;
--	gdb_regs[_R6]		= thread_regs->ARM_r6;
--	gdb_regs[_R7]		= thread_regs->ARM_r7;
--	gdb_regs[_R8]		= thread_regs->ARM_r8;
--	gdb_regs[_R9]		= thread_regs->ARM_r9;
--	gdb_regs[_R10]		= thread_regs->ARM_r10;
--	gdb_regs[_FP]		= thread_regs->ARM_fp;
- 	gdb_regs[_IP]		= thread_regs->ARM_ip;
--	gdb_regs[_SPT]		= thread_regs->ARM_sp;
- 	gdb_regs[_LR]		= thread_regs->ARM_lr;
--	gdb_regs[_PC]		= thread_regs->ARM_pc;
- 	gdb_regs[_CPSR]		= thread_regs->ARM_cpsr;
- }
+ 	irq = bcma_core_irq(cc->core, 0);
  
--- 
-2.2.0.rc0.207.ga3a616c
+ 	/* Determine the registers of the UARTs */
+
 
