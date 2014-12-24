@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaLXDOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 22:14:49 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:7429 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaLXDOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751399AbaLXDOB (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Dec 2014 22:14:01 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:7415 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaLXDN7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Dec 2014 22:13:59 -0500
 From: Wang Long <long.wanglong@huawei.com>
 To: <xuwei5@hisilicon.com>
 CC: <arnd@arndb.de>, <yanhaifeng@gmail.com>, <zhangfei.gao@linaro.org>,
@@ -15,9 +15,9 @@ CC: <arnd@arndb.de>, <yanhaifeng@gmail.com>, <zhangfei.gao@linaro.org>,
         <long.wanglong@huawei.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>,
         <huxinwei@huawei.com>
-Subject: [PATCH 3/7] ARM: dts: Add hip01-ca9x2 dts file
-Date: Wed, 24 Dec 2014 03:09:58 +0000
-Message-ID: <1419390602-193123-4-git-send-email-long.wanglong@huawei.com>
+Subject: [PATCH 7/7] ARM: hisi: enable smp for HiP01
+Date: Wed, 24 Dec 2014 03:10:02 +0000
+Message-ID: <1419390602-193123-8-git-send-email-long.wanglong@huawei.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
 References: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
@@ -26,254 +26,169 @@ Content-Type: text/plain
 X-Originating-IP: [10.107.197.200]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.549A2F3E.01B4,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020203.549A2F3E.008A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 07a334bac25d9c811908c98f5156a22f
+X-Mirapoint-Loop-Id: d5bbd4a53ca969cd808aea4cab6c81a3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dts file for Hisilicon hip01 ca9x2 board
+enable smp for HiP01 board.
 
 Signed-off-by: Wang Long <long.wanglong@huawei.com>
 ---
- .../bindings/arm/hisilicon/hisilicon.txt           |  25 +++++
- arch/arm/boot/dts/Makefile                         |   1 +
- arch/arm/boot/dts/hip01-ca9x2.dts                  |  50 ++++++++++
- arch/arm/boot/dts/hip01.dtsi                       | 110 +++++++++++++++++++++
- 4 files changed, 186 insertions(+)
- create mode 100644 arch/arm/boot/dts/hip01-ca9x2.dts
- create mode 100644 arch/arm/boot/dts/hip01.dtsi
+ arch/arm/boot/dts/hip01-ca9x2.dts |  1 +
+ arch/arm/mach-hisi/core.h         |  3 +++
+ arch/arm/mach-hisi/hotplug.c      | 31 ++++++++++++++++++++++++
+ arch/arm/mach-hisi/platsmp.c      | 50 +++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 85 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt b/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt
-index f717c7b..35b1bd4 100644
---- a/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt
-+++ b/Documentation/devicetree/bindings/arm/hisilicon/hisilicon.txt
-@@ -9,6 +9,10 @@ HiP04 D01 Board
- Required root node properties:
- 	- compatible = "hisilicon,hip04-d01";
- 
-+HiP01 ca9x2 Board
-+Required root node properties:
-+	- compatible = "hisilicon,hip01-ca9x2";
-+
- 
- Hisilicon system controller
- 
-@@ -37,6 +41,27 @@ Example:
- 	};
- 
- -----------------------------------------------------------------------
-+Hisilicon HiP01 system controller
-+
-+Required properties:
-+- compatible : "hisilicon,hip01-sysctrl"
-+- reg : Register address and size
-+
-+The HiP01 system controller is mostly compatible with hisilicon
-+system controller,but it has some specific control registers for
-+HIP01 SoC family, such as slave core boot, and also some same
-+registers located at different offset.
-+
-+Example:
-+
-+	/* for hip01-ca9x2 */
-+	sysctrl: system-controller@10000000 {
-+		compatible = "hisilicon,hip01-sysctrl", "hisilicon,sysctrl";
-+		reg = <0x10000000 0x1000>;
-+		reboot-offset = <0x4>;
-+	};
-+
-+-----------------------------------------------------------------------
- Hisilicon CPU controller
- 
- Required properties:
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 91bd5bd..70c2fd0 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -105,6 +105,7 @@ dtb-$(CONFIG_ARCH_HI3xxx) += hi3620-hi4511.dtb
- dtb-$(CONFIG_ARCH_HIX5HD2) += hisi-x5hd2-dkb.dtb
- dtb-$(CONFIG_ARCH_HIGHBANK) += highbank.dtb \
- 	ecx-2000.dtb
-+dtb-$(CONFIG_ARCH_HIP01) += hip01-ca9x2.dtb
- dtb-$(CONFIG_ARCH_HIP04) += hip04-d01.dtb
- dtb-$(CONFIG_ARCH_INTEGRATOR) += integratorap.dtb \
- 	integratorcp.dtb
 diff --git a/arch/arm/boot/dts/hip01-ca9x2.dts b/arch/arm/boot/dts/hip01-ca9x2.dts
-new file mode 100644
-index 0000000..3f157ae
---- /dev/null
+index 3f157ae..eca5e42 100644
+--- a/arch/arm/boot/dts/hip01-ca9x2.dts
 +++ b/arch/arm/boot/dts/hip01-ca9x2.dts
-@@ -0,0 +1,50 @@
-+/*
-+ * Hisilicon Ltd. HiP01 SoC
-+ *
-+ * Copyright (C) 2014 Hisilicon Ltd.
-+ * Copyright (C) 2014 Huawei Ltd.
-+ *
-+ * Author: Wang Long <long.wanglong@huawei.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+@@ -25,6 +25,7 @@
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
++		enable-method = "hisilicon,hip01-smp";
+ 
+ 		cpu@0 {
+ 			device_type = "cpu";
+diff --git a/arch/arm/mach-hisi/core.h b/arch/arm/mach-hisi/core.h
+index 75520b0..92a682d 100644
+--- a/arch/arm/mach-hisi/core.h
++++ b/arch/arm/mach-hisi/core.h
+@@ -17,4 +17,7 @@ extern struct smp_operations hix5hd2_smp_ops;
+ extern void hix5hd2_set_cpu(int cpu, bool enable);
+ extern void hix5hd2_cpu_die(unsigned int cpu);
+ 
++extern struct smp_operations hip01_smp_ops;
++extern void hip01_set_cpu(int cpu, bool enable);
++extern void hip01_cpu_die(unsigned int cpu);
+ #endif
+diff --git a/arch/arm/mach-hisi/hotplug.c b/arch/arm/mach-hisi/hotplug.c
+index 84e6919..a129aae 100644
+--- a/arch/arm/mach-hisi/hotplug.c
++++ b/arch/arm/mach-hisi/hotplug.c
+@@ -65,6 +65,9 @@
+ #define PMC0_CPU1_PMC_ENABLE		(1 << 7)
+ #define PMC0_CPU1_POWERDOWN		(1 << 3)
+ 
++#define HIP01_PERI9                    0x50
++#define PERI9_CPU1_RESET               (1 << 1)
 +
-+/dts-v1/;
+ enum {
+ 	HI3620_CTRL,
+ 	ERROR_CTRL,
+@@ -209,6 +212,34 @@ void hix5hd2_set_cpu(int cpu, bool enable)
+ 	}
+ }
+ 
++void hip01_set_cpu(int cpu, bool enable)
++{
++	unsigned int temp;
++	struct device_node *np;
 +
-+/* First 8KB reserved for secondary core boot */
-+/memreserve/ 0x80000000 0x00002000;
++	if (!ctrl_base) {
++		np = of_find_compatible_node(NULL, NULL, "hisilicon,hip01-sysctrl");
++		if (np)
++			ctrl_base = of_iomap(np, 0);
++		else
++			BUG();
++	}
 +
-+#include "hip01.dtsi"
++	if (enable) {
++		/* reset on CPU1  */
++		temp = readl_relaxed(ctrl_base + HIP01_PERI9);
++		temp |= PERI9_CPU1_RESET;
++		writel_relaxed(temp, ctrl_base + HIP01_PERI9);
 +
-+/ {
-+	model = "Hisilicon HIP01 Development Board";
-+	compatible = "hisilicon,hip01-ca9x2", "hisilicon,hip01";
++		udelay(50);
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
++		/* unreset on CPU1 */
++		temp = readl_relaxed(ctrl_base + HIP01_PERI9);
++		temp &= ~PERI9_CPU1_RESET;
++		writel_relaxed(temp, ctrl_base + HIP01_PERI9);
++	}
++}
 +
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a9";
-+			reg = <0>;
-+		};
+ static inline void cpu_enter_lowpower(void)
+ {
+ 	unsigned int v;
+diff --git a/arch/arm/mach-hisi/platsmp.c b/arch/arm/mach-hisi/platsmp.c
+index 4a70f56..8880c8e 100644
+--- a/arch/arm/mach-hisi/platsmp.c
++++ b/arch/arm/mach-hisi/platsmp.c
+@@ -10,10 +10,12 @@
+ #include <linux/smp.h>
+ #include <linux/io.h>
+ #include <linux/of_address.h>
++#include <linux/delay.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/smp_plat.h>
+ #include <asm/smp_scu.h>
++#include <asm/mach/map.h>
+ 
+ #include "core.h"
+ 
+@@ -132,5 +134,53 @@ struct smp_operations hix5hd2_smp_ops __initdata = {
+ #endif
+ };
+ 
 +
-+		cpu@1 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a9";
-+			reg = <1>;
-+		};
-+	};
++#define SC_SCTL_REMAP_CLR      0x00000100
++#define HIP01_BOOT_ADDRESS     0x80000000
++#define REG_SC_CTRL            0x000
 +
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x80000000>;
-+	};
++void hip01_set_boot_addr(phys_addr_t start_addr, phys_addr_t jump_addr)
++{
++	void __iomem *virt;
++
++	virt = phys_to_virt(start_addr);
++
++	writel_relaxed(0xe51ff004, virt);
++	writel_relaxed(jump_addr, virt + 4);
++}
++
++static int hip01_boot_secondary(unsigned int cpu, struct task_struct *idle)
++{
++	phys_addr_t jumpaddr;
++	unsigned int remap_reg_value = 0;
++	struct device_node *node;
++
++
++	jumpaddr = virt_to_phys(hisi_secondary_startup);
++	hip01_set_boot_addr(HIP01_BOOT_ADDRESS, jumpaddr);
++
++	node = of_find_compatible_node(NULL, NULL, "hisilicon,hip01-sysctrl");
++	if (WARN_ON(!node))
++		return -1;
++	ctrl_base = of_iomap(node, 0);
++
++	/* set the secondary core boot from DDR */
++	remap_reg_value = readl_relaxed(ctrl_base + REG_SC_CTRL);
++	barrier();
++	remap_reg_value |= SC_SCTL_REMAP_CLR;
++	barrier();
++	writel_relaxed(remap_reg_value, ctrl_base + REG_SC_CTRL);
++
++	hip01_set_cpu(cpu, true);
++
++	return 0;
++}
++
++struct smp_operations hip01_smp_ops __initdata = {
++	.smp_prepare_cpus       = hisi_common_smp_prepare_cpus,
++	.smp_boot_secondary     = hip01_boot_secondary,
 +};
 +
-+&uart0 {
-+	status = "okay";
-+};
-diff --git a/arch/arm/boot/dts/hip01.dtsi b/arch/arm/boot/dts/hip01.dtsi
-new file mode 100644
-index 0000000..33130f8
---- /dev/null
-+++ b/arch/arm/boot/dts/hip01.dtsi
-@@ -0,0 +1,110 @@
-+/*
-+ * Hisilicon Ltd. HiP01 SoC
-+ *
-+ * Copyright (c) 2014 Hisilicon Ltd.
-+ * Copyright (c) 2014 Huawei Ltd.
-+ *
-+ * Author: Wang Long <long.wanglong@huawei.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include "skeleton.dtsi"
-+
-+/ {
-+	interrupt-parent = <&gic>;
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+
-+	gic: interrupt-controller@1e001000 {
-+		compatible = "arm,cortex-a9-gic";
-+		#interrupt-cells = <3>;
-+		#address-cells = <0>;
-+		interrupt-controller;
-+		reg = <0x1a001000 0x1000>, <0x1a000100 0x1000>;
-+	};
-+
-+	hisi_refclk144mhz: refclk144mkhz {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <144000000>;
-+		clock-output-names = "hisi:refclk144khz";
-+	};
-+
-+	soc {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "simple-bus";
-+		interrupt-parent = <&gic>;
-+		ranges = <0 0x10000000 0x20000000>;
-+
-+		amba {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			compatible = "arm,amba-bus";
-+			ranges;
-+
-+			uart0: uart@10001000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0x10001000 0x1000>;
-+				clocks = <&hisi_refclk144mhz>;
-+				clock-names = "apb_pclk";
-+				reg-shift = <2>;
-+				interrupts = <0 32 4>;
-+				status = "disabled";
-+			};
-+
-+			uart1: uart@10002000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0x10002000 0x1000>;
-+				clocks = <&hisi_refclk144mhz>;
-+				clock-names = "apb_pclk";
-+				reg-shift = <2>;
-+				interrupts = <0 33 4>;
-+				status = "disabled";
-+			};
-+
-+			uart2: uart@10003000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0x10003000 0x1000>;
-+				clocks = <&hisi_refclk144mhz>;
-+				clock-names = "apb_pclk";
-+				reg-shift = <2>;
-+				interrupts = <0 34 4>;
-+				status = "disabled";
-+			};
-+
-+			uart3: uart@10006000 {
-+				compatible = "snps,dw-apb-uart";
-+				reg = <0x10006000 0x1000>;
-+				clocks = <&hisi_refclk144mhz>;
-+				clock-names = "apb_pclk";
-+				reg-shift = <2>;
-+				interrupts = <0 4 4>;
-+				status = "disabled";
-+			};
-+		};
-+
-+		system-controller@10000000 {
-+			compatible = "hisilicon,hip01-sysctrl", "hisilicon,sysctrl";
-+			reg = <0x10000000 0x1000>;
-+			reboot-offset = <0x4>;
-+		};
-+
-+		global_timer@0a000200 {
-+			compatible = "arm,cortex-a9-global-timer";
-+			reg = <0x0a000200 0x100>;
-+			interrupts = <1 11 0xf04>;
-+			clocks = <&hisi_refclk144mhz>;
-+		};
-+
-+		local_timer@0a000600 {
-+			compatible = "arm,cortex-a9-twd-timer";
-+			reg = <0x0a000600 0x100>;
-+			interrupts = <1 13 0xf04>;
-+			clocks = <&hisi_refclk144mhz>;
-+		};
-+	};
-+};
+ CPU_METHOD_OF_DECLARE(hi3xxx_smp, "hisilicon,hi3620-smp", &hi3xxx_smp_ops);
+ CPU_METHOD_OF_DECLARE(hix5hd2_smp, "hisilicon,hix5hd2-smp", &hix5hd2_smp_ops);
++CPU_METHOD_OF_DECLARE(hip01_smp, "hisilicon,hip01-smp", &hip01_smp_ops);
 -- 
 1.8.3.4
 
