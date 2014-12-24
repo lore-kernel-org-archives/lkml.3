@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651AbaLXJjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 04:39:17 -0500
-Received: from regular1.263xmail.com ([211.150.99.133]:52629 "EHLO
+	id S1751813AbaLXJja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 04:39:30 -0500
+Received: from regular1.263xmail.com ([211.150.99.130]:56730 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaLXJjO (ORCPT
+	with ESMTP id S1751096AbaLXJjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Dec 2014 04:39:14 -0500
 X-263anti-spam: KSV:0;
@@ -14,9 +14,10 @@ X-KSVirus-check: 0
 X-ABS-CHECKED: 4
 X-ADDR-CHECKED: 0
 X-RL-SENDER: jay.xu@rock-chips.com
+X-FST-TO: lgirdwood@gmail.com
 X-SENDER-IP: 58.22.7.114
 X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <4c21586cc7c5f2e7fb0e1e36ab9e251c>
+X-UNIQUE-TAG: <25de3310f05e59de61e616ff467fd6bc>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Jianqun Xu <jay.xu@rock-chips.com>
@@ -25,45 +26,32 @@ To: lgirdwood@gmail.com, heiko@sntech.de, broonie@kernel.org, perex@perex.cz,
 Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         linux-rockchip@lists.infradead.org, Jianqun Xu <jay.xu@rock-chips.com>
-Subject: [PATCH v2 2/3] ASoC: rockchip: i2s: set TDL and RDL to 16 samples
-Date: Wed, 24 Dec 2014 17:37:01 +0800
-Message-Id: <1419413822-11539-3-git-send-email-jay.xu@rock-chips.com>
+Subject: [PATCH v2 0/3] ASoC: rockchip: i2s: fix watermark to 16 and maxburst to 4
+Date: Wed, 24 Dec 2014 17:36:59 +0800
+Message-Id: <1419413822-11539-1-git-send-email-jay.xu@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419413822-11539-1-git-send-email-jay.xu@rock-chips.com>
+In-Reply-To: <1419325709-15374-1-git-send-email-jay.xu@rock-chips.com>
 References: <1419325709-15374-1-git-send-email-jay.xu@rock-chips.com>
- <1419413822-11539-1-git-send-email-jay.xu@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set Transmit Data Level(TDL) and Receive Data Level(RDL) to 16 samples.
-Without this setting, the TDL is default to be 0x00 (means 0 sample),
-and the RDL is default to be 0x1f (means 32 samples).
+To make Bus DMA works more efficiency, DMA may work in burst mode,
+   we set the watermark of transmit and receive reach to 16 bits.
 
-Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
----
-changes since v1:
-- modify commit message "bit" to "sample", suggested by dgreid
+Jianqun Xu (3):
+  ASoC: rockchip: i2s: fix error defination of transmit data level
+  ASoC: rockchip: i2s: set TDL and RDL to 16 samples
+  ASoC: rockchip: i2s: fix maxburst of dma data to 4
 
- sound/soc/rockchip/rockchip_i2s.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ sound/soc/rockchip/rockchip_i2s.c | 8 ++++++--
+ sound/soc/rockchip/rockchip_i2s.h | 2 +-
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
-index c74ba37..1cd7efc 100644
---- a/sound/soc/rockchip/rockchip_i2s.c
-+++ b/sound/soc/rockchip/rockchip_i2s.c
-@@ -247,6 +247,10 @@ static int rockchip_i2s_hw_params(struct snd_pcm_substream *substream,
- 
- 	regmap_update_bits(i2s->regmap, I2S_TXCR, I2S_TXCR_VDW_MASK, val);
- 	regmap_update_bits(i2s->regmap, I2S_RXCR, I2S_RXCR_VDW_MASK, val);
-+	regmap_update_bits(i2s->regmap, I2S_DMACR, I2S_DMACR_TDL_MASK,
-+			   I2S_DMACR_TDL(16));
-+	regmap_update_bits(i2s->regmap, I2S_DMACR, I2S_DMACR_RDL_MASK,
-+			   I2S_DMACR_RDL(16));
- 
- 	return 0;
- }
 -- 
+changes since v1:
+- modify commit message suggested by dgreid
+- add patch to fix maxburst
 1.9.1
 
 
