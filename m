@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaLXHPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:15:25 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39890 "EHLO
+	id S1752253AbaLXHPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:15:46 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40181 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaLXHPW (ORCPT
+	with ESMTP id S1752169AbaLXHPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:15:22 -0500
+	Wed, 24 Dec 2014 02:15:40 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 17/37] perf tools: Maintain map groups list in a leader thread
-Date: Wed, 24 Dec 2014 16:15:13 +0900
-Message-Id: <1419405333-27952-18-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 24/37] perf session: Pass struct events stats to event processing functions
+Date: Wed, 24 Dec 2014 16:15:20 +0900
+Message-Id: <1419405333-27952-25-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
@@ -27,256 +27,332 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support multi-threaded perf report, we need to maintain time-sorted
-map groups.  Add ->mg_list member to struct thread and sort the list
-by time.  Now leader threads have one more refcnt for map groups in
-the list so also update the thread-mg-share test case.
+Pass stats structure so that it can point separate object when used in
+multi-thread environment.
 
-Currently only add a new map groups when an exec (comm) event is
-received.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/tests/thread-mg-share.c |  7 +++-
- tools/perf/util/event.c            |  2 +
- tools/perf/util/machine.c          |  2 +-
- tools/perf/util/map.c              |  1 +
- tools/perf/util/map.h              |  2 +
- tools/perf/util/thread.c           | 80 +++++++++++++++++++++++++++++++++++++-
- tools/perf/util/thread.h           |  3 ++
- 7 files changed, 93 insertions(+), 4 deletions(-)
+ tools/perf/util/ordered-events.c |  4 +-
+ tools/perf/util/session.c        | 87 +++++++++++++++++++++++-----------------
+ tools/perf/util/session.h        |  1 +
+ 3 files changed, 54 insertions(+), 38 deletions(-)
 
-diff --git a/tools/perf/tests/thread-mg-share.c b/tools/perf/tests/thread-mg-share.c
-index b028499dd3cf..8933e01d0549 100644
---- a/tools/perf/tests/thread-mg-share.c
-+++ b/tools/perf/tests/thread-mg-share.c
-@@ -23,6 +23,9 @@ int test__thread_mg_share(void)
- 	 * with several threads and checks they properly share and
- 	 * maintain map groups info (struct map_groups).
- 	 *
-+	 * Note that a leader thread has one more refcnt for its
-+	 * (current) map groups.
-+	 *
- 	 * thread group (pid: 0, tids: 0, 1, 2, 3)
- 	 * other  group (pid: 4, tids: 4, 5)
- 	*/
-@@ -43,7 +46,7 @@ int test__thread_mg_share(void)
- 			leader && t1 && t2 && t3 && other);
- 
- 	mg = leader->mg;
--	TEST_ASSERT_VAL("wrong refcnt", mg->refcnt == 4);
-+	TEST_ASSERT_VAL("wrong refcnt", mg->refcnt == 5);
- 
- 	/* test the map groups pointer is shared */
- 	TEST_ASSERT_VAL("map groups don't match", mg == t1->mg);
-@@ -59,7 +62,7 @@ int test__thread_mg_share(void)
- 	TEST_ASSERT_VAL("failed to find other leader", other_leader);
- 
- 	other_mg = other->mg;
--	TEST_ASSERT_VAL("wrong refcnt", other_mg->refcnt == 2);
-+	TEST_ASSERT_VAL("wrong refcnt", other_mg->refcnt == 3);
- 
- 	TEST_ASSERT_VAL("map groups don't match", other_mg == other_leader->mg);
- 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index ff7594a27c73..2d04949bdc7d 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -750,6 +750,8 @@ void thread__find_addr_map(struct thread *thread, u8 cpumode,
- 		return;
- 	}
- 
-+	BUG_ON(mg == NULL);
-+
- 	if (cpumode == PERF_RECORD_MISC_KERNEL && perf_host) {
- 		al->level = 'k';
- 		mg = &machine->kmaps;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 2cc088d71922..031bace39fdc 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -330,7 +330,7 @@ static void machine__update_thread_pid(struct machine *machine,
- 		goto out_err;
- 
- 	if (!leader->mg)
--		leader->mg = map_groups__new(machine);
-+		thread__set_map_groups(leader, map_groups__new(machine), 0);
- 
- 	if (!leader->mg)
- 		goto out_err;
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 62ca9f2607d5..f0c1e2a24fee 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -422,6 +422,7 @@ void map_groups__init(struct map_groups *mg, struct machine *machine)
- 	}
- 	mg->machine = machine;
- 	mg->refcnt = 1;
-+	mg->timestamp = 0;
+diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
+index fd4be94125fb..e933c51d7090 100644
+--- a/tools/perf/util/ordered-events.c
++++ b/tools/perf/util/ordered-events.c
+@@ -183,7 +183,9 @@ static int __ordered_events__flush(struct perf_session *s,
+ 		if (ret)
+ 			pr_err("Can't parse sample, err = %d\n", ret);
+ 		else {
+-			ret = perf_session__deliver_event(s, iter->event, &sample, tool,
++			ret = perf_session__deliver_event(s, &s->stats,
++							  iter->event,
++							  &sample, tool,
+ 							  iter->file_offset);
+ 			if (ret)
+ 				return ret;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 4f0fcd2d3901..af2608e782ae 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -779,6 +779,7 @@ static struct machine *
  }
  
- static void maps__delete(struct rb_root *maps)
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 6951a9d42339..dd92510b03d1 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -61,7 +61,9 @@ struct map_groups {
- 	struct rb_root	 maps[MAP__NR_TYPES];
- 	struct list_head removed_maps[MAP__NR_TYPES];
- 	struct machine	 *machine;
-+	u64		 timestamp;
- 	int		 refcnt;
-+	struct list_head list;
- };
- 
- struct map_groups *map_groups__new(struct machine *machine);
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index f2465f17cf16..109ceb5e2a85 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -10,13 +10,64 @@
- #include "comm.h"
- #include "unwind.h"
- 
-+struct map_groups *thread__get_map_groups(struct thread *thread, u64 timestamp)
-+{
-+	struct map_groups *mg;
-+
-+	list_for_each_entry(mg, &thread->mg_list, list)
-+		if (timestamp >= mg->timestamp)
-+			return mg;
-+
-+	return thread->mg;
-+}
-+
-+int thread__set_map_groups(struct thread *thread, struct map_groups *mg,
-+			   u64 timestamp)
-+{
-+	struct list_head *pos;
-+	struct map_groups *old;
-+
-+	if (mg == NULL)
-+		return -ENOMEM;
-+
-+	/*
-+	 * Only a leader thread can have map groups list - others
-+	 * reference it through map_groups__get.  This means the
-+	 * leader thread will have one more refcnt than others.
-+	 */
-+	if (thread->tid != thread->pid_)
-+		return -EINVAL;
-+
-+	if (thread->mg) {
-+		BUG_ON(thread->mg->refcnt <= 1);
-+		map_groups__put(thread->mg);
-+	}
-+
-+	/* sort by time */
-+	list_for_each(pos, &thread->mg_list) {
-+		old = list_entry(pos, struct map_groups, list);
-+		if (timestamp > old->timestamp)
-+			break;
-+	}
-+
-+	list_add_tail(&mg->list, pos);
-+	mg->timestamp = timestamp;
-+
-+	/* set current ->mg to most recent one */
-+	thread->mg = list_first_entry(&thread->mg_list, struct map_groups, list);
-+	/* increase one more refcnt for current */
-+	map_groups__get(thread->mg);
-+
-+	return 0;
-+}
-+
- int thread__init_map_groups(struct thread *thread, struct machine *machine)
- {
- 	struct thread *leader;
- 	pid_t pid = thread->pid_;
- 
- 	if (pid == thread->tid || pid == -1) {
--		thread->mg = map_groups__new(machine);
-+		thread__set_map_groups(thread, map_groups__new(machine), 0);
- 	} else {
- 		leader = machine__findnew_thread(machine, pid, pid);
- 		if (leader)
-@@ -39,6 +90,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 		thread->cpu = -1;
- 		INIT_LIST_HEAD(&thread->comm_list);
- 		INIT_LIST_HEAD(&thread->node);
-+		INIT_LIST_HEAD(&thread->mg_list);
- 
- 		if (unwind__prepare_access(thread) < 0)
- 			goto err_thread;
-@@ -67,6 +119,7 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- void thread__delete(struct thread *thread)
- {
- 	struct comm *comm, *tmp;
-+	struct map_groups *mg, *tmp_mg;
- 
- 	thread_stack__free(thread);
- 
-@@ -74,6 +127,11 @@ void thread__delete(struct thread *thread)
- 		map_groups__put(thread->mg);
- 		thread->mg = NULL;
- 	}
-+	/* only leader threads have mg list */
-+	list_for_each_entry_safe(mg, tmp_mg, &thread->mg_list, list) {
-+		list_del(&mg->list);
-+		map_groups__put(mg);
-+	}
- 	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
- 		list_del(&comm->list);
- 		comm__free(comm);
-@@ -150,6 +208,26 @@ int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
- 			unwind__flush_access(thread);
+ static int deliver_sample_value(struct perf_session *session,
++				struct events_stats *stats,
+ 				struct perf_tool *tool,
+ 				union perf_event *event,
+ 				struct perf_sample *sample,
+@@ -795,7 +796,7 @@ static int deliver_sample_value(struct perf_session *session,
  	}
  
-+	if (exec) {
-+		struct machine *machine;
-+
-+		BUG_ON(thread->mg == NULL || thread->mg->machine == NULL);
-+
-+		if (thread->tid != thread->pid_) {
-+			/* now it'll be a new leader */
-+			thread->pid_ = thread->tid;
-+
-+			/* current mg of leader thread needs one more refcnt */
-+			map_groups__get(thread->mg);
-+
-+			thread__set_map_groups(thread, thread->mg,
-+					       thread->mg->timestamp);
-+		}
-+
-+		machine = thread->mg->machine;
-+		thread__set_map_groups(thread, map_groups__new(machine), timestamp);
-+	}
-+
- 	thread->comm_set = true;
+ 	if (!sid || sid->evsel == NULL) {
+-		++session->stats.nr_unknown_id;
++		++stats->nr_unknown_id;
+ 		return 0;
+ 	}
  
- 	return 0;
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 5c07cee3b64e..8b9a67764613 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -14,6 +14,7 @@ struct thread {
- 	struct rb_node	 	rb_node;
- 	struct list_head 	node;
- 	struct map_groups	*mg;
-+	struct list_head	mg_list;
- 	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
-@@ -56,6 +57,8 @@ struct comm *thread__exec_comm(const struct thread *thread);
- struct comm *thread__comm_time(const struct thread *thread, u64 timestamp);
- const char *thread__comm_str(const struct thread *thread);
- const char *thread__comm_time_str(const struct thread *thread, u64 timestamp);
-+struct map_groups *thread__get_map_groups(struct thread *thread, u64 timestamp);
-+int thread__set_map_groups(struct thread *thread, struct map_groups *mg, u64 timestamp);
- void thread__insert_map(struct thread *thread, struct map *map);
- int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp);
- size_t thread__fprintf(struct thread *thread, FILE *fp);
+@@ -803,6 +804,7 @@ static int deliver_sample_value(struct perf_session *session,
+ }
+ 
+ static int deliver_sample_group(struct perf_session *session,
++				struct events_stats *stats,
+ 				struct perf_tool *tool,
+ 				union  perf_event *event,
+ 				struct perf_sample *sample,
+@@ -812,7 +814,7 @@ static int deliver_sample_group(struct perf_session *session,
+ 	u64 i;
+ 
+ 	for (i = 0; i < sample->read.group.nr; i++) {
+-		ret = deliver_sample_value(session, tool, event, sample,
++		ret = deliver_sample_value(session, stats, tool, event, sample,
+ 					   &sample->read.group.values[i],
+ 					   machine);
+ 		if (ret)
+@@ -824,6 +826,7 @@ static int deliver_sample_group(struct perf_session *session,
+ 
+ static int
+ perf_session__deliver_sample(struct perf_session *session,
++			     struct events_stats *stats,
+ 			     struct perf_tool *tool,
+ 			     union  perf_event *event,
+ 			     struct perf_sample *sample,
+@@ -840,14 +843,15 @@ perf_session__deliver_sample(struct perf_session *session,
+ 
+ 	/* For PERF_SAMPLE_READ we have either single or group mode. */
+ 	if (read_format & PERF_FORMAT_GROUP)
+-		return deliver_sample_group(session, tool, event, sample,
++		return deliver_sample_group(session, stats, tool, event, sample,
+ 					    machine);
+ 	else
+-		return deliver_sample_value(session, tool, event, sample,
++		return deliver_sample_value(session, stats, tool, event, sample,
+ 					    &sample->read.one, machine);
+ }
+ 
+ int perf_session__deliver_event(struct perf_session *session,
++				struct events_stats *stats,
+ 				union perf_event *event,
+ 				struct perf_sample *sample,
+ 				struct perf_tool *tool, u64 file_offset)
+@@ -866,14 +870,14 @@ int perf_session__deliver_event(struct perf_session *session,
+ 	case PERF_RECORD_SAMPLE:
+ 		dump_sample(evsel, event, sample);
+ 		if (evsel == NULL) {
+-			++session->stats.nr_unknown_id;
++			++stats->nr_unknown_id;
+ 			return 0;
+ 		}
+ 		if (machine == NULL) {
+-			++session->stats.nr_unprocessable_samples;
++			++stats->nr_unprocessable_samples;
+ 			return 0;
+ 		}
+-		return perf_session__deliver_sample(session, tool, event,
++		return perf_session__deliver_sample(session, stats, tool, event,
+ 						    sample, evsel, machine);
+ 	case PERF_RECORD_MMAP:
+ 		return tool->mmap(tool, event, sample, machine);
+@@ -887,7 +891,7 @@ int perf_session__deliver_event(struct perf_session *session,
+ 		return tool->exit(tool, event, sample, machine);
+ 	case PERF_RECORD_LOST:
+ 		if (tool->lost == perf_event__process_lost)
+-			session->stats.total_lost += event->lost.lost;
++			stats->total_lost += event->lost.lost;
+ 		return tool->lost(tool, event, sample, machine);
+ 	case PERF_RECORD_READ:
+ 		return tool->read(tool, event, sample, evsel, machine);
+@@ -896,7 +900,7 @@ int perf_session__deliver_event(struct perf_session *session,
+ 	case PERF_RECORD_UNTHROTTLE:
+ 		return tool->unthrottle(tool, event, sample, machine);
+ 	default:
+-		++session->stats.nr_unknown_events;
++		++stats->nr_unknown_events;
+ 		return -1;
+ 	}
+ }
+@@ -951,7 +955,8 @@ int perf_session__deliver_synth_event(struct perf_session *session,
+ 	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
+ 		return perf_session__process_user_event(session, event, tool, 0);
+ 
+-	return perf_session__deliver_event(session, event, sample, tool, 0);
++	return perf_session__deliver_event(session, &session->stats,
++					   event, sample, tool, 0);
+ }
+ 
+ static void event_swap(union perf_event *event, bool sample_id_all)
+@@ -1019,6 +1024,7 @@ int perf_session__peek_event(struct perf_session *session, off_t file_offset,
+ }
+ 
+ static s64 perf_session__process_event(struct perf_session *session,
++				       struct events_stats *stats,
+ 				       union perf_event *event,
+ 				       struct perf_tool *tool,
+ 				       u64 file_offset)
+@@ -1032,7 +1038,7 @@ static s64 perf_session__process_event(struct perf_session *session,
+ 	if (event->header.type >= PERF_RECORD_HEADER_MAX)
+ 		return -EINVAL;
+ 
+-	events_stats__inc(&session->stats, event->header.type);
++	events_stats__inc(stats, event->header.type);
+ 
+ 	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
+ 		return perf_session__process_user_event(session, event, tool, file_offset);
+@@ -1051,8 +1057,8 @@ static s64 perf_session__process_event(struct perf_session *session,
+ 			return ret;
+ 	}
+ 
+-	return perf_session__deliver_event(session, event, &sample, tool,
+-					   file_offset);
++	return perf_session__deliver_event(session, stats, event, &sample,
++					   tool, file_offset);
+ }
+ 
+ void perf_event_header__bswap(struct perf_event_header *hdr)
+@@ -1080,43 +1086,43 @@ static struct thread *perf_session__register_idle_thread(struct perf_session *se
+ 	return thread;
+ }
+ 
+-static void perf_session__warn_about_errors(const struct perf_session *session,
++static void events_stats__warn_about_errors(const struct events_stats *stats,
+ 					    const struct perf_tool *tool)
+ {
+ 	if (tool->lost == perf_event__process_lost &&
+-	    session->stats.nr_events[PERF_RECORD_LOST] != 0) {
++	    stats->nr_events[PERF_RECORD_LOST] != 0) {
+ 		ui__warning("Processed %d events and lost %d chunks!\n\n"
+ 			    "Check IO/CPU overload!\n\n",
+-			    session->stats.nr_events[0],
+-			    session->stats.nr_events[PERF_RECORD_LOST]);
++			    stats->nr_events[0],
++			    stats->nr_events[PERF_RECORD_LOST]);
+ 	}
+ 
+-	if (session->stats.nr_unknown_events != 0) {
++	if (stats->nr_unknown_events != 0) {
+ 		ui__warning("Found %u unknown events!\n\n"
+ 			    "Is this an older tool processing a perf.data "
+ 			    "file generated by a more recent tool?\n\n"
+ 			    "If that is not the case, consider "
+ 			    "reporting to linux-kernel@vger.kernel.org.\n\n",
+-			    session->stats.nr_unknown_events);
++			    stats->nr_unknown_events);
+ 	}
+ 
+-	if (session->stats.nr_unknown_id != 0) {
++	if (stats->nr_unknown_id != 0) {
+ 		ui__warning("%u samples with id not present in the header\n",
+-			    session->stats.nr_unknown_id);
++			    stats->nr_unknown_id);
+ 	}
+ 
+- 	if (session->stats.nr_invalid_chains != 0) {
++	if (stats->nr_invalid_chains != 0) {
+  		ui__warning("Found invalid callchains!\n\n"
+  			    "%u out of %u events were discarded for this reason.\n\n"
+  			    "Consider reporting to linux-kernel@vger.kernel.org.\n\n",
+- 			    session->stats.nr_invalid_chains,
+- 			    session->stats.nr_events[PERF_RECORD_SAMPLE]);
++			    stats->nr_invalid_chains,
++			    stats->nr_events[PERF_RECORD_SAMPLE]);
+  	}
+ 
+-	if (session->stats.nr_unprocessable_samples != 0) {
++	if (stats->nr_unprocessable_samples != 0) {
+ 		ui__warning("%u unprocessable samples recorded.\n"
+ 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
+-			    session->stats.nr_unprocessable_samples);
++			    stats->nr_unprocessable_samples);
+ 	}
+ }
+ 
+@@ -1188,7 +1194,8 @@ static int __perf_session__process_pipe_events(struct perf_session *session,
+ 		}
+ 	}
+ 
+-	if ((skip = perf_session__process_event(session, event, tool, head)) < 0) {
++	if ((skip = perf_session__process_event(session, &session->stats,
++						event, tool, head)) < 0) {
+ 		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
+ 		       head, event->header.size, event->header.type);
+ 		err = -EINVAL;
+@@ -1207,7 +1214,7 @@ static int __perf_session__process_pipe_events(struct perf_session *session,
+ 	err = ordered_events__flush(session, tool, OE_FLUSH__FINAL);
+ out_err:
+ 	free(buf);
+-	perf_session__warn_about_errors(session, tool);
++	events_stats__warn_about_errors(&session->stats, tool);
+ 	ordered_events__free(&session->ordered_events);
+ 	return err;
+ }
+@@ -1252,7 +1259,8 @@ fetch_mmaped_event(struct perf_session *session,
+ #define NUM_MMAPS 128
+ #endif
+ 
+-static int __perf_session__process_events(struct perf_session *session, int fd,
++static int __perf_session__process_events(struct perf_session *session,
++					  struct events_stats *stats, int fd,
+ 					  u64 data_offset, u64 data_size,
+ 					  u64 file_size, struct perf_tool *tool)
+ {
+@@ -1278,7 +1286,9 @@ static int __perf_session__process_events(struct perf_session *session, int fd,
+ 	mmap_size = MMAP_SIZE;
+ 	if (mmap_size > file_size) {
+ 		mmap_size = file_size;
+-		session->one_mmap = true;
++
++		if (!session->file->is_multi)
++			session->one_mmap = true;
+ 	}
+ 
+ 	memset(mmaps, 0, sizeof(mmaps));
+@@ -1323,8 +1333,8 @@ static int __perf_session__process_events(struct perf_session *session, int fd,
+ 	size = event->header.size;
+ 
+ 	if (size < sizeof(struct perf_event_header) ||
+-	    (skip = perf_session__process_event(session, event, tool, file_pos))
+-									< 0) {
++	    (skip = perf_session__process_event(session, stats, event,
++						tool, file_pos)) < 0) {
+ 		pr_err("%#" PRIx64 " [%#x]: failed to process type: %d\n",
+ 		       file_offset + head, event->header.size,
+ 		       event->header.type);
+@@ -1351,7 +1361,6 @@ static int __perf_session__process_events(struct perf_session *session, int fd,
+ 	err = ordered_events__flush(session, tool, OE_FLUSH__FINAL);
+ out_err:
+ 	ui_progress__finish();
+-	perf_session__warn_about_errors(session, tool);
+ 	ordered_events__free(&session->ordered_events);
+ 	session->one_mmap = false;
+ 	return err;
+@@ -1369,13 +1378,16 @@ int perf_session__process_events(struct perf_session *session,
+ 	if (perf_data_file__is_pipe(session->file))
+ 		return __perf_session__process_pipe_events(session, tool);
+ 
+-	err = __perf_session__process_events(session,
++	err = __perf_session__process_events(session, &session->stats,
+ 					     perf_data_file__fd(session->file),
+ 					     session->header.data_offset,
+ 					     session->header.data_size,
+ 					     size, tool);
+-	if (!session->file->is_multi || err)
++
++	if (!session->file->is_multi || err) {
++		events_stats__warn_about_errors(&session->stats, tool);
+ 		return err;
++	}
+ 
+ 	/*
+ 	 * For multi-file data storage, events are processed for each
+@@ -1390,12 +1402,13 @@ int perf_session__process_events(struct perf_session *session,
+ 		if (size == 0)
+ 			continue;
+ 
+-		err = __perf_session__process_events(session, fd,
+-						     0, size, size, tool);
++		err = __perf_session__process_events(session, &session->stats,
++						     fd, 0, size, size, tool);
+ 		if (err < 0)
+ 			break;
+ 	}
+ 
++	events_stats__warn_about_errors(&session->stats, tool);
+ 	return err;
+ }
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 6d663dc76404..8fc067d931cd 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -59,6 +59,7 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ void perf_tool__fill_defaults(struct perf_tool *tool);
+ 
+ int perf_session__deliver_event(struct perf_session *session,
++				struct events_stats *stats,
+ 				union perf_event *event,
+ 				struct perf_sample *sample,
+ 				struct perf_tool *tool, u64 file_offset);
 -- 
 2.1.3
 
