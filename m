@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608AbaLXDPa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 22:15:30 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:57811 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaLXDP0 (ORCPT
+	id S1751611AbaLXDPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 22:15:55 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:7427 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaLXDOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 22:15:26 -0500
-From: Wincy Van <fanwenyi0529@gmail.com>
-To: pbonzini@redhat.com, bsd@redhat.com
-Cc: yang.z.zhang@intel.com, wanpeng.li@linux.intel.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fanwenyi0529@gmail.com
-Subject: [PATCH 1/1] KVM: ioapic: Record edge-triggered interrupts delivery status.
-Date: Wed, 24 Dec 2014 11:14:29 +0800
-Message-Id: <1419390869-1636-1-git-send-email-fanwenyi0529@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 23 Dec 2014 22:14:00 -0500
+From: Wang Long <long.wanglong@huawei.com>
+To: <xuwei5@hisilicon.com>
+CC: <arnd@arndb.de>, <yanhaifeng@gmail.com>, <zhangfei.gao@linaro.org>,
+        <haojian.zhuang@linaro.org>, <khilman@linaro.org>,
+        <lee.jones@linaro.org>, <linux@arm.linux.org.uk>,
+        <long.wanglong@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>,
+        <huxinwei@huawei.com>
+Subject: [PATCH 4/7] ARM: config: enable ARCH_HIP01
+Date: Wed, 24 Dec 2014 03:09:59 +0000
+Message-ID: <1419390602-193123-5-git-send-email-long.wanglong@huawei.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
+References: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.200]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.549A2F3D.0224,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 2dd43eb092b1aaf509cd0dd673f1dc79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the bug discussed in
-https://www.mail-archive.com/kvm@vger.kernel.org/msg109813.html
+Make hip01 share the hisi_defconfig.
+And add it into multi_v7_defconfig too.
 
-This patch uses a new field named irr_delivered to record the
-delivery status of edge-triggered interrupts, and clears the
-delivered interrupts in kvm_get_ioapic. So it has the same effect
-of commit 0bc830b05c667218d703f2026ec866c49df974fc
-("KVM: ioapic: clear IRR for edge-triggered interrupts at delivery")
-while avoids the bug of Windows guests.
-
-Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
+Signed-off-by: Wang Long <long.wanglong@huawei.com>
 ---
- arch/x86/kvm/ioapic.c |    7 ++++++-
- arch/x86/kvm/ioapic.h |    1 +
- 2 files changed, 7 insertions(+), 1 deletions(-)
+ arch/arm/configs/hisi_defconfig     | 1 +
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/arch/x86/kvm/ioapic.c b/arch/x86/kvm/ioapic.c
-index b1947e0..a2e9d96 100644
---- a/arch/x86/kvm/ioapic.c
-+++ b/arch/x86/kvm/ioapic.c
-@@ -206,6 +206,8 @@ static int ioapic_set_irq(struct kvm_ioapic *ioapic, unsigned int irq,
- 
- 	old_irr = ioapic->irr;
- 	ioapic->irr |= mask;
-+	if (edge)
-+		ioapic->irr_delivered &= ~mask;
- 	if ((edge && old_irr == ioapic->irr) ||
- 	    (!edge && entry.fields.remote_irr)) {
- 		ret = 0;
-@@ -349,7 +351,7 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
- 	irqe.shorthand = 0;
- 
- 	if (irqe.trig_mode == IOAPIC_EDGE_TRIG)
--		ioapic->irr &= ~(1 << irq);
-+		ioapic->irr_delivered |= 1 << irq;
- 
- 	if (irq == RTC_GSI && line_status) {
- 		/*
-@@ -597,6 +599,7 @@ static void kvm_ioapic_reset(struct kvm_ioapic *ioapic)
- 	ioapic->base_address = IOAPIC_DEFAULT_BASE_ADDRESS;
- 	ioapic->ioregsel = 0;
- 	ioapic->irr = 0;
-+	ioapic->irr_delivered = 0;
- 	ioapic->id = 0;
- 	memset(ioapic->irq_eoi, 0x00, IOAPIC_NUM_PINS);
- 	rtc_irq_eoi_tracking_reset(ioapic);
-@@ -654,6 +657,7 @@ int kvm_get_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
- 
- 	spin_lock(&ioapic->lock);
- 	memcpy(state, ioapic, sizeof(struct kvm_ioapic_state));
-+	state->irr &= ~ioapic->irr_delivered;
- 	spin_unlock(&ioapic->lock);
- 	return 0;
- }
-@@ -667,6 +671,7 @@ int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
- 	spin_lock(&ioapic->lock);
- 	memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
- 	ioapic->irr = 0;
-+	ioapic->irr_delivered = 0;
- 	update_handled_vectors(ioapic);
- 	kvm_vcpu_request_scan_ioapic(kvm);
- 	kvm_ioapic_inject_all(ioapic, state->irr);
-diff --git a/arch/x86/kvm/ioapic.h b/arch/x86/kvm/ioapic.h
-index 3c91955..a5cdfc0 100644
---- a/arch/x86/kvm/ioapic.h
-+++ b/arch/x86/kvm/ioapic.h
-@@ -77,6 +77,7 @@ struct kvm_ioapic {
- 	struct rtc_status rtc_status;
- 	struct delayed_work eoi_inject;
- 	u32 irq_eoi[IOAPIC_NUM_PINS];
-+	u32 irr_delivered;
- };
- 
- #ifdef DEBUG
+diff --git a/arch/arm/configs/hisi_defconfig b/arch/arm/configs/hisi_defconfig
+index 1125436..c34da58 100644
+--- a/arch/arm/configs/hisi_defconfig
++++ b/arch/arm/configs/hisi_defconfig
+@@ -8,6 +8,7 @@ CONFIG_ARCH_HI3xxx=y
+ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_CMDLINE_PARTITION=y
+ CONFIG_ARCH_HIX5HD2=y
++CONFIG_ARCH_HIP01=y
+ CONFIG_ARCH_HIP04=y
+ CONFIG_SMP=y
+ CONFIG_NR_CPUS=16
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 2328fe7..23523ed 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -32,6 +32,7 @@ CONFIG_ARCH_HIGHBANK=y
+ CONFIG_ARCH_HISI=y
+ CONFIG_ARCH_HI3xxx=y
+ CONFIG_ARCH_HIX5HD2=y
++CONFIG_ARCH_HIP01=y
+ CONFIG_ARCH_HIP04=y
+ CONFIG_ARCH_KEYSTONE=y
+ CONFIG_ARCH_MESON=y
 -- 
-1.7.1
+1.8.3.4
 
