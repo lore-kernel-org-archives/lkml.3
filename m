@@ -1,119 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816AbaLXHMx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:12:53 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:59698 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781AbaLXHMv (ORCPT
+	id S1751972AbaLXHOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:14:54 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39514 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871AbaLXHOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:12:51 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <gregkh@linuxfoundation.org>
-CC: <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <robh@kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3/3] ARC: runtime determine BASE_BAUD per machine
-Date: Wed, 24 Dec 2014 12:42:16 +0530
-Message-ID: <1419405136-14520-4-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1419405136-14520-1-git-send-email-vgupta@synopsys.com>
-References: <1419405136-14520-1-git-send-email-vgupta@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.196.182]
+	Wed, 24 Dec 2014 02:14:50 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 02/37] perf record: Use a software dummy event to track task/mmap events
+Date: Wed, 24 Dec 2014 16:14:58 +0900
+Message-Id: <1419405333-27952-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
----
- arch/arc/include/asm/serial.h | 24 ++++--------------------
- arch/arc/kernel/devtree.c     | 24 ++++++++++++++++++++++++
- 2 files changed, 28 insertions(+), 20 deletions(-)
+Prepend a software dummy event into evlist to track task/comm/mmap
+events separately.  This is a preparation of multi-file/thread support
+which will come later.
 
-diff --git a/arch/arc/include/asm/serial.h b/arch/arc/include/asm/serial.h
-index 602b0970a764..a8c0b8743709 100644
---- a/arch/arc/include/asm/serial.h
-+++ b/arch/arc/include/asm/serial.h
-@@ -10,26 +10,10 @@
- #define _ASM_ARC_SERIAL_H
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-record.c |  3 +++
+ tools/perf/perf.h           |  1 +
+ tools/perf/util/evlist.c    | 38 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h    |  1 +
+ tools/perf/util/evsel.h     | 15 +++++++++++++++
+ 5 files changed, 58 insertions(+)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 8648c6d3003d..aa5fa6aabb31 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -862,6 +862,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		goto out_symbol_exit;
+ 	}
  
- /*
-- * early-8250 requires BASE_BAUD to be defined and includes this header.
-- * We put in a typical value:
-- * 	(core clk / 16) - i.e. UART samples 16 times per sec.
-- * Athough in multi-platform-image this might not work, specially if the
-- * clk driving the UART is different.
-- * We can't use DeviceTree as this is typically for early serial.
-+ * 8250_early (now earlycon) include this hdr and expect BASE_BAUD definition
-+ * for setting up uartclk.
-+ * Now that is done via arch provided earlycon_base_baud() which can use FDT
-+ * provided info as well to provide uartclk based on DT in use.
-  */
++	if (rec->opts.multi_file)
++		perf_evlist__prepend_dummy(rec->evlist);
++
+ 	if (rec->opts.target.tid && !rec->opts.no_inherit_set)
+ 		rec->opts.no_inherit = true;
  
--#include <asm/clk.h>
--
--#define BASE_BAUD	(arc_get_core_freq() / 16)
--
--/*
-- * This is definitely going to break early 8250 consoles on multi-platform
-- * images but hey, it won't add any code complexity for a debug feature of
-- * one broken driver.
-- */
--#ifdef CONFIG_ARC_PLAT_TB10X
--#undef BASE_BAUD
--#define BASE_BAUD	(arc_get_core_freq() / 16 / 3)
--#endif
--
- #endif /* _ASM_ARC_SERIAL_H */
-diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
-index fffdb5e41b20..8adc5958982f 100644
---- a/arch/arc/kernel/devtree.c
-+++ b/arch/arc/kernel/devtree.c
-@@ -17,6 +17,28 @@
- #include <asm/clk.h>
- #include <asm/mach_desc.h>
- 
-+#ifdef CONFIG_SERIAL_8250_CONSOLE
-+
-+static unsigned int arc_base_baud;
-+
-+unsigned int __init serial8250_early_base_baud(char *options)
-+{
-+	return arc_base_baud/16;
-+}
-+
-+static void __init arc_set_early_base_baud(unsigned long dt_root)
-+{
-+	unsigned int core_clk = arc_get_core_freq();
-+
-+	if (of_flat_dt_is_compatible(dt_root, "abilis,arc-tb10x"))
-+		arc_base_baud = core_clk/3;
-+	else
-+		arc_base_baud = core_clk;
-+}
-+#else
-+#define arc_set_early_base_baud(dt_root)
-+#endif
-+
- static const void * __init arch_get_next_mach(const char *const **match)
- {
- 	static const struct machine_desc *mdesc = __arch_info_begin;
-@@ -56,5 +78,7 @@ const struct machine_desc * __init setup_machine_fdt(void *dt)
- 	if (clk)
- 		arc_set_core_freq(of_read_ulong(clk, len/4));
- 
-+	arc_set_early_base_baud(dt_root);
-+
- 	return mdesc;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 1dabb8553499..37284eb47b56 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -53,6 +53,7 @@ struct record_opts {
+ 	bool	     sample_time;
+ 	bool	     period;
+ 	bool	     sample_intr_regs;
++	bool	     multi_file;
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+ 	unsigned int user_freq;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index cfbe2b99b9aa..72dff295237e 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -193,6 +193,44 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 	return -ENOMEM;
  }
+ 
++int perf_evlist__prepend_dummy(struct perf_evlist *evlist)
++{
++	struct perf_event_attr attr = {
++		.type = PERF_TYPE_SOFTWARE,
++		.config = PERF_COUNT_SW_DUMMY,
++	};
++	struct perf_evsel *evsel, *pos;
++
++	event_attr_init(&attr);
++
++	evsel = perf_evsel__new(&attr);
++	if (evsel == NULL)
++		goto error;
++
++	/* use strdup() because free(evsel) assumes name is allocated */
++	evsel->name = strdup("dummy");
++	if (!evsel->name)
++		goto error_free;
++
++	list_for_each_entry(pos, &evlist->entries, node) {
++		pos->idx += 1;
++		pos->tracking = false;
++	}
++
++	list_add(&evsel->node, &evlist->entries);
++	evsel->idx = 0;
++	evsel->tracking = true;
++
++	if (!evlist->nr_entries++)
++		perf_evlist__set_id_pos(evlist);
++
++	return 0;
++error_free:
++	perf_evsel__delete(evsel);
++error:
++	return -ENOMEM;
++}
++
+ static int perf_evlist__add_attrs(struct perf_evlist *evlist,
+ 				  struct perf_event_attr *attrs, size_t nr_attrs)
+ {
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 649b0c597283..b974bddf6b8b 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -67,6 +67,7 @@ void perf_evlist__delete(struct perf_evlist *evlist);
+ 
+ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry);
+ int perf_evlist__add_default(struct perf_evlist *evlist);
++int perf_evlist__prepend_dummy(struct perf_evlist *evlist);
+ int __perf_evlist__add_default_attrs(struct perf_evlist *evlist,
+ 				     struct perf_event_attr *attrs, size_t nr_attrs);
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 38622747d130..5b45eea63043 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -331,6 +331,21 @@ static inline bool perf_evsel__is_function_event(struct perf_evsel *evsel)
+ #undef FUNCTION_EVENT
+ }
+ 
++/**
++ * perf_evsel__is_dummy_tracking - Return whether given evsel is a dummy
++ * event for tracking meta events only
++ *
++ * @evsel - evsel selector to be tested
++ *
++ * Return %true if event is a dummy tracking event
++ */
++static inline bool perf_evsel__is_dummy_tracking(struct perf_evsel *evsel)
++{
++	return evsel->attr.type == PERF_TYPE_SOFTWARE &&
++		evsel->attr.config == PERF_COUNT_SW_DUMMY &&
++		evsel->attr.task == 1 && evsel->idx == 0;
++}
++
+ struct perf_attr_details {
+ 	bool freq;
+ 	bool verbose;
 -- 
-1.8.3.2
+2.1.3
 
