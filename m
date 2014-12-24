@@ -1,55 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaLXSIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 13:08:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751285AbaLXSIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 13:08:35 -0500
-Date: Wed, 24 Dec 2014 19:06:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Stijn Volckaert <Stijn.Volckaert@elis.ugent.be>
-Cc: Roland McGrath <roland@hack.frob.com>, Kees Cook <keescook@chromium.org>,
+	id S1751546AbaLXScc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 13:32:32 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:58938 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaLXScb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 13:32:31 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Johan Hedberg <johan.hedberg@gmail.com>
+Subject: Re: 3.19-rc1 refuse connection from bluetooth headset
+Date: Wed, 24 Dec 2014 19:32:27 +0100
+User-Agent: KMail/1.13.7 (Linux/3.19.0-031900rc1-generic; KDE/4.14.2; x86_64; ; )
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] Allow introspection to already attached ptracer in
-	__ptrace_may_access
-Message-ID: <20141224180654.GA11973@redhat.com>
-References: <549ABF87.8060905@elis.ugent.be>
+References: <201412241815.12922@pali> <20141224173652.GA16667@t440s.P-661HNU-DI-F1>
+In-Reply-To: <20141224173652.GA16667@t440s.P-661HNU-DI-F1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549ABF87.8060905@elis.ugent.be>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: multipart/signed;
+  boundary="nextPart1605061.G2Ycz2iDWt";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412241932.27264@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24, Stijn Volckaert wrote:
->
-> The question now is whether or not it's the security module's
-> responsibility to check whether a tracee relationship is already in
-> place or if ptrace itself should do it.
+--nextPart1605061.G2Ycz2iDWt
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Honestly, I have no idea
+On Wednesday 24 December 2014 18:36:52 Johan Hedberg wrote:
+> Hi Pali,
+>=20
+> On Wed, Dec 24, 2014, Pali Roh=C3=A1r wrote:
+> > now I installed 3.19-rc1 kernel and my bluetooth headset was
+> > refused to connect automatically. I need to start
+> > connection manually from laptop (and then it working).
+> > Before when I started bluetooth headset it automatically
+> > connected and I did not have to do anything. Now with
+> > 3.19-rc1 kernel I need to do connection manually and I see
+> > error
+> >=20
+> > messages in hcidump:
+> >  $ sudo hcidump
+> >  HCI sniffer - Bluetooth packet analyzer ver 2.2
+> >  device: hci0 snap_len: 1028 filter: 0xffffffffffffffff
+> > =20
+> >  > HCI Event: Connect Request (0x04) plen 10
+> >  >=20
+> >      bdaddr <HEADSET_ADDRESS> class 0x240404 type ACL
+> > =20
+> >  < HCI Command: Reject Connection Request (0x01|0x000a) plen
+> >  7
+> > =20
+> >      bdaddr <HEADSET_ADDRESS> reason 0x0f
+> >      Reason: Connection Rejected due to Unacceptable BD_ADDR
+> >  >=20
+> >  > HCI Event: Command Status (0x0f) plen 4
+> >  >=20
+> >      Reject Connection Request (0x01|0x000a) status 0x00
+> >      ncmd 1
+> >  >=20
+> >  > HCI Event: Connect Complete (0x03) plen 11
+> >  >=20
+> >      status 0x0f handle 34 bdaddr <HEADSET_ADDRESS> type ACL
+> >      encrypt 0x00 Error: Connection Rejected due to
+> >      Unacceptable BD_ADDR
+> >  >=20
+> >  > HCI Event: Connect Request (0x04) plen 10
+> >  >=20
+> >      bdaddr <HEADSET_ADDRESS> class 0x240404 type ACL
+> > =20
+> >  < HCI Command: Reject Connection Request (0x01|0x000a) plen
+> >  7
+> > =20
+> >      bdaddr <HEADSET_ADDRESS> reason 0x0f
+> >      Reason: Connection Rejected due to Unacceptable BD_ADDR
+> >  >=20
+> >  > HCI Event: Command Status (0x0f) plen 4
+> >  >=20
+> >      Reject Connection Request (0x01|0x000a) status 0x00
+> >      ncmd 1
+> >  >=20
+> >  > HCI Event: Connect Complete (0x03) plen 11
+> >  >=20
+> >     status 0x0f handle 35 bdaddr <HEADSET_ADDRESS> type ACL
+> >     encrypt 0x00 Error: Connection Rejected due to
+> >     Unacceptable BD_ADDR
+> >=20
+> > (real address of my bluetooth headset was replaced by
+> > <HEADSET_ADDRESS>)
+> >=20
+> > Can you inspect why new kernel refuse connection from my
+> > bluetooth headset?
+> >=20
+> > I'm still using bluez 4.98 (which is in Ubuntu 12.04), I did
+> > not do any update.
+>=20
+> Could you try the attached patch? I think the reason might be
+> the dependence on the HCI_CONNECTABLE flag that's only set if
+> the page scan was enabled through mgmt (which wouldn't be the
+> case with BlueZ 4.98).
+>=20
+> Johan
 
-> --- a/kernel/ptrace.c	2014-12-24 13:53:23.055346526 +0100
-> +++ b/kernel/ptrace.c	2014-12-24 14:17:20.617824840 +0100
-> @@ -232,6 +232,9 @@ static int __ptrace_may_access(struct ta
->  	/* Don't let security modules deny introspection */
->  	if (same_thread_group(task, current))
->  		return 0;
-> +	/* Don't deny introspection to already attached ptracer */
-> +	if (!ptrace_check_attach(task, true))
-> +	        return 0;
+Hi Johan! Thanks for quick reply. Your patch fixes my problem and=20
+auto-connection of my bluetooth headset is working again. Will=20
+you forward patch to mainline kernel?
 
-Perhaps this makes sense, probably security checks do not make sense
-if the target is traced.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-But in this case I'd suggest to simply
+--nextPart1605061.G2Ycz2iDWt
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-	if (ptrace_parent(task) == current)
-		return 0;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlSbBrsACgkQi/DJPQPkQ1KRwACfSt2jyErhH+7AT6diz5LVURdd
+A6QAmwT9kdhqtEJKv9H2YSgui7bxfSqD
+=NQGz
+-----END PGP SIGNATURE-----
 
-Oleg.
-
+--nextPart1605061.G2Ycz2iDWt--
