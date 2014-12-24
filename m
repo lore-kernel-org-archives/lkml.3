@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaLXHWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:22:07 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39674 "EHLO
+	id S1752300AbaLXHWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:22:40 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:39667 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbaLXHOy (ORCPT
+	with ESMTP id S1751945AbaLXHOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Dec 2014 02:14:54 -0500
 X-Original-SENDERIP: 10.177.222.235
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 11/37] perf tools: Introduce thread__comm_time() helpers
-Date: Wed, 24 Dec 2014 16:15:07 +0900
-Message-Id: <1419405333-27952-12-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/37] perf report: Skip dummy tracking event
+Date: Wed, 24 Dec 2014 16:15:06 +0900
+Message-Id: <1419405333-27952-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
@@ -27,96 +27,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When multi-file data storage is enabled, it processes all task, comm
-and mmap events first and then goes to the sample events.  So all it
-sees is the last comm of a thread although it has information at the
-time of sample.
+The dummy tracking event is only for tracking task/comom/mmap events
+and has no sample data for itself.  So no need to report, just skip it.
 
-Sort thread's comm by time so that it can find appropriate comm at the
-sample time.  The thread__comm_time() will mostly work even if
-PERF_SAMPLE_TIME bit is off since in that case, sample->time will be
--1 so it'll take the last comm anyway.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/thread.c | 34 +++++++++++++++++++++++++++++++++-
- tools/perf/util/thread.h |  2 ++
- 2 files changed, 35 insertions(+), 1 deletion(-)
+ tools/perf/builtin-report.c    |  3 +++
+ tools/perf/ui/browsers/hists.c | 10 ++++++++--
+ tools/perf/ui/gtk/hists.c      |  3 +++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 9ebc8b1f9be5..083fa0fcf316 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -103,6 +103,22 @@ struct comm *thread__exec_comm(const struct thread *thread)
- 	return last;
- }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2f91094e228b..4cac79ad3085 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -318,6 +318,9 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+ 		struct hists *hists = evsel__hists(pos);
+ 		const char *evname = perf_evsel__name(pos);
  
-+struct comm *thread__comm_time(const struct thread *thread, u64 timestamp)
-+{
-+	struct comm *comm;
++		if (perf_evsel__is_dummy_tracking(pos))
++			continue;
 +
-+	list_for_each_entry(comm, &thread->comm_list, list) {
-+		if (timestamp >= comm->start)
-+			return comm;
+ 		if (symbol_conf.event_group &&
+ 		    !perf_evsel__is_group_leader(pos))
+ 			continue;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index e6bb04b5b09b..be594e1d6a99 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1998,11 +1998,15 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+ 				  struct perf_session_env *env)
+ {
+ 	int nr_entries = evlist->nr_entries;
++	struct perf_evsel *first = perf_evlist__first(evlist);
++
++	if (perf_evsel__is_dummy_tracking(first)) {
++		first = perf_evsel__next(first);
++		nr_entries--;
 +	}
-+
-+	if (list_empty(&thread->comm_list))
-+		return NULL;
-+
-+	return list_last_entry(&thread->comm_list, struct comm, list);
-+}
-+
-+/* CHECKME: time should always be 0 if event aren't ordered */
- int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
- 		       bool exec)
- {
-@@ -118,7 +134,13 @@ int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
- 		new = comm__new(str, timestamp, exec);
- 		if (!new)
- 			return -ENOMEM;
--		list_add(&new->list, &thread->comm_list);
-+
-+		/* sort by time */
-+		list_for_each_entry(curr, &thread->comm_list, list) {
-+			if (timestamp >= curr->start)
-+				break;
-+		}
-+		list_add_tail(&new->list, &curr->list);
  
- 		if (exec)
- 			unwind__flush_access(thread);
-@@ -139,6 +161,16 @@ const char *thread__comm_str(const struct thread *thread)
- 	return comm__str(comm);
- }
+ single_entry:
+ 	if (nr_entries == 1) {
+-		struct perf_evsel *first = perf_evlist__first(evlist);
+-
+ 		return perf_evsel__hists_browse(first, nr_entries, help,
+ 						false, hbt, min_pcnt,
+ 						env);
+@@ -2013,6 +2017,8 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
  
-+const char *thread__comm_time_str(const struct thread *thread, u64 timestamp)
-+{
-+	const struct comm *comm = thread__comm_time(thread, timestamp);
+ 		nr_entries = 0;
+ 		evlist__for_each(evlist, pos) {
++			if (perf_evsel__is_dummy_tracking(pos))
++				continue;
+ 			if (perf_evsel__is_group_leader(pos))
+ 				nr_entries++;
+ 		}
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index 4b3585eed1e8..83a7ecd5cda8 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -317,6 +317,9 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 		char buf[512];
+ 		size_t size = sizeof(buf);
+ 
++		if (perf_evsel__is_dummy_tracking(pos))
++			continue;
 +
-+	if (!comm)
-+		return NULL;
-+
-+	return comm__str(comm);
-+}
-+
- /* CHECKME: it should probably better return the max comm len from its comm list */
- int thread__comm_len(struct thread *thread)
- {
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 160fd066a7d1..0b6dcd70bc8b 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -53,7 +53,9 @@ static inline int thread__set_comm(struct thread *thread, const char *comm,
- int thread__comm_len(struct thread *thread);
- struct comm *thread__comm(const struct thread *thread);
- struct comm *thread__exec_comm(const struct thread *thread);
-+struct comm *thread__comm_time(const struct thread *thread, u64 timestamp);
- const char *thread__comm_str(const struct thread *thread);
-+const char *thread__comm_time_str(const struct thread *thread, u64 timestamp);
- void thread__insert_map(struct thread *thread, struct map *map);
- int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp);
- size_t thread__fprintf(struct thread *thread, FILE *fp);
+ 		if (symbol_conf.event_group) {
+ 			if (!perf_evsel__is_group_leader(pos))
+ 				continue;
 -- 
 2.1.3
 
