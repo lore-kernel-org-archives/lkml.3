@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaLXQ2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:28:15 -0500
-Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:36949 "EHLO
-	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751726AbaLXQ2M (ORCPT
+	id S1751986AbaLXQ2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:28:18 -0500
+Received: from resqmta-po-08v.sys.comcast.net ([96.114.154.167]:49186 "EHLO
+	resqmta-po-08v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751739AbaLXQ2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Dec 2014 11:28:12 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 11/20] selftests/mqueue: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:47 -0700
-Message-Id: <1e4aa40c42e886d36ae1bfcb93e4b8d696fa6c39.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 12/20] selftests/net: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:48 -0700
+Message-Id: <a9e90a4ce816013dc701684feb2bfc29c04064c8.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -36,39 +36,45 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/mqueue/Makefile | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ tools/testing/selftests/net/Makefile | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/tools/testing/selftests/mqueue/Makefile b/tools/testing/selftests/mqueue/Makefile
-index 8056e2e..27757b9 100644
---- a/tools/testing/selftests/mqueue/Makefile
-+++ b/tools/testing/selftests/mqueue/Makefile
-@@ -1,10 +1,22 @@
-+MQ_OPEN_TEST_STR = ./mq_open_tests /test1 || echo mq_open_tests: [FAIL]
-+MQ_PERF_TEST_STR = ./mq_perf_tests || echo mq_perf_tests: [FAIL]
-+
- all:
- 	gcc -O2 mq_open_tests.c -o mq_open_tests -lrt
- 	gcc -O2 -o mq_perf_tests mq_perf_tests.c -lrt -lpthread -lpopt
+diff --git a/tools/testing/selftests/net/Makefile b/tools/testing/selftests/net/Makefile
+index 62f22cc..2ffc96f 100644
+--- a/tools/testing/selftests/net/Makefile
++++ b/tools/testing/selftests/net/Makefile
+@@ -6,14 +6,28 @@ CFLAGS = -Wall -O2 -g
+ CFLAGS += -I../../../../usr/include/
  
--run_tests:
--	@./mq_open_tests /test1 || echo "mq_open_tests: [FAIL]"
--	@./mq_perf_tests || echo "mq_perf_tests: [FAIL]"
+ NET_PROGS = socket psock_fanout psock_tpacket
++INSTALL_PROGS = run_netsocktests run_afpackettests test_bpf.sh $(NET_PROGS)
++NETSOCK_TEST_STR = /bin/sh ./run_netsocktests || echo sockettests: [FAIL]
++AFPKT_TEST_STR = /bin/sh ./run_afpackettests || echo afpackettests: [FAIL]
++BFP_TEST_STR = ./test_bpf.sh
+ 
+ all: $(NET_PROGS)
+ %: %.c
+ 	$(CC) $(CFLAGS) -o $@ $^
+ 
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install ./mq_open_tests ./mq_perf_tests $(INSTALL_KSFT_PATH)
-+	@echo "$(MQ_OPEN_TEST_STR)" >> $(KSELFTEST)
-+	@echo "$(MQ_PERF_TEST_STR)" >> $(KSELFTEST)
++	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
++	@echo "$(NETSOCK_TEST_STR)" >> $(KSELFTEST)
++	@echo "$(AFPKT_TEST_STR)" >> $(KSELFTEST)
++	@echo "$(BFP_TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo Run make kselftest_install in top level source directory
 +endif
 +
-+run_tests: all
-+	@$(MQ_OPEN_TEST_STR)
-+	@$(MQ_PERF_TEST_STR)
- 
+ run_tests: all
+-	@/bin/sh ./run_netsocktests || echo "sockettests: [FAIL]"
+-	@/bin/sh ./run_afpackettests || echo "afpackettests: [FAIL]"
+-	./test_bpf.sh
++	@$(NETSOCK_TEST_STR)
++	@$(AFPKT_TEST_STR)
++	@$(BFP_TEST_STR)
  clean:
- 	rm -f mq_open_tests mq_perf_tests
+ 	$(RM) $(NET_PROGS)
 -- 
 2.1.0
 
