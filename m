@@ -1,203 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019AbaLXVWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 16:22:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57851 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693AbaLXVWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 16:22:45 -0500
-From: NeilBrown <neilb@suse.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
-Date: Thu, 25 Dec 2014 08:20:51 +1100
-Subject: [PATCH 2/3] mmc: omap_hsmmc: use slot-gpio library for gpio support.
-Cc: GTA04 owners <gta04-owner@goldelico.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20141224212051.30499.84791.stgit@notabene.brown>
-In-Reply-To: <20141224211653.30499.46669.stgit@notabene.brown>
-References: <20141224211653.30499.46669.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
+	id S1751918AbaLXVbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 16:31:04 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:39119 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaLXVbB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 16:31:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+From: David Matlack <dmatlack@google.com>
+Date: Wed, 24 Dec 2014 13:30:40 -0800
+Message-ID: <CALzav=fuOieDmkWviyzLFyTuyray0=oZWTaOUCBUHRAmiKynmg@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
+ pvclock reader
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the common code removes some code duplication, and
-makes it easier to switch to using mmc_of_parse() which
-will remove more duplication.
+On Mon, Dec 22, 2014 at 4:39 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> The pvclock vdso code was too abstracted to understand easily and
+> excessively paranoid.  Simplify it for a huge speedup.
+>
+> This opens the door for additional simplifications, as the vdso no
+> longer accesses the pvti for any vcpu other than vcpu 0.
+>
+> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
+> With this change, it takes 19ns, which is almost as fast as the pure TSC
+> implementation.
+>
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
+>  1 file changed, 47 insertions(+), 35 deletions(-)
+>
+> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> index 9793322751e0..f2e0396d5629 100644
+> --- a/arch/x86/vdso/vclock_gettime.c
+> +++ b/arch/x86/vdso/vclock_gettime.c
+> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
+>
+>  static notrace cycle_t vread_pvclock(int *mode)
+>  {
+> -       const struct pvclock_vsyscall_time_info *pvti;
+> +       const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
+>         cycle_t ret;
+> -       u64 last;
+> -       u32 version;
+> -       u8 flags;
+> -       unsigned cpu, cpu1;
+> -
+> +       u64 tsc, pvti_tsc;
+> +       u64 last, delta, pvti_system_time;
+> +       u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
+>
+>         /*
+> -        * Note: hypervisor must guarantee that:
+> -        * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
+> -        * 2. that per-CPU pvclock time info is updated if the
+> -        *    underlying CPU changes.
+> -        * 3. that version is increased whenever underlying CPU
+> -        *    changes.
+> +        * Note: The kernel and hypervisor must guarantee that cpu ID
+> +        * number maps 1:1 to per-CPU pvclock time info.
+> +        *
+> +        * Because the hypervisor is entirely unaware of guest userspace
+> +        * preemption, it cannot guarantee that per-CPU pvclock time
+> +        * info is updated if the underlying CPU changes or that that
+> +        * version is increased whenever underlying CPU changes.
+> +        *
+> +        * On KVM, we are guaranteed that pvti updates for any vCPU are
+> +        * atomic as seen by *all* vCPUs.  This is an even stronger
+> +        * guarantee than we get with a normal seqlock.
+>          *
+> +        * On Xen, we don't appear to have that guarantee, but Xen still
+> +        * supplies a valid seqlock using the version field.
+> +
 
-This uses the new mmc_gpio_set_cd_isr to provide a non-standard
-interrupt service routine for card-detect interrupts.
+Forgotten * here?
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- drivers/mmc/host/omap_hsmmc.c |   67 +++++++++--------------------------------
- 1 file changed, 14 insertions(+), 53 deletions(-)
+> +        * We only do pvclock vdso timing at all if
+> +        * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
+> +        * mean that all vCPUs have matching pvti and that the TSC is
+> +        * synced, so we can just look at vCPU 0's pvti.
+>          */
+> -       do {
+> -               cpu = __getcpu() & VGETCPU_CPU_MASK;
+> -               /* TODO: We can put vcpu id into higher bits of pvti.version.
+> -                * This will save a couple of cycles by getting rid of
+> -                * __getcpu() calls (Gleb).
+> -                */
+> -
+> -               pvti = get_pvti(cpu);
+> -
+> -               version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
+> -
+> -               /*
+> -                * Test we're still on the cpu as well as the version.
+> -                * We could have been migrated just after the first
+> -                * vgetcpu but before fetching the version, so we
+> -                * wouldn't notice a version change.
+> -                */
+> -               cpu1 = __getcpu() & VGETCPU_CPU_MASK;
+> -       } while (unlikely(cpu != cpu1 ||
+> -                         (pvti->pvti.version & 1) ||
+> -                         pvti->pvti.version != version));
+> -
+> -       if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
+> +
+> +       if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
+>                 *mode = VCLOCK_NONE;
+> +               return 0;
+> +       }
+> +
+> +       do {
+> +               version = pvti->version;
+> +
+> +               /* This is also a read barrier, so we'll read version first. */
+> +               rdtsc_barrier();
+> +               tsc = __native_read_tsc();
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 537cba8f1de1..149cc252fcbd 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -36,6 +36,7 @@
- #include <linux/mmc/host.h>
- #include <linux/mmc/core.h>
- #include <linux/mmc/mmc.h>
-+#include <linux/mmc/slot-gpio.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
-@@ -251,28 +252,22 @@ static void omap_hsmmc_start_dma_transfer(struct omap_hsmmc_host *host);
- static int omap_hsmmc_card_detect(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes card detect signal is active-low */
--	return !gpio_get_value_cansleep(mmc->switch_pin);
-+	return mmc_gpio_get_cd(host->mmc);
- }
- 
- static int omap_hsmmc_get_wp(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes write protect signal is active-high */
--	return gpio_get_value_cansleep(mmc->gpio_wp);
-+	return mmc_gpio_get_ro(host->mmc);
- }
- 
- static int omap_hsmmc_get_cover_state(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes card detect signal is active-low */
--	return !gpio_get_value_cansleep(mmc->switch_pin);
-+	return mmc_gpio_get_cd(host->mmc);
- }
- 
- #ifdef CONFIG_REGULATOR
-@@ -439,7 +434,10 @@ static inline int omap_hsmmc_have_reg(void)
- 
- #endif
- 
--static int omap_hsmmc_gpio_init(struct omap_hsmmc_host *host,
-+static irqreturn_t omap_hsmmc_detect(int irq, void *dev_id);
-+
-+static int omap_hsmmc_gpio_init(struct mmc_host *mmc,
-+				struct omap_hsmmc_host *host,
- 				struct omap_hsmmc_platform_data *pdata)
- {
- 	int ret;
-@@ -452,46 +450,26 @@ static int omap_hsmmc_gpio_init(struct omap_hsmmc_host *host,
- 			host->card_detect = omap_hsmmc_card_detect;
- 		host->card_detect_irq =
- 				gpio_to_irq(pdata->switch_pin);
--		ret = gpio_request(pdata->switch_pin, "mmc_cd");
-+		ret = mmc_gpio_set_cd_isr(mmc, omap_hsmmc_detect);
- 		if (ret)
- 			return ret;
--		ret = gpio_direction_input(pdata->switch_pin);
-+		ret = mmc_gpio_request_cd(mmc, pdata->switch_pin, 0);
- 		if (ret)
--			goto err_free_sp;
-+			return ret;
- 	} else {
- 		pdata->switch_pin = -EINVAL;
- 	}
- 
- 	if (gpio_is_valid(pdata->gpio_wp)) {
- 		host->get_ro = omap_hsmmc_get_wp;
--		ret = gpio_request(pdata->gpio_wp, "mmc_wp");
--		if (ret)
--			goto err_free_cd;
--		ret = gpio_direction_input(pdata->gpio_wp);
-+		ret = mmc_gpio_request_ro(mmc, pdata->gpio_wp);
- 		if (ret)
--			goto err_free_wp;
-+			return ret;
- 	} else {
- 		pdata->gpio_wp = -EINVAL;
- 	}
- 
- 	return 0;
--
--err_free_wp:
--	gpio_free(pdata->gpio_wp);
--err_free_cd:
--	if (gpio_is_valid(pdata->switch_pin))
--err_free_sp:
--		gpio_free(pdata->switch_pin);
--	return ret;
--}
--
--static void omap_hsmmc_gpio_free(struct omap_hsmmc_host *host,
--				 struct omap_hsmmc_platform_data *pdata)
--{
--	if (gpio_is_valid(pdata->gpio_wp))
--		gpio_free(pdata->gpio_wp);
--	if (gpio_is_valid(pdata->switch_pin))
--		gpio_free(pdata->switch_pin);
- }
- 
- /*
-@@ -2066,7 +2044,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	host->next_data.cookie = 1;
- 	host->pbias_enabled = 0;
- 
--	ret = omap_hsmmc_gpio_init(host, pdata);
-+	ret = omap_hsmmc_gpio_init(mmc, host, pdata);
- 	if (ret)
- 		goto err_gpio;
- 
-@@ -2197,20 +2175,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- 	mmc->ocr_avail = mmc_pdata(host)->ocr_mask;
- 
--	/* Request IRQ for card detect */
--	if (host->card_detect_irq) {
--		ret = devm_request_threaded_irq(&pdev->dev,
--						host->card_detect_irq,
--						NULL, omap_hsmmc_detect,
--					   IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
--					   mmc_hostname(mmc), host);
--		if (ret) {
--			dev_err(mmc_dev(host->mmc),
--				"Unable to grab MMC CD IRQ\n");
--			goto err_irq_cd;
--		}
--	}
--
- 	omap_hsmmc_disable_irq(host);
- 
- 	/*
-@@ -2249,7 +2213,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- err_slot_name:
- 	mmc_remove_host(mmc);
--err_irq_cd:
- 	if (host->use_reg)
- 		omap_hsmmc_reg_put(host);
- err_irq:
-@@ -2262,7 +2225,6 @@ err_irq:
- 	if (host->dbclk)
- 		clk_disable_unprepare(host->dbclk);
- err1:
--	omap_hsmmc_gpio_free(host, pdata);
- err_gpio:
- 	mmc_free_host(mmc);
- err:
-@@ -2288,7 +2250,6 @@ static int omap_hsmmc_remove(struct platform_device *pdev)
- 	if (host->dbclk)
- 		clk_disable_unprepare(host->dbclk);
- 
--	omap_hsmmc_gpio_free(host, host->pdata);
- 	mmc_free_host(host->mmc);
- 
- 	return 0;
+Is there a reason why you read the tsc inside the loop rather than once
+after the loop?
 
-
+> +
+> +               pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
+> +               pvti_tsc_shift = pvti->tsc_shift;
+> +               pvti_system_time = pvti->system_time;
+> +               pvti_tsc = pvti->tsc_timestamp;
+> +
+> +               /* Make sure that the version double-check is last. */
+> +               smp_rmb();
+> +       } while (unlikely((version & 1) || version != pvti->version));
+> +
+> +       delta = tsc - pvti_tsc;
+> +       ret = pvti_system_time +
+> +               pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
+> +                                   pvti_tsc_shift);
+>
+>         /* refer to tsc.c read_tsc() comment for rationale */
+>         last = gtod->cycle_last;
+> --
+> 2.1.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
