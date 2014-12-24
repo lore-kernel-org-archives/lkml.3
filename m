@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaLXWMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 17:12:24 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44534 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660AbaLXWMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 17:12:22 -0500
+	id S1751759AbaLXWMw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 17:12:52 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:43038 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858AbaLXWMX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 17:12:23 -0500
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <arnd@arndb.de>, <will.deacon@arm.com>,
@@ -13,9 +14,9 @@ To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <bhelgaas@google.com>,
         <linux-pci@vger.kernel.org>
 CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH v2 2/2] PCI: update dma configuration from DT
-Date: Wed, 24 Dec 2014 17:11:39 -0500
-Message-ID: <1419459099-6667-3-git-send-email-m-karicheri2@ti.com>
+Subject: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma configuration
+Date: Wed, 24 Dec 2014 17:11:38 -0500
+Message-ID: <1419459099-6667-2-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com>
 References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com>
@@ -25,42 +26,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there is a DT node available for the root bridge's parent device,
-use the dma configuration from that device node. For example, keystone
-PCI devices would require dma_pfn_offset to be set correctly in the
-device structure of the pci device in order to have the correct dma mask.
-The DT node will have dma-ranges defined for this. Also support using
-the DT property dma-coherent to allow coherent DMA operation by the
-PCI device.
-
-This patch use the new helper function of_pci_dma_configure() to update
-the device dma configuration.
+Add of_pci_dma_configure() to allow updating the dma configuration
+of the pci device using the configuration from DT of the parent of
+the root bridge device.
 
 Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 ---
- drivers/pci/probe.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/of/of_pci.c    |   73 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/of_pci.h |   12 ++++++++
+ 2 files changed, 85 insertions(+)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 23212f8..d7dcd6c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -6,6 +6,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/pci.h>
-+#include <linux/of_pci.h>
- #include <linux/pci_hotplug.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-@@ -1520,6 +1521,7 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- 	dev->dev.dma_mask = &dev->dma_mask;
- 	dev->dev.dma_parms = &dev->dma_parms;
- 	dev->dev.coherent_dma_mask = 0xffffffffull;
-+	of_pci_dma_configure(dev);
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index 88471d3..6d43f59 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -229,6 +229,79 @@ parse_failed:
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
++
++/**
++ * of_get_pci_root_bridge_parent - Helper function to get the OF node of
++ *		the root bridge's parent
++ * @dev: ptr to pci_dev struct of the pci device
++ *
++ * This function will traverse the bus up to the root bus starting with
++ * the child and return the of node ptr to bridge device's parent device.
++ */
++struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
++{
++	struct pci_bus *bus = dev->bus;
++	struct device *bridge;
++
++	while (!pci_is_root_bus(bus))
++		bus = bus->parent;
++	bridge = bus->bridge;
++
++	return bridge->parent->of_node;
++}
++EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
++
++/**
++ * of_pci_dma_configure - Setup DMA configuration
++ * @dev: ptr to pci_dev struct of the pci device
++ *
++ * Try to get PCI devices's DMA configuration from DT and update it
++ * accordingly. This is similar to of_dma_configure() in of/platform.c
++ */
++void of_pci_dma_configure(struct pci_dev *pci_dev)
++{
++	struct device *dev = &pci_dev->dev;
++	u64 dma_addr, paddr, size;
++	struct device_node *parent_np;
++	unsigned long offset;
++	bool coherent;
++	int ret;
++
++	parent_np = of_get_pci_root_bridge_parent(pci_dev);
++
++	if (parent_np) {
++		/*
++		 * Set default dma-mask to 32 bit. Drivers are expected to setup
++		 * the correct supported dma_mask.
++		 */
++		dev->coherent_dma_mask = DMA_BIT_MASK(32);
++
++		/*
++		 * Set it to coherent_dma_mask by default if the architecture
++		 * code has not set it.
++		 */
++		if (!dev->dma_mask)
++			dev->dma_mask = &dev->coherent_dma_mask;
++
++		ret = of_dma_get_range(parent_np, &dma_addr, &paddr, &size);
++		if (ret < 0) {
++			dma_addr = offset = 0;
++			size = dev->coherent_dma_mask + 1;
++		} else {
++			offset = PFN_DOWN(paddr - dma_addr);
++			dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
++		}
++		dev->dma_pfn_offset = offset;
++
++		coherent = of_dma_is_coherent(parent_np);
++		dev_dbg(dev, "device is%sdma coherent\n",
++			coherent ? " " : " not ");
++
++		arch_setup_dma_ops(dev, dma_addr, size, NULL, coherent);
++	}
++}
++EXPORT_SYMBOL_GPL(of_pci_dma_configure);
++
+ #endif /* CONFIG_OF_ADDRESS */
  
- 	pci_set_dma_max_seg_size(dev, 65536);
- 	pci_set_dma_seg_boundary(dev, 0xffffffff);
+ #ifdef CONFIG_PCI_MSI
+diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+index ce0e5ab..0465a2a 100644
+--- a/include/linux/of_pci.h
++++ b/include/linux/of_pci.h
+@@ -16,6 +16,8 @@ int of_pci_get_devfn(struct device_node *np);
+ int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
+ int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
+ int of_get_pci_domain_nr(struct device_node *node);
++struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev);
++void of_pci_dma_configure(struct pci_dev *pci_dev);
+ #else
+ static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
+ {
+@@ -50,6 +52,16 @@ of_get_pci_domain_nr(struct device_node *node)
+ {
+ 	return -1;
+ }
++
++static inline struct device_node
++*of_get_pci_root_bridge_parent(struct pci_dev *dev)
++{
++	return NULL;
++}
++
++static inline void of_pci_dma_configure(struct pci_dev *pci_dev)
++{
++}
+ #endif
+ 
+ #if defined(CONFIG_OF_ADDRESS)
 -- 
 1.7.9.5
 
