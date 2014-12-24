@@ -1,135 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaLXWRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 17:17:36 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:38848 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbaLXWRe (ORCPT
+	id S1751755AbaLXW1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 17:27:04 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40567 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542AbaLXW1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 17:17:34 -0500
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-To: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Cc: linux-sh@vger.kernel.org, vksavl@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org
-Subject: [PATCH v2] clk-rcar-gen2: RCAN clock support
-Date: Thu, 25 Dec 2014 01:17:29 +0300
-Message-ID: <3007073.i0ghnTEhxV@wasted.cogentembedded.com>
-Organization: Cogent Embedded Inc.
-User-Agent: KMail/4.14.3 (Linux/3.17.7-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
+	Wed, 24 Dec 2014 17:27:02 -0500
+Date: Wed, 24 Dec 2014 23:27:00 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Mark Seaborn <mseaborn@chromium.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Cc: luto@amacapital.net
+Subject: Re: DRAM unreliable under specific access patern
+Message-ID: <20141224222700.GA19513@amd>
+References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the RCAN clock support to the R-Car generation 2 CPG driver.  This clock
-gets derived from  the USB_EXTAL clock, dividing  it by 6.  The layout of the
-RCANCKCR register is similar to those of the clocks supported by the 'clk-div6'
-driver but has no divider field, and so can't be supported by that driver...
+On Wed 2014-12-24 11:47:50, Mark Seaborn wrote:
+> Hi Pavel,
+> 
+> Try this test program: https://github.com/mseaborn/rowhammer-test
+> 
+> It has reproduced bit flips on various machines.
+> 
+> Your program won't be an effective test because you're just hammering
+> addresses x and x+64, which will typically be in the same row of DRAM.
+> 
+> For the test to be effective, you have to pick addresses that are in
+> different rows but in the same bank.  A good way of doing that is just to
+> pick random pairs of addresses (as the test program above does).  If the
+> machine has 16 banks of DRAM (as many of the machines I've tested on do),
+> there will be a 1/16 chance that the two addresses are in the same bank.
+> 
+> [Replying off-list just because I'm not subscribed to lkml and only saw
+> this thread via the web, but feel free to reply on the list. :-) ]
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Ok, so I thought my machine is too old to be affected. Apparently, it
+is not :-(. (With rowhammer-test).
 
----
-The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git' repo.
+Iteration 140 (after 328.76s)
+  48.805 nanosec per iteration: 2.1084 sec for 43200000 iterations
+  check
+  error at 0x890f1118: got 0xfeffffffffffffff
+    (check took 0.244179s)
+    ** exited with status 256 (0x100)
 
-Changes in version 2:
-- switched to using the composite clock driver with the fixed factor and gated
-  clock component drivers;
-- removed *static* from 'parent_name' definition, switching from assignment to
-  initializer;
-- modified the binding document;
-- modified the changelog.
+processor     : 1
+vendor_id     : GenuineIntel
+cpu family    : 6
+model	      	: 23
+model name	: Intel(R) Core(TM)2 Duo CPU     E7400  @ 2.80GHz
+stepping	: 10
+microcode	: 0xa07
+cpu MHz		  : 1596.000
+cache size	  : 3072 KB
 
- Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt |    5 -
- drivers/clk/shmobile/clk-rcar-gen2.c                                     |   40 ++++++++++
- 2 files changed, 43 insertions(+), 2 deletions(-)
+								Pavel
 
-Index: linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
-===================================================================
---- linux.orig/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
-+++ linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
-@@ -16,7 +16,7 @@ Required Properties:
-   - clocks: Reference to the parent clock
-   - #clock-cells: Must be 1
-   - clock-output-names: The names of the clocks. Supported clocks are "main",
--    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1" and "z"
-+    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1", "z", and "rcan"
- 
- 
- Example
-@@ -29,5 +29,6 @@ Example
- 		clocks = <&extal_clk>;
- 		#clock-cells = <1>;
- 		clock-output-names = "main", "pll0, "pll1", "pll3",
--				     "lb", "qspi", "sdh", "sd0", "sd1", "z";
-+				     "lb", "qspi", "sdh", "sd0", "sd1", "z",
-+				     "rcan";
- 	};
-Index: linux/drivers/clk/shmobile/clk-rcar-gen2.c
-===================================================================
---- linux.orig/drivers/clk/shmobile/clk-rcar-gen2.c
-+++ linux/drivers/clk/shmobile/clk-rcar-gen2.c
-@@ -33,6 +33,7 @@ struct rcar_gen2_cpg {
- #define CPG_FRQCRC			0x000000e0
- #define CPG_FRQCRC_ZFC_MASK		(0x1f << 8)
- #define CPG_FRQCRC_ZFC_SHIFT		8
-+#define CPG_RCANCKCR			0x00000270
- 
- /* -----------------------------------------------------------------------------
-  * Z Clock
-@@ -161,6 +162,43 @@ static struct clk * __init cpg_z_clk_reg
- 	return clk;
- }
- 
-+static struct clk * __init cpg_rcan_clk_register(struct rcar_gen2_cpg *cpg,
-+						 struct device_node *np)
-+{
-+	const char *parent_name = of_clk_get_parent_name(np, 1);
-+	struct clk_fixed_factor *fixed;
-+	struct clk_gate *gate;
-+	struct clk *clk;
-+
-+	fixed = kzalloc(sizeof(*fixed), GFP_KERNEL);
-+	if (!fixed)
-+		return ERR_PTR(-ENOMEM);
-+
-+	fixed->mult = 1;
-+	fixed->div = 6;
-+
-+	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
-+	if (!gate) {
-+		kfree(fixed);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	gate->reg = cpg->reg + CPG_RCANCKCR;
-+	gate->bit_idx = 8;
-+	gate->flags = CLK_GATE_SET_TO_DISABLE;
-+	gate->lock = &cpg->lock;
-+
-+	clk = clk_register_composite(NULL, "rcan", &parent_name, 1, NULL, NULL,
-+				     &fixed->hw, &clk_fixed_factor_ops,
-+				     &gate->hw, &clk_gate_ops, 0);
-+	if (IS_ERR(clk)) {
-+		kfree(gate);
-+		kfree(fixed);
-+	}
-+
-+	return clk;
-+}
-+
- /* -----------------------------------------------------------------------------
-  * CPG Clock Data
-  */
-@@ -263,6 +301,8 @@ rcar_gen2_cpg_register_clock(struct devi
- 		shift = 0;
- 	} else if (!strcmp(name, "z")) {
- 		return cpg_z_clk_register(cpg);
-+	} else if (!strcmp(name, "rcan")) {
-+		return cpg_rcan_clk_register(cpg, np);
- 	} else {
- 		return ERR_PTR(-EINVAL);
- 	}
+> Cheers,
+> Mark
+> 
+> Pavel Machek <pavel <at> ucw.cz> wrote:
+> > On Wed 2014-12-24 09:13:32, Andy Lutomirski wrote:
+> > > On Wed, Dec 24, 2014 at 8:38 AM, Pavel Machek <pavel <at> ucw.cz> wrote:
+> > > > Hi!
+> > > >
+> > > > It seems that it is easy to induce DRAM bit errors by doing repeated
+> > > > reads from adjacent memory cells on common hw. Details are at
+> > > >
+> > > > https://www.ece.cmu.edu/~safari/pubs/kim-isca14.pdf
+> > > >
+> > > > . Older memory modules seem to work better, and ECC should detect
+> > > > this. Paper has inner loop that should trigger this.
+> > > >
+> > > > Workarounds seem to be at hardware level, and tricky, too.
+> > >
+> > > One mostly-effective solution would be to stop buying computers
+> > > without ECC.  Unfortunately, no one seems to sell non-server chips
+> > > that can do ECC.
+> >
+> > Or keep using old computers ￼.
+> >
+> > > > Does anyone have implementation of detector? Any ideas how to work
+> > > > around it in software?
+> > > >
+> > >
+> > > Platform-dependent page coloring with very strict, and impossible to
+> > > implement fully correctly, page allocation constraints?
+> >
+> > This seems to be at cacheline level, not at page level, if I
+> > understand it correctly.
+> >
+> > So the problem would is: I have something mapped read-only, and I can
+> > still cause bitflips in it.
+> >
+> > Hmm. So it is pretty obviously a security problem, no need for
+> > java. Just do some bit flips in binary root is going to run, and it
+> > will crash for him. You can map binaries read-only, so you have enough
+> > access.
+> >
+> > As far as I understand it, attached program could reproduce it on
+> > affected machines?
 
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
