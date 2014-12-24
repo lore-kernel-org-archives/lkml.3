@@ -1,126 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaLXEyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 23:54:38 -0500
-Received: from mga09.intel.com ([134.134.136.24]:35822 "EHLO mga09.intel.com"
+	id S1751352AbaLXFWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 00:22:43 -0500
+Received: from mga14.intel.com ([192.55.52.115]:20668 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104AbaLXEyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 23:54:37 -0500
+	id S1750977AbaLXFWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 00:22:41 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="503448454"
-Message-ID: <549A4708.90808@linux.intel.com>
-Date: Wed, 24 Dec 2014 12:54:32 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+X-IronPort-AV: E=Sophos;i="5.07,637,1413270000"; 
+   d="scan'208";a="659381605"
+Date: Wed, 24 Dec 2014 10:52:18 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Dan Williams <dan.j.williams@intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        James Hartley <james.hartley@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
+        Damien Horsley <Damien.Horsley@imgtec.com>,
+        Arnd Bergmann <arnd@arndb.de>, dmaengine@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 2/2] dmaengine: Add driver for IMG MDC
+Message-ID: <20141224052218.GR16827@intel.com>
+References: <1418338757-10022-1-git-send-email-abrestic@chromium.org>
+ <1418338757-10022-3-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, "Wu, Feng" <feng.wu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
-Subject: Re: [v3 06/26] iommu, x86: No need to migrating irq for VT-d Posted-Interrupts
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>	<1418397300-10870-7-git-send-email-feng.wu@intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>	<E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>	<A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>	<54941326.4080405@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC06282@SHSMSX104.ccr.corp.intel.com> <54992C2C.5030305@redhat.com> <E959C4978C3B6342920538CF579893F002314236@SHSMSX104.ccr.corp.intel.com> <5499370D.8000703@redhat.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC06DF9@SHSMSX104.ccr.corp.intel.com> <549A211A.30508@linux.intel.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC06E9B@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC06E9B@SHSMSX104.ccr.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418338757-10022-3-git-send-email-abrestic@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/24 10:32, Zhang, Yang Z wrote:
-> Jiang Liu wrote on 2014-12-24:
->> On 2014/12/24 9:38, Zhang, Yang Z wrote:
->>> Paolo Bonzini wrote on 2014-12-23:
->>>>
->>>>
->>>> On 23/12/2014 10:07, Wu, Feng wrote:
->>>>>> On 23/12/2014 01:37, Zhang, Yang Z wrote:
->>>>>>> I don't quite understand it. If user set an interrupt's affinity
->>>>>>> to a CPU, but he still see the interrupt delivers to other CPUs in host.
->>>>>>> Do you think it is a right behavior?
->>>>>>
->>>>>> No, the interrupt is not delivered at all in the host.  Normally you'd have:
->>>>>>
->>>>>> - interrupt delivered to CPU from host affinity
->>>>>>
->>>>>> - VFIO interrupt handler writes to irqfd
->>>>>>
->>>>>> - interrupt delivered to vCPU from guest affinity
->>>>>>
->>>>>> Here, you just skip the first two steps.  The interrupt is
->>>>>> delivered to the thread that is running the vCPU directly, so the
->>>>>> host affinity is bypassed entirely.
->>>>>>
->>>>>> ... unless you are considering the case where the vCPU is blocked
->>>>>> and the host is processing the posted interrupt wakeup vector.
->>>>>> In that case yes, it would be better to set NDST to a CPU
->>>>>> matching the host
->> affinity.
->>>>>
->>>>> In my understanding, wakeup vector should have no relationship
->>>>> with the host affinity of the irq. Wakeup notification event
->>>>> should be delivered to the pCPU which the vCPU was blocked on. And
->>>>> in kernel's point of view, the irq is not associated with the wakeup vector, right?
->>>>
->>>> That is correct indeed.  It is not associated to the wakeup vector,
->>>> hence this patch is right, I think.
->>>>
->>>> However, the wakeup vector has the same function as the VFIO
->>>> interrupt handler, so you could argue that it is tied to the host
->>>> affinity rather than the guest.  Let's wait for Yang to answer.
->>>
->>> Actually, that's my original question too. I am wondering what
->>> happens if the
->> user changes the assigned device's affinity in host's /proc/irq/? If
->> ignore it is acceptable, then this patch is ok. But it seems the
->> discussion out of my scope, need some experts to tell us their idea since it will impact the user experience.
->> Hi Yang,
-> 
-> Hi Jiang,
-> 
->> 	Originally we have a proposal to return failure when user sets IRQ
->> affinity through native OS interfaces if an IRQ is in PI mode. But
->> that proposal will break CPU hot-removal because OS needs to migrate
->> away all IRQs binding to the CPU to be offlined. Then we propose
->> saving user IRQ affinity setting without changing hardware
->> configuration (keeping PI configuration). Later when PI mode is
->> disabled, the cached affinity setting will be used to setup IRQ
->> destination for native OS. On the other hand, for IRQ in PI mode, it
->> won't be delivered to native OS, so user may not sense that the IRQ is delivered to CPUs other than those in the affinity set.
-> 
-> The IRQ is still there but will be delivered to host in the form of PI event(if the VCPU is running in root-mode). I am not sure whether those interrupts should be reflected in /proc/interrupts? If the answer is yes, then which entries should be used, a new PI entry or use the original IRQ entry?
+On Thu, Dec 11, 2014 at 02:59:17PM -0800, Andrew Bresticker wrote:
+> Add support for the IMG Multi-threaded DMA Controller (MDC) found on
+> certain IMG SoCs.  Currently this driver supports the variant present
+> on the MIPS-based Pistachio SoC.a
 
-You are right, the native interrupt statistics will become inaccurate.
-Maybe some document about this behavior is preferred.
+Overall looks okay. I also need some review by DT folks on the bindings
 
-> 
->> In that aspect, I think it's acceptable:) Regards!
-> 
-> Yes, if all of you guys(especially the IRQ maintainer) are think it is acceptable then we can follow current implementation and document it.
-Good suggestion, we will send an email to Thomas for advice after New
-Year.
-> 
->> Gerry
->>>
->>>>
->>>> Paolo
->>>
->>>
->>> Best regards,
->>> Yang
->>>
->>>
-> 
-> 
-> Best regards,
-> Yang
-> 
-> 
+> +static void mdc_list_desc_config(struct mdc_chan *mchan,
+> +				 struct mdc_hw_list_desc *ldesc,
+> +				 enum dma_transfer_direction dir,
+> +				 dma_addr_t src, dma_addr_t dst, size_t len)
+> +{
+> +	struct mdc_dma *mdma = mchan->mdma;
+> +	unsigned int max_burst, burst_size;
+> +
+> +	ldesc->gen_conf = MDC_GENERAL_CONFIG_IEN | MDC_GENERAL_CONFIG_LIST_IEN |
+> +		MDC_GENERAL_CONFIG_LEVEL_INT | MDC_GENERAL_CONFIG_PHYSICAL_W |
+> +		MDC_GENERAL_CONFIG_PHYSICAL_R;
+> +	ldesc->readport_conf =
+> +		(mchan->thread << MDC_READ_PORT_CONFIG_STHREAD_SHIFT) |
+> +		(mchan->thread << MDC_READ_PORT_CONFIG_RTHREAD_SHIFT) |
+> +		(mchan->thread << MDC_READ_PORT_CONFIG_WTHREAD_SHIFT);
+> +	ldesc->read_addr = src;
+> +	ldesc->write_addr = dst;
+> +	ldesc->xfer_size = len - 1;
+> +	ldesc->node_addr = 0;
+> +	ldesc->cmds_done = 0;
+> +	ldesc->ctrl_status = MDC_CONTROL_AND_STATUS_LIST_EN |
+> +		MDC_CONTROL_AND_STATUS_EN;
+> +	ldesc->next_desc = NULL;
+> +
+> +	if (IS_ALIGNED(dst, mdma->bus_width) &&
+> +	    IS_ALIGNED(src, mdma->bus_width))
+> +		max_burst = mdma->bus_width * mdma->max_burst_mult;
+> +	else
+> +		max_burst = mdma->bus_width * (mdma->max_burst_mult - 1);
+> +
+> +	if (dir == DMA_MEM_TO_DEV) {
+> +		ldesc->gen_conf |= MDC_GENERAL_CONFIG_INC_R;
+> +		ldesc->readport_conf |= MDC_READ_PORT_CONFIG_DREQ_ENABLE;
+> +		mdc_set_read_width(ldesc, mdma->bus_width);
+> +		mdc_set_write_width(ldesc, mchan->config.dst_addr_width);
+> +		burst_size = min(max_burst, mchan->config.dst_maxburst *
+> +				 mchan->config.dst_addr_width);
+why is this calculation done for burst size? Shouldn't we take the
+config.dst_maxburst value configured by client?
+
+
+> +static struct dma_async_tx_descriptor *mdc_prep_slave_sg(
+> +	struct dma_chan *chan, struct scatterlist *sgl,
+> +	unsigned int sg_len, enum dma_transfer_direction dir,
+> +	unsigned long flags, void *context)
+> +{
+> +	struct mdc_chan *mchan = to_mdc_chan(chan);
+> +	struct mdc_dma *mdma = mchan->mdma;
+> +	struct mdc_tx_desc *mdesc;
+> +	struct scatterlist *sg;
+> +	struct mdc_hw_list_desc *curr, *prev = NULL;
+> +	dma_addr_t curr_phys, prev_phys;
+> +	unsigned int i;
+> +
+> +	if (!sgl)
+> +		return NULL;
+> +
+> +	if (!is_slave_direction(dir))
+> +		return NULL;
+> +
+> +	if (mdc_check_slave_width(mchan, dir) < 0)
+> +		return NULL;
+> +
+> +	mdesc = kzalloc(sizeof(*mdesc), GFP_NOWAIT);
+> +	if (!mdesc)
+> +		return NULL;
+> +	mdesc->chan = mchan;
+> +
+> +	for_each_sg(sgl, sg, sg_len, i) {
+> +		dma_addr_t buf = sg_dma_address(sg);
+> +		size_t buf_len = sg_dma_len(sg);
+> +
+> +		while (buf_len > 0) {
+> +			size_t xfer_size;
+> +
+> +			curr = dma_pool_alloc(mdma->desc_pool, GFP_NOWAIT,
+> +					      &curr_phys);
+> +			if (!curr)
+> +				goto free_desc;
+> +
+> +			if (!prev) {
+> +				mdesc->list_phys = curr_phys;
+> +				mdesc->list = curr;
+> +			} else {
+> +				prev->node_addr = curr_phys;
+> +				prev->next_desc = curr;
+> +			}
+> +
+> +			xfer_size = min_t(size_t, mdma->max_xfer_size,
+> +					  buf_len);
+> +
+> +			if (dir == DMA_MEM_TO_DEV) {
+> +				mdc_list_desc_config(mchan, curr, dir, buf,
+> +						     mchan->config.dst_addr,
+> +						     xfer_size);
+> +			} else {
+> +				mdc_list_desc_config(mchan, curr, dir,
+> +						     mchan->config.src_addr,
+> +						     buf, xfer_size);
+> +			}
+> +
+> +			prev = curr;
+> +			prev_phys = curr_phys;
+> +
+> +			mdesc->list_len++;
+> +			mdesc->list_xfer_size += xfer_size;
+> +			buf += xfer_size;
+> +			buf_len -= xfer_size;
+i see this pattern is repeat in all the .prepare calls, can we make it bit
+generic and use that in the these three calls..
+
+> +	dma_cap_zero(mdma->dma_dev.cap_mask);
+> +	dma_cap_set(DMA_SLAVE, mdma->dma_dev.cap_mask);
+> +	dma_cap_set(DMA_PRIVATE, mdma->dma_dev.cap_mask);
+> +	dma_cap_set(DMA_CYCLIC, mdma->dma_dev.cap_mask);
+and you dont seen to support pause/resume, though not a blocker but is it
+not supported in HW or driver doesn't?
+
+-- 
+~Vinod
