@@ -1,155 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaLXWMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 17:12:52 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43038 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858AbaLXWMX (ORCPT
+	id S1751823AbaLXWRg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 17:17:36 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:38848 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568AbaLXWRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 17:12:23 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <arnd@arndb.de>, <will.deacon@arm.com>,
-        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <devicetree@vger.kernel.org>, <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma configuration
-Date: Wed, 24 Dec 2014 17:11:38 -0500
-Message-ID: <1419459099-6667-2-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com>
-References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com>
+	Wed, 24 Dec 2014 17:17:34 -0500
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+To: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
+Cc: linux-sh@vger.kernel.org, vksavl@gmail.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org
+Subject: [PATCH v2] clk-rcar-gen2: RCAN clock support
+Date: Thu, 25 Dec 2014 01:17:29 +0300
+Message-ID: <3007073.i0ghnTEhxV@wasted.cogentembedded.com>
+Organization: Cogent Embedded Inc.
+User-Agent: KMail/4.14.3 (Linux/3.17.7-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_pci_dma_configure() to allow updating the dma configuration
-of the pci device using the configuration from DT of the parent of
-the root bridge device.
+Add the RCAN clock support to the R-Car generation 2 CPG driver.  This clock
+gets derived from  the USB_EXTAL clock, dividing  it by 6.  The layout of the
+RCANCKCR register is similar to those of the clocks supported by the 'clk-div6'
+driver but has no divider field, and so can't be supported by that driver...
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+
 ---
- drivers/of/of_pci.c    |   73 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/of_pci.h |   12 ++++++++
- 2 files changed, 85 insertions(+)
+The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git' repo.
 
-diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-index 88471d3..6d43f59 100644
---- a/drivers/of/of_pci.c
-+++ b/drivers/of/of_pci.c
-@@ -229,6 +229,79 @@ parse_failed:
- 	return err;
+Changes in version 2:
+- switched to using the composite clock driver with the fixed factor and gated
+  clock component drivers;
+- removed *static* from 'parent_name' definition, switching from assignment to
+  initializer;
+- modified the binding document;
+- modified the changelog.
+
+ Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt |    5 -
+ drivers/clk/shmobile/clk-rcar-gen2.c                                     |   40 ++++++++++
+ 2 files changed, 43 insertions(+), 2 deletions(-)
+
+Index: linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
+===================================================================
+--- linux.orig/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
++++ linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
+@@ -16,7 +16,7 @@ Required Properties:
+   - clocks: Reference to the parent clock
+   - #clock-cells: Must be 1
+   - clock-output-names: The names of the clocks. Supported clocks are "main",
+-    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1" and "z"
++    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1", "z", and "rcan"
+ 
+ 
+ Example
+@@ -29,5 +29,6 @@ Example
+ 		clocks = <&extal_clk>;
+ 		#clock-cells = <1>;
+ 		clock-output-names = "main", "pll0, "pll1", "pll3",
+-				     "lb", "qspi", "sdh", "sd0", "sd1", "z";
++				     "lb", "qspi", "sdh", "sd0", "sd1", "z",
++				     "rcan";
+ 	};
+Index: linux/drivers/clk/shmobile/clk-rcar-gen2.c
+===================================================================
+--- linux.orig/drivers/clk/shmobile/clk-rcar-gen2.c
++++ linux/drivers/clk/shmobile/clk-rcar-gen2.c
+@@ -33,6 +33,7 @@ struct rcar_gen2_cpg {
+ #define CPG_FRQCRC			0x000000e0
+ #define CPG_FRQCRC_ZFC_MASK		(0x1f << 8)
+ #define CPG_FRQCRC_ZFC_SHIFT		8
++#define CPG_RCANCKCR			0x00000270
+ 
+ /* -----------------------------------------------------------------------------
+  * Z Clock
+@@ -161,6 +162,43 @@ static struct clk * __init cpg_z_clk_reg
+ 	return clk;
  }
- EXPORT_SYMBOL_GPL(of_pci_get_host_bridge_resources);
-+
-+/**
-+ * of_get_pci_root_bridge_parent - Helper function to get the OF node of
-+ *		the root bridge's parent
-+ * @dev: ptr to pci_dev struct of the pci device
-+ *
-+ * This function will traverse the bus up to the root bus starting with
-+ * the child and return the of node ptr to bridge device's parent device.
-+ */
-+struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev)
+ 
++static struct clk * __init cpg_rcan_clk_register(struct rcar_gen2_cpg *cpg,
++						 struct device_node *np)
 +{
-+	struct pci_bus *bus = dev->bus;
-+	struct device *bridge;
++	const char *parent_name = of_clk_get_parent_name(np, 1);
++	struct clk_fixed_factor *fixed;
++	struct clk_gate *gate;
++	struct clk *clk;
 +
-+	while (!pci_is_root_bus(bus))
-+		bus = bus->parent;
-+	bridge = bus->bridge;
++	fixed = kzalloc(sizeof(*fixed), GFP_KERNEL);
++	if (!fixed)
++		return ERR_PTR(-ENOMEM);
 +
-+	return bridge->parent->of_node;
-+}
-+EXPORT_SYMBOL_GPL(of_get_pci_root_bridge_parent);
++	fixed->mult = 1;
++	fixed->div = 6;
 +
-+/**
-+ * of_pci_dma_configure - Setup DMA configuration
-+ * @dev: ptr to pci_dev struct of the pci device
-+ *
-+ * Try to get PCI devices's DMA configuration from DT and update it
-+ * accordingly. This is similar to of_dma_configure() in of/platform.c
-+ */
-+void of_pci_dma_configure(struct pci_dev *pci_dev)
-+{
-+	struct device *dev = &pci_dev->dev;
-+	u64 dma_addr, paddr, size;
-+	struct device_node *parent_np;
-+	unsigned long offset;
-+	bool coherent;
-+	int ret;
-+
-+	parent_np = of_get_pci_root_bridge_parent(pci_dev);
-+
-+	if (parent_np) {
-+		/*
-+		 * Set default dma-mask to 32 bit. Drivers are expected to setup
-+		 * the correct supported dma_mask.
-+		 */
-+		dev->coherent_dma_mask = DMA_BIT_MASK(32);
-+
-+		/*
-+		 * Set it to coherent_dma_mask by default if the architecture
-+		 * code has not set it.
-+		 */
-+		if (!dev->dma_mask)
-+			dev->dma_mask = &dev->coherent_dma_mask;
-+
-+		ret = of_dma_get_range(parent_np, &dma_addr, &paddr, &size);
-+		if (ret < 0) {
-+			dma_addr = offset = 0;
-+			size = dev->coherent_dma_mask + 1;
-+		} else {
-+			offset = PFN_DOWN(paddr - dma_addr);
-+			dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", offset);
-+		}
-+		dev->dma_pfn_offset = offset;
-+
-+		coherent = of_dma_is_coherent(parent_np);
-+		dev_dbg(dev, "device is%sdma coherent\n",
-+			coherent ? " " : " not ");
-+
-+		arch_setup_dma_ops(dev, dma_addr, size, NULL, coherent);
++	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
++	if (!gate) {
++		kfree(fixed);
++		return ERR_PTR(-ENOMEM);
 +	}
-+}
-+EXPORT_SYMBOL_GPL(of_pci_dma_configure);
 +
- #endif /* CONFIG_OF_ADDRESS */
- 
- #ifdef CONFIG_PCI_MSI
-diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
-index ce0e5ab..0465a2a 100644
---- a/include/linux/of_pci.h
-+++ b/include/linux/of_pci.h
-@@ -16,6 +16,8 @@ int of_pci_get_devfn(struct device_node *np);
- int of_irq_parse_and_map_pci(const struct pci_dev *dev, u8 slot, u8 pin);
- int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
- int of_get_pci_domain_nr(struct device_node *node);
-+struct device_node *of_get_pci_root_bridge_parent(struct pci_dev *dev);
-+void of_pci_dma_configure(struct pci_dev *pci_dev);
- #else
- static inline int of_irq_parse_pci(const struct pci_dev *pdev, struct of_phandle_args *out_irq)
- {
-@@ -50,6 +52,16 @@ of_get_pci_domain_nr(struct device_node *node)
- {
- 	return -1;
- }
++	gate->reg = cpg->reg + CPG_RCANCKCR;
++	gate->bit_idx = 8;
++	gate->flags = CLK_GATE_SET_TO_DISABLE;
++	gate->lock = &cpg->lock;
 +
-+static inline struct device_node
-+*of_get_pci_root_bridge_parent(struct pci_dev *dev)
-+{
-+	return NULL;
++	clk = clk_register_composite(NULL, "rcan", &parent_name, 1, NULL, NULL,
++				     &fixed->hw, &clk_fixed_factor_ops,
++				     &gate->hw, &clk_gate_ops, 0);
++	if (IS_ERR(clk)) {
++		kfree(gate);
++		kfree(fixed);
++	}
++
++	return clk;
 +}
 +
-+static inline void of_pci_dma_configure(struct pci_dev *pci_dev)
-+{
-+}
- #endif
- 
- #if defined(CONFIG_OF_ADDRESS)
--- 
-1.7.9.5
+ /* -----------------------------------------------------------------------------
+  * CPG Clock Data
+  */
+@@ -263,6 +301,8 @@ rcar_gen2_cpg_register_clock(struct devi
+ 		shift = 0;
+ 	} else if (!strcmp(name, "z")) {
+ 		return cpg_z_clk_register(cpg);
++	} else if (!strcmp(name, "rcan")) {
++		return cpg_rcan_clk_register(cpg, np);
+ 	} else {
+ 		return ERR_PTR(-EINVAL);
+ 	}
 
