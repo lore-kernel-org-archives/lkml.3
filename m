@@ -1,114 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323AbaLXIh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 03:37:59 -0500
-Received: from mail-bn1on0086.outbound.protection.outlook.com ([157.56.110.86]:55040
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1752387AbaLXIif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 03:38:35 -0500
+Received: from mail-by2on0109.outbound.protection.outlook.com ([207.46.100.109]:56960
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752288AbaLXIhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 03:37:55 -0500
-X-Greylist: delayed 899 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Dec 2014 03:37:55 EST
-From: <thloh@altera.com>
-To: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Antti Palosaari <crope@iki.fi>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>
-CC: Dinh Nguyen <dinguyen@altera.com>, Tien Hock Loh <thloh@altera.com>
-Subject: [PATCH v8 0/2] drivers/gpio: Altera soft IP GPIO driver
-Date: Wed, 24 Dec 2014 00:22:23 -0800
-Message-ID: <1419409345-8297-1-git-send-email-thloh@altera.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752166AbaLXIhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 03:37:16 -0500
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <dri-devel@lists.freedesktop.org>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <kernel@pengutronix.de>,
+        <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
+        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
+        <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH RFC v5 20/21] ARM: imx_v6_v7_defconfig: Add support for MIPI DSI host controller
+Date: Wed, 24 Dec 2014 16:39:42 +0800
+Message-ID: <1419410383-6359-21-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1419410383-6359-1-git-send-email-Ying.Liu@freescale.com>
+References: <1419410383-6359-1-git-send-email-Ying.Liu@freescale.com>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(21056001)(62966003)(77156002)(105606002)(87936001)(50226001)(4396001)(50466002)(31966008)(106466001)(68736005)(92566001)(36756003)(229853001)(107046002)(77096005)(2351001)(2950100001)(99396003)(64706001)(89996001)(85426001)(120916001)(48376002)(46102003)(97736003)(6806004)(86362001)(575784001)(47776003)(20776003)(84676001)(104016003)(110136001)(19580395003)(76176999)(50986999)(19580405001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0637;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=thloh@altera.com; 
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(87936001)(229853001)(107046002)(2201001)(86152002)(86362001)(105596002)(68736005)(36756003)(106466001)(42186005)(92566001)(50466002)(84676001)(33646002)(89996001)(19580405001)(19580395003)(120916001)(6806004)(50986999)(77156002)(62966003)(31966008)(50226001)(97736003)(48376002)(21056001)(99396003)(64706001)(47776003)(20776003)(46102003)(4396001)(7099022)(921003)(1121003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB218;H:sj-itexedge03.altera.priv.altera.com;FPR:;SPF:SoftFail;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB218;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR03MB218;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0637;
 X-Forefront-PRVS: 04359FAD81
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB218;
-X-OriginatorOrg: altera.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 08:22:34.8978
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 08:37:12.6250
  (UTC)
-X-MS-Exchange-CrossTenant-Id: fbd72e03-d4a5-4110-adce-614d51f2077a
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fbd72e03-d4a5-4110-adce-614d51f2077a;Ip=[66.35.236.227]
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR03MB218
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0637
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tien Hock Loh <thloh@altera.com>
+This patch adds support for MIPI DSI host controller.
 
-Adds a new device tree binding and driver for Altera soft GPIO IP.
-The driver is able to do read/write and allows GPIO to be a interrupt
-controller.
+The new imx_v6_v7_defconfig is generated in this way:
+* make ARCH=arm imx_v6_v7_defconfig
+* make ARCH=arm menuconfig and manually choose to build in
+  the MIPI DSI host controller driver
+* make ARCH=arm savedefconfig
+* cp defconfig arch/arm/configs/imx_v6_v7_defconfig
 
-Tested on Altera GHRD on interrupt handling and IO.
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+---
+v4->v5:
+ * None.
 
-v8:
-Using for_each_set_bit
-added const for struct definition
-removed naggy pr_err
-changed from
-sort alpha header
-remove unused macros
-use fixed width data types instead of unsigned long
-whitespace issue fixes
-removed _relaxed function for better compatibility across different CPU
-changed irq_create_mapping to platform_get_irq
-updated implementation to use gpiochip_irqchip_add
-reserve interrupt-cells number 2 in device tree binding for future use
-remove confusing sections on devicetree bindings
-Added tristate Kconfig help text
+v3->v4:
+ * None.
 
-v7:
-used dev_warn instead of pr_warn
-clean up unnecesarry if else indentation
+v2->v3:
+ * None.
 
-v6:
-Added irq_startup and irq_shutdown
-changed bitwise clamping style
-cleanup bitwise operation to improve readability
-change naming of mapped irqs from virq to mapped_irq
+v1->v2:
+ * None.
 
-v5:
-dispose irq_domain mapping correctly
-update optional binding description in binding docs
+ arch/arm/configs/imx_v6_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-v4:
-added vendor prefix to devicetree binding for IP specific properties
-using MMIO GPIO helper library instead of manually map PIO to memory
-altera_gpio_chip inline struct documentation to kerneldoc
-using dev_ print to print a better failure message
-
-v2, v3:
-Do not reference NO_IRQ
-Updated irq_set_type to only allow the hardware configured irq type
-
-
-Tien Hock Loh (2):
-  drivers/gpio: Altera soft IP GPIO driver device tree binding
-  drivers/gpio: Altera soft IP GPIO driver
-
- .../devicetree/bindings/gpio/gpio-altera.txt       |   43 ++
- MAINTAINERS                                        |    6 +
- drivers/gpio/Kconfig                               |    8 +
- drivers/gpio/Makefile                              |    1 +
- drivers/gpio/gpio-altera.c                         |  410 ++++++++++++++++++++
- 5 files changed, 468 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-altera.txt
- create mode 100644 drivers/gpio/gpio-altera.c
+diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
+index 0dbd0c3..3e0e589 100644
+--- a/arch/arm/configs/imx_v6_v7_defconfig
++++ b/arch/arm/configs/imx_v6_v7_defconfig
+@@ -199,6 +199,7 @@ CONFIG_DRM_IMX_TVE=y
+ CONFIG_DRM_IMX_LDB=y
+ CONFIG_DRM_IMX_IPUV3=y
+ CONFIG_DRM_IMX_HDMI=y
++CONFIG_DRM_IMX_MIPI_DSI=y
+ CONFIG_LCD_CLASS_DEVICE=y
+ CONFIG_LCD_L4F00242T03=y
+ CONFIG_LCD_PLATFORM=y
+-- 
+2.1.0
 
