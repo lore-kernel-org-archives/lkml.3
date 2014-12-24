@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaLXMZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 07:25:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55472 "EHLO mga09.intel.com"
+	id S1752629AbaLXM0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 07:26:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:24591 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138AbaLXMXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 07:23:16 -0500
+	id S1752064AbaLXMXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 07:23:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,638,1413270000"; 
-   d="scan'208";a="642376414"
+   d="scan'208";a="642376413"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: akpm@linux-foundation.org
 Cc: peterz@infradead.org, mingo@kernel.org, davej@redhat.com,
         sasha.levin@oracle.com, hughd@google.com, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 35/38] um: drop _PAGE_FILE and pte_file()-related helpers
-Date: Wed, 24 Dec 2014 14:22:43 +0200
-Message-Id: <1419423766-114457-36-git-send-email-kirill.shutemov@linux.intel.com>
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH 36/38] unicore32: drop pte_file()-related helpers
+Date: Wed, 24 Dec 2014 14:22:44 +0200
+Message-Id: <1419423766-114457-37-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -30,89 +30,49 @@ We've replaced remap_file_pages(2) implementation with emulation.
 Nobody creates non-linear mapping anymore.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Richard Weinberger <richard@nod.at>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- arch/um/include/asm/pgtable-2level.h |  9 ---------
- arch/um/include/asm/pgtable-3level.h | 20 --------------------
- arch/um/include/asm/pgtable.h        |  9 ---------
- 3 files changed, 38 deletions(-)
+ arch/unicore32/include/asm/pgtable-hwdef.h |  1 -
+ arch/unicore32/include/asm/pgtable.h       | 14 --------------
+ 2 files changed, 15 deletions(-)
 
-diff --git a/arch/um/include/asm/pgtable-2level.h b/arch/um/include/asm/pgtable-2level.h
-index f534b73e753e..7afe86035fa7 100644
---- a/arch/um/include/asm/pgtable-2level.h
-+++ b/arch/um/include/asm/pgtable-2level.h
-@@ -41,13 +41,4 @@ static inline void pgd_mkuptodate(pgd_t pgd)	{ }
- #define pfn_pte(pfn, prot) __pte(pfn_to_phys(pfn) | pgprot_val(prot))
- #define pfn_pmd(pfn, prot) __pmd(pfn_to_phys(pfn) | pgprot_val(prot))
+diff --git a/arch/unicore32/include/asm/pgtable-hwdef.h b/arch/unicore32/include/asm/pgtable-hwdef.h
+index 7314e859cca0..e37fa471c2be 100644
+--- a/arch/unicore32/include/asm/pgtable-hwdef.h
++++ b/arch/unicore32/include/asm/pgtable-hwdef.h
+@@ -44,7 +44,6 @@
+ #define PTE_TYPE_INVALID	(3 << 0)
+ 
+ #define PTE_PRESENT		(1 << 2)
+-#define PTE_FILE		(1 << 3)	/* only when !PRESENT */
+ #define PTE_YOUNG		(1 << 3)
+ #define PTE_DIRTY		(1 << 4)
+ #define PTE_CACHEABLE		(1 << 5)
+diff --git a/arch/unicore32/include/asm/pgtable.h b/arch/unicore32/include/asm/pgtable.h
+index ed6f7d000fba..818d0f5598e3 100644
+--- a/arch/unicore32/include/asm/pgtable.h
++++ b/arch/unicore32/include/asm/pgtable.h
+@@ -283,20 +283,6 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ #define MAX_SWAPFILES_CHECK()	\
+ 	BUILD_BUG_ON(MAX_SWAPFILES_SHIFT > __SWP_TYPE_BITS)
  
 -/*
-- * Bits 0 through 4 are taken
+- * Encode and decode a file entry.  File entries are stored in the Linux
+- * page tables as follows:
+- *
+- *   3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
+- *   1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+- *   <----------------------- offset ----------------------> 1 0 0 0
 - */
--#define PTE_FILE_MAX_BITS	27
+-#define pte_file(pte)		(pte_val(pte) & PTE_FILE)
+-#define pte_to_pgoff(x)		(pte_val(x) >> 4)
+-#define pgoff_to_pte(x)		__pte(((x) << 4) | PTE_FILE)
 -
--#define pte_to_pgoff(pte) (pte_val(pte) >> 5)
+-#define PTE_FILE_MAX_BITS	28
 -
--#define pgoff_to_pte(off) ((pte_t) { ((off) << 5) + _PAGE_FILE })
--
- #endif
-diff --git a/arch/um/include/asm/pgtable-3level.h b/arch/um/include/asm/pgtable-3level.h
-index 0032f9212e74..344c559c0a17 100644
---- a/arch/um/include/asm/pgtable-3level.h
-+++ b/arch/um/include/asm/pgtable-3level.h
-@@ -112,25 +112,5 @@ static inline pmd_t pfn_pmd(pfn_t page_nr, pgprot_t pgprot)
- 	return __pmd((page_nr << PAGE_SHIFT) | pgprot_val(pgprot));
- }
- 
--/*
-- * Bits 0 through 3 are taken in the low part of the pte,
-- * put the 32 bits of offset into the high part.
-- */
--#define PTE_FILE_MAX_BITS	32
--
--#ifdef CONFIG_64BIT
--
--#define pte_to_pgoff(p) ((p).pte >> 32)
--
--#define pgoff_to_pte(off) ((pte_t) { ((off) << 32) | _PAGE_FILE })
--
--#else
--
--#define pte_to_pgoff(pte) ((pte).pte_high)
--
--#define pgoff_to_pte(off) ((pte_t) { _PAGE_FILE, (off) })
--
--#endif
--
- #endif
- 
-diff --git a/arch/um/include/asm/pgtable.h b/arch/um/include/asm/pgtable.h
-index bf974f712af7..2324b624f195 100644
---- a/arch/um/include/asm/pgtable.h
-+++ b/arch/um/include/asm/pgtable.h
-@@ -18,7 +18,6 @@
- #define _PAGE_ACCESSED	0x080
- #define _PAGE_DIRTY	0x100
- /* If _PAGE_PRESENT is clear, we use these: */
--#define _PAGE_FILE	0x008	/* nonlinear file mapping, saved PTE; unset:swap */
- #define _PAGE_PROTNONE	0x010	/* if the user mapped it with PROT_NONE;
- 				   pte_present gives true */
- 
-@@ -151,14 +150,6 @@ static inline int pte_write(pte_t pte)
- 	       !(pte_get_bits(pte, _PAGE_PROTNONE)));
- }
- 
--/*
-- * The following only works if pte_present() is not true.
-- */
--static inline int pte_file(pte_t pte)
--{
--	return pte_get_bits(pte, _PAGE_FILE);
--}
--
- static inline int pte_dirty(pte_t pte)
- {
- 	return pte_get_bits(pte, _PAGE_DIRTY);
+ /* Needs to be defined here and not in linux/mm.h, as it is arch dependent */
+ /* FIXME: this is not correct */
+ #define kern_addr_valid(addr)	(1)
 -- 
 2.1.3
 
