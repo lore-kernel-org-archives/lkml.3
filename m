@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaLXHPm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 02:15:42 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40162 "EHLO
+	id S1752486AbaLXHSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 02:18:06 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:40271 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaLXHPi (ORCPT
+	with ESMTP id S1752188AbaLXHPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 02:15:38 -0500
+	Wed, 24 Dec 2014 02:15:42 -0500
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,9 +17,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 23/37] perf tools: Protect dso cache fd with a mutex
-Date: Wed, 24 Dec 2014 16:15:19 +0900
-Message-Id: <1419405333-27952-24-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 31/37] perf record: Show total size of multi file data
+Date: Wed, 24 Dec 2014 16:15:27 +0900
+Message-Id: <1419405333-27952-32-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
@@ -27,305 +27,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When dso cache is accessed in multi-thread environment, it's possible
-to close other dso->data.fd during operation due to open file limit.
-Protect the file descriptors using a separate mutex.
+Currently perf record shows header file size only - extends it to show
+total size of multi-file data storage.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/tests/dso-data.c |   5 ++
- tools/perf/util/dso.c       | 136 +++++++++++++++++++++++++++++---------------
- 2 files changed, 94 insertions(+), 47 deletions(-)
+ tools/perf/builtin-record.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index caaf37f079b1..0276e7d2d41b 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -111,6 +111,9 @@ int test__dso_data(void)
- 	memset(&machine, 0, sizeof(machine));
- 
- 	dso = dso__new((const char *)file);
-+	TEST_ASSERT_VAL("failed to get dso", dso);
-+
-+	dso->binary_type = DSO_BINARY_TYPE__SYSTEM_PATH_DSO;
- 
- 	/* Basic 10 bytes tests. */
- 	for (i = 0; i < ARRAY_SIZE(offsets); i++) {
-@@ -199,6 +202,8 @@ static int dsos__create(int cnt, int size)
- 
- 		dsos[i] = dso__new(file);
- 		TEST_ASSERT_VAL("failed to get dso", dsos[i]);
-+
-+		dsos[i]->binary_type = DSO_BINARY_TYPE__SYSTEM_PATH_DSO;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 7f7a4725d080..eb485f1ee66e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -538,9 +538,9 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 		 */
+ 		fprintf(stderr,
+ 			"[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
+-			(double)rec->bytes_written / 1024.0 / 1024.0,
++			(double)(u64)perf_data_file__multi_size(file) / 1024.0 / 1024.0,
+ 			file->path,
+-			rec->bytes_written / 24);
++			perf_data_file__multi_size(file) / 24);
  	}
  
- 	return 0;
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 9555b1772fb5..6c1f5619f423 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -213,6 +213,7 @@ bool dso__needs_decompress(struct dso *dso)
-  */
- static LIST_HEAD(dso__data_open);
- static long dso__data_open_cnt;
-+static pthread_mutex_t dso__data_open_lock = PTHREAD_MUTEX_INITIALIZER;
- 
- static void dso__list_add(struct dso *dso)
- {
-@@ -240,7 +241,7 @@ static int do_open(char *name)
- 		if (fd >= 0)
- 			return fd;
- 
--		pr_debug("dso open failed, mmap: %s\n",
-+		pr_debug("dso open failed: %s\n",
- 			 strerror_r(errno, sbuf, sizeof(sbuf)));
- 		if (!dso__data_open_cnt || errno != EMFILE)
- 			break;
-@@ -382,7 +383,9 @@ static void check_data_close(void)
-  */
- void dso__data_close(struct dso *dso)
- {
-+	pthread_mutex_lock(&dso__data_open_lock);
- 	close_dso(dso);
-+	pthread_mutex_unlock(&dso__data_open_lock);
- }
- 
- /**
-@@ -405,6 +408,8 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
- 	if (dso->data.status == DSO_DATA_STATUS_ERROR)
- 		return -1;
- 
-+	pthread_mutex_lock(&dso__data_open_lock);
-+
- 	if (dso->data.fd >= 0)
- 		goto out;
- 
-@@ -427,6 +432,7 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
- 	else
- 		dso->data.status = DSO_DATA_STATUS_ERROR;
- 
-+	pthread_mutex_unlock(&dso__data_open_lock);
- 	return dso->data.fd;
- }
- 
-@@ -534,52 +540,66 @@ dso_cache__memcpy(struct dso_cache *cache, u64 offset,
- }
- 
- static ssize_t
--dso_cache__read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
-+dso_cache__read(struct dso *dso, struct machine *machine,
-+		u64 offset, u8 *data, ssize_t size)
- {
- 	struct dso_cache *cache;
- 	struct dso_cache *old;
--	ssize_t ret;
--
--	do {
--		u64 cache_offset;
-+	ssize_t ret = -EINVAL;
-+	u64 cache_offset;
- 
--		ret = -ENOMEM;
-+	cache = zalloc(sizeof(*cache) + DSO__DATA_CACHE_SIZE);
-+	if (!cache)
-+		return -ENOMEM;
- 
--		cache = zalloc(sizeof(*cache) + DSO__DATA_CACHE_SIZE);
--		if (!cache)
--			break;
-+	cache_offset = offset & DSO__DATA_CACHE_MASK;
- 
--		cache_offset = offset & DSO__DATA_CACHE_MASK;
--		ret = -EINVAL;
-+	pthread_mutex_lock(&dso__data_open_lock);
- 
--		if (-1 == lseek(dso->data.fd, cache_offset, SEEK_SET))
--			break;
-+	/*
-+	 * dso->data.fd might be closed if other thread opened another
-+	 * file (dso) due to open file limit (RLIMIT_NOFILE).
-+	 */
-+	if (dso->data.fd < 0) {
-+		dso->data.fd = open_dso(dso, machine);
-+		if (dso->data.fd < 0) {
-+			ret = -errno;
-+			dso->data.status = DSO_DATA_STATUS_ERROR;
-+			goto err_unlock;
-+		}
-+	}
- 
--		ret = read(dso->data.fd, cache->data, DSO__DATA_CACHE_SIZE);
--		if (ret <= 0)
--			break;
-+	if (-1 == lseek(dso->data.fd, cache_offset, SEEK_SET))
-+		goto err_unlock;
- 
--		cache->offset = cache_offset;
--		cache->size   = ret;
--		old = dso_cache__insert(dso, cache);
--		if (old) {
--			/* we lose the race */
--			free(cache);
--			cache = old;
--		}
-+	ret = read(dso->data.fd, cache->data, DSO__DATA_CACHE_SIZE);
-+	if (ret <= 0)
-+		goto err_unlock;
- 
--		ret = dso_cache__memcpy(cache, offset, data, size);
-+	pthread_mutex_unlock(&dso__data_open_lock);
- 
--	} while (0);
-+	cache->offset = cache_offset;
-+	cache->size   = ret;
-+	old = dso_cache__insert(dso, cache);
-+	if (old) {
-+		/* we lose the race */
-+		free(cache);
-+		cache = old;
-+	}
- 
-+	ret = dso_cache__memcpy(cache, offset, data, size);
- 	if (ret <= 0)
- 		free(cache);
- 
- 	return ret;
-+
-+err_unlock:
-+	pthread_mutex_unlock(&dso__data_open_lock);
-+	return ret;
- }
- 
--static ssize_t dso_cache_read(struct dso *dso, u64 offset,
--			      u8 *data, ssize_t size)
-+static ssize_t dso_cache_read(struct dso *dso, struct machine *machine,
-+			      u64 offset, u8 *data, ssize_t size)
- {
- 	struct dso_cache *cache;
- 
-@@ -587,7 +607,7 @@ static ssize_t dso_cache_read(struct dso *dso, u64 offset,
- 	if (cache)
- 		return dso_cache__memcpy(cache, offset, data, size);
- 	else
--		return dso_cache__read(dso, offset, data, size);
-+		return dso_cache__read(dso, machine, offset, data, size);
- }
- 
- /*
-@@ -595,7 +615,8 @@ static ssize_t dso_cache_read(struct dso *dso, u64 offset,
-  * in the rb_tree. Any read to already cached data is served
-  * by cached data.
-  */
--static ssize_t cached_read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
-+static ssize_t cached_read(struct dso *dso, struct machine *machine,
-+			   u64 offset, u8 *data, ssize_t size)
- {
- 	ssize_t r = 0;
- 	u8 *p = data;
-@@ -603,7 +624,7 @@ static ssize_t cached_read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
- 	do {
- 		ssize_t ret;
- 
--		ret = dso_cache_read(dso, offset, p, size);
-+		ret = dso_cache_read(dso, machine, offset, p, size);
- 		if (ret < 0)
- 			return ret;
- 
-@@ -623,21 +644,42 @@ static ssize_t cached_read(struct dso *dso, u64 offset, u8 *data, ssize_t size)
- 	return r;
- }
- 
--static int data_file_size(struct dso *dso)
-+static int data_file_size(struct dso *dso, struct machine *machine)
- {
-+	int ret = 0;
- 	struct stat st;
- 	char sbuf[STRERR_BUFSIZE];
- 
--	if (!dso->data.file_size) {
--		if (fstat(dso->data.fd, &st)) {
--			pr_err("dso mmap failed, fstat: %s\n",
--				strerror_r(errno, sbuf, sizeof(sbuf)));
--			return -1;
-+	if (dso->data.file_size)
-+		return 0;
-+
-+	pthread_mutex_lock(&dso__data_open_lock);
-+
-+	/*
-+	 * dso->data.fd might be closed if other thread opened another
-+	 * file (dso) due to open file limit (RLIMIT_NOFILE).
-+	 */
-+	if (dso->data.fd < 0) {
-+		dso->data.fd = open_dso(dso, machine);
-+		if (dso->data.fd < 0) {
-+			ret = -errno;
-+			dso->data.status = DSO_DATA_STATUS_ERROR;
-+			goto out;
- 		}
--		dso->data.file_size = st.st_size;
- 	}
- 
--	return 0;
-+	if (fstat(dso->data.fd, &st) < 0) {
-+		ret = -errno;
-+		pr_err("dso cache fstat failed: %s\n",
-+		       strerror_r(errno, sbuf, sizeof(sbuf)));
-+		dso->data.status = DSO_DATA_STATUS_ERROR;
-+		goto out;
-+	}
-+	dso->data.file_size = st.st_size;
-+
-+out:
-+	pthread_mutex_unlock(&dso__data_open_lock);
-+	return ret;
- }
- 
- /**
-@@ -655,17 +697,17 @@ off_t dso__data_size(struct dso *dso, struct machine *machine)
- 	if (fd < 0)
- 		return fd;
- 
--	if (data_file_size(dso))
-+	if (data_file_size(dso, machine))
- 		return -1;
- 
- 	/* For now just estimate dso data size is close to file size */
- 	return dso->data.file_size;
- }
- 
--static ssize_t data_read_offset(struct dso *dso, u64 offset,
--				u8 *data, ssize_t size)
-+static ssize_t data_read_offset(struct dso *dso, struct machine *machine,
-+				u64 offset, u8 *data, ssize_t size)
- {
--	if (data_file_size(dso))
-+	if (data_file_size(dso, machine))
- 		return -1;
- 
- 	/* Check the offset sanity. */
-@@ -675,7 +717,7 @@ static ssize_t data_read_offset(struct dso *dso, u64 offset,
- 	if (offset + size < offset)
- 		return -1;
- 
--	return cached_read(dso, offset, data, size);
-+	return cached_read(dso, machine, offset, data, size);
- }
- 
- /**
-@@ -692,10 +734,10 @@ static ssize_t data_read_offset(struct dso *dso, u64 offset,
- ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- 			      u64 offset, u8 *data, ssize_t size)
- {
--	if (dso__data_fd(dso, machine) < 0)
-+	if (dso->data.status == DSO_DATA_STATUS_ERROR)
- 		return -1;
- 
--	return data_read_offset(dso, offset, data, size);
-+	return data_read_offset(dso, machine, offset, data, size);
- }
- 
- /**
+ out_child:
 -- 
 2.1.3
 
