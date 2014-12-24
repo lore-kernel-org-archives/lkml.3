@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaLXQ2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 11:28:05 -0500
-Received: from resqmta-po-01v.sys.comcast.net ([96.114.154.160]:56936 "EHLO
-	resqmta-po-01v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751086AbaLXQ2D (ORCPT
+	id S1752540AbaLXQcq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 11:32:46 -0500
+Received: from resqmta-po-07v.sys.comcast.net ([96.114.154.166]:46986 "EHLO
+	resqmta-po-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751590AbaLXQ2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 11:28:03 -0500
+	Wed, 24 Dec 2014 11:28:06 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -17,9 +17,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v3 01/20] selftests/breakpoints: add install target to enable test install
-Date: Wed, 24 Dec 2014 09:27:37 -0700
-Message-Id: <0a42ee9b3e243c71927d7d71c5cb6e5f5ade510e.1419387513.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v3 05/20] selftests/ftrace: add install target to enable test install
+Date: Wed, 24 Dec 2014 09:27:41 -0700
+Message-Id: <e84eeeecde70ecb3ab82c5f825fec359f9e967ff.1419387513.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
 References: <cover.1419387513.git.shuahkh@osg.samsung.com>
@@ -36,46 +36,31 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/breakpoints/Makefile | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ tools/testing/selftests/ftrace/Makefile | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/breakpoints/Makefile b/tools/testing/selftests/breakpoints/Makefile
-index e18b42b..b5a5fe8 100644
---- a/tools/testing/selftests/breakpoints/Makefile
-+++ b/tools/testing/selftests/breakpoints/Makefile
-@@ -8,6 +8,7 @@ ifeq ($(ARCH),x86_64)
- 	ARCH := x86
- endif
- 
-+TEST_STR = ./breakpoint_test || echo breakpoints selftests: [FAIL]
- 
+diff --git a/tools/testing/selftests/ftrace/Makefile b/tools/testing/selftests/ftrace/Makefile
+index 76cc9f1..7c7cf42 100644
+--- a/tools/testing/selftests/ftrace/Makefile
++++ b/tools/testing/selftests/ftrace/Makefile
+@@ -1,7 +1,16 @@
++TEST_STR = /bin/sh ./ftracetest || echo ftrace selftests: [FAIL]
++
  all:
- ifeq ($(ARCH),x86)
-@@ -16,8 +17,22 @@ else
- 	echo "Not an x86 target, can't build breakpoints selftests"
- endif
  
--run_tests:
--	@./breakpoint_test || echo "breakpoints selftests: [FAIL]"
 +install:
 +ifdef INSTALL_KSFT_PATH
-+ifeq ($(ARCH),x86)
-+	install ./breakpoint_test $(INSTALL_KSFT_PATH)
-+	@echo "$(TEST_STR)" >> $(KSELFTEST)
-+else
-+	@echo Not an x86 target, unable to install breakpoints selftests
-+endif
-+else
-+	@echo Run make kselftest_install in top level source directory
++	install ./ftracetest $(INSTALL_KSFT_PATH)
++	@cp -r test.d $(INSTALL_KSFT_PATH)
++	echo "$(TEST_STR)" >> $(KSELFTEST)
 +endif
 +
-+run_tests: all
-+ifeq ($(ARCH),x86)
+ run_tests:
+-	@/bin/sh ./ftracetest || echo "ftrace selftests: [FAIL]"
 +	@$(TEST_STR)
-+endif
  
  clean:
- 	rm -fr breakpoint_test
+ 	rm -rf logs/*
 -- 
 2.1.0
 
