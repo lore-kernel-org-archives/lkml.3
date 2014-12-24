@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaLXNM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 08:12:27 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:48807 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaLXNM0 (ORCPT
+	id S1752028AbaLXNQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 08:16:06 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:64285 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623AbaLXNQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 08:12:26 -0500
-Date: Wed, 24 Dec 2014 18:42:18 +0530
+	Wed, 24 Dec 2014 08:16:04 -0500
+Date: Wed, 24 Dec 2014 18:45:57 +0530
 From: Vaishali Thakkar <vthakkar1994@gmail.com>
 To: linux-wireless@vger.kernel.org
 Cc: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
         sameo@linux.intel.com, linux-kernel@vger.kernel.org,
         johannes.berg@intel.com, arend@broadcom.com
-Subject: [PATCH] NFC: port100: Introduce the use of function
+Subject: [PATCH v3] NFC: port100: Introduce the use of function
  put_unaligned_le16
-Message-ID: <20141224131218.GA2578@vaishali-Ideapad-Z570>
+Message-ID: <20141224131557.GA2591@vaishali-Ideapad-Z570>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
