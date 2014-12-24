@@ -1,114 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaLXPNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 10:13:01 -0500
-Received: from mail.eperm.de ([89.247.134.16]:51031 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990AbaLXPM7 convert rfc822-to-8bit (ORCPT
+	id S1752197AbaLXPXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 10:23:12 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53245 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbaLXPXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 10:12:59 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: leroy christophe <christophe.leroy@c-s.fr>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: algif_hash: splice of data > 2**16
-Date: Wed, 24 Dec 2014 16:12:53 +0100
-Message-ID: <1444883.Oc8SnflNUU@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <549AC946.2000909@c-s.fr>
-References: <8707521.TbV00HIEUx@tauon> <11733044.fQnf94a6to@tachyon.chronox.de> <549AC946.2000909@c-s.fr>
+	Wed, 24 Dec 2014 10:23:10 -0500
+From: Kalle Valo <kvalo@codeaurora.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: wireless: rtlwifi: rtl8192de: fw.c:  Remove unused function
+References: <1417989613-18300-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Wed, 24 Dec 2014 17:23:01 +0200
+In-Reply-To: <1417989613-18300-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	(Rickard Strandqvist's message of "Sun, 7 Dec 2014 23:00:13 +0100")
+Message-ID: <871tnp9ine.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 24. Dezember 2014, 15:10:14 schrieb leroy christophe:
+Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> writes:
 
-Hi leroy,
+> Remove the function rtl92d_set_fw_pwrmode_cmd() that is not used anywhere.
+>
+> This was partially found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-> Le 24/12/2014 10:03, Stephan Mueller a écrit :
-> > Am Dienstag, 23. Dezember 2014, 18:16:01 schrieb leroy christophe:
-> > 
-> > Hi leroy,
-> > 
-> >> Le 20/12/2014 07:37, Stephan Mueller a écrit :
-> >>> Am Donnerstag, 18. Dezember 2014, 13:22:20 schrieb leroy christophe:
-> >>> 
-> >>> Hi Christophe,
-> >>> 
-> >>>> Le 18/12/2014 13:15, Stephan Mueller a écrit :
-> >>>>> Hi Herbert,
-> >>>>> 
-> >>>>> While testing the vmsplice/splice interface of algif_hash I was made
-> >>>>> aware of the problem that data blobs larger than 16 pages do not seem
-> >>>>> to
-> >>>>> be hashed properly.
-> >>>>> 
-> >>>>> For testing, a file is mmap()ed and handed to vmsplice / splice. If
-> >>>>> the
-> >>>>> file is smaller than 2**16, the interface returns the proper hash.
-> >>>>> However, when the file is larger, only the first 2**16 bytes seem to
-> >>>>> be
-> >>>>> used.
-> >>>>> 
-> >>>>> When adding printk's to hash_sendpage, I see that this function is
-> >>>>> invoked exactly 16 times where the first 15 invocations have the
-> >>>>> MSG_MORE flag set and the last invocation does not have MSG_MORE.
-> >>>> 
-> >>>> Hi Stephan,
-> >>>> 
-> >>>> I have already noticed the same issue and proposed a patch, but I never
-> >>>> got any feedback and it has never been merged, allthought I pinged it a
-> >>>> few times.
-> >>>> 
-> >>>> See https://lkml.org/lkml/2014/4/18/276
-> >>> 
-> >>> After testing, this patch does not work for me. The operation still
-> >>> stops
-> >>> after 16 pages.
-> >> 
-> >> Yes, it looks like the function I fixed is exclusively used by
-> >> sendfile() system call.
-> >> So there is probably the same kind of fix to be done in another function.
-> > 
-> > I do not believe that is the case. IMHO the blocking issue is found in the
-> > following code:
-> > 
-> > splice_from_pipe_feed walks the pipe->nrbufs. And vmsplice_to_pipe defines
-> > the maximum number of nrbufs as PIPE_DEF_BUFFERS -- which is 16. As
-> > subsequent functions allocate memory based on PIPE_DEF_BUFFERS, there is
-> > no trivial way to increase the number of pages to be processed.
-> > 
-> > Thus I see that the vmsplice/splice combo can at most operate on a chunk
-> > of 16 pages. Thus, you have to segment your input buffer into chunks of
-> > that size and invoke the vmsplice/splice syscalls for each segment.
-> 
-> Yes your are probably right. There splice needs to be called with
-> SPLICE_F_MORE flag, hope that works.
+Thanks, applied to wireless-drivers-next.git.
 
-That is not the only one. Vmsplice works on a pipe. A pipe is backed by 16 
-pages max. Thus, you have to call vmsplice once per 16 pages. The current code 
-I am testing which seems to work is the following:
+But in the future, to make my work easier, please simplify your patch
+titles. You do not have to put the full directory structure there. I now
+manually changed it to:
 
-	while (inlen) {
-		size_t datalen = (inlen > MAXLEN) ? MAXLEN : inlen;
+commit 18e0c0bf3a5ea0f54384149570274d535341dc06
+Author: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date:   Sun Dec 7 23:00:13 2014 +0100
 
-		iov.iov_len = datalen;
-		ret = _kcapi_common_vmsplice_data(handle, &iov, 1, datalen, 
-1);
-		if (0 > ret)
-			return ret;
-		processed += ret;
-		iov.iov_base = (void*)(uintptr_t)(in + processed);
-		inlen -= ret;
-	}
-	return _kcapi_common_read_data(handle, out, outlen);
+    rtlwifi: rtl8192de: fw.c: Remove unused function
 
+Most important is that the title begins with the name of the driver
+(rtlwifi, iwlwifi, ath9k and so on) and is not too long. That way it's a
+lot easier for me and Johannes to manage the wireless patches in
+patchwork.
 
 -- 
-Ciao
-Stephan
+Kalle Valo
