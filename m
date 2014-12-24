@@ -1,101 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751119AbaLXBmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 20:42:00 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10733 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750740AbaLXBl6 convert rfc822-to-8bit (ORCPT
+	id S1751302AbaLXBqC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 20:46:02 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:56877 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbaLXBqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 20:41:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="503400566"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, "Wu, Feng" <feng.wu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, "Gleb Natapov" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
-Subject: RE: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Topic: [v3 06/26] iommu, x86: No need to migrating irq for VT-d
- Posted-Interrupts
-Thread-Index: AQHQFiFw/2wcwNXVUk6mLzPIG8E78JyVcJswgAC8KvCAAAEAoIAAJl0AgAYPrcCAAAQJAIAABZWAgAAHY4CAAYvvcA==
-Date: Wed, 24 Dec 2014 01:38:18 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC06DF9@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
-	<1418397300-10870-7-git-send-email-feng.wu@intel.com>
-	<A9667DDFB95DB7438FA9D7D576C3D87E0AC0486D@SHSMSX104.ccr.corp.intel.com>
-	<E959C4978C3B6342920538CF579893F00230A649@SHSMSX104.ccr.corp.intel.com>
-	<A9667DDFB95DB7438FA9D7D576C3D87E0AC04E77@SHSMSX104.ccr.corp.intel.com>
-	<54941326.4080405@redhat.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC06282@SHSMSX104.ccr.corp.intel.com>
- <54992C2C.5030305@redhat.com>
- <E959C4978C3B6342920538CF579893F002314236@SHSMSX104.ccr.corp.intel.com>
- <5499370D.8000703@redhat.com>
-In-Reply-To: <5499370D.8000703@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Dec 2014 20:46:00 -0500
 MIME-Version: 1.0
+In-Reply-To: <1419379901-17182-1-git-send-email-dianders@chromium.org>
+References: <1419379901-17182-1-git-send-email-dianders@chromium.org>
+Date: Wed, 24 Dec 2014 07:16:00 +0530
+Message-ID: <CAKohpo=Xm6sSqVtNaL=ycJ=mbFW0n6zddcu5pawDL3F10SaTEw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: suspend cpufreq governors on shutdown
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Heiko Stuebner <heiko@sntech.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Chris Zhong <zyw@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Dylan Reid <dgreid@chromium.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini wrote on 2014-12-23:
-> 
-> 
-> On 23/12/2014 10:07, Wu, Feng wrote:
->>> On 23/12/2014 01:37, Zhang, Yang Z wrote:
->>>> I don't quite understand it. If user set an interrupt's affinity
->>>> to a CPU, but he still see the interrupt delivers to other CPUs in host.
->>>> Do you think it is a right behavior?
->>> 
->>> No, the interrupt is not delivered at all in the host.  Normally you'd have:
->>> 
->>> - interrupt delivered to CPU from host affinity
->>> 
->>> - VFIO interrupt handler writes to irqfd
->>> 
->>> - interrupt delivered to vCPU from guest affinity
->>> 
->>> Here, you just skip the first two steps.  The interrupt is
->>> delivered to the thread that is running the vCPU directly, so the
->>> host affinity is bypassed entirely.
->>> 
->>> ... unless you are considering the case where the vCPU is blocked
->>> and the host is processing the posted interrupt wakeup vector.  In
->>> that case yes, it would be better to set NDST to a CPU matching the host affinity.
->> 
->> In my understanding, wakeup vector should have no relationship with
->> the host affinity of the irq. Wakeup notification event should be
->> delivered to the pCPU which the vCPU was blocked on. And in kernel's
->> point of view, the irq is not associated with the wakeup vector, right?
-> 
-> That is correct indeed.  It is not associated to the wakeup vector,
-> hence this patch is right, I think.
-> 
-> However, the wakeup vector has the same function as the VFIO interrupt
-> handler, so you could argue that it is tied to the host affinity
-> rather than the guest.  Let's wait for Yang to answer.
+On 24 December 2014 at 05:41, Doug Anderson <dianders@chromium.org> wrote:
+> We should stop cpufreq governors when we shut down the system.  If we
+> don't do this, we can end up with this deadlock:
 
-Actually, that's my original question too. I am wondering what happens if the user changes the assigned device's affinity in host's /proc/irq/? If ignore it is acceptable, then this patch is ok. But it seems the discussion out of my scope, need some experts to tell us their idea since it will impact the user experience. 
+Can you also add what exactly happens in such deadlock? Some lockdeps?
+Or just a hang ?
 
-> 
-> Paolo
+> 1. cpufreq governor may be running on a CPU other than CPU0.
+> 2. In machine_restart() we call smp_send_stop() which stops CPUs.
+>    If one of these CPUs was actively running a cpufreq governor
+>    then it may have the mutex / spinlock needed to access the main
+>    PMIC in the system (perhaps over I2C)
+> 3. If a machine needs access to the main PMIC in order to shutdown
+>    then it will never get it since the mutex was lost when the other
+>    CPU stopped.
+>
+> Let's avoid the race by stopping the cpufreq governor at shutdown,
+> which is a sensible thing to do anyway.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> NOTE: This was developed / tested / on a 3.14 kernel with backports.
+> I have confirmed that it compiles on a mainline kernel and doesn't
+> crash, but I haven't verified that there isn't some other fix in
+> mainline that also fixes this problem.  If you are aware of such a fix
+> then please drop this patch.
 
+No, its a new problem.
 
-Best regards,
-Yang
+>  drivers/cpufreq/cpufreq.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index a09a29c..bd89721 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/mutex.h>
+>  #include <linux/slab.h>
+>  #include <linux/suspend.h>
+> +#include <linux/syscore_ops.h>
+>  #include <linux/tick.h>
+>  #include <trace/events/power.h>
+>
+> @@ -2550,6 +2551,15 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
+>  }
+>  EXPORT_SYMBOL_GPL(cpufreq_unregister_driver);
+>
+> +static void cpufreq_shutdown(void)
+> +{
+> +       cpufreq_suspend();
+> +}
+> +
+> +static struct syscore_ops cpufreq_syscore_ops = {
+> +       .shutdown = cpufreq_shutdown,
 
+directly pass cpufreq_suspend() here and add a note over the
+cpufreq_syscore_ops on why it exists here.
 
+> +};
+> +
+>  static int __init cpufreq_core_init(void)
+>  {
+>         if (cpufreq_disabled())
+> @@ -2558,6 +2568,8 @@ static int __init cpufreq_core_init(void)
+>         cpufreq_global_kobject = kobject_create();
+>         BUG_ON(!cpufreq_global_kobject);
+>
+> +       register_syscore_ops(&cpufreq_syscore_ops);
+> +
+>         return 0;
+>  }
+>  core_initcall(cpufreq_core_init);
+> --
+> 2.2.0.rc0.207.ga3a616c
+>
