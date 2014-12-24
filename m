@@ -1,153 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaLXLCo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 06:02:44 -0500
-Received: from audible.transient.net ([24.143.126.66]:46525 "HELO
-	audible.transient.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751071AbaLXLCl (ORCPT
+	id S1751920AbaLXLET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 06:04:19 -0500
+Received: from smtprelay0202.hostedemail.com ([216.40.44.202]:50333 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751872AbaLXLEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 06:02:41 -0500
-Date: Wed, 24 Dec 2014 11:02:39 +0000
-From: Jamie Heilman <jamie@audible.transient.net>
-To: "Chen, Tiejun" <tiejun.chen@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        luto@amacapital.net
-Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
-Message-ID: <20141224110239.GA3908@cucamonga.audible.transient.net>
-Mail-Followup-To: "Chen, Tiejun" <tiejun.chen@intel.com>,
-	Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	luto@amacapital.net
-References: <20141221124640.GA4059@cucamonga.audible.transient.net>
- <5497C882.4000108@intel.com>
- <20141222092358.GA3915@cucamonga.audible.transient.net>
- <5498CA50.8070906@intel.com>
- <5498CB62.3070901@intel.com>
- <20141223072659.GA4015@cucamonga.audible.transient.net>
- <549A796C.50801@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549A796C.50801@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 24 Dec 2014 06:04:16 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:2904:2914:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3871:3872:3874:4250:4321:4605:5007:6261:6742:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: silk59_7abcaec2d01b
+X-Filterd-Recvd-Size: 4768
+Message-ID: <1419419050.6157.11.camel@perches.com>
+Subject: Re: [PATCH v8 2/2] drivers/gpio: Altera soft IP GPIO driver
+From: Joe Perches <joe@perches.com>
+To: thloh@altera.com
+Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Antti Palosaari <crope@iki.fi>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        Dinh Nguyen <dinguyen@altera.com>
+Date: Wed, 24 Dec 2014 03:04:10 -0800
+In-Reply-To: <1419409345-8297-3-git-send-email-thloh@altera.com>
+References: <1419409345-8297-1-git-send-email-thloh@altera.com>
+	 <1419409345-8297-3-git-send-email-thloh@altera.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen, Tiejun wrote:
-> On 2014/12/23 15:26, Jamie Heilman wrote:
-> >Chen, Tiejun wrote:
-> >>On 2014/12/23 9:50, Chen, Tiejun wrote:
-> >>>On 2014/12/22 17:23, Jamie Heilman wrote:
-> >>>>KVM internal error. Suberror: 1
-> >>>>emulation failure
-> >>>>EAX=000de494 EBX=00000000 ECX=00000000 EDX=00000cfd
-> >>>>ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fb4
-> >>>>EIP=000f15c1 EFL=00010016 [----AP-] CPL=0 II=0 A20=1 SMM=0 HLT=0
-> >>>>ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>>>CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
-> >>>>SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>>>DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>>>FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>>>GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> >>>>LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
-> >>>>TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
-> >>>>GDT=     000f6be8 00000037
-> >>>>IDT=     000f6c26 00000000
-> >>>>CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
-> >>>>DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
-> >>>>DR3=0000000000000000
-> >>>>DR6=00000000ffff0ff0 DR7=0000000000000400
-> >>>>EFER=0000000000000000
-> >>>>Code=e8 ae fc ff ff 89 f2 a8 10 89 d8 75 0a b9 41 15 ff ff ff d1 <5b>
-> >>>>5e c3 5b 5e e9 76 ff ff ff b0 11 e6 20 e6 a0 b0 08 e6 21 b0 70 e6 a1
-> >>>>b0 04 e6 21 b0 02
-> >>>>
-> >>>>FWIW, I get the same thing with 34a1cd60d17 reverted.  Maybe there are
-> >>>>two bugs, maybe there's more to this first one.  I can repro this
-> >>>
-> >>>So if my understanding is correct, this is probably another bug. And
-> >>>especially, I already saw the same log in another thread, "Cleaning up
-> >>>the KVM clock". Maybe you can continue to `git bisect` to locate that
-> >>>bad commit.
-> >>>
-> >>
-> >>Looks just now Andy found that commit,
-> >>0e60b0799fedc495a5c57dbd669de3c10d72edd2 "kvm: change memslot sorting rule
-> >>from size to GFN", maybe you can try to revert this to try yours again.
-> >
-> >That doesn't revert cleanly for me, and I don't have much time to
-> >fiddle with it until the 24th---so checked out the commit before it
-> >(d4ae84a0), applied your patch, built, and yes, everything works fine
-> >at that point.  I'll probably have time for another full bisection
-> >later, assuming things aren't ironed out already by then.
+On Wed, 2014-12-24 at 00:22 -0800, thloh@altera.com wrote:
+> Adds a new driver for Altera soft GPIO IP. The driver is able to
+> do read/write and allows GPIO to be a interrupt controller.
 
-3.18.0-rc3-00120-gd4ae84a0 + vmx reorder msr writes patch = OK
-3.18.0-rc3-00121-g0e60b07 + vmx reorder msr writes patch = emulation failure
+Some trivial comments, some not quite so trivial.
 
-So that certainly points to 0e60b0799fedc495a5c57dbd669de3c10d72edd2
-as well.
+> diff --git a/drivers/gpio/gpio-altera.c b/drivers/gpio/gpio-altera.c
+[]
+> +static int altera_gpio_irq_set_type(struct irq_data *d,
+> +				   unsigned int type)
+> +{
+> +	struct altera_gpio_chip *altera_gc = irq_data_get_irq_chip_data(d);
+> +
+> +	altera_gc = irq_data_get_irq_chip_data(d);
 
-> Could you try this to fix your last error?
+I presume this multiple initialization of altera_gc
+is unnecessary duplication.
 
-Running qemu-system-x86_64 -machine pc,accel=kvm -nodefaults works,
-my real (headless) kvm guests work, but this new patch makes running
-"qemu-system-x86_64 -machine pc,accel=kvm" fail again, this time with
-errors in the host to the tune of:
+> +static void altera_gpio_irq_edge_handler(unsigned int irq,
+> +					struct irq_desc *desc)
+> +{
+> +	struct altera_gpio_chip *altera_gc;
+> +	struct irq_chip *chip;
+> +	struct of_mm_gpio_chip *mm_gc;
+> +	unsigned long status;
+> +	int i;
+> +
+> +	altera_gc = irq_desc_get_handler_data(desc);
+> +	chip = irq_desc_get_chip(desc);
+> +	mm_gc = &altera_gc->mmchip;
+> +
+> +	chained_irq_enter(chip, desc);
+> +
+> +	while ((status =
+> +	      (readl(mm_gc->regs + ALTERA_GPIO_EDGE_CAP) &
+> +	      readl(mm_gc->regs + ALTERA_GPIO_IRQ_MASK)))) {
+> +		writel(status, mm_gc->regs + ALTERA_GPIO_EDGE_CAP);
+> +		for_each_set_bit(i, &status, mm_gc->gc.ngpio) {
+> +			generic_handle_irq(
+> +				irq_find_mapping(altera_gc->mmchip.gc.irqdomain
+> +						, i));
 
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 3901 at arch/x86/kvm/x86.c:6575 kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]()
-Modules linked in: nfsv4 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative autofs4 fan nfsd auth_rpcgss nfs lockd grace fscache sunrpc bridge stp llc vhost_net tun vhost macvtap macvlan fuse cbc dm_crypt usb_storage snd_hda_codec_analog snd_hda_codec_generic kvm_intel kvm tg3 ptp pps_core sr_mod snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_timer snd sg dcdbas cdrom psmouse soundcore floppy evdev xfs dm_mod raid1 md_mod
-CPU: 1 PID: 3901 Comm: qemu-system-x86 Not tainted 3.19.0-rc1-00011-g53262d1-dirty #1
-Hardware name: Dell Inc. Precision WorkStation T3400  /0TP412, BIOS A14 04/30/2012
- 0000000000000000 000000007e052328 ffff8800c25ffcf8 ffffffff813defbe
- 0000000000000000 0000000000000000 ffff8800c25ffd38 ffffffff8103b517
- ffff8800c25ffd28 ffffffffa019bdec ffff8800caf1d000 ffff8800c2774800
-Call Trace:
- [<ffffffff813defbe>] dump_stack+0x4c/0x6e
- [<ffffffff8103b517>] warn_slowpath_common+0x97/0xb1
- [<ffffffffa019bdec>] ? kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
- [<ffffffff8103b60b>] warn_slowpath_null+0x15/0x17
- [<ffffffffa019bdec>] kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
- [<ffffffffa02308b9>] ? vmcs_load+0x20/0x62 [kvm_intel]
- [<ffffffffa0231e03>] ? vmx_vcpu_load+0x140/0x16a [kvm_intel]
- [<ffffffffa0196ba3>] ? kvm_arch_vcpu_load+0x15c/0x161 [kvm]
- [<ffffffffa018d8b1>] kvm_vcpu_ioctl+0x189/0x4bd [kvm]
- [<ffffffff8104647a>] ? do_sigtimedwait+0x12f/0x189
- [<ffffffff810ea316>] do_vfs_ioctl+0x370/0x436
- [<ffffffff810f24f2>] ? __fget+0x67/0x72
- [<ffffffff810ea41b>] SyS_ioctl+0x3f/0x5e
- [<ffffffff813e34d2>] system_call_fastpath+0x12/0x17
----[ end trace 46abac932fb3b4a1 ]---
-------------[ cut here ]------------
-WARNING: CPU: 1 PID: 3901 at arch/x86/kvm/x86.c:6575 kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]()
-Modules linked in: nfsv4 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative autofs4 fan nfsd auth_rpcgss nfs lockd grace fscache sunrpc bridge stp llc vhost_net tun vhost macvtap macvlan fuse cbc dm_crypt usb_storage snd_hda_codec_analog snd_hda_codec_generic kvm_intel kvm tg3 ptp pps_core sr_mod snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_timer snd sg dcdbas cdrom psmouse soundcore floppy evdev xfs dm_mod raid1 md_mod
-CPU: 1 PID: 3901 Comm: qemu-system-x86 Tainted: G        W      3.19.0-rc1-00011-g53262d1-dirty #1
-Hardware name: Dell Inc. Precision WorkStation T3400  /0TP412, BIOS A14 04/30/2012
- 0000000000000000 000000007e052328 ffff8800c25ffcf8 ffffffff813defbe
- 0000000000000000 0000000000000000 ffff8800c25ffd38 ffffffff8103b517
- ffff8800c25ffd28 ffffffffa019bdec ffff8800caf1d000 ffff8800c2774800
-Call Trace:
- [<ffffffff813defbe>] dump_stack+0x4c/0x6e
- [<ffffffff8103b517>] warn_slowpath_common+0x97/0xb1
- [<ffffffffa019bdec>] ? kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
- [<ffffffff8103b60b>] warn_slowpath_null+0x15/0x17
- [<ffffffffa019bdec>] kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
- [<ffffffffa02308b9>] ? vmcs_load+0x20/0x62 [kvm_intel]
- [<ffffffffa0231e03>] ? vmx_vcpu_load+0x140/0x16a [kvm_intel]
- [<ffffffffa0196ba3>] ? kvm_arch_vcpu_load+0x15c/0x161 [kvm]
- [<ffffffffa018d8b1>] kvm_vcpu_ioctl+0x189/0x4bd [kvm]
- [<ffffffff8104647a>] ? do_sigtimedwait+0x12f/0x189
- [<ffffffff810ea316>] do_vfs_ioctl+0x370/0x436
- [<ffffffff810f24f2>] ? __fget+0x67/0x72
- [<ffffffff810ea41b>] SyS_ioctl+0x3f/0x5e
- [<ffffffff813e34d2>] system_call_fastpath+0x12/0x17
----[ end trace 46abac932fb3b4a2 ]---
+That's kind of unpleasant to read.
+It might be better to use a separate these statements
+and use a temporary for irq_find_mapping()
 
-over and over and over ad nauseum, or until I kill the qemu command,
-it also eats a core's worth of cpu.
+> +static void altera_gpio_irq_leveL_high_handler(unsigned int irq,
+> +					      struct irq_desc *desc)
+> +{
+> +	struct altera_gpio_chip *altera_gc;
+> +	struct irq_chip *chip;
+> +	struct of_mm_gpio_chip *mm_gc;
+> +	unsigned long status;
+> +	int i;
+> +
+> +	altera_gc = irq_desc_get_handler_data(desc);
+> +	chip = irq_desc_get_chip(desc);
+> +	mm_gc = &altera_gc->mmchip;
+> +
+> +	chained_irq_enter(chip, desc);
+> +
+> +	status = readl(mm_gc->regs + ALTERA_GPIO_DATA);
+> +	status &= readl(mm_gc->regs + ALTERA_GPIO_IRQ_MASK);
+> +
+> +	for_each_set_bit(i, &status, mm_gc->gc.ngpio) {
+> +		generic_handle_irq(
+> +			irq_find_mapping(altera_gc->mmchip.gc.irqdomain, i));
+
+Maybe a temporary here too
+
+> +int altera_gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *node = pdev->dev.of_node;
+> +	int id, reg, ret;
+> +	struct altera_gpio_chip *altera_gc;
+> +
+> +	altera_gc = devm_kzalloc(&pdev->dev, sizeof(*altera_gc), GFP_KERNEL);
+> +
+> +	if (altera_gc == NULL)
+> +		return -ENOMEM;
+
+No blank line after the devm_kzalloc please and
+	if (!altera_gc)
+is more common.
 
 
--- 
-Jamie Heilman                     http://audible.transient.net/~jamie/
+> +	if (altera_gc->interrupt_trigger == IRQ_TYPE_LEVEL_HIGH) {
+> +		gpiochip_set_chained_irqchip(&altera_gc->mmchip.gc,
+> +			&altera_irq_chip,
+> +			altera_gc->mapped_irq,
+> +			altera_gpio_irq_leveL_high_handler);
+> +	} else {
+> +		gpiochip_set_chained_irqchip(&altera_gc->mmchip.gc,
+> +			&altera_irq_chip,
+> +			altera_gc->mapped_irq,
+> +			altera_gpio_irq_edge_handler);
+> +	}
+
+Sometimes using a ?: ternary is smaller code
+
+	gpiochip_set_chained_irqchip(&altera_gc->mmchip.gc,
+				     &altera_irq_chip,
+				     altera_gc->mapped_irq,
+				     altera_gc->interrupt_trigger == IRQ_TYPE_LEVEL_HIGH ?
+				     altera_gpio_irq_leveL_high_handler :
+				     altera_gpio_irq_edge_handler);
+> 
+
