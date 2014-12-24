@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaLXVWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 16:22:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57849 "EHLO mx2.suse.de"
+	id S1752098AbaLXVWz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 16:22:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57859 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693AbaLXVWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 16:22:38 -0500
+	id S1751512AbaLXVWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 16:22:52 -0500
 From: NeilBrown <neilb@suse.de>
 To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
 Date: Thu, 25 Dec 2014 08:20:51 +1100
-Subject: [PATCH 1/3] mmc: core: Allow host driver to provide isr for
- card-detect interrupts.
+Subject: [PATCH 3/3] mmc: omap_hsmmc: use mmc_of_parse to parse common mmc
+ configuration.
 Cc: GTA04 owners <gta04-owner@goldelico.com>,
         linux-omap <linux-omap@vger.kernel.org>,
         linux-mmc <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20141224212051.30499.28078.stgit@notabene.brown>
+Message-ID: <20141224212051.30499.56178.stgit@notabene.brown>
 In-Reply-To: <20141224211653.30499.46669.stgit@notabene.brown>
 References: <20141224211653.30499.46669.stgit@notabene.brown>
 User-Agent: StGit/0.17.1-dirty
@@ -26,78 +26,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the reasons omap_hsmmc doesn't use the slot-gpio library
-is that it has some non-standard functionality in the card-detect
-interrupt service routine.
-
-To make it possible for omap_hsmmc (and maybe others) to be converted
-to use slot-gpio, add 'mmc_gpio_set_cd_isr' which provides an
-alternate isr to be registered by the slot-gpio code.
+This ensures that all standard options are available to hsmmc,
+In particular, I need cap-power-off-card.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
- drivers/mmc/core/slot-gpio.c  |   20 +++++++++++++++++++-
- include/linux/mmc/slot-gpio.h |    2 ++
- 2 files changed, 21 insertions(+), 1 deletion(-)
+ drivers/mmc/host/omap_hsmmc.c |   33 ++++++++-------------------------
+ 1 file changed, 8 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
-index 1a3edbd47719..1826b25a2a40 100644
---- a/drivers/mmc/core/slot-gpio.c
-+++ b/drivers/mmc/core/slot-gpio.c
-@@ -25,6 +25,7 @@ struct mmc_gpio {
- 	struct gpio_desc *cd_gpio;
- 	bool override_ro_active_level;
- 	bool override_cd_active_level;
-+	irqreturn_t (*cd_gpio_isr)(int irq, void *dev_id);
- 	char *ro_label;
- 	char cd_label[0];
- };
-@@ -136,8 +137,10 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
- 		irq = -EINVAL;
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 149cc252fcbd..36cd73342afc 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -1931,13 +1931,6 @@ static struct omap_hsmmc_platform_data *of_get_hsmmc_pdata(struct device *dev)
+ {
+ 	struct omap_hsmmc_platform_data *pdata;
+ 	struct device_node *np = dev->of_node;
+-	u32 bus_width, max_freq;
+-	int cd_gpio, wp_gpio;
+-
+-	cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
+-	wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
+-	if (cd_gpio == -EPROBE_DEFER || wp_gpio == -EPROBE_DEFER)
+-		return ERR_PTR(-EPROBE_DEFER);
  
- 	if (irq >= 0) {
-+		if (!ctx->cd_gpio_isr)
-+			ctx->cd_gpio_isr = mmc_gpio_cd_irqt;
- 		ret = devm_request_threaded_irq(host->parent, irq,
--			NULL, mmc_gpio_cd_irqt,
-+			NULL, ctx->cd_gpio_isr,
- 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 			ctx->cd_label, host);
- 		if (ret < 0)
-@@ -151,6 +154,21 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
+ 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+ 	if (!pdata)
+@@ -1946,34 +1939,20 @@ static struct omap_hsmmc_platform_data *of_get_hsmmc_pdata(struct device *dev)
+ 	if (of_find_property(np, "ti,dual-volt", NULL))
+ 		pdata->controller_flags |= OMAP_HSMMC_SUPPORTS_DUAL_VOLT;
+ 
+-	pdata->switch_pin = cd_gpio;
+-	pdata->gpio_wp = wp_gpio;
++	pdata->switch_pin = -EINVAL;
++	pdata->gpio_wp = -EINVAL;
+ 
+ 	if (of_find_property(np, "ti,non-removable", NULL)) {
+ 		pdata->nonremovable = true;
+ 		pdata->no_regulator_off_init = true;
+ 	}
+-	of_property_read_u32(np, "bus-width", &bus_width);
+-	if (bus_width == 4)
+-		pdata->caps |= MMC_CAP_4_BIT_DATA;
+-	else if (bus_width == 8)
+-		pdata->caps |= MMC_CAP_8_BIT_DATA;
+ 
+ 	if (of_find_property(np, "ti,needs-special-reset", NULL))
+ 		pdata->features |= HSMMC_HAS_UPDATED_RESET;
+ 
+-	if (!of_property_read_u32(np, "max-frequency", &max_freq))
+-		pdata->max_freq = max_freq;
+-
+ 	if (of_find_property(np, "ti,needs-special-hs-handling", NULL))
+ 		pdata->features |= HSMMC_HAS_HSPE_SUPPORT;
+ 
+-	if (of_find_property(np, "keep-power-in-suspend", NULL))
+-		pdata->pm_caps |= MMC_PM_KEEP_POWER;
+-
+-	if (of_find_property(np, "enable-sdio-wakeup", NULL))
+-		pdata->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
+-
+ 	return pdata;
  }
- EXPORT_SYMBOL(mmc_gpiod_request_cd_irq);
+ #else
+@@ -2031,6 +2010,10 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
  
-+/* Register an alternate interrupt service routine for
-+ * the card-detect GPIO.
-+ */
-+int mmc_gpio_set_cd_isr(struct mmc_host *host,
-+			irqreturn_t (*isr)(int irq, void *dev_id))
-+{
-+	struct mmc_gpio *ctx;
++	ret = mmc_of_parse(mmc);
++	if (ret)
++		goto err1;
 +
-+	ctx = host->slot.handler_priv;
-+	if (ctx->cd_gpio_isr)
-+		return -EBUSY;
-+	ctx->cd_gpio_isr = isr;
-+	return 0;
-+}
-+
- /**
-  * mmc_gpio_request_cd - request a gpio for card-detection
-  * @host: mmc host
-diff --git a/include/linux/mmc/slot-gpio.h b/include/linux/mmc/slot-gpio.h
-index 4a36d6954631..4faf41c9a77a 100644
---- a/include/linux/mmc/slot-gpio.h
-+++ b/include/linux/mmc/slot-gpio.h
-@@ -26,6 +26,8 @@ int mmc_gpiod_request_cd(struct mmc_host *host, const char *con_id,
- int mmc_gpiod_request_ro(struct mmc_host *host, const char *con_id,
- 			 unsigned int idx, bool override_active_level,
- 			 unsigned int debounce, bool *gpio_invert);
-+int mmc_gpio_set_cd_isr(struct mmc_host *host,
-+			    irqreturn_t (*isr)(int irq, void *dev_id));
- void mmc_gpiod_request_cd_irq(struct mmc_host *host);
+ 	host		= mmc_priv(mmc);
+ 	host->mmc	= mmc;
+ 	host->pdata	= pdata;
+@@ -2059,7 +2042,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
  
- #endif
+ 	if (pdata->max_freq > 0)
+ 		mmc->f_max = pdata->max_freq;
+-	else
++	else if (mmc->f_max == 0)
+ 		mmc->f_max = OMAP_MMC_MAX_CLOCK;
+ 
+ 	spin_lock_init(&host->irq_lock);
+@@ -2113,7 +2096,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 	if (mmc_pdata(host)->nonremovable)
+ 		mmc->caps |= MMC_CAP_NONREMOVABLE;
+ 
+-	mmc->pm_caps = mmc_pdata(host)->pm_caps;
++	mmc->pm_caps |= mmc_pdata(host)->pm_caps;
+ 
+ 	omap_hsmmc_conf_bus_power(host);
+ 
 
 
