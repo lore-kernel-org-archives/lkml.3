@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaLXDPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Dec 2014 22:15:06 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:7428 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaLXDOA (ORCPT
+	id S1751608AbaLXDPa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Dec 2014 22:15:30 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:57811 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582AbaLXDP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Dec 2014 22:14:00 -0500
-From: Wang Long <long.wanglong@huawei.com>
-To: <xuwei5@hisilicon.com>
-CC: <arnd@arndb.de>, <yanhaifeng@gmail.com>, <zhangfei.gao@linaro.org>,
-        <haojian.zhuang@linaro.org>, <khilman@linaro.org>,
-        <lee.jones@linaro.org>, <linux@arm.linux.org.uk>,
-        <long.wanglong@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>,
-        <huxinwei@huawei.com>
-Subject: [PATCH 0/7] ARM: hisi: enable HiP01 SoC
-Date: Wed, 24 Dec 2014 03:09:55 +0000
-Message-ID: <1419390602-193123-1-git-send-email-long.wanglong@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.200]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.549A2F47.0145,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 9b67a183f8ec7345f0dd7937022258f0
+	Tue, 23 Dec 2014 22:15:26 -0500
+From: Wincy Van <fanwenyi0529@gmail.com>
+To: pbonzini@redhat.com, bsd@redhat.com
+Cc: yang.z.zhang@intel.com, wanpeng.li@linux.intel.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fanwenyi0529@gmail.com
+Subject: [PATCH 1/1] KVM: ioapic: Record edge-triggered interrupts delivery status.
+Date: Wed, 24 Dec 2014 11:14:29 +0800
+Message-Id: <1419390869-1636-1-git-send-email-fanwenyi0529@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Xu Wei
+This patch fixes the bug discussed in
+https://www.mail-archive.com/kvm@vger.kernel.org/msg109813.html
 
-This series patch enable Hisilicon HiP01 SoC. The HiP01 SoC series
-chip is designed for networking product, it integrates a rich peripheral
-interfaces to support network applications and supports both one 
-core or dual cores and quad cores. The core is Cortex A9. 
+This patch uses a new field named irr_delivered to record the
+delivery status of edge-triggered interrupts, and clears the
+delivered interrupts in kvm_get_ioapic. So it has the same effect
+of commit 0bc830b05c667218d703f2026ec866c49df974fc
+("KVM: ioapic: clear IRR for edge-triggered interrupts at delivery")
+while avoids the bug of Windows guests.
 
-This series patch rebased on Linux 3.19-rc1.
+Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
+---
+ arch/x86/kvm/ioapic.c |    7 ++++++-
+ arch/x86/kvm/ioapic.h |    1 +
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-Best Regards
-
-Wang Long (7):
-  ARM: debug: add HiP01 debug uart
-  ARM: hisi: enable HiP01 SoC
-  ARM: dts: Add hip01-ca9x2 dts file
-  ARM: config: enable ARCH_HIP01
-  ARM: hisi: add a common smp_prepares_cpus function
-  ARM: hisi: rename secondary_startup function
-  ARM: hisi: enable smp for HiP01
-
- .../bindings/arm/hisilicon/hisilicon.txt           |  25 +++++
- arch/arm/Kconfig.debug                             |  10 ++
- arch/arm/boot/dts/Makefile                         |   1 +
- arch/arm/boot/dts/hip01-ca9x2.dts                  |  51 ++++++++++
- arch/arm/boot/dts/hip01.dtsi                       | 110 +++++++++++++++++++++
- arch/arm/configs/hisi_defconfig                    |   1 +
- arch/arm/configs/multi_v7_defconfig                |   1 +
- arch/arm/mach-hisi/Kconfig                         |   8 ++
- arch/arm/mach-hisi/core.h                          |   5 +-
- arch/arm/mach-hisi/headsmp.S                       |   2 +-
- arch/arm/mach-hisi/hisilicon.c                     |  10 ++
- arch/arm/mach-hisi/hotplug.c                       |  31 ++++++
- arch/arm/mach-hisi/platsmp.c                       |  56 ++++++++++-
- 13 files changed, 306 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/boot/dts/hip01-ca9x2.dts
- create mode 100644 arch/arm/boot/dts/hip01.dtsi
-
+diff --git a/arch/x86/kvm/ioapic.c b/arch/x86/kvm/ioapic.c
+index b1947e0..a2e9d96 100644
+--- a/arch/x86/kvm/ioapic.c
++++ b/arch/x86/kvm/ioapic.c
+@@ -206,6 +206,8 @@ static int ioapic_set_irq(struct kvm_ioapic *ioapic, unsigned int irq,
+ 
+ 	old_irr = ioapic->irr;
+ 	ioapic->irr |= mask;
++	if (edge)
++		ioapic->irr_delivered &= ~mask;
+ 	if ((edge && old_irr == ioapic->irr) ||
+ 	    (!edge && entry.fields.remote_irr)) {
+ 		ret = 0;
+@@ -349,7 +351,7 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
+ 	irqe.shorthand = 0;
+ 
+ 	if (irqe.trig_mode == IOAPIC_EDGE_TRIG)
+-		ioapic->irr &= ~(1 << irq);
++		ioapic->irr_delivered |= 1 << irq;
+ 
+ 	if (irq == RTC_GSI && line_status) {
+ 		/*
+@@ -597,6 +599,7 @@ static void kvm_ioapic_reset(struct kvm_ioapic *ioapic)
+ 	ioapic->base_address = IOAPIC_DEFAULT_BASE_ADDRESS;
+ 	ioapic->ioregsel = 0;
+ 	ioapic->irr = 0;
++	ioapic->irr_delivered = 0;
+ 	ioapic->id = 0;
+ 	memset(ioapic->irq_eoi, 0x00, IOAPIC_NUM_PINS);
+ 	rtc_irq_eoi_tracking_reset(ioapic);
+@@ -654,6 +657,7 @@ int kvm_get_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
+ 
+ 	spin_lock(&ioapic->lock);
+ 	memcpy(state, ioapic, sizeof(struct kvm_ioapic_state));
++	state->irr &= ~ioapic->irr_delivered;
+ 	spin_unlock(&ioapic->lock);
+ 	return 0;
+ }
+@@ -667,6 +671,7 @@ int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
+ 	spin_lock(&ioapic->lock);
+ 	memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
+ 	ioapic->irr = 0;
++	ioapic->irr_delivered = 0;
+ 	update_handled_vectors(ioapic);
+ 	kvm_vcpu_request_scan_ioapic(kvm);
+ 	kvm_ioapic_inject_all(ioapic, state->irr);
+diff --git a/arch/x86/kvm/ioapic.h b/arch/x86/kvm/ioapic.h
+index 3c91955..a5cdfc0 100644
+--- a/arch/x86/kvm/ioapic.h
++++ b/arch/x86/kvm/ioapic.h
+@@ -77,6 +77,7 @@ struct kvm_ioapic {
+ 	struct rtc_status rtc_status;
+ 	struct delayed_work eoi_inject;
+ 	u32 irq_eoi[IOAPIC_NUM_PINS];
++	u32 irr_delivered;
+ };
+ 
+ #ifdef DEBUG
 -- 
-1.8.3.4
+1.7.1
 
