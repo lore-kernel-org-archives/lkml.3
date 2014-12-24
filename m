@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaLXIlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 03:41:40 -0500
-Received: from mail-by2on0116.outbound.protection.outlook.com ([207.46.100.116]:63643
+	id S1752322AbaLXImA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 03:42:00 -0500
+Received: from mail-by2on0126.outbound.protection.outlook.com ([207.46.100.126]:10944
 	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751754AbaLXIgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 03:36:07 -0500
+	id S1751800AbaLXIf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 03:35:59 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,37 +15,34 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v5 05/21] ARM: imx6q: clk: Add the video_27m clock
-Date: Wed, 24 Dec 2014 16:39:27 +0800
-Message-ID: <1419410383-6359-6-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v5 03/21] of: Add vendor prefix for Truly Semiconductors Limited
+Date: Wed, 24 Dec 2014 16:39:25 +0800
+Message-ID: <1419410383-6359-4-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419410383-6359-1-git-send-email-Ying.Liu@freescale.com>
 References: <1419410383-6359-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.168.50)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(21056001)(62966003)(77156002)(105606002)(87936001)(50226001)(4396001)(50466002)(31966008)(106466001)(68736005)(92566001)(36756003)(229853001)(107046002)(77096005)(2351001)(2950100001)(99396003)(64706001)(89996001)(85426001)(120916001)(48376002)(46102003)(97736003)(6806004)(86362001)(47776003)(20776003)(84676001)(104016003)(110136001)(19580395003)(76176999)(50986999)(19580405001)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0637;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(99396003)(50986999)(76176999)(89996001)(48376002)(87936001)(31966008)(64706001)(20776003)(84676001)(85426001)(120916001)(47776003)(105606002)(77156002)(50466002)(36756003)(19580405001)(6806004)(62966003)(110136001)(19580395003)(50226001)(4396001)(97736003)(107046002)(106466001)(229853001)(46102003)(2351001)(104016003)(2950100001)(77096005)(86362001)(92566001)(21056001)(68736005)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0634;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0637;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0634;
 X-Forefront-PRVS: 04359FAD81
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 08:36:05.2593
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 24 Dec 2014 08:35:56.4995
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0637
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0634
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-This patch supports the video_27m clock which is a fixed factor
-clock of the pll3_pfd1_540m clock.
 
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
@@ -61,35 +58,21 @@ v2->v3:
 v1->v2:
  * None.
 
- arch/arm/mach-imx/clk-imx6q.c             | 1 +
- include/dt-bindings/clock/imx6qdl-clock.h | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
-index 4e79da7..9470df3 100644
---- a/arch/arm/mach-imx/clk-imx6q.c
-+++ b/arch/arm/mach-imx/clk-imx6q.c
-@@ -246,6 +246,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
- 	clk[IMX6QDL_CLK_PLL3_60M]  = imx_clk_fixed_factor("pll3_60m",  "pll3_usb_otg",   1, 8);
- 	clk[IMX6QDL_CLK_TWD]       = imx_clk_fixed_factor("twd",       "arm",            1, 2);
- 	clk[IMX6QDL_CLK_GPT_3M]    = imx_clk_fixed_factor("gpt_3m",    "osc",            1, 8);
-+	clk[IMX6QDL_CLK_VIDEO_27M] = imx_clk_fixed_factor("video_27m", "pll3_pfd1_540m", 1, 20);
- 	if (cpu_is_imx6dl()) {
- 		clk[IMX6QDL_CLK_GPU2D_AXI] = imx_clk_fixed_factor("gpu2d_axi", "mmdc_ch0_axi_podf", 1, 1);
- 		clk[IMX6QDL_CLK_GPU3D_AXI] = imx_clk_fixed_factor("gpu3d_axi", "mmdc_ch0_axi_podf", 1, 1);
-diff --git a/include/dt-bindings/clock/imx6qdl-clock.h b/include/dt-bindings/clock/imx6qdl-clock.h
-index b690cdb..25625bf 100644
---- a/include/dt-bindings/clock/imx6qdl-clock.h
-+++ b/include/dt-bindings/clock/imx6qdl-clock.h
-@@ -248,6 +248,7 @@
- #define IMX6QDL_PLL6_BYPASS			235
- #define IMX6QDL_PLL7_BYPASS			236
- #define IMX6QDL_CLK_GPT_3M			237
--#define IMX6QDL_CLK_END				238
-+#define IMX6QDL_CLK_VIDEO_27M			238
-+#define IMX6QDL_CLK_END				239
- 
- #endif /* __DT_BINDINGS_CLOCK_IMX6QDL_H */
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index f46adb2..0e67bad 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -158,6 +158,7 @@ tlm	Trusted Logic Mobility
+ toradex	Toradex AG
+ toshiba	Toshiba Corporation
+ toumaz	Toumaz
++truly	Truly Semiconductors Limited
+ usi	Universal Scientific Industrial Co., Ltd.
+ v3	V3 Semiconductor
+ variscite	Variscite Ltd.
 -- 
 2.1.0
 
