@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaLYSCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 13:02:04 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:58620 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423AbaLYR53 (ORCPT
+	id S1752845AbaLYSCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 13:02:44 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:45789 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371AbaLYR5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 12:57:29 -0500
+	Thu, 25 Dec 2014 12:57:24 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: ralf@linux-mips.org
 Cc: f.fainelli@gmail.com, jaedon.shin@gmail.com, abrestic@chromium.org,
         tglx@linutronix.de, jason@lakedaemon.net, jogo@openwrt.org,
         arnd@arndb.de, computersforpeace@gmail.com, linux-mips@linux-mips.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V6 18/25] MIPS: BMIPS: Remove bogus bus name
-Date: Thu, 25 Dec 2014 09:49:13 -0800
-Message-Id: <1419529760-9520-19-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V6 15/25] MIPS: BMIPS: Flush the readahead cache after DMA
+Date: Thu, 25 Dec 2014 09:49:10 -0800
+Message-Id: <1419529760-9520-16-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1419529760-9520-1-git-send-email-cernekee@gmail.com>
 References: <1419529760-9520-1-git-send-email-cernekee@gmail.com>
@@ -23,26 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no "bcm3384" bus so let's just remove it to avoid confusion.
+BMIPS 3300/435x/438x CPUs have a readahead cache that is separate from
+the L1/L2.  During a DMA operation, accesses adjacent to a DMA buffer
+may cause parts of the DMA buffer to be prefetched into the RAC.  To
+avoid possible coherency problems, flush the RAC upon DMA completion.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Signed-off-by: Jaedon Shin <jaedon.shin@gmail.com>
 ---
- arch/mips/bmips/setup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/mm/dma-default.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/arch/mips/bmips/setup.c b/arch/mips/bmips/setup.c
-index 5099109..ac402ed 100644
---- a/arch/mips/bmips/setup.c
-+++ b/arch/mips/bmips/setup.c
-@@ -83,7 +83,7 @@ void __init device_tree_init(void)
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index af5f046..38ee47a 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -18,6 +18,7 @@
+ #include <linux/highmem.h>
+ #include <linux/dma-contiguous.h>
  
- int __init plat_of_setup(void)
++#include <asm/bmips.h>
+ #include <asm/cache.h>
+ #include <asm/cpu-type.h>
+ #include <asm/io.h>
+@@ -69,6 +70,20 @@ static inline struct page *dma_addr_to_page(struct device *dev,
+  */
+ static inline int cpu_needs_post_dma_flush(struct device *dev)
  {
--	return __dt_register_buses("brcm,bcm3384", "simple-bus");
-+	return __dt_register_buses("simple-bus", NULL);
- }
- 
- arch_initcall(plat_of_setup);
++	if (boot_cpu_type() == CPU_BMIPS3300 ||
++	    boot_cpu_type() == CPU_BMIPS4350 ||
++	    boot_cpu_type() == CPU_BMIPS4380) {
++		void __iomem *cbr = BMIPS_GET_CBR();
++		u32 cfg;
++
++		/* Flush stale data out of the readahead cache */
++		cfg = __raw_readl(cbr + BMIPS_RAC_CONFIG);
++		__raw_writel(cfg | 0x100, cbr + BMIPS_RAC_CONFIG);
++		__raw_readl(cbr + BMIPS_RAC_CONFIG);
++
++		return 0;
++	}
++
+ 	return !plat_device_is_coherent(dev) &&
+ 	       (boot_cpu_type() == CPU_R10000 ||
+ 		boot_cpu_type() == CPU_R12000 ||
 -- 
 2.1.1
 
