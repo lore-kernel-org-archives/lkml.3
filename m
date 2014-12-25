@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778AbaLYR5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 12:57:53 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:33713 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486AbaLYR5O (ORCPT
+	id S1752864AbaLYR6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 12:58:05 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:45518 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414AbaLYR51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 12:57:14 -0500
+	Thu, 25 Dec 2014 12:57:27 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: ralf@linux-mips.org
 Cc: f.fainelli@gmail.com, jaedon.shin@gmail.com, abrestic@chromium.org,
         tglx@linutronix.de, jason@lakedaemon.net, jogo@openwrt.org,
         arnd@arndb.de, computersforpeace@gmail.com, linux-mips@linux-mips.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V6 09/25] irqchip: bcm7120-l2: Split STB-specific logic into its own function
-Date: Thu, 25 Dec 2014 09:49:04 -0800
-Message-Id: <1419529760-9520-10-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V6 17/25] MIPS: BMIPS: Rewrite DMA code to use "dma-ranges" property
+Date: Thu, 25 Dec 2014 09:49:12 -0800
+Message-Id: <1419529760-9520-18-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1419529760-9520-1-git-send-email-cernekee@gmail.com>
 References: <1419529760-9520-1-git-send-email-cernekee@gmail.com>
@@ -23,257 +23,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BCM7xxx instances of this block (listed in the register manual as
-simply "IRQ0") all have the following items in common:
-
- - brcm,int-map-mask: for routing different bits in the L2 to different
-   parent IRQs
-
- - brcm,int-fwd-mask: for hardwiring certain IRQs to bypass the L2 and
-   use dedicated L1 lines
-
- - one enable/status pair (32 bits only)
-
-Much of the driver code can be shared with BCM3380-style controllers, but
-in order to do this cleanly, let's split out the BCM7xxx-specific logic
-first.
+This is a more standardized way of handling DMA remapping, and it is
+suitable for the memory map found on BCM3384.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- .../interrupt-controller/brcm,bcm7120-l2-intc.txt  |  12 +-
- drivers/irqchip/irq-bcm7120-l2.c                   | 123 ++++++++++++---------
- 2 files changed, 71 insertions(+), 64 deletions(-)
+ arch/mips/bmips/dma.c | 100 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 68 insertions(+), 32 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt b/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt
-index bae1f21..44a9bb1 100644
---- a/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt
-+++ b/Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7120-l2-intc.txt
-@@ -13,8 +13,7 @@ Such an interrupt controller has the following hardware design:
-   or if they will output an interrupt signal at this 2nd level interrupt
-   controller, in particular for UARTs
+diff --git a/arch/mips/bmips/dma.c b/arch/mips/bmips/dma.c
+index ea42012..04790f4 100644
+--- a/arch/mips/bmips/dma.c
++++ b/arch/mips/bmips/dma.c
+@@ -6,76 +6,112 @@
+  * Copyright (C) 2014 Kevin Cernekee <cernekee@gmail.com>
+  */
  
--- typically has one 32-bit enable word and one 32-bit status word, but on
--  some hardware may have more than one enable/status pair
-+- has one 32-bit enable word and one 32-bit status word
++#define pr_fmt(fmt)		"bmips-dma: " fmt
++
+ #include <linux/device.h>
+ #include <linux/dma-direction.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/init.h>
+-#include <linux/mm.h>
++#include <linux/io.h>
+ #include <linux/of.h>
+-#include <linux/pci.h>
++#include <linux/printk.h>
++#include <linux/slab.h>
+ #include <linux/types.h>
+ #include <dma-coherence.h>
  
- - no atomic set/clear operations
+ /*
+- * BCM3384 has configurable address translation windows which allow the
++ * BCM338x has configurable address translation windows which allow the
+  * peripherals' DMA addresses to be different from the Zephyr-visible
+  * physical addresses.  e.g. usb_dma_addr = zephyr_pa ^ 0x08000000
+  *
+- * If our DT "memory" node has a "dma-xor-mask" property we will enable this
+- * translation using the provided offset.
++ * If the "brcm,ubus" node has a "dma-ranges" property we will enable this
++ * translation globally using the provided information.  This implements a
++ * very limited subset of "dma-ranges" support and it will probably be
++ * replaced by a more generic version later.
+  */
+-static u32 bcm3384_dma_xor_mask;
+-static u32 bcm3384_dma_xor_limit = 0xffffffff;
  
-@@ -53,9 +52,7 @@ The typical hardware layout for this controller is represented below:
- Required properties:
+-/*
+- * PCI collapses the memory hole at 0x10000000 - 0x1fffffff.
+- * On systems with a dma-xor-mask, this range is guaranteed to live above
+- * the dma-xor-limit.
+- */
+-#define BCM3384_MEM_HOLE_PA	0x10000000
+-#define BCM3384_MEM_HOLE_SIZE	0x10000000
++struct bmips_dma_range {
++	u32			child_addr;
++	u32			parent_addr;
++	u32			size;
++};
  
- - compatible: should be "brcm,bcm7120-l2-intc"
--- reg: specifies the base physical address and size of the registers;
--  multiple pairs may be specified, with the first pair handling IRQ offsets
--  0..31 and the second pair handling 32..63
-+- reg: specifies the base physical address and size of the registers
- - interrupt-controller: identifies the node as an interrupt controller
- - #interrupt-cells: specifies the number of cells needed to encode an interrupt
-   source, should be 1.
-@@ -66,10 +63,7 @@ Required properties:
- - brcm,int-map-mask: 32-bits bit mask describing how many and which interrupts
-   are wired to this 2nd level interrupt controller, and how they match their
-   respective interrupt parents. Should match exactly the number of interrupts
--  specified in the 'interrupts' property, multiplied by the number of
--  enable/status register pairs implemented by this controller.  For
--  multiple parent IRQs with multiple enable/status words, this looks like:
--  <irq0_w0 irq0_w1 irq1_w0 irq1_w1 ...>
-+  specified in the 'interrupts' property.
- 
- Optional properties:
- 
-diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
-index e8441ee..6a62858 100644
---- a/drivers/irqchip/irq-bcm7120-l2.c
-+++ b/drivers/irqchip/irq-bcm7120-l2.c
-@@ -34,7 +34,7 @@
- #define IRQSTAT		0x04
- 
- #define MAX_WORDS	4
--#define MAX_MAPPINGS	MAX_WORDS
-+#define MAX_MAPPINGS	(MAX_WORDS * 2)
- #define IRQS_PER_WORD	32
- 
- struct bcm7120_l2_intc_data {
-@@ -47,6 +47,8 @@ struct bcm7120_l2_intc_data {
- 	bool can_wake;
- 	u32 irq_fwd_mask[MAX_WORDS];
- 	u32 irq_map_mask[MAX_WORDS];
-+	int num_parent_irqs;
-+	const __be32 *map_mask_prop;
- };
- 
- static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
-@@ -104,7 +106,7 @@ static void bcm7120_l2_intc_resume(struct irq_data *d)
- 
- static int bcm7120_l2_intc_init_one(struct device_node *dn,
- 					struct bcm7120_l2_intc_data *data,
--					int irq, const __be32 *map_mask)
-+					int irq)
+-static dma_addr_t bcm3384_phys_to_dma(struct device *dev, phys_addr_t pa)
++static struct bmips_dma_range *bmips_dma_ranges;
++
++#define FLUSH_RAC		0x100
++
++static dma_addr_t bmips_phys_to_dma(struct device *dev, phys_addr_t pa)
  {
- 	int parent_irq;
- 	unsigned int idx;
-@@ -120,7 +122,8 @@ static int bcm7120_l2_intc_init_one(struct device_node *dn,
- 	 */
- 	for (idx = 0; idx < data->n_words; idx++)
- 		data->irq_map_mask[idx] |=
--			be32_to_cpup(map_mask + irq * data->n_words + idx);
-+			be32_to_cpup(data->map_mask_prop +
-+				     irq * data->n_words + idx);
- 
- 	irq_set_handler_data(parent_irq, data);
- 	irq_set_chained_handler(parent_irq, bcm7120_l2_intc_irq_handle);
-@@ -128,74 +131,76 @@ static int bcm7120_l2_intc_init_one(struct device_node *dn,
- 	return 0;
+-	if (dev && dev_is_pci(dev) &&
+-	    pa >= (BCM3384_MEM_HOLE_PA + BCM3384_MEM_HOLE_SIZE))
+-		return pa - BCM3384_MEM_HOLE_SIZE;
+-	if (pa <= bcm3384_dma_xor_limit)
+-		return pa ^ bcm3384_dma_xor_mask;
++	struct bmips_dma_range *r;
++
++	for (r = bmips_dma_ranges; r && r->size; r++) {
++		if (pa >= r->child_addr &&
++		    pa < (r->child_addr + r->size))
++			return pa - r->child_addr + r->parent_addr;
++	}
+ 	return pa;
  }
  
--int __init bcm7120_l2_intc_of_init(struct device_node *dn,
--					struct device_node *parent)
-+static int __init bcm7120_l2_intc_iomap_7120(struct device_node *dn,
-+					     struct bcm7120_l2_intc_data *data)
-+{
-+	int ret;
-+
-+	data->map_base[0] = of_iomap(dn, 0);
-+	if (!data->map_base[0]) {
-+		pr_err("unable to map registers\n");
-+		return -ENOMEM;
-+	}
-+
-+	data->pair_base[0] = data->map_base[0];
-+	data->en_offset[0] = IRQEN;
-+	data->stat_offset[0] = IRQSTAT;
-+	data->n_words = 1;
-+
-+	ret = of_property_read_u32_array(dn, "brcm,int-fwd-mask",
-+					 data->irq_fwd_mask, data->n_words);
-+	if (ret != 0 && ret != -EINVAL) {
-+		/* property exists but has the wrong number of words */
-+		pr_err("invalid brcm,int-fwd-mask property\n");
-+		return -EINVAL;
-+	}
-+
-+	data->map_mask_prop = of_get_property(dn, "brcm,int-map-mask", &ret);
-+	if (!data->map_mask_prop ||
-+	    (ret != (sizeof(__be32) * data->num_parent_irqs * data->n_words))) {
-+		pr_err("invalid brcm,int-map-mask property\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+int __init bcm7120_l2_intc_probe(struct device_node *dn,
-+				 struct device_node *parent,
-+				 int (*iomap_regs_fn)(struct device_node *,
-+					struct bcm7120_l2_intc_data *),
-+				 const char *intc_name)
+ dma_addr_t plat_map_dma_mem(struct device *dev, void *addr, size_t size)
  {
- 	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
- 	struct bcm7120_l2_intc_data *data;
- 	struct irq_chip_generic *gc;
- 	struct irq_chip_type *ct;
--	const __be32 *map_mask;
--	int num_parent_irqs;
--	int ret = 0, len;
-+	int ret = 0;
- 	unsigned int idx, irq, flags;
- 
- 	data = kzalloc(sizeof(*data), GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
- 
--	for (idx = 0; idx < MAX_WORDS; idx++) {
--		data->map_base[idx] = of_iomap(dn, idx);
--		if (!data->map_base[idx])
--			break;
--
--		data->pair_base[idx] = data->map_base[idx];
--		data->en_offset[idx] = IRQEN;
--		data->stat_offset[idx] = IRQSTAT;
--
--		data->n_words = idx + 1;
--	}
--	if (!data->n_words) {
--		pr_err("failed to remap intc L2 registers\n");
--		ret = -ENOMEM;
--		goto out_unmap;
--	}
--
--	/* Enable all interrupts specified in the interrupt forward mask;
--	 * disable all others.  If the property doesn't exist (-EINVAL),
--	 * assume all zeroes.
--	 */
--	ret = of_property_read_u32_array(dn, "brcm,int-fwd-mask",
--					 data->irq_fwd_mask, data->n_words);
--	if (ret == 0 || ret == -EINVAL) {
--		for (idx = 0; idx < data->n_words; idx++)
--			__raw_writel(data->irq_fwd_mask[idx],
--				     data->pair_base[idx] +
--				     data->en_offset[idx]);
--	} else {
--		/* property exists but has the wrong number of words */
--		pr_err("invalid int-fwd-mask property\n");
--		ret = -EINVAL;
--		goto out_unmap;
--	}
--
--	num_parent_irqs = of_irq_count(dn);
--	if (num_parent_irqs <= 0) {
-+	data->num_parent_irqs = of_irq_count(dn);
-+	if (data->num_parent_irqs <= 0) {
- 		pr_err("invalid number of parent interrupts\n");
- 		ret = -ENOMEM;
- 		goto out_unmap;
- 	}
- 
--	map_mask = of_get_property(dn, "brcm,int-map-mask", &len);
--	if (!map_mask ||
--	    (len != (sizeof(*map_mask) * num_parent_irqs * data->n_words))) {
--		pr_err("invalid brcm,int-map-mask property\n");
--		ret = -EINVAL;
-+	ret = iomap_regs_fn(dn, data);
-+	if (ret < 0)
- 		goto out_unmap;
-+
-+	for (idx = 0; idx < data->n_words; idx++) {
-+		__raw_writel(data->irq_fwd_mask[idx],
-+			     data->pair_base[idx] +
-+			     data->en_offset[idx]);
- 	}
- 
--	for (irq = 0; irq < num_parent_irqs; irq++) {
--		ret = bcm7120_l2_intc_init_one(dn, data, irq, map_mask);
-+	for (irq = 0; irq < data->num_parent_irqs; irq++) {
-+		ret = bcm7120_l2_intc_init_one(dn, data, irq);
- 		if (ret)
- 			goto out_unmap;
- 	}
-@@ -251,8 +256,8 @@ int __init bcm7120_l2_intc_of_init(struct device_node *dn,
- 		}
- 	}
- 
--	pr_info("registered BCM7120 L2 intc (mem: 0x%p, parent IRQ(s): %d)\n",
--			data->map_base[0], num_parent_irqs);
-+	pr_info("registered %s intc (mem: 0x%p, parent IRQ(s): %d)\n",
-+			intc_name, data->map_base[0], data->num_parent_irqs);
- 
- 	return 0;
- 
-@@ -266,5 +271,13 @@ out_unmap:
- 	kfree(data);
- 	return ret;
+-	return bcm3384_phys_to_dma(dev, virt_to_phys(addr));
++	return bmips_phys_to_dma(dev, virt_to_phys(addr));
  }
+ 
+ dma_addr_t plat_map_dma_mem_page(struct device *dev, struct page *page)
+ {
+-	return bcm3384_phys_to_dma(dev, page_to_phys(page));
++	return bmips_phys_to_dma(dev, page_to_phys(page));
+ }
+ 
+ unsigned long plat_dma_addr_to_phys(struct device *dev, dma_addr_t dma_addr)
+ {
+-	if (dev && dev_is_pci(dev) &&
+-	    dma_addr >= BCM3384_MEM_HOLE_PA)
+-		return dma_addr + BCM3384_MEM_HOLE_SIZE;
+-	if ((dma_addr ^ bcm3384_dma_xor_mask) <= bcm3384_dma_xor_limit)
+-		return dma_addr ^ bcm3384_dma_xor_mask;
++	struct bmips_dma_range *r;
 +
-+int __init bcm7120_l2_intc_probe_7120(struct device_node *dn,
-+				      struct device_node *parent)
-+{
-+	return bcm7120_l2_intc_probe(dn, parent, bcm7120_l2_intc_iomap_7120,
-+				     "BCM7120 L2");
-+}
++	for (r = bmips_dma_ranges; r && r->size; r++) {
++		if (dma_addr >= r->parent_addr &&
++		    dma_addr < (r->parent_addr + r->size))
++			return dma_addr - r->parent_addr + r->child_addr;
++	}
+ 	return dma_addr;
+ }
+ 
+-static int __init bcm3384_init_dma_xor(void)
++static int __init bmips_init_dma_ranges(void)
+ {
+-	struct device_node *np = of_find_node_by_type(NULL, "memory");
++	struct device_node *np =
++		of_find_compatible_node(NULL, NULL, "brcm,ubus");
++	const __be32 *data;
++	struct bmips_dma_range *r;
++	int len;
+ 
+ 	if (!np)
+ 		return 0;
+ 
+-	of_property_read_u32(np, "dma-xor-mask", &bcm3384_dma_xor_mask);
+-	of_property_read_u32(np, "dma-xor-limit", &bcm3384_dma_xor_limit);
++	data = of_get_property(np, "dma-ranges", &len);
++	if (!data)
++		goto out_good;
 +
- IRQCHIP_DECLARE(bcm7120_l2_intc, "brcm,bcm7120-l2-intc",
--		bcm7120_l2_intc_of_init);
-+		bcm7120_l2_intc_probe_7120);
++	len /= sizeof(*data) * 3;
++	if (!len)
++		goto out_bad;
++
++	/* add a dummy (zero) entry at the end as a sentinel */
++	bmips_dma_ranges = kzalloc(sizeof(struct bmips_dma_range) * (len + 1),
++				   GFP_KERNEL);
++	if (!bmips_dma_ranges)
++		goto out_bad;
+ 
++	for (r = bmips_dma_ranges; len; len--, r++) {
++		r->child_addr = be32_to_cpup(data++);
++		r->parent_addr = be32_to_cpup(data++);
++		r->size = be32_to_cpup(data++);
++	}
++
++out_good:
+ 	of_node_put(np);
+ 	return 0;
++
++out_bad:
++	pr_err("error parsing dma-ranges property\n");
++	of_node_put(np);
++	return -EINVAL;
+ }
+-arch_initcall(bcm3384_init_dma_xor);
++arch_initcall(bmips_init_dma_ranges);
 -- 
 2.1.1
 
