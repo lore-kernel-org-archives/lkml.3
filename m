@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283AbaLYLdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 06:33:51 -0500
-Received: from www.osadl.org ([62.245.132.105]:46425 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968AbaLYLdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 06:33:50 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Rik van Riel <riel@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH] doc fix - brlock was removed in the 3.13 kernel series
-Date: Thu, 25 Dec 2014 06:29:41 -0500
-Message-Id: <1419506981-23952-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752336AbaLYMSD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 07:18:03 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:45170 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034AbaLYMR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 07:17:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <1419500596-12760-1-git-send-email-fabf@skynet.be>
+References: <1419500596-12760-1-git-send-email-fabf@skynet.be>
+Date: Thu, 25 Dec 2014 13:17:58 +0100
+Message-ID: <CAFLxGvyhuQcXpaKZpJQ4B-zNpDOV3L3mZ87iFgeGcZkXZO9Keg@mail.gmail.com>
+Subject: Re: [PATCH 1/1 linux-next] fs/reiserfs/inode.c: replace 0 by NULL for pointers
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: LKML <linux-kernel@vger.kernel.org>, reiserfs-devel@vger.kernel.org,
+        Jeff Mahoney <jeffm@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The brlock was completely removed in the 3.13 kernel series.
-see commit 0f6ed63b1707 ("no need to keep brlock macros anymore...")
+On Thu, Dec 25, 2014 at 10:43 AM, Fabian Frederick <fabf@skynet.be> wrote:
+> Fix sparse warning:
+> fs/reiserfs/inode.c:2769:19: warning: Using plain integer as NULL pointer
 
-It seems that documentation in seqlock.h was not updated to reflect
-this. This patch drops the (hopefully last) false brlock reference.
-All remaining references to brlock refer to byte-range locks (notably
-in cifs) and not to "Big Reader Lock" and should be correct.
+I see such fixes often and I always wonder whether this is still an
+issue with modern compilers/computers.
+Can you point out a problem which will be fixed by your patch?
 
-patch is against 3.19.0-rc1 linux-next
+> Cc: reiserfs-devel@vger.kernel.org
+> Cc: Jeff Mahoney <jeffm@suse.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  fs/reiserfs/inode.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+> index a7eec98..e72401e 100644
+> --- a/fs/reiserfs/inode.c
+> +++ b/fs/reiserfs/inode.c
+> @@ -2766,7 +2766,7 @@ static int reiserfs_write_begin(struct file *file,
+>         int old_ref = 0;
+>
+>         inode = mapping->host;
+> -       *fsdata = 0;
+> +       *fsdata = NULL;
+>         if (flags & AOP_FLAG_CONT_EXPAND &&
+>             (pos & (inode->i_sb->s_blocksize - 1)) == 0) {
+>                 pos ++;
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- include/linux/seqlock.h |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index f5df8f6..af7f5e9 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -13,9 +13,8 @@
-  *    from going forward. Unlike the regular rwlock, the read lock here is
-  *    exclusive so that only one locking reader can get it.
-  *
-- * This is not as cache friendly as brlock. Also, this may not work well
-- * for data that contains pointers, because any writer could
-- * invalidate a pointer that a reader was following.
-+ * This may not work well for data that contains pointers, because any
-+ * writer could invalidate a pointer that a reader was following.
-  *
-  * Expected non-blocking reader usage:
-  * 	do {
---
-1.7.10.4
 
+-- 
+Thanks,
+//richard
