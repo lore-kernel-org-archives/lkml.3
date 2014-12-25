@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316AbaLYKR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 05:17:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60479 "EHLO mx2.suse.de"
+	id S1752437AbaLYKTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 05:19:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60490 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989AbaLYKR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 05:17:58 -0500
-Date: Thu, 25 Dec 2014 11:17:57 +0100
-Message-ID: <s5hr3vohw2y.wl-tiwai@suse.de>
+	id S1752232AbaLYKTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 05:19:07 -0500
+Date: Thu, 25 Dec 2014 11:19:04 +0100
+Message-ID: <s5hppb8hw13.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: pci: hda: patch_analog.c:  Remove some unused functions
-In-Reply-To: <1419165312-28886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419165312-28886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Alexander Stein <alexanders83@web.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2] ALSA: atmel: fix building the ac97 driver for at91-multiplatform
+In-Reply-To: <1419160689-20447-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1419160689-20447-1-git-send-email-alexandre.belloni@free-electrons.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,70 +26,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 21 Dec 2014 13:35:12 +0100,
-Rickard Strandqvist wrote:
+At Sun, 21 Dec 2014 12:18:09 +0100,
+Alexandre Belloni wrote:
 > 
-> Removes some functions that are not used anywhere:
-> ad198x_ch_mode_get() ad198x_ch_mode_info() ad198x_ch_mode_info()
+> From: Arnd Bergmann <arnd@arndb.de>
 > 
-> This was partially found by using a static code analysis program called cppcheck.
+> at91 will no longer export the mach/cpu.h and mach/hardware.h header files
+> in the future, which would break building the atmel ac97c driver.
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> Since the cpu_is_* check is only used to find out whether we are running
+> on avr32 or arm/at91, we can hardcode that check in the ARM case.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Link: http://www.spinics.net/lists/arm-kernel/msg382068.html
 
-OK, you sent it already...  Applied now.
+Is this targeted for 3.19 or 3.20?
+
 
 thanks,
 
 Takashi
 
 > ---
->  sound/pci/hda/patch_analog.c |   33 ---------------------------------
->  1 file changed, 33 deletions(-)
+>  sound/atmel/ac97c.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-> index 06275f8..0e76dcc 100644
-> --- a/sound/pci/hda/patch_analog.c
-> +++ b/sound/pci/hda/patch_analog.c
-> @@ -697,39 +697,6 @@ static int patch_ad1981(struct hda_codec *codec)
->   *      E/F quad mic array
->   */
+> diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
+> index b59427d5a697..83975f8d5947 100644
+> --- a/sound/atmel/ac97c.c
+> +++ b/sound/atmel/ac97c.c
+> @@ -34,10 +34,10 @@
+>  #include <linux/platform_data/dma-dw.h>
+>  #include <linux/dma/dw.h>
 >  
-> -#ifdef ENABLE_AD_STATIC_QUIRKS
-> -static int ad198x_ch_mode_info(struct snd_kcontrol *kcontrol,
-> -			       struct snd_ctl_elem_info *uinfo)
-> -{
-> -	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
-> -	struct ad198x_spec *spec = codec->spec;
-> -	return snd_hda_ch_mode_info(codec, uinfo, spec->channel_mode,
-> -				    spec->num_channel_mode);
-> -}
+> +#ifdef CONFIG_AVR32
+>  #include <mach/cpu.h>
 > -
-> -static int ad198x_ch_mode_get(struct snd_kcontrol *kcontrol,
-> -			      struct snd_ctl_elem_value *ucontrol)
-> -{
-> -	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
-> -	struct ad198x_spec *spec = codec->spec;
-> -	return snd_hda_ch_mode_get(codec, ucontrol, spec->channel_mode,
-> -				   spec->num_channel_mode, spec->multiout.max_channels);
-> -}
-> -
-> -static int ad198x_ch_mode_put(struct snd_kcontrol *kcontrol,
-> -			      struct snd_ctl_elem_value *ucontrol)
-> -{
-> -	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
-> -	struct ad198x_spec *spec = codec->spec;
-> -	int err = snd_hda_ch_mode_put(codec, ucontrol, spec->channel_mode,
-> -				      spec->num_channel_mode,
-> -				      &spec->multiout.max_channels);
-> -	if (err >= 0 && spec->need_dac_fix)
-> -		spec->multiout.num_dacs = spec->multiout.max_channels / 2;
-> -	return err;
-> -}
-> -#endif /* ENABLE_AD_STATIC_QUIRKS */
-> -
->  static int ad1988_auto_smux_enum_info(struct snd_kcontrol *kcontrol,
->  				      struct snd_ctl_elem_info *uinfo)
->  {
+> -#ifdef CONFIG_ARCH_AT91
+> -#include <mach/hardware.h>
+> +#else
+> +#define cpu_is_at32ap7000() 0
+>  #endif
+>  
+>  #include "ac97c.h"
 > -- 
-> 1.7.10.4
+> 2.1.0
 > 
