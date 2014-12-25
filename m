@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaLYV4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 16:56:07 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:39616 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaLYV4B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 16:56:01 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Alex Hung <alex.hung@canonical.com>, Darren Hart <dvhart@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-Date: Thu, 25 Dec 2014 22:55:57 +0100
-Message-ID: <4278344.duCujNBB8t@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.19.0-rc1+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <201412252111.06004@pali>
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <CAJ=jquaeyz4NnT2Wg7MaLHrLF1+ARXfds-Z-hRvYyk8SvQGTKQ@mail.gmail.com> <201412252111.06004@pali>
+	id S1752146AbaLYWDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 17:03:15 -0500
+Received: from mail.eperm.de ([89.247.134.16]:51055 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136AbaLYWDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 17:03:13 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH v6 4/4] crypto: AF_ALG: enable RNG interface compilation
+Date: Thu, 25 Dec 2014 23:00:39 +0100
+Message-ID: <1531939.gTKbxagG6Z@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <5682082.ffPqvQlSqN@tachyon.chronox.de>
+References: <5682082.ffPqvQlSqN@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 December 2014 21:11:05 Pali Rohár wrote:
-> I will try to recap all information which we have...
-> 
-> *) We should not send wireless key press to userspace when BIOS 
-> already handles wireless state (and enable/disable wifi): 
-> http://www.spinics.net/lists/platform-driver-x86/msg05922.html
-> 
-> *) some tested dell machines does not implement GRBT method (or 
-> report constant value) which could return state of wireless 
-> (enabled/disabled) -- e.g. Inspiron 7447
-> 
-> *) dell-wireless driver is doing nothing on devices which have 
-> wireless slider switch (except calling CRBT/ARBT methods)
-> 
-> *) all tested machines emit key with keycode 240 (scancode is 
-> probably 136 = 0x88) to userspace via i8042 bus/AT keyboard when 
-> wireless button/slider is pressed/switched
-> 
-> *) both drivers dell-wireless and dell-rbtn do not implement 
-> setting soft rfkill state (or change wifi state)
-> 
-> So in my opinion: if we decide to use driver for acpi DELLABCE 
-> device we should use dell-rbnt for devices with hw slider switch 
-> and dell-wireless for devices with fn button. I think it does not 
-> make sense to use dell-wireless for devices with hw slider 
-> because it do nothing and dell-rbtn for devices with fn key 
-> button as GRBT does not working properly.
+Enable compilation of the RNG AF_ALG support and provide a Kconfig
+option to compile the RNG AF_ALG support.
 
-Here the problem. We are determining which laptop has an hardware
-slider and which doesn't calling CRBT. If the returned value is 2
-or 3, then the laptop has an hardware slider. However, it cannot be
-assumed the opposite if the returned value is 0 or 1.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/Kconfig  | 9 +++++++++
+ crypto/Makefile | 1 +
+ 2 files changed, 10 insertions(+)
 
-See the acpidumps Alex uploaded. The Inspiron 3543 returns 0 when
-CRBT is called and so does the Inspiron 7447. However, the former
-doesn't have a working ARBT method and, if I'm not wrong, its BIOS
-doesn't handle radio devices. The BIOS of the latter can handle
-radio and has a working ARBT method to make it stop from doing that.
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index cd3e6fd..f2d434b 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -1523,6 +1523,15 @@ config CRYPTO_USER_API_AEAD
+ 	  This option enables the user-spaces interface for AEAD
+ 	  cipher algorithms.
+ 
++config CRYPTO_USER_API_RNG
++	tristate "User-space interface for random number generator algorithms"
++	depends on NET
++	select CRYPTO_RNG
++	select CRYPTO_USER_API
++	help
++	  This option enables the user-spaces interface for random
++	  number generator algorithms.
++
+ config CRYPTO_HASH_INFO
+ 	bool
+ 
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 593fd3c..c109df5 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -100,6 +100,7 @@ obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
+ obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
+ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
+ obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
++obj-$(CONFIG_CRYPTO_USER_API_RNG) += algif_rng.o
+ 
+ #
+ # generic algorithms and the async_tx api
+-- 
+2.1.0
 
-Since we determine when the BIOS might not be able to control radio
-devices through CRBT and we can't say it for sure (in the example
-above, CRBT returned the same value), we make sure that the BIOS
-doesn't handle radio devices by calling ARBT. We can ensure this
-(e.g. Inspirong 7447), but we can't ensure the opposite (e.g.
-Inspiron 3453).
 
-If there was a way to determine which laptop really needs
-dell-wireless, calling ARBT wouldn't have been necessary, but that's
-not the case. Users can always blacklist the module if they know
-their laptop can work as expected without it, but we have to ensure
-that everything always works.
-
-This is what I understood by looking at the acpidumps, so I could
-be wrong.
-
-> And second note: Do we need some driver for acpi DELLABCE device? 
-> Which problem is trying acpi DELLABCE device to solve? Is not 
-> everything working fine without driver for DELLABCE device?
-
-As I wrote above, DELLABCE is for those systems whose BIOS doesn't
-handle radio devices and expects the OS do everything when Fn keys
-are pressed.
-(Well, it actually seems that something is done by the keyboard
-controller, but this is not certain yet)
-
-> My dell-rbtn approach is trying to export rfkill interface from 
-> DELLABCE device and eliminate using i8042 hook function in smbios 
-> dell-laptop driver.
-> 
-> Alex, can you check if scancode of wireless change generated by 
-> BIOS is on all machines same: 136 (0x88)? And is send by keyboard 
-> controller (not acpi/wmi)?
-
-I can say that on my XPS13 the scancode is 0x88 and it is sent by
-the keyboard controller.
-
-Gabriele
