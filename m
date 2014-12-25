@@ -1,296 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaLYGeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 01:34:13 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:23188 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbaLYGeM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 01:34:12 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-f3-549bafe18f22
-From: Chao Yu <chao2.yu@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH]f2fs: reuse inode_entry_slab in gc procedure for
- using slab more effectively
-Date: Thu, 25 Dec 2014 14:32:50 +0800
-Message-id: <000d01d0200c$ca1e1590$5e5a40b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAgBz0iCuy/MJLcQqW1U1tpYd5l3g==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jQd2H62eHGBzrMrK4tq+RyeLJ+lnM
-	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxtyLs5kK
-	Ohwq/neuZmlgfGrSxcjJISFgIvH/zUd2CFtM4sK99WxdjFwcQgLTGSUm3LrHCOH8YJTYP2kj
-	M0gVm4CKxPKO/0wgtoiAl8Sk/SdYQGxmAQ+Jxo7vrCC2sECGxLyuTWBTWQRUJVbuvwtUz8HB
-	K2ApcawrGSTMKyAo8WPyPahWLYn1O48zQdjyEpvXvGWGOEhBYsfZ14wQq/QkWk5tYoOoEZfY
-	eOQWywRGgVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc0s+k
-	djCubLA4xCjAwajEw/sgZnaIEGtiWXFl7iFGCQ5mJRHewqVAId6UxMqq1KL8+KLSnNTiQ4zS
-	HCxK4rxK9m0hQgLpiSWp2ampBalFMFkmDk6pBkahibvMCjkOVi+0Wr7Tof/1Escg1T6+qgvM
-	Fguzbvyd9v8wV56p4J7eA4uZt+jENKnGFApfENe4Ks17dMeTRx3CLcH3n1kYnX/3OnjXlb22
-	V28eb+zdKquq9+yIRPmnNU0zLjF/nrOfcVZbZY7r4p4Xr7Km5N1a9enAy67dbumvMyTdr5oF
-	ql5QYinOSDTUYi4qTgQASJpfo2UCAAA=
+	id S1752036AbaLYHqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 02:46:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52690 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755AbaLYHqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 02:46:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="433230649"
+Message-ID: <549BC0D9.6040801@intel.com>
+Date: Thu, 25 Dec 2014 15:46:33 +0800
+From: "Chen, Tiejun" <tiejun.chen@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        luto@amacapital.net, jamie@audible.transient.net
+Subject: Re: regression bisected; KVM: entry failed, hardware error 0x80000021
+References: <20141221124640.GA4059@cucamonga.audible.transient.net> <5497C882.4000108@intel.com> <20141222092358.GA3915@cucamonga.audible.transient.net> <5498CA50.8070906@intel.com> <5498CB62.3070901@intel.com> <20141223072659.GA4015@cucamonga.audible.transient.net> <549A796C.50801@intel.com> <20141224110239.GA3908@cucamonga.audible.transient.net>
+In-Reply-To: <20141224110239.GA3908@cucamonga.audible.transient.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two slab cache inode_entry_slab and winode_slab using the same
-structure as below:
+On 2014/12/24 19:02, Jamie Heilman wrote:
+> Chen, Tiejun wrote:
+>> On 2014/12/23 15:26, Jamie Heilman wrote:
+>>> Chen, Tiejun wrote:
+>>>> On 2014/12/23 9:50, Chen, Tiejun wrote:
+>>>>> On 2014/12/22 17:23, Jamie Heilman wrote:
+>>>>>> KVM internal error. Suberror: 1
+>>>>>> emulation failure
+>>>>>> EAX=000de494 EBX=00000000 ECX=00000000 EDX=00000cfd
+>>>>>> ESI=00000059 EDI=00000000 EBP=00000000 ESP=00006fb4
+>>>>>> EIP=000f15c1 EFL=00010016 [----AP-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+>>>>>> ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+>>>>>> CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
+>>>>>> SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+>>>>>> DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+>>>>>> FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+>>>>>> GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+>>>>>> LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+>>>>>> TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+>>>>>> GDT=     000f6be8 00000037
+>>>>>> IDT=     000f6c26 00000000
+>>>>>> CR0=60000011 CR2=00000000 CR3=00000000 CR4=00000000
+>>>>>> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
+>>>>>> DR3=0000000000000000
+>>>>>> DR6=00000000ffff0ff0 DR7=0000000000000400
+>>>>>> EFER=0000000000000000
+>>>>>> Code=e8 ae fc ff ff 89 f2 a8 10 89 d8 75 0a b9 41 15 ff ff ff d1 <5b>
+>>>>>> 5e c3 5b 5e e9 76 ff ff ff b0 11 e6 20 e6 a0 b0 08 e6 21 b0 70 e6 a1
+>>>>>> b0 04 e6 21 b0 02
+>>>>>>
+>>>>>> FWIW, I get the same thing with 34a1cd60d17 reverted.  Maybe there are
+>>>>>> two bugs, maybe there's more to this first one.  I can repro this
+>>>>>
+>>>>> So if my understanding is correct, this is probably another bug. And
+>>>>> especially, I already saw the same log in another thread, "Cleaning up
+>>>>> the KVM clock". Maybe you can continue to `git bisect` to locate that
+>>>>> bad commit.
+>>>>>
+>>>>
+>>>> Looks just now Andy found that commit,
+>>>> 0e60b0799fedc495a5c57dbd669de3c10d72edd2 "kvm: change memslot sorting rule
+>>> >from size to GFN", maybe you can try to revert this to try yours again.
+>>>
+>>> That doesn't revert cleanly for me, and I don't have much time to
+>>> fiddle with it until the 24th---so checked out the commit before it
+>>> (d4ae84a0), applied your patch, built, and yes, everything works fine
+>>> at that point.  I'll probably have time for another full bisection
+>>> later, assuming things aren't ironed out already by then.
+>
+> 3.18.0-rc3-00120-gd4ae84a0 + vmx reorder msr writes patch = OK
+> 3.18.0-rc3-00121-g0e60b07 + vmx reorder msr writes patch = emulation failure
+>
+> So that certainly points to 0e60b0799fedc495a5c57dbd669de3c10d72edd2
+> as well.
+>
+>> Could you try this to fix your last error?
+>
+> Running qemu-system-x86_64 -machine pc,accel=kvm -nodefaults works,
+> my real (headless) kvm guests work, but this new patch makes running
+> "qemu-system-x86_64 -machine pc,accel=kvm" fail again, this time with
 
-struct dir_inode_entry {
-	struct list_head list;	/* list head */
-	struct inode *inode;	/* vfs inode pointer */
-};
+Are you sure? From my test based on 3.19-rc1 that it owns top commit,
 
-struct inode_entry {
-	struct list_head list;
-	struct inode *inode;
-};
+aa39477b5692611b91ac9455ae588738852b3f60
 
-It's a little waste that the two cache can not share their memory space for each
-other.
-So in this patch we remove one redundant winode_slab slab cache, then use more
-universal name struct inode_entry as remaining data structure name of slab,
-finally we reuse the inode_entry_slab to store dirty dir item and gc item for
-more effective.
+just plus my previous patch, "kvm: x86: vmx: reorder some msr writing"
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+I already can execute such a command successfully,
+
+qemu-system-x86_64 -machine pc,accel=kvm -m 2048 -smp 2 -hda ubuntu.img
+
+And your log below seems not to relate mem_slot issue we're discussing, 
+I guess you need to update qemu as well.
+
+But I also found my new patch just work out Andy's next case, its really 
+bringing a new issue in !next case. So I tried to refine that patch 
+again as follows,
+
+Signed-off-by: Tiejun Chen <tiejun.chen@intel.com>
 ---
- fs/f2fs/checkpoint.c | 18 +++++++++---------
- fs/f2fs/debug.c      |  2 +-
- fs/f2fs/f2fs.h       |  8 +++-----
- fs/f2fs/gc.c         | 20 +++-----------------
- fs/f2fs/gc.h         |  5 -----
- fs/f2fs/super.c      |  8 +-------
- 6 files changed, 17 insertions(+), 44 deletions(-)
+  virt/kvm/kvm_main.c | 5 ++++-
+  1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 3999933..9f5317c 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -24,7 +24,7 @@
- #include <trace/events/f2fs.h>
- 
- static struct kmem_cache *ino_entry_slab;
--static struct kmem_cache *inode_entry_slab;
-+struct kmem_cache *inode_entry_slab;
- 
- /*
-  * We guarantee no failure on the returned page.
-@@ -673,7 +673,7 @@ fail_no_cp:
- 	return -EINVAL;
- }
- 
--static int __add_dirty_inode(struct inode *inode, struct dir_inode_entry *new)
-+static int __add_dirty_inode(struct inode *inode, struct inode_entry *new)
- {
- 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
- 
-@@ -690,7 +690,7 @@ static int __add_dirty_inode(struct inode *inode, struct dir_inode_entry *new)
- void update_dirty_page(struct inode *inode, struct page *page)
- {
- 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
--	struct dir_inode_entry *new;
-+	struct inode_entry *new;
- 	int ret = 0;
- 
- 	if (!S_ISDIR(inode->i_mode) && !S_ISREG(inode->i_mode))
-@@ -720,7 +720,7 @@ out:
- void add_dirty_dir_inode(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
--	struct dir_inode_entry *new =
-+	struct inode_entry *new =
- 			f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
- 	int ret = 0;
- 
-@@ -738,7 +738,7 @@ void add_dirty_dir_inode(struct inode *inode)
- void remove_dirty_dir_inode(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
--	struct dir_inode_entry *entry;
-+	struct inode_entry *entry;
- 
- 	if (!S_ISDIR(inode->i_mode))
- 		return;
-@@ -768,7 +768,7 @@ void remove_dirty_dir_inode(struct inode *inode)
- void sync_dirty_dir_inodes(struct f2fs_sb_info *sbi)
- {
- 	struct list_head *head;
--	struct dir_inode_entry *entry;
-+	struct inode_entry *entry;
- 	struct inode *inode;
- retry:
- 	if (unlikely(f2fs_cp_error(sbi)))
-@@ -781,7 +781,7 @@ retry:
- 		spin_unlock(&sbi->dir_inode_lock);
- 		return;
- 	}
--	entry = list_entry(head->next, struct dir_inode_entry, list);
-+	entry = list_entry(head->next, struct inode_entry, list);
- 	inode = igrab(entry->inode);
- 	spin_unlock(&sbi->dir_inode_lock);
- 	if (inode) {
-@@ -1107,8 +1107,8 @@ int __init create_checkpoint_caches(void)
- 			sizeof(struct ino_entry));
- 	if (!ino_entry_slab)
- 		return -ENOMEM;
--	inode_entry_slab = f2fs_kmem_cache_create("f2fs_dirty_dir_entry",
--			sizeof(struct dir_inode_entry));
-+	inode_entry_slab = f2fs_kmem_cache_create("f2fs_inode_entry",
-+			sizeof(struct inode_entry));
- 	if (!inode_entry_slab) {
- 		kmem_cache_destroy(ino_entry_slab);
- 		return -ENOMEM;
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-index 2b64221..dd7835b 100644
---- a/fs/f2fs/debug.c
-+++ b/fs/f2fs/debug.c
-@@ -172,7 +172,7 @@ get_cache:
- 	si->cache_mem += npages << PAGE_CACHE_SHIFT;
- 	npages = META_MAPPING(sbi)->nrpages;
- 	si->cache_mem += npages << PAGE_CACHE_SHIFT;
--	si->cache_mem += sbi->n_dirty_dirs * sizeof(struct dir_inode_entry);
-+	si->cache_mem += sbi->n_dirty_dirs * sizeof(struct inode_entry);
- 	for (i = 0; i <= UPDATE_INO; i++)
- 		si->cache_mem += sbi->im[i].ino_num * sizeof(struct ino_entry);
- }
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index e22ec06..573fdc8 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -136,8 +136,8 @@ struct ino_entry {
- 	nid_t ino;		/* inode number */
- };
- 
--/* for the list of directory inodes */
--struct dir_inode_entry {
-+/* for the list of directory inodes or gc inodes */
-+struct inode_entry {
- 	struct list_head list;	/* list head */
- 	struct inode *inode;	/* vfs inode pointer */
- };
-@@ -297,7 +297,7 @@ struct f2fs_inode_info {
- 	nid_t i_xattr_nid;		/* node id that contains xattrs */
- 	unsigned long long xattr_ver;	/* cp version of xattr modification */
- 	struct extent_info ext;		/* in-memory extent cache entry */
--	struct dir_inode_entry *dirty_dir;	/* the pointer of dirty dir */
-+	struct inode_entry *dirty_dir;	/* the pointer of dirty dir */
- 
- 	struct radix_tree_root inmem_root;	/* radix tree for inmem pages */
- 	struct list_head inmem_pages;	/* inmemory pages managed by f2fs */
-@@ -1487,8 +1487,6 @@ void stop_gc_thread(struct f2fs_sb_info *);
- block_t start_bidx_of_node(unsigned int, struct f2fs_inode_info *);
- int f2fs_gc(struct f2fs_sb_info *);
- void build_gc_manager(struct f2fs_sb_info *);
--int __init create_gc_caches(void);
--void destroy_gc_caches(void);
- 
- /*
-  * recovery.c
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index eec0933..139b79c 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -24,7 +24,7 @@
- #include "gc.h"
- #include <trace/events/f2fs.h>
- 
--static struct kmem_cache *winode_slab;
-+extern struct kmem_cache *inode_entry_slab;
- 
- static int gc_thread_func(void *data)
- {
-@@ -356,7 +356,7 @@ static void add_gc_inode(struct gc_inode_list *gc_list, struct inode *inode)
- 		iput(inode);
- 		return;
- 	}
--	new_ie = f2fs_kmem_cache_alloc(winode_slab, GFP_NOFS);
-+	new_ie = f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
- 	new_ie->inode = inode;
- retry:
- 	if (radix_tree_insert(&gc_list->iroot, inode->i_ino, new_ie)) {
-@@ -373,7 +373,7 @@ static void put_gc_inode(struct gc_inode_list *gc_list)
- 		radix_tree_delete(&gc_list->iroot, ie->inode->i_ino);
- 		iput(ie->inode);
- 		list_del(&ie->list);
--		kmem_cache_free(winode_slab, ie);
-+		kmem_cache_free(inode_entry_slab, ie);
- 	}
- }
- 
-@@ -750,17 +750,3 @@ void build_gc_manager(struct f2fs_sb_info *sbi)
- {
- 	DIRTY_I(sbi)->v_ops = &default_v_ops;
- }
--
--int __init create_gc_caches(void)
--{
--	winode_slab = f2fs_kmem_cache_create("f2fs_gc_inodes",
--			sizeof(struct inode_entry));
--	if (!winode_slab)
--		return -ENOMEM;
--	return 0;
--}
--
--void destroy_gc_caches(void)
--{
--	kmem_cache_destroy(winode_slab);
--}
-diff --git a/fs/f2fs/gc.h b/fs/f2fs/gc.h
-index 6ff7ad3..f9166a4 100644
---- a/fs/f2fs/gc.h
-+++ b/fs/f2fs/gc.h
-@@ -35,11 +35,6 @@ struct f2fs_gc_kthread {
- 	unsigned int gc_idle;
- };
- 
--struct inode_entry {
--	struct list_head list;
--	struct inode *inode;
--};
--
- struct gc_inode_list {
- 	struct list_head ilist;
- 	struct radix_tree_root iroot;
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index cf68e44..0ae6a2f 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -1231,12 +1231,9 @@ static int __init init_f2fs_fs(void)
- 	err = create_segment_manager_caches();
- 	if (err)
- 		goto free_node_manager_caches;
--	err = create_gc_caches();
--	if (err)
--		goto free_segment_manager_caches;
- 	err = create_checkpoint_caches();
- 	if (err)
--		goto free_gc_caches;
-+		goto free_segment_manager_caches;
- 	f2fs_kset = kset_create_and_add("f2fs", NULL, fs_kobj);
- 	if (!f2fs_kset) {
- 		err = -ENOMEM;
-@@ -1253,8 +1250,6 @@ free_kset:
- 	kset_unregister(f2fs_kset);
- free_checkpoint_caches:
- 	destroy_checkpoint_caches();
--free_gc_caches:
--	destroy_gc_caches();
- free_segment_manager_caches:
- 	destroy_segment_manager_caches();
- free_node_manager_caches:
-@@ -1271,7 +1266,6 @@ static void __exit exit_f2fs_fs(void)
- 	f2fs_destroy_root_stats();
- 	unregister_filesystem(&f2fs_fs_type);
- 	destroy_checkpoint_caches();
--	destroy_gc_caches();
- 	destroy_segment_manager_caches();
- 	destroy_node_manager_caches();
- 	destroy_inodecache();
--- 
-2.2.1
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index f528343..910bc48 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -672,6 +672,7 @@ static void update_memslots(struct kvm_memslots *slots,
+         WARN_ON(mslots[i].id != id);
+         if (!new->npages) {
+                 new->base_gfn = 0;
++               new->flags = 0;
+                 if (mslots[i].npages)
+                         slots->used_slots--;
+         } else {
+@@ -688,7 +689,9 @@ static void update_memslots(struct kvm_memslots *slots,
+                 i++;
+         }
+         while (i > 0 &&
+-              new->base_gfn > mslots[i - 1].base_gfn) {
++              ((new->base_gfn > mslots[i - 1].base_gfn) ||
++            (!new->base_gfn &&
++             !mslots[i - 1].base_gfn && !mslots[i - 1].npages))) {
+                 mslots[i] = mslots[i - 1];
+                 slots->id_to_index[mslots[i].id] = i;
+                 i--;
 
 
+
+Tiejun
+
+> errors in the host to the tune of:
+>
+> ------------[ cut here ]------------
+> WARNING: CPU: 1 PID: 3901 at arch/x86/kvm/x86.c:6575 kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]()
+> Modules linked in: nfsv4 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative autofs4 fan nfsd auth_rpcgss nfs lockd grace fscache sunrpc bridge stp llc vhost_net tun vhost macvtap macvlan fuse cbc dm_crypt usb_storage snd_hda_codec_analog snd_hda_codec_generic kvm_intel kvm tg3 ptp pps_core sr_mod snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_timer snd sg dcdbas cdrom psmouse soundcore floppy evdev xfs dm_mod raid1 md_mod
+> CPU: 1 PID: 3901 Comm: qemu-system-x86 Not tainted 3.19.0-rc1-00011-g53262d1-dirty #1
+> Hardware name: Dell Inc. Precision WorkStation T3400  /0TP412, BIOS A14 04/30/2012
+>   0000000000000000 000000007e052328 ffff8800c25ffcf8 ffffffff813defbe
+>   0000000000000000 0000000000000000 ffff8800c25ffd38 ffffffff8103b517
+>   ffff8800c25ffd28 ffffffffa019bdec ffff8800caf1d000 ffff8800c2774800
+> Call Trace:
+>   [<ffffffff813defbe>] dump_stack+0x4c/0x6e
+>   [<ffffffff8103b517>] warn_slowpath_common+0x97/0xb1
+>   [<ffffffffa019bdec>] ? kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
+>   [<ffffffff8103b60b>] warn_slowpath_null+0x15/0x17
+>   [<ffffffffa019bdec>] kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
+>   [<ffffffffa02308b9>] ? vmcs_load+0x20/0x62 [kvm_intel]
+>   [<ffffffffa0231e03>] ? vmx_vcpu_load+0x140/0x16a [kvm_intel]
+>   [<ffffffffa0196ba3>] ? kvm_arch_vcpu_load+0x15c/0x161 [kvm]
+>   [<ffffffffa018d8b1>] kvm_vcpu_ioctl+0x189/0x4bd [kvm]
+>   [<ffffffff8104647a>] ? do_sigtimedwait+0x12f/0x189
+>   [<ffffffff810ea316>] do_vfs_ioctl+0x370/0x436
+>   [<ffffffff810f24f2>] ? __fget+0x67/0x72
+>   [<ffffffff810ea41b>] SyS_ioctl+0x3f/0x5e
+>   [<ffffffff813e34d2>] system_call_fastpath+0x12/0x17
+> ---[ end trace 46abac932fb3b4a1 ]---
+> ------------[ cut here ]------------
+> WARNING: CPU: 1 PID: 3901 at arch/x86/kvm/x86.c:6575 kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]()
+> Modules linked in: nfsv4 cpufreq_userspace cpufreq_stats cpufreq_powersave cpufreq_ondemand cpufreq_conservative autofs4 fan nfsd auth_rpcgss nfs lockd grace fscache sunrpc bridge stp llc vhost_net tun vhost macvtap macvlan fuse cbc dm_crypt usb_storage snd_hda_codec_analog snd_hda_codec_generic kvm_intel kvm tg3 ptp pps_core sr_mod snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_timer snd sg dcdbas cdrom psmouse soundcore floppy evdev xfs dm_mod raid1 md_mod
+> CPU: 1 PID: 3901 Comm: qemu-system-x86 Tainted: G        W      3.19.0-rc1-00011-g53262d1-dirty #1
+> Hardware name: Dell Inc. Precision WorkStation T3400  /0TP412, BIOS A14 04/30/2012
+>   0000000000000000 000000007e052328 ffff8800c25ffcf8 ffffffff813defbe
+>   0000000000000000 0000000000000000 ffff8800c25ffd38 ffffffff8103b517
+>   ffff8800c25ffd28 ffffffffa019bdec ffff8800caf1d000 ffff8800c2774800
+> Call Trace:
+>   [<ffffffff813defbe>] dump_stack+0x4c/0x6e
+>   [<ffffffff8103b517>] warn_slowpath_common+0x97/0xb1
+>   [<ffffffffa019bdec>] ? kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
+>   [<ffffffff8103b60b>] warn_slowpath_null+0x15/0x17
+>   [<ffffffffa019bdec>] kvm_arch_vcpu_ioctl_run+0xd63/0xe5b [kvm]
+>   [<ffffffffa02308b9>] ? vmcs_load+0x20/0x62 [kvm_intel]
+>   [<ffffffffa0231e03>] ? vmx_vcpu_load+0x140/0x16a [kvm_intel]
+>   [<ffffffffa0196ba3>] ? kvm_arch_vcpu_load+0x15c/0x161 [kvm]
+>   [<ffffffffa018d8b1>] kvm_vcpu_ioctl+0x189/0x4bd [kvm]
+>   [<ffffffff8104647a>] ? do_sigtimedwait+0x12f/0x189
+>   [<ffffffff810ea316>] do_vfs_ioctl+0x370/0x436
+>   [<ffffffff810f24f2>] ? __fget+0x67/0x72
+>   [<ffffffff810ea41b>] SyS_ioctl+0x3f/0x5e
+>   [<ffffffff813e34d2>] system_call_fastpath+0x12/0x17
+> ---[ end trace 46abac932fb3b4a2 ]---
+>
+> over and over and over ad nauseum, or until I kill the qemu command,
+> it also eats a core's worth of cpu.
+>
+>
