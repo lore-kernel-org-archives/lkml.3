@@ -1,66 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbaLYWyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 17:54:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38132 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666AbaLYWyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 17:54:11 -0500
-Date: Thu, 25 Dec 2014 23:53:39 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 13/37] perf tools: Use thread__comm_time() when adding
- hist entries
-Message-ID: <20141225225339.GA15569@krava.redhat.com>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <1419405333-27952-14-git-send-email-namhyung@kernel.org>
+	id S1752458AbaLYWzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 17:55:33 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:38418 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaLYWzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 17:55:31 -0500
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+To: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org,
+        robh+dt@kernel.org
+Cc: linux-sh@vger.kernel.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH] clk-rcar-gen2: ADSP clock support
+Date: Fri, 26 Dec 2014 01:55:26 +0300
+Message-ID: <2616097.6QI9oiZ0Bl@wasted.cogentembedded.com>
+Organization: Cogent Embedded Inc.
+User-Agent: KMail/4.14.3 (Linux/3.17.7-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419405333-27952-14-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 04:15:09PM +0900, Namhyung Kim wrote:
+Add the ADSP clock support to the R-Car generation 2 CPG driver.  This clock
+gets derived from  PLL1.  The layout of the ADSPCKCR register is  similar to
+those of the clocks supported by the 'clk-div6' driver but the divider encoding
+is non-linear, so can't be supported by that driver...
 
-SNIP
+Based on the original patch by Konstantin Kozhevnikov
+<konstantin.kozhevnikov@cogentembedded.com>.
 
->  
->  			he = __hists__add_entry(hists, &al, NULL,
-> -						NULL, NULL, 1, 1, 0, true);
-> +						NULL, NULL, 1, 1, 0, -1, true);
->  			if (he == NULL)
->  				goto out;
->  
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index 9314286ed25c..d322264bac22 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -451,11 +451,11 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
->  				      struct branch_info *bi,
->  				      struct mem_info *mi,
->  				      u64 period, u64 weight, u64 transaction,
-> -				      bool sample_self)
-> +				      u64 timestamp, bool sample_self)
->  {
->  	struct hist_entry entry = {
->  		.thread	= al->thread,
-> -		.comm = thread__comm(al->thread),
-> +		.comm = thread__comm_time(al->thread, timestamp),
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-with thread object having multiple comm entries, could this hurt
-the single threaded performance?
+---
+The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git' repo
+plus the RCAN clock support posted yesterday.
 
-The thread__comm_time function iterates comm_list each time,
-maybe you could add some 'last_comm found check' logic in it?
+ Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt |    5 -
+ drivers/clk/shmobile/clk-rcar-gen2.c                                     |   48 ++++++++++
+ 2 files changed, 51 insertions(+), 2 deletions(-)
 
-jirka
+Index: linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
+===================================================================
+--- linux.orig/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
++++ linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
+@@ -16,7 +16,8 @@ Required Properties:
+   - clocks: Reference to the parent clock
+   - #clock-cells: Must be 1
+   - clock-output-names: The names of the clocks. Supported clocks are "main",
+-    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1", "z", and "rcan"
++    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1", "z", "adsp", and
++    "rcan"
+ 
+ 
+ Example
+@@ -30,5 +31,5 @@ Example
+ 		#clock-cells = <1>;
+ 		clock-output-names = "main", "pll0, "pll1", "pll3",
+ 				     "lb", "qspi", "sdh", "sd0", "sd1", "z",
+-				     "rcan";
++				     "adsp", "rcan";
+ 	};
+Index: linux/drivers/clk/shmobile/clk-rcar-gen2.c
+===================================================================
+--- linux.orig/drivers/clk/shmobile/clk-rcar-gen2.c
++++ linux/drivers/clk/shmobile/clk-rcar-gen2.c
+@@ -33,6 +33,7 @@ struct rcar_gen2_cpg {
+ #define CPG_FRQCRC			0x000000e0
+ #define CPG_FRQCRC_ZFC_MASK		(0x1f << 8)
+ #define CPG_FRQCRC_ZFC_SHIFT		8
++#define CPG_ADSPCKCR			0x0000025c
+ #define CPG_RCANCKCR			0x00000270
+ 
+ /* -----------------------------------------------------------------------------
+@@ -162,6 +163,51 @@ static struct clk * __init cpg_z_clk_reg
+ 	return clk;
+ }
+ 
++/* ADSP divisors */
++static const struct clk_div_table cpg_adsp_div_table[] = {
++	{  1,  3 }, {  2,  4 }, {  3,  6 }, {  4,  8 },
++	{  5, 12 }, {  6, 16 }, {  7, 18 }, {  8, 24 },
++	{ 10, 36 }, { 11, 48 }, {  0,  0 },
++};
++
++static struct clk * __init cpg_adsp_clk_register(struct rcar_gen2_cpg *cpg)
++{
++	const char *parent_name = "pll1";
++	struct clk_divider *div;
++	struct clk_gate *gate;
++	struct clk *clk;
++
++	div = kzalloc(sizeof(*div), GFP_KERNEL);
++	if (!div)
++		return ERR_PTR(-ENOMEM);
++
++	div->reg = cpg->reg + CPG_ADSPCKCR;
++	div->width = 4;
++	div->table = cpg_adsp_div_table;
++	div->lock = &cpg->lock;
++
++	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
++	if (!gate) {
++		kfree(div);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	gate->reg = cpg->reg + CPG_RCANCKCR;
++	gate->bit_idx = 8;
++	gate->flags = CLK_GATE_SET_TO_DISABLE;
++	gate->lock = &cpg->lock;
++
++	clk = clk_register_composite(NULL, "adsp", &parent_name, 1, NULL, NULL,
++				     &div->hw, &clk_divider_ops,
++				     &gate->hw, &clk_gate_ops, 0);
++	if (IS_ERR(clk)) {
++		kfree(gate);
++		kfree(div);
++	}
++
++	return clk;
++}
++
+ static struct clk * __init cpg_rcan_clk_register(struct rcar_gen2_cpg *cpg,
+ 						 struct device_node *np)
+ {
+@@ -301,6 +347,8 @@ rcar_gen2_cpg_register_clock(struct devi
+ 		shift = 0;
+ 	} else if (!strcmp(name, "z")) {
+ 		return cpg_z_clk_register(cpg);
++	} else if (!strcmp(name, "adsp")) {
++		return cpg_adsp_clk_register(cpg);
+ 	} else if (!strcmp(name, "rcan")) {
+ 		return cpg_rcan_clk_register(cpg, np);
+ 	} else {
+
