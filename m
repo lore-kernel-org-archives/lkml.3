@@ -1,105 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbaLYXG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 18:06:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773AbaLYXGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 18:06:25 -0500
-Date: Fri, 26 Dec 2014 00:05:52 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 14/37] perf tools: Convert dead thread list into rbtree
-Message-ID: <20141225230552.GB15569@krava.redhat.com>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <1419405333-27952-15-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419405333-27952-15-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752441AbaLYXHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 18:07:10 -0500
+Received: from smtprelay0233.hostedemail.com ([216.40.44.233]:56634 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751431AbaLYXHH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 18:07:07 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:2:41:69:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3865:3867:3868:3871:4049:4117:4321:4605:5007:6119:6261:8784:9592:10004:10848:11026:11232:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13161:13229:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: honey87_782651affea1d
+X-Filterd-Recvd-Size: 6826
+Message-ID: <1419548824.6157.19.camel@perches.com>
+Subject: [PATCH] device: Change dev_<level> logging functions to return void
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 25 Dec 2014 15:07:04 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 04:15:10PM +0900, Namhyung Kim wrote:
+No caller or macro uses the return value so make all
+the functions return void.
 
-SNIP
+Compiled x86 allyesconfig and defconfig w/o CONFIG_PRINTK
 
->  
->  static void machine__remove_thread(struct machine *machine, struct thread *th)
->  {
-> +	struct rb_node **p = &machine->dead_threads.rb_node;
-> +	struct rb_node *parent = NULL;
-> +	struct thread *pos;
-> +
->  	machine->last_match = NULL;
->  	rb_erase(&th->rb_node, &machine->threads);
-> +
-> +	th->dead = true;
-> +
->  	/*
->  	 * We may have references to this thread, for instance in some hist_entry
-> -	 * instances, so just move them to a separate list.
-> +	 * instances, so just move them to a separate list in rbtree.
->  	 */
-> -	list_add_tail(&th->node, &machine->dead_threads);
-> +	while (*p != NULL) {
-> +		parent = *p;
-> +		pos = rb_entry(parent, struct thread, rb_node);
-> +
-> +		if (pos->tid == th->tid) {
-> +			list_add_tail(&th->node, &pos->node);
-> +			return;
-> +		}
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+This change is associated to a desire to eventually
+change printk to return void.
 
-hum, why is this 'new list' in thread object necessary? why not
-to store all in the tree?
+ drivers/base/core.c    | 29 +++++++++---------------
+ include/linux/device.h | 60 ++++++++++++++++++++++++--------------------------
+ 2 files changed, 40 insertions(+), 49 deletions(-)
+
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 97e2baf..07304a3 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -2080,54 +2080,47 @@ int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...)
+ }
+ EXPORT_SYMBOL(dev_printk_emit);
+ 
+-static int __dev_printk(const char *level, const struct device *dev,
++static void __dev_printk(const char *level, const struct device *dev,
+ 			struct va_format *vaf)
+ {
+-	if (!dev)
+-		return printk("%s(NULL device *): %pV", level, vaf);
+-
+-	return dev_printk_emit(level[1] - '0', dev,
+-			       "%s %s: %pV",
+-			       dev_driver_string(dev), dev_name(dev), vaf);
++	if (dev)
++		dev_printk_emit(level[1] - '0', dev, "%s %s: %pV",
++				dev_driver_string(dev), dev_name(dev), vaf);
++	else
++		printk("%s(NULL device *): %pV", level, vaf);
+ }
+ 
+-int dev_printk(const char *level, const struct device *dev,
+-	       const char *fmt, ...)
++void dev_printk(const char *level, const struct device *dev,
++		const char *fmt, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+-	int r;
+ 
+ 	va_start(args, fmt);
+ 
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+ 
+-	r = __dev_printk(level, dev, &vaf);
++	__dev_printk(level, dev, &vaf);
+ 
+ 	va_end(args);
+-
+-	return r;
+ }
+ EXPORT_SYMBOL(dev_printk);
+ 
+ #define define_dev_printk_level(func, kern_level)		\
+-int func(const struct device *dev, const char *fmt, ...)	\
++void func(const struct device *dev, const char *fmt, ...)	\
+ {								\
+ 	struct va_format vaf;					\
+ 	va_list args;						\
+-	int r;							\
+ 								\
+ 	va_start(args, fmt);					\
+ 								\
+ 	vaf.fmt = fmt;						\
+ 	vaf.va = &args;						\
+ 								\
+-	r = __dev_printk(kern_level, dev, &vaf);		\
++	__dev_printk(kern_level, dev, &vaf);			\
+ 								\
+ 	va_end(args);						\
+-								\
+-	return r;						\
+ }								\
+ EXPORT_SYMBOL(func);
+ 
+diff --git a/include/linux/device.h b/include/linux/device.h
+index fb50673..3c17713 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -1038,22 +1038,22 @@ extern __printf(3, 4)
+ int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...);
+ 
+ extern __printf(3, 4)
+-int dev_printk(const char *level, const struct device *dev,
+-	       const char *fmt, ...);
++void dev_printk(const char *level, const struct device *dev,
++		const char *fmt, ...);
+ extern __printf(2, 3)
+-int dev_emerg(const struct device *dev, const char *fmt, ...);
++void dev_emerg(const struct device *dev, const char *fmt, ...);
+ extern __printf(2, 3)
+-int dev_alert(const struct device *dev, const char *fmt, ...);
++void dev_alert(const struct device *dev, const char *fmt, ...);
+ extern __printf(2, 3)
+-int dev_crit(const struct device *dev, const char *fmt, ...);
++void dev_crit(const struct device *dev, const char *fmt, ...);
+ extern __printf(2, 3)
+-int dev_err(const struct device *dev, const char *fmt, ...);
++void dev_err(const struct device *dev, const char *fmt, ...);
+ extern __printf(2, 3)
+-int dev_warn(const struct device *dev, const char *fmt, ...);
++void dev_warn(const struct device *dev, const char *fmt, ...);
+ extern __printf(2, 3)
+-int dev_notice(const struct device *dev, const char *fmt, ...);
++void dev_notice(const struct device *dev, const char *fmt, ...);
+ extern __printf(2, 3)
+-int _dev_info(const struct device *dev, const char *fmt, ...);
++void _dev_info(const struct device *dev, const char *fmt, ...);
+ 
+ #else
+ 
+@@ -1065,35 +1065,35 @@ static inline __printf(3, 4)
+ int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...)
+ { return 0; }
+ 
+-static inline int __dev_printk(const char *level, const struct device *dev,
+-			       struct va_format *vaf)
+-{ return 0; }
++static inline void __dev_printk(const char *level, const struct device *dev,
++				struct va_format *vaf)
++{}
+ static inline __printf(3, 4)
+-int dev_printk(const char *level, const struct device *dev,
+-	       const char *fmt, ...)
+-{ return 0; }
++void dev_printk(const char *level, const struct device *dev,
++		const char *fmt, ...)
++{}
+ 
+ static inline __printf(2, 3)
+-int dev_emerg(const struct device *dev, const char *fmt, ...)
+-{ return 0; }
++void dev_emerg(const struct device *dev, const char *fmt, ...)
++{}
+ static inline __printf(2, 3)
+-int dev_crit(const struct device *dev, const char *fmt, ...)
+-{ return 0; }
++void dev_crit(const struct device *dev, const char *fmt, ...)
++{}
+ static inline __printf(2, 3)
+-int dev_alert(const struct device *dev, const char *fmt, ...)
+-{ return 0; }
++void dev_alert(const struct device *dev, const char *fmt, ...)
++{}
+ static inline __printf(2, 3)
+-int dev_err(const struct device *dev, const char *fmt, ...)
+-{ return 0; }
++void dev_err(const struct device *dev, const char *fmt, ...)
++{}
+ static inline __printf(2, 3)
+-int dev_warn(const struct device *dev, const char *fmt, ...)
+-{ return 0; }
++void dev_warn(const struct device *dev, const char *fmt, ...)
++{}
+ static inline __printf(2, 3)
+-int dev_notice(const struct device *dev, const char *fmt, ...)
+-{ return 0; }
++void dev_notice(const struct device *dev, const char *fmt, ...)
++{}
+ static inline __printf(2, 3)
+-int _dev_info(const struct device *dev, const char *fmt, ...)
+-{ return 0; }
++void _dev_info(const struct device *dev, const char *fmt, ...)
++{}
+ 
+ #endif
+ 
+@@ -1119,7 +1119,6 @@ do {						     \
+ ({								\
+ 	if (0)							\
+ 		dev_printk(KERN_DEBUG, dev, format, ##arg);	\
+-	0;							\
+ })
+ #endif
+ 
+@@ -1215,7 +1214,6 @@ do {									\
+ ({								\
+ 	if (0)							\
+ 		dev_printk(KERN_DEBUG, dev, format, ##arg);	\
+-	0;							\
+ })
+ #endif
+ 
 
 
-> +
-> +		if (th->tid < pos->tid)
-> +			p = &(*p)->rb_left;
-> +		else
-> +			p = &(*p)->rb_right;
-> +	}
-> +
-
-SNIP
-
-> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-> index 0b6dcd70bc8b..413f28cf689b 100644
-> --- a/tools/perf/util/thread.h
-> +++ b/tools/perf/util/thread.h
-> @@ -11,10 +11,8 @@
->  struct thread_stack;
->  
->  struct thread {
-> -	union {
-> -		struct rb_node	 rb_node;
-> -		struct list_head node;
-> -	};
-> +	struct rb_node	 	rb_node;
-> +	struct list_head 	node;
->  	struct map_groups	*mg;
->  	pid_t			pid_; /* Not all tools update this */
->  	pid_t			tid;
-> @@ -22,7 +20,8 @@ struct thread {
->  	int			cpu;
->  	char			shortname[3];
->  	bool			comm_set;
-> -	bool			dead; /* if set thread has exited */
-> +	bool			exited; /* if set thread has exited */
-> +	bool			dead; /* thread is in dead_threads list */
-
-looks like this also changes the logic (new exited flag),
-not just the dead threads storage wheel
-
-jirka
