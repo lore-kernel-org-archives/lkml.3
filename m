@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaLYLGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 06:06:00 -0500
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:35709 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752264AbaLYLF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 06:05:59 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjUWALbum1RXQ7EK/2dsb2JhbABcgwaBKrQUBQEBAQEBAQUBd5cqBAKBChcBAQEBAX2EaSOBGjeIMAG4WI9OLIYAiQ5kHYQTBZcIkVAigUUBgik9MYEDgUABAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net
-Subject: [PATCH 1/1 net-next] tipc: replace 0 by NULL for pointers
-Date: Thu, 25 Dec 2014 12:05:50 +0100
-Message-Id: <1419505550-17336-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	id S1752283AbaLYLdv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 06:33:51 -0500
+Received: from www.osadl.org ([62.245.132.105]:46425 "EHLO www.osadl.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751968AbaLYLdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 06:33:50 -0500
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Rik van Riel <riel@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH] doc fix - brlock was removed in the 3.13 kernel series
+Date: Thu, 25 Dec 2014 06:29:41 -0500
+Message-Id: <1419506981-23952-1-git-send-email-der.herr@hofr.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix sparse warning:
-net/tipc/link.c:1924:40: warning: Using plain integer as NULL pointer
+The brlock was completely removed in the 3.13 kernel series.
+see commit 0f6ed63b1707 ("no need to keep brlock macros anymore...")
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+It seems that documentation in seqlock.h was not updated to reflect
+this. This patch drops the (hopefully last) false brlock reference.
+All remaining references to brlock refer to byte-range locks (notably
+in cifs) and not to "Big Reader Lock" and should be correct.
+
+patch is against 3.19.0-rc1 linux-next
+
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 ---
- net/tipc/link.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/seqlock.h |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/net/tipc/link.c b/net/tipc/link.c
-index 23bcc11..082c3b5 100644
---- a/net/tipc/link.c
-+++ b/net/tipc/link.c
-@@ -1921,7 +1921,7 @@ static struct tipc_node *tipc_link_find_owner(const char *link_name,
- {
- 	struct tipc_link *l_ptr;
- 	struct tipc_node *n_ptr;
--	struct tipc_node *found_node = 0;
-+	struct tipc_node *found_node = NULL;
- 	int i;
- 
- 	*bearer_id = 0;
--- 
-1.9.1
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index f5df8f6..af7f5e9 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -13,9 +13,8 @@
+  *    from going forward. Unlike the regular rwlock, the read lock here is
+  *    exclusive so that only one locking reader can get it.
+  *
+- * This is not as cache friendly as brlock. Also, this may not work well
+- * for data that contains pointers, because any writer could
+- * invalidate a pointer that a reader was following.
++ * This may not work well for data that contains pointers, because any
++ * writer could invalidate a pointer that a reader was following.
+  *
+  * Expected non-blocking reader usage:
+  * 	do {
+--
+1.7.10.4
 
