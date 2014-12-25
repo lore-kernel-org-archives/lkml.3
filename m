@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaLYVyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 16:54:39 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:64602 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136AbaLYVyh convert rfc822-to-8bit (ORCPT
+	id S1752276AbaLYV4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 16:56:07 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:39616 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459AbaLYV4B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 16:54:37 -0500
+	Thu, 25 Dec 2014 16:56:01 -0500
 From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
 To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>,
-        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult, fan_max) from driver
-Date: Thu, 25 Dec 2014 22:54:34 +0100
-Message-ID: <4129190.SoIGvoiPho@xps13>
+Cc: Alex Hung <alex.hung@canonical.com>, Darren Hart <dvhart@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
+Date: Thu, 25 Dec 2014 22:55:57 +0100
+Message-ID: <4278344.duCujNBB8t@xps13>
 User-Agent: KMail/4.14.2 (Linux/3.19.0-rc1+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <201412181208.58969@pali>
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <1420702.eyL56f8lc9@xps13> <201412181208.58969@pali>
+In-Reply-To: <201412252111.06004@pali>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <CAJ=jquaeyz4NnT2Wg7MaLHrLF1+ARXfds-Z-hRvYyk8SvQGTKQ@mail.gmail.com> <201412252111.06004@pali>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="iso-8859-1"
@@ -28,86 +27,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 December 2014 12:08:58 Pali Rohár wrote:
-> On Wednesday 10 December 2014 14:32:16 Gabriele Mazzotta wrote:
-> > On Wednesday 10 December 2014 12:51:30 Pali Rohár wrote:
-> > > On Tuesday 09 December 2014 21:07:01 Pali Rohár wrote:
-> > > > Now we have autodetection code for fan multiplier and
-> > > > maximal fan speed so we do not need to have those
-> > > > constants for each laptop in kernel driver code.
-> > > > 
-> > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > > ---
-> > > > !!!Please do not apply this patch until all affected
-> > > > machines will be tested!!!
-> > > > 
-> > > > I tested autodetection code only on Dell Latitude E6440
-> > > > (where it worked). Other machines which needs to be
-> > > > tested:
-> > > > 
-> > > > Dell Latitude D520
-> > > > Dell Latitude E6540
-> > > > Dell Precision WorkStation 490
-> > > > Dell Studio
-> > > > Dell XPS M140 (MXC051)
-> > > > ---
-> > > 
-> > > Can somebody else with dell laptops test this patch series?
-> > 
-> > i8k_get_fan_nominal_rpm() returns -22 on my XPS13, so nothing
-> > changed with this patch series applied.
-> > 
-> > Gabriele
+On Thursday 25 December 2014 21:11:05 Pali Rohár wrote:
+> I will try to recap all information which we have...
 > 
-> So your BIOS cannot report nominal_rpm and because your machine 
-> is not in dmi list, all 3 patches do nothing for your machine.
+> *) We should not send wireless key press to userspace when BIOS 
+> already handles wireless state (and enable/disable wifi): 
+> http://www.spinics.net/lists/platform-driver-x86/msg05922.html
 > 
-> But you need to set multiplier to 1, right?
+> *) some tested dell machines does not implement GRBT method (or 
+> report constant value) which could return state of wireless 
+> (enabled/disabled) -- e.g. Inspiron 7447
 > 
-> What about this patch? (on top of 3/3)
+> *) dell-wireless driver is doing nothing on devices which have 
+> wireless slider switch (except calling CRBT/ARBT methods)
 > 
-> --- a/drivers/char/i8k.c
-> +++ b/drivers/char/i8k.c
-> @@ -850,6 +850,10 @@ static int __init i8k_probe(void)
->  		 */
->  		for (fan = 0; fan < I8K_FAN_COUNT; ++fan) {
->  			i8k_fan_mult[fan] = I8K_FAN_DEFAULT_MULT;
-> +			if (i8k_get_fan_rpm(fan) > I8K_FAN_MAX_RPM) {
-> +				i8k_fan_mult[fan] = 1;
-> +				continue;
-> +			}
->  			for (val = 0; val < 256; ++val) {
->  				ret = i8k_get_fan_nominal_rpm(fan, val);
->  				if (ret > I8K_FAN_MAX_RPM) {
+> *) all tested machines emit key with keycode 240 (scancode is 
+> probably 136 = 0x88) to userspace via i8042 bus/AT keyboard when 
+> wireless button/slider is pressed/switched
 > 
+> *) both drivers dell-wireless and dell-rbtn do not implement 
+> setting soft rfkill state (or change wifi state)
 > 
+> So in my opinion: if we decide to use driver for acpi DELLABCE 
+> device we should use dell-rbnt for devices with hw slider switch 
+> and dell-wireless for devices with fn button. I think it does not 
+> make sense to use dell-wireless for devices with hw slider 
+> because it do nothing and dell-rbtn for devices with fn key 
+> button as GRBT does not working properly.
 
-Hi,
+Here the problem. We are determining which laptop has an hardware
+slider and which doesn't calling CRBT. If the returned value is 2
+or 3, then the laptop has an hardware slider. However, it cannot be
+assumed the opposite if the returned value is 0 or 1.
 
-I'm sorry for replying only now, but I couldn't follow this thread
-closely and I'm a bit lost now. I haven't tested the suggested
-change, but I don't think it would work in a reliable way. It's not
-rare for the fan to be completely stopped, especially on boot. You
-are right though, 1 is the right multiplier.
+See the acpidumps Alex uploaded. The Inspiron 3543 returns 0 when
+CRBT is called and so does the Inspiron 7447. However, the former
+doesn't have a working ARBT method and, if I'm not wrong, its BIOS
+doesn't handle radio devices. The BIOS of the latter can handle
+radio and has a working ARBT method to make it stop from doing that.
 
+Since we determine when the BIOS might not be able to control radio
+devices through CRBT and we can't say it for sure (in the example
+above, CRBT returned the same value), we make sure that the BIOS
+doesn't handle radio devices by calling ARBT. We can ensure this
+(e.g. Inspirong 7447), but we can't ensure the opposite (e.g.
+Inspiron 3453).
 
-Guenter, while I was trying to catch up, I noticed that the support
-for the XPS 13 [1] will be added. May I ask you which revision of
-the laptop was tested? I own the 9333 one and I'm not sure that
-having i8k automatically loaded is a good idea. The reason is that
-reading and setting the speed of the right (and only) fan causes a
-freeze of the laptop of some milliseconds, enough to be annoying and
-noticeable. I'm worried of the effect this might have in the everyday
-use, users might start noticing random freezes because of one
-application that all the sudden is able to read the speed of the fan.
-I don't if the same happens on all the other Dell systems, this is
-the first and only Dell laptop I owned.
+If there was a way to determine which laptop really needs
+dell-wireless, calling ARBT wouldn't have been necessary, but that's
+not the case. Users can always blacklist the module if they know
+their laptop can work as expected without it, but we have to ensure
+that everything always works.
 
-If the tested laptop wasn't the XPS13 9333 and this problem does not
-exists, would it be possible to make the DMI_PRODUCT_NAME string such
-that it matches only the tested revision? The string that identifies
-my laptop is "XPS13 9333".
+This is what I understood by looking at the acpidumps, so I could
+be wrong.
+
+> And second note: Do we need some driver for acpi DELLABCE device? 
+> Which problem is trying acpi DELLABCE device to solve? Is not 
+> everything working fine without driver for DELLABCE device?
+
+As I wrote above, DELLABCE is for those systems whose BIOS doesn't
+handle radio devices and expects the OS do everything when Fn keys
+are pressed.
+(Well, it actually seems that something is done by the keyboard
+controller, but this is not certain yet)
+
+> My dell-rbtn approach is trying to export rfkill interface from 
+> DELLABCE device and eliminate using i8042 hook function in smbios 
+> dell-laptop driver.
+> 
+> Alex, can you check if scancode of wireless change generated by 
+> BIOS is on all machines same: 136 (0x88)? And is send by keyboard 
+> controller (not acpi/wmi)?
+
+I can say that on my XPS13 the scancode is 0x88 and it is sent by
+the keyboard controller.
 
 Gabriele
-
-[1] http://www.spinics.net/lists/kernel/msg1878801.html
