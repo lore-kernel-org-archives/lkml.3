@@ -1,139 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaLYUex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 15:34:53 -0500
-Received: from ns.lynxeye.de ([87.118.118.114]:50985 "EHLO lynxeye.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751000AbaLYUeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 15:34:50 -0500
-Message-ID: <1419539683.2165.6.camel@lynxeye.de>
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-From: Lucas Stach <dev@lynxeye.de>
-To: Vince Hsu <vinceh@nvidia.com>
-Cc: thierry.reding@gmail.com, swarren@wwwdotorg.org, gnurou@gmail.com,
-        bskeggs@redhat.com, martin.peres@free.fr, seven@nimrod-online.com,
-        samuel.pitoiset@gmail.com, nouveau@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 25 Dec 2014 21:34:43 +0100
-In-Reply-To: <549B7638.2010405@nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
-		 <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
-	 <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.8 (3.12.8-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751974AbaLYVyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 16:54:39 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:64602 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaLYVyh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 16:54:37 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult, fan_max) from driver
+Date: Thu, 25 Dec 2014 22:54:34 +0100
+Message-ID: <4129190.SoIGvoiPho@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.19.0-rc1+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <201412181208.58969@pali>
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <1420702.eyL56f8lc9@xps13> <201412181208.58969@pali>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 25.12.2014, 10:28 +0800 schrieb Vince Hsu:
-> On 12/24/2014 09:16 PM, Lucas Stach wrote:
-> > Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
-> >> The Tegra124 and later Tegra SoCs have a sepatate rail gating register
-> >> to enable/disable the clamp. The original function
-> >> tegra_powergate_remove_clamping() is not sufficient for the enable
-> >> function. So add a new function which is dedicated to the GPU rail
-> >> gating. Also don't refer to the powergate ID since the GPU ID makes no
-> >> sense here.
-> >>
-> >> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
-> > To be honest I don't see the point of this patch.
-> > You are bloating the PMC interface by introducing another exported
-> > function that does nothing different than what the current function
-> > already does.
-> >
-> > If you need a way to assert the clamp I would have expected you to
-> > introduce a common function to do this for all power partitions.
-> I thought about adding an tegra_powergate_assert_clamping(), but that 
-> doesn't make sense to all the power partitions except GPU. Note the 
-> difference in TRM. Any suggestion for the common function?
+On Thursday 18 December 2014 12:08:58 Pali Rohár wrote:
+> On Wednesday 10 December 2014 14:32:16 Gabriele Mazzotta wrote:
+> > On Wednesday 10 December 2014 12:51:30 Pali Rohár wrote:
+> > > On Tuesday 09 December 2014 21:07:01 Pali Rohár wrote:
+> > > > Now we have autodetection code for fan multiplier and
+> > > > maximal fan speed so we do not need to have those
+> > > > constants for each laptop in kernel driver code.
+> > > > 
+> > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > > > ---
+> > > > !!!Please do not apply this patch until all affected
+> > > > machines will be tested!!!
+> > > > 
+> > > > I tested autodetection code only on Dell Latitude E6440
+> > > > (where it worked). Other machines which needs to be
+> > > > tested:
+> > > > 
+> > > > Dell Latitude D520
+> > > > Dell Latitude E6540
+> > > > Dell Precision WorkStation 490
+> > > > Dell Studio
+> > > > Dell XPS M140 (MXC051)
+> > > > ---
+> > > 
+> > > Can somebody else with dell laptops test this patch series?
+> > 
+> > i8k_get_fan_nominal_rpm() returns -22 on my XPS13, so nothing
+> > changed with this patch series applied.
+> > 
+> > Gabriele
+> 
+> So your BIOS cannot report nominal_rpm and because your machine 
+> is not in dmi list, all 3 patches do nothing for your machine.
+> 
+> But you need to set multiplier to 1, right?
+> 
+> What about this patch? (on top of 3/3)
+> 
+> --- a/drivers/char/i8k.c
+> +++ b/drivers/char/i8k.c
+> @@ -850,6 +850,10 @@ static int __init i8k_probe(void)
+>  		 */
+>  		for (fan = 0; fan < I8K_FAN_COUNT; ++fan) {
+>  			i8k_fan_mult[fan] = I8K_FAN_DEFAULT_MULT;
+> +			if (i8k_get_fan_rpm(fan) > I8K_FAN_MAX_RPM) {
+> +				i8k_fan_mult[fan] = 1;
+> +				continue;
+> +			}
+>  			for (val = 0; val < 256; ++val) {
+>  				ret = i8k_get_fan_nominal_rpm(fan, val);
+>  				if (ret > I8K_FAN_MAX_RPM) {
+> 
+> 
 
-Is there anything speaking against adding this function and only accept
-the GPU partition as valid parameter for now. So at least the interface
-stays symmetric and can be easily extended if any future partitions have
-similar characteristics as the GPU one.
+Hi,
 
-> >
-> > Other comments inline.
-> >
-> > Regards,
-> > Lucas
-> >
-> >> ---
-> >>   drivers/soc/tegra/pmc.c | 34 +++++++++++++++++++++++-----------
-> >>   include/soc/tegra/pmc.h |  2 ++
-> >>   2 files changed, 25 insertions(+), 11 deletions(-)
-> >>
-> >> diff --git a/drivers/soc/tegra/pmc.c b/drivers/soc/tegra/pmc.c
-> >> index a2c0ceb95f8f..7798c530ead1 100644
-> >> --- a/drivers/soc/tegra/pmc.c
-> >> +++ b/drivers/soc/tegra/pmc.c
-> >> @@ -225,17 +225,6 @@ int tegra_powergate_remove_clamping(int id)
-> >>   		return -EINVAL;
-> >>   
-> >>   	/*
-> >> -	 * The Tegra124 GPU has a separate register (with different semantics)
-> >> -	 * to remove clamps.
-> >> -	 */
-> >> -	if (tegra_get_chip_id() == TEGRA124) {
-> >> -		if (id == TEGRA_POWERGATE_3D) {
-> >> -			tegra_pmc_writel(0, GPU_RG_CNTRL);
-> >> -			return 0;
-> >> -		}
-> >> -	}
-> >> -
-> >> -	/*
-> >>   	 * Tegra 2 has a bug where PCIE and VDE clamping masks are
-> >>   	 * swapped relatively to the partition ids
-> >>   	 */
-> >> @@ -253,6 +242,29 @@ int tegra_powergate_remove_clamping(int id)
-> >>   EXPORT_SYMBOL(tegra_powergate_remove_clamping);
-> >>   
-> >>   /**
-> >> + * tegra_powergate_gpu_set_clamping - control GPU-SOC clamps
-> >> + *
-> >> + * The post-Tegra114 chips have a separate rail gating register to configure
-> >> + * clamps.
-> >> + *
-> >> + * @assert: true to assert clamp, and false to remove
-> >> + */
-> >> +int tegra_powergate_gpu_set_clamping(bool assert)
-> > Those functions with a bool parameter to set/unset something are really
-> > annoying. Please avoid this pattern. The naming of the original function
-> > is much more intuitive.
-> But the original function is not sufficient. Maybe add a 
-> tegra_powergate_assert_gpu_clamping()? That way I will prefer to adding 
-> one more removal function for GPU. And then again that's a bloat, too.
-> >
-> >> +{
-> >> +	if (!pmc->soc)
-> >> +		return -EINVAL;
-> >> +
-> >> +	if (tegra_get_chip_id() == TEGRA124) {
-> >> +		tegra_pmc_writel(assert ? 1 : 0, GPU_RG_CNTRL);
-> >> +		tegra_pmc_readl(GPU_RG_CNTRL);
-> > You are reading the register back here, which to me seems like you are
-> > trying to make sure that the write is flushed. Why is this needed?
-> > I also observed the need to do this while working on Tegra124 PCIe in
-> > Barebox, otherwise the partition wouldn't power up. I didn't have time
-> > to follow up on this yet, so it would be nice if you could explain why
-> > this is needed, or if you don't know ask HW about it.
-> That's a read fence to assure the post of the previous writes through 
-> Tegra interconnect. (copy-paster from 
-> https://android.googlesource.com/kernel/tegra.git/+/28b107dcb3aa122de8e94e48af548140d519298f)
-
-I see what it does, the question is more about why this is needed.
-What is the Tegra interconnect? According to the TRM the Tegra contains
-some standard AXI <-> AHB <-> APB bridges. That a read is needed to
-assure the write is posted to the APB bus seems to imply that there is
-some write buffering in one of those bridges. Can we get this documented
-somewhere?
-
-And isn't it needed for the other partition ungating function too then?
-
-Regards,
-Lucas
+I'm sorry for replying only now, but I couldn't follow this thread
+closely and I'm a bit lost now. I haven't tested the suggested
+change, but I don't think it would work in a reliable way. It's not
+rare for the fan to be completely stopped, especially on boot. You
+are right though, 1 is the right multiplier.
 
 
+Guenter, while I was trying to catch up, I noticed that the support
+for the XPS 13 [1] will be added. May I ask you which revision of
+the laptop was tested? I own the 9333 one and I'm not sure that
+having i8k automatically loaded is a good idea. The reason is that
+reading and setting the speed of the right (and only) fan causes a
+freeze of the laptop of some milliseconds, enough to be annoying and
+noticeable. I'm worried of the effect this might have in the everyday
+use, users might start noticing random freezes because of one
+application that all the sudden is able to read the speed of the fan.
+I don't if the same happens on all the other Dell systems, this is
+the first and only Dell laptop I owned.
+
+If the tested laptop wasn't the XPS13 9333 and this problem does not
+exists, would it be possible to make the DMI_PRODUCT_NAME string such
+that it matches only the tested revision? The string that identifies
+my laptop is "XPS13 9333".
+
+Gabriele
+
+[1] http://www.spinics.net/lists/kernel/msg1878801.html
