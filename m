@@ -1,291 +1,994 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaLXXx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 18:53:57 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62449 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaLXXxz (ORCPT
+	id S1751904AbaLYAqW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 19:46:22 -0500
+Received: from regular1.263xmail.com ([211.150.99.134]:57991 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651AbaLYAqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 18:53:55 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Andrew Duggan <aduggan@synaptics.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benjamin.tissoires@redhat.com, jkosina@suse.cz
-Subject: Re: NULL pointer dereference in i2c-hid
-Date: Thu, 25 Dec 2014 00:53:51 +0100
-Message-ID: <1877487.FqOELR9dBu@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.19.0-rc1+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <548B3E32.2050503@synaptics.com>
-References: <31518562.V5Oyo0POsI@xps13> <2094646.ov2KaAkedO@xps13> <548B3E32.2050503@synaptics.com>
+	Wed, 24 Dec 2014 19:46:20 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-ADDR-CHECKED: 0
+X-RL-SENDER: roger.chen@rock-chips.com
+X-FST-TO: eddie.cai@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: roger.chen@rock-chips.com
+X-UNIQUE-TAG: <a7742801742b244819bc72c3489a6168>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <549B5E50.2000501@rock-chips.com>
+Date: Thu, 25 Dec 2014 08:46:08 +0800
+From: Roger <roger.chen@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+CC: peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        kever.yang@rock-chips.com, eddie.cai@rock-chips.com
+Subject: Re: [PATCH v2 1/6] GMAC: add driver for Rockchip RK3288 SoCs integrated
+ GMAC
+References: <1417056591-3570-1-git-send-email-roger.chen@rock-chips.com> <1417056728-3642-1-git-send-email-roger.chen@rock-chips.com> <1591535.72TyRu5yfQ@diego> <547EC24E.6050905@rock-chips.com>
+In-Reply-To: <547EC24E.6050905@rock-chips.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 12 December 2014 11:12:50 Andrew Duggan wrote:
-> On 12/12/2014 12:12 AM, Gabriele Mazzotta wrote:
-> > On Thursday 11 December 2014 16:26:00 Andrew Duggan wrote:
-> >> On 12/11/2014 01:57 PM, Gabriele Mazzotta wrote:
-> >>> On Thursday 11 December 2014 13:34:02 Andrew Duggan wrote:
-> >>>> On 12/11/2014 01:17 PM, Gabriele Mazzotta wrote:
-> >>>>> On Thursday 11 December 2014 12:46:53 Andrew Duggan wrote:
-> >>>>>> On 12/11/2014 11:40 AM, Gabriele Mazzotta wrote:
-> >>>>>>> On Thursday 11 December 2014 11:21:43 Andrew Duggan wrote:
-> >>>>>>>> On 12/11/2014 11:11 AM, Gabriele Mazzotta wrote:
-> >>>>>>>>> On Thursday 11 December 2014 10:40:05 Andrew Duggan wrote:
-> >>>>>>>>>> On 12/11/2014 10:16 AM, Gabriele Mazzotta wrote:
-> >>>>>>>>>>> On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
-> >>>>>>>>>>>> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
-> >>>>>>>>>>>>> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
-> >>>>>>>>>>>>>> my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
-> >>>>>>>>>>>>>> i2c-hid and hid-rmi can be loaded and unloaded independelty from each
-> >>>>>>>>>>>>>> other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
-> >>>>>>>>>>>>>> if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
-> >>>>>>>>>>>>>> pointer dereference.
-> >>>>>>>>>>>>> I'll look into this.
-> >>>>>>>>>>>>>
-> >>>>>>>>>>>>> I can reproduce this easily with i2c-hid + hid-multitouch following your
-> >>>>>>>>>>>>> directions.
-> >>>>>>>>>>>> Can you try the below patch?
-> >>>>>>>>>>>>
-> >>>>>>>>>>>> I think we shouldn't free buffers yet in ->stop() because we need the
-> >>>>>>>>>>>> command buffer sending power commands to the device. Also it seems that
-> >>>>>>>>>>>> ->start() re-allocates buffers anyway if maximum size increases.
-> >>>>>>>>>>>>
-> >>>>>>>>>>>> It shouldn't even leak memory as we release buffers at ->remove()
-> >>>>>>>>>>>> anyway.
-> >>>>>>>>>>>>
-> >>>>>>>>>>>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> >>>>>>>>>>>> index 62cec01937ea..68a8c938feea 100644
-> >>>>>>>>>>>> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> >>>>>>>>>>>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> >>>>>>>>>>>> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
-> >>>>>>>>>>>>        
-> >>>>>>>>>>>>        static void i2c_hid_stop(struct hid_device *hid)
-> >>>>>>>>>>>>        {
-> >>>>>>>>>>>> -	struct i2c_client *client = hid->driver_data;
-> >>>>>>>>>>>> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
-> >>>>>>>>>>>> -
-> >>>>>>>>>>>>        	hid->claimed = 0;
-> >>>>>>>>>>>> -
-> >>>>>>>>>>>> -	i2c_hid_free_buffers(ihid);
-> >>>>>>>>>>>>        }
-> >>>>>>>>>>>>        
-> >>>>>>>>>>>>        static int i2c_hid_open(struct hid_device *hid)
-> >>>>>>>>>>> Yes, it works, thanks.
-> >>>>>>>>>>>
-> >>>>>>>>>>> This change seems to also prevent kernel ooops when I unload either
-> >>>>>>>>>>> i2c-hid or i2c-designware-platform while the touchpad is in use,
-> >>>>>>>>>>> thing that is likely to happen because of the other bug I reported.
-> >>>>>>>>>>>
-> >>>>>>>>>>> Speaking of it, does any of you have any suggestion on how to debug it?
-> >>>>>>>>>> I was able to reproduce the initial issue by unloading hid-rmi and
-> >>>>>>>>>> i2c-hid while holding my fingers on the touchpad. Mika's patch fixes it
-> >>>>>>>>>> for me.
-> >>>>>>>>>>
-> >>>>>>>>>> For the original bug, you can modprobe i2c-hid debug=1 and we can see
-> >>>>>>>>>> what data the touchpad is reporting. That might help narrowing down if
-> >>>>>>>>>> it's noise which the touchpad thinks are fingers or if there is a
-> >>>>>>>>>> problem with the I2C lines causing spurious interrupts.
-> >>>>>>>>>>
-> >>>>>>>>>> Andrew
-> >>>>>>>>> I've already tried to do that and here what I got:
-> >>>>>>>>>
-> >>>>>>>>> When I release the finger, the last message is repeated 81 times.
-> >>>>>>>>> If the byte containing informations about the width of the finger
-> >>>>>>>>> becomes equal to either c0 or 0c at least once, the last message is
-> >>>>>>>>> repeated indefinitely and changes as soon as I start using the touchpad.
-> >>>>>>>>> The only way to stop it is to unload and reload i2c-hid.
-> >>>>>>>> The reports before log throttling kicks in would still be useful. For
-> >>>>>>>> instance c0 is outside of the range of finger width which we report so
-> >>>>>>>> something is wrong there. But, the touchpad should stop interrupting
-> >>>>>>>> once the finger is lifted. The fact that subsequent reads are reporting
-> >>>>>>>> the same data does sound like a problem with I2C getting confused and
-> >>>>>>>> continuously interrupting and reading the old finger data. I am also
-> >>>>>>>> curious about the value of the byte after the report id.
-> >>>>>>>>
-> >>>>>>>> Andrew
-> >>>>>>> If I'm not wrong c0 means that the width is 12 on y axis, while 0c means
-> >>>>>>> that the width is 12 on the x axis.
-> >>>>>> You are correct! I forgot width was 4 bits for X and Y in the same byte.
-> >>>>>> That makes more sense.
-> >>>>>>
-> >>>>>>> I have to correct myself. The important thing is that the byte is either
-> >>>>>>> cx or xc, where x is anything below c.
-> >>>>>>>
-> >>>>>>> Another correction. Sometimes unloading i2c-hid is not enough, I have to
-> >>>>>>> first disable the touchpad with xinput and then unload i2c-hid. If I
-> >>>>>>> don't do it, the messages starts reappearing as soon as I reload i2c-hid.
-> >>>>>>>
-> >>>>>>> I did several tests in the past months and I'm quite sure that the bug
-> >>>>>>> happens only past xc/cy.
-> >>>>>> This maybe coincidental. It is not obvious to me why a certain width
-> >>>>>> value would cause the symptoms described.
-> >>>>> Yes, I don't deny it. This is just a constant I found in my tests.
-> >>>>>
-> >>>>>>> Here few lines right before the bug. The last line is repeated indefinitely:
-> >>>>>>>
-> >>>>>>> [ 1983.527097] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 61 0a 5f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.537211] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 63 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.547329] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 64 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.557486] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 66 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.567663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 68 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.577719] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6a 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.587852] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6b 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.598001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 6e 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.608215] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 61 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.618288] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 64 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.628493] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 67 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.638552] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 69 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.648663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 68 5b 6c 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.658789] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 6f 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.668923] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 61 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.678819] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 64 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.689230] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 66 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.699435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 69 5b 68 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.709502] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6a 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.719574] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6c 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.729713] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6e 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.739863] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 60 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.750001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 62 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.760150] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 64 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.770291] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 66 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.780445] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 68 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.790490] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 5a 0b 68 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.800667] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 4e 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.810691] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 31 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.820963] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 24 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.831071] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 17 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.841178] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 09 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.851325] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0b 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.861435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0d 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.871566] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6b 5b 0f 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.881735] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 01 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.891975] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 03 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.902073] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 05 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.912155] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 07 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.922224] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 09 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.932364] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0b 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.942480] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0d 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.952612] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6c 5b 0f 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.962774] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f1 0d 6d 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.972932] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f3 0d 6e 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.982872] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f6 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1983.993194] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6d 5a f9 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.003295] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a fc 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.013511] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a ff 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.023590] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f2 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.033747] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6e 5a f5 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.043850] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f8 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.053873] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fb 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.064077] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fe 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.074207] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f1 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.084425] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6f 5a f3 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.094533] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f6 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.104629] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f8 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.114742] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fa 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.124890] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fc 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.135006] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fe 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.145149] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a f0 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.155317] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a e2 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.165380] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d4 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.175532] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d6 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.185409] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d8 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.195761] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a db 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.205909] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a dd 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.216034] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d0 0e 76 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.226198] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d3 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.236301] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a d6 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.246520] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a cb 0f 79 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.256573] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 72 5a b1 0e 78 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.266697] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a a7 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.276823] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a 6d 0d 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.286921] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 73 59 96 0a 5a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.296888] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.306825] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>>> [ 1984.316980] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> >>>>>> The last report which repeats indicates that no fingers are present.
-> >>>>>> But, the click button is generating the interrupt and it is reporting
-> >>>>>> that it is in the down position. Could the click button be getting stuck
-> >>>>>> down? That would also explain why the data in the report is not
-> >>>>>> changing. Could you be bumping the touchpad with your palm which is
-> >>>>>> causing the click button to get stuck in the down position? That might
-> >>>>>> also explain the large width value. Our max width is 15, so 12 would
-> >>>>>> typically indicate a contact larger then a normal finger contact. That
-> >>>>>> would explain the width of 12 showing up when this happens.
-> >>>>> Yes, that's not a normal finger touch and the reported width seems
-> >>>>> quite accurate to me. There are no clicks involved, laying the side of
-> >>>>> my thumb gently on the top part of the clickpad (from where even voluntary
-> >>>>> clicks are hard to obtain) is enough to trigger the bug. If a click is
-> >>>>> reported, than something is really wrong.
-> >>>> Do the reports look the same? With the repeated reports starting with
-> >>>> "20 00 0c 04"?
-> >>> I'm not sure I understood exactly what you want to know, so this might
-> >>> not answer your questions.
-> >>>
-> >>> All the repeated messages look like this:
-> >>>
-> >>> 20 00 0c 04 00 00 27 57 fa 00 00 07 8a 0c 00 00 7e 87 eb 00 00 aa 8f 37 00 00 61 4d f1 00 00 00
-> >>>
-> >>> The values equal to zero are always equal to zero when there are no
-> >>> fingers on the touchpad. The non-zero values are equal to the last
-> >>> valid value recorded and don't change when the fingers are released.
-> >>>
-> >>> To get the above line I touched the touchpad with 5 fingers so that
-> >>> all the bytes (except the last one which is different from zero on
-> >>> click release) were used.
-> >> Yes, that was the information I was looking for. But, this must not be
-> >> my day since it turns out I misremembered what 0x4 stood for and this is
-> >> unrelated to the click button. You can ignore everything I said about
-> >> the click button =)
-> >>
-> >> The report you have above is actually a finger lift report which
-> >> indicates that all of the fingers left the touchpad. I checked the
-> >> firmware configuration for this touchpad and it will repeat the lift
-> >> report probably about 40 times. This is the expected behavior. However,
-> >> you reported earlier that the message had been repeated 81 times? That
-> >> seems a bit high and it would not explain why it gets repeated indefinitely.
-> >>
-> >> You can try disabling the repeating finger lift reports and see if that
-> >> helps. To do that you need to download a utility at:
-> >> https://github.com/aduggan/rmi4utils
-> >>
-> >> After building it run:
-> >> $ sudo ./rmihidtool -r 0x45 1 /dev/hidraw0
-> >> This should print out 0x78 assuming the register address is what I
-> >> expect. If not I can send further instructions on how to figure that out.
-> >>
-> >> To disable the repeating lift report run:
-> >> $ sudo ./rmihidtool -w 0x45 0x38 /dev/hidraw0
-> >>
-> >> After you do that there should only be one finger lift report.
-> > Yes, this disables the repeating lift report, but the bug is still there.
-> 
-> Ok, I would have been surprised if this fixed it. But, at least it helps 
-> to narrow down the cause.
-> 
-> >
-> >> Also, if you can get the firmware id from your touchpad that would also
-> >> be useful.
-> >>
-> >> $ sudo ./rmihidtool -f /dev/hidraw0
-> > firmware id: 1522295
-> Thanks, I will see if I can get any additional information on this.
-> 
-> Andrew
+Hi! Heiko
 
-Hi,
+Any suggestion?
 
-I think I found the source of the problem.
+On 2014/12/3 15:57, Roger wrote:
+> Hi! Heiko
+>
+> about regulator, power gpio,  reset gpio and irq gpio
+> please refer to my comment inline, tks.
+>
+> On 2014/12/2 7:44, Heiko Stübner wrote:
+>> Hi Roger,
+>>
+>> the comments inline are a rough first review. I hope to get a clearer 
+>> picture
+>> for the stuff I'm not sure about in v3 once the big issues are fixed.
+>>
+>>
+>> Am Donnerstag, 27. November 2014, 10:52:08 schrieb Roger Chen:
+>>> This driver is based on stmmac driver.
+>>>
+>>> modification based on Giuseppe CAVALLARO's suggestion:
+>>> 1. use BIT()
+>>>
+>>>     > +/*RK3288_GRF_SOC_CON3*/
+>>>     > +#define GMAC_TXCLK_DLY_ENABLE   ((0x4000 << 16) | (0x4000))
+>>>     > +#define GMAC_TXCLK_DLY_DISABLE  ((0x4000 << 16) | (0x0000))
+>>>
+>>>     ...
+>>>
+>>>     why do not use BIT and BIT_MASK where possible?
+>>>
+>>>     ===>after modification:
+>>>
+>>>     #define GRF_BIT(nr)     (BIT(nr) | BIT(nr+16))
+>>>     #define GRF_CLR_BIT(nr) (BIT(nr+16))
+>>>     #define GMAC_TXCLK_DLY_ENABLE   GRF_BIT(14)
+>>>     #define GMAC_TXCLK_DLY_DISABLE  GRF_CLR_BIT(14)
+>>>     ...
+>>> 2.
+>>>
+>>>     > +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>>     > +             GMAC_PHY_INTF_SEL_RGMII);
+>>>     > +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>>     > +             GMAC_RMII_MODE_CLR);
+>>>
+>>>     maybe you could perform just one write unless there is some HW
+>>>     constraint.
+>>>
+>>>     ===>after modification:
+>>>
+>>>     regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>>              GMAC_PHY_INTF_SEL_RGMII | GMAC_RMII_MODE_CLR);
+>>>
+>>> 3. use macros
+>>>
+>>>     > +    regmap_write(bsp_priv->grf, RK3288_GRF_GPIO3D_E, 
+>>> 0xFFFFFFFF);
+>>>     > +    regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4B_E,
+>>>     > +             0x3<<2<<16 | 0x3<<2);
+>>>
+>>>     pls use macros, these shift sequence is really help to decode
+>>>
+>>>     ===>after modification:
+>>>
+>>>     regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4A_E, GPIO4A_12MA);
+>>>     regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4B_E, GPIO4B_2_12MA);
+>>>
+>>> 4. remove grf fail check in rk_gmac_setup()
+>>>
+>>>     > +    if (IS_ERR(bsp_priv->grf))
+>>>     > +        dev_err(&pdev->dev, "Missing rockchip,grf property\n");
+>>>
+>>>     I wonder if you can fail on here and save all the check in
+>>>     set_rgmii_speed etc.
+>>>     Maybe this can be considered a mandatory property for the 
+>>> glue-logic.
+>>>
+>>> 5. remove .tx_coe=1
+>>>
+>>>     > +const struct stmmac_of_data rk_gmac_data = {
+>>>     > +    .has_gmac = 1,
+>>>     > +    .tx_coe = 1,
+>>>
+>>>     FYI, on new gmac there is the HW capability register to dinamically
+>>>     provide you if coe is supported.
+>>>
+>>>     IMO you should add the OF "compatible" string and in case of mac
+>>>     newer than the 3.50a you can remove coe.
+>> changelogs like these, should be compact and also not be in the 
+>> commit message
+>> itself, but in the "comment"-section below the "---" and before the 
+>> diffstat.
+>>
+>>
+>>> Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
+>>> ---
+>> changelog here ... the commonly used pattern is something like
+>>
+>> changes since v2:
+>> - ...
+>> - ...
+>>
+>> changes since v1:
+>> - ...
+>>
+>>> drivers/net/ethernet/stmicro/stmmac/Makefile       |    2 +-
+>>>   drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c     |  636
+>>> ++++++++++++++++++++ 
+>>> .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |
+>>>   3 +
+>>>   .../net/ethernet/stmicro/stmmac/stmmac_platform.h  |    1 +
+>>>   4 files changed, 641 insertions(+), 1 deletion(-)
+>>>   create mode 100644 drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>>>
+>>> diff --git a/drivers/net/ethernet/stmicro/stmmac/Makefile
+>>> b/drivers/net/ethernet/stmicro/stmmac/Makefile index ac4d562..73c2715
+>>> 100644
+>>> --- a/drivers/net/ethernet/stmicro/stmmac/Makefile
+>>> +++ b/drivers/net/ethernet/stmicro/stmmac/Makefile
+>>> @@ -6,7 +6,7 @@ stmmac-objs:= stmmac_main.o stmmac_ethtool.o 
+>>> stmmac_mdio.o
+>>> ring_mode.o    \
+>>>
+>>>   obj-$(CONFIG_STMMAC_PLATFORM) += stmmac-platform.o
+>>>   stmmac-platform-objs:= stmmac_platform.o dwmac-meson.o 
+>>> dwmac-sunxi.o    \
+>>> -               dwmac-sti.o dwmac-socfpga.o
+>>> +               dwmac-sti.o dwmac-socfpga.o dwmac-rk.o
+>>>
+>>>   obj-$(CONFIG_STMMAC_PCI) += stmmac-pci.o
+>>>   stmmac-pci-objs:= stmmac_pci.o
+>>> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>>> b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c new file mode 100644
+>>> index 0000000..870563f
+>>> --- /dev/null
+>>> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>>> @@ -0,0 +1,636 @@
+>>> +/**
+>>> + * dwmac-rk.c - Rockchip RK3288 DWMAC specific glue layer
+>>> + *
+>>> + * Copyright (C) 2014 Chen-Zhi (Roger Chen)
+>>> + *
+>>> + * Chen-Zhi (Roger Chen)  <roger.chen@rock-chips.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or 
+>>> modify
+>>> + * it under the terms of the GNU General Public License as 
+>>> published by
+>>> + * the Free Software Foundation; either version 2 of the License, or
+>>> + * (at your option) any later version.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <linux/stmmac.h>
+>>> +#include <linux/bitops.h>
+>>> +#include <linux/clk.h>
+>>> +#include <linux/phy.h>
+>>> +#include <linux/of_net.h>
+>>> +#include <linux/gpio.h>
+>>> +#include <linux/of_gpio.h>
+>>> +#include <linux/of_device.h>
+>>> +#include <linux/regulator/consumer.h>
+>>> +#include <linux/delay.h>
+>>> +#include <linux/mfd/syscon.h>
+>>> +#include <linux/regmap.h>
+>>> +
+>>> +struct rk_priv_data {
+>>> +    struct platform_device *pdev;
+>>> +    int phy_iface;
+>>> +    bool power_ctrl_by_pmu;
+>>> +    char pmu_regulator[32];
+>>> +    int pmu_enable_level;
+>>> +
+>>> +    int power_io;
+>>> +    int power_io_level;
+>>> +    int reset_io;
+>>> +    int reset_io_level;
+>>> +    int phyirq_io;
+>>> +    int phyirq_io_level;
+>>> +
+>>> +    bool clk_enabled;
+>>> +    bool clock_input;
+>>> +
+>>> +    struct clk *clk_mac;
+>>> +    struct clk *clk_mac_pll;
+>>> +    struct clk *gmac_clkin;
+>>> +    struct clk *mac_clk_rx;
+>>> +    struct clk *mac_clk_tx;
+>>> +    struct clk *clk_mac_ref;
+>>> +    struct clk *clk_mac_refout;
+>>> +    struct clk *aclk_mac;
+>>> +    struct clk *pclk_mac;
+>>> +
+>>> +    int tx_delay;
+>>> +    int rx_delay;
+>>> +
+>>> +    struct regmap *grf;
+>>> +};
+>>> +
+>>> +#define RK3288_GRF_SOC_CON1 0x0248
+>>> +#define RK3288_GRF_SOC_CON3 0x0250
+>>> +#define RK3288_GRF_GPIO3D_E 0x01ec
+>>> +#define RK3288_GRF_GPIO4A_E 0x01f0
+>>> +#define RK3288_GRF_GPIO4B_E 0x01f4
+>> here you're using a space instead of a tab, please select one pattern 
+>> either
+>> tabs or space but do not mix them.
+>>
+>>
+>>> +#define GPIO3D_2MA    0xFFFF0000
+>>> +#define GPIO3D_4MA    0xFFFF5555
+>>> +#define GPIO3D_8MA    0xFFFFAAAA
+>>> +#define GPIO3D_12MA    0xFFFFFFFF
+>>> +
+>>> +#define GPIO4A_2MA    0xFFFF0000
+>>> +#define GPIO4A_4MA    0xFFFF5555
+>>> +#define GPIO4A_8MA    0xFFFFAAAA
+>>> +#define GPIO4A_12MA    0xFFFFFFFF
+>> see comment about pin settings below
+>>
+>>
+>>> +
+>>> +#define GRF_BIT(nr)    (BIT(nr) | BIT(nr+16))
+>>> +#define GRF_CLR_BIT(nr)    (BIT(nr+16))
+>>> +
+>>> +#define GPIO4B_2_2MA    (GRF_CLR_BIT(2) | GRF_CLR_BIT(3))
+>>> +#define GPIO4B_2_4MA    (GRF_BIT(2) | GRF_CLR_BIT(3))
+>>> +#define GPIO4B_2_8MA    (GRF_CLR_BIT(2) | GRF_BIT(3))
+>>> +#define GPIO4B_2_12MA    (GRF_BIT(2) | GRF_BIT(3))
+>>> +
+>>> +/*RK3288_GRF_SOC_CON1*/
+>>> +#define GMAC_PHY_INTF_SEL_RGMII    (GRF_BIT(6) | GRF_CLR_BIT(7) |
+>>> GRF_CLR_BIT(8))
+>>> +#define GMAC_PHY_INTF_SEL_RMII  (GRF_CLR_BIT(6) |
+>>> GRF_CLR_BIT(7) | GRF_BIT(8))
+>>> +#define GMAC_FLOW_CTRL          GRF_BIT(9)
+>>> +#define GMAC_FLOW_CTRL_CLR      GRF_CLR_BIT(9)
+>>> +#define GMAC_SPEED_10M          GRF_CLR_BIT(10)
+>>> +#define GMAC_SPEED_100M         GRF_BIT(10)
+>>> +#define GMAC_RMII_CLK_25M       GRF_BIT(11)
+>>> +#define GMAC_RMII_CLK_2_5M      GRF_CLR_BIT(11)
+>>> +#define GMAC_CLK_125M           (GRF_CLR_BIT(12) | GRF_CLR_BIT(13))
+>>> +#define GMAC_CLK_25M            (GRF_BIT(12) | GRF_BIT(13))
+>>> +#define GMAC_CLK_2_5M           (GRF_CLR_BIT(12) | GRF_BIT(13))
+>>> +#define GMAC_RMII_MODE          GRF_BIT(14)
+>>> +#define GMAC_RMII_MODE_CLR      GRF_CLR_BIT(14)
+>>> +
+>>> +/*RK3288_GRF_SOC_CON3*/
+>>> +#define GMAC_TXCLK_DLY_ENABLE   GRF_BIT(14)
+>>> +#define GMAC_TXCLK_DLY_DISABLE  GRF_CLR_BIT(14)
+>>> +#define GMAC_RXCLK_DLY_ENABLE   GRF_BIT(15)
+>>> +#define GMAC_RXCLK_DLY_DISABLE  GRF_CLR_BIT(15)
+>>> +#define GMAC_CLK_RX_DL_CFG(val) ((0x7F<<7<<16) | (val<<7))
+>>> +#define GMAC_CLK_TX_DL_CFG(val) ((0x7F<<16) | (val))
+>> again mixed tabs and spaces as delimiters.
+>>
+>> Also the _CFG macros are not well abstracted. You could take a look 
+>> at the
+>> HIWORD_UPDATE macro in drivers/clk/rockchip/clk.h:
+>>
+>> #define GMAC_CLK_DL_MASK    0x7f
+>> #define GMAC_CLK_RX_DL_CFG(val)  HIWORD_UPDATE(val, GMAC_CLK_DL_MASK, 7)
+>> #define GMAC_CLK_TX_DL_CFG(val)  HIWORD_UPDATE(val, GMAC_CLK_DL_MASK, 0)
+>>
+>>
+>>> +
+>>> +static void set_to_rgmii(struct rk_priv_data *bsp_priv,
+>>> +             int tx_delay, int rx_delay)
+>>> +{
+>>> +    if (IS_ERR(bsp_priv->grf)) {
+>>> +        pr_err("%s: Missing rockchip,grf property\n", __func__);
+>>> +        return;
+>>> +    }
+>>> +
+>>> +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>> +             GMAC_PHY_INTF_SEL_RGMII | GMAC_RMII_MODE_CLR);
+>>> +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON3,
+>>> +             GMAC_RXCLK_DLY_ENABLE | GMAC_TXCLK_DLY_ENABLE |
+>>> +             GMAC_CLK_RX_DL_CFG(rx_delay) |
+>>> +             GMAC_CLK_TX_DL_CFG(tx_delay));
+>>> +    regmap_write(bsp_priv->grf, RK3288_GRF_GPIO3D_E, GPIO3D_12MA);
+>>> +    regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4A_E, GPIO4A_12MA);
+>>> +    regmap_write(bsp_priv->grf, RK3288_GRF_GPIO4B_E, GPIO4B_2_12MA);
+>> please don't write to parts controlled by other drivers - here the drive
+>> strength settings of pins is controlled by the pinctrl driver. 
+>> Instead you can
+>> just set the drive-strength in the pinctrl settings.
+>>
+>>
+>>> +
+>>> +    pr_debug("%s: tx delay=0x%x; rx delay=0x%x;\n",
+>>> +         __func__, tx_delay, rx_delay);
+>>> +}
+>>> +
+>>> +static void set_to_rmii(struct rk_priv_data *bsp_priv)
+>>> +{
+>>> +    if (IS_ERR(bsp_priv->grf)) {
+>>> +        pr_err("%s: Missing rockchip,grf property\n", __func__);
+>> you have a device-reference in rk_priv_data, so you could use dev_err 
+>> here.
+>> Same for all other pr_err/pr_debug/pr_* calls in this file.
+>>
+>>
+>>> +        return;
+>>> +    }
+>>> +
+>>> +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>> +             GMAC_PHY_INTF_SEL_RMII);
+>>> +    regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>> +             GMAC_RMII_MODE);
+>> these two could be combined?
+>>
+>>
+>>> +}
+>>> +
+>>> +static void set_rgmii_speed(struct rk_priv_data *bsp_priv, int speed)
+>>> +{
+>>> +    if (IS_ERR(bsp_priv->grf)) {
+>>> +        pr_err("%s: Missing rockchip,grf property\n", __func__);
+>>> +        return;
+>>> +    }
+>>> +
+>>> +    if (speed == 10)
+>>> +        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1, 
+>>> GMAC_CLK_2_5M);
+>>> +    else if (speed == 100)
+>>> +        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1, 
+>>> GMAC_CLK_25M);
+>>> +    else if (speed == 1000)
+>>> +        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1, 
+>>> GMAC_CLK_125M);
+>>> +    else
+>>> +        pr_err("unknown speed value for RGMII! speed=%d", speed);
+>>> +}
+>>> +
+>>> +static void set_rmii_speed(struct rk_priv_data *bsp_priv, int speed)
+>>> +{
+>>> +    if (IS_ERR(bsp_priv->grf)) {
+>>> +        pr_err("%s: Missing rockchip,grf property\n", __func__);
+>>> +        return;
+>>> +    }
+>>> +
+>>> +    if (speed == 10) {
+>>> +        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>> +                 GMAC_RMII_CLK_2_5M);
+>>> +        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>> +                 GMAC_SPEED_10M);
+>> combine into one write?
+>>
+>>
+>>> +    } else if (speed == 100) {
+>>> +        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>> +                 GMAC_RMII_CLK_25M);
+>>> +        regmap_write(bsp_priv->grf, RK3288_GRF_SOC_CON1,
+>>> +                 GMAC_SPEED_100M);
+>> combine into one write?
+>>
+>>
+>>> +    } else {
+>>> +        pr_err("unknown speed value for RMII! speed=%d", speed);
+>>> +    }
+>>> +}
+>>> +
+>>> +#define MAC_CLK_RX    "mac_clk_rx"
+>>> +#define MAC_CLK_TX    "mac_clk_tx"
+>>> +#define CLK_MAC_REF    "clk_mac_ref"
+>>> +#define CLK_MAC_REF_OUT    "clk_mac_refout"
+>>> +#define CLK_MAC_PLL    "clk_mac_pll"
+>>> +#define ACLK_MAC    "aclk_mac"
+>>> +#define PCLK_MAC    "pclk_mac"
+>>> +#define MAC_CLKIN    "ext_gmac"
+>>> +#define CLK_MAC        "stmmaceth"
+>> why the need to extra constants for the clock names and not use the 
+>> real names
+>> directly like most other drivers do?
+>>
+>>
+>>> +
+>>> +static int gmac_clk_init(struct rk_priv_data *bsp_priv)
+>>> +{
+>>> +    struct device *dev = &bsp_priv->pdev->dev;
+>>> +
+>>> +    bsp_priv->clk_enabled = false;
+>>> +
+>>> +    bsp_priv->mac_clk_rx = clk_get(dev, MAC_CLK_RX);
+>>> +    if (IS_ERR(bsp_priv->mac_clk_rx))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, MAC_CLK_RX);
+>>> +
+>>> +    bsp_priv->mac_clk_tx = clk_get(dev, MAC_CLK_TX);
+>>> +    if (IS_ERR(bsp_priv->mac_clk_tx))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, MAC_CLK_TX);
+>>> +
+>>> +    bsp_priv->clk_mac_ref = clk_get(dev, CLK_MAC_REF);
+>>> +    if (IS_ERR(bsp_priv->clk_mac_ref))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, CLK_MAC_REF);
+>>> +
+>>> +    bsp_priv->clk_mac_refout = clk_get(dev, CLK_MAC_REF_OUT);
+>>> +    if (IS_ERR(bsp_priv->clk_mac_refout))
+>>> +        pr_warn("%s: warning:cannot get clock %s\n",
+>>> +            __func__, CLK_MAC_REF_OUT);
+>>> +
+>>> +    bsp_priv->aclk_mac = clk_get(dev, ACLK_MAC);
+>>> +    if (IS_ERR(bsp_priv->aclk_mac))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, ACLK_MAC);
+>>> +
+>>> +    bsp_priv->pclk_mac = clk_get(dev, PCLK_MAC);
+>>> +    if (IS_ERR(bsp_priv->pclk_mac))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, PCLK_MAC);
+>>> +
+>>> +    bsp_priv->clk_mac_pll = clk_get(dev, CLK_MAC_PLL);
+>>> +    if (IS_ERR(bsp_priv->clk_mac_pll))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, CLK_MAC_PLL);
+>>> +
+>>> +    bsp_priv->gmac_clkin = clk_get(dev, MAC_CLKIN);
+>>> +    if (IS_ERR(bsp_priv->gmac_clkin))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, MAC_CLKIN);
+>>> +
+>>> +    bsp_priv->clk_mac = clk_get(dev, CLK_MAC);
+>>> +    if (IS_ERR(bsp_priv->clk_mac))
+>>> +        pr_warn("%s: warning: cannot get clock %s\n",
+>>> +            __func__, CLK_MAC);
+>> there is not clk_put in the _remove case ... maybe you could simply use
+>> devm_clk_get here so that all clocks are put on device removal.
+>>
+>> Also you're warning on every missing clock. Below it looks like you 
+>> need a
+>> different set of them for rgmii and rmii, so maybe you should simply 
+>> error out
+>> when core clocks for the selected phy-mode are missing.
+>>
+>>
+>>> +
+>>> +    if (bsp_priv->clock_input) {
+>>> +        pr_info("%s: clock input from PHY\n", __func__);
+>>> +    } else {
+>>> +        if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RMII)
+>>> +            clk_set_rate(bsp_priv->clk_mac_pll, 50000000);
+>>> +
+>>> +        clk_set_parent(bsp_priv->clk_mac, bsp_priv->clk_mac_pll);
+>> why the explicit reparenting. The common clock-framework is 
+>> intelligent enough
+>> to select the best suitable parent.
+>>
+>> In general I'm thinking the clock-handling inside this driver should be
+>> simplyfied, as the common-clock framework can handle most cases 
+>> itself. I.e. if
+>> a 125MHz external clock is present and so on. But haven't looked to 
+>> deep yet.
+>>
+>>
+>>
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +static int gmac_clk_enable(struct rk_priv_data *bsp_priv, bool enable)
+>>> +{
+>>> +    int phy_iface = phy_iface = bsp_priv->phy_iface;
+>>> +
+>>> +    if (enable) {
+>>> +        if (!bsp_priv->clk_enabled) {
+>>> +            if (phy_iface == PHY_INTERFACE_MODE_RMII) {
+>>> +                if (!IS_ERR(bsp_priv->mac_clk_rx))
+>>> +                    clk_prepare_enable(
+>>> +                        bsp_priv->mac_clk_rx);
+>>> +
+>>> +                if (!IS_ERR(bsp_priv->clk_mac_ref))
+>>> +                    clk_prepare_enable(
+>>> +                        bsp_priv->clk_mac_ref);
+>>> +
+>>> +                if (!IS_ERR(bsp_priv->clk_mac_refout))
+>>> +                    clk_prepare_enable(
+>>> +                        bsp_priv->clk_mac_refout);
+>>> +            }
+>>> +
+>>> +            if (!IS_ERR(bsp_priv->aclk_mac))
+>>> +                clk_prepare_enable(bsp_priv->aclk_mac);
+>>> +
+>>> +            if (!IS_ERR(bsp_priv->pclk_mac))
+>>> +                clk_prepare_enable(bsp_priv->pclk_mac);
+>>> +
+>>> +            if (!IS_ERR(bsp_priv->mac_clk_tx))
+>>> +                clk_prepare_enable(bsp_priv->mac_clk_tx);
+>>> +
+>>> +            /**
+>>> +             * if (!IS_ERR(bsp_priv->clk_mac))
+>>> +             *    clk_prepare_enable(bsp_priv->clk_mac);
+>>> +             */
+>>> +            mdelay(5);
+>>> +            bsp_priv->clk_enabled = true;
+>>> +        }
+>>> +    } else {
+>>> +        if (bsp_priv->clk_enabled) {
+>>> +            if (phy_iface == PHY_INTERFACE_MODE_RMII) {
+>>> +                if (!IS_ERR(bsp_priv->mac_clk_rx))
+>>> +                    clk_disable_unprepare(
+>>> +                        bsp_priv->mac_clk_rx);
+>>> +
+>>> +                if (!IS_ERR(bsp_priv->clk_mac_ref))
+>>> +                    clk_disable_unprepare(
+>>> +                        bsp_priv->clk_mac_ref);
+>>> +
+>>> +                if (!IS_ERR(bsp_priv->clk_mac_refout))
+>>> +                    clk_disable_unprepare(
+>>> +                        bsp_priv->clk_mac_refout);
+>>> +            }
+>>> +
+>>> +            if (!IS_ERR(bsp_priv->aclk_mac))
+>>> +                clk_disable_unprepare(bsp_priv->aclk_mac);
+>>> +
+>>> +            if (!IS_ERR(bsp_priv->pclk_mac))
+>>> +                clk_disable_unprepare(bsp_priv->pclk_mac);
+>>> +
+>>> +            if (!IS_ERR(bsp_priv->mac_clk_tx))
+>>> + clk_disable_unprepare(bsp_priv->mac_clk_tx);
+>>> +            /**
+>>> +             * if (!IS_ERR(bsp_priv->clk_mac))
+>>> +             * clk_disable_unprepare(bsp_priv->clk_mac);
+>>> +             */
+>>> +            bsp_priv->clk_enabled = false;
+>>> +        }
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +static int power_on_by_pmu(struct rk_priv_data *bsp_priv, bool enable)
+>>> +{
+>>> +    struct regulator *ldo;
+>>> +    char *ldostr = bsp_priv->pmu_regulator;
+>>> +    int ret;
+>>> +
+>>> +    if (!ldostr) {
+>>> +        pr_err("%s: no ldo found\n", __func__);
+>>> +        return -1;
+>>> +    }
+>>> +
+>>> +    ldo = regulator_get(NULL, ldostr);
+>>> +    if (!ldo) {
+>>> +        pr_err("\n%s get ldo %s failed\n", __func__, ldostr);
+>>> +    } else {
+>>> +        if (enable) {
+>>> +            if (!regulator_is_enabled(ldo)) {
+>>> +                regulator_set_voltage(ldo, 3300000, 3300000);
+>>> +                ret = regulator_enable(ldo);
+>>> +                if (ret != 0)
+>>> +                    pr_err("%s: fail to enable %s\n",
+>>> +                           __func__, ldostr);
+>>> +                else
+>>> +                    pr_info("turn on ldo done.\n");
+>>> +            } else {
+>>> +                pr_warn("%s is enabled before enable", ldostr);
+>>> +            }
+>>> +        } else {
+>>> +            if (regulator_is_enabled(ldo)) {
+>>> +                ret = regulator_disable(ldo);
+>>> +                if (ret != 0)
+>>> +                    pr_err("%s: fail to disable %s\n",
+>>> +                           __func__, ldostr);
+>>> +                else
+>>> +                    pr_info("turn off ldo done.\n");
+>>> +            } else {
+>>> +                pr_warn("%s is disabled before disable",
+>>> +                    ldostr);
+>>> +            }
+>>> +        }
+>>> +        regulator_put(ldo);
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +static int power_on_by_gpio(struct rk_priv_data *bsp_priv, bool 
+>>> enable)
+>>> +{
+>>> +    if (enable) {
+>>> +        /*power on*/
+>>> +        if (gpio_is_valid(bsp_priv->power_io))
+>>> +            gpio_direction_output(bsp_priv->power_io,
+>>> +                          bsp_priv->power_io_level);
+>>> +    } else {
+>>> +        /*power off*/
+>>> +        if (gpio_is_valid(bsp_priv->power_io))
+>>> +            gpio_direction_output(bsp_priv->power_io,
+>>> +                          !bsp_priv->power_io_level);
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +static int phy_power_on(struct rk_priv_data *bsp_priv, bool enable)
+>>> +{
+>>> +    int ret = -1;
+>>> +
+>>> +    pr_info("Ethernet PHY power %s\n", enable == 1 ? "on" : "off");
+>>> +
+>>> +    if (bsp_priv->power_ctrl_by_pmu)
+>>> +        ret = power_on_by_pmu(bsp_priv, enable);
+>>> +    else
+>>> +        ret =  power_on_by_gpio(bsp_priv, enable);
+>> this looks wrong. This should always be a regulator. Even a regulator 
+>> + switch
+>> controlled by a gpio can still be modelled as regulator, so that you 
+>> don't
+>> need this switch and assorted special handling - so just use the 
+>> regulator API
+>>
+> In some case, it would be a switching circuit to control the power for 
+> PHY.
+> All I need to do is to control a GPIO to make switch on/off. So...
+>>> +
+>>> +    if (enable) {
+>>> +        /*reset*/
+>>> +        if (gpio_is_valid(bsp_priv->reset_io)) {
+>>> +            gpio_direction_output(bsp_priv->reset_io,
+>>> +                          bsp_priv->reset_io_level);
+>>> +            mdelay(5);
+>>> +            gpio_direction_output(bsp_priv->reset_io,
+>>> +                          !bsp_priv->reset_io_level);
+>>> +        }
+>>> +        mdelay(30);
+>>> +
+>>> +    } else {
+>>> +        /*pull down reset*/
+>>> +        if (gpio_is_valid(bsp_priv->reset_io)) {
+>>> +            gpio_direction_output(bsp_priv->reset_io,
+>>> +                          bsp_priv->reset_io_level);
+>>> +        }
+>>> +    }
+>> I'm not sure yet if it would be better to use the reset framework for 
+>> this.
+>> While it says it is also meant for reset-gpios, there does not seem a 
+>> driver
+>> for this to exist yet.
+>>
+> What should I do?
+>>
+>>> +
+>>> +    return ret;
+>>> +}
+>>> +
+>>> +#define GPIO_PHY_POWER    "gmac_phy_power"
+>>> +#define GPIO_PHY_RESET    "gmac_phy_reset"
+>>> +#define GPIO_PHY_IRQ    "gmac_phy_irq"
+>> again I don't understand why these constants are necessary
+>>
+>>> +
+>>> +static void *rk_gmac_setup(struct platform_device *pdev)
+>>> +{
+>>> +    struct rk_priv_data *bsp_priv;
+>>> +    struct device *dev = &pdev->dev;
+>>> +    enum of_gpio_flags flags;
+>>> +    int ret;
+>>> +    const char *strings = NULL;
+>>> +    int value;
+>>> +    int irq;
+>>> +
+>>> +    bsp_priv = devm_kzalloc(dev, sizeof(*bsp_priv), GFP_KERNEL);
+>>> +    if (!bsp_priv)
+>>> +        return ERR_PTR(-ENOMEM);
+>>> +
+>>> +    bsp_priv->phy_iface = of_get_phy_mode(dev->of_node);
+>>> +
+>>> +    ret = of_property_read_string(dev->of_node, "pmu_regulator", 
+>>> &strings);
+>>> +    if (ret) {
+>>> +        pr_err("%s: Can not read property: pmu_regulator.\n", 
+>>> __func__);
+>>> +        bsp_priv->power_ctrl_by_pmu = false;
+>>> +    } else {
+>>> +        pr_info("%s: ethernet phy power controlled by pmu(%s).\n",
+>>> +            __func__, strings);
+>>> +        bsp_priv->power_ctrl_by_pmu = true;
+>>> +        strcpy(bsp_priv->pmu_regulator, strings);
+>>> +    }
+>> There is a generic regulator-dt-binding for regulator-consumers 
+>> available
+>> which you should of course use.
+>>
+> The same explanation as above
+>>> +
+>>> +    ret = of_property_read_u32(dev->of_node, "pmu_enable_level", 
+>>> &value);
+>>> +    if (ret) {
+>>> +        pr_err("%s: Can not read property: pmu_enable_level.\n",
+>>> +               __func__);
+>>> +        bsp_priv->power_ctrl_by_pmu = false;
+>>> +    } else {
+>>> +        pr_info("%s: PHY power controlled by pmu(level = %s).\n",
+>>> +            __func__, (value == 1) ? "HIGH" : "LOW");
+>>> +        bsp_priv->power_ctrl_by_pmu = true;
+>>> +        bsp_priv->pmu_enable_level = value;
+>>> +    }
+>> What is this used for? Enabling should of course be done via 
+>> regulator_enable
+>> and disabling using regulator_disable.
+>>
+>>
+>>> +
+>>> +    ret = of_property_read_string(dev->of_node, "clock_in_out", 
+>>> &strings);
+>>> +    if (ret) {
+>>> +        pr_err("%s: Can not read property: clock_in_out.\n", 
+>>> __func__);
+>>> +        bsp_priv->clock_input = true;
+>>> +    } else {
+>>> +        pr_info("%s: clock input or output? (%s).\n",
+>>> +            __func__, strings);
+>>> +        if (!strcmp(strings, "input"))
+>>> +            bsp_priv->clock_input = true;
+>>> +        else
+>>> +            bsp_priv->clock_input = false;
+>>> +    }
+>>> +
+>>> +    ret = of_property_read_u32(dev->of_node, "tx_delay", &value);
+>>> +    if (ret) {
+>>> +        bsp_priv->tx_delay = 0x30;
+>>> +        pr_err("%s: Can not read property: tx_delay.", __func__);
+>>> +        pr_err("%s: set tx_delay to 0x%x\n",
+>>> +               __func__, bsp_priv->tx_delay);
+>>> +    } else {
+>>> +        pr_info("%s: TX delay(0x%x).\n", __func__, value);
+>>> +        bsp_priv->tx_delay = value;
+>>> +    }
+>>> +
+>>> +    ret = of_property_read_u32(dev->of_node, "rx_delay", &value);
+>>> +    if (ret) {
+>>> +        bsp_priv->rx_delay = 0x10;
+>>> +        pr_err("%s: Can not read property: rx_delay.", __func__);
+>>> +        pr_err("%s: set rx_delay to 0x%x\n",
+>>> +               __func__, bsp_priv->rx_delay);
+>>> +    } else {
+>>> +        pr_info("%s: RX delay(0x%x).\n", __func__, value);
+>>> +        bsp_priv->rx_delay = value;
+>>> +    }
+>>> +
+>>> +    bsp_priv->grf = syscon_regmap_lookup_by_phandle(dev->of_node,
+>>> +                            "rockchip,grf");
+>>> +    bsp_priv->phyirq_io =
+>>> +        of_get_named_gpio_flags(dev->of_node,
+>>> +                    "phyirq-gpio", 0, &flags);
+>>> +    bsp_priv->phyirq_io_level = (flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1;
+>>> +
+>>> +    bsp_priv->reset_io =
+>>> +        of_get_named_gpio_flags(dev->of_node,
+>>> +                    "reset-gpio", 0, &flags);
+>>> +    bsp_priv->reset_io_level = (flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1;
+>>> +
+>>> +    bsp_priv->power_io =
+>>> +        of_get_named_gpio_flags(dev->of_node, "power-gpio", 0, 
+>>> &flags);
+>>> +    bsp_priv->power_io_level = (flags & OF_GPIO_ACTIVE_LOW) ? 0 : 1;
+>>> +
+>>> +    /*power*/
+>>> +    if (!gpio_is_valid(bsp_priv->power_io)) {
+>>> +        pr_err("%s: Failed to get GPIO %s.\n",
+>>> +               __func__, "power-gpio");
+>>> +    } else {
+>>> +        ret = gpio_request(bsp_priv->power_io, GPIO_PHY_POWER);
+>>> +        if (ret)
+>>> +            pr_err("%s: ERROR: Failed to request GPIO %s.\n",
+>>> +                   __func__, GPIO_PHY_POWER);
+>>> +    }
+>> When everything power-related is handled using the regulator api, you 
+>> don't
+>> need this
+> The same explanation as above
+>>
+>>> +
+>>> +    if (!gpio_is_valid(bsp_priv->reset_io)) {
+>>> +        pr_err("%s: ERROR: Get reset-gpio failed.\n", __func__);
+>>> +    } else {
+>>> +        ret = gpio_request(bsp_priv->reset_io, GPIO_PHY_RESET);
+>>> +        if (ret)
+>>> +            pr_err("%s: ERROR: Failed to request GPIO %s.\n",
+>>> +                   __func__, GPIO_PHY_RESET);
+>>> +    }
+>>> +
+>>> +    if (bsp_priv->phyirq_io > 0) {
+>> This is more for my understanding: why does the mac driver need to 
+>> handle the
+>> phy interrupt - but I might be overlooking something.
+>>
+> phy interrupt is not mandatory.  In most of the time,  in order to 
+> find something happen in PHY, for example,
+> link is up or down,  we just use polling method to read the phy's 
+> register in a timer.
+> Buf if phy interrupt is in use, when link is up or down,  phy 
+> interrupt pin will be assert to inform the CPU.
+> I just implement the driver for phy interrupt gpio,  not enable it as 
+> default.
+>
+>>> +        struct plat_stmmacenet_data *plat_dat;
+>>> +
+>>> +        pr_info("PHY irq in use\n");
+>>> +        ret = gpio_request(bsp_priv->phyirq_io, GPIO_PHY_IRQ);
+>>> +        if (ret < 0) {
+>>> +            pr_warn("%s: Failed to request GPIO %s\n",
+>>> +                __func__, GPIO_PHY_IRQ);
+>>> +            goto goon;
+>>> +        }
+>>> +
+>>> +        ret = gpio_direction_input(bsp_priv->phyirq_io);
+>>> +        if (ret < 0) {
+>>> +            pr_err("%s, Failed to set input for GPIO %s\n",
+>>> +                   __func__, GPIO_PHY_IRQ);
+>>> +            gpio_free(bsp_priv->phyirq_io);
+>>> +            goto goon;
+>>> +        }
+>>> +
+>>> +        irq = gpio_to_irq(bsp_priv->phyirq_io);
+>>> +        if (irq < 0) {
+>>> +            ret = irq;
+>>> +            pr_err("Failed to set irq for %s\n",
+>>> +                   GPIO_PHY_IRQ);
+>>> +            gpio_free(bsp_priv->phyirq_io);
+>>> +            goto goon;
+>>> +        }
+>>> +
+>>> +        plat_dat = dev_get_platdata(&pdev->dev);
+>>> +        if (plat_dat)
+>>> +            plat_dat->mdio_bus_data->probed_phy_irq = irq;
+>>> +        else
+>>> +            pr_err("%s: plat_data is NULL\n", __func__);
+>>> +    }
+>>> +
+>>> +goon:
+>>> +    /*rmii or rgmii*/
+>>> +    if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RGMII) {
+>>> +        pr_info("%s: init for RGMII\n", __func__);
+>>> +        set_to_rgmii(bsp_priv, bsp_priv->tx_delay, 
+>>> bsp_priv->rx_delay);
+>>> +    } else if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RMII) {
+>>> +        pr_info("%s: init for RMII\n", __func__);
+>>> +        set_to_rmii(bsp_priv);
+>>> +    } else {
+>>> +        pr_err("%s: ERROR: NO interface defined!\n", __func__);
+>>> +    }
+>>> +
+>>> +    bsp_priv->pdev = pdev;
+>>> +
+>>> +    gmac_clk_init(bsp_priv);
+>>> +
+>>> +    return bsp_priv;
+>>> +}
+>>> +
+>>> +static int rk_gmac_init(struct platform_device *pdev, void *priv)
+>>> +{
+>>> +    struct rk_priv_data *bsp_priv = priv;
+>>> +    int ret;
+>>> +
+>>> +    ret = phy_power_on(bsp_priv, true);
+>>> +    if (ret)
+>>> +        return ret;
+>>> +
+>>> +    ret = gmac_clk_enable(bsp_priv, true);
+>>> +    if (ret)
+>>> +        return ret;
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +static void rk_gmac_exit(struct platform_device *pdev, void *priv)
+>>> +{
+>>> +    struct rk_priv_data *gmac = priv;
+>>> +
+>>> +    phy_power_on(gmac, false);
+>>> +    gmac_clk_enable(gmac, false);
+>>> +}
+>>> +
+>>> +static void rk_fix_speed(void *priv, unsigned int speed)
+>>> +{
+>>> +    struct rk_priv_data *bsp_priv = priv;
+>>> +
+>>> +    if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RGMII)
+>>> +        set_rgmii_speed(bsp_priv, speed);
+>>> +    else if (bsp_priv->phy_iface == PHY_INTERFACE_MODE_RMII)
+>>> +        set_rmii_speed(bsp_priv, speed);
+>>> +    else
+>>> +        pr_err("unsupported interface %d", bsp_priv->phy_iface);
+>>> +}
+>>> +
+>>> +const struct stmmac_of_data rk_gmac_data = {
+>>> +    .has_gmac = 1,
+>>> +    .fix_mac_speed = rk_fix_speed,
+>>> +    .setup = rk_gmac_setup,
+>>> +    .init = rk_gmac_init,
+>>> +    .exit = rk_gmac_exit,
+>>> +};
+>>> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>>> b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c index
+>>> 15814b7..b4dee96 100644
+>>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+>>> @@ -33,6 +33,7 @@
+>>>
+>>>   static const struct of_device_id stmmac_dt_ids[] = {
+>>>       /* SoC specific glue layers should come before generic 
+>>> bindings */
+>>> +    { .compatible = "rockchip,rk3288-gmac", .data = &rk_gmac_data},
+>> please name that rk3288_gmac_data [of course the other occurences too]
+>> It makes it easier to see which soc it is meant for and it's also not 
+>> save to
+>> assume that the next one will use the same register + bit positions 
+>> in the
+>> grf.
+>>
+>>
+>>>       { .compatible = "amlogic,meson6-dwmac", .data = 
+>>> &meson6_dwmac_data},
+>>>       { .compatible = "allwinner,sun7i-a20-gmac", .data = 
+>>> &sun7i_gmac_data},
+>>>       { .compatible = "st,stih415-dwmac", .data = &stih4xx_dwmac_data},
+>>> @@ -291,6 +292,8 @@ static int stmmac_pltfr_probe(struct 
+>>> platform_device
+>>> *pdev) return  -ENOMEM;
+>>>           }
+>>>
+>>> +        pdev->dev.platform_data = plat_dat;
+>>> +
+>>>           ret = stmmac_probe_config_dt(pdev, plat_dat, &mac);
+>>>           if (ret) {
+>>>               pr_err("%s: main dt probe failed", __func__);
+>>> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+>>> b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h index
+>>> 25dd1f7..32a0516 100644
+>>> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+>>> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.h
+>>> @@ -24,5 +24,6 @@ extern const struct stmmac_of_data sun7i_gmac_data;
+>>>   extern const struct stmmac_of_data stih4xx_dwmac_data;
+>>>   extern const struct stmmac_of_data stid127_dwmac_data;
+>>>   extern const struct stmmac_of_data socfpga_gmac_data;
+>>> +extern const struct stmmac_of_data rk_gmac_data;
+>>>
+>>>   #endif /* __STMMAC_PLATFORM_H__ */
+>>
+>>
+>
 
-$ ./rmihidtool /dev/hidraw1 -r 0x50 1
-0x01  #PalmDetect Interrupt Enable, right?
-$ ./rmihidtool /dev/hidraw1 -w 0x50 0  #Disable PalmDetect Interrupt
-
-It makes more sense now that widths greater than 12 trigger the bug.
-
-Gabriele
 
