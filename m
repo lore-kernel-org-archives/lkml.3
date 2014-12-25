@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaLYOOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 09:14:11 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:50350 "EHLO vps0.lunn.ch"
+	id S1752463AbaLYOmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 09:42:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43237 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850AbaLYOOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 09:14:06 -0500
-Date: Thu, 25 Dec 2014 15:12:40 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Evgeni Dobrev <evgeni@studio-punkt.com>, devicetree@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/1] add support for Seagate BlackArmor NAS220
-Message-ID: <20141225141240.GJ19265@lunn.ch>
-References: <20141215203855.GA28940@anne>
- <20141222125750.GA29163@anne>
- <549C0C3C.8060601@gmail.com>
- <20141225133109.GI19265@lunn.ch>
- <549C1465.6030909@gmail.com>
+	id S1752186AbaLYOmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 09:42:51 -0500
+Message-ID: <549C2256.5010704@redhat.com>
+Date: Thu, 25 Dec 2014 09:42:30 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549C1465.6030909@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicholas Mc Guire <der.herr@hofr.at>, Al Viro <viro@zeniv.linux.org.uk>
+CC: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] doc fix - brlock was removed in the 3.13 kernel series
+References: <1419506981-23952-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1419506981-23952-1-git-send-email-der.herr@hofr.at>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >Hi Sebastian
-> >
-> >I'm not sure what you mean here. The binding Documentation says:
-> 
-> I was hoping that using phys/phy-names would allow us to get rid of
-> nr-ports property. I haven't checked the corresponding code and likely
-> will not before next year, but we should try to get rid of the nr-ports
-> property completely.
-> 
-> >Required Properties:
-> >- compatibility : "marvell,orion-sata" or "marvell,armada-370-sata"
-> >- reg           : Address range of controller
-> >- interrupts    : Interrupt controller is using
-> >- nr-ports      : Number of SATA ports in use.
-> >
-> >Optional Properties:
-> >- phys          : List of phandles to sata phys
-> >- phy-names     : Should be "0", "1", etc, one number per phandle
-> >
-> >The optional phys/phy-names have just been added to
-> >kirkwood-6192.dtsi.
-> 
-> Yeah, saw that patch after the review.. and my understanding of the
-> phys/phy-names properties is that
-> (a) they allow to count the number of _available_ ports
-> (b) they allow to determine the number of _used_ ports
-> (c) they allow to e.g. disable port 0 but enable port 1
-> 
-> while nr-ports only allows (a). You can derive (b) only if you use
-> the first out of two but you cannot do (c) with nr-ports.
-> 
-> Which is why we introduced the phys/phy-names properties.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-We introduced them for turning the phys on and off.
+On 12/25/2014 06:29 AM, Nicholas Mc Guire wrote:
+> The brlock was completely removed in the 3.13 kernel series. see
+> commit 0f6ed63b1707 ("no need to keep brlock macros anymore...")
+> 
+> It seems that documentation in seqlock.h was not updated to
+> reflect this. This patch drops the (hopefully last) false brlock
+> reference. All remaining references to brlock refer to byte-range
+> locks (notably in cifs) and not to "Big Reader Lock" and should be
+> correct.
+> 
+> patch is against 3.19.0-rc1 linux-next
+> 
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 
-We don't do any derivation from this information. It is the same for
-all devices, since it is in the kirkwood-*.dtsi file, not per board.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Also, orion5x does not allow such control of the phys, they are always
-on. So i don't know if we can derive anything from this information,
-since it is not always present.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-    Andrew
+iQEcBAEBAgAGBQJUnCJVAAoJEM553pKExN6DTl4IALfePxNFoRphS8CmLbONtqmi
+Bs4gu9ngJq6BLenk6bOF5wfMCRTBXHagWnn14wrjjZOFBkh9Fh+Zy+8GKS31rwUL
+GNsCdOUoSBRts2xXMCIxX2cE6+xclYXD5/nWC0InrGtYGfMQmVr5hdLy3UYQu5GO
+M0JaWKuvZE06/pz4ntPKWx0wX15o12ojHQy1IgD9d/J5pe2odAZ2WIueioJAqVes
+0PM3rgSlsdFanI+RNAm5OUmTNqVF9S+ctbdjJN0MpJVBBun1XtdyefhnBeNRZIRf
+9wmMiHU5sFcg3wEraIQ2lZoPCvFcNw4FHt95S5wS3zNI8FJUN0zm4gLe36hh0EU=
+=qaLQ
+-----END PGP SIGNATURE-----
