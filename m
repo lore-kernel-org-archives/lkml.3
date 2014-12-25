@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaLYKPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 05:15:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60460 "EHLO mx2.suse.de"
+	id S1752532AbaLYKQf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 05:16:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60470 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133AbaLYKPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 05:15:39 -0500
-Date: Thu, 25 Dec 2014 11:15:38 +0100
-Message-ID: <s5htx0khw6t.wl-tiwai@suse.de>
+	id S1752508AbaLYKQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 05:16:32 -0500
+Date: Thu, 25 Dec 2014 11:16:31 +0100
+Message-ID: <s5hsig4hw5c.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: isa: gus: gus_instr.c:  Remove unused function
-In-Reply-To: <1419095004-9727-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419095004-9727-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: Re: [PATCH] sound: pci: hda: patch_analog.c:  Remove unused function
+In-Reply-To: <1419114679-11752-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1419114679-11752-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,21 +24,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sat, 20 Dec 2014 18:03:24 +0100,
+At Sat, 20 Dec 2014 23:31:19 +0100,
 Rickard Strandqvist wrote:
 > 
-> Remove the function snd_gus_simple_remove_sample() that is not used anywhere.
+> Remove the function ad198x_ch_mode_get() that is not used anywhere.
 > 
 > This was partially found by using a static code analysis program called cppcheck.
 > 
 > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-The whole instrument manager function was dropped many years ago, but
-this file and functions are left for the future (re-)implementation.
-But judging from the current situation, the chance that we'll get a
-new feature for GUS boards is quite low, so rather we should simply
-delete this file.  The developer can still refer to the git repository
-as a reference.  Will do that for for-next branch.
+As Raymond suggested, remove the whole dead #ifdef block instead.
+It's a left-over code I forgot to remove.
 
 
 thanks,
@@ -46,25 +42,29 @@ thanks,
 Takashi
 
 > ---
->  sound/isa/gus/gus_instr.c |    8 --------
->  1 file changed, 8 deletions(-)
+>  sound/pci/hda/patch_analog.c |    9 ---------
+>  1 file changed, 9 deletions(-)
 > 
-> diff --git a/sound/isa/gus/gus_instr.c b/sound/isa/gus/gus_instr.c
-> index 4dc9caf..2d21408 100644
-> --- a/sound/isa/gus/gus_instr.c
-> +++ b/sound/isa/gus/gus_instr.c
-> @@ -162,11 +162,3 @@ int snd_gus_simple_get_sample(void *private_data, struct simple_instrument *inst
->  
->  	return snd_gus_dram_read(gus, data, instr->address.memory, instr->size, 0);
+> diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
+> index 06275f8..9d5257b 100644
+> --- a/sound/pci/hda/patch_analog.c
+> +++ b/sound/pci/hda/patch_analog.c
+> @@ -707,15 +707,6 @@ static int ad198x_ch_mode_info(struct snd_kcontrol *kcontrol,
+>  				    spec->num_channel_mode);
 >  }
-> -
-> -int snd_gus_simple_remove_sample(void *private_data, struct simple_instrument *instr,
-> -			         int atomic)
+>  
+> -static int ad198x_ch_mode_get(struct snd_kcontrol *kcontrol,
+> -			      struct snd_ctl_elem_value *ucontrol)
 > -{
-> -	struct snd_gus_card *gus = private_data;
-> -
-> -	return snd_gf1_mem_free(&gus->gf1.mem_alloc, instr->address.memory);
+> -	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+> -	struct ad198x_spec *spec = codec->spec;
+> -	return snd_hda_ch_mode_get(codec, ucontrol, spec->channel_mode,
+> -				   spec->num_channel_mode, spec->multiout.max_channels);
 > -}
+> -
+>  static int ad198x_ch_mode_put(struct snd_kcontrol *kcontrol,
+>  			      struct snd_ctl_elem_value *ucontrol)
+>  {
 > -- 
 > 1.7.10.4
 > 
