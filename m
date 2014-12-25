@@ -1,168 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbaLYDMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 22:12:00 -0500
-Received: from mail-by2on0143.outbound.protection.outlook.com ([207.46.100.143]:53580
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751692AbaLYDL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 22:11:59 -0500
-Date: Thu, 25 Dec 2014 10:03:02 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Stefan Agner <stefan@agner.ch>
-CC: Sanchayan Maity <maitysanchayan@gmail.com>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] usb: chipidea: Add identification registers access
- APIs
-Message-ID: <20141225020259.GA5077@shlinux2>
-References: <cover.1418981438.git.maitysanchayan@gmail.com>
- <72124df17c0f40f8a7ae02faa9664b9d51743584.1418981438.git.maitysanchayan@gmail.com>
- <4f5efe169ed3ab16ffcbee52dd6b7661@agner.ch>
+	id S1752160AbaLYDNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 22:13:06 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:49340 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaLYDNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 22:13:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4f5efe169ed3ab16ffcbee52dd6b7661@agner.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(51704005)(24454002)(377424004)(85426001)(46406003)(19580395003)(6806004)(19580405001)(33656002)(46102003)(33716001)(21056001)(23726002)(106466001)(92566001)(97756001)(97736003)(83506001)(47776003)(20776003)(4396001)(64706001)(31966008)(107046002)(87936001)(50986999)(54356999)(77096005)(68736005)(110136001)(76176999)(50466002)(86362001)(105606002)(84676001)(62966003)(77156002)(104016003)(120916001)(2950100001)(99396003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB214;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB214;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB214;
-X-Forefront-PRVS: 04362AC73B
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB214;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 25 Dec 2014 03:11:54.8560
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB214
+In-Reply-To: <5019255.GNGyxISxsX@xps13>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com>
+	<1675821.m9zcYReJQs@xps13>
+	<CAJ=jquawd2u4eFfA+8ytA9Na18vs-t1dPUJ-huMQmhPZ_tcGyA@mail.gmail.com>
+	<5019255.GNGyxISxsX@xps13>
+Date: Thu, 25 Dec 2014 11:13:02 +0800
+Message-ID: <CAJ=jquaeyz4NnT2Wg7MaLHrLF1+ARXfds-Z-hRvYyk8SvQGTKQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
+From: Alex Hung <alex.hung@canonical.com>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Darren Hart <dvhart@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 05:00:05PM +0100, Stefan Agner wrote:
-> On 2014-12-19 10:55, Sanchayan Maity wrote:
-> > Using hw_write_id_reg and hw_read_id_reg to write and read
-> > identification registers contents. This can be used to get
-> > controller information, change some system configurations
-> > and so on.
-> 
-> Checkpatch is complaining about DOS line endings and some trailing
-> whitespace. This applies to all three patches.
-> 
-> > 
-> > Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
-> > ---
-> >  drivers/usb/chipidea/ci.h |   53 +++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 53 insertions(+)
-> > 
-> > diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-> > index ea40626..94db636 100644
-> > --- a/drivers/usb/chipidea/ci.h
-> > +++ b/drivers/usb/chipidea/ci.h
-> > @@ -29,6 +29,15 @@
-> >  /******************************************************************************
-> >   * REGISTERS
-> >   *****************************************************************************/
-> > +/* Identification Registers */
-> > +#define ID_ID				0x0
-> > +#define ID_HWGENERAL			0x4
-> > +#define ID_HWHOST			0x8
-> > +#define ID_HWDEVICE			0xc
-> > +#define ID_HWTXBUF			0x10
-> > +#define ID_HWRXBUF			0x14
-> > +#define ID_SBUSCFG			0x90
-> > +
-> >  /* register indices */
-> >  enum ci_hw_regs {
-> >  	CAP_CAPLENGTH,
-> > @@ -97,6 +106,18 @@ enum ci_role {
-> >  	CI_ROLE_END,
-> >  };
-> >  
-> > +enum CI_REVISION {
-> 
-> Usually the enum names are small caps, only the labels are capitalized.
-> I would suggest use ci_revision here (similar to the enum above).
+I usually prefer to stick with formal document as everything else can
+be changed without reasons.
 
-I will change it.
+I am not certain whether the keypress is defined in Dell's document,
+and I will confirm with Dell. If this keypress is well defined, it is
+a good idea to use it.
 
-> 
-> > +	CI_REVISION_1X = 10,	/* Revision 1.x */
-> > +	CI_REVISION_20 = 20, /* Revision 2.0 */
-> > +	CI_REVISION_21, /* Revision 2.1 */
-> > +	CI_REVISION_22, /* Revision 2.2 */
-> > +	CI_REVISION_23, /* Revision 2.3 */
-> > +	CI_REVISION_24, /* Revision 2.4 */
-> > +	CI_REVISION_25, /* Revision 2.5 */
-> > +	CI_REVISION_25_PLUS, /* Revision above than 2.5 */
-> > +	CI_REVISION_UNKNOWN = 99, /* Unknown Revision */
-> > +};
-> > +
-> >  /**
-> >   * struct ci_role_driver - host/gadget role driver
-> >   * @start: start this role
-> > @@ -168,6 +189,7 @@ struct hw_bank {
-> >   * @b_sess_valid_event: indicates there is a vbus event, and handled
-> >   * at ci_otg_work
-> >   * @imx28_write_fix: Freescale imx28 needs swp instruction for writing
-> > + * @rev: The revision number for controller
-> >   */
-> >  struct ci_hdrc {
-> >  	struct device			*dev;
-> > @@ -207,6 +229,7 @@ struct ci_hdrc {
-> >  	bool				id_event;
-> >  	bool				b_sess_valid_event;
-> >  	bool				imx28_write_fix;
-> > +	enum CI_REVISION		rev;
-> >  };
-> >  
-> >  static inline struct ci_role_driver *ci_role(struct ci_hdrc *ci)
-> > @@ -244,6 +267,36 @@ static inline void ci_role_stop(struct ci_hdrc *ci)
-> >  }
-> >  
-> >  /**
-> > + * hw_read_id_reg: reads from a identification register
-> > + * @ci: the controller
-> > + * @offset: offset from the beginning of identification registers region
-> > + * @mask: bitfield mask
-> > + *
-> > + * This function returns register contents
-> > + */
-> > +static inline u32 hw_read_id_reg(struct ci_hdrc *ci, u32 offset, u32 mask)
-> > +{
-> > +	return ioread32(ci->hw_bank.abs + offset) & mask;
-> > +}
-> > +
-> > +/**
-> > + * hw_write_id_reg: writes to a identification register
-> > + * @ci: the controller
-> > + * @offset: offset from the beginning of identification registers region
-> > + * @mask: bitfield mask
-> > + * @data: new value
-> > + */
-> > +static inline void hw_write_id_reg(struct ci_hdrc *ci, u32 offset,
-> > +			    u32 mask, u32 data)
-> > +{
-> > +	if (~mask)
-> > +		data = (ioread32(ci->hw_bank.abs + offset) & ~mask)
-> > +			| (data & mask);
-> > +
-> > +	iowrite32(data, ci->hw_bank.abs + offset);
-> > +}
-> 
-> This function isn't used anywhere, does it make sense to write an ID
-> register? The ones I see in Vybrid's RM are read-only anyway..
-> 
 
-This API is used to write identification registers (offset, 0x00 - 0x90),
-not only the ID register, the SBUSCFG (offset 0x90) attribute is read/write.
+On Wed, Dec 24, 2014 at 7:40 PM, Gabriele Mazzotta
+<gabriele.mzt@gmail.com> wrote:
+> On Wednesday 24 December 2014 17:13:45 Alex Hung wrote:
+>> I uploaded acpidump files [1] (except for XPS 13 which is not
+>> available), and this should help clarify what has been tested.
+>>
+>> Does Inspirion 5721 does not have either DELLABCE or DELRBTN. It is
+>> used for comparison. My apologies that I did not point this out in
+>> previous email.
+>>
+>> When calling ARBT(1), BIOS will no longer issue scancode and will not
+>> pull low hardware pin "W_DISABLE#" on mini card. This essentially
+>> gives all wireless control to OS. This is likely the answer to
+>> Microsoft's Windows Certification Program
+>> System.Client.RadioManagement.HardwareButton [2] as below:
+>>
+>> =============================================
+>> If a PC has a physical (hardware) button switch on a PC that turns
+>> wireless radios on and off, it must be software controllable and
+>> interact appropriately with the Radio Management UI
+>> =============================================
+>>
+>> Dell's BIOS does issue a notify(RBTN, 0x80). This is done purposely to
+>> re-enumerate the state of radio switch which may be changed when
+>> system is in S3 or S4. I think this should not occur when CRBT returns
+>> 0 or 1 (for hotkey that cannot be changed during S3 or S4), but that's
+>> how it is done currently.
+>
+> The notification is sent on my XPS13 (CRBT returns 0), toggling the WiFi
+> state on resume.
+>
+>> dell-wireless does not handle this notification in S3 or S4 for
+>> following reasons:
+>>
+>> 1. dell-wireless does not handle slider (i.e. CRBT = 2 or 3). Device
+>> drivers should read the hardware pin, "W_DISABLE#" on mini spec and
+>> change hard block accordingly. This pin is commonly used by OEM today.
+>>
+>> 2. it is not possible to distinguish the notification (0x80) from
+>> hotkey press or S3/S4. I also concerned this may mis-trigger state
+>> change when resuming from S3 or S4, but it does not. Does any know how
+>> to ignore this notification during resume only?
+>>
+>> dell-rbtn can use this notification + method (GRBT) [2] to solve the
+>> problem that slider state.
+>
+> Unfortunately this won't solve the problem for me. After ARBT is called
+> with 1 as parameter, it seems that GRBT always returns 1.
+>
+> I don't know how to ignore the notification on resume, if not through
+> a flag set by a PM callback.
+>
+> Given that all the tested laptops reported a keypress on the i8042
+> bus, isn't it better to rely on that instead?
+>
+>> [1] http://people.canonical.com/~alexhung/dell-acpidump/
+>> [2] http://msdn.microsoft.com/en-us/library/windows/hardware/jj128256.aspx
+>> [3] It seems GRBT may not always be implemented...
+>>
+>> I'd love to do more tests and share the results on any particular
+>> systems, but I may need some more detailed instructions.
+>>
+>>
+>>
+>> On Tue, Dec 23, 2014 at 3:16 AM, Gabriele Mazzotta
+>> <gabriele.mzt@gmail.com> wrote:
+>> > On Monday 22 December 2014 15:27:57 Alex Hung wrote:
+>> >> = Testing =
+>> >>
+>> >> I tested six Dell systems for two sets of patches for dell radio
+>> >> button - two system with radio slider and four with radio hotkey.
+>> >> There are also two systems with working ARBT method.
+>> >>
+>> >> == Basic Information ==
+>> >> Based OS: Ubuntu 14.10 (kernel 3.16 [1]) and kernel 3.18 [2]
+>> >>
+>> >> Patches:
+>> >> 1. dell-wireless v3 = original v2 + Gabriele's suggestion [3]
+>> >> 2. dell-rbtn [4]
+>> >>
+>> >> Method:
+>> >> 1. run "rfkill list" and press hotkey / toggle slider during runtime
+>> >> 2. run "rfkill list" and toggle slider during S3
+>> >>
+>> >> == Results ==
+>> >>
+>> >> I summarized the tests in Google sheet as below. Please advise if
+>> >> anyone has problem reading it.
+>> >>
+>> >> https://docs.google.com/spreadsheets/d/1voffS6dNglwAExSGh3UmG__UAO2qfZ829CkJLPo06aI/edit?usp=sharing
+>> >>
+>> >> PS. The document will stay as long as possible for future references.
+>> >>
+>> >> == Summary ==
+>> >>
+>> >> 1. I did not observed a duplicated event. However, keycode 240
+>> >> (unknown) is generated on many UUT. It is not issued by dell-laptop or
+>> >> del-wmi. I am suspecting it is the other event Pali observes but it
+>> >> can be the result of different distro.
+>> >>
+>> >> 2. Some system issues scancode "0xe0 0x73 0xe0 0xf3". It can also be
+>> >> used toggle wireless state but this can also be distro-dependent. This
+>> >> scancode does nothing on Ubuntu 14.10.
+>> >>
+>> >> 2. There are two systems with working ARBT (XPS 13 9333 and Inspiron
+>> >> 7447). Calling ARBT(1) changes BIOS behaviours, and this matches to
+>> >> Dell's document. We should include it in the patch for maximum
+>> >> capability.
+>> >>
+>> >>
+>> >> [1] dell-wireless is only tested 3.16.
+>> >> [2] dell-rbtn is tested on 3.16 and 3.18, but no differences are observed.
+>> >> [3] http://people.canonical.com/~alexhung/dell-wireless/
+>> >> [4] http://people.canonical.com/~alexhung/dell-rbtn/
+>> >
+>> > I've just tried the last revision of dell-wireless and noticed that a
+>> > notification (0x80) is sent to DELLABCE after a transition from S3 to
+>> > S0, causing dell-wireless to send KEY_RFKILL. This shouldn't happen.
+>> > Same thing for transitions from S4 to S0.
+>> >
+>> > Gabriele
+>>
+>>
+>>
+>>
+
+
 
 -- 
-
-Best Regards,
-Peter Chen
+Cheers,
+Alex Hung
