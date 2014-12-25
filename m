@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaLYURk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 15:17:40 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:65003 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaLYURj (ORCPT
+	id S1752283AbaLYU2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 15:28:39 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:41238 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459AbaLYU2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 15:17:39 -0500
-Date: Thu, 25 Dec 2014 15:17:35 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 4/5] workqueue: update NUMA affinity for the node lost CPU
-Message-ID: <20141225201735.GD22951@htj.dyndns.org>
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
- <1418379595-6281-5-git-send-email-laijs@cn.fujitsu.com>
- <20141212172739.GD20020@htj.dyndns.org>
- <548E3948.7040105@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <548E3948.7040105@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 25 Dec 2014 15:28:38 -0500
+From: David Decotigny <ddecotig@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Jeremiah Mahler <jmmahler@gmail.com>, Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        David Decotigny <ddecotig@gmail.com>
+Subject: [PATCH v2] staging: comedi: dmm32at: fix style issues
+Date: Thu, 25 Dec 2014 12:28:28 -0800
+Message-Id: <1419539308-19059-1-git-send-email-ddecotig@gmail.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 09:28:40AM +0800, Lai Jiangshan wrote:
-> > The foundation those pools were standing are gone.
-> 
-> This statement is not true unless we write some code to force them,
-> dequeue them from the unbound_pool_hash, for example.
+Before:
+      1 ERROR: code indent should use tabs where possible
+      1 WARNING: please, no spaces at the start of a line
 
-Yeah, that's the obvious thing to do.  Those pools are dead.  Take
-them off the namespace and drain the existing usages.
+After:
+  (none)
 
+Signed-off-by: David Decotigny <ddecotig@gmail.com>
+---
+ drivers/staging/comedi/drivers/dmm32at.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
+index 6df298a..31919b8 100644
+--- a/drivers/staging/comedi/drivers/dmm32at.c
++++ b/drivers/staging/comedi/drivers/dmm32at.c
+@@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
+ 	/* enable the ai conversion interrupt and the clock to start scans */
+ 	outb(DMM32AT_INTCLK_ADINT |
+ 	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
+-             dev->iobase + DMM32AT_INTCLK_REG);
++	     dev->iobase + DMM32AT_INTCLK_REG);
+ }
+ 
+ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 -- 
-tejun
+2.2.0.rc0.207.ga3a616c
+
