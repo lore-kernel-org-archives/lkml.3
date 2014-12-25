@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaLYJ3F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 04:29:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48890 "EHLO mx1.redhat.com"
+	id S1752503AbaLYJ3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 04:29:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48924 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279AbaLYJ27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 04:28:59 -0500
-Date: Thu, 25 Dec 2014 11:28:48 +0200
+	id S1752158AbaLYJ3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 04:29:18 -0500
+Date: Thu, 25 Dec 2014 11:28:41 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Steven Miao <realmz6@gmail.com>,
-        adi-buildroot-devel@lists.sourceforge.net
-Subject: [PATCH repost 05/16] blackfin/uaccess: fix sparse errors
-Message-ID: <1419499661-8566-6-git-send-email-mst@redhat.com>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH repost 03/16] arm64/uaccess: fix sparse errors
+Message-ID: <1419499661-8566-4-git-send-email-mst@redhat.com>
 References: <1419499661-8566-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,24 +33,25 @@ integer.
 Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Steven Miao <realmz6@gmail.com>
+
+Acked-by: Will Deacon <will.deacon@arm.com>
 ---
- arch/blackfin/include/asm/uaccess.h | 2 +-
+ arch/arm64/include/asm/uaccess.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/blackfin/include/asm/uaccess.h b/arch/blackfin/include/asm/uaccess.h
-index 57701c3..6a46e7d 100644
---- a/arch/blackfin/include/asm/uaccess.h
-+++ b/arch/blackfin/include/asm/uaccess.h
-@@ -147,7 +147,7 @@ static inline int bad_user_access_length(void)
- 		}						\
- 	} else							\
- 		_err = -EFAULT;					\
--	x = (typeof(*(ptr)))_val;				\
-+	x = (__force typeof(*(ptr)))_val;				\
- 	_err;							\
- })
+diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
+index 3bf8f4e..8d66bcf 100644
+--- a/arch/arm64/include/asm/uaccess.h
++++ b/arch/arm64/include/asm/uaccess.h
+@@ -147,7 +147,7 @@ do {									\
+ 	default:							\
+ 		BUILD_BUG();						\
+ 	}								\
+-	(x) = (__typeof__(*(ptr)))__gu_val;				\
++	(x) = (__force __typeof__(*(ptr)))__gu_val;				\
+ } while (0)
  
+ #define __get_user(x, ptr)						\
 -- 
 MST
 
