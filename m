@@ -1,275 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaLYIf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 03:35:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:56428 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071AbaLYIf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 03:35:27 -0500
-Date: Thu, 25 Dec 2014 00:35:23 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-Message-ID: <20141225083523.GA18401@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
- <20141222020317.GB3335@lcm>
- <000001d01db6$7d718770$78549650$@samsung.com>
- <20141222231604.GC8287@jaegeuk-mac02.mot.com>
- <002a01d01e5c$e2ba0250$a82e06f0$@samsung.com>
- <20141223073609.GA9946@jaegeuk-mac02.hsd1.ca.comcast.net>
- <006e01d01f4f$ef9fa940$cedefbc0$@samsung.com>
+	id S1752071AbaLYIs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 03:48:27 -0500
+Received: from mail-db3on0067.outbound.protection.outlook.com ([157.55.234.67]:65123
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751668AbaLYIsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 03:48:24 -0500
+X-Greylist: delayed 1066 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Dec 2014 03:48:24 EST
+Message-ID: <549BCAF8.1070500@mellanox.com>
+Date: Thu, 25 Dec 2014 10:29:44 +0200
+From: Haggai Eran <haggaie@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <006e01d01f4f$ef9fa940$cedefbc0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <j.glisse@gmail.com>, <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, <joro@8bytes.org>,
+        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "Johannes Weiner" <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, "Rik van Riel" <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        "Cameron Buschardt" <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        "Paul Blinzer" <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
+Subject: Re: [PATCH 2/7] mmu_notifier: keep track of active invalidation ranges
+ v2
+References: <1419266940-5440-1-git-send-email-j.glisse@gmail.com>
+ <1419266940-5440-3-git-send-email-j.glisse@gmail.com>
+In-Reply-To: <1419266940-5440-3-git-send-email-j.glisse@gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.8.3.60]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 193.47.165.134)
+ smtp.mailfrom=haggaie@mellanox.com; 
+X-Forefront-Antispam-Report: CIP:193.47.165.134;CTRY:IL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(428002)(51704005)(24454002)(479174004)(189002)(199003)(33656002)(2950100001)(46102003)(36756003)(64706001)(65816999)(59896002)(99396003)(120916001)(50466002)(87936001)(77156002)(4396001)(21056001)(20776003)(50986999)(62966003)(47776003)(105586002)(83506001)(77096005)(106466001)(6806004)(80316001)(64126003)(19580405001)(54356999)(65806001)(87266999)(23676002)(19580395003)(86362001)(101416001)(76176999)(107046002)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:AM3PR05MB0935;H:mtlcas13.mtl.com;FPR:;SPF:None;MLV:sfv;PTR:genko134.voltaire.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:AM3PR05MB0935;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:AM3PR05MB0935;
+X-Forefront-PRVS: 04362AC73B
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:AM3PR05MB0935;
+X-OriginatorOrg: Mellanox.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 25 Dec 2014 08:30:35.8362
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: a652971c-7d2e-4d9b-a6a4-d149256f461b
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=a652971c-7d2e-4d9b-a6a4-d149256f461b;Ip=[193.47.165.134]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: AM3PR05MB0935
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+On 22/12/2014 18:48, j.glisse@gmail.com wrote:
+>  static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+> -						       unsigned long start,
+> -						       unsigned long end,
+> -						       enum mmu_event event)
+> +						       struct mmu_notifier_range *range)
+>  {
+> +	/*
+> +	 * Initialize list no matter what in case a mmu_notifier register after
+> +	 * a range_start but before matching range_end.
+> +	 */
+> +	INIT_LIST_HEAD(&range->list);
 
-On Wed, Dec 24, 2014 at 04:01:16PM +0800, Chao Yu wrote:
-> Hi Jaegeuk,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Tuesday, December 23, 2014 3:36 PM
-> > To: Chao Yu
-> > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > 
-> > Hi Chao,
-> > 
-> > On Tue, Dec 23, 2014 at 11:01:39AM +0800, Chao Yu wrote:
-> > > Hi Jaegeuk,
-> > >
-> > > > -----Original Message-----
-> > > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > > Sent: Tuesday, December 23, 2014 7:16 AM
-> > > > To: Chao Yu
-> > > > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > > > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > > >
-> > > > Hi Chao,
-> > > >
-> > > > On Mon, Dec 22, 2014 at 03:10:30PM +0800, Chao Yu wrote:
-> > > > > Hi Changman,
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Changman Lee [mailto:cm224.lee@samsung.com]
-> > > > > > Sent: Monday, December 22, 2014 10:03 AM
-> > > > > > To: Chao Yu
-> > > > > > Cc: Jaegeuk Kim; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > > > > > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > > > > >
-> > > > > > Hi Yu,
-> > > > > >
-> > > > > > Good approach.
-> > > > >
-> > > > > Thank you. :)
-> > > > >
-> > > > > > As you know, however, f2fs breaks extent itself due to COW.
-> > > > >
-> > > > > Yes, and sometimes f2fs use IPU when override writing, in this condition,
-> > > > > by using this approach we can cache more contiguous mapping extent for better
-> > > > > performance.
-> > > >
-> > > > Hmm. When f2fs faces with this case, there is no chance to make an extent itself
-> > > > at all.
-> > >
-> > > With new implementation of this patch f2fs will build extent cache when readpage/readpages.
-> > 
-> > I don't understand your points exactly. :(
-> > If there are no on-disk extents, it doesn't matter when the caches are built.
-> > Could you define what scenarios you're looking at?
-> 
-> What I mean is that IPU will not split the exist extent in extent cache; and
-> this exist extent cache was been built when we init cache with last accessed extent
-> (the only on-disk extent) which was stored in inode, or be built when we invoke
-> get_data_block in readpage/readpages in IPU mode. So there is a chance to make
-> extent in this scenario.
+I don't see how can an mmu_notifier register after a range_start but
+before a matching range_end. The mmu_notifier registration locks all mm
+locks, and that should prevent any invalidation from running, right?
 
-As long as I can understand your point, IPU can mitigate data fragmentation,
-resulting in more extents, but current IPU policies except FORCE are activated
-only when partition was already fragmented a lot such as high utilization or
-SSR modes. That's why I said IPU is actually not helping extent caches.
+>  	if (mm_has_notifiers(mm))
+> -		__mmu_notifier_invalidate_range_start(mm, start, end, event);
+> +		__mmu_notifier_invalidate_range_start(mm, range);
+>  }
 
-[snip]
+...
 
-> > > IMO, node page cache belongs to system level cache, filesystem sub system can
-> > > not control it completely, cached uptodate node page will be invalidated by
-> > > using drop_caches from sysfs, or reclaimer of mm, result in more IO when we need
-> > > these node page next time.
-> > 
-> > Yes, that's exactly what I wanted.
-> 
-> IMO, cost is expensive when we read node page again if these pages are invalidated
-> by MM. In the worst case, we will read 3 ind-node blocks + 1 dnode block + 3 NAT blocks
-> from disk for one blkaddr.
+>  void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+> -					   unsigned long start,
+> -					   unsigned long end,
+> -					   enum mmu_event event)
+> +					   struct mmu_notifier_range *range)
+>  
+>  {
+>  	struct mmu_notifier *mn;
+> @@ -185,21 +183,36 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+>  	id = srcu_read_lock(&srcu);
+>  	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
+>  		if (mn->ops->invalidate_range_start)
+> -			mn->ops->invalidate_range_start(mn, mm, start,
+> -							end, event);
+> +			mn->ops->invalidate_range_start(mn, mm, range);
+>  	}
+>  	srcu_read_unlock(&srcu, id);
+> +
+> +	/*
+> +	 * This must happen after the callback so that subsystem can block on
+> +	 * new invalidation range to synchronize itself.
+> +	 */
+> +	spin_lock(&mm->mmu_notifier_mm->lock);
+> +	list_add_tail(&range->list, &mm->mmu_notifier_mm->ranges);
+> +	mm->mmu_notifier_mm->nranges++;
+> +	spin_unlock(&mm->mmu_notifier_mm->lock);
+>  }
+>  EXPORT_SYMBOL_GPL(__mmu_notifier_invalidate_range_start);
 
-My point is who should control this sort of caches.
-At least, we should focus on the hit ratio, not the worst case comparison.
-In the worst case, extent cache has more overhead than node page cache alone.
+Don't you have a race here because you add the range struct after the
+callback?
 
-> 
-> > 
-> > > New extent cache belongs to filesystem level cache, it is completely controlled
-> > > by filesystem itself. What we can profit is: on the one hand, it is used as
-> > > first level cache above the node page cache, which can also increase the cache
-> > > hit ratio.
-> > 
-> > I don't think so. The hit ratio depends on the cache policy. The node page
-> > cache is managed globally by kernel in LRU manner, so I think this can show
-> > affordable hit ratio.
-> 
-> As I test, in this scenario we can have higher ratio hit in new extent cache
-> than original extent cache:
-> 1.write a large file
-> 2.write randomly in this file
-> 3.drop cache through drop_caches entry (or reclaim by MM)
-> 4.read this large file
-> 
-> We cache all segregated extents in inode, so our ratio hit is 100% in
-> above scenario. If we add cache policy in extent cache, our hit ratio
-> will drop. But added policy can provide us more choose for different hit
-> ratio (may affect IO count) requirement of users.
+-------------------------------------------------------------------------
+Thread A                    | Thread B
+-------------------------------------------------------------------------
+call mmu notifier callback  |
+  clear SPTE                |
+                            | device page fault
+                            |   mmu_notifier_range_is_valid returns true
+                            |   install new SPTE
+add event struct to list    |
+mm clears/modifies the PTE  |
+-------------------------------------------------------------------------
 
-Of course! Even though system wants to get more memory, you're trying to grab
-in-house memory for extents.
-Or, new shrinker reclaims some of them, but it will drop hit raio obviously.
+So we are left with different entries in the host page table and the
+secondary page table.
 
-Please see below as a summary.
+I would think you'd want the event struct to be added to the list before
+the callback is run.
 
-> 
-> > 
-> > > On the other hand, it is more instable and controllable than node page
-> > > cache.
-> > 
-> > It depends on how you can control the extent cache. But, I'm not sure that
-> > would be better than page cache managed by MM.
-> > 
-> > So, my concerns are:
-> > 
-> > 1. Redundant memory overhead
-> >  : The extent cache is likely on top of the node page cache, which will consume
-> >  memory redundantly.
-> > 
-> > 2. CPU overhead
-> >  : In every block address updates, it needs to traverse extent cache entries.
-> 
-> As I mentioned above, if extent cache has the ability of limitation and shrink,
-> overhead of memory and CPU can be controlled.
-> 
-> > 
-> > 3. Effectiveness
-> >  : We have a node page cache that is managed by MM in LRU order. I think this
-> >  provides good hit ratio, system-wide memory relciaming algorithms, and well-
-> >  defined locking mechanism.
-> 
-> The effectiveness of new extent cache is the key point we should discuss.
-> 
-> IMO, hit ratio of extent cache and memory/CPU cost can be tradeoff.
-> For example:
-> 1.if limitation is on, max value is 1; shrink is off:
-> 	our extent cache will be the same as original extent cache.
-> 2.if limitation is off, shrink is off:
-> 	our extent cache can provide high hit ratio when node page cache is
-> 	invalid but there is more memory/CPU overhead.
-> 3.there are more status between label 1 and label 2 as limitation and shrink is
-> set to different value.
-> So we just develop our extent cache for more functionality and selective.
-> 
-> Another point is that, now size of struct extent_info is 24 bytes which is much
-> smaller than 4096 of node page size (ind-node page size is not calced), it's
-> cost-efficient to use small memory to store contiguous mapping. (This is pointed
-> out by Changman also)
-> 
-> > 
-> > 4. Cache reclaiming policy
-> >  a. global approach: it needs to consider lock contention, CPU overhead, and
-> >                      shrinker. I don't think it is better than page cache.
-> >  b. local approach: there still exists cold misses at the initial read
-> >                     operations. After then, how does the extent cache increase
-> > 		    hit ratio more than giving node page cache?
-> > 
-> > 		    For example, in the case of pretty normal scenario like
-> > 		    open -> read -> close -> open -> read ..., we can't get
-> > 		    benefits form locally-managed extent cache, while node
-> > 		    page cache serves many block addresses.
-> 
-> If this case should be covered, how about remembering these recently accessed extent
-> in a global list when evict, recovering extent cache from list when re-open?
+Best regards,
+Haggai
 
-Oh, surely, this example is from the local approach, not existing in
-the global one. :)
 
-I guess you've understood my concerns enoughly.
-So, could you share a detailed design for all these stuffs?
-
-For the design, I think these must be addressed seriously.
- 1. decide one of global or local management
- 2. should add a shrinker
- 3. reduce lock contention and critical region
-
-Please, limit this feature to consume memory as less as possible, since it will
-increase memory footprint definitely.
-
-Thanks,
-
-> 
-> Thanks,
-> Yu
-> 
-> > 
-> > This is my initial thought on the extent cache.
-> > Definitely, it is worth to discuss further in more details.
-> > 
-> > Thanks,
-> > 
-> > >
-> > > Thanks,
-> > > Yu
-> > >
-> > > >
-> > > > Thanks,
-> > > >
-> > > > >
-> > > > > >
-> > > > > > Anyway, mount option could be alternative for this patch.
-> > > > >
-> > > > > Yes, will do.
-> > > > >
-> > > > > Thanks,
-> > > > > Yu
-> > > > >
-> > > > > >
-> > > > > > On Fri, Dec 19, 2014 at 06:49:29PM +0800, Chao Yu wrote:
-> > > > > > > Now f2fs have page-block mapping cache which can cache only one extent mapping
-> > > > > > > between contiguous logical address and physical address.
-> > > > > > > Normally, this design will work well because f2fs will expand coverage area of
-> > > > > > > the mapping extent when we write forward sequentially. But when we write data
-> > > > > > > randomly in Out-Place-Update mode, the extent will be shorten and hardly be
-> > > > > > > expanded for most time as following reasons:
-> > > > > > > 1.The short part of extent will be discarded if we break contiguous mapping in
-> > > > > > > the middle of extent.
-> > > > > > > 2.The new mapping will be added into mapping cache only at head or tail of the
-> > > > > > > extent.
-> > > > > > > 3.We will drop the extent cache when the extent became very fragmented.
-> > > > > > > 4.We will not update the extent with mapping which we get from readpages or
-> > > > > > > readpage.
-> > > > > > >
-> > > > > > > To solve above problems, this patch adds extent cache base on rb-tree like other
-> > > > > > > filesystems (e.g.: ext4/btrfs) in f2fs. By this way, f2fs can support another
-> > > > > > > more effective cache between dnode page cache and disk. It will supply high hit
-> > > > > > > ratio in the cache with fewer memory when dnode page cache are reclaimed in
-> > > > > > > environment of low memory.
-> > > > > > >
-> > > > > > > Todo:
-> > > > > > > *introduce mount option for extent cache.
-> > > > > > > *add shrink ability for extent cache.
-> > > > > > >
-> > > > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > > > > ---
