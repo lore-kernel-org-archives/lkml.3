@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaLYFcb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 00:32:31 -0500
-Received: from smtp.mei.co.jp ([133.183.100.20]:55610 "EHLO smtp.mei.co.jp"
+	id S1752377AbaLYFc5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 00:32:57 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:55962 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078AbaLYFbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 00:31:53 -0500
+	id S1752307AbaLYFcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 00:32:51 -0500
 From: Masahiro Yamada <yamada.m@jp.panasonic.com>
 To: linux-kbuild@vger.kernel.org
 Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
         Michal Marek <mmarek@suse.cz>,
         Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Jonathan Corbet <corbet@lwn.net>, Robert Richter <rrichter@cavium.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] kbuild: allow cc-ifversion to have the argument for false condition
-Date: Thu, 25 Dec 2014 14:31:27 +0900
-Message-Id: <1419485488-22336-6-git-send-email-yamada.m@jp.panasonic.com>
+        Jonathan Corbet <corbet@lwn.net>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Robert Richter <rrichter@cavium.com>, Andi Kleen <ak@linux.intel.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 2/6] kbuild: do not add $(call ...) to invoke cc-version or cc-fullversion
+Date: Thu, 25 Dec 2014 14:31:24 +0900
+Message-Id: <1419485488-22336-3-git-send-email-yamada.m@jp.panasonic.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1419485488-22336-1-git-send-email-yamada.m@jp.panasonic.com>
 References: <1419485488-22336-1-git-send-email-yamada.m@jp.panasonic.com>
@@ -25,52 +32,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macro "try-run" can have an argument for each of true and false
-cases.  Having an argument for the false case of cc-ifversion (and
-ld-ifversion) would be useful too.
+The macros cc-version, cc-fullversion and ld-version take no argument.
+It is not necessary to add $(call ...) to invoke them.
 
 Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 ---
 
- Documentation/kbuild/makefiles.txt | 5 +++--
- scripts/Kbuild.include             | 4 ++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ Documentation/kbuild/makefiles.txt | 4 ++--
+ arch/parisc/Makefile               | 2 +-
+ arch/powerpc/Makefile              | 6 +++---
+ arch/x86/Makefile.um               | 2 +-
+ kernel/gcov/Makefile               | 2 +-
+ scripts/Kbuild.include             | 7 ++-----
+ 6 files changed, 10 insertions(+), 13 deletions(-)
 
 diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index 7b3487a..a64f3c6 100644
+index a311db8..7b3487a 100644
 --- a/Documentation/kbuild/makefiles.txt
 +++ b/Documentation/kbuild/makefiles.txt
-@@ -531,8 +531,9 @@ more details, with real examples.
- 	than or equal to gcc 3.0.
+@@ -524,7 +524,7 @@ more details, with real examples.
+ 	Example:
+ 		#arch/x86/Makefile
+ 		cflags-y += $(shell \
+-		if [ $(call cc-version) -ge 0300 ] ; then \
++		if [ $(cc-version) -ge 0300 ] ; then \
+ 			echo "-mregparm=3"; fi ;)
  
-     cc-ifversion
--	cc-ifversion tests the version of $(CC) and equals last argument if
--	version expression is true.
-+	cc-ifversion tests the version of $(CC) and equals the fourth parameter
-+	if version expression is true, or the fifth (if given) if the version
-+	expression is false.
+ 	In the above example, -mregparm=3 is only used for gcc version greater
+@@ -552,7 +552,7 @@ more details, with real examples.
  
  	Example:
- 		#fs/reiserfs/Makefile
+ 		#arch/powerpc/Makefile
+-		$(Q)if test "$(call cc-fullversion)" = "040200" ; then \
++		$(Q)if test "$(cc-fullversion)" = "040200" ; then \
+ 			echo -n '*** GCC-4.2.0 cannot compile the 64-bit powerpc ' ; \
+ 			false ; \
+ 		fi
+diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
+index e9b4b6a..ff5e55f 100644
+--- a/arch/parisc/Makefile
++++ b/arch/parisc/Makefile
+@@ -149,7 +149,7 @@ endef
+ # we require gcc 3.3 or above to compile the kernel
+ archprepare: checkbin
+ checkbin:
+-	@if test "$(call cc-version)" -lt "0303"; then \
++	@if test "$(cc-version)" -lt "0303"; then \
+ 		echo -n "Sorry, GCC v3.3 or above is required to build " ; \
+ 		echo "the kernel." ; \
+ 		false ; \
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 132d9c6..fc502e0 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -314,7 +314,7 @@ TOUT	:= .tmp_gas_check
+ # - Require gcc 4.0 or above on 64-bit
+ # - gcc-4.2.0 has issues compiling modules on 64-bit
+ checkbin:
+-	@if test "$(call cc-version)" = "0304" ; then \
++	@if test "$(cc-version)" = "0304" ; then \
+ 		if ! /bin/echo mftb 5 | $(AS) -v -mppc -many -o $(TOUT) >/dev/null 2>&1 ; then \
+ 			echo -n '*** ${VERSION}.${PATCHLEVEL} kernels no longer build '; \
+ 			echo 'correctly with gcc-3.4 and your version of binutils.'; \
+@@ -322,13 +322,13 @@ checkbin:
+ 			false; \
+ 		fi ; \
+ 	fi
+-	@if test "$(call cc-version)" -lt "0400" \
++	@if test "$(cc-version)" -lt "0400" \
+ 	    && test "x${CONFIG_PPC64}" = "xy" ; then \
+                 echo -n "Sorry, GCC v4.0 or above is required to build " ; \
+                 echo "the 64-bit powerpc kernel." ; \
+                 false ; \
+         fi
+-	@if test "$(call cc-fullversion)" = "040200" \
++	@if test "$(cc-fullversion)" = "040200" \
+ 	    && test "x${CONFIG_MODULES}${CONFIG_PPC64}" = "xyy" ; then \
+ 		echo -n '*** GCC-4.2.0 cannot compile the 64-bit powerpc ' ; \
+ 		echo 'kernel with modules enabled.' ; \
+diff --git a/arch/x86/Makefile.um b/arch/x86/Makefile.um
+index 36b62bc..95eba55 100644
+--- a/arch/x86/Makefile.um
++++ b/arch/x86/Makefile.um
+@@ -30,7 +30,7 @@ cflags-y += -ffreestanding
+ # Disable unit-at-a-time mode on pre-gcc-4.0 compilers, it makes gcc use
+ # a lot more stack due to the lack of sharing of stacklots.  Also, gcc
+ # 4.3.0 needs -funit-at-a-time for extern inline functions.
+-KBUILD_CFLAGS += $(shell if [ $(call cc-version) -lt 0400 ] ; then \
++KBUILD_CFLAGS += $(shell if [ $(cc-version) -lt 0400 ] ; then \
+ 			echo $(call cc-option,-fno-unit-at-a-time); \
+ 			else echo $(call cc-option,-funit-at-a-time); fi ;)
+ 
+diff --git a/kernel/gcov/Makefile b/kernel/gcov/Makefile
+index 52aa7e8..6f01fa3 100644
+--- a/kernel/gcov/Makefile
++++ b/kernel/gcov/Makefile
+@@ -21,7 +21,7 @@ else
+ # is not available. We can probably move if-lt to Kbuild.include, so it's also
+ # not defined during clean or to include Kbuild.include in
+ # scripts/Makefile.clean. But the following workaround seems least invasive.
+-  cc-ver := $(if $(call cc-version),$(call cc-version),0)
++  cc-ver := $(if $(cc-version),$(cc-version),0)
+ endif
+ 
+ obj-$(CONFIG_GCOV_KERNEL) := base.o fs.o
 diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
-index 69c9f57..6182fa6 100644
+index a972666..69c9f57 100644
 --- a/scripts/Kbuild.include
 +++ b/scripts/Kbuild.include
-@@ -144,7 +144,7 @@ cc-fullversion = $(shell $(KBUILD_SHELL) \
+@@ -136,17 +136,15 @@ cc-disable-warning = $(call try-run,\
+ 	$(CC) $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) -W$(strip $(1)) -c -x c /dev/null -o "$$TMP",-Wno-$(strip $(1)))
+ 
+ # cc-version
+-# Usage gcc-ver := $(call cc-version)
+ cc-version = $(shell $(KBUILD_SHELL) $(srctree)/scripts/gcc-version.sh $(CC))
+ 
+ # cc-fullversion
+-# Usage gcc-ver := $(call cc-fullversion)
+ cc-fullversion = $(shell $(KBUILD_SHELL) \
+ 	$(srctree)/scripts/gcc-version.sh -p $(CC))
  
  # cc-ifversion
  # Usage:  EXTRA_CFLAGS += $(call cc-ifversion, -lt, 0402, -O1)
--cc-ifversion = $(shell [ $(cc-version) $(1) $(2) ] && echo $(3))
-+cc-ifversion = $(shell [ $(cc-version) $(1) $(2) ] && echo $(3) || echo $(4))
+-cc-ifversion = $(shell [ $(call cc-version) $(1) $(2) ] && echo $(3))
++cc-ifversion = $(shell [ $(cc-version) $(1) $(2) ] && echo $(3))
  
  # cc-ldoption
  # Usage: ldflags += $(call cc-ldoption, -Wl$(comma)--hash-style=both)
-@@ -167,7 +167,7 @@ ld-version = $(shell $(LD) --version | $(srctree)/scripts/ld-version.sh)
+@@ -164,13 +162,12 @@ ld-option = $(call try-run,\
+ ar-option = $(call try-run, $(AR) rc$(1) "$$TMP",$(1),$(2))
+ 
+ # ld-version
+-# Usage: $(call ld-version)
+ # Note this is mainly for HJ Lu's 3 number binutil versions
+ ld-version = $(shell $(LD) --version | $(srctree)/scripts/ld-version.sh)
  
  # ld-ifversion
  # Usage:  $(call ld-ifversion, -ge, 22252, y)
--ld-ifversion = $(shell [ $(ld-version) $(1) $(2) ] && echo $(3))
-+ld-ifversion = $(shell [ $(ld-version) $(1) $(2) ] && echo $(3) || echo $(4))
+-ld-ifversion = $(shell [ $(call ld-version) $(1) $(2) ] && echo $(3))
++ld-ifversion = $(shell [ $(ld-version) $(1) $(2) ] && echo $(3))
  
  ######
  
