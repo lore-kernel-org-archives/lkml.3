@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaLYCuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 21:50:14 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53193 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbaLYCuM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 21:50:12 -0500
-Date: Wed, 24 Dec 2014 18:50:11 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Linux-stable <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] can: kvaser_usb: Don't free packets when tight on
- URBs
-Message-ID: <20141225025011.GA10491@kroah.com>
-References: <20141223154654.GB6460@vivalin-002>
- <20141224235644.GA3778@vivalin-002>
+	id S1752018AbaLYC6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 21:58:04 -0500
+Received: from mail-db3on0098.outbound.protection.outlook.com ([157.55.234.98]:54400
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751651AbaLYC6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Dec 2014 21:58:02 -0500
+Message-ID: <549B7D2C.4000201@ezchip.com>
+Date: Wed, 24 Dec 2014 21:57:48 -0500
+From: Chris Metcalf <cmetcalf@ezchip.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141224235644.GA3778@vivalin-002>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        <akpm@linux-foundation.org>
+CC: <peterz@infradead.org>, <mingo@kernel.org>, <davej@redhat.com>,
+        <sasha.levin@oracle.com>, <hughd@google.com>, <linux-mm@kvack.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 34/38] tile: drop pte_file()-related helpers
+References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com> <1419423766-114457-35-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1419423766-114457-35-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.76.26.91]
+X-ClientProxiedBy: BN3PR09CA0036.namprd09.prod.outlook.com (25.160.111.174) To
+ DB3PR02MB0537.eurprd02.prod.outlook.com (25.160.51.149)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=cmetcalf@ezchip.com; 
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0537;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DB3PR02MB0537;
+X-Forefront-PRVS: 04362AC73B
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(377454003)(51704005)(199003)(479174004)(24454002)(189002)(80316001)(23746002)(62966003)(122386002)(77156002)(31966008)(120916001)(50466002)(40100003)(21056001)(68736005)(19580405001)(19580395003)(87976001)(99396003)(107046002)(46102003)(83506001)(15975445007)(65956001)(77096005)(66066001)(20776003)(47776003)(64706001)(36756003)(50986999)(87266999)(76176999)(54356999)(33656002)(86362001)(106356001)(97736003)(4396001)(2950100001)(92566001)(117156001)(42186005)(101416001)(65816999)(105586002)(18886065003);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR02MB0537;H:[192.168.1.162];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB3PR02MB0537;
+X-OriginatorOrg: ezchip.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 25 Dec 2014 02:57:56.5379 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DB3PR02MB0537
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 25, 2014 at 01:56:44AM +0200, Ahmed S. Darwish wrote:
-> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-> 
-> Flooding the Kvaser CAN to USB dongle with multiple reads and
-> writes in high frequency caused seemingly-random panics in the
-> kernel.
-> 
-> On further inspection, it seems the driver erroneously freed the
-> to-be-transmitted packet upon getting tight on URBs and returning
-> NETDEV_TX_BUSY, leading to invalid memory writes and double frees
-> at a later point in time.
-> 
-> Note:
-> 
-> Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
-> is a driver bug in and out of itself: it means that our start/stop
-> queue flow control is broken.
-> 
-> This patch only fixes the (buggy) error handling code; the root
-> cause shall be fixed in a later commit.
-> 
-> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+On 12/24/2014 7:22 AM, Kirill A. Shutemov wrote:
+> We've replaced remap_file_pages(2) implementation with emulation.
+> Nobody creates non-linear mapping anymore.
+>
+> Signed-off-by: Kirill A. Shutemov<kirill.shutemov@linux.intel.com>
+> Cc: Chris Metcalf<cmetcalf@ezchip.com>
 > ---
->  drivers/net/can/usb/kvaser_usb.c | 12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
->  (Marc, Greg, I believe this should also be added to -stable?)
+>   arch/tile/include/asm/pgtable.h | 11 -----------
+>   arch/tile/mm/homecache.c        |  4 ----
+>   2 files changed, 15 deletions(-)
 
+Acked-by: Chris Metcalf <cmetcalf@ezchip.com>
 
-<formletter>
+-- 
+Chris Metcalf, EZChip Semiconductor
+http://www.ezchip.com
 
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
-
-</formletter>
