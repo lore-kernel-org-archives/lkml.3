@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaLYWJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 17:09:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33369 "EHLO mx1.redhat.com"
+	id S1752522AbaLYWJR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 17:09:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54322 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752200AbaLYWJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 17:09:06 -0500
-Date: Thu, 25 Dec 2014 23:08:30 +0100
+	id S1752414AbaLYWJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 17:09:13 -0500
+Date: Thu, 25 Dec 2014 23:08:50 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
@@ -16,56 +16,49 @@ Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 04/37] perf tools: Add multi file interface to
- perf_data_file
-Message-ID: <20141225220830.GA8719@krava>
+Subject: Re: [PATCH 05/37] perf tools: Create separate mmap for dummy
+ tracking event
+Message-ID: <20141225220850.GB8719@krava>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <1419405333-27952-5-git-send-email-namhyung@kernel.org>
+ <1419405333-27952-6-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1419405333-27952-5-git-send-email-namhyung@kernel.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1419405333-27952-6-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 04:15:00PM +0900, Namhyung Kim wrote:
+On Wed, Dec 24, 2014 at 04:15:01PM +0900, Namhyung Kim wrote:
+> When multi file support is enabled, a dummy tracking event will be
+> used to track metadata (like task, comm and mmap events) for a session
+> and actual samples will be recorded in separate files.
+> 
+> Provide separate mmap to the dummy tracking event.  The size is fixed
+> to 128KiB (+ 1 page) as the event rate will be lower than samples.  I
+> originally wanted to use a single mmap for this but cross-cpu sharing
+> is prohibited so it's per-cpu (or per-task) like normal mmaps.
 
-SNIP
+maybe this needs to be applied after next patch?
+  perf tools: Introduce perf_evlist__mmap_multi
 
->  #endif /* __PERF_DATA_H */
-> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-> index d5eab3f3323f..a5046d52e311 100644
-> --- a/tools/perf/util/util.c
-> +++ b/tools/perf/util/util.c
-> @@ -72,6 +72,49 @@ int mkdir_p(char *path, mode_t mode)
->  	return (stat(path, &st) && mkdir(path, mode)) ? -1 : 0;
->  }
->  
-> +int rm_rf(char *path)
-> +{
-> +	DIR *dir;
-> +	int ret = 0;
-> +	struct dirent *d;
-> +	char namebuf[PATH_MAX];
-> +
-> +	dir = opendir(path);
-> +	if (dir == NULL)
-> +		return 0;
-> +
-> +	while ((d = readdir(dir)) != NULL && !ret) {
-> +		struct stat statbuf;
-> +
-> +		if (d->d_name[0] == '.')
-> +			continue;
+I'm getting compile error:
 
-Could you check for '.' and for '..' to support '.*' removal?
+[jolsa@krava perf]$ make JOBS=1
+  BUILD:   Doing 'make -j1' parallel build
+  CC       util/evlist.o
+util/evlist.c: In function ‘perf_evlist__mmap_per_evsel’:
+util/evlist.c:937:9: error: ‘struct mmap_params’ has no member named ‘track’
+   if (mp->track && perf_evsel__is_dummy_tracking(evsel)) {
+         ^
+util/evlist.c: In function ‘perf_evlist__mmap’:
+util/evlist.c:1092:62: error: ‘use_track_mmap’ undeclared (first use in this function)
+  if (evlist->mmap == NULL && perf_evlist__alloc_mmap(evlist, use_track_mmap) < 0)
+                                                              ^
+util/evlist.c:1092:62: note: each undeclared identifier is reported only once for each function it appears in
+make[1]: *** [util/evlist.o] Error 1
+make: *** [all] Error 2
 
-I know tha we will probably not have any '.*' files in perf.data.dir,
-but this function could be used later like for total cache clean ;-)
-
-also please submit 'rm_rf' in separate patch
-
-thanks,
 jirka
