@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbaLYWDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 17:03:41 -0500
-Received: from mail.eperm.de ([89.247.134.16]:51072 "EHLO mail.eperm.de"
+	id S1752437AbaLYWDe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 17:03:34 -0500
+Received: from mail.eperm.de ([89.247.134.16]:51066 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752336AbaLYWDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 17:03:21 -0500
+	id S1752200AbaLYWDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 17:03:18 -0500
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
@@ -13,10 +13,12 @@ Cc: Daniel Borkmann <dborkman@redhat.com>,
         "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
         "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
         linux-api@vger.kernel.org
-Subject: [PATCH v6 0/4] crypto: AF_ALG: add AEAD and RNG support
-Date: Thu, 25 Dec 2014 22:58:01 +0100
-Message-ID: <5682082.ffPqvQlSqN@tachyon.chronox.de>
+Subject: [PATCH v6 2/4] crypto: AF_ALG: enable AEAD interface compilation
+Date: Thu, 25 Dec 2014 22:59:21 +0100
+Message-ID: <4832287.ds8TMM6v4B@tachyon.chronox.de>
 User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <5682082.ffPqvQlSqN@tachyon.chronox.de>
+References: <5682082.ffPqvQlSqN@tachyon.chronox.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -24,110 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Enable compilation of the AEAD AF_ALG support and provide a Kconfig
+option to compile the AEAD AF_ALG support.
 
-This patch set adds AEAD and RNG support to the AF_ALG interface
-exported by the kernel crypto API. By extending AF_ALG with AEAD and RNG
-support, all cipher types the kernel crypto API allows access to are
-now accessible from userspace.
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ crypto/Kconfig  | 9 +++++++++
+ crypto/Makefile | 1 +
+ 2 files changed, 10 insertions(+)
 
-Both, AEAD and RNG implementations are stand-alone and do not depend
-other AF_ALG interfaces (like hash or skcipher).
-
-The AEAD implementation uses the same approach as provided with
-skcipher by offering the following interfaces:
-
-	* sendmsg and recvmsg interfaces allowing multiple
-	  invocations supporting a threaded user space. To support
-	  multi-threaded user space, kernel-side buffering
-	  is implemented similarly to skcipher.
-
-	* splice / vmsplice interfaces allowing a zero-copy
-	  invocation
-
-The RNG interface only implements the recvmsg interface as
-zero-copy is not applicable.
-
-The new AEAD and RNG interfaces are fully tested with the test application
-provided at [1]. That test application exercises all newly added user space
-interfaces. The testing covers:
-
-	* use of the sendmsg/recvmsg interface
-
-	* use of the splice / vmsplice interface
-
-	* invocation of all AF_ALG types (aead, rng, skcipher, hash)
-
-	* using all types of operation (encryption, decryption, keyed MD,
-	  MD, random numbers, AEAD decryption with positive and negative
-	  authentication verification)
-
-	* stress testing by running all tests for 30 minutes in an
-	  endless loop
-
-	* test execution on 64 bit and 32 bit
-
-[1] http://www.chronox.de/libkcapi.html
-
-Changes v2:
-* rebase to current cryptodev-2.6 tree
-* use memzero_explicit to zeroize AEAD associated data
-* use sizeof for determining length of AEAD associated data
-* update algif_rng.c covering all suggestions from Daniel Borkmann
-  <dborkman@redhat.com>
-* addition of patch 9: add digestsize interface for hashes
-* addition of patch to update documentation covering the userspace interface
-* change numbers of getsockopt options: separate them from sendmsg interface
-  definitions
-
-Changes v3:
-* remove getsockopt interface
-* AEAD: associated data is set prepended to the plain/ciphertext
-* AEAD: allowing arbitrary associated data lengths
-* remove setkey patch as protection was already in the existing code
-
-Changes v4:
-* stand-alone implementation of AEAD
-* testing of all interfaces offered by AEAD
-* stress testing of AEAD and RNG
-
-Changes v5:
-* AEAD: add outer while(size) loop in aead_sendmsg to ensure all data is
-  copied into the kernel (reporter Herbert Xu)
-* AEAD: aead_sendmsg bug fix: change size -= len; to size -= plen;
-* AF_ALG / AEAD: add aead_setauthsize and associated extension to
-  struct af_alg_type as well as alg_setsockopt (reporter Herbert Xu)
-* RNG: rng_recvmsg: use 128 byte stack variable for output of RNG instead
-  of ctx->result (reporter Herbert Xu)
-* RNG / AF_ALG: allow user space to seed RNG via setsockopt
-* RNG: rng_recvmsg bug fix: use genlen as result variable for
-  crypto_rng_get_bytes as previously no negative errors were obtained
-* AF_ALG: alg_setop: zeroize buffer before free
-
-Changes v6:
-* AEAD/RNG: port to 3.19-rc1 with the iov_iter handling
-* RNG: use the setkey interface to obtain the seed and drop the patch adding
-  a separate reseeding interface
-* extract the zeroization patch for alg_setkey into a stand-alone patch
-  submission
-* fix bug in aead_sufficient_data (reporter Herbert Xu)
-* testing of all interfaces with test application provided with libkcapi version
-  0.6.2
-
-Stephan Mueller (4):
-  crypto: AF_ALG: add AEAD support
-  crypto: AF_ALG: enable AEAD interface compilation
-  crypto: AF_ALG: add random number generator support
-  crypto: AF_ALG: enable RNG interface compilation
-
- crypto/Kconfig      |  18 ++
- crypto/Makefile     |   2 +
- crypto/algif_aead.c | 651 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- crypto/algif_rng.c  | 192 ++++++++++++++++
- 4 files changed, 863 insertions(+)
- create mode 100644 crypto/algif_aead.c
- create mode 100644 crypto/algif_rng.c
-
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 1618468..cd3e6fd 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -1514,6 +1514,15 @@ config CRYPTO_USER_API_SKCIPHER
+ 	  This option enables the user-spaces interface for symmetric
+ 	  key cipher algorithms.
+ 
++config CRYPTO_USER_API_AEAD
++	tristate "User-space interface for AEAD cipher algorithms"
++	depends on NET
++	select CRYPTO_AEAD
++	select CRYPTO_USER_API
++	help
++	  This option enables the user-spaces interface for AEAD
++	  cipher algorithms.
++
+ config CRYPTO_HASH_INFO
+ 	bool
+ 
+diff --git a/crypto/Makefile b/crypto/Makefile
+index 1445b91..593fd3c 100644
+--- a/crypto/Makefile
++++ b/crypto/Makefile
+@@ -99,6 +99,7 @@ obj-$(CONFIG_CRYPTO_GHASH) += ghash-generic.o
+ obj-$(CONFIG_CRYPTO_USER_API) += af_alg.o
+ obj-$(CONFIG_CRYPTO_USER_API_HASH) += algif_hash.o
+ obj-$(CONFIG_CRYPTO_USER_API_SKCIPHER) += algif_skcipher.o
++obj-$(CONFIG_CRYPTO_USER_API_AEAD) += algif_aead.o
+ 
+ #
+ # generic algorithms and the async_tx api
 -- 
 2.1.0
 
