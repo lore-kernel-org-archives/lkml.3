@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaLYR6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 12:58:09 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51765 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaLYR5b (ORCPT
+	id S1752921AbaLYR6M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 12:58:12 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:38137 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaLYR5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 12:57:31 -0500
+	Thu, 25 Dec 2014 12:57:36 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: ralf@linux-mips.org
 Cc: f.fainelli@gmail.com, jaedon.shin@gmail.com, abrestic@chromium.org,
         tglx@linutronix.de, jason@lakedaemon.net, jogo@openwrt.org,
         arnd@arndb.de, computersforpeace@gmail.com, linux-mips@linux-mips.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V6 20/25] MIPS: BMIPS: Delete the irqchip driver from irq.c
-Date: Thu, 25 Dec 2014 09:49:15 -0800
-Message-Id: <1419529760-9520-21-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V6 23/25] MIPS: BMIPS: Refresh BCM3384 DTS files
+Date: Thu, 25 Dec 2014 09:49:18 -0800
+Message-Id: <1419529760-9520-24-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1419529760-9520-1-git-send-email-cernekee@gmail.com>
 References: <1419529760-9520-1-git-send-email-cernekee@gmail.com>
@@ -23,233 +23,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BCM3384/BCM63xx can use the common drivers/irqchip/irq-bcm7120-l2.c for
-this purpose; BCM7xxx will use drivers/irqchip/irq-bcm7038-l1.c.  We no
-longer need this code under arch/mips.
+The DT bindings for this platform have changed as the bootloader and
+product requirements evolved.  In particular, there are both
+Linux-on-Zephyr and Linux-on-Viper configurations.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- .../devicetree/bindings/mips/brcm/bcm3384-intc.txt |  37 ----
- arch/mips/bmips/irq.c                              | 189 ++-------------------
- 2 files changed, 17 insertions(+), 209 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/mips/brcm/bcm3384-intc.txt
+ arch/mips/boot/dts/brcm/bcm3384.dtsi        | 109 ------------------------
+ arch/mips/boot/dts/brcm/bcm3384_zephyr.dtsi | 126 ++++++++++++++++++++++++++++
+ arch/mips/boot/dts/brcm/bcm93384wvg.dts     |   9 +-
+ 3 files changed, 127 insertions(+), 117 deletions(-)
+ delete mode 100644 arch/mips/boot/dts/brcm/bcm3384.dtsi
+ create mode 100644 arch/mips/boot/dts/brcm/bcm3384_zephyr.dtsi
 
-diff --git a/Documentation/devicetree/bindings/mips/brcm/bcm3384-intc.txt b/Documentation/devicetree/bindings/mips/brcm/bcm3384-intc.txt
+diff --git a/arch/mips/boot/dts/brcm/bcm3384.dtsi b/arch/mips/boot/dts/brcm/bcm3384.dtsi
 deleted file mode 100644
-index d4e0141..0000000
-diff --git a/arch/mips/bmips/irq.c b/arch/mips/bmips/irq.c
-index fd94fe8..14552e5 100644
---- a/arch/mips/bmips/irq.c
-+++ b/arch/mips/bmips/irq.c
-@@ -3,191 +3,36 @@
-  * under the terms of the GNU General Public License version 2 as published
-  * by the Free Software Foundation.
-  *
-- * Partially based on arch/mips/ralink/irq.c
-- *
-- * Copyright (C) 2009 Gabor Juhos <juhosg@openwrt.org>
-- * Copyright (C) 2013 John Crispin <blogic@openwrt.org>
-- * Copyright (C) 2014 Kevin Cernekee <cernekee@gmail.com>
-+ * Copyright (C) 2014 Broadcom Corporation
-+ * Author: Kevin Cernekee <cernekee@gmail.com>
-  */
+index 21b074a..0000000
+diff --git a/arch/mips/boot/dts/brcm/bcm3384_zephyr.dtsi b/arch/mips/boot/dts/brcm/bcm3384_zephyr.dtsi
+new file mode 100644
+index 0000000..a7bd856
+--- /dev/null
++++ b/arch/mips/boot/dts/brcm/bcm3384_zephyr.dtsi
+@@ -0,0 +1,126 @@
++/ {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "brcm,bcm3384", "brcm,bcm33843";
++
++	memory@0 {
++		device_type = "memory";
++
++		/* Typical range.  The bootloader should fill this in. */
++		reg = <0x0 0x08000000>;
++	};
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		/* On BMIPS5000 this is 1/8th of the CPU core clock */
++		mips-hpt-frequency = <100000000>;
++
++		cpu@0 {
++			compatible = "brcm,bmips5000";
++			device_type = "cpu";
++			reg = <0>;
++		};
++
++		cpu@1 {
++			compatible = "brcm,bmips5000";
++			device_type = "cpu";
++			reg = <1>;
++		};
++	};
++
++	cpu_intc: cpu_intc {
++		#address-cells = <0>;
++		compatible = "mti,cpu-interrupt-controller";
++
++		interrupt-controller;
++		#interrupt-cells = <1>;
++	};
++
++	clocks {
++		periph_clk: periph_clk {
++			compatible = "fixed-clock";
++			#clock-cells = <0>;
++			clock-frequency = <54000000>;
++		};
++	};
++
++	aliases {
++		uart0 = &uart0;
++	};
++
++	ubus {
++		#address-cells = <1>;
++		#size-cells = <1>;
++
++		compatible = "brcm,ubus", "simple-bus";
++		ranges;
++		dma-ranges = <0x00000000 0x08000000 0x08000000>,
++			     <0x08000000 0x00000000 0x08000000>;
++
++		periph_intc: periph_intc@14e00038 {
++			compatible = "brcm,bcm3380-l2-intc";
++			reg = <0x14e00038 0x4 0x14e0003c 0x4>,
++			      <0x14e00340 0x4 0x14e00344 0x4>;
++
++			interrupt-controller;
++			#interrupt-cells = <1>;
++
++			interrupt-parent = <&cpu_intc>;
++			interrupts = <4>;
++		};
++
++		zmips_intc: zmips_intc@104b0060 {
++			compatible = "brcm,bcm3380-l2-intc";
++			reg = <0x104b0060 0x4 0x104b0064 0x4>;
++
++			interrupt-controller;
++			#interrupt-cells = <1>;
++
++			interrupt-parent = <&periph_intc>;
++			interrupts = <29>;
++			brcm,int-map-mask = <0xffffffff>;
++		};
++
++		iop_intc: iop_intc@14e00058 {
++			compatible = "brcm,bcm3380-l2-intc";
++			reg = <0x14e00058 0x4 0x14e0005c 0x4>;
++
++			interrupt-controller;
++			#interrupt-cells = <1>;
++
++			interrupt-parent = <&cpu_intc>;
++			interrupts = <6>;
++			brcm,int-map-mask = <0xffffffff>;
++		};
++
++		uart0: serial@14e00520 {
++			compatible = "brcm,bcm6345-uart";
++			reg = <0x14e00520 0x18>;
++			interrupt-parent = <&periph_intc>;
++			interrupts = <2>;
++			clocks = <&periph_clk>;
++			status = "disabled";
++		};
++
++		ehci0: usb@15400300 {
++			compatible = "brcm,bcm3384-ehci", "generic-ehci";
++			reg = <0x15400300 0x100>;
++			big-endian;
++			interrupt-parent = <&periph_intc>;
++			interrupts = <41>;
++			status = "disabled";
++		};
++
++		ohci0: usb@15400400 {
++			compatible = "brcm,bcm3384-ohci", "generic-ohci";
++			reg = <0x15400400 0x100>;
++			big-endian;
++			no-big-frame-no;
++			interrupt-parent = <&periph_intc>;
++			interrupts = <40>;
++			status = "disabled";
++		};
++	};
++};
+diff --git a/arch/mips/boot/dts/brcm/bcm93384wvg.dts b/arch/mips/boot/dts/brcm/bcm93384wvg.dts
+index 8317411..d1e44a1 100644
+--- a/arch/mips/boot/dts/brcm/bcm93384wvg.dts
++++ b/arch/mips/boot/dts/brcm/bcm93384wvg.dts
+@@ -1,6 +1,6 @@
+ /dts-v1/;
  
--#include <linux/io.h>
--#include <linux/bitops.h>
--#include <linux/of_platform.h>
--#include <linux/of_address.h>
--#include <linux/of_irq.h>
--#include <linux/irqdomain.h>
--#include <linux/interrupt.h>
--#include <linux/slab.h>
--#include <linux/spinlock.h>
-+#include <linux/of.h>
-+#include <linux/irqchip.h>
+-/include/ "bcm3384.dtsi"
++/include/ "bcm3384_zephyr.dtsi"
  
- #include <asm/bmips.h>
-+#include <asm/irq.h>
- #include <asm/irq_cpu.h>
--#include <asm/mipsregs.h>
+ / {
+ 	compatible = "brcm,bcm93384wvg", "brcm,bcm3384";
+@@ -10,13 +10,6 @@
+ 		bootargs = "console=ttyS0,115200";
+ 		stdout-path = &uart0;
+ 	};
 -
--/* INTC register offsets */
--#define INTC_REG_ENABLE		0x00
--#define INTC_REG_STATUS		0x04
--
--#define MAX_WORDS		2
--#define IRQS_PER_WORD		32
--
--struct bcm3384_intc {
--	int			n_words;
--	void __iomem		*reg[MAX_WORDS];
--	u32			enable[MAX_WORDS];
--	spinlock_t		lock;
--};
--
--static void bcm3384_intc_irq_unmask(struct irq_data *d)
--{
--	struct bcm3384_intc *priv = d->domain->host_data;
--	unsigned long flags;
--	int idx = d->hwirq / IRQS_PER_WORD;
--	int bit = d->hwirq % IRQS_PER_WORD;
--
--	spin_lock_irqsave(&priv->lock, flags);
--	priv->enable[idx] |= BIT(bit);
--	__raw_writel(priv->enable[idx], priv->reg[idx] + INTC_REG_ENABLE);
--	spin_unlock_irqrestore(&priv->lock, flags);
--}
--
--static void bcm3384_intc_irq_mask(struct irq_data *d)
--{
--	struct bcm3384_intc *priv = d->domain->host_data;
--	unsigned long flags;
--	int idx = d->hwirq / IRQS_PER_WORD;
--	int bit = d->hwirq % IRQS_PER_WORD;
--
--	spin_lock_irqsave(&priv->lock, flags);
--	priv->enable[idx] &= ~BIT(bit);
--	__raw_writel(priv->enable[idx], priv->reg[idx] + INTC_REG_ENABLE);
--	spin_unlock_irqrestore(&priv->lock, flags);
--}
--
--static struct irq_chip bcm3384_intc_irq_chip = {
--	.name		= "INTC",
--	.irq_unmask	= bcm3384_intc_irq_unmask,
--	.irq_mask	= bcm3384_intc_irq_mask,
--	.irq_mask_ack	= bcm3384_intc_irq_mask,
--};
-+#include <asm/time.h>
+-	memory@0 {
+-		device_type = "memory";
+-		reg = <0x0 0x04000000>;
+-		dma-xor-mask = <0x08000000>;
+-		dma-xor-limit = <0x0fffffff>;
+-	};
+ };
  
- unsigned int get_c0_compare_int(void)
- {
- 	return CP0_LEGACY_COMPARE_IRQ;
- }
- 
--static void bcm3384_intc_irq_handler(unsigned int irq, struct irq_desc *desc)
--{
--	struct irq_domain *domain = irq_get_handler_data(irq);
--	struct bcm3384_intc *priv = domain->host_data;
--	unsigned long flags;
--	unsigned int idx;
--
--	for (idx = 0; idx < priv->n_words; idx++) {
--		unsigned long pending;
--		int hwirq;
--
--		spin_lock_irqsave(&priv->lock, flags);
--		pending = __raw_readl(priv->reg[idx] + INTC_REG_STATUS) &
--			  priv->enable[idx];
--		spin_unlock_irqrestore(&priv->lock, flags);
--
--		for_each_set_bit(hwirq, &pending, IRQS_PER_WORD) {
--			generic_handle_irq(irq_find_mapping(domain,
--					   hwirq + idx * IRQS_PER_WORD));
--		}
--	}
--}
--
--asmlinkage void plat_irq_dispatch(void)
--{
--	unsigned long pending =
--		(read_c0_status() & read_c0_cause() & ST0_IM) >> STATUSB_IP0;
--	int bit;
--
--	for_each_set_bit(bit, &pending, 8)
--		do_IRQ(MIPS_CPU_IRQ_BASE + bit);
--}
--
--static int intc_map(struct irq_domain *d, unsigned int irq, irq_hw_number_t hw)
--{
--	irq_set_chip_and_handler(irq, &bcm3384_intc_irq_chip, handle_level_irq);
--	return 0;
--}
--
--static const struct irq_domain_ops irq_domain_ops = {
--	.xlate = irq_domain_xlate_onecell,
--	.map = intc_map,
--};
--
--static int __init ioremap_one_pair(struct bcm3384_intc *priv,
--				   struct device_node *node,
--				   int idx)
--{
--	struct resource res;
--
--	if (of_address_to_resource(node, idx, &res))
--		return 0;
--
--	if (request_mem_region(res.start, resource_size(&res),
--			       res.name) < 0)
--		pr_err("Failed to request INTC register region\n");
--
--	priv->reg[idx] = ioremap_nocache(res.start, resource_size(&res));
--	if (!priv->reg[idx])
--		panic("Failed to ioremap INTC register range");
--
--	/* start up with everything masked before we hook the parent IRQ */
--	__raw_writel(0, priv->reg[idx] + INTC_REG_ENABLE);
--	priv->enable[idx] = 0;
--
--	return IRQS_PER_WORD;
--}
--
--static int __init intc_of_init(struct device_node *node,
--			       struct device_node *parent)
-+void __init arch_init_irq(void)
- {
--	struct irq_domain *domain;
--	unsigned int parent_irq, n_irqs = 0;
--	struct bcm3384_intc *priv;
--
--	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
--	if (!priv)
--		panic("Failed to allocate bcm3384_intc struct");
--
--	spin_lock_init(&priv->lock);
--
--	parent_irq = irq_of_parse_and_map(node, 0);
--	if (!parent_irq)
--		panic("Failed to get INTC IRQ");
--
--	n_irqs += ioremap_one_pair(priv, node, 0);
--	n_irqs += ioremap_one_pair(priv, node, 1);
--
--	if (!n_irqs)
--		panic("Failed to map INTC registers");
-+	struct device_node *dn;
- 
--	priv->n_words = n_irqs / IRQS_PER_WORD;
--	domain = irq_domain_add_linear(node, n_irqs, &irq_domain_ops, priv);
--	if (!domain)
--		panic("Failed to add irqdomain");
-+	/* Only the STB (bcm7038) controller supports SMP IRQ affinity */
-+	dn = of_find_compatible_node(NULL, NULL, "brcm,bcm7038-l1-intc");
-+	if (dn)
-+		of_node_put(dn);
-+	else
-+		bmips_tp1_irqs = 0;
- 
--	irq_set_chained_handler(parent_irq, bcm3384_intc_irq_handler);
--	irq_set_handler_data(parent_irq, domain);
--
--	return 0;
-+	irqchip_init();
- }
- 
--static struct of_device_id of_irq_ids[] __initdata = {
--	{ .compatible = "mti,cpu-interrupt-controller",
--	  .data = mips_cpu_irq_of_init },
--	{ .compatible = "brcm,bcm3384-intc",
--	  .data = intc_of_init },
--	{},
--};
--
--void __init arch_init_irq(void)
--{
--	bmips_tp1_irqs = 0;
--	of_irq_init(of_irq_ids);
--}
-+OF_DECLARE_2(irqchip, mips_cpu_intc, "mti,cpu-interrupt-controller",
-+	     mips_cpu_irq_of_init);
+ &uart0 {
 -- 
 2.1.1
 
