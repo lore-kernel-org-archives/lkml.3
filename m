@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaLYSG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 13:06:28 -0500
-Received: from smtprelay0020.hostedemail.com ([216.40.44.20]:43181 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752224AbaLYSG0 (ORCPT
+	id S1752423AbaLYSPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 13:15:40 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:49966 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206AbaLYSPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 13:06:26 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:800:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3868:3870:3873:4321:4419:4605:5007:6261:7514:9149:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: angle87_7241fc8cb0b52
-X-Filterd-Recvd-Size: 1377
-Message-ID: <1419530782.6157.15.camel@perches.com>
-Subject: Re: [PATCH] staging: skein: Fix checkpatch warnings
-From: Joe Perches <joe@perches.com>
-To: arno.tiemersma@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 25 Dec 2014 10:06:22 -0800
-In-Reply-To: <1419530490-32316-1-git-send-email-arno.tiemersma@gmail.com>
-References: <1419530490-32316-1-git-send-email-arno.tiemersma@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Dec 2014 13:15:38 -0500
+From: Arno Tiemersma <arno.tiemersma@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arno Tiemersma <arno.tiemersma@gmail.com>
+Subject: [PATCH v2] staging: skein: Fix checkpatch warnings
+Date: Thu, 25 Dec 2014 19:15:30 +0100
+Message-Id: <1419531330-17869-1-git-send-email-arno.tiemersma@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1419530782.6157.15.camel@perches.com>
+References: <1419530782.6157.15.camel@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-25 at 19:01 +0100, arno.tiemersma@gmail.com wrote:
-> Remove do {} while (0) loops around single statements in
-> skein/skein_block.c
-[]
-> diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-[]
-> @@ -83,9 +83,7 @@ do {                                                                      \
->  #else
->  /* looping version */
->  #define R256(p0, p1, p2, p3, ROT, r_num) \
-> -do { \
->  	ROUND256(p0, p1, p2, p3, ROT, r_num); \
+Remove do {} while (0) loops around single statements in
+skein/skein_block.c
 
-When you do these things, you also have to
-remove the trailing semi-colon and the
-line continuation '\' as well.
+Signed-off-by: Arno Tiemersma <arno.tiemersma@gmail.com>
+---
+ drivers/staging/skein/skein_block.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
+index 66261ab..39dccf8 100644
+--- a/drivers/staging/skein/skein_block.c
++++ b/drivers/staging/skein/skein_block.c
+@@ -83,9 +83,7 @@ do {                                                                      \
+ #else
+ /* looping version */
+ #define R256(p0, p1, p2, p3, ROT, r_num) \
+-do { \
+-	ROUND256(p0, p1, p2, p3, ROT, r_num); \
+-} while (0)
++	ROUND256(p0, p1, p2, p3, ROT, r_num)
+ 
+ #define I256(R) \
+ do { \
+@@ -174,9 +172,7 @@ do {                                                                      \
+ 
+ #else /* looping version */
+ #define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)                 \
+-do {                                                                     \
+-	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);            \
+-} while (0)
++	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)
+ 
+ #define I512(R)                                                           \
+ do {                                                                      \
+@@ -263,10 +259,8 @@ do {                                                                          \
+ #if SKEIN_UNROLL_1024 == 0
+ #define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
+ 	      ROT, rn)                                                        \
+-do {                                                                          \
+ 	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
+-		  pF, ROT, rn);                                               \
+-} while (0)
++		  pF, ROT, rn)
+ 
+ #define I1024(R)                                                          \
+ do {                                                                      \
+@@ -291,10 +285,8 @@ do {                                                                      \
+ #else /* looping version */
+ #define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
+ 	      ROT, rn)                                                        \
+-do {                                                                          \
+ 	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
+-		  pF, ROT, rn);                                               \
+-} while (0)
++		  pF, ROT, rn)
+ 
+ #define I1024(R)                                                           \
+ do {                                                                       \
+-- 
+2.1.0
 
