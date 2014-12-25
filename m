@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaLYNLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 08:11:20 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:37784 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034AbaLYNLT (ORCPT
+	id S1752457AbaLYNSN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 08:18:13 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:65105 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034AbaLYNSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 08:11:19 -0500
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] sched/fair: Fix RCU stall upon ENOMEM at sched_create_group().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 25 Dec 2014 22:10:45 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 25 Dec 2014 08:18:07 -0500
+Message-ID: <549C0E8A.6010709@gmail.com>
+Date: Thu, 25 Dec 2014 14:18:02 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+To: Jisheng Zhang <jszhang@marvell.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, antoine.tenart@free-electrons.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: berlin: add PPI cpu mask to twd timer interrupts
+References: <1419487942-2277-1-git-send-email-jszhang@marvell.com> <1419487942-2277-3-git-send-email-jszhang@marvell.com>
+In-Reply-To: <1419487942-2277-3-git-send-email-jszhang@marvell.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 052595ab1a1d1c5668d9de61395c9cc17694597e Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Thu, 25 Dec 2014 15:51:21 +0900
-Subject: [PATCH] sched/fair: Fix RCU stall upon ENOMEM at sched_create_group().
+On 25.12.2014 07:12, Jisheng Zhang wrote:
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
 
-When alloc_fair_sched_group() in sched_create_group() failed,
-free_sched_group() is called, and free_fair_sched_group() is called by
-free_sched_group(). Since destroy_cfs_bandwidth() is called by
-free_fair_sched_group() without calling init_cfs_bandwidth(),
-RCU stall occurs at hrtimer_cancel().
+Jisheng,
 
-  INFO: rcu_sched self-detected stall on CPU { 1}  (t=60000 jiffies g=13074 c=13073 q=0)
-  Task dump for CPU 1:
-  (fprintd)       R  running task        0  6249      1 0x00000088
-   ffffffff81c47d40 ffff88007fc43d78 ffffffff81094988 0000000000000001
-   ffffffff81c47d40 ffff88007fc43d98 ffffffff81097acd ffff88007fc43dd8
-   0000000000000002 ffff88007fc43dc8 ffffffff810c3a80 ffff88007fc4d840
-  Call Trace:
-   <IRQ>  [<ffffffff81094988>] sched_show_task+0xa8/0x110
-   [<ffffffff81097acd>] dump_cpu_task+0x3d/0x50
-   [<ffffffff810c3a80>] rcu_dump_cpu_stacks+0x90/0xd0
-   [<ffffffff810c7751>] rcu_check_callbacks+0x491/0x700
-   [<ffffffff810cbf2b>] update_process_times+0x4b/0x80
-   [<ffffffff810db046>] tick_sched_handle.isra.20+0x36/0x50
-   [<ffffffff810db0a2>] tick_sched_timer+0x42/0x70
-   [<ffffffff810ccb19>] __run_hrtimer+0x69/0x1a0
-   [<ffffffff810db060>] ? tick_sched_handle.isra.20+0x50/0x50
-   [<ffffffff810ccedf>] hrtimer_interrupt+0xef/0x230
-   [<ffffffff810452cb>] local_apic_timer_interrupt+0x3b/0x70
-   [<ffffffff8164a465>] smp_apic_timer_interrupt+0x45/0x60
-   [<ffffffff816485bd>] apic_timer_interrupt+0x6d/0x80
-   <EOI>  [<ffffffff810cc588>] ? lock_hrtimer_base.isra.23+0x18/0x50
-   [<ffffffff81193cf1>] ? __kmalloc+0x211/0x230
-   [<ffffffff810cc9d2>] hrtimer_try_to_cancel+0x22/0xd0
-   [<ffffffff81193cf1>] ? __kmalloc+0x211/0x230
-   [<ffffffff810ccaa2>] hrtimer_cancel+0x22/0x30
-   [<ffffffff810a3cb5>] free_fair_sched_group+0x25/0xd0
-   [<ffffffff8108df46>] free_sched_group+0x16/0x40
-   [<ffffffff810971bb>] sched_create_group+0x4b/0x80
-   [<ffffffff810aa383>] sched_autogroup_create_attach+0x43/0x1c0
-   [<ffffffff8107dc9c>] sys_setsid+0x7c/0x110
-   [<ffffffff81647729>] system_call_fastpath+0x12/0x17
+thanks for the patches!
 
-Check whether init_cfs_bandwidth() was called before calling
-destroy_cfs_bandwidth().
+Please always add some text to the commit log, no matter how simple the
+change is.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- kernel/sched/fair.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+> ---
+>   arch/arm/boot/dts/berlin2.dtsi   | 3 ++-
+>   arch/arm/boot/dts/berlin2cd.dtsi | 3 ++-
+>   arch/arm/boot/dts/berlin2q.dtsi  | 3 ++-
+>   3 files changed, 6 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+> index 015a06c..f6d9002 100644
+> --- a/arch/arm/boot/dts/berlin2.dtsi
+> +++ b/arch/arm/boot/dts/berlin2.dtsi
+> @@ -104,7 +104,8 @@
+>   		local-timer@ad0600 {
+>   			compatible = "arm,cortex-a9-twd-timer";
+>   			reg = <0xad0600 0x20>;
+> -			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
+> +			interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(2) |
+> +					IRQ_TYPE_LEVEL_HIGH)>;
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ef2b104..586ee15 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -7756,8 +7756,12 @@ static void task_move_group_fair(struct task_struct *p, int queued)
- void free_fair_sched_group(struct task_group *tg)
- {
- 	int i;
-+	struct cfs_bandwidth *cfs_b;
- 
--	destroy_cfs_bandwidth(tg_cfs_bandwidth(tg));
-+	/* Check whether init_cfs_bandwidth() was called. */
-+	cfs_b = tg_cfs_bandwidth(tg);
-+	if (cfs_b->throttled_cfs_rq.next)
-+		destroy_cfs_bandwidth(cfs_b);
- 
- 	for_each_possible_cpu(i) {
- 		if (tg->cfs_rq)
--- 
-1.8.3.1
+IMHO, feel free to ignore 80-column restriction on each of the lines
+changed.
+
+Sebastian
+
+>   			clocks = <&chip CLKID_TWD>;
+>   		};
+>
+> diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
+> index a318bc3..517a364 100644
+> --- a/arch/arm/boot/dts/berlin2cd.dtsi
+> +++ b/arch/arm/boot/dts/berlin2cd.dtsi
+> @@ -76,7 +76,8 @@
+>   		local-timer@ad0600 {
+>   			compatible = "arm,cortex-a9-twd-timer";
+>   			reg = <0xad0600 0x20>;
+> -			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
+> +			interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(1) |
+> +					IRQ_TYPE_LEVEL_HIGH)>;
+>   			clocks = <&chip CLKID_TWD>;
+>   		};
+>
+> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> index 933dcbb..33fbf8f 100644
+> --- a/arch/arm/boot/dts/berlin2q.dtsi
+> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+> @@ -112,7 +112,8 @@
+>   			compatible = "arm,cortex-a9-twd-timer";
+>   			reg = <0xad0600 0x20>;
+>   			clocks = <&chip CLKID_TWD>;
+> -			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
+> +			interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) |
+> +					IRQ_TYPE_LEVEL_HIGH)>;
+>   		};
+>
+>   		gic: interrupt-controller@ad1000 {
+>
+
