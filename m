@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174AbaLYI7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 03:59:51 -0500
-Received: from mail.eperm.de ([89.247.134.16]:51034 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993AbaLYI7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 03:59:46 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v5 3/8] crypto: AF_ALG: add AEAD support
-Date: Thu, 25 Dec 2014 09:59:41 +0100
-Message-ID: <4303878.9KB6gYbbHH@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <2159528.zCJB0y2Cap@tachyon.chronox.de>
-References: <56740432.V2v4gLHrzS@tachyon.chronox.de> <20141223202401.GA2474@gondor.apana.org.au> <2159528.zCJB0y2Cap@tachyon.chronox.de>
+	id S1752186AbaLYJL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 04:11:28 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53988 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968AbaLYJLY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 04:11:24 -0500
+Date: Thu, 25 Dec 2014 10:11:21 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Nishanth Menon <nm@ti.com>, linux-omap <linux-omap@vger.kernel.org>,
+        sre@debian.org, sre@ring0.de, aaro.koskinen@iki.fi, tony@atomide.com,
+        ivo.g.dimitrov.75@gmail.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: v3.19-rc1 regression(?) on N900
+Message-ID: <20141225091121.GA20355@amd>
+References: <549B44E2.6080202@ti.com>
+ <201412250932.40403@pali>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201412250932.40403@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 24. Dezember 2014, 09:54:33 schrieb Stephan Mueller:
-
-Hi Stephan,
-
-> Am Mittwoch, 24. Dezember 2014, 07:24:01 schrieb Herbert Xu:
-> 
-> Hi Herbert,
-> 
-> > On Tue, Dec 23, 2014 at 03:52:27PM +0100, Stephan Mueller wrote:
-> > > Am Dienstag, 23. Dezember 2014, 22:56:26 schrieb Herbert Xu:
-> > > > In fact AEAD is rather awkward because you need to do everything
-> > > > in one go.  Perhaps we could adapt our kernel interface to allow
-> > > > partial AEAD operations?
-> > > 
-> > > I am not sure what you are referring to. The invocation does not need to
-> > > be in one go. You can have arbitrary number of sendmsg calls. But all
-> > > input data needs to be supplied before you call recvmsg.
+On Thu 2014-12-25 09:32:40, Pali Rohár wrote:
+> On Wednesday 24 December 2014 23:57:38 Nishanth Menon wrote:
+> > based on automated testing with u-boot as a chained
+> > bootloader..
 > > 
-> > What I mean is that unlike skcipher we cannot precede until we
-> > have the complete input.  So you cannot begin recvmsg until all
-> > input has been sent.
-> 
-> That is right, but isn't that the nature of AEAD ciphers in general? Even if
-> you are in the kernel, you need to have all scatter lists together for one
-> invocation of the AEAD cipher.
-> 
-> In case of a threaded application, the recvmsg does not start until all data
-> is in, marked with the missing MSG_MORE -- see aead_readable.
-> 
-> All we can do is allow the user to use multiple system calls to collect all
-> data before the AEAD operation takes place.
-> 
-> Or do you see another way on how to invoke the AEAD operation in a different
-> manner?
-> 
-> The only item that I see that could be made better is the output side:
-> currently the code allows only one and exactly one iovec to point to the
-> output buffer. I would like to allow multiple iovec buffers that are filled
-> with the output of one invocation of the AEAD operation. However, to avoid
-> making a kernel-internal scratch buffer, I would need to somehow link the
-> kernel-internal scatter lists with the iovec buffers. That only works when
-> walking the iovec lists first and call af_alg_make_sg with every iovec entry
-> and create the kernel-internal scatterlist representation. That is followed
-> by the AEAD operation on the scatterlist.
-> 
-> If we agree on walking the iovec list first, then the question arises how
-> many iovec list entries we allow at max. Is 16 entries a sensible value?
+> > v3.18: boots fine:
+> > https://github.com/nmenon/kernel-test-logs/blob/v3.18/omap2plu
+> > s_defconfig/n900.txt
+> > 
+> > v3.19-rc1: hung
+> > https://github.com/nmenon/kernel-test-logs/blob/v3.19-rc1/omap
+> > 2plus_defconfig/n900.txt
+> > 
+> > in the interim, my farm had a bit of breakdown around the time
+> > of n900 breakdown..
+> > 
+> > as per my last functional linux-next logs:
+> > https://github.com/nmenon/kernel-test-logs/blob/next-20141204/
+> > omap2plus_defconfig/n900.txt -> hung.
+> > https://github.com/nmenon/kernel-test-logs/blob/next-20141112/
+> > omap2plus_defconfig/n900.txt -> working.
+> > 
+> > DEBUG_LL, CONFIG_DEBUG_OMAP3UART3=y and early_printk did not
+> > yield information either
 
-I would be now ready with a new release of the AEAD and RNG interface patches 
-against the current code base (including the iov_iter update). Though, I would 
-like to get your answer regarding your concerns.
+Early hang, independend on config. That's "dtb too big". Delete
+something, and it should work again.
 
-Thanks.
+Plus you'll note video regression.
 
+# > I test-merged 3315764efceaccfb02c7d4c99ef8eed6716cd861, and boom,
+# > video is gone.
+#
+# I reverted
+#
+# > 4b4123f0c7b02f7cf1a3189f967f079197578c3a..9051909e451a0368c95ccf74562adb53fd2719f8
+# in 3.19, and voila, video is back.
+
+> CCing other people.
+> 
+> I see same problem in qemu with 3.19-rc1 kernel when doing DT 
+> boot. In qemu I'm using direct booting from OneNAND (X-Loader --> 
+> NOLO --> kernel) without U-Boot. After NOLO load & boot kernel I 
+> do not see any other output from serial console. Also on qemu 
+> screen there is no new output (just NOKIA logo from bootloader).
+> 
+> I do not have this problem when doing legacy/board code boot with 
+> 3.19-rc1 kernel, so this problem is related to DT.
+> 
+> Kernel 3.18-rc1 worked fine for both DT and legacy boot.
+> 
+> Can somebody look what broke DT booting?
+
+It was too big dtb, at least for me.
+									Pavel
 -- 
-Ciao
-Stephan
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
