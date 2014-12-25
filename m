@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaLYB5F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Dec 2014 20:57:05 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:58910 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaLYB5C (ORCPT
+	id S1752121AbaLYB5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Dec 2014 20:57:24 -0500
+Received: from mail-pa0-f68.google.com ([209.85.220.68]:54880 "EHLO
+	mail-pa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018AbaLYB5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Dec 2014 20:57:02 -0500
-Date: Thu, 25 Dec 2014 01:56:44 +0200
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux-stable <stable@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/4] can: kvaser_usb: Don't free packets when tight on URBs
-Message-ID: <20141224235644.GA3778@vivalin-002>
-References: <20141223154654.GB6460@vivalin-002>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141223154654.GB6460@vivalin-002>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Dec 2014 20:57:15 -0500
+From: David Decotigny <ddecotig@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        David Decotigny <ddecotig@gmail.com>
+Subject: [PATCH v1] staging: comedi: dmm32at: fix style issues
+Date: Wed, 24 Dec 2014 17:55:38 -0800
+Message-Id: <1419472538-8035-1-git-send-email-ddecotig@gmail.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+Before:
+      1 ERROR: code indent should use tabs where possible
+      1 WARNING: please, no spaces at the start of a line
 
-Flooding the Kvaser CAN to USB dongle with multiple reads and
-writes in high frequency caused seemingly-random panics in the
-kernel.
+After:
+  (none)
 
-On further inspection, it seems the driver erroneously freed the
-to-be-transmitted packet upon getting tight on URBs and returning
-NETDEV_TX_BUSY, leading to invalid memory writes and double frees
-at a later point in time.
-
-Note:
-
-Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
-is a driver bug in and out of itself: it means that our start/stop
-queue flow control is broken.
-
-This patch only fixes the (buggy) error handling code; the root
-cause shall be fixed in a later commit.
-
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+Signed-off-by: David Decotigny <ddecotig@gmail.com>
 ---
- drivers/net/can/usb/kvaser_usb.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/dmm32at.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
- (Marc, Greg, I believe this should also be added to -stable?)
-
-diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
-index 541fb7a..6479a2b 100644
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1294,12 +1294,14 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
- 	if (!urb) {
- 		netdev_err(netdev, "No memory left for URBs\n");
- 		stats->tx_dropped++;
--		goto nourbmem;
-+		dev_kfree_skb(skb);
-+		return NETDEV_TX_OK;
- 	}
+diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
+index 6df298a..1615103 100644
+--- a/drivers/staging/comedi/drivers/dmm32at.c
++++ b/drivers/staging/comedi/drivers/dmm32at.c
+@@ -363,9 +363,9 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
+ 	outb(hi2, dev->iobase + DMM32AT_CLK2);
  
- 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
- 	if (!buf) {
- 		stats->tx_dropped++;
-+		dev_kfree_skb(skb);
- 		goto nobufmem;
- 	}
- 
-@@ -1334,6 +1336,9 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
- 		}
- 	}
- 
-+	/*
-+	 * This should never happen; it implies a flow control bug.
-+	 */
- 	if (!context) {
- 		netdev_warn(netdev, "cannot find free context\n");
- 		ret =  NETDEV_TX_BUSY;
-@@ -1364,9 +1369,6 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
- 	if (unlikely(err)) {
- 		can_free_echo_skb(netdev, context->echo_index);
- 
--		skb = NULL; /* set to NULL to avoid double free in
--			     * dev_kfree_skb(skb) */
--
- 		atomic_dec(&priv->active_tx_urbs);
- 		usb_unanchor_urb(urb);
- 
-@@ -1388,8 +1390,6 @@ releasebuf:
- 	kfree(buf);
- nobufmem:
- 	usb_free_urb(urb);
--nourbmem:
--	dev_kfree_skb(skb);
- 	return ret;
+ 	/* enable the ai conversion interrupt and the clock to start scans */
+-	outb(DMM32AT_INTCLK_ADINT |
+-	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
+-             dev->iobase + DMM32AT_INTCLK_REG);
++	outb(DMM32AT_INTCLK_ADINT | DMM32AT_INTCLK_CLKEN |
++		 DMM32AT_INTCLK_CLKSEL,
++	     dev->iobase + DMM32AT_INTCLK_REG);
  }
  
+ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+-- 
+2.2.0.rc0.207.ga3a616c
+
