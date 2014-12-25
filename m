@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaLYJ3Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 04:29:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48915 "EHLO mx1.redhat.com"
+	id S1752354AbaLYJ3F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 04:29:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752361AbaLYJ3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 04:29:09 -0500
-Date: Thu, 25 Dec 2014 11:28:59 +0200
+	id S1752279AbaLYJ27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 04:28:59 -0500
+Date: Thu, 25 Dec 2014 11:28:48 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
-Subject: [PATCH repost 08/16] m32r/uaccess: fix sparse errors
-Message-ID: <1419499661-8566-9-git-send-email-mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        Steven Miao <realmz6@gmail.com>,
+        adi-buildroot-devel@lists.sourceforge.net
+Subject: [PATCH repost 05/16] blackfin/uaccess: fix sparse errors
+Message-ID: <1419499661-8566-6-git-send-email-mst@redhat.com>
 References: <1419499661-8566-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,30 +31,22 @@ integer.
 Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Steven Miao <realmz6@gmail.com>
 ---
- arch/m32r/include/asm/uaccess.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/blackfin/include/asm/uaccess.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/m32r/include/asm/uaccess.h b/arch/m32r/include/asm/uaccess.h
-index 84fe7ba..ee4a212 100644
---- a/arch/m32r/include/asm/uaccess.h
-+++ b/arch/m32r/include/asm/uaccess.h
-@@ -218,7 +218,7 @@ extern int fixup_exception(struct pt_regs *regs);
- 	unsigned long __gu_val;						\
- 	might_fault();							\
- 	__get_user_size(__gu_val,(ptr),(size),__gu_err);		\
--	(x) = (__typeof__(*(ptr)))__gu_val;				\
-+	(x) = (__force __typeof__(*(ptr)))__gu_val;				\
- 	__gu_err;							\
- })
- 
-@@ -230,7 +230,7 @@ extern int fixup_exception(struct pt_regs *regs);
- 	might_fault();							\
- 	if (access_ok(VERIFY_READ,__gu_addr,size))			\
- 		__get_user_size(__gu_val,__gu_addr,(size),__gu_err);	\
--	(x) = (__typeof__(*(ptr)))__gu_val;				\
-+	(x) = (__force __typeof__(*(ptr)))__gu_val;				\
- 	__gu_err;							\
+diff --git a/arch/blackfin/include/asm/uaccess.h b/arch/blackfin/include/asm/uaccess.h
+index 57701c3..6a46e7d 100644
+--- a/arch/blackfin/include/asm/uaccess.h
++++ b/arch/blackfin/include/asm/uaccess.h
+@@ -147,7 +147,7 @@ static inline int bad_user_access_length(void)
+ 		}						\
+ 	} else							\
+ 		_err = -EFAULT;					\
+-	x = (typeof(*(ptr)))_val;				\
++	x = (__force typeof(*(ptr)))_val;				\
+ 	_err;							\
  })
  
 -- 
