@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbaLYKQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 05:16:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60470 "EHLO mx2.suse.de"
+	id S1752316AbaLYKR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 05:17:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60479 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508AbaLYKQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 05:16:32 -0500
-Date: Thu, 25 Dec 2014 11:16:31 +0100
-Message-ID: <s5hsig4hw5c.wl-tiwai@suse.de>
+	id S1751989AbaLYKR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Dec 2014 05:17:58 -0500
+Date: Thu, 25 Dec 2014 11:17:57 +0100
+Message-ID: <s5hr3vohw2y.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: pci: hda: patch_analog.c:  Remove unused function
-In-Reply-To: <1419114679-11752-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419114679-11752-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: Re: [PATCH] sound: pci: hda: patch_analog.c:  Remove some unused functions
+In-Reply-To: <1419165312-28886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1419165312-28886-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,35 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sat, 20 Dec 2014 23:31:19 +0100,
+At Sun, 21 Dec 2014 13:35:12 +0100,
 Rickard Strandqvist wrote:
 > 
-> Remove the function ad198x_ch_mode_get() that is not used anywhere.
+> Removes some functions that are not used anywhere:
+> ad198x_ch_mode_get() ad198x_ch_mode_info() ad198x_ch_mode_info()
 > 
 > This was partially found by using a static code analysis program called cppcheck.
 > 
 > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-As Raymond suggested, remove the whole dead #ifdef block instead.
-It's a left-over code I forgot to remove.
-
+OK, you sent it already...  Applied now.
 
 thanks,
 
 Takashi
 
 > ---
->  sound/pci/hda/patch_analog.c |    9 ---------
->  1 file changed, 9 deletions(-)
+>  sound/pci/hda/patch_analog.c |   33 ---------------------------------
+>  1 file changed, 33 deletions(-)
 > 
 > diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-> index 06275f8..9d5257b 100644
+> index 06275f8..0e76dcc 100644
 > --- a/sound/pci/hda/patch_analog.c
 > +++ b/sound/pci/hda/patch_analog.c
-> @@ -707,15 +707,6 @@ static int ad198x_ch_mode_info(struct snd_kcontrol *kcontrol,
->  				    spec->num_channel_mode);
->  }
+> @@ -697,39 +697,6 @@ static int patch_ad1981(struct hda_codec *codec)
+>   *      E/F quad mic array
+>   */
 >  
+> -#ifdef ENABLE_AD_STATIC_QUIRKS
+> -static int ad198x_ch_mode_info(struct snd_kcontrol *kcontrol,
+> -			       struct snd_ctl_elem_info *uinfo)
+> -{
+> -	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+> -	struct ad198x_spec *spec = codec->spec;
+> -	return snd_hda_ch_mode_info(codec, uinfo, spec->channel_mode,
+> -				    spec->num_channel_mode);
+> -}
+> -
 > -static int ad198x_ch_mode_get(struct snd_kcontrol *kcontrol,
 > -			      struct snd_ctl_elem_value *ucontrol)
 > -{
@@ -62,8 +71,22 @@ Takashi
 > -				   spec->num_channel_mode, spec->multiout.max_channels);
 > -}
 > -
->  static int ad198x_ch_mode_put(struct snd_kcontrol *kcontrol,
->  			      struct snd_ctl_elem_value *ucontrol)
+> -static int ad198x_ch_mode_put(struct snd_kcontrol *kcontrol,
+> -			      struct snd_ctl_elem_value *ucontrol)
+> -{
+> -	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+> -	struct ad198x_spec *spec = codec->spec;
+> -	int err = snd_hda_ch_mode_put(codec, ucontrol, spec->channel_mode,
+> -				      spec->num_channel_mode,
+> -				      &spec->multiout.max_channels);
+> -	if (err >= 0 && spec->need_dac_fix)
+> -		spec->multiout.num_dacs = spec->multiout.max_channels / 2;
+> -	return err;
+> -}
+> -#endif /* ENABLE_AD_STATIC_QUIRKS */
+> -
+>  static int ad1988_auto_smux_enum_info(struct snd_kcontrol *kcontrol,
+>  				      struct snd_ctl_elem_info *uinfo)
 >  {
 > -- 
 > 1.7.10.4
