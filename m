@@ -1,143 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaLYIb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 03:31:59 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:65480 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbaLYIb5 (ORCPT
+	id S1752195AbaLYIcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 03:32:47 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:45724 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaLYIco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 03:31:57 -0500
+	Thu, 25 Dec 2014 03:32:44 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Nishanth Menon <nm@ti.com>
+Subject: Re: v3.19-rc1 regression(?) on N900
+Date: Thu, 25 Dec 2014 09:32:40 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: "linux-omap" <linux-omap@vger.kernel.org>, pavel@ucw.cz, sre@debian.org,
+        sre@ring0.de, aaro.koskinen@iki.fi, tony@atomide.com,
+        ivo.g.dimitrov.75@gmail.com,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+References: <549B44E2.6080202@ti.com>
+In-Reply-To: <549B44E2.6080202@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <549ADBD2.6040702@web.de>
-References: <1419390869-1636-1-git-send-email-fanwenyi0529@gmail.com> <549ADBD2.6040702@web.de>
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Thu, 25 Dec 2014 16:31:35 +0800
-Message-ID: <CACzj_yW-uZajLojE8vw=7xGgK52FMST65jRLrDynreAF=QAuJg@mail.gmail.com>
-Subject: Re: [PATCH 1/1] KVM: ioapic: Record edge-triggered interrupts
- delivery status.
-To: Jan Kiszka <jan.kiszka@web.de>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Bandan Das <bsd@redhat.com>,
-        yang.z.zhang@intel.com, Wanpeng Li <wanpeng.li@linux.intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed;
+  boundary="nextPart3982783.nH4CNfp8MO";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412250932.40403@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-24 23:29 GMT+08:00 Jan Kiszka <jan.kiszka@web.de>:
-> On 2014-12-24 04:14, Wincy Van wrote:
->> This patch fixes the bug discussed in
->> https://www.mail-archive.com/kvm@vger.kernel.org/msg109813.html
->>
->> This patch uses a new field named irr_delivered to record the
->> delivery status of edge-triggered interrupts, and clears the
->> delivered interrupts in kvm_get_ioapic. So it has the same effect
->> of commit 0bc830b05c667218d703f2026ec866c49df974fc
->> ("KVM: ioapic: clear IRR for edge-triggered interrupts at delivery")
->> while avoids the bug of Windows guests.
->>
->> Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
->> ---
->>  arch/x86/kvm/ioapic.c |    7 ++++++-
->>  arch/x86/kvm/ioapic.h |    1 +
->>  2 files changed, 7 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/x86/kvm/ioapic.c b/arch/x86/kvm/ioapic.c
->> index b1947e0..a2e9d96 100644
->> --- a/arch/x86/kvm/ioapic.c
->> +++ b/arch/x86/kvm/ioapic.c
->> @@ -206,6 +206,8 @@ static int ioapic_set_irq(struct kvm_ioapic *ioapic, unsigned int irq,
->>
->>       old_irr = ioapic->irr;
->>       ioapic->irr |= mask;
->> +     if (edge)
->> +             ioapic->irr_delivered &= ~mask;
->>       if ((edge && old_irr == ioapic->irr) ||
->>           (!edge && entry.fields.remote_irr)) {
->>               ret = 0;
->> @@ -349,7 +351,7 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
->>       irqe.shorthand = 0;
->>
->>       if (irqe.trig_mode == IOAPIC_EDGE_TRIG)
->> -             ioapic->irr &= ~(1 << irq);
->> +             ioapic->irr_delivered |= 1 << irq;
->>
->>       if (irq == RTC_GSI && line_status) {
->>               /*
->> @@ -597,6 +599,7 @@ static void kvm_ioapic_reset(struct kvm_ioapic *ioapic)
->>       ioapic->base_address = IOAPIC_DEFAULT_BASE_ADDRESS;
->>       ioapic->ioregsel = 0;
->>       ioapic->irr = 0;
->> +     ioapic->irr_delivered = 0;
->>       ioapic->id = 0;
->>       memset(ioapic->irq_eoi, 0x00, IOAPIC_NUM_PINS);
->>       rtc_irq_eoi_tracking_reset(ioapic);
->> @@ -654,6 +657,7 @@ int kvm_get_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
->>
->>       spin_lock(&ioapic->lock);
->>       memcpy(state, ioapic, sizeof(struct kvm_ioapic_state));
->> +     state->irr &= ~ioapic->irr_delivered;
->>       spin_unlock(&ioapic->lock);
->>       return 0;
->>  }
->> @@ -667,6 +671,7 @@ int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
->>       spin_lock(&ioapic->lock);
->>       memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
->>       ioapic->irr = 0;
->> +     ioapic->irr_delivered = 0;
->>       update_handled_vectors(ioapic);
->>       kvm_vcpu_request_scan_ioapic(kvm);
->>       kvm_ioapic_inject_all(ioapic, state->irr);
->> diff --git a/arch/x86/kvm/ioapic.h b/arch/x86/kvm/ioapic.h
->> index 3c91955..a5cdfc0 100644
->> --- a/arch/x86/kvm/ioapic.h
->> +++ b/arch/x86/kvm/ioapic.h
->> @@ -77,6 +77,7 @@ struct kvm_ioapic {
->>       struct rtc_status rtc_status;
->>       struct delayed_work eoi_inject;
->>       u32 irq_eoi[IOAPIC_NUM_PINS];
->> +     u32 irr_delivered;
->>  };
->>
->>  #ifdef DEBUG
->>
->
-> Does this introduce a state which requires save/restore on migration? If
-> so, then you need to extend the existing interface - in a
-> backward-compatible way. If not, please leave a remark on the reason.
->
+--nextPart3982783.nH4CNfp8MO
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-No, we do not need to save/restore irr_delivered.
+On Wednesday 24 December 2014 23:57:38 Nishanth Menon wrote:
+> based on automated testing with u-boot as a chained
+> bootloader..
+>=20
+> v3.18: boots fine:
+> https://github.com/nmenon/kernel-test-logs/blob/v3.18/omap2plu
+> s_defconfig/n900.txt
+>=20
+> v3.19-rc1: hung
+> https://github.com/nmenon/kernel-test-logs/blob/v3.19-rc1/omap
+> 2plus_defconfig/n900.txt
+>=20
+> in the interim, my farm had a bit of breakdown around the time
+> of n900 breakdown..
+>=20
+> as per my last functional linux-next logs:
+> https://github.com/nmenon/kernel-test-logs/blob/next-20141204/
+> omap2plus_defconfig/n900.txt -> hung.
+> https://github.com/nmenon/kernel-test-logs/blob/next-20141112/
+> omap2plus_defconfig/n900.txt -> working.
+>=20
+> DEBUG_LL, CONFIG_DEBUG_OMAP3UART3=3Dy and early_printk did not
+> yield information either
+>=20
+> Note: I am using the combined uImage+dtb image.[2]
+>=20
+> I think this might just be my setup..(i use chained loader ->
+> NOLO->u-boot->serial download->kernel) but anyways.. Since
+> Pali thought others might be interested in sharing
+> experience...
+>=20
+> [1]   http://slexy.org/raw/s2osxhhwbR
+> [2]
+> https://github.com/nmenon/linux-2.6-playground/commit/177f5f71
+> b3f21ea484ee4b09a2e0c015de522417
 
-First of all, irr_delivered affects irr only when saving ioapic's
-state, it does not affect any of the ioapic's logic.
+CCing other people.
 
-Then, let's see what will happen if we do not save/restore that field :
+I see same problem in qemu with 3.19-rc1 kernel when doing DT=20
+boot. In qemu I'm using direct booting from OneNAND (X-Loader -->=20
+NOLO --> kernel) without U-Boot. After NOLO load & boot kernel I=20
+do not see any other output from serial console. Also on qemu=20
+screen there is no new output (just NOKIA logo from bootloader).
 
-1. If irr_delivered is 0 before saving, it is no difference at all.
-2. If a bit of irr_delivered is 1 before saving, since irr_delivered
-only affects migration,
-    we should check that if the 2nd+ migration is OK.
-    There are 3 possibilities on the first destination :
-    (1) The edge-triggered IRQ is masked, that bit will be cleared, it
-is no difference to do 2nd migration.
-    (2) The edge-triggered IRQ is raised and not masked, that bit will
-be set again, it is no difference to do 2nd migration.
-    (3) The edge-triggered IRQ is lowered, and the corresponding bit
-of irr is cleared,
-          the result of "state->irr &= ~ioapic->irr_delivered" in
-kvm_get_ioapic is not affected by irr_delivered.
+I do not have this problem when doing legacy/board code boot with=20
+3.19-rc1 kernel, so this problem is related to DT.
 
-So it is OK to migrate with a stateless irr_delivered.
+Kernel 3.18-rc1 worked fine for both DT and legacy boot.
 
+Can somebody look what broke DT booting?
 
-Thanks,
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Wincy
+--nextPart3982783.nH4CNfp8MO
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlSby6gACgkQi/DJPQPkQ1KAHACfWND8P4rKtlIfii9F/7J9ATzb
+Vn8An3kKKhrqVkJQ5bZtnoPXUiXNSP1N
+=ngTb
+-----END PGP SIGNATURE-----
 
-
-> Jan
->
->
+--nextPart3982783.nH4CNfp8MO--
