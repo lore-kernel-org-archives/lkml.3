@@ -1,167 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaLZJnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 04:43:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404AbaLZJnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 04:43:39 -0500
-Message-ID: <549D2DBE.5040301@redhat.com>
-Date: Fri, 26 Dec 2014 17:43:26 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751854AbaLZJoF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 04:44:05 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:58344 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751824AbaLZJoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 04:44:00 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        David Airlie <airlied@linux.ie>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v7 1/3] of: Decrement refcount of previous endpoint in of_graph_get_next_endpoint
+Date: Fri, 26 Dec 2014 11:44:04 +0200
+Message-ID: <1673229.XX60cPdPif@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1419340158-20567-2-git-send-email-p.zabel@pengutronix.de>
+References: <1419340158-20567-1-git-send-email-p.zabel@pengutronix.de> <1419340158-20567-2-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-To: Alex Gartrell <agartrell@fb.com>, davem@davemloft.net,
-        herbert@gondor.apana.org.au
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-team@fb.com
-Subject: Re: [PATCH net-next 2/2] tun: enable socket system calls
-References: <1419576624-8999-1-git-send-email-agartrell@fb.com> <1419576624-8999-3-git-send-email-agartrell@fb.com>
-In-Reply-To: <1419576624-8999-3-git-send-email-agartrell@fb.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Philipp,
 
-On 12/26/2014 02:50 PM, Alex Gartrell wrote:
-> By setting private_data to a socket and private_data_is_socket to true, we
-> can use the socket syscalls.  We also can't just blindly use private_data
-> anymore, so there's a __tun_file_get function that returns the container_of
-> private_data appropriately.
+Thank you for the patch.
 
-So this in fact expose other socket syscalls to userspace. But some of
-proto_ops was not supported. E.g consider what happens if a bind() was
-called for tun socket?
-> Signed-off-by: Alex Gartrell <agartrell@fb.com>
+On Tuesday 23 December 2014 14:09:16 Philipp Zabel wrote:
+> Decrementing the reference count of the previous endpoint node allows to
+> use the of_graph_get_next_endpoint function in a for_each_... style macro.
+> All current users of this function that pass a non-NULL prev parameter
+> (coresight, rcar-du, imx-drm, soc_camera, and omap2-dss) are changed to
+> not decrement the passed prev argument's refcount themselves.
+> 
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+> Acked-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 > ---
->  drivers/net/tun.c | 34 ++++++++++++++++++++++------------
->  1 file changed, 22 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index a5cbf67..b16ddc5 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -547,9 +547,18 @@ static void tun_detach_all(struct net_device *dev)
->  		module_put(THIS_MODULE);
->  }
->  
-> +static struct tun_file *tun_file_from_file(struct file *file)
-> +{
-> +	struct socket *s = (struct socket *)file->private_data;
-> +
-> +	if (!s)
+> Changes since v6:
+>  - Added omap2-dss.
+>  - Added Mathieu's ack.
+> ---
+>  drivers/coresight/of_coresight.c                  | 13 ++-----------
+>  drivers/gpu/drm/imx/imx-drm-core.c                | 13 ++-----------
+>  drivers/gpu/drm/rcar-du/rcar_du_kms.c             | 15 ++++-----------
 
-Can s be NULL here? If yes, why tun_get() didn't check for NULL?
-> +		return NULL;
-> +	return container_of(s, struct tun_file, socket);
-> +}
-> +
->  static int tun_attach(struct tun_struct *tun, struct file *file, bool skip_filter)
->  {
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	int err;
->  
->  	err = security_tun_dev_attach(tfile->socket.sk, tun->security);
-> @@ -612,7 +621,7 @@ static struct tun_struct *__tun_get(struct tun_file *tfile)
->  
->  static struct tun_struct *tun_get(struct file *file)
->  {
-> -	return __tun_get(file->private_data);
-> +	return __tun_get(tun_file_from_file(file));
+For rcar-du,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+>  drivers/media/platform/soc_camera/soc_camera.c    |  3 ++-
+>  drivers/of/base.c                                 |  9 +--------
+>  drivers/video/fbdev/omap2/dss/omapdss-boot-init.c |  7 +------
+>  6 files changed, 12 insertions(+), 48 deletions(-)
+> 
+> diff --git a/drivers/coresight/of_coresight.c
+> b/drivers/coresight/of_coresight.c index 5030c07..349c88b 100644
+> --- a/drivers/coresight/of_coresight.c
+> +++ b/drivers/coresight/of_coresight.c
+> @@ -52,15 +52,6 @@ of_coresight_get_endpoint_device(struct device_node
+> *endpoint) endpoint, of_dev_node_match);
 >  }
->  
->  static void tun_put(struct tun_struct *tun)
-> @@ -973,7 +982,7 @@ static void tun_net_init(struct net_device *dev)
->  /* Poll */
->  static unsigned int tun_chr_poll(struct file *file, poll_table *wait)
+> 
+> -static struct device_node *of_get_coresight_endpoint(
+> -		const struct device_node *parent, struct device_node *prev)
+> -{
+> -	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
+> -
+> -	of_node_put(prev);
+> -	return node;
+> -}
+> -
+>  static void of_coresight_get_ports(struct device_node *node,
+>  				   int *nr_inport, int *nr_outport)
 >  {
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	struct tun_struct *tun = __tun_get(tfile);
->  	struct sock *sk;
->  	unsigned int mask = 0;
-> @@ -1235,7 +1244,7 @@ static ssize_t tun_chr_write_iter(struct kiocb *iocb, struct iov_iter *from)
+> @@ -68,7 +59,7 @@ static void of_coresight_get_ports(struct device_node
+> *node, int in = 0, out = 0;
+> 
+>  	do {
+> -		ep = of_get_coresight_endpoint(node, ep);
+> +		ep = of_graph_get_next_endpoint(node, ep);
+>  		if (!ep)
+>  			break;
+> 
+> @@ -140,7 +131,7 @@ struct coresight_platform_data
+> *of_get_coresight_platform_data( /* Iterate through each port to discover
+> topology */
+>  		do {
+>  			/* Get a handle on a port */
+> -			ep = of_get_coresight_endpoint(node, ep);
+> +			ep = of_graph_get_next_endpoint(node, ep);
+>  			if (!ep)
+>  				break;
+> 
+> diff --git a/drivers/gpu/drm/imx/imx-drm-core.c
+> b/drivers/gpu/drm/imx/imx-drm-core.c index b250130..fed627d 100644
+> --- a/drivers/gpu/drm/imx/imx-drm-core.c
+> +++ b/drivers/gpu/drm/imx/imx-drm-core.c
+> @@ -436,15 +436,6 @@ static uint32_t imx_drm_find_crtc_mask(struct
+> imx_drm_device *imxdrm, return 0;
+>  }
+> 
+> -static struct device_node *imx_drm_of_get_next_endpoint(
+> -		const struct device_node *parent, struct device_node *prev)
+> -{
+> -	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
+> -
+> -	of_node_put(prev);
+> -	return node;
+> -}
+> -
+>  int imx_drm_encoder_parse_of(struct drm_device *drm,
+>  	struct drm_encoder *encoder, struct device_node *np)
 >  {
->  	struct file *file = iocb->ki_filp;
->  	struct tun_struct *tun = tun_get(file);
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	ssize_t result;
->  
->  	if (!tun)
-> @@ -1392,7 +1401,7 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->  static ssize_t tun_chr_read_iter(struct kiocb *iocb, struct iov_iter *to)
->  {
->  	struct file *file = iocb->ki_filp;
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	struct tun_struct *tun = __tun_get(tfile);
->  	ssize_t len = iov_iter_count(to), ret;
->  
-> @@ -1567,7 +1576,7 @@ static DEVICE_ATTR(group, 0444, tun_show_group, NULL);
->  static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  {
->  	struct tun_struct *tun;
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	struct net_device *dev;
->  	int err;
->  
-> @@ -1801,7 +1810,7 @@ static void tun_set_sndbuf(struct tun_struct *tun)
->  
->  static int tun_set_queue(struct file *file, struct ifreq *ifr)
->  {
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	struct tun_struct *tun;
->  	int ret = 0;
->  
-> @@ -1834,7 +1843,7 @@ unlock:
->  static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->  			    unsigned long arg, int ifreq_len)
->  {
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	struct tun_struct *tun;
->  	void __user* argp = (void __user*)arg;
->  	struct ifreq ifr;
-> @@ -2122,7 +2131,7 @@ static long tun_chr_compat_ioctl(struct file *file,
->  
->  static int tun_chr_fasync(int fd, struct file *file, int on)
->  {
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
+> @@ -456,7 +447,7 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
+>  	for (i = 0; ; i++) {
+>  		u32 mask;
+> 
+> -		ep = imx_drm_of_get_next_endpoint(np, ep);
+> +		ep = of_graph_get_next_endpoint(np, ep);
+>  		if (!ep)
+>  			break;
+> 
+> @@ -504,7 +495,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
+> return -EINVAL;
+> 
+>  	do {
+> -		ep = imx_drm_of_get_next_endpoint(node, ep);
+> +		ep = of_graph_get_next_endpoint(node, ep);
+>  		if (!ep)
+>  			break;
+> 
+> diff --git a/drivers/gpu/drm/rcar-du/rcar_du_kms.c
+> b/drivers/gpu/drm/rcar-du/rcar_du_kms.c index 0c5ee61..480c4d9 100644
+> --- a/drivers/gpu/drm/rcar-du/rcar_du_kms.c
+> +++ b/drivers/gpu/drm/rcar-du/rcar_du_kms.c
+> @@ -206,7 +206,7 @@ static int rcar_du_encoders_init_one(struct
+> rcar_du_device *rcdu, enum rcar_du_encoder_type enc_type =
+> RCAR_DU_ENCODER_NONE;
+>  	struct device_node *connector = NULL;
+>  	struct device_node *encoder = NULL;
+> -	struct device_node *prev = NULL;
+> +	struct device_node *ep_node = NULL;
+>  	struct device_node *entity_ep_node;
+>  	struct device_node *entity;
 >  	int ret;
->  
->  	if ((ret = fasync_helper(fd, file, on, &tfile->fasync)) < 0)
-> @@ -2165,7 +2174,8 @@ static int tun_chr_open(struct inode *inode, struct file * file)
->  	tfile->sk.sk_write_space = tun_sock_write_space;
->  	tfile->sk.sk_sndbuf = INT_MAX;
->  
-> -	file->private_data = tfile;
-> +	file->private_data = &tfile->socket;
-> +	file->private_data_is_socket = true;
->  	set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
->  	INIT_LIST_HEAD(&tfile->next);
->  
-> @@ -2176,7 +2186,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
->  
->  static int tun_chr_close(struct inode *inode, struct file *file)
+> @@ -225,11 +225,7 @@ static int rcar_du_encoders_init_one(struct
+> rcar_du_device *rcdu, entity_ep_node = of_parse_phandle(ep->local_node,
+> "remote-endpoint", 0);
+> 
+>  	while (1) {
+> -		struct device_node *ep_node;
+> -
+> -		ep_node = of_graph_get_next_endpoint(entity, prev);
+> -		of_node_put(prev);
+> -		prev = ep_node;
+> +		ep_node = of_graph_get_next_endpoint(entity, ep_node);
+> 
+>  		if (!ep_node)
+>  			break;
+> @@ -300,7 +296,7 @@ static int rcar_du_encoders_init_one(struct
+> rcar_du_device *rcdu, static int rcar_du_encoders_init(struct
+> rcar_du_device *rcdu)
 >  {
-> -	struct tun_file *tfile = file->private_data;
-> +	struct tun_file *tfile = tun_file_from_file(file);
->  	struct net *net = tfile->net;
->  
->  	tun_detach(tfile, true);
-> @@ -2335,7 +2345,7 @@ struct socket *tun_get_socket(struct file *file)
->  	struct tun_file *tfile;
->  	if (file->f_op != &tun_fops)
->  		return ERR_PTR(-EINVAL);
-> -	tfile = file->private_data;
-> +	tfile = tun_file_from_file(file);
->  	if (!tfile)
->  		return ERR_PTR(-EBADFD);
->  	return &tfile->socket;
+>  	struct device_node *np = rcdu->dev->of_node;
+> -	struct device_node *prev = NULL;
+> +	struct device_node *ep_node = NULL;
+>  	unsigned int num_encoders = 0;
+> 
+>  	/*
+> @@ -308,15 +304,12 @@ static int rcar_du_encoders_init(struct rcar_du_device
+> *rcdu) * pipeline.
+>  	 */
+>  	while (1) {
+> -		struct device_node *ep_node;
+>  		enum rcar_du_output output;
+>  		struct of_endpoint ep;
+>  		unsigned int i;
+>  		int ret;
+> 
+> -		ep_node = of_graph_get_next_endpoint(np, prev);
+> -		of_node_put(prev);
+> -		prev = ep_node;
+> +		ep_node = of_graph_get_next_endpoint(np, ep_node);
+> 
+>  		if (ep_node == NULL)
+>  			break;
+> diff --git a/drivers/media/platform/soc_camera/soc_camera.c
+> b/drivers/media/platform/soc_camera/soc_camera.c index b3db51c..289b637
+> 100644
+> --- a/drivers/media/platform/soc_camera/soc_camera.c
+> +++ b/drivers/media/platform/soc_camera/soc_camera.c
+> @@ -1710,7 +1710,6 @@ static void scan_of_host(struct soc_camera_host *ici)
+>  		if (!i)
+>  			soc_of_bind(ici, epn, ren->parent);
+> 
+> -		of_node_put(epn);
+>  		of_node_put(ren);
+> 
+>  		if (i) {
+> @@ -1718,6 +1717,8 @@ static void scan_of_host(struct soc_camera_host *ici)
+>  			break;
+>  		}
+>  	}
+> +
+> +	of_node_put(epn);
+>  }
+> 
+>  #else
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 36536b6..aac66df 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -2085,8 +2085,7 @@ EXPORT_SYMBOL(of_graph_parse_endpoint);
+>   * @prev: previous endpoint node, or NULL to get first
+>   *
+>   * Return: An 'endpoint' node pointer with refcount incremented. Refcount
+> - * of the passed @prev node is not decremented, the caller have to use
+> - * of_node_put() on it when done.
+> + * of the passed @prev node is decremented.
+>   */
+>  struct device_node *of_graph_get_next_endpoint(const struct device_node
+> *parent, struct device_node *prev)
+> @@ -2122,12 +2121,6 @@ struct device_node *of_graph_get_next_endpoint(const
+> struct device_node *parent, if (WARN_ONCE(!port, "%s(): endpoint %s has no
+> parent node\n",
+>  			      __func__, prev->full_name))
+>  			return NULL;
+> -
+> -		/*
+> -		 * Avoid dropping prev node refcount to 0 when getting the next
+> -		 * child below.
+> -		 */
+> -		of_node_get(prev);
+>  	}
+> 
+>  	while (1) {
+> diff --git a/drivers/video/fbdev/omap2/dss/omapdss-boot-init.c
+> b/drivers/video/fbdev/omap2/dss/omapdss-boot-init.c index 2f0822e..76fb18b
+> 100644
+> --- a/drivers/video/fbdev/omap2/dss/omapdss-boot-init.c
+> +++ b/drivers/video/fbdev/omap2/dss/omapdss-boot-init.c
+> @@ -164,20 +164,15 @@ static void __init omapdss_walk_device(struct
+> device_node *node, bool root)
+> 
+>  		pn = of_graph_get_remote_port_parent(n);
+> 
+> -		if (!pn) {
+> -			of_node_put(n);
+> +		if (!pn)
+>  			continue;
+> -		}
+> 
+>  		if (!of_device_is_available(pn) || omapdss_list_contains(pn)) {
+>  			of_node_put(pn);
+> -			of_node_put(n);
+>  			continue;
+>  		}
+> 
+>  		omapdss_walk_device(pn, false);
+> -
+> -		of_node_put(n);
+>  	}
+>  }
+
+-- 
+Regards,
+
+Laurent Pinchart
 
