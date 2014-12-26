@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaLZR1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 12:27:08 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45943 "EHLO
+	id S1751602AbaLZR1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 12:27:12 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45942 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751118AbaLZR1F (ORCPT
+	with ESMTP id S1751272AbaLZR1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Dec 2014 12:27:05 -0500
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
@@ -17,67 +17,45 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
         Nadav Haklai <nadavh@marvell.com>, linux-ide@vger.kernel.org,
         Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH 1/2] regulator: core: Add a sanity check on the regulator_ enable/disable functions
-Date: Fri, 26 Dec 2014 18:26:38 +0100
-Message-Id: <1419614799-5770-2-git-send-email-gregory.clement@free-electrons.com>
+Subject: 
+Date: Fri, 26 Dec 2014 18:26:37 +0100
+Message-Id: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two functions use the pointer passed in parameter without any
-check. By adding a NULL pointer check, it allows using those functions
-from a driver in a more generic way. It is useful especially for the
-disable case if the regulator is optional.
+Subject: [PATCH 0/2] regulator: Add the device tree version to the regulator_get family
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- drivers/regulator/core.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+Hi,
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index e225711bb8bc..de29399b5430 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1911,12 +1911,16 @@ static int _regulator_enable(struct regulator_dev *rdev)
-  */
- int regulator_enable(struct regulator *regulator)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret = 0;
- 
-+	if (!regulator)
-+		return 0;
-+
- 	if (regulator->always_on)
- 		return 0;
- 
-+	rdev = regulator->rdev;
- 	if (rdev->supply) {
- 		ret = regulator_enable(rdev->supply);
- 		if (ret != 0)
-@@ -2024,12 +2028,17 @@ static int _regulator_disable(struct regulator_dev *rdev)
-  */
- int regulator_disable(struct regulator *regulator)
- {
--	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *rdev;
- 	int ret = 0;
- 
-+	if (!regulator)
-+		return 0;
-+
- 	if (regulator->always_on)
- 		return 0;
- 
-+	rdev = regulator->rdev;
-+
- 	mutex_lock(&rdev->mutex);
- 	ret = _regulator_disable(rdev);
- 	mutex_unlock(&rdev->mutex);
+Currently it is not possible to associate a regulator to a child node
+which is not a device. The several ports of an ahci controller are
+represented as subnodes but they are not created as devices. In order
+to be able to associate each port with a regulator the framework API
+needs to be extended.
+
+The second patch adds the device tree version (of_) for each member of
+the regulator_get family: normal, exclusive, optional and all of the
+manageable version.The of_regulator_get* functions allow using a
+device node to get the regulator instead using the device object.
+
+The first patch is not related to the second one, but it is little
+improvement.
+
+Gregory
+
+Gregory CLEMENT (2):
+  regulator: core: Add a sanity check on the regulator_ enable/disable
+    functions
+  regulator: core: Add the device tree version to the regulator_get
+    family
+
+ drivers/regulator/core.c           | 127 +++++++++++++++++++++++++++++++++----
+ drivers/regulator/devres.c         |  70 ++++++++++++++++++--
+ include/linux/regulator/consumer.h |  20 ++++++
+ 3 files changed, 198 insertions(+), 19 deletions(-)
+
 -- 
 1.9.1
 
