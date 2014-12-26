@@ -1,66 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbaLZHNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 02:13:55 -0500
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:54217 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaLZHNy (ORCPT
+	id S1751502AbaLZHUm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 02:20:42 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:51496 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaLZHUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 02:13:54 -0500
+	Fri, 26 Dec 2014 02:20:38 -0500
+Date: Fri, 26 Dec 2014 02:20:32 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Haggai Eran <haggaie@mellanox.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        joro@8bytes.org, Mel Gorman <mgorman@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
+        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
+        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
+        John Hubbard <jhubbard@nvidia.com>,
+        Mark Hairgrove <mhairgrove@nvidia.com>,
+        Lucien Dunning <ldunning@nvidia.com>,
+        Cameron Buschardt <cabuschardt@nvidia.com>,
+        Arvind Gopalakrishnan <arvindg@nvidia.com>,
+        Shachar Raindel <raindel@mellanox.com>,
+        Liran Liss <liranl@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
+        John Bridgman <John.Bridgman@amd.com>,
+        Michael Mantor <Michael.Mantor@amd.com>,
+        Paul Blinzer <Paul.Blinzer@amd.com>,
+        Laurent Morichetti <Laurent.Morichetti@amd.com>,
+        Alexander Deucher <Alexander.Deucher@amd.com>,
+        Oded Gabbay <Oded.Gabbay@amd.com>,
+        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
+Subject: Re: [PATCH 2/7] mmu_notifier: keep track of active invalidation
+ ranges v2
+Message-ID: <20141226071112.GA4408@gmail.com>
+References: <1419266940-5440-1-git-send-email-j.glisse@gmail.com>
+ <1419266940-5440-3-git-send-email-j.glisse@gmail.com>
+ <549BCAF8.1070500@mellanox.com>
 MIME-Version: 1.0
-In-Reply-To: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
-Date: Fri, 26 Dec 2014 15:13:53 +0800
-Message-ID: <CAHG8p1DxTmd6QDpmjHSG0+40GaeGV0ox0aZpX_VVxTJUnxhB1A@mail.gmail.com>
-Subject: Re: [PATCH 00/15] media: blackfin: bfin_capture enhancements
-From: Scott Jiang <scott.jiang.linux@gmail.com>
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <549BCAF8.1070500@mellanox.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lad,
+On Thu, Dec 25, 2014 at 10:29:44AM +0200, Haggai Eran wrote:
+> On 22/12/2014 18:48, j.glisse@gmail.com wrote:
+> >  static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+> > -						       unsigned long start,
+> > -						       unsigned long end,
+> > -						       enum mmu_event event)
+> > +						       struct mmu_notifier_range *range)
+> >  {
+> > +	/*
+> > +	 * Initialize list no matter what in case a mmu_notifier register after
+> > +	 * a range_start but before matching range_end.
+> > +	 */
+> > +	INIT_LIST_HEAD(&range->list);
+> 
+> I don't see how can an mmu_notifier register after a range_start but
+> before a matching range_end. The mmu_notifier registration locks all mm
+> locks, and that should prevent any invalidation from running, right?
 
-I'm on holiday these days. I will test these patches later.
+File invalidation (like truncation) can lead to this case.
 
-Thanks,
-Scott
+> 
+> >  	if (mm_has_notifiers(mm))
+> > -		__mmu_notifier_invalidate_range_start(mm, start, end, event);
+> > +		__mmu_notifier_invalidate_range_start(mm, range);
+> >  }
+> 
+> ...
+> 
+> >  void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+> > -					   unsigned long start,
+> > -					   unsigned long end,
+> > -					   enum mmu_event event)
+> > +					   struct mmu_notifier_range *range)
+> >  
+> >  {
+> >  	struct mmu_notifier *mn;
+> > @@ -185,21 +183,36 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
+> >  	id = srcu_read_lock(&srcu);
+> >  	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
+> >  		if (mn->ops->invalidate_range_start)
+> > -			mn->ops->invalidate_range_start(mn, mm, start,
+> > -							end, event);
+> > +			mn->ops->invalidate_range_start(mn, mm, range);
+> >  	}
+> >  	srcu_read_unlock(&srcu, id);
+> > +
+> > +	/*
+> > +	 * This must happen after the callback so that subsystem can block on
+> > +	 * new invalidation range to synchronize itself.
+> > +	 */
+> > +	spin_lock(&mm->mmu_notifier_mm->lock);
+> > +	list_add_tail(&range->list, &mm->mmu_notifier_mm->ranges);
+> > +	mm->mmu_notifier_mm->nranges++;
+> > +	spin_unlock(&mm->mmu_notifier_mm->lock);
+> >  }
+> >  EXPORT_SYMBOL_GPL(__mmu_notifier_invalidate_range_start);
+> 
+> Don't you have a race here because you add the range struct after the
+> callback?
+> 
+> -------------------------------------------------------------------------
+> Thread A                    | Thread B
+> -------------------------------------------------------------------------
+> call mmu notifier callback  |
+>   clear SPTE                |
+>                             | device page fault
+>                             |   mmu_notifier_range_is_valid returns true
+>                             |   install new SPTE
+> add event struct to list    |
+> mm clears/modifies the PTE  |
+> -------------------------------------------------------------------------
+> 
+> So we are left with different entries in the host page table and the
+> secondary page table.
+> 
+> I would think you'd want the event struct to be added to the list before
+> the callback is run.
+> 
 
-2014-12-20 18:47 GMT+08:00 Lad, Prabhakar <prabhakar.csengg@gmail.com>:
-> Hi Scott,
->
-> Although I was on holiday but couldn't resist myself from working,
-> since I was away from my hardware I had to choose a different one,
-> blackfin driver was lucky one. Since I don't have the blackfin
-> board I haven't tested them on the actual board, but just compile
-> tested, Can you please test it & ACK.
->
-> Lad, Prabhakar (15):
->   media: blackfin: bfin_capture: drop buf_init() callback
->   media: blackfin: bfin_capture: release buffers in case
->     start_streaming() call back fails
->   media: blackfin: bfin_capture: set min_buffers_needed
->   media: blackfin: bfin_capture: improve buf_prepare() callback
->   media: blackfin: bfin_capture: improve queue_setup() callback
->   media: blackfin: bfin_capture: use vb2_fop_mmap/poll
->   media: blackfin: bfin_capture: use v4l2_fh_open and vb2_fop_release
->   media: blackfin: bfin_capture: use vb2_ioctl_* helpers
->   media: blackfin: bfin_capture: make sure all buffers are returned on
->     stop_streaming() callback
->   media: blackfin: bfin_capture: return -ENODATA for *std calls
->   media: blackfin: bfin_capture: return -ENODATA for *dv_timings calls
->   media: blackfin: bfin_capture: add support for vidioc_create_bufs
->   media: blackfin: bfin_capture: add support for VB2_DMABUF
->   media: blackfin: bfin_capture: add support for VIDIOC_EXPBUF
->   media: blackfin: bfin_capture: set v4l2 buffer sequence
->
->  drivers/media/platform/blackfin/bfin_capture.c | 310 ++++++++-----------------
->  1 file changed, 98 insertions(+), 212 deletions(-)
->
-> --
-> 1.9.1
->
+Yes you right, but the comment i left trigger memory that i did that on
+purpose a one point probably with a different synch mecanism inside hmm.
+I will try to medidate a bit see if i can bring back memory why i did it
+that way in respect to previous design.
+
+In all case i will respin with that order modified. Can i add you review
+by after doing so ?
+
+Cheers,
+Jérôme
