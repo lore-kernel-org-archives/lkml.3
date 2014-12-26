@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaLZOmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:42:51 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17530 "EHLO
+	id S1752227AbaLZOmy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:42:54 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751867AbaLZOm3 (ORCPT
+	by vger.kernel.org with ESMTP id S1751983AbaLZOmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:29 -0500
+	Fri, 26 Dec 2014 09:42:33 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895473"
+   d="scan'208";a="114895463"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kernel-janitors@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 20/27] usb: r8a66597-hcd: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:54 +0100
-Message-Id: <1419604558-29743-24-git-send-email-Julia.Lawall@lip6.fr>
+To: Johannes Berg <johannes.berg@intel.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Kalle Valo <kvalo@codeaurora.org>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 12/27] iwlwifi: dvm: main: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:44 +0100
+Message-Id: <1419604558-29743-14-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -36,42 +39,36 @@ expression t,f,d;
 
 -init_timer(&t);
 +setup_timer(&t,f,d);
--t.function = f;
 -t.data = d;
+-t.function = f;
 // </smpl>
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/usb/host/r8a66597-hcd.c |   10 ++++------
+ drivers/net/wireless/iwlwifi/dvm/main.c |   10 ++++------
  1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/host/r8a66597-hcd.c b/drivers/usb/host/r8a66597-hcd.c
-index c4bcfae..a048b8e 100644
---- a/drivers/usb/host/r8a66597-hcd.c
-+++ b/drivers/usb/host/r8a66597-hcd.c
-@@ -2483,9 +2483,8 @@ static int r8a66597_probe(struct platform_device *pdev)
- 		r8a66597->max_root_hub = 2;
+diff --git a/drivers/net/wireless/iwlwifi/dvm/main.c b/drivers/net/wireless/iwlwifi/dvm/main.c
+index 0b7f46f..75ec691 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/main.c
++++ b/drivers/net/wireless/iwlwifi/dvm/main.c
+@@ -1011,13 +1011,11 @@ static void iwl_setup_deferred_work(struct iwl_priv *priv)
+ 	if (priv->lib->bt_params)
+ 		iwlagn_bt_setup_deferred_work(priv);
  
- 	spin_lock_init(&r8a66597->lock);
--	init_timer(&r8a66597->rh_timer);
--	r8a66597->rh_timer.function = r8a66597_timer;
--	r8a66597->rh_timer.data = (unsigned long)r8a66597;
-+	setup_timer(&r8a66597->rh_timer, r8a66597_timer,
-+		    (unsigned long)r8a66597);
- 	r8a66597->reg = reg;
+-	init_timer(&priv->statistics_periodic);
+-	priv->statistics_periodic.data = (unsigned long)priv;
+-	priv->statistics_periodic.function = iwl_bg_statistics_periodic;
++	setup_timer(&priv->statistics_periodic, iwl_bg_statistics_periodic,
++		    (unsigned long)priv);
  
- 	/* make sure no interrupts are pending */
-@@ -2496,9 +2495,8 @@ static int r8a66597_probe(struct platform_device *pdev)
+-	init_timer(&priv->ucode_trace);
+-	priv->ucode_trace.data = (unsigned long)priv;
+-	priv->ucode_trace.function = iwl_bg_ucode_trace;
++	setup_timer(&priv->ucode_trace, iwl_bg_ucode_trace,
++		    (unsigned long)priv);
+ }
  
- 	for (i = 0; i < R8A66597_MAX_NUM_PIPE; i++) {
- 		INIT_LIST_HEAD(&r8a66597->pipe_queue[i]);
--		init_timer(&r8a66597->td_timer[i]);
--		r8a66597->td_timer[i].function = r8a66597_td_timer;
--		r8a66597->td_timer[i].data = (unsigned long)r8a66597;
-+		setup_timer(&r8a66597->td_timer[i], r8a66597_td_timer,
-+			    (unsigned long)r8a66597);
- 		setup_timer(&r8a66597->interval_timer[i],
- 				r8a66597_interval_timer,
- 				(unsigned long)r8a66597);
+ void iwl_cancel_deferred_work(struct iwl_priv *priv)
 
