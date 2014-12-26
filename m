@@ -1,161 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaLZJzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 04:55:39 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:33773 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751392AbaLZJzK (ORCPT
+	id S1751887AbaLZJ5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 04:57:52 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:44215 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaLZJ5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 04:55:10 -0500
-X-Listener-Flag: 11101
-From: Eddie Huang <eddie.huang@mediatek.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
-        <yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Stephen Warren <swarren@nvidia.com>,
-        Jason Cooper <jason@lakedaemon.net>, Lee Jones <lee.jones@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Ray Jui <rjui@broadcom.com>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Eddie Huang <eddie.huang@mediatek.com>
-Subject: [PATCH 1/2] ARM: mediatek: add UART dts for mt8127 and mt8135
-Date: Fri, 26 Dec 2014 17:55:00 +0800
-Message-ID: <1419587701-13451-2-git-send-email-eddie.huang@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1
-In-Reply-To: <1419587701-13451-1-git-send-email-eddie.huang@mediatek.com>
-References: <1419587701-13451-1-git-send-email-eddie.huang@mediatek.com>
+	Fri, 26 Dec 2014 04:57:46 -0500
+Message-ID: <549D3117.6040607@kernel.org>
+Date: Fri, 26 Dec 2014 09:57:43 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Daniel Baluta <daniel.baluta@intel.com>, knaack.h@gmx.de
+CC: lars@metafoo.de, pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH 00/10] iio: KMX61 fixes
+References: <1419340953-23161-1-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1419340953-23161-1-git-send-email-daniel.baluta@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add dts support for mt8127 and mt8135 SoC UART
+On 23/12/14 13:22, Daniel Baluta wrote:
+> This is a series of cleanups after Hartmut's review:
+> 
+> 	* http://marc.info/?l=linux-iio&m=141859700810393&w=2
+> 	* http://marc.info/?l=linux-iio&m=141859774010580&w=2
+> 	* http://marc.info/?l=linux-iio&m=141859828910703&w=2
+> 	* http://marc.info/?l=linux-kernel&m=141868557909385&w=2
+> 
+> Daniel Baluta (10):
+>   iio: imu: kmx61: Save odr_bits for later use
+>   iio: imu: kmx61: Don't ignore kmx61_set_power_state errors
+>   iio: imu: kmx61: Enhance error handling
+>   iio: imu: kmx61: Fixup parameters alignment
+>   iio: imu: kmx61: Drop unused device parameter
+>   iio: imu: kmx61: Use false instead of 0 for ev_enable_state
+>   iio: imu: kmx61: Fix device initialization when setting trigger state
+>   iio: imu: kmx61: Remove unnecessary REG_INS1 read
+>   iio: imu: kmx61: Drop odr_bits from kmx61_samp_freq_table
+>   iio: imu: kmx61: Use correct base when reading data
+> 
+>  drivers/iio/imu/kmx61.c | 216 ++++++++++++++++++++++--------------------------
+>  1 file changed, 101 insertions(+), 115 deletions(-)
+> 
+Ouch - I need to concentrate more when reviewing!
+Anyhow, these all look fine to me, but I'd like to leave them for a few days
+for Hartmut to take a look.
 
-Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
----
- arch/arm/boot/dts/mt8127.dtsi | 34 ++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/mt8135.dtsi | 34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 68 insertions(+)
+Jonathan
 
-diff --git a/arch/arm/boot/dts/mt8127.dtsi b/arch/arm/boot/dts/mt8127.dtsi
-index 93bca88..69b1c39 100644
---- a/arch/arm/boot/dts/mt8127.dtsi
-+++ b/arch/arm/boot/dts/mt8127.dtsi
-@@ -64,6 +64,12 @@
- 			clock-frequency = <32000>;
- 			#clock-cells = <0>;
- 		};
-+
-+		uart_clk: dummy26m {
-+			compatible = "fixed-clock";
-+			clock-frequency = <26000000>;
-+			#clock-cells = <0>;
-+		};
- 	};
- 
- 	soc {
-@@ -99,5 +105,33 @@
- 			      <0 0x10214000 0 0x2000>,
- 			      <0 0x10216000 0 0x2000>;
- 		};
-+
-+		uart0: serial@11002000 {
-+			compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11002000 0 0x400>;
-+			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
-+
-+		uart1: serial@11003000 {
-+			compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11003000 0 0x400>;
-+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
-+
-+		uart2: serial@11004000 {
-+			compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11004000 0 0x400>;
-+			interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
-+
-+		uart3: serial@11005000 {
-+			compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11005000 0 0x400>;
-+			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/mt8135.dtsi b/arch/arm/boot/dts/mt8135.dtsi
-index c5e04ef..ec83e69 100644
---- a/arch/arm/boot/dts/mt8135.dtsi
-+++ b/arch/arm/boot/dts/mt8135.dtsi
-@@ -86,6 +86,12 @@
- 			clock-frequency = <32000>;
- 			#clock-cells = <0>;
- 		};
-+
-+		uart_clk: dummy26m {
-+			compatible = "fixed-clock";
-+			clock-frequency = <26000000>;
-+			#clock-cells = <0>;
-+		};
- 	};
- 
- 	soc {
-@@ -121,5 +127,33 @@
- 			      <0 0x10214000 0 0x2000>,
- 			      <0 0x10216000 0 0x2000>;
- 		};
-+
-+		uart0: serial@11006000 {
-+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11006000 0 0x400>;
-+			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
-+
-+		uart1: serial@11007000 {
-+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11007000 0 0x400>;
-+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
-+
-+		uart2: serial@11008000 {
-+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11008000 0 0x400>;
-+			interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
-+
-+		uart3: serial@11009000 {
-+			compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-+			reg = <0 0x11009000 0 0x400>;
-+			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
-+			clocks = <&uart_clk>;
-+		};
- 	};
- };
--- 
-1.8.1.1
-
-************* Email Confidentiality Notice ********************
-The information contained in this e-mail message (including any 
-attachments) may be confidential, proprietary, privileged, or otherwise
-exempt from disclosure under applicable laws. It is intended to be 
-conveyed only to the designated recipient(s). Any use, dissemination, 
-distribution, printing, retaining or copying of this e-mail (including its 
-attachments) by unintended recipient(s) is strictly prohibited and may 
-be unlawful. If you are not an intended recipient of this e-mail, or believe 
-that you have received this e-mail in error, please notify the sender 
-immediately (by replying to this e-mail), delete any and all copies of 
-this e-mail (including any attachments) from your system, and do not
-disclose the content of this e-mail to any other person. Thank you!
