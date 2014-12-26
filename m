@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaLZJGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 04:06:52 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:56470 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751166AbaLZJGp (ORCPT
+	id S1751788AbaLZJH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 04:07:28 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:50680 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751390AbaLZJGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 04:06:45 -0500
+	Fri, 26 Dec 2014 04:06:42 -0500
 X-Listener-Flag: 11101
 From: Flora Fu <flora.fu@mediatek.com>
 To: Philipp Zabel <p.zabel@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
@@ -26,9 +26,9 @@ CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         HenryC Chen <henryc.chen@mediatek.com>,
         Menghui Lin <menghui.lin@mediatek.com>,
         Chen Zhong <chen.zhong@mediatek.com>
-Subject: [PATCH v4 3/3] arm: dts: mt8135: Add Reset Controller for MediaTek SoC
-Date: Fri, 26 Dec 2014 17:05:51 +0800
-Message-ID: <1419584751-18149-4-git-send-email-flora.fu@mediatek.com>
+Subject: [PATCH v4 2/3] dt-bindings: Add Reset Controller for MediaTek SoC
+Date: Fri, 26 Dec 2014 17:05:50 +0800
+Message-ID: <1419584751-18149-3-git-send-email-flora.fu@mediatek.com>
 X-Mailer: git-send-email 1.8.1.1.dirty
 In-Reply-To: <1419584751-18149-1-git-send-email-flora.fu@mediatek.com>
 References: <1419584751-18149-1-git-send-email-flora.fu@mediatek.com>
@@ -39,61 +39,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add reset controller to MT8135.dtsi.
+Add device tree bindings.
 
 Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Flora Fu <flora.fu@mediatek.com>
 ---
- arch/arm/boot/dts/mt8135.dtsi | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ .../devicetree/bindings/reset/mediatek,reset.txt   | 52 ++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/reset/mediatek,reset.txt
 
-diff --git a/arch/arm/boot/dts/mt8135.dtsi b/arch/arm/boot/dts/mt8135.dtsi
-index ec83e69..989e488 100644
---- a/arch/arm/boot/dts/mt8135.dtsi
-+++ b/arch/arm/boot/dts/mt8135.dtsi
-@@ -14,6 +14,7 @@
- 
- #include <dt-bindings/interrupt-controller/irq.h>
- #include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/reset-controller/mt8135-resets.h>
- #include "skeleton64.dtsi"
- 
- / {
-@@ -100,6 +101,34 @@
- 		compatible = "simple-bus";
- 		ranges;
- 
-+		infracfg: syscon@10001000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			compatible = "mediatek,mt8135-infracfg", "syscon";
-+			reg = <0 0x10001000 0 0x1000>;
-+			#clock-cells = <1>;
+diff --git a/Documentation/devicetree/bindings/reset/mediatek,reset.txt b/Documentation/devicetree/bindings/reset/mediatek,reset.txt
+new file mode 100644
+index 0000000..647b401
+--- /dev/null
++++ b/Documentation/devicetree/bindings/reset/mediatek,reset.txt
+@@ -0,0 +1,52 @@
++MediaTek SoC Reset Controller
++======================================
++The reset controller driver accesses registers through the syscon regmap. It
++is a child node of syscon.
 +
-+			infrarst: reset-controller@30 {
-+				#reset-cells = <1>;
-+				compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
-+				reg = <0x30 0x8>;
-+			};
-+		};
++Required properties:
++- compatible : "mediatek,reset"
++- #reset-cells: 1
++- reg: The register region can be accessed from syscon. The first parameter is
++  reset base address offset. The second parameter is byte width of reset registers.
 +
-+		pericfg: syscon@10003000 {
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			compatible = "mediatek,mt8135-pericfg", "syscon";
-+			reg = <0 0x10003000 0 0x1000>;
-+			#clock-cells = <1>;
++example:
++infracfg: syscon@10001000 {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "mediatek,mt8135-infracfg", "syscon";
++	reg = <0 0x10001000 0 0x1000>;
 +
-+			perirst: reset-controller@00 {
-+				#reset-cells = <1>;
-+				compatible = "mediatek,mt8135-pericfg-reset", "mediatek,reset";
-+				reg = <0x00 0x8>;
-+			};
-+		};
++	infrarst: reset-controller@30 {
++		#reset-cells = <1>;
++		compatible = "mediatek,mt8135-infracfg-reset", "mediatek,reset";
++		reg = <0x30 0x8>;
++	};
++};
 +
- 		timer: timer@10008000 {
- 			compatible = "mediatek,mt8135-timer",
- 					"mediatek,mt6577-timer";
++Specifying reset lines connected to IP modules
++==============================================
++
++The reset controller(mtk-reset) manages various reset sources. Those device nodes should
++specify the reset line on the rstc in their resets property, containing a phandle to the
++rstc device node and a RESET_INDEX specifying which module to reset, as described in
++reset.txt.
++
++For MediaTek SoC, RESET_INDEX is reset bit defined in INFRACFG or PERICFG registers.
++
++example:
++pwrap: pwrap@1000f000 {
++	compatible = "mediatek,mt8135-pwrap";
++	reg = <0 0x1000f000 0 0x1000>,
++		<0 0x11017000 0 0x1000>;
++	reg-names = "pwrap-base",
++		"pwrap-bridge-base";
++	resets = <&infrarst MT8135_INFRA_PMIC_WRAP_RST>,
++		<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
++	reset-names = "infrarst", "perirst";
++};
++
++Definitions for the supported resets by IC:
++MT8135:
++include/dt-bindings/reset-controller/mt8135-resets.h
++MT8173:
++include/dt-bindings/reset-controller/mt8173-resets.h
 -- 
 1.8.1.1.dirty
 
