@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaLZOmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:42:39 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17532 "EHLO
+	id S1752255AbaLZOoG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:44:06 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751654AbaLZOm2 (ORCPT
+	by vger.kernel.org with ESMTP id S1752055AbaLZOmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:28 -0500
+	Fri, 26 Dec 2014 09:42:38 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895470"
+   d="scan'208";a="114895475"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: kernel-janitors@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 23/27] usb: isp1760: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:51 +0100
-Message-Id: <1419604558-29743-21-git-send-email-Julia.Lawall@lip6.fr>
+To: Amitkumar Karwar <akarwar@marvell.com>
+Cc: kernel-janitors@vger.kernel.org, Avinash Patil <patila@marvell.com>,
+        Kalle Valo <kvalo@codeaurora.org>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 27/27] mwifiex: main: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:56 +0100
+Message-Id: <1419604558-29743-26-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -43,22 +44,23 @@ expression t,f,d;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/usb/host/isp1760-hcd.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/net/wireless/mwifiex/main.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/isp1760-hcd.c b/drivers/usb/host/isp1760-hcd.c
-index 395649f..79261d5 100644
---- a/drivers/usb/host/isp1760-hcd.c
-+++ b/drivers/usb/host/isp1760-hcd.c
-@@ -1359,9 +1359,7 @@ static int isp1760_run(struct usb_hcd *hcd)
- 	if (retval)
- 		return retval;
+diff --git a/drivers/net/wireless/mwifiex/main.c b/drivers/net/wireless/mwifiex/main.c
+index d4d2223..53f4202 100644
+--- a/drivers/net/wireless/mwifiex/main.c
++++ b/drivers/net/wireless/mwifiex/main.c
+@@ -83,9 +83,8 @@ static int mwifiex_register(void *card, struct mwifiex_if_ops *if_ops,
+ 	}
+ 	mwifiex_init_lock_list(adapter);
  
--	init_timer(&errata2_timer);
--	errata2_timer.function = errata2_function;
--	errata2_timer.data = (unsigned long) hcd;
-+	setup_timer(&errata2_timer, errata2_function, (unsigned long)hcd);
- 	errata2_timer.expires = jiffies + SLOT_CHECK_PERIOD * HZ / 1000;
- 	add_timer(&errata2_timer);
+-	init_timer(&adapter->cmd_timer);
+-	adapter->cmd_timer.function = mwifiex_cmd_timeout_func;
+-	adapter->cmd_timer.data = (unsigned long) adapter;
++	setup_timer(&adapter->cmd_timer, mwifiex_cmd_timeout_func,
++		    (unsigned long)adapter);
+ 
+ 	return 0;
  
 
