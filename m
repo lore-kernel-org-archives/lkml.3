@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704AbaLZHKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 02:10:16 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:52537 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751574AbaLZHKJ (ORCPT
+	id S1751800AbaLZHK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 02:10:28 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:34352 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751729AbaLZHKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 02:10:09 -0500
+	Fri, 26 Dec 2014 02:10:23 -0500
 X-Listener-Flag: 11101
 From: Flora Fu <flora.fu@mediatek.com>
 To: Rob Herring <robh+dt@kernel.org>,
@@ -27,9 +27,9 @@ CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         HenryC Chen <henryc.chen@mediatek.com>,
         Menghui Lin <menghui.lin@mediatek.com>,
         Chen Zhong <chen.zhong@mediatek.com>
-Subject: [PATCH v4 3/6] dt-bindings:: Add document for MT8135 PMIC Wrapper
-Date: Fri, 26 Dec 2014 15:09:25 +0800
-Message-ID: <1419577768-12037-4-git-send-email-flora.fu@mediatek.com>
+Subject: [PATCH v4 5/6] arm: dts: mt8135: Add support for MT8135 PMIC wrapper
+Date: Fri, 26 Dec 2014 15:09:27 +0800
+Message-ID: <1419577768-12037-6-git-send-email-flora.fu@mediatek.com>
 X-Mailer: git-send-email 1.8.1.1.dirty
 In-Reply-To: <1419577768-12037-1-git-send-email-flora.fu@mediatek.com>
 References: <1419577768-12037-1-git-send-email-flora.fu@mediatek.com>
@@ -40,70 +40,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add device tree for MT8135 PMIC wrapper in mt8135.dtsi.
 
 Signed-off-by: Flora Fu <flora.fu@mediatek.com>
 ---
- .../soc/mediatek/mediatek,mt8135-pwrap.txt         | 51 ++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt
+ arch/arm/boot/dts/mt8135.dtsi | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt
-new file mode 100644
-index 0000000..d630fa0
---- /dev/null
-+++ b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt
-@@ -0,0 +1,51 @@
-+MediaTek MT8135 PMIC Wrapper Driver
-+
-+MediaTek PMIC MFD is interfaced to host controller using SPI interface
-+by a proprietary hardware called PMIC wrapper or pwrap.
-+
-++-----------------+           +---------------+
-+|                 |           |               |
-+| Mediatek AP SoC |           |               |
-+| (ex. MT8135)    |           |    MT6397     |
-+|                 |           |               |
-+|      +--------+ | (SPI bus) | +--------+    |
-+|      |        | |-----------| |        |    |
-+|      |  PMIC  | |-----------| |  PMIC  |    |
-+|      | Wrapper| |-----------| | Wrapper|    |
-+|      |        | |-----------| |        |    |
-+|      +--------+ |           | +--------+    |
-+|                 |           |               |
-++-----------------+           +---------------+
-+
-+This document describes the binding for MT8135 PMIC wrapper.
-+
-+Required properties in pwrap device node.
-+- compatible:"mediatek,mt8135-pwrap"
-+- interrupts: IRQ for pwrap in SOC
-+- reg: address range for pwrap registers
-+- resets: reset bit for pwrap
-+- clock: clock frequency selection in SPI bus
-+
-+Optional properities:
-+- pmic: Mediatek PMIC MFD is the child device of pwrap
-+  See the following for child node definitions:
-+  Documentation/devicetree/bindings/mfd/mt6397.txt
-+
-+Example:
-+	pwrap: pwrap@1000f000 {
-+		compatible = "mediatek,mt8135-pwrap";
-+		reg = <0 0x1000f000 0 0x1000>,
-+			<0 0x11017000 0 0x1000>;
-+		reg-names = "pwrap-base", "pwrap-bridge-base";
-+		interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
-+		resets = <&infrarst MT8135_INFRA_PMIC_WRAP_RST>,
-+				<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
-+		reset-names = "infra-pwrap-rst",
-+				"peri-pwrap-bridge-rst";
-+		clocks = <&pmicspi_sel>, <&clk26m>;
-+		clock-names = "pmicspi-sel", "pmicspi-parent";
-+
-+		pmic {
-+			compatible = "mediatek,mt6397";
+diff --git a/arch/arm/boot/dts/mt8135.dtsi b/arch/arm/boot/dts/mt8135.dtsi
+index ec83e69..ab08063 100644
+--- a/arch/arm/boot/dts/mt8135.dtsi
++++ b/arch/arm/boot/dts/mt8135.dtsi
+@@ -117,6 +117,20 @@
+ 			reg = <0 0x10200030 0 0x1c>;
+ 		};
+ 
++		pwrap: pwrap@1000f000 {
++			compatible = "mediatek,mt8135-pwrap";
++			reg = <0 0x1000f000 0 0x1000>,
++				<0 0x11017000 0 0x1000>;
++			reg-names = "pwrap-base", "pwrap-bridge-base";
++			interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
++			resets = <&infrarst MT8135_INFRA_PMIC_WRAP_RST>,
++					<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
++			reset-names = "infra-pwrap-rst",
++					"peri-pwrap-bridge-rst";
++			clocks = <&topckgen TOP_PMICSPI_SEL>, <&clk26m> ;
++			clock-names = "pmicspi-sel", "pmicspi-parent";
 +		};
-+	};
++
+ 		gic: interrupt-controller@10211000 {
+ 			compatible = "arm,cortex-a15-gic";
+ 			interrupt-controller;
 -- 
 1.8.1.1.dirty
 
