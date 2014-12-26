@@ -1,90 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaLZP14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 10:27:56 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:38356 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046AbaLZP1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 10:27:53 -0500
-Date: Fri, 26 Dec 2014 09:27:07 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: "Wu, Songjun" <songjun.wu@atmel.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nicolas.ferre@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] USB: gadget: udc: atmel: fix possible oops when
- unloading module
-Message-ID: <20141226152707.GG17430@saruman>
-Reply-To: <balbi@ti.com>
-References: <1419240374-12179-1-git-send-email-songjun.wu@atmel.com>
- <20141223162419.GB9147@saruman>
- <549A138D.50204@atmel.com>
+	id S1751219AbaLZPxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 10:53:00 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:56721 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaLZPw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 10:52:59 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: 3.19-rc1 errors when opening LID
+Date: Fri, 26 Dec 2014 16:52:53 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+References: <201412241951.48652@pali> <3406993.nnu7vUsHIn@vostro.rjw.lan>
+In-Reply-To: <3406993.nnu7vUsHIn@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YH9Qf6Fh2G5kB/85"
-Content-Disposition: inline
-In-Reply-To: <549A138D.50204@atmel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart2803232.V5hP08oaOP";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412261652.54112@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---YH9Qf6Fh2G5kB/85
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+--nextPart2803232.V5hP08oaOP
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Wed, Dec 24, 2014 at 09:14:53AM +0800, Wu, Songjun wrote:
+On Friday 26 December 2014 16:12:49 Rafael J. Wysocki wrote:
+> On Wednesday, December 24, 2014 07:51:48 PM Pali Roh=C3=A1r wrote:
+> > --nextPart5943893.pKyMBm5Emp
+> > Content-Type: Text/Plain;
+> >=20
+> >   charset=3D"utf-8"
+> >=20
+> > Content-Transfer-Encoding: quoted-printable
+> >=20
+> > Hello!
+> >=20
+> > With new 3.19-rc1 kernel every time when I open LID on my
+> > laptop, kernel pr=3D
 >=20
-> =E5=9C=A8 12/24/2014 00:24, Felipe Balbi =E5=86=99=E9=81=93:
-> >On Mon, Dec 22, 2014 at 05:26:14PM +0800, Songjun Wu wrote:
-> >>When unloading the module, the urb request will be dequeued
-> >>and the completion routine will be excuted.
-> >>If no urb packet, the urb request will not be added to the endpoint que=
-ue
-> >>and the completion routine pointer in urb request is NULL.
-> >>Accessing to the NULL function pointer will cause the oops issue.
-> >>Add the code to check the urb request is in the endpoint queue or not.
-> >>If the urb request is not in the endpoint queue, a negative error code
-> >>will be returned.
-> >
-> >have you triggered the NULL pointer oops ? Care to add it to the commit
-> >log.
+> > ints these error lines to dmesg:
+> Does your syste suspend when the lid is closed and resume when
+> it is open?
 >=20
-> Executing the 'insmod g_hid.ko', then executing the 'rmmod g_hid.ko', the
-> NULL pointer oops will be triggered.
 
-what about all my other queries below and what about adding the oops
-dump to commit log ?
+No, I disabled all autosuspend and autohibernate settings. When I=20
+close LID system is running.
 
-> >Also, which commit is this fixing ? Does this need to be backported ?
-> >When was the bug introduced ?
+>=20
+> > [25568.448566] acpi MSFT1111:00: Cannot transition to power
+> > state D3cold fo=3D r parent in (unknown)
+> > [25568.448572] acpi INT33C2:00: Cannot transition to non-D0
+> > state from D3 [25568.448577] acpi MSFT0002:00: Cannot
+> > transition to power state D3cold fo=3D r parent in (unknown)
+> > [25568.448581] acpi ELAN1010:00: Cannot transition to power
+> > state D3cold fo=3D r parent in (unknown)
+> > [25568.448587] acpi INT33C3:00: Cannot transition to non-D0
+> > state from D3 [25568.448590] acpi INT33C0:00: Cannot
+> > transition to non-D0 state from D3 [25568.448594] acpi
+> > INT33C1:00: Cannot transition to non-D0 state from D3
+> > [25568.448598] acpi INT33C4:00: Cannot transition to non-D0
+> > state from D3 [25568.448602] acpi INT33C5:00: Cannot
+> > transition to non-D0 state from D3 [25568.448623] acpi
+> > device:41: Cannot transition to power state D3cold for =3D
+> > parent in (unknown)
+> > [25568.448627] acpi INT33C6:00: Cannot transition to non-D0
+> > state from D3
+>=20
+> All of the above mean that power transitions were not carried
+> out for some devices, because they were in unexpected power
+> states to start with.
+>=20
+> They are devices on the Intel LPSS as far as I can say (CCing
+> Mika and Andy).
+>=20
 
---=20
-balbi
+Just to note: all above acpi devices do not exist in 3.13 kernel,=20
+at least I do not see them in /sys/bus/acpi/.
 
---YH9Qf6Fh2G5kB/85
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > [25568.448890] pci_bus 0000:01: Allocating resources
+> > [25568.448905] i915 0000:00:02.0: BAR 6: [??? 0x00000000
+> > flags 0x2] has bog=3D us alignment
+> > [25568.449064] i915 0000:00:02.0: BAR 6: [??? 0x00000000
+> > flags 0x2] has bog=3D us alignment
+> > [25568.449472] i915 0000:00:02.0: BAR 6: [??? 0x00000000
+> > flags 0x2] has bog=3D us alignment
+> >=20
+> > With older kernel (3.13) I do not see these errors, so it is
+> > regression.
+>=20
+> It only is a regression if it leads to functional problems.=20
+> Do you see any?
+>=20
+
+Ok. I do not see functional problems, but I see above messages in=20
+dmesg log every time when I open LID.
+
+> > Ca=3Dn you look at it? If it is needed, I can provide other
+> > logs, ACPI/DSTD dump=3D s, etc.
+>=20
+> It looks like 3.13 didn't try to use some devices that are now
+> used in 3.19-rc1 and something doesn't work entirely as
+> expected.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2803232.V5hP08oaOP
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJUnX5LAAoJEIaOsuA1yqREvUoP/jtQSCq6idIa5UKrE197fW/3
-Qb779kzCIDDCXuG/YUFXU/kIE6p9bNs18IiZuZm88yQ1vStHqJTtZpbes3TZxMJS
-rAYCL307gkLPc6AHQdN4yVj0jidEUaRrDLjJ90yuuzpVMl8qAsOFDPOuNBmL1LRI
-QJ1a0iPF7sHiDHm5pfTyFBvl10JTxJtDOlMtZysov0PI1owNQOfKC/6hIEcKXDJG
-l3w4U/LwmdzY3OlVtrGlWsJdeV3SL0x5GYEiBLGUQbMuOqQVgoR5B7rCY1jpoxCL
-GmhmUvKliepHRXVlBF6Bu299KMvk82WQ8Jb/GgDqXYA1rq+j4b3mLbfUcByGjtR2
-abSmTnENuvK3LsI0xxP/CS/IgOhnaeSrIYIHPi96rAGuc/8h074m5rtgfjzLyPbK
-7clOgbTFYvIFlc3IigzXLM5X/euTOOC1MPX2iByuaCM3mXVAnNAMIUYfBU2p80Uh
-9gisk6v0rR7pRq0sSGH/gD8bYupEUoyPgeJXyQfQRjlHXk9ANPAACOYwqZOztuon
-BavECe/qCxhADZpLnaCKBhV3QzIKCitguhw0Yq7zqLeO6blL9SuveByg28V8bN/X
-kirS+oMEFCiI9RdTBgT2UicHT18BDw9hX/swXKz/lU7/pEMkDubMUzlrVV13dCyH
-3T2hSJdDUO6rDqhC2FyO
-=zJor
+iEYEABECAAYFAlSdhFYACgkQi/DJPQPkQ1IcRgCfZ1PB+47+ZP/JBFnXrH8crdYe
+eN8An2gTl3SxG/HthbWXi4ElZwy7Jc23
+=zisQ
 -----END PGP SIGNATURE-----
 
---YH9Qf6Fh2G5kB/85--
+--nextPart2803232.V5hP08oaOP--
