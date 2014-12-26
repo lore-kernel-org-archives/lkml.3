@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaLZAzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 19:55:17 -0500
-Received: from irpauto-web.nfrance.com ([80.247.225.168]:19586 "EHLO
-	irpauto-web.nfrance.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaLZAzN (ORCPT
+	id S1751225AbaLZBBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 20:01:09 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:47952 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaLZBBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 19:55:13 -0500
-X-Greylist: delayed 106015 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Dec 2014 19:55:13 EST
-Message-Id: <201412241928.sBOJS81j045374@irpauto-web.nfrance.com>
-Reply-To: <ndumelu7@ymail.com>
-From: "HON. NDUDI. ELUMELU" <engrjohnodeh@mailbox.hu>
-Subject: I RE-SEND
-Date: Wed, 24 Dec 2014 14:28:15 -0500
+	Thu, 25 Dec 2014 20:01:05 -0500
+Date: Fri, 26 Dec 2014 12:00:56 +1100
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Amos Kong <akong@redhat.com>, m@bues.ch, mpm@selenic.com,
+        amit.shah@redhat.com
+Subject: Re: [PATCH 3/5] hwrng: core - Do not register device
+ opportunistically
+Message-ID: <20141226010056.GB20702@gondor.apana.org.au>
+References: <20141223053909.GA28001@gondor.apana.org.au>
+ <E1Y3ICh-0007d7-SM@gondolin.me.apana.org.au>
+ <87mw6egd22.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mw6egd22.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Friend,
+On Wed, Dec 24, 2014 at 09:59:41AM +1030, Rusty Russell wrote:
+>
+> Does this break userspace by creating a device which will just return
+> -ENODEV on read?  Sure, callers *should* handle it...
 
-Please kindly re-send your details to this e mail address ndumelu7@ymail.com in other to enable the lawyer commence the processing all the documents that will back up your claim. 
+If somebody complains we could easily fix this by making open
+fail.  In fact, if such applications exist then they're likely
+to want to hold onto a reference to the RNG after then open...
 
-(1) YOUR FULL NAME......................
-(2) YOUR ADDRESS....................... .
-(3) TELEPHONE..................... .........
-(4) YOUR AGE........................... ....
-(5) YOUR OCCUPATION.................... ..
-(6) YOUR FINANCIAL STATUS:
-
-With Much Regards,
-Hon. Ndudi Elumelu
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
