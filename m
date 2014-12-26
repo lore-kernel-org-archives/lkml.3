@@ -1,116 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751276AbaLZQ0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 11:26:43 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:43984 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaLZQ0k (ORCPT
+	id S1751370AbaLZQ1P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 11:27:15 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:33484 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbaLZQ1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 11:26:40 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] add omap34xx temperature monitoring support
-Date: Fri, 26 Dec 2014 17:26:35 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, khilman@kernel.org, aaro.koskinen@iki.fi,
-        ivo.g.dimitrov.75@gmail.com, jdelvare@suse.de, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org
-References: <20141226102933.GA28778@amd> <20141226155456.GB12409@atomide.com> <20141226161757.GD12409@atomide.com>
-In-Reply-To: <20141226161757.GD12409@atomide.com>
+	Fri, 26 Dec 2014 11:27:13 -0500
+Message-ID: <549D8C59.1000700@gmail.com>
+Date: Fri, 26 Dec 2014 09:27:05 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart7693259.07laUllPLH";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 02/37] perf record: Use a software dummy event to track
+ task/mmap events
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org> <1419405333-27952-3-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1419405333-27952-3-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201412261726.35668@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart7693259.07laUllPLH
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 12/24/14 12:14 AM, Namhyung Kim wrote:
+> Prepend a software dummy event into evlist to track task/comm/mmap
+> events separately.  This is a preparation of multi-file/thread support
+> which will come later.
 
-On Friday 26 December 2014 17:17:57 Tony Lindgren wrote:
-> * Tony Lindgren <tony@atomide.com> [141226 07:57]:
-> > * Pavel Machek <pavel@ucw.cz> [141226 02:32]:
-> > > --- /dev/null
-> > > +++ b/drivers/hwmon/omap34xx_temp.c
-> > > @@ -0,0 +1,263 @@
-> > > +/*
-> > > + * omap34xx_temp.c - Linux kernel module for OMAP34xx
-> > > hardware monitoring + *
-> > > + * Copyright (C) 2008 Nokia Corporation
-> > > + *
-> > > + * Written by Peter De Schrijver
-> > > <peter.de-schrijver@nokia.com> + *
-> > > + * Inspired by k8temp.c
-> > > + *
-> > > + * This file is subject to the terms and conditions of
-> > > the GNU General + * Public License. See the file
-> > > "COPYING" in the main directory of this + * archive for
-> > > more details.
-> > > + *
-> > > + * This program is distributed in the hope that it will
-> > > be useful, + * but WITHOUT ANY WARRANTY; without even the
-> > > implied warranty of + * MERCHANTABILITY or FITNESS FOR A
-> > > PARTICULAR PURPOSE.  See the + * GNU General Public
-> > > License for more details.
-> > > + */
-> > > +
-> > > +#include <linux/clk.h>
-> > > +#include <linux/hrtimer.h>
-> > > +#include <linux/module.h>
-> > > +#include <linux/hwmon.h>
-> > > +#include <linux/hwmon-sysfs.h>
-> > > +#include <linux/err.h>
-> > > +#include <linux/platform_device.h>
-> > > +#include <linux/io.h>
-> > > +#include <linux/slab.h>
-> > > +
-> > > +#include "../../arch/arm/mach-omap2/control.h"
-> >=20
-> > No need to do this, you can use syscon here like
-> > pbias-regulator.c is doing.
->=20
-> Oh looks like you're already using syscon, nice. What defines
-> do you need from control.h?
->=20
-> Those should be in the driver if private to the driver, or
-> else we should have some minimal header in include/linux
-> somewhere if some control.h defines really need to be
-> exposed.
->=20
-> Regards,
->=20
-> Tony
+Are you are making this the first event because of how perf internals 
+are coded -- that the first event tracks tasks events? With the tracking 
+bit in evsel you should not need to do that. Is there another reason?
 
-Hi Tony,
+---8<---
 
-Sebastian Reichel has already sent new version of temperature=20
-driver. See email thread with subject:
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index cfbe2b99b9aa..72dff295237e 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -193,6 +193,44 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+>   	return -ENOMEM;
+>   }
+>
+> +int perf_evlist__prepend_dummy(struct perf_evlist *evlist)
+> +{
+> +	struct perf_event_attr attr = {
+> +		.type = PERF_TYPE_SOFTWARE,
+> +		.config = PERF_COUNT_SW_DUMMY,
+> +	};
+> +	struct perf_evsel *evsel, *pos;
+> +
+> +	event_attr_init(&attr);
+> +
+> +	evsel = perf_evsel__new(&attr);
+> +	if (evsel == NULL)
+> +		goto error;
+> +
+> +	/* use strdup() because free(evsel) assumes name is allocated */
+> +	evsel->name = strdup("dummy");
+> +	if (!evsel->name)
+> +		goto error_free;
+> +
+> +	list_for_each_entry(pos, &evlist->entries, node) {
+> +		pos->idx += 1;
+> +		pos->tracking = false;
+> +	}
+> +
+> +	list_add(&evsel->node, &evlist->entries);
+> +	evsel->idx = 0;
+> +	evsel->tracking = true;
 
-[PATCH 0/3] OMAP3 temperature sensor
+perf_evlist__set_tracking_event()?
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+David
 
---nextPart7693259.07laUllPLH
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSdjDsACgkQi/DJPQPkQ1Lw+ACcDN2lz98KkTiOwdnJA1az4VzT
-xB0AoMfO3MB7UJvxIw/Jll7njj/BkH2f
-=SkcA
------END PGP SIGNATURE-----
-
---nextPart7693259.07laUllPLH--
