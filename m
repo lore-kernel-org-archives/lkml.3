@@ -1,66 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaLZJT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 04:19:56 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:39993 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaLZJTx convert rfc822-to-8bit (ORCPT
+	id S1751554AbaLZJ2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 04:28:22 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:34859 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaLZJ2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 04:19:53 -0500
+	Fri, 26 Dec 2014 04:28:19 -0500
+Message-ID: <549D2A28.7000606@atmel.com>
+Date: Fri, 26 Dec 2014 17:28:08 +0800
+From: Josh Wu <josh.wu@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <877fxhbjj8.fsf@kamboji.qca.qualcomm.com>
-References: <1419378909-14414-1-git-send-email-oscar.forner.martinez@gmail.com>
-	<877fxhbjj8.fsf@kamboji.qca.qualcomm.com>
-Date: Fri, 26 Dec 2014 10:19:52 +0100
-Message-ID: <CACna6rx7k6cNkiu_OoEDr3Vvfo+GOtD9BLB6X1+oDNKz-AFg8Q@mail.gmail.com>
-Subject: Re: [PATCH] Drivers: bcma: Fix three coding style issues, more than
- 80 characters per line.
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Kalle Valo <kvalo@codeaurora.org>
-Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mtd: nand: atmel: Rework driver to separate nfc and
+ nand nodes
+References: <1417732214-3292-1-git-send-email-boris.brezillon@free-electrons.com> <1417732214-3292-2-git-send-email-boris.brezillon@free-electrons.com>
+In-Reply-To: <1417732214-3292-2-git-send-email-boris.brezillon@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 December 2014 at 08:20, Kalle Valo <kvalo@codeaurora.org> wrote:
-> Oscar Forner Martinez <oscar.forner.martinez@gmail.com> writes:
+Hi, Boris
+
+On 12/5/2014 6:30 AM, Boris Brezillon wrote:
+> mtd: nand: atmel: Update DT documentation after splitting NFC and NAND
 >
->> Three lines with more than 80 characters per line have been split in several lines.
->>
->> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
->> ---
->>  drivers/bcma/driver_chipcommon.c | 10 +++++++---
->>  1 file changed, 7 insertions(+), 3 deletions(-)
+> The NAND and NFC (NAND Flash Controller) were linked together with a
+> parent <-> child relationship.
 >
-> Just to handle the bureaucracy before v2 is submitted:
+> This model has several drawbacks:
+> - it does not allow for multiple NAND chip handling while the controller
+>    support multi-chip (even though the driver is not ready yet)
+> - it mixes NAND partitions and NFC nodes at the same level (which is a bit
+>    disturbing)
+> - the introduction of the EBI bus implies defining NAND chips under the
+>    EBI node, and the ranges available under the EBI node should be
+>    restricted to EBI address space, while the NFC references several
+>    registers outside of these EBI ranges.
 >
-> To which tree should this go to? I see that earlier John has applied
-> patches to drivers/bcma/, but what about now? Should I take these? John,
-> any suggestions?
+> Move the NFC node outside of the NAND node, to get a more future-proof
+> DT representation.
+>
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+I'm fine with this patch.
+Acked-by: Josh Wu <josh.wu@atmel.com>
 
-bcma is a bus with multiple cores (devices)
+Best Regards,
+Josh Wu
 
-As some of cores (devices) are very simply to handle and/or they are
-needed very early (e.g. for initialization), bcma has:
-1) Few bult-in drivers (like MIPS, ChipCommon)
-2) Few "external" drivers using standard bus mechanism (e.g. b43,
-brcmsmac, bgmac)
+> ---
+>   drivers/mtd/nand/atmel_nand.c | 76 ++++++++++++++++++++++++++++++++++---------
+>   1 file changed, 61 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+> index 19d1e9d..0239fe6 100644
+> --- a/drivers/mtd/nand/atmel_nand.c
+> +++ b/drivers/mtd/nand/atmel_nand.c
+> @@ -123,6 +123,7 @@ struct atmel_nand_host {
+>   	struct dma_chan		*dma_chan;
+>   
+>   	struct atmel_nfc	*nfc;
+> +	bool			wait_for_nfc;
+>   
+>   	bool			has_pmecc;
+>   	u8			pmecc_corr_cap;
+> @@ -1423,6 +1424,12 @@ static void atmel_nand_hwctl(struct mtd_info *mtd, int mode)
+>   		ecc_writel(host->ecc, CR, ATMEL_ECC_RST);
+>   }
+>   
+> +static const struct of_device_id atmel_nand_nfc_match[] = {
+> +	{ .compatible = "atmel,sama5d3-nfc" },
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, atmel_nand_nfc_match);
+> +
+>   static int atmel_of_init_port(struct atmel_nand_host *host,
+>   			      struct device_node *np)
+>   {
+> @@ -1431,6 +1438,7 @@ static int atmel_of_init_port(struct atmel_nand_host *host,
+>   	int ecc_mode;
+>   	struct atmel_nand_data *board = &host->board;
+>   	enum of_gpio_flags flags = 0;
+> +	struct device_node *child;
+>   
+>   	if (of_property_read_u32(np, "atmel,nand-addr-offset", &val) == 0) {
+>   		if (val >= 32) {
+> @@ -1467,8 +1475,30 @@ static int atmel_of_init_port(struct atmel_nand_host *host,
+>   
+>   	host->has_pmecc = of_property_read_bool(np, "atmel,has-pmecc");
+>   
+> -	/* load the nfc driver if there is */
+> -	of_platform_populate(np, NULL, NULL, host->dev);
+> +	/*
+> +	 * Backward compatibility with DTs defining the NFC node as their
+> +	 * child.
+> +	 * The new model reference the NFC so that we can define several
+> +	 * chip controlled by the same controller.
+> +	 */
+> +	for_each_available_child_of_node(np, child) {
+> +		/*
+> +		 * If we find an NFC node under the NAND node, then populate
+> +		 * the device so that it can be probed, and wait for it.
+> +		 */
+> +		if (of_match_node(atmel_nand_nfc_match, child)) {
+> +			of_platform_populate(np, NULL, NULL, host->dev);
+> +			host->wait_for_nfc = true;
+> +			break;
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * If there's an atmel,nfc property we should access the NAND
+> +	 * through the NFC.
+> +	 */
+> +	if (of_property_read_bool(np, "atmel,nfc"))
+> +		host->wait_for_nfc = true;
+>   
+>   	if (!(board->ecc_mode == NAND_ECC_HW) || !host->has_pmecc)
+>   		return 0;	/* Not using PMECC */
+> @@ -2032,10 +2062,6 @@ static int atmel_nand_probe(struct platform_device *pdev)
+>   	if (!host)
+>   		return -ENOMEM;
+>   
+> -	res = platform_driver_register(&atmel_nand_nfc_driver);
+> -	if (res)
+> -		dev_err(&pdev->dev, "atmel_nand: can't register NFC driver\n");
+> -
+>   	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>   	host->io_base = devm_ioremap_resource(&pdev->dev, mem);
+>   	if (IS_ERR(host->io_base)) {
+> @@ -2089,6 +2115,13 @@ static int atmel_nand_probe(struct platform_device *pdev)
+>   			goto err_nand_ioremap;
+>   		}
+>   	} else {
+> +		/*
+> +		 * If the NFC is not initialized (or not probed) and the device
+> +		 * is asking to be accessed through the NFC then defer the
+> +		 * probe.
+> +		 */
+> +		if (host->wait_for_nfc)
+> +			return -EPROBE_DEFER;
+>   		res = atmel_nand_set_enable_ready_pins(mtd);
+>   		if (res)
+>   			goto err_nand_ioremap;
+> @@ -2230,8 +2263,6 @@ static int atmel_nand_remove(struct platform_device *pdev)
+>   	if (host->dma_chan)
+>   		dma_release_channel(host->dma_chan);
+>   
+> -	platform_driver_unregister(&atmel_nand_nfc_driver);
+> -
+>   	return 0;
+>   }
+>   
+> @@ -2303,12 +2334,6 @@ static int atmel_nand_nfc_remove(struct platform_device *pdev)
+>   	return 0;
+>   }
+>   
+> -static const struct of_device_id atmel_nand_nfc_match[] = {
+> -	{ .compatible = "atmel,sama5d3-nfc" },
+> -	{ /* sentinel */ }
+> -};
+> -MODULE_DEVICE_TABLE(of, atmel_nand_nfc_match);
+> -
+>   static struct platform_driver atmel_nand_nfc_driver = {
+>   	.driver = {
+>   		.name = "atmel_nand_nfc",
+> @@ -2329,7 +2354,28 @@ static struct platform_driver atmel_nand_driver = {
+>   	},
+>   };
+>   
+> -module_platform_driver(atmel_nand_driver);
+> +static int __init atmel_nand_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = platform_driver_register(&atmel_nand_nfc_driver);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = platform_driver_register(&atmel_nand_driver);
+> +	if (ret)
+> +		platform_driver_unregister(&atmel_nand_nfc_driver);
+> +
+> +	return ret;
+> +}
+> +module_init(atmel_nand_init);
+> +
+> +static void __exit atmel_nand_exit(void)
+> +{
+> +	platform_driver_unregister(&atmel_nand_driver);
+> +	platform_driver_unregister(&atmel_nand_nfc_driver);
+> +}
+> +module_exit(atmel_nand_exit);
+>   
+>   MODULE_LICENSE("GPL");
+>   MODULE_AUTHOR("Rick Bronson");
 
-I guess the biggest bcma users are wireless drivers, so bcma was also
-maintained using wireless tree. Unfortunately bus can't be just setup
-once and not touched anymore. Drivers often need to touch ChipCommon
-so there are some export_symbol-s in driver_chipcommon.c and you also
-can get patchset-s touching bcma and then wireless driver.
-
-Of course there are some problems with such maintenance. Rarely I've
-to do changes in arch/mips/bcm47xx/ code, wait for a release and then
-change sth in drivers/bcma. But I don't see a better solution for all
-of this.
-
--- 
-Rafał
