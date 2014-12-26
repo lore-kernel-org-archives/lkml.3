@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaLZMJv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 07:09:51 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41509 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730AbaLZMJs (ORCPT
+	id S1751836AbaLZMXN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 07:23:13 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:43474 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441AbaLZMXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 07:09:48 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: David Miller <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull-request: wireless-drivers 2014-12-26
-Date: Fri, 26 Dec 2014 14:09:42 +0200
-Message-ID: <87egrm7gu1.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 26 Dec 2014 07:23:11 -0500
+From: Alexander Kuleshov <kuleshovmail@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Alexander Kuleshov <kuleshovmail@gmail.com>
+Subject: [PATCH] x86: Remove excess calculations for heap_end_ptr
+Date: Fri, 26 Dec 2014 18:22:42 +0600
+Message-Id: <1419596562-20679-1-git-send-email-kuleshovmail@gmail.com>
+X-Mailer: git-send-email 2.2.1.202.g98acd41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+heap_end_ptr default value defined as _end+STACK_SZE-512, but
+STACK_SIZE is already 512.
 
-here's my first wireless-drivers pull request after John's "retirement".
-I'll start this with few fixes for 3.19, changelog below.
+Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+---
+ arch/x86/boot/header.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I used a signed tag to create this pull request, I hope that's ok.
-Please let me know if there are any problems.
-
-Kalle
-
-
-The following changes since commit 02d6a746c3f0cdd6f8aad0afd0b32d4646d6525e:
-
-  Merge branch 'for-upstream' of git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth (2014-12-19 15:47:32 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/kvalo/wireless-drivers.git tags/wireless-drivers-for-davem-2014-12-26
-
-for you to fetch changes up to 8975842bed0840f314281c9fbf021a1d29537cf0:
-
-  brcmfmac: Do not crash if platform data is not populated (2014-12-24 15:26:46 +0200)
-
-----------------------------------------------------------------
-o Paul made a Kconfig dependency fix to ipw2200, it was not possible to
-  enable that driver because Wireless Extensions is now disabled by default.
-
-o Mika fixed brcmfmac not to crash when platform data is not populated
-
-o Emmanuel provided few fixes to iwlwifi, he says:
-
-  "I have here new device IDs and a fix for double free bug I
-  introduced. I also fix an issue with the RFKILL interrupt - the HW
-  needs us to ACK the interrupt again after we reset it. Liad fixes an
-  issue with the firmware debugging infrastructure. While working on
-  torture scenarios of firmware restarts, Eliad found an issue which
-  he fixed."
-
-----------------------------------------------------------------
-Eliad Peller (1):
-      iwlwifi: mvm: clear IN_HW_RESTART flag on stop()
-
-Emmanuel Grumbach (3):
-      iwlwifi: pcie: re-ACK all interrupts after device reset
-      iwlwifi: don't double free a pointer if no FW was found
-      iwlwifi: add new device IDs for 3165
-
-Kalle Valo (1):
-      Merge tag 'iwlwifi-fixes-for-kalle-2014-12-18' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-
-Liad Kaufman (1):
-      iwlwifi: pcie: limit fw chunk sizes given to fh
-
-Mika Westerberg (1):
-      brcmfmac: Do not crash if platform data is not populated
-
-Paul Bolle (1):
-      ipw2200: select CFG80211_WEXT
-
- drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |    4 ++--
- drivers/net/wireless/ipw2x00/Kconfig             |    3 ++-
- drivers/net/wireless/iwlwifi/iwl-drv.c           |    2 +-
- drivers/net/wireless/iwlwifi/iwl-fh.h            |    1 +
- drivers/net/wireless/iwlwifi/mvm/mac80211.c      |   15 +++++++++++++--
- drivers/net/wireless/iwlwifi/pcie/drv.c          |    4 ++++
- drivers/net/wireless/iwlwifi/pcie/trans.c        |   17 +++++++++++------
- 7 files changed, 34 insertions(+), 12 deletions(-)
-
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 16ef025..c69b870 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -342,7 +342,7 @@ ramdisk_size:	.long	0		# its size in bytes
+ bootsect_kludge:
+ 		.long	0		# obsolete
+ 
+-heap_end_ptr:	.word	_end+STACK_SIZE-512
++heap_end_ptr:	.word	_end
+ 					# (Header version 0x0201 or later)
+ 					# space from here (exclusive) down to
+ 					# end of setup code can be used by setup
 -- 
-Kalle Valo
+2.2.1.201.gbbcefff
+
