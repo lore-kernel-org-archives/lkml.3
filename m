@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaLZQfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 11:35:04 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58971 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaLZQe5 (ORCPT
+	id S1751348AbaLZQwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 11:52:06 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50672 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173AbaLZQwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 11:34:57 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/h90nVr73h5aXM2rpuATgs
-Date: Fri, 26 Dec 2014 08:31:16 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, khilman@kernel.org, aaro.koskinen@iki.fi,
-        ivo.g.dimitrov.75@gmail.com, jdelvare@suse.de, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] add omap34xx temperature monitoring support
-Message-ID: <20141226163115.GA2411@atomide.com>
-References: <20141226102933.GA28778@amd>
- <20141226155456.GB12409@atomide.com>
- <20141226161757.GD12409@atomide.com>
- <201412261726.35668@pali>
+	Fri, 26 Dec 2014 11:52:04 -0500
+Message-ID: <549D922F.3020101@gmail.com>
+Date: Fri, 26 Dec 2014 09:51:59 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412261726.35668@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 05/37] perf tools: Create separate mmap for dummy tracking
+ event
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org> <1419405333-27952-6-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1419405333-27952-6-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [141226 08:29]:
-> On Friday 26 December 2014 17:17:57 Tony Lindgren wrote:
-> > > > +
-> > > > +#include "../../arch/arm/mach-omap2/control.h"
-> > > 
-> > > No need to do this, you can use syscon here like
-> > > pbias-regulator.c is doing.
-> > 
-> > Oh looks like you're already using syscon, nice. What defines
-> > do you need from control.h?
-> > 
-> > Those should be in the driver if private to the driver, or
-> > else we should have some minimal header in include/linux
-> > somewhere if some control.h defines really need to be
-> > exposed.
-> > 
-> > Regards,
-> > 
-> > Tony
-> 
-> Hi Tony,
-> 
-> Sebastian Reichel has already sent new version of temperature 
-> driver. See email thread with subject:
-> 
-> [PATCH 0/3] OMAP3 temperature sensor
+On 12/24/14 12:15 AM, Namhyung Kim wrote:
+> When multi file support is enabled, a dummy tracking event will be
+> used to track metadata (like task, comm and mmap events) for a session
+> and actual samples will be recorded in separate files.
+>
+> Provide separate mmap to the dummy tracking event.  The size is fixed
+> to 128KiB (+ 1 page) as the event rate will be lower than samples.  I
 
-Yeah great, looks like I was also reading Sebastian's patch
-with the syscon comments above :)
+Have you tried stress tests like a kernel compile with -j Ncpus (Ncpus = 
+16 or higher)?
 
-Regards,
-
-Tony
+David
