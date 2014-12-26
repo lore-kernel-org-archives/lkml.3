@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaLZRJz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 12:09:55 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:37242 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaLZRJx (ORCPT
+	id S1751463AbaLZROA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 12:14:00 -0500
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:48811 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaLZRN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 12:09:53 -0500
+	Fri, 26 Dec 2014 12:13:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141226142946.GA28213@newt.localdomain>
+In-Reply-To: <CANCZXo5wQhsxAbHypZqzaWPiakr9Mjbn-JCw+7+vW8vnmM2y9w@mail.gmail.com>
 References: <1419597539-21254-1-git-send-email-kuleshovmail@gmail.com>
 	<20141226142946.GA28213@newt.localdomain>
-Date: Fri, 26 Dec 2014 23:09:53 +0600
-Message-ID: <CANCZXo5wQhsxAbHypZqzaWPiakr9Mjbn-JCw+7+vW8vnmM2y9w@mail.gmail.com>
+	<CANCZXo5wQhsxAbHypZqzaWPiakr9Mjbn-JCw+7+vW8vnmM2y9w@mail.gmail.com>
+Date: Fri, 26 Dec 2014 23:13:59 +0600
+Message-ID: <CANCZXo7UFYnY=6-WnWR_WB5VDKmfFM-AWN5u=C_uJJtavuHucA@mail.gmail.com>
 Subject: Re: [PATCH] x86: Fix multiple coding style issues
 From: Alexander Kuleshov <kuleshovmail@gmail.com>
 To: Jeremiah Mahler <jmmahler@gmail.com>,
@@ -24,32 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jeremiah,
-
-Thank you for feedback. It is my first patches to kernel, so i have a
-some little questions:
-
 > Jeremiah Mahler <jmmahler@gmail.com>:
-> Alexander,
+If you are looking for things to fix I suggest looking in the
+drivers/staging directory.  There are lots of things that need to be
+fixed in there.
+
+Ah sorry, read it incorrectly.
+
+2014-12-26 23:09 GMT+06:00 Alexander Kuleshov <kuleshovmail@gmail.com>:
+> Hello Jeremiah,
 >
-> On Fri, Dec 26, 2014 at 06:38:59PM +0600, Alexander Kuleshov wrote:
+> Thank you for feedback. It is my first patches to kernel, so i have a
+> some little questions:
 >
-> Your description needs to be more specific than just "coding style
-> fixes".  What type of problems did you fix?  How did you find them?
+>> Jeremiah Mahler <jmmahler@gmail.com>:
+>> Alexander,
+>>
+>> On Fri, Dec 26, 2014 at 06:38:59PM +0600, Alexander Kuleshov wrote:
+>>
+>> Your description needs to be more specific than just "coding style
+>> fixes".  What type of problems did you fix?  How did you find them?
+>>
 >
+> There are some lines which more than 80 chars, I found it with
+> scripts/checkpatch.pl.
+> What is the best place to put this description? In commit message
+> after first line?
+>
+>> Jeremiah Mahler <jmmahler@gmail.com>:
+>> If you are looking for things to fix I suggest looking in the
+>> drivers/staging directory.  There are lots of things that need to be
+>> fixed in there.
+>
+> So i must make this patch for kernel/git/gregkh/staging.git and resend
+> it again or just to add to this thread?
+> Or i'm wrong?
+>
+> Thank you.
 
-There are some lines which more than 80 chars, I found it with
-scripts/checkpatch.pl.
-What is the best place to put this description? In commit message
-after first line?
 
-> Jeremiah Mahler <jmmahler@gmail.com>:
-> If you are looking for things to fix I suggest looking in the
-> drivers/staging directory.  There are lots of things that need to be
-> fixed in there.
 
-So i must make this patch for kernel/git/gregkh/staging.git and resend
-it again or just to add to this thread?
-Or i'm wrong?
-
-Thank you.
+-- 
+_________________________
+0xAX
