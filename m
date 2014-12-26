@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaLZOwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:52:41 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751659AbaLZOmZ (ORCPT
+	id S1751380AbaLZO7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:59:13 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42872 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaLZO7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:25 -0500
-X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895451"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/27] [media] au0828: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:32 +0100
-Message-Id: <1419604558-29743-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
+	Fri, 26 Dec 2014 09:59:08 -0500
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeremiah Mahler <jmmahler@gmail.com>
+Subject: [PATCH] doc: driver-model: improve wording "is provide the"
+Date: Fri, 26 Dec 2014 06:57:49 -0800
+Message-Id: <1419605869-13455-1-git-send-email-jmmahler@gmail.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert a call to init_timer and accompanying intializations of
-the timer's data and function fields to a call to setup_timer.
+Improve the wording by changing it from "is provide the" to
+"is to give the".
 
-A simplified version of the semantic match that fixes this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-expression t,f,d;
-@@
-
--t.function = f;
--t.data = d;
--init_timer(&t);
-+setup_timer(&t,f,d);
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
+Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
 ---
- drivers/media/usb/au0828/au0828-video.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ Documentation/driver-model/bus.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
-index 5f337b1..0b24791 100644
---- a/drivers/media/usb/au0828/au0828-video.c
-+++ b/drivers/media/usb/au0828/au0828-video.c
-@@ -2043,13 +2043,10 @@ int au0828_analog_register(struct au0828_dev *dev,
- 	INIT_LIST_HEAD(&dev->vbiq.active);
- 	INIT_LIST_HEAD(&dev->vbiq.queued);
+diff --git a/Documentation/driver-model/bus.txt b/Documentation/driver-model/bus.txt
+index 6754b2d..b577a45 100644
+--- a/Documentation/driver-model/bus.txt
++++ b/Documentation/driver-model/bus.txt
+@@ -45,7 +45,7 @@ them are inherently bus-specific. Drivers typically declare an array
+ of device IDs of devices they support that reside in a bus-specific
+ driver structure. 
  
--	dev->vid_timeout.function = au0828_vid_buffer_timeout;
--	dev->vid_timeout.data = (unsigned long) dev;
--	init_timer(&dev->vid_timeout);
--
--	dev->vbi_timeout.function = au0828_vbi_buffer_timeout;
--	dev->vbi_timeout.data = (unsigned long) dev;
--	init_timer(&dev->vbi_timeout);
-+	setup_timer(&dev->vid_timeout, au0828_vid_buffer_timeout,
-+		    (unsigned long)dev);
-+	setup_timer(&dev->vbi_timeout, au0828_vbi_buffer_timeout,
-+		    (unsigned long)dev);
- 
- 	dev->width = NTSC_STD_W;
- 	dev->height = NTSC_STD_H;
+-The purpose of the match callback is provide the bus an opportunity to
++The purpose of the match callback is to give the bus an opportunity to
+ determine if a particular driver supports a particular device by
+ comparing the device IDs the driver supports with the device ID of a
+ particular device, without sacrificing bus-specific functionality or
+-- 
+2.1.4
 
