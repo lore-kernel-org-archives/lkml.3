@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238AbaL0Lw5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 06:52:57 -0500
-Received: from www.osadl.org ([62.245.132.105]:59157 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826AbaL0Lw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 06:52:56 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Yao Yuan <yao.yuan@freescale.com>, Fugang Duan <B38611@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Kaushal Butala <kaushalkernelmailinglist@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH] fix handling of wait_for_completion_timeout result
-Date: Sat, 27 Dec 2014 06:48:50 -0500
-Message-Id: <1419680930-9052-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751274AbaL0MIM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 07:08:12 -0500
+Received: from hosted-by.slaskdatacenter.pl ([212.59.240.104]:57954 "EHLO
+	server30.suprizkutu.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaL0MIL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Dec 2014 07:08:11 -0500
+X-Greylist: delayed 58643 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Dec 2014 07:08:10 EST
+Reply-To: hepsibir4682@gmail.com
+Message-ID: <01e8fdc7756da5edfc167e721683ce83@gmail.com>
+From: "=?iso-8859-9?B?WXVzdWYgSGF5ZGFyb/B1bGxhcv0=?=" 
+	<hepsibir4682@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?MS4yMDAgVEwneWUgSGFzdGEgS2F5/XQgUHJvZ3Jhbf0=?=
+Date: Fri, 26 Dec 2014 21:50:20 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: avast! (VPS 141226-1, 26.12.2014), Outbound message
+X-Antivirus-Status: Clean
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - server30.suprizkutu.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - gmail.com
+X-Get-Message-Sender-Via: server30.suprizkutu.com: authenticated_id: info@suprizkutu.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wati_for_completion_timeout does not return negative values so 
-"result" handlin here should be simplified to cover the actually
-possible cases only.
+Merhaba, 
 
-patch was only compile tested for imx_v6_v7_defconfig 
+Size, Dünya üzerinde birçok Hekim'in kullandýðý "Online Hasta Kayýt ve Portföy Yönetim" sistemimiz https://healthrecordapp.com/tr/ hakkýnda bilgi vermek için ulaþtýk. 
 
-patch is against 3.19.0-rc1 -next-20141226
+HealthRecordApp, basit ve kolay kullanýmlý arayüzü ile geleneksel hasta kayýt sistemlerinden ve yazýlýmlarýndan hem çok farklý, hem çok ucuz, hem de çok daha kullanýþlý bir sistemdir. 
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Bu sistem ile hasta portföyünüzü ekleyerek veya yeni hasta portföyü oluþturarak tüm verilerinize web tarayýcýsý üzerinden istediðiniz her yerden online olarak ulaþabilirsiniz. 
+
+Ayný zamanda Online randevu oluþturabilir, hasta dökümanlarýný kontrol edebilir, Portföyünüzle alakalý istatistiklere bakabilir, hastalarýnýza muayene tarihlerinden önce sms veya e-posta gönderebilirsiniz. 
+
+Bu sistem anyný zamanda dünyanýn en güvenli sistemi SSL güvenlik sistemleri ile korunmakta ve datalara yalnýz siz ve sizin tanýmladýðýnýz kullanýcýlar ulaþabilirler. 
+
+Bu sistemi daha yakýndan tanýmak ve ücretsiz demosu'nu kullanmak için https://healthrecordapp.com/tr/kullanici/kayit linkinden kayýt olup ücretsiz deneyebilirsiniz. 
+
+Sistemin tam sürüm ücreti yýllýk 1200 TL olup, dilerseniz aylýk bazda da ödeme yaparak tam sürümüne sahip olabilirsiniz... 
+
+Eðer randevu verirseniz yüzyüze sistem hakkýnda daha açýklayýcý bilgiler de verebiliriz. 
+
+Dilerseniz sistemi web sitenize entegre edebilir, hastalarýnýzýn online randevu ve online ödeme yapmalarýna imkan saðlayabiliriz. 
+
+Web siteniz yoksa, kurumsal kimliðinize yakýþacak web sitesi tasarýmýda yapabiliriz. 
+
+Lütfen detaylý bilgi için irtibata geçiniz... 
+
+
+
+
+
+Saygýlarýmla...
+
+Mustafa Öztürk
+
+ForWapp Ýnternet Yazýlýmlarý
+
+0212 660 50 75
+
+0505 545 12 25
+
+www.forwapp.com
+
+
+
 ---
- drivers/i2c/busses/i2c-imx.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index 7f3a9fe..2be7d9d 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -628,9 +628,9 @@ static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
- 	result = wait_for_completion_timeout(
- 				&i2c_imx->dma->cmd_complete,
- 				msecs_to_jiffies(DMA_TIMEOUT));
--	if (result <= 0) {
-+	if (result == 0) {
- 		dmaengine_terminate_all(dma->chan_using);
--		return result ?: -ETIMEDOUT;
-+		return -ETIMEDOUT;
- 	}
- 
- 	/* Waiting for transfer complete. */
-@@ -686,9 +686,9 @@ static int i2c_imx_dma_read(struct imx_i2c_struct *i2c_imx,
- 	result = wait_for_completion_timeout(
- 				&i2c_imx->dma->cmd_complete,
- 				msecs_to_jiffies(DMA_TIMEOUT));
--	if (result <= 0) {
-+	if (result == 0) {
- 		dmaengine_terminate_all(dma->chan_using);
--		return result ?: -ETIMEDOUT;
-+		return -ETIMEDOUT;
- 	}
- 
- 	/* waiting for transfer complete. */
--- 
-1.7.10.4
+Bu e-posta virüslere karþý Avast antivirüs yazýlýmý tarafýndan kontrol edilmiþtir.
+http://www.avast.com
 
