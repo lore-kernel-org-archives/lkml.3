@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaLZOmy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:42:54 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
+	id S1752177AbaLZOmt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:42:49 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17530 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751983AbaLZOmd (ORCPT
+	by vger.kernel.org with ESMTP id S1751807AbaLZOm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:33 -0500
+	Fri, 26 Dec 2014 09:42:27 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895463"
+   d="scan'208";a="114895455"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Johannes Berg <johannes.berg@intel.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
 Cc: kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        Kalle Valo <kvalo@codeaurora.org>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 12/27] iwlwifi: dvm: main: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:44 +0100
-Message-Id: <1419604558-29743-14-git-send-email-Julia.Lawall@lip6.fr>
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/27] [media] usbvision: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:36 +0100
+Message-Id: <1419604558-29743-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -43,32 +41,29 @@ expression t,f,d;
 -t.function = f;
 // </smpl>
 
+The semantic patch also changes the cast to long to a cast to unsigned
+long in the data initializer, as unsigned long is the type of the data field.
+
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/main.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/media/usb/usbvision/usbvision-core.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/dvm/main.c b/drivers/net/wireless/iwlwifi/dvm/main.c
-index 0b7f46f..75ec691 100644
---- a/drivers/net/wireless/iwlwifi/dvm/main.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/main.c
-@@ -1011,13 +1011,11 @@ static void iwl_setup_deferred_work(struct iwl_priv *priv)
- 	if (priv->lib->bt_params)
- 		iwlagn_bt_setup_deferred_work(priv);
+diff --git a/drivers/media/usb/usbvision/usbvision-core.c b/drivers/media/usb/usbvision/usbvision-core.c
+index 302aa07..64c63d3 100644
+--- a/drivers/media/usb/usbvision/usbvision-core.c
++++ b/drivers/media/usb/usbvision/usbvision-core.c
+@@ -2194,9 +2194,8 @@ static void usbvision_power_off_timer(unsigned long data)
  
--	init_timer(&priv->statistics_periodic);
--	priv->statistics_periodic.data = (unsigned long)priv;
--	priv->statistics_periodic.function = iwl_bg_statistics_periodic;
-+	setup_timer(&priv->statistics_periodic, iwl_bg_statistics_periodic,
-+		    (unsigned long)priv);
- 
--	init_timer(&priv->ucode_trace);
--	priv->ucode_trace.data = (unsigned long)priv;
--	priv->ucode_trace.function = iwl_bg_ucode_trace;
-+	setup_timer(&priv->ucode_trace, iwl_bg_ucode_trace,
-+		    (unsigned long)priv);
+ void usbvision_init_power_off_timer(struct usb_usbvision *usbvision)
+ {
+-	init_timer(&usbvision->power_off_timer);
+-	usbvision->power_off_timer.data = (long)usbvision;
+-	usbvision->power_off_timer.function = usbvision_power_off_timer;
++	setup_timer(&usbvision->power_off_timer, usbvision_power_off_timer,
++		    (unsigned long)usbvision);
  }
  
- void iwl_cancel_deferred_work(struct iwl_priv *priv)
+ void usbvision_set_power_off_timer(struct usb_usbvision *usbvision)
 
