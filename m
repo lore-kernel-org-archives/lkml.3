@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaLZOmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:42:44 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
+	id S1752092AbaLZOmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:42:39 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17532 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751841AbaLZOm2 (ORCPT
+	by vger.kernel.org with ESMTP id S1751654AbaLZOm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Dec 2014 09:42:28 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895458"
+   d="scan'208";a="114895470"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Solomon Peachy <pizza@shaftnet.org>
-Cc: kernel-janitors@vger.kernel.org, Kalle Valo <kvalo@codeaurora.org>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: kernel-janitors@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/27] cw1200: queue: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:39 +0100
-Message-Id: <1419604558-29743-9-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 23/27] usb: isp1760: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:51 +0100
+Message-Id: <1419604558-29743-21-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -37,29 +36,29 @@ expression t,f,d;
 
 -init_timer(&t);
 +setup_timer(&t,f,d);
--t.data = d;
 -t.function = f;
+-t.data = d;
 // </smpl>
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wireless/cw1200/queue.c |    4 +---
+ drivers/usb/host/isp1760-hcd.c |    4 +---
  1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/cw1200/queue.c b/drivers/net/wireless/cw1200/queue.c
-index 9c3925f..0ba5ef9 100644
---- a/drivers/net/wireless/cw1200/queue.c
-+++ b/drivers/net/wireless/cw1200/queue.c
-@@ -179,9 +179,7 @@ int cw1200_queue_init(struct cw1200_queue *queue,
- 	INIT_LIST_HEAD(&queue->pending);
- 	INIT_LIST_HEAD(&queue->free_pool);
- 	spin_lock_init(&queue->lock);
--	init_timer(&queue->gc);
--	queue->gc.data = (unsigned long)queue;
--	queue->gc.function = cw1200_queue_gc;
-+	setup_timer(&queue->gc, cw1200_queue_gc, (unsigned long)queue);
+diff --git a/drivers/usb/host/isp1760-hcd.c b/drivers/usb/host/isp1760-hcd.c
+index 395649f..79261d5 100644
+--- a/drivers/usb/host/isp1760-hcd.c
++++ b/drivers/usb/host/isp1760-hcd.c
+@@ -1359,9 +1359,7 @@ static int isp1760_run(struct usb_hcd *hcd)
+ 	if (retval)
+ 		return retval;
  
- 	queue->pool = kzalloc(sizeof(struct cw1200_queue_item) * capacity,
- 			GFP_KERNEL);
+-	init_timer(&errata2_timer);
+-	errata2_timer.function = errata2_function;
+-	errata2_timer.data = (unsigned long) hcd;
++	setup_timer(&errata2_timer, errata2_function, (unsigned long)hcd);
+ 	errata2_timer.expires = jiffies + SLOT_CHECK_PERIOD * HZ / 1000;
+ 	add_timer(&errata2_timer);
+ 
 
