@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035AbaLZOvp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:51:45 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
+	id S1753123AbaLZOwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:52:19 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751720AbaLZOm0 (ORCPT
+	by vger.kernel.org with ESMTP id S1751680AbaLZOmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:26 -0500
+	Fri, 26 Dec 2014 09:42:25 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895453"
+   d="scan'208";a="114895452"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jay Cliburn <jcliburn@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Chris Snook <chris.snook@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/27] atheros: atlx: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:34 +0100
-Message-Id: <1419604558-29743-4-git-send-email-Julia.Lawall@lip6.fr>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/27] [media] s2255drv: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:33 +0100
+Message-Id: <1419604558-29743-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -43,29 +43,22 @@ expression t,f,d;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/ethernet/atheros/atlx/atl2.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/media/usb/s2255/s2255drv.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/atheros/atlx/atl2.c b/drivers/net/ethernet/atheros/atlx/atl2.c
-index 84a09e8..482a7ca 100644
---- a/drivers/net/ethernet/atheros/atlx/atl2.c
-+++ b/drivers/net/ethernet/atheros/atlx/atl2.c
-@@ -1436,13 +1436,11 @@ static int atl2_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	atl2_check_options(adapter);
- 
--	init_timer(&adapter->watchdog_timer);
--	adapter->watchdog_timer.function = atl2_watchdog;
--	adapter->watchdog_timer.data = (unsigned long) adapter;
-+	setup_timer(&adapter->watchdog_timer, atl2_watchdog,
-+		    (unsigned long)adapter);
- 
--	init_timer(&adapter->phy_config_timer);
--	adapter->phy_config_timer.function = atl2_phy_config;
--	adapter->phy_config_timer.data = (unsigned long) adapter;
-+	setup_timer(&adapter->phy_config_timer, atl2_phy_config,
-+		    (unsigned long)adapter);
- 
- 	INIT_WORK(&adapter->reset_task, atl2_reset_task);
- 	INIT_WORK(&adapter->link_chg_task, atl2_link_chg_task);
+diff --git a/drivers/media/usb/s2255/s2255drv.c b/drivers/media/usb/s2255/s2255drv.c
+index de55e96..0f3c34d 100644
+--- a/drivers/media/usb/s2255/s2255drv.c
++++ b/drivers/media/usb/s2255/s2255drv.c
+@@ -2274,9 +2274,7 @@ static int s2255_probe(struct usb_interface *interface,
+ 		dev_err(&interface->dev, "Could not find bulk-in endpoint\n");
+ 		goto errorEP;
+ 	}
+-	init_timer(&dev->timer);
+-	dev->timer.function = s2255_timer;
+-	dev->timer.data = (unsigned long)dev->fw_data;
++	setup_timer(&dev->timer, s2255_timer, (unsigned long)dev->fw_data);
+ 	init_waitqueue_head(&dev->fw_data->wait_fw);
+ 	for (i = 0; i < MAX_CHANNELS; i++) {
+ 		struct s2255_vc *vc = &dev->vc[i];
 
