@@ -1,141 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaLZXus (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 18:50:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58968 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779AbaLZXuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 18:50:46 -0500
-Date: Sat, 27 Dec 2014 00:50:33 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali Rohar <pali.rohar@gmail.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>, Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, lm-sensors@lm-sensors.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 1/3] DT Binding for omap3 temperature sensor
-Message-ID: <20141226235032.GA29735@earth.universe>
-References: <20141226102933.GA28778@amd>
- <1419597294-21487-1-git-send-email-sre@kernel.org>
- <1419597294-21487-2-git-send-email-sre@kernel.org>
- <20141226171944.GA24756@amd>
+	id S1751745AbaLZXvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 18:51:55 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:58910 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaLZXvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 18:51:54 -0500
+Date: Fri, 26 Dec 2014 15:51:51 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] nouveau: fix ambiguous backlight controls
+Message-ID: <20141226235151.GA18697@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Ilia Mirkin <imirkin@alum.mit.edu>, David Airlie <airlied@linux.ie>,
+	Ben Skeggs <bskeggs@redhat.com>,
+	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	Hans de Goede <hdegoede@redhat.com>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1419629187-13916-1-git-send-email-jmmahler@gmail.com>
+ <CAKb7Uvi2jXTeD9+pUg6YiQrwK1HaVt2aoC-to1Xw1htvmJao-w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141226171944.GA24756@amd>
+In-Reply-To: <CAKb7Uvi2jXTeD9+pUg6YiQrwK1HaVt2aoC-to1Xw1htvmJao-w@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ilia,
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Pavel,
-
-On Fri, Dec 26, 2014 at 06:19:44PM +0100, Pavel Machek wrote:
-> On Fri 2014-12-26 13:34:52, Sebastian Reichel wrote:
-> > OMAP34xx and OMAP36xx processors contain a register in the syscon area,
-> > which can be used to determine the SoCs temperature. This provides a
-> > DT binding specification for the temperature monitor.
-> >=20
-> > Signed-off-by: Sebastian Reichel <sre@kernel.org>
+On Fri, Dec 26, 2014 at 04:39:08PM -0500, Ilia Mirkin wrote:
+> On Fri, Dec 26, 2014 at 4:26 PM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
+> > If a display supports backlight control using the nouveau driver, and
+> > also supports standard ACPI backlight control, there will be two sets of
+> > controls.
+> >
+> > /sys/class/backlight/acpi_video0
+> > /sys/class/backlight/nv_backlight
+> >
+> > This creates ambiguity because these controls can be out of sync with
+> > each other.  One could be at 100% while the other is at 0% and the
+> > actual display brightness depends on which one was used last.  This also
+> > creates anomalies in Powertop which will show two values for brightness
+> > with potentially different values.
+> >
+> > Fix this ambiguity by having the nouveau driver only enable its
+> > backlight controls if the standard ACPI controls are not present.
+> >
+> > Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
 > > ---
-> >  .../bindings/hwmon/omap3-temperature.txt           | 25 ++++++++++++++=
-++++++++
-> >  1 file changed, 25 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/hwmon/omap3-tempe=
-rature.txt
-> >=20
-> > diff --git a/Documentation/devicetree/bindings/hwmon/omap3-temperature.=
-txt b/Documentation/devicetree/bindings/hwmon/omap3-temperature.txt
-> > new file mode 100644
-> > index 0000000..99631ad
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/hwmon/omap3-temperature.txt
-> > @@ -0,0 +1,25 @@
-> > +* OMAP3 temperature sensor
-> > +
-> > +The OMAP34xx and OMAP36xx processors contain a register in the syscon =
-area,
-> > +which can be used to determine the SoCs temperature.
-> > +
-> > +Requires node properties:
-> > +- compatible :	should contain one of
-> > +	- "ti,omap34xx-temperature-sensor" for OMAP34xx
-> > +	- "ti,omap36xx-temperature-sensor" for OMAP36xx
-> > +- syscon :	Should be a phandle to system configuration node which
-> > +		encompases the temperature register
-> > +- clocks :	Should contain 32KHz fclk clock specifier
-> > +- clock-names :	Should contain clock names
-> > +	- "fck" for the 32KHz fclk clock specifier
->=20
-> I don't quite get it. The temperature sensor is internal on the CPU,
-> right? Why do we need device tree to describe it? As soon as we have
-> CPU that is compatible to ti,omap3430, we know everything we need to
-> know, no?
+> >  drivers/gpu/drm/nouveau/nouveau_backlight.c | 5 +++++
+> >  1 file changed, 5 insertions(+)
+> >
+> > diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> > index e566c5b..3a52bd4 100644
+> > --- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> > +++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> > @@ -221,6 +221,11 @@ nouveau_backlight_init(struct drm_device *dev)
+> >         struct nvif_device *device = &drm->device;
+> >         struct drm_connector *connector;
+> >
+> > +       if (acpi_video_backlight_support()) {
+> 
+> None of the other drivers have this. Is nouveau somehow different
+> than, say, radeon in this respect?
+> 
+> Unfortunately the backlight situation is pretty fubar'd... sometimes
+> the acpi controls don't work, sometimes the card controls don't work,
+> sometimes they both work but in different ways (and then everyone's
+> favourite -- neither works, and there's some third platform thing).
+> I'm pretty sure this code existed before, but got removed. See commit
+> bee564430feec1175ee64bcfd4913cacc519f817 and the previous commit
+> 5bead799d3f8 before that. The ping-pong is probably not the right way
+> to go.
+> 
 
-Lots of stuff is SoC internal and described in the DT (e.g. serial
-controllers). Just have a look in omap3.dtsi or omap34xx.dtsi.
+I was not aware of that change. But you are right, it took out what I
+was trying to put back in.
 
-I put the temperature sensor into its own node for the following
-reasons:
+Thanks for the helpful information.  I will have to rethink this fix.
 
- * syscon reference
- * clock reference
+[...]
 
-I first thought about loading the driver from the syscon driver,
-but omap uses a generic one, so that's not an option. Apart from
-that one would still need the clock reference.
-
-> > +Example for omap34xx:
-> > +
-> > +/ {
-> > +	temperature-sensor {
-> > +		compatible =3D "ti,omap34xx-temperature-sensor";
-> > +		syscon =3D <&omap3_scm_general>;
-> > +		clocks =3D <&ts_fck>;
-> > +		clock-names =3D "fck";
-> > +	};
-> > +};
->=20
-> Or is there something that depends on the board there? Or do we want
-> to do it like this to be consistent with existing bindings?
-
-This is SoC specific and should go into the omap34xx.dtsi and
-omap36xx.dtsi files. See also PATCH 3/3.
-
--- Sebastian
-
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUnfRFAAoJENju1/PIO/qahdoP+wdNC4pbt8G2UmiQUb8Z9mde
-EpLP0cJ9cAcGvG/W828PFZmdcdHeEsm6IsuSZUj9HYoCAndtbaeqsQ0xN1WossMF
-wPZ+9A9KWdx+FswQVByJnpWDYd9y+yQN3Wo1C69g62+6eUe+kuSRZAab1mrnhU+M
-/+ygbknk7OJpiJa+fYdCyjzcnV7Sq8xKfO8K79qpvuHEZuF0X8SsY3zO802L6BWm
-YrFTA0jWPrwDwmpSOMGB1E3jQBgz7J4DjmZgt8O5R5uo7kB2KjaxHrd4hQFgF0Vn
-ythh9TYImJFXGi4sZ7IVHf3ONzuNPRhNu+0WBmZXdg4b/CrJ+1ID8Zw9dWIUesQx
-Zx80yABcUDmIZmlsLxosOONA2G4te8nCVFFZ49673D25pBRl5e0jE00pMHcUOTPI
-WsMOQdNhQgJnsZSgd2NLr7NWa4Bnuz23VDK73vZ3vRVS4Rofr/IsYESpkhh+tMl6
-bBJPzGX6kBlxjZK+2zjH+P/Ocrjkf1AGcJQKgQVOXbKi5j4qe1d10KOvVNXYnxRm
-kbw/OE5fj8SHh57ePv4+qJK95ao5oqLOsCC4RbjwNe7et9iayC5VZEisVkbUUv4D
-ct5kSmq625N90y3qf+JkYVjZtYVNBb1PGzWS+A5UV55gw1SHs1E1PBU4aqvzN8pK
-pr+8j8+9xkLQD0z4EliB
-=RrdN
------END PGP SIGNATURE-----
-
---envbJBWh7q8WU6mo--
+-- 
+- Jeremiah Mahler
