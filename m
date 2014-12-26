@@ -1,133 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaLZHLI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 02:11:08 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:52565 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751559AbaLZHKO (ORCPT
+	id S1751828AbaLZHNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 02:13:55 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:54217 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaLZHNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 02:10:14 -0500
-X-Listener-Flag: 11101
-From: Flora Fu <flora.fu@mediatek.com>
-To: Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>
-CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Olof Johansson <olof@lixom.net>, Flora Fu <flora.fu@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Dongdong Cheng <dongdong.cheng@mediatek.com>,
-        HenryC Chen <henryc.chen@mediatek.com>,
-        Menghui Lin <menghui.lin@mediatek.com>,
-        Chen Zhong <chen.zhong@mediatek.com>
-Subject: [PATCH v4 4/6] dt-bindings: Add document for MT6397 MFD
-Date: Fri, 26 Dec 2014 15:09:26 +0800
-Message-ID: <1419577768-12037-5-git-send-email-flora.fu@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
-In-Reply-To: <1419577768-12037-1-git-send-email-flora.fu@mediatek.com>
-References: <1419577768-12037-1-git-send-email-flora.fu@mediatek.com>
+	Fri, 26 Dec 2014 02:13:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+In-Reply-To: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
+Date: Fri, 26 Dec 2014 15:13:53 +0800
+Message-ID: <CAHG8p1DxTmd6QDpmjHSG0+40GaeGV0ox0aZpX_VVxTJUnxhB1A@mail.gmail.com>
+Subject: Re: [PATCH 00/15] media: blackfin: bfin_capture enhancements
+From: Scott Jiang <scott.jiang.linux@gmail.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Lad,
 
-Signed-off-by: Flora Fu <flora.fu@mediatek.com>
----
- Documentation/devicetree/bindings/mfd/mt6397.txt | 75 ++++++++++++++++++++++++
- 1 file changed, 75 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/mt6397.txt
+I'm on holiday these days. I will test these patches later.
 
-diff --git a/Documentation/devicetree/bindings/mfd/mt6397.txt b/Documentation/devicetree/bindings/mfd/mt6397.txt
-new file mode 100644
-index 0000000..64ef408
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/mt6397.txt
-@@ -0,0 +1,75 @@
-+MediaTek MT6397 Multifunction Device Driver
-+
-+MT6397 is a multifunction device with the following sub modules:
-+- Regulator
-+- RTC
-+- Audio codec
-+- GPIO
-+- Clock
-+
-+It is interfaced to host controller using SPI interface by a proprietary hardware
-+called PMIC wrapper or pwrap. MT6397 MFD is a child device of pwrap.
-+See the following for pwarp node definitions:
-+Documentation/devicetree/bindings/soc/mediatek,mt8135-pwrap.txt
-+
-+This document describes the binding for mfd device and its sub module.
-+
-+Required properties:
-+compatible: "mediatek,mt6397"
-+
-+Optional properties:
-+- codec: Audio codec
-+- pinctrl: GPIO in mt6397
-+- rtc: RTC
-+- clock: clocks in mt6397
-+- regulators: regulators in mt6397
-+
-+Example:
-+	pwrap: pwrap@1000f000 {
-+		compatible = "mediatek,mt8135-pwrap";
-+		reg = <0 0x1000f000 0 0x1000>,
-+			<0 0x11017000 0 0x1000>;
-+		reg-names = "pwrap-base", "pwrap-bridge-base";
-+		interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_HIGH>;
-+		resets = <&infrarst MT8135_INFRA_PMIC_WRAP_RST>,
-+				<&perirst MT8135_PERI_PWRAP_BRIDGE_SW_RST>;
-+		reset-names = "infra-pwrap-rst",
-+				"peri-pwrap-bridge-rst";
-+		clocks = <&pmicspi_sel>, <&clk26m>;
-+		clock-names = "pmicspi-sel", "pmicspi-parent";
-+
-+		pmic {
-+			compatible = "mediatek,mt6397";
-+
-+			codec: mt6397codec {
-+				compatible = "mediatek,mt6397-codec";
-+			};
-+
-+			pinctrl@0x0000C000 {
-+				compatible = "mediatek,mt6397-pinctrl";
-+				reg = <0 0x0000C000 0 0x0108>;
-+				gpio-controller;
-+			};
-+
-+			mt6397regulator: mt6397regulator {
-+				compatible = "mediatek,mt6397-regulator";
-+
-+				mt6397_vpca15_reg: buck_vpca15 {
-+					regulator-compatible = "buck_vpca15";
-+					regulator-name = "vpca15";
-+					regulator-min-microvolt = < 850000>;
-+					regulator-max-microvolt = <1400000>;
-+					regulator-ramp-delay = <12500>;
-+					regulator-always-on;
-+				};
-+
-+				mt6397_vgp4_reg: ldo_vgp4 {
-+					regulator-compatible = "ldo_vgp4";
-+					regulator-name = "vgp4";
-+					regulator-min-microvolt = <1200000>;
-+					regulator-max-microvolt = <3300000>;
-+					regulator-enable-ramp-delay = <218>;
-+				};
-+			};
-+		};
-+	};
--- 
-1.8.1.1.dirty
+Thanks,
+Scott
 
+2014-12-20 18:47 GMT+08:00 Lad, Prabhakar <prabhakar.csengg@gmail.com>:
+> Hi Scott,
+>
+> Although I was on holiday but couldn't resist myself from working,
+> since I was away from my hardware I had to choose a different one,
+> blackfin driver was lucky one. Since I don't have the blackfin
+> board I haven't tested them on the actual board, but just compile
+> tested, Can you please test it & ACK.
+>
+> Lad, Prabhakar (15):
+>   media: blackfin: bfin_capture: drop buf_init() callback
+>   media: blackfin: bfin_capture: release buffers in case
+>     start_streaming() call back fails
+>   media: blackfin: bfin_capture: set min_buffers_needed
+>   media: blackfin: bfin_capture: improve buf_prepare() callback
+>   media: blackfin: bfin_capture: improve queue_setup() callback
+>   media: blackfin: bfin_capture: use vb2_fop_mmap/poll
+>   media: blackfin: bfin_capture: use v4l2_fh_open and vb2_fop_release
+>   media: blackfin: bfin_capture: use vb2_ioctl_* helpers
+>   media: blackfin: bfin_capture: make sure all buffers are returned on
+>     stop_streaming() callback
+>   media: blackfin: bfin_capture: return -ENODATA for *std calls
+>   media: blackfin: bfin_capture: return -ENODATA for *dv_timings calls
+>   media: blackfin: bfin_capture: add support for vidioc_create_bufs
+>   media: blackfin: bfin_capture: add support for VB2_DMABUF
+>   media: blackfin: bfin_capture: add support for VIDIOC_EXPBUF
+>   media: blackfin: bfin_capture: set v4l2 buffer sequence
+>
+>  drivers/media/platform/blackfin/bfin_capture.c | 310 ++++++++-----------------
+>  1 file changed, 98 insertions(+), 212 deletions(-)
+>
+> --
+> 1.9.1
+>
