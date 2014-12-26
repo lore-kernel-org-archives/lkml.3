@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751521AbaLZHFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 02:05:15 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:28875 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751140AbaLZHFM (ORCPT
+	id S1751533AbaLZHJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 02:09:59 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:52488 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751183AbaLZHJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 02:05:12 -0500
-From: Alex Gartrell <agartrell@fb.com>
-To: <davem@davemloft.net>, <herbert@gondor.apana.org.au>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel-team@fb.com>, Alex Gartrell <agartrell@fb.com>
-Subject: [PATCH net-next] tun: Fixed unsigned/signed comparison
-Date: Thu, 25 Dec 2014 23:05:03 -0800
-Message-ID: <1419577503-12862-1-git-send-email-agartrell@fb.com>
-X-Mailer: git-send-email 1.8.1
-X-FB-Internal: Safe
+	Fri, 26 Dec 2014 02:09:55 -0500
+X-Listener-Flag: 11101
+From: Flora Fu <flora.fu@mediatek.com>
+To: Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <srv_heupstream@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Olof Johansson <olof@lixom.net>, Flora Fu <flora.fu@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Dongdong Cheng <dongdong.cheng@mediatek.com>,
+        HenryC Chen <henryc.chen@mediatek.com>,
+        Menghui Lin <menghui.lin@mediatek.com>,
+        Chen Zhong <chen.zhong@mediatek.com>
+Subject: [PATCH v4 0/6] Add Support for MediaTek PMIC MT6397 MFD Core and Regulator
+Date: Fri, 26 Dec 2014 15:09:22 +0800
+Message-ID: <1419577768-12037-1-git-send-email-flora.fu@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-25_06:2014-12-24,2014-12-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.87658777406341e-11 kscore.compositescore=0
- circleOfTrustscore=502.112 compositescore=0.986137415400633
- urlsuspect_oldscore=0.986137415400633 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.986137415400633 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412260076
-X-FB-Internal: deliver
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Validated that this was actually using the unsigned comparison with gdb.
+Hi,
 
-Signed-off-by: Alex Gartrell <agartrell@fb.com>
----
- drivers/net/tun.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The patch sets add support for MediaTek PMIC MT6397 MFD core and its regulator driver.
+This is hardware layout for access PMIC MT6397 from AP SoC MT8135.
+Between PMIC MT6397 and MT8135, the physical signal channel is SPI bus.
+A specific hardware called PMIC Wrapper or PWRAP to handle access protocols in both PMIC and AP side.
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index a5cbf67..6c63e21 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1499,7 +1499,7 @@ static int tun_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		goto out;
- 	}
- 	ret = tun_do_read(tun, tfile, &m->msg_iter, flags & MSG_DONTWAIT);
--	if (ret > total_len) {
-+	if (ret > (ssize_t)total_len) {
- 		m->msg_flags |= MSG_TRUNC;
- 		ret = flags & MSG_TRUNC ? ret : total_len;
- 	}
--- 
-Alex Gartrell <agartrell@fb.com>
++-----------------+           +---------------+
+|                 |           |               |
+| Mediatek AP SoC |           |               |
+| (ex. MT8135)    |           |    MT6397     |
+|                 |           |               |
+|      +--------+ | (SPI bus) | +--------+    |
+|      |        | |-----------| |        |    |
+|      |  PMIC  | |-----------| |  PMIC  |    |
+|      | Wrapper| |-----------| | Wrapper|    |
+|      |        | |-----------| |        |    |
+|      +--------+ |           | +--------+    |
+|                 |           |               |
++-----------------+           +---------------+
+
+This driver is based on kernel release 3.19.
+
+Changes since v3
+================
+(1) Patch 1/6: PMIC Wrapper is the parent of MT6397 MFD. Use auxdata to pass regmap pointer as MFD's platform data.
+(2) Patch 2/6: Update MT6397 MFD implmentation according to patch 1/6. Update MFD cells table: rtc, codec, clock for sub modules.
+(3) Patch 4/6: Document for MT8135 PMIC wrapper.
+(4) Patch 5/6: Document for MT6397 MFD.
+(5) Patch 7/6: Device tree for MT8135 PMIC wrapper in mt8135.dtsi.
+			   - nodes of clocks depend on mt8135 clocks 
+			   - nodes of resets depend on mt8135 reset controllers:
+                 https://lkml.org/lkml/2014/11/3/134
+                 https://lkml.org/lkml/2014/11/5/283
+(6) Patch 6/6: Add device tree for MT6397 MFD and regulators in mt8135 board file.
+v3:
+https://lkml.org/lkml/2014/12/4/924
+
+Changes since v2
+================
+(1) Patch 1/8: Update kernel config of MT8135 PMIC Wrapper. It needs to select REGMAP.
+(2) Patch 2/8: Update patch of MT6397 MFD driver to fix defeat of coding styles.
+(3) Patch 3/8: Update MT6397 regulator driver
+	- use standard helpers for ops ".set_voltage_sel", ".get_voltage_sel" and ".is_enabled"
+	- remove regulator's DT matching codes in the driver.  
+	- fix defeat of coding styles.
+(4) Patch 4/8: Update document for MT8135 PMIC wrapper.
+(5) Patch 5/8: Update document for MT6397 MFD.
+(6) Patch 6/8: Update document for MT6397 regulators.
+(7) Patch 7/8: Update device tree for MT8135 PMIC wrapper in mt8135.dtsi.
+(8) Patch 8/8: Add device tree for MT6397 MFD and regulators in mt8135-evbp1.dts board file.
+v2:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/307069.html
+
+Changes since v1
+================
+(1) Patch 1/8: Add MT8135 PMIC wrapper driver for SoC's proprietary hardware.
+(2) Patch 2/8: Update patch of MT6397 MFD driver to contain only MFD related codes and fix defeat of coding styles.
+(3) Patch 3/8: Update MT6397 regulator driver
+	- use helpers and standard ways for specifying data in regulator description.
+	- add more comments to explaining why the driver implement its own regulator_ops for ".is_enabled", ".set_voltage_sel" and ".get_voltage_sel".
+	- update driver implement for coding styles.
+(4) Patch 4/8: Add document for MT8135 PMIC wrapper.
+(5) Patch 5/8: Update document for MT6397 MFD.
+(6) Patch 6/8: Update document for MT6397 regulators.
+(7) Patch 7/8: Add device tree for MT6397 MFD in mt8135.dtsi.
+(8) Patch 8/8: Update device tree for MT6397 regulators in mt8135.dtsi.
+Initial version (v1):
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/302984.html
+
+Flora Fu (6):
+  soc: mediatek: Add PMIC wrapper for MT8135 and MT6397 SoC
+  mfd: MT6397: Add support for PMIC MT6397 MFD
+  dt-bindings:: Add document for MT8135 PMIC Wrapper
+  dt-bindings: Add document for MT6397 MFD
+  arm: dts: mt8135: Add support for MT8135 PMIC wrapper
+  arm: dts: mt8135: Add support for MT6397 MFD and regulator
+
+ Documentation/devicetree/bindings/mfd/mt6397.txt   |  75 ++
+ .../soc/mediatek/mediatek,mt8135-pwrap.txt         |  51 ++
+ arch/arm/boot/dts/mt8135-evbp1.dts                 | 193 +++++
+ arch/arm/boot/dts/mt8135.dtsi                      |  14 +
+ drivers/mfd/Kconfig                                |  10 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/mt6397-core.c                          |  94 +++
+ drivers/soc/Kconfig                                |   1 +
+ drivers/soc/Makefile                               |   1 +
+ drivers/soc/mediatek/Kconfig                       |  12 +
+ drivers/soc/mediatek/Makefile                      |   1 +
+ drivers/soc/mediatek/mt8135-pmic-wrap.c            | 855 +++++++++++++++++++++
+ drivers/soc/mediatek/mt8135-pmic-wrap.h            | 138 ++++
+ include/linux/mfd/mt6397/core.h                    |  23 +
+ include/linux/mfd/mt6397/registers.h               | 362 +++++++++
+ 15 files changed, 1831 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/mt6397.txt
+ create mode 100644 Documentation/devicetree/bindings/soc/mediatek/mediatek,mt8135-pwrap.txt
+ create mode 100644 drivers/mfd/mt6397-core.c
+ create mode 100644 drivers/soc/mediatek/Kconfig
+ create mode 100644 drivers/soc/mediatek/Makefile
+ create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.c
+ create mode 100644 drivers/soc/mediatek/mt8135-pmic-wrap.h
+ create mode 100644 include/linux/mfd/mt6397/core.h
+ create mode 100644 include/linux/mfd/mt6397/registers.h
+
+--
+1.8.1.1.dirty
 
