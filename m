@@ -1,127 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaLZE4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 23:56:24 -0500
-Received: from ozlabs.org ([103.22.144.67]:39087 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920AbaLZE4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 23:56:21 -0500
-Date: Fri, 26 Dec 2014 15:56:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        live-patching@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: livepatching tree for linux-next
-Message-ID: <20141226155613.36dd95b9@canb.auug.org.au>
-In-Reply-To: <20141223151056.GA4789@treble.redhat.com>
-References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz>
-	<20141223094607.GA16445@infradead.org>
-	<20141223151056.GA4789@treble.redhat.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751261AbaLZFT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 00:19:57 -0500
+Received: from fgwmail8.fujitsu.co.jp ([192.51.44.38]:59346 "EHLO
+	fgwmail8.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaLZFTy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 00:19:54 -0500
+X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Dec 2014 00:19:53 EST
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <549CEE8F.2090209@jp.fujitsu.com>
+Date: Fri, 26 Dec 2014 14:13:51 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/sSi3tLVOg.pLycl_hainmFk"; protocol="application/pgp-signature"
+To: <zhen-hual@hp.com>
+CC: <dwmw2@infradead.org>, <bhe@redhat.com>, <joro@8bytes.org>,
+        <vgoyal@redhat.com>, <dyoung@redhat.com>,
+        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <kexec@lists.infradead.org>,
+        <alex.williamson@redhat.com>, <ddutile@redhat.com>,
+        <ishii.hironobu@jp.fujitsu.com>, <bhelgaas@google.com>,
+        <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
+        <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
+        <billsumnerlinux@gmail.com>
+Subject: Re: [PATCH 0/10] iommu/vt-d: Fix intel vt-d faults in kdump kernel
+References: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/sSi3tLVOg.pLycl_hainmFk
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Zhen-Hua,
 
-Hi Jiri,
+I tested your patch and found two problems.
 
-On Tue, 23 Dec 2014 09:10:56 -0600 Josh Poimboeuf <jpoimboe@redhat.com> wro=
-te:
->
-> On Tue, Dec 23, 2014 at 01:46:07AM -0800, Christoph Hellwig wrote:
-> > On Mon, Dec 22, 2014 at 08:52:02PM +0100, Jiri Kosina wrote:
-> > >=20
-> > > a substantial amount of work has been invested into abstracing "Live=
-=20
-> > > Patching" core functionality out of the already existing implementati=
-ons,=20
-> > > so that further improvements can be built on top of it in incremental=
-=20
-> > > steps.
-> > >=20
-> > > The core functionality (which is self-contained) now works and has be=
-en=20
-> > > Reviewed/Acked by both interested parties (i.e. people working on kPa=
-tch=20
-> > > and kGraft) and agreed to be a common ground on which further develop=
-ment=20
-> > > will happen.
-> > >=20
-> > > We plan to send a pull request for 3.20, therefore I'd like to ask yo=
-u to=20
-> > > include 'for-next' branch of
-> >=20
-> > This is still missing the actual patch generators, which should be
-> > merged together with the code, otherwise we'll get a mess with forever
-> > out of tree tools like systemtap again.
->=20
-> Well, a patch generator isn't required.  You can build a patch module
-> from source with kbuild, just like you would for any other kernel
-> module.  This is what kGraft already does today.  For example:
->=20
->    https://git.kernel.org/cgit/linux/kernel/git/jikos/livepatching.git/co=
-mmit/?h=3Dfor-next&id=3D13d1cf7e702596e0cd8ec62afa6bd49c431f2d0c
->=20
-> We do want to add a generator, but there are two of them out there that
-> need to be converged.  It doesn't make sense to do that work until we
-> have first converged the rest of the stack (namely, consistency models).
-> That's our next step.
->=20
-> The current code is by no means a final product, but it's still quite
-> useful already.
+[1]
+Kenel panic occurs during 2nd kernel boot.
 
-OK, I have added this from today but if it becomes an issue, I will
-drop it again.  Lets see how it goes.
+..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+Kernel panic - not syncing: timer doesn't work through Interrupt-remapped IO-APIC
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0 #25
+Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015 Rev.3D81.3030 02/10/2012
+ 0000000000000002 ffff880036167d08 ffffffff815b1c6a 0000000000000000
+ ffffffff817f7670 ffff880036167d88 ffffffff815b19f1 0000000000000008
+ ffff880036167d98 ffff880036167d38 ffffffff810a5d2f ffff880036167d98
+Call Trace:
+ [<ffffffff815b1c6a>] dump_stack+0x48/0x5e
+ [<ffffffff815b19f1>] panic+0xbb/0x1fa
+ [<ffffffff810a5d2f>] ? vprintk_default+0x1f/0x30
+ [<ffffffff814c6a6c>] panic_if_irq_remap+0x1c/0x20
+ [<ffffffff81b53985>] check_timer+0x1e7/0x5ed
+ [<ffffffff8129bd9d>] ? radix_tree_lookup+0xd/0x10
+ [<ffffffff81b5413b>] setup_IO_APIC+0x261/0x292
+ [<ffffffff81b50302>] native_smp_prepare_cpus+0x214/0x25d
+ [<ffffffff81b41c65>] kernel_init_freeable+0x1dc/0x28c
+ [<ffffffff815aaf00>] ? rest_init+0x80/0x80
+ [<ffffffff815aaf0e>] kernel_init+0xe/0xf0
+ [<ffffffff815b5d2c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff815aaf00>] ? rest_init+0x80/0x80
+---[ end Kernel panic - not syncing: timer doesn't work through Interrupt-remapped IO-APIC
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-        Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+This panic seems to be related to unflushed cache. I confirmed this
+problem was fixed by the following patch.
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -200,8 +200,13 @@ static int modify_irte(int irq, struct irte *irte_modified)
+ 	set_64bit(&irte->high, irte_modified->high);
+ 
+ #ifdef CONFIG_CRASH_DUMP
+-	if (is_kdump_kernel())
++	if (is_kdump_kernel()) {
+ 		__iommu_update_old_irte(iommu, index);
++		__iommu_flush_cache(iommu,
++			iommu->ir_table->base_old_virt +
++			index * sizeof(struct irte),
++			sizeof(struct irte));
++	}
+ #endif
+ 	__iommu_flush_cache(iommu, irte, sizeof(*irte));
+ 
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+[2]
+Some DMAR error messages are still found in 2nd kernel boot.
 
---Sig_/sSi3tLVOg.pLycl_hainmFk
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+dmar: DRHD: handling fault status reg 2
+dmar: DMAR:[DMA Write] Request device [01:00.0] fault addr ffded000
+DMAR:[fault reason 01] Present bit in root entry is clear
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+I confiremd your commit 1a2262 was already applied. Any idea?
 
-iQIcBAEBCAAGBQJUnOpyAAoJEMDTa8Ir7ZwVIhoP/ijzP8x+UQ3pmr6MANGMPZtk
-3ETTXmXuJzngDfA1+umlxiykOJbx7Sf8FGiJYCCiD+bZ+DB8aRmi9qsMECpOi1x8
-8RKe3UgXZ5ARk4bX5Sdb0dgljpbkXbSLUxYt6xWIx3EgHaTzZBnPv2xvx+0Jo7lr
-JoS1ATiyiv0Js25YN+H+qGCWPZzfwBfYL60qhtWC15lmAuAruy023BtMNmiszWHr
-0s6eytCsDfr1cHxcu/d1JmKHqYHv/dIf5ML177nr2E/YUfO8Z2j3xo2x47RO1hYE
-wgSy2aYIbgXxtDSBOqWzGTGTd7AMmBaamTQ2QtKlbu6FDS8jDIVJ24k4OBVZKKoa
-oWXhf0qyy+LGuwSbZWaLP3vlX3I73sl/uZL/ZLPkr7t9oGX4Hf+ROuZpIcpG5uGe
-UZ5OCgY1bygUIL3xQTPOkjL0lZ/xDNMA2uNmoDMbRZq2/Z0OLT+GxwrJlCGBSr2v
-3Yuy2cjoPUZorFxFY50TnbyH92wS/4WJdx2NHXaUPOLpLRHtOSXY82FfB45RzvJH
-N+/dFuUD5X3Wvi3HglMUQ1qTMztyqN0tFb0/Ly9E7f5tubaHfZHEH572ZDXvC1Ys
-vyXTIc1ldZ01y+4Os6vBaJ6whZbSpZ3V8voKwVudqsd6E5pP9gcWKDXy9eXU9vHr
-zAdDoAMUfCO2ymv7V7vq
-=LN77
------END PGP SIGNATURE-----
+Thanks,
+Takao Indoh
 
---Sig_/sSi3tLVOg.pLycl_hainmFk--
+
+On 2014/12/22 18:15, Li, Zhen-Hua wrote:
+> This patchset is an update of Bill Sumner's patchset, implements a fix for:
+> If a kernel boots with intel_iommu=on on a system that supports intel vt-d,
+> when a panic happens, the kdump kernel will boot with these faults:
+> 
+>      dmar: DRHD: handling fault status reg 102
+>      dmar: DMAR:[DMA Read] Request device [01:00.0] fault addr fff80000
+>      DMAR:[fault reason 01] Present bit in root entry is clear
+> 
+>      dmar: DRHD: handling fault status reg 2
+>      dmar: INTR-REMAP: Request device [[61:00.0] fault index 42
+>      INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
+> 
+> On some system, the interrupt remapping fault will also happen even if the
+> intel_iommu is not set to on, because the interrupt remapping will be enabled
+> when x2apic is needed by the system.
+> 
+> The cause of the DMA fault is described in Bill's original version, and the
+> INTR-Remap fault is caused by a similar reason. In short, the initialization
+> of vt-d drivers causes the in-flight DMA and interrupt requests get wrong
+> response.
+> 
+> To fix this problem, we modifies the behaviors of the intel vt-d in the
+> crashdump kernel:
+> 
+> For DMA Remapping:
+> 1. To accept the vt-d hardware in an active state,
+> 2. Do not disable and re-enable the translation, keep it enabled.
+> 3. Use the old root entry table, do not rewrite the RTA register.
+> 4. Malloc and use new context entry table and page table, copy data from the
+>     old ones that used by the old kernel.
+> 5. to use different portions of the iova address ranges for the device drivers
+>     in the crashdump kernel than the iova ranges that were in-use at the time
+>     of the panic.
+> 6. After device driver is loaded, when it issues the first dma_map command,
+>     free the dmar_domain structure for this device, and generate a new one, so
+>     that the device can be assigned a new and empty page table.
+> 7. When a new context entry table is generated, we also save its address to
+>     the old root entry table.
+> 
+> For Interrupt Remapping:
+> 1. To accept the vt-d hardware in an active state,
+> 2. Do not disable and re-enable the interrupt remapping, keep it enabled.
+> 3. Use the old interrupt remapping table, do not rewrite the IRTA register.
+> 4. When ioapic entry is setup, the interrupt remapping table is changed, and
+>     the updated data will be stored to the old interrupt remapping table.
+> 
+> Advantages of this approach:
+> 1. All manipulation of the IO-device is done by the Linux device-driver
+>     for that device.
+> 2. This approach behaves in a manner very similar to operation without an
+>     active iommu.
+> 3. Any activity between the IO-device and its RMRR areas is handled by the
+>     device-driver in the same manner as during a non-kdump boot.
+> 4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
+>     This supports the practice of creating a special kdump kernel without
+>     drivers for any devices that are not required for taking a crashdump.
+> 5. Minimal code-changes among the existing mainline intel vt-d code.
+> 
+> Summary of changes in this patch set:
+> 1. Added some useful function for root entry table in code intel-iommu.c
+> 2. Added new members to struct root_entry and struct irte;
+> 3. Functions to load old root entry table to iommu->root_entry from the memory
+>     of old kernel.
+> 4. Functions to malloc new context entry table and page table and copy the data
+>     from the old ones to the malloced new ones.
+> 5. Functions to enable support for DMA remapping in kdump kernel.
+> 6. Functions to load old irte data from the old kernel to the kdump kernel.
+> 7. Some code changes that support other behaviours that have been listed.
+> 8. In the new functions, use physical address as "unsigned long" type, not
+>     pointers.
+> 
+> Original version by Bill Sumner:
+>      https://lkml.org/lkml/2014/1/10/518
+>      https://lkml.org/lkml/2014/4/15/716
+>      https://lkml.org/lkml/2014/4/24/836
+> 
+> Zhenhua's last of Bill's patchset:
+>      https://lkml.org/lkml/2014/10/21/134
+>      https://lkml.org/lkml/2014/12/15/121
+> 
+> Changed in this version:
+> 1. Do not disable and re-enable traslation and interrupt remapping.
+> 2. Use old root entry table.
+> 3. Use old interrupt remapping table.
+> 4. Use "unsigned long" as physical address.
+> 5. Use intel_unmap to unmap the old dma;
+> 
+> This patchset should be applied with this one together:
+>      https://lkml.org/lkml/2014/11/5/43
+>      x86/iommu: fix incorrect bit operations in setting values
+> 
+> Bill Sumner (5):
+>    iommu/vt-d: Update iommu_attach_domain() and its callers
+>    iommu/vt-d: Items required for kdump
+>    iommu/vt-d: data types and functions used for kdump
+>    iommu/vt-d: Add domain-id functions
+>    iommu/vt-d: enable kdump support in iommu module
+> 
+> Li, Zhen-Hua (10):
+>    iommu/vt-d: Update iommu_attach_domain() and its callers
+>    iommu/vt-d: Items required for kdump
+>    iommu/vt-d: Add domain-id functions
+>    iommu/vt-d: functions to copy data from old mem
+>    iommu/vt-d: Add functions to load and save old re
+>    iommu/vt-d: datatypes and functions used for kdump
+>    iommu/vt-d: enable kdump support in iommu module
+>    iommu/vtd: assign new page table for dma_map
+>    iommu/vt-d: Copy functions for irte
+>    iommu/vt-d: Use old irte in kdump kernel
+> 
+>   drivers/iommu/intel-iommu.c         | 1050 +++++++++++++++++++++++++++++++++--
+>   drivers/iommu/intel_irq_remapping.c |   99 +++-
+>   include/linux/intel-iommu.h         |   18 +
+>   3 files changed, 1123 insertions(+), 44 deletions(-)
+> 
+
+
