@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaLZOtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:49:17 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
+	id S1752754AbaLZOtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:49:20 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751886AbaLZOma (ORCPT
+	by vger.kernel.org with ESMTP id S1751885AbaLZOma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Dec 2014 09:42:30 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895456"
+   d="scan'208";a="114895464"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Solomon Peachy <pizza@shaftnet.org>
-Cc: kernel-janitors@vger.kernel.org, Kalle Valo <kvalo@codeaurora.org>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 8/27] wireless: cw1200: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:37 +0100
-Message-Id: <1419604558-29743-7-git-send-email-Julia.Lawall@lip6.fr>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 14/27] leds: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:45 +0100
+Message-Id: <1419604558-29743-15-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -37,30 +36,30 @@ expression t,f,d;
 
 -init_timer(&t);
 +setup_timer(&t,f,d);
--t.data = d;
 -t.function = f;
+-t.data = d;
 // </smpl>
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wireless/cw1200/pm.c |    5 ++---
+ drivers/leds/led-class.c |    5 ++---
  1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/cw1200/pm.c b/drivers/net/wireless/cw1200/pm.c
-index 6907c8f..d2202ae 100644
---- a/drivers/net/wireless/cw1200/pm.c
-+++ b/drivers/net/wireless/cw1200/pm.c
-@@ -101,9 +101,8 @@ int cw1200_pm_init(struct cw1200_pm_state *pm,
- {
- 	spin_lock_init(&pm->lock);
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index dbeebac..291ca45 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -239,9 +239,8 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
  
--	init_timer(&pm->stay_awake);
--	pm->stay_awake.data = (unsigned long)pm;
--	pm->stay_awake.function = cw1200_pm_stay_awake_tmo;
-+	setup_timer(&pm->stay_awake, cw1200_pm_stay_awake_tmo,
-+		    (unsigned long)pm);
+ 	INIT_WORK(&led_cdev->set_brightness_work, set_brightness_delayed);
  
- 	return 0;
- }
+-	init_timer(&led_cdev->blink_timer);
+-	led_cdev->blink_timer.function = led_timer_function;
+-	led_cdev->blink_timer.data = (unsigned long)led_cdev;
++	setup_timer(&led_cdev->blink_timer, led_timer_function,
++		    (unsigned long)led_cdev);
+ 
+ #ifdef CONFIG_LEDS_TRIGGERS
+ 	led_trigger_set_default(led_cdev);
 
