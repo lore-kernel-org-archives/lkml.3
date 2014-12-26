@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaLZOAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:00:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45272 "EHLO mx1.redhat.com"
+	id S1751955AbaLZODd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:03:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59988 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaLZOAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:00:21 -0500
-Date: Fri, 26 Dec 2014 14:59:45 +0100
+	id S1751136AbaLZODc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 09:03:32 -0500
+Date: Fri, 26 Dec 2014 15:02:34 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
@@ -16,62 +16,34 @@ Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Adrian Hunter <adrian.hunter@intel.com>,
         Andi Kleen <andi@firstfloor.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 37/37] perf data: Implement 'split' subcommand
-Message-ID: <20141226135945.GA20929@krava.redhat.com>
+Subject: Re: [RFC/PATCHSET 00/37] perf tools: Speed-up perf report by using
+ multi thread (v1)
+Message-ID: <20141226140234.GB20929@krava.redhat.com>
 References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <1419405333-27952-38-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419405333-27952-38-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 04:15:33PM +0900, Namhyung Kim wrote:
-> The perf data split command is for splitting a (large) single data
-> file into multiple files under a directory (perf.data.dir by default)
-> so that it can be processed and reported using multiple threads.
+On Wed, Dec 24, 2014 at 04:14:56PM +0900, Namhyung Kim wrote:
+
+SNIP
+
 > 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/Documentation/perf-data.txt |  28 +++++
->  tools/perf/builtin-data.c              | 223 +++++++++++++++++++++++++++++++++
->  2 files changed, 251 insertions(+)
 > 
-> diff --git a/tools/perf/Documentation/perf-data.txt b/tools/perf/Documentation/perf-data.txt
-> index b8c83947715c..42708702f10c 100644
-> --- a/tools/perf/Documentation/perf-data.txt
-> +++ b/tools/perf/Documentation/perf-data.txt
-> @@ -13,3 +13,31 @@ SYNOPSIS
->  DESCRIPTION
->  -----------
->  Data file related processing.
-> +
-> +COMMANDS
-> +--------
-> +split::
-> +	Split single data file (perf.data) into multiple files under a directory
-> +	in order to be reported by multiple threads.
-> +
-> +OPTIONS for 'split'
-> +---------------------
-> +-i::
-> +--input::
-> +	Specify input perf data file path.
-> +
-> +-o::
-> +--output::
-> +	Specify output perf data directory path.
+> You can get it from 'perf/threaded-v1' branch on my tree at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> Please take a look and play with it.  Any comments are welcome! :)
 
-should the -o have 'perf.data.dir' as default?
+very nice at first round check ;-)
 
-[jolsa@krava perf]$ ./perf record ls > /dev/null
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.000 MB perf.data (~0 samples) ]
-[jolsa@krava perf]$ ./perf data split
-[jolsa@krava perf]$ ll perf.data*
--rw------- 1 jolsa jolsa 16172 Dec 26 14:58 perf.data
+I'll do detailed review next week
 
+thanks,
 jirka
