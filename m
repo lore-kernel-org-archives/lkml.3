@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaLZMjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 07:39:31 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:49984 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881AbaLZMj3 (ORCPT
+	id S1751934AbaLZMkw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 07:40:52 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45277 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbaLZMku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 07:39:29 -0500
-From: Alexander Kuleshov <kuleshovmail@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Alexander Kuleshov <kuleshovmail@gmail.com>
-Subject: [PATCH] x86: Fix multiple coding style issues
-Date: Fri, 26 Dec 2014 18:38:59 +0600
-Message-Id: <1419597539-21254-1-git-send-email-kuleshovmail@gmail.com>
-X-Mailer: git-send-email 2.2.1.202.g98acd41
+	Fri, 26 Dec 2014 07:40:50 -0500
+Message-ID: <549D574F.6010700@kernel.org>
+Date: Fri, 26 Dec 2014 12:40:47 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Hartmut Knaack <knaack.h@gmx.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Murilo Opsfelder Araujo <mopsfelder@gmail.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: iio: accel: sca3000_core.c:  Remove unused function
+References: <1419087187-4250-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1419087187-4250-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
----
- arch/x86/boot/header.S | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+On 20/12/14 14:53, Rickard Strandqvist wrote:
+> Remove the function sca3000_check_status() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Applied to the togreg branch of iio.git - initially pushed out as testing
+for the autobuilders to play with it.
 
-diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
-index 16ef025..75f016b 100644
---- a/arch/x86/boot/header.S
-+++ b/arch/x86/boot/header.S
-@@ -211,7 +211,8 @@ section_table:
- 	.long	0				# PointerToLineNumbers
- 	.word	0				# NumberOfRelocations
- 	.word	0				# NumberOfLineNumbers
--	.long	0x60500020			# Characteristics (section flags)
-+	.long	0x60500020			# Characteristics
-+						# (section flags)
- 
- 	#
- 	# The EFI application loader requires a relocation section
-@@ -229,7 +230,8 @@ section_table:
- 	.long	0				# PointerToLineNumbers
- 	.word	0				# NumberOfRelocations
- 	.word	0				# NumberOfLineNumbers
--	.long	0x42100040			# Characteristics (section flags)
-+	.long	0x42100040			# Characteristics
-+						# (section flags)
- 
- 	#
- 	# The offset & size fields are filled in by build.c.
-@@ -247,7 +249,8 @@ section_table:
- 	.long	0				# PointerToLineNumbers
- 	.word	0				# NumberOfRelocations
- 	.word	0				# NumberOfLineNumbers
--	.long	0x60500020			# Characteristics (section flags)
-+	.long	0x60500020			# Characteristics
-+						# (section flags)
- 
- 	#
- 	# The offset & size fields are filled in by build.c.
-@@ -266,7 +269,8 @@ section_table:
- 	.long	0				# PointerToLineNumbers
- 	.word	0				# NumberOfRelocations
- 	.word	0				# NumberOfLineNumbers
--	.long	0xc8000080			# Characteristics (section flags)
-+	.long	0xc8000080			# Characteristics
-+						# (section flags)
- 
- #endif /* CONFIG_EFI_STUB */
- 
-@@ -426,7 +430,8 @@ cmdline_size:   .long   COMMAND_LINE_SIZE-1     #length of the command line,
-                                                 #added with boot protocol
-                                                 #version 2.06
- 
--hardware_subarch:	.long 0			# subarchitecture, added with 2.07
-+hardware_subarch:	.long 0			# subarchitecture,
-+						# added with 2.07
- 						# default to 0 for normal x86 PC
- 
- hardware_subarch_data:	.quad 0
--- 
-2.2.1.202.g98acd41
+Thanks,
+
+Jonathan
+> ---
+>  drivers/staging/iio/accel/sca3000_core.c |   27 ---------------------------
+>  1 file changed, 27 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/accel/sca3000_core.c b/drivers/staging/iio/accel/sca3000_core.c
+> index e4e5639..655e34c 100644
+> --- a/drivers/staging/iio/accel/sca3000_core.c
+> +++ b/drivers/staging/iio/accel/sca3000_core.c
+> @@ -223,33 +223,6 @@ error_ret:
+>  	return ret;
+>  }
+>  
+> -#ifdef SCA3000_DEBUG
+> -/**
+> - * sca3000_check_status() check the status register
+> - *
+> - * Only used for debugging purposes
+> - **/
+> -static int sca3000_check_status(struct device *dev)
+> -{
+> -	int ret;
+> -	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+> -	struct sca3000_state *st = iio_priv(indio_dev);
+> -
+> -	mutex_lock(&st->lock);
+> -	ret = sca3000_read_data_short(st, SCA3000_REG_ADDR_STATUS, 1);
+> -	if (ret < 0)
+> -		goto error_ret;
+> -	if (st->rx[0] & SCA3000_EEPROM_CS_ERROR)
+> -		dev_err(dev, "eeprom error\n");
+> -	if (st->rx[0] & SCA3000_SPI_FRAME_ERROR)
+> -		dev_err(dev, "Previous SPI Frame was corrupt\n");
+> -
+> -error_ret:
+> -	mutex_unlock(&st->lock);
+> -	return ret;
+> -}
+> -#endif /* SCA3000_DEBUG */
+> -
+>  /**
+>   * sca3000_show_rev() - sysfs interface to read the chip revision number
+>   **/
+> 
 
