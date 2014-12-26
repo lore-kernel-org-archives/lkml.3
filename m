@@ -1,139 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaLZJaU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 04:30:20 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:29737 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751211AbaLZJaQ (ORCPT
+	id S1751630AbaLZJhR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 04:37:17 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:64876 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaLZJhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 04:30:16 -0500
-Message-ID: <549D2A9D.50407@atmel.com>
-Date: Fri, 26 Dec 2014 17:30:05 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 26 Dec 2014 04:37:12 -0500
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        <linux-mtd@lists.infradead.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] mtd: nand: atmel: Update DT documentation after splitting
- NFC and NAND
-References: <1417732214-3292-1-git-send-email-boris.brezillon@free-electrons.com> <1417732214-3292-3-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1417732214-3292-3-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Date: Fri, 26 Dec 2014 17:37:11 +0800
+Message-ID: <CA+2_TiaV+03YKnWdrsR-h8rahvgqqJpSK_Z4vJJYaeiFJ0HvGw@mail.gmail.com>
+Subject: panic at rb_next when do pick_next_task_fair because of rb_leftmost
+ is NULL
+From: Neil Zhang <glacier1980@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, peterz@infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Boris
+Hi All,
+I encountered the following crash in 3.10.24.
 
-Thanks for the patch.
+The panic log is as following.
+The strange thing is that the nr_running change to NULL after pass the
+check in the beginning of pick_next_task_fair.
+So it seems there are race condition in the code.
+Seems no related patch to fix it in the mainline.
+Does anyone can help it?
 
-You need to rebase on the top of current mtd-l2 git tree. As I had some 
-change on the binding document.
+struct rq {
+lock = {
+raw_lock = {
+{
+slock = 1463113524,
+tickets = {
+owner = 22324,
+next = 22325
+}
+}
+}
+},
+nr_running = 0,
+cpu_load = {0, 0, 3, 33, 72},
+last_load_update_tick = 83021764,
+nohz_stamp = 0,
+nohz_flags = 1,
+skip_clock_update = 0,
+nr_last_stamp = 83321795255303,
+nr_running_integral = 54283347762368512,
+ave_seqcnt = {
+sequence = 690446180
+},
+load = {
+weight = 0,
+inv_weight = 0
+},
+nr_load_updates = 51751174,
+nr_switches = 290795987,
+cfs = {
+load = {
+weight = 0,
+inv_weight = 0
+},
+nr_running = 0,
+h_nr_running = 0,
+exec_clock = 17025953367624,
+min_vruntime = 125082978146967,
+min_vruntime_copy = 125082978146967,
+tasks_timeline = {
+rb_node = 0x0
+},
+rb_leftmost = 0x0,
+curr = 0x0,
+next = 0x0,
+last = 0x0,
+skip = 0x0,
+nr_spread_over = 57488,
+runnable_load_avg = 0,
 
-Best Regards,
-Josh Wu
+[83321.795281] c0 2084 (v.airplayserver) Unable to handle kernel NULL
+pointer dereference at virtual address 00000008
+[83321.795286] c0 2084 (v.airplayserver) pgd = ea858000
+[83321.795293] c0 2084 (v.airplayserver) [00000008] *pgd=00000000
+[83321.795306] c0 2084 (v.airplayserver) Internal error: Oops: 205
+[#1] PREEMPT SMP ARM
+[83321.795315] c0 2084 (v.airplayserver) Modules linked in:
+[83321.795324] c0 2084 (v.airplayserver) CPU: 0 PID: 2084 Comm:
+v.airplayserver Not tainted 3.10.24-gc7b472f #1
+[83321.795329] c0 2084 (v.airplayserver) task: ce1f1ac0 ti: ce156000
+task.ti: ce156000
+[83321.795349] c0 2084 (v.airplayserver) PC is at rb_next+0x0/0x60
+[83321.795363] c0 2084 (v.airplayserver) LR is at
+pick_next_task_fair+0x10c/0x138
+[83321.795368] c0 2084 (v.airplayserver) pc : [<c02c22f0>] lr :
+[<c00973a0>] psr: 60060093
+sp : ce157e18 ip : 00000000 fp : ce157edc
+[83321.795371] c0 2084 (v.airplayserver) r10: c54474c0 r9 : c0c644c0
+r8 : ce157f20
+[83321.795376] c0 2084 (v.airplayserver) r7 : c54474c0 r6 : 00000000
+r5 : 00000000 r4 : c5447518
+[83321.795380] c0 2084 (v.airplayserver) r3 : c0097294 r2 : c54478f8
+r1 : 00000000 r0 : 00000008
+[83321.795388] c0 2084 (v.airplayserver) Flags: nZCv IRQs off FIQs on
+Mode SVC_32 ISA ARM Segment user
+[83321.795392] c0 2084 (v.airplayserver) Control: 30c5387d Table:
+aa858000 DAC: fffffffd
+[83321.795396] c0 2084 (v.airplayserver)
+PC: 0xc02c2270:
+[83321.795419] c0 2084 (v.airplayserver) 2270 1a000001 ea000004
+e1a00003 e5903004 e3530000 1afffffb e12fff1e e12fff1e
+[83321.795439] c0 2084 (v.airplayserver) 2290 e1a03001 e5901000
+e3d11003 05823000 0a000003 e5912008 e1500002 05813008
+[83321.795461] c0 2084 (v.airplayserver) 22b0 15813004 e5902008
+e3520000 15921000 12011001 11831001 15821000 e5902004
+[83321.795483] c0 2084 (v.airplayserver) 22d0 e3520000 15921000
+12011001 11831001 15821000 e8900007 e8830007 e12fff1e
+[83321.795504] c0 2084 (v.airplayserver) 22f0 e5902000 e1500002
+0a000012 e5903004 e3530000 1a000001 ea000006 e1a03002
+[83321.795526] c0 2084 (v.airplayserver) 2310 e5932008 e3520000
+1afffffb e1a00003 e12fff1e e5932000 e3d23003 0afffffa
+[83321.795546] c0 2084 (v.airplayserver) 2330 e5932004 e1500002
+e1a00003 0afffff8 e1a00003 e12fff1e e3a03000 eafffff2
+[83321.795568] c0 2084 (v.airplayserver) 2350 e5902000 e1500002
+0a000012 e5903008 e3530000 1a000001 ea000006 e1a03002
+[83321.795572] c0 2084 (v.airplayserver)
+LR: 0xc0097320:
+[83321.795592] c0 2084 (v.airplayserver) 7320 e5954128 e3540000
+1affffe1 e59f3090 e2455038 e5933000 e3130080 0a000013
+[83321.795612] c0 2084 (v.airplayserver) 7340 e59734e4 e283101f
+e3530000 e203201f b1a03001 e59f106c e1a032c3 e5911000
+[83321.795635] c0 2084 (v.airplayserver) 7360 e7913103 e1a03233
+e3130001 0a000007 e597355c e5933000 e5933018 e3530000
+[83321.795657] c0 2084 (v.airplayserver) 7380 0a000002 e1a00007
+e1a01005 ebfffe2a e1a00005 e8bd80f8 e2860008 eb08abd3
+[83321.795681] c0 2084 (v.airplayserver) 73a0 e3500000 0affffc9
+e2405008 e1a01006 e1a00005 ebffff0d e3500000 c1a05006
+[83321.795702] c0 2084 (v.airplayserver) 73c0 eaffffc2 c0c9b4b4
+c08945bc e92d00f0 e52de004 e8bd4000 e3a02020 e3a03000
+[83321.795724] c0 2084 (v.airplayserver) 73e0 e1530001 01520000
+3a000004 e59f30ec e0830100 e59000e4 e8bd00f0 e12fff1e
+[83321.795746] c0 2084 (v.airplayserver) 7400 e3510000 03500f56
+8a00002e e1a04000 e1a05001 e3e0601f e3e07000 e3a0c000
+[83321.795751] c0 2084 (v.airplayserver)
+SP: 0xce157d98:
+[83321.795771] c0 2084 (v.airplayserver) 7d98 ed711dc0 00000000
+00000000 00000000 c54474c0 00000000 00000000 00000002
+[83321.795795] c0 2084 (v.airplayserver) 7db8 c02c22f0 60060093
+ffffffff ce157e04 ce157f20 c000ead8 00000008 00000000
+[83321.795815] c0 2084 (v.airplayserver) 7dd8 c54478f8 c0097294
+c5447518 00000000 00000000 c54474c0 ce157f20 c0c644c0
+[83321.795838] c0 2084 (v.airplayserver) 7df8 c54474c0 ce157edc
+00000000 ce157e18 c00973a0 c02c22f0 60060093 ffffffff
+[83321.795861] c0 2084 (v.airplayserver) 7e18 c0097294 ce1f1d94
+c089595c ce156000 ce1f1ac0 c08880d4 ce157e90 fab25188
+[83321.795881] c0 2084 (v.airplayserver) 7e38 00004bc7 ce157f20
+ce156000 ce157f20 c54449b8 00000000 c08870e8 c0c644c0
+[83321.795903] c0 2084 (v.airplayserver) 7e58 c0c644c0 c0c644c0
+c0c644c0 c0c644c0 00000000 c0087120 c0c61980 00000000
+[83321.795928] c0 2084 (v.airplayserver) 7e78 fab18e38 00004bc7
+ce156000 c0c61980 00000000 c008745c dc2d0e38 00004bc7
+[83321.795930] c0 2084 (v.airplayserver)
+FP: 0xce157e5c:
+[83321.795951] c0 2084 (v.airplayserver) 7e5c c0c644c0 c0c644c0
+c0c644c0 00000000 c0087120 c0c61980 00000000 fab18e38
+[83321.795973] c0 2084 (v.airplayserver) 7e7c 00004bc7 ce156000
+c0c61980 00000000 c008745c dc2d0e38 00004bc7 ce1f1af8
+[83321.795994] c0 2084 (v.airplayserver) 7e9c a0060013 00000000
+0000c350 00000000 1e848000 00000000 ce157f20 00000001
+[83321.796018] c0 2084 (v.airplayserver) 7ebc 0000c350 00000000
+1e848000 00000000 ce157f20 00000001 ce156000 c0db183c
+[83321.796039] c0 2084 (v.airplayserver) 7edc c08870e8 0000c350
+00000001 00000000 1e854350 00000000 00000001 00000000
+[83321.796061] c0 2084 (v.airplayserver) 7efc ce156000 0000c350
+00000000 ce157f98 c0087b44 0000c350 00000000 1e854350
+[83321.796082] c0 2084 (v.airplayserver) 7f1c 00000000 cc6c5f20
+00000000 00000000 00000000 fab25188 00004bc7 fab18e38
+[83321.796104] c0 2084 (v.airplayserver) 7f3c 00004bc7 c0086618
+c54449b8 00000001 00000824 c008745c 69612e76 616c7072
+[83321.796108] c0 2084 (v.airplayserver)
+R2: 0xc5447878:
+[83321.796129] c0 2084 (v.airplayserver) 7878 c5447878 c5447878
+c5447880 c5447880 c5447888 c5447888 c5447890 c5447890
+[83321.796150] c0 2084 (v.airplayserver) 7898 c5447898 c5447898
+c54478a0 c54478a0 c54478a8 c54478a8 c54478b0 c54478b0
+[83321.796171] c0 2084 (v.airplayserver) 78b8 c54478b8 c54478b8
+c54478c0 c54478c0 c54478c8 c54478c8 c54478d0 c54478d0
+[83321.796194] c0 2084 (v.airplayserver) 78d8 c54478d8 c54478d8
+00000000 00000064 00000064 00000000 00000000 00000000
+[83321.796216] c0 2084 (v.airplayserver) 78f8 c54478f8 c54478f8
+00000000 00000000 000136df 00000000 389fd980 00000000
+[83321.796237] c0 2084 (v.airplayserver) 7918 dac4dac4 00000000
+c54474c0 c544793c 00200200 c0db0210 ed3192cc c54475a4
+[83321.796258] c0 2084 (v.airplayserver) 7938 04f2cf8e c544793c
+c544793c ffffd918 ce1f1ac0 c0ca4800 ee0b1ac0 04f2d06d
+[83321.796283] c0 2084 (v.airplayserver) 7958 00000000 00000000
+de023377 00004bc7 de023377 00004bc7 00000000 d98e3c00
 
-On 12/5/2014 6:30 AM, Boris Brezillon wrote:
-> The NAND and NFC (NAND Flash Controller) were linked together with a
-> parent <-> child relationship.
->
-> This model has several drawbacks:
-> - it does not allow for multiple NAND chip handling while the controller
->    support multi-chip (even though the driver is not ready yet)
-> - it mixes NAND partitions and NFC nodes at the same level (which is a bit
->    disturbing)
-> - the introduction of the EBI bus implies defining NAND chips under the
->    EBI node, and the ranges available under the EBI node should be
->    restricted to EBI address space, while the NFC references several
->    registers outside of these EBI ranges.
->
-> Move the NFC node outside of the NAND node, to get a more future-proof
-> model.
->
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> ---
->   .../devicetree/bindings/mtd/atmel-nand.txt         | 46 ++++++++++++----------
->   1 file changed, 26 insertions(+), 20 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> index 6edc3b6..8896850 100644
-> --- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> +++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> @@ -30,15 +30,19 @@ Optional properties:
->     sector size 1024.
->   - nand-bus-width : 8 or 16 bus width if not present 8
->   - nand-on-flash-bbt: boolean to enable on flash bbt option if not present false
-> -- Nand Flash Controller(NFC) is a slave driver under Atmel nand flash
-> -  - Required properties:
-> -    - compatible : "atmel,sama5d3-nfc".
-> -    - reg : should specify the address and size used for NFC command registers,
-> -            NFC registers and NFC Sram. NFC Sram address and size can be absent
-> -            if don't want to use it.
-> -    - clocks: phandle to the peripheral clock
-> -  - Optional properties:
-> -    - atmel,write-by-sram: boolean to enable NFC write by sram.
-> +- atmel,nfc: phandle referencing the NAND Flash Controller, if available.
-> +
-> +The NAND Flash Controller (NFC) is an advanced NAND controller and should be
-> +used in conjunction with the NAND flash device.
-> +Required properties:
-> + - compatible : "atmel,sama5d3-nfc".
-> + - reg : should specify the address and size used for NFC command registers,
-> +         NFC registers and NFC Sram. NFC Sram address and size can be absent
-> +         if you don't want to use it.
-> + - clocks: phandle to the peripheral clock
-> +
-> +Optional properties:
-> + - atmel,write-by-sram: boolean to enable NFC write by sram.
->   
->   Examples:
->   nand0: nand@40000000,0 {
-> @@ -89,21 +93,23 @@ nand0: nand@40000000 {
->   };
->   
->   /* for NFC supported chips */
-> +nfc: nfc@70000000 {
-> +	compatible = "atmel,sama5d3-nfc";
-> +	#address-cells = <1>;
-> +	#size-cells = <1>;
-> +	clocks = <&hsmc_clk>
-> +	reg = <
-> +		0x70000000 0x10000000	/* NFC Command Registers */
-> +		0xffffc000 0x00000070	/* NFC HSMC regs */
-> +		0x00200000 0x00100000	/* NFC SRAM banks */
-> +	>;
-> +};
-> +
->   nand0: nand@40000000 {
->   	compatible = "atmel,at91rm9200-nand";
->   	#address-cells = <1>;
->   	#size-cells = <1>;
->   	ranges;
-> +	atmel,nfc = <&nfc>;
->           ...
-> -        nfc@70000000 {
-> -		compatible = "atmel,sama5d3-nfc";
-> -		#address-cells = <1>;
-> -		#size-cells = <1>;
-> -		clocks = <&hsmc_clk>
-> -		reg = <
-> -			0x70000000 0x10000000	/* NFC Command Registers */
-> -			0xffffc000 0x00000070	/* NFC HSMC regs */
-> -			0x00200000 0x00100000	/* NFC SRAM banks */
-> -		>;
-> -	};
->   };
-
+[83321.796286] c0 2084 (v.airplayserver)
+R3: 0xc0097214:
+[83321.796306] c0 2084 (v.airplayserver) 7214 1affffb9 e595317c
+e3530005 0affffb6 e3550000 0affffb4 e5953124 e5835038
+[83321.796327] c0 2084 (v.airplayserver) 7234 e5955120 e3550000
+1afffffa eaffffae e1a00004 e58d1004 e3a07001 ebfffa6d
+[83321.796350] c0 2084 (v.airplayserver) 7254 e59d1004 eaffff9b
+e1a02005 eaffffaf e1a03004 eaffffb5 e1a00004 ebfffa65
+[83321.796371] c0 2084 (v.airplayserver) 7274 eaffffd7 e59131b4
+e3530005 1affffd4 eaffff9d e7f001f2 c0d01f74 c0c9b4b4
+[83321.796395] c0 2084 (v.airplayserver) 7294 e92d40f8 e52de004
+e8bd4000 e1a07000 e5905060 e2804058 e3550000 0a000036
+[83321.796415] c0 2084 (v.airplayserver) 72b4 e594602c e594503c
+e3560000 12466008 e1550006 11a05006 0a000031 e5940038
+[83321.796435] c0 2084 (v.airplayserver) 72d4 e3500000 0a000003
+e1a01006 ebffff42 e3500000 d5945038 e5940034 e3500000
+[83321.796458] c0 2084 (v.airplayserver) 72f4 0a000003 e1a01006
+ebffff3b e3500000 d5945034 e1a00004 e1a01005 ebfffebf
+[83321.796462] c0 2084 (v.airplayserver)
+R4: 0xc5447498:
+[83321.796485] c0 2084 (v.airplayserver) 7498 00000000 00000000
+00000000 00000000 00000000 00000000 00000000 00000000
+[83321.796506] c0 2084 (v.airplayserver) 74b8 00000000 00000000
+57355734 00000000 00000000 00000000 00000003 00000021
+[83321.796526] c0 2084 (v.airplayserver) 74d8 00000048 04f2cfc4
+00000000 00000000 00000001 00000000 de021c07 00004bc7
+[83321.796549] c0 2084 (v.airplayserver) 74f8 cc985000 00c0da6a
+29275d16 0000034b 00000000 0315a8b6 115530e2 00000000
+[83321.796571] c0 2084 (v.airplayserver) 7518 0000034b 00000000
+00000001 00000001 2993334b 00000f7c 267b8ab8 000071c3
+[83321.796595] c0 2084 (v.airplayserver) 7538 267b8ab8 000071c3
+00000000 00000000 00000000 00000000 00000000 00000000
+[83321.796615] c0 2084 (v.airplayserver) 7558 0000e090 00000000
+00000000 00000000 00000037 00000000 04bc7de1 00000000
+[83321.796636] c0 2084 (v.airplayserver) 7578 00000000 00000000
+04bc7de0 00000000 0000001e 00000000 00000037 00000000
+[83321.796641] c0 2084 (v.airplayserver)
+R7: 0xc5447440:
+[83321.796661] c0 2084 (v.airplayserver) 7440 00000000 ee0be5f0
+ee0be5f0 00000000 00000001 00000000 00000000 00000000
+[83321.796683] c0 2084 (v.airplayserver) 7460 ee0a2980 00000000
+00000000 00000001 00000000 00000000 00000000 00000000
+[83321.796708] c0 2084 (v.airplayserver) 7480 00000000 00000000
+00000000 00000000 00000000 00000000 00000000 00000000
+[83321.796729] c0 2084 (v.airplayserver) 74a0 00000000 00000000
+00000000 00000000 00000000 00000000 00000000 00000000
+[83321.796751] c0 2084 (v.airplayserver) 74c0 57355734 00000000
+00000000 00000000 00000003 00000021 00000048 04f2cfc4
+[83321.796774] c0 2084 (v.airplayserver) 74e0 00000000 00000000
+00000001 00000000 de021c07 00004bc7 cc985000 00c0da6a
+[83321.796796] c0 2084 (v.airplayserver) 7500 29275d16 0000034b
+00000000 0315a8b6 115530e2 00000000 0000034b 00000000
+[83321.796816] c0 2084 (v.airplayserver) 7520 00000001 00000001
+2993334b 00000f7c 267b8ab8 000071c3 267b8ab8 000071c3
+[83321.796820] c0 2084 (v.airplayserver)
+R8: 0xce157ea0:
+[83321.796841] c0 2084 (v.airplayserver) 7ea0 00000000 0000c350
+00000000 1e848000 00000000 ce157f20 00000001 0000c350
+[83321.796862] c0 2084 (v.airplayserver) 7ec0 00000000 1e848000
+00000000 ce157f20 00000001 ce156000 c0db183c c08870e8
+[83321.796882] c0 2084 (v.airplayserver) 7ee0 0000c350 00000001
+00000000 1e854350 00000000 00000001 00000000 ce156000
+[83321.796905] c0 2084 (v.airplayserver) 7f00 0000c350 00000000
+ce157f98 c0087b44 0000c350 00000000 1e854350 00000000
+[83321.796927] c0 2084 (v.airplayserver) 7f20 cc6c5f20 00000000
+00000000 00000000 fab25188 00004bc7 fab18e38 00004bc7
+[83321.796948] c0 2084 (v.airplayserver) 7f40 c0086618 c54449b8
+00000001 00000824 c008745c 69612e76 616c7072 72657379
+[83321.796971] c0 2084 (v.airplayserver) 7f60 00726576 00000000
+ce1f1ac0 ce156000 047e3000 00000000 00000150 1dcd64ff
+[83321.796992] c0 2084 (v.airplayserver) 7f80 000000a2 c000f124
+ce156000 00000000 77d80ca4 c0087c60 00000000 1e848000
+[83321.796994] c0 2084 (v.airplayserver)
+R9: 0xc0c64440:
+[83321.797018] c0 2084 (v.airplayserver) 4440 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797038] c0 2084 (v.airplayserver) 4460 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797062] c0 2084 (v.airplayserver) 4480 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797084] c0 2084 (v.airplayserver) 44a0 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797108] c0 2084 (v.airplayserver) 44c0 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797128] c0 2084 (v.airplayserver) 44e0 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797150] c0 2084 (v.airplayserver) 4500 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797173] c0 2084 (v.airplayserver) 4520 e7fddef0 e7fddef0
+e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0 e7fddef0
+[83321.797178] c0 2084 (v.airplayserver)
+R10: 0xc5447440:
+[83321.797200] c0 2084 (v.airplayserver) 7440 00000000 ee0be5f0
+ee0be5f0 00000000 00000001 00000000 00000000 00000000
+[83321.797221] c0 2084 (v.airplayserver) 7460 ee0a2980 00000000
+00000000 00000001 00000000 00000000 00000000 00000000
+[83321.797243] c0 2084 (v.airplayserver) 7480 00000000 00000000
+00000000 00000000 00000000 00000000 00000000 00000000
+[83321.797265] c0 2084 (v.airplayserver) 74a0 00000000 00000000
+00000000 00000000 00000000 00000000 00000000 00000000
+[83321.797286] c0 2084 (v.airplayserver) 74c0 57355734 00000000
+00000000 00000000 00000003 00000021 00000048 04f2cfc4
+[83321.797310] c0 2084 (v.airplayserver) 74e0 00000000 00000000
+00000001 00000000 de021c07 00004bc7 cc985000 00c0da6a
+[83321.797333] c0 2084 (v.airplayserver) 7500 29275d16 0000034b
+00000000 0315a8b6 115530e2 00000000 0000034b 00000000
+[83321.797354] c0 2084 (v.airplayserver) 7520 00000001 00000001
+2993334b 00000f7c 267b8ab8 000071c3 267b8ab8 000071c3
+[83321.797360] c0 2084 (v.airplayserver) Process v.airplayserver (pid:
+2084, stack limit = 0xce156238)
+[83321.797365] c0 2084 (v.airplayserver) Stack: (0xce157e18 to 0xce158000)
+[83321.797370] c0 2084 (v.airplayserver) 7e00: c0097294 ce1f1d94
+[83321.797375] c0 2084 (v.airplayserver) 7e20: c089595c ce156000
+ce1f1ac0 c08880d4 ce157e90 fab25188 00004bc7 ce157f20
+[83321.797380] c0 2084 (v.airplayserver) 7e40: ce156000 ce157f20
+c54449b8 00000000 c08870e8 c0c644c0 c0c644c0 c0c644c0
+[83321.797385] c0 2084 (v.airplayserver) 7e60: c0c644c0 c0c644c0
+00000000 c0087120 c0c61980 00000000 fab18e38 00004bc7
+[83321.797390] c0 2084 (v.airplayserver) 7e80: ce156000 c0c61980
+00000000 c008745c dc2d0e38 00004bc7 ce1f1af8 a0060013
+[83321.797395] c0 2084 (v.airplayserver) 7ea0: 00000000 0000c350
+00000000 1e848000 00000000 ce157f20 00000001 0000c350
+[83321.797399] c0 2084 (v.airplayserver) 7ec0: 00000000 1e848000
+00000000 ce157f20 00000001 ce156000 c0db183c c08870e8
+[83321.797403] c0 2084 (v.airplayserver) 7ee0: 0000c350 00000001
+00000000 1e854350 00000000 00000001 00000000 ce156000
+[83321.797408] c0 2084 (v.airplayserver) 7f00: 0000c350 00000000
+ce157f98 c0087b44 0000c350 00000000 1e854350 00000000
+[83321.797412] c0 2084 (v.airplayserver) 7f20: cc6c5f20 00000000
+00000000 00000000 fab25188 00004bc7 fab18e38 00004bc7
+[83321.797417] c0 2084 (v.airplayserver) 7f40: c0086618 c54449b8
+00000001 00000824 c008745c 69612e76 616c7072 72657379
+[83321.797421] c0 2084 (v.airplayserver) 7f60: 00726576 00000000
+ce1f1ac0 ce156000 047e3000 00000000 00000150 1dcd64ff
+[83321.797426] c0 2084 (v.airplayserver) 7f80: 000000a2 c000f124
+ce156000 00000000 77d80ca4 c0087c60 00000000 1e848000
+[83321.797431] c0 2084 (v.airplayserver) 7fa0: 437b1bac c000ef80
+437b1bac 00000150 77d80c70 00000000 00000001 00000128
+[83321.797436] c0 2084 (v.airplayserver) 7fc0: 437b1bac 00000150
+1dcd64ff 000000a2 77544008 1e848000 437b1ba8 77d80ca4
+[83321.797441] c0 2084 (v.airplayserver) 7fe0: 0000002a 77d80c68
+4157025c 4009fe44 20060010 77d80c70 ff080001 ff080001
+[83321.797457] c0 2084 (v.airplayserver) [<c02c22f0>]
+(rb_next+0x0/0x60) from [<c00973a0>] (pick_next_task_fair+0x10c/0x138)
+[83321.797478] c0 2084 (v.airplayserver) [<c00973a0>]
+(pick_next_task_fair+0x10c/0x138) from [<c08880d4>]
+(__schedule+0x678/0x7e8)
+[83321.797491] c0 2084 (v.airplayserver) [<c08880d4>]
+(__schedule+0x678/0x7e8) from [<c08870e8>] (do_nanosleep+0xb4/0x134)
+[83321.797502] c0 2084 (v.airplayserver) [<c08870e8>]
+(do_nanosleep+0xb4/0x134) from [<c0087b44>]
+(hrtimer_nanosleep+0x98/0x110)
+[83321.797509] c0 2084 (v.airplayserver) [<c0087b44>]
+(hrtimer_nanosleep+0x98/0x110) from [<c0087c60>]
+(SyS_nanosleep+0xa4/0xb0)
+[83321.797523] c0 2084 (v.airplayserver) [<c0087c60>]
+(SyS_nanosleep+0xa4/0xb0) from [<c000ef80>]
+(ret_fast_syscall+0x0/0x30)
+[83321.797531] c0 2084 (v.airplayserver) Code: 15821000 e8900007
+e8830007 e12fff1e (e5902000)
