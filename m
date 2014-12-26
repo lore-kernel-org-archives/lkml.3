@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaLZOqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:46:45 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
+	id S1752004AbaLZOmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:42:33 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17530 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752008AbaLZOme (ORCPT
+	by vger.kernel.org with ESMTP id S1751046AbaLZOm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:34 -0500
+	Fri, 26 Dec 2014 09:42:28 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895462"
+   d="scan'208";a="114895457"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Johannes Berg <johannes.berg@intel.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        Kalle Valo <kvalo@codeaurora.org>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/27] iwlwifi: dvm: tt: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:43 +0100
-Message-Id: <1419604558-29743-13-git-send-email-Julia.Lawall@lip6.fr>
+To: Solomon Peachy <pizza@shaftnet.org>
+Cc: kernel-janitors@vger.kernel.org, Kalle Valo <kvalo@codeaurora.org>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 7/27] cw1200: main: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:38 +0100
+Message-Id: <1419604558-29743-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -46,31 +44,23 @@ expression t,f,d;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/tt.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
+ drivers/net/wireless/cw1200/main.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/dvm/tt.c b/drivers/net/wireless/iwlwifi/dvm/tt.c
-index acb981a..c4736c8 100644
---- a/drivers/net/wireless/iwlwifi/dvm/tt.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/tt.c
-@@ -612,15 +612,10 @@ void iwl_tt_initialize(struct iwl_priv *priv)
- 	memset(tt, 0, sizeof(struct iwl_tt_mgmt));
+diff --git a/drivers/net/wireless/cw1200/main.c b/drivers/net/wireless/cw1200/main.c
+index 3e78cc3..fa965ee 100644
+--- a/drivers/net/wireless/cw1200/main.c
++++ b/drivers/net/wireless/cw1200/main.c
+@@ -374,9 +374,8 @@ static struct ieee80211_hw *cw1200_init_common(const u8 *macaddr,
+ 	INIT_WORK(&priv->update_filtering_work, cw1200_update_filtering_work);
+ 	INIT_WORK(&priv->set_beacon_wakeup_period_work,
+ 		  cw1200_set_beacon_wakeup_period_work);
+-	init_timer(&priv->mcast_timeout);
+-	priv->mcast_timeout.data = (unsigned long)priv;
+-	priv->mcast_timeout.function = cw1200_mcast_timeout;
++	setup_timer(&priv->mcast_timeout, cw1200_mcast_timeout,
++		    (unsigned long)priv);
  
- 	tt->state = IWL_TI_0;
--	init_timer(&priv->thermal_throttle.ct_kill_exit_tm);
--	priv->thermal_throttle.ct_kill_exit_tm.data = (unsigned long)priv;
--	priv->thermal_throttle.ct_kill_exit_tm.function =
--		iwl_tt_check_exit_ct_kill;
--	init_timer(&priv->thermal_throttle.ct_kill_waiting_tm);
--	priv->thermal_throttle.ct_kill_waiting_tm.data =
--		(unsigned long)priv;
--	priv->thermal_throttle.ct_kill_waiting_tm.function =
--		iwl_tt_ready_for_ct_kill;
-+	setup_timer(&priv->thermal_throttle.ct_kill_exit_tm,
-+		    iwl_tt_check_exit_ct_kill, (unsigned long)priv);
-+	setup_timer(&priv->thermal_throttle.ct_kill_waiting_tm,
-+		    iwl_tt_ready_for_ct_kill, (unsigned long)priv);
- 	/* setup deferred ct kill work */
- 	INIT_WORK(&priv->tt_work, iwl_bg_tt_work);
- 	INIT_WORK(&priv->ct_enter, iwl_bg_ct_enter);
+ 	if (cw1200_queue_stats_init(&priv->tx_queue_stats,
+ 				    CW1200_LINK_ID_MAX,
 
