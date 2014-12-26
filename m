@@ -1,82 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaLZSv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 13:51:27 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:61020 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaLZSv0 (ORCPT
+	id S1751470AbaLZTC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 14:02:27 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:61634 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751127AbaLZTCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 13:51:26 -0500
-Date: Fri, 26 Dec 2014 19:51:09 +0100
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Damon Swayn <damon.swayn@null.net>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: line6: pcm: Corrected checkpatch notices in
- pcm.h
-Message-ID: <20141226185109.GA27831@t400>
-References: <1419593406-18978-1-git-send-email-damon.swayn@null.net>
+	Fri, 26 Dec 2014 14:02:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419593406-18978-1-git-send-email-damon.swayn@null.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141224223434.GA20669@amd>
+References: <20141203214641.GA1390@amd> <20141224223434.GA20669@amd>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 26 Dec 2014 13:02:02 -0600
+Message-ID: <CAL_JsqJsDqYm-xfEM1CqNzJxfZY6vnYxaBYpT+3t4+gV2F3M1A@mail.gmail.com>
+Subject: Re: [PATCHv2] media: i2c/adp1653: devicetree support for adp1653
+To: Pavel Machek <pavel@ucw.cz>, Bryan Wu <cooloney@gmail.com>
+Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, freemangordon@abv.bg,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>, sakari.ailus@iki.fi,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        Jacek Anaszewski <j.anaszewski@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26, Damon Swayn wrote:
-> Fixed a coding style issue
-
-You need to be more specific here, describe what kind of issue this
-patch is fixing. Keep in mind that this message, when formulated
-properly, will end up as a comment to the Linux kernel source - it must,
-therefore, contain valuable information.
-
-thanks,
-konrad
-
-ps: the file name does not have to be mentioned in the subject as this
-information is already in the diff.
- 
-> Signed-off-by: Damon Swayn <damon.swayn@null.net>
+On Wed, Dec 24, 2014 at 4:34 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>
+> We are moving to device tree support on OMAP3, but that currently
+> breaks ADP1653 driver. This adds device tree support, plus required
+> documentation.
+>
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+>
 > ---
->  drivers/staging/line6/pcm.h | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/line6/pcm.h b/drivers/staging/line6/pcm.h
-> index 6aa0d46..5d87934 100644
-> --- a/drivers/staging/line6/pcm.h
-> +++ b/drivers/staging/line6/pcm.h
-> @@ -145,21 +145,21 @@ enum {
->  	    LINE6_BIT_PCM_IMPULSE_PLAYBACK_BUFFER |
->  #endif
->  	    LINE6_BIT_PCM_ALSA_PLAYBACK_BUFFER |
-> -	    LINE6_BIT_PCM_MONITOR_PLAYBACK_BUFFER ,
-> +	    LINE6_BIT_PCM_MONITOR_PLAYBACK_BUFFER,
->  
->  	LINE6_BITS_PLAYBACK_STREAM =
->  #ifdef CONFIG_LINE6_USB_IMPULSE_RESPONSE
->  	    LINE6_BIT_PCM_IMPULSE_PLAYBACK_STREAM |
->  #endif
->  	    LINE6_BIT_PCM_ALSA_PLAYBACK_STREAM |
-> -	    LINE6_BIT_PCM_MONITOR_PLAYBACK_STREAM ,
-> +	    LINE6_BIT_PCM_MONITOR_PLAYBACK_STREAM,
->  
->  	LINE6_BITS_CAPTURE_BUFFER =
->  #ifdef CONFIG_LINE6_USB_IMPULSE_RESPONSE
->  	    LINE6_BIT_PCM_IMPULSE_CAPTURE_BUFFER |
->  #endif
->  	    LINE6_BIT_PCM_ALSA_CAPTURE_BUFFER |
-> -	    LINE6_BIT_PCM_MONITOR_CAPTURE_BUFFER ,
-> +	    LINE6_BIT_PCM_MONITOR_CAPTURE_BUFFER,
->  
->  	LINE6_BITS_CAPTURE_STREAM =
->  #ifdef CONFIG_LINE6_USB_IMPULSE_RESPONSE
-> -- 
-> 2.1.0
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+>
+> Changed -microsec to -us, as requested by devicetree people.
+>
+> Fixed checkpatch issues.
+>
+> diff --git a/Documentation/devicetree/bindings/leds/common.txt b/Documentation/devicetree/bindings/leds/common.txt
+> index 2d88816..2c6c7c5 100644
+> --- a/Documentation/devicetree/bindings/leds/common.txt
+> +++ b/Documentation/devicetree/bindings/leds/common.txt
+> @@ -14,6 +14,15 @@ Optional properties for child nodes:
+>       "ide-disk" - LED indicates disk activity
+>       "timer" - LED flashes at a fixed, configurable rate
+>
+> +- max-microamp : maximum intensity in microamperes of the LED
+> +                (torch LED for flash devices)
+> +- flash-max-microamp : maximum intensity in microamperes of the
+> +                       flash LED; it is mandatory if the LED should
+> +                      support the flash mode
+> +- flash-timeout-microsec : timeout in microseconds after which the flash
+> +                           LED is turned off
+
+Doesn't all this go in your flash led binding patch?
+
+> +
+> +
+>  Examples:
+>
+>  system-status {
+> @@ -21,3 +30,10 @@ system-status {
+>         linux,default-trigger = "heartbeat";
+>         ...
+>  };
+> +
+> +camera-flash {
+> +       label = "Flash";
+> +       max-microamp = <50000>;
+> +       flash-max-microamp = <320000>;
+> +       flash-timeout-microsec = <500000>;
+> +}
+> diff --git a/Documentation/devicetree/bindings/media/i2c/adp1653.txt b/Documentation/devicetree/bindings/media/i2c/adp1653.txt
+> new file mode 100644
+> index 0000000..3c7065f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/i2c/adp1653.txt
+> @@ -0,0 +1,38 @@
+> +* Analog Devices ADP1653 flash LED driver
+> +
+> +Required Properties:
+> +
+> +  - compatible: Must contain one of the following
+> +    - "adi,adp1653"
+> +
+> +  - reg: I2C slave address
+> +
+> +  - gpios: References to the GPIO that controls the power for the chip.
+> +
+> +There are two led outputs available - flash and indicator. One led is
+> +represented by one child node, nodes need to be named "flash" and "indicator".
+> +
+> +Required properties of the LED child node:
+> +- max-microamp : see Documentation/devicetree/bindings/leds/common.txt
+> +
+> +Required properties of the flash LED child node:
+> +
+> +- flash-max-microamp : see Documentation/devicetree/bindings/leds/common.txt
+> +- flash-timeout-us : see Documentation/devicetree/bindings/leds/common.txt
+> +
+> +Example:
+> +
+> +        adp1653: led-controller@30 {
+> +                compatible = "adi,adp1653";
+> +               reg = <0x30>;
+> +                gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
+> +
+> +               flash {
+> +                        flash-timeout-us = <500000>;
+> +                        flash-max-microamp = <320000>;
+> +                        max-microamp = <50000>;
+> +               };
+> +                indicator {
+
+These are different LEDs or different modes?
+
+> +                        max-microamp = <17500>;
+
+This is a bit inconsistent. The binding says this is for flash LEDs
+torch mode, but I see no reason why it can't be common. Can you update
+the binding doc to be clear here.
+
+Also, aren't you missing label properties?
+
+Rob
