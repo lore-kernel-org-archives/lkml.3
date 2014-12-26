@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745AbaLZXvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 18:51:55 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:58910 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaLZXvy (ORCPT
+	id S1751573AbaLZX6z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 18:58:55 -0500
+Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:47591 "HELO
+	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750779AbaLZX6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 18:51:54 -0500
-Date: Fri, 26 Dec 2014 15:51:51 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] nouveau: fix ambiguous backlight controls
-Message-ID: <20141226235151.GA18697@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Ilia Mirkin <imirkin@alum.mit.edu>, David Airlie <airlied@linux.ie>,
-	Ben Skeggs <bskeggs@redhat.com>,
-	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-	Hans de Goede <hdegoede@redhat.com>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1419629187-13916-1-git-send-email-jmmahler@gmail.com>
- <CAKb7Uvi2jXTeD9+pUg6YiQrwK1HaVt2aoC-to1Xw1htvmJao-w@mail.gmail.com>
+	Fri, 26 Dec 2014 18:58:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKb7Uvi2jXTeD9+pUg6YiQrwK1HaVt2aoC-to1Xw1htvmJao-w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1417806738.2404.42.camel@jtkirshe-mobl>
+References: <1417804872-58635-1-git-send-email-joestringer@nicira.com> <1417806738.2404.42.camel@jtkirshe-mobl>
+From: Jesse Gross <jesse@nicira.com>
+Date: Fri, 26 Dec 2014 18:58:32 -0500
+Message-ID: <CAEP_g=8mS=P2U_vU2ZMEBUkU8jWo5t2P0h9kxF_jbzJhExAZ9g@mail.gmail.com>
+Subject: Re: [linux-nics] [PATCHv4 net] i40e: Implement ndo_gso_check()
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Joe Stringer <joestringer@nicira.com>, netdev <netdev@vger.kernel.org>,
+        "linux.nics" <linux.nics@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tom Herbert <therbert@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ilia,
+On Fri, Dec 5, 2014 at 2:12 PM, Jeff Kirsher
+<jeffrey.t.kirsher@intel.com> wrote:
+> On Fri, 2014-12-05 at 10:41 -0800, Joe Stringer wrote:
+>> ndo_gso_check() was recently introduced to allow NICs to report the
+>> offloading support that they have on a per-skb basis. Add an
+>> implementation for this driver which checks for IPIP, GRE, UDP
+>> tunnels.
+>>
+>> Signed-off-by: Joe Stringer <joestringer@nicira.com>
+>> ---
+>> v4: Simplify the check to just do tunnel header length.
+>>     Fix #define style issue.
+>> v3: Drop IPIP and GRE (no driver support even though hw supports it).
+>>     Check for UDP outer protocol for UDP tunnels.
+>> v2: Expand to include IP in IP and IPv4/IPv6 inside GRE/UDP tunnels.
+>>     Add MAX_INNER_LENGTH (as 80).
+>> ---
+>>  drivers/net/ethernet/intel/i40e/i40e_main.c |   12 ++++++++++++
+>>  1 file changed, 12 insertions(+)
+>
+> Thanks Joe, I will update the patch in my queue with your latest
+> version.
 
-On Fri, Dec 26, 2014 at 04:39:08PM -0500, Ilia Mirkin wrote:
-> On Fri, Dec 26, 2014 at 4:26 PM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
-> > If a display supports backlight control using the nouveau driver, and
-> > also supports standard ACPI backlight control, there will be two sets of
-> > controls.
-> >
-> > /sys/class/backlight/acpi_video0
-> > /sys/class/backlight/nv_backlight
-> >
-> > This creates ambiguity because these controls can be out of sync with
-> > each other.  One could be at 100% while the other is at 0% and the
-> > actual display brightness depends on which one was used last.  This also
-> > creates anomalies in Powertop which will show two values for brightness
-> > with potentially different values.
-> >
-> > Fix this ambiguity by having the nouveau driver only enable its
-> > backlight controls if the standard ACPI controls are not present.
-> >
-> > Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-> > ---
-> >  drivers/gpu/drm/nouveau/nouveau_backlight.c | 5 +++++
-> >  1 file changed, 5 insertions(+)
-> >
-> > diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> > index e566c5b..3a52bd4 100644
-> > --- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> > +++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> > @@ -221,6 +221,11 @@ nouveau_backlight_init(struct drm_device *dev)
-> >         struct nvif_device *device = &drm->device;
-> >         struct drm_connector *connector;
-> >
-> > +       if (acpi_video_backlight_support()) {
-> 
-> None of the other drivers have this. Is nouveau somehow different
-> than, say, radeon in this respect?
-> 
-> Unfortunately the backlight situation is pretty fubar'd... sometimes
-> the acpi controls don't work, sometimes the card controls don't work,
-> sometimes they both work but in different ways (and then everyone's
-> favourite -- neither works, and there's some third platform thing).
-> I'm pretty sure this code existed before, but got removed. See commit
-> bee564430feec1175ee64bcfd4913cacc519f817 and the previous commit
-> 5bead799d3f8 before that. The ping-pong is probably not the right way
-> to go.
-> 
-
-I was not aware of that change. But you are right, it took out what I
-was trying to put back in.
-
-Thanks for the helpful information.  I will have to rethink this fix.
-
-[...]
-
--- 
-- Jeremiah Mahler
+Jeff, as a heads-up, this patch and the corresponding one for fm10k
+will no longer apply now that the ndo has changed. This was changed by
+5f35227e ("net: Generalize ndo_gso_check to ndo_features_check"). The
+update needed is trivial and is just due to the change in the function
+signature but I'm not sure where you are in the testing process with
+this.
