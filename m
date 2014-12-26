@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321AbaL0Py2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 10:54:28 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24714 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748AbaL0Py1 (ORCPT
+	id S1751496AbaL0P5S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 10:57:18 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40175 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaL0P5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 10:54:27 -0500
-Message-ID: <549ED5D7.8070007@oracle.com>
-Date: Sat, 27 Dec 2014 10:52:55 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 27 Dec 2014 10:57:16 -0500
+Date: Fri, 26 Dec 2014 08:54:02 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pranith Kumar <bobby.prani@gmail.com>
+Subject: Re: linux-next: build failure after merge of the rcu tree
+Message-ID: <20141226165401.GH11609@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141226185120.402d392f@canb.auug.org.au>
 MIME-Version: 1.0
-To: Davidlohr Bueso <dave@stgolabs.net>, Li Bin <huawei.libin@huawei.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        rui.xiang@huawei.com, wengmeiling.weng@huawei.com
-Subject: Re: sched: spinlock recursion in sched_rr_get_interval
-References: <53B98709.3090603@oracle.com>	 <20140707083016.GA19379@twins.programming.kicks-ass.net>	 <53BAA6DF.5060409@oracle.com>	 <20140707200550.GA6758@twins.programming.kicks-ass.net>	 <549D03F6.9090607@huawei.com> <1419673927.8667.2.camel@stgolabs.net>
-In-Reply-To: <1419673927.8667.2.camel@stgolabs.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141226185120.402d392f@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14122715-0013-0000-0000-0000076D415C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2014 04:52 AM, Davidlohr Bueso wrote:
->> Hello，
->> > Does ACCESS_ONCE() can help this issue? I have no evidence that its lack is
->> > responsible for the issue, but I think here need it indeed. Is that right?
->> > 
->> > SPIN_BUG_ON(ACCESS_ONCE(lock->owner) == current, "recursion");
-> Hmm I guess on a contended spinlock, there's a chance that lock->owner
-> can change, if the contended lock is acquired, right between the 'cond'
-> and spin_debug(), which would explain the bogus ->owner related
-> messages. Of course the same applies to ->owner_cpu. Your ACCESS_ONCE,
-> however, doesn't really change anything since we still read ->owner
-> again in spin_debug; How about something like this (untested)?
+On Fri, Dec 26, 2014 at 06:51:20PM +1100, Stephen Rothwell wrote:
+> Hi Paul,
+> 
+> After merging the rcu tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> In file included from arch/powerpc/include/asm/kvm_ppc.h:30:0,
+>                  from arch/powerpc/kernel/setup_64.c:68:
+> include/linux/kvm_host.h:366:21: error: field 'srcu' has incomplete type
+>   struct srcu_struct srcu;
+>                      ^
+> include/linux/kvm_host.h:367:21: error: field 'irq_srcu' has incomplete type
+>   struct srcu_struct irq_srcu;
+>                      ^
+> 
+> Caused by commit f01a973369dd ("srcu: Isolate srcu sections using
+> CONFIG_SRCU").  Please stop readding that commit after until it is
+> fixed :-(
+> 
+> I have reverted that commit for today (again :-().
 
-There's a chance that lock->owner would change, but how would you explain
-it changing to 'current'?
+Hello, Stephen,
 
-That is, what race condition specifically creates the
-'lock->owner == current' situation in the debug check?
+Please accept my apologies for the hassle!  I had removed that commit
+for the duration of the merge window, and forgotten about it when I
+re-added all my non-3.19 commits.  :-/
 
-Thanks,
-Sasha
+Could you please send your .config?  Or let me know whether it has
+CONFIG_KVM=n?
+
+Pranith, if Stephen has CONFIG_KVM=n, it might be best to move the
+"select SRCU" to "config PPC" in arch/powerpc/Kconfig.  Are you able
+to cross-build powerpc?
+
+							Thanx, Paul
+
