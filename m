@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbaLZJCO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 04:02:14 -0500
-Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:30759 "EHLO
+	id S1751701AbaLZJCV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 04:02:21 -0500
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:4001 "EHLO
 	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751315AbaLZJBw (ORCPT
+	by vger.kernel.org with ESMTP id S1751369AbaLZJBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Dec 2014 04:01:52 -0500
 From: Jisheng Zhang <jszhang@marvell.com>
@@ -16,10 +16,12 @@ To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <thomas.petazzoni@free-electrons.com>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH v2 0/3] ARM: dts: berlin: add PMU and twd's cpu mask and fix GPIO locations
-Date: Fri, 26 Dec 2014 16:57:58 +0800
-Message-ID: <1419584281-4811-1-git-send-email-jszhang@marvell.com>
+Subject: [PATCH v2 1/3] ARM: dts: berlin: add pmu node for BG2Q and BG2CD
+Date: Fri, 26 Dec 2014 16:57:59 +0800
+Message-ID: <1419584281-4811-2-git-send-email-jszhang@marvell.com>
 X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1419584281-4811-1-git-send-email-jszhang@marvell.com>
+References: <1419584281-4811-1-git-send-email-jszhang@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
@@ -31,24 +33,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches try to improve dts for berlin. One of them enables PMU support
-to BG2Q and BG2CD SoCs. One of them adds the missing PPI cpu mask to twd timer
-interrupts. The last one corrects the SM GPIOs' location for BG2Q SoC.
+This patch adds the pmu node, enabling the PMU unit on Marvell BG2Q and
+BG2CD SoCs.
 
-Changes since v1:
- - Adds some text to the log of the second commit
- - Adds the patch to fix SM GPIO locations
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+---
+ arch/arm/boot/dts/berlin2cd.dtsi | 5 +++++
+ arch/arm/boot/dts/berlin2q.dtsi  | 8 ++++++++
+ 2 files changed, 13 insertions(+)
 
-Jisheng Zhang (3):
-  ARM: dts: berlin: add pmu node for BG2Q and BG2CD
-  ARM: dts: berlin: add PPI cpu mask to twd timer interrupts
-  ARM: dts: berlin: correct BG2Q's SM GPIO location.
-
- arch/arm/boot/dts/berlin2.dtsi   |  2 +-
- arch/arm/boot/dts/berlin2cd.dtsi |  7 +++-
- arch/arm/boot/dts/berlin2q.dtsi  | 70 ++++++++++++++++++++++------------------
- 3 files changed, 46 insertions(+), 33 deletions(-)
-
+diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
+index 230df3b..a318bc3 100644
+--- a/arch/arm/boot/dts/berlin2cd.dtsi
++++ b/arch/arm/boot/dts/berlin2cd.dtsi
+@@ -45,6 +45,11 @@
+ 
+ 		ranges = <0 0xf7000000 0x1000000>;
+ 
++		pmu {
++			compatible = "arm,cortex-a9-pmu";
++			interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
++		};
++
+ 		sdhci0: sdhci@ab0000 {
+ 			compatible = "mrvl,pxav3-mmc";
+ 			reg = <0xab0000 0x200>;
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 35253c9..933dcbb 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -63,6 +63,14 @@
+ 		ranges = <0 0xf7000000 0x1000000>;
+ 		interrupt-parent = <&gic>;
+ 
++		pmu {
++			compatible = "arm,cortex-a9-pmu";
++			interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>;
++		};
++
+ 		sdhci0: sdhci@ab0000 {
+ 			compatible = "mrvl,pxav3-mmc";
+ 			reg = <0xab0000 0x200>;
 -- 
 2.1.4
 
