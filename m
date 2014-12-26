@@ -1,73 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaLZULq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 15:11:46 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:63641 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173AbaLZULo (ORCPT
+	id S1751429AbaLZUdr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 15:33:47 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55894 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaLZUdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 15:11:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <1419245407.30945.35.camel@x220>
-References: <1417038661-30209-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<1417038661-30209-3-git-send-email-bjorn.andersson@sonymobile.com>
-	<1419245407.30945.35.camel@x220>
-Date: Fri, 26 Dec 2014 12:11:42 -0800
-Message-ID: <CAJAp7OiEkuz8wjdix-=BHU2Eu6Yzbn1P52F8zzjO6wA_cpEWng@mail.gmail.com>
-Subject: Re: [PATCH v8 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Paul Bolle <pebolle@tiscali.nl>, Lee Jones <lee.jones@linaro.org>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Mark Brown <broonie@kernel.org>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
+	Fri, 26 Dec 2014 15:33:43 -0500
+Date: Fri, 26 Dec 2014 21:33:40 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, freemangordon@abv.bg,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>, sakari.ailus@iki.fi,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        Jacek Anaszewski <j.anaszewski@samsung.com>
+Subject: Re: [PATCHv2] media: i2c/adp1653: devicetree support for adp1653
+Message-ID: <20141226203340.GA1791@amd>
+References: <20141203214641.GA1390@amd>
+ <20141224223434.GA20669@amd>
+ <CAL_JsqJsDqYm-xfEM1CqNzJxfZY6vnYxaBYpT+3t4+gV2F3M1A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqJsDqYm-xfEM1CqNzJxfZY6vnYxaBYpT+3t4+gV2F3M1A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 2:50 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Hi Bjorn,
->
+Hi!
 
-Hi Paul
+> > We are moving to device tree support on OMAP3, but that currently
+> > breaks ADP1653 driver. This adds device tree support, plus required
+> > documentation.
+> >
+> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> >
+> > ---
+> >
+> > Changed -microsec to -us, as requested by devicetree people.
+> >
+> > Fixed checkpatch issues.
+> >
+> > diff --git a/Documentation/devicetree/bindings/leds/common.txt b/Documentation/devicetree/bindings/leds/common.txt
+> > index 2d88816..2c6c7c5 100644
+> > --- a/Documentation/devicetree/bindings/leds/common.txt
+> > +++ b/Documentation/devicetree/bindings/leds/common.txt
+> > @@ -14,6 +14,15 @@ Optional properties for child nodes:
+> >       "ide-disk" - LED indicates disk activity
+> >       "timer" - LED flashes at a fixed, configurable rate
+> >
+> > +- max-microamp : maximum intensity in microamperes of the LED
+> > +                (torch LED for flash devices)
+> > +- flash-max-microamp : maximum intensity in microamperes of the
+> > +                       flash LED; it is mandatory if the LED should
+> > +                      support the flash mode
+> > +- flash-timeout-microsec : timeout in microseconds after which the flash
+> > +                           LED is turned off
+> 
+> Doesn't all this go in your flash led binding patch?
 
-[..]
->
-> The Qualcomm RPM regulator driver (see Kconfig symbol
-> REGULATOR_QCOM_RPM) was added in v3.18. It depends on the above symbol,
-> so it has not yet gotten build coverage. Even manual hacks like
->     make -C ../.. M=$PWD CONFIG_REGULATOR_QCOM_RPM=m qcom_rpm-regulator.ko
->
-> won't work for that driver, because it includes linux/mfd/qcom_rpm.h,
-> which is not part of the tree.
->
+No, I should not have included this part.
 
-Correct, but unfortunately Lee Jones awaits devicetree maintainers ack
-(or any comment) and have been doing so for months now. I did send out
-a ping a few weeks ago, but might have done so when they where
-occupied by the merge window.
+> > +Example:
+> > +
+> > +        adp1653: led-controller@30 {
+> > +                compatible = "adi,adp1653";
+> > +               reg = <0x30>;
+> > +                gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>; /* 88 */
+> > +
+> > +               flash {
+> > +                        flash-timeout-us = <500000>;
+> > +                        flash-max-microamp = <320000>;
+> > +                        max-microamp = <50000>;
+> > +               };
+> > +                indicator {
+> 
+> These are different LEDs or different modes?
+
+flash & indicator are different LEDs. One is white, one is red. Flash
+can be used as a flash and as a torch.
+
+> > +                        max-microamp = <17500>;
+> 
+> This is a bit inconsistent. The binding says this is for flash LEDs
+> torch mode, but I see no reason why it can't be common. Can you update
+> the binding doc to be clear here.
+
+By inconsisnent, you mean you want patch below?
+
+> Also, aren't you missing label properties?
+
+label is optional, and as my driver does not yet use it, I forgot
+about it.
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+index 2c6c7c5..92d4dac 100644
+--- a/Documentation/devicetree/bindings/leds/common.txt
++++ b/Documentation/devicetree/bindings/leds/common.txt
+@@ -15,7 +15,6 @@ Optional properties for child nodes:
+      "timer" - LED flashes at a fixed, configurable rate
+ 
+ - max-microamp : maximum intensity in microamperes of the LED
+-	         (torch LED for flash devices)
+ - flash-max-microamp : maximum intensity in microamperes of the
+                        flash LED; it is mandatory if the LED should
+ 		       support the flash mode
 
 
-Lee, the Qualcomm RPM binding is not for a subsystem and is limited to
-Qualcomm devices. Could we apply this in accordance with II.2 in
-Documentation/devicetree/bindings/submitting-patches.txt or is there
-anything I could do to make you feel comfortable doing so?
-
-> It seems there's no generally agreed upon guideline for situations like
-> this. So I guess it's up to Mark to decide how long the tree should
-> include an unbuildable driver.
->
-
-I haven't seen any guidelines, but appreciate Mark's way of working in
-this matter - as we've been able to run our devices with fewer
-out-of-tree patches.
-
-Regards,
-Bjorn
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
