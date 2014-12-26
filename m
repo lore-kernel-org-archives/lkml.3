@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaLZAGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Dec 2014 19:06:47 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:35634 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaLZAGT (ORCPT
+	id S1752637AbaLZAHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Dec 2014 19:07:24 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:59789 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbaLZAGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Dec 2014 19:06:19 -0500
+	Thu, 25 Dec 2014 19:06:06 -0500
 From: Jeremiah Mahler <jmmahler@gmail.com>
 To: Oleg Drokin <oleg.drokin@intel.com>
 Cc: Andreas Dilger <andreas.dilger@intel.com>,
@@ -21,9 +21,9 @@ Cc: Andreas Dilger <andreas.dilger@intel.com>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         James A Shackleford <shack@linux.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Jeremiah Mahler <jmmahler@gmail.com>
-Subject: [PATCH 5/6] staging: lustre: replace MIN with min_t, remove cast
-Date: Thu, 25 Dec 2014 16:04:45 -0800
-Message-Id: <1419552286-8492-6-git-send-email-jmmahler@gmail.com>
+Subject: [PATCH 2/6] staging: lustre: replace MIN with min_t
+Date: Thu, 25 Dec 2014 16:04:42 -0800
+Message-Id: <1419552286-8492-3-git-send-email-jmmahler@gmail.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1419552286-8492-1-git-send-email-jmmahler@gmail.com>
 References: <1419552286-8492-1-git-send-email-jmmahler@gmail.com>
@@ -31,27 +31,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch from MIN to min_t and remove the previous cast of the second
-argument to int.
+Switch from MIN to the built in min_t with the int type.
 
 Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
 ---
- drivers/staging/lustre/lnet/lnet/lib-move.c | 2 +-
+ drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lnet/lnet/lib-move.c b/drivers/staging/lustre/lnet/lnet/lib-move.c
-index 76eb238..d11686f 100644
---- a/drivers/staging/lustre/lnet/lnet/lib-move.c
-+++ b/drivers/staging/lustre/lnet/lnet/lib-move.c
-@@ -1530,7 +1530,7 @@ lnet_parse_reply(lnet_ni_t *ni, lnet_msg_t *msg)
- 	LASSERT(md->md_offset == 0);
+diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+index 95f1e17..94df05b 100644
+--- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
++++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+@@ -1087,7 +1087,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
+ 	niov = 0;
  
- 	rlength = hdr->payload_length;
--	mlength = MIN(rlength, (int)md->md_length);
-+	mlength = min_t(int, rlength, md->md_length);
+ 	do {
+-		nob = MIN (nob_to_skip, sizeof (ksocknal_slop_buffer));
++		nob = min_t(int, nob_to_skip, sizeof(ksocknal_slop_buffer));
  
- 	if (mlength < rlength &&
- 	    (md->md_options & LNET_MD_TRUNCATE) == 0) {
+ 		conn->ksnc_rx_iov[niov].iov_base = ksocknal_slop_buffer;
+ 		conn->ksnc_rx_iov[niov].iov_len  = nob;
 -- 
 2.1.4
 
