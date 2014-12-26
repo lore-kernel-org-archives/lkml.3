@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaLZL44 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 06:56:56 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:7956 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751441AbaLZL4x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 06:56:53 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'minchan@kernel.org'" <minchan@kernel.org>,
-        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
-        "'Kirill A. Shutemov'" <kirill@shutemov.name>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>,
-        "'pintu.k@samsung.com'" <pintu.k@samsung.com>
-Date: Fri, 26 Dec 2014 19:56:49 +0800
-Subject: [RFC] mm:change meminfo cached calculation
-Thread-Topic: [RFC] mm:change meminfo cached calculation
-Thread-Index: AdAUm5skPt4e77aMQROTaYv2A3+JEABH+XSwAS5N5DABo3oMAA==
-Message-ID: <35FD53F367049845BC99AC72306C23D103EDAF89E160@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
-	<CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
-	<35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
-	<20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
-	<35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
-	<20141208114601.GA28846@node.dhcp.inet.fi>
-	<35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
- <CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1751944AbaLZL5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 06:57:09 -0500
+Received: from mout.gmx.net ([212.227.15.18]:62260 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926AbaLZL5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 06:57:06 -0500
+Date: Fri, 26 Dec 2014 12:56:53 +0100
+From: Helge Deller <deller@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        John David Anglin <dave.anglin@bell.net>
+Subject: [GIT PULL] parisc fix for v3.19
+Message-ID: <20141226115653.GA1050@p100.box>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Provags-ID: V03:K0:hOcJl5EvV6ZIpG12CEXCi2CQjN2mbfee2xscf6dMfu52RfiD+fd
+ sKidExQ/j0JS64SbbGFsnqqdn9Ygt5lNM/25OiKQsNIypGBtefRHWEGUzlhk34/Rz5Qiu7d
+ FKo8JYkcXGhfKqZz1KWQnf+4CMNqjgJaZrJvZ3YC5wtg/acww8aijui358WuNTB1nrfAxPe
+ nBuGpDPGT3ZsQ663Qt7pw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBQBvEhX010931
 
-This patch subtract sharedram from cached,
-sharedram can only be swap into swap partitions,
-they should be treated as swap pages, not as cached pages.
+Hi Linus,
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- fs/proc/meminfo.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+please pull one patch for the parisc architecture for kernel 3.19 from 
 
-diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
-index d3ebf2e..2b598a6 100644
---- a/fs/proc/meminfo.c
-+++ b/fs/proc/meminfo.c
-@@ -45,7 +45,7 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
- 	committed = percpu_counter_read_positive(&vm_committed_as);
- 
- 	cached = global_page_state(NR_FILE_PAGES) -
--			total_swapcache_pages() - i.bufferram;
-+			total_swapcache_pages() - i.bufferram - i.sharedram;
- 	if (cached < 0)
- 		cached = 0;
- 
--- 
-2.1.3
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.19-1
+
+This patch unbreaks the kernel compilation on parisc with gcc-4.9.
+
+Thanks,
+Helge
+
+----------------------------------------------------------------
+John David Anglin (1):
+      parisc: fix out-of-register compiler error in ldcw inline assembler function
+
+ arch/parisc/include/asm/ldcw.h | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
