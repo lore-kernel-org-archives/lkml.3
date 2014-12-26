@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbaLZOwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:52:19 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
+	id S1753163AbaLZOwl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:52:41 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751680AbaLZOmZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751659AbaLZOmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Dec 2014 09:42:25 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895452"
+   d="scan'208";a="114895451"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/27] [media] s2255drv: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:33 +0100
-Message-Id: <1419604558-29743-3-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 2/27] [media] au0828: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:32 +0100
+Message-Id: <1419604558-29743-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -34,31 +34,38 @@ follows: (http://coccinelle.lip6.fr/)
 expression t,f,d;
 @@
 
--init_timer(&t);
-+setup_timer(&t,f,d);
 -t.function = f;
 -t.data = d;
+-init_timer(&t);
++setup_timer(&t,f,d);
 // </smpl>
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/usb/s2255/s2255drv.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/media/usb/au0828/au0828-video.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/media/usb/s2255/s2255drv.c b/drivers/media/usb/s2255/s2255drv.c
-index de55e96..0f3c34d 100644
---- a/drivers/media/usb/s2255/s2255drv.c
-+++ b/drivers/media/usb/s2255/s2255drv.c
-@@ -2274,9 +2274,7 @@ static int s2255_probe(struct usb_interface *interface,
- 		dev_err(&interface->dev, "Could not find bulk-in endpoint\n");
- 		goto errorEP;
- 	}
--	init_timer(&dev->timer);
--	dev->timer.function = s2255_timer;
--	dev->timer.data = (unsigned long)dev->fw_data;
-+	setup_timer(&dev->timer, s2255_timer, (unsigned long)dev->fw_data);
- 	init_waitqueue_head(&dev->fw_data->wait_fw);
- 	for (i = 0; i < MAX_CHANNELS; i++) {
- 		struct s2255_vc *vc = &dev->vc[i];
+diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
+index 5f337b1..0b24791 100644
+--- a/drivers/media/usb/au0828/au0828-video.c
++++ b/drivers/media/usb/au0828/au0828-video.c
+@@ -2043,13 +2043,10 @@ int au0828_analog_register(struct au0828_dev *dev,
+ 	INIT_LIST_HEAD(&dev->vbiq.active);
+ 	INIT_LIST_HEAD(&dev->vbiq.queued);
+ 
+-	dev->vid_timeout.function = au0828_vid_buffer_timeout;
+-	dev->vid_timeout.data = (unsigned long) dev;
+-	init_timer(&dev->vid_timeout);
+-
+-	dev->vbi_timeout.function = au0828_vbi_buffer_timeout;
+-	dev->vbi_timeout.data = (unsigned long) dev;
+-	init_timer(&dev->vbi_timeout);
++	setup_timer(&dev->vid_timeout, au0828_vid_buffer_timeout,
++		    (unsigned long)dev);
++	setup_timer(&dev->vbi_timeout, au0828_vbi_buffer_timeout,
++		    (unsigned long)dev);
+ 
+ 	dev->width = NTSC_STD_W;
+ 	dev->height = NTSC_STD_H;
 
