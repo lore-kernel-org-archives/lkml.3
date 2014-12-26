@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351AbaLZGLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 01:11:09 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:52553 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbaLZGLE (ORCPT
+	id S1751460AbaLZGLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 01:11:25 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:57293 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaLZGLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 01:11:04 -0500
+	Fri, 26 Dec 2014 01:11:05 -0500
 From: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soeren.brinkmann@gmail.com>
 To: Oleg Drokin <oleg.drokin@intel.com>,
         Andreas Dilger <andreas.dilger@intel.com>,
@@ -14,10 +14,12 @@ To: Oleg Drokin <oleg.drokin@intel.com>,
 Cc: HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org,
         =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soeren.brinkmann@gmail.com>
-Subject: [PATCH 1/2] staging: lustre: libcfs/nidstrings: Declare internal symbols static
-Date: Fri, 26 Dec 2014 07:10:50 +0100
-Message-Id: <1419574251-27087-1-git-send-email-soeren.brinkmann@gmail.com>
+Subject: [PATCH 2/2] staging: lustre: libcfs/nidstrings: Avoid forward declarations
+Date: Fri, 26 Dec 2014 07:10:51 +0100
+Message-Id: <1419574251-27087-2-git-send-email-soeren.brinkmann@gmail.com>
 X-Mailer: git-send-email 2.2.1
+In-Reply-To: <1419574251-27087-1-git-send-email-soeren.brinkmann@gmail.com>
+References: <1419574251-27087-1-git-send-email-soeren.brinkmann@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,213 +27,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes sparse warnings:
-  staging/lustre/lustre/libcfs/nidstrings.c:200:11: warning: symbol 'libcfs_nnetstrfns' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:203:1: warning: symbol 'libcfs_lo_str2addr' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:210:1: warning: symbol 'libcfs_ip_addr2str' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:227:1: warning: symbol 'libcfs_ip_str2addr' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:248:1: warning: symbol 'libcfs_decnum_addr2str' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:254:1: warning: symbol 'libcfs_hexnum_addr2str' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:260:1: warning: symbol 'libcfs_num_str2addr' was not declared. Should it be static?
-  staging/lustre/lustre/libcfs/nidstrings.c:279:18: warning: symbol 'libcfs_lnd2netstrfns' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:292:18: warning: symbol 'libcfs_namenum2netstrfns' was not declared. Should it be static?
-  drivers/staging/lustre/lustre/libcfs/nidstrings.c:307:18: warning: symbol 'libcfs_name2netstrfns' was not declared. Should it be static?
-
-Some functions had static forward declarations followed by non-static
-implementations. Those forward declarations are removed and the
-implementations are declared static and moved into a location that
-doesn't require forward declarations.
+Avoid forward declaratoins by moving functions to a location before they
+are referenced.
 
 Signed-off-by: Sören Brinkmann <soeren.brinkmann@gmail.com>
 ---
- drivers/staging/lustre/lustre/libcfs/nidstrings.c | 146 ++++++++++------------
- 1 file changed, 66 insertions(+), 80 deletions(-)
+ drivers/staging/lustre/lustre/libcfs/nidstrings.c | 77 +++++++++++------------
+ 1 file changed, 37 insertions(+), 40 deletions(-)
 
 diff --git a/drivers/staging/lustre/lustre/libcfs/nidstrings.c b/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-index 47c239f22ba8..a73424a69982 100644
+index a73424a69982..c70da373e412 100644
 --- a/drivers/staging/lustre/lustre/libcfs/nidstrings.c
 +++ b/drivers/staging/lustre/lustre/libcfs/nidstrings.c
-@@ -81,12 +81,68 @@ libcfs_next_nidstring(void)
- 	return str;
+@@ -143,8 +143,43 @@ static int libcfs_num_str2addr(const char *str, int nob, __u32 *addr)
+ 	return 0;
  }
  
--static int  libcfs_lo_str2addr(const char *str, int nob, __u32 *addr);
--static void libcfs_ip_addr2str(__u32 addr, char *str);
--static int  libcfs_ip_str2addr(const char *str, int nob, __u32 *addr);
--static void libcfs_decnum_addr2str(__u32 addr, char *str);
--static void libcfs_hexnum_addr2str(__u32 addr, char *str);
--static int  libcfs_num_str2addr(const char *str, int nob, __u32 *addr);
-+static int libcfs_lo_str2addr(const char *str, int nob, __u32 *addr)
+-static int  libcfs_num_parse(char *str, int len, struct list_head *list);
+-static int  libcfs_num_match(__u32 addr, struct list_head *list);
++/**
++ * Nf_parse_addrlist method for networks using numeric addresses.
++ *
++ * Examples of such networks are gm and elan.
++ *
++ * \retval 0 if \a str parsed to numeric address
++ * \retval errno otherwise
++ */
++static int
++libcfs_num_parse(char *str, int len, struct list_head *list)
 +{
-+	*addr = 0;
-+	return 1;
++	struct cfs_expr_list *el;
++	int	rc;
++
++	rc = cfs_expr_list_parse(str, len, 0, MAX_NUMERIC_VALUE, &el);
++	if (rc == 0)
++		list_add_tail(&el->el_link, list);
++
++	return rc;
 +}
 +
-+static void libcfs_ip_addr2str(__u32 addr, char *str)
++/*
++ * Nf_match_addr method for networks using numeric addresses
++ *
++ * \retval 1 on match
++ * \retval 0 otherwise
++ */
++static int
++libcfs_num_match(__u32 addr, struct list_head *numaddr)
 +{
-+	snprintf(str, LNET_NIDSTR_SIZE, "%u.%u.%u.%u",
-+		 (addr >> 24) & 0xff, (addr >> 16) & 0xff,
-+		 (addr >> 8) & 0xff, addr & 0xff);
++	struct cfs_expr_list *el;
++
++	LASSERT(!list_empty(numaddr));
++	el = list_entry(numaddr->next, struct cfs_expr_list, el_link);
++
++	return cfs_expr_list_match(addr, el);
 +}
-+
-+static int libcfs_ip_str2addr(const char *str, int nob, __u32 *addr)
-+{
-+	unsigned int	a;
-+	unsigned int	b;
-+	unsigned int	c;
-+	unsigned int	d;
-+	int		n = nob; /* XscanfX */
-+
-+	/* numeric IP? */
-+	if (sscanf(str, "%u.%u.%u.%u%n", &a, &b, &c, &d, &n) >= 4 &&
-+	    n == nob &&
-+	    (a & ~0xff) == 0 && (b & ~0xff) == 0 &&
-+	    (c & ~0xff) == 0 && (d & ~0xff) == 0) {
-+		*addr = ((a<<24)|(b<<16)|(c<<8)|d);
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static void libcfs_decnum_addr2str(__u32 addr, char *str)
-+{
-+	snprintf(str, LNET_NIDSTR_SIZE, "%u", addr);
-+}
-+
-+static void libcfs_hexnum_addr2str(__u32 addr, char *str)
-+{
-+	snprintf(str, LNET_NIDSTR_SIZE, "0x%x", addr);
-+}
-+
-+static int libcfs_num_str2addr(const char *str, int nob, __u32 *addr)
-+{
-+	int     n;
-+
-+	n = nob;
-+	if (sscanf(str, "0x%x%n", addr, &n) >= 1 && n == nob)
-+		return 1;
-+
-+	n = nob;
-+	if (sscanf(str, "0X%x%n", addr, &n) >= 1 && n == nob)
-+		return 1;
-+
-+	n = nob;
-+	if (sscanf(str, "%u%n", addr, &n) >= 1 && n == nob)
-+		return 1;
-+
-+	return 0;
-+}
-+
- static int  libcfs_num_parse(char *str, int len, struct list_head *list);
- static int  libcfs_num_match(__u32 addr, struct list_head *list);
  
-@@ -197,24 +253,7 @@ static struct netstrfns  libcfs_netstrfns[] = {
- 	{/* .nf_type      */  -1},
+ struct netstrfns {
+ 	int	  nf_type;
+@@ -572,27 +607,6 @@ struct addrrange {
  };
  
--const int libcfs_nnetstrfns = ARRAY_SIZE(libcfs_netstrfns);
--
--int
--libcfs_lo_str2addr(const char *str, int nob, __u32 *addr)
+ /**
+- * Nf_parse_addrlist method for networks using numeric addresses.
+- *
+- * Examples of such networks are gm and elan.
+- *
+- * \retval 0 if \a str parsed to numeric address
+- * \retval errno otherwise
+- */
+-static int
+-libcfs_num_parse(char *str, int len, struct list_head *list)
 -{
--	*addr = 0;
--	return 1;
+-	struct cfs_expr_list *el;
+-	int	rc;
+-
+-	rc = cfs_expr_list_parse(str, len, 0, MAX_NUMERIC_VALUE, &el);
+-	if (rc == 0)
+-		list_add_tail(&el->el_link, list);
+-
+-	return rc;
 -}
 -
--void
--libcfs_ip_addr2str(__u32 addr, char *str)
--{
--#if 0   /* never lookup */
--#endif
--	snprintf(str, LNET_NIDSTR_SIZE, "%u.%u.%u.%u",
--		 (addr >> 24) & 0xff, (addr >> 16) & 0xff,
--		 (addr >> 8) & 0xff, addr & 0xff);
--}
-+static const int libcfs_nnetstrfns = ARRAY_SIZE(libcfs_netstrfns);
- 
- /* CAVEAT EMPTOR XscanfX
-  * I use "%n" at the end of a sscanf format to detect trailing junk.  However
-@@ -223,60 +262,7 @@ libcfs_ip_addr2str(__u32 addr, char *str)
-  * fine, if it doesn't, then the scan ended at the end of the string, which is
-  * fine too :) */
- 
--int
--libcfs_ip_str2addr(const char *str, int nob, __u32 *addr)
--{
--	unsigned int	a;
--	unsigned int	b;
--	unsigned int	c;
--	unsigned int	d;
--	int		n = nob; /* XscanfX */
--
--	/* numeric IP? */
--	if (sscanf(str, "%u.%u.%u.%u%n", &a, &b, &c, &d, &n) >= 4 &&
--	    n == nob &&
--	    (a & ~0xff) == 0 && (b & ~0xff) == 0 &&
--	    (c & ~0xff) == 0 && (d & ~0xff) == 0) {
--		*addr = ((a<<24)|(b<<16)|(c<<8)|d);
--		return 1;
--	}
--
--	return 0;
--}
--
--void
--libcfs_decnum_addr2str(__u32 addr, char *str)
--{
--	snprintf(str, LNET_NIDSTR_SIZE, "%u", addr);
--}
--
--void
--libcfs_hexnum_addr2str(__u32 addr, char *str)
--{
--	snprintf(str, LNET_NIDSTR_SIZE, "0x%x", addr);
--}
--
--int
--libcfs_num_str2addr(const char *str, int nob, __u32 *addr)
--{
--	int     n;
--
--	n = nob;
--	if (sscanf(str, "0x%x%n", addr, &n) >= 1 && n == nob)
--		return 1;
--
--	n = nob;
--	if (sscanf(str, "0X%x%n", addr, &n) >= 1 && n == nob)
--		return 1;
--
--	n = nob;
--	if (sscanf(str, "%u%n", addr, &n) >= 1 && n == nob)
--		return 1;
--
--	return 0;
--}
--
--struct netstrfns *
-+static struct netstrfns *
- libcfs_lnd2netstrfns(int lnd)
- {
- 	int    i;
-@@ -289,7 +275,7 @@ libcfs_lnd2netstrfns(int lnd)
- 	return NULL;
+-/**
+  * Parses \<addrrange\> token on the syntax.
+  *
+  * Allocates struct addrrange and links to \a nidrange via
+@@ -798,23 +812,6 @@ cfs_parse_nidlist(char *str, int len, struct list_head *nidlist)
  }
+ EXPORT_SYMBOL(cfs_parse_nidlist);
  
--struct netstrfns *
-+static struct netstrfns *
- libcfs_namenum2netstrfns(const char *name)
- {
- 	struct netstrfns *nf;
-@@ -304,7 +290,7 @@ libcfs_namenum2netstrfns(const char *name)
- 	return NULL;
- }
- 
--struct netstrfns *
-+static struct netstrfns *
- libcfs_name2netstrfns(const char *name)
- {
- 	int    i;
+-/*
+- * Nf_match_addr method for networks using numeric addresses
+- *
+- * \retval 1 on match
+- * \retval 0 otherwise
+- */
+-static int
+-libcfs_num_match(__u32 addr, struct list_head *numaddr)
+-{
+-	struct cfs_expr_list *el;
+-
+-	LASSERT(!list_empty(numaddr));
+-	el = list_entry(numaddr->next, struct cfs_expr_list, el_link);
+-
+-	return cfs_expr_list_match(addr, el);
+-}
+-
+ /**
+  * Matches a nid (\a nid) against the compiled list of nidranges (\a nidlist).
+  *
 -- 
 2.2.1
 
