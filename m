@@ -1,411 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644AbaLZR1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 12:27:15 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45951 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751295AbaLZR1G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 12:27:06 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, linux-ide@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH 2/2] regulator: core: Add the device tree version to the regulator_get family
-Date: Fri, 26 Dec 2014 18:26:39 +0100
-Message-Id: <1419614799-5770-3-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com>
+	id S1751473AbaLZRkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 12:40:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285AbaLZRj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 12:39:59 -0500
+Date: Fri, 26 Dec 2014 18:38:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Leon Ma <xindong.ma@intel.com>, Al Viro <viro@ZenIV.linux.org.uk>
+Cc: akpm@linux-foundation.org, mhocko@suse.cz, mingo@kernel.org,
+        peterz@infradead.org, riel@redhat.com, ionut.m.alexa@gmail.com,
+        peter@hurleysoftware.com, linux-kernel@vger.kernel.org,
+        di.zhang@intel.com, zhonghua.sun@intel.com
+Subject: Re: [PATCH] move exit_task_work() before exit_fs().
+Message-ID: <20141226173849.GA9460@redhat.com>
+References: <1419579926-28512-1-git-send-email-xindong.ma@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419579926-28512-1-git-send-email-xindong.ma@intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the device tree version (of_) for each member of the
-regulator_get family: normal, exclusive, optional and all of the
-manageable version.
+On 12/26, Leon Ma wrote:
+>
+> We encountered following panic. The scenario is the process is exiting and executing its
+> task work. When closing dev node, the driver triggers a firmware reload according to device
+> status. Because task->fs is set to NULL in exit_fs(), panic happens.
 
-The of_regulator_get* functions allow using a device node to get the
-regulator instead using the device object. It is needed for the
-regulator associated to a child node which is not a device, it is the
-case of the SATA ports of an ahci controller for instance.
+I think this should be fixed somewhere else...
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- drivers/regulator/core.c           | 114 +++++++++++++++++++++++++++++++++----
- drivers/regulator/devres.c         |  70 ++++++++++++++++++++---
- include/linux/regulator/consumer.h |  20 +++++++
- 3 files changed, 187 insertions(+), 17 deletions(-)
+> Task work is a common interface, we should not limite the resource the user will utilize.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index de29399b5430..74167b98797a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -127,26 +127,37 @@ static bool have_full_constraints(void)
- 
- /**
-  * of_get_regulator - get a regulator device node based on supply name
-+ * and on device node if provided
-+ *
-  * @dev: Device pointer for the consumer (of regulator) device
-+ * @np: Device tree node pointer on the node containing the regulator
-  * @supply: regulator supply name
-  *
-  * Extract the regulator device node corresponding to the supply name.
-  * returns the device node corresponding to the regulator if found, else
-  * returns NULL.
-  */
--static struct device_node *of_get_regulator(struct device *dev, const char *supply)
-+static struct device_node *of_get_regulator_by_node(struct device *dev,
-+						    const char *supply,
-+						    struct device_node *np)
- {
- 	struct device_node *regnode = NULL;
- 	char prop_name[32]; /* 32 is max size of property name */
-+	struct device_node *node;
-+
-+	if (np)
-+		node = np;
-+	else
-+		node = dev->of_node;
- 
- 	dev_dbg(dev, "Looking up %s-supply from device tree\n", supply);
- 
- 	snprintf(prop_name, 32, "%s-supply", supply);
--	regnode = of_parse_phandle(dev->of_node, prop_name, 0);
-+	regnode = of_parse_phandle(node, prop_name, 0);
- 
- 	if (!regnode) {
- 		dev_dbg(dev, "Looking up %s property in node %s failed",
--				prop_name, dev->of_node->full_name);
-+				prop_name, node->full_name);
- 		return NULL;
- 	}
- 	return regnode;
-@@ -1268,6 +1279,7 @@ static void regulator_supply_alias(struct device **dev, const char **supply)
- 
- static struct regulator_dev *regulator_dev_lookup(struct device *dev,
- 						  const char *supply,
-+						  struct device_node *np,
- 						  int *ret)
- {
- 	struct regulator_dev *r;
-@@ -1278,8 +1290,8 @@ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
- 	regulator_supply_alias(&dev, &supply);
- 
- 	/* first do a dt based lookup */
--	if (dev && dev->of_node) {
--		node = of_get_regulator(dev, supply);
-+	if ((dev && dev->of_node) || np) {
-+		node = of_get_regulator_by_node(dev, supply, np);
- 		if (node) {
- 			list_for_each_entry(r, &regulator_list, list)
- 				if (r->dev.parent &&
-@@ -1322,6 +1334,7 @@ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
- 
- /* Internal regulator request function */
- static struct regulator *_regulator_get(struct device *dev, const char *id,
-+					struct device_node *node,
- 					bool exclusive, bool allow_dummy)
- {
- 	struct regulator_dev *rdev;
-@@ -1344,7 +1357,7 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
- 
- 	mutex_lock(&regulator_list_mutex);
- 
--	rdev = regulator_dev_lookup(dev, id, &ret);
-+	rdev = regulator_dev_lookup(dev, id, node, &ret);
- 	if (rdev)
- 		goto found;
- 
-@@ -1431,7 +1444,7 @@ out:
-  */
- struct regulator *regulator_get(struct device *dev, const char *id)
- {
--	return _regulator_get(dev, id, false, true);
-+	return _regulator_get(dev, id, NULL, false, true);
- }
- EXPORT_SYMBOL_GPL(regulator_get);
- 
-@@ -1458,7 +1471,7 @@ EXPORT_SYMBOL_GPL(regulator_get);
-  */
- struct regulator *regulator_get_exclusive(struct device *dev, const char *id)
- {
--	return _regulator_get(dev, id, true, false);
-+	return _regulator_get(dev, id, NULL, true, false);
- }
- EXPORT_SYMBOL_GPL(regulator_get_exclusive);
- 
-@@ -1484,10 +1497,91 @@ EXPORT_SYMBOL_GPL(regulator_get_exclusive);
-  */
- struct regulator *regulator_get_optional(struct device *dev, const char *id)
- {
--	return _regulator_get(dev, id, false, false);
-+	return _regulator_get(dev, id, NULL, false, false);
- }
- EXPORT_SYMBOL_GPL(regulator_get_optional);
- 
-+/**
-+ * of_regulator_get - lookup and obtain a reference to a regulator.
-+ * @dev: device for regulator "consumer"
-+ * @node: device node for which to get the regulator
-+ * @id: Supply name or regulator ID.
-+ *
-+ * Returns a struct regulator corresponding to the regulator producer,
-+ * or IS_ERR() condition containing errno.
-+ *
-+ * Use of supply names configured via regulator_set_device_supply() is
-+ * strongly encouraged.  It is recommended that the supply name used
-+ * should match the name used for the supply and/or the relevant
-+ * device pins in the datasheet.
-+ */
-+struct regulator *of_regulator_get(struct device *dev,
-+				   const char *id,
-+				struct device_node *node)
-+{
-+	return _regulator_get(dev, id, node, false, true);
-+}
-+EXPORT_SYMBOL_GPL(of_regulator_get);
-+
-+/**
-+ * of_regulator_get_exclusive - obtain exclusive access to a regulator.
-+ * @dev: device for regulator "consumer"
-+ * @node: device node for which to get the regulator
-+ * @id: Supply name or regulator ID.
-+ *
-+ * Returns a struct regulator corresponding to the regulator producer,
-+ * or IS_ERR() condition containing errno.  Other consumers will be
-+ * unable to obtain this regulator while this reference is held and the
-+ * use count for the regulator will be initialised to reflect the current
-+ * state of the regulator.
-+ *
-+ * This is intended for use by consumers which cannot tolerate shared
-+ * use of the regulator such as those which need to force the
-+ * regulator off for correct operation of the hardware they are
-+ * controlling.
-+ *
-+ * Use of supply names configured via regulator_set_device_supply() is
-+ * strongly encouraged.  It is recommended that the supply name used
-+ * should match the name used for the supply and/or the relevant
-+ * device pins in the datasheet.
-+ */
-+struct regulator *of_regulator_get_exclusive(struct device *dev,
-+					     const char *id,
-+					     struct device_node *node)
-+{
-+	return _regulator_get(dev, id, node, true, false);
-+}
-+EXPORT_SYMBOL_GPL(of_regulator_get_exclusive);
-+
-+/**
-+ * of_regulator_get_optional - obtain optional access to a regulator.
-+ * @dev: device for regulator "consumer"
-+ * @node: device node for which to get the regulator
-+ * @id: Supply name or regulator ID.
-+ *
-+ * Returns a struct regulator corresponding to the regulator producer,
-+ * or IS_ERR() condition containing errno.
-+ *
-+ * This is intended for use by consumers for devices which can have
-+ * some supplies unconnected in normal use, such as some MMC devices.
-+ * It can allow the regulator core to provide stub supplies for other
-+ * supplies requested using normal regulator_get() calls without
-+ * disrupting the operation of drivers that can handle absent
-+ * supplies.
-+ *
-+ * Use of supply names configured via regulator_set_device_supply() is
-+ * strongly encouraged.  It is recommended that the supply name used
-+ * should match the name used for the supply and/or the relevant
-+ * device pins in the datasheet.
-+ */
-+struct regulator *of_regulator_get_optional(struct device *dev,
-+					    const char *id,
-+					    struct device_node *node)
-+{
-+	return _regulator_get(dev, id, node, false, false);
-+}
-+EXPORT_SYMBOL_GPL(of_regulator_get_optional);
-+
- /* Locks held by regulator_put() */
- static void _regulator_put(struct regulator *regulator)
- {
-@@ -3714,7 +3808,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
- 	if (supply) {
- 		struct regulator_dev *r;
- 
--		r = regulator_dev_lookup(dev, supply, &ret);
-+		r = regulator_dev_lookup(dev, supply, NULL, &ret);
- 
- 		if (ret == -ENODEV) {
- 			/*
-diff --git a/drivers/regulator/devres.c b/drivers/regulator/devres.c
-index 8f785bc9e510..755fc07ebc33 100644
---- a/drivers/regulator/devres.c
-+++ b/drivers/regulator/devres.c
-@@ -30,7 +30,9 @@ static void devm_regulator_release(struct device *dev, void *res)
- 	regulator_put(*(struct regulator **)res);
- }
- 
--static struct regulator *_devm_regulator_get(struct device *dev, const char *id,
-+static struct regulator *_devm_regulator_get(struct device *dev,
-+					     const char *id,
-+					     struct device_node *node,
- 					     int get_type)
- {
- 	struct regulator **ptr, *regulator;
-@@ -41,13 +43,13 @@ static struct regulator *_devm_regulator_get(struct device *dev, const char *id,
- 
- 	switch (get_type) {
- 	case NORMAL_GET:
--		regulator = regulator_get(dev, id);
-+		regulator = of_regulator_get(dev, id, node);
- 		break;
- 	case EXCLUSIVE_GET:
--		regulator = regulator_get_exclusive(dev, id);
-+		regulator = of_regulator_get_exclusive(dev, id, node);
- 		break;
- 	case OPTIONAL_GET:
--		regulator = regulator_get_optional(dev, id);
-+		regulator = of_regulator_get_optional(dev, id, node);
- 		break;
- 	default:
- 		regulator = ERR_PTR(-EINVAL);
-@@ -74,7 +76,7 @@ static struct regulator *_devm_regulator_get(struct device *dev, const char *id,
-  */
- struct regulator *devm_regulator_get(struct device *dev, const char *id)
- {
--	return _devm_regulator_get(dev, id, NORMAL_GET);
-+	return _devm_regulator_get(dev, id, NULL, NORMAL_GET);
- }
- EXPORT_SYMBOL_GPL(devm_regulator_get);
- 
-@@ -90,7 +92,7 @@ EXPORT_SYMBOL_GPL(devm_regulator_get);
- struct regulator *devm_regulator_get_exclusive(struct device *dev,
- 					       const char *id)
- {
--	return _devm_regulator_get(dev, id, EXCLUSIVE_GET);
-+	return _devm_regulator_get(dev, id, NULL, EXCLUSIVE_GET);
- }
- EXPORT_SYMBOL_GPL(devm_regulator_get_exclusive);
- 
-@@ -106,10 +108,64 @@ EXPORT_SYMBOL_GPL(devm_regulator_get_exclusive);
- struct regulator *devm_regulator_get_optional(struct device *dev,
- 					      const char *id)
- {
--	return _devm_regulator_get(dev, id, OPTIONAL_GET);
-+	return _devm_regulator_get(dev, id, NULL, OPTIONAL_GET);
- }
- EXPORT_SYMBOL_GPL(devm_regulator_get_optional);
- 
-+/**
-+ * devm_regulator_get - Resource managed regulator_get()
-+ * @dev: device for regulator "consumer"
-+ * @node: device node for which to get the regulator
-+ * @id: Supply name or regulator ID.
-+ *
-+ * Managed regulator_get(). Regulators returned from this function are
-+ * automatically regulator_put() on driver detach. See regulator_get()
-+ * for more information.
-+ */
-+struct regulator *devm_of_regulator_get(struct device *dev,
-+					const char *id,
-+					struct device_node *node)
-+{
-+	return _devm_regulator_get(dev, id, node, NORMAL_GET);
-+}
-+EXPORT_SYMBOL_GPL(devm_of_regulator_get);
-+
-+/**
-+ * devm_regulator_get_exclusive - Resource managed regulator_get_exclusive()
-+ * @dev: device for regulator "consumer"
-+ * @node: device node for which to get the regulator
-+ * @id: Supply name or regulator ID.
-+ *
-+ * Managed regulator_get_exclusive(). Regulators returned from this
-+ * function are automatically regulator_put() on driver detach. See
-+ * regulator_get_exclusive() for more information.
-+ */
-+struct regulator *devm_of_regulator_get_exclusive(struct device *dev,
-+						 const char *id,
-+						 struct device_node *node)
-+{
-+	return _devm_regulator_get(dev, id, node, EXCLUSIVE_GET);
-+}
-+EXPORT_SYMBOL_GPL(devm_of_regulator_get_exclusive);
-+
-+/**
-+ * devm_regulator_get_optional - Resource managed regulator_get_optional()
-+ * @dev: device for regulator "consumer"
-+ * @node: device node for which to get the regulator
-+ * @id: Supply name or regulator ID.
-+ *
-+ * Managed regulator_get_optional(). Regulators returned from this
-+ * function are automatically regulator_put() on driver detach. See
-+ * regulator_get_optional() for more information.
-+ */
-+struct regulator *devm_of_regulator_get_optional(struct device *dev,
-+						 const char *id,
-+						 struct device_node *node)
-+{
-+	return _devm_regulator_get(dev, id, node, OPTIONAL_GET);
-+}
-+EXPORT_SYMBOL_GPL(devm_of_regulator_get_optional);
-+
- static int devm_regulator_match(struct device *dev, void *res, void *data)
- {
- 	struct regulator **r = res;
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index d17e1ff7ad01..1c88ce1aaa3f 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -40,6 +40,7 @@
- struct device;
- struct notifier_block;
- struct regmap;
-+struct device_node;
- 
- /*
-  * Regulator operating modes.
-@@ -162,14 +163,33 @@ struct regulator *__must_check regulator_get(struct device *dev,
- 					     const char *id);
- struct regulator *__must_check devm_regulator_get(struct device *dev,
- 					     const char *id);
-+struct regulator *__must_check of_regulator_get(struct device *dev,
-+						const char *id,
-+						struct device_node *node);
-+struct regulator *__must_check devm_of_regulator_get(struct device *dev,
-+						const char *id,
-+						struct device_node *node);
- struct regulator *__must_check regulator_get_exclusive(struct device *dev,
- 						       const char *id);
- struct regulator *__must_check devm_regulator_get_exclusive(struct device *dev,
- 							const char *id);
-+struct regulator *__must_check of_regulator_get_exclusive(struct device *dev,
-+						      const char *id,
-+						      struct device_node *node);
-+struct regulator *__must_check devm_of_regulator_get_exclusive(struct device *dev,
-+						      const char *id,
-+						      struct device_node *node);
- struct regulator *__must_check regulator_get_optional(struct device *dev,
- 						      const char *id);
- struct regulator *__must_check devm_regulator_get_optional(struct device *dev,
- 							   const char *id);
-+struct regulator *__must_check of_regulator_get_optional(struct device *dev,
-+						      const char *id,
-+						      struct device_node *node);
-+struct regulator *__must_check devm_of_regulator_get_optional(struct device *dev,
-+						      const char *id,
-+						      struct device_node *node);
-+
- void regulator_put(struct regulator *regulator);
- void devm_regulator_put(struct regulator *regulator);
- 
--- 
-1.9.1
+Exactly. And note that with this patch exit_mm()..disassociate_ctty() paths
+can't use task works.
+
+Not to mention that this patch moves exit_files() up, even before exit_mm(),
+without any explanation.
+
+Add Al. May be we can move exit_fs() down after exit_task_work(), I dunno,
+but to me it would be better to change the driver.
+
+
+> [  118.521972] task: ffff880038de5cd0 ti: ffff880038e86000 task.ti: ffff880038e86000
+> [  118.521977] RIP: 0010:[<ffffffff8217a0a6>]  [<ffffffff8217a0a6>] path_init+0x336/0x440
+> [  118.521986] RSP: 0000:ffff880038e876a0  EFLAGS: 00010246
+> [  118.521991] RAX: 0000000000000000 RBX: ffff880038e87790 RCX: 0000000000000071
+> [  118.521996] RDX: ffff88003f30f5d4 RSI: ffffffff82179f75 RDI: ffffffff8209b167
+> [  118.522000] RBP: ffff880038e876e0 R08: ffff880038e87730 R09: ffff8800218b44c0
+> [  118.522005] R10: 0000000000000000 R11: 000000000000000f R12: ffff880038ebf000
+> [  118.522010] R13: ffff880038e87870 R14: ffff880038e87850 R15: 00000000ffffff9c
+> [  118.522015] FS:  0000000000000000(0000) GS:ffff88003f300000(0000) knlGS:0000000000000000
+> [  118.522020] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
+> [  118.522025] CR2: 0000000000000020 CR3: 0000000039d4f000 CR4: 00000000001007e0
+> [  118.522030] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  118.522035] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  118.522039] Stack:
+> [  118.522043]  ffff880038dbc300 ffff880038e876b8 ffffffff822cf046 ffff88002e434f00
+> [  118.522056]  ffff880038e87790 ffff880038e87870 ffff880038e87850 00000000ffffff9c
+> [  118.522069]  ffff880038e87780 ffffffff8217d419 ffff88003b1de480 ffff88003bbf7700
+> [  118.522082] Call Trace:
+> [  118.522092]  [<ffffffff822cf046>] ? security_file_alloc+0x16/0x20
+> [  118.522100]  [<ffffffff8217d419>] path_openat+0x69/0x4b0
+> [  118.522109]  [<ffffffff826b5c7f>] ? is_connected_output_ep+0x15f/0x260
+> [  118.522117]  [<ffffffff8217dae9>] do_filp_open+0x39/0x90
+> [  118.522125]  [<ffffffff823316ca>] ? string.isra.3+0x3a/0xe0
+> [  118.522133]  [<ffffffff82332809>] ? vsnprintf+0x209/0x620
+> [  118.522141]  [<ffffffff8216ced2>] file_open_name+0xb2/0xf0
+> [  118.522148]  [<ffffffff8216cf46>] filp_open+0x36/0x40
+> [  118.522157]  [<ffffffff82404441>] _request_firmware+0x351/0x9c0
+> [  118.522164]  [<ffffffff82404b26>] request_firmware+0x16/0x20
+> [  118.522172]  [<ffffffff826dd733>] sst_request_fw+0x63/0x510
+> [  118.522180]  [<ffffffff8283be10>] ? __mutex_lock_slowpath+0x280/0x3b0
+> [  118.522188]  [<ffffffff826df047>] sst_load_fw+0x1f7/0x4a0
+> [  118.522195]  [<ffffffff826da81f>] sst_download_fw+0xf/0x60
+> [  118.522202]  [<ffffffff826db022>] intel_sst_check_device+0x92/0x1f0
+> [  118.522209]  [<ffffffff826db4bd>] sst_set_generic_params+0x18d/0x500
+> [  118.522218]  [<ffffffff826cee25>] sst_fill_and_send_cmd.constprop.7+0x95/0x130
+> [  118.522226]  [<ffffffff826cf1dd>] sst_send_gain_cmd+0x9d/0xe0
+> [  118.522233]  [<ffffffff826cf283>] sst_set_pipe_gain+0x63/0xa0
+> [  118.522241]  [<ffffffff826d0665>] sst_send_pipe_gains+0xd5/0x2b0
+> [  118.522248]  [<ffffffff826cb5d6>] sst_media_digital_mute+0x46/0x80
+> [  118.522257]  [<ffffffff826ab5b1>] snd_soc_dai_digital_mute+0x21/0x60
+> [  118.522265]  [<ffffffff826bc39d>] soc_pcm_close+0xbd/0x250
+> [  118.522272]  [<ffffffff826bdf2a>] dpcm_fe_dai_close+0x7a/0x150
+> [  118.522281]  [<ffffffff8267f138>] snd_pcm_release_substream+0x58/0xb0
+> [  118.522289]  [<ffffffff8267f1cf>] snd_pcm_release+0x3f/0xa0//////////
+> [  118.522296]  [<ffffffff8216f600>] __fput+0xf0/0x240
+> [  118.522304]  [<ffffffff8216f75e>] ____fput+0xe/0x10
+> [  118.522312]  [<ffffffff82090195>] task_work_run+0xa5/0xd0
+> [  118.522320]  [<ffffffff82072a08>] do_exit+0x2b8/0xad0
+> [  118.522327]  [<ffffffff8283d3bf>] ? __schedule+0x3df/0x820
+> [  118.522335]  [<ffffffff820733af>] do_group_exit+0x3f/0xa0
+> [  118.522343]  [<ffffffff82082b6e>] get_signal_to_deliver+0x24e/0x650
+> [  118.522352]  [<ffffffff8200232d>] do_signal+0x4d/0x960
+> [  118.522360]  [<ffffffff82097584>] ? hrtimer_start_range_ns+0x14/0x20
+> [  118.522368]  [<ffffffff8262a98d>] ? binder_ioctl+0x15d/0x990
+> [  118.522377]  [<ffffffff82002ca5>] do_notify_resume+0x65/0x80
+> [  118.522384]  [<ffffffff82844efa>] int_signal+0x12/0x17
+> 
+> Signed-off-by: Leon Ma <xindong.ma@intel.com>
+> Signed-off-by: Zhang Di <di.zhang@intel.com>
+> Signed-off-by: Sun Zhonghua <zhonghua.sun@intel.com>
+> ---
+>  kernel/exit.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 1ea4369..64ba13b 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -729,6 +729,8 @@ void do_exit(long code)
+>  	tsk->exit_code = code;
+>  	taskstats_exit(tsk, group_dead);
+>  
+> +	exit_files(tsk);
+> +	exit_task_work(tsk);
+>  	exit_mm(tsk);
+>  
+>  	if (group_dead)
+> @@ -737,12 +739,10 @@ void do_exit(long code)
+>  
+>  	exit_sem(tsk);
+>  	exit_shm(tsk);
+> -	exit_files(tsk);
+>  	exit_fs(tsk);
+>  	if (group_dead)
+>  		disassociate_ctty(1);
+>  	exit_task_namespaces(tsk);
+> -	exit_task_work(tsk);
+>  	exit_thread();
+>  
+>  	/*
+> -- 
+> 1.7.9.5
+> 
 
