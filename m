@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbaLZOpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:45:18 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17530 "EHLO
+	id S1752332AbaLZOpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:45:12 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17532 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752015AbaLZOmf (ORCPT
+	by vger.kernel.org with ESMTP id S1752035AbaLZOmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:35 -0500
+	Fri, 26 Dec 2014 09:42:36 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895465"
+   d="scan'208";a="114895476"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Byungho An <bh74.an@samsung.com>
-Cc: kernel-janitors@vger.kernel.org, Girish K S <ks.giri@samsung.com>,
-        Vipul Pandya <vipul.pandya@samsung.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 15/27] net: sxgbe: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:46 +0100
-Message-Id: <1419604558-29743-16-git-send-email-Julia.Lawall@lip6.fr>
+To: Amitkumar Karwar <akarwar@marvell.com>
+Cc: kernel-janitors@vger.kernel.org, Avinash Patil <patila@marvell.com>,
+        Kalle Valo <kvalo@codeaurora.org>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 26/27] mwifiex: 11n_rxreorder: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:57 +0100
+Message-Id: <1419604558-29743-27-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -44,36 +44,24 @@ expression t,f,d;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/net/wireless/mwifiex/11n_rxreorder.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c b/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
-index 6984944..b6612d6 100644
---- a/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
-+++ b/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
-@@ -133,9 +133,8 @@ bool sxgbe_eee_init(struct sxgbe_priv_data * const priv)
- 			return false;
+diff --git a/drivers/net/wireless/mwifiex/11n_rxreorder.c b/drivers/net/wireless/mwifiex/11n_rxreorder.c
+index d73fda3..f33dc81 100644
+--- a/drivers/net/wireless/mwifiex/11n_rxreorder.c
++++ b/drivers/net/wireless/mwifiex/11n_rxreorder.c
+@@ -391,10 +391,8 @@ mwifiex_11n_create_rx_reorder_tbl(struct mwifiex_private *priv, u8 *ta,
+ 	new_node->timer_context.priv = priv;
+ 	new_node->timer_context.timer_is_set = false;
  
- 		priv->eee_active = 1;
--		init_timer(&priv->eee_ctrl_timer);
--		priv->eee_ctrl_timer.function = sxgbe_eee_ctrl_timer;
--		priv->eee_ctrl_timer.data = (unsigned long)priv;
-+		setup_timer(&priv->eee_ctrl_timer, sxgbe_eee_ctrl_timer,
-+			    (unsigned long)priv);
- 		priv->eee_ctrl_timer.expires = SXGBE_LPI_TIMER(eee_timer);
- 		add_timer(&priv->eee_ctrl_timer);
+-	init_timer(&new_node->timer_context.timer);
+-	new_node->timer_context.timer.function = mwifiex_flush_data;
+-	new_node->timer_context.timer.data =
+-			(unsigned long) &new_node->timer_context;
++	setup_timer(&new_node->timer_context.timer, mwifiex_flush_data,
++		    (unsigned long)&new_node->timer_context);
  
-@@ -1009,10 +1008,9 @@ static void sxgbe_tx_init_coalesce(struct sxgbe_priv_data *priv)
- 		struct sxgbe_tx_queue *p = priv->txq[queue_num];
- 		p->tx_coal_frames =  SXGBE_TX_FRAMES;
- 		p->tx_coal_timer = SXGBE_COAL_TX_TIMER;
--		init_timer(&p->txtimer);
-+		setup_timer(&p->txtimer, sxgbe_tx_timer,
-+			    (unsigned long)&priv->txq[queue_num]);
- 		p->txtimer.expires = SXGBE_COAL_TIMER(p->tx_coal_timer);
--		p->txtimer.data = (unsigned long)&priv->txq[queue_num];
--		p->txtimer.function = sxgbe_tx_timer;
- 		add_timer(&p->txtimer);
- 	}
- }
+ 	for (i = 0; i < win_size; ++i)
+ 		new_node->rx_reorder_ptr[i] = NULL;
 
