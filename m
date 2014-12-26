@@ -1,144 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaLZHUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 02:20:42 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:51496 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaLZHUi (ORCPT
+	id S1751590AbaLZHXB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 02:23:01 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:15710 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751197AbaLZHW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 02:20:38 -0500
-Date: Fri, 26 Dec 2014 02:20:32 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Haggai Eran <haggaie@mellanox.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        joro@8bytes.org, Mel Gorman <mgorman@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
-        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
-        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Michael Mantor <Michael.Mantor@amd.com>,
-        Paul Blinzer <Paul.Blinzer@amd.com>,
-        Laurent Morichetti <Laurent.Morichetti@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>,
-        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
-Subject: Re: [PATCH 2/7] mmu_notifier: keep track of active invalidation
- ranges v2
-Message-ID: <20141226071112.GA4408@gmail.com>
-References: <1419266940-5440-1-git-send-email-j.glisse@gmail.com>
- <1419266940-5440-3-git-send-email-j.glisse@gmail.com>
- <549BCAF8.1070500@mellanox.com>
+	Fri, 26 Dec 2014 02:22:58 -0500
+From: Alex Gartrell <agartrell@fb.com>
+To: <davem@davemloft.net>, <herbert@gondor.apana.org.au>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel-team@fb.com>, Alex Gartrell <agartrell@fb.com>
+Subject: [PATCH net-next] tun: return proper error code from tun_do_read
+Date: Thu, 25 Dec 2014 23:22:49 -0800
+Message-ID: <1419578569-13132-1-git-send-email-agartrell@fb.com>
+X-Mailer: git-send-email 1.8.1
+X-FB-Internal: Safe
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <549BCAF8.1070500@mellanox.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-25_06:2014-12-24,2014-12-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.87547199992366e-11 kscore.compositescore=0
+ circleOfTrustscore=514.84 compositescore=0.98609165920913
+ urlsuspect_oldscore=0.98609165920913 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.98609165920913 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412260079
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 25, 2014 at 10:29:44AM +0200, Haggai Eran wrote:
-> On 22/12/2014 18:48, j.glisse@gmail.com wrote:
-> >  static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
-> > -						       unsigned long start,
-> > -						       unsigned long end,
-> > -						       enum mmu_event event)
-> > +						       struct mmu_notifier_range *range)
-> >  {
-> > +	/*
-> > +	 * Initialize list no matter what in case a mmu_notifier register after
-> > +	 * a range_start but before matching range_end.
-> > +	 */
-> > +	INIT_LIST_HEAD(&range->list);
-> 
-> I don't see how can an mmu_notifier register after a range_start but
-> before a matching range_end. The mmu_notifier registration locks all mm
-> locks, and that should prevent any invalidation from running, right?
+Instead of -1 with EAGAIN, read on a O_NONBLOCK tun fd will return 0.  This
+fixes this by properly returning the error code from __skb_recv_datagram.
 
-File invalidation (like truncation) can lead to this case.
+Signed-off-by: Alex Gartrell <agartrell@fb.com>
+---
+ drivers/net/tun.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 
-> >  	if (mm_has_notifiers(mm))
-> > -		__mmu_notifier_invalidate_range_start(mm, start, end, event);
-> > +		__mmu_notifier_invalidate_range_start(mm, range);
-> >  }
-> 
-> ...
-> 
-> >  void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
-> > -					   unsigned long start,
-> > -					   unsigned long end,
-> > -					   enum mmu_event event)
-> > +					   struct mmu_notifier_range *range)
-> >  
-> >  {
-> >  	struct mmu_notifier *mn;
-> > @@ -185,21 +183,36 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
-> >  	id = srcu_read_lock(&srcu);
-> >  	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
-> >  		if (mn->ops->invalidate_range_start)
-> > -			mn->ops->invalidate_range_start(mn, mm, start,
-> > -							end, event);
-> > +			mn->ops->invalidate_range_start(mn, mm, range);
-> >  	}
-> >  	srcu_read_unlock(&srcu, id);
-> > +
-> > +	/*
-> > +	 * This must happen after the callback so that subsystem can block on
-> > +	 * new invalidation range to synchronize itself.
-> > +	 */
-> > +	spin_lock(&mm->mmu_notifier_mm->lock);
-> > +	list_add_tail(&range->list, &mm->mmu_notifier_mm->ranges);
-> > +	mm->mmu_notifier_mm->nranges++;
-> > +	spin_unlock(&mm->mmu_notifier_mm->lock);
-> >  }
-> >  EXPORT_SYMBOL_GPL(__mmu_notifier_invalidate_range_start);
-> 
-> Don't you have a race here because you add the range struct after the
-> callback?
-> 
-> -------------------------------------------------------------------------
-> Thread A                    | Thread B
-> -------------------------------------------------------------------------
-> call mmu notifier callback  |
->   clear SPTE                |
->                             | device page fault
->                             |   mmu_notifier_range_is_valid returns true
->                             |   install new SPTE
-> add event struct to list    |
-> mm clears/modifies the PTE  |
-> -------------------------------------------------------------------------
-> 
-> So we are left with different entries in the host page table and the
-> secondary page table.
-> 
-> I would think you'd want the event struct to be added to the list before
-> the callback is run.
-> 
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index a5cbf67..2f65d6c 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1378,7 +1378,7 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+ 	skb = __skb_recv_datagram(tfile->socket.sk, noblock ? MSG_DONTWAIT : 0,
+ 				  &peeked, &off, &err);
+ 	if (!skb)
+-		return 0;
++		return err;
+ 
+ 	ret = tun_put_user(tun, tfile, skb, to);
+ 	if (unlikely(ret < 0))
+-- 
+Alex Gartrell <agartrell@fb.com>
 
-Yes you right, but the comment i left trigger memory that i did that on
-purpose a one point probably with a different synch mecanism inside hmm.
-I will try to medidate a bit see if i can bring back memory why i did it
-that way in respect to previous design.
-
-In all case i will respin with that order modified. Can i add you review
-by after doing so ?
-
-Cheers,
-Jérôme
