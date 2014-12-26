@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463AbaLZROA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 12:14:00 -0500
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:48811 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaLZRN7 (ORCPT
+	id S1751533AbaLZROT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 12:14:19 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58639 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaLZROP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 12:13:59 -0500
+	Fri, 26 Dec 2014 12:14:15 -0500
+Message-ID: <549D9762.3090701@gmail.com>
+Date: Fri, 26 Dec 2014 10:14:10 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CANCZXo5wQhsxAbHypZqzaWPiakr9Mjbn-JCw+7+vW8vnmM2y9w@mail.gmail.com>
-References: <1419597539-21254-1-git-send-email-kuleshovmail@gmail.com>
-	<20141226142946.GA28213@newt.localdomain>
-	<CANCZXo5wQhsxAbHypZqzaWPiakr9Mjbn-JCw+7+vW8vnmM2y9w@mail.gmail.com>
-Date: Fri, 26 Dec 2014 23:13:59 +0600
-Message-ID: <CANCZXo7UFYnY=6-WnWR_WB5VDKmfFM-AWN5u=C_uJJtavuHucA@mail.gmail.com>
-Subject: Re: [PATCH] x86: Fix multiple coding style issues
-From: Alexander Kuleshov <kuleshovmail@gmail.com>
-To: Jeremiah Mahler <jmmahler@gmail.com>,
-        Alexander Kuleshov <kuleshovmail@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 14/37] perf tools: Convert dead thread list into rbtree
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org> <1419405333-27952-15-git-send-email-namhyung@kernel.org> <20141225230552.GB15569@krava.redhat.com> <CAM9d7chs3vHjRLn-Tv=XxRBkPsyr6-B1h5J=ywaSTm-G25X4gw@mail.gmail.com>
+In-Reply-To: <CAM9d7chs3vHjRLn-Tv=XxRBkPsyr6-B1h5J=ywaSTm-G25X4gw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Jeremiah Mahler <jmmahler@gmail.com>:
-If you are looking for things to fix I suggest looking in the
-drivers/staging directory.  There are lots of things that need to be
-fixed in there.
-
-Ah sorry, read it incorrectly.
-
-2014-12-26 23:09 GMT+06:00 Alexander Kuleshov <kuleshovmail@gmail.com>:
-> Hello Jeremiah,
->
-> Thank you for feedback. It is my first patches to kernel, so i have a
-> some little questions:
->
->> Jeremiah Mahler <jmmahler@gmail.com>:
->> Alexander,
+On 12/25/14 7:26 PM, Namhyung Kim wrote:
+>>> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+>>> index 0b6dcd70bc8b..413f28cf689b 100644
+>>> --- a/tools/perf/util/thread.h
+>>> +++ b/tools/perf/util/thread.h
+>>> @@ -11,10 +11,8 @@
+>>>   struct thread_stack;
+>>>
+>>>   struct thread {
+>>> -     union {
+>>> -             struct rb_node   rb_node;
+>>> -             struct list_head node;
+>>> -     };
+>>> +     struct rb_node          rb_node;
+>>> +     struct list_head        node;
+>>>        struct map_groups       *mg;
+>>>        pid_t                   pid_; /* Not all tools update this */
+>>>        pid_t                   tid;
+>>> @@ -22,7 +20,8 @@ struct thread {
+>>>        int                     cpu;
+>>>        char                    shortname[3];
+>>>        bool                    comm_set;
+>>> -     bool                    dead; /* if set thread has exited */
+>>> +     bool                    exited; /* if set thread has exited */
+>>> +     bool                    dead; /* thread is in dead_threads list */
 >>
->> On Fri, Dec 26, 2014 at 06:38:59PM +0600, Alexander Kuleshov wrote:
->>
->> Your description needs to be more specific than just "coding style
->> fixes".  What type of problems did you fix?  How did you find them?
->>
+>> looks like this also changes the logic (new exited flag),
+>> not just the dead threads storage wheel
 >
-> There are some lines which more than 80 chars, I found it with
-> scripts/checkpatch.pl.
-> What is the best place to put this description? In commit message
-> after first line?
->
->> Jeremiah Mahler <jmmahler@gmail.com>:
->> If you are looking for things to fix I suggest looking in the
->> drivers/staging directory.  There are lots of things that need to be
->> fixed in there.
->
-> So i must make this patch for kernel/git/gregkh/staging.git and resend
-> it again or just to add to this thread?
-> Or i'm wrong?
->
-> Thank you.
+> AFAICS the 'dead' flag is not used other than thread__exited().  And
+> it confused me a dead thread might not be in a dead_threads tree (or
+> list).  So I changed the name and no logical change intended.
 
+git show 236a3bbd5cb51
 
+David
 
--- 
-_________________________
-0xAX
