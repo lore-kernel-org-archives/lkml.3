@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaLZL5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 06:57:09 -0500
-Received: from mout.gmx.net ([212.227.15.18]:62260 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926AbaLZL5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 06:57:06 -0500
-Date: Fri, 26 Dec 2014 12:56:53 +0100
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        John David Anglin <dave.anglin@bell.net>
-Subject: [GIT PULL] parisc fix for v3.19
-Message-ID: <20141226115653.GA1050@p100.box>
+	id S1751873AbaLZMCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 07:02:44 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:63960 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaLZMCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 07:02:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Provags-ID: V03:K0:hOcJl5EvV6ZIpG12CEXCi2CQjN2mbfee2xscf6dMfu52RfiD+fd
- sKidExQ/j0JS64SbbGFsnqqdn9Ygt5lNM/25OiKQsNIypGBtefRHWEGUzlhk34/Rz5Qiu7d
- FKo8JYkcXGhfKqZz1KWQnf+4CMNqjgJaZrJvZ3YC5wtg/acww8aijui358WuNTB1nrfAxPe
- nBuGpDPGT3ZsQ663Qt7pw==
-X-UI-Out-Filterresults: notjunk:1;
+Reply-To: sedat.dilek@gmail.com
+Date: Fri, 26 Dec 2014 13:02:40 +0100
+Message-ID: <CA+icZUXPt=GM08PD8LOpCdxCYhNMrr-2MHxPyNRWPXqUjQXFrw@mail.gmail.com>
+Subject: deb-pkg: Cleaning of debian/*tmp files when running 'make (dist)clean'
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Michal Marek <mmarek@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
+        maximilian attems <max@stro.at>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-please pull one patch for the parisc architecture for kernel 3.19 from 
+I creating Debian/Ubuntu packages using builddeb script ('make deb-pkg').
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.19-1
+While I was doing a 'make distclean' and grep-ed for some patterns I
+saw that my debian/*tmp dirs were not deleted.
 
-This patch unbreaks the kernel compilation on parisc with gcc-4.9.
+$ ls debian/*tmp
+debian/fwtmp:
+DEBIAN  lib  usr
 
-Thanks,
-Helge
+debian/hdrtmp:
+DEBIAN  lib  usr
 
-----------------------------------------------------------------
-John David Anglin (1):
-      parisc: fix out-of-register compiler error in ldcw inline assembler function
+debian/headertmp:
+DEBIAN  usr
 
- arch/parisc/include/asm/ldcw.h | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+debian/tmp:
+boot  DEBIAN  etc  lib  usr
+
+Any chance that this is also done on 'make (dist)clean' (not only
+within the builddeb script)?
+
+111:rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir"
+"$libc_headers_dir" "$dbg_dir"
+
+Any other make (PHONY) target I don't know?
+
+Or introduce sth. like clean_tmpdirs() executed before 'exit 0' (or
+simply invoke above rm-line).
+
+BTW, can we have some more meaningful var-names for both headers-dirs,
+something like...
+
+[ scripts/package/builddeb ]
+
+-kernel_headers_dir="$objtree/debian/hdrtmp"
+-libc_headers_dir="$objtree/debian/headertmp"
++kernel_headers_dir="$objtree/debian/k_hdrtmp"
++libc_headers_dir="$objtree/debian/c_hdrtmp"
+
+...it's a bit confusing when you look at filesystem-level (dirs, files).
+
+Thanks.
+
+Regards,
+- Sedat -
