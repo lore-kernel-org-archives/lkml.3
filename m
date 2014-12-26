@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaLZXQn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 18:16:43 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:37558 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaLZXQm (ORCPT
+	id S1751627AbaLZXVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 18:21:23 -0500
+Received: from domu-toccata.ens-lyon.fr ([140.77.166.138]:44119 "EHLO
+	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaLZXVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 18:16:42 -0500
+	Fri, 26 Dec 2014 18:21:22 -0500
+Date: Sat, 27 Dec 2014 00:21:16 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: [PATCHv5 0/2] INPUT: Route keyboard LEDs through the generic LEDs
+ layer
+Message-ID: <20141226232116.GA5069@type>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20141226225744.GA30955@codemonkey.org.uk>
-References: <20141221223204.GA9618@codemonkey.org.uk>
-	<CA+55aFygv+PRcYScwCjGVQ7-0PA1mHOGYaKGKS4LBhxPm0YBJA@mail.gmail.com>
-	<CA+55aFwaghUQxp9LJRWH6ANCX5y45c3Fu9T0OnpBaqRdn1=tvw@mail.gmail.com>
-	<CA+55aFz0n=sJgn5LeBLcTzj9=eCVkrWiQZNCKupuD7CMTwm=jQ@mail.gmail.com>
-	<20141222225725.GA8140@codemonkey.org.uk>
-	<CA+55aFzjA_KSqUJiKm5qeZEeFBdrg17doANao+8iphBvVM8boQ@mail.gmail.com>
-	<20141224030125.GA8725@codemonkey.org.uk>
-	<20141226163410.GA25161@codemonkey.org.uk>
-	<20141226181204.GA26527@codemonkey.org.uk>
-	<CA+55aFyySYFJjV5689Ej+Rer_igR0R1S5=h0GwWpWpA6Tk1Okw@mail.gmail.com>
-	<20141226225744.GA30955@codemonkey.org.uk>
-Date: Fri, 26 Dec 2014 15:16:41 -0800
-X-Google-Sender-Auth: 2TAWgwgK8-1mR88GEj9ud3OTDIs
-Message-ID: <CA+55aFxu+8Ty2id7hB++BZZsr0w_-U0tVz1tm6y=OKqp5vi5Og@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>,
-        John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 26, 2014 at 2:57 PM, Dave Jones <davej@codemonkey.org.uk> wrote:
->
-> hm.
+Here is v5 coming, with separate patches for the kbd and the input
+parts.
 
-So with the previous patch that had the false positives, you never saw
-this? You saw the false positives instead?
-
-I'm wondering if the added debug noise just ended up helping. Doing a
-printk() will automatically cause some scheduler activity. And they
-also caused the time reading jiggle.
-
-That said, it's also possible that I screwed something up in the
-second version of the patch, just breaking it and making it generally
-ineffective.
-
-Oh - and have you actually seen the "TSC unstable (delta = xyz)" +
-"switched to hpet" messages there yet?
-
-                         Linus
+Samuel
