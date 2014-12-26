@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243AbaLZOk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:40:26 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:60960 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaLZOkX (ORCPT
+	id S1751392AbaLZOka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:40:30 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:60700 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaLZOk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:40:23 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-c5-549d7354d17f
+	Fri, 26 Dec 2014 09:40:26 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-ad-549d7358eea6
 From: "Stefan I. Strogin" <s.strogin@partner.samsung.com>
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
 Cc: "Stefan I. Strogin" <s.strogin@partner.samsung.com>,
@@ -23,91 +23,95 @@ Cc: "Stefan I. Strogin" <s.strogin@partner.samsung.com>,
         SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
         Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
         Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Subject: [PATCH 0/3] mm: cma: /proc/cmainfo
-Date: Fri, 26 Dec 2014 17:39:01 +0300
-Message-id: <cover.1419602920.git.s.strogin@partner.samsung.com>
+Subject: [PATCH 1/3] stacktrace: add seq_print_stack_trace()
+Date: Fri, 26 Dec 2014 17:39:02 +0300
+Message-id: <00bfb81bf8749f3be738d20dd263b81490693309.1419602920.git.s.strogin@partner.samsung.com>
 X-Mailer: git-send-email 2.1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xK7ohxXNDDBqOqljMWb+GzeLx63ks
-	Fp9WPmWzWNndzGaxvXMGu0XnxCXsFpd3zWGzuLfmP6vF2iN32S0WHG9htVj29T27Rd/3w+wW
-	k2dLWXw7OYfZ4tqOfiaLqTN+sFuc3HCW1WJDM5eDkMflvl4mj52z7rJ7zO6YyeqxaVUnm8em
-	T5PYPbreXmHyODHjN4vHg0ObWTzW/XnF5HHw3R4mj74tqxg9Pm+S8+ja+Is1gDeKyyYlNSez
-	LLVI3y6BK6P71yymgr0iFZMfVDYw7hLsYuTkkBAwkVj9ZTIThC0mceHeerYuRi4OIYGljBJv
-	DtxlgnB6mST+nTvGDFLFJmApcWxeE1iHCFD37ua5jCBFzAKzWSUu/tnABpIQFtCWaGrdAlbE
-	IqAqcW73VnYQm1fAQWLznq8sEOvkJDbs/s84gZF7ASPDKkbR1NLkguKk9FxDveLE3OLSvHS9
-	5PzcTYyQAP+yg3HxMatDjAIcjEo8vAnr5oQIsSaWFVfmHmKU4GBWEuGtMpsbIsSbklhZlVqU
-	H19UmpNafIiRiYNTqoHRlzv/2sSJDzNWcVrM4DdyDYg+u3gKo/dW9Th/z2khPMXSQvPzL+1i
-	UerhqGVgFLcO1/n+q8Kcv+HCmR2z1I0/KbwMr6i/pVA/07CMI126YIt/rmVJmkzDiqAzKfmt
-	RbnfDgp3zouacP7FZEGzz8m7Mv6LntnOuHHJ/q3XnjXuObvL1diKP06JpTgj0VCLuag4EQBf
-	NhjPTgIAAA==
+In-reply-to: <cover.1419602920.git.s.strogin@partner.samsung.com>
+References: <cover.1419602920.git.s.strogin@partner.samsung.com>
+In-reply-to: <cover.1419602920.git.s.strogin@partner.samsung.com>
+References: <cover.1419602920.git.s.strogin@partner.samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xK7oRxXNDDN5/lraYs34Nm8Xj1/NY
+	LD6tfMpmsbK7mc1ie+cMdovOiUvYLS7vmsNmcW/Nf1aLtUfuslssON7CarHs63t2i77vh9kt
+	Js+Wsvh2cg6zxbUd/UwWU2f8YLc4ueEsq8WGZi4HIY/Lfb1MHjtn3WX3mN0xk9Vj06pONo9N
+	nyaxe3S9vcLkcWLGbxaPB4c2s3is+/OKyePguz1MHn1bVjF6fN4k59G18RdrAG8Ul01Kak5m
+	WWqRvl0CV8aK+5vZCnYLVnzumsXYwHiAr4uRk0NCwESi51EfM4QtJnHh3nq2LkYuDiGBpYwS
+	v5r+M0M4vUwS2/ruMoJUsQlYShyb18QEYosAde9unssIUsQsMJtV4uKfDWwgCWEBG4k9Z5az
+	g9gsAqoSfbfXgzXzCqRKPNrcyAqxTk5iw+7/YHFOAUeJJ0/WgQ0VEnCQ6Lz4hhWX+ARG/gWM
+	DKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQmLo6w7GpcesDjEKcDAq8fAmrJsTIsSaWFZc
+	mXuIUYKDWUmEt8psbogQb0piZVVqUX58UWlOavEhRiYOTqkGxui0x82rOT3WpbTIWjm3cVhz
+	MEYd4418eKFN2PKBz5Pwojgf3ys2q0SaTqhMvG525nc+n8Am3lXLFtb4vP7nvaMqgrOvoDKy
+	8qmmYWBM3Mvg2rd+kmmXJFhZL/QovW2c1OWl/1Iz9q7Q34YnLz4n23O5nOYTUqqr+qzg+agl
+	8vPfRx17XsUpsRRnJBpqMRcVJwIAG3s6B38CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+Add a function seq_print_stack_trace() which prints stacktraces to seq_files.
 
-Here is a patch set that adds /proc/cmainfo.
+Signed-off-by: Stefan I. Strogin <s.strogin@partner.samsung.com>
+---
+ include/linux/stacktrace.h |  4 ++++
+ kernel/stacktrace.c        | 17 +++++++++++++++++
+ 2 files changed, 21 insertions(+)
 
-When compiled with CONFIG_CMA_DEBUG /proc/cmainfo will contain information
-about about total, used, maximum free contiguous chunk and all currently
-allocated contiguous buffers in CMA regions. The information about allocated
-CMA buffers includes pid, comm, allocation latency and stacktrace at the
-moment of allocation.
-
-Example:
-
-# cat /proc/cmainfo 
-CMARegion stat:    65536 kB total,      248 kB used,    65216 kB max contiguous chunk
-
-0x32400000 - 0x32401000 (4 kB), allocated by pid 63 (systemd-udevd), latency 74 us
- [<c1006e96>] dma_generic_alloc_coherent+0x86/0x160
- [<c13093af>] rpm_idle+0x1f/0x1f0
- [<c1006e10>] dma_generic_alloc_coherent+0x0/0x160
- [<f80a533e>] ohci_init+0x1fe/0x430 [ohci_hcd]
- [<c1006e10>] dma_generic_alloc_coherent+0x0/0x160
- [<f801404f>] ohci_pci_reset+0x4f/0x60 [ohci_pci]
- [<f80f165c>] usb_add_hcd+0x1fc/0x900 [usbcore]
- [<c1256158>] pcibios_set_master+0x38/0x90
- [<f8101ea6>] usb_hcd_pci_probe+0x176/0x4f0 [usbcore]
- [<c125852f>] pci_device_probe+0x6f/0xd0
- [<c1199495>] sysfs_create_link+0x25/0x50
- [<c1300522>] driver_probe_device+0x92/0x3b0
- [<c14564fb>] __mutex_lock_slowpath+0x5b/0x90
- [<c1300880>] __driver_attach+0x0/0x80
- [<c13008f9>] __driver_attach+0x79/0x80
- [<c1300880>] __driver_attach+0x0/0x80
-
-0x32401000 - 0x32402000 (4 kB), allocated by pid 58 (systemd-udevd), latency 17 us
- [<c130e370>] dmam_coherent_release+0x0/0x90
- [<c112d76c>] __kmalloc_track_caller+0x31c/0x380
- [<c1006e96>] dma_generic_alloc_coherent+0x86/0x160
- [<c1006e10>] dma_generic_alloc_coherent+0x0/0x160
- [<c130e226>] dmam_alloc_coherent+0xb6/0x100
- [<f8125153>] ata_bmdma_port_start+0x43/0x60 [libata]
- [<f8113068>] ata_host_start.part.29+0xb8/0x190 [libata]
- [<c13624a0>] pci_read+0x30/0x40
- [<f8124eb9>] ata_pci_sff_activate_host+0x29/0x220 [libata]
- [<f8127050>] ata_bmdma_interrupt+0x0/0x1f0 [libata]
- [<c1256158>] pcibios_set_master+0x38/0x90
- [<f80ad9be>] piix_init_one+0x44e/0x630 [ata_piix]
- [<c1455ef0>] mutex_lock+0x10/0x20
- [<c1197093>] kernfs_activate+0x63/0xd0
- [<c11971c3>] kernfs_add_one+0xc3/0x130
- [<c125852f>] pci_device_probe+0x6f/0xd0
-<...>
-
-Dmitry Safonov (1):
-  cma: add functions to get region pages counters
-
-Stefan I. Strogin (2):
-  stacktrace: add seq_print_stack_trace()
-  mm: cma: introduce /proc/cmainfo
-
- include/linux/cma.h        |   2 +
- include/linux/stacktrace.h |   4 +
- kernel/stacktrace.c        |  17 ++++
- mm/cma.c                   | 236 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 259 insertions(+)
-
+diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
+index 669045a..6d62484 100644
+--- a/include/linux/stacktrace.h
++++ b/include/linux/stacktrace.h
+@@ -2,6 +2,7 @@
+ #define __LINUX_STACKTRACE_H
+ 
+ #include <linux/types.h>
++#include <linux/seq_file.h>
+ 
+ struct task_struct;
+ struct pt_regs;
+@@ -24,6 +25,8 @@ extern void save_stack_trace_tsk(struct task_struct *tsk,
+ extern void print_stack_trace(struct stack_trace *trace, int spaces);
+ extern int snprint_stack_trace(char *buf, size_t size,
+ 			struct stack_trace *trace, int spaces);
++extern void seq_print_stack_trace(struct seq_file *m,
++			struct stack_trace *trace, int spaces);
+ 
+ #ifdef CONFIG_USER_STACKTRACE_SUPPORT
+ extern void save_stack_trace_user(struct stack_trace *trace);
+@@ -37,6 +40,7 @@ extern void save_stack_trace_user(struct stack_trace *trace);
+ # define save_stack_trace_user(trace)			do { } while (0)
+ # define print_stack_trace(trace, spaces)		do { } while (0)
+ # define snprint_stack_trace(buf, size, trace, spaces)	do { } while (0)
++# define seq_print_stack_trace(m, trace, spaces)	do { } while (0)
+ #endif
+ 
+ #endif
+diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
+index b6e4c16..66ef6f4 100644
+--- a/kernel/stacktrace.c
++++ b/kernel/stacktrace.c
+@@ -57,6 +57,23 @@ int snprint_stack_trace(char *buf, size_t size,
+ }
+ EXPORT_SYMBOL_GPL(snprint_stack_trace);
+ 
++void seq_print_stack_trace(struct seq_file *m, struct stack_trace *trace,
++			int spaces)
++{
++	int i;
++
++	if (WARN_ON(!trace->entries))
++		return;
++
++	for (i = 0; i < trace->nr_entries; i++) {
++		unsigned long ip = trace->entries[i];
++
++		seq_printf(m, "%*c[<%p>] %pS\n", 1 + spaces, ' ',
++				(void *) ip, (void *) ip);
++	}
++}
++EXPORT_SYMBOL_GPL(seq_print_stack_trace);
++
+ /*
+  * Architectures that do not implement save_stack_trace_tsk or
+  * save_stack_trace_regs get this weak alias and a once-per-bootup warning
 -- 
 2.1.0
 
