@@ -1,126 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbaLZOu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:50:56 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52211 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752864AbaLZOuv convert rfc822-to-8bit (ORCPT
+	id S1752964AbaLZOv0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:51:26 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751760AbaLZOm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:50:51 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: 3.19-rc1 errors when opening LID
-Date: Fri, 26 Dec 2014 16:12:49 +0100
-Message-ID: <3406993.nnu7vUsHIn@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <201412241951.48652@pali>
-References: <201412241951.48652@pali>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Fri, 26 Dec 2014 09:42:27 -0500
+X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
+   d="scan'208";a="114895454"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Jay Cliburn <jcliburn@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Chris Snook <chris.snook@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/27] atl1e: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:35 +0100
+Message-Id: <1419604558-29743-5-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 24, 2014 07:51:48 PM Pali Rohár wrote:
-> 
-> --nextPart5943893.pKyMBm5Emp
-> Content-Type: Text/Plain;
->   charset="utf-8"
-> Content-Transfer-Encoding: quoted-printable
-> 
-> Hello!
-> 
-> With new 3.19-rc1 kernel every time when I open LID on my laptop, kernel pr=
-> ints these error lines to dmesg:
+Convert a call to init_timer and accompanying intializations of
+the timer's data and function fields to a call to setup_timer.
 
-Does your syste suspend when the lid is closed and resume when it is open?
+A simplified version of the semantic match that fixes this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-> [25566.368133] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
-> ed register detected. Please use the i915.mmio_debug=3D1 to debug this prob=
-> lem.
-> [25566.368134] [drm:intel_uncore_check_errors [i915]] *ERROR* Unclaimed reg=
-> ister before interrupt
-> [25566.368192] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
-> ed register detected. Please use the i915.mmio_debug=3D1 to debug this prob=
-> lem.
-> [25566.368232] [drm:hsw_unclaimed_reg_detect.isra.6 [i915]] *ERROR* Unclaim=
-> ed register detected. Please use the i915.mmio_debug=3D1 to debug this prob=
-> lem.<4>[25568.446011] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2]=
-> =20
-> has bogus alignment
+// <smpl>
+@@
+expression t,f,d;
+@@
 
-The above messages are from i915 and don't seem to be related to ACPI.
+-init_timer(&t);
++setup_timer(&t,f,d);
+-t.function = f;
+-t.data = d;
+// </smpl>
 
-> [25568.447018] pci_bus 0000:02: Allocating resources
-> [25568.447055] pci_bus 0000:03: Allocating resources
-> [25568.447135] pci_bus 0000:04: Allocating resources
-> [25568.447168] pci_bus 0000:05: Allocating resources
-> [25568.447195] pci_bus 0000:06: Allocating resources
-> [25568.447228] pci_bus 0000:0e: Allocating resources
-> [25568.447323] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> [25568.447557] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> [25568.447735] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> [25568.447847] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> [25568.448399] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> [25568.448438] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The above too.
+---
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-> [25568.448566] acpi MSFT1111:00: Cannot transition to power state D3cold fo=
-> r parent in (unknown)
-> [25568.448572] acpi INT33C2:00: Cannot transition to non-D0 state from D3
-> [25568.448577] acpi MSFT0002:00: Cannot transition to power state D3cold fo=
-> r parent in (unknown)
-> [25568.448581] acpi ELAN1010:00: Cannot transition to power state D3cold fo=
-> r parent in (unknown)
-> [25568.448587] acpi INT33C3:00: Cannot transition to non-D0 state from D3
-> [25568.448590] acpi INT33C0:00: Cannot transition to non-D0 state from D3
-> [25568.448594] acpi INT33C1:00: Cannot transition to non-D0 state from D3
-> [25568.448598] acpi INT33C4:00: Cannot transition to non-D0 state from D3
-> [25568.448602] acpi INT33C5:00: Cannot transition to non-D0 state from D3
-> [25568.448623] acpi device:41: Cannot transition to power state D3cold for =
-> parent in (unknown)
-> [25568.448627] acpi INT33C6:00: Cannot transition to non-D0 state from D3
+diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+index 2326579..c88abf5 100644
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -2373,9 +2373,8 @@ static int atl1e_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+ 	netif_napi_add(netdev, &adapter->napi, atl1e_clean, 64);
+ 
+-	init_timer(&adapter->phy_config_timer);
+-	adapter->phy_config_timer.function = atl1e_phy_config;
+-	adapter->phy_config_timer.data = (unsigned long) adapter;
++	setup_timer(&adapter->phy_config_timer, atl1e_phy_config,
++		    (unsigned long)adapter);
+ 
+ 	/* get user settings */
+ 	atl1e_check_options(adapter);
 
-All of the above mean that power transitions were not carried out for some
-devices, because they were in unexpected power states to start with.
-
-They are devices on the Intel LPSS as far as I can say (CCing Mika and Andy).
-
-> [25568.448890] pci_bus 0000:01: Allocating resources
-> [25568.448905] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> [25568.449064] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> [25568.449472] i915 0000:00:02.0: BAR 6: [??? 0x00000000 flags 0x2] has bog=
-> us alignment
-> 
-> With older kernel (3.13) I do not see these errors, so it is regression.
-
-It only is a regression if it leads to functional problems.  Do you see any?
-
-> Ca=n you look at it? If it is needed, I can provide other logs, ACPI/DSTD dump=
-> s, etc.
-
-It looks like 3.13 didn't try to use some devices that are now used in 3.19-rc1
-and something doesn't work entirely as expected.
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
