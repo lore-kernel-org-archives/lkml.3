@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751205AbaLZVnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 16:43:42 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:65142 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaLZVnj (ORCPT
+	id S1751499AbaLZWHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 17:07:05 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40789 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaLZWHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 16:43:39 -0500
-Date: Fri, 26 Dec 2014 16:43:35 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:ata: Remove unneeded fix me comment for the
- function,mv_print_info in sata_mv.c
-Message-ID: <20141226214335.GB10889@htj.dyndns.org>
-References: <1419629997-2623-1-git-send-email-xerofoify@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419629997-2623-1-git-send-email-xerofoify@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 26 Dec 2014 17:07:03 -0500
+Date: Fri, 26 Dec 2014 17:06:34 -0500 (EST)
+Message-Id: <20141226.170634.1467105628556822771.davem@davemloft.net>
+To: appana.durga.rao@xilinx.com
+Cc: anirudh@xilinx.com, John.Linn@xilinx.com, michal.simek@xilinx.com,
+        soren.brinkmann@xilinx.com, grant.likely@linaro.org,
+        robh+dt@kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, appanad@xilinx.com
+Subject: Re: [PATCH] net: xilinx: Remove unnecessary temac_property in the
+ driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <072fa5b149374b09b3f6d5d767714d3e@BN1AFFO11FD010.protection.gbl>
+References: <072fa5b149374b09b3f6d5d767714d3e@BN1AFFO11FD010.protection.gbl>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 26 Dec 2014 14:07:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 26, 2014 at 04:39:57PM -0500, Nicholas Krause wrote:
-> Removes a unneed fix me comment for the function,mv_print_info in sata_mv.c.
-> This comment is no longer needed as this function has been completed correctly
-> to print out hardware info to the kernel log buffer and therefore this comment
-> is no longer needed for the function,mv_print_info.
+From: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+Date: Tue, 23 Dec 2014 18:07:55 +0530
 
-How do we know the function is completed correctly?
+> This property is no longer used in the code yet the code looks for it in the device tree.
+> It does not cause an error if it's not in the tree.
+> 
+> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
 
-Thanks.
-
--- 
-tejun
+Applied, thanks.
