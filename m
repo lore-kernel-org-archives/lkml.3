@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaLZOmt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:42:49 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17530 "EHLO
+	id S1752128AbaLZOmo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:42:44 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751807AbaLZOm1 (ORCPT
+	by vger.kernel.org with ESMTP id S1751841AbaLZOm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:27 -0500
+	Fri, 26 Dec 2014 09:42:28 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895455"
+   d="scan'208";a="114895458"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/27] [media] usbvision: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:36 +0100
-Message-Id: <1419604558-29743-6-git-send-email-Julia.Lawall@lip6.fr>
+To: Solomon Peachy <pizza@shaftnet.org>
+Cc: kernel-janitors@vger.kernel.org, Kalle Valo <kvalo@codeaurora.org>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/27] cw1200: queue: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:39 +0100
+Message-Id: <1419604558-29743-9-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -41,29 +41,25 @@ expression t,f,d;
 -t.function = f;
 // </smpl>
 
-The semantic patch also changes the cast to long to a cast to unsigned
-long in the data initializer, as unsigned long is the type of the data field.
-
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/usb/usbvision/usbvision-core.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/wireless/cw1200/queue.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/media/usb/usbvision/usbvision-core.c b/drivers/media/usb/usbvision/usbvision-core.c
-index 302aa07..64c63d3 100644
---- a/drivers/media/usb/usbvision/usbvision-core.c
-+++ b/drivers/media/usb/usbvision/usbvision-core.c
-@@ -2194,9 +2194,8 @@ static void usbvision_power_off_timer(unsigned long data)
+diff --git a/drivers/net/wireless/cw1200/queue.c b/drivers/net/wireless/cw1200/queue.c
+index 9c3925f..0ba5ef9 100644
+--- a/drivers/net/wireless/cw1200/queue.c
++++ b/drivers/net/wireless/cw1200/queue.c
+@@ -179,9 +179,7 @@ int cw1200_queue_init(struct cw1200_queue *queue,
+ 	INIT_LIST_HEAD(&queue->pending);
+ 	INIT_LIST_HEAD(&queue->free_pool);
+ 	spin_lock_init(&queue->lock);
+-	init_timer(&queue->gc);
+-	queue->gc.data = (unsigned long)queue;
+-	queue->gc.function = cw1200_queue_gc;
++	setup_timer(&queue->gc, cw1200_queue_gc, (unsigned long)queue);
  
- void usbvision_init_power_off_timer(struct usb_usbvision *usbvision)
- {
--	init_timer(&usbvision->power_off_timer);
--	usbvision->power_off_timer.data = (long)usbvision;
--	usbvision->power_off_timer.function = usbvision_power_off_timer;
-+	setup_timer(&usbvision->power_off_timer, usbvision_power_off_timer,
-+		    (unsigned long)usbvision);
- }
- 
- void usbvision_set_power_off_timer(struct usb_usbvision *usbvision)
+ 	queue->pool = kzalloc(sizeof(struct cw1200_queue_item) * capacity,
+ 			GFP_KERNEL);
 
