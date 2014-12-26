@@ -1,220 +1,724 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaLZFT5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 00:19:57 -0500
-Received: from fgwmail8.fujitsu.co.jp ([192.51.44.38]:59346 "EHLO
-	fgwmail8.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaLZFTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 00:19:54 -0500
-X-Greylist: delayed 327 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Dec 2014 00:19:53 EST
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <549CEE8F.2090209@jp.fujitsu.com>
-Date: Fri, 26 Dec 2014 14:13:51 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751259AbaLZFjq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 00:39:46 -0500
+Received: from mail-by2on0135.outbound.protection.outlook.com ([207.46.100.135]:28154
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750853AbaLZFjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 00:39:44 -0500
+From: Jaiprakash Singh <b44839@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Jaiprakash Singh <b44839@freescale.com>
+Subject: [PATCH 1/1][v4] [RESEND] IFC: Change IO accessor based on endianness
+Date: Fri, 26 Dec 2014 11:09:33 +0530
+Message-ID: <1419572373-2939-1-git-send-email-b44839@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 192.88.158.2) smtp.mailfrom=<>; 
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(42382002)(68736005)(84676001)(21056001)(97736003)(64706001)(104016003)(99396003)(4396001)(77096005)(92566001)(78352002)(229853001)(50226001)(110136001)(50986999)(107046002)(2351001)(81156004)(62966003)(450100001)(101416001)(36756003)(87936001)(106466001)(47776003)(46102003)(551934003)(48376002)(120916001)(33646002)(20776003)(105586002)(31966008)(89996001)(19580405001)(50466002)(69596002)(77156002)(6806004)(19580395003)(88662002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB472;H:az84smr01.freescale.net;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:0;A:0;LANG:en;
 MIME-Version: 1.0
-To: <zhen-hual@hp.com>
-CC: <dwmw2@infradead.org>, <bhe@redhat.com>, <joro@8bytes.org>,
-        <vgoyal@redhat.com>, <dyoung@redhat.com>,
-        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <kexec@lists.infradead.org>,
-        <alex.williamson@redhat.com>, <ddutile@redhat.com>,
-        <ishii.hironobu@jp.fujitsu.com>, <bhelgaas@google.com>,
-        <doug.hatch@hp.com>, <jerry.hoemann@hp.com>, <tom.vaden@hp.com>,
-        <li.zhang6@hp.com>, <lisa.mitchell@hp.com>,
-        <billsumnerlinux@gmail.com>
-Subject: Re: [PATCH 0/10] iommu/vt-d: Fix intel vt-d faults in kdump kernel
-References: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1419239729-26529-1-git-send-email-zhen-hual@hp.com>
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB472;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB472;
+X-Forefront-PRVS: 04371797A5
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB472;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 26 Dec 2014 05:39:42.4055
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB472
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zhen-Hua,
+From: Jaiprakash Singh <b44839@freescale.com>
 
-I tested your patch and found two problems.
+IFC IO accressor are set at run time based
+on IFC IP registers endianness.IFC node in
+DTS file contains information about
+endianness.
 
-[1]
-Kenel panic occurs during 2nd kernel boot.
+Signed-off-by: Jaiprakash Singh <b44839@freescale.com>
+---
+Changes for v4
+	- Review rework as per Scott's comments
+	- Tested on B4860QDS board
+	- ACKed by Scott
+---
+ .../bindings/memory-controllers/fsl/ifc.txt        |    3 +
+ drivers/memory/fsl_ifc.c                           |   34 ++-
+ drivers/mtd/nand/fsl_ifc_nand.c                    |  260 ++++++++++----------
+ include/linux/fsl_ifc.h                            |   50 ++++
+ 4 files changed, 205 insertions(+), 142 deletions(-)
 
-..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-Kernel panic - not syncing: timer doesn't work through Interrupt-remapped IO-APIC
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0 #25
-Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015 Rev.3D81.3030 02/10/2012
- 0000000000000002 ffff880036167d08 ffffffff815b1c6a 0000000000000000
- ffffffff817f7670 ffff880036167d88 ffffffff815b19f1 0000000000000008
- ffff880036167d98 ffff880036167d38 ffffffff810a5d2f ffff880036167d98
-Call Trace:
- [<ffffffff815b1c6a>] dump_stack+0x48/0x5e
- [<ffffffff815b19f1>] panic+0xbb/0x1fa
- [<ffffffff810a5d2f>] ? vprintk_default+0x1f/0x30
- [<ffffffff814c6a6c>] panic_if_irq_remap+0x1c/0x20
- [<ffffffff81b53985>] check_timer+0x1e7/0x5ed
- [<ffffffff8129bd9d>] ? radix_tree_lookup+0xd/0x10
- [<ffffffff81b5413b>] setup_IO_APIC+0x261/0x292
- [<ffffffff81b50302>] native_smp_prepare_cpus+0x214/0x25d
- [<ffffffff81b41c65>] kernel_init_freeable+0x1dc/0x28c
- [<ffffffff815aaf00>] ? rest_init+0x80/0x80
- [<ffffffff815aaf0e>] kernel_init+0xe/0xf0
- [<ffffffff815b5d2c>] ret_from_fork+0x7c/0xb0
- [<ffffffff815aaf00>] ? rest_init+0x80/0x80
----[ end Kernel panic - not syncing: timer doesn't work through Interrupt-remapped IO-APIC
-
-
-This panic seems to be related to unflushed cache. I confirmed this
-problem was fixed by the following patch.
-
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -200,8 +200,13 @@ static int modify_irte(int irq, struct irte *irte_modified)
- 	set_64bit(&irte->high, irte_modified->high);
+diff --git a/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt b/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt
+index d5e3704..89427b0 100644
+--- a/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt
++++ b/Documentation/devicetree/bindings/memory-controllers/fsl/ifc.txt
+@@ -18,6 +18,8 @@ Properties:
+               interrupt (NAND_EVTER_STAT).  If there is only one,
+               that interrupt reports both types of event.
  
- #ifdef CONFIG_CRASH_DUMP
--	if (is_kdump_kernel())
-+	if (is_kdump_kernel()) {
- 		__iommu_update_old_irte(iommu, index);
-+		__iommu_flush_cache(iommu,
-+			iommu->ir_table->base_old_virt +
-+			index * sizeof(struct irte),
-+			sizeof(struct irte));
++- little-endian : If this property is absent, the big-endian mode will
++                  be in use as default for registers.
+ 
+ - ranges : Each range corresponds to a single chipselect, and covers
+            the entire access window as configured.
+@@ -34,6 +36,7 @@ Example:
+ 		#size-cells = <1>;
+ 		reg = <0x0 0xffe1e000 0 0x2000>;
+ 		interrupts = <16 2 19 2>;
++		little-endian;
+ 
+ 		/* NOR, NAND Flashes and CPLD on board */
+ 		ranges = <0x0 0x0 0x0 0xee000000 0x02000000
+diff --git a/drivers/memory/fsl_ifc.c b/drivers/memory/fsl_ifc.c
+index 3d5d792..f2e1a5c 100644
+--- a/drivers/memory/fsl_ifc.c
++++ b/drivers/memory/fsl_ifc.c
+@@ -62,7 +62,7 @@ int fsl_ifc_find(phys_addr_t addr_base)
+ 		return -ENODEV;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fsl_ifc_ctrl_dev->regs->cspr_cs); i++) {
+-		u32 cspr = in_be32(&fsl_ifc_ctrl_dev->regs->cspr_cs[i].cspr);
++		u32 cspr = ifc_in32(&fsl_ifc_ctrl_dev->regs->cspr_cs[i].cspr);
+ 		if (cspr & CSPR_V && (cspr & CSPR_BA) ==
+ 				convert_ifc_address(addr_base))
+ 			return i;
+@@ -79,16 +79,16 @@ static int fsl_ifc_ctrl_init(struct fsl_ifc_ctrl *ctrl)
+ 	/*
+ 	 * Clear all the common status and event registers
+ 	 */
+-	if (in_be32(&ifc->cm_evter_stat) & IFC_CM_EVTER_STAT_CSER)
+-		out_be32(&ifc->cm_evter_stat, IFC_CM_EVTER_STAT_CSER);
++	if (ifc_in32(&ifc->cm_evter_stat) & IFC_CM_EVTER_STAT_CSER)
++		ifc_out32(IFC_CM_EVTER_STAT_CSER, &ifc->cm_evter_stat);
+ 
+ 	/* enable all error and events */
+-	out_be32(&ifc->cm_evter_en, IFC_CM_EVTER_EN_CSEREN);
++	ifc_out32(IFC_CM_EVTER_EN_CSEREN, &ifc->cm_evter_en);
+ 
+ 	/* enable all error and event interrupts */
+-	out_be32(&ifc->cm_evter_intr_en, IFC_CM_EVTER_INTR_EN_CSERIREN);
+-	out_be32(&ifc->cm_erattr0, 0x0);
+-	out_be32(&ifc->cm_erattr1, 0x0);
++	ifc_out32(IFC_CM_EVTER_INTR_EN_CSERIREN, &ifc->cm_evter_intr_en);
++	ifc_out32(0x0, &ifc->cm_erattr0);
++	ifc_out32(0x0, &ifc->cm_erattr1);
+ 
+ 	return 0;
+ }
+@@ -127,9 +127,9 @@ static u32 check_nand_stat(struct fsl_ifc_ctrl *ctrl)
+ 
+ 	spin_lock_irqsave(&nand_irq_lock, flags);
+ 
+-	stat = in_be32(&ifc->ifc_nand.nand_evter_stat);
++	stat = ifc_in32(&ifc->ifc_nand.nand_evter_stat);
+ 	if (stat) {
+-		out_be32(&ifc->ifc_nand.nand_evter_stat, stat);
++		ifc_out32(stat, &ifc->ifc_nand.nand_evter_stat);
+ 		ctrl->nand_stat = stat;
+ 		wake_up(&ctrl->nand_wait);
+ 	}
+@@ -161,16 +161,16 @@ static irqreturn_t fsl_ifc_ctrl_irq(int irqno, void *data)
+ 	irqreturn_t ret = IRQ_NONE;
+ 
+ 	/* read for chip select error */
+-	cs_err = in_be32(&ifc->cm_evter_stat);
++	cs_err = ifc_in32(&ifc->cm_evter_stat);
+ 	if (cs_err) {
+ 		dev_err(ctrl->dev, "transaction sent to IFC is not mapped to"
+ 				"any memory bank 0x%08X\n", cs_err);
+ 		/* clear the chip select error */
+-		out_be32(&ifc->cm_evter_stat, IFC_CM_EVTER_STAT_CSER);
++		ifc_out32(IFC_CM_EVTER_STAT_CSER, &ifc->cm_evter_stat);
+ 
+ 		/* read error attribute registers print the error information */
+-		status = in_be32(&ifc->cm_erattr0);
+-		err_addr = in_be32(&ifc->cm_erattr1);
++		status = ifc_in32(&ifc->cm_erattr0);
++		err_addr = ifc_in32(&ifc->cm_erattr1);
+ 
+ 		if (status & IFC_CM_ERATTR0_ERTYP_READ)
+ 			dev_err(ctrl->dev, "Read transaction error"
+@@ -231,6 +231,14 @@ static int fsl_ifc_ctrl_probe(struct platform_device *dev)
+ 		goto err;
+ 	}
+ 
++	if (of_property_read_bool(dev->dev.of_node, "little-endian")) {
++		fsl_ifc_ctrl_dev->little_endian = true;
++		dev_dbg(&dev->dev, "IFC REGISTERS are LITTLE endian\n");
++	} else {
++		fsl_ifc_ctrl_dev->little_endian = false;
++		dev_dbg(&dev->dev, "IFC REGISTERS are BIG endian\n");
 +	}
- #endif
- 	__iommu_flush_cache(iommu, irte, sizeof(*irte));
++
+ 	/* get the Controller level irq */
+ 	fsl_ifc_ctrl_dev->irq = irq_of_parse_and_map(dev->dev.of_node, 0);
+ 	if (fsl_ifc_ctrl_dev->irq == NO_IRQ) {
+diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
+index 2338124..263bff4 100644
+--- a/drivers/mtd/nand/fsl_ifc_nand.c
++++ b/drivers/mtd/nand/fsl_ifc_nand.c
+@@ -239,8 +239,8 @@ static void set_addr(struct mtd_info *mtd, int column, int page_addr, int oob)
  
-
-[2]
-Some DMAR error messages are still found in 2nd kernel boot.
-
-dmar: DRHD: handling fault status reg 2
-dmar: DMAR:[DMA Write] Request device [01:00.0] fault addr ffded000
-DMAR:[fault reason 01] Present bit in root entry is clear
-
-I confiremd your commit 1a2262 was already applied. Any idea?
-
-Thanks,
-Takao Indoh
-
-
-On 2014/12/22 18:15, Li, Zhen-Hua wrote:
-> This patchset is an update of Bill Sumner's patchset, implements a fix for:
-> If a kernel boots with intel_iommu=on on a system that supports intel vt-d,
-> when a panic happens, the kdump kernel will boot with these faults:
-> 
->      dmar: DRHD: handling fault status reg 102
->      dmar: DMAR:[DMA Read] Request device [01:00.0] fault addr fff80000
->      DMAR:[fault reason 01] Present bit in root entry is clear
-> 
->      dmar: DRHD: handling fault status reg 2
->      dmar: INTR-REMAP: Request device [[61:00.0] fault index 42
->      INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
-> 
-> On some system, the interrupt remapping fault will also happen even if the
-> intel_iommu is not set to on, because the interrupt remapping will be enabled
-> when x2apic is needed by the system.
-> 
-> The cause of the DMA fault is described in Bill's original version, and the
-> INTR-Remap fault is caused by a similar reason. In short, the initialization
-> of vt-d drivers causes the in-flight DMA and interrupt requests get wrong
-> response.
-> 
-> To fix this problem, we modifies the behaviors of the intel vt-d in the
-> crashdump kernel:
-> 
-> For DMA Remapping:
-> 1. To accept the vt-d hardware in an active state,
-> 2. Do not disable and re-enable the translation, keep it enabled.
-> 3. Use the old root entry table, do not rewrite the RTA register.
-> 4. Malloc and use new context entry table and page table, copy data from the
->     old ones that used by the old kernel.
-> 5. to use different portions of the iova address ranges for the device drivers
->     in the crashdump kernel than the iova ranges that were in-use at the time
->     of the panic.
-> 6. After device driver is loaded, when it issues the first dma_map command,
->     free the dmar_domain structure for this device, and generate a new one, so
->     that the device can be assigned a new and empty page table.
-> 7. When a new context entry table is generated, we also save its address to
->     the old root entry table.
-> 
-> For Interrupt Remapping:
-> 1. To accept the vt-d hardware in an active state,
-> 2. Do not disable and re-enable the interrupt remapping, keep it enabled.
-> 3. Use the old interrupt remapping table, do not rewrite the IRTA register.
-> 4. When ioapic entry is setup, the interrupt remapping table is changed, and
->     the updated data will be stored to the old interrupt remapping table.
-> 
-> Advantages of this approach:
-> 1. All manipulation of the IO-device is done by the Linux device-driver
->     for that device.
-> 2. This approach behaves in a manner very similar to operation without an
->     active iommu.
-> 3. Any activity between the IO-device and its RMRR areas is handled by the
->     device-driver in the same manner as during a non-kdump boot.
-> 4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
->     This supports the practice of creating a special kdump kernel without
->     drivers for any devices that are not required for taking a crashdump.
-> 5. Minimal code-changes among the existing mainline intel vt-d code.
-> 
-> Summary of changes in this patch set:
-> 1. Added some useful function for root entry table in code intel-iommu.c
-> 2. Added new members to struct root_entry and struct irte;
-> 3. Functions to load old root entry table to iommu->root_entry from the memory
->     of old kernel.
-> 4. Functions to malloc new context entry table and page table and copy the data
->     from the old ones to the malloced new ones.
-> 5. Functions to enable support for DMA remapping in kdump kernel.
-> 6. Functions to load old irte data from the old kernel to the kdump kernel.
-> 7. Some code changes that support other behaviours that have been listed.
-> 8. In the new functions, use physical address as "unsigned long" type, not
->     pointers.
-> 
-> Original version by Bill Sumner:
->      https://lkml.org/lkml/2014/1/10/518
->      https://lkml.org/lkml/2014/4/15/716
->      https://lkml.org/lkml/2014/4/24/836
-> 
-> Zhenhua's last of Bill's patchset:
->      https://lkml.org/lkml/2014/10/21/134
->      https://lkml.org/lkml/2014/12/15/121
-> 
-> Changed in this version:
-> 1. Do not disable and re-enable traslation and interrupt remapping.
-> 2. Use old root entry table.
-> 3. Use old interrupt remapping table.
-> 4. Use "unsigned long" as physical address.
-> 5. Use intel_unmap to unmap the old dma;
-> 
-> This patchset should be applied with this one together:
->      https://lkml.org/lkml/2014/11/5/43
->      x86/iommu: fix incorrect bit operations in setting values
-> 
-> Bill Sumner (5):
->    iommu/vt-d: Update iommu_attach_domain() and its callers
->    iommu/vt-d: Items required for kdump
->    iommu/vt-d: data types and functions used for kdump
->    iommu/vt-d: Add domain-id functions
->    iommu/vt-d: enable kdump support in iommu module
-> 
-> Li, Zhen-Hua (10):
->    iommu/vt-d: Update iommu_attach_domain() and its callers
->    iommu/vt-d: Items required for kdump
->    iommu/vt-d: Add domain-id functions
->    iommu/vt-d: functions to copy data from old mem
->    iommu/vt-d: Add functions to load and save old re
->    iommu/vt-d: datatypes and functions used for kdump
->    iommu/vt-d: enable kdump support in iommu module
->    iommu/vtd: assign new page table for dma_map
->    iommu/vt-d: Copy functions for irte
->    iommu/vt-d: Use old irte in kdump kernel
-> 
->   drivers/iommu/intel-iommu.c         | 1050 +++++++++++++++++++++++++++++++++--
->   drivers/iommu/intel_irq_remapping.c |   99 +++-
->   include/linux/intel-iommu.h         |   18 +
->   3 files changed, 1123 insertions(+), 44 deletions(-)
-> 
+ 	ifc_nand_ctrl->page = page_addr;
+ 	/* Program ROW0/COL0 */
+-	iowrite32be(page_addr, &ifc->ifc_nand.row0);
+-	iowrite32be((oob ? IFC_NAND_COL_MS : 0) | column, &ifc->ifc_nand.col0);
++	ifc_out32(page_addr, &ifc->ifc_nand.row0);
++	ifc_out32((oob ? IFC_NAND_COL_MS : 0) | column, &ifc->ifc_nand.col0);
+ 
+ 	buf_num = page_addr & priv->bufnum_mask;
+ 
+@@ -302,19 +302,19 @@ static void fsl_ifc_run_command(struct mtd_info *mtd)
+ 	int i;
+ 
+ 	/* set the chip select for NAND Transaction */
+-	iowrite32be(priv->bank << IFC_NAND_CSEL_SHIFT,
+-		    &ifc->ifc_nand.nand_csel);
++	ifc_out32(priv->bank << IFC_NAND_CSEL_SHIFT,
++		  &ifc->ifc_nand.nand_csel);
+ 
+ 	dev_vdbg(priv->dev,
+ 			"%s: fir0=%08x fcr0=%08x\n",
+ 			__func__,
+-			ioread32be(&ifc->ifc_nand.nand_fir0),
+-			ioread32be(&ifc->ifc_nand.nand_fcr0));
++			ifc_in32(&ifc->ifc_nand.nand_fir0),
++			ifc_in32(&ifc->ifc_nand.nand_fcr0));
+ 
+ 	ctrl->nand_stat = 0;
+ 
+ 	/* start read/write seq */
+-	iowrite32be(IFC_NAND_SEQ_STRT_FIR_STRT, &ifc->ifc_nand.nandseq_strt);
++	ifc_out32(IFC_NAND_SEQ_STRT_FIR_STRT, &ifc->ifc_nand.nandseq_strt);
+ 
+ 	/* wait for command complete flag or timeout */
+ 	wait_event_timeout(ctrl->nand_wait, ctrl->nand_stat,
+@@ -337,7 +337,7 @@ static void fsl_ifc_run_command(struct mtd_info *mtd)
+ 		int sector_end = sector + chip->ecc.steps - 1;
+ 
+ 		for (i = sector / 4; i <= sector_end / 4; i++)
+-			eccstat[i] = ioread32be(&ifc->ifc_nand.nand_eccstat[i]);
++			eccstat[i] = ifc_in32(&ifc->ifc_nand.nand_eccstat[i]);
+ 
+ 		for (i = sector; i <= sector_end; i++) {
+ 			errors = check_read_ecc(mtd, ctrl, eccstat, i);
+@@ -377,33 +377,33 @@ static void fsl_ifc_do_read(struct nand_chip *chip,
+ 
+ 	/* Program FIR/IFC_NAND_FCR0 for Small/Large page */
+ 	if (mtd->writesize > 512) {
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-			    (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+-			    (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP2_SHIFT) |
+-			    (IFC_FIR_OP_CMD1 << IFC_NAND_FIR0_OP3_SHIFT) |
+-			    (IFC_FIR_OP_RBCD << IFC_NAND_FIR0_OP4_SHIFT),
+-			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(0x0, &ifc->ifc_nand.nand_fir1);
+-
+-		iowrite32be((NAND_CMD_READ0 << IFC_NAND_FCR0_CMD0_SHIFT) |
+-			    (NAND_CMD_READSTART << IFC_NAND_FCR0_CMD1_SHIFT),
+-			    &ifc->ifc_nand.nand_fcr0);
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++			  (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
++			  (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP2_SHIFT) |
++			  (IFC_FIR_OP_CMD1 << IFC_NAND_FIR0_OP3_SHIFT) |
++			  (IFC_FIR_OP_RBCD << IFC_NAND_FIR0_OP4_SHIFT),
++			  &ifc->ifc_nand.nand_fir0);
++		ifc_out32(0x0, &ifc->ifc_nand.nand_fir1);
++
++		ifc_out32((NAND_CMD_READ0 << IFC_NAND_FCR0_CMD0_SHIFT) |
++			  (NAND_CMD_READSTART << IFC_NAND_FCR0_CMD1_SHIFT),
++			  &ifc->ifc_nand.nand_fcr0);
+ 	} else {
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-			    (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+-			    (IFC_FIR_OP_RA0  << IFC_NAND_FIR0_OP2_SHIFT) |
+-			    (IFC_FIR_OP_RBCD << IFC_NAND_FIR0_OP3_SHIFT),
+-			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(0x0, &ifc->ifc_nand.nand_fir1);
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++			  (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
++			  (IFC_FIR_OP_RA0  << IFC_NAND_FIR0_OP2_SHIFT) |
++			  (IFC_FIR_OP_RBCD << IFC_NAND_FIR0_OP3_SHIFT),
++			  &ifc->ifc_nand.nand_fir0);
++		ifc_out32(0x0, &ifc->ifc_nand.nand_fir1);
+ 
+ 		if (oob)
+-			iowrite32be(NAND_CMD_READOOB <<
+-				    IFC_NAND_FCR0_CMD0_SHIFT,
+-				    &ifc->ifc_nand.nand_fcr0);
++			ifc_out32(NAND_CMD_READOOB <<
++				  IFC_NAND_FCR0_CMD0_SHIFT,
++				  &ifc->ifc_nand.nand_fcr0);
+ 		else
+-			iowrite32be(NAND_CMD_READ0 <<
+-				    IFC_NAND_FCR0_CMD0_SHIFT,
+-				    &ifc->ifc_nand.nand_fcr0);
++			ifc_out32(NAND_CMD_READ0 <<
++				  IFC_NAND_FCR0_CMD0_SHIFT,
++				  &ifc->ifc_nand.nand_fcr0);
+ 	}
+ }
+ 
+@@ -423,7 +423,7 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 	switch (command) {
+ 	/* READ0 read the entire buffer to use hardware ECC. */
+ 	case NAND_CMD_READ0:
+-		iowrite32be(0, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(0, &ifc->ifc_nand.nand_fbcr);
+ 		set_addr(mtd, 0, page_addr, 0);
+ 
+ 		ifc_nand_ctrl->read_bytes = mtd->writesize + mtd->oobsize;
+@@ -438,7 +438,7 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 
+ 	/* READOOB reads only the OOB because no ECC is performed. */
+ 	case NAND_CMD_READOOB:
+-		iowrite32be(mtd->oobsize - column, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(mtd->oobsize - column, &ifc->ifc_nand.nand_fbcr);
+ 		set_addr(mtd, column, page_addr, 1);
+ 
+ 		ifc_nand_ctrl->read_bytes = mtd->writesize + mtd->oobsize;
+@@ -454,19 +454,19 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 		if (command == NAND_CMD_PARAM)
+ 			timing = IFC_FIR_OP_RBCD;
+ 
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-			    (IFC_FIR_OP_UA  << IFC_NAND_FIR0_OP1_SHIFT) |
+-			    (timing << IFC_NAND_FIR0_OP2_SHIFT),
+-			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(command << IFC_NAND_FCR0_CMD0_SHIFT,
+-			    &ifc->ifc_nand.nand_fcr0);
+-		iowrite32be(column, &ifc->ifc_nand.row3);
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++			  (IFC_FIR_OP_UA  << IFC_NAND_FIR0_OP1_SHIFT) |
++			  (timing << IFC_NAND_FIR0_OP2_SHIFT),
++			  &ifc->ifc_nand.nand_fir0);
++		ifc_out32(command << IFC_NAND_FCR0_CMD0_SHIFT,
++			  &ifc->ifc_nand.nand_fcr0);
++		ifc_out32(column, &ifc->ifc_nand.row3);
+ 
+ 		/*
+ 		 * although currently it's 8 bytes for READID, we always read
+ 		 * the maximum 256 bytes(for PARAM)
+ 		 */
+-		iowrite32be(256, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(256, &ifc->ifc_nand.nand_fbcr);
+ 		ifc_nand_ctrl->read_bytes = 256;
+ 
+ 		set_addr(mtd, 0, 0, 0);
+@@ -481,16 +481,16 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 
+ 	/* ERASE2 uses the block and page address from ERASE1 */
+ 	case NAND_CMD_ERASE2:
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-			    (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+-			    (IFC_FIR_OP_CMD1 << IFC_NAND_FIR0_OP2_SHIFT),
+-			    &ifc->ifc_nand.nand_fir0);
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++			  (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP1_SHIFT) |
++			  (IFC_FIR_OP_CMD1 << IFC_NAND_FIR0_OP2_SHIFT),
++			  &ifc->ifc_nand.nand_fir0);
+ 
+-		iowrite32be((NAND_CMD_ERASE1 << IFC_NAND_FCR0_CMD0_SHIFT) |
+-			    (NAND_CMD_ERASE2 << IFC_NAND_FCR0_CMD1_SHIFT),
+-			    &ifc->ifc_nand.nand_fcr0);
++		ifc_out32((NAND_CMD_ERASE1 << IFC_NAND_FCR0_CMD0_SHIFT) |
++			  (NAND_CMD_ERASE2 << IFC_NAND_FCR0_CMD1_SHIFT),
++			  &ifc->ifc_nand.nand_fcr0);
+ 
+-		iowrite32be(0, &ifc->ifc_nand.nand_fbcr);
++		ifc_out32(0, &ifc->ifc_nand.nand_fbcr);
+ 		ifc_nand_ctrl->read_bytes = 0;
+ 		fsl_ifc_run_command(mtd);
+ 		return;
+@@ -507,19 +507,18 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 				(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD1_SHIFT) |
+ 				(NAND_CMD_PAGEPROG << IFC_NAND_FCR0_CMD2_SHIFT);
+ 
+-			iowrite32be(
+-				 (IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-				 (IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
+-				 (IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP2_SHIFT) |
+-				 (IFC_FIR_OP_WBCD  << IFC_NAND_FIR0_OP3_SHIFT) |
+-				 (IFC_FIR_OP_CMD2 << IFC_NAND_FIR0_OP4_SHIFT),
+-				 &ifc->ifc_nand.nand_fir0);
+-			iowrite32be(
+-				 (IFC_FIR_OP_CW1 << IFC_NAND_FIR1_OP5_SHIFT) |
+-				 (IFC_FIR_OP_RDSTAT <<
+-					IFC_NAND_FIR1_OP6_SHIFT) |
+-				 (IFC_FIR_OP_NOP << IFC_NAND_FIR1_OP7_SHIFT),
+-				 &ifc->ifc_nand.nand_fir1);
++			ifc_out32(
++				(IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++				(IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP1_SHIFT) |
++				(IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP2_SHIFT) |
++				(IFC_FIR_OP_WBCD << IFC_NAND_FIR0_OP3_SHIFT) |
++				(IFC_FIR_OP_CMD2 << IFC_NAND_FIR0_OP4_SHIFT),
++				&ifc->ifc_nand.nand_fir0);
++			ifc_out32(
++				(IFC_FIR_OP_CW1 << IFC_NAND_FIR1_OP5_SHIFT) |
++				(IFC_FIR_OP_RDSTAT << IFC_NAND_FIR1_OP6_SHIFT) |
++				(IFC_FIR_OP_NOP << IFC_NAND_FIR1_OP7_SHIFT),
++				&ifc->ifc_nand.nand_fir1);
+ 		} else {
+ 			nand_fcr0 = ((NAND_CMD_PAGEPROG <<
+ 					IFC_NAND_FCR0_CMD1_SHIFT) |
+@@ -528,20 +527,19 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 				    (NAND_CMD_STATUS <<
+ 					IFC_NAND_FCR0_CMD3_SHIFT));
+ 
+-			iowrite32be(
++			ifc_out32(
+ 				(IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+ 				(IFC_FIR_OP_CMD2 << IFC_NAND_FIR0_OP1_SHIFT) |
+ 				(IFC_FIR_OP_CA0 << IFC_NAND_FIR0_OP2_SHIFT) |
+ 				(IFC_FIR_OP_RA0 << IFC_NAND_FIR0_OP3_SHIFT) |
+ 				(IFC_FIR_OP_WBCD << IFC_NAND_FIR0_OP4_SHIFT),
+ 				&ifc->ifc_nand.nand_fir0);
+-			iowrite32be(
+-				 (IFC_FIR_OP_CMD1 << IFC_NAND_FIR1_OP5_SHIFT) |
+-				 (IFC_FIR_OP_CW3 << IFC_NAND_FIR1_OP6_SHIFT) |
+-				 (IFC_FIR_OP_RDSTAT <<
+-					IFC_NAND_FIR1_OP7_SHIFT) |
+-				 (IFC_FIR_OP_NOP << IFC_NAND_FIR1_OP8_SHIFT),
+-				  &ifc->ifc_nand.nand_fir1);
++			ifc_out32(
++				(IFC_FIR_OP_CMD1 << IFC_NAND_FIR1_OP5_SHIFT) |
++				(IFC_FIR_OP_CW3 << IFC_NAND_FIR1_OP6_SHIFT) |
++				(IFC_FIR_OP_RDSTAT << IFC_NAND_FIR1_OP7_SHIFT) |
++				(IFC_FIR_OP_NOP << IFC_NAND_FIR1_OP8_SHIFT),
++				&ifc->ifc_nand.nand_fir1);
+ 
+ 			if (column >= mtd->writesize)
+ 				nand_fcr0 |=
+@@ -556,7 +554,7 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 			column -= mtd->writesize;
+ 			ifc_nand_ctrl->oob = 1;
+ 		}
+-		iowrite32be(nand_fcr0, &ifc->ifc_nand.nand_fcr0);
++		ifc_out32(nand_fcr0, &ifc->ifc_nand.nand_fcr0);
+ 		set_addr(mtd, column, page_addr, ifc_nand_ctrl->oob);
+ 		return;
+ 	}
+@@ -564,24 +562,26 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 	/* PAGEPROG reuses all of the setup from SEQIN and adds the length */
+ 	case NAND_CMD_PAGEPROG: {
+ 		if (ifc_nand_ctrl->oob) {
+-			iowrite32be(ifc_nand_ctrl->index -
+-				    ifc_nand_ctrl->column,
+-				    &ifc->ifc_nand.nand_fbcr);
++			ifc_out32(ifc_nand_ctrl->index -
++				  ifc_nand_ctrl->column,
++				  &ifc->ifc_nand.nand_fbcr);
+ 		} else {
+-			iowrite32be(0, &ifc->ifc_nand.nand_fbcr);
++			ifc_out32(0, &ifc->ifc_nand.nand_fbcr);
+ 		}
+ 
+ 		fsl_ifc_run_command(mtd);
+ 		return;
+ 	}
+ 
+-	case NAND_CMD_STATUS:
+-		iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-			    (IFC_FIR_OP_RB << IFC_NAND_FIR0_OP1_SHIFT),
+-			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
+-			    &ifc->ifc_nand.nand_fcr0);
+-		iowrite32be(1, &ifc->ifc_nand.nand_fbcr);
++	case NAND_CMD_STATUS: {
++		void __iomem *addr;
++
++		ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++			  (IFC_FIR_OP_RB << IFC_NAND_FIR0_OP1_SHIFT),
++			  &ifc->ifc_nand.nand_fir0);
++		ifc_out32(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
++			  &ifc->ifc_nand.nand_fcr0);
++		ifc_out32(1, &ifc->ifc_nand.nand_fbcr);
+ 		set_addr(mtd, 0, 0, 0);
+ 		ifc_nand_ctrl->read_bytes = 1;
+ 
+@@ -591,17 +591,19 @@ static void fsl_ifc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+ 		 * The chip always seems to report that it is
+ 		 * write-protected, even when it is not.
+ 		 */
++		addr = ifc_nand_ctrl->addr;
+ 		if (chip->options & NAND_BUSWIDTH_16)
+-			setbits16(ifc_nand_ctrl->addr, NAND_STATUS_WP);
++			ifc_out16(ifc_in16(addr) | (NAND_STATUS_WP), addr);
+ 		else
+-			setbits8(ifc_nand_ctrl->addr, NAND_STATUS_WP);
++			ifc_out8(ifc_in8(addr) | (NAND_STATUS_WP), addr);
+ 		return;
++	}
+ 
+ 	case NAND_CMD_RESET:
+-		iowrite32be(IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT,
+-			    &ifc->ifc_nand.nand_fir0);
+-		iowrite32be(NAND_CMD_RESET << IFC_NAND_FCR0_CMD0_SHIFT,
+-			    &ifc->ifc_nand.nand_fcr0);
++		ifc_out32(IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT,
++			  &ifc->ifc_nand.nand_fir0);
++		ifc_out32(NAND_CMD_RESET << IFC_NAND_FCR0_CMD0_SHIFT,
++			  &ifc->ifc_nand.nand_fcr0);
+ 		fsl_ifc_run_command(mtd);
+ 		return;
+ 
+@@ -659,7 +661,7 @@ static uint8_t fsl_ifc_read_byte(struct mtd_info *mtd)
+ 	 */
+ 	if (ifc_nand_ctrl->index < ifc_nand_ctrl->read_bytes) {
+ 		offset = ifc_nand_ctrl->index++;
+-		return in_8(ifc_nand_ctrl->addr + offset);
++		return ifc_in8(ifc_nand_ctrl->addr + offset);
+ 	}
+ 
+ 	dev_err(priv->dev, "%s: beyond end of buffer\n", __func__);
+@@ -681,7 +683,7 @@ static uint8_t fsl_ifc_read_byte16(struct mtd_info *mtd)
+ 	 * next byte.
+ 	 */
+ 	if (ifc_nand_ctrl->index < ifc_nand_ctrl->read_bytes) {
+-		data = in_be16(ifc_nand_ctrl->addr + ifc_nand_ctrl->index);
++		data = ifc_in16(ifc_nand_ctrl->addr + ifc_nand_ctrl->index);
+ 		ifc_nand_ctrl->index += 2;
+ 		return (uint8_t) data;
+ 	}
+@@ -727,18 +729,18 @@ static int fsl_ifc_wait(struct mtd_info *mtd, struct nand_chip *chip)
+ 	u32 nand_fsr;
+ 
+ 	/* Use READ_STATUS command, but wait for the device to be ready */
+-	iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-		    (IFC_FIR_OP_RDSTAT << IFC_NAND_FIR0_OP1_SHIFT),
+-		    &ifc->ifc_nand.nand_fir0);
+-	iowrite32be(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
+-		    &ifc->ifc_nand.nand_fcr0);
+-	iowrite32be(1, &ifc->ifc_nand.nand_fbcr);
++	ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++		  (IFC_FIR_OP_RDSTAT << IFC_NAND_FIR0_OP1_SHIFT),
++		  &ifc->ifc_nand.nand_fir0);
++	ifc_out32(NAND_CMD_STATUS << IFC_NAND_FCR0_CMD0_SHIFT,
++		  &ifc->ifc_nand.nand_fcr0);
++	ifc_out32(1, &ifc->ifc_nand.nand_fbcr);
+ 	set_addr(mtd, 0, 0, 0);
+ 	ifc_nand_ctrl->read_bytes = 1;
+ 
+ 	fsl_ifc_run_command(mtd);
+ 
+-	nand_fsr = ioread32be(&ifc->ifc_nand.nand_fsr);
++	nand_fsr = ifc_in32(&ifc->ifc_nand.nand_fsr);
+ 
+ 	/*
+ 	 * The chip always seems to report that it is
+@@ -830,34 +832,34 @@ static void fsl_ifc_sram_init(struct fsl_ifc_mtd *priv)
+ 	uint32_t cs = priv->bank;
+ 
+ 	/* Save CSOR and CSOR_ext */
+-	csor = ioread32be(&ifc->csor_cs[cs].csor);
+-	csor_ext = ioread32be(&ifc->csor_cs[cs].csor_ext);
++	csor = ifc_in32(&ifc->csor_cs[cs].csor);
++	csor_ext = ifc_in32(&ifc->csor_cs[cs].csor_ext);
+ 
+ 	/* chage PageSize 8K and SpareSize 1K*/
+ 	csor_8k = (csor & ~(CSOR_NAND_PGS_MASK)) | 0x0018C000;
+-	iowrite32be(csor_8k, &ifc->csor_cs[cs].csor);
+-	iowrite32be(0x0000400, &ifc->csor_cs[cs].csor_ext);
++	ifc_out32(csor_8k, &ifc->csor_cs[cs].csor);
++	ifc_out32(0x0000400, &ifc->csor_cs[cs].csor_ext);
+ 
+ 	/* READID */
+-	iowrite32be((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
+-		    (IFC_FIR_OP_UA  << IFC_NAND_FIR0_OP1_SHIFT) |
+-		    (IFC_FIR_OP_RB << IFC_NAND_FIR0_OP2_SHIFT),
+-		    &ifc->ifc_nand.nand_fir0);
+-	iowrite32be(NAND_CMD_READID << IFC_NAND_FCR0_CMD0_SHIFT,
+-		    &ifc->ifc_nand.nand_fcr0);
+-	iowrite32be(0x0, &ifc->ifc_nand.row3);
++	ifc_out32((IFC_FIR_OP_CW0 << IFC_NAND_FIR0_OP0_SHIFT) |
++		  (IFC_FIR_OP_UA  << IFC_NAND_FIR0_OP1_SHIFT) |
++		  (IFC_FIR_OP_RB << IFC_NAND_FIR0_OP2_SHIFT),
++		  &ifc->ifc_nand.nand_fir0);
++	ifc_out32(NAND_CMD_READID << IFC_NAND_FCR0_CMD0_SHIFT,
++		  &ifc->ifc_nand.nand_fcr0);
++	ifc_out32(0x0, &ifc->ifc_nand.row3);
+ 
+-	iowrite32be(0x0, &ifc->ifc_nand.nand_fbcr);
++	ifc_out32(0x0, &ifc->ifc_nand.nand_fbcr);
+ 
+ 	/* Program ROW0/COL0 */
+-	iowrite32be(0x0, &ifc->ifc_nand.row0);
+-	iowrite32be(0x0, &ifc->ifc_nand.col0);
++	ifc_out32(0x0, &ifc->ifc_nand.row0);
++	ifc_out32(0x0, &ifc->ifc_nand.col0);
+ 
+ 	/* set the chip select for NAND Transaction */
+-	iowrite32be(cs << IFC_NAND_CSEL_SHIFT, &ifc->ifc_nand.nand_csel);
++	ifc_out32(cs << IFC_NAND_CSEL_SHIFT, &ifc->ifc_nand.nand_csel);
+ 
+ 	/* start read seq */
+-	iowrite32be(IFC_NAND_SEQ_STRT_FIR_STRT, &ifc->ifc_nand.nandseq_strt);
++	ifc_out32(IFC_NAND_SEQ_STRT_FIR_STRT, &ifc->ifc_nand.nandseq_strt);
+ 
+ 	/* wait for command complete flag or timeout */
+ 	wait_event_timeout(ctrl->nand_wait, ctrl->nand_stat,
+@@ -867,8 +869,8 @@ static void fsl_ifc_sram_init(struct fsl_ifc_mtd *priv)
+ 		printk(KERN_ERR "fsl-ifc: Failed to Initialise SRAM\n");
+ 
+ 	/* Restore CSOR and CSOR_ext */
+-	iowrite32be(csor, &ifc->csor_cs[cs].csor);
+-	iowrite32be(csor_ext, &ifc->csor_cs[cs].csor_ext);
++	ifc_out32(csor, &ifc->csor_cs[cs].csor);
++	ifc_out32(csor_ext, &ifc->csor_cs[cs].csor_ext);
+ }
+ 
+ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+@@ -885,7 +887,7 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 
+ 	/* fill in nand_chip structure */
+ 	/* set up function call table */
+-	if ((ioread32be(&ifc->cspr_cs[priv->bank].cspr)) & CSPR_PORT_SIZE_16)
++	if ((ifc_in32(&ifc->cspr_cs[priv->bank].cspr)) & CSPR_PORT_SIZE_16)
+ 		chip->read_byte = fsl_ifc_read_byte16;
+ 	else
+ 		chip->read_byte = fsl_ifc_read_byte;
+@@ -899,13 +901,13 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 	chip->bbt_td = &bbt_main_descr;
+ 	chip->bbt_md = &bbt_mirror_descr;
+ 
+-	iowrite32be(0x0, &ifc->ifc_nand.ncfgr);
++	ifc_out32(0x0, &ifc->ifc_nand.ncfgr);
+ 
+ 	/* set up nand options */
+ 	chip->bbt_options = NAND_BBT_USE_FLASH;
+ 	chip->options = NAND_NO_SUBPAGE_WRITE;
+ 
+-	if (ioread32be(&ifc->cspr_cs[priv->bank].cspr) & CSPR_PORT_SIZE_16) {
++	if (ifc_in32(&ifc->cspr_cs[priv->bank].cspr) & CSPR_PORT_SIZE_16) {
+ 		chip->read_byte = fsl_ifc_read_byte16;
+ 		chip->options |= NAND_BUSWIDTH_16;
+ 	} else {
+@@ -918,7 +920,7 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 	chip->ecc.read_page = fsl_ifc_read_page;
+ 	chip->ecc.write_page = fsl_ifc_write_page;
+ 
+-	csor = ioread32be(&ifc->csor_cs[priv->bank].csor);
++	csor = ifc_in32(&ifc->csor_cs[priv->bank].csor);
+ 
+ 	/* Hardware generates ECC per 512 Bytes */
+ 	chip->ecc.size = 512;
+@@ -984,7 +986,7 @@ static int fsl_ifc_chip_init(struct fsl_ifc_mtd *priv)
+ 		chip->ecc.mode = NAND_ECC_SOFT;
+ 	}
+ 
+-	ver = ioread32be(&ifc->ifc_rev);
++	ver = ifc_in32(&ifc->ifc_rev);
+ 	if (ver == FSL_IFC_V1_1_0)
+ 		fsl_ifc_sram_init(priv);
+ 
+@@ -1008,7 +1010,7 @@ static int fsl_ifc_chip_remove(struct fsl_ifc_mtd *priv)
+ static int match_bank(struct fsl_ifc_regs __iomem *ifc, int bank,
+ 		      phys_addr_t addr)
+ {
+-	u32 cspr = ioread32be(&ifc->cspr_cs[bank].cspr);
++	u32 cspr = ifc_in32(&ifc->cspr_cs[bank].cspr);
+ 
+ 	if (!(cspr & CSPR_V))
+ 		return 0;
+@@ -1094,16 +1096,16 @@ static int fsl_ifc_nand_probe(struct platform_device *dev)
+ 
+ 	dev_set_drvdata(priv->dev, priv);
+ 
+-	iowrite32be(IFC_NAND_EVTER_EN_OPC_EN |
+-		    IFC_NAND_EVTER_EN_FTOER_EN |
+-		    IFC_NAND_EVTER_EN_WPER_EN,
+-		    &ifc->ifc_nand.nand_evter_en);
++	ifc_out32(IFC_NAND_EVTER_EN_OPC_EN |
++		  IFC_NAND_EVTER_EN_FTOER_EN |
++		  IFC_NAND_EVTER_EN_WPER_EN,
++		  &ifc->ifc_nand.nand_evter_en);
+ 
+ 	/* enable NAND Machine Interrupts */
+-	iowrite32be(IFC_NAND_EVTER_INTR_OPCIR_EN |
+-		    IFC_NAND_EVTER_INTR_FTOERIR_EN |
+-		    IFC_NAND_EVTER_INTR_WPERIR_EN,
+-		    &ifc->ifc_nand.nand_evter_intr_en);
++	ifc_out32(IFC_NAND_EVTER_INTR_OPCIR_EN |
++		  IFC_NAND_EVTER_INTR_FTOERIR_EN |
++		  IFC_NAND_EVTER_INTR_WPERIR_EN,
++		  &ifc->ifc_nand.nand_evter_intr_en);
+ 	priv->mtd.name = kasprintf(GFP_KERNEL, "%llx.flash", (u64)res.start);
+ 	if (!priv->mtd.name) {
+ 		ret = -ENOMEM;
+diff --git a/include/linux/fsl_ifc.h b/include/linux/fsl_ifc.h
+index f49ddb1..c26e8c0 100644
+--- a/include/linux/fsl_ifc.h
++++ b/include/linux/fsl_ifc.h
+@@ -830,9 +830,59 @@ struct fsl_ifc_ctrl {
+ 
+ 	u32 nand_stat;
+ 	wait_queue_head_t nand_wait;
++	bool little_endian;
+ };
+ 
+ extern struct fsl_ifc_ctrl *fsl_ifc_ctrl_dev;
+ 
++static inline u32 ifc_in32(void __iomem *addr)
++{
++	u32 val;
++
++	if (fsl_ifc_ctrl_dev->little_endian)
++		val = ioread32(addr);
++	else
++		val = ioread32be(addr);
++
++	return val;
++}
++
++static inline u16 ifc_in16(void __iomem *addr)
++{
++	u16 val;
++
++	if (fsl_ifc_ctrl_dev->little_endian)
++		val = ioread16(addr);
++	else
++		val = ioread16be(addr);
++
++	return val;
++}
++
++static inline u8 ifc_in8(void __iomem *addr)
++{
++	return ioread8(addr);
++}
++
++static inline void ifc_out32(u32 val, void __iomem *addr)
++{
++	if (fsl_ifc_ctrl_dev->little_endian)
++		iowrite32(val, addr);
++	else
++		iowrite32be(val, addr);
++}
++
++static inline void ifc_out16(u16 val, void __iomem *addr)
++{
++	if (fsl_ifc_ctrl_dev->little_endian)
++		iowrite16(val, addr);
++	else
++		iowrite16be(val, addr);
++}
++
++static inline void ifc_out8(u8 val, void __iomem *addr)
++{
++	iowrite8(val, addr);
++}
+ 
+ #endif /* __ASM_FSL_IFC_H */
+-- 
+1.7.9.5
 
 
