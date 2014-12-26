@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaLZROT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 12:14:19 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58639 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaLZROP (ORCPT
+	id S1751459AbaLZRTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 12:19:49 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33878 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaLZRTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 12:14:15 -0500
-Message-ID: <549D9762.3090701@gmail.com>
-Date: Fri, 26 Dec 2014 10:14:10 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 26 Dec 2014 12:19:47 -0500
+Date: Fri, 26 Dec 2014 18:19:44 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Pali Rohar <pali.rohar@gmail.com>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>, Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, lm-sensors@lm-sensors.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH 1/3] DT Binding for omap3 temperature sensor
+Message-ID: <20141226171944.GA24756@amd>
+References: <20141226102933.GA28778@amd>
+ <1419597294-21487-1-git-send-email-sre@kernel.org>
+ <1419597294-21487-2-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 14/37] perf tools: Convert dead thread list into rbtree
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org> <1419405333-27952-15-git-send-email-namhyung@kernel.org> <20141225230552.GB15569@krava.redhat.com> <CAM9d7chs3vHjRLn-Tv=XxRBkPsyr6-B1h5J=ywaSTm-G25X4gw@mail.gmail.com>
-In-Reply-To: <CAM9d7chs3vHjRLn-Tv=XxRBkPsyr6-B1h5J=ywaSTm-G25X4gw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419597294-21487-2-git-send-email-sre@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25/14 7:26 PM, Namhyung Kim wrote:
->>> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
->>> index 0b6dcd70bc8b..413f28cf689b 100644
->>> --- a/tools/perf/util/thread.h
->>> +++ b/tools/perf/util/thread.h
->>> @@ -11,10 +11,8 @@
->>>   struct thread_stack;
->>>
->>>   struct thread {
->>> -     union {
->>> -             struct rb_node   rb_node;
->>> -             struct list_head node;
->>> -     };
->>> +     struct rb_node          rb_node;
->>> +     struct list_head        node;
->>>        struct map_groups       *mg;
->>>        pid_t                   pid_; /* Not all tools update this */
->>>        pid_t                   tid;
->>> @@ -22,7 +20,8 @@ struct thread {
->>>        int                     cpu;
->>>        char                    shortname[3];
->>>        bool                    comm_set;
->>> -     bool                    dead; /* if set thread has exited */
->>> +     bool                    exited; /* if set thread has exited */
->>> +     bool                    dead; /* thread is in dead_threads list */
->>
->> looks like this also changes the logic (new exited flag),
->> not just the dead threads storage wheel
->
-> AFAICS the 'dead' flag is not used other than thread__exited().  And
-> it confused me a dead thread might not be in a dead_threads tree (or
-> list).  So I changed the name and no logical change intended.
+On Fri 2014-12-26 13:34:52, Sebastian Reichel wrote:
+> OMAP34xx and OMAP36xx processors contain a register in the syscon area,
+> which can be used to determine the SoCs temperature. This provides a
+> DT binding specification for the temperature monitor.
+> 
+> Signed-off-by: Sebastian Reichel <sre@kernel.org>
+> ---
+>  .../bindings/hwmon/omap3-temperature.txt           | 25 ++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/hwmon/omap3-temperature.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/hwmon/omap3-temperature.txt b/Documentation/devicetree/bindings/hwmon/omap3-temperature.txt
+> new file mode 100644
+> index 0000000..99631ad
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwmon/omap3-temperature.txt
+> @@ -0,0 +1,25 @@
+> +* OMAP3 temperature sensor
+> +
+> +The OMAP34xx and OMAP36xx processors contain a register in the syscon area,
+> +which can be used to determine the SoCs temperature.
+> +
+> +Requires node properties:
+> +- compatible :	should contain one of
+> +	- "ti,omap34xx-temperature-sensor" for OMAP34xx
+> +	- "ti,omap36xx-temperature-sensor" for OMAP36xx
+> +- syscon :	Should be a phandle to system configuration node which
+> +		encompases the temperature register
+> +- clocks :	Should contain 32KHz fclk clock specifier
+> +- clock-names :	Should contain clock names
+> +	- "fck" for the 32KHz fclk clock specifier
 
-git show 236a3bbd5cb51
+I don't quite get it. The temperature sensor is internal on the CPU,
+right? Why do we need device tree to describe it? As soon as we have
+CPU that is compatible to ti,omap3430, we know everything we need to
+know, no?
 
-David
+> +Example for omap34xx:
+> +
+> +/ {
+> +	temperature-sensor {
+> +		compatible = "ti,omap34xx-temperature-sensor";
+> +		syscon = <&omap3_scm_general>;
+> +		clocks = <&ts_fck>;
+> +		clock-names = "fck";
+> +	};
+> +};
 
+Or is there something that depends on the board there? Or do we want
+to do it like this to be consistent with existing bindings?
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
