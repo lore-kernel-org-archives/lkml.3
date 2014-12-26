@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaLZOol (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 09:44:41 -0500
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:4736 "EHLO
+	id S1752360AbaLZOpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 09:45:14 -0500
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:17526 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752042AbaLZOmh (ORCPT
+	by vger.kernel.org with ESMTP id S1751046AbaLZOmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 09:42:37 -0500
+	Fri, 26 Dec 2014 09:42:35 -0500
 X-IronPort-AV: E=Sophos;i="5.07,647,1413237600"; 
-   d="scan'208";a="114895477"
+   d="scan'208";a="114895468"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Amitkumar Karwar <akarwar@marvell.com>
-Cc: kernel-janitors@vger.kernel.org, Avinash Patil <patila@marvell.com>,
-        Kalle Valo <kvalo@codeaurora.org>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 25/27] mwifiex: tdls: Use setup_timer
-Date: Fri, 26 Dec 2014 15:35:58 +0100
-Message-Id: <1419604558-29743-28-git-send-email-Julia.Lawall@lip6.fr>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: kernel-janitors@vger.kernel.org, Kalle Valo <kvalo@codeaurora.org>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 17/27] iwl3945: Use setup_timer
+Date: Fri, 26 Dec 2014 15:35:49 +0100
+Message-Id: <1419604558-29743-19-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -37,30 +37,29 @@ expression t,f,d;
 
 -init_timer(&t);
 +setup_timer(&t,f,d);
--t.function = f;
 -t.data = d;
+-t.function = f;
 // </smpl>
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/wireless/mwifiex/tdls.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlegacy/3945-mac.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/tdls.c b/drivers/net/wireless/mwifiex/tdls.c
-index 22884b4..5a64681 100644
---- a/drivers/net/wireless/mwifiex/tdls.c
-+++ b/drivers/net/wireless/mwifiex/tdls.c
-@@ -1367,9 +1367,8 @@ void mwifiex_check_auto_tdls(unsigned long context)
+diff --git a/drivers/net/wireless/iwlegacy/3945-mac.c b/drivers/net/wireless/iwlegacy/3945-mac.c
+index dc1d20c..e566580 100644
+--- a/drivers/net/wireless/iwlegacy/3945-mac.c
++++ b/drivers/net/wireless/iwlegacy/3945-mac.c
+@@ -3429,9 +3429,7 @@ il3945_setup_deferred_work(struct il_priv *il)
  
- void mwifiex_setup_auto_tdls_timer(struct mwifiex_private *priv)
- {
--	init_timer(&priv->auto_tdls_timer);
--	priv->auto_tdls_timer.function = mwifiex_check_auto_tdls;
--	priv->auto_tdls_timer.data = (unsigned long)priv;
-+	setup_timer(&priv->auto_tdls_timer, mwifiex_check_auto_tdls,
-+		    (unsigned long)priv);
- 	priv->auto_tdls_timer_active = true;
- 	mod_timer(&priv->auto_tdls_timer,
- 		  jiffies + msecs_to_jiffies(MWIFIEX_TIMER_10S));
+ 	il3945_hw_setup_deferred_work(il);
+ 
+-	init_timer(&il->watchdog);
+-	il->watchdog.data = (unsigned long)il;
+-	il->watchdog.function = il_bg_watchdog;
++	setup_timer(&il->watchdog, il_bg_watchdog, (unsigned long)il);
+ 
+ 	tasklet_init(&il->irq_tasklet,
+ 		     (void (*)(unsigned long))il3945_irq_tasklet,
 
