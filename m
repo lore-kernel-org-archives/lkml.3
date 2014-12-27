@@ -1,57 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaL0LbM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 06:31:12 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:32930 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaL0LbH (ORCPT
+	id S1751445AbaL0Lby (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 06:31:54 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:36594 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaL0Lbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 06:31:07 -0500
-From: Koshy George <koshygp@gmail.com>
-To: trond.myklebust@primarydata.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Koshy George <koshygp@gmail.com>
-Subject: [PATCH] NFS: nfs4_fs.h: Fix for checkpatch warnings
-Date: Sat, 27 Dec 2014 04:30:57 -0700
-Message-Id: <1419679857-16626-1-git-send-email-koshygp@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 27 Dec 2014 06:31:52 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        silverhammermba@gmail.com, Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: [PATCH 0/2] input: synaptics - make image sensors report finger widths
+Date: Sat, 27 Dec 2014 12:31:27 +0100
+Message-Id: <1419679889-6582-1-git-send-email-gabriele.mzt@gmail.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix checkpatch warning for nfs4_fs.h
+Image sensors were not reporting finger widths despite being able to do
+it. These patches will make sure that finger widths are always reported.
 
-fs/nfs/nfs4_fs.h:134: ERROR: "foo *	bar" should be "foo *bar"
-fs/nfs/nfs4_fs.h:416: ERROR: "foo * bar" should be "foo *bar"
+Gabriele Mazzotta (2):
+  input: synaptics - make image sensors report ABS_MT_TOUCH_MAJOR
+  input: synaptics - fix width calculation on image sensors
 
-Signed-off-by: Koshy George <koshygp@gmail.com>
-[Being first patch, need some assistance]
----
- fs/nfs/nfs4_fs.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/mouse/synaptics.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
-index a081787..ae336c7 100644
---- a/fs/nfs/nfs4_fs.h
-+++ b/fs/nfs/nfs4_fs.h
-@@ -131,7 +131,7 @@ enum {
- 
- struct nfs4_lock_state {
- 	struct list_head	ls_locks;	/* Other lock stateids */
--	struct nfs4_state *	ls_state;	/* Pointer to open state */
-+	struct nfs4_state	*ls_state;	/* Pointer to open state */
- #define NFS_LOCK_INITIALIZED 0
- #define NFS_LOCK_LOST        1
- 	unsigned long		ls_flags;
-@@ -413,7 +413,7 @@ static inline void nfs4_schedule_session_recovery(struct nfs4_session *session,
- extern struct nfs4_state_owner *nfs4_get_state_owner(struct nfs_server *, struct rpc_cred *, gfp_t);
- extern void nfs4_put_state_owner(struct nfs4_state_owner *);
- extern void nfs4_purge_state_owners(struct nfs_server *);
--extern struct nfs4_state * nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
-+extern struct nfs4_state *nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
- extern void nfs4_put_open_state(struct nfs4_state *);
- extern void nfs4_close_state(struct nfs4_state *, fmode_t);
- extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
 -- 
-1.9.1
+2.1.4
 
