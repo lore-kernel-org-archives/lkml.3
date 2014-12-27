@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679AbaL0TYg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 14:24:36 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45540 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaL0TYe (ORCPT
+	id S1751742AbaL0TZf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 14:25:35 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42364 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaL0TZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 14:24:34 -0500
-Date: Sat, 27 Dec 2014 20:24:31 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Pali Rohar <pali.rohar@gmail.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>, Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, lm-sensors@lm-sensors.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH 2/3] hwmon: Driver for OMAP3 temperature sensor
-Message-ID: <20141227192431.GC10007@amd>
-References: <20141226102933.GA28778@amd>
- <1419597294-21487-1-git-send-email-sre@kernel.org>
- <1419597294-21487-3-git-send-email-sre@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419597294-21487-3-git-send-email-sre@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 27 Dec 2014 14:25:34 -0500
+From: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+To: zajec5@gmail.com
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+Subject: [PATCH] bcma: fix three coding style issues, more than 80 characters per line
+Date: Sat, 27 Dec 2014 19:24:28 +0000
+Message-Id: <1419708268-14114-1-git-send-email-oscar.forner.martinez@gmail.com>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Three lines with more than 80 characters per line have been split in several lines.
 
+Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+---
+ drivers/bcma/driver_chipcommon.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-> OMAP34xx and OMAP36xx processors contain a register in the syscon area,
-> which can be used to determine the SoCs temperature. This patch provides
-> a DT based driver for the temperature sensor based on an older driver
-> written by Peter De Schrijver for the Nokia N900 and N9.
-> 
-> Signed-off-by: Sebastian Reichel <sre@kernel.org>
-
-I did clk_enable -> clk_prepare_enable conversion, as described in
-another email.
-
-I got occasional error reading:
-
-root@n900:~# cat /sys/class/hwmon/hwmon0/device/temp_input
-20.0
-root@n900:~# cat /sys/class/hwmon/hwmon0/device/temp_input
-cat: /sys/class/hwmon/hwmon0/device/temp_input: Input/output error
-root@n900:~# cat /sys/class/hwmon/hwmon0/device/temp_input
-20.0
-
-Nothing in dmesg. It takes few tries to reproduce..
-
-On other attempt, it hung hard:
-
-root@n900:~# cat /sys/class/hwmon/hwmon0/device/temp_input ; cat
-/sys/class/hwmon/hwmon0/device/temp_input  ;cat
-/sys/class/hwmon/hwmon0/device/temp_input ; cat
-/sys/class/hwmon/hwmon0/device/temp_input
-17.0
-17.0
-^[[A
-
-
-
-^Z
-
-
-^C^C^C
-
-Best regards,
-									Pavel
+diff --git a/drivers/bcma/driver_chipcommon.c b/drivers/bcma/driver_chipcommon.c
+index 19f6796..84d4a95 100644
+--- a/drivers/bcma/driver_chipcommon.c
++++ b/drivers/bcma/driver_chipcommon.c
+@@ -79,7 +79,9 @@ static int bcma_chipco_watchdog_ticks_per_ms(struct bcma_drv_cc *cc)
+ 
+ 	if (cc->capabilities & BCMA_CC_CAP_PMU) {
+ 		if (bus->chipinfo.id == BCMA_CHIP_ID_BCM4706)
+-			/* 4706 CC and PMU watchdogs are clocked at 1/4 of ALP clock */
++			/* 4706 CC and PMU watchdogs are clocked at 1/4 of ALP
++			 * clock
++			 */
+ 			return bcma_chipco_get_alp_clock(cc) / 4000;
+ 		else
+ 			/* based on 32KHz ILP clock */
+@@ -97,7 +99,8 @@ int bcma_chipco_watchdog_register(struct bcma_drv_cc *cc)
+ 	wdt.driver_data = cc;
+ 	wdt.timer_set = bcma_chipco_watchdog_timer_set_wdt;
+ 	wdt.timer_set_ms = bcma_chipco_watchdog_timer_set_ms_wdt;
+-	wdt.max_timer_ms = bcma_chipco_watchdog_get_max_timer(cc) / cc->ticks_per_ms;
++	wdt.max_timer_ms =
++		bcma_chipco_watchdog_get_max_timer(cc) / cc->ticks_per_ms;
+ 
+ 	pdev = platform_device_register_data(NULL, "bcm47xx-wdt",
+ 					     cc->core->bus->num, &wdt,
+@@ -335,7 +338,8 @@ void bcma_chipco_serial_init(struct bcma_drv_cc *cc)
+ 				       | BCMA_CC_CORECTL_UARTCLKEN);
+ 		}
+ 	} else {
+-		bcma_err(cc->core->bus, "serial not supported on this device ccrev: 0x%x\n", ccrev);
++		bcma_err(cc->core->bus, "serial not supported on this device ccrev: 0x%x\n",
++			 ccrev);
+ 		return;
+ 	}
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+2.2.1
+
