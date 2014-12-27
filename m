@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaL0QOg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 11:14:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748AbaL0QOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 11:14:33 -0500
-Date: Sat, 27 Dec 2014 18:14:14 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Helge Deller <deller@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org
-Subject: Re: [PATCH repost 12/16] parisc/uaccess: fix sparse errors
-Message-ID: <20141227161414.GA2571@redhat.com>
-References: <1419499661-8566-1-git-send-email-mst@redhat.com>
- <1419499661-8566-13-git-send-email-mst@redhat.com>
- <549C91B9.8080009@gmx.de>
+	id S1751499AbaL0QUD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 11:20:03 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:46907 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaL0QUA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Dec 2014 11:20:00 -0500
+Date: Sat, 27 Dec 2014 21:49:28 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Koshy George <koshygp@gmail.com>
+Cc: trond.myklebust@primarydata.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: nfs4_fs.h: Fix for checkpatch warnings
+Message-ID: <20141227161928.GA2075@fool>
+References: <1419679857-16626-1-git-send-email-koshygp@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <549C91B9.8080009@gmx.de>
+In-Reply-To: <1419679857-16626-1-git-send-email-koshygp@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 25, 2014 at 11:37:45PM +0100, Helge Deller wrote:
-> Hi Michael,
+On Sat, Dec 27, 2014 at 04:30:57AM -0700, Koshy George wrote:
+> This patch fix checkpatch warning for nfs4_fs.h
 > 
-> On 12/25/2014 10:29 AM, Michael S. Tsirkin wrote:
-> >virtio wants to read bitwise types from userspace using get_user.  At the
+> fs/nfs/nfs4_fs.h:134: ERROR: "foo *	bar" should be "foo *bar"
+> fs/nfs/nfs4_fs.h:416: ERROR: "foo * bar" should be "foo *bar"
 > 
-> I don't know the virtio code much yet, but does it makes sense to read bitwise types?
-> Will virtio then get possible troubles because of endianess correct as well?
+> Signed-off-by: Koshy George <koshygp@gmail.com>
+> [Being first patch, need some assistance]
 
-There's no conversion: we are reading from __virtio16 __user *
-pointer into __virtio16 v value.
+this should not come here. any comment like this you can place below the ---
+And actually its better to try generate your first patch on staging. There are lots of things to fix there.
 
-> Do you have a code example, or the sparse error message ?
+thanks
+sudip
+> ---
+>  fs/nfs/nfs4_fs.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Helge
-
-Sure. the code is upstream now.
-The warning is below.
-
-sparse warnings: (new ones prefixed by >>)
-
->> drivers/vhost/vringh.c:554:18: sparse: cast to restricted __virtio16
-
-vim +554 drivers/vhost/vringh.c
-
-   538                                                           __virtio16 *p, u16 val))
-   539  {
-   540          if (!vrh->event_indices) {
-   541                  /* Old-school; update flags. */
-   542                  if (putu16(vrh, &vrh->vring.used->flags,
-   543                             VRING_USED_F_NO_NOTIFY)) {
-   544                          vringh_bad("Setting used flags %p",
-   545                                     &vrh->vring.used->flags);
-   546                  }
-   547          }
-   548  }
-   549
-   550  /* Userspace access helpers: in this case, addresses are really userspace. */
-   551  static inline int getu16_user(const struct vringh *vrh, u16 *val, const __virtio16 *p)
-   552  {
-   553          __virtio16 v = 0;
- > 554          int rc = get_user(v, (__force __virtio16 __user *)p);
-   555          *val = vringh16_to_cpu(vrh, v);
-   556          return rc;
-   557  }
-   558
-   559  static inline int putu16_user(const struct vringh *vrh, __virtio16 *p, u16 val)
-   560  {
-   561          __virtio16 v = cpu_to_vringh16(vrh, val);
-   562          return put_user(v, (__force __virtio16 __user *)p);
-
-
-
+> diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
+> index a081787..ae336c7 100644
+> --- a/fs/nfs/nfs4_fs.h
+> +++ b/fs/nfs/nfs4_fs.h
+> @@ -131,7 +131,7 @@ enum {
+>  
+>  struct nfs4_lock_state {
+>  	struct list_head	ls_locks;	/* Other lock stateids */
+> -	struct nfs4_state *	ls_state;	/* Pointer to open state */
+> +	struct nfs4_state	*ls_state;	/* Pointer to open state */
+>  #define NFS_LOCK_INITIALIZED 0
+>  #define NFS_LOCK_LOST        1
+>  	unsigned long		ls_flags;
+> @@ -413,7 +413,7 @@ static inline void nfs4_schedule_session_recovery(struct nfs4_session *session,
+>  extern struct nfs4_state_owner *nfs4_get_state_owner(struct nfs_server *, struct rpc_cred *, gfp_t);
+>  extern void nfs4_put_state_owner(struct nfs4_state_owner *);
+>  extern void nfs4_purge_state_owners(struct nfs_server *);
+> -extern struct nfs4_state * nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
+> +extern struct nfs4_state *nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
+>  extern void nfs4_put_open_state(struct nfs4_state *);
+>  extern void nfs4_close_state(struct nfs4_state *, fmode_t);
+>  extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
+> -- 
+> 1.9.1
 > 
-> >moment this triggers sparse errors, since the value is passed through an
-> >integer.
-> >
-> >Fix that up using __force.
-> >
-> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >---
-> >  arch/parisc/include/asm/uaccess.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> >diff --git a/arch/parisc/include/asm/uaccess.h b/arch/parisc/include/asm/uaccess.h
-> >index a5cb070..3a20da6 100644
-> >--- a/arch/parisc/include/asm/uaccess.h
-> >+++ b/arch/parisc/include/asm/uaccess.h
-> >@@ -104,7 +104,7 @@ struct exception_data {
-> >  	    }                                           \
-> >  	}                                               \
-> >  							\
-> >-	(x) = (__typeof__(*(ptr))) __gu_val;            \
-> >+	(x) = (__force __typeof__(*(ptr))) __gu_val;            \
-> >  	__gu_err;                                       \
-> >  })
-> >
-> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
