@@ -1,224 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820AbaL0VTS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 16:19:18 -0500
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:15268 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751707AbaL0VTQ (ORCPT
+	id S1751453AbaL0WBV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 17:01:21 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:60954 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079AbaL0WBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 16:19:16 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApsQAJwhn1Rbsnvc/2dsb2JhbABcgwaBKrQcBQEBAQEBAQUBd5c2gQgXAQEBAQF9hDovI4EaN4gwAbU8jz2GA4l0hDAFhSeITYkUgQ2FGIsrIoFFAYIpPTGCQwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        Andrew Morton <akpm@linux-foundation.org>, coda@cs.cmu.edu,
-        codalist@TELEMANN.coda.cs.cmu.edu
-Subject: [PATCH 1/1 linux-next] fs/coda/dir.c: forward declaration clean-up
-Date: Sat, 27 Dec 2014 22:19:07 +0100
-Message-Id: <1419715147-13189-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 2.1.0
+	Sat, 27 Dec 2014 17:01:19 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Benjamin Romer <benjamin.romer@unisys.com>,
+        David Kershner <david.kershner@unisys.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ken Cox <jkc@redhat.com>, Daeseok Youn <daeseok.youn@gmail.com>,
+        "Tobenna P. Igwe" <ptigwe@gmail.com>, sparmaintainer@unisys.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: unisys: uislib: uisutils.c:  Fix a missing va_end
+Date: Sat, 27 Dec 2014 23:04:14 +0100
+Message-Id: <1419717855-6760-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--Move operation structures to avoid forward declarations.
--Fix some checkpatch warnings:
+A missing va_end in connection with vsnprintf
 
-WARNING: Missing a blank line after declarations
-+		struct inode *host_inode = file_inode(host_file);
-+		mutex_lock(&host_inode->i_mutex);
+Was found by using a static code analysis program called cppcheck.
 
-ERROR: that open brace { should be on the previous line
-+const struct dentry_operations coda_dentry_operations =
-+{
-
-ERROR: that open brace { should be on the previous line
-+const struct inode_operations coda_dir_inode_operations =
-+{
-
-Cc: Jan Harkes <jaharkes@cs.cmu.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- fs/coda/dir.c | 138 ++++++++++++++++++++++++----------------------------------
- 1 file changed, 56 insertions(+), 82 deletions(-)
+ drivers/staging/unisys/uislib/uisutils.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/coda/dir.c b/fs/coda/dir.c
-index 86c8938..281ee01 100644
---- a/fs/coda/dir.c
-+++ b/fs/coda/dir.c
-@@ -28,29 +28,6 @@
- 
- #include "coda_int.h"
- 
--/* dir inode-ops */
--static int coda_create(struct inode *dir, struct dentry *new, umode_t mode, bool excl);
--static struct dentry *coda_lookup(struct inode *dir, struct dentry *target, unsigned int flags);
--static int coda_link(struct dentry *old_dentry, struct inode *dir_inode, 
--		     struct dentry *entry);
--static int coda_unlink(struct inode *dir_inode, struct dentry *entry);
--static int coda_symlink(struct inode *dir_inode, struct dentry *entry,
--			const char *symname);
--static int coda_mkdir(struct inode *dir_inode, struct dentry *entry, umode_t mode);
--static int coda_rmdir(struct inode *dir_inode, struct dentry *entry);
--static int coda_rename(struct inode *old_inode, struct dentry *old_dentry, 
--                       struct inode *new_inode, struct dentry *new_dentry);
--
--/* dir file-ops */
--static int coda_readdir(struct file *file, struct dir_context *ctx);
--
--/* dentry ops */
--static int coda_dentry_revalidate(struct dentry *de, unsigned int flags);
--static int coda_dentry_delete(const struct dentry *);
--
--/* support routines */
--static int coda_venus_readdir(struct file *, struct dir_context *);
--
- /* same as fs/bad_inode.c */
- static int coda_return_EIO(void)
- {
-@@ -58,38 +35,6 @@ static int coda_return_EIO(void)
- }
- #define CODA_EIO_ERROR ((void *) (coda_return_EIO))
- 
--const struct dentry_operations coda_dentry_operations =
--{
--	.d_revalidate	= coda_dentry_revalidate,
--	.d_delete	= coda_dentry_delete,
--};
--
--const struct inode_operations coda_dir_inode_operations =
--{
--	.create		= coda_create,
--	.lookup		= coda_lookup,
--	.link		= coda_link,
--	.unlink		= coda_unlink,
--	.symlink	= coda_symlink,
--	.mkdir		= coda_mkdir,
--	.rmdir		= coda_rmdir,
--	.mknod		= CODA_EIO_ERROR,
--	.rename		= coda_rename,
--	.permission	= coda_permission,
--	.getattr	= coda_getattr,
--	.setattr	= coda_setattr,
--};
--
--const struct file_operations coda_dir_operations = {
--	.llseek		= generic_file_llseek,
--	.read		= generic_read_dir,
--	.iterate	= coda_readdir,
--	.open		= coda_open,
--	.release	= coda_release,
--	.fsync		= coda_fsync,
--};
--
--
- /* inode operations for directories */
- /* access routines: lookup, readlink, permission */
- static struct dentry *coda_lookup(struct inode *dir, struct dentry *entry, unsigned int flags)
-@@ -374,33 +319,6 @@ static int coda_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	return error;
- }
- 
--
--/* file operations for directories */
--static int coda_readdir(struct file *coda_file, struct dir_context *ctx)
--{
--	struct coda_file_info *cfi;
--	struct file *host_file;
--	int ret;
--
--	cfi = CODA_FTOC(coda_file);
--	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
--	host_file = cfi->cfi_container;
--
--	if (host_file->f_op->iterate) {
--		struct inode *host_inode = file_inode(host_file);
--		mutex_lock(&host_inode->i_mutex);
--		ret = -ENOENT;
--		if (!IS_DEADDIR(host_inode)) {
--			ret = host_file->f_op->iterate(host_file, ctx);
--			file_accessed(host_file);
--		}
--		mutex_unlock(&host_inode->i_mutex);
--		return ret;
--	}
--	/* Venus: we must read Venus dirents from a file */
--	return coda_venus_readdir(coda_file, ctx);
--}
--
- static inline unsigned int CDT2DT(unsigned char cdt)
- {
- 	unsigned int dt;
-@@ -495,6 +413,33 @@ out:
- 	return 0;
- }
- 
-+/* file operations for directories */
-+static int coda_readdir(struct file *coda_file, struct dir_context *ctx)
-+{
-+	struct coda_file_info *cfi;
-+	struct file *host_file;
-+	int ret;
-+
-+	cfi = CODA_FTOC(coda_file);
-+	BUG_ON(!cfi || cfi->cfi_magic != CODA_MAGIC);
-+	host_file = cfi->cfi_container;
-+
-+	if (host_file->f_op->iterate) {
-+		struct inode *host_inode = file_inode(host_file);
-+
-+		mutex_lock(&host_inode->i_mutex);
-+		ret = -ENOENT;
-+		if (!IS_DEADDIR(host_inode)) {
-+			ret = host_file->f_op->iterate(host_file, ctx);
-+			file_accessed(host_file);
-+		}
-+		mutex_unlock(&host_inode->i_mutex);
-+		return ret;
-+	}
-+	/* Venus: we must read Venus dirents from a file */
-+	return coda_venus_readdir(coda_file, ctx);
-+}
-+
- /* called when a cache lookup succeeds */
- static int coda_dentry_revalidate(struct dentry *de, unsigned int flags)
- {
-@@ -603,3 +548,32 @@ int coda_revalidate_inode(struct inode *inode)
- 	}
- 	return 0;
- }
-+
-+const struct dentry_operations coda_dentry_operations = {
-+	.d_revalidate	= coda_dentry_revalidate,
-+	.d_delete	= coda_dentry_delete,
-+};
-+
-+const struct inode_operations coda_dir_inode_operations = {
-+	.create		= coda_create,
-+	.lookup		= coda_lookup,
-+	.link		= coda_link,
-+	.unlink		= coda_unlink,
-+	.symlink	= coda_symlink,
-+	.mkdir		= coda_mkdir,
-+	.rmdir		= coda_rmdir,
-+	.mknod		= CODA_EIO_ERROR,
-+	.rename		= coda_rename,
-+	.permission	= coda_permission,
-+	.getattr	= coda_getattr,
-+	.setattr	= coda_setattr,
-+};
-+
-+const struct file_operations coda_dir_operations = {
-+	.llseek		= generic_file_llseek,
-+	.read		= generic_read_dir,
-+	.iterate	= coda_readdir,
-+	.open		= coda_open,
-+	.release	= coda_release,
-+	.fsync		= coda_fsync,
-+};
+diff --git a/drivers/staging/unisys/uislib/uisutils.c b/drivers/staging/unisys/uislib/uisutils.c
+index 8ff6d26..d821c82 100644
+--- a/drivers/staging/unisys/uislib/uisutils.c
++++ b/drivers/staging/unisys/uislib/uisutils.c
+@@ -59,6 +59,7 @@ uisutil_add_proc_line_ex(int *total, char **buffer, int *buffer_remaining,
+ 	DBGINF("buffer = 0x%p : *buffer = 0x%p.\n", buffer, *buffer);
+ 	va_start(args, format);
+ 	len = vsnprintf(*buffer, *buffer_remaining, format, args);
++	va_end(args);
+ 	if (len >= *buffer_remaining) {
+ 		*buffer += *buffer_remaining;
+ 		*total += *buffer_remaining;
 -- 
-2.1.0
+1.7.10.4
 
