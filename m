@@ -1,89 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaL0EXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 23:23:36 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:64438 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371AbaL0EXf (ORCPT
+	id S1751094AbaL0FGn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 00:06:43 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:34829 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715AbaL0FGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 23:23:35 -0500
-From: Taesoo Kim <tsgatesv@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: taesoo@gatech.edu, Taesoo Kim <tsgatesv@gmail.com>
-Subject: [PATCH 1/1] perf list: Fix --raw-dump option
-Date: Fri, 26 Dec 2014 23:29:33 -0500
-Message-Id: <1419654573-2340-1-git-send-email-tsgatesv@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Sat, 27 Dec 2014 00:06:42 -0500
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH RESEND 1/5] perf diff: Fix to sort by baseline field by default
+Date: Sat, 27 Dec 2014 14:06:29 +0900
+Message-Id: <1419656793-32756-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, 'perf list --raw-dump' requires extra arguments
-(e.g., hw) to invoke, which breaks bash/zsh completion
-(perf-completion.sh).
+The currently perf diff didn't add the baseline and delta (or other
+compute) fields to the sort list so output will be sorted by other
+fields like alphabetical order of DSO or symbol as below example.
 
-  $ perf list --raw-dump
-    Error: unknown option `raw-dump'
+Fix it by adding hpp formats for the fields and provides default
+compare functions.
 
-     usage: perf list [hw|sw|cache|tracepoint|pmu|event_glob]
+Before:
 
-After,
+  $ perf diff
+  # Event 'cycles'
+  #
+  # Baseline    Delta  Shared Object       Symbol
+  # ........  .......  ..................  ...............................
+  #
+                       [bridge]            [k] ip_sabotage_in
+                       [btrfs]             [k] __etree_search.constprop.47
+       0.01%           [btrfs]             [k] btrfs_file_mmap
+       0.01%   -0.01%  [btrfs]             [k] btrfs_getattr
+                       [e1000e]            [k] e1000_watchdog
+       0.00%           [kernel.vmlinux]    [k] PageHuge
+       0.00%           [kernel.vmlinux]    [k] __acct_update_integrals
+       0.00%           [kernel.vmlinux]    [k] __activate_page
+                       [kernel.vmlinux]    [k] __alloc_fd
+       0.02%   +0.02%  [kernel.vmlinux]    [k] __alloc_pages_nodemask
+       ...
 
-  $ perf list --raw-dump
-  cpu-cycles instructions cache-references cache-misses ...
+After:
 
-Signed-off-by: Taesoo Kim <tsgatesv@gmail.com>
+  # Baseline    Delta  Shared Object       Symbol
+  # ........  .......  ..................  ................................
+  #
+      24.73%   -4.62%  perf                [.] append_chain_children
+       7.96%   -1.29%  perf                [.] dso__find_symbol
+       6.97%   -2.07%  libc-2.20.so        [.] vfprintf
+       4.61%   +0.88%  libc-2.20.so        [.] __fprintf_chk
+       4.41%   +2.43%  perf                [.] sort__comm_cmp
+       4.10%   -0.16%  perf                [.] comm__str
+       4.03%   -0.93%  perf                [.] machine__findnew_thread_time
+       3.82%   +3.09%  perf                [.] __hists__add_entry
+       2.95%   -0.18%  perf                [.] sort__dso_cmp
+       ...
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-list.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ tools/perf/builtin-diff.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
 
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index 011195e..ec76bee 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -16,14 +16,17 @@
- #include "util/pmu.h"
- #include "util/parse-options.h"
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index e787a4406d1f..318ab9c3f0ba 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -545,6 +545,42 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+ 	return __hist_entry__cmp_compute(p_left, p_right, c);
+ }
  
-+static bool raw_dump = false;
++static int64_t
++hist_entry__cmp_nop(struct hist_entry *left __maybe_unused,
++		    struct hist_entry *right __maybe_unused)
++{
++	return 0;
++}
 +
- int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	int i;
- 	const struct option list_options[] = {
-+		OPT_BOOLEAN(0, "raw-dump", &raw_dump, "Dump raw events"),
- 		OPT_END()
- 	};
- 	const char * const list_usage[] = {
--		"perf list [hw|sw|cache|tracepoint|pmu|event_glob]",
-+		"perf list [hw|sw|cache|tracepoint|pmu|event_glob|--raw-dump]",
- 		NULL
- 	};
- 
-@@ -32,6 +35,11 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	setup_pager();
- 
-+	if (raw_dump) {
-+		print_events(NULL, true);
++static int64_t
++hist_entry__cmp_baseline(struct hist_entry *left, struct hist_entry *right)
++{
++	if (sort_compute)
 +		return 0;
-+	}
 +
- 	if (argc == 0) {
- 		print_events(NULL, false);
- 		return 0;
-@@ -53,8 +61,6 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- 			print_hwcache_events(NULL, false);
- 		else if (strcmp(argv[i], "pmu") == 0)
- 			print_pmu_events(NULL, false);
--		else if (strcmp(argv[i], "--raw-dump") == 0)
--			print_events(NULL, true);
- 		else {
- 			char *sep = strchr(argv[i], ':'), *s;
- 			int sep_idx;
++	if (left->stat.period == right->stat.period)
++		return 0;
++	return left->stat.period > right->stat.period ? 1 : -1;
++}
++
++static int64_t
++hist_entry__cmp_delta(struct hist_entry *left, struct hist_entry *right)
++{
++	return hist_entry__cmp_compute(right, left, COMPUTE_DELTA);
++}
++
++static int64_t
++hist_entry__cmp_ratio(struct hist_entry *left, struct hist_entry *right)
++{
++	return hist_entry__cmp_compute(right, left, COMPUTE_RATIO);
++}
++
++static int64_t
++hist_entry__cmp_wdiff(struct hist_entry *left, struct hist_entry *right)
++{
++	return hist_entry__cmp_compute(right, left, COMPUTE_WEIGHTED_DIFF);
++}
++
+ static void insert_hist_entry_by_compute(struct rb_root *root,
+ 					 struct hist_entry *he,
+ 					 int c)
+@@ -1038,27 +1074,35 @@ static void data__hpp_register(struct data__file *d, int idx)
+ 	fmt->header = hpp__header;
+ 	fmt->width  = hpp__width;
+ 	fmt->entry  = hpp__entry_global;
++	fmt->cmp    = hist_entry__cmp_nop;
++	fmt->collapse = hist_entry__cmp_nop;
+ 
+ 	/* TODO more colors */
+ 	switch (idx) {
+ 	case PERF_HPP_DIFF__BASELINE:
+ 		fmt->color = hpp__color_baseline;
++		fmt->sort  = hist_entry__cmp_baseline;
+ 		break;
+ 	case PERF_HPP_DIFF__DELTA:
+ 		fmt->color = hpp__color_delta;
++		fmt->sort  = hist_entry__cmp_delta;
+ 		break;
+ 	case PERF_HPP_DIFF__RATIO:
+ 		fmt->color = hpp__color_ratio;
++		fmt->sort  = hist_entry__cmp_ratio;
+ 		break;
+ 	case PERF_HPP_DIFF__WEIGHTED_DIFF:
+ 		fmt->color = hpp__color_wdiff;
++		fmt->sort  = hist_entry__cmp_wdiff;
+ 		break;
+ 	default:
++		fmt->sort  = hist_entry__cmp_nop;
+ 		break;
+ 	}
+ 
+ 	init_header(d, dfmt);
+ 	perf_hpp__column_register(fmt);
++	perf_hpp__register_sort_field(fmt);
+ }
+ 
+ static void ui_init(void)
 -- 
-2.1.3
+2.2.1
 
