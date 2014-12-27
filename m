@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498AbaL0XkM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 18:40:12 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:64080 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaL0XkK (ORCPT
+	id S1751607AbaL0XnC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 18:43:02 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:34127 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205AbaL0XnA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 18:40:10 -0500
+	Sat, 27 Dec 2014 18:43:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <1419694644-2241-1-git-send-email-fabf@skynet.be>
-References: <1419694644-2241-1-git-send-email-fabf@skynet.be>
-Date: Sun, 28 Dec 2014 00:40:08 +0100
-Message-ID: <CAMeQTsY5TWRbCP3T1L69JjSL8SimSOo0+3VTzT4oMV1XA3ogDQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1 linux-next] drm/gma500: replace 0 by NULL for pointer
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>
+In-Reply-To: <CADZ0XgJ=LU3n55MxcHUMdX7uRcOm-m+=DFLGDi6PPkj+5=y1sg@mail.gmail.com>
+References: <1419708268-14114-1-git-send-email-oscar.forner.martinez@gmail.com>
+	<CACna6rxjrcpZXiv0jxmY4+EtLESYtKh=6W2RgqUDLHYy3AQ4rA@mail.gmail.com>
+	<CADZ0Xg++nexnzmuaOp+MHXBbODwSpoEYNcbDU=X9tNYbzh=W-w@mail.gmail.com>
+	<CADZ0XgJ=LU3n55MxcHUMdX7uRcOm-m+=DFLGDi6PPkj+5=y1sg@mail.gmail.com>
+Date: Sun, 28 Dec 2014 00:42:59 +0100
+Message-ID: <CACna6ry78Gs5PTUxjXy+tZAS-DNzTmqrSmwa_EVYRO6L-5_3ZA@mail.gmail.com>
+Subject: Re: [PATCH] bcma: fix three coding style issues, more than 80
+ characters per line
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 27, 2014 at 4:37 PM, Fabian Frederick <fabf@skynet.be> wrote:
-> Fix sparse warning:
-> drivers/gpu/drm/gma500/psb_drv.c:
-> 328:56: warning: Using plain integer as NULL pointer
+On 27 December 2014 at 23:04, Oscar Forner Martinez
+<oscar.forner.martinez@gmail.com> wrote:
+> 2014-12-27 21:14 GMT+00:00 Oscar Forner Martinez
+> <oscar.forner.martinez@gmail.com>:
+>>
+>> 2014-12-27 20:19 GMT+00:00 Rafał Miłecki <zajec5@gmail.com>:
+>>>
+>>> On 27 December 2014 at 20:24, Oscar Forner Martinez
+>>> <oscar.forner.martinez@gmail.com> wrote:
+>>> > Three lines with more than 80 characters per line have been split in
+>>> > several lines.
+>>>
+>>> Thanks for the next version :)
+>>>
+>>> 1) You missed version number. Something like
+>>> git format-patch --subject-prefix="PATCH V3"
+>>> (you saying for the future).
+>>
+>>
+>> Yes, sorry I forgot to put -v 3 in git format-patch.
+>>
+>>>
+>>>
+>>> 2) I'm OK with your changes, but when checking the patch I get some
+>>> errors like
+>>> ERROR: trailing whitespace
+>>> ERROR: DOS line endings
+>>> (I used ./scripts/checkpatch.pl, see attached checkpatch log).
+>>>
+>>> I think that "trailing whitespace" errors are caused by DOS line
+>>> endings, because I don't see anything wrong about your code.
+>>>
+>>> Is there something wrong with your emacs? git-send-email shouldn't
+>>> malform patches I believe.
+>>
+>>
+>> When I run ./scripts/checkpatch.pl with my patch does not show any error
+>> (please find attached the output). I will try to run it with the one from my
+>> e-mail. My only configuration in the .emacs file is: (setq c-default-style
+>> "linux").
 >
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+>
+> I ran the ./scripts/checkpatch.pl with the patch got it from
+> http://marc.info/?l=linux-wireless&m=141970834908165 and it does not show
+> any error. Could you please tell me how I have to check in the same way as
+> you did?
 
-Reviewed-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+False alarm, sorry. GMail changed sth again or my browser
+change/update broke saving e-mails.
 
-> ---
->  drivers/gpu/drm/gma500/psb_drv.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-> index 92e7e57..9b49c155 100644
-> --- a/drivers/gpu/drm/gma500/psb_drv.c
-> +++ b/drivers/gpu/drm/gma500/psb_drv.c
-> @@ -325,7 +325,7 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
->         if (ret)
->                 goto out_err;
->
-> -       dev_priv->mmu = psb_mmu_driver_init(dev, 1, 0, 0);
-> +       dev_priv->mmu = psb_mmu_driver_init(dev, 1, 0, NULL);
->         if (!dev_priv->mmu)
->                 goto out_err;
->
-> --
-> 2.1.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Rafał
