@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaL0P3r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 10:29:47 -0500
-Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:19332 "EHLO
+	id S1751525AbaL0P3v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 10:29:51 -0500
+Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:30786 "EHLO
 	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaL0P3o (ORCPT
+	with ESMTP id S1751079AbaL0P3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 27 Dec 2014 10:29:44 -0500
 X-ME-Helo: beldin.home
-X-ME-Date: Sat, 27 Dec 2014 16:29:37 +0100
+X-ME-Date: Sat, 27 Dec 2014 16:29:36 +0100
 X-ME-IP: 109.222.86.28
 From: Robert Jarzmik <robert.jarzmik@free.fr>
 To: Daniel Mack <daniel@zonque.org>, Haojian Zhuang <haojian.zhuang@gmail.com>,
@@ -19,9 +19,9 @@ To: Daniel Mack <daniel@zonque.org>, Haojian Zhuang <haojian.zhuang@gmail.com>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] arm: pxa: move gpio11 clock to board files
-Date: Sat, 27 Dec 2014 14:55:27 +0100
-Message-Id: <1419688528-760-4-git-send-email-robert.jarzmik@free.fr>
+Subject: [PATCH 1/4] arm: pxa: change clocks init sequence
+Date: Sat, 27 Dec 2014 14:55:25 +0100
+Message-Id: <1419688528-760-2-git-send-email-robert.jarzmik@free.fr>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419688528-760-1-git-send-email-robert.jarzmik@free.fr>
 References: <1419688528-760-1-git-send-email-robert.jarzmik@free.fr>
@@ -29,55 +29,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pxa25x gpio11 clock output was previously selected on its pin by the
-clock enabling, toggling the pin function.
+Since pxa clocks were ported to the clock framework, an ordering issue
+appears between clocks and clocksource initialization. As a consequence,
+the pxa timer clock cannot be acquired in pxa_timer, and is disabled by
+clock framework because it is "unused".
 
-As we transition to common clock framework, the pin function is moved to
-board file for the 2 users, ie. lubbock and eseries.
+The ordering issue is that in the kernel boot sequence :
+  start_kernel()
+    ...
+    time_init()
+      -> pxa_timer()
+        -> here the clocksource is initialized
+    ...
+    rest_init()
+      kernel_init()
+	initcalls
+	  -> here the clocks are initialized
+
+In the current sequence, the clocks are initialized way after pxa_timer,
+which cannot acquire the OSTIMER0 clock.
+
+To solve this issue, the clocks initialization is moved to pxa_timer(),
+so that clocks are initialized before clocksource for non device-tree.
+For device-tree, the standard arm time_init() will take care of the
+ordering.
 
 Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 ---
- arch/arm/mach-pxa/eseries.c | 5 ++++-
- arch/arm/mach-pxa/lubbock.c | 3 +++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ arch/arm/mach-pxa/generic.c  | 4 ++++
+ arch/arm/mach-pxa/generic.h  | 2 ++
+ drivers/clk/pxa/clk-pxa27x.c | 3 +--
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-pxa/eseries.c b/arch/arm/mach-pxa/eseries.c
-index cfb8641..d8fc9a3 100644
---- a/arch/arm/mach-pxa/eseries.c
-+++ b/arch/arm/mach-pxa/eseries.c
-@@ -683,7 +683,7 @@ static unsigned long e750_pin_config[] __initdata = {
- 	/* PC Card */
- 	GPIO8_GPIO,   /* CD0 */
- 	GPIO44_GPIO,  /* CD1 */
--	GPIO11_GPIO,  /* IRQ0 */
-+	/* GPIO11_GPIO,  IRQ0 */
- 	GPIO6_GPIO,   /* IRQ1 */
- 	GPIO27_GPIO,  /* RST0 */
- 	GPIO24_GPIO,  /* RST1 */
-@@ -778,6 +778,9 @@ static unsigned long e800_pin_config[] __initdata = {
- 	GPIO29_AC97_SDATA_IN_0,
- 	GPIO30_AC97_SDATA_OUT,
- 	GPIO31_AC97_SYNC,
-+
-+	/* tc6393xb */
-+	GPIO11_3_6MHz,
- };
+diff --git a/arch/arm/mach-pxa/generic.c b/arch/arm/mach-pxa/generic.c
+index 04b013f..d988c53 100644
+--- a/arch/arm/mach-pxa/generic.c
++++ b/arch/arm/mach-pxa/generic.c
+@@ -63,6 +63,10 @@ EXPORT_SYMBOL(get_clock_tick_rate);
+  */
+ void __init pxa_timer_init(void)
+ {
++	if (cpu_is_pxa25x())
++		pxa25x_clocks_init();
++	if (cpu_is_pxa27x())
++		pxa27x_clocks_init();
+ 	pxa_timer_nodt_init(IRQ_OST0, io_p2v(0x40a00000),
+ 			    get_clock_tick_rate());
+ }
+diff --git a/arch/arm/mach-pxa/generic.h b/arch/arm/mach-pxa/generic.h
+index 7a9fa1a..149087c 100644
+--- a/arch/arm/mach-pxa/generic.h
++++ b/arch/arm/mach-pxa/generic.h
+@@ -26,11 +26,13 @@ extern void pxa_timer_init(void);
+ #define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
  
- static struct w100_gen_regs e800_lcd_regs = {
-diff --git a/arch/arm/mach-pxa/lubbock.c b/arch/arm/mach-pxa/lubbock.c
-index d8a1be6..b742708 100644
---- a/arch/arm/mach-pxa/lubbock.c
-+++ b/arch/arm/mach-pxa/lubbock.c
-@@ -101,6 +101,9 @@ static unsigned long lubbock_pin_config[] __initdata = {
- 	GPIO6_MMC_CLK,
- 	GPIO8_MMC_CS0,
+ #define pxa25x_handle_irq icip_handle_irq
++extern int __init pxa25x_clocks_init(void);
+ extern void __init pxa25x_init_irq(void);
+ extern void __init pxa25x_map_io(void);
+ extern void __init pxa26x_init_irq(void);
  
-+	/* SA1111 chip */
-+	GPIO11_3_6MHz,
-+
- 	/* wakeup */
- 	GPIO1_GPIO | WAKEUP_ON_EDGE_RISE,
- };
+ #define pxa27x_handle_irq ichp_handle_irq
++extern int __init pxa27x_clocks_init(void);
+ extern void __init pxa27x_dt_init_irq(void);
+ extern unsigned	pxa27x_get_clk_frequency_khz(int);
+ extern void __init pxa27x_init_irq(void);
+diff --git a/drivers/clk/pxa/clk-pxa27x.c b/drivers/clk/pxa/clk-pxa27x.c
+index 5f9b54b..2b8343a 100644
+--- a/drivers/clk/pxa/clk-pxa27x.c
++++ b/drivers/clk/pxa/clk-pxa27x.c
+@@ -362,12 +362,11 @@ static void __init pxa27x_base_clocks_init(void)
+ 	clk_register_clk_pxa27x_lcd_base();
+ }
+ 
+-static int __init pxa27x_clocks_init(void)
++int __init pxa27x_clocks_init(void)
+ {
+ 	pxa27x_base_clocks_init();
+ 	return clk_pxa_cken_init(pxa27x_clocks, ARRAY_SIZE(pxa27x_clocks));
+ }
+-postcore_initcall(pxa27x_clocks_init);
+ 
+ static void __init pxa27x_dt_clocks_init(struct device_node *np)
+ {
 -- 
 2.1.0
 
