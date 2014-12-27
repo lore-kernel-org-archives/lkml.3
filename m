@@ -1,125 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371AbaL0HRe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 02:17:34 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:55910 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826AbaL0HRa (ORCPT
+	id S1751447AbaL0HYM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 02:24:12 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:41915 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaL0HYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 02:17:30 -0500
-From: SeongJae Park <sj38.park@gmail.com>
-X-Google-Original-From: SeongJae Park <sjpark@hxeon>
-Date: Sat, 27 Dec 2014 16:18:14 +0900 (KST)
-To: "Stefan I. Strogin" <s.strogin@partner.samsung.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
-        Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Subject: Re: [PATCH 3/3] cma: add functions to get region pages counters
-In-Reply-To: <dfddb08aba9a05e6e7b43e9861ab09b7ac1c89cd.1419602920.git.s.strogin@partner.samsung.com>
-Message-ID: <alpine.DEB.2.10.1412271616450.1819@hxeon>
-References: <cover.1419602920.git.s.strogin@partner.samsung.com> <dfddb08aba9a05e6e7b43e9861ab09b7ac1c89cd.1419602920.git.s.strogin@partner.samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sat, 27 Dec 2014 02:24:10 -0500
+Date: Sat, 27 Dec 2014 12:54:00 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Helene Gsaenger <helene.gsaenger@studium.fau.de>, simone.weiss@fau.de,
+        linux-kernel@i4.cs.fau.de, lars@metafoo.de,
+        Michael.Hennerich@analog.com, knaack.h@gmx.de, pmeerw@pmeerw.net,
+        gregkh@linuxfoundation.org, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging/iio/accel: checkpatch: fixed long lines by
+ moving comments
+Message-ID: <20141227072400.GB4780@sudip-PC>
+References: <1419211422-9611-1-git-send-email-helene.gsaenger@studium.fau.de>
+ <20141222134851.GA8347@sudip-PC>
+ <549D31A0.6010301@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <549D31A0.6010301@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Dec 26, 2014 at 10:00:00AM +0000, Jonathan Cameron wrote:
+> On 22/12/14 13:48, Sudip Mukherjee wrote:
+> > On Mon, Dec 22, 2014 at 02:23:42AM +0100, Helene Gsaenger wrote:
+> >> Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de>
+> >> Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+> >> ---
+> >>  drivers/staging/iio/accel/adis16203.h | 41 ++++++++++++++++++++++++++---------
+> >>  1 file changed, 31 insertions(+), 10 deletions(-)
+> >>
+> >> diff --git a/drivers/staging/iio/accel/adis16203.h b/drivers/staging/iio/accel/adis16203.h
+> >> index acc688d..fefe2f9 100644
+> >> --- a/drivers/staging/iio/accel/adis16203.h
+> >> +++ b/drivers/staging/iio/accel/adis16203.h
+> >> @@ -16,26 +16,47 @@
+> >>  #define ADIS16203_ALM_SMPL2      0x26 /* Alarm 2, sample period */
+> >>  #define ADIS16203_ALM_CTRL       0x28 /* Alarm control */
+> >>  #define ADIS16203_AUX_DAC        0x30 /* Auxiliary DAC data */
+> >> -#define ADIS16203_GPIO_CTRL      0x32 /* General-purpose digital input/output control */
+> >> +#define ADIS16203_GPIO_CTRL      0x32 /* General-purpose digital input/output
+> >> +				       * control */
+> >>  #define ADIS16203_MSC_CTRL       0x34 /* Miscellaneous control */
+> >> -#define ADIS16203_SMPL_PRD       0x36 /* Internal sample period (rate) control */
+> >> +#define ADIS16203_SMPL_PRD       0x36 /* Internal sample period (rate)
+> >> +				       * control */
+> > 
+> > this is not the style for multiline comments. Check in CodingStyle.
+> > and besides, I think it will be better if you can put the comments in a line of its own.
+> + remember checkpatch is only for guidance.  Some rules such as the 80 character limit
+> are often ignored if clarity would be gained by doing so, or if as here a large patch
+> would be needed (move all comments to separate lines) in order to meet the 80 character
+> line limit for a couple of cases.
 
-On Fri, 26 Dec 2014, Stefan I. Strogin wrote:
+ofcourse checkpatch is only for guidance, and we need to use our own judgement to decide.
+here I mentioned separate line because Helene Gsaenger has sent the patch splitting some commments in the second line, which was not looking good.
+Personally, I will like comments beside the #define, so that while reading the code, i can immediately see what that #define is doing.
 
-> From: Dmitry Safonov <d.safonov@partner.samsung.com>
->
-> Here are two functions that provide interface to compute/get used size
-> and size of biggest free chunk in cma region.
-> Added that information in cmainfo.
->
-> Signed-off-by: Dmitry Safonov <d.safonov@partner.samsung.com>
-> ---
-> include/linux/cma.h |  2 ++
-> mm/cma.c            | 34 ++++++++++++++++++++++++++++++++++
-> 2 files changed, 36 insertions(+)
->
-> diff --git a/include/linux/cma.h b/include/linux/cma.h
-> index 9384ba6..855e6f2 100644
-> --- a/include/linux/cma.h
-> +++ b/include/linux/cma.h
-> @@ -18,6 +18,8 @@ struct cma;
-> extern unsigned long totalcma_pages;
-> extern phys_addr_t cma_get_base(struct cma *cma);
-> extern unsigned long cma_get_size(struct cma *cma);
-> +extern unsigned long cma_get_used(struct cma *cma);
-> +extern unsigned long cma_get_maxchunk(struct cma *cma);
->
-> extern int __init cma_declare_contiguous(phys_addr_t base,
-> 			phys_addr_t size, phys_addr_t limit,
-> diff --git a/mm/cma.c b/mm/cma.c
-> index ffaea26..5e560ed 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -78,6 +78,36 @@ unsigned long cma_get_size(struct cma *cma)
-> 	return cma->count << PAGE_SHIFT;
-> }
->
-> +unsigned long cma_get_used(struct cma *cma)
-> +{
-> +	unsigned long ret = 0;
-> +
-> +	mutex_lock(&cma->lock);
-> +	/* pages counter is smaller than sizeof(int) */
-> +	ret = bitmap_weight(cma->bitmap, (int)cma->count);
-> +	mutex_unlock(&cma->lock);
-> +
-> +	return ret << (PAGE_SHIFT + cma->order_per_bit);
-> +}
-> +
-> +unsigned long cma_get_maxchunk(struct cma *cma)
-> +{
-> +	unsigned long maxchunk = 0;
-> +	unsigned long start, end = 0;
-> +
-> +	mutex_lock(&cma->lock);
-> +	for (;;) {
-> +		start = find_next_zero_bit(cma->bitmap, cma->count, end);
-> +		if (start >= cma->count)
-> +			break;
-> +		end = find_next_bit(cma->bitmap, cma->count, start);
-> +		maxchunk = max(end - start, maxchunk);
-> +	}
-> +	mutex_unlock(&cma->lock);
-> +
-> +	return maxchunk << (PAGE_SHIFT + cma->order_per_bit);
-> +}
-> +
-> static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
-> {
-> 	if (align_order <= cma->order_per_bit)
-> @@ -591,6 +621,10 @@ static int s_show(struct seq_file *m, void *p)
-> 	struct cma_buffer *cmabuf;
-> 	struct stack_trace trace;
->
-> +	seq_printf(m, "CMARegion stat: %8lu kB total, %8lu kB used, %8lu kB max contiguous chunk\n\n",
+Sudip
 
-How about 'CMA Region' rather than 'CMARegion'?
 
-> +		   cma_get_size(cma) >> 10,
-> +		   cma_get_used(cma) >> 10,
-> +		   cma_get_maxchunk(cma) >> 10);
-> 	mutex_lock(&cma->list_lock);
->
-> 	list_for_each_entry(cmabuf, &cma->buffers_list, list) {
-> -- 
-> 2.1.0
->
->
+> > 
+> > thanks
+> > sudip
+> >>  #define ADIS16203_AVG_CNT        0x38 /* Operation, filter configuration */
+> >>  #define ADIS16203_SLP_CNT        0x3A /* Operation, sleep mode control */
+> >>  #define ADIS16203_DIAG_STAT      0x3C /* Diagnostics, system status register */
+> >>  #define ADIS16203_GLOB_CMD       0x3E /* Operation, system command register */
+> >>  
+> >>  /* MSC_CTRL */
+> >> -#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10) /* Self-test at power-on: 1 = disabled, 0 = enabled */
+> >> -#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)  /* Reverses rotation of both inclination outputs */
+> >> +#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10) /* Self-test at
+> >> +							   * power-on:
+> >> +							   * 1 = disabled,
+> >> +							   * 0 = enabled */
+> >> +#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)  /* Reverses rotation
+> >> +							   * of both
+> >> +							   * inclination
+> >> +							   * outputs */
+> >>  #define ADIS16203_MSC_CTRL_SELF_TEST_EN	        (1 << 8)  /* Self-test enable */
+> >> -#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)  /* Data-ready enable: 1 = enabled, 0 = disabled */
+> >> -#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)  /* Data-ready polarity: 1 = active high, 0 = active low */
+> >> -#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)  /* Data-ready line selection: 1 = DIO1, 0 = DIO0 */
+> >> +#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)  /* Data-ready enable:
+> >> +							   * 1 = enabled,
+> >> +							   * 0 = disabled */
+> >> +#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)  /* Data-ready
+> >> +							   * polarity:
+> >> +							   * 1 = active high,
+> >> +							   * 0 = active low */
+> >> +#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)  /* Data-ready line
+> >> +							   * selection:
+> >> +							   * 1 = DIO1,
+> >> +							   * 0 = DIO0 */
+> >>  
+> >>  /* DIAG_STAT */
+> >> -#define ADIS16203_DIAG_STAT_ALARM2        (1<<9) /* Alarm 2 status: 1 = alarm active, 0 = alarm inactive */
+> >> -#define ADIS16203_DIAG_STAT_ALARM1        (1<<8) /* Alarm 1 status: 1 = alarm active, 0 = alarm inactive */
+> >> -#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5 /* Self-test diagnostic error flag */
+> >> +#define ADIS16203_DIAG_STAT_ALARM2        (1<<9) /* Alarm 2 status:
+> >> +						  * 1 = alarm active,
+> >> +						  * 0 = alarm inactive */
+> >> +#define ADIS16203_DIAG_STAT_ALARM1        (1<<8) /* Alarm 1 status:
+> >> +						  * 1 = alarm active,
+> >> +						  * 0 = alarm inactive */
+> >> +#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5 /* Self-test diagnostic error
+> >> +						 * flag */
+> >>  #define ADIS16203_DIAG_STAT_SPI_FAIL_BIT      3 /* SPI communications failure */
+> >>  #define ADIS16203_DIAG_STAT_FLASH_UPT_BIT     2 /* Flash update failure */
+> >>  #define ADIS16203_DIAG_STAT_POWER_HIGH_BIT    1 /* Power supply above 3.625 V */
+> >> -- 
+> >> 1.9.1
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> 
