@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaL0Tzp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 14:55:45 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4645 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624AbaL0Tzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 14:55:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,652,1413270000"; 
-   d="scan'208";a="661148998"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: "Julia.Lawall@lip6.fr" <Julia.Lawall@lip6.fr>
-CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "kvalo@codeaurora.org" <kvalo@codeaurora.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH 12/27] iwlwifi: dvm: main: Use setup_timer
-Thread-Topic: [PATCH 12/27] iwlwifi: dvm: main: Use setup_timer
-Thread-Index: AQHQIRovO/LD1lb0LEidp+FL/nBrxpyjuluA
-Date: Sat, 27 Dec 2014 19:55:21 +0000
-Message-ID: <1419710121.6140.0.camel@egrumbacBox>
-References: <1419604558-29743-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1419604558-29743-14-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1419604558-29743-14-git-send-email-Julia.Lawall@lip6.fr>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.170.105]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <6429DB7FDB9FEA4FBEDA201ED9B82ADC@intel.com>
+	id S1751836AbaL0T6a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 14:58:30 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49436 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaL0T62 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Dec 2014 14:58:28 -0500
+Date: Sat, 27 Dec 2014 20:58:25 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Pali Rohar <pali.rohar@gmail.com>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>, Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, lm-sensors@lm-sensors.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH 2/3] hwmon: Driver for OMAP3 temperature sensor
+Message-ID: <20141227195825.GF10007@amd>
+References: <20141226102933.GA28778@amd>
+ <1419597294-21487-1-git-send-email-sre@kernel.org>
+ <1419597294-21487-3-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419597294-21487-3-git-send-email-sre@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBRJuBcu013518
 
-On Fri, 2014-12-26 at 15:35 +0100, Julia Lawall wrote:
-> Convert a call to init_timer and accompanying intializations of
-> the timer's data and function fields to a call to setup_timer.
+On Fri 2014-12-26 13:34:53, Sebastian Reichel wrote:
+> OMAP34xx and OMAP36xx processors contain a register in the syscon area,
+> which can be used to determine the SoCs temperature. This patch provides
+> a DT based driver for the temperature sensor based on an older driver
+> written by Peter De Schrijver for the Nokia N900 and N9.
 > 
-> A simplified version of the semantic match that fixes this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression t,f,d;
-> @@
-> 
-> -init_timer(&t);
-> +setup_timer(&t,f,d);
-> -t.data = d;
-> -t.function = f;
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
+> Signed-off-by: Sebastian Reichel <sre@kernel.org>
+> ---
+>  drivers/hwmon/Kconfig      |   8 ++
+>  drivers/hwmon/Makefile     |   1 +
+>  drivers/hwmon/omap3-temp.c | 307 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 316 insertions(+)
+>  create mode 100644 drivers/hwmon/omap3-temp.c
 
-Both applied - thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+When it hangs, it loops here:
+
+do {
+regmap_read(data->syscon, SYSCON_TEMP_REG,&temp_sensor_reg);
+if ((temp_sensor_reg & eocz_mask) == level)
+   return true;
+printk("=");
+}
+while (ktime_us_delta(expire, ktime_get()) > 0);
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
