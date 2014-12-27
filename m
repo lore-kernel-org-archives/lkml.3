@@ -1,140 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746AbaL0Ako (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Dec 2014 19:40:44 -0500
-Received: from [81.7.185.110] ([81.7.185.110]:47016 "EHLO mail.asbjorn.biz"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779AbaL0Akm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Dec 2014 19:40:42 -0500
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: "David S. Miller" <davem@davemloft.net>, netfilter-devel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH v2] nftables: nft_flush_table: handle chain dependencies
-Date: Sat, 27 Dec 2014 00:39:25 +0000
-Message-Id: <1419640765-7707-1-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1419634318-18303-1-git-send-email-asbjorn@asbjorn.biz>
-References: <1419634318-18303-1-git-send-email-asbjorn@asbjorn.biz>
+	id S1751460AbaL0BbC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Dec 2014 20:31:02 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:22461 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaL0BbA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Dec 2014 20:31:00 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <namhyung@kernel.org>, <mingo@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
+Subject: [PATCH] perf: fix building error in x86_64 when dwarf unwind is on
+Date: Sat, 27 Dec 2014 09:26:11 +0800
+Message-ID: <1419643571-62764-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.549E0BCF.00E6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 0154596339600f627baaef3d52205edf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update: I errously assumed that git add, while writing the commit
-message, would be added to the commit.
-Based on net-next f96fe225. Compiles and checkpatch clean.
+When build with 'make ARCH=x86' and dwarf unwind is on, there is a
+compiling error:
 
-Jumping between chains doesn't mix well with flush ruleset,
-since nft_flush_table doesn't handle chains referencing chains.
+   CC       /home/wn/perf/arch/x86/util/unwind-libdw.o
+   CC       /home/wn/perf/arch/x86/tests/regs_load.o
+ arch/x86/tests/regs_load.S: Assembler messages:
+ arch/x86/tests/regs_load.S:65: Error: operand type mismatch for `push'
+ arch/x86/tests/regs_load.S:72: Error: operand type mismatch for `pop'
+ make[1]: *** [/home/wn/perf/arch/x86/tests/regs_load.o] Error 1
+ make[1]: INTERNAL: Exiting with 25 jobserver tokens available; should be 24!
+ make: *** [all] Error 2
+ ...
 
-This way it will take one to two loops, to settle.
-Alternatively it can be solved by always having two loops,
+Which is caused by incorrectly undefine macro HAVE_ARCH_X86_64_SUPPORT.
+'config/Makefile.arch' tests __x86_64__ only when 'ARCH=x86_64'. However,
+with 'ARCH=x86', the underlying compile may also be x86_64, which causes
+mismatching.
 
-[  353.373791] ------------[ cut here ]------------
-[  353.373845] kernel BUG at net/netfilter/nf_tables_api.c:1159!
-[  353.373896] invalid opcode: 0000 [#1] SMP
-[  353.373942] Modules linked in: intel_powerclamp uas iwldvm iwlwifi
-[  353.374017] CPU: 0 PID: 6445 Comm: 31c3.nft Not tainted 3.18.0 #98
-[  353.374069] Hardware name: LENOVO 5129CTO/5129CTO, BIOS 6QET47WW
-(1.17 ) 07/14/2010
-[  353.374132] task: ffff880230976300 ti: ffff8800a8444000 task.ti:
-ffff8800a8444000
-[  353.374192] RIP: 0010:[<ffffffff8195fef8>]  [<ffffffff8195fef8>]
-nf_tables_chain_destroy+0x58/0x60
-[  353.374275] RSP: 0018:ffff8800a8447a90  EFLAGS: 00010202
-[  353.374320] RAX: 0000000000000001 RBX: ffff880231d92c00 RCX:
-00000001802a0027
-[  353.374379] RDX: 00000001802a0028 RSI: ffffea0008c537c0 RDI:
-ffff8802314df4e0
-[  353.374437] RBP: ffff8800a8447ad8 R08: 00000000314df201 R09:
-00000001802a0027
-[  353.374494] R10: ffffffff81964a32 R11: ffff8802314df2a0 R12:
-ffffffff820c50a8
-[  353.374552] R13: ffffffff820c46c0 R14: ffff8800ad706700 R15:
-ffff8802314dfcc0
-[  353.374611] FS:  00007f96eacb6700(0000) GS:ffff88023bc00000(0000)
-knlGS:0000000000000000
-[  353.374676] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  353.374723] CR2: 00007f96eacc7002 CR3: 00000000a8418000 CR4:
-00000000000007f0
-[  353.374781] Stack:
-[  353.374800]  ffffffff81964c31 0000000000000000 ffffc90024fecb30
-ffffc90024fecb3c
-[  353.374872]  ffffc90024fecb7c ffff8800ad706700 0000000000000001
-0000000000000000
-[  353.374944]  ffff8800ad706300 ffff8800a8447b68 ffffffff81949118
-0000000000000000
-[  353.375018] Call Trace:
-[  353.375046]  [<ffffffff81964c31>] ? nf_tables_commit+0x381/0x540
-[  353.375101]  [<ffffffff81949118>] nfnetlink_rcv+0x3d8/0x4b0
-[  353.375150]  [<ffffffff81943fc5>] netlink_unicast+0x105/0x1a0
-[  353.375200]  [<ffffffff8194438e>] netlink_sendmsg+0x32e/0x790
-[  353.375253]  [<ffffffff818f398e>] sock_sendmsg+0x8e/0xc0
-[  353.375300]  [<ffffffff818f36b9>] ?
-move_addr_to_kernel.part.20+0x19/0x70
-[  353.375357]  [<ffffffff818f44f9>] ? move_addr_to_kernel+0x19/0x30
-[  353.375410]  [<ffffffff819016d2>] ? verify_iovec+0x42/0xd0
-[  353.375459]  [<ffffffff818f3e10>] ___sys_sendmsg+0x3f0/0x400
-[  353.375510]  [<ffffffff810615fa>] ? native_sched_clock+0x2a/0x90
-[  353.375563]  [<ffffffff81176697>] ? acct_account_cputime+0x17/0x20
-[  353.375616]  [<ffffffff8110dc78>] ? account_user_time+0x88/0xa0
-[  353.375667]  [<ffffffff818f4bbd>] __sys_sendmsg+0x3d/0x80
-[  353.375719]  [<ffffffff81b184f4>] ?
-int_check_syscall_exit_work+0x34/0x3d
-[  353.375776]  [<ffffffff818f4c0d>] SyS_sendmsg+0xd/0x20
-[  353.375823]  [<ffffffff81b1826d>] system_call_fastpath+0x16/0x1b
-[  353.375872] Code: 8b 78 10 e8 cb cd 7e ff 48 8b 7b f8 e8 f2 98 86 ff
-48 8d bb 78 ff ff ff e8 56 b8 89 ff 48 83 c4 08 5b 5d c3 0f 1f 80 00 00
-00 00 <0f> 0b 66 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 41 55 41 54 53
-[  353.376307] RIP  [<ffffffff8195fef8>]
-nf_tables_chain_destroy+0x58/0x60
-[  353.376368]  RSP <ffff8800a8447a90>
-[  353.388988] ---[ end trace e51c442af1fdea42 ]---
+This patch fixes it by checking __x86_64__ in both case of
+'ARCH=x86_64' and 'ARCH=x86'.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 ---
- net/netfilter/nf_tables_api.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ tools/perf/config/Makefile.arch | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/netfilter/nf_tables_api.c b/net/netfilter/nf_tables_api.c
-index 129a8da..761519b 100644
---- a/net/netfilter/nf_tables_api.c
-+++ b/net/netfilter/nf_tables_api.c
-@@ -712,7 +712,11 @@ static int nft_flush_table(struct nft_ctx *ctx)
- 	int err;
- 	struct nft_chain *chain, *nc;
- 	struct nft_set *set, *ns;
-+	int skipped_chains, flushed_chains;
+diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
+index 851cd01..303a096 100644
+--- a/tools/perf/config/Makefile.arch
++++ b/tools/perf/config/Makefile.arch
+@@ -15,6 +15,8 @@ endif
  
-+flush_chains:
-+	skipped_chains = 0;
-+	flushed_chains = 0;
- 	list_for_each_entry_safe(chain, nc, &ctx->table->chains, list) {
- 		ctx->chain = chain;
- 
-@@ -720,9 +724,20 @@ static int nft_flush_table(struct nft_ctx *ctx)
- 		if (err < 0)
- 			goto out;
- 
-+		if (chain->use > 0) {
-+			skipped_chains++;
-+			continue;
-+		}
-+
- 		err = nft_delchain(ctx);
- 		if (err < 0)
- 			goto out;
-+
-+		flushed_chains++;
-+	}
-+	if (skipped_chains > 0) {
-+		BUG_ON(flushed_chains == 0);
-+		goto flush_chains;
- 	}
- 
- 	list_for_each_entry_safe(set, ns, &ctx->table->sets, list) {
+ ifeq ($(ARCH),x86_64)
+   override ARCH := x86
++endif
++ifeq ($(ARCH),x86)
+   IS_X86_64 := 0
+   ifeq (, $(findstring m32,$(CFLAGS)))
+     IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
 -- 
-2.1.4
+1.8.4
 
