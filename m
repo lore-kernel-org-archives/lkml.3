@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344AbaL0Phf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 10:37:35 -0500
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:48155 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750748AbaL0Phb (ORCPT
+	id S1751321AbaL0Py2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 10:54:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:24714 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaL0Py1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 10:37:31 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjAVAK7RnlRbsnvc/2dsb2JhbABcgwaBKrQbBQEBAQEBAQUBd5cwBAKBCBcBAQEBAX2EOi8jgRo3iDABuTuPIyyGA4kQZB2EEwWXCJFQIoFFgio9MYEDgUABAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 1/1 linux-next] drm/gma500: replace 0 by NULL for pointer
-Date: Sat, 27 Dec 2014 16:37:24 +0100
-Message-Id: <1419694644-2241-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 2.1.0
+	Sat, 27 Dec 2014 10:54:27 -0500
+Message-ID: <549ED5D7.8070007@oracle.com>
+Date: Sat, 27 Dec 2014 10:52:55 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <dave@stgolabs.net>, Li Bin <huawei.libin@huawei.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        rui.xiang@huawei.com, wengmeiling.weng@huawei.com
+Subject: Re: sched: spinlock recursion in sched_rr_get_interval
+References: <53B98709.3090603@oracle.com>	 <20140707083016.GA19379@twins.programming.kicks-ass.net>	 <53BAA6DF.5060409@oracle.com>	 <20140707200550.GA6758@twins.programming.kicks-ass.net>	 <549D03F6.9090607@huawei.com> <1419673927.8667.2.camel@stgolabs.net>
+In-Reply-To: <1419673927.8667.2.camel@stgolabs.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix sparse warning: 
-drivers/gpu/drm/gma500/psb_drv.c:
-328:56: warning: Using plain integer as NULL pointer
+On 12/27/2014 04:52 AM, Davidlohr Bueso wrote:
+>> Hello，
+>> > Does ACCESS_ONCE() can help this issue? I have no evidence that its lack is
+>> > responsible for the issue, but I think here need it indeed. Is that right?
+>> > 
+>> > SPIN_BUG_ON(ACCESS_ONCE(lock->owner) == current, "recursion");
+> Hmm I guess on a contended spinlock, there's a chance that lock->owner
+> can change, if the contended lock is acquired, right between the 'cond'
+> and spin_debug(), which would explain the bogus ->owner related
+> messages. Of course the same applies to ->owner_cpu. Your ACCESS_ONCE,
+> however, doesn't really change anything since we still read ->owner
+> again in spin_debug; How about something like this (untested)?
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/gpu/drm/gma500/psb_drv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+There's a chance that lock->owner would change, but how would you explain
+it changing to 'current'?
 
-diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 92e7e57..9b49c155 100644
---- a/drivers/gpu/drm/gma500/psb_drv.c
-+++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -325,7 +325,7 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
- 	if (ret)
- 		goto out_err;
- 
--	dev_priv->mmu = psb_mmu_driver_init(dev, 1, 0, 0);
-+	dev_priv->mmu = psb_mmu_driver_init(dev, 1, 0, NULL);
- 	if (!dev_priv->mmu)
- 		goto out_err;
- 
--- 
-2.1.0
+That is, what race condition specifically creates the
+'lock->owner == current' situation in the debug check?
 
+Thanks,
+Sasha
