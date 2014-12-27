@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaL0HDW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 02:03:22 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:43635 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaL0HDU (ORCPT
+	id S1751371AbaL0HRe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 02:17:34 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:55910 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbaL0HRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 02:03:20 -0500
+	Sat, 27 Dec 2014 02:17:30 -0500
 From: SeongJae Park <sj38.park@gmail.com>
 X-Google-Original-From: SeongJae Park <sjpark@hxeon>
-Date: Sat, 27 Dec 2014 16:04:04 +0900 (KST)
+Date: Sat, 27 Dec 2014 16:18:14 +0900 (KST)
 To: "Stefan I. Strogin" <s.strogin@partner.samsung.com>
 cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
         Pintu Kumar <pintu.k@samsung.com>,
         Weijie Yang <weijie.yang@samsung.com>,
         Laura Abbott <lauraa@codeaurora.org>,
         SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
         Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
         Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Subject: Re: [PATCH 1/3] stacktrace: add seq_print_stack_trace()
-In-Reply-To: <00bfb81bf8749f3be738d20dd263b81490693309.1419602920.git.s.strogin@partner.samsung.com>
-Message-ID: <alpine.DEB.2.10.1412271602580.1819@hxeon>
-References: <cover.1419602920.git.s.strogin@partner.samsung.com> <00bfb81bf8749f3be738d20dd263b81490693309.1419602920.git.s.strogin@partner.samsung.com>
+Subject: Re: [PATCH 3/3] cma: add functions to get region pages counters
+In-Reply-To: <dfddb08aba9a05e6e7b43e9861ab09b7ac1c89cd.1419602920.git.s.strogin@partner.samsung.com>
+Message-ID: <alpine.DEB.2.10.1412271616450.1819@hxeon>
+References: <cover.1419602920.git.s.strogin@partner.samsung.com> <dfddb08aba9a05e6e7b43e9861ab09b7ac1c89cd.1419602920.git.s.strogin@partner.samsung.com>
 User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
@@ -35,78 +35,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+Hello,
 
 On Fri, 26 Dec 2014, Stefan I. Strogin wrote:
 
-> Add a function seq_print_stack_trace() which prints stacktraces to seq_files.
+> From: Dmitry Safonov <d.safonov@partner.samsung.com>
 >
-> Signed-off-by: Stefan I. Strogin <s.strogin@partner.samsung.com>
-
-Reviewed-by: SeongJae Park <sj38.park@gmail.com>
-
+> Here are two functions that provide interface to compute/get used size
+> and size of biggest free chunk in cma region.
+> Added that information in cmainfo.
+>
+> Signed-off-by: Dmitry Safonov <d.safonov@partner.samsung.com>
 > ---
-> include/linux/stacktrace.h |  4 ++++
-> kernel/stacktrace.c        | 17 +++++++++++++++++
-> 2 files changed, 21 insertions(+)
+> include/linux/cma.h |  2 ++
+> mm/cma.c            | 34 ++++++++++++++++++++++++++++++++++
+> 2 files changed, 36 insertions(+)
 >
-> diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
-> index 669045a..6d62484 100644
-> --- a/include/linux/stacktrace.h
-> +++ b/include/linux/stacktrace.h
-> @@ -2,6 +2,7 @@
-> #define __LINUX_STACKTRACE_H
+> diff --git a/include/linux/cma.h b/include/linux/cma.h
+> index 9384ba6..855e6f2 100644
+> --- a/include/linux/cma.h
+> +++ b/include/linux/cma.h
+> @@ -18,6 +18,8 @@ struct cma;
+> extern unsigned long totalcma_pages;
+> extern phys_addr_t cma_get_base(struct cma *cma);
+> extern unsigned long cma_get_size(struct cma *cma);
+> +extern unsigned long cma_get_used(struct cma *cma);
+> +extern unsigned long cma_get_maxchunk(struct cma *cma);
 >
-> #include <linux/types.h>
-> +#include <linux/seq_file.h>
->
-> struct task_struct;
-> struct pt_regs;
-> @@ -24,6 +25,8 @@ extern void save_stack_trace_tsk(struct task_struct *tsk,
-> extern void print_stack_trace(struct stack_trace *trace, int spaces);
-> extern int snprint_stack_trace(char *buf, size_t size,
-> 			struct stack_trace *trace, int spaces);
-> +extern void seq_print_stack_trace(struct seq_file *m,
-> +			struct stack_trace *trace, int spaces);
->
-> #ifdef CONFIG_USER_STACKTRACE_SUPPORT
-> extern void save_stack_trace_user(struct stack_trace *trace);
-> @@ -37,6 +40,7 @@ extern void save_stack_trace_user(struct stack_trace *trace);
-> # define save_stack_trace_user(trace)			do { } while (0)
-> # define print_stack_trace(trace, spaces)		do { } while (0)
-> # define snprint_stack_trace(buf, size, trace, spaces)	do { } while (0)
-> +# define seq_print_stack_trace(m, trace, spaces)	do { } while (0)
-> #endif
->
-> #endif
-> diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
-> index b6e4c16..66ef6f4 100644
-> --- a/kernel/stacktrace.c
-> +++ b/kernel/stacktrace.c
-> @@ -57,6 +57,23 @@ int snprint_stack_trace(char *buf, size_t size,
+> extern int __init cma_declare_contiguous(phys_addr_t base,
+> 			phys_addr_t size, phys_addr_t limit,
+> diff --git a/mm/cma.c b/mm/cma.c
+> index ffaea26..5e560ed 100644
+> --- a/mm/cma.c
+> +++ b/mm/cma.c
+> @@ -78,6 +78,36 @@ unsigned long cma_get_size(struct cma *cma)
+> 	return cma->count << PAGE_SHIFT;
 > }
-> EXPORT_SYMBOL_GPL(snprint_stack_trace);
 >
-> +void seq_print_stack_trace(struct seq_file *m, struct stack_trace *trace,
-> +			int spaces)
+> +unsigned long cma_get_used(struct cma *cma)
 > +{
-> +	int i;
+> +	unsigned long ret = 0;
 > +
-> +	if (WARN_ON(!trace->entries))
-> +		return;
+> +	mutex_lock(&cma->lock);
+> +	/* pages counter is smaller than sizeof(int) */
+> +	ret = bitmap_weight(cma->bitmap, (int)cma->count);
+> +	mutex_unlock(&cma->lock);
 > +
-> +	for (i = 0; i < trace->nr_entries; i++) {
-> +		unsigned long ip = trace->entries[i];
-> +
-> +		seq_printf(m, "%*c[<%p>] %pS\n", 1 + spaces, ' ',
-> +				(void *) ip, (void *) ip);
-> +	}
+> +	return ret << (PAGE_SHIFT + cma->order_per_bit);
 > +}
-> +EXPORT_SYMBOL_GPL(seq_print_stack_trace);
 > +
-> /*
->  * Architectures that do not implement save_stack_trace_tsk or
->  * save_stack_trace_regs get this weak alias and a once-per-bootup warning
+> +unsigned long cma_get_maxchunk(struct cma *cma)
+> +{
+> +	unsigned long maxchunk = 0;
+> +	unsigned long start, end = 0;
+> +
+> +	mutex_lock(&cma->lock);
+> +	for (;;) {
+> +		start = find_next_zero_bit(cma->bitmap, cma->count, end);
+> +		if (start >= cma->count)
+> +			break;
+> +		end = find_next_bit(cma->bitmap, cma->count, start);
+> +		maxchunk = max(end - start, maxchunk);
+> +	}
+> +	mutex_unlock(&cma->lock);
+> +
+> +	return maxchunk << (PAGE_SHIFT + cma->order_per_bit);
+> +}
+> +
+> static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
+> {
+> 	if (align_order <= cma->order_per_bit)
+> @@ -591,6 +621,10 @@ static int s_show(struct seq_file *m, void *p)
+> 	struct cma_buffer *cmabuf;
+> 	struct stack_trace trace;
+>
+> +	seq_printf(m, "CMARegion stat: %8lu kB total, %8lu kB used, %8lu kB max contiguous chunk\n\n",
+
+How about 'CMA Region' rather than 'CMARegion'?
+
+> +		   cma_get_size(cma) >> 10,
+> +		   cma_get_used(cma) >> 10,
+> +		   cma_get_maxchunk(cma) >> 10);
+> 	mutex_lock(&cma->list_lock);
+>
+> 	list_for_each_entry(cmabuf, &cma->buffers_list, list) {
 > -- 
 > 2.1.0
 >
