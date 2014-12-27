@@ -1,167 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaL0NkU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 08:40:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55266 "EHLO mx1.redhat.com"
+	id S1751399AbaL0NsF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 08:48:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46248 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748AbaL0NkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 08:40:19 -0500
-Message-ID: <549EB69E.6070708@redhat.com>
-Date: Sat, 27 Dec 2014 14:39:42 +0100
-From: Hans de Goede <hdegoede@redhat.com>
+	id S1750748AbaL0NsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Dec 2014 08:48:01 -0500
+Message-ID: <549EB88D.20403@suse.com>
+Date: Sat, 27 Dec 2014 14:47:57 +0100
+From: Juergen Gross <jgross@suse.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jeremiah Mahler <jmmahler@gmail.com>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Darren Hart <dvhart@infradead.org>
-Subject: Re: [PATCH] nouveau: fix ambiguous backlight controls
-References: <1419629187-13916-1-git-send-email-jmmahler@gmail.com> <CAKb7Uvi2jXTeD9+pUg6YiQrwK1HaVt2aoC-to1Xw1htvmJao-w@mail.gmail.com> <20141226235151.GA18697@hudson.localdomain>
-In-Reply-To: <20141226235151.GA18697@hudson.localdomain>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?KOI8-R?Q?=F0=CC=C1=CD=C5=CE_=F0=C5=D4=D2=CF=D7?= 
+	<plamen@petrovi.no-ip.info>,
+        linux-kernel@vger.kernel.org
+CC: "'Thomas Gleixner'" <tglx@linutronix.de>
+Subject: Re: [BISECTED] 3.19-rc1 regression - kernel does not load in GRUB
+ 0.97 (GRUB Legacy)
+References: <000001d01f10$85f506f0$91df14d0$@petrovi.no-ip.info>
+In-Reply-To: <000001d01f10$85f506f0$91df14d0$@petrovi.no-ip.info>
+Content-Type: text/plain; charset=koi8-r; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 27-12-14 00:51, Jeremiah Mahler wrote:
-> Ilia,
+On 12/24/2014 01:28 AM, Пламен Петров wrote:
+> Hello!
 >
-> On Fri, Dec 26, 2014 at 04:39:08PM -0500, Ilia Mirkin wrote:
->> On Fri, Dec 26, 2014 at 4:26 PM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
->>> If a display supports backlight control using the nouveau driver, and
->>> also supports standard ACPI backlight control, there will be two sets of
->>> controls.
->>>
->>> /sys/class/backlight/acpi_video0
->>> /sys/class/backlight/nv_backlight
->>>
->>> This creates ambiguity because these controls can be out of sync with
->>> each other.  One could be at 100% while the other is at 0% and the
->>> actual display brightness depends on which one was used last.  This also
->>> creates anomalies in Powertop which will show two values for brightness
->>> with potentially different values.
->>>
->>> Fix this ambiguity by having the nouveau driver only enable its
->>> backlight controls if the standard ACPI controls are not present.
->>>
->>> Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
->>> ---
->>>   drivers/gpu/drm/nouveau/nouveau_backlight.c | 5 +++++
->>>   1 file changed, 5 insertions(+)
->>>
->>> diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
->>> index e566c5b..3a52bd4 100644
->>> --- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
->>> +++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
->>> @@ -221,6 +221,11 @@ nouveau_backlight_init(struct drm_device *dev)
->>>          struct nvif_device *device = &drm->device;
->>>          struct drm_connector *connector;
->>>
->>> +       if (acpi_video_backlight_support()) {
->>
->> None of the other drivers have this. Is nouveau somehow different
->> than, say, radeon in this respect?
->>
->> Unfortunately the backlight situation is pretty fubar'd... sometimes
->> the acpi controls don't work, sometimes the card controls don't work,
->> sometimes they both work but in different ways (and then everyone's
->> favourite -- neither works, and there's some third platform thing).
->> I'm pretty sure this code existed before, but got removed. See commit
->> bee564430feec1175ee64bcfd4913cacc519f817 and the previous commit
->> 5bead799d3f8 before that. The ping-pong is probably not the right way
->> to go.
->>
+> I use GRUB Legacy bootloader (version 0.97) on a couple machines, and where
+> 3.18.x loads fine, 3.19-rc1 does not.
 >
-> I was not aware of that change. But you are right, it took out what I
-> was trying to put back in.
+> While compiling I used the attached .config file accompanied by "make
+> olddefconfig"
+
+Can you tell me something about the hardware (processor model)?
+You are not booting the system under VMWare by any chance?
+
+Could you try the earlyprintk kernel option (serial or vga)?
+
+Can you boot with kernel option "nopat"?
+
+
+Juergen
+
 >
-> Thanks for the helpful information.  I will have to rethink this fix.
+> The bisection I ran points to:
+> bd809af16e3ab1f8d55b3e2928c47c67e2a865d2 is the first bad commit
+> commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2
+> Author: Juergen Gross <jgross@suse.com>
+> Date:   Mon Nov 3 14:02:03 2014 +0100
+>
+>      x86: Enable PAT to use cache mode translation tables
+>
+>      Update the translation tables from cache mode to pgprot values
+>      according to the PAT settings. This enables changing the cache
+>      attributes of a PAT index in just one place without having to change
+>      at the users side.
+>
+>      With this change it is possible to use the same kernel with different
+>      PAT configurations, e.g. supporting Xen.
+>
+> Here is the output of git bisect log
+>
+> git bisect start
+> # bad: [97bf6af1f928216fd6c5a66e8a57bfa95a659672] Linux 3.19-rc1
+> git bisect bad 97bf6af1f928216fd6c5a66e8a57bfa95a659672
+> # good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
+> git bisect good b2776bf7149bddd1f4161f14f79520f17fc1d71d
+> # bad: [70e71ca0af244f48a5dcf56dc435243792e3a495] Merge
+> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+> git bisect bad 70e71ca0af244f48a5dcf56dc435243792e3a495
+> # bad: [e28870f9b3e92cd3570925089c6bb789c2603bc4] Merge tag
+> 'backlight-for-linus-3.19' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight
+> git bisect bad e28870f9b3e92cd3570925089c6bb789c2603bc4
+> # good: [6da314122ddc11936c6f054753bbb956a499d020] Merge tag 'dt-for-linus'
+> of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+> git bisect good 6da314122ddc11936c6f054753bbb956a499d020
+> # good: [a53b831549141aa060a8b54b76e3a42870d74cc0] exit: pidns: fix/update
+> the comments in zap_pid_ns_processes()
+> git bisect good a53b831549141aa060a8b54b76e3a42870d74cc0
+> # bad: [cbfe0de303a55ed96d8831c2d5f56f8131cd6612] Merge branch 'for-linus'
+> of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs
+> git bisect bad cbfe0de303a55ed96d8831c2d5f56f8131cd6612
+> # bad: [a6b849578ef3e0b131b1ea4063473a4f935a65e9] Merge branch 'for-linus'
+> of git://git.samba.org/sfrench/cifs-2.6
+> git bisect bad a6b849578ef3e0b131b1ea4063473a4f935a65e9
+> # bad: [c9f861c77269bc9950c16c6404a9476062241671] Merge branch
+> 'x86-ras-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect bad c9f861c77269bc9950c16c6404a9476062241671
+> # good: [773fed910d41e443e495a6bfa9ab1c2b7b13e012] Merge branches
+> 'x86-platform-for-linus' and 'x86-uv-for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect good 773fed910d41e443e495a6bfa9ab1c2b7b13e012
+> # good: [f439c429c320981943f8b64b2a4049d946cb492b] x86: Support PAT bit in
+> pagetable dump for lower levels
+> git bisect good f439c429c320981943f8b64b2a4049d946cb492b
+> # good: [e3480271f59253cb60d030aa5e615bf00b731fea] x86, mce, severity:
+> Extend the the mce_severity mechanism to handle UCNA/DEFERRED error
+> git bisect good e3480271f59253cb60d030aa5e615bf00b731fea
+> # bad: [0dbcae884779fdf7e2239a97ac7488877f0693d9] x86: mm: Move PAT only
+> functions to mm/pat.c
+> git bisect bad 0dbcae884779fdf7e2239a97ac7488877f0693d9
+> # bad: [bd809af16e3ab1f8d55b3e2928c47c67e2a865d2] x86: Enable PAT to use
+> cache mode translation tables
+> git bisect bad bd809af16e3ab1f8d55b3e2928c47c67e2a865d2
+> # good: [f5b2831d654167d77da8afbef4d2584897b12d0c] x86: Respect PAT bit when
+> copying pte values between large and normal pages
+> git bisect good f5b2831d654167d77da8afbef4d2584897b12d0c
+> # first bad commit: [bd809af16e3ab1f8d55b3e2928c47c67e2a865d2] x86: Enable
+> PAT to use cache mode translation tables
+>
+> Reverting the above commit fixes the problem for me, and 3.19-rc1 loads
+> fine.
+>
+> Any additional info available on request.
+>
+> Please, CC me - I am not subscribed to the list.
+> ---------------------------------
+> Plamen Petrov
+>
 
-So first of all NAK to the original fix, but I think that much was
-already clear.
-
-Let me explain how this currently works, most laptops have up to 3
-backlight control interfaces (all talking to the same single backlight):
-
-acpi_video: a standardized acpi interface for backlight control, broken on most
-win8 ready laptops.
-
-vendor: e.g. asus_wmi, dell_laptop, etc. typically not much better on
-win8 ready laptops.
-
-native: e.g. intel_backlight, nv_backlight, usually your best bet on win8
-laptops, but not so much on older models.
-
-Before windows8 only 2 of these 3 get registered / exported to userspace,
-either you've:
-
-acpi_video + native:
-
-or:
-
-vendor + native:
-
-Since most vendor drivers contain:
-
-if (acpi_video_backlight_support())
-	return 0;
-
-And userspace backlight control code knows the prefer the firmware interfaces
-over the native one and to simply ignore the native interface, unless there
-is no firmware interface, so having 2 interfaces present in sysfs is not
-really a problem as userspace knows how to deal with this.
-
-So along came Windows 8, breaking most acpi_video implementations. This got
-fixed by a new module parameter to the acpi_video driver called use_native_backlight,
-which now a days defaults to 1. When this parameter is true *and* the BIOS is
-a win8 ready bios, then acpi_video will not register a backlight interface itself,
-and acpi_video_backlight_support() will still return 1, causing the vendor interfaces
-to not register. Leaving only the native interface.
-
-Your proposed patch will break things on win8 laptops using nv_backlight, since in the
-use_native_backlight case it will cause nv_backlight to not register resulting in
-not having any backlight interface at all.
-
-I will happily admit that the combination of acpi_backlight=[video|vendor]
-+ video.use_native_backlight=[0|1] which has evolved over time is not the prettiest
-solution. IMHO if you want to clean things up, and ensure only one interface gets
-registered at a time, the solution would be to change acpi_backlight to also take
-a native option, so that on the kernel commandline we end up with only:
-acpi_backlight=[video|vendor|native] and move the use_native_backlight handling
-from drivers/acpi/video.c to drivers/acpi/video_detect.c .
-
-Code wise this would mean replacing acpi_video_backlight_support() with a function
-called acpi_video_get_backlight_type which returns an enum which can be:
-
-acpi_video_backlight_acpi_video,
-acpi_video_backlight_vendor,
-acpi_video_backlight_native,
-
-And fix all callers to use that.
-
-But, things are not that easy because there also is acpi_video_dmi_promote_vendor()
-which is used by vendor drivers (mostly found under drivers/platform/x86) to tell
-video_detect.c that the vendor driver knows that on this particular model laptop
-it is better to use the vendor driver then acpi_video, and in some cases
-this is used in combination with not actually registering the vendor backlight interface
-to get the same end result as the new "native" option would give, but then on laptops
-which need this despite not being win8 ready (and thus not automatically defaulting
-to native).
-
-So you would need to replace this to with a acpi_video_set_dmi_backlight_type, which
-should change the return of acpi_video_get_backlight_type, but only if not overridden
-from the kernel commandline, as the commandline takes presedence over the dmi
-quirks which are tracked in the various vendor drivers.
-
-A cleanup to all this would certainly be welcome, but as outlined above it is not
-trivial. I do not have time to actively work on this myself, but I will happily
-review any patches you come up with for this.
-
-Regards,
-
-Hans
