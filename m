@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaL0HAk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 02:00:40 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47578 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826AbaL0HAi (ORCPT
+	id S1751538AbaL0HDW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 02:03:22 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43635 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaL0HDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 02:00:38 -0500
-Date: Sat, 27 Dec 2014 12:30:27 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: David Decotigny <ddecotig@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jeremiah Mahler <jmmahler@gmail.com>, Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: Re: [PATCH v2] staging: comedi: dmm32at: fix style issues
-Message-ID: <20141227070027.GA4780@sudip-PC>
-References: <1419539308-19059-1-git-send-email-ddecotig@gmail.com>
+	Sat, 27 Dec 2014 02:03:20 -0500
+From: SeongJae Park <sj38.park@gmail.com>
+X-Google-Original-From: SeongJae Park <sjpark@hxeon>
+Date: Sat, 27 Dec 2014 16:04:04 +0900 (KST)
+To: "Stefan I. Strogin" <s.strogin@partner.samsung.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
+        Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Subject: Re: [PATCH 1/3] stacktrace: add seq_print_stack_trace()
+In-Reply-To: <00bfb81bf8749f3be738d20dd263b81490693309.1419602920.git.s.strogin@partner.samsung.com>
+Message-ID: <alpine.DEB.2.10.1412271602580.1819@hxeon>
+References: <cover.1419602920.git.s.strogin@partner.samsung.com> <00bfb81bf8749f3be738d20dd263b81490693309.1419602920.git.s.strogin@partner.samsung.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419539308-19059-1-git-send-email-ddecotig@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 25, 2014 at 12:28:28PM -0800, David Decotigny wrote:
-> Before:
->       1 ERROR: code indent should use tabs where possible
->       1 WARNING: please, no spaces at the start of a line
-> 
-> After:
->   (none)
-> 
-> Signed-off-by: David Decotigny <ddecotig@gmail.com>
+
+
+On Fri, 26 Dec 2014, Stefan I. Strogin wrote:
+
+> Add a function seq_print_stack_trace() which prints stacktraces to seq_files.
+>
+> Signed-off-by: Stefan I. Strogin <s.strogin@partner.samsung.com>
+
+Reviewed-by: SeongJae Park <sj38.park@gmail.com>
+
 > ---
->  drivers/staging/comedi/drivers/dmm32at.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
-> index 6df298a..31919b8 100644
-> --- a/drivers/staging/comedi/drivers/dmm32at.c
-> +++ b/drivers/staging/comedi/drivers/dmm32at.c
-> @@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
->  	/* enable the ai conversion interrupt and the clock to start scans */
->  	outb(DMM32AT_INTCLK_ADINT |
->  	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
-> -             dev->iobase + DMM32AT_INTCLK_REG);
-> +	     dev->iobase + DMM32AT_INTCLK_REG);
-
-another suggestion:
-if you do like the following patch (use 2 tabs) then you do not need to give spaces to indent the code.
-
-diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
-index 6df298a..cedf8ed 100644
---- a/drivers/staging/comedi/drivers/dmm32at.c
-+++ b/drivers/staging/comedi/drivers/dmm32at.c
-@@ -364,8 +364,8 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
-
-	/* enable the ai conversion interrupt and the clock to start scans */
-	 outb(DMM32AT_INTCLK_ADINT |
--            DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
--             dev->iobase + DMM32AT_INTCLK_REG);
-+		DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
-+		dev->iobase + DMM32AT_INTCLK_REG);
- }
-
- static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
-
-	
-thanks
-sudip
-
->  }
->  
->  static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+> include/linux/stacktrace.h |  4 ++++
+> kernel/stacktrace.c        | 17 +++++++++++++++++
+> 2 files changed, 21 insertions(+)
+>
+> diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
+> index 669045a..6d62484 100644
+> --- a/include/linux/stacktrace.h
+> +++ b/include/linux/stacktrace.h
+> @@ -2,6 +2,7 @@
+> #define __LINUX_STACKTRACE_H
+>
+> #include <linux/types.h>
+> +#include <linux/seq_file.h>
+>
+> struct task_struct;
+> struct pt_regs;
+> @@ -24,6 +25,8 @@ extern void save_stack_trace_tsk(struct task_struct *tsk,
+> extern void print_stack_trace(struct stack_trace *trace, int spaces);
+> extern int snprint_stack_trace(char *buf, size_t size,
+> 			struct stack_trace *trace, int spaces);
+> +extern void seq_print_stack_trace(struct seq_file *m,
+> +			struct stack_trace *trace, int spaces);
+>
+> #ifdef CONFIG_USER_STACKTRACE_SUPPORT
+> extern void save_stack_trace_user(struct stack_trace *trace);
+> @@ -37,6 +40,7 @@ extern void save_stack_trace_user(struct stack_trace *trace);
+> # define save_stack_trace_user(trace)			do { } while (0)
+> # define print_stack_trace(trace, spaces)		do { } while (0)
+> # define snprint_stack_trace(buf, size, trace, spaces)	do { } while (0)
+> +# define seq_print_stack_trace(m, trace, spaces)	do { } while (0)
+> #endif
+>
+> #endif
+> diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
+> index b6e4c16..66ef6f4 100644
+> --- a/kernel/stacktrace.c
+> +++ b/kernel/stacktrace.c
+> @@ -57,6 +57,23 @@ int snprint_stack_trace(char *buf, size_t size,
+> }
+> EXPORT_SYMBOL_GPL(snprint_stack_trace);
+>
+> +void seq_print_stack_trace(struct seq_file *m, struct stack_trace *trace,
+> +			int spaces)
+> +{
+> +	int i;
+> +
+> +	if (WARN_ON(!trace->entries))
+> +		return;
+> +
+> +	for (i = 0; i < trace->nr_entries; i++) {
+> +		unsigned long ip = trace->entries[i];
+> +
+> +		seq_printf(m, "%*c[<%p>] %pS\n", 1 + spaces, ' ',
+> +				(void *) ip, (void *) ip);
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(seq_print_stack_trace);
+> +
+> /*
+>  * Architectures that do not implement save_stack_trace_tsk or
+>  * save_stack_trace_regs get this weak alias and a once-per-bootup warning
 > -- 
-> 2.2.0.rc0.207.ga3a616c
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 2.1.0
+>
+>
