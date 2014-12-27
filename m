@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaL0S3d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 13:29:33 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:60259 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079AbaL0S3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 13:29:32 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pinctrl: rockchip: Avoid losing interrupts when supporting both edges
-Date: Sat, 27 Dec 2014 19:29:23 +0100
-Message-ID: <6699676.mHhQhT5KAT@phil>
-User-Agent: KMail/4.14.2 (Linux/3.16-3-amd64; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <1419274049-5069-1-git-send-email-dianders@chromium.org>
-References: <1419274049-5069-1-git-send-email-dianders@chromium.org>
+	id S1751616AbaL0SeU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 13:34:20 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:55910 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaL0SeS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Dec 2014 13:34:18 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1419679857-16626-1-git-send-email-koshygp@gmail.com>
+References: <1419679857-16626-1-git-send-email-koshygp@gmail.com>
+Date: Sat, 27 Dec 2014 13:34:17 -0500
+Message-ID: <CAHQdGtS4iq2d-g-EKu9k_-Kv5pwW-rHkUxQFSCCV5iiB=52vug@mail.gmail.com>
+Subject: Re: [PATCH] NFS: nfs4_fs.h: Fix for checkpatch warnings
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Koshy George <koshygp@gmail.com>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 22. Dezember 2014, 10:47:29 schrieb Doug Anderson:
-> I was seeing cases where I was losing interrupts when inserting and
-> removing SD cards.  Sometimes the card would get "stuck" in the
-> inserted state.
-> 
-> I believe that the problem was related to the code to handle the case
-> where we needed both rising and falling edges.  This code would
-> disable the interrupt as the polarity was switched.  If an interrupt
-> came at the wrong time it could be lost.
-> 
-> We'll match what the gpio-dwapb.c driver does upstream and change the
-> interrupt polarity without disabling things.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Sat, Dec 27, 2014 at 6:30 AM, Koshy George <koshygp@gmail.com> wrote:
+> This patch fix checkpatch warning for nfs4_fs.h
+>
+> fs/nfs/nfs4_fs.h:134: ERROR: "foo *     bar" should be "foo *bar"
+> fs/nfs/nfs4_fs.h:416: ERROR: "foo * bar" should be "foo *bar"
+>
+> Signed-off-by: Koshy George <koshygp@gmail.com>
+> [Being first patch, need some assistance]
+> ---
+>  fs/nfs/nfs4_fs.h | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
+> index a081787..ae336c7 100644
+> --- a/fs/nfs/nfs4_fs.h
+> +++ b/fs/nfs/nfs4_fs.h
+> @@ -131,7 +131,7 @@ enum {
+>
+>  struct nfs4_lock_state {
+>         struct list_head        ls_locks;       /* Other lock stateids */
+> -       struct nfs4_state *     ls_state;       /* Pointer to open state */
+> +       struct nfs4_state       *ls_state;      /* Pointer to open state */
+>  #define NFS_LOCK_INITIALIZED 0
+>  #define NFS_LOCK_LOST        1
+>         unsigned long           ls_flags;
+> @@ -413,7 +413,7 @@ static inline void nfs4_schedule_session_recovery(struct nfs4_session *session,
+>  extern struct nfs4_state_owner *nfs4_get_state_owner(struct nfs_server *, struct rpc_cred *, gfp_t);
+>  extern void nfs4_put_state_owner(struct nfs4_state_owner *);
+>  extern void nfs4_purge_state_owners(struct nfs_server *);
+> -extern struct nfs4_state * nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
+> +extern struct nfs4_state *nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
+>  extern void nfs4_put_open_state(struct nfs4_state *);
+>  extern void nfs4_close_state(struct nfs4_state *, fmode_t);
+>  extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
+> --
+> 1.9.1
 
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-on a rk3188 board with the edge triggered power-button
-Tested-by: Heiko Stuebner <heiko@sntech.de>
+Sorry, but I'm not applying this kind of patch.
 
-
-Heiko
+-- 
+Trond Myklebust
+Linux NFS client maintainer, PrimaryData
+trond.myklebust@primarydata.com
