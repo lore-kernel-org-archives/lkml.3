@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362AbaL0PB7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 10:01:59 -0500
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:9798 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751079AbaL0PB5 (ORCPT
+	id S1751460AbaL0PCO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 10:02:14 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:41213 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaL0PCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 10:01:57 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjAVAITJnlRbsnvc/2dsb2JhbABbgwaBKrQbBQEBAQEBAQUBd5cwBAKBCBcBAQEBAX2EOi8jgRo3iDABuhWPS4YDiXQdhBMFlwiJZ4dpIoFFAYIpPTGCQwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH 1/1 linux-next] ext3: destroy sbi mutexes in put_super
-Date: Sat, 27 Dec 2014 16:01:22 +0100
-Message-Id: <1419692482-17658-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 2.1.0
+	Sat, 27 Dec 2014 10:02:11 -0500
+Date: Sat, 27 Dec 2014 07:02:07 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Dongsu Park <dongsu.park@profitbricks.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>,
+        Ming Lin <mlin@minggr.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ming Lei <ming.lei@canonical.com>, Neil Brown <neilb@suse.de>,
+        Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+        dm-devel@redhat.com, drbd-dev@lists.linbit.com,
+        Jiri Kosina <jkosina@suse.cz>, Geoff Levand <geoff@infradead.org>,
+        Jim Paris <jim@jtan.com>, Joshua Morris <josh.h.morris@us.ibm.com>,
+        Philip Kelleher <pjk1939@linux.vnet.ibm.com>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [RFC PATCH 01/17] block: make generic_make_request handle
+ arbitrarily sized bios
+Message-ID: <20141227150207.GC1094@infradead.org>
+References: <cover.1419241597.git.dongsu.park@profitbricks.com>
+ <d26a9a0fc9a7d1529c115785ee5935d5750782bd.1419241597.git.dongsu.park@profitbricks.com>
+ <20141223101614.GA13138@infradead.org>
+ <20141223114140.GB15080@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141223114140.GB15080@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
-This is untested.
+On Tue, Dec 23, 2014 at 12:41:40PM +0100, Dongsu Park wrote:
+> You mean, checking rq->cmd_type == REQ_TYPE_BLOCK_PC, right?
+> 
+> I'm wondering about how to check that in blk_queue_split().
+> At the moment when blk_queue_split() is called, it's even before a request
+> is mapped e.g. in blk_sq_make_request().
+> Unlike scsi drivers where it's easy to get cmd->rq, blk_queue_split()
+> doesn't seem to be able to get a request by blk_get_request().
+> 
+> Or am I missing something?
 
- fs/ext3/super.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index 9b4e7d7..d4dbf3c 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -466,6 +466,8 @@ static void ext3_put_super (struct super_block * sb)
- 	}
- 	sb->s_fs_info = NULL;
- 	kfree(sbi->s_blockgroup_lock);
-+	mutex_destroy(&sbi->s_orphan_lock);
-+	mutex_destroy(&sbi->s_resize_lock);
- 	kfree(sbi);
- }
- 
--- 
-2.1.0
-
+You're probably missing what I didn't notice either: BLOCK_PC requests
+are never sent through ->make_request.  Consider my comment withdrawn
+and sorry for the confusion.
