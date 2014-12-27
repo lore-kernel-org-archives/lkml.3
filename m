@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551AbaL0FG5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 00:06:57 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:62635 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715AbaL0FGx (ORCPT
+	id S1751749AbaL0FHg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 00:07:36 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:48826 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaL0FGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 00:06:53 -0500
+	Sat, 27 Dec 2014 00:06:49 -0500
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 4/5] perf diff: Fix output ordering to honor next column
-Date: Sat, 27 Dec 2014 14:06:32 +0900
-Message-Id: <1419656793-32756-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 3/5] perf diff: Print diff result more precisely
+Date: Sat, 27 Dec 2014 14:06:31 +0900
+Message-Id: <1419656793-32756-3-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1419656793-32756-1-git-send-email-namhyung@kernel.org>
 References: <1419656793-32756-1-git-send-email-namhyung@kernel.org>
@@ -21,187 +21,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When perf diff prints output, it sorts the entries using baseline field
-by default, but entries which don't have baseline are not sorted
-properly.  This patch makes it sorted by values of next column.
+Current perf diff result is somewhat confusing since it sometimes hide
+small result and sometimes there's no result.  So do not hide small
+result (less than 0.01%) and print "N/A" if baseline is not
+recorded (for ratio and wdiff only).  Blank means the baseline is
+available but its pairs are not.
 
 Before:
 
-  # Baseline/0  Delta/1  Delta/2  Shared Object      Symbol
-  # ..........  .......  .......  .................  ..........................................
+  # Baseline    Delta  Shared Object      Symbol
+  # ........  .......  .................  .........................
   #
-        32.75%   +0.28%   -0.83%  libc-2.20.so       [.] malloc
-        31.50%   -0.74%   -0.23%  libc-2.20.so       [.] _int_free
-        22.98%   +0.51%   +0.52%  libc-2.20.so       [.] _int_malloc
-         5.70%   +0.28%   +0.30%  libc-2.20.so       [.] free
-         4.38%   -0.21%   +0.25%  a.out              [.] main
-         1.32%   -0.15%   +0.05%  a.out              [.] free@plt
-         1.31%   +0.03%   -0.06%  a.out              [.] malloc@plt
-         0.01%   -0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
-         0.01%                    [kernel.kallsyms]  [k] scheduler_tick
-         0.01%            -0.00%  [kernel.kallsyms]  [k] native_read_msr_safe
-                          +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-                 +0.01%   +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
-                          +0.01%  [kernel.kallsyms]  [k] intel_pstate_timer_func
-                 +0.01%           [kernel.kallsyms]  [k] perf_adjust_freq_unthr_context.part.82
-                 +0.01%           [kernel.kallsyms]  [k] read_tsc
-                          +0.01%  [kernel.kallsyms]  [k] timekeeping_update.constprop.8
+       ...
+       0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.01%           [kernel.kallsyms]  [k] scheduler_tick
+       0.01%           [kernel.kallsyms]  [k] native_read_msr_safe
+       0.00%           [kernel.kallsyms]  [k] __rcu_read_unlock
+                       [kernel.kallsyms]  [k] _raw_spin_lock
+               +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+                       [kernel.kallsyms]  [k] read_tsc
 
 After:
 
-  # Baseline/0  Delta/1  Delta/2  Shared Object      Symbol
-  # ..........  .......  .......  .................  ..........................................
+  # Baseline    Delta  Shared Object      Symbol
+  # ........  .......  .................  .........................
   #
-        32.75%   +0.28%   -0.83%  libc-2.20.so       [.] malloc
-        31.50%   -0.74%   -0.23%  libc-2.20.so       [.] _int_free
-        22.98%   +0.51%   +0.52%  libc-2.20.so       [.] _int_malloc
-         5.70%   +0.28%   +0.30%  libc-2.20.so       [.] free
-         4.38%   -0.21%   +0.25%  a.out              [.] main
-         1.32%   -0.15%   +0.05%  a.out              [.] free@plt
-         1.31%   +0.03%   -0.06%  a.out              [.] malloc@plt
-         0.01%   -0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
-         0.01%                    [kernel.kallsyms]  [k] scheduler_tick
-         0.01%            -0.00%  [kernel.kallsyms]  [k] native_read_msr_safe
-                 +0.01%   +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
-                 +0.01%           [kernel.kallsyms]  [k] read_tsc
-                 +0.01%           [kernel.kallsyms]  [k] perf_adjust_freq_unthr_context.part.82
-                          +0.01%  [kernel.kallsyms]  [k] intel_pstate_timer_func
-                          +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
-                          +0.01%  [kernel.kallsyms]  [k] timekeeping_update.constprop.8
+       ...
+       0.01%   -0.01%  [kernel.kallsyms]  [k] native_write_msr_safe
+       0.01%           [kernel.kallsyms]  [k] scheduler_tick
+       0.01%           [kernel.kallsyms]  [k] native_read_msr_safe
+       0.00%           [kernel.kallsyms]  [k] __rcu_read_unlock
+               +0.01%  [kernel.kallsyms]  [k] _raw_spin_lock
+               +0.01%  [kernel.kallsyms]  [k] apic_timer_interrupt
+               +0.01%  [kernel.kallsyms]  [k] read_tsc
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-diff.c | 60 +++++++++++++++++++++++++++--------------------
- 1 file changed, 34 insertions(+), 26 deletions(-)
+ tools/perf/builtin-diff.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 3f86737da2c4..f490e24e9477 100644
+index 72c718e6549c..3f86737da2c4 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -65,6 +65,7 @@ static bool show_period;
- static bool show_formula;
- static bool show_baseline_only;
- static unsigned int sort_compute;
-+static unsigned int data_idx;
+@@ -788,7 +788,7 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+ 	char pfmt[20] = " ";
  
- static s64 compute_wdiff_w1;
- static s64 compute_wdiff_w2;
-@@ -448,26 +449,30 @@ static void hists__precompute(struct hists *hists)
- 	next = rb_first(root);
- 	while (next != NULL) {
- 		struct hist_entry *he, *pair;
-+		struct data__file *d;
-+		int i;
+ 	if (!pair)
+-		goto dummy_print;
++		goto no_print;
  
- 		he   = rb_entry(next, struct hist_entry, rb_node_in);
- 		next = rb_next(&he->rb_node_in);
+ 	switch (comparison_method) {
+ 	case COMPUTE_DELTA:
+@@ -797,8 +797,6 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
+ 		else
+ 			diff = compute_delta(he, pair);
  
--		pair = get_pair_data(he, &data__files[sort_compute]);
--		if (!pair)
--			continue;
-+		data__for_each_file_new(i, d) {
-+			pair = get_pair_data(he, d);
-+			if (!pair)
-+				continue;
- 
--		switch (compute) {
--		case COMPUTE_DELTA:
--			compute_delta(he, pair);
--			break;
--		case COMPUTE_RATIO:
--			compute_ratio(he, pair);
--			break;
--		case COMPUTE_WEIGHTED_DIFF:
--			compute_wdiff(he, pair);
--			break;
--		default:
--			BUG_ON(1);
-+			switch (compute) {
-+			case COMPUTE_DELTA:
-+				compute_delta(he, pair);
-+				break;
-+			case COMPUTE_RATIO:
-+				compute_ratio(he, pair);
-+				break;
-+			case COMPUTE_WEIGHTED_DIFF:
-+				compute_wdiff(he, pair);
-+				break;
-+			default:
-+				BUG_ON(1);
-+			}
- 		}
+-		if (fabs(diff) < 0.01)
+-			goto dummy_print;
+ 		scnprintf(pfmt, 20, "%%%+d.2f%%%%", dfmt->header_width - 1);
+ 		return percent_color_snprintf(hpp->buf, hpp->size,
+ 					pfmt, diff);
+@@ -830,6 +828,9 @@ static int __hpp__color_compare(struct perf_hpp_fmt *fmt,
  	}
- }
-@@ -517,7 +522,7 @@ __hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
- 
- static int64_t
- hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
--			int c)
-+			int c, int sort_idx)
- {
- 	bool pairs_left  = hist_entry__has_pairs(left);
- 	bool pairs_right = hist_entry__has_pairs(right);
-@@ -529,8 +534,8 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
- 	if (!pairs_left || !pairs_right)
- 		return pairs_left ? -1 : 1;
- 
--	p_left  = get_pair_data(left,  &data__files[sort_compute]);
--	p_right = get_pair_data(right, &data__files[sort_compute]);
-+	p_left  = get_pair_data(left,  &data__files[sort_idx]);
-+	p_right = get_pair_data(right, &data__files[sort_idx]);
- 
- 	if (!p_left && !p_right)
- 		return 0;
-@@ -555,8 +560,13 @@ hist_entry__cmp_nop(struct hist_entry *left __maybe_unused,
- static int64_t
- hist_entry__cmp_baseline(struct hist_entry *left, struct hist_entry *right)
- {
--	if (sort_compute)
--		return 0;
-+	/*
-+	 * This function will be called first for each entry to resort
-+	 * output.  Next compare-functions use this idx to find their
-+	 * data and increase it for next data so we need to initialize
-+	 * it everytime.
-+	 */
-+	data_idx = 0;
- 
- 	if (left->stat.period == right->stat.period)
- 		return 0;
-@@ -566,19 +576,19 @@ hist_entry__cmp_baseline(struct hist_entry *left, struct hist_entry *right)
- static int64_t
- hist_entry__cmp_delta(struct hist_entry *left, struct hist_entry *right)
- {
--	return hist_entry__cmp_compute(right, left, COMPUTE_DELTA);
-+	return hist_entry__cmp_compute(right, left, COMPUTE_DELTA, ++data_idx);
+ dummy_print:
+ 	return scnprintf(hpp->buf, hpp->size, "%*s",
++			dfmt->header_width, "N/A");
++no_print:
++	return scnprintf(hpp->buf, hpp->size, "%*s",
+ 			dfmt->header_width, pfmt);
  }
  
- static int64_t
- hist_entry__cmp_ratio(struct hist_entry *left, struct hist_entry *right)
- {
--	return hist_entry__cmp_compute(right, left, COMPUTE_RATIO);
-+	return hist_entry__cmp_compute(right, left, COMPUTE_RATIO, ++data_idx);
- }
+@@ -879,14 +880,15 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
+ 		else
+ 			diff = compute_delta(he, pair);
  
- static int64_t
- hist_entry__cmp_wdiff(struct hist_entry *left, struct hist_entry *right)
- {
--	return hist_entry__cmp_compute(right, left, COMPUTE_WEIGHTED_DIFF);
-+	return hist_entry__cmp_compute(right, left, COMPUTE_WEIGHTED_DIFF, ++data_idx);
- }
+-		if (fabs(diff) >= 0.01)
+-			scnprintf(buf, size, "%+4.2F%%", diff);
++		scnprintf(buf, size, "%+4.2F%%", diff);
+ 		break;
  
- static void hists__process(struct hists *hists)
-@@ -586,9 +596,7 @@ static void hists__process(struct hists *hists)
- 	if (show_baseline_only)
- 		hists__baseline_only(hists);
+ 	case PERF_HPP_DIFF__RATIO:
+ 		/* No point for ratio number if we are dummy.. */
+-		if (he->dummy)
++		if (he->dummy) {
++			scnprintf(buf, size, "N/A");
+ 			break;
++		}
  
--	if (sort_compute)
--		hists__precompute(hists);
--
-+	hists__precompute(hists);
- 	hists__output_resort(hists, NULL);
+ 		if (pair->diff.computed)
+ 			ratio = pair->diff.period_ratio;
+@@ -899,8 +901,10 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
  
- 	hists__fprintf(hists, true, 0, 0, 0, stdout);
+ 	case PERF_HPP_DIFF__WEIGHTED_DIFF:
+ 		/* No point for wdiff number if we are dummy.. */
+-		if (he->dummy)
++		if (he->dummy) {
++			scnprintf(buf, size, "N/A");
+ 			break;
++		}
+ 
+ 		if (pair->diff.computed)
+ 			wdiff = pair->diff.wdiff;
 -- 
 2.2.1
 
