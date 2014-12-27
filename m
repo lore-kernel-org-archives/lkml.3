@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaL0SeU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Dec 2014 13:34:20 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:55910 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaL0SeS (ORCPT
+	id S1751648AbaL0SmP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Dec 2014 13:42:15 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:47703 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaL0SmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Dec 2014 13:34:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <1419679857-16626-1-git-send-email-koshygp@gmail.com>
-References: <1419679857-16626-1-git-send-email-koshygp@gmail.com>
-Date: Sat, 27 Dec 2014 13:34:17 -0500
-Message-ID: <CAHQdGtS4iq2d-g-EKu9k_-Kv5pwW-rHkUxQFSCCV5iiB=52vug@mail.gmail.com>
-Subject: Re: [PATCH] NFS: nfs4_fs.h: Fix for checkpatch warnings
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Koshy George <koshygp@gmail.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 27 Dec 2014 13:42:11 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Marek Belisko <marek.belisko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Gulsah Kose <gulsah.1004@gmail.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: ft1000: ft1000-usb: ft1000_hw.c:  Fix a potential memory leak.
+Date: Sat, 27 Dec 2014 19:45:07 +0100
+Message-Id: <1419705907-5937-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 27, 2014 at 6:30 AM, Koshy George <koshygp@gmail.com> wrote:
-> This patch fix checkpatch warning for nfs4_fs.h
->
-> fs/nfs/nfs4_fs.h:134: ERROR: "foo *     bar" should be "foo *bar"
-> fs/nfs/nfs4_fs.h:416: ERROR: "foo * bar" should be "foo *bar"
->
-> Signed-off-by: Koshy George <koshygp@gmail.com>
-> [Being first patch, need some assistance]
-> ---
->  fs/nfs/nfs4_fs.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
-> index a081787..ae336c7 100644
-> --- a/fs/nfs/nfs4_fs.h
-> +++ b/fs/nfs/nfs4_fs.h
-> @@ -131,7 +131,7 @@ enum {
->
->  struct nfs4_lock_state {
->         struct list_head        ls_locks;       /* Other lock stateids */
-> -       struct nfs4_state *     ls_state;       /* Pointer to open state */
-> +       struct nfs4_state       *ls_state;      /* Pointer to open state */
->  #define NFS_LOCK_INITIALIZED 0
->  #define NFS_LOCK_LOST        1
->         unsigned long           ls_flags;
-> @@ -413,7 +413,7 @@ static inline void nfs4_schedule_session_recovery(struct nfs4_session *session,
->  extern struct nfs4_state_owner *nfs4_get_state_owner(struct nfs_server *, struct rpc_cred *, gfp_t);
->  extern void nfs4_put_state_owner(struct nfs4_state_owner *);
->  extern void nfs4_purge_state_owners(struct nfs_server *);
-> -extern struct nfs4_state * nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
-> +extern struct nfs4_state *nfs4_get_open_state(struct inode *, struct nfs4_state_owner *);
->  extern void nfs4_put_open_state(struct nfs4_state *);
->  extern void nfs4_close_state(struct nfs4_state *, fmode_t);
->  extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
-> --
-> 1.9.1
+Avoid allocate memory if we will exit the function.
 
-Sorry, but I'm not applying this kind of patch.
+Was found by using a static code analysis program called cppcheck.
 
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index 2e13e7b..72b8f03 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -331,15 +331,15 @@ int card_send_command(struct ft1000_usb *ft1000dev, void *ptempbuffer,
+ 
+ 	DEBUG("card_send_command: enter card_send_command... size=%d\n", size);
+ 
++	ret = ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
++	if (ret)
++		return ret;
++
+ 	commandbuf = kmalloc(size + 2, GFP_KERNEL);
+ 	if (!commandbuf)
+ 		return -ENOMEM;
+ 	memcpy((void *)commandbuf + 2, (void *)ptempbuffer, size);
+ 
+-	ret = ft1000_read_register(ft1000dev, &temp, FT1000_REG_DOORBELL);
+-	if (ret)
+-		return ret;
+-
+ 	if (temp & 0x0100)
+ 		usleep_range(900, 1100);
+ 
 -- 
-Trond Myklebust
-Linux NFS client maintainer, PrimaryData
-trond.myklebust@primarydata.com
+1.7.10.4
+
