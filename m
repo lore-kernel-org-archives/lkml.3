@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaL1QPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 11:15:40 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55151 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaL1QPi (ORCPT
+	id S1751982AbaL1QRS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 11:17:18 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:59645 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882AbaL1QRR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 11:15:38 -0500
-Date: Sun, 28 Dec 2014 17:15:24 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH] Ensure different messages in STRICT_DEVMEM and PAT cases
-Message-ID: <20141228161524.GA10442@amd>
+	Sun, 28 Dec 2014 11:17:17 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult, fan_max) from driver
+Date: Sun, 28 Dec 2014 17:17:14 +0100
+Message-ID: <1566138.nEi3x1Fh8B@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.19.0-rc1+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <201412281707.44124@pali>
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <5055106.1nbl2aCxTj@xps13> <201412281707.44124@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 823a62aebddaec01fd776a8dd4f8f4a5b419e3f9
-Author: Pavel <pavel@ucw.cz>
-Date:   Sun Dec 28 17:04:02 2014 +0100
+On Sunday 28 December 2014 17:07:43 Pali Rohár wrote:
+> On Sunday 28 December 2014 17:02:35 Gabriele Mazzotta wrote:
+> > On Sunday 28 December 2014 16:48:54 Pali Rohár wrote:
+> > > On Sunday 28 December 2014 16:25:21 Gabriele Mazzotta wrote:
+> > > > On Sunday 28 December 2014 09:46:19 Pali Rohár wrote:
+> > > > > Ok, here are new patches for testing... Those you are
+> > > > > still reading this email thread and have your Dell
+> > > > > machines near, can you test them (ideally with
+> > > > > disabling dmi config data)?
+> > > > 
+> > > > Could you please tell me exactly against what should I
+> > > > apply these patches? I can see that they depend on other
+> > > > patches in this thread, but I can't find any tree that
+> > > > includes them.
+> > > 
+> > > Two patches in previous email could apply on 3.19-rc1 tree.
+> > 
+> > I see that the second patch you've just sent depends on the
+> > followings: https://patchwork.kernel.org/patch/5524791/
+> > (I8K_SMM_GET_TEMP_TYPE)
+> > https://patchwork.kernel.org/patch/5524731/ (Copyright)
+> > 
+> > If I'm not wrong, they are not included in 3.19-rc1.
+> 
+> Yes, they are not included in 3.19-rc1 but patches from previous 
+> mail should work without them.
 
-STRICT_DEVMEM and PAT produce same failure accessing /dev/mem, which
-is quite confusing to the user. Make printk messages different to
-lessen confusion.
-    
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+OK, I wanted to double check in case I had something missing.
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 6574388..2b6f5d8 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -488,7 +488,7 @@ pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
- }
- 
- #ifdef CONFIG_STRICT_DEVMEM
--/* This check is done in drivers/char/mem.c in case of STRICT_DEVMEM*/
-+/* This check is done in drivers/char/mem.c in case of STRICT_DEVMEM */
- static inline int range_is_allowed(unsigned long pfn, unsigned long size)
- {
- 	return 1;
-@@ -506,7 +506,7 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
- 
- 	while (cursor < to) {
- 		if (!devmem_is_allowed(pfn)) {
-pp-			printk(KERN_INFO "Program %s tried to access /dev/mem between [mem %#010Lx-%#010Lx]\n",
-+			printk(KERN_INFO "Program %s tried to access /dev/mem between [mem %#010Lx-%#010Lx], PAT prevents it\n",
- 				current->comm, from, to - 1);
- 			return 0;
- 		}
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Patches tested on my XPS13: the correct values for fan_mult and fan_man
+are automatically selected.
