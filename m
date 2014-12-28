@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaL1Ixj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 03:53:39 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:61351 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439AbaL1Ixi convert rfc822-to-8bit (ORCPT
+	id S1751814AbaL1JDa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 04:03:30 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:52571 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699AbaL1JDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 03:53:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+icZUVm6YNK_eN7-NcSH-mAqC61vwYryVUJuNMCKuhq8kXV2g@mail.gmail.com>
-References: <1419708268-14114-1-git-send-email-oscar.forner.martinez@gmail.com>
-	<CACna6rz4ue2PFQR-=nKxmCJSw9O8pKU=S7LqxA68OY1D0obvKg@mail.gmail.com>
-	<CA+icZUVm6YNK_eN7-NcSH-mAqC61vwYryVUJuNMCKuhq8kXV2g@mail.gmail.com>
-Date: Sun, 28 Dec 2014 09:53:36 +0100
-Message-ID: <CACna6rymPy1+YtEHEk18ci3VaAWkiwJ2iWv+p_yYPAjzQeJwtw@mail.gmail.com>
-Subject: Re: [PATCH] bcma: fix three coding style issues, more than 80
- characters per line
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 28 Dec 2014 04:03:25 -0500
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: [PATCH] kvm: warn on more invariant breakage
+Date: Sun, 28 Dec 2014 10:03:15 +0100
+Message-Id: <1419757395-11273-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 December 2014 at 06:50, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Sun, Dec 28, 2014 at 12:44 AM, Rafał Miłecki <zajec5@gmail.com> wrote:
->> On 27 December 2014 at 20:24, Oscar Forner Martinez
->> <oscar.forner.martinez@gmail.com> wrote:
->>> Three lines with more than 80 characters per line have been split in several lines.
->>>
->>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
->>
->> Acked-by: Rafał Miłecki <zajec5@gmail.com>
->>
->
-> As for the comment-line changes... 80+ chars are allowed for better readability.
-> So, please don't do that.
-> [ Checkpatch should not warn on this especially for comments. ]
+Modifying a non-existent slot is not allowed.  Also check that the
+first loop doesn't move a deleted slot beyond the used part of
+the mslots array.
 
-We almost always split long comments into separated lines in the
-kernel. What's different with this case?
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ virt/kvm/kvm_main.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 050974c051b5..1cc6e2e19982 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -671,6 +671,7 @@ static void update_memslots(struct kvm_memslots *slots,
+ 
+ 	WARN_ON(mslots[i].id != id);
+ 	if (!new->npages) {
++		WARN_ON(!mslots[i].npages);
+ 		new->base_gfn = 0;
+ 		if (mslots[i].npages)
+ 			slots->used_slots--;
+@@ -704,7 +705,8 @@ static void update_memslots(struct kvm_memslots *slots,
+ 			slots->id_to_index[mslots[i].id] = i;
+ 			i--;
+ 		}
+-	}
++	} else
++		WARN_ON_ONCE(i != slots->used_slots);
+ 
+ 	mslots[i] = *new;
+ 	slots->id_to_index[mslots[i].id] = i;
 -- 
-Rafał
+1.8.3.1
+
