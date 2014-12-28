@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaL1Qih (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 11:38:37 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:36882 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809AbaL1Qif (ORCPT
+	id S1751926AbaL1QpH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 11:45:07 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36391 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809AbaL1QpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 11:38:35 -0500
-From: Aniroop Mathur <aniroop.mathur@gmail.com>
-To: <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <aniroop.mathur@gmail.com>, <a.mathur@samsung.com>
-Subject: [PATCH] regulator: core: Avoid negative regulator no & initialize it to -1
-Date: Sun, 28 Dec 2014 22:08:38 +0530
-Message-Id: <1419784718-3704-1-git-send-email-aniroop.mathur@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 28 Dec 2014 11:45:00 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: oded.gabbay@amd.com
+Cc: airlied@linux.ie, alexander.deucher@amd.com, j.glisse@gmail.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        John.Bridgman@amd.com, Andrew.Lewycky@amd.com, joro@8bytes.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] amdkfd: actually allocate longs for the pasid bitmask
+Date: Sun, 28 Dec 2014 11:44:37 -0500
+Message-Id: <1419785077-25800-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch initializes regulator_no to -1 to avoid extra subtraction
-operation performed every time we register a regulator and avoid negative
-regulator no in its name.
+Commit "amdkfd: use sizeof(long) granularity for the pasid bitmask" calculated
+the number of longs it will need, but ended up allocating that number of
+bytes rather than longs.
 
-Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
+Fix that silly error and allocate the amount of data really required.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- drivers/regulator/core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/amd/amdkfd/kfd_pasid.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index a3c3785..b0729ef 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3481,7 +3481,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
+diff --git a/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c b/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c
+index 71699ad..4c25ef5 100644
+--- a/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c
++++ b/drivers/gpu/drm/amd/amdkfd/kfd_pasid.c
+@@ -32,7 +32,7 @@ int kfd_pasid_init(void)
  {
- 	const struct regulation_constraints *constraints = NULL;
- 	const struct regulator_init_data *init_data;
--	static atomic_t regulator_no = ATOMIC_INIT(0);
-+	static atomic_t regulator_no = ATOMIC_INIT(-1);
- 	struct regulator_dev *rdev;
- 	struct device *dev;
- 	int ret, i;
-@@ -3550,8 +3550,8 @@ regulator_register(const struct regulator_desc *regulator_desc,
- 	rdev->dev.class = &regulator_class;
- 	rdev->dev.of_node = of_node_get(config->of_node);
- 	rdev->dev.parent = dev;
--	dev_set_name(&rdev->dev, "regulator.%d",
--		     atomic_inc_return(&regulator_no) - 1);
-+	dev_set_name(&rdev->dev, "regulator.%lu",
-+		     atomic_inc_return(&regulator_no));
- 	ret = device_register(&rdev->dev);
- 	if (ret != 0) {
- 		put_device(&rdev->dev);
+ 	pasid_limit = max_num_of_processes;
+ 
+-	pasid_bitmap = kzalloc(BITS_TO_LONGS(pasid_limit), GFP_KERNEL);
++	pasid_bitmap = kcalloc(BITS_TO_LONGS(pasid_limit), sizeof(long), GFP_KERNEL);
+ 	if (!pasid_bitmap)
+ 		return -ENOMEM;
+ 
 -- 
-1.9.1
+1.7.10.4
 
