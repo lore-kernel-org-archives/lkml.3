@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaL1VpM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 16:45:12 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:40658 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776AbaL1VpH (ORCPT
+	id S1751529AbaL1Vqe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 16:46:34 -0500
+Received: from inca-roads.misterjones.org ([213.251.177.50]:51940 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751148AbaL1Vqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 16:45:07 -0500
-From: jitendra kumar khasdev <jkhasdev@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, pankaj.saraf@nektech.in,
-        jitendra kumar khasdev <jkhasdev@gmail.com>
-Subject: [PATCH 3/3] Staging: comedi: fix space and 80 char coding style issue
-Date: Mon, 29 Dec 2014 03:14:45 +0530
-Message-Id: <1419803085-9441-1-git-send-email-jkhasdev@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 28 Dec 2014 16:46:31 -0500
+To: Christoffer Dall <christoffer.dall@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH] clocksource: =?UTF-8?Q?arch=5Ftimer=3A=20Fix=20arm=36?=  =?UTF-8?Q?=34=20platforms=20not=20booting?=
+X-PHP-Originating-Script: 0:main.inc
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sun, 28 Dec 2014 21:46:20 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Sonny Rao <sonnyrao@chromium.org>
+Organization: ARM Ltd
+In-Reply-To: <1419776431-26217-1-git-send-email-christoffer.dall@linaro.org>
+References: <1419776431-26217-1-git-send-email-christoffer.dall@linaro.org>
+Message-ID: <71346397bb3c0e654aa5b634328ae29c@www.loen.fr>
+User-Agent: Roundcube Webmail/0.7.2
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: christoffer.dall@linaro.org, daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, mark.rutland@arm.com, catalin.marinas@arm.com, olof@lixom.net, yingjoe.chen@mediatek.com, sonnyrao@chromium.org
+X-SA-Exim-Mail-From: marc.zyngier@arm.com
+X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the s626.c file that fixes up spcae and maximum
-character limit warning found by the checkpatch.pl tool
+On 2014-12-28 14:20, Christoffer Dall wrote:
+> Commit 0b46b8a718c6e ("clocksource: arch_timer: Fix code to...") 
+> fixes
+> timer issues with certain ARMv7 platforms, but unfortunately breaks
+> arm64 platforms with hyp mode (EL2) enabled.
+>
+> The commit only sets arch_timer_use_virtual to false under 
+> CONFIG_ARM,
+> but forgets that the config variable is also set in other code paths
+> (actually, right underneath the check in the patch) with detrimental
+> consequences as we've now introduced a direct early call to BUG() on
+> practically all arm64 platforms.
+>
+> One could argue that this code could be refactored to use different
+> variables for checking which *timer* to use and which *counter* to 
+> use,
+> which seems to be the desired difference between ARM and arm64 in 
+> this
+> case, but this approach fixes an urgent issue for now.
+>
+> Cc: Sonny Rao <sonnyrao@chromium.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Marc Zyngier <marc.zyngier@arm.com>
+> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+> ---
+> This was apparently already discovered by Yingjoe Chen in this thread
+> https://lkml.org/lkml/2014/11/24/41 and Catalin recommended a similar
+> fix.
 
-Signed-off-by: Jitendra Kumar Khasdev  <jkhasdev@gmail.com>
----
- drivers/staging/comedi/drivers/s626.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+I'm increasingly worried about the time it takes to get such critical
+fixes into the tree (arm64 is *dead* without it).
 
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 14932c5..77f715b 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -118,7 +118,7 @@ static void s626_mc_enable(struct comedi_device *dev,
- static void s626_mc_disable(struct comedi_device *dev,
- 			    unsigned int cmd, unsigned int reg)
- {
--	writel(cmd << 16 , dev->mmio + reg);
-+	writel(cmd << 16, dev->mmio + reg);
- 	mmiowb();
- }
- 
-@@ -2534,7 +2534,8 @@ static int s626_initialize(struct comedi_device *dev)
- 	for (i = 0; i < 2; i++) {
- 		writel(S626_I2C_CLKSEL, dev->mmio + S626_P_I2CSTAT);
- 		s626_mc_enable(dev, S626_MC2_UPLD_IIC, S626_P_MC2);
--		ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc, 0);
-+		ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc,
-+		0);
- 		if (ret)
- 			return ret;
- 	}
+What is holding this patch which, as far as I remember, has been posted
+by Catalin almost three weeks ago?
+
+Daniel?
+
+         M.
 -- 
-1.9.1
-
+Fast, cheap, reliable. Pick two.
