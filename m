@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaL1Qpi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 11:45:38 -0500
-Received: from www.osadl.org ([62.245.132.105]:38634 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935AbaL1Qpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 11:45:36 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH RFC] checkpatch: fix for catching all world writable settings
-Date: Sun, 28 Dec 2014 11:41:47 -0500
-Message-Id: <1419784907-6614-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752016AbaL1Qpw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 11:45:52 -0500
+Received: from smtprelay0123.hostedemail.com ([216.40.44.123]:38569 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751992AbaL1Qps (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Dec 2014 11:45:48 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:421:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:6261:7903:10004:10400:10848:11026:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tray77_15452be8e7262
+X-Filterd-Recvd-Size: 1458
+Message-ID: <1419785144.20894.10.camel@perches.com>
+Subject: Re: [PATCH 1/1] fs/ufs/super.c: remove unnecessary casting
+From: Joe Perches <joe@perches.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org,
+        Evgeniy Dushistov <dushistov@mail.ru>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Sun, 28 Dec 2014 08:45:44 -0800
+In-Reply-To: <20141228153311.GI22149@ZenIV.linux.org.uk>
+References: <1419780509-4582-1-git-send-email-fabf@skynet.be>
+	 <20141228153311.GI22149@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently checkpatch will fuss if one uses world writable settings in debugfs
-files by passing S_IWUGO but not when passing S_IRWXUGO. This patch extends
-the check to cover the S_IRWXUGO case.
+On Sun, 2014-12-28 at 15:33 +0000, Al Viro wrote:
+> On Sun, Dec 28, 2014 at 04:28:29PM +0100, Fabian Frederick wrote:
+> > Fix the following coccinelle warning:
+> > fs/ufs/super.c:1418:7-28: WARNING: casting value returned by memory
+> > allocation function to (struct ufs_inode_info *) is useless.
+> 
+> ... except that it makes allocations harder to grep for.
 
-tested on trivial examples:
-WARNING: Exporting world writable files is usually an error. Consider more 
-restrictive permissions.
-#72: FILE: test.c:72:
-+       id_file = debugfs_create_file("id", S_IRUGO | S_IWUGO, my_dir,
+How does it do that?
 
-with the patch applied it also fusses now in the S_IRWXUGO case.
-WARNING: Exporting world writable files is usually an error. Consider more 
-restrictive permissions.
-#72: FILE: test.c:72:
-+       id_file = debugfs_create_file("id", S_IRWXUGO, my_dir,
+> IOW, it's not
+> obviously an improvement and should be up to maintainer of the code in
+> question.
 
-patch is against linux-next 3.19.0-rc1 -next-20141226
-
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- scripts/checkpatch.pl |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index f0bb6d6..48120b1 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -5227,7 +5227,9 @@ sub process {
- 		}
- 
- 		if ($line =~ /debugfs_create_file.*S_IWUGO/ ||
--		    $line =~ /DEVICE_ATTR.*S_IWUGO/ ) {
-+		    $line =~ /debugfs_create_file.*S_IRWXUGO/ ||
-+		    $line =~ /DEVICE_ATTR.*S_IWUGO/ ||
-+		    $line =~ /DEVICE_ATTR.*S_IRWXUGO/ ) {
- 			WARN("EXPORTED_WORLD_WRITABLE",
- 			     "Exporting world writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
- 		}
---
-1.7.10.4
+That's always true in any case.
 
