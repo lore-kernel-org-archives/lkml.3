@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaL1Vqe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 16:46:34 -0500
-Received: from inca-roads.misterjones.org ([213.251.177.50]:51940 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751148AbaL1Vqb (ORCPT
+	id S1751659AbaL1Vsw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 16:48:52 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:33377 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaL1Vst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 16:46:31 -0500
-To: Christoffer Dall <christoffer.dall@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH] clocksource: =?UTF-8?Q?arch=5Ftimer=3A=20Fix=20arm=36?=  =?UTF-8?Q?=34=20platforms=20not=20booting?=
-X-PHP-Originating-Script: 0:main.inc
+	Sun, 28 Dec 2014 16:48:49 -0500
+Date: Sun, 28 Dec 2014 22:48:35 +0100
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Dave Taht <dave.taht@gmail.com>
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next] net: stmmac: add BQL support
+Message-ID: <20141228214059.GA25570@gmail.com>
+References: <1419778631-23067-1-git-send-email-b.galvani@gmail.com>
+ <CAA93jw7XMK0foH_Hf9PHitV+Xhwxu15xATFv-jnn8_1Tv+kFCA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sun, 28 Dec 2014 21:46:20 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Sonny Rao <sonnyrao@chromium.org>
-Organization: ARM Ltd
-In-Reply-To: <1419776431-26217-1-git-send-email-christoffer.dall@linaro.org>
-References: <1419776431-26217-1-git-send-email-christoffer.dall@linaro.org>
-Message-ID: <71346397bb3c0e654aa5b634328ae29c@www.loen.fr>
-User-Agent: Roundcube Webmail/0.7.2
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: christoffer.dall@linaro.org, daniel.lezcano@linaro.org, linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org, mark.rutland@arm.com, catalin.marinas@arm.com, olof@lixom.net, yingjoe.chen@mediatek.com, sonnyrao@chromium.org
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA93jw7XMK0foH_Hf9PHitV+Xhwxu15xATFv-jnn8_1Tv+kFCA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-12-28 14:20, Christoffer Dall wrote:
-> Commit 0b46b8a718c6e ("clocksource: arch_timer: Fix code to...") 
-> fixes
-> timer issues with certain ARMv7 platforms, but unfortunately breaks
-> arm64 platforms with hyp mode (EL2) enabled.
->
-> The commit only sets arch_timer_use_virtual to false under 
-> CONFIG_ARM,
-> but forgets that the config variable is also set in other code paths
-> (actually, right underneath the check in the patch) with detrimental
-> consequences as we've now introduced a direct early call to BUG() on
-> practically all arm64 platforms.
->
-> One could argue that this code could be refactored to use different
-> variables for checking which *timer* to use and which *counter* to 
-> use,
-> which seems to be the desired difference between ARM and arm64 in 
-> this
-> case, but this approach fixes an urgent issue for now.
->
-> Cc: Sonny Rao <sonnyrao@chromium.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
-> Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
-> ---
-> This was apparently already discovered by Yingjoe Chen in this thread
-> https://lkml.org/lkml/2014/11/24/41 and Catalin recommended a similar
-> fix.
+On Sun, Dec 28, 2014 at 08:25:40AM -0800, Dave Taht wrote:
+> On Sun, Dec 28, 2014 at 6:57 AM, Beniamino Galvani <b.galvani@gmail.com> wrote:
+> > Add support for Byte Queue Limits to the STMicro MAC driver.
+> 
+> Thank you!
+> 
+> > Tested on a Amlogic S805 Cortex-A5 board, where the use of BQL
+> > slightly decreases the ping latency from ~10ms to ~3ms when the
+> > 100Mbps link is saturated by TCP streams. No difference is
+> > observed at 1Gbps.
+> 
+> I see the plural. With TSQ in place it is hard (without something like
+> the rrul test driving multiple streams) to drive a driver to
+> saturation with small numbers of flows. This was with pfifo_fast, not
+> sch_fq, at 100mbit?
 
-I'm increasingly worried about the time it takes to get such critical
-fixes into the tree (arm64 is *dead* without it).
+Hi Dave,
 
-What is holding this patch which, as far as I remember, has been posted
-by Catalin almost three weeks ago?
+yes, this was with pfifo_fast and I used 4 iperf TCP streams. The total
+throughput didn't seem to increase adding more streams.
 
-Daniel?
+> 
+> Can this board actually drive a full gigabit in the first place? Until
+> now most of the low end arm boards I have seen only came with
+> a 100mbit mac, and the gig ones lacking offloads seemed to peak
+> out at about 600mbit.
 
-         M.
--- 
-Fast, cheap, reliable. Pick two.
+I measured a throughput of 650mbit in rx and 600mbit in tx.
+
+> 
+> Under my christmas tree landed a quad core A5 (odroid-c1), also an
+> xgene and zedboard - both of the latter are a-needing BQL,
+> and I haven't booted the udroid yet. Hopefully it is the
+> same driver you just improved.
+
+I'm using the odroid-c1 too, with this tree based on the recent
+Amlogic mainline work:
+
+  https://github.com/bengal/linux/tree/meson8b
+
+Unfortunately at the moment the support for the board is very basic
+(for example, SMP is not working yet) but it's enough to do some NIC
+tests.
+
+Beniamino
