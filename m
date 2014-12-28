@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaL1Wsj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 17:48:39 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:43714 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbaL1Wsf convert rfc822-to-8bit (ORCPT
+	id S1751713AbaL1WyM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 17:54:12 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:31011 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbaL1WyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 17:48:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141224234144.GA19262@amd>
-References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
- <20141224234144.GA19262@amd>
-From: Mark Seaborn <mseaborn@chromium.org>
-Date: Sun, 28 Dec 2014 14:48:13 -0800
-X-Google-Sender-Auth: 9cMw0JhpqTOpKfRR66HCdPumxkc
-Message-ID: <CAL82V5OK0OQsxYsZ2hAMOP37wv_k7Jc9_zREUo_Pix1aZ0D6bQ@mail.gmail.com>
-Subject: Re: DRAM unreliable under specific access patern
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>, luto <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 28 Dec 2014 17:54:07 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-01-54a08a0c88a7
+Date: Mon, 29 Dec 2014 07:52:53 +0900
+From: Changman Lee <cm224.lee@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Dec 26 (f2fs)
+Message-id: <20141228225253.GG3335@lcm>
+References: <20141226193009.60d3f62e@canb.auug.org.au>
+ <549DB43B.7050902@infradead.org> <20141226205822.GA21870@jaegeuk-mac02>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-disposition: inline
+In-reply-to: <20141226205822.GA21870@jaegeuk-mac02>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsWyRsSkXZena0GIwbOL0hZP1s9itri8aw6b
+	xcGFbYwWb+9MZ7HYuvcquwOrR+ONG2wem1doeWxa1cnm8XmTXABLFJdNSmpOZllqkb5dAlfG
+	rc+3WAvusFW8n9XO1MA4nbWLkZNDQsBE4t2POWwQtpjEhXvrgWwuDiGBpYwSnUdOAjkcYEXT
+	fkiB1AgJTGeUmPCVGaLmJ6PE6YlPmEESLAKqEv33ZrGA2GwCWhLtp9eC2SICKhKHFl1mB2lg
+	FuhnlFj/+AgjSEJYQF9i/7KHYFfwCqhLNP5/yQ4xtYFRovHzEhaIhKDEj8n3wGxmoKnrdx5n
+	grClJR79ncEOYnMKGEt8+bsNbJAo0LYpJ7eBvSAhsItd4u3Ho1DnCUh8m3yIBeIdWYlNB5gh
+	XpaUOLjiBssERrFZSNbNQrJuFpJ1CxiZVzGKphYkFxQnpRcZ6RUn5haX5qXrJefnbmIERtbp
+	f8/6djDePGB9iFGAg1GJh3fCsfkhQqyJZcWVuYcYTYGumMgsJZqcD4zfvJJ4Q2MzIwtTE1Nj
+	I3NLMyVx3gSpn8FCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGL3PLMlJea795qtuxYrj4ls7
+	lio8KFSIsbCov9Vz/WXxXmPOB60Jr77tzyk+Ovfzh7VeP/52vNN4OGVRwO7lPrr7f++4/F5F
+	deVa6/5F3Jyre1rEQu5V+sk9T5M2KNkQfzzaMO2379krz0XK7/izcbAeuMbee2jmpJ8MM0Nu
+	1M104lVbqRO+/4ASS3FGoqEWc1FxIgCzdio3pwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t9jQV2ergUhBtOOi1s8WT+L2eLyrjls
+	FgcXtjFavL0zncVi696r7A6sHo03brB5bF6h5bFpVSebx+dNcgEsUQ2MNhmpiSmpRQqpecn5
+	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
+	hIa46VrANEbo+oYEwfUYGaCBhHWMGbc+32ItuMNW8X5WO1MD43TWLkYODgkBE4lpP6S6GDmB
+	TDGJC/fWs4HYQgLTGSUmfGXuYuQCsn8ySpye+IQZJMEioCrRf28WC4jNJqAl0X56LZgtIqAi
+	cWjRZXaQBmaBfkaJ9Y+PMIIkhAX0JfYve8gKYvMKqEs0/n/JDjG1gVGi8fMSFoiEoMSPyffA
+	bGagqet3HmeCsKUlHv2dwQ5icwoYS3z5uw1skCjQtiknt7FNYBSYhaR9FpL2WUjaFzAyr2IU
+	TS1ILihOSs810itOzC0uzUvXS87P3cQIjttn0jsYVzVYHGIU4GBU4uGdcGx+iBBrYllxZe4h
+	RgkOZiURXqOyBSFCvCmJlVWpRfnxRaU5qcWHGE2B4TGRWUo0OR+YUvJK4g2NTcyMLI3MLIxM
+	zM2VxHmV7NtChATSE0tSs1NTC1KLYPqYODilGhg7uK/9iPpbktzRx+k+ZVrVnhcKSa0N2V/2
+	rU4LlPc0ftnD/LB/4qajE5dPNlv0Z1/xr1oD310sTy3Yn+yqtXlUnBti79zMk/+3ttC2XitP
+	pc/lOWO/TeAa7h7xR/JXvjsfSlzNF132xYPrcZdvpNnZ9VLCRgxfGDer3D2x/l3Y1I73zAaz
+	PyixFGckGmoxFxUnAgBXJZiy8QIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 December 2014 at 15:41, Pavel Machek <pavel@ucw.cz> wrote:
-> > Try this test program: https://github.com/mseaborn/rowhammer-test
-> >
-> > It has reproduced bit flips on various machines.
-...
-> So we have a program that corrupts basically random memory on many
-> machines. That is not good. That means that unpriviledged user can
-> crash processes of other users.
-...
-> We could make DRAM refresh faster. That will incur performance
-> penalty (<10%?), and is probably chipset-specific...?
+On Fri, Dec 26, 2014 at 12:59:05PM -0800, Jaegeuk Kim wrote:
+> I fixed the merged patch directly.
+> 
+> Changman,
+> The patch was initially made by you, so let me know, if you have objection.
+> 
+> Thanks,
 
-Some machines already double the DRAM refresh rate in some cases.
+Sorry for my mistake.
+Thanks, Stephen and Jaegeuk.
 
-For example, a presentation from Intel says:
-
-  "When non-pTRR compliant DIMMs are used, the E5-2600 v2 system
-  defaults into double refresh mode, which has longer memory
-  latency/DIMM access latency and can lower memory bandwidth by up to
-  2-4%.
-  ...
-  * DDR3 DIMMs are affected by a pass gate charge migration issue (also
-    known as Row Hammer) that may result in a memory error.
-  * The Pseudo Target Row Refresh (pTRR) feature introduced on Ivy
-    Bridge processor families (2S/4S E5 v2, E7 v2) helps mitigate the
-    DDR3 pass gate issue by automatically refreshing victim rows."
-
-  -- from http://infobazy.gda.pl/2014/pliki/prezentacje/d2s2e4-Kaczmarski-Optymalna.pdf
-  ("Thoughts on Intel Xeon E5-2600 v2 Product Family Performance
-Optimisation – component selection guidelines", August 2014, Marcin
-Kaczmarski)
-
-Note that Target Row Refresh (TRR) is a DRAM feature that was added to
-the recently-published LPDDR4 standard (where "LP" = "Low Power").
-See http://www.jedec.org/standards-documents/results/jesd209-4
-(registration is required to download the spec, but it's free).  TRR
-is basically a request that the CPU's memory controller can send to a
-DRAM module to ask it to refresh a row's neighbours.  I am not sure
-how Pseudo TRR differs from TRR, though.
-
-That presentation mentions one CPU (or CPU family), but I don't know
-which other CPUs support these features (i.e. doubling the refresh
-rate and/or using pTRR).  Even if a CPU supports these features, it is
-difficult to determine whether a machine's BIOS enables them.  It is
-the BIOS's responsibility to configure the CPU's memory controller at
-startup.
-
-Also, it is not clear how much doubling the DRAM refresh rate would
-help prevent rowhammer-induced bit flips.  Yoongu Kim et al's paper
-shows that, for some DRAM modules, a refresh period of 32ms (instead
-of the usual 64ms) is not short enough to reduce the error rate to
-zero.  See Figure 4 in
-http://users.ece.cmu.edu/~yoonguk/papers/kim-isca14.pdf.  I expect
-that doubling the refresh rate is useful for reliability, but not
-necessarily security.  It would prevent accidental bit flips caused by
-accidental row hammering, where programs accidentally generate a lot
-of cache misses without using CLFLUSH.  But it might not prevent a
-determined attacker from generating bit flips that might be used for
-taking control of a system.
-
-Cheers,
-Mark
+> 
+> On Fri, Dec 26, 2014 at 11:17:15AM -0800, Randy Dunlap wrote:
+> > On 12/26/14 00:30, Stephen Rothwell wrote:
+> > > Hi all,
+> > > 
+> > > There will only be intermittent releases of linux-next between now and
+> > > Jan 5.
+> > > 
+> > > Changes since 20141221:
+> > > 
+> > 
+> > on x86_64:
+> > when CONFIG_F2FS_STAT_FS is not enabled:
+> > 
+> > ../fs/f2fs/segment.c: In function 'rewrite_data_page':
+> > ../fs/f2fs/segment.c:1233:2: error: implicit declaration of function 'stat_inc_inplace_blocks' [-Werror=implicit-function-declaration]
+> > 
+> > 
+> > 
+> > -- 
+> > ~Randy
