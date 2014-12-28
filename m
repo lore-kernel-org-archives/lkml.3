@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaL1PBN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 10:01:13 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:23042 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaL1PBL (ORCPT
+	id S1751873AbaL1PMh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 10:12:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59884 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751619AbaL1PMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 10:01:11 -0500
-X-IronPort-AV: E=Sophos;i="5.07,655,1413270000"; 
-   d="scan'208";a="53817660"
-Message-ID: <54A01B34.4000002@broadcom.com>
-Date: Sun, 28 Dec 2014 16:01:08 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-CC: Sedat Dilek <sedat.dilek@gmail.com>,
-        Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] bcma: fix three coding style issues, more than 80 characters
- per line
-References: <1419708268-14114-1-git-send-email-oscar.forner.martinez@gmail.com>	<CACna6rz4ue2PFQR-=nKxmCJSw9O8pKU=S7LqxA68OY1D0obvKg@mail.gmail.com>	<CA+icZUVm6YNK_eN7-NcSH-mAqC61vwYryVUJuNMCKuhq8kXV2g@mail.gmail.com>	<CACna6rymPy1+YtEHEk18ci3VaAWkiwJ2iWv+p_yYPAjzQeJwtw@mail.gmail.com>	<CA+icZUVuTB55UcKKbUMd8VB5mHMkaxhCVDkLKhtSXizR+1gE2A@mail.gmail.com> <CACna6rwRPwannK7TviY7AmhMvd09h-zLXJOBEK-U09dz=5ezKQ@mail.gmail.com>
-In-Reply-To: <CACna6rwRPwannK7TviY7AmhMvd09h-zLXJOBEK-U09dz=5ezKQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 28 Dec 2014 10:12:36 -0500
+Message-ID: <1419779536.4705.183.camel@decadent.org.uk>
+Subject: Re: [PATCH] Initialize off value in asd_process_ctrl_a_user()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Eric B Munson <emunson@akamai.com>
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Sun, 28 Dec 2014 16:12:16 +0100
+In-Reply-To: <1417538041-6850-1-git-send-email-emunson@akamai.com>
+References: <1417538041-6850-1-git-send-email-emunson@akamai.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Sq0PTv2v8yVcNJppV786"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 151.217.233.135
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/14 15:02, Rafał Miłecki wrote:
-> On 28 December 2014 at 10:12, Sedat Dilek<sedat.dilek@gmail.com>  wrote:
->> On Sun, Dec 28, 2014 at 9:53 AM, Rafał Miłecki<zajec5@gmail.com>  wrote:
->>> On 28 December 2014 at 06:50, Sedat Dilek<sedat.dilek@gmail.com>  wrote:
->>>> On Sun, Dec 28, 2014 at 12:44 AM, Rafał Miłecki<zajec5@gmail.com>  wrote:
->>>>> On 27 December 2014 at 20:24, Oscar Forner Martinez
->>>>> <oscar.forner.martinez@gmail.com>  wrote:
->>>>>> Three lines with more than 80 characters per line have been split in several lines.
->>>>>>
->>>>>> Signed-off-by: Oscar Forner Martinez<oscar.forner.martinez@gmail.com>
->>>>>
->>>>> Acked-by: Rafał Miłecki<zajec5@gmail.com>
->>>>>
->>>>
->>>> As for the comment-line changes... 80+ chars are allowed for better readability.
->>>> So, please don't do that.
->>>> [ Checkpatch should not warn on this especially for comments. ]
->>>
->>> We almost always split long comments into separated lines in the
->>> kernel. What's different with this case?
->>>
->>
->> 1st it is not mandatory.
->>
->> 2nd it is more readable in one line.
->>
->> -                       /* 4706 CC and PMU watchdogs are clocked at
->> 1/4 of ALP clock */
->> +                       /* 4706 CC and PMU watchdogs are clocked at 1/4 of ALP
->> +                        * clock
->> +                        */
->>
->> I agree with you when the comment would be longer.
->
-> So I guess there is some rule like
-> "Don't use 2 lines if there is 80 chars + one word"
-> ? Where can I find such rules?
 
-Personally, I don't like taking this sliding slope. Just stick to the 80 
-characters rule and add a few words in the comment, eg:
+--=-Sq0PTv2v8yVcNJppV786
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-			/* The BCM4706 ChipCommon and PMU watchdogs are
-			 * clocked at one quarter of the ALP clock.
-			 */
+On Tue, 2014-12-02 at 11:34 -0500, Eric B Munson wrote:
+> If the asd_find_flash_de() function returns ENOENT the off value will
+> be used uninitialized in the call to asd_read_flash_seg().
 
-Regards,
-Arend
+This is just papering over the problem.  This was my attempt at a proper
+fix: http://article.gmane.org/gmane.linux.scsi/91320
 
+Ben.
+
+> Signed-off-by: Eric B Munson <emunson@akamai.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/scsi/aic94xx/aic94xx_sds.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/scsi/aic94xx/aic94xx_sds.c b/drivers/scsi/aic94xx/ai=
+c94xx_sds.c
+> index edb43fd..6f6a5b8 100644
+> --- a/drivers/scsi/aic94xx/aic94xx_sds.c
+> +++ b/drivers/scsi/aic94xx/aic94xx_sds.c
+> @@ -982,7 +982,7 @@ static int asd_process_ctrl_a_user(struct asd_ha_stru=
+ct *asd_ha,
+>  				   struct asd_flash_dir *flash_dir)
+>  {
+>  	int err, i;
+> -	u32 offs, size;
+> +	u32 offs =3D 0, size;
+>  	struct asd_ll_el *el;
+>  	struct asd_ctrla_phy_settings *ps;
+>  	struct asd_ctrla_phy_settings dflt_ps;
+
+--=20
+Ben Hutchings
+Life would be so much easier if we could look at the source code.
+
+--=-Sq0PTv2v8yVcNJppV786
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVKAd1ee/yOyVhhEJAQq/WxAAwRRJ3fx+5TKMHki7q+x2Kw/mHL/1hX7d
+WYE09pe8uhCbAJnS/Yv2m3GcTVg8VaqiVZ1pXziB0tfEurrxayqDnPyEBXk0BLWk
+2pVVZt+tXGBkx0m8R4H9EoTL6cn/xW5+j+w3NtPg8DA6iTMd18P6E8D9ONf3wFft
+hD+1hCTQSehkAJ06tiu/uLApkg59Qi0TJFZgTxiQEaakaO7VBaK3dHbaS0xw2CS2
+aLfclKYIUtOntr1eC1mPbS0TNbGSLZsxC1b1ADLWWBXUd9xR8bQ611Ksb8HW0WRE
+nCIgk8tVFUjtOz+nRrDsErN1HnhUpAZ6v94rMW4J2B6Fsfo1dynkb2fqQp62aEs5
+4XoLaOriHlUKdwpvrb7KrctYwJ04yKVtvm6HsVIF394IK8SiYmUIyxDtyvKrhycQ
++xfV/z21R7A7mHHGp7ycFFs2PsTiVi2c3iMuFAAC50zs2F5VmPKtRcyb3BBm7o8X
+7zZzV2uUrVUFbIeJd9jWQev3f35st7SrUf6ZpvHvwLE7nLNrFJF6TNym3nhL5L4e
+uZndFBTgMo+dA9/enJVrvVQVEpZCXbydWKYRufo3sXHNoCkBL9HM35vEZ2DhS6RQ
+q6NU0j3vzNfBi+X0aEZC7kU1aRQa951iq7TzQE6zZCkWmfjkOKKZ+8n8Qmm4JSfM
+s7zSwKC0Tvw=
+=IrZy
+-----END PGP SIGNATURE-----
+
+--=-Sq0PTv2v8yVcNJppV786--
