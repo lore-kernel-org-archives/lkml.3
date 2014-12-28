@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaL1JM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 04:12:27 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:50468 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaL1JMV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 04:12:21 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CACna6rymPy1+YtEHEk18ci3VaAWkiwJ2iWv+p_yYPAjzQeJwtw@mail.gmail.com>
-References: <1419708268-14114-1-git-send-email-oscar.forner.martinez@gmail.com>
-	<CACna6rz4ue2PFQR-=nKxmCJSw9O8pKU=S7LqxA68OY1D0obvKg@mail.gmail.com>
-	<CA+icZUVm6YNK_eN7-NcSH-mAqC61vwYryVUJuNMCKuhq8kXV2g@mail.gmail.com>
-	<CACna6rymPy1+YtEHEk18ci3VaAWkiwJ2iWv+p_yYPAjzQeJwtw@mail.gmail.com>
-Date: Sun, 28 Dec 2014 10:12:19 +0100
-Message-ID: <CA+icZUVuTB55UcKKbUMd8VB5mHMkaxhCVDkLKhtSXizR+1gE2A@mail.gmail.com>
-Subject: Re: [PATCH] bcma: fix three coding style issues, more than 80
- characters per line
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Cc: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751854AbaL1JMd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 04:12:33 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:40549 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739AbaL1JM0 (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Sun, 28 Dec 2014 04:12:26 -0500
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Davidlohr Bueso <dave@stgolabs.net>, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <dbueso@suse.de>
+Subject: [PATCH 8/8] locking/osq: No need for load/acquire when acquire-polling
+Date: Sun, 28 Dec 2014 01:11:23 -0800
+Message-Id: <1419757883-4423-9-git-send-email-dave@stgolabs.net>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1419757883-4423-1-git-send-email-dave@stgolabs.net>
+References: <1419757883-4423-1-git-send-email-dave@stgolabs.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 9:53 AM, Rafał Miłecki <zajec5@gmail.com> wrote:
-> On 28 December 2014 at 06:50, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Sun, Dec 28, 2014 at 12:44 AM, Rafał Miłecki <zajec5@gmail.com> wrote:
->>> On 27 December 2014 at 20:24, Oscar Forner Martinez
->>> <oscar.forner.martinez@gmail.com> wrote:
->>>> Three lines with more than 80 characters per line have been split in several lines.
->>>>
->>>> Signed-off-by: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
->>>
->>> Acked-by: Rafał Miłecki <zajec5@gmail.com>
->>>
->>
->> As for the comment-line changes... 80+ chars are allowed for better readability.
->> So, please don't do that.
->> [ Checkpatch should not warn on this especially for comments. ]
->
-> We almost always split long comments into separated lines in the
-> kernel. What's different with this case?
->
+Both mutexes and rwsems took a performance hit when we switched
+over from the original mcs code to the cancelable variant (osq).
+The reason being the use of smp_load_acquire() when polling for
+node->locked. Paul describes the scenario nicely:
+https://lkml.org/lkml/2013/11/19/405
 
-1st it is not mandatory.
+The smp_load_acquire() when unqueuing make sense. In addition,
+we don't need to worry about leaking the critical region as
+osq is only used internally.
 
-2nd it is more readable in one line.
+This impacts both regular and large levels of concurrency and
+hardware, ie on a 40 core system with a disk intensive workload:
 
--                       /* 4706 CC and PMU watchdogs are clocked at
-1/4 of ALP clock */
-+                       /* 4706 CC and PMU watchdogs are clocked at 1/4 of ALP
-+                        * clock
-+                        */
+disk-1               804.83 (  0.00%)      828.16 (  2.90%)
+disk-61             8063.45 (  0.00%)    18181.82 (125.48%)
+disk-121            7187.41 (  0.00%)    20119.17 (179.92%)
+disk-181            6933.32 (  0.00%)    20509.91 (195.82%)
+disk-241            6850.81 (  0.00%)    20397.80 (197.74%)
+disk-301            6815.22 (  0.00%)    20287.58 (197.68%)
+disk-361            7080.40 (  0.00%)    20205.22 (185.37%)
+disk-421            7076.13 (  0.00%)    19957.33 (182.04%)
+disk-481            7083.25 (  0.00%)    19784.06 (179.31%)
+disk-541            7038.39 (  0.00%)    19610.92 (178.63%)
+disk-601            7072.04 (  0.00%)    19464.53 (175.23%)
+disk-661            7010.97 (  0.00%)    19348.23 (175.97%)
+disk-721            7069.44 (  0.00%)    19255.33 (172.37%)
+disk-781            7007.58 (  0.00%)    19103.14 (172.61%)
+disk-841            6981.18 (  0.00%)    18964.22 (171.65%)
+disk-901            6968.47 (  0.00%)    18826.72 (170.17%)
+disk-961            6964.61 (  0.00%)    18708.02 (168.62%)
 
-I agree with you when the comment would be longer.
+Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+---
+ kernel/locking/osq_lock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-- Sedat -
+diff --git a/kernel/locking/osq_lock.c b/kernel/locking/osq_lock.c
+index 9c6e251..d10dfb9 100644
+--- a/kernel/locking/osq_lock.c
++++ b/kernel/locking/osq_lock.c
+@@ -109,7 +109,7 @@ bool osq_lock(struct optimistic_spin_queue *lock)
+ 	 * cmpxchg in an attempt to undo our queueing.
+ 	 */
+ 
+-	while (!smp_load_acquire(&node->locked)) {
++	while (!READ_ONCE(node->locked)) {
+ 		/*
+ 		 * If we need to reschedule bail... so we can block.
+ 		 */
+-- 
+2.1.2
+
