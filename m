@@ -1,89 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaL1WyM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 17:54:12 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:31011 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496AbaL1WyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 17:54:07 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-01-54a08a0c88a7
-Date: Mon, 29 Dec 2014 07:52:53 +0900
-From: Changman Lee <cm224.lee@samsung.com>
-To: Jaegeuk Kim <jaegeuk@kernel.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 26 (f2fs)
-Message-id: <20141228225253.GG3335@lcm>
-References: <20141226193009.60d3f62e@canb.auug.org.au>
- <549DB43B.7050902@infradead.org> <20141226205822.GA21870@jaegeuk-mac02>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-In-reply-to: <20141226205822.GA21870@jaegeuk-mac02>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsWyRsSkXZena0GIwbOL0hZP1s9itri8aw6b
-	xcGFbYwWb+9MZ7HYuvcquwOrR+ONG2wem1doeWxa1cnm8XmTXABLFJdNSmpOZllqkb5dAlfG
-	rc+3WAvusFW8n9XO1MA4nbWLkZNDQsBE4t2POWwQtpjEhXvrgWwuDiGBpYwSnUdOAjkcYEXT
-	fkiB1AgJTGeUmPCVGaLmJ6PE6YlPmEESLAKqEv33ZrGA2GwCWhLtp9eC2SICKhKHFl1mB2lg
-	FuhnlFj/+AgjSEJYQF9i/7KHYFfwCqhLNP5/yQ4xtYFRovHzEhaIhKDEj8n3wGxmoKnrdx5n
-	grClJR79ncEOYnMKGEt8+bsNbJAo0LYpJ7eBvSAhsItd4u3Ho1DnCUh8m3yIBeIdWYlNB5gh
-	XpaUOLjiBssERrFZSNbNQrJuFpJ1CxiZVzGKphYkFxQnpRcZ6RUn5haX5qXrJefnbmIERtbp
-	f8/6djDePGB9iFGAg1GJh3fCsfkhQqyJZcWVuYcYTYGumMgsJZqcD4zfvJJ4Q2MzIwtTE1Nj
-	I3NLMyVx3gSpn8FCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGL3PLMlJea795qtuxYrj4ls7
-	lio8KFSIsbCov9Vz/WXxXmPOB60Jr77tzyk+Ovfzh7VeP/52vNN4OGVRwO7lPrr7f++4/F5F
-	deVa6/5F3Jyre1rEQu5V+sk9T5M2KNkQfzzaMO2379krz0XK7/izcbAeuMbee2jmpJ8MM0Nu
-	1M104lVbqRO+/4ASS3FGoqEWc1FxIgCzdio3pwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t9jQV2ergUhBtOOi1s8WT+L2eLyrjls
-	FgcXtjFavL0zncVi696r7A6sHo03brB5bF6h5bFpVSebx+dNcgEsUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
-	hIa46VrANEbo+oYEwfUYGaCBhHWMGbc+32ItuMNW8X5WO1MD43TWLkYODgkBE4lpP6S6GDmB
-	TDGJC/fWs4HYQgLTGSUmfGXuYuQCsn8ySpye+IQZJMEioCrRf28WC4jNJqAl0X56LZgtIqAi
-	cWjRZXaQBmaBfkaJ9Y+PMIIkhAX0JfYve8gKYvMKqEs0/n/JDjG1gVGi8fMSFoiEoMSPyffA
-	bGagqet3HmeCsKUlHv2dwQ5icwoYS3z5uw1skCjQtiknt7FNYBSYhaR9FpL2WUjaFzAyr2IU
-	TS1ILihOSs810itOzC0uzUvXS87P3cQIjttn0jsYVzVYHGIU4GBU4uGdcGx+iBBrYllxZe4h
-	RgkOZiURXqOyBSFCvCmJlVWpRfnxRaU5qcWHGE2B4TGRWUo0OR+YUvJK4g2NTcyMLI3MLIxM
-	zM2VxHmV7NtChATSE0tSs1NTC1KLYPqYODilGhg7uK/9iPpbktzRx+k+ZVrVnhcKSa0N2V/2
-	rU4LlPc0ftnD/LB/4qajE5dPNlv0Z1/xr1oD310sTy3Yn+yqtXlUnBti79zMk/+3ttC2XitP
-	pc/lOWO/TeAa7h7xR/JXvjsfSlzNF132xYPrcZdvpNnZ9VLCRgxfGDer3D2x/l3Y1I73zAaz
-	PyixFGckGmoxFxUnAgBXJZiy8QIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751649AbaL1XNp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 18:13:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751496AbaL1XNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Dec 2014 18:13:44 -0500
+Message-ID: <1419808412.5162.73.camel@localhost>
+Subject: Re: fanotify bug on gdb -- hard crash
+From: Eric Paris <eparis@redhat.com>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: ivo.welch@gmail.com, linux-kernel@vger.kernel.org
+Date: Sun, 28 Dec 2014 18:13:32 -0500
+In-Reply-To: <549DAB95.3090003@gmx.de>
+References: <CAPr7RtWpX_kYiJRRnPVSZrL-U2GqoV5aBPM_AF7xBzV99jzJuw@mail.gmail.com>
+	 <549DAB95.3090003@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 26, 2014 at 12:59:05PM -0800, Jaegeuk Kim wrote:
-> I fixed the merged patch directly.
-> 
-> Changman,
-> The patch was initially made by you, so let me know, if you have objection.
-> 
-> Thanks,
+Why are you setting FAN_OPEN_PERM and then not responding to perm
+requests? Of course the system is going to appear locked, until you
+start responding to open events, remove that mark, or close the fanotify
+fd...
 
-Sorry for my mistake.
-Thanks, Stephen and Jaegeuk.
+-Eric
 
+On Fri, 2014-12-26 at 19:40 +0100, Heinrich Schuchardt wrote:
+> Hello Ivo,
 > 
-> On Fri, Dec 26, 2014 at 11:17:15AM -0800, Randy Dunlap wrote:
-> > On 12/26/14 00:30, Stephen Rothwell wrote:
-> > > Hi all,
-> > > 
-> > > There will only be intermittent releases of linux-next between now and
-> > > Jan 5.
-> > > 
-> > > Changes since 20141221:
-> > > 
-> > 
-> > on x86_64:
-> > when CONFIG_F2FS_STAT_FS is not enabled:
-> > 
-> > ../fs/f2fs/segment.c: In function 'rewrite_data_page':
-> > ../fs/f2fs/segment.c:1233:2: error: implicit declaration of function 'stat_inc_inplace_blocks' [-Werror=implicit-function-declaration]
-> > 
-> > 
-> > 
-> > -- 
-> > ~Randy
+> On 26.12.2014 15:45, ivo welch wrote:
+> > I am not a kernel developer, so forgive the intrusion.
+> >
+> > I suspect I have found either a bug in gdb (less likely) or a bug in
+> > fanotify (more likely).  it is replicable, and the code is almost
+> > unchanged from the example in the fanotify man page.  to trigger it,
+> > all an su needs to do is to step through the program below with gdb
+> > 7.8.1 'n' command, and linux locks up the system pretty hard (reboot
+> > required).  I have confirmed the replicability of this issue on a
+> > clean arch 2014.12.01 3.17.6-1 system and on a clean ubuntu 14.10
+> > system, both VMs created just to check it.  /iaw
+> >
+> >
+> > #define _GNU_SOURCE     /* Needed to get O_LARGEFILE definition */
+> > #include <stdio.h>
+> > #include <stdlib.h>
+> > #include <errno.h>
+> > #include <fcntl.h>
+> > #include <poll.h>
+> > #include <sys/fanotify.h>
+> >
+> > int main(int argc, char *argv[]) {
+> >    int fd;
+> >    fd = fanotify_init(FAN_CLOEXEC | FAN_CLASS_CONTENT | FAN_NONBLOCK,
+> > O_RDONLY | O_LARGEFILE);
+> >    if (fd == -1) exit(1);
+> >    fprintf(stderr, "calling fanotify_mark: fd=%d\n", fd);
+> >    if (fanotify_mark(fd, FAN_MARK_ADD | FAN_MARK_MOUNT, FAN_OPEN_PERM |
+> > FAN_CLOSE_WRITE, -1, "/") == -1) exit(2);
+> >    fprintf(stderr, "in gdb step through with 'n' for repeat.\n");
+> >    fprintf(stderr, "  (and sometimes otherwise), a ^C works, but a ^Z
+> > and then ^C does not.\n");
+> > }
+> 
+> I was not able to reproduce your problem according to your description 
+> with Ubuntu 14.10.
+> 
+> I ran a Ubuntu 14.04 amd64 LiveImage in a VM and compiled your example with
+> gcc -g -o test test.c
+> 
+> The gdb version in Ubuntu 14.10 is 7.4 and not 7.8.1. The kernel version 
+> is 3.13.
+> 
+> root@ubuntu:/home/ubuntu/temp# gdb ./test
+> GNU gdb (Ubuntu/Linaro 7.4-2012.04-0ubuntu2.1) 7.4-2012.04
+> Copyright (C) 2012 Free Software Foundation, Inc.
+> License GPLv3+: GNU GPL version 3 or later 
+> <http://gnu.org/licenses/gpl.html>
+> This is free software: you are free to change and redistribute it.
+> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> and "show warranty" for details.
+> This GDB was configured as "x86_64-linux-gnu".
+> For bug reporting instructions, please see:
+> <http://bugs.launchpad.net/gdb-linaro/>...
+> Reading symbols from /home/ubuntu/temp/test...done.
+> (gdb) break main
+> Breakpoint 1 at 0x400693: file test.c, line 10.
+> (gdb) run
+> Starting program: /home/ubuntu/temp/test
+> warning: no loadable sections found in added symbol-file system-supplied 
+> DSO at 0x7ffff7ffa000
+> 
+> Breakpoint 1, main (argc=1, argv=0x7fffffffe638) at test.c:10
+> 10        fd = fanotify_init(FAN_CLOEXEC | FAN_CLASS_CONTENT | FAN_NONBLOCK,
+> (gdb) n
+> 12        if (fd == -1) exit(1);
+> (gdb) n
+> 13        fprintf(stderr, "calling fanotify_mark: fd=%d\n", fd);
+> (gdb) n
+> calling fanotify_mark: fd=7
+> 14        if (fanotify_mark(fd, FAN_MARK_ADD | FAN_MARK_MOUNT, 
+> FAN_OPEN_PERM |
+> (gdb) n
+> 16        fprintf(stderr, "in gdb step through with 'n' for repeat.\n");
+> (gdb) n
+> in gdb step through with 'n' for repeat.
+> 17        fprintf(stderr, "  (and sometimes otherwise), a ^C works, but 
+> a ^Z and then ^C does not.\n");
+> (gdb) n
+>    (and sometimes otherwise), a ^C works, but a ^Z and then ^C does not.
+> 18      }
+> (gdb) n
+> 0x00007ffff7a3b78d in __libc_start_main () from 
+> /lib/x86_64-linux-gnu/libc.so.6
+> (gdb) n
+> Single stepping until exit from function __libc_start_main,
+> which has no line number information.
+> [Inferior 1 (process 4423) exited with code 0110]
+> (gdb) n
+> The program is not being run.
+> (gdb) q
+> root@ubuntu:/home/ubuntu/temp#
+> 
+> >
+> > I don't know who else to tell this.  I hope this report is useful, if
+> > someone competent can confirm it.  /iaw
+> 
+> Bug reports for the Linux kernel should be adressed to the maintainer. 
+> You can find him in the MAINTAINERS file of the linux source.
+> 
+> See
+> https://www.kernel.org/pub/linux/docs/lkml/reporting-bugs.html
+> https://bugzilla.kernel.org/
+> 
+> Before reporting a bug it is worthwhile to check if the problem also 
+> occurs with the current kernel version (as of today 3.18.1 or 3.19-rc1).
+> 
+>  > PS: Is there an alternative to fanotify to avoid this?  I want to
+>  > learn of all file-open requests on a ro device.
+>  > ----
+> 
+> The fanotify API is the right choice. Inotify is an alternative but 
+> requires marking all directories.
+> 
+> For your task you can use the code provided at
+> https://launchpad.net/fatrace
+> 
+> Best regards
+> 
+> Heinrich Schuchardt
+
+
