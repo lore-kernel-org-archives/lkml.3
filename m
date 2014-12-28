@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaL1QMt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 11:12:49 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:40998 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaL1QMr (ORCPT
+	id S1751967AbaL1QPk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 11:15:40 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55151 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaL1QPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 11:12:47 -0500
-From: Aniroop Mathur <aniroop.mathur@gmail.com>
-To: <schwidefsky@de.ibm.com>, <heiko.carstens@de.ibm.com>,
-        <linux390@de.ibm.com>, <linux-s390@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <aniroop.mathur@gmail.com>, <a.mathur@samsung.com>
-Subject: [PATCH] s390: Initialize nr_devices count variable to -1
-Date: Sun, 28 Dec 2014 21:42:53 +0530
-Message-Id: <1419783173-3066-1-git-send-email-aniroop.mathur@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 28 Dec 2014 11:15:38 -0500
+Date: Sun, 28 Dec 2014 17:15:24 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] Ensure different messages in STRICT_DEVMEM and PAT cases
+Message-ID: <20141228161524.GA10442@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aniroop Mathur <a.mathur@samsung.com>
+commit 823a62aebddaec01fd776a8dd4f8f4a5b419e3f9
+Author: Pavel <pavel@ucw.cz>
+Date:   Sun Dec 28 17:04:02 2014 +0100
 
-This patch initializes nr_device count variable to -1 to avoid extra
-subtraction operation performed everytime scm block device is set up.
+STRICT_DEVMEM and PAT produce same failure accessing /dev/mem, which
+is quite confusing to the user. Make printk messages different to
+lessen confusion.
+    
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
----
- drivers/s390/block/scm_blk.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/s390/block/scm_blk.c b/drivers/s390/block/scm_blk.c
-index 76bed17..ee2bd6f 100644
---- a/drivers/s390/block/scm_blk.c
-+++ b/drivers/s390/block/scm_blk.c
-@@ -23,7 +23,7 @@ static int scm_major;
- static DEFINE_SPINLOCK(list_lock);
- static LIST_HEAD(inactive_requests);
- static unsigned int nr_requests = 64;
--static atomic_t nr_devices = ATOMIC_INIT(0);
-+static atomic_t nr_devices = ATOMIC_INIT(-1);
- module_param(nr_requests, uint, S_IRUGO);
- MODULE_PARM_DESC(nr_requests, "Number of parallel requests.");
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 6574388..2b6f5d8 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -488,7 +488,7 @@ pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
+ }
  
-@@ -357,7 +357,7 @@ int scm_blk_dev_setup(struct scm_blk_dev *bdev, struct scm_device *scmdev)
- 	int len, ret = -ENOMEM;
- 	unsigned int devindex, nr_max_blk;
+ #ifdef CONFIG_STRICT_DEVMEM
+-/* This check is done in drivers/char/mem.c in case of STRICT_DEVMEM*/
++/* This check is done in drivers/char/mem.c in case of STRICT_DEVMEM */
+ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
+ {
+ 	return 1;
+@@ -506,7 +506,7 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
  
--	devindex = atomic_inc_return(&nr_devices) - 1;
-+	devindex = atomic_inc_return(&nr_devices);
- 	/* scma..scmz + scmaa..scmzz */
- 	if (devindex > 701) {
- 		ret = -ENODEV;
+ 	while (cursor < to) {
+ 		if (!devmem_is_allowed(pfn)) {
+pp-			printk(KERN_INFO "Program %s tried to access /dev/mem between [mem %#010Lx-%#010Lx]\n",
++			printk(KERN_INFO "Program %s tried to access /dev/mem between [mem %#010Lx-%#010Lx], PAT prevents it\n",
+ 				current->comm, from, to - 1);
+ 			return 0;
+ 		}
+
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
