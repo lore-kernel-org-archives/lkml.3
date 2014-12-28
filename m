@@ -1,57 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaL1O1T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 09:27:19 -0500
-Received: from mout.web.de ([212.227.15.4]:51835 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831AbaL1O1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 09:27:01 -0500
-Message-ID: <54A01326.3050306@users.sourceforge.net>
-Date: Sun, 28 Dec 2014 15:26:46 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751899AbaL1OaX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 09:30:23 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33809 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793AbaL1OaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Dec 2014 09:30:21 -0500
+Date: Sun, 28 Dec 2014 06:30:16 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>, David Airlie <airlied@linux.ie>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Darren Hart <dvhart@infradead.org>
+Subject: Re: [PATCH] nouveau: fix ambiguous backlight controls
+Message-ID: <20141228143016.GA22394@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Hans de Goede <hdegoede@redhat.com>,
+	Ilia Mirkin <imirkin@alum.mit.edu>, David Airlie <airlied@linux.ie>,
+	Ben Skeggs <bskeggs@redhat.com>,
+	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Darren Hart <dvhart@infradead.org>
+References: <1419629187-13916-1-git-send-email-jmmahler@gmail.com>
+ <CAKb7Uvi2jXTeD9+pUg6YiQrwK1HaVt2aoC-to1Xw1htvmJao-w@mail.gmail.com>
+ <20141226235151.GA18697@hudson.localdomain>
+ <549EB69E.6070708@redhat.com>
 MIME-Version: 1.0
-To: Eric Van Hensbergen <ericvh@gmail.com>,
-        Latchesar Ionkov <lucho@ionkov.net>, Ron Minnich <rminnich@sandia.gov>,
-        v9fs-developer@lists.sourceforge.net
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 0/8] fs/9p: Deletion of some unnecessary checks
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:NiAg6488mz27Wdmg8xPoGEpC/mWf2lVWXbKYrEGf1wX6HCRp0EZ
- L6frDIGdCo9FBz5rKSQcE1q8+R0EBI5DKjoJJp5LU7KFLJdHVoNgcvWEYxb5ZRl2dmdTyVd
- FqpulTYiWyy0IstjpQ2whs8V+rTYfFhxCV6LsmMuBiGryLCBArDsQc0YM0+7shjo1e/1fPC
- tRv+9WWaYhocBKu5qRAng==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <549EB69E.6070708@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 28 Dec 2014 14:50:08 +0100
+Hans,
 
-Further update suggestions were taken into account after a patch was applied
-from static source code analysis.
+On Sat, Dec 27, 2014 at 02:39:42PM +0100, Hans de Goede wrote:
+> Hi,
+> 
+> On 27-12-14 00:51, Jeremiah Mahler wrote:
+> >Ilia,
+> >
+> >On Fri, Dec 26, 2014 at 04:39:08PM -0500, Ilia Mirkin wrote:
+> >>On Fri, Dec 26, 2014 at 4:26 PM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
+> >>>If a display supports backlight control using the nouveau driver, and
+> >>>also supports standard ACPI backlight control, there will be two sets of
+> >>>controls.
+> >>>
+> >>>/sys/class/backlight/acpi_video0
+> >>>/sys/class/backlight/nv_backlight
+> >>>
+> >>>This creates ambiguity because these controls can be out of sync with
+> >>>each other.  One could be at 100% while the other is at 0% and the
+> >>>actual display brightness depends on which one was used last.  This also
+> >>>creates anomalies in Powertop which will show two values for brightness
+> >>>with potentially different values.
+> >>>
+> >>>Fix this ambiguity by having the nouveau driver only enable its
+> >>>backlight controls if the standard ACPI controls are not present.
+> >>>
+> >>>Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
+> >>>---
+> >>>  drivers/gpu/drm/nouveau/nouveau_backlight.c | 5 +++++
+> >>>  1 file changed, 5 insertions(+)
+> >>>
+> >>>diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> >>>index e566c5b..3a52bd4 100644
+> >>>--- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> >>>+++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
+> >>>@@ -221,6 +221,11 @@ nouveau_backlight_init(struct drm_device *dev)
+> >>>         struct nvif_device *device = &drm->device;
+> >>>         struct drm_connector *connector;
+> >>>
+> >>>+       if (acpi_video_backlight_support()) {
+> >>
+> >>None of the other drivers have this. Is nouveau somehow different
+> >>than, say, radeon in this respect?
+> >>
+> >>Unfortunately the backlight situation is pretty fubar'd... sometimes
+> >>the acpi controls don't work, sometimes the card controls don't work,
+> >>sometimes they both work but in different ways (and then everyone's
+> >>favourite -- neither works, and there's some third platform thing).
+> >>I'm pretty sure this code existed before, but got removed. See commit
+> >>bee564430feec1175ee64bcfd4913cacc519f817 and the previous commit
+> >>5bead799d3f8 before that. The ping-pong is probably not the right way
+> >>to go.
+> >>
+> >
+> >I was not aware of that change. But you are right, it took out what I
+> >was trying to put back in.
+> >
+> >Thanks for the helpful information.  I will have to rethink this fix.
+> 
+> So first of all NAK to the original fix, but I think that much was
+> already clear.
+> 
+> Let me explain how this currently works, most laptops have up to 3
+> backlight control interfaces (all talking to the same single backlight):
+> 
+> acpi_video: a standardized acpi interface for backlight control, broken on most
+> win8 ready laptops.
+> 
+> vendor: e.g. asus_wmi, dell_laptop, etc. typically not much better on
+> win8 ready laptops.
+> 
+> native: e.g. intel_backlight, nv_backlight, usually your best bet on win8
+> laptops, but not so much on older models.
+> 
+> Before windows8 only 2 of these 3 get registered / exported to userspace,
+> either you've:
+> 
+> acpi_video + native:
+> 
+> or:
+> 
+> vendor + native:
+> 
+> Since most vendor drivers contain:
+> 
+> if (acpi_video_backlight_support())
+> 	return 0;
+> 
+> And userspace backlight control code knows the prefer the firmware interfaces
+> over the native one and to simply ignore the native interface, unless there
+> is no firmware interface, so having 2 interfaces present in sysfs is not
+> really a problem as userspace knows how to deal with this.
+> 
+> So along came Windows 8, breaking most acpi_video implementations. This got
+> fixed by a new module parameter to the acpi_video driver called use_native_backlight,
+> which now a days defaults to 1. When this parameter is true *and* the BIOS is
+> a win8 ready bios, then acpi_video will not register a backlight interface itself,
+> and acpi_video_backlight_support() will still return 1, causing the vendor interfaces
+> to not register. Leaving only the native interface.
+> 
+So acpi_video_backlight_support() will return true for win8 even when ACPI
+isn't actually supported.  Could this have been fixed by updating
+acpi_video_backlight_support() function?
 
-Markus Elfring (8):
-  Deletion of unnecessary checks before the function call "p9_client_clunk"
-  One function call less in v9fs_create() after error detection
-  One function call less in v9fs_vfs_atomic_open() after error detection
-  One function call less in v9fs_fid_xattr_get() after error detection
-  One function call less in v9fs_vfs_atomic_open_dotl() after error detection
-  Less function calls in v9fs_vfs_mkdir_dotl() after error detection
-  One function call less in v9fs_vfs_symlink_dotl() after error detection
-  Less function calls in v9fs_vfs_mknod_dotl() after error detection
+> Your proposed patch will break things on win8 laptops using nv_backlight, since in the
+> use_native_backlight case it will cause nv_backlight to not register resulting in
+> not having any backlight interface at all.
+> 
+> I will happily admit that the combination of acpi_backlight=[video|vendor]
+> + video.use_native_backlight=[0|1] which has evolved over time is not the prettiest
+> solution. IMHO if you want to clean things up, and ensure only one interface gets
+> registered at a time, the solution would be to change acpi_backlight to also take
+> a native option, so that on the kernel commandline we end up with only:
+> acpi_backlight=[video|vendor|native] and move the use_native_backlight handling
+> from drivers/acpi/video.c to drivers/acpi/video_detect.c .
+> 
+It is not ideal but I can see why it was done.  It is much better to have
+at least one working interface even if this means there are two in some
+cases.
 
- fs/9p/vfs_dir.c        |  3 +--
- fs/9p/vfs_inode.c      | 25 ++++++++++--------------
- fs/9p/vfs_inode_dotl.c | 52 +++++++++++++++++++++-----------------------------
- fs/9p/xattr.c          |  6 ++----
- 4 files changed, 35 insertions(+), 51 deletions(-)
+My complaint of two which can be out of sync with each other is a non-issue
+in most cases.
+
+> Code wise this would mean replacing acpi_video_backlight_support() with a function
+> called acpi_video_get_backlight_type which returns an enum which can be:
+> 
+> acpi_video_backlight_acpi_video,
+> acpi_video_backlight_vendor,
+> acpi_video_backlight_native,
+> 
+> And fix all callers to use that.
+> 
+So all the detection would be done in drivers/acpi/video_detect.c and
+then acpi_video_backlight_type() could be called to determine the type.
+
+> But, things are not that easy because there also is acpi_video_dmi_promote_vendor()
+> which is used by vendor drivers (mostly found under drivers/platform/x86) to tell
+> video_detect.c that the vendor driver knows that on this particular model laptop
+> it is better to use the vendor driver then acpi_video, and in some cases
+> this is used in combination with not actually registering the vendor backlight interface
+> to get the same end result as the new "native" option would give, but then on laptops
+> which need this despite not being win8 ready (and thus not automatically defaulting
+> to native).
+> 
+> So you would need to replace this to with a acpi_video_set_dmi_backlight_type, which
+> should change the return of acpi_video_get_backlight_type, but only if not overridden
+> from the kernel commandline, as the commandline takes presedence over the dmi
+> quirks which are tracked in the various vendor drivers.
+> 
+Ugh, this is a messy situation.
+
+> A cleanup to all this would certainly be welcome, but as outlined above it is not
+> trivial. I do not have time to actively work on this myself, but I will happily
+> review any patches you come up with for this.
+> 
+> Regards,
+> 
+> Hans
+
+Thanks for the very detailed description :)
 
 -- 
-2.2.1
-
+- Jeremiah Mahler
