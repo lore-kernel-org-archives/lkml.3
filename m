@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaL1JSW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 04:18:22 -0500
-Received: from 1wt.eu ([62.212.114.60]:25616 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795AbaL1JSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 04:18:18 -0500
-Date: Sun, 28 Dec 2014 10:18:18 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: DRAM unreliable under specific access patern
-Message-ID: <20141228091818.GA8029@1wt.eu>
-References: <20141224163823.GA17035@amd>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141224163823.GA17035@amd>
-User-Agent: Mutt/1.4.2.3i
+	id S1751442AbaL1J4e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 04:56:34 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39061 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207AbaL1J4c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Dec 2014 04:56:32 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <1419619556.4705.136.camel@decadent.org.uk>
+References: <CA+icZUXPt=GM08PD8LOpCdxCYhNMrr-2MHxPyNRWPXqUjQXFrw@mail.gmail.com>
+	<CA+icZUVfiQ1+k2zD9HXMM40N8rwg6rEmYLdKfHGsGt3xvJu+4w@mail.gmail.com>
+	<1419619556.4705.136.camel@decadent.org.uk>
+Date: Sun, 28 Dec 2014 10:56:30 +0100
+Message-ID: <CA+icZUX47rv=BqMdKuXeT0s9q1fageu1gUxBDc-Dn+tk=36vqg@mail.gmail.com>
+Subject: Re: deb-pkg: Cleaning of debian/*tmp files when running 'make (dist)clean'
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Michal Marek <mmarek@suse.cz>, maximilian attems <max@stro.at>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+On Fri, Dec 26, 2014 at 7:46 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> On Fri, 2014-12-26 at 13:43 +0100, Sedat Dilek wrote:
+>> On Fri, Dec 26, 2014 at 1:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> [...]
+>> >
+>> > Any other make (PHONY) target I don't know?
+>> >
+>>
+>> I fell over "clean-dirs"...
+>>
+>> scripts/package/Makefile:93:clean-dirs += $(objtree)/debian/
+>>
+>> ...but did not really understood how it works.
+>> The main Makefile defines some clean-dirs PHONY#s.
+>> I can only speculate, someone with more skillz in Makefile handling
+>> should look at this.
+>
+> It looks like this has not worked for a long time.  The scripts
+> directory is not included in the main recursive processes; it seems to
+> be special-cased for build and not for clean.  This is partly deliberate
+> because clean is supposed to leave 'enough to build external modules'.
+> It's not obvious to include scripts/packages/ in clean.
+>
 
-On Wed, Dec 24, 2014 at 05:38:23PM +0100, Pavel Machek wrote:
-> Hi!
-> 
-> It seems that it is easy to induce DRAM bit errors by doing repeated
-> reads from adjacent memory cells on common hw. Details are at
-> 
-> https://www.ece.cmu.edu/~safari/pubs/kim-isca14.pdf
+[ CCing some more people (submitters to scripts/Makefile.clean) ]
 
-Extremely interesting stuff. I've always wondered if such modules
-were *that* reliable given how picky they are about all timings.
+Thanks for your reply and confirmation.
 
-> . Older memory modules seem to work better, and ECC should detect
-> this. Paper has inner loop that should trigger this.
-> 
-> Workarounds seem to be at hardware level, and tricky, too.
-> 
-> Does anyone have implementation of detector? Any ideas how to work
-> around it in software?
+So, how to fix that issue?
 
-Maybe reserve some memory "canary" that is periodically scanned and
-observe changes there. That will not tell you for sure that something
-has not been done, but it will tell you for sure that bits were flipped.
+Cleanup debian/*tmp dirs within builddeb script for now?
 
-Also I'm wondering whether perf counters on certain CPUs could be used
-to detect the abnormal number of clflushes or even the memory access
-pattern (will not work in multi-socket environments if a user has one
-dedicated CPU though).
+Fix that clean-dirs mechanism (or remove it)?
+These 4 Makefile#s use it...
 
-Thanks for sharing the link!
-Willy
+Documentation/DocBook/Makefile
+Makefile
+scripts/Makefile.clean
+scripts/package/Makefile
 
+Any help appreciated.
+
+- Sedat -
