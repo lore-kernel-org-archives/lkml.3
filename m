@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaL1S4p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 13:56:45 -0500
-Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:43136 "EHLO
-	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751758AbaL1S4l (ORCPT
+	id S1751995AbaL1S4s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 13:56:48 -0500
+Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:42451 "EHLO
+	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751752AbaL1S4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Dec 2014 13:56:41 -0500
 X-RRZE-Submit-IP: 131.188.42.195
@@ -16,9 +16,9 @@ Cc: linux-kernel@i4.cs.fau.de, hsweeten@visionengravers.com, abbotti@mev.co.uk,
         chase.southwood@gmail.com, rickard_strandqvist@spectrumdigital.se,
         Andreas Siegling <andreas.siegling@fau.de>,
         Zhutao Lu <lvzhutao@gmail.com>
-Subject: [PATCH 3/3] comedi: checkpatch warning: missing blank line
-Date: Sun, 28 Dec 2014 19:56:15 +0100
-Message-Id: <1419792975-31519-4-git-send-email-andreas.siegling@fau.de>
+Subject: [PATCH 1/3] comedi: checkpatch error: tabs instead of spaces
+Date: Sun, 28 Dec 2014 19:56:13 +0100
+Message-Id: <1419792975-31519-2-git-send-email-andreas.siegling@fau.de>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1419792975-31519-1-git-send-email-andreas.siegling@fau.de>
 References: <1419792975-31519-1-git-send-email-andreas.siegling@fau.de>
@@ -26,65 +26,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will fix all occurrences of the checkpatch warning:
-	 WARNING: Missing a blank line after declarations
-in drivers/staging/comedi/.
+This patch fixes all occurrences of 8 whitespaces instead of a tab.
+It will remove the 8 whitespaces and replace them with a tab, thereby
+the checkpatch-error:
+		ERROR: code indent should use tabs where possible
+is removed from all files in drivers/staging/comedi/
+It also brings some consistency of indentation in the comments.
 
 Signed-off-by: Andreas Siegling <andreas.siegling@fau.de>
 Signed-off-by: Zhutao Lu <lvzhutao@gmail.com>
 ---
- drivers/staging/comedi/drivers/comedi_bond.c | 1 +
- drivers/staging/comedi/drivers/ni_stc.h      | 4 ++++
- 2 files changed, 5 insertions(+)
+ drivers/staging/comedi/drivers/daqboard2000.c | 62 +++++++++++++--------------
+ drivers/staging/comedi/drivers/das16m1.c      |  4 +-
+ drivers/staging/comedi/drivers/dmm32at.c      |  2 +-
+ drivers/staging/comedi/drivers/pcl818.c       | 36 ++++++++--------
+ 4 files changed, 52 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
-index 85b2f4a..221d381 100644
---- a/drivers/staging/comedi/drivers/comedi_bond.c
-+++ b/drivers/staging/comedi/drivers/comedi_bond.c
-@@ -261,6 +261,7 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
- 			{
- 				/* Append dev:subdev to devpriv->name */
- 				char buf[20];
-+
- 				snprintf(buf, sizeof(buf), "%u:%u ",
- 					 bdev->minor, bdev->subdev);
- 				strlcat(devpriv->name, buf,
-diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
-index bb76fe1..3b8b3c5 100644
---- a/drivers/staging/comedi/drivers/ni_stc.h
-+++ b/drivers/staging/comedi/drivers/ni_stc.h
-@@ -326,6 +326,7 @@ static inline unsigned RTSI_Output_Bit(unsigned channel, int is_mseries)
- {
- 	unsigned max_channel;
- 	unsigned base_bit_shift;
-+
- 	if (is_mseries) {
- 		base_bit_shift = 8;
- 		max_channel = 7;
-@@ -1142,6 +1143,7 @@ static inline unsigned MSeries_AI_Config_Bank_Bits(enum ni_reg_type reg_type,
- 						   unsigned channel)
- {
- 	unsigned bits = channel & 0x30;
-+
- 	if (reg_type == ni_reg_622x) {
- 		if (channel & 0x40)
- 			bits |= 0x400;
-@@ -1191,6 +1193,7 @@ enum MSeries_PLL_Control_Bits {
- static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
- {
- 	static const unsigned max_divisor = 0x10;
-+
- 	if (divisor < 1 || divisor > max_divisor) {
- 		pr_err("%s: bug, invalid divisor=%i\n", __func__, divisor);
- 		return 0;
-@@ -1201,6 +1204,7 @@ static inline unsigned MSeries_PLL_Divisor_Bits(unsigned divisor)
- static inline unsigned MSeries_PLL_Multiplier_Bits(unsigned multiplier)
- {
- 	static const unsigned max_multiplier = 0x100;
-+
- 	if (multiplier < 1 || multiplier > max_multiplier) {
- 		pr_err("%s: bug, invalid multiplier=%i\n", __func__,
- 		       multiplier);
+diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
+index 96697fb..4172e99 100644
+--- a/drivers/staging/comedi/drivers/daqboard2000.c
++++ b/drivers/staging/comedi/drivers/daqboard2000.c
+@@ -43,7 +43,7 @@ Configuration options: not applicable, uses PCI auto config
+       available from http://www.plxtech.com/products/io/pci9080 
+ 
+    2. The initialization done so far is:
+-        a. program the FPGA (windows code sans a lot of error messages)
++	a. program the FPGA (windows code sans a lot of error messages)
+ 	b.
+ 
+    3. Analog out seems to work OK with DAC's disabled, if DAC's are enabled,
+@@ -52,52 +52,52 @@ Configuration options: not applicable, uses PCI auto config
+       gives me no clues. I'll keep it simple so far.
+ 
+    4. Analog in.
+-        Each channel in the scanlist seems to be controlled by four
++	Each channel in the scanlist seems to be controlled by four
+ 	control words:
+ 
+-        Word0:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	Word0:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  ! | | | ! | | | ! | | | ! | | | !
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ 
+-        Word1:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	Word1:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  ! | | | ! | | | ! | | | ! | | | !
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ 	   |             |       | | | | |
+-           +------+------+       | | | | +-- Digital input (??)
++	   +------+------+       | | | | +-- Digital input (??)
+ 		  |		 | | | +---- 10 us settling time
+ 		  |		 | | +------ Suspend acquisition (last to scan)
+ 		  |		 | +-------- Simultaneous sample and hold
+ 		  |		 +---------- Signed data format
+ 		  +------------------------- Correction offset low
+ 
+-        Word2:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-           |     | |     | | | | | |     |
+-           +-----+ +--+--+ +++ +++ +--+--+
+-              |       |     |   |     +----- Expansion channel
++	Word2:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  ! | | | ! | | | ! | | | ! | | | !
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	   |     | |     | | | | | |     |
++	   +-----+ +--+--+ +++ +++ +--+--+
++	      |       |     |   |     +----- Expansion channel
+ 	      |       |     |   +----------- Expansion gain
+-              |       |     +--------------- Channel (low)
++	      |       |     +--------------- Channel (low)
+ 	      |       +--------------------- Correction offset high
+ 	      +----------------------------- Correction gain low
+-        Word3:
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-          ! | | | ! | | | ! | | | ! | | | !
+-          +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+-           |             | | | |   | | | |
+-           +------+------+ | | +-+-+ | | +-- Low bank enable
+-                  |        | |   |   | +---- High bank enable
+-                  |        | |   |   +------ Hi/low select
+-		  |    	   | |   +---------- Gain (1,?,2,4,8,16,32,64)
+-		  |    	   | +-------------- differential/single ended
+-		  |    	   +---------------- Unipolar
++	Word3:
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	  ! | | | ! | | | ! | | | ! | | | !
++	  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++	   |             | | | |   | | | |
++	   +------+------+ | | +-+-+ | | +-- Low bank enable
++		  |	   | |   |   | +---- High bank enable
++		  |	   | |   |   +------ Hi/low select
++		  |	   | |   +---------- Gain (1,?,2,4,8,16,32,64)
++		  |	   | +-------------- differential/single ended
++		  |	   +---------------- Unipolar
+ 		  +------------------------- Correction gain high
+ 
+    999. The card seems to have an incredible amount of capabilities, but
+-        trying to reverse engineer them from the Windows source is beyond my
++	trying to reverse engineer them from the Windows source is beyond my
+ 	patience.
+ 
+  */
+diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
+index 80f41b7..3895aa9 100644
+--- a/drivers/staging/comedi/drivers/das16m1.c
++++ b/drivers/staging/comedi/drivers/das16m1.c
+@@ -46,8 +46,8 @@ list has 2 or more channels in it, then two conditions must be satisfied:
+ (2) - the list must have an even number of entries.
+ 
+ Options:
+-        [0] - base io address
+-        [1] - irq (optional, but you probably want it)
++	[0] - base io address
++	[1] - irq (optional, but you probably want it)
+ 
+ irq can be omitted, although the cmd interface will not work without it.
+ */
+diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
+index 6df298a..31919b8 100644
+--- a/drivers/staging/comedi/drivers/dmm32at.c
++++ b/drivers/staging/comedi/drivers/dmm32at.c
+@@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
+ 	/* enable the ai conversion interrupt and the clock to start scans */
+ 	outb(DMM32AT_INTCLK_ADINT |
+ 	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
+-             dev->iobase + DMM32AT_INTCLK_REG);
++	     dev->iobase + DMM32AT_INTCLK_REG);
+ }
+ 
+ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
+index 8edea35..525a471 100644
+--- a/drivers/staging/comedi/drivers/pcl818.c
++++ b/drivers/staging/comedi/drivers/pcl818.c
+@@ -45,11 +45,11 @@ A word or two about DMA. Driver support DMA operations at two ways:
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=A/D input  -5V.. +5V
+-          1, 10=A/D input -10V..+10V
++	  1, 10=A/D input -10V..+10V
+     [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
++	  1, 10=D/A output 0-10V (internal reference -10V)
+ 	  2    =D/A output unknown (external reference)
+ 
+    Options for PCL-818, PCL-818H:
+@@ -57,44 +57,44 @@ A word or two about DMA. Driver support DMA operations at two ways:
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
++	  1, 10=D/A output 0-10V (internal reference -10V)
+ 	  2    =D/A output unknown (external reference)
+ 
+    Options for PCL-818HD, PCL-818HG:
+     [0] - IO Base
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA/FIFO  (-1=use FIFO, 0=disable both FIFO and DMA,
+-                      1=use DMA ch 1, 3=use DMA ch 3)
++		      1=use DMA ch 1, 3=use DMA ch 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] - 0,  5=D/A output 0-5V  (internal reference -5V)
+-          1, 10=D/A output 0-10V (internal reference -10V)
+-   	  2    =D/A output unknown (external reference)
++	  1, 10=D/A output 0-10V (internal reference -10V)
++	  2    =D/A output unknown (external reference)
+ 
+    Options for PCL-718:
+     [0] - IO Base
+     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
+     [2] - DMA	(0=disable, 1, 3)
+     [3] - 0, 10=10MHz clock for 8254
+-              1= 1MHz clock for 8254
++	      1= 1MHz clock for 8254
+     [4] -     0=A/D Range is +/-10V
+-	      1=             +/-5V
+-	      2=             +/-2.5V
+-	      3=             +/-1V
+-	      4=             +/-0.5V
+-	      5=  	     user defined bipolar
++	      1=	     +/-5V
++	      2=	     +/-2.5V
++	      3=	     +/-1V
++	      4=	     +/-0.5V
++	      5=	     user defined bipolar
+ 	      6=	     0-10V
+ 	      7=	     0-5V
+- 	      8=	     0-2V
++	      8=	     0-2V
+ 	      9=	     0-1V
+ 	     10=	     user defined unipolar
+     [5] - 0,  5=D/A outputs 0-5V  (internal reference -5V)
+-          1, 10=D/A outputs 0-10V (internal reference -10V)
++	  1, 10=D/A outputs 0-10V (internal reference -10V)
+ 	      2=D/A outputs unknown (external reference)
+     [6] - 0, 60=max  60kHz A/D sampling
+-          1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
++	  1,100=max 100kHz A/D sampling (PCL-718 with Option 001 installed)
+ 
+ */
+ 
 -- 
 1.9.1
 
