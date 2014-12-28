@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaL1QiG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 11:38:06 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:42140 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809AbaL1QiD (ORCPT
+	id S1751953AbaL1Qih (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 11:38:37 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36882 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809AbaL1Qif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 11:38:03 -0500
-Date: Sun, 28 Dec 2014 17:30:58 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>
-Subject: Re: [PATCH 7/8] locking: Use [READ,ASSIGN]_ONCE() for non-scalar
- types
-Message-ID: <20141228163058.GB12952@dyad.arnhem.chello.nl>
-References: <1419757883-4423-1-git-send-email-dave@stgolabs.net>
- <1419757883-4423-8-git-send-email-dave@stgolabs.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419757883-4423-8-git-send-email-dave@stgolabs.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Sun, 28 Dec 2014 11:38:35 -0500
+From: Aniroop Mathur <aniroop.mathur@gmail.com>
+To: <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <aniroop.mathur@gmail.com>, <a.mathur@samsung.com>
+Subject: [PATCH] regulator: core: Avoid negative regulator no & initialize it to -1
+Date: Sun, 28 Dec 2014 22:08:38 +0530
+Message-Id: <1419784718-3704-1-git-send-email-aniroop.mathur@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 01:11:22AM -0800, Davidlohr Bueso wrote:
-> I guess everyone will eventually have to update, so lets
-> do our part... and become the first users of ASSIGN_ONCE().
+This patch initializes regulator_no to -1 to avoid extra subtraction
+operation performed every time we register a regulator and avoid negative
+regulator no in its name.
 
-> -	ACCESS_ONCE(prev->next) = node;
-> +	ASSIGN_ONCE(node, prev->next);
+Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
+---
+ drivers/regulator/core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> -	struct mcs_spinlock *next = ACCESS_ONCE(node->next);
-> +	struct mcs_spinlock *next = READ_ONCE(node->next);
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index a3c3785..b0729ef 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3481,7 +3481,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ {
+ 	const struct regulation_constraints *constraints = NULL;
+ 	const struct regulator_init_data *init_data;
+-	static atomic_t regulator_no = ATOMIC_INIT(0);
++	static atomic_t regulator_no = ATOMIC_INIT(-1);
+ 	struct regulator_dev *rdev;
+ 	struct device *dev;
+ 	int ret, i;
+@@ -3550,8 +3550,8 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ 	rdev->dev.class = &regulator_class;
+ 	rdev->dev.of_node = of_node_get(config->of_node);
+ 	rdev->dev.parent = dev;
+-	dev_set_name(&rdev->dev, "regulator.%d",
+-		     atomic_inc_return(&regulator_no) - 1);
++	dev_set_name(&rdev->dev, "regulator.%lu",
++		     atomic_inc_return(&regulator_no));
+ 	ret = device_register(&rdev->dev);
+ 	if (ret != 0) {
+ 		put_device(&rdev->dev);
+-- 
+1.9.1
 
-That's disgusting and sad, doubly so because I was entirely unaware of that stuff.
