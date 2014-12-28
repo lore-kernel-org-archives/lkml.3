@@ -1,204 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaL1OaX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 09:30:23 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:33809 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaL1OaV (ORCPT
+	id S1751849AbaL1OvG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 09:51:06 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:63178 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaL1OvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 09:30:21 -0500
-Date: Sun, 28 Dec 2014 06:30:16 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>, David Airlie <airlied@linux.ie>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Darren Hart <dvhart@infradead.org>
-Subject: Re: [PATCH] nouveau: fix ambiguous backlight controls
-Message-ID: <20141228143016.GA22394@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Hans de Goede <hdegoede@redhat.com>,
-	Ilia Mirkin <imirkin@alum.mit.edu>, David Airlie <airlied@linux.ie>,
-	Ben Skeggs <bskeggs@redhat.com>,
-	"Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Darren Hart <dvhart@infradead.org>
-References: <1419629187-13916-1-git-send-email-jmmahler@gmail.com>
- <CAKb7Uvi2jXTeD9+pUg6YiQrwK1HaVt2aoC-to1Xw1htvmJao-w@mail.gmail.com>
- <20141226235151.GA18697@hudson.localdomain>
- <549EB69E.6070708@redhat.com>
+	Sun, 28 Dec 2014 09:51:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549EB69E.6070708@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <549EDF47.6050903@gmail.com>
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
+ <1419405333-27952-16-git-send-email-namhyung@kernel.org> <549EDF47.6050903@gmail.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Sun, 28 Dec 2014 23:50:42 +0900
+X-Google-Sender-Auth: 0XXEmp40D4b8Aiv2tQe_SxqBh0w
+Message-ID: <CAM9d7chrHpOs-zN0o4WH=L=h8RPQEKa9dQFvGebRaUQFLNfNmA@mail.gmail.com>
+Subject: Re: [PATCH 15/37] perf tools: Introduce machine__find*_thread_time()
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hans,
+On Sun, Dec 28, 2014 at 1:33 AM, David Ahern <dsahern@gmail.com> wrote:
+> On 12/24/14 12:15 AM, Namhyung Kim wrote:
+>>
+>> @@ -61,12 +61,12 @@ static int unwind_entry(struct unwind_entry *entry,
+>> void *arg)
+>>   __attribute__ ((noinline))
+>>   static int unwind_thread(struct thread *thread)
+>>   {
+>> -       struct perf_sample sample;
+>> +       struct perf_sample sample = {
+>> +               .time = -1ULL,
+>> +       };
+>
+>
+> 1-liner like the others?
 
-On Sat, Dec 27, 2014 at 02:39:42PM +0100, Hans de Goede wrote:
-> Hi,
-> 
-> On 27-12-14 00:51, Jeremiah Mahler wrote:
-> >Ilia,
-> >
-> >On Fri, Dec 26, 2014 at 04:39:08PM -0500, Ilia Mirkin wrote:
-> >>On Fri, Dec 26, 2014 at 4:26 PM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
-> >>>If a display supports backlight control using the nouveau driver, and
-> >>>also supports standard ACPI backlight control, there will be two sets of
-> >>>controls.
-> >>>
-> >>>/sys/class/backlight/acpi_video0
-> >>>/sys/class/backlight/nv_backlight
-> >>>
-> >>>This creates ambiguity because these controls can be out of sync with
-> >>>each other.  One could be at 100% while the other is at 0% and the
-> >>>actual display brightness depends on which one was used last.  This also
-> >>>creates anomalies in Powertop which will show two values for brightness
-> >>>with potentially different values.
-> >>>
-> >>>Fix this ambiguity by having the nouveau driver only enable its
-> >>>backlight controls if the standard ACPI controls are not present.
-> >>>
-> >>>Signed-off-by: Jeremiah Mahler <jmmahler@gmail.com>
-> >>>---
-> >>>  drivers/gpu/drm/nouveau/nouveau_backlight.c | 5 +++++
-> >>>  1 file changed, 5 insertions(+)
-> >>>
-> >>>diff --git a/drivers/gpu/drm/nouveau/nouveau_backlight.c b/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> >>>index e566c5b..3a52bd4 100644
-> >>>--- a/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> >>>+++ b/drivers/gpu/drm/nouveau/nouveau_backlight.c
-> >>>@@ -221,6 +221,11 @@ nouveau_backlight_init(struct drm_device *dev)
-> >>>         struct nvif_device *device = &drm->device;
-> >>>         struct drm_connector *connector;
-> >>>
-> >>>+       if (acpi_video_backlight_support()) {
-> >>
-> >>None of the other drivers have this. Is nouveau somehow different
-> >>than, say, radeon in this respect?
-> >>
-> >>Unfortunately the backlight situation is pretty fubar'd... sometimes
-> >>the acpi controls don't work, sometimes the card controls don't work,
-> >>sometimes they both work but in different ways (and then everyone's
-> >>favourite -- neither works, and there's some third platform thing).
-> >>I'm pretty sure this code existed before, but got removed. See commit
-> >>bee564430feec1175ee64bcfd4913cacc519f817 and the previous commit
-> >>5bead799d3f8 before that. The ping-pong is probably not the right way
-> >>to go.
-> >>
-> >
-> >I was not aware of that change. But you are right, it took out what I
-> >was trying to put back in.
-> >
-> >Thanks for the helpful information.  I will have to rethink this fix.
-> 
-> So first of all NAK to the original fix, but I think that much was
-> already clear.
-> 
-> Let me explain how this currently works, most laptops have up to 3
-> backlight control interfaces (all talking to the same single backlight):
-> 
-> acpi_video: a standardized acpi interface for backlight control, broken on most
-> win8 ready laptops.
-> 
-> vendor: e.g. asus_wmi, dell_laptop, etc. typically not much better on
-> win8 ready laptops.
-> 
-> native: e.g. intel_backlight, nv_backlight, usually your best bet on win8
-> laptops, but not so much on older models.
-> 
-> Before windows8 only 2 of these 3 get registered / exported to userspace,
-> either you've:
-> 
-> acpi_video + native:
-> 
-> or:
-> 
-> vendor + native:
-> 
-> Since most vendor drivers contain:
-> 
-> if (acpi_video_backlight_support())
-> 	return 0;
-> 
-> And userspace backlight control code knows the prefer the firmware interfaces
-> over the native one and to simply ignore the native interface, unless there
-> is no firmware interface, so having 2 interfaces present in sysfs is not
-> really a problem as userspace knows how to deal with this.
-> 
-> So along came Windows 8, breaking most acpi_video implementations. This got
-> fixed by a new module parameter to the acpi_video driver called use_native_backlight,
-> which now a days defaults to 1. When this parameter is true *and* the BIOS is
-> a win8 ready bios, then acpi_video will not register a backlight interface itself,
-> and acpi_video_backlight_support() will still return 1, causing the vendor interfaces
-> to not register. Leaving only the native interface.
-> 
-So acpi_video_backlight_support() will return true for win8 even when ACPI
-isn't actually supported.  Could this have been fixed by updating
-acpi_video_backlight_support() function?
+Did you mean this?
 
-> Your proposed patch will break things on win8 laptops using nv_backlight, since in the
-> use_native_backlight case it will cause nv_backlight to not register resulting in
-> not having any backlight interface at all.
-> 
-> I will happily admit that the combination of acpi_backlight=[video|vendor]
-> + video.use_native_backlight=[0|1] which has evolved over time is not the prettiest
-> solution. IMHO if you want to clean things up, and ensure only one interface gets
-> registered at a time, the solution would be to change acpi_backlight to also take
-> a native option, so that on the kernel commandline we end up with only:
-> acpi_backlight=[video|vendor|native] and move the use_native_backlight handling
-> from drivers/acpi/video.c to drivers/acpi/video_detect.c .
-> 
-It is not ideal but I can see why it was done.  It is much better to have
-at least one working interface even if this means there are two in some
-cases.
+        struct perf_sample sample = { .time = -1ULL, };
 
-My complaint of two which can be out of sync with each other is a non-issue
-in most cases.
+>
+>
+>
+>> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+>> index 582e011adc92..2cc088d71922 100644
+>> --- a/tools/perf/util/machine.c
+>> +++ b/tools/perf/util/machine.c
+>> @@ -431,6 +431,103 @@ struct thread *machine__find_thread(struct machine
+>> *machine, pid_t pid,
+>>         return __machine__findnew_thread(machine, pid, tid, false);
+>>   }
+>>
+>> +static void machine__remove_thread(struct machine *machine, struct thread
+>> *th);
+>
+>
+> Why is this declaration needed?
 
-> Code wise this would mean replacing acpi_video_backlight_support() with a function
-> called acpi_video_get_backlight_type which returns an enum which can be:
-> 
-> acpi_video_backlight_acpi_video,
-> acpi_video_backlight_vendor,
-> acpi_video_backlight_native,
-> 
-> And fix all callers to use that.
-> 
-So all the detection would be done in drivers/acpi/video_detect.c and
-then acpi_video_backlight_type() could be called to determine the type.
+It seems like a leftover from previous changes, will remove.
 
-> But, things are not that easy because there also is acpi_video_dmi_promote_vendor()
-> which is used by vendor drivers (mostly found under drivers/platform/x86) to tell
-> video_detect.c that the vendor driver knows that on this particular model laptop
-> it is better to use the vendor driver then acpi_video, and in some cases
-> this is used in combination with not actually registering the vendor backlight interface
-> to get the same end result as the new "native" option would give, but then on laptops
-> which need this despite not being win8 ready (and thus not automatically defaulting
-> to native).
-> 
-> So you would need to replace this to with a acpi_video_set_dmi_backlight_type, which
-> should change the return of acpi_video_get_backlight_type, but only if not overridden
-> from the kernel commandline, as the commandline takes presedence over the dmi
-> quirks which are tracked in the various vendor drivers.
-> 
-Ugh, this is a messy situation.
 
-> A cleanup to all this would certainly be welcome, but as outlined above it is not
-> trivial. I do not have time to actively work on this myself, but I will happily
-> review any patches you come up with for this.
-> 
-> Regards,
-> 
-> Hans
+>
+>> +
+>> +static struct thread *__machine__findnew_thread_time(struct machine
+>> *machine,
+>> +                                                    pid_t pid, pid_t tid,
+>> +                                                    u64 timestamp, bool
+>> create)
+>> +{
+>> +       struct thread *curr, *pos, *new;
+>> +       struct thread *th = NULL;
+>> +       struct rb_node **p;
+>> +       struct rb_node *parent = NULL;
+>> +       bool initial = timestamp == (u64)0;
+>> +
+>> +       curr = __machine__findnew_thread(machine, pid, tid, initial);
+>
+>
+> What if create arg is false? Should initial arg also be false?
 
-Thanks for the very detailed description :)
+Nop, the create arg adds the thread to the dead thread tree (or
+missing thread tree later).  And the initial flag adds it to the
+normal threads tree like in case of synthesized events.  This was
+because I firstly used the *_findnew_thread_time() for the meta event
+processing, but then I realized that using *_findnew_thread() makes
+the processing much easier since the meta events are processed
+sequencially.  And this *_findnew_thread_time() is used only for
+sample processing.  Maybe we can use 'false' instead of the
+'initial'..
 
--- 
-- Jeremiah Mahler
+
+>
+>> +       if (curr && timestamp >= curr->start_time)
+>> +               return curr;
+>> +
+>> +       p = &machine->dead_threads.rb_node;
+>> +       while (*p != NULL) {
+>> +               parent = *p;
+>> +               th = rb_entry(parent, struct thread, rb_node);
+>> +
+>> +               if (th->tid == tid) {
+>> +                       list_for_each_entry(pos, &th->node, node) {
+>> +                               if (timestamp >= pos->start_time &&
+>> +                                   pos->start_time > th->start_time) {
+>> +                                       th = pos;
+>> +                                       break;
+>> +                               }
+>> +                       }
+>> +
+>> +                       if (timestamp >= th->start_time) {
+>> +                               machine__update_thread_pid(machine, th,
+>> pid);
+>> +                               return th;
+>> +                       }
+>> +                       break;
+>> +               }
+>> +
+>> +               if (tid < th->tid)
+>> +                       p = &(*p)->rb_left;
+>> +               else
+>> +                       p = &(*p)->rb_right;
+>> +       }
+>
+>
+> Can the dead_threads search be put in a separate function --
+> machine__find_dead_thread?
+
+Okay, I can do it.
+
+
+>
+>> +
+>> +       if (!create)
+>> +               return NULL;
+>> +
+>> +       if (!curr)
+>> +               return __machine__findnew_thread(machine, pid, tid, true);
+>> +
+>> +       new = thread__new(pid, tid);
+>> +       if (new == NULL)
+>> +               return NULL;
+>> +
+>> +       new->start_time = timestamp;
+>> +
+>> +       if (*p) {
+>> +               list_for_each_entry(pos, &th->node, node) {
+>> +                       /* sort by time */
+>> +                       if (timestamp >= pos->start_time) {
+>> +                               th = pos;
+>> +                               break;
+>> +                       }
+>> +               }
+>> +               list_add_tail(&new->node, &th->node);
+>> +       } else {
+>> +               rb_link_node(&new->rb_node, parent, p);
+>> +               rb_insert_color(&new->rb_node, &machine->dead_threads);
+>> +       }
+>
+>
+> Why insert this unknown tid on the dead_threads list?
+
+Well, mostly the search will be succeeded, and if it failed it's
+either newly created thread so curr = NULL and adds it to the normal
+tree.  Otherwise (rarely) there might be a missing fork event and the
+sample is for an older thread in that any timestamp didn't match to
+existing (current and dead) threads.  So I added it to the dead thread
+tree.  But with multi-thread support enabled, it'll be added to the
+new missing threads tree which is protected by a mutex.
+
+
+>
+>> +
+>> +       /*
+>> +        * We have to initialize map_groups separately
+>> +        * after rb tree is updated.
+>> +        *
+>> +        * The reason is that we call machine__findnew_thread
+>> +        * within thread__init_map_groups to find the thread
+>> +        * leader and that would screwed the rb tree.
+>> +        */
+>> +       if (thread__init_map_groups(new, machine)) {
+>> +               thread__delete(new);
+>> +               return NULL;
+>> +       }
+>> +
+>> +       return new;
+>> +}
+>
+>
+> ---8<---
+>
+>> @@ -1265,6 +1362,16 @@ static void machine__remove_thread(struct machine
+>> *machine, struct thread *th)
+>>                 pos = rb_entry(parent, struct thread, rb_node);
+>>
+>>                 if (pos->tid == th->tid) {
+>> +                       struct thread *old;
+>> +
+>> +                       /* sort by time */
+>> +                       list_for_each_entry(old, &pos->node, node) {
+>> +                               if (th->start_time >= old->start_time) {
+>> +                                       pos = old;
+>> +                                       break;
+>> +                               }
+>> +                       }
+>> +
+>
+>
+> this change seems unrelated to the patch subject --
+> machine__find*_thread_time.
+
+It searchs a thread in the dead threads tree based on timestamp value.
+So the list should be sorted by time order.  But yes, I agree that
+this change should be moved to the dead thread conversion patch.
+
+Thanks,
+Namhyung
