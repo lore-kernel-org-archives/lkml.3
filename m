@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbaL2KHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 05:07:39 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:32840 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaL2KHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 05:07:35 -0500
-Date: Mon, 29 Dec 2014 11:07:27 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: akpm@linux-foundation.org, peterz@infradead.org, mingo@kernel.org,
-        davej@redhat.com, sasha.levin@oracle.com, hughd@google.com,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH 30/38] s390: drop pte_file()-related helpers
-Message-ID: <20141229110727.75afa56d@mschwide>
-In-Reply-To: <1419423766-114457-31-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1419423766-114457-31-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751859AbaL2KO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 05:14:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34766 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751114AbaL2KOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 05:14:24 -0500
+Date: Mon, 29 Dec 2014 11:14:22 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-2?Q?Giedrius_Statkevi=E8ius?= 
+	<giedrius.statkevicius@gmail.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] hid: Add a new id 0x501a for Genius MousePen i608X
+In-Reply-To: <1419632910-12773-1-git-send-email-giedrius.statkevicius@gmail.com>
+Message-ID: <alpine.LNX.2.00.1412291112460.1680@pobox.suse.cz>
+References: <1419632910-12773-1-git-send-email-giedrius.statkevicius@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14122910-0013-0000-0000-0000025E7CDE
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Dec 2014 14:22:38 +0200
-"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+On Sat, 27 Dec 2014, Giedrius Statkevičius wrote:
 
-> We've replaced remap_file_pages(2) implementation with emulation.
-> Nobody creates non-linear mapping anymore.
+> New Genius MousePen i608X devices have a new id 0x501a instead of the
+> old 0x5011 so add a new #define with "_2" appended and change required
+> places.
 > 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
-> @@ -279,7 +279,6 @@ static inline int is_module_addr(void *addr)
->   *
->   * pte_present is true for the bit pattern .xx...xxxxx1, (pte & 0x001) == 0x001
->   * pte_none    is true for the bit pattern .10...xxxx00, (pte & 0x603) == 0x400
-> - * pte_file    is true for the bit pattern .11...xxxxx0, (pte & 0x601) == 0x600
->   * pte_swap    is true for the bit pattern .10...xxxx10, (pte & 0x603) == 0x402
->   */
- 
-Nice, once this is upstream I can free up one of the software bits in
-the pte by redefining the type bits. Right now all of them are used up.
-Is the removal of non-linear mappings a done deal ?
+> The remaining two checkpatch warnings about line length
+> being over 80 characters are present in the original files too and this
+> patch was made in the same style (no line break).
+> 
+> Just adding a new id and changing the required places should make the
+> new device work without any issues according to the bug report in the
+> following url.
+> 
+> This patch was made according to and fixes:
+> https://bugzilla.kernel.org/show_bug.cgi?id=67111
+> 
+> Signed-off-by: Giedrius Statkevičius <giedrius.statkevicius@gmail.com>
+
+Applied to for-3.19/upstream-fixes.
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Jiri Kosina
+SUSE Labs
