@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaL2Rgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 12:36:44 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.219]:18250 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaL2Rgm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 12:36:42 -0500
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5k7AuKiShA==
-X-RZG-CLASS-ID: mo00
-Message-ID: <54A19123.5040708@hartkopp.net>
-Date: Mon, 29 Dec 2014 18:36:35 +0100
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1752332AbaL2Rhu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 12:37:50 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39563 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321AbaL2Rhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 12:37:48 -0500
+Message-ID: <54A19151.3090506@ti.com>
+Date: Mon, 29 Dec 2014 19:37:21 +0200
+From: Jyri Sarha <jsarha@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: =?windows-1252?Q?Heinz-J=FCrgen_Oertel?= <hj.oertel@t-online.de>,
-        mkl@pengutronix.de
-CC: Aaron Wu <Aaron.wu@analog.com>, linux-can@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bfin_can: move the header file to arch independent location
-References: <1419563241-20766-1-git-send-email-Aaron.wu@analog.com> <549E936A.2080904@hartkopp.net> <5234314.TQCbV9cZp1@heinz>
-In-Reply-To: <5234314.TQCbV9cZp1@heinz>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Mark Brown <broonie@kernel.org>, Jean-Francois Moine <moinejf@free.fr>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, <alsa-devel@alsa-project.org>,
+        <devicetree@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 0/2] ASoC: tda998x: add a codec to the HDMI transmitter
+References: <cover.1414053169.git.moinejf@free.fr> <20141229165246.GZ17800@sirena.org.uk>
+In-Reply-To: <20141229165246.GZ17800@sirena.org.uk>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/2014 05:45 PM, Heinz-Jürgen Oertel wrote:
-> Am Samstag, 27. Dezember 2014, 12:09:30 schrieb Oliver Hartkopp:
->> As bfin_can.c is the only user of defines from this include file just add the
->> needed(!) defines directly to bfin_can.c
-> 
-> I often include also the yet unneeded definitions, e.g., for unused register or unused bit definitions.
-> That makes it easier for someone else to add missing functionality, when later on needed.
-> 
+On 12/29/2014 06:52 PM, Mark Brown wrote:
+> On Thu, Oct 23, 2014 at 10:32:49AM +0200, Jean-Francois Moine wrote:
+>> The NXP TDA998x HDMI transmitter may transmit audio to the HDMI link
+>> from 2 different sources, I2S and S/PDIF.
+>
+> So, I'm not seeing *any* interest here from any other HDMI users.  This
+> is a continuing theme with HDMI patches and is really very concerning,
+> everyone appears to be working in their own bubbles coming up with their
+> own things and ignoring everyone else's work - what little review I'm
+> seeing seems to be happening only after I explicitly prompt it.  I'm
+> following up to Jean-Francois' patches here but this isn't specific to
+> them, it seems like a general thing with HDMI code.
+>
+> This in turn makes me think there's some abstraction problems with
+> what's going on and we're going to have to go through yet more
+> refactorings to fix things up as we do manage to come up with better
+> abstractions.  What I'd really like to see as a bare minimum is some
+> visible conversation about what we're doing and sign that people are
+> at least keeping in mind generic solutions when working on HDMI code.
+> Some commentary on the similarities and differences between hardware
+> and which abstractions work with which devices would also be really
+> helpful in working out if we're going in the right direction.
+>
+> Basically at the minute I'm worried that we may be making the problems
+> we've got here worse not better, I've not personally had the time to sit
+> down and study the hardware sufficiently to form a firm impression
+> myself which isn't helping.
+>
 
-Yes. This can be useful when you can imagine to add functionality into a
-specific direction. But in this case there were tons of mailbox definitions
-(always defined 32 times each) which we will not use in this way in the netdev
-driver.
+I have not seen any significant new development since v7 of these 
+patches. My comments for v6 were mostly[1] addressed and I can live with 
+these changes, even develop this approach further if it gets merged.
 
-Just take a look into bfin_can.h and what is really used in bfin_can.c from
-those defines and you will see.
+However, as a general note I see a need for a generic ASoC hdmi codec 
+abstraction and I don't think this is generic enough. More of the audio 
+specific implementation and HDMI standard specific things should be 
+pushed away from the hdmi encoder driver (tda998x in this case) to the 
+generic ASoC side hdmi codec driver (or library).
 
-Regards,
-Oliver
+I am currently working on something that tries to be a generic solution 
+that should be usable for different encoders and platforms, but 
+unfortunately I have been busy with other things lately and have not 
+been able to put anything working together yet. As soon as I have at 
+least a bare bone API and and a proof of concept implementation working, 
+I send RFC/POF patches out.
+
+Best regards,
+Jyri
+
+[1] I personally do not like the hdmi_get_cdev() approach. I would 
+rather go with only a library for registering from ASoC codec component 
+under the HDMI encoder device or a completely separate device with only 
+a reference to the HDMI encoder.
+
