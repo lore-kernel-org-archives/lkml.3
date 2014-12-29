@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaL2WWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 17:22:23 -0500
-Received: from mail.swri.org ([129.162.252.40]:39331 "EHLO
-	esg260-1.itc.swri.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaL2WWW convert rfc822-to-8bit (ORCPT
+	id S1752505AbaL2W05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 17:26:57 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:51217 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaL2W0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 17:22:22 -0500
-X-Greylist: delayed 2809 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Dec 2014 17:22:22 EST
-From: Margaret M Sanders <msanders@swri.org>
-To: Paul Moore <paul@paul-moore.com>,
-        =?iso-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-CC: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        linux Kernel <linux-kernel@vger.kernel.org>
-Subject: WASP for Linux 7?
-Thread-Topic: WASP for Linux 7?
-Thread-Index: AdAjryo1q8S2IFoLSLus7jMJEFjx8g==
-Date: Mon, 29 Dec 2014 21:35:23 +0000
-Message-ID: <2AAF61416E46C443A2E009DC0ECCF02C0D89CC@swri16exbe1.electro.swri.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [129.162.162.66]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Dec 2014 17:26:55 -0500
+Date: Mon, 29 Dec 2014 14:26:50 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Chung-yih Wang <cywang@chromium.org>
+Subject: Re: [PATCH 1/2] Input: synaptics: Use in-kernel tracking for
+ reporting mt data
+Message-ID: <20141229222650.GG9565@dtor-ws>
+References: <1414693987-6059-1-git-send-email-benjamin.tissoires@redhat.com>
+ <20141031165136.GB32331@dtor-ws>
+ <CAN+gG=EBz6vifWoV5PmGzMNJgHD59F2P_6sZfDZU5hbkSOPoQQ@mail.gmail.com>
+ <CAN+gG=F0a1FLvgFkWMc4qC_WAj6dSmOaEEZhvty2KGbbM+uQtw@mail.gmail.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-29_03:2014-12-29,2014-12-29,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=inbound_policy_notspam policy=inbound_policy score=0
- kscore.is_bulkscore=2.77555756156289e-16 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.624711071532594
- urlsuspect_oldscore=0.998844286130374 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=0 rbsscore=0.624711071532594
- spamscore=0 recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9
- adultscore=0 classifier=spam adjust=-40 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1412290217
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=F0a1FLvgFkWMc4qC_WAj6dSmOaEEZhvty2KGbbM+uQtw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expertise:
+Hi Benjamin,
 
-Is there a WASP for Linux 7? What is the accepted and accredited security scanning app for Linux 7--is it SECSCN?
-
-Thank you,
-
-MS
-SwRI
-ISSO/ATA
-
------Original Message-----
-From: linux-audit-bounces@redhat.com [mailto:linux-audit-bounces@redhat.com] On Behalf Of Paul Moore
-Sent: Monday, December 29, 2014 1:42 PM
-To: Toralf Förster
-Cc: linux-audit@redhat.com; linux Kernel
-Subject: Re: v3.19-rc2: crashes during boot (syslog-ng, rpcbind ...)
-
-On Monday, December 29, 2014 05:24:38 PM Toralf Förster wrote:
-> On 12/29/2014 05:21 PM, Paul Moore wrote:
-> > On Mon, Dec 29, 2014 at 11:07 AM, Toralf Förster wrote:
-> >> A x86 KVM guest running at a 64 bit Gentoo hardened host system the 
-> >> following crashes appeared reproducible (screen shots attached.
-> >> 
-> >> If I removed syslog-ng from the runlevel default, then the crash 
-> >> just appeared a little bit later at another subsystem>
+On Mon, Dec 08, 2014 at 01:01:28PM -0500, Benjamin Tissoires wrote:
+> On Thu, Nov 20, 2014 at 2:42 PM, Benjamin Tissoires
+> <benjamin.tissoires@gmail.com> wrote:
+> > On Fri, Oct 31, 2014 at 12:51 PM, Dmitry Torokhov
+> > <dmitry.torokhov@gmail.com> wrote:
+> >> On Thu, Oct 30, 2014 at 02:33:06PM -0400, Benjamin Tissoires wrote:
+> >>> The current code tries to consider all states and transitions to properly
+> >>> detect which finger is attached to which slot. The code is quite huge
+> >>> and difficult to read.
+> >>> If the sensor manages to group the touch points but is not reliable in
+> >>> giving tracking ids, we can simply use the kernel tracking method. Note
+> >>> that it is already used by Cr-48 Chromebooks.
+> >>>
+> >>> Incidentaly, this fixes a bug reported by Peter Hutterer:
+> >>> """
+> >>> on the Lenovo T440, run:
+> >>> evemu-record /dev/input/event4 | grep BTN_
+> >>>
+> >>> then put one, two, three, two fingers down
+> >>> when you go from 3 to 2 fingers the driver sends a spurious BTN_TOUCH 0
+> >>> event:
+> >>>
+> >>> E: 0.000000 0001 014a 0001      # EV_KEY / BTN_TOUCH            1
+> >>> E: 0.000000 0001 0145 0001      # EV_KEY / BTN_TOOL_FINGER      1
+> >>> E: 0.770008 0001 0145 0000      # EV_KEY / BTN_TOOL_FINGER      0
+> >>> E: 0.770008 0001 014d 0001      # EV_KEY / BTN_TOOL_DOUBLETAP   1
+> >>> E: 1.924716 0001 014d 0000      # EV_KEY / BTN_TOOL_DOUBLETAP   0
+> >>> E: 1.924716 0001 014e 0001      # EV_KEY / BTN_TOOL_TRIPLETAP   1
+> >>>
+> >>> .. changing from 3 to 2 fingers now
+> >>>
+> >>> E: 3.152641 0001 014a 0000      # EV_KEY / BTN_TOUCH            0
+> >>> E: 3.152641 0001 014d 0001      # EV_KEY / BTN_TOOL_DOUBLETAP   1
+> >>> E: 3.152641 0001 014e 0000      # EV_KEY / BTN_TOOL_TRIPLETAP   0
+> >>> E: 3.176948 0001 014a 0001      # EV_KEY / BTN_TOUCH            1
+> >>>
+> >>> quick look in the kernel shows it's caused by hw.z going to 0 for a packet,
+> >>> so probably a firmware bug. either way, it makes it hard to track BTN_TOUCH
+> >>> as signal that at least one finger is down.
+> >>> """
+> >>>
+> >>> The in-kernel tracking is enough to remove this spurious BTN_TOUCH 0.
+> >>>
+> >>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> >>> ---
+> >>>
+> >>> Hi Dmitry,
+> >>>
+> >>> I started working on that for 2 other bug reports
+> >>> https://bugs.freedesktop.org/show_bug.cgi?id=81278
+> >>> and
+> >>> https://bugs.freedesktop.org/show_bug.cgi?id=76722
+> >>>
+> >>> I thought the cursor jumps could be fixed by the in-kernel tracking, but the
+> >>> tracking needs a little bit more work to filter them out (patches to follow soon).
+> >>>
+> >>> From a user perspective, this patch does not change anything to what the user
+> >>> previously had. It also fixes Peter's bug that's why I decide to send this out
+> >>> by itself (removing ~350 lines of code and fixing bugs is always nice).
+> >>>
+> >>> I think the cursor jump fixes will need more bikeshedding in input-mt.c (I am
+> >>> *really* bad at designing APIs), so I'll send it later as an RFC.
+> >>
+> >> Daniel and Chung-yih were working on the driver so let's see if they
+> >> have a moment...
+> >>
 > >
-> > It looks like it doesn't like something in 
-> > audit_compare_dname_path(); I'll take a look and see what I can 
-> > find, there is a patch in -rc2 which touched some related code.
-> > 
-> > I didn't see this problem in my earlier testing, can you share your 
-> > .config?
->
-> ofc - attached
+> > Any news from the chrome team? This is a requirement for fixing the
+> > cursor jumps, and I'd rather have this series in shape before
+> > introducing the changes in input-mt.c.
+> >
+> 
+> ping?
 
-[NOTE: added linux-audit to the CC line, I should have done that earlier]
+Looks like a very nice fix and clean up. I queued it for 3.20, sorry for
+the delay.
 
-I believe I can reproduce this now; I'm seeing slightly different panics, but it is "close enough" and based on some quality time with the code I believe they are both symptoms of the same root cause.
+Thanks.
 
-To help verify that I'm heading down the right path, could you share your audit configuration as well?  If that's not possible, can you at least confirm that you using a few audit directory watches?
-
---
-paul moore
-www.paul-moore.com
-
-
---
-Linux-audit mailing list
-Linux-audit@redhat.com
-https://www.redhat.com/mailman/listinfo/linux-audit
+-- 
+Dmitry
