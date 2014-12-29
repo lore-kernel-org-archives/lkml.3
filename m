@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaL2RVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 12:21:09 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:43886 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026AbaL2RVH (ORCPT
+	id S1752228AbaL2RV0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 12:21:26 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:52455 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbaL2RVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 12:21:07 -0500
+	Mon, 29 Dec 2014 12:21:12 -0500
 From: Fabio Estevam <festevam@gmail.com>
 To: vinod.koul@intel.com
 Cc: linux-kernel@vger.kernel.org, shawn.guo@linaro.org, kernel@pengutronix.de,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 1/3] dmaengine: imx-sdma: Declare slave capabilities for the generic code
-Date: Mon, 29 Dec 2014 15:20:51 -0200
-Message-Id: <1419873653-14411-1-git-send-email-festevam@gmail.com>
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH 3/3] dmaengine: imx-sdma: Return a proper error code in platform_get_irq()
+Date: Mon, 29 Dec 2014 15:20:53 -0200
+Message-Id: <1419873653-14411-3-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1419873653-14411-1-git-send-email-festevam@gmail.com>
+References: <1419873653-14411-1-git-send-email-festevam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fabio Estevam <fabio.estevam@freescale.com>
 
-Since ecc19d17868be9c ("dmaengine: Add a warning for drivers not using the
-generic slave caps retrieval") the following warning is observed:
+There is no need to return a 'fake' value upon platform_get_irq() failure.
 
-[    0.224981] ------------[ cut here ]------------
-[    0.225013] WARNING: CPU: 0 PID: 1 at drivers/dma/dmaengine.c:830 dma_async_device_register+0x2a0/0x4c8()
-[    0.225023] this driver doesn't support generic slave capabilities reporting
+Just propagate the real error instead.
 
-Declare the slave capabilities to avoid such warning.
-
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
 Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- drivers/dma/imx-sdma.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/dma/imx-sdma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index e3dd85a..facb4162 100644
+index 6ac61ba..18c0a13 100644
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
-@@ -1595,6 +1595,10 @@ static int sdma_probe(struct platform_device *pdev)
- 	sdma->dma_device.device_prep_dma_cyclic = sdma_prep_dma_cyclic;
- 	sdma->dma_device.device_config = sdma_config;
- 	sdma->dma_device.device_terminate_all = sdma_disable_channel;
-+	sdma->dma_device.src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
-+	sdma->dma_device.dst_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_4_BYTES);
-+	sdma->dma_device.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-+	sdma->dma_device.residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
- 	sdma->dma_device.device_issue_pending = sdma_issue_pending;
- 	sdma->dma_device.dev->dma_parms = &sdma->dma_parms;
- 	dma_set_max_seg_size(sdma->dma_device.dev, 65535);
+@@ -1483,7 +1483,7 @@ static int sdma_probe(struct platform_device *pdev)
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0)
+-		return -EINVAL;
++		return irq;
+ 
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	sdma->regs = devm_ioremap_resource(&pdev->dev, iores);
 -- 
 1.9.1
 
