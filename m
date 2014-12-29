@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622AbaL2Xce (ORCPT <rfc822;w@1wt.eu>);
+	id S1752605AbaL2Xce (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 29 Dec 2014 18:32:34 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:41133 "EHLO
+Received: from mail.kmu-office.ch ([178.209.48.109]:41063 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752470AbaL2Xc2 (ORCPT
+	with ESMTP id S1751453AbaL2Xc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 18:32:28 -0500
+	Mon, 29 Dec 2014 18:32:26 -0500
 From: Stefan Agner <stefan@agner.ch>
 To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@arm.linux.org.uk,
         u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
@@ -16,9 +16,9 @@ To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@arm.linux.org.uk,
         marc.zyngier@arm.com
 Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Stefan Agner <stefan@agner.ch>
-Subject: [PATCH v2 08/12] ARM: allow MULTIPLATFORM with !MMU
-Date: Tue, 30 Dec 2014 00:32:11 +0100
-Message-Id: <1419895935-22966-9-git-send-email-stefan@agner.ch>
+Subject: [PATCH v2 03/12] irqchip: vf610-mscm: support NVIC parent
+Date: Tue, 30 Dec 2014 00:32:06 +0100
+Message-Id: <1419895935-22966-4-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1419895935-22966-1-git-send-email-stefan@agner.ch>
 References: <1419895935-22966-1-git-send-email-stefan@agner.ch>
@@ -26,104 +26,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support SoC with heterogenous CPU architectures (such
-as Freescale Vybrid/i.MXSX) it is preferable to use the same
-architecture (ARCH_MXC in this case) for the MMU enabled and !MMU
-CPU. Hence allow to select MULTIPLATFORM even without MMU.
+Support the NVIC interrupt controller as node parent of the MSCM
+interrupt router. On the dual-core variants of Vybird (VF6xx), the
+NVIC interrupt controller is used by the Cortex-M4. To support
+running Linux on this core too, MSCM needs NVIC parent support too.
 
 Signed-off-by: Stefan Agner <stefan@agner.ch>
 ---
- arch/arm/Kconfig | 21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+ drivers/irqchip/irq-vf610-mscm.c | 31 +++++++++++++++++++++++++------
+ 1 file changed, 25 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 97d07ed..95007b9 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -228,7 +228,7 @@ config VECTORS_BASE
- 	  in size.
+diff --git a/drivers/irqchip/irq-vf610-mscm.c b/drivers/irqchip/irq-vf610-mscm.c
+index 7a284d5..f4f7d78 100644
+--- a/drivers/irqchip/irq-vf610-mscm.c
++++ b/drivers/irqchip/irq-vf610-mscm.c
+@@ -30,6 +30,7 @@ struct vf610_mscm_chip_data {
+ 	void __iomem *mscm_base;
+ 	u16 cpu_mask;
+ 	u16 saved_irsprc[MSCM_IRSPRC_NUM];
++	bool is_nvic;
+ };
  
- config ARM_PATCH_PHYS_VIRT
--	bool "Patch physical to virtual translations at runtime" if EMBEDDED
-+	bool "Patch physical to virtual translations at runtime" if EMBEDDED || (ARCH_MULTIPLATFORM && MMU)
- 	default y
- 	depends on !XIP_KERNEL && MMU
- 	depends on !ARCH_REALVIEW || !SPARSEMEM
-@@ -303,15 +303,12 @@ config MMU
- #
- choice
- 	prompt "ARM system type"
--	default ARCH_VERSATILE if !MMU
--	default ARCH_MULTIPLATFORM if MMU
-+	default ARCH_MULTIPLATFORM
+ static struct vf610_mscm_chip_data *mscm_data;
+@@ -74,6 +75,7 @@ static void vf610_mscm_enable(struct irq_data *data)
+ {
+ 	irq_hw_number_t hwirq = data->hwirq;
+ 	struct vf610_mscm_chip_data *chip_data = data->chip_data;
++	struct irq_data *parent = data->parent_data;
+ 	u16 irsprc;
  
- config ARCH_MULTIPLATFORM
- 	bool "Allow multiple platforms to be selected"
--	depends on MMU
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARM_HAS_SG_CHAIN
--	select ARM_PATCH_PHYS_VIRT
- 	select AUTO_ZRELADDR
- 	select CLKSRC_OF
- 	select COMMON_CLK
-@@ -783,13 +780,13 @@ comment "CPU Core family selection"
+ 	irsprc = readw_relaxed(chip_data->mscm_base + MSCM_IRSPRC(hwirq));
+@@ -84,17 +86,24 @@ static void vf610_mscm_enable(struct irq_data *data)
+ 	writew_relaxed(chip_data->cpu_mask,
+ 		       chip_data->mscm_base + MSCM_IRSPRC(hwirq));
  
- config ARCH_MULTI_V4
- 	bool "ARMv4 based platforms (FA526)"
--	depends on !ARCH_MULTI_V6_V7
-+	depends on !ARCH_MULTI_V6_V7 && MMU
- 	select ARCH_MULTI_V4_V5
- 	select CPU_FA526
+-	irq_chip_unmask_parent(data);
++	if (parent->chip->irq_enable)
++		parent->chip->irq_enable(parent);
++	else
++		parent->chip->irq_unmask(parent);
+ }
  
- config ARCH_MULTI_V4T
- 	bool "ARMv4T based platforms (ARM720T, ARM920T, ...)"
--	depends on !ARCH_MULTI_V6_V7
-+	depends on !ARCH_MULTI_V6_V7 && MMU
- 	select ARCH_MULTI_V4_V5
- 	select CPU_ARM920T if !(CPU_ARM7TDMI || CPU_ARM720T || \
- 		CPU_ARM740T || CPU_ARM9TDMI || CPU_ARM922T || \
-@@ -797,7 +794,7 @@ config ARCH_MULTI_V4T
+ static void vf610_mscm_disable(struct irq_data *data)
+ {
+ 	irq_hw_number_t hwirq = data->hwirq;
+ 	struct vf610_mscm_chip_data *chip_data = data->chip_data;
++	struct irq_data *parent = data->parent_data;
  
- config ARCH_MULTI_V5
- 	bool "ARMv5 based platforms (ARM926T, XSCALE, PJ1, ...)"
--	depends on !ARCH_MULTI_V6_V7
-+	depends on !ARCH_MULTI_V6_V7 && MMU
- 	select ARCH_MULTI_V4_V5
- 	select CPU_ARM926T if !(CPU_ARM946E || CPU_ARM1020 || \
- 		CPU_ARM1020E || CPU_ARM1022 || CPU_ARM1026 || \
-@@ -808,11 +805,13 @@ config ARCH_MULTI_V4_V5
+ 	writew_relaxed(0x0, chip_data->mscm_base + MSCM_IRSPRC(hwirq));
  
- config ARCH_MULTI_V6
- 	bool "ARMv6 based platforms (ARM11)"
-+	depends on MMU
- 	select ARCH_MULTI_V6_V7
- 	select CPU_V6K
+-	irq_chip_mask_parent(data);
++	if (parent->chip->irq_enable)
++		parent->chip->irq_disable(parent);
++	else
++		parent->chip->irq_mask(parent);
+ }
  
- config ARCH_MULTI_V7
--	bool "ARMv7 based platforms (Cortex-A, PJ4, Scorpion, Krait)"
-+	bool "ARMv7-A based platforms (Cortex-A, PJ4, Scorpion, Krait)"
-+	depends on MMU
- 	default y
- 	select ARCH_MULTI_V6_V7
- 	select CPU_V7
-@@ -823,7 +822,7 @@ config ARCH_MULTI_V6_V7
- 	select MIGHT_HAVE_CACHE_L2X0
+ static struct irq_chip vf610_mscm_irq_chip = {
+@@ -126,10 +135,17 @@ static int vf610_mscm_domain_alloc(struct irq_domain *domain, unsigned int virq,
+ 					      domain->host_data);
  
- config ARCH_MULTI_CPU_AUTO
--	def_bool !(ARCH_MULTI_V4 || ARCH_MULTI_V4T || ARCH_MULTI_V6_V7)
-+	def_bool !(ARCH_MULTI_V4 || ARCH_MULTI_V4T || ARCH_MULTI_V6_V7) && MMU
- 	select ARCH_MULTI_V5
+ 	gic_data.np = domain->parent->of_node;
+-	gic_data.args_count = 3;
+-	gic_data.args[0] = GIC_SPI;
+-	gic_data.args[1] = irq_data->args[0];
+-	gic_data.args[2] = irq_data->args[1];
++
++	if (mscm_data->is_nvic) {
++		gic_data.args_count = 1;
++		gic_data.args[0] = irq_data->args[0];
++	} else {
++		gic_data.args_count = 3;
++		gic_data.args[0] = GIC_SPI;
++		gic_data.args[1] = irq_data->args[0];
++		gic_data.args[2] = irq_data->args[1];
++	}
++
+ 	return irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, &gic_data);
+ }
  
- endmenu
-@@ -1960,7 +1959,7 @@ endchoice
+@@ -171,6 +187,9 @@ static int __init vf610_mscm_of_init(struct device_node *node,
+ 		goto out_unmap;
+ 	}
  
- config XIP_KERNEL
- 	bool "Kernel Execute-In-Place from ROM"
--	depends on !ARM_LPAE && !ARCH_MULTIPLATFORM
-+	depends on !ARM_LPAE && (!ARCH_MULTIPLATFORM || ARCH_MULTI_V7M)
- 	help
- 	  Execute-In-Place allows the kernel to run from non-volatile storage
- 	  directly addressable by the CPU, such as NOR flash. This saves RAM
++	if (of_device_is_compatible(domain->parent->of_node, "arm,armv7m-nvic"))
++		mscm_data->is_nvic = true;
++
+ 	mscm_data->cpu_mask = 0x1 << readl_relaxed(mscm_data->mscm_base + MSCM_CPxNUM);
+ 
+ 	cpu_pm_register_notifier(&mscm_notifier_block);
 -- 
 2.2.1
 
