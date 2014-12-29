@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaL2QDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 11:03:52 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54298 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaL2QDt (ORCPT
+	id S1752175AbaL2QEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 11:04:32 -0500
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:34483 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbaL2QE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 11:03:49 -0500
-Date: Mon, 29 Dec 2014 16:03:16 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-spi@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org
-Message-ID: <20141229160316.GO17800@sirena.org.uk>
-References: <1419846074-240217-1-git-send-email-mika.westerberg@linux.intel.com>
+	Mon, 29 Dec 2014 11:04:29 -0500
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5k7AuKiShA==
+X-RZG-CLASS-ID: mo00
+Message-ID: <54A17B83.60206@hartkopp.net>
+Date: Mon, 29 Dec 2014 17:04:19 +0100
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E0e4ihfNxLmjeTLW"
-Content-Disposition: inline
-In-Reply-To: <1419846074-240217-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 86.128.155.20
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/spidev: Convert to use unified device property API
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: "Wu, Aaron" <Aaron.Wu@analog.com>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>,
+        "wg@grandegger.com" <wg@grandegger.com>,
+        "mkl@pengutronix.de" <mkl@pengutronix.de>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bfin_can: move the header file to arch independent location
+References: <1419563241-20766-1-git-send-email-Aaron.wu@analog.com> <549E936A.2080904@hartkopp.net> <649EF91064D35D40B9C93A225BF41674612CCDB7@NWD2MBX7.ad.analog.com>
+In-Reply-To: <649EF91064D35D40B9C93A225BF41674612CCDB7@NWD2MBX7.ad.analog.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Aaron,
 
---E0e4ihfNxLmjeTLW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 12/29/2014 03:32 AM, Wu, Aaron wrote:
+>> From: Oliver Hartkopp [mailto:socketcan@hartkopp.net]
 
-On Mon, Dec 29, 2014 at 11:41:14AM +0200, Mika Westerberg wrote:
-> This will allow the driver to match using DT compatible property if the
-> device has ACPI _HID of "PRP0001" and accompanying "compatible" property
-> listed in _DSD.
+>> So the correct way is to check which defines are *really* referenced and add
+>> these directly to bfin_can.c (the only user) when removing bfin_can.h
+> 
+> Thanks for reply, will merge your idea and be back.
 
-Which nobody should be doing since it's already totally broken for
-something to be using this on the DT side except in the one case of the
-Rohm device which is listed there.  I don't want to merge anything which
-allows the breakage we're seeing with people putting spidev in their DTs
-to be propagated into ACPI, at most we should have something that
-specifically identifies individual devices only.
+Great. As there's so many unused stuff in bfin_can.h I assume this to be a
+real good improvement.
 
---E0e4ihfNxLmjeTLW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Also your comments about another of my recent patch " Rewrite the blackfin CAN driver into arch independent style" is welcome.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+This looks good to ME but usually Marc maintains the driver portions - and I
+don't really know if it just *looks* good or if it *is* good ;-)
 
-iQEcBAEBAgAGBQJUoXtEAAoJECTWi3JdVIfQtFQH/RWVQu+hAR8vPuKzMwIcllNK
-BmlpZlqV2mxJQ7hyt8DOQuYp7J5Edw9XexIQefE5b/dEiAZiuOPOv3J+m0MQM2+h
-mY/m9o1aZzJ+aLIlNoSQhp9cTDX9DZnX9mohENaUZgpvGkAjvVqEDdUs/gwDlD5a
-dlPVzxMHI/o8VeW+0caSxhRK/ZaFsRdyxqElb/LmP8njtNzAvM7R9Ntar3MJ6wCN
-18P/INpQtsNxPHvAanc45pLn0oGI6EUxRrxxwGJkO33oHeuGkYbX667hm2xkQIdE
-5t68HlDb5iKS3jU8ivktixpoRRmOYHjwjUBBBhMQgn0pALn9o0W94SZOXHnchmg=
-=JGH5
------END PGP SIGNATURE-----
+I just wanted to comment on the include file - as I knew the potential
+feedback from Marc there. For the rest we need to wait for Marc coming back
+from vacation.
 
---E0e4ihfNxLmjeTLW--
+Best regards,
+Oliver
