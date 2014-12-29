@@ -1,124 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaL2Fkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 00:40:43 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:34012 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843AbaL2Fkm (ORCPT
+	id S1751780AbaL2Fss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 00:48:48 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:61136 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaL2Fsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 00:40:42 -0500
-From: Chen Yucong <slaoub@gmail.com>
-To: tony.luck@intel.com
-Cc: bp@alien8.de, linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chen Yucong <slaoub@gmail.com>
-Subject: [PATCH] x86, mce: use mce_usable_address() for UCNA memory error recovery
-Date: Mon, 29 Dec 2014 13:40:23 +0800
-Message-Id: <1419831623-14078-1-git-send-email-slaoub@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 29 Dec 2014 00:48:47 -0500
+Date: Sun, 28 Dec 2014 21:47:06 -0800
+From: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        navin patidar <navin.patidar@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Elena Oat <oat.elena@gmail.com>, Tim Jester-Pfadt <t.jp@gmx.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8188eu: rtw_mlme.c: fix sparse warning
+Message-ID: <20141229054706.GA8062@fedora.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A machine-check address register (MCi_ADDR) that the processor uses
-to report the address or location associated with the logged error.
-The address field can hold a virtual (linear) address, a physical
-address, or a value indicating an internal physical location, depending
-on the type of error. For further information, see the documentation
-for particular implementations of the architecture.
-                                           -- AMD64 APM Volume 2
+Fixes the following sparse warning for rtw_mlme.c:
 
-The IA32_MCi_ADDR MSR contains the address of the code or data memory
-location that produced the machine-check error. The IA32_MCi_ADDR
-register is either not implemented or contains no address if the ADDRV
-flag in the IA32_MCi_STATUS register is clear. The address returned is
-an offset into a segment, linear address, physical address, or memory
-address. This depends on the error encountered.
-                                           -- Intel SDM Volume 3B
+drivers/staging/rtl8188eu/core/rtw_mlme.c:810:9: warning: context imbalance in 'rtw_free_assoc_resources' - different lock contexts for basic block
 
-As the comment of `mce_usable_address' suggests, we should check if the
-address reported by the CPU is in a format we can parse. This patch aims
-to use mce_usable_address() for UCNA/Deferred memory error recovery. For
-Intel x86_64 platform mce_usable_address() can work fine, but it doesn't
-even matter for AMD platform.
-
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Signed-off-by: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |   48 ++++++++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 18 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_mlme.c | 37 ++++++++++++++++++++-----------
+ 1 file changed, 24 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 800d423..c777626 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -607,6 +607,35 @@ static bool memory_error(struct mce *m)
- 	return false;
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+index d4632da..a47717a 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+@@ -755,12 +755,30 @@ static void free_scanqueue(struct	mlme_priv *pmlmepriv)
+ 	spin_unlock_bh(&scan_queue->lock);
  }
  
-+/*
-+ * Check if the address reported by the CPU is in a format we can parse.
-+ * It would be possible to add code for most other cases, but all would
-+ * be somewhat complicated (e.g. segment offset would require an instruction
-+ * parser). So only support physical addresses up to page granuality for now.
-+ */
-+static int mce_usable_address(struct mce *m)
++static void rtw_free_current_network(struct adapter *adapter)
 +{
-+	struct cpuinfo_x86 *c = &boot_cpu_data;
++	struct wlan_network *pwlan = NULL;
++	struct mlme_priv *pmlmepriv = &adapter->mlmepriv;
++	struct wlan_network *tgt_network = &pmlmepriv->cur_network;
 +
-+	if (c->x86_vendor == X86_VENDOR_INTEL) {
-+		if (!(m->status & MCI_STATUS_MISCV) ||
-+					!(m->status & MCI_STATUS_ADDRV))
-+			return 0;
-+		if (MCI_MISC_ADDR_LSB(m->misc) > PAGE_SHIFT)
-+			return 0;
-+		if (MCI_MISC_ADDR_MODE(m->misc) != MCI_MISC_ADDR_PHYS)
-+			return 0;
-+		return 1;
-+	} else if (c->x86_vendor == X86_VENDOR_AMD) {
-+		/*
-+		 * coming soon
-+		 */
-+		return 0;
-+	}
++	pwlan = rtw_find_network(&pmlmepriv->scanned_queue,
++				 tgt_network->network.MacAddress);
++	if (pwlan)
++		pwlan->fixed = false;
++	else
++		RT_TRACE(_module_rtl871x_mlme_c_, _drv_err_,
++			("rtw_free_assoc_resources:pwlan==NULL\n\n"));
 +
-+	return 0;
++	if (check_fwstate(pmlmepriv, WIFI_ADHOC_MASTER_STATE) &&
++			 (adapter->stapriv.asoc_sta_count == 1))
++		rtw_free_network_nolock(pmlmepriv, pwlan);
 +}
 +
- DEFINE_PER_CPU(unsigned, mce_poll_count);
- 
  /*
-@@ -671,7 +700,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		 * do not add it into the ring buffer.
- 		 */
- 		if (severity == MCE_DEFERRED_SEVERITY && memory_error(&m)) {
--			if (m.status & MCI_STATUS_ADDRV) {
-+			if (mce_usable_address(&m)) {
- 				mce_ring_add(m.addr >> PAGE_SHIFT);
- 				mce_schedule_work();
- 			}
-@@ -976,23 +1005,6 @@ reset:
- 	return ret;
+ *rtw_free_assoc_resources: the caller has to lock pmlmepriv->lock
+ */
+ void rtw_free_assoc_resources(struct adapter *adapter, int lock_scanned_queue)
+ {
+-	struct wlan_network *pwlan = NULL;
+ 	struct	mlme_priv *pmlmepriv = &adapter->mlmepriv;
+ 	struct	sta_priv *pstapriv = &adapter->stapriv;
+ 	struct wlan_network *tgt_network = &pmlmepriv->cur_network;
+@@ -793,20 +811,13 @@ void rtw_free_assoc_resources(struct adapter *adapter, int lock_scanned_queue)
+ 		rtw_init_bcmc_stainfo(adapter);
+ 	}
+ 
+-	if (lock_scanned_queue)
++	if (lock_scanned_queue) {
+ 		spin_lock_bh(&(pmlmepriv->scanned_queue.lock));
+-
+-	pwlan = rtw_find_network(&pmlmepriv->scanned_queue, tgt_network->network.MacAddress);
+-	if (pwlan)
+-		pwlan->fixed = false;
+-	else
+-		RT_TRACE(_module_rtl871x_mlme_c_, _drv_err_, ("rtw_free_assoc_resources:pwlan==NULL\n\n"));
+-
+-	if ((check_fwstate(pmlmepriv, WIFI_ADHOC_MASTER_STATE) && (adapter->stapriv.asoc_sta_count == 1)))
+-		rtw_free_network_nolock(pmlmepriv, pwlan);
+-
+-	if (lock_scanned_queue)
++		rtw_free_current_network(adapter);
+ 		spin_unlock_bh(&pmlmepriv->scanned_queue.lock);
++	} else
++		rtw_free_current_network(adapter);
++
+ 	pmlmepriv->key_mask = 0;
  }
  
--/*
-- * Check if the address reported by the CPU is in a format we can parse.
-- * It would be possible to add code for most other cases, but all would
-- * be somewhat complicated (e.g. segment offset would require an instruction
-- * parser). So only support physical addresses up to page granuality for now.
-- */
--static int mce_usable_address(struct mce *m)
--{
--	if (!(m->status & MCI_STATUS_MISCV) || !(m->status & MCI_STATUS_ADDRV))
--		return 0;
--	if (MCI_MISC_ADDR_LSB(m->misc) > PAGE_SHIFT)
--		return 0;
--	if (MCI_MISC_ADDR_MODE(m->misc) != MCI_MISC_ADDR_PHYS)
--		return 0;
--	return 1;
--}
--
- static void mce_clear_state(unsigned long *toclear)
- {
- 	int i;
 -- 
-1.7.10.4
+1.9.3
 
