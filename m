@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaL2HyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 02:54:12 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46104 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaL2HyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 02:54:07 -0500
-Message-ID: <54A10868.70001@ti.com>
-Date: Mon, 29 Dec 2014 09:53:12 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752004AbaL2HzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 02:55:03 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:52002 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaL2HzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 02:55:00 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Mon, 29 Dec 2014 16:56:07 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        acme@kernel.org, jolsa@kernel.org
+Subject: Re: [PATCH] perf: fix building error in x86_64 when dwarf unwind is
+ on
+Message-ID: <20141229075607.GC6081@sejong>
+References: <1419643571-62764-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] arch: arm: common: edma.c:  Remove some unused functions
-References: <1417906406-5527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1417906406-5527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1419643571-62764-1-git-send-email-wangnan0@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2014 12:53 AM, Rickard Strandqvist wrote:
-> Removes some functions that are not used anywhere:
-> edma_shadow0_read() edma_or_array()
-> 
-> This was partially found by using a static code analysis program called cppcheck.
+Hi Wang,
 
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+(Adding Arnaldo and Jiri to CC)
+
+On Sat, Dec 27, 2014 at 09:26:11AM +0800, Wang Nan wrote:
+> When build with 'make ARCH=x86' and dwarf unwind is on, there is a
+> compiling error:
+> 
+>    CC       /home/wn/perf/arch/x86/util/unwind-libdw.o
+>    CC       /home/wn/perf/arch/x86/tests/regs_load.o
+>  arch/x86/tests/regs_load.S: Assembler messages:
+>  arch/x86/tests/regs_load.S:65: Error: operand type mismatch for `push'
+>  arch/x86/tests/regs_load.S:72: Error: operand type mismatch for `pop'
+>  make[1]: *** [/home/wn/perf/arch/x86/tests/regs_load.o] Error 1
+>  make[1]: INTERNAL: Exiting with 25 jobserver tokens available; should be 24!
+>  make: *** [all] Error 2
+>  ...
+> 
+> Which is caused by incorrectly undefine macro HAVE_ARCH_X86_64_SUPPORT.
+> 'config/Makefile.arch' tests __x86_64__ only when 'ARCH=x86_64'. However,
+> with 'ARCH=x86', the underlying compile may also be x86_64, which causes
+> mismatching.
+
+Hmm.. how did you compile this?  I guess ARCH=x86 requires -m32 flag
+to the gcc, did you pass it (like via EXTRA_CFLAGS=-m32)?
+
+I'm confused by 'underlying compile may also be x86_64' part..
+
+Thanks,
+Namhyung
+
 
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> This patch fixes it by checking __x86_64__ in both case of
+> 'ARCH=x86_64' and 'ARCH=x86'.
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
 > ---
->  arch/arm/common/edma.c |    8 --------
->  1 file changed, 8 deletions(-)
+>  tools/perf/config/Makefile.arch | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> index d86771a..163273d 100644
-> --- a/arch/arm/common/edma.c
-> +++ b/arch/arm/common/edma.c
-> @@ -160,10 +160,6 @@ static inline void edma_modify_array(unsigned ctlr, int offset, int i,
->  {
->  	edma_modify(ctlr, offset + (i << 2), and, or);
->  }
-> -static inline void edma_or_array(unsigned ctlr, int offset, int i, unsigned or)
-> -{
-> -	edma_or(ctlr, offset + (i << 2), or);
-> -}
->  static inline void edma_or_array2(unsigned ctlr, int offset, int i, int j,
->  		unsigned or)
->  {
-> @@ -174,10 +170,6 @@ static inline void edma_write_array2(unsigned ctlr, int offset, int i, int j,
->  {
->  	edma_write(ctlr, offset + ((i*2 + j) << 2), val);
->  }
-> -static inline unsigned int edma_shadow0_read(unsigned ctlr, int offset)
-> -{
-> -	return edma_read(ctlr, EDMA_SHADOW0 + offset);
-> -}
->  static inline unsigned int edma_shadow0_read_array(unsigned ctlr, int offset,
->  		int i)
->  {
+> diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
+> index 851cd01..303a096 100644
+> --- a/tools/perf/config/Makefile.arch
+> +++ b/tools/perf/config/Makefile.arch
+> @@ -15,6 +15,8 @@ endif
+>  
+>  ifeq ($(ARCH),x86_64)
+>    override ARCH := x86
+> +endif
+> +ifeq ($(ARCH),x86)
+>    IS_X86_64 := 0
+>    ifeq (, $(findstring m32,$(CFLAGS)))
+>      IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+> -- 
+> 1.8.4
 > 
-
-
--- 
-Péter
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
