@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaL2Joo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 04:44:44 -0500
-Received: from regular1.263xmail.com ([211.150.99.138]:59736 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaL2Joj (ORCPT
+	id S1752268AbaL2Jqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 04:46:43 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:57496 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933AbaL2Jqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 04:44:39 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: roger.chen@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: roger.chen@rock-chips.com
-X-UNIQUE-TAG: <0cf328453627e5aa9bd71d82ad79a964>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Roger Chen <roger.chen@rock-chips.com>
-To: heiko@sntech.de
-Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        kever.yang@rock-chips.com, eddie.cai@rock-chips.com,
-        roger.chen@rock-chips.com
-Subject: [PATCH v3 6/6] GMAC: add document for Rockchip RK3288 GMAC
-Date: Mon, 29 Dec 2014 17:44:34 +0800
-Message-Id: <1419846274-14747-1-git-send-email-roger.chen@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1419846152-14531-1-git-send-email-roger.chen@rock-chips.com>
-References: <1419846152-14531-1-git-send-email-roger.chen@rock-chips.com>
+	Mon, 29 Dec 2014 04:46:42 -0500
+Date: Mon, 29 Dec 2014 01:46:36 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Drysdale <drysdale@google.com>
+Subject: Re: Linux 3.19-rc1 - merge window closed
+Message-ID: <20141229094636.GB13940@roeck-us.net>
+References: <CA+55aFwu19GP5vHTwadX+ygAKwOqNLuEBA9TVEdnfxgvzP1zHA@mail.gmail.com>
+ <1419145899.8696.5.camel@haakon3.risingtidesystems.com>
+ <20141221121122.GA16310@roeck-us.net>
+ <1419277314.8696.9.camel@haakon3.risingtidesystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1419277314.8696.9.camel@haakon3.risingtidesystems.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54A12301.02A0,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The document descripts how to add properties for GMAC in device tree.
+On Mon, Dec 22, 2014 at 11:41:54AM -0800, Nicholas A. Bellinger wrote:
+> On Sun, 2014-12-21 at 04:11 -0800, Guenter Roeck wrote:
+> > On Sat, Dec 20, 2014 at 11:11:39PM -0800, Nicholas A. Bellinger wrote:
+> > > Hi Linus,
+> > > 
+> > > On Sat, 2014-12-20 at 17:43 -0800, Linus Torvalds wrote:
+> > > > So it's been a day less than two weeks, and the merge window is closed.
+> > > > 
+> > ... 
+> > > 
+> > > Just hit the following build failure with CONFIG_AUDIT=y:
+> > > 
+> > > arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
+> > > arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared (first use in this function)
+> > > arch/x86/ia32/audit.c:38:7: note: each undeclared identifier is reported only once for each function it appears in
+> > > make[2]: *** [arch/x86/ia32/audit.o] Error 1
+> > > make[1]: *** [arch/x86/ia32] Error 2
+> > > make: *** [arch/x86] Error 2
+> > > make: *** Waiting for unfinished jobs....
+> > > 
+> > 
+> > I tried your configuration. For some reason it builds for me, so I guess
+> > I must be missing something. What is your build command line ?
+> > 
+> 
+> Nothing fancy or out of the ordinary:
+> 
+I tried your configuration plus another one reported to create the problem.
+I am still unable to reproduce it. I tried with gcc 4.9.1 and 4.7.2.
 
-change since v2:
+Please have a look at https://lkml.org/lkml/2014/11/25/542 and check if that
+solves your problem.
 
-1. remove power-gpio, reset-gpio, phyirq-gpio, pmu_regulator setting
-2. add "snps,reset-gpio", "snps,reset-active-low;" "snps,reset-delays-us"
-
-Signed-off-by: Roger Chen <roger.chen@rock-chips.com>
----
- .../devicetree/bindings/net/rockchip-dwmac.txt     |   67 ++++++++++++++++++++
- 1 file changed, 67 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/rockchip-dwmac.txt
-
-diff --git a/Documentation/devicetree/bindings/net/rockchip-dwmac.txt b/Documentation/devicetree/bindings/net/rockchip-dwmac.txt
-new file mode 100644
-index 0000000..94d887f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/rockchip-dwmac.txt
-@@ -0,0 +1,67 @@
-+Rockchip SoC RK3288 10/100/1000 Ethernet driver(GMAC)
-+
-+The device node has following properties.
-+
-+Required properties:
-+ - compatible: Can be "rockchip,rk3288-gmac".
-+ - reg: addresses and length of the register sets for the device.
-+ - interrupts: Should contain the GMAC interrupts.
-+ - interrupt-names: Should contain the interrupt names "macirq".
-+ - rockchip,grf: phandle to the syscon grf used to control speed and mode.
-+ - clocks: <&cru SCLK_MAC>: clock selector for main clock, from PLL or PHY.
-+	   <&cru SCLK_MAC_PLL>: PLL clock for SCLK_MAC
-+	   <&cru SCLK_MAC_RX>: clock gate for RX
-+	   <&cru SCLK_MAC_TX>: clock gate for TX
-+	   <&cru SCLK_MACREF>: clock gate for RMII referce clock
-+	   <&cru SCLK_MACREF_OUT> clock gate for RMII reference clock output
-+	   <&cru ACLK_GMAC>: AXI clock gate for GMAC 
-+	   <&cru PCLK_GMAC>: APB clock gate for GMAC 
-+ - clock-names: One name for each entry in the clocks property.
-+ - phy-mode: See ethernet.txt file in the same directory.
-+ - pinctrl-names: Names corresponding to the numbered pinctrl states.
-+ - pinctrl-0: pin-control mode. can be <&rgmii_pins> or <&rmii_pins>.
-+ - clock_in_out: For RGMII, it must be "input", means main clock(125MHz)
-+   is not sourced from SoC's PLL, but input from PHY; For RMII, "input" means
-+   PHY provides the reference clock(50MHz), "output" means GMAC provides the
-+   reference clock. 
-+ - snps,reset-gpio       gpio number for phy reset.
-+ - snps,reset-active-low boolean flag to indicate if phy reset is active low.
-+ - assigned-clocks: main clock, should be <&cru SCLK_MAC>;
-+ - assigned-clock-parents = parent of main clock.
-+   can be <&ext_gmac> or <&cru SCLK_MAC_PLL>.
-+
-+Optional properties:
-+ - tx_delay: Delay value for TXD timing. Range value is 0~0x7F, 0x30 as default.
-+ - rx_delay: Delay value for RXD timing. Range value is 0~0x7F, 0x10 as default.
-+
-+Example:
-+
-+gmac: ethernet@ff290000 {
-+	compatible = "rockchip,rk3288-gmac";
-+	reg = <0xff290000 0x10000>;
-+	interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
-+	interrupt-names = "macirq";
-+	rockchip,grf = <&grf>;
-+	clocks = <&cru SCLK_MAC>,
-+		<&cru SCLK_MAC_RX>, <&cru SCLK_MAC_TX>,
-+		<&cru SCLK_MACREF>, <&cru SCLK_MACREF_OUT>,
-+		<&cru ACLK_GMAC>, <&cru PCLK_GMAC>;
-+	clock-names = "stmmaceth",
-+		"mac_clk_rx", "mac_clk_tx",
-+		"clk_mac_ref", "clk_mac_refout",
-+		"aclk_mac", "pclk_mac";
-+	phy-mode = "rgmii";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&rgmii_pins /*&rmii_pins*/>;
-+
-+	clock_in_out = "input";
-+	snps,reset-gpio = <&gpio4 7 0>;
-+	snps,reset-active-low;
-+
-+	assigned-clocks = <&cru SCLK_MAC>;
-+	assigned-clock-parents = <&ext_gmac>;
-+	tx_delay = <0x30>;
-+	rx_delay = <0x10>;
-+
-+	status = "ok";
-+};
--- 
-1.7.9.5
-
-
+Thanks,
+Guenter
