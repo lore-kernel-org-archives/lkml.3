@@ -1,233 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaL2AEv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 19:04:51 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:32506 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515AbaL2AE0 (ORCPT
+	id S1751858AbaL2AIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 19:08:13 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45843 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaL2AIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 19:04:26 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-91-54a09a86bee8
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: myungjoo.ham@samsung.com
-Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
-        rafael.j.wysocki@intel.com, mark.rutland@arm.com,
-        a.kesavan@samsung.com, tomasz.figa@gmail.com, k.kozlowski@samsung.com,
-        cw00.choi@samsung.com, inki.dae@samsung.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCHv6 0/9] devfreq: Add devfreq-event class to provide raw data for
- devfreq device
-Date: Mon, 29 Dec 2014 09:04:04 +0900
-Message-id: <1419811453-16160-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkRLd91oIQgyvzGS0er1nMZHH9y3NW
-	i/lHzrFaTLo/gcXi9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27xapdfxgd+D3WzFvD6LFz1l12j8V7XjJ5bF5S79G3ZRWjx+dNcgFsUVw2Kak5
-	mWWpRfp2CVwZqz53MhU8cK24824HYwPjVYsuRg4OCQETiZvvk7oYOYFMMYkL99azdTFycQgJ
-	LGWU+PfnDgtEwkTi2Yf/7BCJ6YwSPy78ZoVwmpgkGs+/ZwSpYhPQktj/4gYbiC0iICNxdeN2
-	FpAiZoFGZokvy/4zgSSEBRIkdq5YA2azCKhKXHz/mBnE5hVwlTgyexErxDoFiWXLZ4JtkBA4
-	xC5x7P4BdogGAYlvkw+xQNwtK7HpADNEvaTEwRU3WCYwCi5gZFjFKJpakFxQnJReZKRXnJhb
-	XJqXrpecn7uJERgPp/8969vBePOA9SFGAQ5GJR7eCcfmhwixJpYVV+YeYjQF2jCRWUo0OR8Y
-	dXkl8YbGZkYWpiamxkbmlmZK4rwJUj+DhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAGnf1U
-	ZrZcfIbGzq2mV+5cnv/rTe+zbVXcjK5bT96KnxVq89B1fWW3cOjBH/yi00y21W6RF128/9j+
-	LfYXVQNmL9cOlvm4cm/UQtb9W25M//Ce59MDq4Q/yhZLktfYHpT+FZdUc9XnZb3v+iN1r0xM
-	f22btNzvkYJCQ5vzViWJhyarPZqO9R+ZpcRSnJFoqMVcVJwIAGfwepaCAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jQd22WQtCDLYvM7Z4vGYxk8X1L89Z
-	LeYfOcdqMen+BBaL1y8MLXoXXGWzONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
-	3biCzeLxirfsFqt2/WF04PdYM28No8fOWXfZPRbvecnksXlJvUffllWMHp83yQWwRTUw2mSk
-	JqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAnaykUJaYUwoU
-	CkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzFj1uZOp4IFrxZ13OxgbGK9adDFyckgI
-	mEg8+/CfHcIWk7hwbz1bFyMXh5DAdEaJHxd+s0I4TUwSjeffM4JUsQloSex/cYMNxBYRkJG4
-	unE7C0gRs0Ajs8SXZf+ZQBLCAgkSO1esAbNZBFQlLr5/zAxi8wq4ShyZvYgVYp2CxLLlM1kn
-	MHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcb8+kdzCuarA4xCjAwajEwzvh2PwQ
-	IdbEsuLK3EOMEhzMSiK8RmULQoR4UxIrq1KL8uOLSnNSiw8xmgJtn8gsJZqcD0wFeSXxhsYm
-	ZkaWRuaGFkbG5krivEr2bSFCAumJJanZqakFqUUwfUwcnFINjHHlM57oOicc3/L4Sn6LR4vt
-	SoHohxHb0oIfB674mdy3rr4iOEGi3fvNzR1TU6+c5zaTd9YqCq9TdjFhqnaINrZxcZH7/KU1
-	+U1T02RelgYBsz3hx1o9OmSf7/m5WNjzjFndv4yIt3N7Hu7VnzJbVXaHosKRtQHcr6vfWc09
-	5zWtI7Usr9lJiaU4I9FQi7moOBEAdi8rq80CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 28 Dec 2014 19:08:11 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 29 Dec 2014 09:10:13 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: ngupta@vflare.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mm/zsmalloc: add statistics support
+Message-ID: <20141229001013.GB27095@bbox>
+References: <1419599180-4422-1-git-send-email-opensource.ganesh@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1419599180-4422-1-git-send-email-opensource.ganesh@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset add new devfreq_event class to provide raw data to determine
-current utilization of device  which is used for devfreq governor.
+On Fri, Dec 26, 2014 at 09:06:20PM +0800, Ganesh Mahendran wrote:
+> Keeping fragmentation of zsmalloc in a low level is our target. But now
+> we still need to add the debug code in zsmalloc to get the quantitative data.
+> 
+> This patch adds a new configuration CONFIG_ZSMALLOC_STAT to enable the
+> statistics collection for developers. Currently only the objects statatitics
+> in each class are collected. User can get the information via debugfs.
+>      cat /sys/kernel/debug/zsmalloc/zram0/...
+> 
+> For example:
+> 
+> After I copied "jdk-8u25-linux-x64.tar.gz" to zram with ext4 filesystem:
+>  class  size obj_allocated   obj_used pages_used
+>      0    32             0          0          0
+>      1    48           256         12          3
+>      2    64            64         14          1
+>      3    80            51          7          1
+>      4    96           128          5          3
+>      5   112            73          5          2
+>      6   128            32          4          1
+>      7   144             0          0          0
+>      8   160             0          0          0
+>      9   176             0          0          0
+>     10   192             0          0          0
+>     11   208             0          0          0
+>     12   224             0          0          0
+>     13   240             0          0          0
+>     14   256            16          1          1
+>     15   272            15          9          1
+>     16   288             0          0          0
+>     17   304             0          0          0
+>     18   320             0          0          0
+>     19   336             0          0          0
+>     20   352             0          0          0
+>     21   368             0          0          0
+>     22   384             0          0          0
+>     23   400             0          0          0
+>     24   416             0          0          0
+>     25   432             0          0          0
+>     26   448             0          0          0
+>     27   464             0          0          0
+>     28   480             0          0          0
+>     29   496            33          1          4
+>     30   512             0          0          0
+>     31   528             0          0          0
+>     32   544             0          0          0
+>     33   560             0          0          0
+>     34   576             0          0          0
+>     35   592             0          0          0
+>     36   608             0          0          0
+>     37   624             0          0          0
+>     38   640             0          0          0
+>     40   672             0          0          0
+>     42   704             0          0          0
+>     43   720            17          1          3
+>     44   736             0          0          0
+>     46   768             0          0          0
+>     49   816             0          0          0
+>     51   848             0          0          0
+>     52   864            14          1          3
+>     54   896             0          0          0
+>     57   944            13          1          3
+>     58   960             0          0          0
+>     62  1024             4          1          1
+>     66  1088            15          2          4
+>     67  1104             0          0          0
+>     71  1168             0          0          0
+>     74  1216             0          0          0
+>     76  1248             0          0          0
+>     83  1360             3          1          1
+>     91  1488            11          1          4
+>     94  1536             0          0          0
+>    100  1632             5          1          2
+>    107  1744             0          0          0
+>    111  1808             9          1          4
+>    126  2048             4          4          2
+>    144  2336             7          3          4
+>    151  2448             0          0          0
+>    168  2720            15         15         10
+>    190  3072            28         27         21
+>    202  3264             0          0          0
+>    254  4096         36209      36209      36209
+> 
+>  Total               37022      36326      36288
+> 
+> We can calculate the overall fragentation by the last line:
+>     Total               37022      36326      36288
+>     (37022 - 36326) / 37022 = 1.87%
+> 
+> Also by analysing objects alocated in every class we know why we got so low fragmentation:
+>     Most of the allocated objects is in <class 254>. And there is only 1 page in class
+>     254 zspage.  So, No fragmentation will be introduced by allocating objs in class 254.
+> 
+> And in the future, we can collect other zsmalloc statistics as we need and analyse them.
+> 
+> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+> Suggested-by: Minchan Kim <minchan@kernel.org>
+> Cc: Nitin Gupta <ngupta@vflare.org>
 
-[Description of devfreq-event class]
-This patchset add new devfreq_event class for devfreq_event device which provide
-raw data (e.g., memory bus utilization/GPU utilization). This raw data from
-devfreq_event data would be used for the governor of devfreq subsystem.
-- devfreq_event device : Provide raw data for governor of existing devfreq device
-- devfreq device       : Monitor device state and change frequency/voltage of device
-                         using the raw data from devfreq_event device
+If you fix minors below,
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-The devfreq subsystem support generic DVFS(Dynamic Voltage/Frequency Scaling)
-for Non-CPU Devices. The devfreq device would dertermine current device state
-using various governor (e.g., ondemand, performance, powersave). After completed
-determination of system state, devfreq device would change the frequency/voltage
-of devfreq device according to the result of governor.
+> ---
+>  mm/Kconfig    |   10 +++
+>  mm/zsmalloc.c |  244 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 250 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 1d1ae6b..95c5728 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -601,6 +601,16 @@ config PGTABLE_MAPPING
+>  	  You can check speed with zsmalloc benchmark:
+>  	  https://github.com/spartacus06/zsmapbench
+>  
+> +config ZSMALLOC_STAT
+> +	bool "Export zsmalloc statistics"
+> +	depends on ZSMALLOC
+> +	select DEBUG_FS
+> +	help
+> +	  This option enables code in the zsmalloc to collect various
+> +	  statistics about whats happening in zsmalloc and exports that
+> +	  information to userspace via debugfs.
+> +	  If unsure, say N.
+> +
+>  config GENERIC_EARLY_IOREMAP
+>  	bool
+>  
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index 2359e61..f5ae7c6 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -91,6 +91,7 @@
+>  #include <linux/hardirq.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/types.h>
+> +#include <linux/debugfs.h>
+>  #include <linux/zsmalloc.h>
+>  #include <linux/zpool.h>
+>  
+> @@ -168,6 +169,22 @@ enum fullness_group {
+>  	ZS_FULL
+>  };
+>  
+> +enum zs_stat_type {
+> +	OBJ_ALLOCATED,
+> +	OBJ_USED,
+> +};
+> +
+> +#ifdef CONFIG_ZSMALLOC_STAT
+> +
+> +static struct dentry *zs_stat_root;
+> +
+> +struct zs_size_stat {
+> +	unsigned long obj_allocated;
+> +	unsigned long obj_used;
+> +};
 
-But, devfreq governor must need basic data which indicates current device state.
-Existing devfreq subsystem only consider devfreq device which check current system
-state and determine proper system state using basic data. There is no subsystem
-for device providing basic data to devfreq device.
+I hope you makes it array so that we could use zs_stat_type as index.
+It could remove if-conditions in zs_stat_xxx.
 
-The devfreq subsystem must need devfreq_event device(data-provider device) for
-existing devfreq device. So, this patch add new devfreq_event class for
-devfreq_event device which read various basic data(e.g, memory bus utilization,
-GPU utilization) and provide measured data to existing devfreq device through
-standard APIs of devfreq_event class.
+> +
+> +#endif
+> +
+>  /*
+>   * number of size_classes
+>   */
+> @@ -200,6 +217,10 @@ struct size_class {
+>  	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
+>  	int pages_per_zspage;
+>  
+> +#ifdef CONFIG_ZSMALLOC_STAT
+> +	struct zs_size_stat stats;
+> +#endif
+> +
+>  	spinlock_t lock;
+>  
+>  	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
+> @@ -217,10 +238,16 @@ struct link_free {
+>  };
+>  
+>  struct zs_pool {
+> +	char *name;
+> +
+>  	struct size_class **size_class;
+>  
+>  	gfp_t flags;	/* allocation flags used when growing pool */
+>  	atomic_long_t pages_allocated;
+> +
+> +#ifdef CONFIG_ZSMALLOC_STAT
+> +	struct dentry *stat_dentry;
+> +#endif
+>  };
+>  
+>  /*
+> @@ -942,6 +969,177 @@ static bool can_merge(struct size_class *prev, int size, int pages_per_zspage)
+>  	return true;
+>  }
+>  
+> +#ifdef CONFIG_ZSMALLOC_STAT
+> +
+> +static inline void zs_stat_inc(struct size_class *class,
+> +				enum zs_stat_type type, unsigned long cnt)
+> +{
+> +	if (type == OBJ_ALLOCATED)
+> +		class->stats.obj_allocated += cnt;
+> +	else if (type == OBJ_USED)
+> +		class->stats.obj_used += cnt;
+> +}
+> +
+> +static inline void zs_stat_dec(struct size_class *class,
+> +				enum zs_stat_type type, unsigned long cnt)
+> +{
+> +	if (type == OBJ_ALLOCATED)
+> +		class->stats.obj_allocated -= cnt;
+> +	else if (type == OBJ_USED)
+> +		class->stats.obj_used -= cnt;
+> +}
+> +
+> +static inline unsigned long zs_stat_get(struct size_class *class,
+> +				enum zs_stat_type type)
+> +{
+> +	if (type == OBJ_ALLOCATED)
+> +		return class->stats.obj_allocated;
+> +	else if (type == OBJ_USED)
+> +		return class->stats.obj_used;
+> +
+> +	return 0;
+> +}
+> +
+> +static int __init zs_stat_init(void)
+> +{
+> +	if (!debugfs_initialized())
+> +		return -ENODEV;
+> +
+> +	zs_stat_root = debugfs_create_dir("zsmalloc", NULL);
+> +	if (!zs_stat_root)
+> +		return -ENOMEM;
+> +
+> +	return 0;
+> +}
+> +
+> +static void __exit zs_stat_exit(void)
+> +{
+> +	debugfs_remove_recursive(zs_stat_root);
+> +}
+> +
+> +static int zs_stats_size_show(struct seq_file *s, void *v)
+> +{
+> +	int i;
+> +	struct zs_pool *pool = s->private;
+> +	struct size_class *class;
+> +	int objs_per_zspage;
+> +	unsigned long obj_allocated, obj_used, pages_used;
+> +	unsigned long total_objs = 0, total_used_objs = 0, total_pages = 0;
+> +
+> +	seq_printf(s, " %5s %5s %13s %10s %10s\n", "class", "size",
+> +				"obj_allocated", "obj_used", "pages_used");
+> +
+> +	for (i = 0; i < zs_size_classes; i++) {
+> +		class = pool->size_class[i];
+> +
+> +		if (class->index != i)
+> +			continue;
+> +
+> +		spin_lock(&class->lock);
+> +		obj_allocated = zs_stat_get(class, OBJ_ALLOCATED);
+> +		obj_used = zs_stat_get(class, OBJ_USED);
+> +		spin_unlock(&class->lock);
+> +
+> +		objs_per_zspage = get_maxobj_per_zspage(class->size,
+> +				class->pages_per_zspage);
+> +		pages_used = obj_allocated / objs_per_zspage *
+> +				class->pages_per_zspage;
+> +
+> +		seq_printf(s, " %5u %5u    %10lu %10lu %10lu\n", i,
+> +			class->size, obj_allocated, obj_used, pages_used);
+> +
+> +		total_objs += obj_allocated;
+> +		total_used_objs += obj_used;
+> +		total_pages += pages_used;
+> +	}
+> +
+> +	seq_puts(s, "\n");
+> +	seq_printf(s, " %5s %5s    %10lu %10lu %10lu\n", "Total", "",
+> +			total_objs, total_used_objs, total_pages);
+> +
+> +	return 0;
+> +}
+> +
+> +static int zs_stats_size_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, zs_stats_size_show, inode->i_private);
+> +}
+> +
+> +static const struct file_operations zs_stat_size_ops = {
+> +	.open           = zs_stats_size_open,
+> +	.read           = seq_read,
+> +	.llseek         = seq_lseek,
+> +	.release        = single_release,
+> +};
+> +
+> +static int zs_pool_stat_create(char *name, struct zs_pool *pool)
+> +{
+> +	struct dentry *entry;
+> +
+> +	if (!zs_stat_root)
+> +		return -ENODEV;
+> +
+> +	entry = debugfs_create_dir(name, zs_stat_root);
+> +	if (!entry) {
+> +		pr_warn("debugfs dir <%s> creation failed\n", name);
+> +		return -ENOMEM;
+> +	}
+> +	pool->stat_dentry = entry;
+> +
+> +	entry = debugfs_create_file("obj_in_classes", S_IFREG | S_IRUGO,
+> +			pool->stat_dentry, pool, &zs_stat_size_ops);
+> +	if (!entry) {
+> +		pr_warn("%s: debugfs file entry <%s> creation failed\n",
+> +				name, "obj_in_classes");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void zs_pool_stat_destroy(struct zs_pool *pool)
+> +{
+> +	debugfs_remove_recursive(pool->stat_dentry);
+> +}
+> +
+> +#else /* CONFIG_ZSMALLOC_STAT */
+> +
+> +static inline void zs_stat_inc(struct size_class *class,
+> +				enum zs_stat_type type, unsigned long cnt)
+> +{
+> +}
+> +
+> +static inline void zs_stat_dec(struct size_class *class,
+> +				enum zs_stat_type type, unsigned long cnt)
+> +{
+> +}
+> +
+> +static inline unsigned long zs_stat_get(struct size_class *class,
+> +				enum zs_stat_type type)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int __init zs_stat_init(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static void __exit zs_stat_exit(void)
+> +{
+> +}
+> +
+> +static inline int zs_pool_stat_create(struct zs_pool *pool)
 
-The following description explains the feature of two kind of devfreq class:
-- devfreq class (existing)
- : devfreq consumer device use raw data from devfreq_event device for
-   determining proper current system state and change voltage/frequency
-   dynamically using various governors.
-- devfreq_event class (new)
- : Provide measured raw data to devfreq device for governor
+                                         char *name, struct zs_pool *pool
 
-Also, the devfreq-event device would support various type event as following:
- : DEVFREQ_EVENT_TYPE_RAW_DATA
- : DEVFREQ_EVENT_TYPE_UTILIZATION
- : DEVFREQ_EVENT_TYPE_BANDWIDTH
- : DEVFREQ_EVENT_TYPE_LATENCY
-
-[For example]
-If board dts includes PPMU_DMC0/DMC1/LEFTBUS/RIGHTBUS event node,
-would show following sysfs entry. Also devfreq driver(e.g., exynos4_bus.c)
-can get the instance of devfreq-event device by using provided API and then
-get raw data which reflect the current state of device.
-
--sh-3.2# cd /sys/class/devfreq-event/
--sh-3.2# ls -al
-total 0
-drwxr-xr-x  2 root root 0 Jan  9 16:47 .
-drwxr-xr-x 37 root root 0 Jan  9 16:47 ..
-lrwxrwxrwx  1 root root 0 Jan  9 16:47 event.0 -> ../../devices/soc/106a0000.ppmu_dmc0/devfreq-event/event.0
-lrwxrwxrwx  1 root root 0 Jan  9 16:47 event.1 -> ../../devices/soc/106b0000.ppmu_dmc1/devfreq-event/event.1
-lrwxrwxrwx  1 root root 0 Jan  9 16:47 event.2 -> ../../devices/soc/112a0000.ppmu_rightbus/devfreq-event/event.2
-lrwxrwxrwx  1 root root 0 Jan  9 16:47 event.3 -> ../../devices/soc/116a0000.ppmu_leftbus0/devfreq-event/event.3
-
-Changes from v5:
-- Rebase these patch-set on v3.19-rc1 and Test it.
-1. exynos-ppmu.c
-- Change the error value when of_iomap() fail to map the memory
-- Remove owner setting of platform_driver
-- Add exynos_ppmu_disable() function
-2. exynos dts file
-- Add PPMU node to Exynos3250-based Monk board
-- Remove ppmu_cpu node on Exynos4412-based TRATS2 board and add ppmu_leftbus/rightbus node
-
-Changes from v4:
-1. devfreq-event class driver
-- Add devfreq_event_get_edev_count() function
-- Modify the simple description of devfreq-event framework in devfreq-event.c
-- Minimize the usage range of global lock usage in devfreq_event_add_edev()
-- Remove '_is_enabled()' function pointer in devfreq_event_ops structure
-- Add separte CONFIG_PM_DEVFREQ_EVENT configuration
-- Add new devfreq-event.h header file including devfreq-event helper functions
-2. exynos dts file
-- Add new patch to support PPMU with DEVFREQ-event on Exynos4412-based TRATS2
-
-Changes from v3:
-1. devfreq-event class driver
-- Fix return value of devfreq_event_get_event()
-- Add new structure devfreq_event_data for devfreq_event_get_event()
-- Modify the prototype of devfreq_event_get_event() function
-- Call of_node_put after calling of_parse_phandle() to decrement refcount
-2. exynos-ppmu driver
-- Modify usage of devfreq_event_get_event() function
-  according to new prototype of this funciton
-- Add the additional description to exynos-ppmu.txt how to add PPMU node
-  in board dts file
-- Use 'PPMU_EVENT' macro to remove duplicate codes
-- Add the support of PPMU for Exynos5260
-3. exynos dts file
-- Add missing PPMU_FSYS node to exynos3250.dtsi
-- Fix 'ppmu_mfc_l' node name as 'ppmu_mfc' because exynos3250 has only one MFC IP.
-- Add missing PPMU_ACP/G3D to exynos4.dtsi
-4. etc
-- Fix wrong abbreviation of PPMU (PPMU :Platform Performance Monitoring Unit)
-- Add new patch to support the PPMU of Exynos5260 SoC
-
-Changes from v2:
-1. devfreq-event class driver
-- Rename all the helper functions of devfreq-event device
-- Add devfreq_event_remove_edev() instead of devfreq_put_event_dev()
-- Add devfreq_event_release_edev() to initialize it before put device
-- Add the detailed description of devfreq-event API
-- Add the attributes of devfreq-event class (enable_count)
-- Check the overflow about event/total_event data in devfreq_event_get_event()
-- Remove the 'exclusive flag' feature
-- Set set_event()/get_event() functions as mandary
-- Add missing of_node_put() call
-- Change variable type of 'get_event()' funciton from 'int' to 'u64'
-2. exynos-ppmu driver
-- Remove un-used field (struct devfreq)
-- Use 'of_get_child_by_name()' instead of 'of_find_node_by_name()'
-- Add missing of_node_put() call
-- Fix wrong clock control
-- Use devfreq_event_remove_edev() instead of devfreq_remove_device()
-- Add the documentation for exynos-ppmu driver
-- Remove 'enable/disable/is_enabled/reset' function of exynos-ppmu driver
-3. exynos3250-rinato.dts
-- Add ppmu_{leftbus|rightbus} dt node and remove ppmu_cpu dt node
-
-Changes from v1:
-- Code clean
-- Add the description of devfreq-event structure
-- Add 'is_enabled' function to devfreq_event_ops structure
-- Add 'enable_count' field to devfreq_event_dev structure
-- Check whether devfreq-event device is enabled or not
-  during calling devfreq_event API
-- Define the type of devfreq-event device as following
-  : DEVFREQ_EVENT_TYPE_RAW_DATA
-  : DEVFREQ_EVENT_TYPE_UTILIZATION
-  : DEVFREQ_EVENT_TYPE_BANDWIDTH
-  : DEVFREQ_EVENT_TYPE_LATENCY
-- Add the exclusive feature of devfreq-event device.
-  If devfreq-event device is used on only on devfreq driver,
-  should used 'devfreq_enable_event_dev_exclusive()' function
-- Add new patch6 for test on Exynos3250-based Rinato board
-
-Chanwoo Choi (9):
-  devfreq: event: Add new devfreq_event class to provide basic data for devfreq governor
-  devfreq: event: Add the list of supported devfreq-event type
-  devfreq: event: Add exynos-ppmu devfreq-event driver
-  devfreq: event: Add documentation for exynos-ppmu devfreq-event driver
-  ARM: dts: Add PPMU dt node for Exynos3250 SoC
-  ARM: dts: Add PPMU dt node for Exynos4 SoCs
-  ARM: dts: Add PPMU dt node for Exynos5260 SoC
-  ARM: dts: exynos: Add PPMU node to Exynos3250-based Rinato/Monk board
-  ARM: dts: exynos: Add PPMU node for Exynos4412-based TRATS2 board
-
- .../bindings/devfreq/event/exynos-ppmu.txt         | 110 +++++
- arch/arm/boot/dts/exynos3250-monk.dts              |  40 ++
- arch/arm/boot/dts/exynos3250-rinato.dts            |  40 ++
- arch/arm/boot/dts/exynos3250.dtsi                  |  74 +++
- arch/arm/boot/dts/exynos4.dtsi                     | 108 +++++
- arch/arm/boot/dts/exynos4210.dtsi                  |   8 +
- arch/arm/boot/dts/exynos4412-trats2.dts            |  40 ++
- arch/arm/boot/dts/exynos5260.dtsi                  |  90 ++++
- drivers/devfreq/Kconfig                            |   2 +
- drivers/devfreq/Makefile                           |   6 +-
- drivers/devfreq/devfreq-event.c                    | 510 +++++++++++++++++++++
- drivers/devfreq/event/Kconfig                      |  25 +
- drivers/devfreq/event/Makefile                     |   2 +
- drivers/devfreq/event/exynos-ppmu.c                | 410 +++++++++++++++++
- include/linux/devfreq-event.h                      | 189 ++++++++
- 15 files changed, 1653 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/devfreq/event/exynos-ppmu.txt
- create mode 100644 drivers/devfreq/devfreq-event.c
- create mode 100644 drivers/devfreq/event/Kconfig
- create mode 100644 drivers/devfreq/event/Makefile
- create mode 100644 drivers/devfreq/event/exynos-ppmu.c
- create mode 100644 include/linux/devfreq-event.h
+Thanks for the nice work, Ganesh!
 
 -- 
-1.8.5.5
-
+Kind regards,
+Minchan Kim
