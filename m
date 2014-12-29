@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaL2Xd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 18:33:27 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:41143 "EHLO
+	id S1752667AbaL2XdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 18:33:25 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:41142 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534AbaL2Xc2 (ORCPT
+	with ESMTP id S1752532AbaL2Xc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Dec 2014 18:32:28 -0500
 From: Stefan Agner <stefan@agner.ch>
@@ -16,9 +16,9 @@ To: shawn.guo@linaro.org, kernel@pengutronix.de, linux@arm.linux.org.uk,
         marc.zyngier@arm.com
 Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Stefan Agner <stefan@agner.ch>
-Subject: [PATCH v2 09/12] ARM: efm32: move into multiplatform
-Date: Tue, 30 Dec 2014 00:32:12 +0100
-Message-Id: <1419895935-22966-10-git-send-email-stefan@agner.ch>
+Subject: [PATCH v2 10/12] ARM: vf610: enable Cortex-M4 on Vybrid SoC
+Date: Tue, 30 Dec 2014 00:32:13 +0100
+Message-Id: <1419895935-22966-11-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1419895935-22966-1-git-send-email-stefan@agner.ch>
 References: <1419895935-22966-1-git-send-email-stefan@agner.ch>
@@ -26,101 +26,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+This patch allows to build the Kernel for Vybrid (VF6xx) SoC
+when ARMv7-M CPU is selected. The resulting image runs on the
+secondary Cortex-M4 core. This core has equally access to all
+peripherals as the main Cortex-A5 core. However, there is no
+resource control mechanism, hence when both cores are used
+simultaneously, orthogonal device tree's are required.
 
-Since the multiplatform configuration can support no-MMU kernels now,
-there is nothing stopping us from moving the efm32 platform in there
-as well. This introduces a new ARCH_MULTI_V7M CPU architecture selection
-option, since v7-M is incompatible with v7-A, and we can have either
-of the two enabled for multiplatform, but not both at the same time.
+The boot CPU is dependent on the SoC variant, however the
+commonly available boards use variants where the Cortex-A5 is
+the primary/boot CPU. Booting the secondary Cortex-M4 CPU
+needs SoC specific register written. There is no in kernel
+support for this right now, a external userspace utility
+called "m4boot" can be used to boot the kernel:
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+m4boot xipImage initramfs.cpio.lzo vf610m4-colibri.dtb
+
 Signed-off-by: Stefan Agner <stefan@agner.ch>
 ---
- arch/arm/Kconfig                 | 35 ++++++++++++++++-------------------
- arch/arm/configs/efm32_defconfig |  2 ++
- 2 files changed, 18 insertions(+), 19 deletions(-)
+ Documentation/devicetree/bindings/arm/fsl.txt |  3 +++
+ arch/arm/mach-imx/Kconfig                     | 36 +++++++++++++++++----------
+ arch/arm/mach-imx/Makefile.boot               |  0
+ arch/arm/mach-imx/mach-vf610.c                |  1 +
+ 4 files changed, 27 insertions(+), 13 deletions(-)
+ create mode 100644 arch/arm/mach-imx/Makefile.boot
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 95007b9..8fe035b 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -314,7 +314,7 @@ config ARCH_MULTIPLATFORM
- 	select COMMON_CLK
- 	select GENERIC_CLOCKEVENTS
- 	select MIGHT_HAVE_PCI
--	select MULTI_IRQ_HANDLER
-+	select MULTI_IRQ_HANDLER if !ARCH_MULTI_V7M
- 	select SPARSE_IRQ
- 	select USE_OF
+diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
+index c830b5b..f396088 100644
+--- a/Documentation/devicetree/bindings/arm/fsl.txt
++++ b/Documentation/devicetree/bindings/arm/fsl.txt
+@@ -81,12 +81,15 @@ Freescale Vybrid Platform Device Tree Bindings
+ For the Vybrid SoC familiy all variants with DDR controller are supported,
+ which is the VF5xx and VF6xx series. Out of historical reasons, in most
+ places the kernel uses vf610 to refer to the whole familiy.
++The compatible string "fsl,vf610m4" is used for the secondary Cortex-M4
++core support.
  
-@@ -400,24 +400,6 @@ config ARCH_EBSA110
- 	  Ethernet interface, two PCMCIA sockets, two serial ports and a
- 	  parallel port.
+ Required root node compatible property (one of them):
+     - compatible = "fsl,vf500";
+     - compatible = "fsl,vf510";
+     - compatible = "fsl,vf600";
+     - compatible = "fsl,vf610";
++    - compatible = "fsl,vf610m4";
  
--config ARCH_EFM32
--	bool "Energy Micro efm32"
--	depends on !MMU
--	select ARCH_REQUIRE_GPIOLIB
--	select ARM_NVIC
--	select AUTO_ZRELADDR
--	select CLKSRC_OF
--	select COMMON_CLK
--	select CPU_V7M
--	select GENERIC_CLOCKEVENTS
--	select NO_DMA
--	select NO_IOPORT_MAP
--	select SPARSE_IRQ
--	select USE_OF
--	help
--	  Support for Energy Micro's (now Silicon Labs) efm32 Giant Gecko
--	  processors.
--
- config ARCH_EP93XX
- 	bool "EP93xx-based"
- 	select ARCH_HAS_HOLES_MEMORYMODEL
-@@ -778,6 +760,14 @@ menu "Multiple platform selection"
+ Freescale LS1021A Platform Device Tree Bindings
+ ------------------------------------------------
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 96c8eb8..4f26942 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -1,5 +1,5 @@
+ menuconfig ARCH_MXC
+-	bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7
++	bool "Freescale i.MX family" if ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7 || ARCH_MULTI_V7M
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_CPU_SUSPEND if PM
+ 	select CLKSRC_MMIO
+@@ -558,9 +558,11 @@ config MACH_VPR200
  
- comment "CPU Core family selection"
+ endif
  
-+config ARCH_MULTI_V7M
-+	bool "ARMv7-M based platforms (Cortex-M)"
-+	depends on !MMU && !(ARCH_MULTI_V4_V5 || ARCH_MULTI_V6_V7)
-+	select CPU_V7M
-+	select ARM_NVIC
-+	select NO_DMA # for now
-+	select NO_IOPORT_MAP # for now
++comment "Device tree only"
 +
- config ARCH_MULTI_V4
- 	bool "ARMv4 based platforms (FA526)"
- 	depends on !ARCH_MULTI_V6_V7 && MMU
-@@ -834,6 +824,13 @@ config ARCH_VIRT
- 	select ARM_PSCI
- 	select HAVE_ARM_ARCH_TIMER
+ if ARCH_MULTI_V7
  
-+config ARCH_EFM32
-+	bool "Energy Micro efm32" if ARCH_MULTI_V7M
-+	depends on !MMU
+-comment "Device tree only"
++comment "Cortex-A platforms"
+ 
+ config SOC_IMX5
+ 	bool
+@@ -630,10 +632,28 @@ config SOC_IMX6SX
+ 	help
+ 	  This enables support for Freescale i.MX6 SoloX processor.
+ 
++
++config SOC_LS1021A
++	bool "Freescale LS1021A support"
++	select ARM_GIC
++	select HAVE_ARM_ARCH_TIMER
++	select PCI_DOMAINS if PCI
++	select ZONE_DMA if ARM_LPAE
++
 +	help
-+	  Support for Energy Micro's (now Silicon Labs) efm32 Giant Gecko
-+	  processors.
++	  This enable support for Freescale LS1021A processor.
 +
- #
- # This is sorted alphabetically by mach-* pathname.  However, plat-*
- # Kconfigs may be included either alphabetically (according to the
-diff --git a/arch/arm/configs/efm32_defconfig b/arch/arm/configs/efm32_defconfig
-index f59fffb..7bd2486 100644
---- a/arch/arm/configs/efm32_defconfig
-+++ b/arch/arm/configs/efm32_defconfig
-@@ -16,6 +16,8 @@ CONFIG_EMBEDDED=y
- # CONFIG_IOSCHED_DEADLINE is not set
- # CONFIG_IOSCHED_CFQ is not set
- # CONFIG_MMU is not set
-+# CONFIG_ARCH_MULTI_V7 is not set
-+CONFIG_ARCH_MULTI_V7M=y
- CONFIG_ARCH_EFM32=y
- # CONFIG_KUSER_HELPERS is not set
- CONFIG_SET_MEM_PARAM=y
++endif
++
++comment "Cortex-A/Cortex-M asymmetric multiprocessing platforms"
++
++if ARCH_MULTI_V7 || ARCH_MULTI_V7M
++
+ config SOC_VF610
+ 	bool "Vybrid Family VF610 support"
+ 	select VF610_MSCM
+-	select ARM_GIC
++	select ARM_GIC if ARCH_MULTI_V7
++	select ARM_NVIC if ARCH_MULTI_V7M
+ 	select PINCTRL_VF610
+ 	select PL310_ERRATA_769419 if CACHE_L2X0
+ 
+@@ -660,16 +680,6 @@ choice
+ 
+ endchoice
+ 
+-config SOC_LS1021A
+-	bool "Freescale LS1021A support"
+-	select ARM_GIC
+-	select HAVE_ARM_ARCH_TIMER
+-	select PCI_DOMAINS if PCI
+-	select ZONE_DMA if ARM_LPAE
+-
+-	help
+-	  This enable support for Freescale LS1021A processor.
+-
+ endif
+ 
+ source "arch/arm/mach-imx/devices/Kconfig"
+diff --git a/arch/arm/mach-imx/Makefile.boot b/arch/arm/mach-imx/Makefile.boot
+new file mode 100644
+index 0000000..e69de29
+diff --git a/arch/arm/mach-imx/mach-vf610.c b/arch/arm/mach-imx/mach-vf610.c
+index 2e7c75b..b20f6c1 100644
+--- a/arch/arm/mach-imx/mach-vf610.c
++++ b/arch/arm/mach-imx/mach-vf610.c
+@@ -17,6 +17,7 @@ static const char * const vf610_dt_compat[] __initconst = {
+ 	"fsl,vf510",
+ 	"fsl,vf600",
+ 	"fsl,vf610",
++	"fsl,vf610m4",
+ 	NULL,
+ };
+ 
 -- 
 2.2.1
 
