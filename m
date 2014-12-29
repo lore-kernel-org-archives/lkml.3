@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaL2Syw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 13:54:52 -0500
-Received: from www.osadl.org ([62.245.132.105]:46276 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751455AbaL2Syv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 13:54:51 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: "Juergen E. Fischer" <fischer@norbit.de>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [SCSI] aha152x: cleanup on stack DECLARE_COMPLETION
-Date: Mon, 29 Dec 2014 13:51:00 -0500
-Message-Id: <1419879060-29972-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752194AbaL2TFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 14:05:24 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:34655 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542AbaL2TFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 14:05:22 -0500
+Date: Mon, 29 Dec 2014 11:04:48 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Nishanth Menon <nm@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
+        Sebastian Reichel <sre@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        dt list <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Pali Rohar <pali.rohar@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/3] hwmon: Driver for OMAP3 temperature sensor
+Message-ID: <20141229190448.GA27124@roeck-us.net>
+References: <20141226102933.GA28778@amd>
+ <1419597294-21487-1-git-send-email-sre@kernel.org>
+ <1419597294-21487-3-git-send-email-sre@kernel.org>
+ <CANOLnON6rAQ2+jJEFDKseH2Htu6bqRkURDioGt7zp1Ze73f8Pw@mail.gmail.com>
+ <CAGo_u6qO0ok+GBnm7SQtw6dJuwGN2OuP7CpKDEWawS3V2go4KA@mail.gmail.com>
+ <20141229181556.GA26926@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141229181556.GA26926@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.54A1A602.004F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 11
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix-up for incorrect use of DECLARE_COMPLETION. see also commit
-6e9a4738 ("completions: lockdep annotate on stack completions")
+On Mon, Dec 29, 2014 at 07:15:56PM +0100, Pavel Machek wrote:
+> On Mon 2014-12-29 12:01:03, Nishanth Menon wrote:
+> > On Mon, Dec 29, 2014 at 11:52 AM, Grazvydas Ignotas <notasas@gmail.com> wrote:
+> > > On Fri, Dec 26, 2014 at 2:34 PM, Sebastian Reichel <sre@kernel.org> wrote:
+> > >> OMAP34xx and OMAP36xx processors contain a register in the syscon area,
+> > >> which can be used to determine the SoCs temperature. This patch provides
+> > >> a DT based driver for the temperature sensor based on an older driver
+> > >> written by Peter De Schrijver for the Nokia N900 and N9.
+> > >
+> > > The sensor looks like an earlier iteration of sensors used in newer
+> > > OMAPs, which are already supported by maybe
+> > > drivers/thermal/ti-soc-thermal/ , maybe it would make sense to update
+> > > that driver instead?
+> > 
+> > Just to be clear - OMAP4 is the first time that the sensors were
+> > reliable enough to be used.
+> 
+> When testing initial version of the patch, they seem to work very well
+> in the omap3 case.
+> 
+Pavel,
 
-V2: split out patch for individual files and (hopefully) proper
-    labeling this time
+can you look into the omap4 thermal driver to see if it can be used ?
 
-patch is against linux-next 3.19.0-rc1 -next-20141226
-
-patch was compile tested with i386_defconfig + CONFIG_ISA=y
-SCSI_LOWLEVEL=y, CONFIG_SCSI_AHA152X=y
-
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- drivers/scsi/aha152x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
- create mode 100644 fixups
-
-diff --git a/drivers/scsi/aha152x.c b/drivers/scsi/aha152x.c
-index 2b960b3..b16afb9 100644
---- a/drivers/scsi/aha152x.c
-+++ b/drivers/scsi/aha152x.c
-@@ -1055,7 +1055,7 @@ static int aha152x_abort(Scsi_Cmnd *SCpnt)
- static int aha152x_device_reset(Scsi_Cmnd * SCpnt)
- {
- 	struct Scsi_Host *shpnt = SCpnt->device->host;
--	DECLARE_COMPLETION(done);
-+	DECLARE_COMPLETION_ONSTACK(done);
- 	int ret, issued, disconnected;
- 	unsigned char old_cmd_len = SCpnt->cmd_len;
- 	unsigned long flags;
-diff --git a/fixups b/fixups
-new file mode 100644
-index 0000000..e69de29
--- 
-1.7.10.4
-
+Thanks,
+Guenter
