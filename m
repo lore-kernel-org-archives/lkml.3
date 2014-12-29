@@ -1,242 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaL2E3X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 23:29:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41707 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751519AbaL2E3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 23:29:22 -0500
-Message-ID: <1419827352.5162.77.camel@localhost>
-Subject: Re: fanotify bug on gdb -- hard crash
-From: Eric Paris <eparis@redhat.com>
-To: ivo welch <ivo.welch@gmail.com>
-Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>, linux-kernel@vger.kernel.org
-Date: Sun, 28 Dec 2014 23:29:12 -0500
-In-Reply-To: <CAPr7RtWQ6bt4M8f-2-w0nbLvgpupb0kckE=VQDYbC8EXwiPDJg@mail.gmail.com>
-References: <CAPr7RtWpX_kYiJRRnPVSZrL-U2GqoV5aBPM_AF7xBzV99jzJuw@mail.gmail.com>
-	 <549DAB95.3090003@gmx.de> <1419808412.5162.73.camel@localhost>
-	 <CAPr7RtWQ6bt4M8f-2-w0nbLvgpupb0kckE=VQDYbC8EXwiPDJg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751861AbaL2EvH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 23:51:07 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:36309 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaL2EvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Dec 2014 23:51:03 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-46-54a0ddb20cd3
+Date: Mon, 29 Dec 2014 04:50:58 +0000 (GMT)
+From: GIRISH K S <ks.giri@samsung.com>
+Subject: Re: [PATCH 15/27] net: sxgbe: Use setup_timer
+To: Julia Lawall <Julia.Lawall@lip6.fr>, ByungHo An <bh74.an@samsung.com>
+Cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Vipul Chandrakant <vipul.pandya@samsung.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: ks.giri@samsung.com
+MIME-version: 1.0
+X-MTR: 20141229044926733@ks.giri
+Msgkey: 20141229044926733@ks.giri
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20141229044926733@ks.giri
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=windows-1252
+MIME-version: 1.0
+Message-id: <451468949.291671419828656924.JavaMail.weblogic@epmlwas09c>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsWyRsSkWnfT3QUhBq+3alpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M788OMhfME63o/DuVqYHxikgXIweHkICSxIVfQl2MnBwSAiYS
+	RzunsUDYYhIX7q1n62LkAipZyihx/+oOFpiiV4/fskIk5jBKHDjUygaSYBFQlVj45jxYEZuA
+	usTHA72MILawgJnEgh3NYLaIgL/EpusT2UGamQXeM0rM7ZnFDpIQEpCV+PXxKZjNKyAocXLm
+	E6htChKHJnZCxRUlnnffZIWIy0ksmXqZCcLmlZjR/pQFJj7t6xpmCFta4vysDYww7yz+/hgq
+	zi9x7PYOqF4BialnDkLVqEr8X3CQHcLmk1iz8C0LTP2uU8uZYXbd3zIXqldCYmvLE7B7mIFu
+	m9L9kB3CNpA4smgOK7pfeAXcJWZv/sQC8ryEwEQOidaW7awTGJVmIambhWTWLCSzkNUsYGRZ
+	xSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iRGYHE7/ezZhB+O9A9aHGAU4GJV4eBNOLAgRYk0s
+	K67MPcRoCoyoicxSosn5wBSUVxJvaGxmZGFqYmpsZG5ppiTO+1rqZ7CQQHpiSWp2ampBalF8
+	UWlOavEhRiYOTqkGxpQdTtG2VtN9Nxyq/H9Zj824Vpa13cNYXcQmvMzc5d0RvWez2z7G8X7M
+	VT4Vmyjf/PB/2q9G4Xv7NRrDLjvtOLTY9oJk7sdenqebV33z8TYWft2pUHNBzvpyiY5u/vyk
+	Y3Gt1450crvIW3aYvDln7/3hs9s76bZ93+/rFff8nLjLwvpRa5yzEktxRqKhFnNRcSIAPDjv
+	pgkDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t/tft1NdxeEGDQsV7K4vGsOmwOjx+dN
+	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hqaxVoYGBkamQDUJaRnf
+	nx1kLpgnWtH5dypTA+MVkS5GDg4hASWJC7+Euhg5OSQETCRePX7LCmGLSVy4t56ti5ELqGQO
+	o8SBQ61sIAkWAVWJhW/Os4DYbALqEh8P9DKC2MICZhILdjSD2SIC/hKbrk9kB2lmFnjPKDG3
+	ZxY7SEJIQFbi18enYDavgKDEyZlPWCC2KUgcmtgJFVeUeN59E+oKOYklUy8zQdi8EjPan7LA
+	xKd9XcMMYUtLnJ+1gRHm6sXfH0PF+SWO3d4B1SsgMfXMQagaVYn/Cw6yQ9h8EmsWvmWBqd91
+	ajkzzK77W+ZC9UpIbG15AnYPM9BtU7ofskPYBhJHFs1hRfcLr4C7xOzNn1gmMMrOQpKahaR9
+	FpJ2ZDULGFlWMYqmFiQXFCelV5joFSfmFpfmpesl5+duYgQnomdLdjA2XLA+xCjAwajEw8tx
+	bEGIEGtiWXFl7iFGCQ5mJRFeozKgEG9KYmVValF+fFFpTmrxIUZTYLRNZJYSTc4HJsm8knhD
+	YxNzU2NTCwNDc3MzJXHe/+dyQ4QE0hNLUrNTUwtSi2D6mDg4pRoYGcMq+yx3rkxoE8gUdV3v
+	YX/QzV07S6ckcrdr9grFmsqNf7YdCldWdhIs2pyz7NP1FRJB0098vXPQ/NkJ9m0bJB0bn1Ud
+	Zr32/uU0X+mvumb+Mi2LbNhlak8t9M4WYS1n7NCYOPdETO3qTfeC1SIrDLbmLqgR3SfOWvlq
+	hlpckFSmm9tD1dVKLMUZiYZazEXFiQDu9fgJWgMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Change FAN_OPEN_PERM to FAN_OPEN
-
-If you have any more deadlocks, please let us know. Once you understand
-the difference between the two let us know if there are any more
-problems...
-
--Eric
-
-On Mon, 2014-12-29 at 08:13 +0800, ivo welch wrote:
-> 
-> 
-> I really don't know what I am doing.  however, the code is really not
-> mine, but verbatim from the man-page example,
-> http://man7.org/linux/man-pages/man7/fanotify.7.html .  I had more
-> code below my code, but had whittled down the example to illustrate
-> where my system locks up.
-> 
-> 
-> I wonder if there could be safeguards in the call to avoid crashing
-> the system.  I know fanotify is playing with fire, but should it
-> incapacitate the system in this way?
-> 
-> 
-> in the end, all I want to do is log each and every file-open operation
-> asap.  I want to do read-only probing.  could someone please point me
-> to a correct example or facility if the manpage is wrong.
-> 
-> 
-> /iaw
-> 
-> 
-> 
-> ----
-> Ivo Welch (ivo.welch@gmail.com)
-> http://www.ivo-welch.info/
-> J. Fred Weston Professor of Finance
-> Anderson School at UCLA, C519
-> Director, UCLA Anderson Fink Center for Finance and Investments
-> Free Finance Textbook, http://book.ivo-welch.info/
-> Editor, Critical Finance Review,
-> http://www.critical-finance-review.org/
->  
-> 
-> On Mon, Dec 29, 2014 at 7:13 AM, Eric Paris <eparis@redhat.com> wrote:
->         Why are you setting FAN_OPEN_PERM and then not responding to
->         perm
->         requests? Of course the system is going to appear locked,
->         until you
->         start responding to open events, remove that mark, or close
->         the fanotify
->         fd...
->         
->         -Eric
->         
->         On Fri, 2014-12-26 at 19:40 +0100, Heinrich Schuchardt wrote:
->         > Hello Ivo,
->         >
->         > On 26.12.2014 15:45, ivo welch wrote:
->         > > I am not a kernel developer, so forgive the intrusion.
->         > >
->         > > I suspect I have found either a bug in gdb (less likely)
->         or a bug in
->         > > fanotify (more likely).  it is replicable, and the code is
->         almost
->         > > unchanged from the example in the fanotify man page.  to
->         trigger it,
->         > > all an su needs to do is to step through the program below
->         with gdb
->         > > 7.8.1 'n' command, and linux locks up the system pretty
->         hard (reboot
->         > > required).  I have confirmed the replicability of this
->         issue on a
->         > > clean arch 2014.12.01 3.17.6-1 system and on a clean
->         ubuntu 14.10
->         > > system, both VMs created just to check it.  /iaw
->         > >
->         > >
->         > > #define _GNU_SOURCE     /* Needed to get O_LARGEFILE
->         definition */
->         > > #include <stdio.h>
->         > > #include <stdlib.h>
->         > > #include <errno.h>
->         > > #include <fcntl.h>
->         > > #include <poll.h>
->         > > #include <sys/fanotify.h>
->         > >
->         > > int main(int argc, char *argv[]) {
->         > >    int fd;
->         > >    fd = fanotify_init(FAN_CLOEXEC | FAN_CLASS_CONTENT |
->         FAN_NONBLOCK,
->         > > O_RDONLY | O_LARGEFILE);
->         > >    if (fd == -1) exit(1);
->         > >    fprintf(stderr, "calling fanotify_mark: fd=%d\n", fd);
->         > >    if (fanotify_mark(fd, FAN_MARK_ADD | FAN_MARK_MOUNT,
->         FAN_OPEN_PERM |
->         > > FAN_CLOSE_WRITE, -1, "/") == -1) exit(2);
->         > >    fprintf(stderr, "in gdb step through with 'n' for
->         repeat.\n");
->         > >    fprintf(stderr, "  (and sometimes otherwise), a ^C
->         works, but a ^Z
->         > > and then ^C does not.\n");
->         > > }
->         >
->         > I was not able to reproduce your problem according to your
->         description
->         > with Ubuntu 14.10.
->         >
->         > I ran a Ubuntu 14.04 amd64 LiveImage in a VM and compiled
->         your example with
->         > gcc -g -o test test.c
->         >
->         > The gdb version in Ubuntu 14.10 is 7.4 and not 7.8.1. The
->         kernel version
->         > is 3.13.
->         >
->         > root@ubuntu:/home/ubuntu/temp# gdb ./test
->         > GNU gdb (Ubuntu/Linaro 7.4-2012.04-0ubuntu2.1) 7.4-2012.04
->         > Copyright (C) 2012 Free Software Foundation, Inc.
->         > License GPLv3+: GNU GPL version 3 or later
->         > <http://gnu.org/licenses/gpl.html>
->         > This is free software: you are free to change and
->         redistribute it.
->         > There is NO WARRANTY, to the extent permitted by law.  Type
->         "show copying"
->         > and "show warranty" for details.
->         > This GDB was configured as "x86_64-linux-gnu".
->         > For bug reporting instructions, please see:
->         > <http://bugs.launchpad.net/gdb-linaro/>...
->         > Reading symbols from /home/ubuntu/temp/test...done.
->         > (gdb) break main
->         > Breakpoint 1 at 0x400693: file test.c, line 10.
->         > (gdb) run
->         > Starting program: /home/ubuntu/temp/test
->         > warning: no loadable sections found in added symbol-file
->         system-supplied
->         > DSO at 0x7ffff7ffa000
->         >
->         > Breakpoint 1, main (argc=1, argv=0x7fffffffe638) at
->         test.c:10
->         > 10        fd = fanotify_init(FAN_CLOEXEC | FAN_CLASS_CONTENT
->         | FAN_NONBLOCK,
->         > (gdb) n
->         > 12        if (fd == -1) exit(1);
->         > (gdb) n
->         > 13        fprintf(stderr, "calling fanotify_mark: fd=%d\n",
->         fd);
->         > (gdb) n
->         > calling fanotify_mark: fd=7
->         > 14        if (fanotify_mark(fd, FAN_MARK_ADD |
->         FAN_MARK_MOUNT,
->         > FAN_OPEN_PERM |
->         > (gdb) n
->         > 16        fprintf(stderr, "in gdb step through with 'n' for
->         repeat.\n");
->         > (gdb) n
->         > in gdb step through with 'n' for repeat.
->         > 17        fprintf(stderr, "  (and sometimes otherwise), a ^C
->         works, but
->         > a ^Z and then ^C does not.\n");
->         > (gdb) n
->         >    (and sometimes otherwise), a ^C works, but a ^Z and then
->         ^C does not.
->         > 18      }
->         > (gdb) n
->         > 0x00007ffff7a3b78d in __libc_start_main () from
->         > /lib/x86_64-linux-gnu/libc.so.6
->         > (gdb) n
->         > Single stepping until exit from function __libc_start_main,
->         > which has no line number information.
->         > [Inferior 1 (process 4423) exited with code 0110]
->         > (gdb) n
->         > The program is not being run.
->         > (gdb) q
->         > root@ubuntu:/home/ubuntu/temp#
->         >
->         > >
->         > > I don't know who else to tell this.  I hope this report is
->         useful, if
->         > > someone competent can confirm it.  /iaw
->         >
->         > Bug reports for the Linux kernel should be adressed to the
->         maintainer.
->         > You can find him in the MAINTAINERS file of the linux
->         source.
->         >
->         > See
->         >
->         https://www.kernel.org/pub/linux/docs/lkml/reporting-bugs.html
->         > https://bugzilla.kernel.org/
->         >
->         > Before reporting a bug it is worthwhile to check if the
->         problem also
->         > occurs with the current kernel version (as of today 3.18.1
->         or 3.19-rc1).
->         >
->         >  > PS: Is there an alternative to fanotify to avoid this?  I
->         want to
->         >  > learn of all file-open requests on a ro device.
->         >  > ----
->         >
->         > The fanotify API is the right choice. Inotify is an
->         alternative but
->         > requires marking all directories.
->         >
->         > For your task you can use the code provided at
->         > https://launchpad.net/fatrace
->         >
->         > Best regards
->         >
->         > Heinrich Schuchardt
->         
->         
->         
-> 
-> 
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBT4pSGZ016580
 
 
+
+------- Original Message -------
+Sender : Julia Lawall<Julia.Lawall@lip6.fr>
+Date : Dec 26, 2014 20:05 (GMT+05:30)
+Title : [PATCH 15/27] net: sxgbe: Use setup_timer
+
+Convert a call to init_timer and accompanying intializations of
+the timer's data and function fields to a call to setup_timer.
+
+A simplified version of the semantic match that fixes this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// 
+@@
+expression t,f,d;
+@@
+
+-init_timer(&t);
++setup_timer(&t,f,d);
+-t.function = f;
+-t.data = d;
+// 
+
+Signed-off-by: Julia Lawall 
+
+---
+drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c |   10 ++++------
+1 file changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c b/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
+index 6984944..b6612d6 100644
+--- a/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
++++ b/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
+@@ -133,9 +133,8 @@ bool sxgbe_eee_init(struct sxgbe_priv_data * const priv)
+return false;
+
+priv->eee_active = 1;
+- init_timer(&priv->eee_ctrl_timer);
+- priv->eee_ctrl_timer.function = sxgbe_eee_ctrl_timer;
+- priv->eee_ctrl_timer.data = (unsigned long)priv;
++ setup_timer(&priv->eee_ctrl_timer, sxgbe_eee_ctrl_timer,
++     (unsigned long)priv);
+priv->eee_ctrl_timer.expires = SXGBE_LPI_TIMER(eee_timer);
+add_timer(&priv->eee_ctrl_timer);
+
+@@ -1009,10 +1008,9 @@ static void sxgbe_tx_init_coalesce(struct sxgbe_priv_data *priv)
+struct sxgbe_tx_queue *p = priv->txq[queue_num];
+p->tx_coal_frames =  SXGBE_TX_FRAMES;
+p->tx_coal_timer = SXGBE_COAL_TX_TIMER;
+- init_timer(&p->txtimer);
++ setup_timer(&p->txtimer, sxgbe_tx_timer,
++     (unsigned long)&priv->txq[queue_num]);
+p->txtimer.expires = SXGBE_COAL_TIMER(p->tx_coal_timer);
+- p->txtimer.data = (unsigned long)&priv->txq[queue_num];
+- p->txtimer.function = sxgbe_tx_timer;
+add_timer(&p->txtimer);
+}
+}
+Looks good to me.
+Acked by: Girish K S <ks.giri@samsung.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
