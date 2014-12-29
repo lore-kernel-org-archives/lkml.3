@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaL2TmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 14:42:21 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:42156 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061AbaL2TmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 14:42:12 -0500
-Message-ID: <54A1AE91.4020909@osg.samsung.com>
-Date: Mon, 29 Dec 2014 12:42:09 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752006AbaL2TxD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 14:53:03 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:45781 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaL2TxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 14:53:00 -0500
+Message-ID: <54A1B11A.6020307@codeaurora.org>
+Date: Mon, 29 Dec 2014 11:52:58 -0800
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org,
-        "open list:KERNEL SELFTEST F..." <linux-api@vger.kernel.org>,
-        shuahkh@osg.samsung.com
-Subject: [GIT PULL] kselftest fixes for 3.19
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Minchan Kim <minchan@kernel.org>,
+        "Stefan I. Strogin" <s.strogin@partner.samsung.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
+        Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
+References: <cover.1419602920.git.s.strogin@partner.samsung.com> <20141229023639.GC27095@bbox>
+In-Reply-To: <20141229023639.GC27095@bbox>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 12/28/2014 6:36 PM, Minchan Kim wrote:
+> Hello,
+>
+> On Fri, Dec 26, 2014 at 05:39:01PM +0300, Stefan I. Strogin wrote:
+>> Hello all,
+>>
+>> Here is a patch set that adds /proc/cmainfo.
+>>
+>> When compiled with CONFIG_CMA_DEBUG /proc/cmainfo will contain information
+>> about about total, used, maximum free contiguous chunk and all currently
+>> allocated contiguous buffers in CMA regions. The information about allocated
+>> CMA buffers includes pid, comm, allocation latency and stacktrace at the
+>> moment of allocation.
+>
+> It just says what you are doing but you didn't say why we need it.
+> I can guess but clear description(ie, the problem what you want to
+> solve with this patchset) would help others to review, for instance,
+> why we need latency, why we need callstack, why we need new wheel
+> rather than ftrace and so on.
+>
+> Thanks.
+>
 
-Please pull the following kselftest fix for 3.19.
 
-thanks,
--- Shuah
+I've been meaning to write something like this for a while so I'm
+happy to see an attempt made to fix this. I can't speak for the
+author's reasons for wanting this information but there are
+several reasons why I was thinking of something similar.
 
-The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+The most common bug reports seen internally on CMA are 1) CMA is
+too slow and 2) CMA failed to allocate memory. For #1, not all
+allocations may be slow so it's useful to be able to keep track
+of which allocations are taking too long. For #2, migration
+failure is fairly common but it's still important to rule out
+a memory leak from a dma client. Seeing all the allocations is
+also very useful for memory tuning (e.g. how big does the CMA
+region need to be, which clients are actually allocating memory).
 
-  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+ftrace is certainly usable for tracing CMA allocation callers and
+latency. ftrace is still only a fixed size buffer though so it's
+possible for information to be lost if other logging is enabled.
+For most of the CMA use cases, there is a very high cost if the
+proper debugging information is not available so the more that
+can be guaranteed the better.
 
-are available in the git repository at:
+It's also worth noting that the SLUB allocator has a sysfs
+interface for showing allocation callers when CONFIG_SLUB_DEBUG
+is enabled.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest
-tags/linux-kselftest-3.19-fixes
-
-for you to fetch changes up to 6898b627aab6ba553e6d8b40a0b1ddc43c48d42f:
-
-  selftests/exec: Use %zu to format size_t (2014-12-22 11:11:36 -0700)
-
-----------------------------------------------------------------
-kselftest fixes for: 3.19
-
-Fix exec test compile warnings.
-
-----------------------------------------------------------------
-Geert Uytterhoeven (1):
-      selftests/exec: Use %zu to format size_t
-
- tools/testing/selftests/exec/execveat.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks,
+Laura
 
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
