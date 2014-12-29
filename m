@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaL2GDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 01:03:24 -0500
-Received: from mga14.intel.com ([192.55.52.115]:62546 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843AbaL2GDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 01:03:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,658,1413270000"; 
-   d="scan'208";a="643942665"
-Message-ID: <54A0EE9B.9040803@intel.com>
-Date: Mon, 29 Dec 2014 14:03:07 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1751683AbaL2GUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 01:20:34 -0500
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:40461 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934AbaL2GUc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 01:20:32 -0500
+Message-ID: <54A0F2AD.6060505@lwfinger.net>
+Date: Mon, 29 Dec 2014 00:20:29 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Zhang Rui <rui.zhang@intel.com>
-CC: Olof Johansson <olof@lixom.net>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        jg1.han@samsung.com
-Subject: Re: [PATCH v6] Thermal: introduce INT3406 thermal driver
-References: <54868CF6.6020505@intel.com> <CAOesGMirF-_H2ZzFR-VpwkEErZE2uQJSYx5EuePArQsEh=r_Kw@mail.gmail.com> <20141211010226.GA26253@aaronlu.sh.intel.com> <CAOesGMj_uObbxLdpobEhP=nRPsFUJNCtq01RH7ZSECd5=1Ti6Q@mail.gmail.com> <1418265472.12435.68.camel@rzhang1-toshiba> <548934D0.8000502@intel.com> <1418286781.12435.73.camel@rzhang1-toshiba> <54895821.3050902@intel.com> <1419217761.19619.2.camel@rzhang1-toshiba> <20141222095344.GE4525@x1> <5498C4D9.8050509@intel.com>
-In-Reply-To: <5498C4D9.8050509@intel.com>
-Content-Type: text/plain; charset=utf-8
+To: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        navin patidar <navin.patidar@gmail.com>,
+        Elena Oat <oat.elena@gmail.com>, Tim Jester-Pfadt <t.jp@gmx.de>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8188eu: rtw_mlme.c: fix sparse warning
+References: <20141229054706.GA8062@fedora.localdomain>
+In-Reply-To: <20141229054706.GA8062@fedora.localdomain>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2014 09:26 AM, Aaron Lu wrote:
-> On 12/22/2014 05:53 PM, Lee Jones wrote:
->> On Mon, 22 Dec 2014, Zhang Rui wrote:
->>
->>> On Thu, 2014-12-11 at 16:38 +0800, Aaron Lu wrote:
->>>> INT3406 ACPI device object resembles an ACPI video output device, but its
->>>> _BCM is said to be deprecated and should not be used. So we will make
->>>> use of the raw interface to do the actual cooling. Due to this, the
->>>> backlight core has some modifications. Also, to re-use some of the ACPI
->>>> video module's code, one function has been exported.
->>>>
->>>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
->>>
->>> Jingoo and Lee,
->>>
->>> are you okay with the changes in drivers/video/backlight/backlight.c and
->>> include/linux/backlight.h?
->>
->> NB: Jingoo still needs to review the crux of the patch.
->>
->>>> ---
->>>> v6: Fix an issue that wrongly set error path return value as reported
->>>> by Olof Johansson.
->>>>
->>>>  drivers/acpi/video.c                              |  77 ++++----
->>>>  drivers/thermal/Kconfig                           |  26 +--
->>>>  drivers/thermal/int340x_thermal/Kconfig           |  41 ++++
->>>>  drivers/thermal/int340x_thermal/Makefile          |   1 +
->>>>  drivers/thermal/int340x_thermal/int3406_thermal.c | 229 ++++++++++++++++++++++
->>>>  drivers/video/backlight/backlight.c               |  44 +++--
->>>>  include/acpi/video.h                              |  20 ++
->>>>  include/linux/backlight.h                         |   2 +
->>>>  8 files changed, 366 insertions(+), 74 deletions(-)
->>>>  create mode 100644 drivers/thermal/int340x_thermal/Kconfig
->>>>  create mode 100644 drivers/thermal/int340x_thermal/int3406_thermal.c
->>
->> I gather by the message at the top that you're looking for an Ack so
->> this can be routed through another subsystem.  Not going to happen.
->>
->> So you're on v6 already and a) no one has mentioned that introducing a
->> new driver AND making core framework changes (in a different subsystem
->> to boot) in one patch is bad and b) this is the first time you've
->> Cc'ed the maintainers of the aforementioned subsystem?
->>
->> Moving forward you should split this patch into component parts and
->> resend -- only this time ensure you Cc all maintainers in the first
->> instance, rather than as as afterthought.
-> 
-> OK, thanks for the suggestion.
-> 
->>
->>>> -config INT340X_THERMAL
->>>> -	tristate "ACPI INT340X thermal drivers"
->>>> -	depends on X86 && ACPI
->>>> -	select THERMAL_GOV_USER_SPACE
->>>> -	select ACPI_THERMAL_REL
->>>> -	select ACPI_FAN
->>
->> This patch also relies on backlight as well, no?
-> 
-> Yes it does, will add it in next revision.
+On 12/28/2014 11:47 PM, Serguey Parkhomovsky wrote:
+> Fixes the following sparse warning for rtw_mlme.c:
+>
+> drivers/staging/rtl8188eu/core/rtw_mlme.c:810:9: warning: context imbalance in 'rtw_free_assoc_resources' - different lock contexts for basic block
+>
+> Signed-off-by: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
+> ---
+>   drivers/staging/rtl8188eu/core/rtw_mlme.c | 37 ++++++++++++++++++++-----------
+>   1 file changed, 24 insertions(+), 13 deletions(-)
 
-My fault. INT340X_THERMAL does not rely on backlight, INT3406 does.
-Since I have marked INT3406 depends on ACPI_VIDEO, which depends on
-BACKLIGHT, so we are good here.
+Are these many changes needed just because Sparse is not smart enough to 
+understand that the following does not really have a context imbalance:
 
-Thanks,
-Aaron
+	if (lock_scanned_queue)
+		spin_lock_bh(&(pmlmepriv->scanned_queue.lock));
+	.....
+	.....
+
+	if (lock_scanned_queue)
+   		spin_unlock_bh(&pmlmepriv->scanned_queue.lock);
+
+Nothing in the middle touches lock_scanned_queue, thus if the spin lock and 
+unlock operations will be paired. That is all that is important. The fact that 
+some tool objects to this construct means that the tool is broken, not the code.
+
+In my mind, Sparse warnings/errors/checks are in place to alert you to a 
+possible problem. If they point to white space issues, then you fix them. If 
+they point to lines that are too long, then you see if you can shorten them 
+without harming the readability. In any case, judgement should be used before 
+blindly trying to silence the warning.
+
+For those reasons, NACK.
+
+Larry
+
+
