@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaL2ObW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 09:31:22 -0500
+	id S1752451AbaL2ObU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 09:31:20 -0500
 Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:25326 "EHLO
 	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752344AbaL2ObJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752351AbaL2ObK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 09:31:09 -0500
+	Mon, 29 Dec 2014 09:31:10 -0500
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Am0QAHdloVRXQ5FV/2dsb2JhbABcgwaBKrQrAQEBAQEBBQF3lzAEAgKBCxcBAQEBAX2EDQEFViMQUTkeGYgwAbQmjxMBAQEHIoYDiRBkBxaEEwWMPopKkVAig289MYEDgUABAQE
+X-IronPort-Anti-Spam-Result: Am0QAHdloVRXQ5FV/2dsb2JhbABcgwaBKrQrAQEBAQEBBQF3lzAEAgKBCxcBAQEBAX2EDQEFViMQUTkeGYgwAbQmjxMBAQEBBiKGA4kQZAcWhBMFjD6KSpFQIoNvPTGBA4FAAQEB
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fabian Frederick <fabf@skynet.be>, Corey Minyard <minyard@acm.org>,
-        openipmi-developer@lists.sourceforge.net
-Subject: [PATCH 03/11 linux-next] ipmi: remove unnecessary version.h inclusion
-Date: Mon, 29 Dec 2014 15:29:37 +0100
-Message-Id: <1419863387-24233-4-git-send-email-fabf@skynet.be>
+        Fabian Frederick <fabf@skynet.be>, Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        linux-media@vger.kernel.org
+Subject: [PATCH 05/11 linux-next] [media] tw68: remove unnecessary version.h inclusion
+Date: Mon, 29 Dec 2014 15:29:39 +0100
+Message-Id: <1419863387-24233-6-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419863387-24233-1-git-send-email-fabf@skynet.be>
 References: <1419863387-24233-1-git-send-email-fabf@skynet.be>
@@ -29,21 +30,21 @@ Based on versioncheck.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/char/ipmi/ipmi_ssif.c | 1 -
+ drivers/media/pci/tw68/tw68.h | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/char/ipmi/ipmi_ssif.c b/drivers/char/ipmi/ipmi_ssif.c
-index fd5a5e8..120ed8d 100644
---- a/drivers/char/ipmi/ipmi_ssif.c
-+++ b/drivers/char/ipmi/ipmi_ssif.c
-@@ -31,7 +31,6 @@
-  * interface into the I2C driver, I believe.
+diff --git a/drivers/media/pci/tw68/tw68.h b/drivers/media/pci/tw68/tw68.h
+index 7a7501b..93f2335 100644
+--- a/drivers/media/pci/tw68/tw68.h
++++ b/drivers/media/pci/tw68/tw68.h
+@@ -25,7 +25,6 @@
+  *  GNU General Public License for more details.
   */
  
 -#include <linux/version.h>
- #if defined(MODVERSIONS)
- #include <linux/modversions.h>
- #endif
+ #include <linux/pci.h>
+ #include <linux/videodev2.h>
+ #include <linux/notifier.h>
 -- 
 2.1.0
 
