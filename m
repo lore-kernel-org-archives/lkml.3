@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaL2OfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 09:35:22 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:38668 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519AbaL2OfU (ORCPT
+	id S1752286AbaL2Ojh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 09:39:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23229 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611AbaL2Oje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 09:35:20 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-e1-54a166a7e8d8
-From: Zbigniew Jasinski <z.jasinski@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: James Morris <james.l.morris@oracle.com>,
+	Mon, 29 Dec 2014 09:39:34 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>, David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
         "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] smack: Fix a bidirectional UDS connect check typo
-Date: Mon, 29 Dec 2014 15:34:58 +0100
-Message-id: <1419863698-29558-1-git-send-email-z.jasinski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t/xK7rL0xaGGDw4zGhxb9svNou+x0EW
-	l3fNYbP40POIzeL8hXPsDqwe13ZHenx8eovF4+j+RWwenzfJBbBEcdmkpOZklqUW6dslcGU8
-	vSJZ0M5V8WjeLpYGxnkcXYycHBICJhJLHl5mhLDFJC7cW8/WxcjFISSwlFHi795bLBBOH5PE
-	5jmXWEGq2AQMJHoXNLCD2CICOhL79jxnByliFpjNKPHo5DWgIg4OYQEnibZVsiA1LAKqEmt+
-	NbGB2LwCbhL/Fj1hBymREFCQmDPJZgIj9wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsY
-	IQHwdQfj0mNWhxgFOBiVeHgTTiwIEWJNLCuuzD3EKMHBrCTCK225MESINyWxsiq1KD++qDQn
-	tfgQIxMHp1QDY7RojPI1M837MqaXFLd+vmQl9HmxJM/y/sP3fjfMTalc8Fv7zQrHUIHIVUvq
-	Piy4x/pE2J871flnVFXTlPMfjHa/v+Agfsg485Xd/Wr3OMmWsPDFTt92zHPJqOr+ZCgqIu3C
-	eFxw655GTqWHM0Mq+vJ3PL2pK7h5ZrzYXhHppy3d61mdfsR+VWIpzkg01GIuKk4EAGeK7uXe	AQAA
+        keyrings@linux-nfs.org (open list:KEYS/KEYRINGS:),
+        linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
+Subject: [PATCH] KEYS: close race between key lookup and freeing
+Date: Mon, 29 Dec 2014 09:39:01 -0500
+Message-Id: <1419863941-16403-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 54e70ec5eb090193b03e69d551fa6771a5a217c4 commit introduced a
-bidirectional check that should have checked for mutual WRITE access
-between two labels. Due to a typo subject's OUT label is checked with
-object's OUT. Should be OUT to IN.
+When a key is being garbage collected, it's key->user would get put before
+the ->destroy() callback is called, where the key is removed from it's
+respective tracking structures.
 
-Signed-off-by: Zbigniew Jasinski <z.jasinski@samsung.com>
+This leaves a key hanging in a semi-invalid state which leaves a window open
+for a different task to try an access key->user. An example is
+find_keyring_by_name() which would dereference key->user for a key that is
+in the process of being garbage collected (where key->user was freed but
+->destroy() wasn't called yet - so it's still present in the linked list).
+
+This would cause either a panic, or corrupt memory.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- security/smack/smack_lsm.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ security/keys/gc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index b774029..30f61f8 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -3313,7 +3313,7 @@ static int smack_unix_stream_connect(struct sock *sock,
+diff --git a/security/keys/gc.c b/security/keys/gc.c
+index 9609a7f..c795237 100644
+--- a/security/keys/gc.c
++++ b/security/keys/gc.c
+@@ -148,12 +148,12 @@ static noinline void key_gc_unused_keys(struct list_head *keys)
+ 		if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
+ 			atomic_dec(&key->user->nikeys);
  
- 	if (!smack_privileged(CAP_MAC_OVERRIDE)) {
- 		skp = ssp->smk_out;
--		okp = osp->smk_out;
-+		okp = osp->smk_in;
- #ifdef CONFIG_AUDIT
- 		smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
- 		smk_ad_setfield_u_net_sk(&ad, other);
-@@ -3321,6 +3321,8 @@ static int smack_unix_stream_connect(struct sock *sock,
- 		rc = smk_access(skp, okp, MAY_WRITE, &ad);
- 		rc = smk_bu_note("UDS connect", skp, okp, MAY_WRITE, rc);
- 		if (rc == 0) {
-+			okp = osp->smk_out;
-+			skp = ssp->smk_in;
- 			rc = smk_access(okp, skp, MAY_WRITE, NULL);
- 			rc = smk_bu_note("UDS connect", okp, skp,
- 						MAY_WRITE, rc);
+-		key_user_put(key->user);
+-
+ 		/* now throw away the key memory */
+ 		if (key->type->destroy)
+ 			key->type->destroy(key);
+ 
++		key_user_put(key->user);
++
+ 		kfree(key->description);
+ 
+ #ifdef KEY_DEBUGGING
 -- 
-1.7.9.5
+1.7.10.4
 
