@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaL2PAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 10:00:31 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:40808 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551AbaL2PA1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 10:00:27 -0500
-From: Joe Howse <josephhowse@nummist.com>
-To: Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joe Howse <josephhowse@nummist.com>
-Subject: [PATCH 1/1] gspca: Add high-speed modes for PS3 Eye camera
-Date: Mon, 29 Dec 2014 11:00:03 -0400
-Message-Id: <1419865203-3967-1-git-send-email-josephhowse@nummist.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752098AbaL2PFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 10:05:47 -0500
+Received: from mail.eperm.de ([89.247.134.16]:51085 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751654AbaL2PFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 10:05:44 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v6 1/4] crypto: AF_ALG: add AEAD support
+Date: Mon, 29 Dec 2014 16:05:40 +0100
+Message-ID: <29582980.qoHS2EjmLy@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141229103319.GB13334@gondor.apana.org.au>
+References: <5682082.ffPqvQlSqN@tachyon.chronox.de> <5002301.TQO37u96dE@tachyon.chronox.de> <20141229103319.GB13334@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support in the PS3 Eye driver for QVGA capture at higher
-frame rates: 187, 150, and 137 FPS. This functionality is valuable
-because the PS3 Eye is popular for computer vision projects and no
-other camera in its price range supports such high frame rates.
+Am Montag, 29. Dezember 2014, 21:33:19 schrieb Herbert Xu:
 
-Correct a QVGA mode that was listed as 40 FPS. It is really 37 FPS
-(half of 75 FPS).
+Hi Herbert,
 
-Tests confirm that the nominal frame rates are achieved.
+> On Thu, Dec 25, 2014 at 11:01:47PM +0100, Stephan Mueller wrote:
+> > +	err = -ENOMEM;
+> 
+> This should be EINVAL.
 
-Signed-off-by: Joe Howse <josephhowse@nummist.com>
----
- drivers/media/usb/gspca/ov534.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+Changed
+> 
+> > +	if (!aead_sufficient_data(ctx))
+> > +		goto unlock;
+> 
+> So we're checking two things here, one that we have enough data
+> for AD and two we have the authentication tag.  The latter is
+> redundant as the underlying implementation should be able to cope
+> with short input so we should only check the assoclen here.
 
-diff --git a/drivers/media/usb/gspca/ov534.c b/drivers/media/usb/gspca/ov534.c
-index 90f0d63..a9c866d 100644
---- a/drivers/media/usb/gspca/ov534.c
-+++ b/drivers/media/usb/gspca/ov534.c
-@@ -12,6 +12,8 @@
-  * PS3 Eye camera enhanced by Richard Kaswy http://kaswy.free.fr
-  * PS3 Eye camera - brightness, contrast, awb, agc, aec controls
-  *                  added by Max Thrun <bear24rw@gmail.com>
-+ * PS3 Eye camera - FPS range extended by Joseph Howse
-+ *                  <josephhowse@nummist.com> http://nummist.com
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -116,7 +118,7 @@ static const struct v4l2_pix_format ov767x_mode[] = {
- 		.colorspace = V4L2_COLORSPACE_JPEG},
- };
- 
--static const u8 qvga_rates[] = {125, 100, 75, 60, 50, 40, 30};
-+static const u8 qvga_rates[] = {187, 150, 137, 125, 100, 75, 60, 50, 37, 30};
- static const u8 vga_rates[] = {60, 50, 40, 30, 15};
- 
- static const struct framerates ov772x_framerates[] = {
-@@ -769,12 +771,16 @@ static void set_frame_rate(struct gspca_dev *gspca_dev)
- 		{15, 0x03, 0x41, 0x04},
- 	};
- 	static const struct rate_s rate_1[] = {	/* 320x240 */
-+/*		{205, 0x01, 0xc1, 0x02},  * 205 FPS: video is partly corrupt */
-+		{187, 0x01, 0x81, 0x02}, /* 187 FPS or below: video is valid */
-+		{150, 0x01, 0xc1, 0x04},
-+		{137, 0x02, 0xc1, 0x02},
- 		{125, 0x02, 0x81, 0x02},
- 		{100, 0x02, 0xc1, 0x04},
- 		{75, 0x03, 0xc1, 0x04},
- 		{60, 0x04, 0xc1, 0x04},
- 		{50, 0x02, 0x41, 0x04},
--		{40, 0x03, 0x41, 0x04},
-+		{37, 0x03, 0x41, 0x04},
- 		{30, 0x04, 0x41, 0x04},
- 	};
- 
+Agreed, will change it to
+
+if (ctx->used < ctx->aead_assoclen)
+
+> 
+> Also this check should be moved to the sendmsg side as that'll
+> make it more obvious as to what went wrong.
+
+I would be a bit uneasy about that as this would open up a potential kernel 
+crasher: the sleep in aead_readable() can wake up recvmsg in two conditions: 
+either we received sufficient data or we do not expect more data (due to !ctx-
+>more). If the latter triggers, we still may have insufficient AD data. Yet, 
+the following code now sets the AD with aead_request_set_assoc using the 
+initially expected data. So, the data buffer provided to  
+aead_request_set_assoc is not long enough. The mentioned check shall prevent 
+this problem.
+
+In addition, I do not see how we can move that check to the sendmsg/sendpage 
+side: the code currently allows the caller to freely invoke the syscall 
+arbitrary amount of times. Thus, one particular invocation of sendmsg/sendpage 
+does not mean we receive all AD.
+
+Again, to allow the caller the greatest degree of freedom, you can call 
+sendmsg with an arbitrary amount of bytes as often as you want (until we fill 
+up all buffers) before the recvmsg is triggered. So, there is no need to send 
+the entire AD (or even AD+message) buffer in one sendmsg call. Compare the 
+AEAD interface with a hash interface:
+
+- the AEAD sendmsg/sendpage is logically equivalent to a hash update that you 
+can call an arbitrary number of times with an arbitrary number of bytes.
+
+- the AEAD recvmsg is logically equivalent to the hash final.
+
+This would mean that the check must stay in recvmsg as only here we know that 
+the caller wants data to be processed.
+
+> 
+> PS we should add a length check for missing/partial auth tags
+> to crypto_aead_decrypt.  We can then remove such checks from
+> individual implementations.
+
+I agree in full here. Shall I create such a patch together with the AEAD 
+AF_ALG interface, or can we merge the AEAD without that patch now and create a 
+separate patch later?
+> 
+> Thanks,
+
+
 -- 
-1.9.1
-
+Ciao
+Stephan
