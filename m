@@ -1,72 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301AbaL2Okz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 09:40:55 -0500
-Received: from colo.foxharp.net ([166.84.7.52]:37230 "EHLO colo.foxharp.net"
+	id S1752083AbaL2OmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 09:42:22 -0500
+Received: from mga11.intel.com ([192.55.52.93]:47276 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408AbaL2Okz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 09:40:55 -0500
-X-Greylist: delayed 522 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Dec 2014 09:40:54 EST
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: [PATCH v1] OLPC: use %*ph specifier instead of passing direct values
-From: Paul Fox <pgf@laptop.org>
-cc: linux-kernel@vger.kernel.org, Andres Salomon <dilinger@queued.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-reply-to: <1419856010-9528-1-git-send-email-andriy.shevchenko@linux.intel.com> (sfid-20141229_072643_678691_70512A7F)
-References: <1419856010-9528-1-git-send-email-andriy.shevchenko@linux.intel.com> (sfid-20141229_072643_678691_70512A7F)
-MIME-Version: 1.0
+	id S1752215AbaL2OmU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 09:42:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,659,1413270000"; 
+   d="scan'208";a="661977038"
+From: "Tirdea, Irina" <irina.tirdea@intel.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dogaru, Vlad" <vlad.dogaru@intel.com>,
+        "Baluta, Daniel" <daniel.baluta@intel.com>,
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        "Peter Meerwald" <pmeerw@pmeerw.net>
+Subject: RE: [PATCH 1/8] iio: core: Introduce CALORIES channel type
+Thread-Topic: [PATCH 1/8] iio: core: Introduce CALORIES channel type
+Thread-Index: AQHQIQ+QQuXaI2o/kE29ew9n0fZJ3ZymoTEQ
+Date: Mon, 29 Dec 2014 14:42:16 +0000
+Deferred-Delivery: Mon, 29 Dec 2014 14:42:00 +0000
+Message-ID: <1F3AC3675D538145B1661F571FE1805F199F7ADF@irsmsx105.ger.corp.intel.com>
+References: <1419029879-12024-1-git-send-email-irina.tirdea@intel.com>
+ <1419029879-12024-2-git-send-email-irina.tirdea@intel.com>
+ <549D61F3.3030302@kernel.org>
+In-Reply-To: <549D61F3.3030302@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.180]
 Content-Type: text/plain; charset="us-ascii"
-Content-ID: <22121.1419863530.1@grass>
-Date: Mon, 29 Dec 2014 09:32:10 -0500
-Message-Id: <20141229143210.C9C685180445@grass.foxharp.boston.ma.us>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change looks okay to me.
- Acked-by: Paul Fox <pgf@laptop.org>
 
-paul
 
-andy wrote:
- > The %*ph specifier allows to dump small buffers in hex format. Let's use it
- > instead of passing direct values via stack.
- > 
- > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
- > ---
- >  drivers/platform/olpc/olpc-ec.c | 13 +++++--------
- >  1 file changed, 5 insertions(+), 8 deletions(-)
- > 
- > diff --git a/drivers/platform/olpc/olpc-ec.c b/drivers/platform/olpc/olpc-ec.c
- > index f911952..f99b183 100644
- > --- a/drivers/platform/olpc/olpc-ec.c
- > +++ b/drivers/platform/olpc/olpc-ec.c
- > @@ -192,18 +192,15 @@ static ssize_t ec_dbgfs_cmd_write(struct file *file, const char __user *buf,
- >  	for (i = 0; i <= ec_cmd_bytes; i++)
- >  		ec_cmd[i] = ec_cmd_int[i];
- >  
- > -	pr_debug("olpc-ec: debugfs cmd 0x%02x with %d args %02x %02x %02x %02x %02x, want %d returns\n",
- > -			ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2],
- > -			ec_cmd[3], ec_cmd[4], ec_cmd[5], ec_dbgfs_resp_bytes);
- > +	pr_debug("olpc-ec: debugfs cmd 0x%02x with %d args %5ph, want %d returns\n",
- > +			ec_cmd[0], ec_cmd_bytes, ec_cmd + 1,
- > +			ec_dbgfs_resp_bytes);
- >  
- >  	olpc_ec_cmd(ec_cmd[0], (ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
- >  			ec_cmd_bytes, ec_dbgfs_resp, ec_dbgfs_resp_bytes);
- >  
- > -	pr_debug("olpc-ec: response %02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
- > -			ec_dbgfs_resp[0], ec_dbgfs_resp[1], ec_dbgfs_resp[2],
- > -			ec_dbgfs_resp[3], ec_dbgfs_resp[4], ec_dbgfs_resp[5],
- > -			ec_dbgfs_resp[6], ec_dbgfs_resp[7],
- > -			ec_dbgfs_resp_bytes);
- > +	pr_debug("olpc-ec: response %8ph (%d bytes expected)\n",
- > +			ec_dbgfs_resp, ec_dbgfs_resp_bytes);
- >  
- >  out:
- >  	mutex_unlock(&ec_dbgfs_lock);
- > -- 
- > 2.1.3
+> -----Original Message-----
+> From: linux-iio-owner@vger.kernel.org [mailto:linux-iio-owner@vger.kernel.org] On Behalf Of Jonathan Cameron
+> Sent: 26 December, 2014 15:26
+> To: Tirdea, Irina; linux-iio@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; Dogaru, Vlad; Baluta, Daniel; Hartmut Knaack; Lars-Peter Clausen; Peter Meerwald
+> Subject: Re: [PATCH 1/8] iio: core: Introduce CALORIES channel type
+> 
+> On 19/12/14 22:57, Irina Tirdea wrote:
+> > Some devices compute the number of calories that the user has
+> > burnt since the last reset.
+> >
+> > One of this devices is Freescale's MMA9553L
+> > (http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf)
+> > that computes the number of calories based on weight and step rate.
+> >
+> > Introduce a new channel type CALORIES to export these values.
+> >
+> > Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> hmm..  Ideally we use SI units for everything, but in human energy usage
+> Calories are the most common unit by a long way.  I'm having some trouble
+> even finding the conversion for this particular for of calorie.
+> 
 
-=---------------------
- paul fox, pgf@laptop.org
+Initially I wanted to use the calorie as unit, but it seemed a little bit confusing because there are 2 different units both called calorie:
+- The small calorie or gram calorie approximates the energy needed to increase the temperature of 1 gram of water by 1 C.
+- The kilogram calorie or "large calorie" is an obsolete term used for the kilocalorie, which is the calorie used to express the energy content of foods. However, in practice, the prefix "kilo" is usually omitted.
+
+Instead of using cal (small calorie), kcal or Calorie (large calorie) as unit, I think it would be more clear to use Joule since that would eliminate confusion and it is also a SI unit.
+
+According to the conversion table from here http://physics.nist.gov/Pubs/SP811/appenB9.html#ENERGY, we could convert nutritional calories to Joules using the following formula:
+  Energy (Joules) = 4 184 * calories_th_nutrition
+I used this formula in the implementation of the driver.
+
+> Now clearly it doesn't matter if the only energy sensors we ever get
+> are for human activity. However, that's unlikely to be the case.  We
+> already have devices doing instantaneous power and there are plenty
+> of smart meter chips out there (though of course, they will use the
+> option of kW Hours just to confuse matters).
+> 
+> I'd definitely prefer joules if we can do it with out a large amount of
+> pain.
+> 
+> Lars - any views on this?  (Analog do make plenty of 'energy' measurement
+> devices after all!)
+> > ---
+> >  Documentation/ABI/testing/sysfs-bus-iio |    9 +++++++++
+> >  drivers/iio/industrialio-core.c         |    1 +
+> >  include/linux/iio/types.h               |    1 +
+> >  3 files changed, 11 insertions(+)
+> >
+> > diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+> > index df5e69e..bb9342b 100644
+> > --- a/Documentation/ABI/testing/sysfs-bus-iio
+> > +++ b/Documentation/ABI/testing/sysfs-bus-iio
+> > @@ -282,6 +282,7 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_current_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_accel_peak_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_scale
+> > +What:		/sys/bus/iio/devices/iio:deviceX/in_calories_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
+> > @@ -1049,6 +1050,14 @@ Description:
+> >  		For a list of available output power modes read
+> >  		in_accel_power_mode_available.
+> >
+> > +What:		/sys/.../iio:deviceX/in_calories_input
+> > +What:		/sys/.../iio:deviceX/in_calories_raw
+> > +KernelVersion:	3.17
+> > +Contact:	linux-iio@vger.kernel.org
+> > +Description:
+> > +		This attribute is used to read the number of calories burned since the last
+> > +		reset. Units after application of scale are Joules.
+> > +
+> >  What:		/sys/bus/iio/devices/iio:deviceX/store_eeprom
+> >  KernelVersion:	3.4.0
+> >  Contact:	linux-iio@vger.kernel.org
+> > diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> > index ee442ee..5d95e84 100644
+> > --- a/drivers/iio/industrialio-core.c
+> > +++ b/drivers/iio/industrialio-core.c
+> > @@ -72,6 +72,7 @@ static const char * const iio_chan_type_name_spec[] = {
+> >  	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
+> >  	[IIO_ACTIVITY] = "activity",
+> >  	[IIO_STEPS] = "steps",
+> > +	[IIO_CALORIES] = "calories",
+> >  };
+> >
+> >  static const char * const iio_modifier_names[] = {
+> > diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+> > index 904dcbb..d2fe930 100644
+> > --- a/include/linux/iio/types.h
+> > +++ b/include/linux/iio/types.h
+> > @@ -32,6 +32,7 @@ enum iio_chan_type {
+> >  	IIO_HUMIDITYRELATIVE,
+> >  	IIO_ACTIVITY,
+> >  	IIO_STEPS,
+> > +	IIO_CALORIES,
+> >  };
+> >
+> >  enum iio_modifier {
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
