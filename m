@@ -1,96 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaL2Mm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 07:42:29 -0500
-Received: from pegasos-out.vodafone.de ([80.84.1.38]:52624 "EHLO
-	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaL2Mm1 (ORCPT
+	id S1751774AbaL2Mp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 07:45:29 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:52812 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751134AbaL2Mp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 07:42:27 -0500
-X-Spam-Flag: NO
-X-Spam-Score: 0.157
-Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=softfail
-	(invalid, public key: DNS query timeout for
-	mail._domainkey.vodafone.de) header.i=@vodafone.de
-X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 6184F600098
-Message-ID: <54A14C0C.8090401@vodafone.de>
-Date: Mon, 29 Dec 2014 13:41:48 +0100
-From: =?ISO-8859-15?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 29 Dec 2014 07:45:27 -0500
+Date: Mon, 29 Dec 2014 13:45:22 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: [PATCH v2] [media] Add RGB444_1X12 and RGB565_1X16 media bus
+ formats
+Message-ID: <20141229134522.07ffd4a5@bbrezillon>
+In-Reply-To: <1416126278-17708-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1416126278-17708-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Oded Gabbay <oded.gabbay@amd.com>, dri-devel@lists.freedesktop.org,
-        Alexander Deucher <Alexander.Deucher@amd.com>
-CC: linux-kernel@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        LKP ML <lkp@01.org>, ak@linux.intel.com, rusty@rustcorp.com.au,
-        airlied@linux.ie
-Subject: Re: [PATCH v2] drm/radeon: Init amdkfd only if it was compiled
-References: <1419843586-29864-1-git-send-email-oded.gabbay@amd.com>
-In-Reply-To: <1419843586-29864-1-git-send-email-oded.gabbay@amd.com>
-Content-Type: text/plain; charset=iso-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.12.2014 um 09:59 schrieb Oded Gabbay:
-> This patch changes the radeon_kfd_init(), which is used to initialize the
-> interface between radeon and amdkfd, so the interface will be initialized only
-> if amdkfd was build, either as module or inside the kernel image.
->
-> In the modules case, the symbol_request() will be used (same as old code). In
-> the in-image compilation case, a direct call to kgd2kfd_init() will be done.
-> For other cases, radeon_kfd_init() will just return false.
->
-> This patch is necessary because in case of the following specific
-> configuration: kernel 32-bit, no modules support, random kernel base and no
-> hibernation, the symbol_request() doesn't work as expected - it doesn't return
-> NULL if the symbol doesn't exists - which makes the kernel panic.
->
-> Signed-off-by: Oded Gabbay <oded.gabbay@amd.com>
+Hello Mauro,
 
-Using symbol_request() in general doesn't seem to be such a good idea, 
-because it breaks symbol versioning and as far as I can see is only very 
-rarely used in drivers (AFAIK only V4L drivers).
+Last week I received a notification informing me that this patch was
+"Not Applicable".
+Could you give more details on why you think this should not go through
+the media-tree (or am I misunderstanding the meaning of "Not
+Applicable") ?
 
-But for the moment I don't have another idea either except for always 
-loading the module which on most hardware is completely unnecessary. 
-Maybe we should consider restructuring the module load dependencies in 
-the next kernel release.
+I really need this patch for the atmel HLCDC DRM driver, moreover this
+patch from Philip [1] depends on mine.
 
-For now the patch is Reviewed-by: Christian König <christian.koenig@amd.com>
+Regards,
 
+Boris
+
+[1]http://comments.gmane.org/gmane.linux.drivers.video-input-infrastructure/85952
+
+On Sun, 16 Nov 2014 09:24:38 +0100
+Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
+
+> Add RGB444_1X12 and RGB565_1X16 format definitions and update the
+> documentation.
+> 
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 > ---
->   drivers/gpu/drm/radeon/radeon_kfd.c | 12 ++++++++++++
->   1 file changed, 12 insertions(+)
->
-> diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
-> index 242fd8b..d3e78b4 100644
-> --- a/drivers/gpu/drm/radeon/radeon_kfd.c
-> +++ b/drivers/gpu/drm/radeon/radeon_kfd.c
-> @@ -101,6 +101,7 @@ static const struct kgd2kfd_calls *kgd2kfd;
->   
->   bool radeon_kfd_init(void)
->   {
-> +#if defined(CONFIG_HSA_AMD_MODULE)
->   	bool (*kgd2kfd_init_p)(unsigned, const struct kfd2kgd_calls*,
->   				const struct kgd2kfd_calls**);
->   
-> @@ -117,6 +118,17 @@ bool radeon_kfd_init(void)
->   	}
->   
->   	return true;
-> +#elif defined(CONFIG_HSA_AMD)
-> +	if (!kgd2kfd_init(KFD_INTERFACE_VERSION, &kfd2kgd, &kgd2kfd)) {
-> +		kgd2kfd = NULL;
-> +
-> +		return false;
-> +	}
-> +
-> +	return true;
-> +#else
-> +	return false;
-> +#endif
->   }
->   
->   void radeon_kfd_fini(void)
+> Changes since v1:
+> - keep BPP and bits per sample ordering
+> 
+>  Documentation/DocBook/media/v4l/subdev-formats.xml | 40 ++++++++++++++++++++++
+>  include/uapi/linux/media-bus-format.h              |  4 ++-
+>  2 files changed, 43 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/DocBook/media/v4l/subdev-formats.xml b/Documentation/DocBook/media/v4l/subdev-formats.xml
+> index 18730b9..0d6f731 100644
+> --- a/Documentation/DocBook/media/v4l/subdev-formats.xml
+> +++ b/Documentation/DocBook/media/v4l/subdev-formats.xml
+> @@ -176,6 +176,24 @@
+>  	    </row>
+>  	  </thead>
+>  	  <tbody valign="top">
+> +	    <row id="MEDIA-BUS-FMT-RGB444-1X12">
+> +	      <entry>MEDIA_BUS_FMT_RGB444_1X12</entry>
+> +	      <entry>0x100d</entry>
+> +	      <entry></entry>
+> +	      &dash-ent-20;
+> +	      <entry>r<subscript>3</subscript></entry>
+> +	      <entry>r<subscript>2</subscript></entry>
+> +	      <entry>r<subscript>1</subscript></entry>
+> +	      <entry>r<subscript>0</subscript></entry>
+> +	      <entry>g<subscript>3</subscript></entry>
+> +	      <entry>g<subscript>2</subscript></entry>
+> +	      <entry>g<subscript>1</subscript></entry>
+> +	      <entry>g<subscript>0</subscript></entry>
+> +	      <entry>b<subscript>3</subscript></entry>
+> +	      <entry>b<subscript>2</subscript></entry>
+> +	      <entry>b<subscript>1</subscript></entry>
+> +	      <entry>b<subscript>0</subscript></entry>
+> +	    </row>
+>  	    <row id="MEDIA-BUS-FMT-RGB444-2X8-PADHI-BE">
+>  	      <entry>MEDIA_BUS_FMT_RGB444_2X8_PADHI_BE</entry>
+>  	      <entry>0x1001</entry>
+> @@ -288,6 +306,28 @@
+>  	      <entry>g<subscript>4</subscript></entry>
+>  	      <entry>g<subscript>3</subscript></entry>
+>  	    </row>
+> +	    <row id="MEDIA-BUS-FMT-RGB565-1X16">
+> +	      <entry>MEDIA_BUS_FMT_RGB565_1X16</entry>
+> +	      <entry>0x100d</entry>
+> +	      <entry></entry>
+> +	      &dash-ent-16;
+> +	      <entry>r<subscript>4</subscript></entry>
+> +	      <entry>r<subscript>3</subscript></entry>
+> +	      <entry>r<subscript>2</subscript></entry>
+> +	      <entry>r<subscript>1</subscript></entry>
+> +	      <entry>r<subscript>0</subscript></entry>
+> +	      <entry>g<subscript>5</subscript></entry>
+> +	      <entry>g<subscript>4</subscript></entry>
+> +	      <entry>g<subscript>3</subscript></entry>
+> +	      <entry>g<subscript>2</subscript></entry>
+> +	      <entry>g<subscript>1</subscript></entry>
+> +	      <entry>g<subscript>0</subscript></entry>
+> +	      <entry>b<subscript>4</subscript></entry>
+> +	      <entry>b<subscript>3</subscript></entry>
+> +	      <entry>b<subscript>2</subscript></entry>
+> +	      <entry>b<subscript>1</subscript></entry>
+> +	      <entry>b<subscript>0</subscript></entry>
+> +	    </row>
+>  	    <row id="MEDIA-BUS-FMT-BGR565-2X8-BE">
+>  	      <entry>MEDIA_BUS_FMT_BGR565_2X8_BE</entry>
+>  	      <entry>0x1005</entry>
+> diff --git a/include/uapi/linux/media-bus-format.h b/include/uapi/linux/media-bus-format.h
+> index 23b4090..37091c6 100644
+> --- a/include/uapi/linux/media-bus-format.h
+> +++ b/include/uapi/linux/media-bus-format.h
+> @@ -33,11 +33,13 @@
+>  
+>  #define MEDIA_BUS_FMT_FIXED			0x0001
+>  
+> -/* RGB - next is	0x100e */
+> +/* RGB - next is	0x1010 */
+> +#define MEDIA_BUS_FMT_RGB444_1X12		0x100e
+>  #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_BE	0x1001
+>  #define MEDIA_BUS_FMT_RGB444_2X8_PADHI_LE	0x1002
+>  #define MEDIA_BUS_FMT_RGB555_2X8_PADHI_BE	0x1003
+>  #define MEDIA_BUS_FMT_RGB555_2X8_PADHI_LE	0x1004
+> +#define MEDIA_BUS_FMT_RGB565_1X16		0x100f
+>  #define MEDIA_BUS_FMT_BGR565_2X8_BE		0x1005
+>  #define MEDIA_BUS_FMT_BGR565_2X8_LE		0x1006
+>  #define MEDIA_BUS_FMT_RGB565_2X8_BE		0x1007
 
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
