@@ -1,62 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaL2M0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 07:26:43 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44091 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200AbaL2M0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 07:26:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,659,1413270000"; 
-   d="scan'208";a="654431768"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, Andres Salomon <dilinger@queued.net>,
-        Paul Fox <pgf@laptop.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1] OLPC: use %*ph specifier instead of passing direct values
-Date: Mon, 29 Dec 2014 14:26:50 +0200
-Message-Id: <1419856010-9528-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
+	id S1752131AbaL2M2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 07:28:13 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:46290 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaL2M2G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 07:28:06 -0500
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: minchan@kernel.org, ngupta@vflare.org, sjennings@variantweb.net,
+        ddstreet@ieee.org, akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ganesh Mahendran <opensource.ganesh@gmail.com>
+Subject: [PATCH V2 1/2] mm/zpool: add name argument to create zpool
+Date: Mon, 29 Dec 2014 20:27:47 +0800
+Message-Id: <1419856067-6180-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The %*ph specifier allows to dump small buffers in hex format. Let's use it
-instead of passing direct values via stack.
+Currently the underlay of zpool: zsmalloc/zbud, do not know
+who creates them. There is not a method to let zsmalloc/zbud
+find which caller they belogs to.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Now we want to add statistics collection in zsmalloc. We need
+to name the debugfs dir for each pool created. The way suggested
+by Minchan Kim is to use a name passed by caller(such as zram)
+to create the zsmalloc pool.
+    /sys/kernel/debug/zsmalloc/zram0
+
+This patch adds a argument *name* to zs_create_pool() and other
+related functions.
+
+Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: Seth Jennings <sjennings@variantweb.net>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Dan Streetman <ddstreet@ieee.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
+
 ---
- drivers/platform/olpc/olpc-ec.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+Change in V2:
+    add @name description in zpool_create_pool() function description
+---
+ drivers/block/zram/zram_drv.c |    8 +++++---
+ include/linux/zpool.h         |    5 +++--
+ include/linux/zsmalloc.h      |    2 +-
+ mm/zbud.c                     |    3 ++-
+ mm/zpool.c                    |    6 ++++--
+ mm/zsmalloc.c                 |    6 +++---
+ mm/zswap.c                    |    5 +++--
+ 7 files changed, 21 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/platform/olpc/olpc-ec.c b/drivers/platform/olpc/olpc-ec.c
-index f911952..f99b183 100644
---- a/drivers/platform/olpc/olpc-ec.c
-+++ b/drivers/platform/olpc/olpc-ec.c
-@@ -192,18 +192,15 @@ static ssize_t ec_dbgfs_cmd_write(struct file *file, const char __user *buf,
- 	for (i = 0; i <= ec_cmd_bytes; i++)
- 		ec_cmd[i] = ec_cmd_int[i];
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index bd8bda3..ebae0d9 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -314,9 +314,10 @@ static void zram_meta_free(struct zram_meta *meta)
+ 	kfree(meta);
+ }
  
--	pr_debug("olpc-ec: debugfs cmd 0x%02x with %d args %02x %02x %02x %02x %02x, want %d returns\n",
--			ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2],
--			ec_cmd[3], ec_cmd[4], ec_cmd[5], ec_dbgfs_resp_bytes);
-+	pr_debug("olpc-ec: debugfs cmd 0x%02x with %d args %5ph, want %d returns\n",
-+			ec_cmd[0], ec_cmd_bytes, ec_cmd + 1,
-+			ec_dbgfs_resp_bytes);
+-static struct zram_meta *zram_meta_alloc(u64 disksize)
++static struct zram_meta *zram_meta_alloc(int device_id, u64 disksize)
+ {
+ 	size_t num_pages;
++	char pool_name[8];
+ 	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
+ 	if (!meta)
+ 		goto out;
+@@ -328,7 +329,8 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+ 		goto free_meta;
+ 	}
  
- 	olpc_ec_cmd(ec_cmd[0], (ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
- 			ec_cmd_bytes, ec_dbgfs_resp, ec_dbgfs_resp_bytes);
+-	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
++	snprintf(pool_name, sizeof(pool_name), "zram%d", device_id);
++	meta->mem_pool = zs_create_pool(pool_name, GFP_NOIO | __GFP_HIGHMEM);
+ 	if (!meta->mem_pool) {
+ 		pr_err("Error creating memory pool\n");
+ 		goto free_table;
+@@ -765,7 +767,7 @@ static ssize_t disksize_store(struct device *dev,
+ 		return -EINVAL;
  
--	pr_debug("olpc-ec: response %02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
--			ec_dbgfs_resp[0], ec_dbgfs_resp[1], ec_dbgfs_resp[2],
--			ec_dbgfs_resp[3], ec_dbgfs_resp[4], ec_dbgfs_resp[5],
--			ec_dbgfs_resp[6], ec_dbgfs_resp[7],
--			ec_dbgfs_resp_bytes);
-+	pr_debug("olpc-ec: response %8ph (%d bytes expected)\n",
-+			ec_dbgfs_resp, ec_dbgfs_resp_bytes);
+ 	disksize = PAGE_ALIGN(disksize);
+-	meta = zram_meta_alloc(disksize);
++	meta = zram_meta_alloc(zram->disk->first_minor, disksize);
+ 	if (!meta)
+ 		return -ENOMEM;
  
- out:
- 	mutex_unlock(&ec_dbgfs_lock);
+diff --git a/include/linux/zpool.h b/include/linux/zpool.h
+index f14bd75..56529b3 100644
+--- a/include/linux/zpool.h
++++ b/include/linux/zpool.h
+@@ -36,7 +36,8 @@ enum zpool_mapmode {
+ 	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
+ };
+ 
+-struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops);
++struct zpool *zpool_create_pool(char *type, char *name,
++			gfp_t gfp, struct zpool_ops *ops);
+ 
+ char *zpool_get_type(struct zpool *pool);
+ 
+@@ -80,7 +81,7 @@ struct zpool_driver {
+ 	atomic_t refcount;
+ 	struct list_head list;
+ 
+-	void *(*create)(gfp_t gfp, struct zpool_ops *ops);
++	void *(*create)(char *name, gfp_t gfp, struct zpool_ops *ops);
+ 	void (*destroy)(void *pool);
+ 
+ 	int (*malloc)(void *pool, size_t size, gfp_t gfp,
+diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+index 05c2147..3283c6a 100644
+--- a/include/linux/zsmalloc.h
++++ b/include/linux/zsmalloc.h
+@@ -36,7 +36,7 @@ enum zs_mapmode {
+ 
+ struct zs_pool;
+ 
+-struct zs_pool *zs_create_pool(gfp_t flags);
++struct zs_pool *zs_create_pool(char *name, gfp_t flags);
+ void zs_destroy_pool(struct zs_pool *pool);
+ 
+ unsigned long zs_malloc(struct zs_pool *pool, size_t size);
+diff --git a/mm/zbud.c b/mm/zbud.c
+index db8de74..6d7f128 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -130,7 +130,8 @@ static struct zbud_ops zbud_zpool_ops = {
+ 	.evict =	zbud_zpool_evict
+ };
+ 
+-static void *zbud_zpool_create(gfp_t gfp, struct zpool_ops *zpool_ops)
++static void *zbud_zpool_create(char *name, gfp_t gfp,
++			struct zpool_ops *zpool_ops)
+ {
+ 	return zbud_create_pool(gfp, zpool_ops ? &zbud_zpool_ops : NULL);
+ }
+diff --git a/mm/zpool.c b/mm/zpool.c
+index 739cdf0..bacdab6 100644
+--- a/mm/zpool.c
++++ b/mm/zpool.c
+@@ -129,6 +129,7 @@ static void zpool_put_driver(struct zpool_driver *driver)
+ /**
+  * zpool_create_pool() - Create a new zpool
+  * @type	The type of the zpool to create (e.g. zbud, zsmalloc)
++ * @name	The name of the zpool (e.g. zram0, zswap)
+  * @gfp		The GFP flags to use when allocating the pool.
+  * @ops		The optional ops callback.
+  *
+@@ -140,7 +141,8 @@ static void zpool_put_driver(struct zpool_driver *driver)
+  *
+  * Returns: New zpool on success, NULL on failure.
+  */
+-struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops)
++struct zpool *zpool_create_pool(char *type, char *name, gfp_t gfp,
++		struct zpool_ops *ops)
+ {
+ 	struct zpool_driver *driver;
+ 	struct zpool *zpool;
+@@ -168,7 +170,7 @@ struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops)
+ 
+ 	zpool->type = driver->type;
+ 	zpool->driver = driver;
+-	zpool->pool = driver->create(gfp, ops);
++	zpool->pool = driver->create(name, gfp, ops);
+ 	zpool->ops = ops;
+ 
+ 	if (!zpool->pool) {
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index b724039..2359e61 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -246,9 +246,9 @@ struct mapping_area {
+ 
+ #ifdef CONFIG_ZPOOL
+ 
+-static void *zs_zpool_create(gfp_t gfp, struct zpool_ops *zpool_ops)
++static void *zs_zpool_create(char *name, gfp_t gfp, struct zpool_ops *zpool_ops)
+ {
+-	return zs_create_pool(gfp);
++	return zs_create_pool(name, gfp);
+ }
+ 
+ static void zs_zpool_destroy(void *pool)
+@@ -1148,7 +1148,7 @@ EXPORT_SYMBOL_GPL(zs_free);
+  * On success, a pointer to the newly created pool is returned,
+  * otherwise NULL.
+  */
+-struct zs_pool *zs_create_pool(gfp_t flags)
++struct zs_pool *zs_create_pool(char *name, gfp_t flags)
+ {
+ 	int i;
+ 	struct zs_pool *pool;
+diff --git a/mm/zswap.c b/mm/zswap.c
+index 373326b..a358823 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -906,11 +906,12 @@ static int __init init_zswap(void)
+ 
+ 	pr_info("loading zswap\n");
+ 
+-	zswap_pool = zpool_create_pool(zswap_zpool_type, gfp, &zswap_zpool_ops);
++	zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", gfp,
++					&zswap_zpool_ops);
+ 	if (!zswap_pool && strcmp(zswap_zpool_type, ZSWAP_ZPOOL_DEFAULT)) {
+ 		pr_info("%s zpool not available\n", zswap_zpool_type);
+ 		zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
+-		zswap_pool = zpool_create_pool(zswap_zpool_type, gfp,
++		zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", gfp,
+ 					&zswap_zpool_ops);
+ 	}
+ 	if (!zswap_pool) {
 -- 
-2.1.3
+1.7.9.5
 
