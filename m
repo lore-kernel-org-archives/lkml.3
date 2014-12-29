@@ -1,47 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaL2MNY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 07:13:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36762 "EHLO mx2.suse.de"
+	id S1752138AbaL2MRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 07:17:17 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:39151 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaL2MNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 07:13:22 -0500
-Date: Mon, 29 Dec 2014 13:13:17 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Pavel Machek <pavel@ucw.cz>
-cc: Andy Lutomirski <luto@amacapital.net>,
-        kernel list <linux-kernel@vger.kernel.org>, yoongukim@cmu.edu,
-        donghyu1@cmu.edu, omutlu@gmail.com
-Subject: Re: DRAM unreliable under specific access patern
-In-Reply-To: <20141224175040.GA28791@amd>
-Message-ID: <alpine.LRH.2.00.1412291310000.12303@twin.jikos.cz>
-References: <20141224163823.GA17035@amd> <CALCETrW8nrKSZ800C+WaHMK4DCuWnD9TG3dYo7cZwm5j4CpNJQ@mail.gmail.com> <20141224172506.GA23683@amd> <CALCETrVP2PtB82x4JFFsXDomNKgRTk_3LoMyyk5KCXN=f8_DJw@mail.gmail.com> <20141224175040.GA28791@amd>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751435AbaL2MRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 07:17:12 -0500
+Date: Mon, 29 Dec 2014 14:16:16 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: akpm@linux-foundation.org, peterz@infradead.org, mingo@kernel.org,
+        davej@redhat.com, sasha.levin@oracle.com, hughd@google.com,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCHv2 21/38] m68k: drop _PAGE_FILE and pte_file()-related helpers
+Message-ID: <20141229121616.GB379@node.dhcp.inet.fi>
+References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1419423766-114457-22-git-send-email-kirill.shutemov@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419423766-114457-22-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Dec 2014, Pavel Machek wrote:
+We've replaced remap_file_pages(2) implementation with emulation.
+Nobody creates non-linear mapping anymore.
 
-> Well... We could periodically scrub (every few miliseconds) pages
-> mapped to userspace. 
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ v2: fix patch miss-fold -- move m68k changes from mips commit
+---
+ arch/m68k/include/asm/mcf_pgtable.h      | 23 ++---------------------
+ arch/m68k/include/asm/motorola_pgtable.h | 15 ---------------
+ arch/m68k/include/asm/pgtable_no.h       |  2 --
+ arch/m68k/include/asm/sun3_pgtable.h     | 15 ---------------
+ 4 files changed, 2 insertions(+), 53 deletions(-)
 
-I.e. implement ECC in software. Would be extremely slow though.
-
-> We might be able to do some magic and disallow cache flushes to 
-> userspace programs. 
-
-My understanding is that cflush is not strictly necessary, it only makes 
-the issue more likely to trigger.
-
-If you modify the pattern so that it neraly fits into cacheline (but not 
-really), you would be able to produce similar (if not the same) cache 
-eviction pattern as if without explicit cflush. Right?
-
+diff --git a/arch/m68k/include/asm/mcf_pgtable.h b/arch/m68k/include/asm/mcf_pgtable.h
+index 3c793682e5d9..2500ce04fcc4 100644
+--- a/arch/m68k/include/asm/mcf_pgtable.h
++++ b/arch/m68k/include/asm/mcf_pgtable.h
+@@ -35,7 +35,6 @@
+  * hitting hardware.
+  */
+ #define CF_PAGE_DIRTY		0x00000001
+-#define CF_PAGE_FILE		0x00000200
+ #define CF_PAGE_ACCESSED	0x00001000
+ 
+ #define _PAGE_CACHE040		0x020   /* 68040 cache mode, cachable, copyback */
+@@ -243,11 +242,6 @@ static inline int pte_young(pte_t pte)
+ 	return pte_val(pte) & CF_PAGE_ACCESSED;
+ }
+ 
+-static inline int pte_file(pte_t pte)
+-{
+-	return pte_val(pte) & CF_PAGE_FILE;
+-}
+-
+ static inline int pte_special(pte_t pte)
+ {
+ 	return 0;
+@@ -391,26 +385,13 @@ static inline void cache_page(void *vaddr)
+ 	*ptep = pte_mkcache(*ptep);
+ }
+ 
+-#define PTE_FILE_MAX_BITS	21
+-#define PTE_FILE_SHIFT		11
+-
+-static inline unsigned long pte_to_pgoff(pte_t pte)
+-{
+-	return pte_val(pte) >> PTE_FILE_SHIFT;
+-}
+-
+-static inline pte_t pgoff_to_pte(unsigned pgoff)
+-{
+-	return __pte((pgoff << PTE_FILE_SHIFT) + CF_PAGE_FILE);
+-}
+-
+ /*
+  * Encode and de-code a swap entry (must be !pte_none(e) && !pte_present(e))
+  */
+ #define __swp_type(x)		((x).val & 0xFF)
+-#define __swp_offset(x)		((x).val >> PTE_FILE_SHIFT)
++#define __swp_offset(x)		((x).val >> 11)
+ #define __swp_entry(typ, off)	((swp_entry_t) { (typ) | \
+-					(off << PTE_FILE_SHIFT) })
++					(off << 11) })
+ #define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
+ #define __swp_entry_to_pte(x)	(__pte((x).val))
+ 
+diff --git a/arch/m68k/include/asm/motorola_pgtable.h b/arch/m68k/include/asm/motorola_pgtable.h
+index e0fdd4d08075..0085aab80e5a 100644
+--- a/arch/m68k/include/asm/motorola_pgtable.h
++++ b/arch/m68k/include/asm/motorola_pgtable.h
+@@ -28,7 +28,6 @@
+ #define _PAGE_CHG_MASK  (PAGE_MASK | _PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_NOCACHE)
+ 
+ #define _PAGE_PROTNONE	0x004
+-#define _PAGE_FILE	0x008	/* pagecache or swap? */
+ 
+ #ifndef __ASSEMBLY__
+ 
+@@ -168,7 +167,6 @@ static inline void pgd_set(pgd_t *pgdp, pmd_t *pmdp)
+ static inline int pte_write(pte_t pte)		{ return !(pte_val(pte) & _PAGE_RONLY); }
+ static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & _PAGE_DIRTY; }
+ static inline int pte_young(pte_t pte)		{ return pte_val(pte) & _PAGE_ACCESSED; }
+-static inline int pte_file(pte_t pte)		{ return pte_val(pte) & _PAGE_FILE; }
+ static inline int pte_special(pte_t pte)	{ return 0; }
+ 
+ static inline pte_t pte_wrprotect(pte_t pte)	{ pte_val(pte) |= _PAGE_RONLY; return pte; }
+@@ -266,19 +264,6 @@ static inline void cache_page(void *vaddr)
+ 	}
+ }
+ 
+-#define PTE_FILE_MAX_BITS	28
+-
+-static inline unsigned long pte_to_pgoff(pte_t pte)
+-{
+-	return pte.pte >> 4;
+-}
+-
+-static inline pte_t pgoff_to_pte(unsigned off)
+-{
+-	pte_t pte = { (off << 4) + _PAGE_FILE };
+-	return pte;
+-}
+-
+ /* Encode and de-code a swap entry (must be !pte_none(e) && !pte_present(e)) */
+ #define __swp_type(x)		(((x).val >> 4) & 0xff)
+ #define __swp_offset(x)		((x).val >> 12)
+diff --git a/arch/m68k/include/asm/pgtable_no.h b/arch/m68k/include/asm/pgtable_no.h
+index 11859b86b1f9..ac7d87a02335 100644
+--- a/arch/m68k/include/asm/pgtable_no.h
++++ b/arch/m68k/include/asm/pgtable_no.h
+@@ -37,8 +37,6 @@ extern void paging_init(void);
+ #define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
+ #define __swp_entry_to_pte(x)	((pte_t) { (x).val })
+ 
+-static inline int pte_file(pte_t pte) { return 0; }
+-
+ /*
+  * ZERO_PAGE is a global shared page that is always zero: used
+  * for zero-mapped memory areas etc..
+diff --git a/arch/m68k/include/asm/sun3_pgtable.h b/arch/m68k/include/asm/sun3_pgtable.h
+index f55aa04161e8..48657f9fdece 100644
+--- a/arch/m68k/include/asm/sun3_pgtable.h
++++ b/arch/m68k/include/asm/sun3_pgtable.h
+@@ -38,8 +38,6 @@
+ #define _PAGE_PRESENT	(SUN3_PAGE_VALID)
+ #define _PAGE_ACCESSED	(SUN3_PAGE_ACCESSED)
+ 
+-#define PTE_FILE_MAX_BITS 28
+-
+ /* Compound page protection values. */
+ //todo: work out which ones *should* have SUN3_PAGE_NOCACHE and fix...
+ // is it just PAGE_KERNEL and PAGE_SHARED?
+@@ -168,7 +166,6 @@ static inline void pgd_clear (pgd_t *pgdp) {}
+ static inline int pte_write(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_WRITEABLE; }
+ static inline int pte_dirty(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_MODIFIED; }
+ static inline int pte_young(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_ACCESSED; }
+-static inline int pte_file(pte_t pte)		{ return pte_val(pte) & SUN3_PAGE_ACCESSED; }
+ static inline int pte_special(pte_t pte)	{ return 0; }
+ 
+ static inline pte_t pte_wrprotect(pte_t pte)	{ pte_val(pte) &= ~SUN3_PAGE_WRITEABLE; return pte; }
+@@ -202,18 +199,6 @@ static inline pmd_t *pmd_offset (pgd_t *pgd, unsigned long address)
+ 	return (pmd_t *) pgd;
+ }
+ 
+-static inline unsigned long pte_to_pgoff(pte_t pte)
+-{
+-	return pte.pte & SUN3_PAGE_PGNUM_MASK;
+-}
+-
+-static inline pte_t pgoff_to_pte(unsigned off)
+-{
+-	pte_t pte = { off + SUN3_PAGE_ACCESSED };
+-	return pte;
+-}
+-
+-
+ /* Find an entry in the third-level pagetable. */
+ #define pte_index(address) ((address >> PAGE_SHIFT) & (PTRS_PER_PTE-1))
+ #define pte_offset_kernel(pmd, address) ((pte_t *) __pmd_page(*pmd) + pte_index(address))
 -- 
-Jiri Kosina
-SUSE Labs
+2.1.4
 
