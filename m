@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbaL2BQj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:16:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33152 "EHLO
+	id S1752345AbaL2BQg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:16:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33146 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751861AbaL2BMN (ORCPT
+	by vger.kernel.org with ESMTP id S1751860AbaL2BMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Dec 2014 20:12:13 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Uwe Kleine-=?UTF-8?Q?K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
-        "Wolfram Sang" <wsa@the-dreams.de>,
-        "Hein Tibosch" <hein_tibosch@yahoo.es>,
-        "Grygorii Strashko" <grygorii.strashko@ti.com>
+CC: akpm@linux-foundation.org, "Willy Tarreau" <w@1wt.eu>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andy Lutomirski" <luto@amacapital.net>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "security@kernel.org" <security@kernel.org>
 Date: Mon, 29 Dec 2014 02:11:31 +0100
-Message-ID: <lsq.1419815491.85394466@decadent.org.uk>
+Message-ID: <lsq.1419815491.155068126@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 06/27] i2c: davinci: generate STP always when NACK is
- received
+Subject: [PATCH 3.2 10/27] x86/tls: Validate TLS entries to protect espfix
 In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
 X-SA-Exim-Connect-IP: 46.189.28.191
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,60 +36,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 9ea359f7314132cbcb5a502d2d8ef095be1f45e4 upstream.
+commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
 
-According to I2C specification the NACK should be handled as follows:
-"When SDA remains HIGH during this ninth clock pulse, this is defined as the Not
-Acknowledge signal. The master can then generate either a STOP condition to
-abort the transfer, or a repeated START condition to start a new transfer."
-[I2C spec Rev. 6, 3.1.6: http://www.nxp.com/documents/user_manual/UM10204.pdf]
+Installing a 16-bit RW data segment into the GDT defeats espfix.
+AFAICT this will not affect glibc, Wine, or dosemu at all.
 
-Currently the Davinci i2c driver interrupts the transfer on receipt of a
-NACK but fails to send a STOP in some situations and so makes the bus
-stuck until next I2C IP reset (idle/enable).
-
-For example, the issue will happen during SMBus read transfer which
-consists from two i2c messages write command/address and read data:
-
-S Slave Address Wr A Command Code A Sr Slave Address Rd A D1..Dn A P
-<--- write -----------------------> <--- read --------------------->
-
-The I2C client device will send NACK if it can't recognize "Command Code"
-and it's expected from I2C master to generate STP in this case.
-But now, Davinci i2C driver will just exit with -EREMOTEIO and STP will
-not be generated.
-
-Hence, fix it by generating Stop condition (STP) always when NACK is received.
-
-This patch fixes Davinci I2C in the same way it was done for OMAP I2C
-commit cda2109a26eb ("i2c: omap: query STP always when NACK is received").
-
-Reviewed-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: security@kernel.org <security@kernel.org>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/i2c/busses/i2c-davinci.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ arch/x86/kernel/tls.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
---- a/drivers/i2c/busses/i2c-davinci.c
-+++ b/drivers/i2c/busses/i2c-davinci.c
-@@ -416,11 +416,9 @@ i2c_davinci_xfer_msg(struct i2c_adapter
- 	if (dev->cmd_err & DAVINCI_I2C_STR_NACK) {
- 		if (msg->flags & I2C_M_IGNORE_NAK)
- 			return msg->len;
--		if (stop) {
--			w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
--			w |= DAVINCI_I2C_MDR_STP;
--			davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
--		}
-+		w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
-+		w |= DAVINCI_I2C_MDR_STP;
-+		davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
- 		return -EREMOTEIO;
- 	}
- 	return -EIO;
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -28,6 +28,21 @@ static int get_free_idx(void)
+ 	return -ESRCH;
+ }
+ 
++static bool tls_desc_okay(const struct user_desc *info)
++{
++	if (LDT_empty(info))
++		return true;
++
++	/*
++	 * espfix is required for 16-bit data segments, but espfix
++	 * only works for LDT segments.
++	 */
++	if (!info->seg_32bit)
++		return false;
++
++	return true;
++}
++
+ static void set_tls_desc(struct task_struct *p, int idx,
+ 			 const struct user_desc *info, int n)
+ {
+@@ -67,6 +82,9 @@ int do_set_thread_area(struct task_struc
+ 	if (copy_from_user(&info, u_info, sizeof(info)))
+ 		return -EFAULT;
+ 
++	if (!tls_desc_okay(&info))
++		return -EINVAL;
++
+ 	if (idx == -1)
+ 		idx = info.entry_number;
+ 
+@@ -197,6 +215,7 @@ int regset_tls_set(struct task_struct *t
+ {
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
++	int i;
+ 
+ 	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+@@ -210,6 +229,10 @@ int regset_tls_set(struct task_struct *t
+ 	else
+ 		info = infobuf;
+ 
++	for (i = 0; i < count / sizeof(struct user_desc); i++)
++		if (!tls_desc_okay(info + i))
++			return -EINVAL;
++
+ 	set_tls_desc(target,
+ 		     GDT_ENTRY_TLS_MIN + (pos / sizeof(struct user_desc)),
+ 		     info, count / sizeof(struct user_desc));
 
