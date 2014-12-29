@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaL2F4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 00:56:47 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:63264 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaL2F4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 00:56:46 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-8f-54a0ed1bcccd
-Message-id: <54A0ED19.1040003@partner.samsung.com>
-Date: Mon, 29 Dec 2014 08:56:41 +0300
-From: Safonov Dmitry <d.safonov@partner.samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: SeongJae Park <sj38.park@gmail.com>,
-        "Stefan I. Strogin" <s.strogin@partner.samsung.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Hui Zhu <zhuhui@xiaomi.com>,
-        Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Subject: Re: [PATCH 3/3] cma: add functions to get region pages counters
-References: <cover.1419602920.git.s.strogin@partner.samsung.com>
- <dfddb08aba9a05e6e7b43e9861ab09b7ac1c89cd.1419602920.git.s.strogin@partner.samsung.com>
- <alpine.DEB.2.10.1412271616450.1819@hxeon>
-In-reply-to: <alpine.DEB.2.10.1412271616450.1819@hxeon>
-Content-type: text/plain; charset=windows-1252; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsVy+t/xa7rSbxeEGPxt1beYs34Nm8Xj1/NY
-	LD6tfMpmsbK7mc1ie+cMdovOiUvYLS7vmsNmcW/Nf1aLtUfuslssON7CarHs63t2i77vh9kt
-	Js+Wsvh2cg6zxbUd/UwWU2f8YLc4ueEsq8WGZi4HIY/Lfb1MHjtn3WX3mN0xk9Vj06pONo9N
-	nyaxe3S9vcLkcWLGbxaPB4c2s3is+/OKyePguz1MHn1bVjF6fN4k59G18RdrAG8Ul01Kak5m
-	WWqRvl0CV8bLgweYC+YxVtxeeZ29gbGyi5GTQ0LAROL85h/sELaYxIV769m6GLk4hASWMkrc
-	ebyAEcL5yCgxfeIZVpAqXgEjidfPe5lAbBYBVYlXnb1AcQ4ONqBJ85pjQMKiAhESH1Z9ZYMo
-	F5T4MfkeC4gtIhAn0fj2KxPITGaBgywSz7p2gM0RFvCQ2Hz1EdTm44wSneffgp3EKWAucXPX
-	L7BuZgFbiQXv10HZ8hKb17xlnsAoMAvJkllIymYhKVvAyLyKUTS1NLmgOCk910ivODG3uDQv
-	XS85P3cTIyRCv+5gXHrM6hCjAAejEg9vwokFIUKsiWXFlbmHGCU4mJVEeI3KgEK8KYmVValF
-	+fFFpTmpxYcYmTg4pRoYtVf8/nt875YQXZVM+8oldb5F6xfor69b+NW8rG/lhlfsdje4Mq73
-	50j0RPnU/K6fdfyroEag2cYn7xwbGOd9MNj7SUci50rEV13TRxYB6v47EoxqCx0NnD9Id7PN
-	fbGrpTL0kmtC+LTf/2cp/DghxNhWY556vI1Z9NeD4wvYm2SD+m86hgUqsRRnJBpqMRcVJwIA
-	WuCKt64CAAA=
+	id S1751749AbaL2GDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 01:03:24 -0500
+Received: from mga14.intel.com ([192.55.52.115]:62546 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843AbaL2GDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 01:03:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,658,1413270000"; 
+   d="scan'208";a="643942665"
+Message-ID: <54A0EE9B.9040803@intel.com>
+Date: Mon, 29 Dec 2014 14:03:07 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>, Zhang Rui <rui.zhang@intel.com>
+CC: Olof Johansson <olof@lixom.net>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jg1.han@samsung.com
+Subject: Re: [PATCH v6] Thermal: introduce INT3406 thermal driver
+References: <54868CF6.6020505@intel.com> <CAOesGMirF-_H2ZzFR-VpwkEErZE2uQJSYx5EuePArQsEh=r_Kw@mail.gmail.com> <20141211010226.GA26253@aaronlu.sh.intel.com> <CAOesGMj_uObbxLdpobEhP=nRPsFUJNCtq01RH7ZSECd5=1Ti6Q@mail.gmail.com> <1418265472.12435.68.camel@rzhang1-toshiba> <548934D0.8000502@intel.com> <1418286781.12435.73.camel@rzhang1-toshiba> <54895821.3050902@intel.com> <1419217761.19619.2.camel@rzhang1-toshiba> <20141222095344.GE4525@x1> <5498C4D9.8050509@intel.com>
+In-Reply-To: <5498C4D9.8050509@intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/23/2014 09:26 AM, Aaron Lu wrote:
+> On 12/22/2014 05:53 PM, Lee Jones wrote:
+>> On Mon, 22 Dec 2014, Zhang Rui wrote:
+>>
+>>> On Thu, 2014-12-11 at 16:38 +0800, Aaron Lu wrote:
+>>>> INT3406 ACPI device object resembles an ACPI video output device, but its
+>>>> _BCM is said to be deprecated and should not be used. So we will make
+>>>> use of the raw interface to do the actual cooling. Due to this, the
+>>>> backlight core has some modifications. Also, to re-use some of the ACPI
+>>>> video module's code, one function has been exported.
+>>>>
+>>>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+>>>
+>>> Jingoo and Lee,
+>>>
+>>> are you okay with the changes in drivers/video/backlight/backlight.c and
+>>> include/linux/backlight.h?
+>>
+>> NB: Jingoo still needs to review the crux of the patch.
+>>
+>>>> ---
+>>>> v6: Fix an issue that wrongly set error path return value as reported
+>>>> by Olof Johansson.
+>>>>
+>>>>  drivers/acpi/video.c                              |  77 ++++----
+>>>>  drivers/thermal/Kconfig                           |  26 +--
+>>>>  drivers/thermal/int340x_thermal/Kconfig           |  41 ++++
+>>>>  drivers/thermal/int340x_thermal/Makefile          |   1 +
+>>>>  drivers/thermal/int340x_thermal/int3406_thermal.c | 229 ++++++++++++++++++++++
+>>>>  drivers/video/backlight/backlight.c               |  44 +++--
+>>>>  include/acpi/video.h                              |  20 ++
+>>>>  include/linux/backlight.h                         |   2 +
+>>>>  8 files changed, 366 insertions(+), 74 deletions(-)
+>>>>  create mode 100644 drivers/thermal/int340x_thermal/Kconfig
+>>>>  create mode 100644 drivers/thermal/int340x_thermal/int3406_thermal.c
+>>
+>> I gather by the message at the top that you're looking for an Ack so
+>> this can be routed through another subsystem.  Not going to happen.
+>>
+>> So you're on v6 already and a) no one has mentioned that introducing a
+>> new driver AND making core framework changes (in a different subsystem
+>> to boot) in one patch is bad and b) this is the first time you've
+>> Cc'ed the maintainers of the aforementioned subsystem?
+>>
+>> Moving forward you should split this patch into component parts and
+>> resend -- only this time ensure you Cc all maintainers in the first
+>> instance, rather than as as afterthought.
+> 
+> OK, thanks for the suggestion.
+> 
+>>
+>>>> -config INT340X_THERMAL
+>>>> -	tristate "ACPI INT340X thermal drivers"
+>>>> -	depends on X86 && ACPI
+>>>> -	select THERMAL_GOV_USER_SPACE
+>>>> -	select ACPI_THERMAL_REL
+>>>> -	select ACPI_FAN
+>>
+>> This patch also relies on backlight as well, no?
+> 
+> Yes it does, will add it in next revision.
 
-On 12/27/2014 10:18 AM, SeongJae Park wrote:
-> Hello,
->
-> How about 'CMA Region' rather than 'CMARegion'?
-Sure.
+My fault. INT340X_THERMAL does not rely on backlight, INT3406 does.
+Since I have marked INT3406 depends on ACPI_VIDEO, which depends on
+BACKLIGHT, so we are good here.
 
--- 
-Best regards,
-Safonov Dmitry.
-
+Thanks,
+Aaron
