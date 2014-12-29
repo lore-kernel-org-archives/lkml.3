@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaL2Lpi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 06:45:38 -0500
-Received: from [104.46.96.80] ([104.46.96.80]:1120 "EHLO mail.bbc.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751200AbaL2Lpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 06:45:36 -0500
-X-Greylist: delayed 122493 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Dec 2014 06:45:36 EST
-Message-ID: <32bb8ecf590564369602aff51a18b4c2.squirrel@104.46.96.80>
-Date: Sat, 27 Dec 2014 13:52:47 -0000
-Subject: =?iso-8859-1?Q?Ber=F8rte_K=E6re_kunde?=
-From: "comerbancn" <wyongli11@yahoo.com.hk>
-Reply-To: "ywogliyuli@gmail.comhogliwa"@gmail.com
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1752049AbaL2Lus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 06:50:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:57218 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751200AbaL2Luq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 06:50:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,659,1413270000"; 
+   d="scan'208";a="654419602"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1 2/4] hexdump: fix ascii column for the tail of a dump
+Date: Mon, 29 Dec 2014 13:50:52 +0200
+Message-Id: <1419853854-5602-3-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1419853854-5602-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1419853854-5602-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In current implementation we have floating ascii column in the tail of the
+dump.
 
-Carefree.
-Berørte Kære kunde,
-Jeg er i kontakt med dig på grund af dette behov og at det haster med
-denne transaktion betyder. De er ansvarlige for udenlandske investeringer
-i Bank of China (ICBC), og jeg var en finansiel rådgiver og indkomst for
-en privat investor, som har et stort indskud i min bank.
-Transaktionen indebærer overførsel af fonden for den samlede deponering af
-23, 556,768.00 millioner Euro til dig som højst to advokater for død denne
-kunde uden en nær slægtning.
-Jeg kan forsikre Dem om, at denne transaktion er folk på 100% risiko frie
-og juridiske personer, der har gjort alle de underjordiske arbejder lokalt
-for en gnidningsløs overdragelse af fonden i den korteste periode, og
-bliver født i byen, hvor bankfilial.
-Så snart jeg får et svar for din interesse, vil jeg sende dig alle
-oplysninger om den vellykkede afslutning af denne transaktion, og del dine
-noter vil være 50%, og mine vil være 50% af denne fond.
-Kontakt venligst på min private e-mail nedenfor for eventuelle spørgsmål
-og yderligere information.
-Med venlig hilsen
-Wang Yongli (ICBC Bank of China)
-E-mail: hogliwa@gmail.com
+For example, for row size equal to 16 the ascii column as in following table
 
+group size \ length	8	12	16
+	1		50	50	50
+	2		22	32	42
+	4		20	29	38
+	8		19	-	36
+
+This patch makes it the same independently of amount of bytes dumped.
+
+The change is safe since all current users, which use ASCII part of the dump,
+rely on the group size equal to 1. The patch doesn't change behaviour for such
+group size (see the table above).
+
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ lib/hexdump.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lib/hexdump.c b/lib/hexdump.c
+index 270773b..a61cb6b 100644
+--- a/lib/hexdump.c
++++ b/lib/hexdump.c
+@@ -126,7 +126,7 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
+ 			lx += scnprintf(linebuf + lx, linebuflen - lx,
+ 					"%s%16.16llx", j ? " " : "",
+ 					(unsigned long long)*(ptr8 + j));
+-		ascii_column = 17 * ngroups + 2;
++		ascii_column = rowsize * 2 + rowsize / 8 + 2;
+ 		break;
+ 	}
+ 
+@@ -137,7 +137,7 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
+ 		for (j = 0; j < ngroups; j++)
+ 			lx += scnprintf(linebuf + lx, linebuflen - lx,
+ 					"%s%8.8x", j ? " " : "", *(ptr4 + j));
+-		ascii_column = 9 * ngroups + 2;
++		ascii_column = rowsize * 2 + rowsize / 4 + 2;
+ 		break;
+ 	}
+ 
+@@ -148,7 +148,7 @@ void hex_dump_to_buffer(const void *buf, size_t len, int rowsize,
+ 		for (j = 0; j < ngroups; j++)
+ 			lx += scnprintf(linebuf + lx, linebuflen - lx,
+ 					"%s%4.4x", j ? " " : "", *(ptr2 + j));
+-		ascii_column = 5 * ngroups + 2;
++		ascii_column = rowsize * 2 + rowsize / 2 + 2;
+ 		break;
+ 	}
+ 
+-- 
+2.1.3
 
