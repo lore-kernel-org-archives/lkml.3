@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaL2TKD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 14:10:03 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:58678 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaL2TKA (ORCPT
+	id S1752307AbaL2TOl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 14:14:41 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50509 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751061AbaL2TOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 14:10:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eddie Huang <eddie.huang@mediatek.com>
-Cc: Rob Herring <robherring2@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@linux.intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Mon, 29 Dec 2014 14:14:40 -0500
+Date: Mon, 29 Dec 2014 19:13:57 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Christoffer Dall <christoffer.dall@linaro.org>, arnd@arndb.de
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>, yingjoe.chen@mediatek.com,
-        yh.chen@mediatek.com
-Subject: Re: [PATCH 1/2] tty: serial: 8250_mtk: Add earlycon
-Date: Mon, 29 Dec 2014 20:08:59 +0100
-Message-ID: <16342339.NQnBcp9YuE@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1419827096.6184.128.camel@mtksdaap41>
-References: <1418891601-53769-1-git-send-email-eddie.huang@mediatek.com> <CAL_JsqKp+1ZWPK4rB4_vxrx-dtNCy7Hc3S67uQ9VHdAby8erjg@mail.gmail.com> <1419827096.6184.128.camel@mtksdaap41>
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix arm64 platforms not booting
+Message-ID: <20141229191357.GA21793@leverpostej>
+References: <1419776431-26217-1-git-send-email-christoffer.dall@linaro.org>
+ <71346397bb3c0e654aa5b634328ae29c@www.loen.fr>
+ <20141229083509.GC29460@cbox>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:SucAS9NHwG6g20ibYlhYkgo45o4oHBhypLs6z0u4GehEFiAtLJP
- XbXi4ZDq2bHA2j5C/G7pszX5slV5feFRH3RG1d/BzBC7qllPlYR4xeUHa2WtoymiJb1DLym
- FIhwOCDNY3KQP9gjKsiIYhsStwonv5JeAsJI320EYX8NDHI0srGHmEcAH4fAgY9zwLpBrBQ
- HpDjQO+BgaJxL+fHi/Ckw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141229083509.GC29460@cbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 December 2014 12:24:56 Eddie Huang wrote:
-> Hi Rob,
-> 
-> On Fri, 2014-12-26 at 15:24 -0600, Rob Herring wrote:
-> > On Thu, Dec 18, 2014 at 2:33 AM, Eddie Huang <eddie.huang@mediatek.com> wrote:
-> > > Mediatek UART has highspeed register, but 8250_early.c doesn't
-> > > support this, so add earlycon in 8250_mtk.c
-> > 
-> > I don't see any highspeed register setup here. More generically,
-> > aren't you just skipping any UART setup? That may be useful on other
-> > platforms with 8250s, too. With the kernel command line version, you
-> > could perhaps add a "noinit" flag. The DT case is harder, and I'm not
-> > sure how we should handle that. We could perhaps add a
-> > "stdout-path-initialized" flag to chosen.
-> > 
-> 
-> Yes, I skipped UART setup same as msm_serial.c and amba-pl011.c
-> (although they are standalone serial driver). Just like earlyprintk, I
-> think earlycon should reuse UART setting in loader. Since some other
-> platforms with 8250 already depend on this, it's ok to add flags to
-> distinguish whether 8250 earlycon driver should init hw or not. As you
-> said, add "noinit" flag is simple, but "stdout-path-initialized" need
-> more discussion. 
+[Adding Arnd]
 
-It would definitely be nice to have consistent behavior, and I also
-think it would be good to default to noinit for the console, because that
-is the more likely case. Basically anything that can do debug_ll on ARM
-already depends on this behavior because the debug_ll infrastructure
-does not initialize the console before using it. I believe the same
-is true for powerpc udbg.
+On Mon, Dec 29, 2014 at 08:35:09AM +0000, Christoffer Dall wrote:
+> On Sun, Dec 28, 2014 at 09:46:20PM +0000, Marc Zyngier wrote:
+> > On 2014-12-28 14:20, Christoffer Dall wrote:
+> > >Commit 0b46b8a718c6e ("clocksource: arch_timer: Fix code to...")
+> > >fixes
+> > >timer issues with certain ARMv7 platforms, but unfortunately breaks
+> > >arm64 platforms with hyp mode (EL2) enabled.
+> > >
+> > >The commit only sets arch_timer_use_virtual to false under
+> > >CONFIG_ARM,
+> > >but forgets that the config variable is also set in other code paths
+> > >(actually, right underneath the check in the patch) with detrimental
+> > >consequences as we've now introduced a direct early call to BUG() on
+> > >practically all arm64 platforms.
+> > >
+> > >One could argue that this code could be refactored to use different
+> > >variables for checking which *timer* to use and which *counter* to
+> > >use,
+> > >which seems to be the desired difference between ARM and arm64 in
+> > >this
+> > >case, but this approach fixes an urgent issue for now.
+> > >
+> > >Cc: Sonny Rao <sonnyrao@chromium.org>
+> > >Cc: Catalin Marinas <catalin.marinas@arm.com>
+> > >Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > >Cc: Olof Johansson <olof@lixom.net>
+> > >Cc: Mark Rutland <mark.rutland@arm.com>
+> > >Cc: Catalin Marinas <catalin.marinas@arm.com>
+> > >Cc: Marc Zyngier <marc.zyngier@arm.com>
+> > >Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> > >Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+> > >---
+> > >This was apparently already discovered by Yingjoe Chen in this thread
+> > >https://lkml.org/lkml/2014/11/24/41 and Catalin recommended a similar
+> > >fix.
+> > 
+> > I'm increasingly worried about the time it takes to get such critical
+> > fixes into the tree (arm64 is *dead* without it).
+> > 
+> > What is holding this patch which, as far as I remember, has been posted
+> > by Catalin almost three weeks ago?
+> > 
+> I didn't find that since I didn't think I'd have to go back that long on
+> lakml for something that breaks boot of an entire architecture.  Sorry
+> for the confusion of a second patch, but fwiw, I now spent another few
+> hours bisecting this, so I would really like to see this fix go into
+> mainline ASAP as well to save others the trouble.
 
-	Arnd
+Last I knew, Arnd was going to take the fix [1], which has been in
+arm-soc's for-next and fixes branches for almost two weeks now. It
+didn't make it into the last pull req due to some confusion over who was
+going to take it.
+
+Arnd, what's the plan for getting this into mainline ASAP?
+
+Mark.
+
+[1] https://git.kernel.org/cgit/linux/kernel/git/arm/arm-soc.git/commit/?h=fixes&id=d6ad36913083d683aad4e02e53580c995f1a6ede
