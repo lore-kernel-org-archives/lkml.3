@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaL2KO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 05:14:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59353 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751969AbaL2KOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 05:14:53 -0500
-Message-ID: <54A12932.4000508@redhat.com>
-Date: Mon, 29 Dec 2014 11:13:06 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751988AbaL2KUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 05:20:18 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:49851 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114AbaL2KUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 05:20:15 -0500
+Date: Mon, 29 Dec 2014 21:20:03 +1100
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v6 0/4] crypto: AF_ALG: add AEAD and RNG support
+Message-ID: <20141229102002.GA13334@gondor.apana.org.au>
+References: <5682082.ffPqvQlSqN@tachyon.chronox.de>
 MIME-Version: 1.0
-To: =?UTF-8?B?RGF2aWQgTGFuemVuZMO2cmZlcg==?= 
-	<david.lanzendoerfer@o2s.ch>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-mmc@vger.kernel.org,
-        Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        Peter Griffin <peter.griffin@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
-        =?UTF-8?B?5p2O5oOz?= <lixiang@allwinnertech.com>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: sunxi-project-meetup@31c3
-References: <20141216003412.15488.54812.stgit@dizzy-6.o2s.ch> <20141216003756.15488.34861.stgit@dizzy-6.o2s.ch> <549001F6.5080202@redhat.com> <2457832.ADcVT4pQTP@pagira.o2s.ch>
-In-Reply-To: <2457832.ADcVT4pQTP@pagira.o2s.ch>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5682082.ffPqvQlSqN@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Dec 25, 2014 at 10:58:01PM +0100, Stephan Mueller wrote:
+> Hi,
+> 
+> This patch set adds AEAD and RNG support to the AF_ALG interface
+> exported by the kernel crypto API. By extending AF_ALG with AEAD and RNG
+> support, all cipher types the kernel crypto API allows access to are
+> now accessible from userspace.
 
-On 28-12-14 20:32, David Lanzendörfer wrote:
-> Hello folks
-> Is anyone of you at the Chaos Communication Congress?
-> I'd like to organize a table for sunxi-linux-project
+For some reason your 1st patch came out last due to its Date
+header.  Please fix this up in your next submission as otherwise
+it screws up the patch ordering for me.
 
-I'm not attending 31c3, so count me out.
-
-Regards,
-
-Hans
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
