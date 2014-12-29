@@ -1,95 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaL2IWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 03:22:36 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:53168 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaL2IWd (ORCPT
+	id S1751948AbaL2Ic5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 03:32:57 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:39330 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaL2Icy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 03:22:33 -0500
-Date: Mon, 29 Dec 2014 09:22:29 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
+	Mon, 29 Dec 2014 03:32:54 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Alex Hung <alex.hung@canonical.com>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
+Date: Mon, 29 Dec 2014 09:32:49 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
+Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Darren Hart <dvhart@infradead.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: switch soft limit default back to
- infinity
-Message-ID: <20141229082229.GA32618@dhcp22.suse.cz>
-References: <1419792468-9278-1-git-send-email-hannes@cmpxchg.org>
+References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <4278344.duCujNBB8t@xps13> <CAJ=jqubG0ETuF_86M7=zbD4dDnaDcq-=4tGBL-PkoquNpWpwoA@mail.gmail.com>
+In-Reply-To: <CAJ=jqubG0ETuF_86M7=zbD4dDnaDcq-=4tGBL-PkoquNpWpwoA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419792468-9278-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart1902698.r17nDVCvHm";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412290932.49815@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 28-12-14 13:47:48, Johannes Weiner wrote:
-> 3e32cb2e0a12 ("mm: memcontrol: lockless page counters") accidentally
-> switched the soft limit default from infinity to zero, which turns all
+--nextPart1902698.r17nDVCvHm
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Should have noticed that during the review :/
+On Monday 29 December 2014 08:27:21 Alex Hung wrote:
+> On Fri, Dec 26, 2014 at 5:55 AM, Gabriele Mazzotta
+>=20
+> <gabriele.mzt@gmail.com> wrote:
+> > On Thursday 25 December 2014 21:11:05 Pali Roh=C3=A1r wrote:
+> >> I will try to recap all information which we have...
+> >>=20
+> >> *) We should not send wireless key press to userspace when
+> >> BIOS already handles wireless state (and enable/disable
+> >> wifi):
+> >> http://www.spinics.net/lists/platform-driver-x86/msg05922.
+> >> html
+> >>=20
+> >> *) some tested dell machines does not implement GRBT method
+> >> (or report constant value) which could return state of
+> >> wireless (enabled/disabled) -- e.g. Inspiron 7447
+> >>=20
+> >> *) dell-wireless driver is doing nothing on devices which
+> >> have wireless slider switch (except calling CRBT/ARBT
+> >> methods)
+> >>=20
+> >> *) all tested machines emit key with keycode 240 (scancode
+> >> is probably 136 =3D 0x88) to userspace via i8042 bus/AT
+> >> keyboard when wireless button/slider is pressed/switched
+> >>=20
+> >> *) both drivers dell-wireless and dell-rbtn do not
+> >> implement setting soft rfkill state (or change wifi state)
+> >>=20
+> >> So in my opinion: if we decide to use driver for acpi
+> >> DELLABCE device we should use dell-rbnt for devices with
+> >> hw slider switch and dell-wireless for devices with fn
+> >> button. I think it does not make sense to use
+> >> dell-wireless for devices with hw slider because it do
+> >> nothing and dell-rbtn for devices with fn key button as
+> >> GRBT does not working properly.
+> >=20
+> > Here the problem. We are determining which laptop has an
+> > hardware slider and which doesn't calling CRBT. If the
+> > returned value is 2 or 3, then the laptop has an hardware
+> > slider. However, it cannot be assumed the opposite if the
+> > returned value is 0 or 1.
+>=20
+> The spec defines as below:
+> 1. When CRBT returns 0 or 1, a system has a toggle, ex.
+> hotkey, radio button. 2. When CRBT returns 2 or 3, a system
+> has a slider switch
+>=20
+> The only difference of 0 and 1 (or 2 and 3) is the presence of
+> a wireless LED. However I believe this is defined according
+> to Microsoft's hardware requirement.
+>=20
+> > See the acpidumps Alex uploaded. The Inspiron 3543 returns 0
+> > when CRBT is called and so does the Inspiron 7447. However,
+> > the former doesn't have a working ARBT method and, if I'm
+> > not wrong, its BIOS doesn't handle radio devices. The BIOS
+> > of the latter can handle radio and has a working ARBT
+> > method to make it stop from doing that.
+> >=20
+> > Since we determine when the BIOS might not be able to
+> > control radio devices through CRBT and we can't say it for
+> > sure (in the example above, CRBT returned the same value),
+> > we make sure that the BIOS doesn't handle radio devices by
+> > calling ARBT. We can ensure this (e.g. Inspirong 7447), but
+> > we can't ensure the opposite (e.g. Inspiron 3453).
+> >=20
+> > If there was a way to determine which laptop really needs
+> > dell-wireless, calling ARBT wouldn't have been necessary,
+> > but that's not the case. Users can always blacklist the
+> > module if they know their laptop can work as expected
+> > without it, but we have to ensure that everything always
+> > works.
+> >=20
+> > This is what I understood by looking at the acpidumps, so I
+> > could be wrong.
+>=20
+> I think ARBT acts as a switch for changing BIOS behaviours:
+>=20
+> When ARBT is not called or is called with ARBT(0), BIOS's
+> default behaviour is to change wireless states by hardware
+> pin. When ARBT(1) is called by driver or userspace
+> application (ex. required in Windows 8), wireless state is
+> controlled by OS. Similar functions are defined in ASUS ATK
+> and HP WMI. Such implementation will provide maximum
+> capability for different OS with / without dedicate drivers.
+>=20
+> The reality is never such wonderful; especially many systems
+> are only tested with Win8 + driver (some may tested with Win7
+> - and acpi_osi=3D!Windows 2012 / 2013 will probably work). In
+> this case, we probably need to be more compatible with
+> Windows 8 / 8.1.
+>=20
+> >> And second note: Do we need some driver for acpi DELLABCE
+> >> device? Which problem is trying acpi DELLABCE device to
+> >> solve? Is not everything working fine without driver for
+> >> DELLABCE device?
+> >=20
+> > As I wrote above, DELLABCE is for those systems whose BIOS
+> > doesn't handle radio devices and expects the OS do
+> > everything when Fn keys are pressed.
+> > (Well, it actually seems that something is done by the
+> > keyboard controller, but this is not certain yet)
+> >=20
+> >> My dell-rbtn approach is trying to export rfkill interface
+> >> from DELLABCE device and eliminate using i8042 hook
+> >> function in smbios dell-laptop driver.
+> >>=20
+> >> Alex, can you check if scancode of wireless change
+> >> generated by BIOS is on all machines same: 136 (0x88)? And
+> >> is send by keyboard controller (not acpi/wmi)?
+> >=20
+> > I can say that on my XPS13 the scancode is 0x88 and it is
+> > sent by the keyboard controller.
+> >=20
+> > Gabriele
+>=20
+> Just before I check the scancode, I looked up the scancode
+> table
+> (http://download.microsoft.com/download/1/6/1/161ba512-40e2-4
+> cc9-843a-923143f3456c/translate.pdf) and found 0x88 is already
+> used - it is the "break" ("release" in Linux term) code for
+> "7" (the one above Y/U, not number pad). It can be verified
+> by "showkey -s": 0x08 for press and 0x88 for release. It is
+> not the best idea to map this scancode to anything else.
+>=20
+> I also sent emails for this scancode last week but it is a
+> holiday season but I don't expect to receive any feedback
+> this year...
 
-> memcgs with even a single page into soft limit excessors and engages
-> soft limit reclaim on all of them during global memory pressure.  This
-> makes global reclaim generally more aggressive, but also inverts the
-> meaning of existing soft limit configurations where unset soft limits
-> are usually more generous than set ones.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Just to note, that there is only press key event with scancode=20
+136 (0x88). Release event is not sent to AT keyboard which cause=20
+problems (if you map this scancode to some well known keycode).
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Alex, but I wrote you about this problem (in private email which=20
+you forwarded) together with other bios/fw problems for latitude=20
+machines...
 
-Thanks!
+Anyway I sent email to Matthew Garrett before Christmas and linux=20
+kernel could generate proper release event by fixing commit=20
+61579ba83934d397a4fa2bb7372de9ae112587d5 (adding also 9 and 10 to=20
+chassis_type). I believe Matthew Garrett will kernel provide=20
+workaround until Dell fix their BIOSes...
 
-> ---
->  mm/memcontrol.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index ef91e856c7e4..b7104a55ae64 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4679,6 +4679,7 @@ mem_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
->  	if (parent_css == NULL) {
->  		root_mem_cgroup = memcg;
->  		page_counter_init(&memcg->memory, NULL);
-> +		memcg->soft_limit = PAGE_COUNTER_MAX;
->  		page_counter_init(&memcg->memsw, NULL);
->  		page_counter_init(&memcg->kmem, NULL);
->  	}
-> @@ -4724,6 +4725,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
->  
->  	if (parent->use_hierarchy) {
->  		page_counter_init(&memcg->memory, &parent->memory);
-> +		memcg->soft_limit = PAGE_COUNTER_MAX;
->  		page_counter_init(&memcg->memsw, &parent->memsw);
->  		page_counter_init(&memcg->kmem, &parent->kmem);
->  
-> @@ -4733,6 +4735,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
->  		 */
->  	} else {
->  		page_counter_init(&memcg->memory, NULL);
-> +		memcg->soft_limit = PAGE_COUNTER_MAX;
->  		page_counter_init(&memcg->memsw, NULL);
->  		page_counter_init(&memcg->kmem, NULL);
->  		/*
-> @@ -4807,7 +4810,7 @@ static void mem_cgroup_css_reset(struct cgroup_subsys_state *css)
->  	mem_cgroup_resize_limit(memcg, PAGE_COUNTER_MAX);
->  	mem_cgroup_resize_memsw_limit(memcg, PAGE_COUNTER_MAX);
->  	memcg_update_kmem_limit(memcg, PAGE_COUNTER_MAX);
-> -	memcg->soft_limit = 0;
-> +	memcg->soft_limit = PAGE_COUNTER_MAX;
->  }
->  
->  #ifdef CONFIG_MMU
-> -- 
-> 2.2.0
-> 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
--- 
-Michal Hocko
-SUSE Labs
+--nextPart1902698.r17nDVCvHm
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlShEbEACgkQi/DJPQPkQ1J3ZACgidNMGV1FH8PL7VRpC1QEEFZA
+bd4AoJz4mkATSSV/swYpo8TbE8w0NWIF
+=gGTz
+-----END PGP SIGNATURE-----
+
+--nextPart1902698.r17nDVCvHm--
