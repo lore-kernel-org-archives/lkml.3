@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaL2WNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 17:13:50 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37876 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaL2WNt (ORCPT
+	id S1752490AbaL2WOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 17:14:05 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:48203 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437AbaL2WOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 17:13:49 -0500
-Message-ID: <54A1D211.4080609@oracle.com>
-Date: Mon, 29 Dec 2014 16:13:37 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 29 Dec 2014 17:14:01 -0500
+Date: Mon, 29 Dec 2014 14:13:56 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [git pull] Input updates for 3.19-rc2
+Message-ID: <20141229221356.GF9565@dtor-ws>
 MIME-Version: 1.0
-To: nick <xerofoify@gmail.com>
-CC: jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: Remove TO DO in jfs_xtree.c
-References: <549F55AC.9040308@gmail.com>
-In-Reply-To: <549F55AC.9040308@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2014 06:58 PM, nick wrote:
-> Greetings Dave,
-> I am wondering why there is a TO DO above this code:
->         * ToDo:  tlocks should be on doubly-linked list, so we can
->         * quickly remove it and add it to the end.
+Hi Linus,
 
-I'm sure the idea was to avoid the for loop needed to find the previous
-entry in the linked list. A doubly-linked list makes it much simpler to
-remove an item from an arbitrary position in the list.
+Please pull from:
 
->         */
-> 
->        /*
->        * Move parent page's tlock to the end of the tid's tlock list
->        */
->        if (log && mp->lid && (tblk->last != mp->lid) &&
->            lid_to_tlock(mp->lid)->tid) {
->                lid_t lid = mp->lid;
->                 struct tlock *prev;
-> 
->              tlck = lid_to_tlock(lid);
-> 
->              if (tblk->next == lid)
->                        tblk->next = tlck->next;
->              else {
->                        for (prev = lid_to_tlock(tblk->next);
->                              prev->next != lid;
->                             prev = lid_to_tlock(prev->next)) {
->                               assert(prev->next);
->                       }
->                         prev->next = tlck->next;
->               }
->               lid_to_tlock(tblk->last)->next = lid;
->               tlck->next = 0;
->                tblk->last = lid;
->        }
-> As this code clearly moves the locks onto a linked list. Therefore I am recommend we remove this
-> TO DO as this is clearly misleading and no longer needed.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-That comment has been in the code forever and I don't have any intention
-of changing things, but I don't think it's wrong. I don't mind removing
-it, though. jfs has been barely maintained and there is a ton of cleanup
-that can be done if someone were willing to take the time to do it.
+to receive updates for the input subsystem. You will get fixes for v7
+protocol for ALPS devices and few other driver fixes. Also users can
+request input events to be stamped with boot time timestamps, in
+addition to real and monotonic timestamps.
 
-Thanks,
-Shaggy
+Changelog:
+---------
+
+Aniroop Mathur (1):
+      Input: evdev - add CLOCK_BOOTTIME support
+
+Anshul Garg (1):
+      Input: optimize events_per_packet count calculation
+
+Asaf Vertz (1):
+      Input: edt-ft5x06 - fixed a macro coding style issue
+
+Dmitry Torokhov (2):
+      Input: gpio_keys - allow separating gpio and irq in device tree
+      Input: gpio_keys - replace timer and workqueue with delayed workqueue
+
+Hans de Goede (4):
+      Input: alps - v7: ignore new packets
+      Input: alps - v7: sometimes a single touch is reported in mt[1]
+      Input: alps - v7: fix finger counting for > 2 fingers on clickpads
+      Input: alps - v7: document the v7 touchpad packet protocol
+
+Linus Walleij (3):
+      mfd: stmpe: add pull up/down register offsets for STMPE
+      Input: stmpe - enforce device tree only mode
+      Input: stmpe - bias keypad columns properly
+
+Nicholas Mc Guire (1):
+      Input: hil_kbd - fix incorrect use of init_completion
+
+haarp (1):
+      Input: psmouse - expose drift duration for IBM trackpoints
+
+
+Diffstat:
+--------
+
+ .../devicetree/bindings/input/gpio-keys.txt        |  10 +-
+ .../devicetree/bindings/input/stmpe-keypad.txt     |   2 +
+ drivers/input/evdev.c                              |  60 ++++++---
+ drivers/input/input.c                              |  22 ++--
+ drivers/input/keyboard/Kconfig                     |   1 +
+ drivers/input/keyboard/gpio_keys.c                 | 114 ++++++++---------
+ drivers/input/keyboard/hil_kbd.c                   |   6 +-
+ drivers/input/keyboard/stmpe-keypad.c              | 141 ++++++++++++---------
+ drivers/input/mouse/alps.c                         |  84 ++++++++++--
+ drivers/input/mouse/trackpoint.c                   |   4 +
+ drivers/input/mouse/trackpoint.h                   |   5 +
+ drivers/input/touchscreen/edt-ft5x06.c             |   4 +-
+ drivers/mfd/stmpe.c                                |   4 +
+ drivers/mfd/stmpe.h                                |   3 +
+ include/linux/mfd/stmpe.h                          |  22 +---
+ 15 files changed, 302 insertions(+), 180 deletions(-)
+
+-- 
+Dmitry
+
