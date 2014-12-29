@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaL2HG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 02:06:59 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48461 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaL2HG6 (ORCPT
+	id S1751970AbaL2HHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 02:07:23 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:44952 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbaL2HHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 02:06:58 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Mon, 29 Dec 2014 16:08:04 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 18/37] perf tools: Remove thread when map groups
- initialization failed
-Message-ID: <20141229070804.GA6081@sejong>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <1419405333-27952-19-git-send-email-namhyung@kernel.org>
- <549F52C4.7090205@gmail.com>
+	Mon, 29 Dec 2014 02:07:20 -0500
+Date: Mon, 29 Dec 2014 12:37:12 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: jitendra kumar khasdev <jkhasdev@gmail.com>
+Cc: gregkh@linuxfoundation.org, abbotti@mev.co.uk,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        pankaj.saraf@nektech.in
+Subject: Re: [PATCH 3/3] Staging: comedi: fix space and 80 char coding style
+ issue
+Message-ID: <20141229070712.GD3749@sudip-PC>
+References: <1419803085-9441-1-git-send-email-jkhasdev@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <549F52C4.7090205@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1419803085-9441-1-git-send-email-jkhasdev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 27, 2014 at 05:45:56PM -0700, David Ahern wrote:
-> On 12/24/14 12:15 AM, Namhyung Kim wrote:
-> >Otherwise it'll break the machine->threads tree.
-> >
-> >Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> >---
-> >  tools/perf/util/machine.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> >diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> >index 031bace39fdc..beae6e8fe789 100644
-> >--- a/tools/perf/util/machine.c
-> >+++ b/tools/perf/util/machine.c
-> >@@ -411,6 +411,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
-> >  		 * leader and that would screwed the rb tree.
-> >  		 */
-> >  		if (thread__init_map_groups(th, machine)) {
-> >+			rb_erase(&th->rb_node, &machine->threads);
-> >  			thread__delete(th);
-> >  			return NULL;
-> >  		}
-> >
+On Mon, Dec 29, 2014 at 03:14:45AM +0530, jitendra kumar khasdev wrote:
+> This is a patch to the s626.c file that fixes up spcae and maximum
+> character limit warning found by the checkpatch.pl tool
+
+you are doing two different kind of changes in this patch. it should be in two different patches. One patch should do only one type of change.
+
+thanks
+sudip
+
 > 
-> Can you move the thread__init_map_groups() before the thread is added to the
-> rbtree? If no, you need to delay setting 'machine->last_match = th'
-> otherwise it references a deleted thread.
-
-You're right - I'll move the setting after the thread__init_map_groups().
-
-Thanks,
-Namhyung
+> Signed-off-by: Jitendra Kumar Khasdev  <jkhasdev@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/s626.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
+> index 14932c5..77f715b 100644
+> --- a/drivers/staging/comedi/drivers/s626.c
+> +++ b/drivers/staging/comedi/drivers/s626.c
+> @@ -118,7 +118,7 @@ static void s626_mc_enable(struct comedi_device *dev,
+>  static void s626_mc_disable(struct comedi_device *dev,
+>  			    unsigned int cmd, unsigned int reg)
+>  {
+> -	writel(cmd << 16 , dev->mmio + reg);
+> +	writel(cmd << 16, dev->mmio + reg);
+>  	mmiowb();
+>  }
+>  
+> @@ -2534,7 +2534,8 @@ static int s626_initialize(struct comedi_device *dev)
+>  	for (i = 0; i < 2; i++) {
+>  		writel(S626_I2C_CLKSEL, dev->mmio + S626_P_I2CSTAT);
+>  		s626_mc_enable(dev, S626_MC2_UPLD_IIC, S626_P_MC2);
+> -		ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc, 0);
+> +		ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc,
+> +		0);
+>  		if (ret)
+>  			return ret;
+>  	}
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
