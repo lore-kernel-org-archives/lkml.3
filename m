@@ -1,58 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaL2SDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 13:03:05 -0500
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:51597 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbaL2SDC (ORCPT
+	id S1752058AbaL2SOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 13:14:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:40607 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484AbaL2SOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 13:03:02 -0500
-Date: Mon, 29 Dec 2014 20:02:52 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Nishanth Menon <nm@ti.com>, linux-omap <linux-omap@vger.kernel.org>,
-        sre@debian.org, Tony Lindgren <tony@atomide.com>, sre@ring0.de,
-        ivo.g.dimitrov.75@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: v3.19-rc1 regression(?) on N900
-Message-ID: <20141229180252.GE582@fuloong-minipc.musicnaut.iki.fi>
-References: <549B44E2.6080202@ti.com>
- <201412250932.40403@pali>
- <20141225091121.GA20355@amd>
- <20141225222122.GB582@fuloong-minipc.musicnaut.iki.fi>
- <54A10B1E.7030800@ti.com>
+	Mon, 29 Dec 2014 13:14:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,659,1413270000"; 
+   d="scan'208";a="654563866"
+From: "Tirdea, Irina" <irina.tirdea@intel.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dogaru, Vlad" <vlad.dogaru@intel.com>,
+        "Baluta, Daniel" <daniel.baluta@intel.com>,
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: RE: [PATCH 3/8] iio: core: Introduce SPEED channel type
+Thread-Topic: [PATCH 3/8] iio: core: Introduce SPEED channel type
+Thread-Index: AQHQIQ/a2ooJZNW3oUOYtS4Ton7SX5yms7pg
+Date: Mon, 29 Dec 2014 18:13:08 +0000
+Deferred-Delivery: Mon, 29 Dec 2014 18:13:00 +0000
+Message-ID: <1F3AC3675D538145B1661F571FE1805F199F7B6F@irsmsx105.ger.corp.intel.com>
+References: <1419029879-12024-1-git-send-email-irina.tirdea@intel.com>
+ <1419029879-12024-4-git-send-email-irina.tirdea@intel.com>
+ <549D6274.8030601@kernel.org>
+In-Reply-To: <549D6274.8030601@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.180]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A10B1E.7030800@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Mon, Dec 29, 2014 at 10:04:46AM +0200, Tomi Valkeinen wrote:
-> On 26/12/14 00:21, Aaro Koskinen wrote:
+
+> -----Original Message-----
+> From: Jonathan Cameron [mailto:jic23@kernel.org]
+> Sent: 26 December, 2014 15:28
+> To: Tirdea, Irina; linux-iio@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; Dogaru, Vlad; Baluta, Daniel; Hartmut Knaack; Lars-Peter Clausen; Peter Meerwald
+> Subject: Re: [PATCH 3/8] iio: core: Introduce SPEED channel type
 > 
-> > ...however, I can confirm that framebuffer is broken:
-> > 
-> > [    8.230743] omapfb omapfb: no displays
-> > [    8.255584] omapfb omapfb: failed to setup omapfb
-> > [    8.260620] platform omapfb: Driver omapfb requests probe deferral
-> > [    8.284118] of_get_named_gpiod_flags: parsed 'reset-gpios' property of node
-> > '/ocp/spi@48098000/acx565akm@2[0]' - status (0)
-> > [    8.284271] acx565akm spi1.2: failed to find video source
-> > [    8.290069] spi spi1.2: Driver acx565akm requests probe deferral
-> > 
-> > I bisected it to ef691ff48bc8 (OMAPDSS: DT: Get source endpoint
-> > by matching reg-id). When I revert that, also FB works with 3.19-rc1.
-> 
-> I've attached a patch for this. Only hack-tested on OMAP3 beagle, so
-> please report if it works.
+> On 19/12/14 22:57, Irina Tirdea wrote:
+> > Some devices export the current speed value of the user.
+> >
+> > One of this devices is Freescale's MMA9553L
+> > (http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf)
+> > that computes the speed of the user based on the number of steps and
+> > stride length.
+> >
+> > Introduce a new channel type SPEED to export these values.
+> >
+> A fun question raised by this is whether we are going to end up with
+> both speed and velocity (depending on whether it is signed or not).
+> I suppose there isn't much to be done about that though and this looks fine
+> to me (as does the previous one).
 
-That works, thanks.
+We might be able to unify speed and velocity if we use modifiers.
 
-A.
+I am not sure how a device would export velocity information, but I assume it would be similar to acceleration (since we are talking about a vector as well). In this case we would need one channel type IIO_VELOCITY with modifiers for the 3 axes (IIO_MOD_X, IIO_MOD_Y, IIO_MOD_Z). We can further compute speed as the magnitude or the norm of the velocity vector (root of the sum squared values for x, y, z), so we can export it as an additional modifier IIO_MOD_NORM.
+
+The pedometer only gives speed information without keeping track of the direction, so in this case we will have one channel IIO_VELOCITY with one modifier IIO_MOD_NORM.
+
+Would this be a better approach than just exporting IIO_SPEED?
+
+Thanks,
+Irina
+
+> > Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> > ---
+> >  Documentation/ABI/testing/sysfs-bus-iio |    9 +++++++++
+> >  drivers/iio/industrialio-core.c         |    1 +
+> >  include/linux/iio/types.h               |    1 +
+> >  3 files changed, 11 insertions(+)
+> >
+> > diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+> > index a5c1dcc..07acef7 100644
+> > --- a/Documentation/ABI/testing/sysfs-bus-iio
+> > +++ b/Documentation/ABI/testing/sysfs-bus-iio
+> > @@ -295,6 +295,7 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
+> >  What:		/sys/bus/iio/devices/iio:deviceX/in_humidityrelative_scale
+> > +What:		/sys/bus/iio/devices/iio:deviceX/in_speed_scale
+> >  KernelVersion:	2.6.35
+> >  Contact:	linux-iio@vger.kernel.org
+> >  Description:
+> > @@ -1146,6 +1147,14 @@ Description:
+> >  		present, output should be considered as processed with the
+> >  		unit in milliamps.
+> >
+> > +What:		/sys/.../iio:deviceX/in_speed_input
+> > +What:		/sys/.../iio:deviceX/in_speed_raw
+> > +KernelVersion:	3.19
+> > +Contact:	linux-iio@vger.kernel.org
+> > +Description:
+> > +		This attribute is used to read the current speed value of the user.
+> > +		Units after application of scale are m/s.
+> > +
+> >  What:		/sys/.../iio:deviceX/in_steps_en
+> >  KernelVersion:	3.19
+> >  Contact:	linux-iio@vger.kernel.org
+> > diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> > index 4a10d31..5e50aca 100644
+> > --- a/drivers/iio/industrialio-core.c
+> > +++ b/drivers/iio/industrialio-core.c
+> > @@ -74,6 +74,7 @@ static const char * const iio_chan_type_name_spec[] = {
+> >  	[IIO_STEPS] = "steps",
+> >  	[IIO_CALORIES] = "calories",
+> >  	[IIO_DISTANCE] = "distance",
+> > +	[IIO_SPEED] = "speed",
+> >  };
+> >
+> >  static const char * const iio_modifier_names[] = {
+> > diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+> > index b98f751..c848f45 100644
+> > --- a/include/linux/iio/types.h
+> > +++ b/include/linux/iio/types.h
+> > @@ -34,6 +34,7 @@ enum iio_chan_type {
+> >  	IIO_STEPS,
+> >  	IIO_CALORIES,
+> >  	IIO_DISTANCE,
+> > +	IIO_SPEED,
+> >  };
+> >
+> >  enum iio_modifier {
+> >
+
