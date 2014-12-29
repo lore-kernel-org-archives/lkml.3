@@ -1,144 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaL2Wsn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 17:48:43 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:58480 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaL2Wsm (ORCPT
+	id S1752494AbaL2WvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 17:51:20 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63837 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaL2WvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 17:48:42 -0500
-Date: Mon, 29 Dec 2014 22:53:57 +0000
-From: "Carlos R. Mafra" <crmafra@gmail.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Bisected regression from 3.17 still present in 3.19-rc1
-Message-ID: <20141229225315.GA1800@linux-g29b.site>
-References: <20141228185409.GA2015@linux-g29b.site>
- <2053111.OpHlk1cZNM@vostro.rjw.lan>
- <20141229215707.GA2667@linux-g29b.site>
- <CAMxnaaVhCxJE9YGpTnyyB-UAxhmGc267pFRK6mSFRdRbmRob4A@mail.gmail.com>
+	Mon, 29 Dec 2014 17:51:18 -0500
+Date: Mon, 29 Dec 2014 14:51:13 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Andrew Duggan <aduggan@synaptics.com>,
+        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: synaptics - switch ForcePad detection to PNP IDs
+Message-ID: <20141229225113.GA13847@dtor-ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMxnaaVhCxJE9YGpTnyyB-UAxhmGc267pFRK6mSFRdRbmRob4A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Dec 2014 at 23:20:13 +0100, Andreas Noever wrote:
-> On Mon, Dec 29, 2014 at 10:57 PM, Carlos R. Mafra <crmafra@gmail.com> wrote:
-> > On Mon, 29 Dec 2014 at 22:49:37 +0100, Rafael J. Wysocki wrote:
-> >> On Sunday, December 28, 2014 06:54:09 PM Carlos R. Mafra wrote:
-> >> >
-> >> > The laptop is a 2-year-old macbook Pro with retina display.
-> >> >
-> >> > I use a dockapp called wmlaptop2 (http://repo.or.cz/w/wmlaptop2.git)
-> >> > which, among other things, displays battery information (% of charge
-> >> > remaining etc).
-> >> >
-> >> > With the kernel v3.17 the battery information stopped working and it
-> >> > still does not work in the latest v3.19-rc1.
-> >
-> > Correction: v3.18 is when it stopped working, not v3.17.
-> >
-> >> > Looking at what wmlaptop2 does I noticed that one entry inside
-> >> > /sys/class/power_supply is not present in a bad kernel.
-> >> >
-> >> > In a good kernel:
-> >> >
-> >> > [mafra@linux-g29b:~]$ ls /sys/class/power_supply/
-> >> > ADP1@  BAT0@
-> >> >
-> >> > but in v3.17 onwards there's no BAT0@ entry:
-> >> >
-> >> > [mafra@linux-g29b:~]$ ls /sys/class/power_supply/
-> >> > ADP1@
-> >> >
-> >> > I bisected the problem to this commit:
-> >>
-> >> Does it help if you revert this commit from 3.19-rc1 (or -rc2)?
-> >
-> > Yes, I just did that now (it reverts cleanly) and reverting the
-> > commit makes it work again.
-> Could you try to revert 9faf6136ff4647452580b019f4b16f8c5082e589 (ACPI
-> / SBS: Disable smart battery manager on Apple) and possibly also
-> 3031cddea633ea5328162d3d712a582e4205dbed (ACPI / SBS: Don't assume the
-> existence of an SBS charger) without reverting "ACPI: Support
-> _OSI("Darwin") correctly"?
-> 
-> As far as I understand these two were added because the third patch
-> breaks battery support on some Apple systems. Maybe the fix is only
-> needed for some models (and makes your model fail)?
+According to Synaptics devices with ForcePads use SYN300D and SYN3014 as
+PNP IDs, so let's switch from DMI-bases detection scheme to PNP-based
+one, which should be more reliable.
 
-Of the following table:
+Suggested-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/mouse/synaptics.c | 35 ++++++++++++++---------------------
+ drivers/input/mouse/synaptics.h |  1 +
+ 2 files changed, 15 insertions(+), 21 deletions(-)
 
-revert 9faf613 | revert 3031cdd
-     yes       |     no
-     yes       |     yes
-     no        |     no
-     no        |     yes
-
-I tested the first row and it does not fix the problem. Do
-I need to test the other 3 possibilities too? 
-
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index d2ab13a..f04017e 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -190,6 +190,13 @@ static const char * const topbuttonpad_pnp_ids[] = {
+ 	NULL
+ };
  
-> 
-> >
-> >> > commit 7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334
-> >> > Author: Matthew Garrett <matthew.garrett@nebula.com>
-> >> > Date:   Sat Sep 20 13:19:47 2014 +0200
-> >> >
-> >> >     ACPI: Support _OSI("Darwin") correctly
-> >> >
-> >> >
-> >> > Is there anything else I can do to help fixing this?
-> >> >
-> >> > PS: the bisect log:
-> >> >
-> >> > git bisect start
-> >> > # bad: [f114040e3ea6e07372334ade75d1ee0775c355e1] Linux 3.18-rc1
-> >> > git bisect bad f114040e3ea6e07372334ade75d1ee0775c355e1
-> >> > # good: [bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9] Linux 3.17
-> >> > git bisect good bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9
-> >> > # good: [35a9ad8af0bb0fa3525e6d0d20e32551d226f38e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
-> >> > git bisect good 35a9ad8af0bb0fa3525e6d0d20e32551d226f38e
-> >> > # bad: [d6dd50e07c5bec00db2005969b1a01f8ca3d25ef] Merge branch 'core-rcu-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> >> > git bisect bad d6dd50e07c5bec00db2005969b1a01f8ca3d25ef
-> >> > # bad: [bf65dea87e87c53ba4f97c6432761498bc977efd] Merge tag 'edac/v3.18-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac
-> >> > git bisect bad bf65dea87e87c53ba4f97c6432761498bc977efd
-> >> > # bad: [b211e9d7c861bdb37b86d6384da9edfb80949ceb] Merge branch 'for-3.18' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup
-> >> > git bisect bad b211e9d7c861bdb37b86d6384da9edfb80949ceb
-> >> > # good: [80213c03c4151d900cf293ef0fc51f8d88495e14] Merge tag 'pci-v3.18-changes' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci
-> >> > git bisect good 80213c03c4151d900cf293ef0fc51f8d88495e14
-> >> > # good: [7f8998c7aef3ac9c5f3f2943e083dfa6302e90d0] nosave: consolidate __nosave_{begin,end} in <asm/sections.h>
-> >> > git bisect good 7f8998c7aef3ac9c5f3f2943e083dfa6302e90d0
-> >> > # bad: [49a09c9ab012017c4673b86dbb28c616cf8f2381] Merge branch 'pm-domains'
-> >> > git bisect bad 49a09c9ab012017c4673b86dbb28c616cf8f2381
-> >> > # bad: [88b42a4883a7783972c8fc607e60bd3f027e24de] Merge branch 'pm-genirq'
-> >> > git bisect bad 88b42a4883a7783972c8fc607e60bd3f027e24de
-> >> > # bad: [a13f453140d542f9d5a0ee15601531c72e5401d7] Merge branch 'acpi-lpss'
-> >> > git bisect bad a13f453140d542f9d5a0ee15601531c72e5401d7
-> >> > # bad: [939558f2a4b7851c11ce8d08387730914a1e1f5f] Merge branch 'acpi-apple'
-> >> > git bisect bad 939558f2a4b7851c11ce8d08387730914a1e1f5f
-> >> > # good: [5a0b8deeeb19906b24a48d0078aa6b64dc0b4dab] ACPICA: Clear all non-wakeup GPEs in acpi_hw_enable_wakeup_gpe_block()
-> >> > git bisect good 5a0b8deeeb19906b24a48d0078aa6b64dc0b4dab
-> >> > # bad: [7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334] ACPI: Support _OSI("Darwin") correctly
-> >> > git bisect bad 7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334
-> >> > # good: [9faf6136ff4647452580b019f4b16f8c5082e589] ACPI / SBS: Disable smart battery manager on Apple
-> >> > git bisect good 9faf6136ff4647452580b019f4b16f8c5082e589
-> >> > # first bad commit: [7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334] ACPI: Support _OSI("Darwin") correctly
-> >> > [mafra@linux-g29b:linux-2.6]$
-> >> > --
-> >> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> > the body of a message to majordomo@vger.kernel.org
-> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> > Please read the FAQ at  http://www.tux.org/lkml/
-> >>
-> >> --
-> >> I speak only for myself.
-> >> Rafael J. Wysocki, Intel Open Source Technology Center.
++/* This list has been kindly provided by Synaptics. */
++static const char * const forcepad_pnp_ids[] = {
++	"SYN300D",
++	"SYN3014",
++	NULL
++};
++
+ /*****************************************************************************
+  *	Synaptics communications functions
+  ****************************************************************************/
+@@ -601,8 +608,6 @@ static void synaptics_parse_agm(const unsigned char buf[],
+ 	}
+ }
+ 
+-static bool is_forcepad;
+-
+ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 				    struct synaptics_data *priv,
+ 				    struct synaptics_hw_state *hw)
+@@ -632,7 +637,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 
+-		if (is_forcepad) {
++		if (priv->is_forcepad) {
+ 			/*
+ 			 * ForcePads, like Clickpads, use middle button
+ 			 * bits to report primary button clicks.
+@@ -1307,29 +1312,11 @@ static const struct dmi_system_id __initconst cr48_dmi_table[] = {
+ 	{ }
+ };
+ 
+-static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
+-#if defined(CONFIG_DMI) && defined(CONFIG_X86)
+-	{
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
+-		},
+-	},
+-#endif
+-	{ }
+-};
+-
+ void __init synaptics_module_init(void)
+ {
+ 	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+ 	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
+ 	cr48_profile_sensor = dmi_check_system(cr48_dmi_table);
+-
+-	/*
+-	 * Unfortunately ForcePad capability is not exported over PS/2,
+-	 * so we have to resort to checking DMI.
+-	 */
+-	is_forcepad = dmi_check_system(forcepad_dmi_table);
+ }
+ 
+ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+@@ -1364,6 +1351,12 @@ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+ 	if (SYN_ID_DISGEST_SUPPORTED(priv->identity))
+ 		priv->disable_gesture = true;
+ 
++	/*
++	 * Unfortunately ForcePad capability is not exported over PS/2,
++	 * so we have to resort to checking PNP IDs.
++	 */
++	priv->is_forcepad = psmouse_matches_pnp_id(psmouse, forcepad_pnp_ids);
++
+ 	if (synaptics_set_mode(psmouse)) {
+ 		psmouse_err(psmouse, "Unable to initialize device.\n");
+ 		goto init_fail;
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index aedc329..fb3838c 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -168,6 +168,7 @@ struct synaptics_data {
+ 	unsigned long				press_start;
+ 	bool					press;
+ 	bool					report_press;
++	bool					is_forcepad;
+ };
+ 
+ void synaptics_module_init(void);
+-- 
+2.2.0.rc0.207.ga3a616c
+
+
+-- 
+Dmitry
