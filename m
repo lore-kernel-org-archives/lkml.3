@@ -1,396 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaL2AIN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 19:08:13 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45843 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498AbaL2AIL (ORCPT
+	id S1751654AbaL2A7I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 19:59:08 -0500
+Received: from mga03.intel.com ([134.134.136.65]:60518 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751476AbaL2A7F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 19:08:11 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 29 Dec 2014 09:10:13 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Ganesh Mahendran <opensource.ganesh@gmail.com>
-Cc: ngupta@vflare.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mm/zsmalloc: add statistics support
-Message-ID: <20141229001013.GB27095@bbox>
-References: <1419599180-4422-1-git-send-email-opensource.ganesh@gmail.com>
+	Sun, 28 Dec 2014 19:59:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,657,1413270000"; 
+   d="scan'208";a="630148346"
+From: "Ma, Xindong" <xindong.ma@intel.com>
+To: Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "ionut.m.alexa@gmail.com" <ionut.m.alexa@gmail.com>,
+        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Di" <di.zhang@intel.com>,
+        "Sun, Zhonghua" <zhonghua.sun@intel.com>
+Subject: RE: [PATCH] move exit_task_work() before exit_fs().
+Thread-Topic: [PATCH] move exit_task_work() before exit_fs().
+Thread-Index: AQHQITL3mdB5I21gqEyyZHrRUq+JSpylwB0Q
+Date: Mon, 29 Dec 2014 00:58:59 +0000
+Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD0266FC53@SHSMSX103.ccr.corp.intel.com>
+References: <1419579926-28512-1-git-send-email-xindong.ma@intel.com>
+ <20141226173849.GA9460@redhat.com>
+In-Reply-To: <20141226173849.GA9460@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1419599180-4422-1-git-send-email-opensource.ganesh@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 26, 2014 at 09:06:20PM +0800, Ganesh Mahendran wrote:
-> Keeping fragmentation of zsmalloc in a low level is our target. But now
-> we still need to add the debug code in zsmalloc to get the quantitative data.
 > 
-> This patch adds a new configuration CONFIG_ZSMALLOC_STAT to enable the
-> statistics collection for developers. Currently only the objects statatitics
-> in each class are collected. User can get the information via debugfs.
->      cat /sys/kernel/debug/zsmalloc/zram0/...
+> On 12/26, Leon Ma wrote:
+> >
+> > We encountered following panic. The scenario is the process is exiting
+> > and executing its task work. When closing dev node, the driver
+> > triggers a firmware reload according to device status. Because task->fs is
+> set to NULL in exit_fs(), panic happens.
 > 
-> For example:
+> I think this should be fixed somewhere else...
+Yes, for this panic, I also think driver is not perfect and need a fix. But kernel should not add the limitation like this...
 > 
-> After I copied "jdk-8u25-linux-x64.tar.gz" to zram with ext4 filesystem:
->  class  size obj_allocated   obj_used pages_used
->      0    32             0          0          0
->      1    48           256         12          3
->      2    64            64         14          1
->      3    80            51          7          1
->      4    96           128          5          3
->      5   112            73          5          2
->      6   128            32          4          1
->      7   144             0          0          0
->      8   160             0          0          0
->      9   176             0          0          0
->     10   192             0          0          0
->     11   208             0          0          0
->     12   224             0          0          0
->     13   240             0          0          0
->     14   256            16          1          1
->     15   272            15          9          1
->     16   288             0          0          0
->     17   304             0          0          0
->     18   320             0          0          0
->     19   336             0          0          0
->     20   352             0          0          0
->     21   368             0          0          0
->     22   384             0          0          0
->     23   400             0          0          0
->     24   416             0          0          0
->     25   432             0          0          0
->     26   448             0          0          0
->     27   464             0          0          0
->     28   480             0          0          0
->     29   496            33          1          4
->     30   512             0          0          0
->     31   528             0          0          0
->     32   544             0          0          0
->     33   560             0          0          0
->     34   576             0          0          0
->     35   592             0          0          0
->     36   608             0          0          0
->     37   624             0          0          0
->     38   640             0          0          0
->     40   672             0          0          0
->     42   704             0          0          0
->     43   720            17          1          3
->     44   736             0          0          0
->     46   768             0          0          0
->     49   816             0          0          0
->     51   848             0          0          0
->     52   864            14          1          3
->     54   896             0          0          0
->     57   944            13          1          3
->     58   960             0          0          0
->     62  1024             4          1          1
->     66  1088            15          2          4
->     67  1104             0          0          0
->     71  1168             0          0          0
->     74  1216             0          0          0
->     76  1248             0          0          0
->     83  1360             3          1          1
->     91  1488            11          1          4
->     94  1536             0          0          0
->    100  1632             5          1          2
->    107  1744             0          0          0
->    111  1808             9          1          4
->    126  2048             4          4          2
->    144  2336             7          3          4
->    151  2448             0          0          0
->    168  2720            15         15         10
->    190  3072            28         27         21
->    202  3264             0          0          0
->    254  4096         36209      36209      36209
+> > Task work is a common interface, we should not limite the resource the
+> user will utilize.
 > 
->  Total               37022      36326      36288
+> Exactly. And note that with this patch exit_mm()..disassociate_ctty() paths
+> can't use task works.
+I don't get this. Currently disassociate_ctty() is also called after exit_mm() and exit_task_work(). My patch didn't change this.
 > 
-> We can calculate the overall fragentation by the last line:
->     Total               37022      36326      36288
->     (37022 - 36326) / 37022 = 1.87%
+> Not to mention that this patch moves exit_files() up, even before exit_mm(),
+> without any explanation.
+Moving exit_files() up is because exit_files() closes files and add tasks to task works.
 > 
-> Also by analysing objects alocated in every class we know why we got so low fragmentation:
->     Most of the allocated objects is in <class 254>. And there is only 1 page in class
->     254 zspage.  So, No fragmentation will be introduced by allocating objs in class 254.
+> Add Al. May be we can move exit_fs() down after exit_task_work(), I dunno,
+> but to me it would be better to change the driver.
 > 
-> And in the future, we can collect other zsmalloc statistics as we need and analyse them.
-> 
-> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
-> Suggested-by: Minchan Kim <minchan@kernel.org>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-
-If you fix minors below,
-Acked-by: Minchan Kim <minchan@kernel.org>
-
-> ---
->  mm/Kconfig    |   10 +++
->  mm/zsmalloc.c |  244 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 250 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index 1d1ae6b..95c5728 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -601,6 +601,16 @@ config PGTABLE_MAPPING
->  	  You can check speed with zsmalloc benchmark:
->  	  https://github.com/spartacus06/zsmapbench
->  
-> +config ZSMALLOC_STAT
-> +	bool "Export zsmalloc statistics"
-> +	depends on ZSMALLOC
-> +	select DEBUG_FS
-> +	help
-> +	  This option enables code in the zsmalloc to collect various
-> +	  statistics about whats happening in zsmalloc and exports that
-> +	  information to userspace via debugfs.
-> +	  If unsure, say N.
-> +
->  config GENERIC_EARLY_IOREMAP
->  	bool
->  
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index 2359e61..f5ae7c6 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -91,6 +91,7 @@
->  #include <linux/hardirq.h>
->  #include <linux/spinlock.h>
->  #include <linux/types.h>
-> +#include <linux/debugfs.h>
->  #include <linux/zsmalloc.h>
->  #include <linux/zpool.h>
->  
-> @@ -168,6 +169,22 @@ enum fullness_group {
->  	ZS_FULL
->  };
->  
-> +enum zs_stat_type {
-> +	OBJ_ALLOCATED,
-> +	OBJ_USED,
-> +};
-> +
-> +#ifdef CONFIG_ZSMALLOC_STAT
-> +
-> +static struct dentry *zs_stat_root;
-> +
-> +struct zs_size_stat {
-> +	unsigned long obj_allocated;
-> +	unsigned long obj_used;
-> +};
-
-I hope you makes it array so that we could use zs_stat_type as index.
-It could remove if-conditions in zs_stat_xxx.
-
-> +
-> +#endif
-> +
->  /*
->   * number of size_classes
->   */
-> @@ -200,6 +217,10 @@ struct size_class {
->  	/* Number of PAGE_SIZE sized pages to combine to form a 'zspage' */
->  	int pages_per_zspage;
->  
-> +#ifdef CONFIG_ZSMALLOC_STAT
-> +	struct zs_size_stat stats;
-> +#endif
-> +
->  	spinlock_t lock;
->  
->  	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
-> @@ -217,10 +238,16 @@ struct link_free {
->  };
->  
->  struct zs_pool {
-> +	char *name;
-> +
->  	struct size_class **size_class;
->  
->  	gfp_t flags;	/* allocation flags used when growing pool */
->  	atomic_long_t pages_allocated;
-> +
-> +#ifdef CONFIG_ZSMALLOC_STAT
-> +	struct dentry *stat_dentry;
-> +#endif
->  };
->  
->  /*
-> @@ -942,6 +969,177 @@ static bool can_merge(struct size_class *prev, int size, int pages_per_zspage)
->  	return true;
->  }
->  
-> +#ifdef CONFIG_ZSMALLOC_STAT
-> +
-> +static inline void zs_stat_inc(struct size_class *class,
-> +				enum zs_stat_type type, unsigned long cnt)
-> +{
-> +	if (type == OBJ_ALLOCATED)
-> +		class->stats.obj_allocated += cnt;
-> +	else if (type == OBJ_USED)
-> +		class->stats.obj_used += cnt;
-> +}
-> +
-> +static inline void zs_stat_dec(struct size_class *class,
-> +				enum zs_stat_type type, unsigned long cnt)
-> +{
-> +	if (type == OBJ_ALLOCATED)
-> +		class->stats.obj_allocated -= cnt;
-> +	else if (type == OBJ_USED)
-> +		class->stats.obj_used -= cnt;
-> +}
-> +
-> +static inline unsigned long zs_stat_get(struct size_class *class,
-> +				enum zs_stat_type type)
-> +{
-> +	if (type == OBJ_ALLOCATED)
-> +		return class->stats.obj_allocated;
-> +	else if (type == OBJ_USED)
-> +		return class->stats.obj_used;
-> +
-> +	return 0;
-> +}
-> +
-> +static int __init zs_stat_init(void)
-> +{
-> +	if (!debugfs_initialized())
-> +		return -ENODEV;
-> +
-> +	zs_stat_root = debugfs_create_dir("zsmalloc", NULL);
-> +	if (!zs_stat_root)
-> +		return -ENOMEM;
-> +
-> +	return 0;
-> +}
-> +
-> +static void __exit zs_stat_exit(void)
-> +{
-> +	debugfs_remove_recursive(zs_stat_root);
-> +}
-> +
-> +static int zs_stats_size_show(struct seq_file *s, void *v)
-> +{
-> +	int i;
-> +	struct zs_pool *pool = s->private;
-> +	struct size_class *class;
-> +	int objs_per_zspage;
-> +	unsigned long obj_allocated, obj_used, pages_used;
-> +	unsigned long total_objs = 0, total_used_objs = 0, total_pages = 0;
-> +
-> +	seq_printf(s, " %5s %5s %13s %10s %10s\n", "class", "size",
-> +				"obj_allocated", "obj_used", "pages_used");
-> +
-> +	for (i = 0; i < zs_size_classes; i++) {
-> +		class = pool->size_class[i];
-> +
-> +		if (class->index != i)
-> +			continue;
-> +
-> +		spin_lock(&class->lock);
-> +		obj_allocated = zs_stat_get(class, OBJ_ALLOCATED);
-> +		obj_used = zs_stat_get(class, OBJ_USED);
-> +		spin_unlock(&class->lock);
-> +
-> +		objs_per_zspage = get_maxobj_per_zspage(class->size,
-> +				class->pages_per_zspage);
-> +		pages_used = obj_allocated / objs_per_zspage *
-> +				class->pages_per_zspage;
-> +
-> +		seq_printf(s, " %5u %5u    %10lu %10lu %10lu\n", i,
-> +			class->size, obj_allocated, obj_used, pages_used);
-> +
-> +		total_objs += obj_allocated;
-> +		total_used_objs += obj_used;
-> +		total_pages += pages_used;
-> +	}
-> +
-> +	seq_puts(s, "\n");
-> +	seq_printf(s, " %5s %5s    %10lu %10lu %10lu\n", "Total", "",
-> +			total_objs, total_used_objs, total_pages);
-> +
-> +	return 0;
-> +}
-> +
-> +static int zs_stats_size_open(struct inode *inode, struct file *file)
-> +{
-> +	return single_open(file, zs_stats_size_show, inode->i_private);
-> +}
-> +
-> +static const struct file_operations zs_stat_size_ops = {
-> +	.open           = zs_stats_size_open,
-> +	.read           = seq_read,
-> +	.llseek         = seq_lseek,
-> +	.release        = single_release,
-> +};
-> +
-> +static int zs_pool_stat_create(char *name, struct zs_pool *pool)
-> +{
-> +	struct dentry *entry;
-> +
-> +	if (!zs_stat_root)
-> +		return -ENODEV;
-> +
-> +	entry = debugfs_create_dir(name, zs_stat_root);
-> +	if (!entry) {
-> +		pr_warn("debugfs dir <%s> creation failed\n", name);
-> +		return -ENOMEM;
-> +	}
-> +	pool->stat_dentry = entry;
-> +
-> +	entry = debugfs_create_file("obj_in_classes", S_IFREG | S_IRUGO,
-> +			pool->stat_dentry, pool, &zs_stat_size_ops);
-> +	if (!entry) {
-> +		pr_warn("%s: debugfs file entry <%s> creation failed\n",
-> +				name, "obj_in_classes");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void zs_pool_stat_destroy(struct zs_pool *pool)
-> +{
-> +	debugfs_remove_recursive(pool->stat_dentry);
-> +}
-> +
-> +#else /* CONFIG_ZSMALLOC_STAT */
-> +
-> +static inline void zs_stat_inc(struct size_class *class,
-> +				enum zs_stat_type type, unsigned long cnt)
-> +{
-> +}
-> +
-> +static inline void zs_stat_dec(struct size_class *class,
-> +				enum zs_stat_type type, unsigned long cnt)
-> +{
-> +}
-> +
-> +static inline unsigned long zs_stat_get(struct size_class *class,
-> +				enum zs_stat_type type)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int __init zs_stat_init(void)
-> +{
-> +	return 0;
-> +}
-> +
-> +static void __exit zs_stat_exit(void)
-> +{
-> +}
-> +
-> +static inline int zs_pool_stat_create(struct zs_pool *pool)
-
-                                         char *name, struct zs_pool *pool
-
-Thanks for the nice work, Ganesh!
-
--- 
-Kind regards,
-Minchan Kim
+I'm OK with this suggestion to fix this issue. I'm not sure whether in the future task work users will access other resources and expose other issues.
