@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaL2TFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 14:05:24 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34655 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542AbaL2TFW (ORCPT
+	id S1752252AbaL2TKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 14:10:03 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:58678 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaL2TKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 14:05:22 -0500
-Date: Mon, 29 Dec 2014 11:04:48 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Nishanth Menon <nm@ti.com>, Grazvydas Ignotas <notasas@gmail.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        dt list <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	Mon, 29 Dec 2014 14:10:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Rob Herring <robherring2@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Pali Rohar <pali.rohar@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@linux.intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] hwmon: Driver for OMAP3 temperature sensor
-Message-ID: <20141229190448.GA27124@roeck-us.net>
-References: <20141226102933.GA28778@amd>
- <1419597294-21487-1-git-send-email-sre@kernel.org>
- <1419597294-21487-3-git-send-email-sre@kernel.org>
- <CANOLnON6rAQ2+jJEFDKseH2Htu6bqRkURDioGt7zp1Ze73f8Pw@mail.gmail.com>
- <CAGo_u6qO0ok+GBnm7SQtw6dJuwGN2OuP7CpKDEWawS3V2go4KA@mail.gmail.com>
- <20141229181556.GA26926@amd>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>, yingjoe.chen@mediatek.com,
+        yh.chen@mediatek.com
+Subject: Re: [PATCH 1/2] tty: serial: 8250_mtk: Add earlycon
+Date: Mon, 29 Dec 2014 20:08:59 +0100
+Message-ID: <16342339.NQnBcp9YuE@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1419827096.6184.128.camel@mtksdaap41>
+References: <1418891601-53769-1-git-send-email-eddie.huang@mediatek.com> <CAL_JsqKp+1ZWPK4rB4_vxrx-dtNCy7Hc3S67uQ9VHdAby8erjg@mail.gmail.com> <1419827096.6184.128.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141229181556.GA26926@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54A1A602.004F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 11
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:SucAS9NHwG6g20ibYlhYkgo45o4oHBhypLs6z0u4GehEFiAtLJP
+ XbXi4ZDq2bHA2j5C/G7pszX5slV5feFRH3RG1d/BzBC7qllPlYR4xeUHa2WtoymiJb1DLym
+ FIhwOCDNY3KQP9gjKsiIYhsStwonv5JeAsJI320EYX8NDHI0srGHmEcAH4fAgY9zwLpBrBQ
+ HpDjQO+BgaJxL+fHi/Ckw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 07:15:56PM +0100, Pavel Machek wrote:
-> On Mon 2014-12-29 12:01:03, Nishanth Menon wrote:
-> > On Mon, Dec 29, 2014 at 11:52 AM, Grazvydas Ignotas <notasas@gmail.com> wrote:
-> > > On Fri, Dec 26, 2014 at 2:34 PM, Sebastian Reichel <sre@kernel.org> wrote:
-> > >> OMAP34xx and OMAP36xx processors contain a register in the syscon area,
-> > >> which can be used to determine the SoCs temperature. This patch provides
-> > >> a DT based driver for the temperature sensor based on an older driver
-> > >> written by Peter De Schrijver for the Nokia N900 and N9.
-> > >
-> > > The sensor looks like an earlier iteration of sensors used in newer
-> > > OMAPs, which are already supported by maybe
-> > > drivers/thermal/ti-soc-thermal/ , maybe it would make sense to update
-> > > that driver instead?
+On Monday 29 December 2014 12:24:56 Eddie Huang wrote:
+> Hi Rob,
+> 
+> On Fri, 2014-12-26 at 15:24 -0600, Rob Herring wrote:
+> > On Thu, Dec 18, 2014 at 2:33 AM, Eddie Huang <eddie.huang@mediatek.com> wrote:
+> > > Mediatek UART has highspeed register, but 8250_early.c doesn't
+> > > support this, so add earlycon in 8250_mtk.c
 > > 
-> > Just to be clear - OMAP4 is the first time that the sensors were
-> > reliable enough to be used.
+> > I don't see any highspeed register setup here. More generically,
+> > aren't you just skipping any UART setup? That may be useful on other
+> > platforms with 8250s, too. With the kernel command line version, you
+> > could perhaps add a "noinit" flag. The DT case is harder, and I'm not
+> > sure how we should handle that. We could perhaps add a
+> > "stdout-path-initialized" flag to chosen.
+> > 
 > 
-> When testing initial version of the patch, they seem to work very well
-> in the omap3 case.
-> 
-Pavel,
+> Yes, I skipped UART setup same as msm_serial.c and amba-pl011.c
+> (although they are standalone serial driver). Just like earlyprintk, I
+> think earlycon should reuse UART setting in loader. Since some other
+> platforms with 8250 already depend on this, it's ok to add flags to
+> distinguish whether 8250 earlycon driver should init hw or not. As you
+> said, add "noinit" flag is simple, but "stdout-path-initialized" need
+> more discussion. 
 
-can you look into the omap4 thermal driver to see if it can be used ?
+It would definitely be nice to have consistent behavior, and I also
+think it would be good to default to noinit for the console, because that
+is the more likely case. Basically anything that can do debug_ll on ARM
+already depends on this behavior because the debug_ll infrastructure
+does not initialize the console before using it. I believe the same
+is true for powerpc udbg.
 
-Thanks,
-Guenter
+	Arnd
