@@ -1,181 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaL2RNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 12:13:48 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:62930
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751693AbaL2RKu (ORCPT
+	id S1752596AbaL2ROr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 12:14:47 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54541 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbaL2ROp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 12:10:50 -0500
-X-IronPort-AV: E=Sophos;i="5.07,659,1413237600"; 
-   d="scan'208";a="94921789"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-arm-kernel@lists.infradead.org
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-wireless@vger.kernel.org, ath10k@lists.infradead.org
-Subject: [PATCH 0/8] fix error return code
-Date: Mon, 29 Dec 2014 18:04:35 +0100
-Message-Id: <1419872683-32709-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 29 Dec 2014 12:14:45 -0500
+Date: Mon, 29 Dec 2014 17:14:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Message-ID: <20141229171433.GD17800@sirena.org.uk>
+References: <1418725315-25621-1-git-send-email-iivanov@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FBzHcVv9FDoUuQV5"
+Content-Disposition: inline
+In-Reply-To: <1418725315-25621-1-git-send-email-iivanov@mm-sol.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 86.128.155.20
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: qup: Add SPI_CPOL configuration support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The complate semantic patch that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
 
-// <smpl>
-@ok exists@
-identifier f,ret,i;
-expression e;
-constant c;
-@@
+--FBzHcVv9FDoUuQV5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-// identify a function that returns a negative return value at least once.
-f(...) {
-... when any
-(
-return -c@i;
-|
-ret = -c@i;
-... when != ret = e
-return ret;
-|
-if (ret < 0) { ... return ret; }
-)
-... when any
-}
+On Tue, Dec 16, 2014 at 12:21:55PM +0200, Ivan T. Ivanov wrote:
+> Device support SPI_CPOL, but driver have missed to add
+> support for this configuration.
 
-@r exists@
-identifier ret,ok.f,fn;
-expression e1,e2,e3,e4,e5,e6,x;
-statement S,S1;
-position p1,p2,p3;
-@@
+Applied, thanks.
 
-// identify a case where the return variable is set to a non-negative value
-// and then returned in error-handling code
-f(...) {
-... when any
-(
-if@p1 (\(ret < 0\|ret != 0\))
- { ... return ret; }
-|
-ret@p1 = 0
-)
-... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
-    when != &ret
-    when any
-(
- if (<+... ret = e5 ...+>) S1
-|
- if (<+... &ret ...+>) S1
-|
-if@p2(<+...x = fn(...)...+>)
- {
-  ... when != ret = e6
-      when forall
- return@p3 ret;
-}
-|
-break;
-|
-x = fn(...)
-... when != \(ret = e4\|ret++\|ret--\|ret+=e4\|ret-=e4\)
-    when != &ret
-(
- if (<+... ret = e3 ...+>) S
-|
- if (<+... &ret ...+>) S
-|
-if@p2(<+...\(x != 0\|x < 0\|x == NULL\|IS_ERR(x)\)...+>)
- {
-  ... when != ret = e2
-      when forall
- return@p3 ret;
-}
-)
-)
-... when any
-}
+--FBzHcVv9FDoUuQV5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-@printer depends on r@
-position p;
-identifier ok.f,pr;
-constant char [] c;
-@@
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-f(...) { <...pr@p(...,c,...)...> }
+iQEcBAEBAgAGBQJUoYv5AAoJECTWi3JdVIfQBToH/3LpACz0ln+PYeIQxc034Yqd
+34llPbVHgwvdw12E5V32s+M+LwlSO9zMccEY/b11MM39ceEHoZlUi5nUqD19Pz/f
+JmBCc62KLbQ0+Qtal1BFmuKSknMWbw9ewBdvdRh6sdnMfE6n7rHUxEKnsds4X63E
+9jPPUu4apOYFVqM2c4IReuyzJrDwEADcKnYTvjy/aPtz+UmdE9s8yRqYbb8NPh2t
+LDeU2mM/UVVjctHM/INBQj1fEfeWKqW6Hhq8CDgt7bvbaBthMirDWuGvUCGRbJip
+xzZD0TYPAYO/7KAwSG+1DkRo2ppvfmeZARlwlZ+wmxqf/TlQ1CfZwPGhbqefah8=
+=B2x2
+-----END PGP SIGNATURE-----
 
-@bad0 exists@
-identifier r.ret,ok.f,g != {ERR_PTR,IS_ERR};
-position p != printer.p;
-@@
-
-f(...) { ... when any
-g@p(...,ret,...)
-... when any
- }
-
-@bad depends on !bad0 exists@
-position r.p1,r.p2;
-statement S1,S2;
-identifier r.ret;
-expression e1;
-@@
-
-// ignore the above if there is some path where the variable is set to
-// something else
-(
-if@p1 (\(ret < 0\|ret != 0\)) S1
-|
-ret@p1 = 0
-)
-... when any
- \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\|&ret\)
-... when any
-if@p2(...) S2
-
-@bad1 depends on !bad0 && !bad exists@
-position r.p2;
-statement S2;
-identifier r.ret;
-expression e1;
-constant c;
-@@
-
-ret = -c
-... when != \(ret = e1\|ret++\|ret--\|ret+=e1\|ret-=e1\)
-    when != &ret
-    when any
-if@p2(...) S2
-
-@bad2 depends on !bad0 && !bad && !bad1 exists@
-position r.p1,r.p2;
-identifier r.ret;
-expression e1;
-statement S2;
-constant c;
-@@
-
-// likewise ignore it if there has been an intervening return
-ret@p1 = 0
-... when != if (...) { ... ret = e1 ... return ret; }
-    when != if (...) { ... return -c; }
-    when any
-if@p2(...) S2
-
-
-@script:python depends on !bad0 && !bad && !bad1 && !bad2@
-p1 << r.p1;
-p2 << r.p2;
-p3 << r.p3;
-@@
-
-cocci.print_main("",p1)
-cocci.print_secs("",p2)
-cocci.print_secs("",p3)
-// </smpl>
-
+--FBzHcVv9FDoUuQV5--
