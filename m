@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaL2BSB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:18:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33132 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751804AbaL2BMN (ORCPT
+	id S1752545AbaL2BSt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:18:49 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:17109 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752092AbaL2BSq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 20:12:13 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Sun, 28 Dec 2014 20:18:46 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="54798274"
+Message-ID: <54A0ABEF.1000106@cn.fujitsu.com>
+Date: Mon, 29 Dec 2014 09:18:39 +0800
+From: Qu Wenruo <quwenruo@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "kbuild test robot" <fengguang.wu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 29 Dec 2014 02:11:31 +0100
-Message-ID: <lsq.1419815491.301260267@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 25/27] drivers/net: macvtap and tun depend on INET
-In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
-X-SA-Exim-Connect-IP: 46.189.28.191
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: Juergen Gross <jgross@suse.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [REGRESSION][x86] Commit f5b2831d65 cause boot failure in VMware
+ ESXi 5.1 guest
+References: <549CC096.3080701@cn.fujitsu.com> <549EB95F.9090209@suse.com>
+In-Reply-To: <549EB95F.9090209@suse.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.33]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.66-rc1 review patch.  If anyone has any objections, please let me know.
 
-------------------
+-------- Original Message --------
+Subject: Re: [REGRESSION][x86] Commit f5b2831d65 cause boot failure in 
+VMware ESXi 5.1 guest
+From: Juergen Gross <jgross@suse.com>
+To: Qu Wenruo <quwenruo@cn.fujitsu.com>
+Date: 2014年12月27日 21:51
+> On 12/26/2014 02:57 AM, Qu Wenruo wrote:
+>> Hi all,
+>>
+>> When testing v3.19-rc1 kernel(in fact, try to test), the kernel itself
+>> fail to boot on VMware ESXi 5.1 guest.
+>> The boot failure is quite easy to describe, only one line is output:
+>> "Probing EDD (edd=off to disable)...ok"
+>>
+>> No other output(including warning/bug_on/backtrace or whatever) and the
+>> guest just hangs.
+>> It's OK on v3.18, so it's a regression.
+>>
+>> Bisect points to the following commit:
+>> commit f5b2831d654167d77da8afbef4d2584897b12d0c
+>> Author: Juergen Gross <jgross@suse.com>
+>> Date:   Mon Nov 3 14:02:02 2014 +0100
+>>
+>>      x86: Respect PAT bit when copying pte values between large and
+>> normal pages
+>>
+>>      The PAT bit in the ptes is not moved to the correct position when
+>>      copying page protection attributes between entries of different 
+>> sized
+>>      pages. Translate the ptes according to their page size.
+>>
+>>
+>> I have also created the kernel BZ report:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=90321
+>>
+>> Hopes this can be resolved in next rc.
+>
+> As the same issue has been reported with VMWare workstation which was
+> related to an error in the PAT MSR emulation of VMWare, I guess this
+> will be the same problem. I've already sent a patch.
+>
+> You should be able to boot with the "nopat" kernel option.
+>
+>
+> Juergen
+Thanks for the explanation. Again the closed source blob to blame.
 
-From: Ben Hutchings <ben@decadent.org.uk>
+Anyway, the nopat option works.
 
-commit de11b0e8c569b96c2cf6a811e3805b7aeef498a3 upstream.
-
-These drivers now call ipv6_proxy_select_ident(), which is defined
-only if CONFIG_INET is enabled.  However, they have really depended
-on CONFIG_INET for as long as they have allowed sending GSO packets
-from userland.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: f43798c27684 ("tun: Allow GSO using virtio_net_hdr")
-Fixes: b9fb9ee07e67 ("macvtap: add GSO/csum offload support")
-Fixes: 5188cd44c55d ("drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets")
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -143,6 +143,7 @@ config MACVLAN
- config MACVTAP
- 	tristate "MAC-VLAN based tap driver (EXPERIMENTAL)"
- 	depends on MACVLAN
-+	depends on INET
- 	help
- 	  This adds a specialized tap character device driver that is based
- 	  on the MAC-VLAN network interface, called macvtap. A macvtap device
-@@ -195,6 +196,7 @@ config RIONET_RX_SIZE
- 
- config TUN
- 	tristate "Universal TUN/TAP device driver support"
-+	depends on INET
- 	select CRC32
- 	---help---
- 	  TUN/TAP provides packet reception and transmission for user space
-
+Great thanks
+Qu
