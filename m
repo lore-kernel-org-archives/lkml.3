@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaL2RMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 12:12:19 -0500
+	id S1752308AbaL2RKv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 12:10:51 -0500
 Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:53723
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752314AbaL2RKw (ORCPT
+	by vger.kernel.org with ESMTP id S1751473AbaL2RKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 12:10:52 -0500
+	Mon, 29 Dec 2014 12:10:49 -0500
 X-IronPort-AV: E=Sophos;i="5.07,659,1413237600"; 
-   d="scan'208";a="94921794"
+   d="scan'208";a="94921790"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] net: sun4i-emac: fix error return code
-Date: Mon, 29 Dec 2014 18:04:40 +0100
-Message-Id: <1419872683-32709-6-git-send-email-Julia.Lawall@lip6.fr>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/8] net: Xilinx: fix error return code
+Date: Mon, 29 Dec 2014 18:04:36 +0100
+Message-Id: <1419872683-32709-2-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1419872683-32709-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1419872683-32709-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -51,23 +53,40 @@ ret = 0
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/net/ethernet/allwinner/sun4i-emac.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/xilinx/ll_temac_main.c   |    2 ++
+ drivers/net/ethernet/xilinx/xilinx_emaclite.c |    1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/net/ethernet/allwinner/sun4i-emac.c b/drivers/net/ethernet/allwinner/sun4i-emac.c
-index 1fcd556..cfdf7de 100644
---- a/drivers/net/ethernet/allwinner/sun4i-emac.c
-+++ b/drivers/net/ethernet/allwinner/sun4i-emac.c
-@@ -850,8 +850,10 @@ static int emac_probe(struct platform_device *pdev)
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 9c2d91e..dbcbf0c 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -1043,6 +1043,7 @@ static int temac_of_probe(struct platform_device *op)
+ 	lp->regs = of_iomap(op->dev.of_node, 0);
+ 	if (!lp->regs) {
+ 		dev_err(&op->dev, "could not map temac regs.\n");
++		rc = -ENOMEM;
+ 		goto nodev;
  	}
  
- 	db->clk = devm_clk_get(&pdev->dev, NULL);
--	if (IS_ERR(db->clk))
-+	if (IS_ERR(db->clk)) {
-+		ret = PTR_ERR(db->clk);
- 		goto out;
-+	}
+@@ -1062,6 +1063,7 @@ static int temac_of_probe(struct platform_device *op)
+ 	np = of_parse_phandle(op->dev.of_node, "llink-connected", 0);
+ 	if (!np) {
+ 		dev_err(&op->dev, "could not find DMA node\n");
++		rc = -ENODEV;
+ 		goto err_iounmap;
+ 	}
  
- 	clk_prepare_enable(db->clk);
+diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+index 2485879..9d4ce38 100644
+--- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
++++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
+@@ -1109,6 +1109,7 @@ static int xemaclite_of_probe(struct platform_device *ofdev)
+ 	res = platform_get_resource(ofdev, IORESOURCE_IRQ, 0);
+ 	if (!res) {
+ 		dev_err(dev, "no IRQ found\n");
++		rc = -ENXIO;
+ 		goto error;
+ 	}
  
 
