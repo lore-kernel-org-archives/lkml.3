@@ -1,32 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaL2Cjn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 21:39:43 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40305 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaL2Cjm (ORCPT
+	id S1751967AbaL2Ckw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 21:40:52 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:37139 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaL2Cks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 21:39:42 -0500
-Date: Mon, 29 Dec 2014 02:39:39 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Alexander Kuleshov <kuleshovmail@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: overlayfs: Fix coding style issues, missing a blank
- line after declarations
-Message-ID: <20141229023939.GL22149@ZenIV.linux.org.uk>
-References: <1419746213-5405-1-git-send-email-kuleshovmail@gmail.com>
+	Sun, 28 Dec 2014 21:40:48 -0500
+From: hejianet <jiakernel@gmail.com>
+X-Google-Original-From: hejianet <hejianet@gmail.com>
+Message-ID: <54A0BF9D.7090709@gmail.com>
+Date: Mon, 29 Dec 2014 10:42:37 +0800
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419746213-5405-1-git-send-email-kuleshovmail@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: lustre: libcfs: fix sparse warnings about static
+ declaration
+References: <1418740778-827-1-git-send-email-hejianet@gmail.com>
+In-Reply-To: <1418740778-827-1-git-send-email-hejianet@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 11:56:53AM +0600, Alexander Kuleshov wrote:
-> Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
-> ---
+Ping.
+Thanks for any comments
 
-For the record: anything of that sort against fs/*.c will be flushed down
-the toilet where such valuable contributions belong.  Don't even bother.
+On Tue, 16 Dec 2014 22:39:38 +0800 from hejianet@gmail.com wrote:
+> make sparse happy since these two fuchtion are only used in module.c.
+> tested by successful compilation.
+>
+> Signed-off-by: Jia He <hejianet@gmail.com>
+> Cc: Oleg Drokin <oleg.drokin@intel.com>
+> Cc: Andreas Dilger <andreas.dilger@intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  drivers/staging/lustre/lustre/libcfs/module.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/lustre/lustre/libcfs/module.c b/drivers/staging/lustre/lustre/libcfs/module.c
+> index 2c4fc74..b9ee37c 100644
+> --- a/drivers/staging/lustre/lustre/libcfs/module.c
+> +++ b/drivers/staging/lustre/lustre/libcfs/module.c
+> @@ -42,8 +42,7 @@
+>  #include "../../include/linux/lnet/lnet.h"
+>  #include "tracefile.h"
+>  
+> -void
+> -kportal_memhog_free (struct libcfs_device_userstate *ldu)
+> +static void kportal_memhog_free (struct libcfs_device_userstate *ldu)
+>  {
+>  	struct page **level0p = &ldu->ldu_memhog_root_page;
+>  	struct page **level1p;
+> @@ -86,8 +85,7 @@ kportal_memhog_free (struct libcfs_device_userstate *ldu)
+>  	LASSERT (ldu->ldu_memhog_pages == 0);
+>  }
+>  
+> -int
+> -kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
+> +static int kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
+>  		     gfp_t flags)
+>  {
+>  	struct page **level0p;
+
