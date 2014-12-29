@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaL2HCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 02:02:47 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:52579 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaL2HCq (ORCPT
+	id S1751979AbaL2HG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 02:06:59 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48461 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaL2HG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 02:02:46 -0500
-Date: Mon, 29 Dec 2014 12:32:39 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jonas Lundqvist <jonas@gannon.se>
-Cc: Jeremiah Mahler <jmmahler@gmail.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: line6: remove spaces before commas.
-Message-ID: <20141229070239.GC3749@sudip-PC>
-References: <1419773206-18729-1-git-send-email-jonas@gannon.se>
- <20141228154442.GA24583@hudson.localdomain>
- <54A06874.7050006@gannon.se>
+	Mon, 29 Dec 2014 02:06:58 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Mon, 29 Dec 2014 16:08:04 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 18/37] perf tools: Remove thread when map groups
+ initialization failed
+Message-ID: <20141229070804.GA6081@sejong>
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
+ <1419405333-27952-19-git-send-email-namhyung@kernel.org>
+ <549F52C4.7090205@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <54A06874.7050006@gannon.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <549F52C4.7090205@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 09:30:44PM +0100, Jonas Lundqvist wrote:
-> Hi Jeremiah,
+On Sat, Dec 27, 2014 at 05:45:56PM -0700, David Ahern wrote:
+> On 12/24/14 12:15 AM, Namhyung Kim wrote:
+> >Otherwise it'll break the machine->threads tree.
+> >
+> >Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> >---
+> >  tools/perf/util/machine.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> >diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> >index 031bace39fdc..beae6e8fe789 100644
+> >--- a/tools/perf/util/machine.c
+> >+++ b/tools/perf/util/machine.c
+> >@@ -411,6 +411,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+> >  		 * leader and that would screwed the rb tree.
+> >  		 */
+> >  		if (thread__init_map_groups(th, machine)) {
+> >+			rb_erase(&th->rb_node, &machine->threads);
+> >  			thread__delete(th);
+> >  			return NULL;
+> >  		}
+> >
 > 
-> On 12/28/2014 04:44 PM, Jeremiah Mahler wrote:
-> > Jonas,
-> > 
-> > On Sun, Dec 28, 2014 at 02:26:46PM +0100, Jonas Lundqvist wrote:
-> >> Fixed three errors in pcm.h found by checkpatch.pl.
-> > 
-> > What type of errors did you fix?
-> 
-> These errors:
-> drivers/staging/line6/pcm.h:148: ERROR: space prohibited before that ','
-> (ctx:WxE)
-> drivers/staging/line6/pcm.h:155: ERROR: space prohibited before that ','
-> (ctx:WxE)
-> drivers/staging/line6/pcm.h:162: ERROR: space prohibited before that ','
-> (ctx:WxE)
+> Can you move the thread__init_map_groups() before the thread is added to the
+> rbtree? If no, you need to delay setting 'machine->last_match = th'
+> otherwise it references a deleted thread.
 
-I am sure Jeremiah Mahler actually wanted to tell you that you should include that information in the commit log. We always mention what kind of error was fixed.
+You're right - I'll move the setting after the thread__init_map_groups().
 
-
-thanks
-sudip
-> 
-> 
-> BR
-> Jonas
-> 
-
-
+Thanks,
+Namhyung
