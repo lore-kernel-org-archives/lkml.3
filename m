@@ -1,120 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaL2ELm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 23:11:42 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:38298 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaL2ELl (ORCPT
+	id S1751933AbaL2EMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 23:12:16 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:10458 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863AbaL2EMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 23:11:41 -0500
-Message-ID: <54A0D450.6060909@huawei.com>
-Date: Mon, 29 Dec 2014 12:10:56 +0800
+	Sun, 28 Dec 2014 23:12:15 -0500
 From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>, <lizefan@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v17 11/11] ARM: optprobes: execute instruction during
- restoring if possible.
-References: <1419665637-12744-1-git-send-email-wangnan0@huawei.com> <1419665760-13336-1-git-send-email-wangnan0@huawei.com> <54A07FBE.3010206@hitachi.com>
+To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v18 10/11] ARM: kprobes: check register usage for probed instruction.
+Date: Mon, 29 Dec 2014 12:07:23 +0800
+Message-ID: <1419826043-27935-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
 In-Reply-To: <54A07FBE.3010206@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
+References: <54A07FBE.3010206@hitachi.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
 X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.54A0D4AC.006A,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 9b3c013c7f5ba17382fc13bb632117b7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/29 6:10, Masami Hiramatsu wrote:
-> (2014/12/27 16:36), Wang Nan wrote:
->> This patch removes software emulation or simulation for most of probed
->> instructions. If the instruction doesn't use PC relative addressing,
->> it will be translated into following instructions in the restore code
->> in code template:
->>
->>  ldmia {r0 - r14}  // restore all instruction except PC
->>  <instruction>     // direct execute the probed instruction
->>  b next_insn       // branch to next instruction.
->>
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->> ---
->>  arch/arm/include/asm/kprobes.h    |  3 +++
->>  arch/arm/include/asm/probes.h     |  1 +
->>  arch/arm/probes/kprobes/opt-arm.c | 47 +++++++++++++++++++++++++++++++++++++--
->>  3 files changed, 49 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
->> index 50ff3bc..3ea9be5 100644
->> --- a/arch/arm/include/asm/kprobes.h
->> +++ b/arch/arm/include/asm/kprobes.h
->> @@ -57,6 +57,9 @@ extern __visible kprobe_opcode_t optprobe_template_call;
->>  extern __visible kprobe_opcode_t optprobe_template_end;
->>  extern __visible kprobe_opcode_t optprobe_template_sub_sp;
->>  extern __visible kprobe_opcode_t optprobe_template_add_sp;
->> +extern __visible kprobe_opcode_t optprobe_template_restore_begin;
->> +extern __visible kprobe_opcode_t optprobe_template_restore_orig_insn;
->> +extern __visible kprobe_opcode_t optprobe_template_restore_end;
->>  
->>  #define MAX_OPTIMIZED_LENGTH	4
->>  #define MAX_OPTINSN_SIZE				\
->> diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
->> index ee8725c..8ebbe83 100644
->> --- a/arch/arm/include/asm/probes.h
->> +++ b/arch/arm/include/asm/probes.h
->> @@ -50,6 +50,7 @@ struct arch_probes_insn {
->>  #define set_register_nouse(m, n)	__clear_register_flag(m, n, REG_NO_USE)
->>  #define set_register_use(m, n)	__set_register_flag(m, n, REG_USE)
->>  	int register_usage_mask;
->> +	bool kprobe_direct_exec;
->>  };
->>  
->>  #endif /* __ASSEMBLY__ */
->> diff --git a/arch/arm/probes/kprobes/opt-arm.c b/arch/arm/probes/kprobes/opt-arm.c
->> index 6a60df3..f3bd1cc 100644
->> --- a/arch/arm/probes/kprobes/opt-arm.c
->> +++ b/arch/arm/probes/kprobes/opt-arm.c
->> @@ -32,6 +32,13 @@
->>  #include "core.h"
->>  
->>  /*
->> + * See register_usage_mask. If the probed instruction doesn't use PC,
->> + * we can copy it into template and have it executed directly without
->> + * simulation or emulation.
->> + */
->> +#define can_kprobe_direct_exec(m)	(!((m) & 0xc0000000UL))
-> 
-> I think you'd better define a macro for this bitmask.
-> 
-> 
->> +
->> +/*
->>   * NOTE: the first sub and add instruction will be modified according
->>   * to the stack cost of the instruction.
->>   */
->> @@ -66,7 +73,15 @@ asm (
->>  			"	orrne	r2, #1\n"
->>  			"	strne	r2, [sp, #60] @ set bit0 of PC for thumb\n"
->>  			"	msr	cpsr_cxsf, r1\n"
->> +			".global optprobe_template_restore_begin\n"
->> +			"optprobe_template_restore_begin:\n"
->>  			"	ldmia	sp, {r0 - r15}\n"
->> +			".global optprobe_template_restore_orig_insn\n"
->> +			"optprobe_template_restore_orig_insn:\n"
->> +			"	nop\n"
->> +			".global optprobe_template_restore_end\n"
->> +			"optprobe_template_restore_end:\n"
->> +			"	ldmia	sp, {r13 - r15}\n"
-> 
-> Why this can't be a nop too?
-> 
-> Thank you,
-> 
+This patch utilizes previous introduced checker to check register usage
+for probed ARM instruction and saves it in a mask. Futher patch will
+use such information to avoid simuation or emulation.
 
-Good suggestion. I'll send a new version of patch 10 and 11.
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ arch/arm/include/asm/probes.h          |  12 ++++
+ arch/arm/probes/decode.c               |   7 ++
+ arch/arm/probes/kprobes/actions-arm.c  |   2 +-
+ arch/arm/probes/kprobes/checkers-arm.c | 124 +++++++++++++++++++++++++++++++++
+ arch/arm/probes/kprobes/checkers.h     |   1 +
+ 5 files changed, 145 insertions(+), 1 deletion(-)
 
-Thank you.
-
-
+diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+index f0a1ee8..ee04067 100644
+--- a/arch/arm/include/asm/probes.h
++++ b/arch/arm/include/asm/probes.h
+@@ -41,6 +41,18 @@ struct arch_probes_insn {
+ 	probes_insn_singlestep_t	*insn_singlestep;
+ 	probes_insn_fn_t		*insn_fn;
+ 	int stack_space;
++
++	/* Use 2 bits for a register. One more bit for extension */
++#define REG_NO_USE	(0)
++#define REG_USE		(1)
++#define REG_MASK	(3)
++#define __register_usage_flag(n, f)	((f) << ((n) * 2))
++#define __register_usage_mask(n)	(REG_MASK << ((n) * 2))
++#define __clean_register_flag(m, n)	((m) & (~(__register_usage_mask(n))))
++#define __set_register_flag(m, n, f)	(__clean_register_flag(m, n) | __register_usage_flag(n, f))
++#define set_register_nouse(m, n)	do {(m) = __set_register_flag(m, n, REG_NO_USE);} while(0)
++#define set_register_use(m, n)		do {(m) = __set_register_flag(m, n, REG_USE);} while(0)
++	int register_usage_mask;
+ };
+ 
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/arm/probes/decode.c b/arch/arm/probes/decode.c
+index f9d7c42..d60a1b2 100644
+--- a/arch/arm/probes/decode.c
++++ b/arch/arm/probes/decode.c
+@@ -435,6 +435,13 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+ 	 */
+ 	asi->stack_space = 0;
+ 
++	/*
++	 * Similay to stack_space, register_usage_mask is filled by
++	 * checkers. Its default value is set to ~0, which is 'all
++	 * registers are used', to prevent any potential optimization.
++	 */
++	asi->register_usage_mask = ~(0UL);
++
+ 	if (emulate)
+ 		insn = prepare_emulated_insn(insn, asi, thumb);
+ 
+diff --git a/arch/arm/probes/kprobes/actions-arm.c b/arch/arm/probes/kprobes/actions-arm.c
+index 4fedd4c..26e435b 100644
+--- a/arch/arm/probes/kprobes/actions-arm.c
++++ b/arch/arm/probes/kprobes/actions-arm.c
+@@ -340,4 +340,4 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
+ };
+ 
+-const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, NULL};
++const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, arm_regs_checker, NULL};
+diff --git a/arch/arm/probes/kprobes/checkers-arm.c b/arch/arm/probes/kprobes/checkers-arm.c
+index f817663..df1d77b 100644
+--- a/arch/arm/probes/kprobes/checkers-arm.c
++++ b/arch/arm/probes/kprobes/checkers-arm.c
+@@ -97,3 +97,127 @@ const struct decode_checker arm_stack_checker[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_STORE] = {.checker = arm_check_stack},
+ 	[PROBES_LDMSTM] = {.checker = arm_check_stack},
+ };
++
++static enum probes_insn __kprobes arm_check_regs_nouse(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	asi->register_usage_mask = 0;
++	return INSN_GOOD;
++}
++
++static void __arm_check_regs(probes_opcode_t insn,
++		const struct decode_header *h,
++		int *quintuple)
++{
++	int i;
++	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
++	probes_opcode_t mask, shifted;
++
++	memset(quintuple, 0xff, sizeof(int) * 5);
++	for (i = 0, shifted = insn, mask = 0xf; regs != 0;
++			regs >>= 4, mask <<= 4, shifted >>= 4, i++)
++		if (regs & 0xf)
++			quintuple[i] = shifted & 0xf;
++}
++
++static enum probes_insn arm_check_regs_normal(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	int quintuple[5], i;
++	asi->register_usage_mask = 0;
++	__arm_check_regs(insn, h, quintuple);
++	for (i = 0; i < 5; i++) {
++		int r = quintuple[i];
++		if (r < 0)
++			continue;
++		set_register_use(asi->register_usage_mask, r);
++	}
++
++	return INSN_GOOD;
++}
++
++static enum probes_insn arm_check_regs_ldmstm(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	unsigned int reglist = insn & 0xffff;
++	unsigned int rn = (insn >> 16) & 0xf;
++	int i;
++
++	set_register_use(asi->register_usage_mask, rn);
++	for (i = 0; reglist > 0; i++, reglist >>= 1)
++		if (reglist & 1)
++			set_register_use(asi->register_usage_mask, i);
++	return INSN_GOOD;
++}
++
++static enum probes_insn arm_check_regs_mov_ip_sp(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	/* should be 'mov ip, sp' */
++	set_register_use(asi->register_usage_mask, 12);
++	set_register_use(asi->register_usage_mask, 13);
++	return INSN_GOOD;
++}
++
++/*
++ *                                    | Rn |Rt/d|         | Rm |
++ * LDRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx
++ * STRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx
++ *                                    | Rn |Rt/d|         |imm4L|
++ * LDRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx
++ * STRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx
++ *
++ * Such instructions access Rt/d and its next register, so different
++ * from others, a specific checker is required for Rt/d and Rt2/d2.
++ */
++static enum probes_insn arm_check_regs_ldrdstrd(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	int quintuple[5], rn, rdt, rm;
++	asi->register_usage_mask = 0;
++	__arm_check_regs(insn, h, quintuple);
++
++	rn = quintuple[4];
++	rdt = quintuple[3];
++	rm = quintuple[0];
++        set_register_use(asi->register_usage_mask, rn);
++        set_register_use(asi->register_usage_mask, rdt);
++        set_register_use(asi->register_usage_mask, rdt + 1);
++	if (rm >= 0)
++		set_register_use(asi->register_usage_mask, rm);
++
++	return INSN_GOOD;
++}
++
++
++const struct decode_checker arm_regs_checker[NUM_PROBES_ARM_ACTIONS] = {
++	[PROBES_EMULATE_NONE] = {.checker = arm_check_regs_nouse},
++	[PROBES_SIMULATE_NOP] = {.checker = arm_check_regs_nouse},
++	[PROBES_MRS] = {.checker = arm_check_regs_normal},
++	[PROBES_SATURATING_ARITHMETIC] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL1] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL2] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL_ADD_LONG] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL_ADD] = {.checker = arm_check_regs_normal},
++	[PROBES_LOAD] = {.checker = arm_check_regs_normal},
++	[PROBES_LOAD_EXTRA] = {.checker = arm_check_regs_normal},
++	[PROBES_STORE] = {.checker = arm_check_regs_normal},
++	[PROBES_STORE_EXTRA] = {.checker = arm_check_regs_normal},
++	[PROBES_DATA_PROCESSING_REG] = {.checker = arm_check_regs_normal},
++	[PROBES_DATA_PROCESSING_IMM] = {.checker = arm_check_regs_normal},
++	[PROBES_SATURATE] = {.checker = arm_check_regs_normal},
++	[PROBES_REV] = {.checker = arm_check_regs_normal},
++	[PROBES_MMI] = {.checker = arm_check_regs_normal},
++	[PROBES_PACK] = {.checker = arm_check_regs_normal},
++	[PROBES_EXTEND] = {.checker = arm_check_regs_normal},
++	[PROBES_EXTEND_ADD] = {.checker = arm_check_regs_normal},
++	[PROBES_BITFIELD] = {.checker = arm_check_regs_normal},
++	[PROBES_LDMSTM] = {.checker = arm_check_regs_ldmstm},
++	[PROBES_MOV_IP_SP] = {.checker = arm_check_regs_mov_ip_sp},
++	[PROBES_LDRSTRD] = {.checker = arm_check_regs_ldrdstrd},
++};
+diff --git a/arch/arm/probes/kprobes/checkers.h b/arch/arm/probes/kprobes/checkers.h
+index bddfa0e..cf6c9e7 100644
+--- a/arch/arm/probes/kprobes/checkers.h
++++ b/arch/arm/probes/kprobes/checkers.h
+@@ -47,6 +47,7 @@ extern const union decode_action stack_check_actions[];
+ 
+ #ifndef CONFIG_THUMB2_KERNEL
+ extern const struct decode_checker arm_stack_checker[];
++extern const struct decode_checker arm_regs_checker[];
+ #else
+ #endif
+ extern const struct decode_checker t32_stack_checker[];
+-- 
+1.8.4
 
