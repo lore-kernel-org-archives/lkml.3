@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321AbaL2Ouf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 09:50:35 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:28938 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201AbaL2OuN (ORCPT
+	id S1752241AbaL2Oy0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 09:54:26 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:53584 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaL2OyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 09:50:13 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-e5-54a16a2451c3
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: linux-mm@kvack.org
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 4/4] mm/slab: use kstrdup_const for allocating cache names
-Date: Mon, 29 Dec 2014 15:48:30 +0100
-Message-id: <1419864510-24834-5-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1419864510-24834-1-git-send-email-a.hajda@samsung.com>
-References: <1419864510-24834-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xq7oqWQtDDNonG1vcWneO1eLyrjls
-	FvfW/Ge1WHvkLrsDi8emT5PYPfq2rGL0+LxJLoA5issmJTUnsyy1SN8ugSvjzZc9TAVTOCs2
-	3f7A3MC4nb2LkZNDQsBEYvGJHVC2mMSFe+vZuhi5OIQEljJKHH/yGMrpY5KY/XIlG0gVm4Cm
-	xN/NN8FsEaCOj2cuM3cxcnAwC5RI3DorBhIWFvCTOLq7D6yERUBV4sid2WA2r4CzxMONyxkh
-	lslJnDw2mRWklVPAReJvVxxIWAio5OeSKewTGHkXMDKsYhRNLU0uKE5KzzXSK07MLS7NS9dL
-	zs/dxAgJkK87GJceszrEKMDBqMTDm3BiQYgQa2JZcWXuIUYJDmYlEV5py4UhQrwpiZVVqUX5
-	8UWlOanFhxiZODilGhj5Xcx2xHics2FbvzPOY/PnjHk3dM79OmyfvG0lv+SE9Ca2FXo5Bqv/
-	t9YX7Vi+Oni9bs30VWFrmF9mFMY8Cuu6l37Gc32zcl1sy2QtdgdZxl430VO3Mu5nSt2+k/NO
-	d8ID00P1e/nUGmf4zJC9vSvPiX3D2upH3+d6b7u/8a5cs+rKd0wxFzYrsRRnJBpqMRcVJwIA
-	hFDYke4BAAA=
+	Mon, 29 Dec 2014 09:54:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <1419827096.6184.128.camel@mtksdaap41>
+References: <1418891601-53769-1-git-send-email-eddie.huang@mediatek.com>
+ <1418891601-53769-2-git-send-email-eddie.huang@mediatek.com>
+ <CAL_JsqKp+1ZWPK4rB4_vxrx-dtNCy7Hc3S67uQ9VHdAby8erjg@mail.gmail.com> <1419827096.6184.128.camel@mtksdaap41>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 29 Dec 2014 08:54:02 -0600
+Message-ID: <CAL_JsqJQPQ2Ngis9GN8pi31pd-Y3E=ioXFoRfXBvMKkasng_Mw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] tty: serial: 8250_mtk: Add earlycon
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@linux.intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, yh.chen@mediatek.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-slab frequently performs duplication of strings located
-in read-only memory section. Replacing kstrdup by kstrdup_const
-allows to avoid such operations.
+On Sun, Dec 28, 2014 at 10:24 PM, Eddie Huang <eddie.huang@mediatek.com> wrote:
+> Hi Rob,
+>
+> On Fri, 2014-12-26 at 15:24 -0600, Rob Herring wrote:
+>> On Thu, Dec 18, 2014 at 2:33 AM, Eddie Huang <eddie.huang@mediatek.com> wrote:
+>> > Mediatek UART has highspeed register, but 8250_early.c doesn't
+>> > support this, so add earlycon in 8250_mtk.c
+>>
+>> I don't see any highspeed register setup here. More generically,
+>> aren't you just skipping any UART setup? That may be useful on other
+>> platforms with 8250s, too. With the kernel command line version, you
+>> could perhaps add a "noinit" flag. The DT case is harder, and I'm not
+>> sure how we should handle that. We could perhaps add a
+>> "stdout-path-initialized" flag to chosen.
+>>
+>
+> Yes, I skipped UART setup same as msm_serial.c and amba-pl011.c
+> (although they are standalone serial driver). Just like earlyprintk, I
+> think earlycon should reuse UART setting in loader. Since some other
+> platforms with 8250 already depend on this, it's ok to add flags to
+> distinguish whether 8250 earlycon driver should init hw or not. As you
+> said, add "noinit" flag is simple, but "stdout-path-initialized" need
+> more discussion.
+>
+>> >
+>> > Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
+>> > ---
+>> >  drivers/tty/serial/8250/8250_mtk.c | 33 +++++++++++++++++++++++++++++++++
+>> >  1 file changed, 33 insertions(+)
+>> >
+>> > diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
+>> > index de7aae5..65dd569 100644
+>> > --- a/drivers/tty/serial/8250/8250_mtk.c
+>> > +++ b/drivers/tty/serial/8250/8250_mtk.c
+>> > @@ -23,6 +23,7 @@
+>> >  #include <linux/pm_runtime.h>
+>> >  #include <linux/serial_8250.h>
+>> >  #include <linux/serial_reg.h>
+>> > +#include <linux/console.h>
+>> >
+>> >  #include "8250.h"
+>> >
+>> > @@ -289,6 +290,38 @@ static struct platform_driver mtk8250_platform_driver = {
+>> >  };
+>> >  module_platform_driver(mtk8250_platform_driver);
+>> >
+>> > +#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
+>> > +
+>> > +static void __init mtk8250_serial_putc(struct uart_port *port, int c)
+>> > +{
+>> > +       while ((readl(port->membase + (UART_LSR << 2)) & BOTH_EMPTY) !=
+>> > +               BOTH_EMPTY)
+>> > +               ;
+>> > +       writel(c, port->membase + (UART_TX << 2));
+>> > +}
+>> > +
+>> > +static void __init early_mtk8250_write(struct console *console,
+>> > +                                       const char *s, unsigned int count)
+>>
+>> Is there a reason early_serial8250_write can't work for you other than
+>> it is currently static?
+>>
+>> Rob
+>>
+>
+> The reason is only static. I want to keep 8250_early.c untouchable, all
+> modifications in 8250_mtk.c
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
----
- mm/slab_common.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+That is not how kernel development works. You should fix 8250_early.c
+to do what you need rather than duplicating code.
 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index e03dd6f..2d94d1a 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -390,7 +390,7 @@ kmem_cache_create(const char *name, size_t size, size_t align,
- 	if (s)
- 		goto out_unlock;
- 
--	cache_name = kstrdup(name, GFP_KERNEL);
-+	cache_name = kstrdup_const(name, GFP_KERNEL);
- 	if (!cache_name) {
- 		err = -ENOMEM;
- 		goto out_unlock;
-@@ -401,7 +401,7 @@ kmem_cache_create(const char *name, size_t size, size_t align,
- 				 flags, ctor, NULL, NULL);
- 	if (IS_ERR(s)) {
- 		err = PTR_ERR(s);
--		kfree(cache_name);
-+		kfree_const(cache_name);
- 	}
- 
- out_unlock:
-@@ -494,7 +494,7 @@ static int memcg_cleanup_cache_params(struct kmem_cache *s)
- 
- void slab_kmem_cache_release(struct kmem_cache *s)
- {
--	kfree(s->name);
-+	kfree_const(s->name);
- 	kmem_cache_free(kmem_cache, s);
- }
- 
--- 
-1.9.1
-
+Rob
