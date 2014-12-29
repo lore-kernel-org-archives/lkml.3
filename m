@@ -1,125 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaL2Qjk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 11:39:40 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42128 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaL2Qjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 11:39:39 -0500
-Date: Mon, 29 Dec 2014 10:39:09 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: udc-core: call udc_stop() before gadget
- unbind
-Message-ID: <20141229163909.GG29379@saruman>
-Reply-To: <balbi@ti.com>
-References: <1418390248-6254-1-git-send-email-r.baldyga@samsung.com>
- <20141215051317.GC25410@shlinux2>
- <548EB262.6040208@samsung.com>
- <20141222163430.GH12815@saruman>
- <54990CE7.1030008@samsung.com>
- <20141223183120.GG9147@saruman>
- <54A102FC.4000307@samsung.com>
+	id S1751462AbaL2Qxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 11:53:35 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54470 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaL2Qxd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 11:53:33 -0500
+Date: Mon, 29 Dec 2014 16:52:46 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Message-ID: <20141229165246.GZ17800@sirena.org.uk>
+References: <cover.1414053169.git.moinejf@free.fr>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kjpMrWxdCilgNbo1"
+	protocol="application/pgp-signature"; boundary="cqgibCT2eNae4+Dl"
 Content-Disposition: inline
-In-Reply-To: <54A102FC.4000307@samsung.com>
+In-Reply-To: <cover.1414053169.git.moinejf@free.fr>
+X-Cookie: You have no real enemies.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 86.128.155.20
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v8 0/2] ASoC: tda998x: add a codec to the HDMI transmitter
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---kjpMrWxdCilgNbo1
+
+--cqgibCT2eNae4+Dl
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Dec 29, 2014 at 08:30:04AM +0100, Robert Baldyga wrote:
-> Hi Felipe,
->=20
-> On 12/23/2014 07:31 PM, Felipe Balbi wrote:
-> > On Tue, Dec 23, 2014 at 07:34:15AM +0100, Robert Baldyga wrote:
-> >> On 12/22/2014 05:34 PM, Felipe Balbi wrote:
-> >>> On Mon, Dec 15, 2014 at 11:05:22AM +0100, Robert Baldyga wrote:
-> >>>> On 12/15/2014 06:13 AM, Peter Chen wrote:
-> >>>>> On Fri, Dec 12, 2014 at 02:17:28PM +0100, Robert Baldyga wrote:
-> >>>>>> As usb function drivers assumes that all usb request will be compl=
-eted
-> >>>>>> before function unbind call, we should supply such behavior. In so=
-me
-> >>>>>> cases ep_disable() won't kill all request effectively, because some
-> >>>>>> IN requests can be in running state. In such situation it's possib=
-le
-> >>>>>> to have unbind function called before last request completion, whi=
-ch
-> >>>>>> can cause problems.
-> >>>>>
-> >>>>> Doesn't the function's disable/unbind should call usb_ep_dequeue to=
- make
-> >>>>> sure the transfer has ended?
-> >>>>
-> >>>> USB function drivers like ECM or HID surely doesn't. It looks like
-> >>>> there's assumption that all requests will be completed by UDC driver.
-> >>>
-> >>> that's a bug on those drivers :-)
-> >>
-> >> So we can't make assumptions that requests will be completed in
-> >> ep_disable()?
-> >=20
-> > oh, no you can. I misread it.
-> >=20
-> >>>> Function ep_disable() should complete requests in hardware driver, b=
-ut
-> >>>> at least in DWC2 driver not all requests are completed at this stage
-> >>>
-> >>> and that's a bug on dwc2 :-)
-> >>
-> >> I have already found that out. Another UDC drivers simply kill all
-> >> request without waiting for currently running, so I did the same in
-> >> DWC2. Here is my patch:
-> >> http://www.spinics.net/lists/linux-usb/msg118698.html
-> >=20
-> > should be in my pull request already.
->=20
-> It looks like you applied wrong patch. I meant patch titled "drivers:
-> usb: dwc2: remove 'force' parameter from kill_all_requests()" is the
-> latest and complete fix. The patch you have applied named "usb: dwc2:
-> gadget: kill requests with 'force' in s3c_hsotg_udc_stop()" do not solve
-> problem completely without changes in udc-core, which we concluded are
-> not acceptable.
->=20
-> Sorry for the mess. I understand that titles of both patches are
-> confusing similar.
+On Thu, Oct 23, 2014 at 10:32:49AM +0200, Jean-Francois Moine wrote:
+> The NXP TDA998x HDMI transmitter may transmit audio to the HDMI link
+> from 2 different sources, I2S and S/PDIF.
 
-Can you send a patch on top fixing things up ? Either that or a revert
-followed by correct patch.
+So, I'm not seeing *any* interest here from any other HDMI users.  This
+is a continuing theme with HDMI patches and is really very concerning,
+everyone appears to be working in their own bubbles coming up with their
+own things and ignoring everyone else's work - what little review I'm
+seeing seems to be happening only after I explicitly prompt it.  I'm
+following up to Jean-Francois' patches here but this isn't specific to
+them, it seems like a general thing with HDMI code.
 
---=20
-balbi
+This in turn makes me think there's some abstraction problems with
+what's going on and we're going to have to go through yet more
+refactorings to fix things up as we do manage to come up with better
+abstractions.  What I'd really like to see as a bare minimum is some
+visible conversation about what we're doing and sign that people are
+at least keeping in mind generic solutions when working on HDMI code.
+Some commentary on the similarities and differences between hardware
+and which abstractions work with which devices would also be really
+helpful in working out if we're going in the right direction.
 
---kjpMrWxdCilgNbo1
+Basically at the minute I'm worried that we may be making the problems
+we've got here worse not better, I've not personally had the time to sit
+down and study the hardware sufficiently to form a firm impression
+myself which isn't helping.
+
+--cqgibCT2eNae4+Dl
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUoYOtAAoJEIaOsuA1yqRE/zAQAKNXiPqYDG2JG6ms9XuJY2SN
-9XXsQMlPlgMmE3b/PruFVXKFSAbwlMtiZ1JSBv4YEm+F+rQd1NVaCQyboMsY430z
-5XeXXNNABE3oYgXhMzDQUnkqYp6iKFsf7hil+e5vyuySF0bABXhMTH+bGGEnGazx
-eVMKsimdjrDADT5sCK/tozaibklDt/ng+O+dVsq8kzMOMqw8SkNNLLRDuNngWl0A
-Rvy4L6FEnQLwwlDB2k90H3YmRLM8QtiQrPvssZwvCsSNq+vBa+0WsnTEgwkY7lNi
-ge4BdCuDDWK3pMGDc7bONe9k+FvI7oEnCKFci4vhblSsxmfsN23INkS3Rg7CWKkq
-uBslzEjkoMCkIH5HEdq/6xrndUX3VofJP4NSlS+ade5RQyRgxFnXOdqahp17xlLs
-UA/VcqibmvrcAWmXU5sX9y+joDAD4xwK5WB79Obc1kq4M2U/i+MPVznxLRwtLvF0
-oiKGx6x4aKPr/rMF2WDpC2ZupeG3FNU6uDBUS59rkhDYSEb/COmfDv5OKT53vxmk
-IfXuJlyPmk7dlIwCBxZbu4RMqH4icnk02g80+4chkBUSBYrq/bDdsJRRx+My34uq
-gt8Pj6xdoCJNwVx207smKt7wm1EsjY6RnsF0vUZmSNggkK5Cr1JvcknFsUC4uttc
-L9z1KuYUTepl3NizmwHl
-=Jhu5
+iQEcBAEBAgAGBQJUoYbZAAoJECTWi3JdVIfQkIEH/2fiNrgDHQawYRxNQhcbJwSy
+ITPRwYBq4D3kay1+XiR7FfxVtHaOJO7sRRQmjeB41tBzMjuir5b238ZaIfYKJK3k
+YEPB46yaSXAbW4DbjDaLO5ul+4ZlW6rZRAiungYq3QAROrvfS2kjM5tM1fDSyd/a
+NHRYB0NxvWCd9tfZFChGWIIsupHeHtNF7lFfwgrR0ve02ACbgLpN0Su7DScu0NJ2
+csTwwcdNWT5lP5Op67GO5igshLBuZF/3Z4olTwTsguhWji1KuIeP5Sac49pbpdm4
+qayMSgWnb2FRJx5EZHhdnvnpfa2+Bwka0n5dFmsvXwHfmMx8t3id3KqMGMlX0vE=
+=3ShM
 -----END PGP SIGNATURE-----
 
---kjpMrWxdCilgNbo1--
+--cqgibCT2eNae4+Dl--
