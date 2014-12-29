@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaL2BQc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:16:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33154 "EHLO
+	id S1752363AbaL2BQj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:16:39 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33152 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751863AbaL2BMN (ORCPT
+	by vger.kernel.org with ESMTP id S1751861AbaL2BMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Dec 2014 20:12:13 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Herbert Xu" <herbert@gondor.apana.org.au>,
-        "Ard Biesheuvel" <ard.biesheuvel@linaro.org>
+CC: akpm@linux-foundation.org,
+        "Uwe Kleine-=?UTF-8?Q?K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
+        "Wolfram Sang" <wsa@the-dreams.de>,
+        "Hein Tibosch" <hein_tibosch@yahoo.es>,
+        "Grygorii Strashko" <grygorii.strashko@ti.com>
 Date: Mon, 29 Dec 2014 02:11:31 +0100
-Message-ID: <lsq.1419815491.146188502@decadent.org.uk>
+Message-ID: <lsq.1419815491.85394466@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 18/27] crypto: ghash-clmulni-intel - use C
- implementation for setkey()
+Subject: [PATCH 3.2 06/27] i2c: davinci: generate STP always when NACK is
+ received
 In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
 X-SA-Exim-Connect-IP: 46.189.28.191
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,104 +35,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+From: Grygorii Strashko <grygorii.strashko@ti.com>
 
-commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
+commit 9ea359f7314132cbcb5a502d2d8ef095be1f45e4 upstream.
 
-The GHASH setkey() function uses SSE registers but fails to call
-kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
-then having to deal with the restriction that they cannot be called from
-interrupt context, move the setkey() implementation to the C domain.
+According to I2C specification the NACK should be handled as follows:
+"When SDA remains HIGH during this ninth clock pulse, this is defined as the Not
+Acknowledge signal. The master can then generate either a STOP condition to
+abort the transfer, or a repeated START condition to start a new transfer."
+[I2C spec Rev. 6, 3.1.6: http://www.nxp.com/documents/user_manual/UM10204.pdf]
 
-Note that setkey() does not use any particular SSE features and is not
-expected to become a performance bottleneck.
+Currently the Davinci i2c driver interrupts the transfer on receipt of a
+NACK but fails to send a STOP in some situations and so makes the bus
+stuck until next I2C IP reset (idle/enable).
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-[bwh: Backported to 3.2: adjust context]
+For example, the issue will happen during SMBus read transfer which
+consists from two i2c messages write command/address and read data:
+
+S Slave Address Wr A Command Code A Sr Slave Address Rd A D1..Dn A P
+<--- write -----------------------> <--- read --------------------->
+
+The I2C client device will send NACK if it can't recognize "Command Code"
+and it's expected from I2C master to generate STP in this case.
+But now, Davinci i2C driver will just exit with -EREMOTEIO and STP will
+not be generated.
+
+Hence, fix it by generating Stop condition (STP) always when NACK is received.
+
+This patch fixes Davinci I2C in the same way it was done for OMAP I2C
+commit cda2109a26eb ("i2c: omap: query STP always when NACK is received").
+
+Reviewed-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Reported-by: Hein Tibosch <hein_tibosch@yahoo.es>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/crypto/ghash-clmulni-intel_asm.S  | 29 -----------------------------
- arch/x86/crypto/ghash-clmulni-intel_glue.c | 14 +++++++++++---
- 2 files changed, 11 insertions(+), 32 deletions(-)
+ drivers/i2c/busses/i2c-davinci.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
-+++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
-@@ -24,10 +24,6 @@
- .align 16
- .Lbswap_mask:
- 	.octa 0x000102030405060708090a0b0c0d0e0f
--.Lpoly:
--	.octa 0xc2000000000000000000000000000001
--.Ltwo_one:
--	.octa 0x00000001000000000000000000000001
- 
- #define DATA	%xmm0
- #define SHASH	%xmm1
-@@ -131,27 +127,3 @@ ENTRY(clmul_ghash_update)
- 	movups DATA, (%rdi)
- .Lupdate_just_ret:
- 	ret
--
--/*
-- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
-- *
-- * Calculate hash_key << 1 mod poly
-- */
--ENTRY(clmul_ghash_setkey)
--	movaps .Lbswap_mask, BSWAP
--	movups (%rsi), %xmm0
--	PSHUFB_XMM BSWAP %xmm0
--	movaps %xmm0, %xmm1
--	psllq $1, %xmm0
--	psrlq $63, %xmm1
--	movaps %xmm1, %xmm2
--	pslldq $8, %xmm1
--	psrldq $8, %xmm2
--	por %xmm1, %xmm0
--	# reduction
--	pshufd $0b00100100, %xmm2, %xmm1
--	pcmpeqd .Ltwo_one, %xmm1
--	pand .Lpoly, %xmm1
--	pxor %xmm1, %xmm0
--	movups %xmm0, (%rdi)
--	ret
---- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
-+++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
-@@ -29,8 +29,6 @@ void clmul_ghash_mul(char *dst, const be
- void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
- 			const be128 *shash);
- 
--void clmul_ghash_setkey(be128 *shash, const u8 *key);
--
- struct ghash_async_ctx {
- 	struct cryptd_ahash *cryptd_tfm;
- };
-@@ -57,13 +55,23 @@ static int ghash_setkey(struct crypto_sh
- 			const u8 *key, unsigned int keylen)
- {
- 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
-+	be128 *x = (be128 *)key;
-+	u64 a, b;
- 
- 	if (keylen != GHASH_BLOCK_SIZE) {
- 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
- 		return -EINVAL;
+--- a/drivers/i2c/busses/i2c-davinci.c
++++ b/drivers/i2c/busses/i2c-davinci.c
+@@ -416,11 +416,9 @@ i2c_davinci_xfer_msg(struct i2c_adapter
+ 	if (dev->cmd_err & DAVINCI_I2C_STR_NACK) {
+ 		if (msg->flags & I2C_M_IGNORE_NAK)
+ 			return msg->len;
+-		if (stop) {
+-			w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
+-			w |= DAVINCI_I2C_MDR_STP;
+-			davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
+-		}
++		w = davinci_i2c_read_reg(dev, DAVINCI_I2C_MDR_REG);
++		w |= DAVINCI_I2C_MDR_STP;
++		davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, w);
+ 		return -EREMOTEIO;
  	}
- 
--	clmul_ghash_setkey(&ctx->shash, key);
-+	/* perform multiplication by 'x' in GF(2^128) */
-+	a = be64_to_cpu(x->a);
-+	b = be64_to_cpu(x->b);
-+
-+	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
-+	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
-+
-+	if (a >> 63)
-+		ctx->shash.b ^= cpu_to_be64(0xc2);
- 
- 	return 0;
- }
+ 	return -EIO;
 
