@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaL2BRy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:17:54 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33122 "EHLO
+	id S1752268AbaL2BTj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:19:39 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33125 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751633AbaL2BMN (ORCPT
+	by vger.kernel.org with ESMTP id S1751640AbaL2BMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Dec 2014 20:12:13 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Martin Schwidefsky" <schwidefsky@de.ibm.com>
+CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Andy Lutomirski" <luto@amacapital.net>
 Date: Mon, 29 Dec 2014 02:11:31 +0100
-Message-ID: <lsq.1419815491.752779291@decadent.org.uk>
+Message-ID: <lsq.1419815491.377803922@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 16/27] s390,time: revert direct ktime path for s390
- clockevent device
+Subject: [PATCH 3.2 12/27] x86, kvm: Clear paravirt_enabled on KVM guests
+ for espfix32's benefit
 In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
 X-SA-Exim-Connect-IP: 46.189.28.191
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,72 +33,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 8adbf78ec4839c1dc4ff20c9a1f332a7bc99e6e6 upstream.
+commit 29fa6825463c97e5157284db80107d1bfac5d77b upstream.
 
-Git commit 4f37a68cdaf6dea833cfdded2a3e0c47c0f006da
-"s390: Use direct ktime path for s390 clockevent device" makes use
-of the CLOCK_EVT_FEAT_KTIME clockevent option to avoid the delta
-calculation with ktime_get() in clockevents_program_event and the
-get_tod_clock() in s390_next_event. This is based on the assumption
-that the difference between the internal ktime and the hardware
-clock is reflected in the wall_to_monotonic delta. But this is not
-true, the ntp corrections are applied via changes to the tk->mult
-multiplier and this is not reflected in wall_to_monotonic.
+paravirt_enabled has the following effects:
 
-In theory this could be solved by using the raw monotonic clock
-but it is simpler to switch back to the standard clock delta
-calculation.
+ - Disables the F00F bug workaround warning.  There is no F00F bug
+   workaround any more because Linux's standard IDT handling already
+   works around the F00F bug, but the warning still exists.  This
+   is only cosmetic, and, in any event, there is no such thing as
+   KVM on a CPU with the F00F bug.
 
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-[bwh: Backported to 3.2: s/get_tod_clock()/get_clock()/]
+ - Disables 32-bit APM BIOS detection.  On a KVM paravirt system,
+   there should be no APM BIOS anyway.
+
+ - Disables tboot.  I think that the tboot code should check the
+   CPUID hypervisor bit directly if it matters.
+
+ - paravirt_enabled disables espfix32.  espfix32 should *not* be
+   disabled under KVM paravirt.
+
+The last point is the purpose of this patch.  It fixes a leak of the
+high 16 bits of the kernel stack address on 32-bit KVM paravirt
+guests.  Fixes CVE-2014-8134.
+
+Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/kernel/time.c | 19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ arch/x86/kernel/kvm.c      | 9 ++++++++-
+ arch/x86/kernel/kvmclock.c | 1 -
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -110,20 +110,10 @@ static void fixup_clock_comparator(unsig
- 	set_clock_comparator(S390_lowcore.clock_comparator);
- }
- 
--static int s390_next_ktime(ktime_t expires,
-+static int s390_next_event(unsigned long delta,
- 			   struct clock_event_device *evt)
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -419,7 +419,14 @@ static void kvm_leave_lazy_mmu(void)
+ static void __init paravirt_ops_setup(void)
  {
--	struct timespec ts;
--	u64 nsecs;
--
--	ts.tv_sec = ts.tv_nsec = 0;
--	monotonic_to_bootbased(&ts);
--	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
--	do_div(nsecs, 125);
--	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
--	/* Program the maximum value if we have an overflow (== year 2042) */
--	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
--		S390_lowcore.clock_comparator = -1ULL;
-+	S390_lowcore.clock_comparator = get_clock() + delta;
- 	set_clock_comparator(S390_lowcore.clock_comparator);
- 	return 0;
- }
-@@ -148,15 +138,14 @@ void init_cpu_timer(void)
- 	cpu = smp_processor_id();
- 	cd = &per_cpu(comparators, cpu);
- 	cd->name		= "comparator";
--	cd->features		= CLOCK_EVT_FEAT_ONESHOT |
--				  CLOCK_EVT_FEAT_KTIME;
-+	cd->features		= CLOCK_EVT_FEAT_ONESHOT;
- 	cd->mult		= 16777;
- 	cd->shift		= 12;
- 	cd->min_delta_ns	= 1;
- 	cd->max_delta_ns	= LONG_MAX;
- 	cd->rating		= 400;
- 	cd->cpumask		= cpumask_of(cpu);
--	cd->set_next_ktime	= s390_next_ktime;
-+	cd->set_next_event	= s390_next_event;
- 	cd->set_mode		= s390_set_mode;
+ 	pv_info.name = "KVM";
+-	pv_info.paravirt_enabled = 1;
++
++	/*
++	 * KVM isn't paravirt in the sense of paravirt_enabled.  A KVM
++	 * guest kernel works like a bare metal kernel with additional
++	 * features, and paravirt_enabled is about features that are
++	 * missing.
++	 */
++	pv_info.paravirt_enabled = 0;
  
- 	clockevents_register_device(cd);
+ 	if (kvm_para_has_feature(KVM_FEATURE_NOP_IO_DELAY))
+ 		pv_cpu_ops.io_delay = kvm_io_delay;
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -203,7 +203,6 @@ void __init kvmclock_init(void)
+ #endif
+ 	kvm_get_preset_lpj();
+ 	clocksource_register_hz(&kvm_clock, NSEC_PER_SEC);
+-	pv_info.paravirt_enabled = 1;
+ 	pv_info.name = "KVM";
+ 
+ 	if (kvm_para_has_feature(KVM_FEATURE_CLOCKSOURCE_STABLE_BIT))
 
