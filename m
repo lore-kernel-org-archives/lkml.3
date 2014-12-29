@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464AbaL2Oeu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 09:34:50 -0500
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:8521 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751440AbaL2Oer (ORCPT
+	id S1752522AbaL2OfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 09:35:22 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:38668 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519AbaL2OfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 09:34:47 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Am0QALdloVRXQ5FV/2dsb2JhbABcgwaBKrQrAQEBAQEBBQF3lzAEAgKBCxcBAQEBAX2EDQEFViMQUTkeGYgwAbQmjxMBAQEBBgIghgOJEGQHFoQTBYw+ikqRUCKDbz0xgQOBQAEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org
-Subject: [PATCH 11/11 linux-next] s390/hmcdrv: remove unnecessary version.h inclusion
-Date: Mon, 29 Dec 2014 15:34:39 +0100
-Message-Id: <1419863679-24430-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1419863387-24233-1-git-send-email-fabf@skynet.be>
-References: <1419863387-24233-1-git-send-email-fabf@skynet.be>
+	Mon, 29 Dec 2014 09:35:20 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-e1-54a166a7e8d8
+From: Zbigniew Jasinski <z.jasinski@samsung.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] smack: Fix a bidirectional UDS connect check typo
+Date: Mon, 29 Dec 2014 15:34:58 +0100
+Message-id: <1419863698-29558-1-git-send-email-z.jasinski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t/xK7rL0xaGGDw4zGhxb9svNou+x0EW
+	l3fNYbP40POIzeL8hXPsDqwe13ZHenx8eovF4+j+RWwenzfJBbBEcdmkpOZklqUW6dslcGU8
+	vSJZ0M5V8WjeLpYGxnkcXYycHBICJhJLHl5mhLDFJC7cW8/WxcjFISSwlFHi795bLBBOH5PE
+	5jmXWEGq2AQMJHoXNLCD2CICOhL79jxnByliFpjNKPHo5DWgIg4OYQEnibZVsiA1LAKqEmt+
+	NbGB2LwCbhL/Fj1hBymREFCQmDPJZgIj9wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsY
+	IQHwdQfj0mNWhxgFOBiVeHgTTiwIEWJNLCuuzD3EKMHBrCTCK225MESINyWxsiq1KD++qDQn
+	tfgQIxMHp1QDY7RojPI1M837MqaXFLd+vmQl9HmxJM/y/sP3fjfMTalc8Fv7zQrHUIHIVUvq
+	Piy4x/pE2J871flnVFXTlPMfjHa/v+Agfsg485Xd/Wr3OMmWsPDFTt92zHPJqOr+ZCgqIu3C
+	eFxw655GTqWHM0Mq+vJ3PL2pK7h5ZrzYXhHppy3d61mdfsR+VWIpzkg01GIuKk4EAGeK7uXe	AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on versioncheck.
+The 54e70ec5eb090193b03e69d551fa6771a5a217c4 commit introduced a
+bidirectional check that should have checked for mutual WRITE access
+between two labels. Due to a typo subject's OUT label is checked with
+object's OUT. Should be OUT to IN.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Zbigniew Jasinski <z.jasinski@samsung.com>
 ---
- drivers/s390/char/hmcdrv_mod.c | 1 -
- 1 file changed, 1 deletion(-)
+ security/smack/smack_lsm.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/s390/char/hmcdrv_mod.c b/drivers/s390/char/hmcdrv_mod.c
-index 505c6a7..251a318 100644
---- a/drivers/s390/char/hmcdrv_mod.c
-+++ b/drivers/s390/char/hmcdrv_mod.c
-@@ -11,7 +11,6 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
--#include <linux/version.h>
- #include <linux/stat.h>
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index b774029..30f61f8 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -3313,7 +3313,7 @@ static int smack_unix_stream_connect(struct sock *sock,
  
- #include "hmcdrv_ftp.h"
+ 	if (!smack_privileged(CAP_MAC_OVERRIDE)) {
+ 		skp = ssp->smk_out;
+-		okp = osp->smk_out;
++		okp = osp->smk_in;
+ #ifdef CONFIG_AUDIT
+ 		smk_ad_init_net(&ad, __func__, LSM_AUDIT_DATA_NET, &net);
+ 		smk_ad_setfield_u_net_sk(&ad, other);
+@@ -3321,6 +3321,8 @@ static int smack_unix_stream_connect(struct sock *sock,
+ 		rc = smk_access(skp, okp, MAY_WRITE, &ad);
+ 		rc = smk_bu_note("UDS connect", skp, okp, MAY_WRITE, rc);
+ 		if (rc == 0) {
++			okp = osp->smk_out;
++			skp = ssp->smk_in;
+ 			rc = smk_access(okp, skp, MAY_WRITE, NULL);
+ 			rc = smk_bu_note("UDS connect", okp, skp,
+ 						MAY_WRITE, rc);
 -- 
-2.1.0
+1.7.9.5
 
