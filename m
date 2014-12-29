@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaL2BM7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:12:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33195 "EHLO
+	id S1752120AbaL2BNG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:13:06 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33193 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751911AbaL2BMR (ORCPT
+	by vger.kernel.org with ESMTP id S1751909AbaL2BMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Dec 2014 20:12:17 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "Dominik Mierzejewski" <dominik@greysector.net>
+CC: akpm@linux-foundation.org, "Neil Horman" <nhorman@tuxdriver.com>,
+        "Vlad Yasevich" <vyasevich@gmail.com>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Mon, 29 Dec 2014 02:11:31 +0100
-Message-ID: <lsq.1419815491.459542017@decadent.org.uk>
+Message-ID: <lsq.1419815491.598277997@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 05/27] ahci: disable MSI on SAMSUNG 0xa800 SSD
+Subject: [PATCH 3.2 20/27] net: sctp: fix memory leak in auth key management
 In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
 X-SA-Exim-Connect-IP: 46.189.28.191
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,30 +33,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 2b21ef0aae65f22f5ba86b13c4588f6f0c2dbefb upstream.
+commit 4184b2a79a7612a9272ce20d639934584a1f3786 upstream.
 
-Just like 0x1600 which got blacklisted by 66a7cbc303f4 ("ahci: disable
-MSI instead of NCQ on Samsung pci-e SSDs on macbooks"), 0xa800 chokes
-on NCQ commands if MSI is enabled.  Disable MSI.
+A very minimal and simple user space application allocating an SCTP
+socket, setting SCTP_AUTH_KEY setsockopt(2) on it and then closing
+the socket again will leak the memory containing the authentication
+key from user space:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Dominik Mierzejewski <dominik@greysector.net>
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=89171
+unreferenced object 0xffff8800837047c0 (size 16):
+  comm "a.out", pid 2789, jiffies 4296954322 (age 192.258s)
+  hex dump (first 16 bytes):
+    01 00 00 00 04 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff816d7e8e>] kmemleak_alloc+0x4e/0xb0
+    [<ffffffff811c88d8>] __kmalloc+0xe8/0x270
+    [<ffffffffa0870c23>] sctp_auth_create_key+0x23/0x50 [sctp]
+    [<ffffffffa08718b1>] sctp_auth_set_key+0xa1/0x140 [sctp]
+    [<ffffffffa086b383>] sctp_setsockopt+0xd03/0x1180 [sctp]
+    [<ffffffff815bfd94>] sock_common_setsockopt+0x14/0x20
+    [<ffffffff815beb61>] SyS_setsockopt+0x71/0xd0
+    [<ffffffff816e58a9>] system_call_fastpath+0x12/0x17
+    [<ffffffffffffffff>] 0xffffffffffffffff
+
+This is bad because of two things, we can bring down a machine from
+user space when auth_enable=1, but also we would leave security sensitive
+keying material in memory without clearing it after use. The issue is
+that sctp_auth_create_key() already sets the refcount to 1, but after
+allocation sctp_auth_set_key() does an additional refcount on it, and
+thus leaving it around when we free the socket.
+
+Fixes: 65b07e5d0d0 ("[SCTP]: API updates to suport SCTP-AUTH extensions.")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ahci.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/sctp/auth.c | 2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -502,6 +502,7 @@ static const struct pci_device_id ahci_p
- 	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
- 	 */
- 	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
-+	{ PCI_VDEVICE(SAMSUNG, 0xa800), board_ahci_nomsi },
+--- a/net/sctp/auth.c
++++ b/net/sctp/auth.c
+@@ -866,8 +866,6 @@ int sctp_auth_set_key(struct sctp_endpoi
+ 		list_add(&cur_key->key_list, sh_keys);
  
- 	/* Enmotus */
- 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
+ 	cur_key->key = key;
+-	sctp_auth_key_hold(key);
+-
+ 	return 0;
+ nomem:
+ 	if (!replace)
 
