@@ -1,187 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaL2ULp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 15:11:45 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:38923 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaL2ULo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 15:11:44 -0500
-Date: Mon, 29 Dec 2014 12:11:39 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Mathias Gottschlag <mgottschlag@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: psmouse - use IS_ENABLED instead of homegrown code
-Message-ID: <20141229201139.GA1690@dtor-ws>
+	id S1752296AbaL2USz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 15:18:55 -0500
+Received: from mout.gmx.net ([212.227.15.19]:49237 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505AbaL2USy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 15:18:54 -0500
+Message-ID: <54A1B724.8070106@gmx.de>
+Date: Mon, 29 Dec 2014 21:18:44 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Moore <paul@paul-moore.com>
+CC: linux Kernel <linux-kernel@vger.kernel.org>, linux-audit@redhat.com
+Subject: Re: v3.19-rc2: crashes during boot (syslog-ng, rpcbind ...)
+References: <54A17C49.5080102@gmx.de> <CAHC9VhTT1WqGfuOLpXw1o2ZE5Bhwg35KCc1Gg2-bYtFX9jAYRg@mail.gmail.com> <54A18046.9060209@gmx.de> <4182091.odzUCAWhED@sifl>
+In-Reply-To: <4182091.odzUCAWhED@sifl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:GAT9tbMhCMIzUo6qHdM/k9IjuMdFq3wiUnj2IfG9Q7gerxWWhl3
+ Uw11UXmqZGRTNReo/CYZXhdgdAJNpkSyYjfTGBRgCqM3tbZ4LB/7JDVGeaXjPOM4bbPCXaw
+ C26bVmEl+zldB1Aq3x4lqOxgtYzrLcAwbZkpRQ0WbHUSrIPmLYFmZQ1Lw/csERmoXBXj71c
+ x9KQmTBF6CJC7VprpLt4g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of having various protocols provide <protocol>_supported()
-functions, let's use IS_ENABLED() macro that works well in "if" statements.
+On 12/29/2014 08:41 PM, Paul Moore wrote:
+> To help verify that I'm heading down the right path, could you share your 
+> audit configuration as well?  If that's not possible, can you at least confirm 
+> that you using a few audit directory watches?
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/mouse/cypress_ps2.c  |  5 -----
- drivers/input/mouse/cypress_ps2.h  |  5 -----
- drivers/input/mouse/focaltech.c    | 10 ----------
- drivers/input/mouse/focaltech.h    |  1 -
- drivers/input/mouse/psmouse-base.c |  6 +++---
- drivers/input/mouse/synaptics.c    | 10 ----------
- drivers/input/mouse/synaptics.h    |  1 -
- 7 files changed, 3 insertions(+), 35 deletions(-)
+Well, it is just a victim system for trinity - but I did not configured auditd in a special manner - so it is just the plain default configuration of Gentoo:
 
-diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-index 8af34ff..6e5f70b 100644
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -710,8 +710,3 @@ err_exit:
- 
- 	return -1;
- }
--
--bool cypress_supported(void)
--{
--	return true;
--}
-diff --git a/drivers/input/mouse/cypress_ps2.h b/drivers/input/mouse/cypress_ps2.h
-index 4720f21..81f68aa 100644
---- a/drivers/input/mouse/cypress_ps2.h
-+++ b/drivers/input/mouse/cypress_ps2.h
-@@ -172,7 +172,6 @@ struct cytp_data {
- #ifdef CONFIG_MOUSE_PS2_CYPRESS
- int cypress_detect(struct psmouse *psmouse, bool set_properties);
- int cypress_init(struct psmouse *psmouse);
--bool cypress_supported(void);
- #else
- inline int cypress_detect(struct psmouse *psmouse, bool set_properties)
- {
-@@ -182,10 +181,6 @@ inline int cypress_init(struct psmouse *psmouse)
- {
- 	return -ENOSYS;
- }
--inline bool cypress_supported(void)
--{
--	return 0;
--}
- #endif /* CONFIG_MOUSE_PS2_CYPRESS */
- 
- #endif  /* _CYPRESS_PS2_H */
-diff --git a/drivers/input/mouse/focaltech.c b/drivers/input/mouse/focaltech.c
-index fca38ba..757f78a 100644
---- a/drivers/input/mouse/focaltech.c
-+++ b/drivers/input/mouse/focaltech.c
-@@ -424,11 +424,6 @@ fail:
- 	return error;
- }
- 
--bool focaltech_supported(void)
--{
--	return true;
--}
--
- #else /* CONFIG_MOUSE_PS2_FOCALTECH */
- 
- int focaltech_init(struct psmouse *psmouse)
-@@ -438,9 +433,4 @@ int focaltech_init(struct psmouse *psmouse)
- 	return 0;
- }
- 
--bool focaltech_supported(void)
--{
--	return false;
--}
--
- #endif /* CONFIG_MOUSE_PS2_FOCALTECH */
-diff --git a/drivers/input/mouse/focaltech.h b/drivers/input/mouse/focaltech.h
-index 71870a9..ca61ebf 100644
---- a/drivers/input/mouse/focaltech.h
-+++ b/drivers/input/mouse/focaltech.h
-@@ -19,6 +19,5 @@
- 
- int focaltech_detect(struct psmouse *psmouse, bool set_properties);
- int focaltech_init(struct psmouse *psmouse);
--bool focaltech_supported(void);
- 
- #endif
-diff --git a/drivers/input/mouse/psmouse-base.c b/drivers/input/mouse/psmouse-base.c
-index 68469fe..4ccd01d 100644
---- a/drivers/input/mouse/psmouse-base.c
-+++ b/drivers/input/mouse/psmouse-base.c
-@@ -727,7 +727,7 @@ static int psmouse_extensions(struct psmouse *psmouse,
- 	if (psmouse_do_detect(focaltech_detect, psmouse, set_properties) == 0) {
- 		if (max_proto > PSMOUSE_IMEX) {
- 			if (!set_properties || focaltech_init(psmouse) == 0) {
--				if (focaltech_supported())
-+				if (IS_ENABLED(CONFIG_MOUSE_PS2_FOCALTECH))
- 					return PSMOUSE_FOCALTECH;
- 				/*
- 				 * Note that we need to also restrict
-@@ -776,7 +776,7 @@ static int psmouse_extensions(struct psmouse *psmouse,
-  * Try activating protocol, but check if support is enabled first, since
-  * we try detecting Synaptics even when protocol is disabled.
-  */
--			if (synaptics_supported() &&
-+			if (IS_ENABLED(CONFIG_MOUSE_PS2_SYNAPTICS) &&
- 			    (!set_properties || synaptics_init(psmouse) == 0)) {
- 				return PSMOUSE_SYNAPTICS;
- 			}
-@@ -801,7 +801,7 @@ static int psmouse_extensions(struct psmouse *psmouse,
-  */
- 	if (max_proto > PSMOUSE_IMEX &&
- 			cypress_detect(psmouse, set_properties) == 0) {
--		if (cypress_supported()) {
-+		if (IS_ENABLED(CONFIG_MOUSE_PS2_CYPRESS)) {
- 			if (cypress_init(psmouse) == 0)
- 				return PSMOUSE_CYPRESS;
- 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index f947292..094bf64 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1817,11 +1817,6 @@ int synaptics_init_relative(struct psmouse *psmouse)
- 	return __synaptics_init(psmouse, false);
- }
- 
--bool synaptics_supported(void)
--{
--	return true;
--}
--
- #else /* CONFIG_MOUSE_PS2_SYNAPTICS */
- 
- void __init synaptics_module_init(void)
-@@ -1833,9 +1828,4 @@ int synaptics_init(struct psmouse *psmouse)
- 	return -ENOSYS;
- }
- 
--bool synaptics_supported(void)
--{
--	return false;
--}
--
- #endif /* CONFIG_MOUSE_PS2_SYNAPTICS */
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index 1bd01f2..feb28a5 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -191,6 +191,5 @@ int synaptics_detect(struct psmouse *psmouse, bool set_properties);
- int synaptics_init(struct psmouse *psmouse);
- int synaptics_init_relative(struct psmouse *psmouse);
- void synaptics_reset(struct psmouse *psmouse);
--bool synaptics_supported(void);
- 
- #endif /* _SYNAPTICS_H */
--- 
-2.2.0.rc0.207.ga3a616c
+n22kvm-clone audit # wc *
+  26  201 1127 audit.rules
+  13   85  573 audit.rules.stop.post
+  16   81  547 audit.rules.stop.pre
+  32   95  701 auditd.conf
+  87  462 2948 total
+n22kvm-clone audit # tail -n 40 -v *
+==> audit.rules <==                                                                                                
+# Copyright 1999-2011 Gentoo Foundation                                                                            
+# Distributed under the terms of the GNU General Public License v2                                                 
+# $Header: /var/cvsroot/gentoo-x86/sys-process/audit/files/audit.rules-2.1.3,v 1.1 2011/09/11 02:58:55 robbat2 Exp $
+#                                                                                                                  
+# This file contains the auditctl rules that are loaded                                                            
+# whenever the audit daemon is started via the initscripts.                                                        
+# The rules are simply the parameters that would be passed                                                         
+# to auditctl.                                                                                                     
+                                                                                                                                  
+# First rule - delete all                                                                                                         
+# This is to clear out old rules, so we don't append to them.                                                                     
+-D                                                                                                                                
+                                                                                                                                                    
+# Feel free to add below this line. See auditctl man page                                                                                           
+                                                                                                                                                    
+# The following rule would cause all of the syscalls listed to be ignored in logging.                                                               
+-a exit,never -F arch=b32 -S read -S write -S open -S fstat -S mmap -S brk -S munmap -S nanosleep -S fcntl -S close -S dup2 -S rt_sigaction -S stat                          
+#-a exit,never -F arch=b64 -S read -S write -S open -S fstat -S mmap -S brk -S munmap -S nanosleep -S fcntl -S close -S dup2 -S rt_sigaction -S stat                         
+                                                                                                                                                                             
+# The following rule would cause the capture of all systems not caught above.                                                                                                
+# -a exit,always -S all                                                                                                                                                      
+                                                                                                                                                                             
+# Increase the buffers to survive stress events                                                                                                                              
+-b 8192                                                                                                                                                                      
+                                                                                                                                                                             
+# vim:ft=conf:                                                                                                                                                               
+                                                                                                                                                                             
+==> audit.rules.stop.post <==                                                                                                                                                
+# Copyright 1999-2005 Gentoo Foundation                                                                                                                                      
+# Distributed under the terms of the GNU General Public License v2                                                                                                           
+# $Header: /var/cvsroot/gentoo-x86/sys-process/audit/files/audit.rules.stop.post,v 1.1 2006/06/22 07:41:46 robbat2 Exp $                                                     
+#                                                                                                                                                                            
+# This file contains the auditctl rules that are loaded immediately after the                                                                                                
+# audit deamon is stopped via the initscripts.                                                                                                                               
+# The rules are simply the parameters that would be passed
+# to auditctl.
+
+# Not used for the default Gentoo configuration as of v1.2.3
+# Paranoid security types might wish to reconfigure kauditd here.
+
+# vim:ft=conf:
+
+==> audit.rules.stop.pre <==
+# Copyright 1999-2011 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo-x86/sys-process/audit/files/audit.rules.stop.pre,v 1.2 2011/09/11 02:58:55 robbat2 Exp $
+#
+# This file contains the auditctl rules that are loaded immediately before the
+# audit deamon is stopped via the initscripts.
+# The rules are simply the parameters that would be passed
+# to auditctl.
+
+# auditd is stopping, don't capture events anymore
+-D
+
+# Disable kernel generating audit events
+-e 0
+
+# vim:ft=conf:
+
+==> auditd.conf <==
+#
+# This file controls the configuration of the audit daemon
+#
+
+log_file = /var/log/audit/audit.log
+log_format = RAW
+log_group = root
+priority_boost = 4
+flush = INCREMENTAL
+freq = 20
+num_logs = 5
+disp_qos = lossy
+dispatcher = /sbin/audispd
+name_format = NONE
+##name = mydomain
+max_log_file = 6 
+max_log_file_action = ROTATE
+space_left = 75
+space_left_action = SYSLOG
+action_mail_acct = root
+admin_space_left = 50
+admin_space_left_action = SUSPEND
+disk_full_action = SUSPEND
+disk_error_action = SUSPEND
+##tcp_listen_port = 
+tcp_listen_queue = 5
+tcp_max_per_addr = 1
+##tcp_client_ports = 1024-65535
+tcp_client_max_idle = 0
+enable_krb5 = no
+krb5_principal = auditd
+##krb5_key_file = /etc/audit/audit.key
+
+
+
+n22kvm-clone audit # cat /etc/conf.d/auditd 
+# Copyright 1999-2011 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: /var/cvsroot/gentoo-x86/sys-process/audit/files/auditd-conf.d-2.1.3,v 1.1 2011/09/11 02:58:55 robbat2 Exp $
+
+# Configuration options for auditd
+# -f for foreground mode
+# There are some other options as well, but you'll have to look in the source
+# code to find them as they aren't ready for use yet.
+EXTRAOPTIONS=''
+
+# Audit rules file to run after starting auditd
+RULEFILE_STARTUP=/etc/audit/audit.rules
+
+# Audit rules file to run before and after stopping auditd
+RULEFILE_STOP_PRE=/etc/audit/audit.rules.stop.pre
+RULEFILE_STOP_POST=/etc/audit/audit.rules.stop.post
+
+# If you want to enforce a certain locale for auditd, 
+# uncomment one of the next lines:
+#AUDITD_LANG=none
+AUDITD_LANG=C
+#AUDITD_LANG=en_US
+#AUDITD_LANG=en_US.UTF-8
+
 
 
 -- 
-Dmitry
+Toralf
+pgp key: 7B1A 07F4 EC82 0F90 D4C2  8936 872A E508 0076 E94E
+
