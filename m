@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaL2NSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 08:18:21 -0500
-Received: from arrowlinuxcloud.com ([192.198.192.26]:45126 "EHLO
-	gains.arrowlinuxcloud.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751877AbaL2NSS (ORCPT
+	id S1751808AbaL2Naz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 08:30:55 -0500
+Received: from 78-32-181-23.static.enta.net ([78.32.181.23]:51744 "EHLO
+	mail.linicks.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaL2Nay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 08:18:18 -0500
-X-Greylist: delayed 3995 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Dec 2014 08:18:18 EST
-User-Agent: Microsoft-MacOutlook/14.3.9.131030
-Date: Mon, 29 Dec 2014 17:41:32 +0530
-Subject: Re: [PATCH 3/3] Staging: comedi: fix space and 80 char coding style
- issue
-From: Pankaj Saraf <pankaj.saraf@nektech.in>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        jitendra kumar khasdev <jkhasdev@gmail.com>
-CC: <gregkh@linuxfoundation.org>, <abbotti@mev.co.uk>,
-        <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>
-Message-ID: <D0C741E6.3D64%pankaj.saraf@nektech.in>
-Thread-Topic: [PATCH 3/3] Staging: comedi: fix space and 80 char coding style
- issue
-References: <1419803085-9441-1-git-send-email-jkhasdev@gmail.com>
- <20141229070712.GD3749@sudip-PC>
-In-Reply-To: <20141229070712.GD3749@sudip-PC>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - gains.arrowlinuxcloud.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - nektech.in
-X-Get-Message-Sender-Via: gains.arrowlinuxcloud.com: authenticated_id: pankaj.saraf@nektech.in
+	Mon, 29 Dec 2014 08:30:54 -0500
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Dec 2014 08:30:54 EST
+Message-ID: <54A155C6.5050005@linicks.net>
+Date: Mon, 29 Dec 2014 13:23:18 +0000
+From: Nick Warne <nick@linicks.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: [QUESTION] Unnamed syslog kernel logs
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jitendra,
+Hello developers,
 
-You have to make 2 different changes so that the description of the change
-can clearly be associated to change-number. Thanks!
+Not being very familiar with kernel debugging, I have a question about 
+strange syslogs.
 
-Regards
-Pankaj Saraf
-NEKTech Research Labs, Bhopal (M.P.) - India
+History:
 
-On 29/12/14 12:37 pm, "Sudip Mukherjee" <sudipm.mukherjee@gmail.com> wrote:
+I have been trying to tie-down a strange problem on my headless AMD64 
+box - it occasionally just turns-off if just as if the power supply is 
+cut.  It can happen anywhere between 2 months or 2 days - just intermittent.
 
->On Mon, Dec 29, 2014 at 03:14:45AM +0530, jitendra kumar khasdev wrote:
->> This is a patch to the s626.c file that fixes up spcae and maximum
->> character limit warning found by the checkpatch.pl tool
->
->you are doing two different kind of changes in this patch. it should be
->in two different patches. One patch should do only one type of change.
->
->thanks
->sudip
->
->> 
->> Signed-off-by: Jitendra Kumar Khasdev  <jkhasdev@gmail.com>
->> ---
->>  drivers/staging/comedi/drivers/s626.c | 5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
->> 
->> diff --git a/drivers/staging/comedi/drivers/s626.c
->>b/drivers/staging/comedi/drivers/s626.c
->> index 14932c5..77f715b 100644
->> --- a/drivers/staging/comedi/drivers/s626.c
->> +++ b/drivers/staging/comedi/drivers/s626.c
->> @@ -118,7 +118,7 @@ static void s626_mc_enable(struct comedi_device
->>*dev,
->>  static void s626_mc_disable(struct comedi_device *dev,
->>  			    unsigned int cmd, unsigned int reg)
->>  {
->> -	writel(cmd << 16 , dev->mmio + reg);
->> +	writel(cmd << 16, dev->mmio + reg);
->>  	mmiowb();
->>  }
->>  
->> @@ -2534,7 +2534,8 @@ static int s626_initialize(struct comedi_device
->>*dev)
->>  	for (i = 0; i < 2; i++) {
->>  		writel(S626_I2C_CLKSEL, dev->mmio + S626_P_I2CSTAT);
->>  		s626_mc_enable(dev, S626_MC2_UPLD_IIC, S626_P_MC2);
->> -		ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc, 0);
->> +		ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc,
->> +		0);
->>  		if (ret)
->>  			return ret;
->>  	}
->> -- 
->> 1.9.1
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Analysing logs (which when this occurs they do not report anything), I 
+noticed this in syslog (typical):
 
+Dec 28 09:37:19 sauron kernel: ACPI: PCI Interrupt Link [APCL] enabled 
+at IRQ 22
+Dec 28 09:37:19 sauron kernel: ACPI: PCI Interrupt Link [APC5] enabled 
+at IRQ 16
+Dec 28 09:37:19 sauron kernel: 1030
+Dec 28 09:37:19 sauron kernel: 0200
+Dec 28 09:37:19 sauron kernel: 0110
+Dec 28 09:37:19 sauron kernel: 0111
+Dec 28 09:37:19 sauron kernel: 0113
+Dec 28 09:37:19 sauron kernel: 0362
+Dec 28 09:37:19 sauron kernel: ACPI: PCI Interrupt Link [APSI] enabled 
+at IRQ 21
+Dec 28 09:37:19 sauron kernel: ACPI: PCI Interrupt Link [APSJ] enabled 
+at IRQ 20
 
+I don't understand what the middle lines are telling me here?
+
+Anyway, today I took the machine down, and removed  ram a module (as I 
+found it's sister slot was bad) and also the graphics card as I don't 
+use it.
+
+Now when I boot, these mysterious line have vanished from syslog:
+
+ec 29 13:05:49 sauron kernel: ACPI: Enabled 1 GPEs in block 00 to 1F
+Dec 29 13:05:49 sauron kernel: ACPI: PCI Interrupt Link [APCF] enabled 
+at IRQ 23
+Dec 29 13:05:49 sauron kernel: ACPI: PCI Interrupt Link [APCL] enabled 
+at IRQ 22
+Dec 29 13:05:49 sauron kernel: ACPI: PCI Interrupt Link [APSI] enabled 
+at IRQ 21
+Dec 29 13:05:49 sauron kernel: ACPI: PCI Interrupt Link [APSJ] enabled 
+at IRQ 20
+Dec 29 13:05:49 sauron kernel: ACPI: PCI Interrupt Link [APCH] enabled 
+at IRQ 23
+
+is all I get now in that section.
+
+Was the kernel attempting to tell me something was bad with them funny 
+unnamed lines?
+
+Thanks for any help,
+
+Regards,
+
+Nick
+-- 
+"A bug in the code is worth two in the documentation."
+http://linicks.net/
+http://slackpi.linicks.net/
