@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaL2BSt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:18:49 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:17109 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752092AbaL2BSq convert rfc822-to-8bit (ORCPT
+	id S1752477AbaL2BRy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:17:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33122 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751633AbaL2BMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 20:18:46 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="54798274"
-Message-ID: <54A0ABEF.1000106@cn.fujitsu.com>
-Date: Mon, 29 Dec 2014 09:18:39 +0800
-From: Qu Wenruo <quwenruo@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 28 Dec 2014 20:12:13 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION][x86] Commit f5b2831d65 cause boot failure in VMware
- ESXi 5.1 guest
-References: <549CC096.3080701@cn.fujitsu.com> <549EB95F.9090209@suse.com>
-In-Reply-To: <549EB95F.9090209@suse.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.33]
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Martin Schwidefsky" <schwidefsky@de.ibm.com>
+Date: Mon, 29 Dec 2014 02:11:31 +0100
+Message-ID: <lsq.1419815491.752779291@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 16/27] s390,time: revert direct ktime path for s390
+ clockevent device
+In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
+X-SA-Exim-Connect-IP: 46.189.28.191
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.2.66-rc1 review patch.  If anyone has any objections, please let me know.
 
--------- Original Message --------
-Subject: Re: [REGRESSION][x86] Commit f5b2831d65 cause boot failure in 
-VMware ESXi 5.1 guest
-From: Juergen Gross <jgross@suse.com>
-To: Qu Wenruo <quwenruo@cn.fujitsu.com>
-Date: 2014年12月27日 21:51
-> On 12/26/2014 02:57 AM, Qu Wenruo wrote:
->> Hi all,
->>
->> When testing v3.19-rc1 kernel(in fact, try to test), the kernel itself
->> fail to boot on VMware ESXi 5.1 guest.
->> The boot failure is quite easy to describe, only one line is output:
->> "Probing EDD (edd=off to disable)...ok"
->>
->> No other output(including warning/bug_on/backtrace or whatever) and the
->> guest just hangs.
->> It's OK on v3.18, so it's a regression.
->>
->> Bisect points to the following commit:
->> commit f5b2831d654167d77da8afbef4d2584897b12d0c
->> Author: Juergen Gross <jgross@suse.com>
->> Date:   Mon Nov 3 14:02:02 2014 +0100
->>
->>      x86: Respect PAT bit when copying pte values between large and
->> normal pages
->>
->>      The PAT bit in the ptes is not moved to the correct position when
->>      copying page protection attributes between entries of different 
->> sized
->>      pages. Translate the ptes according to their page size.
->>
->>
->> I have also created the kernel BZ report:
->> https://bugzilla.kernel.org/show_bug.cgi?id=90321
->>
->> Hopes this can be resolved in next rc.
->
-> As the same issue has been reported with VMWare workstation which was
-> related to an error in the PAT MSR emulation of VMWare, I guess this
-> will be the same problem. I've already sent a patch.
->
-> You should be able to boot with the "nopat" kernel option.
->
->
-> Juergen
-Thanks for the explanation. Again the closed source blob to blame.
+------------------
 
-Anyway, the nopat option works.
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Great thanks
-Qu
+commit 8adbf78ec4839c1dc4ff20c9a1f332a7bc99e6e6 upstream.
+
+Git commit 4f37a68cdaf6dea833cfdded2a3e0c47c0f006da
+"s390: Use direct ktime path for s390 clockevent device" makes use
+of the CLOCK_EVT_FEAT_KTIME clockevent option to avoid the delta
+calculation with ktime_get() in clockevents_program_event and the
+get_tod_clock() in s390_next_event. This is based on the assumption
+that the difference between the internal ktime and the hardware
+clock is reflected in the wall_to_monotonic delta. But this is not
+true, the ntp corrections are applied via changes to the tk->mult
+multiplier and this is not reflected in wall_to_monotonic.
+
+In theory this could be solved by using the raw monotonic clock
+but it is simpler to switch back to the standard clock delta
+calculation.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+[bwh: Backported to 3.2: s/get_tod_clock()/get_clock()/]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/s390/kernel/time.c | 19 ++++---------------
+ 1 file changed, 4 insertions(+), 15 deletions(-)
+
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -110,20 +110,10 @@ static void fixup_clock_comparator(unsig
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
+ }
+ 
+-static int s390_next_ktime(ktime_t expires,
++static int s390_next_event(unsigned long delta,
+ 			   struct clock_event_device *evt)
+ {
+-	struct timespec ts;
+-	u64 nsecs;
+-
+-	ts.tv_sec = ts.tv_nsec = 0;
+-	monotonic_to_bootbased(&ts);
+-	nsecs = ktime_to_ns(ktime_add(timespec_to_ktime(ts), expires));
+-	do_div(nsecs, 125);
+-	S390_lowcore.clock_comparator = sched_clock_base_cc + (nsecs << 9);
+-	/* Program the maximum value if we have an overflow (== year 2042) */
+-	if (unlikely(S390_lowcore.clock_comparator < sched_clock_base_cc))
+-		S390_lowcore.clock_comparator = -1ULL;
++	S390_lowcore.clock_comparator = get_clock() + delta;
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
+ 	return 0;
+ }
+@@ -148,15 +138,14 @@ void init_cpu_timer(void)
+ 	cpu = smp_processor_id();
+ 	cd = &per_cpu(comparators, cpu);
+ 	cd->name		= "comparator";
+-	cd->features		= CLOCK_EVT_FEAT_ONESHOT |
+-				  CLOCK_EVT_FEAT_KTIME;
++	cd->features		= CLOCK_EVT_FEAT_ONESHOT;
+ 	cd->mult		= 16777;
+ 	cd->shift		= 12;
+ 	cd->min_delta_ns	= 1;
+ 	cd->max_delta_ns	= LONG_MAX;
+ 	cd->rating		= 400;
+ 	cd->cpumask		= cpumask_of(cpu);
+-	cd->set_next_ktime	= s390_next_ktime;
++	cd->set_next_event	= s390_next_event;
+ 	cd->set_mode		= s390_set_mode;
+ 
+ 	clockevents_register_device(cd);
+
