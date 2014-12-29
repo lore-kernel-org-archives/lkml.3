@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaL2R3z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 12:29:55 -0500
-Received: from www.osadl.org ([62.245.132.105]:45904 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaL2R3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 12:29:54 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [SCSI RFC] mpt2sas: wait_for_completion_timeout timeout not reported
-Date: Mon, 29 Dec 2014 12:25:54 -0500
-Message-Id: <1419873954-22573-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752342AbaL2RaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 12:30:00 -0500
+Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:40355 "EHLO
+	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752194AbaL2R35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 12:29:57 -0500
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        dvhart@infradead.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: [PATCH 0/2] x86: Add IMR support to Quark/Galileo
+Date: Mon, 29 Dec 2014 17:23:01 +0000
+Message-Id: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wait_for_completion_timeout reaching timeout was being ignored,
-this probably also should fail if timeout condition occurs ?
+This patchset adds an IMR driver to the kernel plus platform code for
+Intel Galileo Gen1/Gen2 boards.
 
-this was only compile tested with
-x86_64_defconfig + CONFIG_SCSI_LOWLEVEL=y + CONFIG_SCSI_MPT2SAS=m
+IMRs:
+Quark SoC X1000 ships with a set of registers called Isolated Memory Regions
+IMRs provide fine grained memory access control to various system agents
+within the SoC such as CPU SMM/non-SMM mode, PCIe virtual channels, CPU snoop
+cycles, eSRAM flush cycles and the RMU. In simple terms, IMRs provide a
+mechanism to protect memory regions from unwarranted access by system agents
+that should not have access to that memory.
 
-patch is against linux-next 3.19.0-rc1 -next-20141226
+IMRs support a lock bit. Once a lock bit is set for an individual IMR it is
+not possible to tear down that IMR without performing a cold boot of the
+system. IMRs support reporting of violations. The SoC system can be
+configured to reboot immediately when an IMR violation has taken place.
+Immediate reboot of the system on IMR violation is recommended and is
+currently how Quark BIOS configures the system.
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- drivers/scsi/mpt2sas/mpt2sas_config.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+As an example Galileo boards ship with an IMR around the ACPI runtime
+services memory and if a DMA read/write cycle were to occur to this region
+of memory this would trigger the IMR violation mechansim. 
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_config.c b/drivers/scsi/mpt2sas/mpt2sas_config.c
-index c72a2ff..02dc2d8 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_config.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_config.c
-@@ -391,7 +391,7 @@ _config_request(struct MPT2SAS_ADAPTER *ioc, Mpi2ConfigRequest_t
- 	mpt2sas_base_put_smid_default(ioc, smid);
- 	timeleft = wait_for_completion_timeout(&ioc->config_cmds.done,
- 	    timeout*HZ);
--	if (!(ioc->config_cmds.status & MPT2_CMD_COMPLETE)) {
-+	if (timeleft == 0 || !(ioc->config_cmds.status & MPT2_CMD_COMPLETE)) {
- 		printk(MPT2SAS_ERR_FMT "%s: timeout\n",
- 		    ioc->name, __func__);
- 		_debug_dump_mf(mpi_request,
+Galileo:
+Intel's Arduino compatible Galileo boards boot to Linux with IMRs protecting
+the compressed kernel image and boot params data structure. The memory that
+the compressed kernel and boot params data structure is in, is marked as
+usable memory by the EFI memory map. As a result it is possible for memory
+marked as processor read/write only in an IMR to be given to devices in the
+SoC for the purposes of DMA by way of dma_alloc_coherent.
+A DMA to a region of memory by a system agent which is not allowed access
+this memory result in a system reset. Without tearing down the IMRs placed
+around the compressed kernel image and boot params data structure there is a
+high risk of triggering an inadvertent system reset when performing DMA
+actions with any of the peripherals that support DMA in Quark such as the
+MMC, Ethernet or USB host/device.
+
+Therefore Galileo specific platform code is the second component of this
+patchset. The platform code tears-down every unlocked IMR to ensure no
+conflict exists between the IMR usage during boot and the EFI memory map. In
+addition an IMR is placed around the kernel's .text section to ensure no
+invalid access to kernel code can happen by way of spurious DMA, SMM or RMU
+read/write cycles. This code gets compiled into the kernel because we want
+to run the code early before any DMA has taken place. The prime examples of
+DMA transactions resetting the system are mouting a root filesystem on MMC
+or mouting a root filesystem over NFS.
+
+Bryan O'Donoghue (2):
+  x86: Add Isolated Memory Regions for Quark X1000
+  platform/x86 Add Intel Galileo platform specific setup
+
+ arch/x86/Kconfig                     |  23 ++
+ arch/x86/include/asm/imr.h           |  79 ++++++
+ arch/x86/include/asm/intel-quark.h   |  31 ++
+ arch/x86/kernel/Makefile             |   1 +
+ arch/x86/kernel/imr.c                | 529 +++++++++++++++++++++++++++++++++++
+ drivers/platform/x86/Kconfig         |  15 +
+ drivers/platform/x86/Makefile        |   1 +
+ drivers/platform/x86/intel_galileo.c | 175 ++++++++++++
+ 8 files changed, 854 insertions(+)
+ create mode 100644 arch/x86/include/asm/imr.h
+ create mode 100644 arch/x86/include/asm/intel-quark.h
+ create mode 100644 arch/x86/kernel/imr.c
+ create mode 100644 drivers/platform/x86/intel_galileo.c
+
 -- 
-1.7.10.4
+1.9.1
 
