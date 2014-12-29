@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299AbaL2Oan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 09:30:43 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:54229 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaL2Oag (ORCPT
+	id S1752260AbaL2Oad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 09:30:33 -0500
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:1421 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752164AbaL2OaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 09:30:36 -0500
-Date: Mon, 29 Dec 2014 20:00:31 +0530
-From: Balavasu <kp.balavasu@gmail.com>
+	Mon, 29 Dec 2014 09:30:14 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am0QAEhkoVRXQ5FV/2dsb2JhbABcgwaBKrQrAQEBAQEBBQF3lzAEAgKBCxcBAQEBAX2EDQEFViMQUTkeGYgwAbQojxMBAQEHIoYDiRBkBxaEEwWMPopKkVAig289MYEDgUABAQE
+From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
-Cc: andreas.dilger@intel.com, oleg.drokin@intel.com, greg@kroah.com
-Subject: [PATCH 1/2] staging: lustre: lnet: lnet: do not initialise statics
- to 0 or NULL
-Message-ID: <20141229143031.GA3358@vasu-Inspiron-3542>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fabian Frederick <fabf@skynet.be>
+Subject: [PATCH 02/11 linux-next] skd: remove unnecessary version.h inclusion
+Date: Mon, 29 Dec 2014 15:29:36 +0100
+Message-Id: <1419863387-24233-3-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1419863387-24233-1-git-send-email-fabf@skynet.be>
+References: <1419863387-24233-1-git-send-email-fabf@skynet.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the checkpatch.pl issue
-Error: do not initialise statics to 0 or NULL
+Based on versioncheck.
 
-Signed-off-by: Balavasu <kp.balavasu@gmail.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/staging/lustre/lnet/lnet/router.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/block/skd_main.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
-index b5b8fb5..cdeb246 100644
---- a/drivers/staging/lustre/lnet/lnet/router.c
-+++ b/drivers/staging/lustre/lnet/lnet/router.c
-@@ -46,7 +46,7 @@ MODULE_PARM_DESC(small_router_buffers, "# of small (1 page) messages to buffer i
- static int large_router_buffers;
- module_param(large_router_buffers, int, 0444);
- MODULE_PARM_DESC(large_router_buffers, "# of large messages to buffer in the router");
--static int peer_buffer_credits = 0;
-+static int peer_buffer_credits;
- module_param(peer_buffer_credits, int, 0444);
- MODULE_PARM_DESC(peer_buffer_credits, "# router buffer credits per peer");
- 
-@@ -80,7 +80,7 @@ lnet_peer_buffer_credits(lnet_ni_t *ni)
- 
- #endif
- 
--static int check_routers_before_use = 0;
-+static int check_routers_before_use;
- module_param(check_routers_before_use, int, 0444);
- MODULE_PARM_DESC(check_routers_before_use, "Assume routers are down and ping them before use");
- 
-@@ -245,7 +245,7 @@ lnet_find_net_locked (__u32 net)
- 
- static void lnet_shuffle_seed(void)
- {
--	static int seeded = 0;
-+	static int seeded;
- 	int lnd_type, seed[2];
- 	struct timeval tv;
- 	lnet_ni_t *ni;
-@@ -1584,8 +1584,8 @@ lnet_notify (lnet_ni_t *ni, lnet_nid_t nid, int alive, unsigned long when)
- void
- lnet_router_checker (void)
- {
--	static time_t last = 0;
--	static int    running = 0;
-+	static time_t last;
-+	static int    running;
- 
- 	time_t	    now = get_seconds();
- 	int	       interval = now - last;
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index 1e46eb2..542353a 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -34,7 +34,6 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/completion.h>
+ #include <linux/scatterlist.h>
+-#include <linux/version.h>
+ #include <linux/err.h>
+ #include <linux/scatterlist.h>
+ #include <linux/aer.h>
 -- 
-1.9.1
+2.1.0
 
