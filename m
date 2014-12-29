@@ -1,134 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaL2EvH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 23:51:07 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:36309 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaL2EvD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 23:51:03 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-46-54a0ddb20cd3
-Date: Mon, 29 Dec 2014 04:50:58 +0000 (GMT)
-From: GIRISH K S <ks.giri@samsung.com>
-Subject: Re: [PATCH 15/27] net: sxgbe: Use setup_timer
-To: Julia Lawall <Julia.Lawall@lip6.fr>, ByungHo An <bh74.an@samsung.com>
-Cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Vipul Chandrakant <vipul.pandya@samsung.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: ks.giri@samsung.com
-MIME-version: 1.0
-X-MTR: 20141229044926733@ks.giri
-Msgkey: 20141229044926733@ks.giri
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-MLAttribute: 
-X-RootMTR: 20141229044926733@ks.giri
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-X-ConfirmMail: N,general
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <451468949.291671419828656924.JavaMail.weblogic@epmlwas09c>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsWyRsSkWnfT3QUhBq+3alpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6M788OMhfME63o/DuVqYHxikgXIweHkICSxIVfQl2MnBwSAiYS
-	RzunsUDYYhIX7q1n62LkAipZyihx/+oOFpiiV4/fskIk5jBKHDjUygaSYBFQlVj45jxYEZuA
-	usTHA72MILawgJnEgh3NYLaIgL/EpusT2UGamQXeM0rM7ZnFDpIQEpCV+PXxKZjNKyAocXLm
-	E6htChKHJnZCxRUlnnffZIWIy0ksmXqZCcLmlZjR/pQFJj7t6xpmCFta4vysDYww7yz+/hgq
-	zi9x7PYOqF4BialnDkLVqEr8X3CQHcLmk1iz8C0LTP2uU8uZYXbd3zIXqldCYmvLE7B7mIFu
-	m9L9kB3CNpA4smgOK7pfeAXcJWZv/sQC8ryEwEQOidaW7awTGJVmIambhWTWLCSzkNUsYGRZ
-	xSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iRGYHE7/ezZhB+O9A9aHGAU4GJV4eBNOLAgRYk0s
-	K67MPcRoCoyoicxSosn5wBSUVxJvaGxmZGFqYmpsZG5ppiTO+1rqZ7CQQHpiSWp2ampBalF8
-	UWlOavEhRiYOTqkGxpQdTtG2VtN9Nxyq/H9Zj824Vpa13cNYXcQmvMzc5d0RvWez2z7G8X7M
-	VT4Vmyjf/PB/2q9G4Xv7NRrDLjvtOLTY9oJk7sdenqebV33z8TYWft2pUHNBzvpyiY5u/vyk
-	Y3Gt1450crvIW3aYvDln7/3hs9s76bZ93+/rFff8nLjLwvpRa5yzEktxRqKhFnNRcSIAPDjv
-	pgkDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t/tft1NdxeEGDQsV7K4vGsOmwOjx+dN
-	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
-	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hqaxVoYGBkamQDUJaRnf
-	nx1kLpgnWtH5dypTA+MVkS5GDg4hASWJC7+Euhg5OSQETCRePX7LCmGLSVy4t56ti5ELqGQO
-	o8SBQ61sIAkWAVWJhW/Os4DYbALqEh8P9DKC2MICZhILdjSD2SIC/hKbrk9kB2lmFnjPKDG3
-	ZxY7SEJIQFbi18enYDavgKDEyZlPWCC2KUgcmtgJFVeUeN59E+oKOYklUy8zQdi8EjPan7LA
-	xKd9XcMMYUtLnJ+1gRHm6sXfH0PF+SWO3d4B1SsgMfXMQagaVYn/Cw6yQ9h8EmsWvmWBqd91
-	ajkzzK77W+ZC9UpIbG15AnYPM9BtU7ofskPYBhJHFs1hRfcLr4C7xOzNn1gmMMrOQpKahaR9
-	FpJ2ZDULGFlWMYqmFiQXFCelV5joFSfmFpfmpesl5+duYgQnomdLdjA2XLA+xCjAwajEw8tx
-	bEGIEGtiWXFl7iFGCQ5mJRFeozKgEG9KYmVValF+fFFpTmrxIUZTYLRNZJYSTc4HJsm8knhD
-	YxNzU2NTCwNDc3MzJXHe/+dyQ4QE0hNLUrNTUwtSi2D6mDg4pRoYGcMq+yx3rkxoE8gUdV3v
-	YX/QzV07S6ckcrdr9grFmsqNf7YdCldWdhIs2pyz7NP1FRJB0098vXPQ/NkJ9m0bJB0bn1Ud
-	Zr32/uU0X+mvumb+Mi2LbNhlak8t9M4WYS1n7NCYOPdETO3qTfeC1SIrDLbmLqgR3SfOWvlq
-	hlpckFSmm9tD1dVKLMUZiYZazEXFiQDu9fgJWgMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1751800AbaL2FAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 00:00:49 -0500
+Received: from ozlabs.org ([103.22.144.67]:52153 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741AbaL2FAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 00:00:47 -0500
+Message-ID: <1419828790.26911.3.camel@ellerman.id.au>
+Subject: Re: [PATCH v3 00/20] kselftest install target feature
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
+        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
+        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <cover.1419387513.git.shuahkh@osg.samsung.com>
+References: <cover.1419387513.git.shuahkh@osg.samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Dec 2014 15:53:10 +1100
+Mime-Version: 1.0
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBT4pSGZ016580
+
+On Wed, 2014-12-24 at 09:27 -0700, Shuah Khan wrote:
+> This patch series adds a new kselftest_install make target
+> to enable selftest install. When make kselftest_install is
+> run, selftests are installed on the system. A new install
+> target is added to selftests Makefile which will install
+> targets for the tests that are specified in INSTALL_TARGETS.
+> During install, a script is generated to run tests that are
+> installed. This script will be installed in the selftest install
+> directory. Individual test Makefiles are changed to add to the
+> script. This will allow new tests to add install and run test
+> commands to the generated kselftest script. kselftest target
+> now depends on kselftest_install and runs the generated kselftest
+> script to reduce duplicate work and for common look and feel when
+> running tests.
+> 
+> This approach leverages and extends the existing framework that
+> uses makefile targets to implement run_tests and adds install
+> target. This will scale well as new tests get added and makes
+> it easier for test writers to add install target at the same
+> time new test gets added.
+> 
+> This v3 series reduces duplicate code to generate script
+> in indiviual test Makefiles and consolidates support in
+> selftests main Makefile. In the main Makefile, it does
+> minimal work to set and export install path. In this
+> series exec and powerpc tests are not included in the
+> install, this work will be done in future patches. exec
+> and powerpc are still run when make kselftest is invoked.
+
+Any particular reason you excluded the powerpc tests? Going by a quick count,
+powerpc has 32 of the 54 self tests, ie. more than half.
+
+Sorry I didn't get a chance to review v1 or v2, but is this really the best
+solution we can come up with? It seems to involve a lot of boiler plate getting
+repeated in every Makefile.
+
+I'm off this week so I can't immediately come up with something better, I'll
+try in the new year.
+
+cheers
 
 
-
-------- Original Message -------
-Sender : Julia Lawall<Julia.Lawall@lip6.fr>
-Date : Dec 26, 2014 20:05 (GMT+05:30)
-Title : [PATCH 15/27] net: sxgbe: Use setup_timer
-
-Convert a call to init_timer and accompanying intializations of
-the timer's data and function fields to a call to setup_timer.
-
-A simplified version of the semantic match that fixes this problem is as
-follows: (http://coccinelle.lip6.fr/)
-
-// 
-@@
-expression t,f,d;
-@@
-
--init_timer(&t);
-+setup_timer(&t,f,d);
--t.function = f;
--t.data = d;
-// 
-
-Signed-off-by: Julia Lawall 
-
----
-drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c |   10 ++++------
-1 file changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c b/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
-index 6984944..b6612d6 100644
---- a/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
-+++ b/drivers/net/ethernet/samsung/sxgbe/sxgbe_main.c
-@@ -133,9 +133,8 @@ bool sxgbe_eee_init(struct sxgbe_priv_data * const priv)
-return false;
-
-priv->eee_active = 1;
-- init_timer(&priv->eee_ctrl_timer);
-- priv->eee_ctrl_timer.function = sxgbe_eee_ctrl_timer;
-- priv->eee_ctrl_timer.data = (unsigned long)priv;
-+ setup_timer(&priv->eee_ctrl_timer, sxgbe_eee_ctrl_timer,
-+     (unsigned long)priv);
-priv->eee_ctrl_timer.expires = SXGBE_LPI_TIMER(eee_timer);
-add_timer(&priv->eee_ctrl_timer);
-
-@@ -1009,10 +1008,9 @@ static void sxgbe_tx_init_coalesce(struct sxgbe_priv_data *priv)
-struct sxgbe_tx_queue *p = priv->txq[queue_num];
-p->tx_coal_frames =  SXGBE_TX_FRAMES;
-p->tx_coal_timer = SXGBE_COAL_TX_TIMER;
-- init_timer(&p->txtimer);
-+ setup_timer(&p->txtimer, sxgbe_tx_timer,
-+     (unsigned long)&priv->txq[queue_num]);
-p->txtimer.expires = SXGBE_COAL_TIMER(p->tx_coal_timer);
-- p->txtimer.data = (unsigned long)&priv->txq[queue_num];
-- p->txtimer.function = sxgbe_tx_timer;
-add_timer(&p->txtimer);
-}
-}
-Looks good to me.
-Acked by: Girish K S <ks.giri@samsung.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
