@@ -1,153 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaL2VXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 16:23:11 -0500
-Received: from mail.kernel.org ([198.145.29.136]:49949 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751560AbaL2VXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 16:23:10 -0500
-Date: Mon, 29 Dec 2014 13:23:00 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-Message-ID: <20141229212300.GB29975@jaegeuk-mac02.mot.com>
-References: <001f01d01b79$954f0140$bfed03c0$@samsung.com>
- <20141222020317.GB3335@lcm>
- <000001d01db6$7d718770$78549650$@samsung.com>
- <20141222231604.GC8287@jaegeuk-mac02.mot.com>
- <002a01d01e5c$e2ba0250$a82e06f0$@samsung.com>
- <20141223073609.GA9946@jaegeuk-mac02.hsd1.ca.comcast.net>
- <006e01d01f4f$ef9fa940$cedefbc0$@samsung.com>
- <20141225083523.GA18401@jaegeuk-mac02.hsd1.ca.comcast.net>
- <003301d02337$e793a210$b6bae630$@samsung.com>
+	id S1752472AbaL2V1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 16:27:36 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59994 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752438AbaL2V1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 16:27:35 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Carlos R. Mafra" <crmafra2@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Bisected regression from 3.17 still present in 3.19-rc1
+Date: Mon, 29 Dec 2014 22:49:37 +0100
+Message-ID: <2053111.OpHlk1cZNM@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141228185409.GA2015@linux-g29b.site>
+References: <20141228185409.GA2015@linux-g29b.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <003301d02337$e793a210$b6bae630$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
-
-On Mon, Dec 29, 2014 at 03:19:18PM +0800, Chao Yu wrote:
-
-[snip]
-
-Nice draft. :)
-
+On Sunday, December 28, 2014 06:54:09 PM Carlos R. Mafra wrote:
 > 
-> Please see the draft below.
+> The laptop is a 2-year-old macbook Pro with retina display.
 > 
-> 1) Extent management:
-> If we use global management that managing all extents which are from different
-> inodes in sbi, we will face with serious lock contention when we access these
-> extents belong to different inodes concurrently, the loss may outweights the
-> gain.
-
-Agreed.
-
-> So we choose a local management for extent which means all extents are
-> managed by inode itself to avoid above lock contention. Addtionlly, we manage
-> all extents globally by linking all inode into a global lru list for extent
-> cache shrinker.
-> Approach:
-> 	a) build extent tree/rwlock/lru list/extent count in each inode.
-> 		*extent tree: link all extent in rb-tree;
-> 		*rwlock: protect fields when accessing extent cache concurrently;
-> 		*lru list: sort all extents in accessing time order;
-> 		*extent count: record total count of extents in cache.
-> 	b) use lru shrink list in sbi to manage all inode which cached extents.
-> 		*inode will be added or repostioned in this global list whenever
-> 		extent is being access in this inode.
-> 		*use spinlock to protect this shrink list.
-
-1. How about adding a data structure with inode number instead of referring
-inode pointer?
-
-2. How about managing extent entries globally and setting an upper bound to
-the number of extent entries instead of limiting them per each inode?
-(The rb-tree will handle many extents per inode.)
-
-3. It needs to set a minimum length for the candidate of extent cache.
- (e.g., 64)
-
-So, for example,
-struct ino_entry_for_extents {
-	inode number;
-	rb_tree for extent_entry objects;
-	rwlock;
-};
-
-struct extent_entry {
-	blkaddr, len;
-	list_head *;
-};
-
-Something like this.
-
-[A, B, C, ... are extent entry]
-
-The sbi has
-1. an extent_list: (LRU) A -> B -> C -> D -> E -> F -> G (MRU)
-2. radix_tree:  ino_entry_for_extents (#10) has D, B in rb-tree
-              ` ino_entry_for_extents (#11) has A, C in rb-tree
-              ` ino_entry_for_extents (#12) has F    in rb-tree
-              ` ino_entry_for_extents (#13) has G, E in rb-tree
-
-In f2fs_update_extent_cache and __get_data_block for #10,
-  ino_entry_for_extents (#10) was founded and updated D or B.
-  Then, updated entries are moved to MRU.
-
-In f2fs_evict_inode for #11, A and C are moved to LRU.
-But, if this inode is unlinked, all the A, C, and ino_entry_for_extens (#11)
-should be released.
-
-In f2fs_balance_fs_bg, some LRU extents are released according to the amount
-of consumed memory. Then, it frees any ino_entry_for_extents having no extent.
-
-IMO, we don't need to consider readahead for this, since get_data_block will
-be called by VFS readahead.
-
-Furthermore, we need to think about whether LRU is really best or not.
-IMO, the extent cache aims to improve second access speed, rather than initial
-cold misses. So, maybe MRU or another algorithms would be better.
-
-Thanks,
-
+> I use a dockapp called wmlaptop2 (http://repo.or.cz/w/wmlaptop2.git)
+> which, among other things, displays battery information (% of charge
+> remaining etc).
 > 
-> 2) Limitation:
-> In one inode, as we split or add extent in extent cache when read/write, extent
-> number will enlarge, so memory and CPU overhead will increase.
-> In order to control the overhead of memory and CPU, we try to set a upper bound
-> number to limit total extent number in each inode, This number is global
-> configuration which is visable to all inode. This number will be exported to
-> sysfs for configuring according to requirement of user. By default, designed
-> number is 8.
+> With the kernel v3.17 the battery information stopped working and it
+> still does not work in the latest v3.19-rc1.
 > 
-> 3) Shrinker:
-> There are two shrink paths:
-> 	a) one is triggered when extent count has exceed the upper bound of
-> 	inode's extent cache. We will try to release extent(s) from head of
-> 	inode's inner extent lru list until extent count is equal to upper bound.
-> 	This operation could be in f2fs_update_extent_cache().
-> 	b) the other one is triggered when memory util exceed threshold, we try
-> 	get inode from head of global lru list(s), and release extent(s) with
-> 	fixed number (by default: 64 extents) in inode one by one.
-> 	This operation could be in f2fs_balance_fs_bg().
+> Looking at what wmlaptop2 does I noticed that one entry inside
+> /sys/class/power_supply is not present in a bad kernel.
 > 
-> 4) Revalidation:
-> In ->evict(), extent cache will be released, in order to reuse extent cache
-> of inode when reopen for high hit ratio, a proper way is to add cached extent
-> tree into a hash table (could be radix tree), revalidate extent tree and recover
-> it to inode when reopen.
-> Besides, a global lru list is needed here for shrinker.
+> In a good kernel:
 > 
-> 5) Readahead:
-> Expand extent cache by readaheading when we call get_dnode_of_data in non-emergency
-> path. Note, ra can affect lock contention for both ->rwlock in extent cache and
-> ->lock of global shrink list.
+> [mafra@linux-g29b:~]$ ls /sys/class/power_supply/
+> ADP1@  BAT0@
 > 
+> but in v3.17 onwards there's no BAT0@ entry:
+> 
+> [mafra@linux-g29b:~]$ ls /sys/class/power_supply/
+> ADP1@
+> 
+> I bisected the problem to this commit:
+
+Does it help if you revert this commit from 3.19-rc1 (or -rc2)?
+
+> commit 7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334
+> Author: Matthew Garrett <matthew.garrett@nebula.com>
+> Date:   Sat Sep 20 13:19:47 2014 +0200
+> 
+>     ACPI: Support _OSI("Darwin") correctly
+>     
+> 
+> Is there anything else I can do to help fixing this?
+> 
+> PS: the bisect log:
+> 
+> git bisect start
+> # bad: [f114040e3ea6e07372334ade75d1ee0775c355e1] Linux 3.18-rc1
+> git bisect bad f114040e3ea6e07372334ade75d1ee0775c355e1
+> # good: [bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9] Linux 3.17
+> git bisect good bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9
+> # good: [35a9ad8af0bb0fa3525e6d0d20e32551d226f38e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+> git bisect good 35a9ad8af0bb0fa3525e6d0d20e32551d226f38e
+> # bad: [d6dd50e07c5bec00db2005969b1a01f8ca3d25ef] Merge branch 'core-rcu-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+> git bisect bad d6dd50e07c5bec00db2005969b1a01f8ca3d25ef
+> # bad: [bf65dea87e87c53ba4f97c6432761498bc977efd] Merge tag 'edac/v3.18-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac
+> git bisect bad bf65dea87e87c53ba4f97c6432761498bc977efd
+> # bad: [b211e9d7c861bdb37b86d6384da9edfb80949ceb] Merge branch 'for-3.18' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup
+> git bisect bad b211e9d7c861bdb37b86d6384da9edfb80949ceb
+> # good: [80213c03c4151d900cf293ef0fc51f8d88495e14] Merge tag 'pci-v3.18-changes' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci
+> git bisect good 80213c03c4151d900cf293ef0fc51f8d88495e14
+> # good: [7f8998c7aef3ac9c5f3f2943e083dfa6302e90d0] nosave: consolidate __nosave_{begin,end} in <asm/sections.h>
+> git bisect good 7f8998c7aef3ac9c5f3f2943e083dfa6302e90d0
+> # bad: [49a09c9ab012017c4673b86dbb28c616cf8f2381] Merge branch 'pm-domains'
+> git bisect bad 49a09c9ab012017c4673b86dbb28c616cf8f2381
+> # bad: [88b42a4883a7783972c8fc607e60bd3f027e24de] Merge branch 'pm-genirq'
+> git bisect bad 88b42a4883a7783972c8fc607e60bd3f027e24de
+> # bad: [a13f453140d542f9d5a0ee15601531c72e5401d7] Merge branch 'acpi-lpss'
+> git bisect bad a13f453140d542f9d5a0ee15601531c72e5401d7
+> # bad: [939558f2a4b7851c11ce8d08387730914a1e1f5f] Merge branch 'acpi-apple'
+> git bisect bad 939558f2a4b7851c11ce8d08387730914a1e1f5f
+> # good: [5a0b8deeeb19906b24a48d0078aa6b64dc0b4dab] ACPICA: Clear all non-wakeup GPEs in acpi_hw_enable_wakeup_gpe_block()
+> git bisect good 5a0b8deeeb19906b24a48d0078aa6b64dc0b4dab
+> # bad: [7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334] ACPI: Support _OSI("Darwin") correctly
+> git bisect bad 7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334
+> # good: [9faf6136ff4647452580b019f4b16f8c5082e589] ACPI / SBS: Disable smart battery manager on Apple
+> git bisect good 9faf6136ff4647452580b019f4b16f8c5082e589
+> # first bad commit: [7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334] ACPI: Support _OSI("Darwin") correctly
+> [mafra@linux-g29b:linux-2.6]$
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
