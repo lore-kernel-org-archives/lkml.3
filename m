@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaL2DiR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 22:38:17 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:36496 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaL2DiQ (ORCPT
+	id S1751780AbaL2ELm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 23:11:42 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38298 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295AbaL2ELl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 22:38:16 -0500
-Date: Sun, 28 Dec 2014 19:38:07 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Joe Perches <joe@perches.com>
-cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Kuleshov <kuleshovmail@gmail.com>,
-        Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: overlayfs: Fix coding style issues, missing a blank
- line after declarations
-In-Reply-To: <1419822060.18886.1.camel@perches.com>
-Message-ID: <alpine.LSU.2.11.1412281912360.1328@eggly.anvils>
-References: <1419746213-5405-1-git-send-email-kuleshovmail@gmail.com> <20141229023939.GL22149@ZenIV.linux.org.uk> <20141229024951.GA9934@ZenIV.linux.org.uk> <1419822060.18886.1.camel@perches.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sun, 28 Dec 2014 23:11:41 -0500
+Message-ID: <54A0D450.6060909@huawei.com>
+Date: Mon, 29 Dec 2014 12:10:56 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>, <lizefan@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v17 11/11] ARM: optprobes: execute instruction during
+ restoring if possible.
+References: <1419665637-12744-1-git-send-email-wangnan0@huawei.com> <1419665760-13336-1-git-send-email-wangnan0@huawei.com> <54A07FBE.3010206@hitachi.com>
+In-Reply-To: <54A07FBE.3010206@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Dec 2014, Joe Perches wrote:
-> On Mon, 2014-12-29 at 02:49 +0000, Al Viro wrote:
-> > On Mon, Dec 29, 2014 at 02:39:39AM +0000, Al Viro wrote:
-> > > On Sun, Dec 28, 2014 at 11:56:53AM +0600, Alexander Kuleshov wrote:
-> > > > Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
-> > > > ---
-> > > 
-> > > For the record: anything of that sort against fs/*.c will be flushed down
-> > > the toilet where such valuable contributions belong.  Don't even bother.
-> > 
-> > Joe, could you please explain what has driven you to include that into
-> > scripts/checkpatch.pl and open the countless sphincters?  Aren't we
-> > getting enough pointless patches as it is?
+On 2014/12/29 6:10, Masami Hiramatsu wrote:
+> (2014/12/27 16:36), Wang Nan wrote:
+>> This patch removes software emulation or simulation for most of probed
+>> instructions. If the instruction doesn't use PC relative addressing,
+>> it will be translated into following instructions in the restore code
+>> in code template:
+>>
+>>  ldmia {r0 - r14}  // restore all instruction except PC
+>>  <instruction>     // direct execute the probed instruction
+>>  b next_insn       // branch to next instruction.
+>>
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>> ---
+>>  arch/arm/include/asm/kprobes.h    |  3 +++
+>>  arch/arm/include/asm/probes.h     |  1 +
+>>  arch/arm/probes/kprobes/opt-arm.c | 47 +++++++++++++++++++++++++++++++++++++--
+>>  3 files changed, 49 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
+>> index 50ff3bc..3ea9be5 100644
+>> --- a/arch/arm/include/asm/kprobes.h
+>> +++ b/arch/arm/include/asm/kprobes.h
+>> @@ -57,6 +57,9 @@ extern __visible kprobe_opcode_t optprobe_template_call;
+>>  extern __visible kprobe_opcode_t optprobe_template_end;
+>>  extern __visible kprobe_opcode_t optprobe_template_sub_sp;
+>>  extern __visible kprobe_opcode_t optprobe_template_add_sp;
+>> +extern __visible kprobe_opcode_t optprobe_template_restore_begin;
+>> +extern __visible kprobe_opcode_t optprobe_template_restore_orig_insn;
+>> +extern __visible kprobe_opcode_t optprobe_template_restore_end;
+>>  
+>>  #define MAX_OPTIMIZED_LENGTH	4
+>>  #define MAX_OPTINSN_SIZE				\
+>> diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+>> index ee8725c..8ebbe83 100644
+>> --- a/arch/arm/include/asm/probes.h
+>> +++ b/arch/arm/include/asm/probes.h
+>> @@ -50,6 +50,7 @@ struct arch_probes_insn {
+>>  #define set_register_nouse(m, n)	__clear_register_flag(m, n, REG_NO_USE)
+>>  #define set_register_use(m, n)	__set_register_flag(m, n, REG_USE)
+>>  	int register_usage_mask;
+>> +	bool kprobe_direct_exec;
+>>  };
+>>  
+>>  #endif /* __ASSEMBLY__ */
+>> diff --git a/arch/arm/probes/kprobes/opt-arm.c b/arch/arm/probes/kprobes/opt-arm.c
+>> index 6a60df3..f3bd1cc 100644
+>> --- a/arch/arm/probes/kprobes/opt-arm.c
+>> +++ b/arch/arm/probes/kprobes/opt-arm.c
+>> @@ -32,6 +32,13 @@
+>>  #include "core.h"
+>>  
+>>  /*
+>> + * See register_usage_mask. If the probed instruction doesn't use PC,
+>> + * we can copy it into template and have it executed directly without
+>> + * simulation or emulation.
+>> + */
+>> +#define can_kprobe_direct_exec(m)	(!((m) & 0xc0000000UL))
 > 
-> I don't care for that style actually.
-> It was Andrew Morton that wanted it used globally.
+> I think you'd better define a macro for this bitmask.
 > 
-> I wanted it to be a --strict test and only for
-> net/ and drivers/net/ where David Miller prefers
-> that style.
 > 
-> https://lkml.org/lkml/2014/3/6/550
+>> +
+>> +/*
+>>   * NOTE: the first sub and add instruction will be modified according
+>>   * to the stack cost of the instruction.
+>>   */
+>> @@ -66,7 +73,15 @@ asm (
+>>  			"	orrne	r2, #1\n"
+>>  			"	strne	r2, [sp, #60] @ set bit0 of PC for thumb\n"
+>>  			"	msr	cpsr_cxsf, r1\n"
+>> +			".global optprobe_template_restore_begin\n"
+>> +			"optprobe_template_restore_begin:\n"
+>>  			"	ldmia	sp, {r0 - r15}\n"
+>> +			".global optprobe_template_restore_orig_insn\n"
+>> +			"optprobe_template_restore_orig_insn:\n"
+>> +			"	nop\n"
+>> +			".global optprobe_template_restore_end\n"
+>> +			"optprobe_template_restore_end:\n"
+>> +			"	ldmia	sp, {r13 - r15}\n"
+> 
+> Why this can't be a nop too?
+> 
+> Thank you,
+> 
 
-Although I am guilty of inflicting it on others, just so their patches
-keep checkpatch.pl quiet, I have been finding this rule very counter-
-productive, and often at odds with long-established good practice.
+Good suggestion. I'll send a new version of patch 10 and 11.
 
-It makes sense at the head of a substantial function declaring a
-collection of variables; but Alexander's patch gives many fine examples
-of where it is stupid, and thank you to him for showing it up so well.
+Thank you.
 
-In a wrapper function which finds it convenient to declare and assign
-a variable before doing a line or two and returning, a common pattern,
-a blank line is just distracting hot air to pacify checkpatch.pl.
 
-In a block which needs one extra local variable to do its work, I find
-the rule pushes me to move that declaration to the head of the function
-instead of keeping it local to the block, just to avoid the unnecessary
-blank line.
 
-Please rescind or refine the rule - thanks.
-
-Hugh
