@@ -1,196 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaL2Ic5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 03:32:57 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:39330 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994AbaL2Icy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 03:32:54 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Alex Hung <alex.hung@canonical.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 0/3] Dell Airplane Mode Switch driver
-Date: Mon, 29 Dec 2014 09:32:49 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13.0-44-generic; KDE/4.14.2; x86_64; ; )
-Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Darren Hart <dvhart@infradead.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
+	id S1751993AbaL2Ido (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 03:33:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:54291 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994AbaL2Idl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 03:33:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,659,1413270000"; 
+   d="scan'208";a="654357181"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-spi@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Martin Oldfield <m@mjoldfield.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-kernel@vger.kernel.org
-References: <1416755361-17357-1-git-send-email-pali.rohar@gmail.com> <4278344.duCujNBB8t@xps13> <CAJ=jqubG0ETuF_86M7=zbD4dDnaDcq-=4tGBL-PkoquNpWpwoA@mail.gmail.com>
-In-Reply-To: <CAJ=jqubG0ETuF_86M7=zbD4dDnaDcq-=4tGBL-PkoquNpWpwoA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1902698.r17nDVCvHm";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412290932.49815@pali>
+Subject: [PATCH RESEND] spi/pxa2xx: Clear cur_chip pointer before starting next message
+Date: Mon, 29 Dec 2014 10:33:36 +0200
+Message-Id: <1419842016-208334-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1902698.r17nDVCvHm
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Once the current message is finished, the driver notifies SPI core about
+this by calling spi_finalize_current_message(). This function queues next
+message to be transferred. If there are more messages in the queue, it is
+possible that the driver is asked to transfer the next message at this
+point.
 
-On Monday 29 December 2014 08:27:21 Alex Hung wrote:
-> On Fri, Dec 26, 2014 at 5:55 AM, Gabriele Mazzotta
->=20
-> <gabriele.mzt@gmail.com> wrote:
-> > On Thursday 25 December 2014 21:11:05 Pali Roh=C3=A1r wrote:
-> >> I will try to recap all information which we have...
-> >>=20
-> >> *) We should not send wireless key press to userspace when
-> >> BIOS already handles wireless state (and enable/disable
-> >> wifi):
-> >> http://www.spinics.net/lists/platform-driver-x86/msg05922.
-> >> html
-> >>=20
-> >> *) some tested dell machines does not implement GRBT method
-> >> (or report constant value) which could return state of
-> >> wireless (enabled/disabled) -- e.g. Inspiron 7447
-> >>=20
-> >> *) dell-wireless driver is doing nothing on devices which
-> >> have wireless slider switch (except calling CRBT/ARBT
-> >> methods)
-> >>=20
-> >> *) all tested machines emit key with keycode 240 (scancode
-> >> is probably 136 =3D 0x88) to userspace via i8042 bus/AT
-> >> keyboard when wireless button/slider is pressed/switched
-> >>=20
-> >> *) both drivers dell-wireless and dell-rbtn do not
-> >> implement setting soft rfkill state (or change wifi state)
-> >>=20
-> >> So in my opinion: if we decide to use driver for acpi
-> >> DELLABCE device we should use dell-rbnt for devices with
-> >> hw slider switch and dell-wireless for devices with fn
-> >> button. I think it does not make sense to use
-> >> dell-wireless for devices with hw slider because it do
-> >> nothing and dell-rbtn for devices with fn key button as
-> >> GRBT does not working properly.
-> >=20
-> > Here the problem. We are determining which laptop has an
-> > hardware slider and which doesn't calling CRBT. If the
-> > returned value is 2 or 3, then the laptop has an hardware
-> > slider. However, it cannot be assumed the opposite if the
-> > returned value is 0 or 1.
->=20
-> The spec defines as below:
-> 1. When CRBT returns 0 or 1, a system has a toggle, ex.
-> hotkey, radio button. 2. When CRBT returns 2 or 3, a system
-> has a slider switch
->=20
-> The only difference of 0 and 1 (or 2 and 3) is the presence of
-> a wireless LED. However I believe this is defined according
-> to Microsoft's hardware requirement.
->=20
-> > See the acpidumps Alex uploaded. The Inspiron 3543 returns 0
-> > when CRBT is called and so does the Inspiron 7447. However,
-> > the former doesn't have a working ARBT method and, if I'm
-> > not wrong, its BIOS doesn't handle radio devices. The BIOS
-> > of the latter can handle radio and has a working ARBT
-> > method to make it stop from doing that.
-> >=20
-> > Since we determine when the BIOS might not be able to
-> > control radio devices through CRBT and we can't say it for
-> > sure (in the example above, CRBT returned the same value),
-> > we make sure that the BIOS doesn't handle radio devices by
-> > calling ARBT. We can ensure this (e.g. Inspirong 7447), but
-> > we can't ensure the opposite (e.g. Inspiron 3453).
-> >=20
-> > If there was a way to determine which laptop really needs
-> > dell-wireless, calling ARBT wouldn't have been necessary,
-> > but that's not the case. Users can always blacklist the
-> > module if they know their laptop can work as expected
-> > without it, but we have to ensure that everything always
-> > works.
-> >=20
-> > This is what I understood by looking at the acpidumps, so I
-> > could be wrong.
->=20
-> I think ARBT acts as a switch for changing BIOS behaviours:
->=20
-> When ARBT is not called or is called with ARBT(0), BIOS's
-> default behaviour is to change wireless states by hardware
-> pin. When ARBT(1) is called by driver or userspace
-> application (ex. required in Windows 8), wireless state is
-> controlled by OS. Similar functions are defined in ASUS ATK
-> and HP WMI. Such implementation will provide maximum
-> capability for different OS with / without dedicate drivers.
->=20
-> The reality is never such wonderful; especially many systems
-> are only tested with Win8 + driver (some may tested with Win7
-> - and acpi_osi=3D!Windows 2012 / 2013 will probably work). In
-> this case, we probably need to be more compatible with
-> Windows 8 / 8.1.
->=20
-> >> And second note: Do we need some driver for acpi DELLABCE
-> >> device? Which problem is trying acpi DELLABCE device to
-> >> solve? Is not everything working fine without driver for
-> >> DELLABCE device?
-> >=20
-> > As I wrote above, DELLABCE is for those systems whose BIOS
-> > doesn't handle radio devices and expects the OS do
-> > everything when Fn keys are pressed.
-> > (Well, it actually seems that something is done by the
-> > keyboard controller, but this is not certain yet)
-> >=20
-> >> My dell-rbtn approach is trying to export rfkill interface
-> >> from DELLABCE device and eliminate using i8042 hook
-> >> function in smbios dell-laptop driver.
-> >>=20
-> >> Alex, can you check if scancode of wireless change
-> >> generated by BIOS is on all machines same: 136 (0x88)? And
-> >> is send by keyboard controller (not acpi/wmi)?
-> >=20
-> > I can say that on my XPS13 the scancode is 0x88 and it is
-> > sent by the keyboard controller.
-> >=20
-> > Gabriele
->=20
-> Just before I check the scancode, I looked up the scancode
-> table
-> (http://download.microsoft.com/download/1/6/1/161ba512-40e2-4
-> cc9-843a-923143f3456c/translate.pdf) and found 0x88 is already
-> used - it is the "break" ("release" in Linux term) code for
-> "7" (the one above Y/U, not number pad). It can be verified
-> by "showkey -s": 0x08 for press and 0x88 for release. It is
-> not the best idea to map this scancode to anything else.
->=20
-> I also sent emails for this scancode last week but it is a
-> holiday season but I don't expect to receive any feedback
-> this year...
+When spi_finalize_current_message() returns the driver clears the
+drv_data->cur_chip pointer to NULL. The problem is that if the driver
+already started the next message clearing drv_data->cur_chip will cause
+NULL pointer dereference which crashes the kernel like:
 
-Just to note, that there is only press key event with scancode=20
-136 (0x88). Release event is not sent to AT keyboard which cause=20
-problems (if you map this scancode to some well known keycode).
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+ IP: [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
+ PGD 78bb8067 PUD 37712067 PMD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in:
+ CPU: 1 PID: 11 Comm: ksoftirqd/1 Tainted: G           O   3.18.0-rc4-mjo #5
+ Hardware name: Intel Corp. VALLEYVIEW B3 PLATFORM/NOTEBOOK, BIOS MNW2CRB1.X64.0071.R30.1408131301 08/13/2014
+ task: ffff880077f9f290 ti: ffff88007a820000 task.ti: ffff88007a820000
+ RIP: 0010:[<ffffffffa0022bc8>]  [<ffffffffa0022bc8>] cs_deassert+0x18/0x70 [spi_pxa2xx_platform]
+ RSP: 0018:ffff88007a823d08  EFLAGS: 00010202
+ RAX: 0000000000000008 RBX: ffff8800379a4430 RCX: 0000000000000026
+ RDX: 0000000000000000 RSI: 0000000000000246 RDI: ffff8800379a4430
+ RBP: ffff88007a823d18 R08: 00000000ffffffff R09: 000000007a9bc65a
+ R10: 000000000000028f R11: 0000000000000005 R12: ffff880070123e98
+ R13: ffff880070123de8 R14: 0000000000000100 R15: ffffc90004888000
+ FS:  0000000000000000(0000) GS:ffff880079a80000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000048 CR3: 000000007029b000 CR4: 00000000001007e0
+ Stack:
+  ffff88007a823d58 ffff8800379a4430 ffff88007a823d48 ffffffffa0022c89
+  0000000000000000 ffff8800379a4430 0000000000000000 0000000000000006
+  ffff88007a823da8 ffffffffa0023be0 ffff88007a823dd8 ffffffff81076204
+ Call Trace:
+  [<ffffffffa0022c89>] giveback+0x69/0xa0 [spi_pxa2xx_platform]
+  [<ffffffffa0023be0>] pump_transfers+0x710/0x740 [spi_pxa2xx_platform]
+  [<ffffffff81076204>] ? pick_next_task_fair+0x744/0x830
+  [<ffffffff81049679>] tasklet_action+0xa9/0xe0
+  [<ffffffff81049a0e>] __do_softirq+0xee/0x280
+  [<ffffffff81049bc0>] run_ksoftirqd+0x20/0x40
+  [<ffffffff810646df>] smpboot_thread_fn+0xff/0x1b0
+  [<ffffffff810645e0>] ? SyS_setgroups+0x150/0x150
+  [<ffffffff81060f9d>] kthread+0xcd/0xf0
+  [<ffffffff81060ed0>] ? kthread_create_on_node+0x180/0x180
+  [<ffffffff8187a82c>] ret_from_fork+0x7c/0xb0
 
-Alex, but I wrote you about this problem (in private email which=20
-you forwarded) together with other bios/fw problems for latitude=20
-machines...
+Fix this by clearing drv_data->cur_chip before we call spi_finalize_current_message().
 
-Anyway I sent email to Matthew Garrett before Christmas and linux=20
-kernel could generate proper release event by fixing commit=20
-61579ba83934d397a4fa2bb7372de9ae112587d5 (adding also 9 and 10 to=20
-chassis_type). I believe Matthew Garrett will kernel provide=20
-workaround until Dell fix their BIOSes...
+Reported-by: Martin Oldfield <m@mjoldfield.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+ drivers/spi/spi-pxa2xx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index 05c623cfb078..23822e7df6c1 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -546,8 +546,8 @@ static void giveback(struct driver_data *drv_data)
+ 			cs_deassert(drv_data);
+ 	}
+ 
+-	spi_finalize_current_message(drv_data->master);
+ 	drv_data->cur_chip = NULL;
++	spi_finalize_current_message(drv_data->master);
+ }
+ 
+ static void reset_sccr1(struct driver_data *drv_data)
+-- 
+2.1.3
 
---nextPart1902698.r17nDVCvHm
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlShEbEACgkQi/DJPQPkQ1J3ZACgidNMGV1FH8PL7VRpC1QEEFZA
-bd4AoJz4mkATSSV/swYpo8TbE8w0NWIF
-=gGTz
------END PGP SIGNATURE-----
-
---nextPart1902698.r17nDVCvHm--
