@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaL2MEC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 07:04:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36699 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435AbaL2MEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 07:04:01 -0500
-Date: Mon, 29 Dec 2014 13:03:58 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Aniroop Mathur <aniroop.mathur@gmail.com>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        a.mathur@samsung.com, Jason Gerecke <killertofu@gmail.com>,
-        Ping Cheng <pingc@wacom.com>
-Subject: Re: [PATCH] hid: Initialize battery_no to -1 & correct its format
- string
-In-Reply-To: <1419782872-2991-1-git-send-email-aniroop.mathur@gmail.com>
-Message-ID: <alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
-References: <1419782872-2991-1-git-send-email-aniroop.mathur@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752056AbaL2MLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 07:11:05 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:52774 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaL2MLB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 07:11:01 -0500
+Date: Mon, 29 Dec 2014 13:10:57 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH TRIVIAL] swap: remove unused
+ mem_cgroup_uncharge_swapcache declaration
+Message-ID: <20141229121057.GB32618@dhcp22.suse.cz>
+References: <1419854337-15161-1-git-send-email-vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419854337-15161-1-git-send-email-vdavydov@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Dec 2014, Aniroop Mathur wrote:
-
-> From: Aniroop Mathur <a.mathur@samsung.com>
+On Mon 29-12-14 14:58:57, Vladimir Davydov wrote:
+> The body of this function was removed by commit 0a31bc97c80c ("mm:
+> memcontrol: rewrite uncharge API").
 > 
-> This patch initializes battery_no to -1 to avoid extra subtraction
-> operation performed everytime wacom battery is initialized 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 
-This is so femto-optimization, that I don't really care deeply. Adding 
-Jason and Ping to CC. If they want this, I'll apply the patch.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-> and correct format string of unsigned long from %ld to %lu.
-> 
-> Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
 > ---
->  drivers/hid/wacom_sys.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>  include/linux/swap.h |   15 ---------------
+>  mm/shmem.c           |    2 +-
+>  2 files changed, 1 insertion(+), 16 deletions(-)
 > 
-> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
-> index 129fd33..4b5ff84 100644
-> --- a/drivers/hid/wacom_sys.c
-> +++ b/drivers/hid/wacom_sys.c
-> @@ -919,17 +919,17 @@ static int wacom_ac_get_property(struct power_supply *psy,
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 34e8b60ab973..7067eca501e2 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -437,16 +437,6 @@ extern int reuse_swap_page(struct page *);
+>  extern int try_to_free_swap(struct page *);
+>  struct backing_dev_info;
 >  
->  static int wacom_initialize_battery(struct wacom *wacom)
->  {
-> -	static atomic_t battery_no = ATOMIC_INIT(0);
-> +	static atomic_t battery_no = ATOMIC_INIT(-1);
->  	int error;
->  	unsigned long n;
+> -#ifdef CONFIG_MEMCG
+> -extern void
+> -mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout);
+> -#else
+> -static inline void
+> -mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+> -{
+> -}
+> -#endif
+> -
+>  #else /* CONFIG_SWAP */
 >  
->  	if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
-> -		n = atomic_inc_return(&battery_no) - 1;
-> +		n = atomic_inc_return(&battery_no);
+>  #define swap_address_space(entry)		(NULL)
+> @@ -547,11 +537,6 @@ static inline swp_entry_t get_swap_page(void)
+>  	return entry;
+>  }
 >  
->  		wacom->battery.properties = wacom_battery_props;
->  		wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
->  		wacom->battery.get_property = wacom_battery_get_property;
-> -		sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%ld", n);
-> +		sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%lu", n);
->  		wacom->battery.name = wacom->wacom_wac.bat_name;
->  		wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
->  		wacom->battery.use_for_apm = 0;
-> @@ -937,7 +937,7 @@ static int wacom_initialize_battery(struct wacom *wacom)
->  		wacom->ac.properties = wacom_ac_props;
->  		wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
->  		wacom->ac.get_property = wacom_ac_get_property;
-> -		sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
-> +		sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%lu", n);
->  		wacom->ac.name = wacom->wacom_wac.ac_name;
->  		wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
->  		wacom->ac.use_for_apm = 0;
+> -static inline void
+> -mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent)
+> -{
+> -}
+> -
+>  #endif /* CONFIG_SWAP */
+>  #endif /* __KERNEL__*/
+>  #endif /* _LINUX_SWAP_H */
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index 185836ba53ef..0c92e925c4bf 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -1131,7 +1131,7 @@ repeat:
+>  			 * truncated or holepunched since swap was confirmed.
+>  			 * shmem_undo_range() will have done some of the
+>  			 * unaccounting, now delete_from_swap_cache() will do
+> -			 * the rest (including mem_cgroup_uncharge_swapcache).
+> +			 * the rest.
+>  			 * Reset swap.val? No, leave it so "failed" goes back to
+>  			 * "repeat": reading a hole and writing should succeed.
+>  			 */
 > -- 
-> 1.9.1
+> 1.7.10.4
 > 
 
 -- 
-Jiri Kosina
+Michal Hocko
 SUSE Labs
