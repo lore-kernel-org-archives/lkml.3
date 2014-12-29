@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaL1TA2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 14:00:28 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:55789 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751800AbaL1TAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 14:00:25 -0500
-Date: Sun, 28 Dec 2014 14:00:20 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Subject: Re: [RFC PATCH 1/2] memcg: account swap instead of memory+swap
-Message-ID: <20141228190020.GA9385@phnom.home.cmpxchg.org>
-References: <dd99dc0de2ce6fd9aa18b25851819b71a58dca7d.1419782051.git.vdavydov@parallels.com>
+	id S1751885AbaL1TMK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 14:12:10 -0500
+Received: from smtp73.iad3a.emailsrvr.com ([173.203.187.73]:49366 "EHLO
+	smtp73.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751767AbaL1TMH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Dec 2014 14:12:07 -0500
+X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Dec 2014 14:12:07 EST
+X-Sender-Id: support@proofguru.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <dd99dc0de2ce6fd9aa18b25851819b71a58dca7d.1419782051.git.vdavydov@parallels.com>
+From: "Big Time Joy" <bigtimejoy@emailn.de>
+Reply-To: bigtimejoy@emailn.de
+To: linux-kernel@vger.kernel.org
+Subject: Lucrative Fun!
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Smart_Send_3_1_6
+Date: Sun, 28 Dec 2014 20:03:00 -0800
+Message-ID: <2264135130064312254720@WIN-TM1KAIADIOV>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 07:19:12PM +0300, Vladimir Davydov wrote:
-> The design of swap limits for memory cgroups looks broken. Instead of a
-> separate swap limit, there is the memory.memsw.limit_in_bytes knob,
-> which limits total memory+swap consumption. As a result, under global
-> memory pressure, a cgroup can eat up to memsw.limit of *swap*, so it's
-> just impossible to set the swap limit to be less than the memory limit
-> with such a design. In particular, this means that we have to leave swap
-> unlimited if we want to partition system memory dynamically using soft
-> limits.
-> 
-> This patch therefore attempts to move from memory+swap to pure swap
-> accounting so that we will be able to separate memory and swap resources
-> in the sane cgroup hierarchy, which is the business of the following
-> patch.
-> 
-> The old interface acts on memory and swap limits as follows:
+Hi there!
 
-The implementation seems fine to me, but there is no point in cramming
-this into the old interface.  Let's just leave it alone and implement
-proper swap accounting and limiting in the default/unified hierarchy.
+Check out this great possibility!
+
+http://www.lotusasiacasino.com?cid=20W02156&mid=2228620828
+
+
+
+Copy to browser!
+
+
+
+
+
+
+
+
+No more such Info? Simply answer <NO>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+No more such info ? Simply answer <NO>
