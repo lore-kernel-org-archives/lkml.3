@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaL2Oy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 09:54:26 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:53584 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440AbaL2OyX (ORCPT
+	id S1752073AbaL2PAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 10:00:31 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:40808 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551AbaL2PA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 09:54:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <1419827096.6184.128.camel@mtksdaap41>
-References: <1418891601-53769-1-git-send-email-eddie.huang@mediatek.com>
- <1418891601-53769-2-git-send-email-eddie.huang@mediatek.com>
- <CAL_JsqKp+1ZWPK4rB4_vxrx-dtNCy7Hc3S67uQ9VHdAby8erjg@mail.gmail.com> <1419827096.6184.128.camel@mtksdaap41>
-From: Rob Herring <robherring2@gmail.com>
-Date: Mon, 29 Dec 2014 08:54:02 -0600
-Message-ID: <CAL_JsqJQPQ2Ngis9GN8pi31pd-Y3E=ioXFoRfXBvMKkasng_Mw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] tty: serial: 8250_mtk: Add earlycon
-To: Eddie Huang <eddie.huang@mediatek.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Alan Cox <alan@linux.intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, yh.chen@mediatek.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 29 Dec 2014 10:00:27 -0500
+From: Joe Howse <josephhowse@nummist.com>
+To: Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Joe Howse <josephhowse@nummist.com>
+Subject: [PATCH 1/1] gspca: Add high-speed modes for PS3 Eye camera
+Date: Mon, 29 Dec 2014 11:00:03 -0400
+Message-Id: <1419865203-3967-1-git-send-email-josephhowse@nummist.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 10:24 PM, Eddie Huang <eddie.huang@mediatek.com> wrote:
-> Hi Rob,
->
-> On Fri, 2014-12-26 at 15:24 -0600, Rob Herring wrote:
->> On Thu, Dec 18, 2014 at 2:33 AM, Eddie Huang <eddie.huang@mediatek.com> wrote:
->> > Mediatek UART has highspeed register, but 8250_early.c doesn't
->> > support this, so add earlycon in 8250_mtk.c
->>
->> I don't see any highspeed register setup here. More generically,
->> aren't you just skipping any UART setup? That may be useful on other
->> platforms with 8250s, too. With the kernel command line version, you
->> could perhaps add a "noinit" flag. The DT case is harder, and I'm not
->> sure how we should handle that. We could perhaps add a
->> "stdout-path-initialized" flag to chosen.
->>
->
-> Yes, I skipped UART setup same as msm_serial.c and amba-pl011.c
-> (although they are standalone serial driver). Just like earlyprintk, I
-> think earlycon should reuse UART setting in loader. Since some other
-> platforms with 8250 already depend on this, it's ok to add flags to
-> distinguish whether 8250 earlycon driver should init hw or not. As you
-> said, add "noinit" flag is simple, but "stdout-path-initialized" need
-> more discussion.
->
->> >
->> > Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
->> > ---
->> >  drivers/tty/serial/8250/8250_mtk.c | 33 +++++++++++++++++++++++++++++++++
->> >  1 file changed, 33 insertions(+)
->> >
->> > diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
->> > index de7aae5..65dd569 100644
->> > --- a/drivers/tty/serial/8250/8250_mtk.c
->> > +++ b/drivers/tty/serial/8250/8250_mtk.c
->> > @@ -23,6 +23,7 @@
->> >  #include <linux/pm_runtime.h>
->> >  #include <linux/serial_8250.h>
->> >  #include <linux/serial_reg.h>
->> > +#include <linux/console.h>
->> >
->> >  #include "8250.h"
->> >
->> > @@ -289,6 +290,38 @@ static struct platform_driver mtk8250_platform_driver = {
->> >  };
->> >  module_platform_driver(mtk8250_platform_driver);
->> >
->> > +#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
->> > +
->> > +static void __init mtk8250_serial_putc(struct uart_port *port, int c)
->> > +{
->> > +       while ((readl(port->membase + (UART_LSR << 2)) & BOTH_EMPTY) !=
->> > +               BOTH_EMPTY)
->> > +               ;
->> > +       writel(c, port->membase + (UART_TX << 2));
->> > +}
->> > +
->> > +static void __init early_mtk8250_write(struct console *console,
->> > +                                       const char *s, unsigned int count)
->>
->> Is there a reason early_serial8250_write can't work for you other than
->> it is currently static?
->>
->> Rob
->>
->
-> The reason is only static. I want to keep 8250_early.c untouchable, all
-> modifications in 8250_mtk.c
+Add support in the PS3 Eye driver for QVGA capture at higher
+frame rates: 187, 150, and 137 FPS. This functionality is valuable
+because the PS3 Eye is popular for computer vision projects and no
+other camera in its price range supports such high frame rates.
 
-That is not how kernel development works. You should fix 8250_early.c
-to do what you need rather than duplicating code.
+Correct a QVGA mode that was listed as 40 FPS. It is really 37 FPS
+(half of 75 FPS).
 
-Rob
+Tests confirm that the nominal frame rates are achieved.
+
+Signed-off-by: Joe Howse <josephhowse@nummist.com>
+---
+ drivers/media/usb/gspca/ov534.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/usb/gspca/ov534.c b/drivers/media/usb/gspca/ov534.c
+index 90f0d63..a9c866d 100644
+--- a/drivers/media/usb/gspca/ov534.c
++++ b/drivers/media/usb/gspca/ov534.c
+@@ -12,6 +12,8 @@
+  * PS3 Eye camera enhanced by Richard Kaswy http://kaswy.free.fr
+  * PS3 Eye camera - brightness, contrast, awb, agc, aec controls
+  *                  added by Max Thrun <bear24rw@gmail.com>
++ * PS3 Eye camera - FPS range extended by Joseph Howse
++ *                  <josephhowse@nummist.com> http://nummist.com
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -116,7 +118,7 @@ static const struct v4l2_pix_format ov767x_mode[] = {
+ 		.colorspace = V4L2_COLORSPACE_JPEG},
+ };
+ 
+-static const u8 qvga_rates[] = {125, 100, 75, 60, 50, 40, 30};
++static const u8 qvga_rates[] = {187, 150, 137, 125, 100, 75, 60, 50, 37, 30};
+ static const u8 vga_rates[] = {60, 50, 40, 30, 15};
+ 
+ static const struct framerates ov772x_framerates[] = {
+@@ -769,12 +771,16 @@ static void set_frame_rate(struct gspca_dev *gspca_dev)
+ 		{15, 0x03, 0x41, 0x04},
+ 	};
+ 	static const struct rate_s rate_1[] = {	/* 320x240 */
++/*		{205, 0x01, 0xc1, 0x02},  * 205 FPS: video is partly corrupt */
++		{187, 0x01, 0x81, 0x02}, /* 187 FPS or below: video is valid */
++		{150, 0x01, 0xc1, 0x04},
++		{137, 0x02, 0xc1, 0x02},
+ 		{125, 0x02, 0x81, 0x02},
+ 		{100, 0x02, 0xc1, 0x04},
+ 		{75, 0x03, 0xc1, 0x04},
+ 		{60, 0x04, 0xc1, 0x04},
+ 		{50, 0x02, 0x41, 0x04},
+-		{40, 0x03, 0x41, 0x04},
++		{37, 0x03, 0x41, 0x04},
+ 		{30, 0x04, 0x41, 0x04},
+ 	};
+ 
+-- 
+1.9.1
+
