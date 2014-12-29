@@ -1,110 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaL2V1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 16:27:36 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59994 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752438AbaL2V1f (ORCPT
+	id S1752499AbaL2Va4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 16:30:56 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:39395 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329AbaL2Vay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 16:27:35 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Carlos R. Mafra" <crmafra2@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Bisected regression from 3.17 still present in 3.19-rc1
-Date: Mon, 29 Dec 2014 22:49:37 +0100
-Message-ID: <2053111.OpHlk1cZNM@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141228185409.GA2015@linux-g29b.site>
-References: <20141228185409.GA2015@linux-g29b.site>
+	Mon, 29 Dec 2014 16:30:54 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Date: Mon, 29 Dec 2014 22:30:53 +0100
+X-Google-Sender-Auth: w2-ec9Hx8X0nef8F7xXp-h5ivJo
+Message-ID: <CAJZ5v0hYnuN-b3rMdc=UCUcVoUSyB39oCuSMoV08ZHAjKjwqcg@mail.gmail.com>
+Subject: [GIT PULL] Power management and ACPI material for 3.19-rc3
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 28, 2014 06:54:09 PM Carlos R. Mafra wrote:
-> 
-> The laptop is a 2-year-old macbook Pro with retina display.
-> 
-> I use a dockapp called wmlaptop2 (http://repo.or.cz/w/wmlaptop2.git)
-> which, among other things, displays battery information (% of charge
-> remaining etc).
-> 
-> With the kernel v3.17 the battery information stopped working and it
-> still does not work in the latest v3.19-rc1.
-> 
-> Looking at what wmlaptop2 does I noticed that one entry inside
-> /sys/class/power_supply is not present in a bad kernel.
-> 
-> In a good kernel:
-> 
-> [mafra@linux-g29b:~]$ ls /sys/class/power_supply/
-> ADP1@  BAT0@
-> 
-> but in v3.17 onwards there's no BAT0@ entry:
-> 
-> [mafra@linux-g29b:~]$ ls /sys/class/power_supply/
-> ADP1@
-> 
-> I bisected the problem to this commit:
+Hi Linus,
 
-Does it help if you revert this commit from 3.19-rc1 (or -rc2)?
+Please pull from
 
-> commit 7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334
-> Author: Matthew Garrett <matthew.garrett@nebula.com>
-> Date:   Sat Sep 20 13:19:47 2014 +0200
-> 
->     ACPI: Support _OSI("Darwin") correctly
->     
-> 
-> Is there anything else I can do to help fixing this?
-> 
-> PS: the bisect log:
-> 
-> git bisect start
-> # bad: [f114040e3ea6e07372334ade75d1ee0775c355e1] Linux 3.18-rc1
-> git bisect bad f114040e3ea6e07372334ade75d1ee0775c355e1
-> # good: [bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9] Linux 3.17
-> git bisect good bfe01a5ba2490f299e1d2d5508cbbbadd897bbe9
-> # good: [35a9ad8af0bb0fa3525e6d0d20e32551d226f38e] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
-> git bisect good 35a9ad8af0bb0fa3525e6d0d20e32551d226f38e
-> # bad: [d6dd50e07c5bec00db2005969b1a01f8ca3d25ef] Merge branch 'core-rcu-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-> git bisect bad d6dd50e07c5bec00db2005969b1a01f8ca3d25ef
-> # bad: [bf65dea87e87c53ba4f97c6432761498bc977efd] Merge tag 'edac/v3.18-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac
-> git bisect bad bf65dea87e87c53ba4f97c6432761498bc977efd
-> # bad: [b211e9d7c861bdb37b86d6384da9edfb80949ceb] Merge branch 'for-3.18' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup
-> git bisect bad b211e9d7c861bdb37b86d6384da9edfb80949ceb
-> # good: [80213c03c4151d900cf293ef0fc51f8d88495e14] Merge tag 'pci-v3.18-changes' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci
-> git bisect good 80213c03c4151d900cf293ef0fc51f8d88495e14
-> # good: [7f8998c7aef3ac9c5f3f2943e083dfa6302e90d0] nosave: consolidate __nosave_{begin,end} in <asm/sections.h>
-> git bisect good 7f8998c7aef3ac9c5f3f2943e083dfa6302e90d0
-> # bad: [49a09c9ab012017c4673b86dbb28c616cf8f2381] Merge branch 'pm-domains'
-> git bisect bad 49a09c9ab012017c4673b86dbb28c616cf8f2381
-> # bad: [88b42a4883a7783972c8fc607e60bd3f027e24de] Merge branch 'pm-genirq'
-> git bisect bad 88b42a4883a7783972c8fc607e60bd3f027e24de
-> # bad: [a13f453140d542f9d5a0ee15601531c72e5401d7] Merge branch 'acpi-lpss'
-> git bisect bad a13f453140d542f9d5a0ee15601531c72e5401d7
-> # bad: [939558f2a4b7851c11ce8d08387730914a1e1f5f] Merge branch 'acpi-apple'
-> git bisect bad 939558f2a4b7851c11ce8d08387730914a1e1f5f
-> # good: [5a0b8deeeb19906b24a48d0078aa6b64dc0b4dab] ACPICA: Clear all non-wakeup GPEs in acpi_hw_enable_wakeup_gpe_block()
-> git bisect good 5a0b8deeeb19906b24a48d0078aa6b64dc0b4dab
-> # bad: [7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334] ACPI: Support _OSI("Darwin") correctly
-> git bisect bad 7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334
-> # good: [9faf6136ff4647452580b019f4b16f8c5082e589] ACPI / SBS: Disable smart battery manager on Apple
-> git bisect good 9faf6136ff4647452580b019f4b16f8c5082e589
-> # first bad commit: [7bc5a2bad0b8d9d1ac9f7b8b33150e4ddf197334] ACPI: Support _OSI("Darwin") correctly
-> [mafra@linux-g29b:linux-2.6]$
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
+ pm+acpi-3.19-rc3
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+to receive power management and ACPI material for v3.19-rc3 with
+top-most commit 651c3293bf333c774f3d4c9876a6552d0ac2f5b9
+
+ Merge branch 'acpi-video'
+
+on top of commit b7392d2247cfe6771f95d256374f1a8e6a6f48d6
+
+ Linux 3.19-rc2
+
+These are fixes (operating performance points library, cpufreq-dt
+driver, cpufreq core, ACPI backlight, cpupower tool), cleanups
+(cpuidle), new processor IDs for the RAPL (Running Average Power
+Limit) power capping driver, and a modification of the generic
+power domains framework allowing modular drivers to call one of
+its helper functions.
+
+Specifics:
+
+ - Fix for a potential NULL pointer dereference in the cpufreq
+   core due to an initialization race condition (Ethan Zhao).
+
+ - Fixes for abuse of the OPP (Operating Performance Points) API
+   related to RCU and other minor issues in the OPP library and
+   the cpufreq-dt driver (Dmitry Torokhov).
+
+ - cpuidle governors cleanup making them measure idle duration in
+   a better way without using the CPUIDLE_FLAG_TIME_INVALID flag
+   which allows that flag to be dropped from the ACPI cpuidle driver
+   and from the core too (Len Brown).
+
+ - New ACPI backlight blacklist entries for Samsung machines
+   without a working native backlight interface that need to
+   use the ACPI backlight instead (Aaron Lu).
+
+ - New CPU IDs of future Intel Xeon CPUs for the Intel RAPL power
+   capping driver (Jacob Pan).
+
+ - Generic power domains framework modification to export the
+   of_genpd_get_from_provider() function to modular drivers that
+   will allow future driver modifications to be based on the mainline
+   (Amit Daniel Kachhap).
+
+ - Two fixes for the cpupower tool (Michal Privoznik, Prarit Bhargava).
+
+Thanks and Happy New Year!
+
+
+---------------
+
+Aaron Lu (1):
+      ACPI / video: Add some Samsung models to disable_native_backlight list
+
+Amit Daniel Kachhap (1):
+      PM / Domains: Export of_genpd_get_from_provider function
+
+Dmitry Torokhov (4):
+      PM / OPP: add some lockdep annotations
+      PM / OPP: fix warning in of_free_opp_table()
+      PM / OPP: take RCU lock in dev_pm_opp_get_opp_count
+      cpufreq-dt: defer probing if OPP table is not ready
+
+Ethan Zhao (1):
+      cpufreq: fix a NULL pointer dereference in __cpufreq_governor()
+
+Jacob Pan (1):
+      powercap / RAPL: add IDs for future Xeon CPUs
+
+Len Brown (3):
+      cpuidle: menu: Better idle duration measurement without using
+CPUIDLE_FLAG_TIME_INVALID
+      cpuidle: ladder: Better idle duration measurement without using
+CPUIDLE_FLAG_TIME_INVALID
+      cpuidle / ACPI: remove unused CPUIDLE_FLAG_TIME_INVALID
+
+Michal Privoznik (1):
+      tools / cpupower: Correctly detect if running as root
+
+Prarit Bhargava (1):
+      tools / cpupower: Fix no idle state information return value
+
+---------------
+
+ drivers/acpi/processor_idle.c              |  2 --
+ drivers/acpi/video.c                       | 17 +++++++++++++
+ drivers/base/power/domain.c                |  3 ++-
+ drivers/base/power/opp.c                   | 39 ++++++++++++++++++++++++------
+ drivers/cpufreq/cpufreq-dt.c               | 11 +++++++++
+ drivers/cpufreq/cpufreq.c                  |  6 +++++
+ drivers/cpuidle/governors/ladder.c         |  7 +-----
+ drivers/cpuidle/governors/menu.c           | 25 ++++++++-----------
+ drivers/powercap/intel_rapl.c              |  1 +
+ include/linux/cpuidle.h                    |  3 ---
+ include/linux/pm_domain.h                  |  8 ++++++
+ tools/power/cpupower/utils/cpupower.c      |  2 +-
+ tools/power/cpupower/utils/helpers/sysfs.c |  2 +-
+ 13 files changed, 89 insertions(+), 37 deletions(-)
