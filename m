@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaL2BQY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:16:24 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33147 "EHLO
+	id S1752461AbaL2BRv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:17:51 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33124 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751736AbaL2BMN (ORCPT
+	by vger.kernel.org with ESMTP id S1751659AbaL2BMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Dec 2014 20:12:13 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>,
-        "Nadav Amit" <namit@cs.technion.ac.il>
+CC: akpm@linux-foundation.org, "Chris Wilson" <chris@chris-wilson.co.uk>,
+        "David Herrmann" <dh.herrmann@gmail.com>,
+        "Dave Airlie" <airlied@redhat.com>
 Date: Mon, 29 Dec 2014 02:11:31 +0100
-Message-ID: <lsq.1419815491.894272372@decadent.org.uk>
+Message-ID: <lsq.1419815491.715332536@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 09/27] KVM: x86: Don't report guest userspace
- emulation error to userspace
+Subject: [PATCH 3.2 17/27] drm: fix DRM_IOCTL_MODE_GETFB handle-leak
 In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
 X-SA-Exim-Connect-IP: 46.189.28.191
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +32,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: David Herrmann <dh.herrmann@gmail.com>
 
-commit a2b9e6c1a35afcc0973acb72e591c714e78885ff upstream.
+commit 101b96f32956ee99bf1468afaf572b88cda9f88b upstream.
 
-Commit fc3a9157d314 ("KVM: X86: Don't report L2 emulation failures to
-user-space") disabled the reporting of L2 (nested guest) emulation failures to
-userspace due to race-condition between a vmexit and the instruction emulator.
-The same rational applies also to userspace applications that are permitted by
-the guest OS to access MMIO area or perform PIO.
+DRM_IOCTL_MODE_GETFB is used to retrieve information about a given
+framebuffer ID. It is a read-only helper and was thus declassified for
+unprivileged access in:
 
-This patch extends the current behavior - of injecting a #UD instead of
-reporting it to userspace - also for guest userspace code.
+  commit a14b1b42477c5ef089fcda88cbaae50d979eb8f9
+  Author: Mandeep Singh Baines <mandeep.baines@gmail.com>
+  Date:   Fri Jan 20 12:11:16 2012 -0800
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+      drm: remove master fd restriction on mode setting getters
+
+However, alongside width, height and stride information,
+DRM_IOCTL_MODE_GETFB also passes back a handle to the underlying buffer of
+the framebuffer. This handle allows users to mmap() it and read or write
+into it. Obviously, this should be restricted to DRM-Master.
+
+With the current setup, *any* process with access to /dev/dri/card0 (which
+means any process with access to hardware-accelerated rendering) can
+access the current screen framebuffer and modify it ad libitum.
+
+For backwards-compatibility reasons we want to keep the
+DRM_IOCTL_MODE_GETFB call unprivileged. Besides, it provides quite useful
+information regarding screen setup. So we simply test whether the caller
+is the current DRM-Master and if not, we return 0 as handle, which is
+always invalid. A following DRM_IOCTL_GEM_CLOSE on this handle will fail
+with EINVAL, but we accept this. Users shouldn't test for errors during
+GEM_CLOSE, anyway. And it is still better as a failing MODE_GETFB call.
+
+v2: add capable(CAP_SYS_ADMIN) check for compatibility with i-g-t
+
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+[bwh: Backported to 3.2:
+ - drm_framebuffer_funcs::create_handle must be non-null
+ - Adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kvm/x86.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4846,7 +4846,7 @@ static int handle_emulation_failure(stru
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1815,7 +1815,17 @@ int drm_mode_getfb(struct drm_device *de
+ 	r->depth = fb->depth;
+ 	r->bpp = fb->bits_per_pixel;
+ 	r->pitch = fb->pitch;
+-	fb->funcs->create_handle(fb, file_priv, &r->handle);
++	if (file_priv->is_master || capable(CAP_SYS_ADMIN)) {
++		ret = fb->funcs->create_handle(fb, file_priv, &r->handle);
++	} else {
++		/* GET_FB() is an unprivileged ioctl so we must not
++		 * return a buffer-handle to non-master processes! For
++		 * backwards-compatibility reasons, we cannot make
++		 * GET_FB() privileged, so just return an invalid handle
++		 * for non-masters. */
++		r->handle = 0;
++		ret = 0;
++	}
  
- 	++vcpu->stat.insn_emulation_fail;
- 	trace_kvm_emulate_insn_failed(vcpu);
--	if (!is_guest_mode(vcpu)) {
-+	if (!is_guest_mode(vcpu) && kvm_x86_ops->get_cpl(vcpu) == 0) {
- 		vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
- 		vcpu->run->internal.suberror = KVM_INTERNAL_ERROR_EMULATION;
- 		vcpu->run->internal.ndata = 0;
+ out:
+ 	mutex_unlock(&dev->mode_config.mutex);
 
