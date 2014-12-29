@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaL2BND (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:13:03 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33194 "EHLO
+	id S1752046AbaL2BMx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:12:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33199 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751902AbaL2BMR (ORCPT
+	by vger.kernel.org with ESMTP id S1751915AbaL2BMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Dec 2014 20:12:17 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Neil Horman" <nhorman@tuxdriver.com>,
+CC: akpm@linux-foundation.org, "Vlad Yasevich" <vyasevich@gmail.com>,
         "Daniel Borkmann" <dborkman@redhat.com>,
-        "Vlad Yasevich" <vyasevich@gmail.com>
+        "Robert =?UTF-8?Q?=C5=9Awi=C4=99cki?=" <robert@swiecki.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Neil Horman" <nhorman@tuxdriver.com>
 Date: Mon, 29 Dec 2014 02:11:31 +0100
-Message-ID: <lsq.1419815491.986624871@decadent.org.uk>
+Message-ID: <lsq.1419815491.535123160@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 08/27] net: sctp: fix NULL pointer dereference in
- af->from_addr_param on malformed packet
+Subject: [PATCH 3.2 26/27] net: sctp: use MAX_HEADER for headroom reserve
+ in output path
 In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
 X-SA-Exim-Connect-IP: 46.189.28.191
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,74 +37,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Borkmann <dborkman@redhat.com>
 
-commit e40607cbe270a9e8360907cb1e62ddf0736e4864 upstream.
+commit 9772b54c55266ce80c639a80aa68eeb908f8ecf5 upstream.
 
-An SCTP server doing ASCONF will panic on malformed INIT ping-of-death
-in the form of:
+To accomodate for enough headroom for tunnels, use MAX_HEADER instead
+of LL_MAX_HEADER. Robert reported that he has hit after roughly 40hrs
+of trinity an skb_under_panic() via SCTP output path (see reference).
+I couldn't reproduce it from here, but not using MAX_HEADER as elsewhere
+in other protocols might be one possible cause for this.
 
-  ------------ INIT[PARAM: SET_PRIMARY_IP] ------------>
+In any case, it looks like accounting on chunks themself seems to look
+good as the skb already passed the SCTP output path and did not hit
+any skb_over_panic(). Given tunneling was enabled in his .config, the
+headroom would have been expanded by MAX_HEADER in this case.
 
-While the INIT chunk parameter verification dissects through many things
-in order to detect malformed input, it misses to actually check parameters
-inside of parameters. E.g. RFC5061, section 4.2.4 proposes a 'set primary
-IP address' parameter in ASCONF, which has as a subparameter an address
-parameter.
-
-So an attacker may send a parameter type other than SCTP_PARAM_IPV4_ADDRESS
-or SCTP_PARAM_IPV6_ADDRESS, param_type2af() will subsequently return 0
-and thus sctp_get_af_specific() returns NULL, too, which we then happily
-dereference unconditionally through af->from_addr_param().
-
-The trace for the log:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000078
-IP: [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-PGD 0
-Oops: 0000 [#1] SMP
-[...]
-Pid: 0, comm: swapper Not tainted 2.6.32-504.el6.x86_64 #1 Bochs Bochs
-RIP: 0010:[<ffffffffa01e9c62>]  [<ffffffffa01e9c62>] sctp_process_init+0x492/0x990 [sctp]
-[...]
-Call Trace:
- <IRQ>
- [<ffffffffa01f2add>] ? sctp_bind_addr_copy+0x5d/0xe0 [sctp]
- [<ffffffffa01e1fcb>] sctp_sf_do_5_1B_init+0x21b/0x340 [sctp]
- [<ffffffffa01e3751>] sctp_do_sm+0x71/0x1210 [sctp]
- [<ffffffffa01e5c09>] ? sctp_endpoint_lookup_assoc+0xc9/0xf0 [sctp]
- [<ffffffffa01e61f6>] sctp_endpoint_bh_rcv+0x116/0x230 [sctp]
- [<ffffffffa01ee986>] sctp_inq_push+0x56/0x80 [sctp]
- [<ffffffffa01fcc42>] sctp_rcv+0x982/0xa10 [sctp]
- [<ffffffffa01d5123>] ? ipt_local_in_hook+0x23/0x28 [iptable_filter]
- [<ffffffff8148bdc9>] ? nf_iterate+0x69/0xb0
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
- [<ffffffff8148bf86>] ? nf_hook_slow+0x76/0x120
- [<ffffffff81496d10>] ? ip_local_deliver_finish+0x0/0x2d0
-[...]
-
-A minimal way to address this is to check for NULL as we do on all
-other such occasions where we know sctp_get_af_specific() could
-possibly return with NULL.
-
-Fixes: d6de3097592b ("[SCTP]: Add the handling of "Set Primary IP Address" parameter to INIT")
+Reported-by: Robert Święcki <robert@swiecki.net>
+Reference: https://lkml.org/lkml/2014/12/1/507
+Fixes: 594ccc14dfe4d ("[SCTP] Replace incorrect use of dev_alloc_skb with alloc_skb in sctp_packet_transmit().")
 Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/sm_make_chunk.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/sctp/output.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -2570,6 +2570,9 @@ do_addr_param:
- 		addr_param = param.v + sizeof(sctp_addip_param_t);
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -384,12 +384,12 @@ int sctp_packet_transmit(struct sctp_pac
+ 	sk = chunk->skb->sk;
  
- 		af = sctp_get_af_specific(param_type2af(param.p->type));
-+		if (af == NULL)
-+			break;
-+
- 		af->from_addr_param(&addr, addr_param,
- 				    htons(asoc->peer.port), 0);
+ 	/* Allocate the new skb.  */
+-	nskb = alloc_skb(packet->size + LL_MAX_HEADER, GFP_ATOMIC);
++	nskb = alloc_skb(packet->size + MAX_HEADER, GFP_ATOMIC);
+ 	if (!nskb)
+ 		goto nomem;
  
+ 	/* Make sure the outbound skb has enough header room reserved. */
+-	skb_reserve(nskb, packet->overhead + LL_MAX_HEADER);
++	skb_reserve(nskb, packet->overhead + MAX_HEADER);
+ 
+ 	/* Set the owning socket so that we know where to get the
+ 	 * destination IP address.
 
