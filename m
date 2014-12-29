@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaL2GhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 01:37:03 -0500
-Received: from mail-bl2on0106.outbound.protection.outlook.com ([65.55.169.106]:9344
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1752275AbaL2GhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 01:37:09 -0500
+Received: from mail-bn1bon0143.outbound.protection.outlook.com ([157.56.111.143]:53924
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752200AbaL2Gg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 01:36:56 -0500
+	id S1752246AbaL2GhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 01:37:04 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,38 +15,43 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v6 18/21] ARM: dts: imx6qdl-sabresd: Add support for TRULY TFT480800-16-E MIPI DSI panel
-Date: Mon, 29 Dec 2014 14:39:25 +0800
-Message-ID: <1419835168-9034-19-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v6 20/21] ARM: imx_v6_v7_defconfig: Add support for MIPI DSI host controller
+Date: Mon, 29 Dec 2014 14:39:27 +0800
+Message-ID: <1419835168-9034-21-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419835168-9034-1-git-send-email-Ying.Liu@freescale.com>
 References: <1419835168-9034-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.168.50)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(97736003)(6806004)(50986999)(36756003)(89996001)(46102003)(19580395003)(48376002)(77096005)(84676001)(120916001)(99396003)(2950100001)(50466002)(85426001)(19580405001)(68736005)(86362001)(105606002)(230783001)(77156002)(104016003)(87936001)(107046002)(76176999)(110136001)(21056001)(575784001)(2351001)(50226001)(64706001)(229853001)(47776003)(20776003)(4396001)(106466001)(62966003)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0630;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(106466001)(36756003)(97736003)(89996001)(19580395003)(229853001)(2351001)(110136001)(2950100001)(87936001)(68736005)(107046002)(77096005)(85426001)(105606002)(104016003)(575784001)(50986999)(120916001)(76176999)(77156002)(62966003)(4396001)(84676001)(50466002)(50226001)(6806004)(46102003)(48376002)(19580405001)(86362001)(20776003)(99396003)(21056001)(47776003)(64706001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0633;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0633;
 X-Forefront-PRVS: 0440AC9990
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 29 Dec 2014 06:36:52.2297
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 29 Dec 2014 06:37:00.9913
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0630
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0633
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TRULY TFT480800-16-E panel is driven by the Himax HX8369A driver IC.
-The driver IC supports several display/control interface modes, including
-the MIPI DSI video mode and command mode.
+This patch adds support for MIPI DSI host controller.
+
+The new imx_v6_v7_defconfig is generated in this way:
+* make ARCH=arm imx_v6_v7_defconfig
+* make ARCH=arm menuconfig and manually choose to build in
+  the MIPI DSI host controller driver
+* make ARCH=arm savedefconfig
+* cp defconfig arch/arm/configs/imx_v6_v7_defconfig
 
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
@@ -54,8 +59,7 @@ v5->v6:
  * None.
 
 v4->v5:
- * Replace the bs[3:0]-gpios properties with the bs-gpios property.
-   This addresses Andrzej Hajda's comment.
+ * None.
 
 v3->v4:
  * None.
@@ -64,54 +68,23 @@ v2->v3:
  * None.
 
 v1->v2:
- * To address Thierry Reding's comments, remove several unnecessary
-   properties as they can be implied by the compatible string.
- * Fix the compatible string.
- * Remove the display-timings node from the panel node as it can be
-   implied by the compatible string as well.
- * Remove the status property as it is unneeded.
+ * None.
 
- arch/arm/boot/dts/imx6qdl-sabresd.dtsi | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/arm/configs/imx_v6_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
-index baf2f00..4e3a666 100644
---- a/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-sabresd.dtsi
-@@ -482,6 +482,13 @@
- 				MX6QDL_PAD_SD4_DAT7__SD4_DATA7		0x17059
- 			>;
- 		};
-+
-+		pinctrl_mipi_panel: mipipanelgrp {
-+			fsl,pins = <
-+				MX6QDL_PAD_NANDF_CS0__GPIO6_IO11 0x1b0b0
-+				MX6QDL_PAD_NANDF_CS1__GPIO6_IO14 0x1b0b0
-+			>;
-+		};
- 	};
- 
- 	gpio_leds {
-@@ -518,6 +525,19 @@
- 	};
- };
- 
-+&mipi_dsi {
-+	status = "okay";
-+
-+	panel {
-+		compatible = "truly,tft480800-16-e-dsi";
-+		reg = <0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&pinctrl_mipi_panel>;
-+		reset-gpios = <&gpio6 11 GPIO_ACTIVE_LOW>;
-+		bs-gpios = <0>, <0>, <&gpio6 14 GPIO_ACTIVE_HIGH>, <0>;
-+	};
-+};
-+
- &pcie {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_pcie>;
+diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
+index 0dbd0c3..3e0e589 100644
+--- a/arch/arm/configs/imx_v6_v7_defconfig
++++ b/arch/arm/configs/imx_v6_v7_defconfig
+@@ -199,6 +199,7 @@ CONFIG_DRM_IMX_TVE=y
+ CONFIG_DRM_IMX_LDB=y
+ CONFIG_DRM_IMX_IPUV3=y
+ CONFIG_DRM_IMX_HDMI=y
++CONFIG_DRM_IMX_MIPI_DSI=y
+ CONFIG_LCD_CLASS_DEVICE=y
+ CONFIG_LCD_L4F00242T03=y
+ CONFIG_LCD_PLATFORM=y
 -- 
 2.1.0
 
