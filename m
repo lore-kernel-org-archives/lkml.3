@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaL2UWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 15:22:44 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:46123 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaL2UWn (ORCPT
+	id S1752339AbaL2Uet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 15:34:49 -0500
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:58046 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbaL2Uer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 15:22:43 -0500
+	Mon, 29 Dec 2014 15:34:47 -0500
+Message-ID: <54A1BAEE.6000101@landley.net>
+Date: Mon, 29 Dec 2014 14:34:54 -0600
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <1419883144-13523-1-git-send-email-geert@linux-m68k.org>
-References: <1419883144-13523-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 29 Dec 2014 21:22:41 +0100
-X-Google-Sender-Auth: Z0cBaxhgu0WAyCTG1126-sWj6PA
-Message-ID: <CAMuHMdXccHA6Zzv-avucH3e5CpguUT-nAAHQ=E+V-rdVLiEV7g@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.19-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>, Christophe Fillot <cf@utc.fr>
+CC: linux-ima-user@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Linux-ima-user] Initramfs and IMA Appraisal
+References: <5463ABC8.10308@utc.fr>	 <1415827252.18773.33.camel@dhcp-9-2-203-236.watson.ibm.com>	 <547617AF.6000604@utc.fr>	 <1417039941.26016.46.camel@dhcp-9-2-203-236.watson.ibm.com>	 <5476EBAC.8090103@utc.fr> <1419860736.14143.13.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-Reply-To: <1419860736.14143.13.camel@dhcp-9-2-203-236.watson.ibm.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 8:59 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.19-rc2[1]  to v3.19-rc1[3], the summaries are:
->   - build errors: +8/-5
+On 12/29/2014 07:45 AM, Mimi Zohar wrote:
+> On Thu, 2014-11-27 at 10:15 +0100, Christophe Fillot wrote:
+>>>
+>>> Are you using an initrd not an initramfs?  According to
+>>> Documentation/filesystems/ramfs-rootfs-initramfs.txt, "If
+>> CONFIG_TMPFS
+>>> is enabled, rootfs will use tmpfs instead of ramfs by default".
+>>>
+>> Yes, that what I thought too, but it seems that it is not really the 
+>> case because of this test:
+>>
+>>      if (IS_ENABLED(CONFIG_TMPFS) && !saved_root_name[0] &&
+>>          (!root_fs_names || strstr(root_fs_names, "tmpfs"))) {
+>>          err = shmem_init();
+>>          is_tmpfs = true;
+>>      } else {
+>>          err = init_ramfs_fs();
+>>      }
+> 
+> [CC'ing Rob Landley, lsm, lkml]
+> 
+> Thanks!  "saved_root_name" is set to the boot command line "root="
+> option, which in my case is the UUID.  I'm not sure why real root should
+> impact the initramfs tmpfs/ramfs decision.
+> 
+> Unless there is a good explanation, did you want to post a patch to
+> remove the test?
 
-Surprise! No new R_PPC64_REL24 relocation truncations, hence not much new
-generic code was added. Bloat-o-meter on atari_defconfig agrees: +36 bytes.
+I added support last year, here's the start of the patch series:
 
-  + /home/kisskb/slave/src/arch/powerpc/platforms/pseries/hotplug-memory.c:
-error: 'SECTION_SIZE_BITS' undeclared (first use in this function):
-=> 27:31
-  + /home/kisskb/slave/src/mm/memory_hotplug.c: error:
-'PAGES_PER_SECTION' undeclared (first use in this function):  =>
-1836:46, 1178:18
-  + /home/kisskb/slave/src/mm/memory_hotplug.c: error:
-'PAGE_SECTION_MASK' undeclared (first use in this function):  =>
-1177:20
-  + /home/kisskb/slave/src/mm/memory_hotplug.c: error: implicit
-declaration of function '__nr_to_section'
-[-Werror=implicit-function-declaration]:  => 1841:3
-  + /home/kisskb/slave/src/mm/memory_hotplug.c: error: implicit
-declaration of function 'find_memory_block_hinted'
-[-Werror=implicit-function-declaration]:  => 1848:3
-  + /home/kisskb/slave/src/mm/memory_hotplug.c: error: implicit
-declaration of function 'pfn_to_section_nr'
-[-Werror=implicit-function-declaration]:  => 1837:3
-  + /home/kisskb/slave/src/mm/memory_hotplug.c: error: implicit
-declaration of function 'present_section_nr'
-[-Werror=implicit-function-declaration]:  => 1838:3
+  https://lkml.org/lkml/2013/6/29/101
 
-powerpc-randconfig
+The logic is that if you specify a fallback root via root=, then you're
+not staying on rootfs (that's what root= _means_, "here is the root
+filesystem the kernel is to mount over rootfs"), and thus the extra
+infrastructure for tmpfs instead of ramfs is unnecessary.
 
-  + error: initramfs.c: undefined reference to `__stack_chk_guard':
-=> .init.text+0x3132)
+I keep encountering people who set root=/dev/ram0 because they think
+that means initrd (it doesn't), and then they feed in a cpio archive
+(that's a third state even before you get to the ramfs/tmpfs
+distinction), and they always want to change the code to make what they
+asked it to do not be crazy...
 
-i386-randconfig
+Possibly the documentation needs to elaborate, but I expect what we
+really need is a CONFIG_VERBOSE_ROOT_SETUP that sticks in a bunch of
+printfs so the /dev/console output explains what it's doing. ("could not
+exec /init out of initramfs (errno %d, file %s), falling back to
+root=\nAdd blather=1 to kernel cmdline to see cpio
+filenames/permissions.", and so on. Where "actual exec" shows where your
+dynamic linker is when that's what wasn't there.)
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/8257/ (all 262 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/8241/ (all 262 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Rob
