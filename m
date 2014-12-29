@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbaL2RJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 12:09:32 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46851 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058AbaL2RJb (ORCPT
+	id S1752229AbaL2RKR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 12:10:17 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54535 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020AbaL2RKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 12:09:31 -0500
-Date: Mon, 29 Dec 2014 18:09:28 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        kernel list <linux-kernel@vger.kernel.org>, yoongukim@cmu.edu,
-        donghyu1@cmu.edu, omutlu@gmail.com
-Subject: Re: DRAM unreliable under specific access patern
-Message-ID: <20141229170927.GA26246@amd>
-References: <20141224163823.GA17035@amd>
- <CALCETrW8nrKSZ800C+WaHMK4DCuWnD9TG3dYo7cZwm5j4CpNJQ@mail.gmail.com>
- <20141224172506.GA23683@amd>
- <CALCETrVP2PtB82x4JFFsXDomNKgRTk_3LoMyyk5KCXN=f8_DJw@mail.gmail.com>
- <20141224175040.GA28791@amd>
- <alpine.LRH.2.00.1412291310000.12303@twin.jikos.cz>
+	Mon, 29 Dec 2014 12:10:15 -0500
+Date: Mon, 29 Dec 2014 17:10:04 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Aniroop Mathur <aniroop.mathur@gmail.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org, a.mathur@samsung.com
+Message-ID: <20141229171004.GC17800@sirena.org.uk>
+References: <1419872808-11958-1-git-send-email-aniroop.mathur@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lEkl9o9W2JhK2ndV"
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1412291310000.12303@twin.jikos.cz>
+In-Reply-To: <1419872808-11958-1-git-send-email-aniroop.mathur@gmail.com>
+X-Cookie: You have no real enemies.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 86.128.155.20
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Fix format specifier warning
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-12-29 13:13:17, Jiri Kosina wrote:
-> On Wed, 24 Dec 2014, Pavel Machek wrote:
-> 
-> > Well... We could periodically scrub (every few miliseconds) pages
-> > mapped to userspace. 
-> 
-> I.e. implement ECC in software. Would be extremely slow though.
 
-No, not really. If you read the cells that are about to go bad, you'll
-update them. Agreed on extremely slow.
+--lEkl9o9W2JhK2ndV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > We might be able to do some magic and disallow cache flushes to 
-> > userspace programs. 
-> 
-> My understanding is that cflush is not strictly necessary, it only makes 
-> the issue more likely to trigger.
+On Mon, Dec 29, 2014 at 10:36:48PM +0530, Aniroop Mathur wrote:
+> Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
 
-Umm. Not really, AFAICT.
+Applied, thanks.  Please check what you're generating your patches
+against - they aren't applying cleanly, you should be using current
+development code.
 
-So, the memory can take "certain ammount" of "neighboring
-accesses". You need to do that ammount before next refresh.
+--lEkl9o9W2JhK2ndV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> If you modify the pattern so that it neraly fits into cacheline (but not 
-> really), you would be able to produce similar (if not the same) cache 
-> eviction pattern as if without explicit cflush. Right?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-No, I don't think so.
+iQEcBAEBAgAGBQJUoYrrAAoJECTWi3JdVIfQG+cH/iT4p8+c05LgpkGZC8Vbx6VH
+g0vlDK+3OvFJsCmjUJ1ymyYr2z//G3mhxqQKfUy3TBWwL4JFKswM89f2NTTWIF/l
+9fIIhvD6BZ07aZSr3rIXe9GY4UV9iCxAPTh4iP+YCXHPfFyfVA1f7pbknHYNFA6o
+l5uHsz1MyHpI5Ub2g1rhfnbCXSMARmUTVfmNX56/Non/60sCdVH5B0gfOimqSfcY
+651tgO6kFKNNbIODqm6kurdiM/BVZ5TjW07bpQGes0DjCJOFFtOU5zsdbVwZqhyY
+gMR7W50mm8Znz2a6zF8V0seLxF9IrF8/VxzXLNglQqlrNuEEnI7sgaJWmbpuNE4=
+=bGTm
+-----END PGP SIGNATURE-----
 
-Well.. you need to generate certain ammount of traffic on the address
-lines, and it corrupts "neighboring" cells. I wish I knew more about
-DRAM... If you'll read a cache line, you can't "break" it as reads
-refreshes it. You need to do few miliseconds worth of reads, AFAICT.
-
-If you'll just keep reading cachelines, the cachelines you read will
-not be "neighboring" enough to the "target" cells you want to break.
-									
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--lEkl9o9W2JhK2ndV--
