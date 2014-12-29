@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaL2INW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 03:13:22 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51364 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaL2INU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 03:13:20 -0500
-Message-ID: <54A10D18.1060308@ti.com>
-Date: Mon, 29 Dec 2014 10:13:12 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751994AbaL2IOh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 03:14:37 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:31485 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaL2IOg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 03:14:36 -0500
+Message-ID: <54A10D53.2010800@huawei.com>
+Date: Mon, 29 Dec 2014 16:14:11 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [GIT PULL] fbdev fixes for 3.19
-References: <54899F0E.4090309@ti.com> <20141220210125.GB16705@amd> <20141220212027.GC16705@amd> <20141220215718.GA25101@amd> <20141223111250.GA30284@amd>
-In-Reply-To: <20141223111250.GA30284@amd>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="t2mwM2X2VItUwrbIGIJGmu0UWEJKOquhI"
+To: Namhyung Kim <namhyung@kernel.org>
+CC: <mingo@redhat.com>, <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <acme@kernel.org>, <jolsa@kernel.org>
+Subject: Re: [PATCH] perf: fix building error in x86_64 when dwarf unwind
+ is on
+References: <1419643571-62764-1-git-send-email-wangnan0@huawei.com> <20141229075607.GC6081@sejong>
+In-Reply-To: <20141229075607.GC6081@sejong>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---t2mwM2X2VItUwrbIGIJGmu0UWEJKOquhI
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On 23/12/14 13:12, Pavel Machek wrote:
-
->>> I test-merged 3315764efceaccfb02c7d4c99ef8eed6716cd861, and boom,
->>> video is gone.
+On 2014/12/29 15:56, Namhyung Kim wrote:
+> Hi Wang,
+> 
+> (Adding Arnaldo and Jiri to CC)
+> 
+> On Sat, Dec 27, 2014 at 09:26:11AM +0800, Wang Nan wrote:
+>> When build with 'make ARCH=x86' and dwarf unwind is on, there is a
+>> compiling error:
 >>
->> I reverted
->> 4b4123f0c7b02f7cf1a3189f967f079197578c3a..9051909e451a0368c95ccf74562a=
-db53fd2719f8
->> in 3.19, and voila, video is back.
->=20
-> Tomi?
->=20
-> Your merge causes regression on my hardware. I'd expect some
-> communication from you. If you don't have time right now, can we
-> revert the merge until its fixed?
+>>    CC       /home/wn/perf/arch/x86/util/unwind-libdw.o
+>>    CC       /home/wn/perf/arch/x86/tests/regs_load.o
+>>  arch/x86/tests/regs_load.S: Assembler messages:
+>>  arch/x86/tests/regs_load.S:65: Error: operand type mismatch for `push'
+>>  arch/x86/tests/regs_load.S:72: Error: operand type mismatch for `pop'
+>>  make[1]: *** [/home/wn/perf/arch/x86/tests/regs_load.o] Error 1
+>>  make[1]: INTERNAL: Exiting with 25 jobserver tokens available; should be 24!
+>>  make: *** [all] Error 2
+>>  ...
+>>
+>> Which is caused by incorrectly undefine macro HAVE_ARCH_X86_64_SUPPORT.
+>> 'config/Makefile.arch' tests __x86_64__ only when 'ARCH=x86_64'. However,
+>> with 'ARCH=x86', the underlying compile may also be x86_64, which causes
+>> mismatching.
+> 
+> Hmm.. how did you compile this?  I guess ARCH=x86 requires -m32 flag
+> to the gcc, did you pass it (like via EXTRA_CFLAGS=-m32)?
+> 
+> I'm confused by 'underlying compile may also be x86_64' part..
+> 
 
-I've posted a fix on the "n900 regressions" thread.
+I hit this problem when building perf with Yocto (https://www.yoctoproject.org/), which
+is a famous building system for embeded system.
 
- Tomi
+When building kernel, we can simply use 'make ARCH=x86' and select 'CONFIG_64BIT'
+in menuconfig to get a x86_64 kernel. As a result, there building framework
+like Yocto doesn't ever consider 'x86_64' as a valid ARCH option. See:
+https://git.yoctoproject.org/cgit/cgit.cgi/poky/tree/meta/classes/kernel-arch.bbclass
+Therefore, when building with such framework, it uses a x86_64 compiler and ARCH=x86.
+
+> Thanks,
+> Namhyung
+> 
+> 
+>>
+>> This patch fixes it by checking __x86_64__ in both case of
+>> 'ARCH=x86_64' and 'ARCH=x86'.
+>>
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>> ---
+>>  tools/perf/config/Makefile.arch | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
+>> index 851cd01..303a096 100644
+>> --- a/tools/perf/config/Makefile.arch
+>> +++ b/tools/perf/config/Makefile.arch
+>> @@ -15,6 +15,8 @@ endif
+>>  
+>>  ifeq ($(ARCH),x86_64)
+>>    override ARCH := x86
+>> +endif
+>> +ifeq ($(ARCH),x86)
+>>    IS_X86_64 := 0
+>>    ifeq (, $(findstring m32,$(CFLAGS)))
+>>      IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+>> -- 
+>> 1.8.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
 
-
---t2mwM2X2VItUwrbIGIJGmu0UWEJKOquhI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUoQ0YAAoJEPo9qoy8lh71LUIP/0jxnBS0cRYNsQ8+WLhUdQ8r
-ny2loQU60fSR8WTh+NPFbiyax33O4HnBFV1a0qw9QsoQMULCiUam4duexXCk3h5m
-68b6z4H/7iDmDnMDOSOfosmnGIiaW/PO+oN8gikLyMPeNFouOw5aMu+UtbuRVgbV
-xZlV2dcteSbv7rAtw2tE75cngVgvqkfrMonIiiMLbJqwrCgK7zhO47ZkiWA3bZFi
-VG9zqZtVhl8ofAe3zE6BiyyiSaetvrsSM1Riiui8ITHVKBwsiPfaPgb1c68STdPo
-s2iNIUI7d7KBt4dh/lapS9yHWLcLfC8+tGon3RojxsUYeZLb3IIhMYg8RpQ+w3Om
-79+As9kJQWK8gWjJ8UGaT++qZ/bcCf9PDtXcXtVxAYADdSYDK56X6P2djrTA/R+a
-5aZryNRM/hMqNKmwrEggm4kTKxNqlX5bK2W8rFXvAJUcyH0jWjciuB4raA3HVeEC
-hLLppthEcv4DhG1QVH8t7juO0qnfjdMz+0K72jmaUAaOCRV2lViLoYU8ZwqrTu4+
-eePNbt13j91876bm9M/VKOGsjskMdsOXQH6c31zU0xYzuHTwsfAu/SH5uKPnJPzO
-Yhh7gaWBj7Zs5vIOPhjD/Z6UH+7BR29l4IE+qkyLt0+4LhxNV/aBW3uSfYVlYHzx
-hlCbmkvpKhJDctzTn8Av
-=N6PP
------END PGP SIGNATURE-----
-
---t2mwM2X2VItUwrbIGIJGmu0UWEJKOquhI--
