@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaL2BJs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Dec 2014 20:09:48 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:54500 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaL2BJr (ORCPT
+	id S1751927AbaL2BMR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Dec 2014 20:12:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33134 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751534AbaL2BMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Dec 2014 20:09:47 -0500
-Message-ID: <54A0A9D5.2010804@hurleysoftware.com>
-Date: Sun, 28 Dec 2014 20:09:41 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 28 Dec 2014 20:12:13 -0500
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: "Ma, Xindong" <xindong.ma@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "ionut.m.alexa@gmail.com" <ionut.m.alexa@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Di" <di.zhang@intel.com>,
-        "Sun, Zhonghua" <zhonghua.sun@intel.com>
-Subject: Re: [PATCH] move exit_task_work() before exit_fs().
-References: <1419579926-28512-1-git-send-email-xindong.ma@intel.com> <20141226173849.GA9460@redhat.com> <3917C05D9F83184EAA45CE249FF1B1DD0266FC53@SHSMSX103.ccr.corp.intel.com>
-In-Reply-To: <3917C05D9F83184EAA45CE249FF1B1DD0266FC53@SHSMSX103.ccr.corp.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Mauro Carvalho Chehab" <mchehab@osg.samsung.com>
+Date: Mon, 29 Dec 2014 02:11:31 +0100
+Message-ID: <lsq.1419815491.744659422@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 11/27] [media] ttusb-dec: buffer overflow in ioctl
+In-Reply-To: <lsq.1419815490.288081487@decadent.org.uk>
+X-SA-Exim-Connect-IP: 46.189.28.191
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2014 07:58 PM, Ma, Xindong wrote:
->>
->> On 12/26, Leon Ma wrote:
->>>
->>> We encountered following panic. The scenario is the process is exiting
->>> and executing its task work. When closing dev node, the driver
->>> triggers a firmware reload according to device status. Because task->fs is
->> set to NULL in exit_fs(), panic happens.
->>
->> I think this should be fixed somewhere else...
-> Yes, for this panic, I also think driver is not perfect and need a fix. But kernel should not add the limitation like this...
->>
->>> Task work is a common interface, we should not limite the resource the
->> user will utilize.
->>
->> Exactly. And note that with this patch exit_mm()..disassociate_ctty() paths
->> can't use task works.
-> I don't get this. Currently disassociate_ctty() is also called after exit_mm() and exit_task_work(). My patch didn't change this.
+3.2.66-rc1 review patch.  If anyone has any objections, please let me know.
 
-??
+------------------
 
-742-	if (group_dead)
-743:		disassociate_ctty(1);
-744-	exit_task_namespaces(tsk);
-745-	exit_task_work(tsk);
-746-	exit_thread();
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
->> Not to mention that this patch moves exit_files() up, even before exit_mm(),
->> without any explanation.
-> Moving exit_files() up is because exit_files() closes files and add tasks to task works.
->>
->> Add Al. May be we can move exit_fs() down after exit_task_work(), I dunno,
->> but to me it would be better to change the driver.
->>
-> I'm OK with this suggestion to fix this issue. I'm not sure whether in the future task work users will access other resources and expose other issues.
-> 
+commit f2e323ec96077642d397bb1c355def536d489d16 upstream.
+
+We need to add a limit check here so we don't overflow the buffer.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/media/dvb/ttusb-dec/ttusbdecfe.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/media/dvb/ttusb-dec/ttusbdecfe.c
++++ b/drivers/media/dvb/ttusb-dec/ttusbdecfe.c
+@@ -154,6 +154,9 @@ static int ttusbdecfe_dvbs_diseqc_send_m
+ 		   0x00, 0x00, 0x00, 0x00,
+ 		   0x00, 0x00 };
+ 
++	if (cmd->msg_len > sizeof(b) - 4)
++		return -EINVAL;
++
+ 	memcpy(&b[4], cmd->msg, cmd->msg_len);
+ 
+ 	state->config->send_command(fe, 0x72,
 
