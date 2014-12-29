@@ -1,217 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaL2M2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 07:28:13 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:46290 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaL2M2G (ORCPT
+	id S1752169AbaL2M2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 07:28:49 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:52676 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751580AbaL2M2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 07:28:06 -0500
-From: Ganesh Mahendran <opensource.ganesh@gmail.com>
-To: minchan@kernel.org, ngupta@vflare.org, sjennings@variantweb.net,
-        ddstreet@ieee.org, akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ganesh Mahendran <opensource.ganesh@gmail.com>
-Subject: [PATCH V2 1/2] mm/zpool: add name argument to create zpool
-Date: Mon, 29 Dec 2014 20:27:47 +0800
-Message-Id: <1419856067-6180-1-git-send-email-opensource.ganesh@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 29 Dec 2014 07:28:46 -0500
+Date: Mon, 29 Dec 2014 13:28:41 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Josh Wu <josh.wu@atmel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        <linux-mtd@lists.infradead.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ARM: at91/dt: sama5: move NAND nodes into board
+ dts/dtsi
+Message-ID: <20141229132841.3d694058@bbrezillon>
+In-Reply-To: <549D2E4F.4090705@atmel.com>
+References: <1417732214-3292-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1417732214-3292-5-git-send-email-boris.brezillon@free-electrons.com>
+	<549D2E4F.4090705@atmel.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the underlay of zpool: zsmalloc/zbud, do not know
-who creates them. There is not a method to let zsmalloc/zbud
-find which caller they belogs to.
+Hi Josh,
 
-Now we want to add statistics collection in zsmalloc. We need
-to name the debugfs dir for each pool created. The way suggested
-by Minchan Kim is to use a name passed by caller(such as zram)
-to create the zsmalloc pool.
-    /sys/kernel/debug/zsmalloc/zram0
+On Fri, 26 Dec 2014 17:45:51 +0800
+Josh Wu <josh.wu@atmel.com> wrote:
 
-This patch adds a argument *name* to zs_create_pool() and other
-related functions.
+> Hi, Boris
+> 
+> On 12/5/2014 6:30 AM, Boris Brezillon wrote:
+> > sama5d3 and sama5d4 SoCs provides several CS to interface with external
+> > memories, and in particular NAND chips.
+> > The NAND flash controller embedded in the these SoCs can connect to any of
+> > the available CS (each CS is assigned a memory range, hence the nand@xxx
+> > you're seeing in the DT), thus the NAND chip definition should be part of
+> > the board description because we cannot guess at the SoC level which CS
+> > will be chosen by the board designer.
+> >
+> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > ---
+> >   arch/arm/boot/dts/at91-sama5d3_xplained.dts | 18 +++++++++++++++++-
+> >   arch/arm/boot/dts/at91-sama5d4ek.dts        | 16 +++++++++++++++-
+> >   arch/arm/boot/dts/sama5d3.dtsi              | 21 ---------------------
+> >   arch/arm/boot/dts/sama5d3xcm.dtsi           | 18 +++++++++++++++++-
+> >   arch/arm/boot/dts/sama5d4.dtsi              | 19 -------------------
+> >   5 files changed, 49 insertions(+), 43 deletions(-)
+> >
+> > diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+> > index fec1fca..860258b 100644
+> > --- a/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+> > +++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+> > @@ -213,13 +213,29 @@
+> >   		};
+> >   
+> >   		nand0: nand@60000000 {
+> > +			compatible = "atmel,at91rm9200-nand";
+> > +			#address-cells = <1>;
+> > +			#size-cells = <1>;
+> > +			ranges;
+> it would be better to leave this part to the sama5d3.dtsi.
 
-Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
-Cc: Seth Jennings <sjennings@variantweb.net>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Dan Streetman <ddstreet@ieee.org>
-Acked-by: Minchan Kim <minchan@kernel.org>
+Actually I did it on purpose, because nothing prevents anyone from
+connecting its NAND chip on a different CS and connect something else
+on CS3, hence this NAND node should not be defined at SoC level but in
+upper layers.
+I know this is currently hardcoded in the NAND driver, but I'd really
+like to have the DT part corrected, and defining the NAND node in the
+proper dts(i) file is part of the correction.
 
----
-Change in V2:
-    add @name description in zpool_create_pool() function description
----
- drivers/block/zram/zram_drv.c |    8 +++++---
- include/linux/zpool.h         |    5 +++--
- include/linux/zsmalloc.h      |    2 +-
- mm/zbud.c                     |    3 ++-
- mm/zpool.c                    |    6 ++++--
- mm/zsmalloc.c                 |    6 +++---
- mm/zswap.c                    |    5 +++--
- 7 files changed, 21 insertions(+), 14 deletions(-)
+If you really want to make this node common to all atmel boards
+embedding a sama5d3 SoC, then we could create another dtsi (but I
+remember that Nicolas was trying to limit the number of dtsi files).
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index bd8bda3..ebae0d9 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -314,9 +314,10 @@ static void zram_meta_free(struct zram_meta *meta)
- 	kfree(meta);
- }
- 
--static struct zram_meta *zram_meta_alloc(u64 disksize)
-+static struct zram_meta *zram_meta_alloc(int device_id, u64 disksize)
- {
- 	size_t num_pages;
-+	char pool_name[8];
- 	struct zram_meta *meta = kmalloc(sizeof(*meta), GFP_KERNEL);
- 	if (!meta)
- 		goto out;
-@@ -328,7 +329,8 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
- 		goto free_meta;
- 	}
- 
--	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
-+	snprintf(pool_name, sizeof(pool_name), "zram%d", device_id);
-+	meta->mem_pool = zs_create_pool(pool_name, GFP_NOIO | __GFP_HIGHMEM);
- 	if (!meta->mem_pool) {
- 		pr_err("Error creating memory pool\n");
- 		goto free_table;
-@@ -765,7 +767,7 @@ static ssize_t disksize_store(struct device *dev,
- 		return -EINVAL;
- 
- 	disksize = PAGE_ALIGN(disksize);
--	meta = zram_meta_alloc(disksize);
-+	meta = zram_meta_alloc(zram->disk->first_minor, disksize);
- 	if (!meta)
- 		return -ENOMEM;
- 
-diff --git a/include/linux/zpool.h b/include/linux/zpool.h
-index f14bd75..56529b3 100644
---- a/include/linux/zpool.h
-+++ b/include/linux/zpool.h
-@@ -36,7 +36,8 @@ enum zpool_mapmode {
- 	ZPOOL_MM_DEFAULT = ZPOOL_MM_RW
- };
- 
--struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops);
-+struct zpool *zpool_create_pool(char *type, char *name,
-+			gfp_t gfp, struct zpool_ops *ops);
- 
- char *zpool_get_type(struct zpool *pool);
- 
-@@ -80,7 +81,7 @@ struct zpool_driver {
- 	atomic_t refcount;
- 	struct list_head list;
- 
--	void *(*create)(gfp_t gfp, struct zpool_ops *ops);
-+	void *(*create)(char *name, gfp_t gfp, struct zpool_ops *ops);
- 	void (*destroy)(void *pool);
- 
- 	int (*malloc)(void *pool, size_t size, gfp_t gfp,
-diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-index 05c2147..3283c6a 100644
---- a/include/linux/zsmalloc.h
-+++ b/include/linux/zsmalloc.h
-@@ -36,7 +36,7 @@ enum zs_mapmode {
- 
- struct zs_pool;
- 
--struct zs_pool *zs_create_pool(gfp_t flags);
-+struct zs_pool *zs_create_pool(char *name, gfp_t flags);
- void zs_destroy_pool(struct zs_pool *pool);
- 
- unsigned long zs_malloc(struct zs_pool *pool, size_t size);
-diff --git a/mm/zbud.c b/mm/zbud.c
-index db8de74..6d7f128 100644
---- a/mm/zbud.c
-+++ b/mm/zbud.c
-@@ -130,7 +130,8 @@ static struct zbud_ops zbud_zpool_ops = {
- 	.evict =	zbud_zpool_evict
- };
- 
--static void *zbud_zpool_create(gfp_t gfp, struct zpool_ops *zpool_ops)
-+static void *zbud_zpool_create(char *name, gfp_t gfp,
-+			struct zpool_ops *zpool_ops)
- {
- 	return zbud_create_pool(gfp, zpool_ops ? &zbud_zpool_ops : NULL);
- }
-diff --git a/mm/zpool.c b/mm/zpool.c
-index 739cdf0..bacdab6 100644
---- a/mm/zpool.c
-+++ b/mm/zpool.c
-@@ -129,6 +129,7 @@ static void zpool_put_driver(struct zpool_driver *driver)
- /**
-  * zpool_create_pool() - Create a new zpool
-  * @type	The type of the zpool to create (e.g. zbud, zsmalloc)
-+ * @name	The name of the zpool (e.g. zram0, zswap)
-  * @gfp		The GFP flags to use when allocating the pool.
-  * @ops		The optional ops callback.
-  *
-@@ -140,7 +141,8 @@ static void zpool_put_driver(struct zpool_driver *driver)
-  *
-  * Returns: New zpool on success, NULL on failure.
-  */
--struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops)
-+struct zpool *zpool_create_pool(char *type, char *name, gfp_t gfp,
-+		struct zpool_ops *ops)
- {
- 	struct zpool_driver *driver;
- 	struct zpool *zpool;
-@@ -168,7 +170,7 @@ struct zpool *zpool_create_pool(char *type, gfp_t gfp, struct zpool_ops *ops)
- 
- 	zpool->type = driver->type;
- 	zpool->driver = driver;
--	zpool->pool = driver->create(gfp, ops);
-+	zpool->pool = driver->create(name, gfp, ops);
- 	zpool->ops = ops;
- 
- 	if (!zpool->pool) {
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index b724039..2359e61 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -246,9 +246,9 @@ struct mapping_area {
- 
- #ifdef CONFIG_ZPOOL
- 
--static void *zs_zpool_create(gfp_t gfp, struct zpool_ops *zpool_ops)
-+static void *zs_zpool_create(char *name, gfp_t gfp, struct zpool_ops *zpool_ops)
- {
--	return zs_create_pool(gfp);
-+	return zs_create_pool(name, gfp);
- }
- 
- static void zs_zpool_destroy(void *pool)
-@@ -1148,7 +1148,7 @@ EXPORT_SYMBOL_GPL(zs_free);
-  * On success, a pointer to the newly created pool is returned,
-  * otherwise NULL.
-  */
--struct zs_pool *zs_create_pool(gfp_t flags)
-+struct zs_pool *zs_create_pool(char *name, gfp_t flags)
- {
- 	int i;
- 	struct zs_pool *pool;
-diff --git a/mm/zswap.c b/mm/zswap.c
-index 373326b..a358823 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -906,11 +906,12 @@ static int __init init_zswap(void)
- 
- 	pr_info("loading zswap\n");
- 
--	zswap_pool = zpool_create_pool(zswap_zpool_type, gfp, &zswap_zpool_ops);
-+	zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", gfp,
-+					&zswap_zpool_ops);
- 	if (!zswap_pool && strcmp(zswap_zpool_type, ZSWAP_ZPOOL_DEFAULT)) {
- 		pr_info("%s zpool not available\n", zswap_zpool_type);
- 		zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
--		zswap_pool = zpool_create_pool(zswap_zpool_type, gfp,
-+		zswap_pool = zpool_create_pool(zswap_zpool_type, "zswap", gfp,
- 					&zswap_zpool_ops);
- 	}
- 	if (!zswap_pool) {
+The same goes for the other parts you pointed out.
+
+Best Regards,
+
+Boris
+
 -- 
-1.7.9.5
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
