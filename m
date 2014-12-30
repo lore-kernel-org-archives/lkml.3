@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746AbaL3AO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 19:14:29 -0500
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:55540 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaL3AO1 (ORCPT
+	id S1752348AbaL3AU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 19:20:56 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:57526 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667AbaL3AUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 19:14:27 -0500
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: broonie@kernel.org
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, lgirdwood@gmail.com, a_bouin@yahoo.fr,
-        timur@tabi.org, Xiubo.Lee@gmail.com, festevam@gmail.com
-Subject: [PATCH] ASoC: fsl_esai: Fix incorrect xDC field width of xCCR registers
-Date: Mon, 29 Dec 2014 16:13:51 -0800
-Message-Id: <1419898431-11336-1-git-send-email-nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 29 Dec 2014 19:20:53 -0500
+From: Vinson Lee <vlee@twopensource.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Vinson Lee <vlee@twitter.com>
+Subject: [PATCH] crypto: sha-mb - Add avx2_supported check.
+Date: Mon, 29 Dec 2014 16:20:39 -0800
+Message-Id: <1419898842-9447-1-git-send-email-vlee@twopensource.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The xDC field should have 5 bit width according to Reference Manual.
-Thus this patch fixes it.
+From: Vinson Lee <vlee@twitter.com>
 
-Signed-off-by: Aurelien BOUIN <a_bouin@yahoo.fr>
-Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+This patch fixes this allyesconfig target build error with older
+binutils.
+
+  LD      arch/x86/crypto/built-in.o
+ld: arch/x86/crypto/sha-mb/built-in.o: No such file: No such file or directory
+
+Cc: stable@vger.kernel.org # 3.18+
+Signed-off-by: Vinson Lee <vlee@twitter.com>
 ---
+ arch/x86/crypto/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The patch was originally submitted by Aurelien BOUIN while in an
-informal way. And he hasn't finished any re-submitting during the
-past two weeks. Thus I create a new patch with his signed-off
-included so as to fix the probelm as soon as possible, not sure
-whether it's decent or not though.
-
---Nicolin
-
- sound/soc/fsl/fsl_esai.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/soc/fsl/fsl_esai.h b/sound/soc/fsl/fsl_esai.h
-index 91a550f..5e793bb 100644
---- a/sound/soc/fsl/fsl_esai.h
-+++ b/sound/soc/fsl/fsl_esai.h
-@@ -302,7 +302,7 @@
- #define ESAI_xCCR_xFP_MASK	(((1 << ESAI_xCCR_xFP_WIDTH) - 1) << ESAI_xCCR_xFP_SHIFT)
- #define ESAI_xCCR_xFP(v)	((((v) - 1) << ESAI_xCCR_xFP_SHIFT) & ESAI_xCCR_xFP_MASK)
- #define ESAI_xCCR_xDC_SHIFT     9
--#define ESAI_xCCR_xDC_WIDTH	4
-+#define ESAI_xCCR_xDC_WIDTH	5
- #define ESAI_xCCR_xDC_MASK	(((1 << ESAI_xCCR_xDC_WIDTH) - 1) << ESAI_xCCR_xDC_SHIFT)
- #define ESAI_xCCR_xDC(v)	((((v) - 1) << ESAI_xCCR_xDC_SHIFT) & ESAI_xCCR_xDC_MASK)
- #define ESAI_xCCR_xPSR_SHIFT	8
+diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
+index fd0f848..5a4a089 100644
+--- a/arch/x86/crypto/Makefile
++++ b/arch/x86/crypto/Makefile
+@@ -26,7 +26,6 @@ obj-$(CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL) += ghash-clmulni-intel.o
+ 
+ obj-$(CONFIG_CRYPTO_CRC32C_INTEL) += crc32c-intel.o
+ obj-$(CONFIG_CRYPTO_SHA1_SSSE3) += sha1-ssse3.o
+-obj-$(CONFIG_CRYPTO_SHA1_MB) += sha-mb/
+ obj-$(CONFIG_CRYPTO_CRC32_PCLMUL) += crc32-pclmul.o
+ obj-$(CONFIG_CRYPTO_SHA256_SSSE3) += sha256-ssse3.o
+ obj-$(CONFIG_CRYPTO_SHA512_SSSE3) += sha512-ssse3.o
+@@ -46,6 +45,7 @@ endif
+ ifeq ($(avx2_supported),yes)
+ 	obj-$(CONFIG_CRYPTO_CAMELLIA_AESNI_AVX2_X86_64) += camellia-aesni-avx2.o
+ 	obj-$(CONFIG_CRYPTO_SERPENT_AVX2_X86_64) += serpent-avx2.o
++	obj-$(CONFIG_CRYPTO_SHA1_MB) += sha-mb/
+ endif
+ 
+ aes-i586-y := aes-i586-asm_32.o aes_glue.o
 -- 
-1.9.1
+1.7.1
 
