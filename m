@@ -1,130 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083AbaL3JF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 04:05:56 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:37261 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756AbaL3JFw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 04:05:52 -0500
+	id S1752131AbaL3JGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 04:06:11 -0500
+Received: from mga01.intel.com ([192.55.52.88]:13180 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752086AbaL3JGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 04:06:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,664,1413270000"; 
+   d="scan'208";a="630700765"
+Message-ID: <54A26A96.4080505@intel.com>
+Date: Tue, 30 Dec 2014 11:04:22 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <54A19C17.1020909@ti.com>
-References: <1419331716-8972-1-git-send-email-m.szyprowski@samsung.com>
-	<1419331716-8972-3-git-send-email-m.szyprowski@samsung.com>
-	<54A19C17.1020909@ti.com>
-Date: Tue, 30 Dec 2014 18:05:51 +0900
-Message-ID: <CA+Ln22G3kVA_-tsjAxbe2rqSHeLtdU2X_EhNL0uW3cUCgaWLgg@mail.gmail.com>
-Subject: Re: [PATCH v10 2/8] ARM: l2c: Refactor the driver to use commit-like interface
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, Daniel Drake <drake@endlessm.com>,
-        Jon Loeliger <loeliger@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kevin Hilman <khilman@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Namhyung Kim <namhyung@kernel.org>
+CC: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 02/37] perf record: Use a software dummy event to track
+ task/mmap events
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org> <1419405333-27952-3-git-send-email-namhyung@kernel.org> <549D8C59.1000700@gmail.com> <CAM9d7chzE5ffPO=AwmjBEpbHb38xLJt4nhg-=Cjgj7tz+jCLZA@mail.gmail.com> <54A14FE4.9070601@intel.com> <20141230055111.GE6081@sejong>
+In-Reply-To: <20141230055111.GE6081@sejong>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks a lot for investigating this, even before I could look into
-splitting this.
-
-2014-12-30 3:23 GMT+09:00 Nishanth Menon <nm@ti.com>:
-> On 12/23/2014 04:48 AM, Marek Szyprowski wrote:
->
->> -static void l2c310_resume(void)
->> +static void l2c310_configure(void __iomem *base)
->>  {
->> -     void __iomem *base = l2x0_base;
->> +     unsigned revision;
+On 30/12/14 07:51, Namhyung Kim wrote:
+> Hi Adrian,
+> 
+> On Mon, Dec 29, 2014 at 02:58:12PM +0200, Adrian Hunter wrote:
+>> On 27/12/14 07:28, Namhyung Kim wrote:
+>>> Hi David,
+>>>
+>>> On Sat, Dec 27, 2014 at 1:27 AM, David Ahern <dsahern@gmail.com> wrote:
+>>>> On 12/24/14 12:14 AM, Namhyung Kim wrote:
+>>>>>
+>>>>> Prepend a software dummy event into evlist to track task/comm/mmap
+>>>>> events separately.  This is a preparation of multi-file/thread support
+>>>>> which will come later.
+>>>>
+>>>>
+>>>> Are you are making this the first event because of how perf internals are
+>>>> coded -- that the first event tracks tasks events? With the tracking bit in
+>>>> evsel you should not need to do that. Is there another reason?
+>>>
+>>> Yeah, I know the tracking bit can be set to any evsel in the evlist.
+>>> But I'd like to keep it at a fixed index so that it can be easily
+>>> identified at later stages (like perf report) too.  Ideally, it'd be
+>>> great if we have a way to distinguish this auto-added dummy tracking
+>>> event from other (user-added) (dummy?) tracking events if any.
+>>>
+>>>>
+>>>> ---8<---
+>>>>
+>>>>> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+>>>>> index cfbe2b99b9aa..72dff295237e 100644
+>>>>> --- a/tools/perf/util/evlist.c
+>>>>> +++ b/tools/perf/util/evlist.c
+>>>>> @@ -193,6 +193,44 @@ int perf_evlist__add_default(struct perf_evlist
+>>>>> *evlist)
+>>>>>         return -ENOMEM;
+>>>>>   }
+>>>>>
+>>>>> +int perf_evlist__prepend_dummy(struct perf_evlist *evlist)
+>>>>> +{
+>>>>> +       struct perf_event_attr attr = {
+>>>>> +               .type = PERF_TYPE_SOFTWARE,
+>>>>> +               .config = PERF_COUNT_SW_DUMMY,
 >>
->> -     if (!(readl_relaxed(base + L2X0_CTRL) & L2X0_CTRL_EN)) {
->> -             unsigned revision;
->> -
->> -             /* restore pl310 setup */
->> -             writel_relaxed(l2x0_saved_regs.tag_latency,
->> -                            base + L310_TAG_LATENCY_CTRL);
->> -             writel_relaxed(l2x0_saved_regs.data_latency,
->> -                            base + L310_DATA_LATENCY_CTRL);
->> -             writel_relaxed(l2x0_saved_regs.filter_end,
->> -                            base + L310_ADDR_FILTER_END);
->> -             writel_relaxed(l2x0_saved_regs.filter_start,
->> -                            base + L310_ADDR_FILTER_START);
->> -
->> -             revision = readl_relaxed(base + L2X0_CACHE_ID) &
->> -                             L2X0_CACHE_ID_RTL_MASK;
->> -
->> -             if (revision >= L310_CACHE_ID_RTL_R2P0)
->> -                     l2c_write_sec(l2x0_saved_regs.prefetch_ctrl, base,
->> -                                   L310_PREFETCH_CTRL);
->> -             if (revision >= L310_CACHE_ID_RTL_R3P0)
->> -                     l2c_write_sec(l2x0_saved_regs.pwr_ctrl, base,
->> -                                   L310_POWER_CTRL);
->> -
->> -             l2c_enable(base, l2x0_saved_regs.aux_ctrl, 8);
->> -
->> -             /* Re-enable full-line-of-zeros for Cortex-A9 */
->> -             if (l2x0_saved_regs.aux_ctrl & L310_AUX_CTRL_FULL_LINE_ZERO)
->> -                     set_auxcr(get_auxcr() | BIT(3) | BIT(2) | BIT(1));
->> -     }
->> +     /* restore pl310 setup */
->> +     writel_relaxed(l2x0_saved_regs.tag_latency,
->> +                    base + L310_TAG_LATENCY_CTRL);
->> +     writel_relaxed(l2x0_saved_regs.data_latency,
->> +                    base + L310_DATA_LATENCY_CTRL);
->> +     writel_relaxed(l2x0_saved_regs.filter_end,
->> +                    base + L310_ADDR_FILTER_END);
->> +     writel_relaxed(l2x0_saved_regs.filter_start,
->> +                    base + L310_ADDR_FILTER_START);
->> +
->
-> ^^ The above change broke AM437xx. Looks like the change causes the
-> following behavior difference on AM437x. For some reason, touching any
-> of the above 4 registers(even with the values read from the same
-> registers) causes AM437x to go beserk. Comment the 4 writes and we
-> reach shell. looks like l2c310_resume is not invoked prior to this
-> series. :(.. now that we reuse that logic to actually do programming,
-> we start to see the problem.
+>> Probably need .exclude_kernel = 1, here
+> 
+> Ah, right.
+> 
+>>
+>>>>> +       };
+>>>>> +       struct perf_evsel *evsel, *pos;
+>>>>> +
+>>>>> +       event_attr_init(&attr);
+>>>>> +
+>>>>> +       evsel = perf_evsel__new(&attr);
+>>>>> +       if (evsel == NULL)
+>>>>> +               goto error;
+>>>>> +
+>>>>> +       /* use strdup() because free(evsel) assumes name is allocated */
+>>>>> +       evsel->name = strdup("dummy");
+>>>>> +       if (!evsel->name)
+>>>>> +               goto error_free;
+>>>>> +
+>>>>> +       list_for_each_entry(pos, &evlist->entries, node) {
+>>>>> +               pos->idx += 1;
+>>>>> +               pos->tracking = false;
+>>>>> +       }
+>>>>> +
+>>>>> +       list_add(&evsel->node, &evlist->entries);
+>>>>> +       evsel->idx = 0;
+>>>>> +       evsel->tracking = true;
+>>>>
+>>>>
+>>>> perf_evlist__set_tracking_event()?
+>>>
+>>> I found that after I wrote this, so yes, it can use the function
+>>> instead of the oped-code.  But the loop traversal is needed anyway to
+>>> fixup the evsel->idx.
+>>
+>> perf_evlist__set_tracking_event() also ensures there is only one tracking
+>> event so it is easy to identify. It is the only event with attr->mmap etc
+>> set to 1. Then you can use perf_evlist__add().
+> 
+> Well, yes, I think we can put the dummy tracking event anywhere in the
+> evlist with this, but I still slightly prefer put it at a fixed
+> location for a possible code simplification..
 
-Hmm, but the thing is that .configure() should not be called if the
-controller is already configured, i.e. L2X0_CTRL_EN in L2X0_CTRL is
-set. Maybe I missed some check somewhere. Let me reread my code I
-wrote quite a long time ago and make sure.
+Probably you should not be checking for the "tracking event" at all on the
+processing side and instead just have perf report ignore all dummy events.
+That generalizes things even more.
 
->
-> one option might be to write only those registers that differ from
-> saved_registers (example: unmodified values dont need reprogramming).
->
-> Looks like the following also need addressing:
-> data->save is called twice (once more after l2cof_init)
-> l2c310_init_fns also needs l2c310_configure
-> will be nice to use l2x0_data only after we kmemdup data in __l2c_init
+What is the code simplification?
 
-I'll check this.
-
->
-> if you'd like to split this up in pieces, [1] might be nice - will go
-> good to change the pl310, aurora etc in each chunks to enable better
-> review.
-
-Thanks a lot, the split up version will be definitely useful. Just to
-make sure, the parts look quite bisectable, but have you verified that
-applying the changes one by one leave the L2 cache working on OMAP?
-
->
-> [1]
-> https://github.com/nmenon/linux-2.6-playground/commits/temp/l2c-patch2-splitup
-
-Best regards,
-Tomasz
