@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaL3MbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 07:31:14 -0500
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:39830 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaL3MbN (ORCPT
+	id S1752582AbaL3Mev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 07:34:51 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:58326 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977AbaL3Met (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 07:31:13 -0500
-Message-ID: <54A29B0A.3060707@hurleysoftware.com>
-Date: Tue, 30 Dec 2014 07:31:06 -0500
+	Tue, 30 Dec 2014 07:34:49 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Francesco Ruggeri <fruggeri@aristanetworks.com>,
-        Francesco Ruggeri <fruggeri@arista.com>
-Subject: Re: [PATCH] Revert "tty: Fix pty master poll() after slave closes
- v2"
-References: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Shreyas Bethur <shreyas.bethur@ni.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH] tty: Prevent hw state corruption in exclusive mode reopen
+Date: Tue, 30 Dec 2014 07:34:33 -0500
+Message-Id: <1419942873-6779-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2014 07:17 AM, Peter Hurley wrote:
-> This reverts commit c4dc304677e8d566572c4738d95c48be150c6606.
-> This fix is superseded by commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
-> 'pty, n_tty: Simplify input processing on final close'.
-> 
-> The final close now waits for input processing to complete before
-> destroying the pty, so poll() does not need to special case this
-> condition.
+Exclusive mode ttys (TTY_EXCLUSIVE) do not allow further reopens;
+fail the condition before associating the file pointer and calling
+the driver open() method.
 
-Greg,
+Prevents DTR programming when the tty is already in exclusive mode.
 
-As noted in this commit log, commit c4dc304677e8d566572c4738d95c48be150c6606,
-'tty: Fix pty master poll() after slave closes v2', is not required
-after commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
-'pty, n_tty: Simplify input processing on final close'
+Reported-by: Shreyas Bethur <shreyas.bethur@ni.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_io.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-However, 'tty: Fix pty master poll() after slave closes v2' is appropriate
-for stable back to v3.12.
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 4f35b43..8629087 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2091,6 +2091,11 @@ retry_open:
+ 		goto err_file;
+ 	}
+ 
++	if (test_bit(TTY_EXCLUSIVE, &tty->flags) && !capable(CAP_SYS_ADMIN)) {
++		retval = -EBUSY;
++		goto err_file;
++	}
++
+ 	tty_add_file(tty, filp);
+ 
+ 	check_tty_count(tty, __func__);
+@@ -2106,10 +2111,6 @@ retry_open:
+ 		retval = -ENODEV;
+ 	filp->f_flags = saved_flags;
+ 
+-	if (!retval && test_bit(TTY_EXCLUSIVE, &tty->flags) &&
+-						!capable(CAP_SYS_ADMIN))
+-		retval = -EBUSY;
+-
+ 	if (retval) {
+ #ifdef TTY_DEBUG_HANGUP
+ 		printk(KERN_DEBUG "%s: error %d in opening %s...\n", __func__,
+-- 
+2.2.1
 
-Regards,
-Peter Hurley
