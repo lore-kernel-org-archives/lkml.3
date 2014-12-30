@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968AbaL3Wmw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 17:42:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54074 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748AbaL3Wmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 17:42:51 -0500
-Date: Tue, 30 Dec 2014 23:42:48 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-cc: Borislav Petkov <bp@alien8.de>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "egrumbach@gmail.com" <egrumbach@gmail.com>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>
-Subject: Re: iwlwifi-driver card doesn't work with 3.19-rc2+
-In-Reply-To: <54A328C2.5080606@lwfinger.net>
-Message-ID: <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz>
-References: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz> <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com> <54A2B807.1020202@hurleysoftware.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DC915@hasmsx107.ger.corp.intel.com>
- <alpine.LNX.2.00.1412301610320.31609@pobox.suse.cz> <1419971304.30412.0.camel@egrumbacBox> <alpine.LNX.2.00.1412302135520.31609@pobox.suse.cz> <20141230212326.GA29263@pd.tnic> <54A328C2.5080606@lwfinger.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752007AbaL3Wne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 17:43:34 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:37161 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748AbaL3Wnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 17:43:33 -0500
+X-IronPort-AV: E=Sophos;i="5.07,668,1413270000"; 
+   d="scan'208";a="53944297"
+From: Jonathan Richardson <jonathar@broadcom.com>
+To: Tim Kryger <tim.kryger@gmail.com>
+CC: Scott Branden <sbranden@broadcom.com>,
+        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
+        Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pwm@vger.kernel.org>,
+        "Jonathan Richardson" <jonathar@broadcom.com>
+Subject: [PATCH v4 0/3] Fix bugs in kona pwm driver and pwm core
+Date: Tue, 30 Dec 2014 14:43:27 -0800
+Message-ID: <1419979410-7589-1-git-send-email-jonathar@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Jonathan Richardson <jonathar@broadcom.com>
+References: <Jonathan Richardson <jonathar@broadcom.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Dec 2014, Larry Finger wrote:
+This patchset fixes a number of bugs in the Broadcom Kona pwm driver. It also 
+fixes a bug in the pwm core where the state was incorrect on failed calls to
+enable.
 
-> > > If wireless maintainers think otherwise, I'll send a revert request to
-> > > Linus for consideration.
-> > 
-> > I wonder if the reaction would be like this one:
-> > 
-> > https://lkml.org/lkml/2012/12/23/75
-> > 
-> > :-)
-> 
-> It would be a little like that.
-> 
-> One thread of interest is https://lkml.org/lkml/2014/12/22/348. Commit
-> 24a0aa212ee2 ("cfg80211: make WEXT compatibility unselectable") made it
-> impossible to select the IPW2200. The patch to allow selecting the IPW2200,
-> which automatically selects CFG80211_WEXT has been added to wireless-drivers,
-> but it has not yet made it to mainline. Once it does, then choosing to build
-> the IPW2200 will provide a workaround.
-> 
-> In my opinion, the need for the IPW2200 to have CFG80211_WEXT means that the
-> original commit will likely be reverted, but your voice will help.
+Changes from v3:
+- Removed setting the pwm set to disabled if enable fails. This is now
+  done in the pwm core.
+- Removed previous change in kona_pwmc_config() that returned right away if
+  the state was disabled. The loop needs to execute to ensure that the period
+  and duty cycle are valid. Delaying this check to when the pwm is enabled is 
+  incorrect.
+- Added comments to clarify code.
+- Changed commit messages to more accurately reflect the code changes.
 
-Ok, thanks a lot for another datapoint. I am sending revert patch to Linus 
-tonight.
+Jonathan Richardson (3):
+  pwm: kona: Fix incorrect config, disable, and polarity procedures
+  pwm: kona: Remove setting default smooth type and polarity for all
+    channels
+  pwm: core: Set enable state properly on failed call to enable
+
+ drivers/pwm/core.c         |   10 +++-
+ drivers/pwm/pwm-bcm-kona.c |  116 ++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 104 insertions(+), 22 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
