@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbaL3MPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 07:15:20 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:54483 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaL3MPT convert rfc822-to-8bit (ORCPT
+	id S1752611AbaL3MR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 07:17:29 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:63886 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977AbaL3MR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 07:15:19 -0500
-Message-ID: <54A29752.2060204@arm.com>
-Date: Tue, 30 Dec 2014 12:15:14 +0000
-From: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: Fix SCTLR_EL1 initialisation
-References: <1418831421-19370-1-git-send-email-suzuki.poulose@arm.com> <20141217173915.GF30307@arm.com>
-In-Reply-To: <20141217173915.GF30307@arm.com>
-X-OriginalArrivalTime: 30 Dec 2014 12:15:15.0025 (UTC) FILETIME=[44809C10:01D0242A]
-X-MC-Unique: 114123012151701501
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Dec 2014 07:17:27 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Francesco Ruggeri <fruggeri@arista.com>
+Subject: [PATCH] Revert "tty: Fix pty master poll() after slave closes v2"
+Date: Tue, 30 Dec 2014 07:17:09 -0500
+Message-Id: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/12/14 17:39, Will Deacon wrote:
-> On Wed, Dec 17, 2014 at 03:50:21PM +0000, Suzuki K. Poulose wrote:
->> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
->>
->> We initialise the SCTLR_EL1 value by read-modify-writeback
->> of the desired bits, leaving the other bits (including reserved
->> bits(RESx)) untouched. However, sometimes the boot monitor could
->> leave garbage values in the RESx bits which could have different
->> implications. This patch makes sure that all the bits, including
->> the RESx bits, are set to the proper state, except for the
->> 'endianness' control bits, EE(25) & E0E(24)- which are set early
->> in the el2_setup.
->>
->> Updated the state of the Bit[6] in the comment to RES0 in the
->> comment.
->>
->> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> ---
->
-> Looks good to me:
->
->    Acked-by: Will Deacon <will.deacon@arm.com>
->
-> Is this 3.19 material, or simply a cleanup/being cautious?
-Sorry, for the late response. Yes this is kind of being cautious.
+This reverts commit c4dc304677e8d566572c4738d95c48be150c6606.
+This fix is superseded by commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
+'pty, n_tty: Simplify input processing on final close'.
 
-Suzuki
+The final close now waits for input processing to complete before
+destroying the pty, so poll() does not need to special case this
+condition.
 
+Cc: Francesco Ruggeri <fruggeri@arista.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index a618b10..d2dc10f 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2399,17 +2399,12 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
+ 
+ 	poll_wait(file, &tty->read_wait, wait);
+ 	poll_wait(file, &tty->write_wait, wait);
+-	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
+-		mask |= POLLHUP;
+ 	if (input_available_p(tty, 1))
+ 		mask |= POLLIN | POLLRDNORM;
+-	else if (mask & POLLHUP) {
+-		tty_flush_to_ldisc(tty);
+-		if (input_available_p(tty, 1))
+-			mask |= POLLIN | POLLRDNORM;
+-	}
+ 	if (tty->packet && tty->link->ctrl_status)
+ 		mask |= POLLPRI | POLLIN | POLLRDNORM;
++	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
++		mask |= POLLHUP;
+ 	if (tty_hung_up_p(file))
+ 		mask |= POLLHUP;
+ 	if (!(mask & (POLLHUP | POLLIN | POLLRDNORM))) {
+-- 
+2.2.1
 
