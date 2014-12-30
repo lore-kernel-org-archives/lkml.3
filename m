@@ -1,157 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaL3SkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:40:19 -0500
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:38943 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaL3SkQ (ORCPT
+	id S1751514AbaL3Sq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:46:28 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:33413 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaL3Sq1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:40:16 -0500
+	Tue, 30 Dec 2014 13:46:27 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: linux Kernel <linux-kernel@vger.kernel.org>, linux-audit@redhat.com
+Subject: Re: v3.19-rc2: crashes during boot (syslog-ng, rpcbind ...)
+Date: Tue, 30 Dec 2014 13:46:24 -0500
+Message-ID: <4559278.bMkG2euyQm@sifl>
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <5490032.bFDrnJqxyv@sifl>
+References: <54A17C49.5080102@gmx.de> <54A1B724.8070106@gmx.de> <5490032.bFDrnJqxyv@sifl>
 MIME-Version: 1.0
-In-Reply-To: <1419457167-15042-1-git-send-email-richard@nod.at>
-References: <1419457167-15042-1-git-send-email-richard@nod.at>
-Date: Tue, 30 Dec 2014 10:40:15 -0800
-X-Google-Sender-Auth: iShV_9XoE839xPvx2xFPdP3s1lU
-Message-ID: <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
-From: Kees Cook <keescook@chromium.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>,
-        DaeSeok Youn <daeseok.youn@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Brad Spengler <spender@grsecurity.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 1:39 PM, Richard Weinberger <richard@nod.at> wrote:
-> While exploring the offset2lib attack I remembered that
-> grsecurity has an interesting feature to make such attacks
-> much harder. Exploits can brute stack canaries often very easily
-> if the target is a forking server like sshd or Apache httpd.
-> The problem is that after fork() the child has by definition
-> exactly the same memory as the parent and therefore also the same
-> stack canaries.
-> The attacker can guess the stack canaries byte by byte.
-> After 256 times 7 forks() a good exploit can find the correct
-> canary value.
+On Tuesday, December 30, 2014 09:11:32 AM Paul Moore wrote:
+> On Monday, December 29, 2014 09:18:44 PM Toralf Förster wrote:
+> > On 12/29/2014 08:41 PM, Paul Moore wrote:
+> > > To help verify that I'm heading down the right path, could you share
+> > > your audit configuration as well?  If that's not possible, can you at
+> > > least confirm that you using a few audit directory watches?
+> > 
+> > Well, it is just a victim system for trinity - but I did not configured
+> > auditd in a special manner - so it is just the plain default configuration
+> > of Gentoo:
 >
-> The basic idea behind this patch is to delay fork() if a child died
-> due to a fatal error.
-> Currently it delays fork() by 30 seconds if the parent tries to fork()
-> within 60 seconds after a child died due to a fatal error.
->
-> I'm sure you'll hate this patch but I want to find out how much you hate it
-> and whether there is a little chance to get it mainline in a modified form.
-> Later I'd make it depend on a new Kconfig option and off by default
-> and the timing constants changeable via sysctl.
->
-> Credit for the concept goes to grsecurity folks, I'll take the flames.
->
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  fs/coredump.c         | 10 ++++++++++
->  include/linux/sched.h |  1 +
->  kernel/fork.c         |  7 +++++++
->  3 files changed, 18 insertions(+)
->
-> diff --git a/fs/coredump.c b/fs/coredump.c
-> index b5c86ff..d7730c8 100644
-> --- a/fs/coredump.c
-> +++ b/fs/coredump.c
-> @@ -512,6 +512,7 @@ void do_coredump(const siginfo_t *siginfo)
->         bool need_nonrelative = false;
->         bool core_dumped = false;
->         static atomic_t core_dump_count = ATOMIC_INIT(0);
-> +       int sig = siginfo->si_signo;
->         struct coredump_params cprm = {
->                 .siginfo = siginfo,
->                 .regs = signal_pt_regs(),
-> @@ -526,6 +527,15 @@ void do_coredump(const siginfo_t *siginfo)
->
->         audit_core_dumps(siginfo->si_signo);
->
-> +       if (sig == SIGSEGV || sig == SIGBUS || sig == SIGKILL || sig == SIGILL) {
+> Okay, thanks for the information; the file related syscall watches are
+> likely what triggered the problem code.  Until I've got the fix sorted out,
+> removing the syscall watches or just disabling auditd from starting at boot
+> should workaround the problem.
 
-I think we should add SIGSYS to this list.
+I still want to go over the below patch a bit more to check a few things, but 
+it solves the problem for me and I believe it should solve the problem you are 
+seeing as well.  Can you give it a try and let me know what happens?
 
-> +               rcu_read_lock();
-> +               read_lock(&tasklist_lock);
-> +               if (current->real_parent && (current->flags & PF_FORKNOEXEC))
-> +                       current->real_parent->brute_expires = get_seconds() + (30 * 60);
-> +               read_unlock(&tasklist_lock);
-> +               rcu_read_unlock();
-> +       }
-> +
->         binfmt = mm->binfmt;
->         if (!binfmt || !binfmt->core_dump)
->                 goto fail;
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 8db31ef..c616735 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1701,6 +1701,7 @@ struct task_struct {
->  #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
->         unsigned long   task_state_change;
->  #endif
-> +       unsigned long brute_expires;
->  };
->
->  /* Future-safe accessor for struct task_struct's cpus_allowed. */
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 4dc2dda..178c80e 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -74,6 +74,7 @@
->  #include <linux/uprobes.h>
->  #include <linux/aio.h>
->  #include <linux/compiler.h>
-> +#include <linux/delay.h>
->
->  #include <asm/pgtable.h>
->  #include <asm/pgalloc.h>
-> @@ -352,6 +353,8 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
->         tsk->splice_pipe = NULL;
->         tsk->task_frag.page = NULL;
->
-> +       tsk->brute_expires = 0;
-> +
->         account_kernel_stack(ti, 1);
->
->         return tsk;
-> @@ -1669,6 +1672,10 @@ long do_fork(unsigned long clone_flags,
->                 if (clone_flags & CLONE_PARENT_SETTID)
->                         put_user(nr, parent_tidptr);
->
-> +               if (unlikely(current->brute_expires) && time_before(get_seconds(),
-> +                   current->brute_expires))
-> +                       msleep(30 * 1000);
-> +
->                 if (clone_flags & CLONE_VFORK) {
->                         p->vfork_done = &vfork;
->                         init_completion(&vfork);
-> --
-> 2.1.0
->
-
-Instead of open-coding the checks here, maybe it'd make sense to
-extract the "attach" and "check" logic into explicit functions that
-can be CONFIG stubbed out? This is how grsec handles it via their
-gr_handle_brute_* functions.
-
-Regardless, I'm for adding this feature to mainline. :)
-
--Kees
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 287b3d3..d834770 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -72,6 +72,8 @@
+ #include <linux/fs_struct.h>
+ #include <linux/compat.h>
+ #include <linux/ctype.h>
++#include <linux/string.h>
++#include <uapi/linux/limits.h>
+ 
+ #include "audit.h"
+ 
+@@ -1862,7 +1864,7 @@ void __audit_inode(struct filename *name, const struct 
+dentry *dentry,
+ 
+ 	list_for_each_entry_reverse(n, &context->names_list, list) {
+ 		/* does the name pointer match? */
+-		if (!n->name || n->name->name != name->name)
++		if (!n->name || strcmp(n->name->name, name->name))
+ 			continue;
+ 
+ 		/* match the correct record type */
+@@ -1881,14 +1883,39 @@ out_alloc:
+ 	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
+ 	if (!n)
+ 		return;
+-	if (name)
+-		/* since name is not NULL we know there is already a matching
+-		 * name record, see audit_getname(), so there must be a type
+-		 * mismatch; reuse the string path since the original name
+-		 * record will keep the string valid until we free it in
+-		 * audit_free_names() */
+-		n->name = name;
++	/* unfortunately, while we may have a path name to record with the
++	 * inode, we can't always rely on the string lasting until the end of
++	 * the syscall so we need to create our own copy, it may fail due to
++	 * memory allocation issues, but we do our best */
++	if (name) {
++		/* we can't use getname_kernel() due to size limits */
++		struct filename *new = __getname();
+ 
++		if (unlikely(!new))
++			goto out;
++
++		memset(new, 0, sizeof(*new));
++		if ((strlen(name->name) + 1) <= (PATH_MAX - sizeof(*new))) {
++			char *new_name = (char *)(new) + sizeof(*new);
++			new->name = new_name;
++			new->separate = false;
++		} else {
++			/* this looks odd, but is due to final_putname() */
++			struct filename *new2;
++			new2 = kzalloc(sizeof(*new2), GFP_KERNEL);
++			if (unlikely(!new2)) {
++				__putname(new);
++				goto out;
++			}
++			new2->name = (char *)new;
++			new = new2;
++			new->separate = true;
++		}
++		strcpy((char *)new->name, name->name);
++		new->aname = n;
++		n->name = new;
++		n->name_put = true;
++	}
+ out:
+ 	if (parent) {
+ 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
 
 -- 
-Kees Cook
-Chrome OS Security
+paul moore
+www.paul-moore.com
+
