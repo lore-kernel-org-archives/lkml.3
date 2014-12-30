@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaL3WQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 17:16:01 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:45718 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751939AbaL3WP7 (ORCPT
+	id S1751986AbaL3WSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 17:18:53 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50046 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748AbaL3WSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 17:15:59 -0500
-Date: Wed, 31 Dec 2014 00:15:22 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        Lee Jones <lee.jones@linaro.org>, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v9 07/19] dt-binding: mfd: max77693: Add DT binding
- related macros
-Message-ID: <20141230221522.GO17565@valkosipuli.retiisi.org.uk>
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-8-git-send-email-j.anaszewski@samsung.com>
+	Tue, 30 Dec 2014 17:18:52 -0500
+Message-ID: <54A324C5.4080605@hitachi.com>
+Date: Wed, 31 Dec 2014 07:18:45 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417622814-10845-8-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: problems with perf probe and system libraries
+References: <54A2285F.3040200@gmail.com>
+In-Reply-To: <54A2285F.3040200@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+Hi David,
 
-The driver depends on these so I'd rearrange this patch in the set before
-the driver patch.
-
-On Wed, Dec 03, 2014 at 05:06:42PM +0100, Jacek Anaszewski wrote:
-> Add macros for max77693 led part related binding.
+(2014/12/30 13:21), David Ahern wrote:
+> Hi Masami:
 > 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
->  include/dt-bindings/mfd/max77693.h |   38 ++++++++++++++++++++++++++++++++++++
->  1 file changed, 38 insertions(+)
->  create mode 100644 include/dt-bindings/mfd/max77693.h
+> I have been looking at perf-probe again and having a number of problems 
+> with top of tree.
 > 
-> diff --git a/include/dt-bindings/mfd/max77693.h b/include/dt-bindings/mfd/max77693.h
-> new file mode 100644
-> index 0000000..4011cb47
-> --- /dev/null
-> +++ b/include/dt-bindings/mfd/max77693.h
-> @@ -0,0 +1,38 @@
-> +/*
-> + * This header provides macros for MAX77693 device binding
-> + *
-> + * Copyright (C) 2014, Samsung Electronics Co., Ltd.
-> + *
-> + * Author: Jacek Anaszewski <j.anaszewski@samsung.com>
-> + */
-> +
-> +#ifndef __DT_BINDINGS_MAX77693_H__
-> +#define __DT_BINDINGS_MAX77693_H
-> +
-> +/* External control pins */
-> +#define MAX77693_LED_FLED_UNUSED	0
-> +#define MAX77693_LED_FLED_USED		1
-> +
-> +/* FLED pins */
-> +#define MAX77693_LED_FLED1		1
-> +#define MAX77693_LED_FLED2		2
+> Here's the first one I have isolated:
+> 
+> $ perf probe -x /lib64/libc-2.18.so -a 'malloc  size=%di'
+> Probe point 'malloc' not found.
+>    Error: Failed to add events.
 
-I'd personally simply use numbers for the above but I can't really say to be
-an expert on the topic.
+It seems to fail when failed to open debuginfo.
+I confirmed it on ubuntu 14.04 too.
+I'll try to fix that.
 
-> +/* External trigger type */
-> +#define MAX77693_LED_TRIG_TYPE_EDGE	0
-> +#define MAX77693_LED_TRIG_TYPE_LEVEL	1
-> +
-> +/* Trigger flags */
-> +#define MAX77693_LED_TRIG_FLASHEN	(1 << 0)
-> +#define MAX77693_LED_TRIG_TORCHEN	(1 << 1)
-> +#define MAX77693_LED_TRIG_SOFTWARE	(1 << 2)
-> +
-> +#define MAX77693_LED_TRIG_ALL		(MAX77693_LED_TRIG_FLASHEN | \
-> +					 MAX77693_LED_TRIG_TORCHEN | \
-> +					 MAX77693_LED_TRIG_SOFTWARE)
-> +
-> +/* Boost modes */
-> +#define MAX77693_LED_BOOST_OFF		0
-> +#define MAX77693_LED_BOOST_ADAPTIVE	1
-> +#define MAX77693_LED_BOOST_FIXED	2
-> +
-> +#endif /* __DT_BINDINGS_MAX77693_H */
+Thank you for reporting!
+
+> 
+> $ perf probe -x /lib64/libc-2.18.so -F | grep malloc
+> malloc
+> malloc@plt
+> malloc_atfork
+> malloc_check
+> malloc_consolidate
+> malloc_hook_ini
+> malloc_info
+> malloc_printerr
+> mallochook
+> ptmalloc_init
+> ptmalloc_init.part.8
+> ptmalloc_lock_all
+> ptmalloc_unlock_all
+> ptmalloc_unlock_all2
+> tr_mallochook
+> 
+> $ perf probe -x /lib64/libc-2.18.so -a 'malloc=malloc size=%di'
+> Probe point 'malloc' not found.
+>    Error: Failed to add events.
+> 
+> A year ago (v3.12) this worked fine so I did a git bisect which points to:
+> 
+> commit fb7345bbf7fad9bf72ef63a19c707970b9685812
+> Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Date:   Thu Dec 26 05:41:53 2013 +0000
+> 
+>      perf probe: Support basic dwarf-based operations on uprobe events
+> 
+> I have tried top of tree on Fedora 16, 18 and 20 with a variety of 
+> kernels - and a variety of results. Reverting to 
+> 8a613d40e389b723fd5889ac8d4033ed4030be31 which is the commit before this 
+> one and it works again.
+> 
+> David
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
 -- 
-Regards,
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+
