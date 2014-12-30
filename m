@@ -1,83 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaL3SF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:05:56 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:62848 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaL3SFy (ORCPT
+	id S1751555AbaL3SNH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:13:07 -0500
+Received: from smtp.2z.net ([209.23.134.46]:34827 "EHLO smtp.2z.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751340AbaL3SNB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:05:54 -0500
-Date: Tue, 30 Dec 2014 19:05:49 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Laurent Georget <laurent.georget@supelec.fr>
-Cc: linux-man <linux-man@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] adjtimex.2: Add details about ADJ_FREQUENCY
-Message-ID: <20141230180549.GB7403@localhost.localdomain>
-References: <54A2DEAD.2050708@supelec.fr>
+	Tue, 30 Dec 2014 13:13:01 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A2DEAD.2050708@supelec.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+To: Recipients <info@sk.net>
+From: "SK" <info@sk.net>
+Date: Tue, 30 Dec 2014 20:18:45 +0400
+Reply-To: sermonkwan121@sina.com
+X-WatchGuard-Spam-ID: str=0001.0A020201.54A2D0A1.0054,ss=4,sh,re=0.000,fgs=12
+X-WatchGuard-Spam-Score: 4, spam; 0, no virus
+X-WatchGuard-Mail-Client-IP: 93.158.192.26
+X-WatchGuard-Mail-From: info@sk.net
+Subject: *****SPAM***** RE
+X-WatchGuard-AntiVirus: part scanned. clean action=allow
+Message-Id: <20141230161852.9DC7C7297A@smtp.2z.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 06:19:41PM +0100, Laurent Georget wrote:
-> Hi,
-> 
-> this is another patch for adjtimex(2) man page which fixes a FIXME by
-> giving the scaling unit of timex.freq and adds a detail about the value
-> expected by ADJ_FREQUENCY.
-> 
-> Laurent
-> 
-> diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
-> index 18823c8..2652fc6 100644
-> --- a/man2/adjtimex.2
-> +++ b/man2/adjtimex.2
-> @@ -55,8 +55,8 @@ struct timex {
->                           status flag is set, otherwise
->                           microseconds */
->      long freq;        /* Frequency offset, as scaled PPM
-> -                         (parts per million) */
-> -.\" FIXME What is the scaling unit of timex.freq?  2^16 ?
+This is to request your assistance to execute a lucrative project in Asia. Kindly respond.
 
-Your text sounds funny and seems unclear to me.  How about something
-more like this:
-
-	long freq	/* Frequency offset in PPM with a 16 bit
-			   factional field */
-
-> +                         (parts per million) :
-> +                         the scaling unit of timex.freq is 2^16 usec =
-> 1000*2^16 nsec.
-
-Your mailer is wrapping lines here ...
-
->      long maxerror;    /* Maximum error (microseconds) */
->      long esterror;    /* Estimated error (microseconds) */
->      int  status;      /* Clock command/status */
-> @@ -106,6 +106,10 @@ Set time offset from
->  .BR ADJ_FREQUENCY
->  Set frequency offset from
->  .IR buf.freq .
-> +The clock frequency must be comprised between -500000 and 500000 scaled
-> ns/s.
-
-and here.
-
-The phrase "must be comprised" does not make any sense in this
-context. How about this instead?
-
-   The allowed frequency range is -500 PPM to +500 PPM.
-
-> +If the given value is outside those bounds, it is silently truncated. This
-> +corresponds to values between -32768000 and 32768000 for
-> +.IR buf.freq .
->  .TP
->  .BR ADJ_MAXERROR
->  Set maximum time error from
-> 
-
-
+Sk
