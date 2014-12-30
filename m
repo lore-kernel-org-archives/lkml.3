@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaL3Kmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 05:42:36 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40378 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756AbaL3Kmf (ORCPT
+	id S1752040AbaL3K4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 05:56:08 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:36152 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaL3K4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 05:42:35 -0500
-Message-ID: <54A28195.4070102@cogentembedded.com>
-Date: Tue, 30 Dec 2014 13:42:29 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 30 Dec 2014 05:56:05 -0500
+Date: Tue, 30 Dec 2014 11:55:56 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        akpm@linux-foundation.org, peterz@infradead.org, mingo@kernel.org,
+        davej@redhat.com, sasha.levin@oracle.com, hughd@google.com,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 30/38] s390: drop pte_file()-related helpers
+Message-ID: <20141230115556.1a8b1a94@mschwide>
+In-Reply-To: <20141229103757.GA379@node.dhcp.inet.fi>
+References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1419423766-114457-31-git-send-email-kirill.shutemov@linux.intel.com>
+	<20141229110727.75afa56d@mschwide>
+	<20141229103757.GA379@node.dhcp.inet.fi>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>, shawn.guo@linaro.org,
-        kernel@pengutronix.de, linux@arm.linux.org.uk,
-        u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
-        arnd@arndb.de, daniel.lezcano@linaro.org, tglx@linutronix.de,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        marc.zyngier@arm.com
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 07/12] ARM: imx: depend MXC debug board on 3DS machines
-References: <1419895935-22966-1-git-send-email-stefan@agner.ch> <1419895935-22966-8-git-send-email-stefan@agner.ch>
-In-Reply-To: <1419895935-22966-8-git-send-email-stefan@agner.ch>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14123010-0021-0000-0000-0000025405BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 29 Dec 2014 12:37:57 +0200
+"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-On 12/30/2014 2:32 AM, Stefan Agner wrote:
+> On Mon, Dec 29, 2014 at 11:07:27AM +0100, Martin Schwidefsky wrote:
+> > On Wed, 24 Dec 2014 14:22:38 +0200
+> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> > 
+> > > We've replaced remap_file_pages(2) implementation with emulation.
+> > > Nobody creates non-linear mapping anymore.
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> > > Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > > ---
+> > > @@ -279,7 +279,6 @@ static inline int is_module_addr(void *addr)
+> > >   *
+> > >   * pte_present is true for the bit pattern .xx...xxxxx1, (pte & 0x001) == 0x001
+> > >   * pte_none    is true for the bit pattern .10...xxxx00, (pte & 0x603) == 0x400
+> > > - * pte_file    is true for the bit pattern .11...xxxxx0, (pte & 0x601) == 0x600
+> > >   * pte_swap    is true for the bit pattern .10...xxxx10, (pte & 0x603) == 0x402
+> > >   */
+> >  
+> > Nice, once this is upstream I can free up one of the software bits in
+> > the pte by redefining the type bits. Right now all of them are used up.
+> > Is the removal of non-linear mappings a done deal ?
+> 
+> Yes, if no horrible regression will be reported. We don't create
+> non-linear mapping in -mm (and -next) tree for a few release cycles.
+> Nobody complained so far.
+> 
+> Ack?
 
-> Depend the MXC debug board on machines which actually support it.
+Yes, ack! 
 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
-> This configuration appeared lonely when I enabled ARCH_MULTI_V7M.
-> Afaik, the selection of it only makes sense with one of the supported
-> boards...
 
->   arch/arm/mach-imx/Kconfig | 1 +
->   1 file changed, 1 insertion(+)
+-- 
+blue skies,
+   Martin.
 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index 3c5859e..96c8eb8 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -21,6 +21,7 @@ config MXC_AVIC
->
->   config MXC_DEBUG_BOARD
->   	bool "Enable MXC debug board(for 3-stack)"
-> +	depends on CONFIG_MACH_MX27_3DS || CONFIG_MACH_MX31_3DS || CONFIG_MACH_MX35_3DS
-
-    CONFIG_ prefixes are not needed in Kconfig.
-
-[...]
-
-WBR, Sergei
+"Reality continues to ruin my life." - Calvin.
 
