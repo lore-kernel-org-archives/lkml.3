@@ -1,94 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaL3MHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 07:07:22 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:30847 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaL3MHU (ORCPT
+	id S1752604AbaL3MH3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 07:07:29 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:45907 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaL3MHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 07:07:20 -0500
-X-AuditID: cbfee68d-f79296d000004278-82-54a29576f937
-From: Inha Song <ideal.song@samsung.com>
-To: broonie@kernel.org, lgirdwood@gmail.com, lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org, ckeepax@opensource.wolfsonmicro.com,
-        alsa-devel@alsa-project.org, Inha Song <ideal.song@samsung.com>
-Subject: [alsa-devel] [PATCH] mfd: wm8994: set mfd id-base for regulator devs
- creation to avoid conflicts
-Date: Tue, 30 Dec 2014 21:06:51 +0900
-Message-id: <1419941211-17667-1-git-send-email-ideal.song@samsung.com>
-X-Mailer: git-send-email 2.0.0.390.gcb682f8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsWyRsSkQLd86qIQg4XzWSyuXDzEZDH14RM2
-	i39TbrBb7Pp7n9Hi/tejjBbfrnQwWVzeNYfNYvnb/2wWp7tZHTg9NnxuYvPYOesuu8emVZ1s
-	Hneu7WHzmHcy0OPlxN9sHn1bVjF6fN4kF8ARxWWTkpqTWZZapG+XwJVx99EE1oIvnBXfp15i
-	bmD8zN7FyMkhIWAicfTTdSYIW0ziwr31bF2MXBxCAksZJZY83MgCU9R6dDsrRGIRo0T72YXM
-	EM4cJokf/bMYQarYBDQkvn/ezAxiiwg4Sjxeug9sLLPAMUaJ2Y2FILawQLbE87+TwaayCKhK
-	zDvwhw3E5hVwk5i7cA8rxDZtiX0NM8HOkBBYxC7Rd62FDaJBQOLb5ENAzRxACVmJTQeYIeol
-	JQ6uuMEygVFwASPDKkbR1ILkguKk9CJDveLE3OLSvHS95PzcTYzAMD/971nvDsbbB6wPMQpw
-	MCrx8G54vzBEiDWxrLgy9xCjKdCGicxSosn5wGjKK4k3NDYzsjA1MTU2Mrc0UxLnVZT6GSwk
-	kJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB8YbtT2HZKQ239KU640rvXFyXMVHrQfP8ZovYt18/
-	5IU9XMbRJtfLG+zInTDh7szJNZHVdqr3GTK7JlQfe7Xy0NWXh3cfWhu54XSK+dqEG6ZTT0SI
-	/snY2dCZ/8pWUW2JistPxj15QvPZZk6L/F64O3bxvt+vsqX+6PFPZCr9rXnQ7s33u97z5yqx
-	FGckGmoxFxUnAgALa5H1bgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jAd2yqYtCDH6strS4cvEQk8XUh0/Y
-	LP5NucFusevvfUaL+1+PMlp8u9LBZHF51xw2i+Vv/7NZnO5mdeD02PC5ic1j56y77B6bVnWy
-	edy5tofNY97JQI+XE3+zefRtWcXo8XmTXABHVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7yp
-	mYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QeUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC
-	4HqMDNBAwhrGjLuPJrAWfOGs+D71EnMD42f2LkZODgkBE4nWo9tZIWwxiQv31rN1MXJxCAks
-	YpRoP7uQGcKZwyTxo38WI0gVm4CGxPfPm5lBbBEBR4nHS/cxgdjMAscYJWY3FoLYwgLZEs//
-	TmYBsVkEVCXmHfjDBmLzCrhJzF24B2qbtsS+hplsExi5FzAyrGIUTS1ILihOSs811CtOzC0u
-	zUvXS87P3cQIjqJnUjsYVzZYHGIU4GBU4uHd8H5hiBBrYllxZe4hRgkOZiUR3kaDRSFCvCmJ
-	lVWpRfnxRaU5qcWHGE2Btk9klhJNzgdGeF5JvKGxiZmRpZG5oYWRsbmSOK+SfVuIkEB6Yklq
-	dmpqQWoRTB8TB6dUA2N6hH2Vjthc/x7mW1v29a4U9uR/eaPrUnm1xmqmd82vo3O4zZeen8N7
-	paDi0qvYzxb7PTy3NXLO7dsmkvnk1nqLHR3tDJu2vbx+jNH+QIxky+HjnbGyOVJFk4zWKujf
-	Tn7FYfua+dhbKz4dz4N9CbeNLyXkKezVYQvvefwiVMYpdqPPapkFKkosxRmJhlrMRcWJAI/X
-	CnO4AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 30 Dec 2014 07:07:24 -0500
+Message-ID: <54A29576.7040508@gmail.com>
+Date: Tue, 30 Dec 2014 13:07:18 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: mtk.manpages@gmail.com, Kees Cook <keescook@chromium.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: Re: Edited seccomp.2 man page for review
+References: <545E0B06.6030706@gmail.com> <CALCETrWSz5hZJb5vavKX_kbfjm42w-e4aQjdRNsvS4m5uw4Q2w@mail.gmail.com>
+In-Reply-To: <CALCETrWSz5hZJb5vavKX_kbfjm42w-e4aQjdRNsvS4m5uw4Q2w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit: 6e3f62f0793e ("mfd: core: Fix platform-device id generation")
-We must set the id base when register a duplicate name of mfd_cell.
-If not, duplicate filename error was reported.
+Hi Andy,
 
-- sysfs: cannot create duplicate filename '/devices/.../wm8994-ldo'
+Apologies for the slow follow-up.
 
-Signed-off-by: Inha Song <ideal.song@samsung.com>
----
- drivers/mfd/wm8994-core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On 11/10/2014 08:37 PM, Andy Lutomirski wrote:
+> On Sat, Nov 8, 2014 at 4:22 AM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+>> Hi Kees, (and all),
+>>
+>> Thanks for the seccomp.2 draft man page that you provided a few
+>> weeks ago (https://lkml.org/lkml/2014/9/25/685), and my apologies
+>> for the slow follow-up.
+>>
+> 
+> Answers to some of your questions below.
+> 
+>> .BR execve (2)
+>> is allowed by the filter,
+>> the filters and constraints on permitted system calls are preserved across an
+>> .BR execve (2).
+>>
+>> .\" FIXME I (mtk) reworded the following paragraph substantially.
+>> .\" Please check it.
+>> In order to use the
+>> .BR SECCOMP_SET_MODE_FILTER
+>> operation, either the caller must have the
+>> .BR CAP_SYS_ADMIN
+>> capability or the call must be preceded by the call:
+>>
+>>     prctl(PR_SET_NO_NEW_PRIVS, 1);
+>>
+>> Otherwise, the
+>> .BR SECCOMP_SET_MODE_FILTER
+>> operation will fail and return
+>> .BR EACCES
+>> in
+>> .IR errno .
+>> This requirement ensures that filter programs cannot be applied to child
+>> .\" FIXME What does "installed" in the following line mean?
+>> processes with greater privileges than the process that installed them.
+>>
+> 
+> This requirement ensures that an unprivileged process cannot apply a
+> malicious filter and then invoke a setuid or other privileged program
+> using execve, thus potentially compromising that program.
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index e6fab94..47cd3cc 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -36,12 +36,12 @@
- static const struct mfd_cell wm8994_regulator_devs[] = {
- 	{
- 		.name = "wm8994-ldo",
--		.id = 1,
-+		.id = 0,
- 		.pm_runtime_no_callbacks = true,
- 	},
- 	{
- 		.name = "wm8994-ldo",
--		.id = 2,
-+		.id = 1,
- 		.pm_runtime_no_callbacks = true,
- 	},
- };
-@@ -344,7 +344,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 	dev_set_drvdata(wm8994->dev, wm8994);
- 
- 	/* Add the on-chip regulators first for bootstrapping */
--	ret = mfd_add_devices(wm8994->dev, -1,
-+	ret = mfd_add_devices(wm8994->dev, 0,
- 			      wm8994_regulator_devs,
- 			      ARRAY_SIZE(wm8994_regulator_devs),
- 			      NULL, 0, NULL);
+Thanks. Much easier to understand. I've taken your text pretty much as
+given into the man page.
+
+>> If
+>> .BR prctl (2)
+>> or
+>> .BR seccomp (2)
+>> is allowed by the attached filter, further filters may be added.
+>> This will increase evaluation time, but allows for further reduction of
+>> the attack surface during execution of a process.
+>>
+>> The
+>> .BR SECCOMP_SET_MODE_FILTER
+>> operation is available only if the kernel is configured with
+>> .BR CONFIG_SECCOMP_FILTER
+>> enabled.
+>>
+>> When
+>> .IR flags
+>> is 0, this operation is functionally identical to the call:
+>>
+>>     prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, args);
+>>
+>> The recognized
+>> .IR flags
+>> are:
+>> .RS
+>> .TP
+>> .BR SECCOMP_FILTER_FLAG_TSYNC
+>> When adding a new filter, synchronize all other threads of the calling
+>> process to the same seccomp filter tree.
+>> .\" FIXME Nowhere in this page is the term "filter tree" defined.
+>> .\" There should be a definition somewhere.
+>> .\" Is it: "the set of filters attached to a thread"?
+> 
+> It's the ordered list of filters attached to a thread, where attaching
+> identical filters in separate syscalls results in different filters
+> from this perspective.
+
+Thanks again. I've pretty much taken that text into the man page.
+
+>> If any thread cannot do this,
+>> the call will not attach the new seccomp filter,
+>> and will fail, returning the first thread ID found that cannot synchronize.
+>> Synchronization will fail if another thread is in
+>> .BR SECCOMP_MODE_STRICT
+>> or if it has attached new seccomp filters to itself,
+>> diverging from the calling thread's filter tree.
+>> .RE
+>> .SH FILTERS
+>> When adding filters via
+>> .BR SECCOMP_SET_MODE_FILTER ,
+>> .IR args
+>> points to a filter program:
+>>
+>> .in +4n
+>> .nf
+>> struct sock_fprog {
+>>     unsigned short      len;    /* Number of BPF instructions */
+>>     struct sock_filter *filter;
+>> };
+>> .fi
+>> .in
+>>
+>> Each program must contain one or more BPF instructions:
+>>
+>> .in +4n
+>> .nf
+>> struct sock_filter {    /* Filter block */
+>>     __u16   code;       /* Actual filter code */
+>>     __u8    jt;         /* Jump true */
+>>     __u8    jf;         /* Jump false */
+>>     __u32   k;          /* Generic multiuse field */
+>> };
+>> .fi
+>> .in
+>>
+>> When executing the instructions, the BPF program executes over the
+>> system call information made available via:
+>>
+>> .in +4n
+>> .nf
+>> struct seccomp_data {
+>>     int nr;                     /* system call number */
+>>     __u32 arch;                 /* AUDIT_ARCH_* value */
+>>     __u64 instruction_pointer;  /* CPU instruction pointer */
+>>     __u64 args[6];              /* up to 6 system call arguments */
+>> };
+>> .fi
+>> .in
+>>
+>> .\" FIXME I find the next piece a little hard to understand, so,
+>> .\"       some questions:
+>> .\"       * If there are multiple filters, in what order are they executed?
+>> .\"         (The man page should probably detail the answer to this question.)
+> 
+> All of them are executed.  The precedence rules determine what happens
+> if the filters return different values.
+
+Got it. Thanks.
+
+>> .\"       * If there are multiple filters, are they all always executed?
+>> .\"         I assume not, but the notion that
+>> .\"             "the return value for the evaluation of a given system call
+>> .\"              will always use the value with the highest precedence"
+>> .\"         implies that even that if one filter generates (say)
+>> .\"         SECCOMP_RET_ERRNO, then further filters may still be executed,
+>> .\"         including one that generates (say) the "higher priority"
+>> .\"         SECCOMP_RET_KILL condition.
+>> .\"       Can you clarify the above?
+>> A seccomp filter returns one of the values listed below.
+>> If multiple filters exist,
+>> the return value for the evaluation of a given system call
+>> will always use the value with the highest precedence.
+>> (For example,
+>> .BR SECCOMP_RET_KILL
+>> will always take precedence.)
+>>
+>> In decreasing order order of precedence,
+>> the values that may be returned by a seccomp filter are:
+>> .TP
+>> .BR SECCOMP_RET_KILL
+>> Results in the task exiting immediately without executing the system call.
+>> The task terminates as though killed by a
+>> .B SIGSYS
+>> signal
+>> .RI ( not
+>> .BR SIGKILL ).
+>> .TP
+>> .BR SECCOMP_RET_TRAP
+>> Results in the kernel sending a
+>> .BR SIGSYS
+>> signal to the triggering task without executing the system call.
+>> .IR siginfo\->si_call_addr
+>> will show the address of the system call instruction, and
+>> .IR siginfo\->si_syscall
+>> and
+>> .IR siginfo\->si_arch
+>> will indicate which system call was attempted.
+>> The program counter will be as though the system call happened
+>> (i.e., it will not point to the system call instruction).
+>> The return value register will contain an architecture\-dependent value;
+>> if resuming execution, set it to something sensible.
+>> (The architecture dependency is because replacing it with
+>> .BR ENOSYS
+>> could overwrite some useful information.)
+>>
+>> .\" FIXME The following sentence is the first time that SECCOMP_RET_DATA
+>> .\"       is mentioned. SECCOMP_RET_DATA needs to be described in this
+>> .\"       man page.
+>> The
+>> .BR SECCOMP_RET_DATA
+>> portion of the return value will be passed as
+>> .IR si_errno .
+>>
+>> .BR SIGSYS
+>> triggered by seccomp will have the value
+>> .BR SYS_SECCOMP
+>> in the
+>> .IR si_code
+>> field.
+>> .TP
+>> .BR SECCOMP_RET_ERRNO
+>> .\" FIXME What does "the return value" refer to in the next sentence?
+>> .\"       It is not obvious to me.
+> 
+> The return value is the value returned by the BPF program.
+
+Got it!
+
+Thanks for the comments, Andy!
+
+Cheers,
+
+Michael
+
+
+
+
+
 -- 
-2.0.0.390.gcb682f8
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
