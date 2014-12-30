@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714AbaL3Piu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 10:38:50 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58685 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbaL3Pis (ORCPT
+	id S1751970AbaL3Pjm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 10:39:42 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:64480 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707AbaL3Pjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 10:38:48 -0500
-Date: Tue, 30 Dec 2014 10:33:26 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Olivier Sobrie <olivier@sobrie.be>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] can: kvaser_usb: Add support for the Usbcan-II family
-Message-ID: <20141230153326.GA3798@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20141223155311.GA5997@vivalin-002>
- <CAEM=fMqNnq9QYLiR8WXJ0wN2V=1B1TouxaLB_JLrYOtKvwxBkA@mail.gmail.com>
- <20141224150417.GB5707@vivalin-002>
- <20141228215134.GA2548@thinkoso.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141228215134.GA2548@thinkoso.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Dec 2014 10:39:40 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Shreyas Bethur <shreyas.bethur@ni.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2] tty: Prevent hw state corruption in exclusive mode reopen
+Date: Tue, 30 Dec 2014 10:39:25 -0500
+Message-Id: <1419953965-16494-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.2.1
+In-Reply-To: <1419942873-6779-1-git-send-email-peter@hurleysoftware.com>
+References: <1419942873-6779-1-git-send-email-peter@hurleysoftware.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 10:51:34PM +0100, Olivier Sobrie wrote:
-[...]
-> > > >  
-> > > > +	if (LEAF_PRODUCT_ID(id->idProduct)) {
-> > > > +		dev->family = KVASER_LEAF;
-> > > > +		dev->max_channels = LEAF_MAX_NET_DEVICES;
-> > > > +	} else if (USBCAN_PRODUCT_ID(id->idProduct)) {
-> > > > +		dev->family = KVASER_USBCAN;
-> > > > +		dev->max_channels = USBCAN_MAX_NET_DEVICES;
-> > > > +	} else {
-> > > > +		dev_err(&intf->dev, "Product ID (%d) does not belong to any "
-> > > > +				    "known Kvaser USB family", id->idProduct);
-> > > > +		return -ENODEV;
-> > > > +	}
-> > > > +
-> > > 
-> > > Is it really required to keep max_channels in the kvaser_usb structure?
-> > > If I looked correctly, you use this variable as a replacement for
-> > > MAX_NET_DEVICES in the code and MAX_NET_DEVICES is only used in probe
-> > > and disconnect functions. I think it can even be replaced by nchannels
-> > > in the disconnect path. So I also think that it don't need to be in the
-> > > kvaser_usb structure.
-> > > 
-> > 
-> > hmmm.. given the current state of error arbitration explained
-> > above, where I cannot accept a dev->nchannels > 2, I guess we
-> > have two options:
-> > 
-> > a) Remove max_channels, and hardcode the channels count
-> > correctness logic as follows:
-> > 
-> >         dev->nchannels = msg.u.cardinfo.nchannels;
-> >         if ((dev->family == USBCAN && dev->nchannels > USBCAN_MAX_NET_DEVICES)
-> >             || (dev->family == LEAF && dev->nchannels > LEAF_MAX_NET_DEVICES))
-> >                 return -EINVAL
-> > 
-> > b) Leave max_channels in 'struct kvaser_usb' as is.
-> > 
-> > I personally prefer the solution at 'b)' but I can do it as
-> > in 'a)' if you prefer :-)
-> 
-> Keeping max_channels in the kvaser_usb structure is useless because it
-> is only used in one function that is called in the probe function.
-> 
-> I would prefer to have:
-> 	if (dev->nchannels > MAX_NET_DEVICES)
-> 		return -EINVAL
-> 
-> 	if ((dev->family == USBCAN) &&
-> 	    (dev->nchannels > MAX_USBCAN_NET_DEVICES))
-> 		return -EINVAL
-> 
-> You can remove LEAF_MAX_NET_DEVICES which is not used, keep
-> MAX_NET_DEVICES equals to 3 and remove the MAX() macro.
-> The test specific to the USBCAN family can eventually be moved in the
-> kvaser_usb_probe() function.
-> 
+Exclusive mode ttys (TTY_EXCLUSIVE) do not allow further reopens;
+fail the condition before associating the file pointer and calling
+the driver open() method.
 
-Quite nice, will do it that way in v3.
+Prevents DTR programming when the tty is already in exclusive mode.
 
-Regards,
-Darwish
+Reported-by: Shreyas Bethur <shreyas.bethur@ni.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_io.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 4f35b43..51f066a 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1464,6 +1464,9 @@ static int tty_reopen(struct tty_struct *tty)
+ 	    driver->subtype == PTY_TYPE_MASTER)
+ 		return -EIO;
+ 
++	if (test_bit(TTY_EXCLUSIVE, &tty->flags) && !capable(CAP_SYS_ADMIN))
++		return -EBUSY;
++
+ 	tty->count++;
+ 
+ 	WARN_ON(!tty->ldisc);
+@@ -2106,10 +2109,6 @@ retry_open:
+ 		retval = -ENODEV;
+ 	filp->f_flags = saved_flags;
+ 
+-	if (!retval && test_bit(TTY_EXCLUSIVE, &tty->flags) &&
+-						!capable(CAP_SYS_ADMIN))
+-		retval = -EBUSY;
+-
+ 	if (retval) {
+ #ifdef TTY_DEBUG_HANGUP
+ 		printk(KERN_DEBUG "%s: error %d in opening %s...\n", __func__,
+-- 
+2.2.1
+
