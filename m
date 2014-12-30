@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaL3ER2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 23:17:28 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:41298 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532AbaL3ER0 (ORCPT
+	id S1752408AbaL3EVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 23:21:55 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:45897 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555AbaL3EVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 23:17:26 -0500
-Message-ID: <54A2275C.3030908@landley.net>
-Date: Mon, 29 Dec 2014 22:17:32 -0600
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 29 Dec 2014 23:21:54 -0500
+Message-ID: <54A2285F.3040200@gmail.com>
+Date: Mon, 29 Dec 2014 21:21:51 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Christophe Fillot <cf@utc.fr>, linux-ima-user@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [Linux-ima-user] Initramfs and IMA Appraisal
-References: <5463ABC8.10308@utc.fr>	 <1415827252.18773.33.camel@dhcp-9-2-203-236.watson.ibm.com>	 <547617AF.6000604@utc.fr>	 <1417039941.26016.46.camel@dhcp-9-2-203-236.watson.ibm.com>	 <5476EBAC.8090103@utc.fr>	 <1419860736.14143.13.camel@dhcp-9-2-203-236.watson.ibm.com>	 <54A1BAEE.6000101@landley.net>	 <1419889608.14143.40.camel@dhcp-9-2-203-236.watson.ibm.com>	 <54A2062C.2030909@landley.net> <1419909649.14143.86.camel@dhcp-9-2-203-236.watson.ibm.com>
-In-Reply-To: <1419909649.14143.86.camel@dhcp-9-2-203-236.watson.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: problems with perf probe and system libraries
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/2014 09:20 PM, Mimi Zohar wrote:
-> On Mon, 2014-12-29 at 19:55 -0600, Rob Landley wrote: 
->>> Thanks Rob for the explanation.  The problem is that ramfs does not
->>> support extended attributes, while tmpfs does.
->>
->> If you're _using_ initramfs/initmpfs, there's no reason to specify a root=.
-> 
-> The menu entry looks like:
-> linux   /vmlinuz-3.17.0+ root=UUID=94595ff7-0fd4-4ea3-99f2-f7ddf8fbc91f
-> ro  ...
-> initrd  /initramfs-3.17.0+.img
-> 
-> Because "root=" is specified, rootfs is not using tmpfs.
+Hi Masami:
 
-Yes. Pilot error.
+I have been looking at perf-probe again and having a number of problems 
+with top of tree.
 
-If you want tmpfs to switch to UUID $THINGY you can do ROOT= and have it
-use that. You're asking for something to be interpreted by the kernel
-sometimes and passed on to userspace other times and have no side
-effects even though it's interpeted by the kernel.
+Here's the first one I have isolated:
 
->>> The boot loader could
->>> "measure" (trusted boot) the initramfs, but as the initramfs is
->>> generated on the target system, the initramfs is not signed, preventing
->>> it from being appraised (secure Boot). To close the initramfs integrity
->>> appraisal gap requires verifying the individual initramfs file
->>> signatures, which are stored as extended attributes.
->>
->> Faced with the phrases "trusted boot" and "integrity appraisal", I plead
->> the third.
-> 
-> Fine.  Bottom line, rootfs needs to support extended attributes.
+$ perf probe -x /lib64/libc-2.18.so -a 'malloc  size=%di'
+Probe point 'malloc' not found.
+   Error: Failed to add events.
 
-I added a patch to make it work as tmpfs a year ago. You now know what
-trivial configuration mistake you make that's preventing it from
-working. If you'd like me to submit a documentation update patch to make
-it easier to avoid in future, I can do that.
+$ perf probe -x /lib64/libc-2.18.so -F | grep malloc
+malloc
+malloc@plt
+malloc_atfork
+malloc_check
+malloc_consolidate
+malloc_hook_ini
+malloc_info
+malloc_printerr
+mallochook
+ptmalloc_init
+ptmalloc_init.part.8
+ptmalloc_lock_all
+ptmalloc_unlock_all
+ptmalloc_unlock_all2
+tr_mallochook
 
->> (In the wake of the Snowden infodump,
-> 
-> All the more reason to allow only those files that are properly signed
-> to be read/executed.
+$ perf probe -x /lib64/libc-2.18.so -a 'malloc=malloc size=%di'
+Probe point 'malloc' not found.
+   Error: Failed to add events.
 
-Using the infrastructure the NSA provided, which is intentionally so
-complicated that "you are not expected to understand this".
+A year ago (v3.12) this worked fine so I did a git bisect which points to:
 
-Good luck with that.
+commit fb7345bbf7fad9bf72ef63a19c707970b9685812
+Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date:   Thu Dec 26 05:41:53 2013 +0000
 
-> Mimi
+     perf probe: Support basic dwarf-based operations on uprobe events
 
-Rob
+I have tried top of tree on Fedora 16, 18 and 20 with a variety of 
+kernels - and a variety of results. Reverting to 
+8a613d40e389b723fd5889ac8d4033ed4030be31 which is the commit before this 
+one and it works again.
+
+David
