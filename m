@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587AbaL3K5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 05:57:48 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:46502 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752098AbaL3K4p (ORCPT
+	id S1752112AbaL3LIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 06:08:42 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:36074 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989AbaL3LIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 05:56:45 -0500
-From: Andrew Jackson <andrew.jackson@arm.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 1/6] ASoC: dwc: Switch to managed clock resource
-Date: Tue, 30 Dec 2014 10:55:43 +0000
-Message-Id: <af6e23a9f11ead4b8abd1f70dbf634964253b37f.1419936132.git.Andrew.Jackson@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1419936132.git.Andrew.Jackson@arm.com>
-References: <cover.1419936132.git.Andrew.Jackson@arm.com>
-In-Reply-To: <cover.1419936132.git.Andrew.Jackson@arm.com>
-References: <cover.1419936132.git.Andrew.Jackson@arm.com>
+	Tue, 30 Dec 2014 06:08:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141224212051.30499.28078.stgit@notabene.brown>
+References: <20141224211653.30499.46669.stgit@notabene.brown>
+	<20141224212051.30499.28078.stgit@notabene.brown>
+Date: Tue, 30 Dec 2014 12:08:39 +0100
+Message-ID: <CAPDyKFq1DEeZJbRvdCHtZjQfDBEq6Sd5q+7HpEeb5Kv9doYkZQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mmc: core: Allow host driver to provide isr for
+ card-detect interrupts.
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Chris Ball <chris@printf.net>, GTA04 owners <gta04-owner@goldelico.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Jackson <Andrew.Jackson@arm.com>
+On 24 December 2014 at 22:20, NeilBrown <neilb@suse.de> wrote:
+> One of the reasons omap_hsmmc doesn't use the slot-gpio library
+> is that it has some non-standard functionality in the card-detect
+> interrupt service routine.
+>
+> To make it possible for omap_hsmmc (and maybe others) to be converted
+> to use slot-gpio, add 'mmc_gpio_set_cd_isr' which provides an
+> alternate isr to be registered by the slot-gpio code.
+>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  drivers/mmc/core/slot-gpio.c  |   20 +++++++++++++++++++-
+>  include/linux/mmc/slot-gpio.h |    2 ++
+>  2 files changed, 21 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+> index 1a3edbd47719..1826b25a2a40 100644
+> --- a/drivers/mmc/core/slot-gpio.c
+> +++ b/drivers/mmc/core/slot-gpio.c
+> @@ -25,6 +25,7 @@ struct mmc_gpio {
+>         struct gpio_desc *cd_gpio;
+>         bool override_ro_active_level;
+>         bool override_cd_active_level;
+> +       irqreturn_t (*cd_gpio_isr)(int irq, void *dev_id);
+>         char *ro_label;
+>         char cd_label[0];
+>  };
+> @@ -136,8 +137,10 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
+>                 irq = -EINVAL;
+>
+>         if (irq >= 0) {
+> +               if (!ctx->cd_gpio_isr)
+> +                       ctx->cd_gpio_isr = mmc_gpio_cd_irqt;
+>                 ret = devm_request_threaded_irq(host->parent, irq,
+> -                       NULL, mmc_gpio_cd_irqt,
+> +                       NULL, ctx->cd_gpio_isr,
+>                         IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>                         ctx->cd_label, host);
+>                 if (ret < 0)
+> @@ -151,6 +154,21 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
+>  }
+>  EXPORT_SYMBOL(mmc_gpiod_request_cd_irq);
+>
+> +/* Register an alternate interrupt service routine for
+> + * the card-detect GPIO.
+> + */
+> +int mmc_gpio_set_cd_isr(struct mmc_host *host,
+> +                       irqreturn_t (*isr)(int irq, void *dev_id))
+> +{
+> +       struct mmc_gpio *ctx;
+> +
+> +       ctx = host->slot.handler_priv;
+> +       if (ctx->cd_gpio_isr)
+> +               return -EBUSY;
+> +       ctx->cd_gpio_isr = isr;
+> +       return 0;
 
-Simplify error handling during probe by using managed clock
-resources.
+I feel this is a bit more complex than what's needed.
+How about just assigning ->cd_gpio_isr() callback, without checking
+it's value first and then make mmc_gpio_set_cd_isr() a void function?
 
-Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
----
- sound/soc/dwc/designware_i2s.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
-index 06d3a34..5e9d163 100644
---- a/sound/soc/dwc/designware_i2s.c
-+++ b/sound/soc/dwc/designware_i2s.c
-@@ -407,13 +407,13 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 
- 	dev->capability = pdata->cap;
- 	dev->i2s_clk_cfg = pdata->i2s_clk_cfg;
--	dev->clk = clk_get(&pdev->dev, NULL);
-+	dev->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(dev->clk))
- 		return  PTR_ERR(dev->clk);
- 
- 	ret = clk_enable(dev->clk);
- 	if (ret < 0)
--		goto err_clk_put;
-+		return ret;
- 
- 	dev_set_drvdata(&pdev->dev, dev);
- 	ret = snd_soc_register_component(&pdev->dev, &dw_i2s_component,
-@@ -427,19 +427,13 @@ static int dw_i2s_probe(struct platform_device *pdev)
- 
- err_clk_disable:
- 	clk_disable(dev->clk);
--err_clk_put:
--	clk_put(dev->clk);
- 	return ret;
- }
- 
- static int dw_i2s_remove(struct platform_device *pdev)
- {
--	struct dw_i2s_dev *dev = dev_get_drvdata(&pdev->dev);
--
- 	snd_soc_unregister_component(&pdev->dev);
- 
--	clk_put(dev->clk);
--
- 	return 0;
- }
- 
--- 
-1.7.1
-
+> +}
+> +
+>  /**
+>   * mmc_gpio_request_cd - request a gpio for card-detection
+>   * @host: mmc host
+> diff --git a/include/linux/mmc/slot-gpio.h b/include/linux/mmc/slot-gpio.h
+> index 4a36d6954631..4faf41c9a77a 100644
+> --- a/include/linux/mmc/slot-gpio.h
+> +++ b/include/linux/mmc/slot-gpio.h
+> @@ -26,6 +26,8 @@ int mmc_gpiod_request_cd(struct mmc_host *host, const char *con_id,
+>  int mmc_gpiod_request_ro(struct mmc_host *host, const char *con_id,
+>                          unsigned int idx, bool override_active_level,
+>                          unsigned int debounce, bool *gpio_invert);
+> +int mmc_gpio_set_cd_isr(struct mmc_host *host,
+> +                           irqreturn_t (*isr)(int irq, void *dev_id));
+>  void mmc_gpiod_request_cd_irq(struct mmc_host *host);
+>
+>  #endif
+>
+>
