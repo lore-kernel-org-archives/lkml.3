@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaL3Dch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 22:32:37 -0500
-Received: from mail-by2on0124.outbound.protection.outlook.com ([207.46.100.124]:19023
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1752816AbaL3Dc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 22:32:56 -0500
+Received: from mail-bn1bbn0104.outbound.protection.outlook.com ([157.56.111.104]:37170
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752678AbaL3DbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 22:31:04 -0500
+	id S1752656AbaL3Daz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 22:30:55 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,730 +15,341 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v7 16/21] drm: panel: Add support for Himax HX8369A MIPI DSI panel
-Date: Tue, 30 Dec 2014 11:34:06 +0800
-Message-ID: <1419910451-15268-17-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v7 14/21] drm: imx: Support Synopsys DesignWare MIPI DSI host controller
+Date: Tue, 30 Dec 2014 11:34:04 +0800
+Message-ID: <1419910451-15268-15-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419910451-15268-1-git-send-email-Ying.Liu@freescale.com>
 References: <1419910451-15268-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.168.50)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(6806004)(19580405001)(36756003)(89996001)(48376002)(97736003)(50986999)(99396003)(2950100001)(77096005)(120916001)(85426001)(50466002)(84676001)(68736005)(86362001)(105606002)(77156002)(104016003)(87936001)(107046002)(76176999)(92566001)(110136001)(21056001)(31966008)(2351001)(47776003)(64706001)(575784001)(229853001)(46102003)(19580395003)(20776003)(4396001)(106466001)(50226001)(62966003)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0630;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(36756003)(92566001)(19580405001)(50466002)(229853001)(99396003)(87936001)(64706001)(19580395003)(97736003)(89996001)(47776003)(85426001)(20776003)(48376002)(106466001)(31966008)(21056001)(120916001)(76176999)(50986999)(2351001)(575784001)(86362001)(104016003)(84676001)(105606002)(107046002)(6806004)(77156002)(68736005)(77096005)(2950100001)(46102003)(62966003)(50226001)(110136001)(4396001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0626;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0626;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR0301MB0626;
 X-Forefront-PRVS: 04410E544A
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0626;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 30 Dec 2014 03:31:00.9119
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 30 Dec 2014 03:30:52.1153
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0630
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0626
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for Himax HX8369A MIPI DSI panel.
+This patch adds support for Synopsys DesignWare MIPI DSI host controller
+which is embedded in the i.MX6q/sdl SoCs.
 
-Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
 v6->v7:
- * Address Andrzej Hajda's following comments.
- * Simplify the return logic in hx8369a_dcs_write().
- * Replace the macro hx8369a_dsi_init_helper() with a function array to improve
-   the code quality.
- * Handle error cases during getting gpios in probe().
- * Add 'Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>'.
+ * None.
 
 v5->v6:
  * Make the checkpatch.pl script be happier.
- * Do not set the dsi channel number to be zero in probe(), because the MIPI DSI
-   bus driver would set it.
 
 v4->v5:
- * Address Andrzej Hajda's comments.
- * Get the bs-gpios property instead of the bs[3:0]-gpios properties.
- * Implement error propagation for panel register configurations.
- * Other minor changes to improve the code quality.
+ * None.
 
 v3->v4:
  * Move the relevant dt-bindings to a separate patch to address Stefan
    Wahren's comment.
 
 v2->v3:
- * Sort the included header files alphabetically.
+ * To address Andy Yan's comments, move the common Synopsys DesignWare MIPI DSI
+   host controller logic into it's drm/bridge driver and leave the i.MX specific
+   logic only.
 
 v1->v2:
- * Address almost all comments from Thierry Reding.
- * Remove several DT properties as they can be implied by the compatible string.
- * Add the HIMAX/himax prefixes to the driver's Kconfig name and driver name.
- * Move the driver's Makefile entry place to sort the entries alphabetically.
- * Reuse several standard DCS functions instead of inventing wheels.
- * Move the panel resetting and power logics to the driver probe/remove stages.
-   This may simplify panel prepare/unprepare hooks. The power consumption should
-   not change a lot at DPMS since the panel enters sleep mode at that time.
- * Add the module author.
- * Other minor changes, such as coding style issues.
+ * Address almost all comments from Thierry Reding and Russell.
+ * Update the DT documentation to remove the display-timings node in the panel node.
+ * Update the DT documentation to state that the nodes which represent the possible
+   DRM CRTCs the controller may connect with should be placed in the node "ports".
+ * Remove the flag 'enabled' from the struct imx_mipi_dsi.
+ * Move the format_to_bpp() function in v1 to the common DRM MIPI DSI driver.
+ * Improve the way we wait for check status for DPHY and command packet transfer.
+ * Improve the DPMS support for the encoder.
+ * Split the functions of ->host_attach() and ->mode_valid() clearly as suggested by
+   Thierry Reding.
+ * Improve the logics in imx_mipi_dsi_dcs_long_write().
+ * Enable/disable the pllref_clk and pllref_gate_clk at the component binding/unbinding
+   stages to help remove the flag 'enabled'.
+ * Update the module license to be "GPL".
+ * Other minor changes, such as coding style issues and macro naming issues.
 
- drivers/gpu/drm/panel/Kconfig               |   5 +
- drivers/gpu/drm/panel/Makefile              |   1 +
- drivers/gpu/drm/panel/panel-himax-hx8369a.c | 614 ++++++++++++++++++++++++++++
- 3 files changed, 620 insertions(+)
- create mode 100644 drivers/gpu/drm/panel/panel-himax-hx8369a.c
+ drivers/gpu/drm/imx/Kconfig           |   7 ++
+ drivers/gpu/drm/imx/Makefile          |   1 +
+ drivers/gpu/drm/imx/dw_mipi_dsi-imx.c | 230 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 238 insertions(+)
+ create mode 100644 drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
 
-diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
-index 024e98e..81b0bf0 100644
---- a/drivers/gpu/drm/panel/Kconfig
-+++ b/drivers/gpu/drm/panel/Kconfig
-@@ -16,6 +16,11 @@ config DRM_PANEL_SIMPLE
- 	  that it can be automatically turned off when the panel goes into a
- 	  low power state.
- 
-+config DRM_PANEL_HIMAX_HX8369A
-+	tristate "Himax HX8369A panel"
-+	depends on OF
-+	select DRM_MIPI_DSI
+diff --git a/drivers/gpu/drm/imx/Kconfig b/drivers/gpu/drm/imx/Kconfig
+index 82fb758..c576f6b 100644
+--- a/drivers/gpu/drm/imx/Kconfig
++++ b/drivers/gpu/drm/imx/Kconfig
+@@ -51,3 +51,10 @@ config DRM_IMX_HDMI
+ 	depends on DRM_IMX
+ 	help
+ 	  Choose this if you want to use HDMI on i.MX6.
 +
- config DRM_PANEL_LD9040
- 	tristate "LD9040 RGB/SPI panel"
- 	depends on OF && SPI
-diff --git a/drivers/gpu/drm/panel/Makefile b/drivers/gpu/drm/panel/Makefile
-index 4b2a043..d5dbe06 100644
---- a/drivers/gpu/drm/panel/Makefile
-+++ b/drivers/gpu/drm/panel/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_DRM_PANEL_SIMPLE) += panel-simple.o
-+obj-$(CONFIG_DRM_PANEL_HIMAX_HX8369A) += panel-himax-hx8369a.o
- obj-$(CONFIG_DRM_PANEL_LD9040) += panel-ld9040.o
- obj-$(CONFIG_DRM_PANEL_S6E8AA0) += panel-s6e8aa0.o
- obj-$(CONFIG_DRM_PANEL_SHARP_LQ101R1SX01) += panel-sharp-lq101r1sx01.o
-diff --git a/drivers/gpu/drm/panel/panel-himax-hx8369a.c b/drivers/gpu/drm/panel/panel-himax-hx8369a.c
++config DRM_IMX_MIPI_DSI
++	tristate "Freescale i.MX DRM MIPI DSI"
++	select DRM_DW_MIPI_DSI
++	depends on DRM_IMX
++	help
++	  Choose this if you want to use MIPI DSI on i.MX6.
+diff --git a/drivers/gpu/drm/imx/Makefile b/drivers/gpu/drm/imx/Makefile
+index 582c438..f0dc278 100644
+--- a/drivers/gpu/drm/imx/Makefile
++++ b/drivers/gpu/drm/imx/Makefile
+@@ -10,3 +10,4 @@ obj-$(CONFIG_DRM_IMX_LDB) += imx-ldb.o
+ imx-ipuv3-crtc-objs  := ipuv3-crtc.o ipuv3-plane.o
+ obj-$(CONFIG_DRM_IMX_IPUV3)	+= imx-ipuv3-crtc.o
+ obj-$(CONFIG_DRM_IMX_HDMI) += imx-hdmi.o
++obj-$(CONFIG_DRM_IMX_MIPI_DSI) += dw_mipi_dsi-imx.o
+diff --git a/drivers/gpu/drm/imx/dw_mipi_dsi-imx.c b/drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
 new file mode 100644
-index 0000000..dd3b604
+index 0000000..b2c96e2
 --- /dev/null
-+++ b/drivers/gpu/drm/panel/panel-himax-hx8369a.c
-@@ -0,0 +1,614 @@
++++ b/drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
+@@ -0,0 +1,230 @@
 +/*
-+ * Himax HX8369A panel driver.
++ * i.MX drm driver - MIPI DSI Host Controller
 + *
 + * Copyright (C) 2011-2014 Freescale Semiconductor, Inc.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
 + *
-+ * This driver is based on Samsung s6e8aa0 panel driver.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + */
 +
-+#include <drm/drmP.h>
-+#include <drm/drm_mipi_dsi.h>
-+#include <drm/drm_panel.h>
-+
-+#include <linux/gpio/consumer.h>
++#include <linux/component.h>
++#include <linux/mfd/syscon.h>
++#include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
++#include <linux/module.h>
 +#include <linux/of_device.h>
-+#include <linux/regulator/consumer.h>
++#include <linux/regmap.h>
++#include <linux/videodev2.h>
++#include <drm/bridge/dw_mipi_dsi.h>
++#include <drm/drm_crtc_helper.h>
++#include <drm/drm_mipi_dsi.h>
 +
-+#include <video/mipi_display.h>
-+#include <video/of_videomode.h>
-+#include <video/videomode.h>
++#include "imx-drm.h"
 +
-+#define WRDISBV		0x51
-+#define WRCTRLD		0x53
-+#define WRCABC		0x55
-+#define SETPOWER	0xb1
-+#define SETDISP		0xb2
-+#define SETCYC		0xb4
-+#define SETVCOM		0xb6
-+#define SETEXTC		0xb9
-+#define SETMIPI		0xba
-+#define SETPANEL	0xcc
-+#define SETGIP		0xd5
-+#define SETGAMMA	0xe0
++#define DRIVER_NAME	"imx-mipi-dsi"
 +
-+#define HX8369A_MIN_BRIGHTNESS	0x00
-+#define HX8369A_MAX_BRIGHTNESS	0xff
-+
-+enum hx8369a_mpu_interface {
-+	HX8369A_DBI_TYPE_A_8BIT,
-+	HX8369A_DBI_TYPE_A_9BIT,
-+	HX8369A_DBI_TYPE_A_16BIT,
-+	HX8369A_DBI_TYPE_A_18BIT,
-+	HX8369A_DBI_TYPE_B_8BIT,
-+	HX8369A_DBI_TYPE_B_9BIT,
-+	HX8369A_DBI_TYPE_B_16BIT,
-+	HX8369A_DBI_TYPE_B_18BIT,
-+	HX8369A_DSI_CMD_MODE,
-+	HX8369A_DBI_TYPE_B_24BIT,
-+	HX8369A_DSI_VIDEO_MODE,
-+	HX8369A_MDDI,
-+	HX8369A_DPI_DBI_TYPE_C_OPT1,
-+	HX8369A_DPI_DBI_TYPE_C_OPT2,
-+	HX8369A_DPI_DBI_TYPE_C_OPT3
-+};
-+
-+enum hx8369a_resolution {
-+	HX8369A_RES_480_864,
-+	HX8369A_RES_480_854,
-+	HX8369A_RES_480_800,
-+	HX8369A_RES_480_640,
-+	HX8369A_RES_360_640,
-+	HX8369A_RES_480_720,
-+};
-+
-+struct hx8369a_panel_desc {
-+	const struct drm_display_mode *mode;
-+
-+	/* ms */
-+	unsigned int power_on_delay;
-+	unsigned int reset_delay;
-+
-+	unsigned int dsi_lanes;
-+};
-+
-+struct hx8369a {
++struct imx_mipi_dsi {
++	struct drm_encoder encoder;
 +	struct device *dev;
-+	struct drm_panel panel;
-+
-+	const struct hx8369a_panel_desc *pd;
-+
-+	struct regulator_bulk_data supplies[5];
-+	struct gpio_desc *reset_gpio;
-+	struct gpio_desc *bs_gpio[4];
-+	u8 res_sel;
++	struct regmap *regmap;
 +};
 +
-+static inline struct hx8369a *panel_to_hx8369a(struct drm_panel *panel)
++static inline struct imx_mipi_dsi *enc_to_dsi(struct drm_encoder *enc)
 +{
-+	return container_of(panel, struct hx8369a, panel);
++	return container_of(enc, struct imx_mipi_dsi, encoder);
 +}
 +
-+static int hx8369a_dcs_write(struct hx8369a *ctx, const char *func,
-+			     const void *data, size_t len)
++static void imx_mipi_dsi_set_ipu_di_mux(struct imx_mipi_dsi *dsi, int ipu_di)
 +{
-+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-+	ssize_t ret;
-+
-+	ret = mipi_dsi_dcs_write_buffer(dsi, data, len);
-+	if (ret < 0)
-+		dev_err(ctx->dev, "%s failed: %d\n", func, ret);
-+	return ret;
++	regmap_update_bits(dsi->regmap, IOMUXC_GPR3,
++			   IMX6Q_GPR3_MIPI_MUX_CTL_MASK,
++			   ipu_di << IMX6Q_GPR3_MIPI_MUX_CTL_SHIFT);
 +}
 +
-+#define hx8369a_dcs_write_seq(ctx, seq...) \
-+({ \
-+	const u8 d[] = { seq }; \
-+	BUILD_BUG_ON_MSG(ARRAY_SIZE(d) > 64, \
-+			 "DCS sequence too big for stack"); \
-+	hx8369a_dcs_write(ctx, __func__, d, ARRAY_SIZE(d)); \
-+})
++static struct drm_encoder_funcs imx_mipi_dsi_encoder_funcs = {
++	.destroy = imx_drm_encoder_destroy,
++};
 +
-+#define hx8369a_dcs_write_seq_static(ctx, seq...) \
-+({ \
-+	static const u8 d[] = { seq }; \
-+	hx8369a_dcs_write(ctx, __func__, d, ARRAY_SIZE(d)); \
-+})
-+
-+static int hx8369a_dsi_set_display_related_register(struct hx8369a *ctx)
++static bool imx_mipi_dsi_encoder_mode_fixup(struct drm_encoder *encoder,
++					const struct drm_display_mode *mode,
++					struct drm_display_mode *adjusted_mode)
 +{
-+	u8 sec_p = (ctx->res_sel << 4) | 0x03;
-+
-+	return hx8369a_dcs_write_seq(ctx, SETDISP, 0x00, sec_p, 0x03,
-+			   0x03, 0x70, 0x00, 0xff, 0x00, 0x00, 0x00,
-+			   0x00, 0x03, 0x03, 0x00, 0x01);
++	return true;
 +}
 +
-+static int hx8369a_dsi_set_display_waveform_cycle(struct hx8369a *ctx)
++static void imx_mipi_dsi_encoder_prepare(struct drm_encoder *encoder)
 +{
-+	return hx8369a_dcs_write_seq_static(ctx, SETCYC, 0x00, 0x1d,
-+					0x5f, 0x0e, 0x06);
-+}
++	u32 encoder_pix_fmt, interface_pix_fmt;
 +
-+static int hx8369a_dsi_set_gip(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, SETGIP, 0x00, 0x04,
-+				 0x03, 0x00, 0x01, 0x05, 0x1c, 0x70,
-+				 0x01, 0x03, 0x00, 0x00, 0x40, 0x06,
-+				 0x51, 0x07, 0x00, 0x00, 0x41, 0x06,
-+				 0x50, 0x07, 0x07, 0x0f, 0x04);
-+}
++	encoder_pix_fmt = dw_mipi_dsi_get_encoder_pixel_format(encoder);
 +
-+static int hx8369a_dsi_set_power(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, SETPOWER, 0x01, 0x00,
-+				   0x34, 0x06, 0x00, 0x0f, 0x0f, 0x2a,
-+				   0x32, 0x3f, 0x3f, 0x07, 0x3a, 0x01,
-+				   0xe6, 0xe6, 0xe6, 0xe6, 0xe6);
-+}
-+
-+static int hx8369a_dsi_set_vcom_voltage(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, SETVCOM, 0x56, 0x56);
-+}
-+
-+static int hx8369a_dsi_set_panel(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, SETPANEL, 0x02);
-+}
-+
-+static int hx8369a_dsi_set_gamma_curve(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, SETGAMMA, 0x00, 0x1d,
-+				   0x22, 0x38, 0x3d, 0x3f, 0x2e, 0x4a,
-+				   0x06, 0x0d, 0x0f, 0x13, 0x15, 0x13,
-+				   0x16, 0x10, 0x19, 0x00, 0x1d, 0x22,
-+				   0x38, 0x3d, 0x3f, 0x2e, 0x4a, 0x06,
-+				   0x0d, 0x0f, 0x13, 0x15, 0x13, 0x16,
-+				   0x10, 0x19);
-+}
-+
-+static int hx8369a_dsi_set_mipi(struct hx8369a *ctx)
-+{
-+	u8 eleventh_p = ctx->pd->dsi_lanes == 2 ? 0x11 : 0x10;
-+
-+	return hx8369a_dcs_write_seq(ctx, SETMIPI, 0x00, 0xa0, 0xc6,
-+				 0x00, 0x0a, 0x00, 0x10, 0x30, 0x6f,
-+				 0x02, eleventh_p, 0x18, 0x40);
-+}
-+
-+static int hx8369a_dsi_set_interface_pixel_fomat(struct hx8369a *ctx)
-+{
-+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-+	u8 format;
-+	int ret;
-+
-+	switch (dsi->format) {
++	switch (encoder_pix_fmt) {
 +	case MIPI_DSI_FMT_RGB888:
-+	case MIPI_DSI_FMT_RGB666:
-+		format = 0x77;
++		interface_pix_fmt = V4L2_PIX_FMT_RGB24;
 +		break;
 +	case MIPI_DSI_FMT_RGB565:
-+		format = 0x55;
-+		break;
-+	case MIPI_DSI_FMT_RGB666_PACKED:
-+		format = 0x66;
++		interface_pix_fmt = V4L2_PIX_FMT_RGB565;
 +		break;
 +	default:
-+		dev_err(ctx->dev, "unsupported DSI pixel format\n");
-+		return -EINVAL;
++		BUG();
++		return;
 +	}
 +
-+	ret = mipi_dsi_dcs_set_pixel_format(dsi, format);
-+	if (ret < 0)
-+		dev_err(ctx->dev, "%s failed: %d\n", __func__, ret);
-+	return ret;
++	imx_drm_panel_format(encoder, interface_pix_fmt);
 +}
 +
-+static int hx8369a_dsi_set_column_address(struct hx8369a *ctx)
++static void imx_mipi_dsi_encoder_mode_set(struct drm_encoder *encoder,
++					struct drm_display_mode *mode,
++					struct drm_display_mode *adjusted_mode)
 +{
-+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-+	const struct drm_display_mode *mode = ctx->pd->mode;
-+	int ret;
-+
-+	ret = mipi_dsi_dcs_set_column_address(dsi, 0, mode->hdisplay - 1);
-+	if (ret < 0)
-+		dev_err(ctx->dev, "%s failed: %d\n", __func__, ret);
-+	return ret;
 +}
 +
-+static int hx8369a_dsi_set_page_address(struct hx8369a *ctx)
++static void imx_mipi_dsi_encoder_commit(struct drm_encoder *encoder)
 +{
-+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-+	const struct drm_display_mode *mode = ctx->pd->mode;
-+	int ret;
++	struct imx_mipi_dsi *dsi = enc_to_dsi(encoder);
++	int mux = imx_drm_encoder_get_mux_id(dsi->dev->of_node, encoder);
 +
-+	ret = mipi_dsi_dcs_set_page_address(dsi, 0, mode->vdisplay - 1);
-+	if (ret < 0)
-+		dev_err(ctx->dev, "%s failed: %d\n", __func__, ret);
-+	return ret;
++	imx_mipi_dsi_set_ipu_di_mux(dsi, mux);
 +}
 +
-+static int hx8369a_dsi_write_display_brightness(struct hx8369a *ctx,
-+						u8 brightness)
++static void imx_mipi_dsi_encoder_disable(struct drm_encoder *encoder)
 +{
-+	return hx8369a_dcs_write_seq(ctx, WRDISBV, brightness);
 +}
 +
-+static int hx8369a_dsi_write_cabc(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, WRCABC, 0x01);
-+}
-+
-+static int hx8369a_dsi_write_control_display(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, WRCTRLD, 0x24);
-+}
-+
-+static int hx8369a_dsi_panel_init(struct hx8369a *ctx)
-+{
-+	int (*funcs[])(struct hx8369a *ctx) = {
-+		hx8369a_dsi_set_display_related_register,
-+		hx8369a_dsi_set_display_waveform_cycle,
-+		hx8369a_dsi_set_gip,
-+		hx8369a_dsi_set_power,
-+		hx8369a_dsi_set_vcom_voltage,
-+		hx8369a_dsi_set_panel,
-+		hx8369a_dsi_set_gamma_curve,
-+		hx8369a_dsi_set_mipi,
-+		hx8369a_dsi_set_interface_pixel_fomat,
-+		hx8369a_dsi_set_column_address,
-+		hx8369a_dsi_set_page_address,
-+		hx8369a_dsi_write_cabc,
-+		hx8369a_dsi_write_control_display,
-+	};
-+	int ret, i;
-+
-+	for (i = 0; i < ARRAY_SIZE(funcs); i++) {
-+		ret = funcs[i](ctx);
-+		if (ret)
-+			return ret;
-+	}
-+	return 0;
-+}
-+
-+static int hx8369a_dsi_set_extension_command(struct hx8369a *ctx)
-+{
-+	return hx8369a_dcs_write_seq_static(ctx, SETEXTC, 0xff, 0x83, 0x69);
-+}
-+
-+static int hx8369a_dsi_set_maximum_return_packet_size(struct hx8369a *ctx,
-+						      u16 size)
-+{
-+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-+	int ret;
-+
-+	ret = mipi_dsi_set_maximum_return_packet_size(dsi, size);
-+	if (ret < 0)
-+		dev_err(ctx->dev,
-+			"error %d setting maximum return packet size to %d\n",
-+			ret, size);
-+	return ret;
-+}
-+
-+static int hx8369a_dsi_set_sequence(struct hx8369a *ctx)
-+{
-+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-+	int ret;
-+
-+	ret = hx8369a_dsi_set_extension_command(ctx);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = hx8369a_dsi_set_maximum_return_packet_size(ctx, 4);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = hx8369a_dsi_panel_init(ctx);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = mipi_dsi_dcs_exit_sleep_mode(dsi);
-+	if (ret < 0) {
-+		dev_err(ctx->dev, "failed to exit sleep mode: %d\n", ret);
-+		goto out;
-+	}
-+
-+	ret = mipi_dsi_dcs_set_display_on(dsi);
-+	if (ret < 0) {
-+		dev_err(ctx->dev, "failed to set display on: %d\n", ret);
-+		goto out;
-+	}
-+
-+	/*
-+	 * It's necessary to wait 120msec after sending the Sleep Out
-+	 * command before Sleep In command can be sent, according to
-+	 * the HX8369A data sheet.
-+	 */
-+	msleep(120);
-+out:
-+	return ret;
-+}
-+
-+static int hx8369a_dsi_disable(struct drm_panel *panel)
-+{
-+	struct hx8369a *ctx = panel_to_hx8369a(panel);
-+
-+	return hx8369a_dsi_write_display_brightness(ctx,
-+						HX8369A_MIN_BRIGHTNESS);
-+}
-+
-+static int hx8369a_dsi_unprepare(struct drm_panel *panel)
-+{
-+	struct hx8369a *ctx = panel_to_hx8369a(panel);
-+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(ctx->dev);
-+	int ret;
-+
-+	ret = mipi_dsi_dcs_enter_sleep_mode(dsi);
-+	if (ret < 0) {
-+		dev_err(ctx->dev, "failed to enter sleep mode: %d\n", ret);
-+		goto out;
-+	}
-+
-+	ret = mipi_dsi_dcs_set_display_off(dsi);
-+	if (ret < 0) {
-+		dev_err(ctx->dev, "failed to set display off: %d\n", ret);
-+		goto out;
-+	}
-+
-+	/*
-+	 * This is to allow time for the supply voltages and clock
-+	 * circuits to stablize, according to the HX8369A data sheet.
-+	 */
-+	msleep(5);
-+out:
-+	return ret;
-+}
-+
-+static int hx8369a_dsi_prepare(struct drm_panel *panel)
-+{
-+	struct hx8369a *ctx = panel_to_hx8369a(panel);
-+
-+	return hx8369a_dsi_set_sequence(ctx);
-+}
-+
-+static int hx8369a_dsi_enable(struct drm_panel *panel)
-+{
-+	struct hx8369a *ctx = panel_to_hx8369a(panel);
-+
-+	return hx8369a_dsi_write_display_brightness(ctx,
-+						HX8369A_MAX_BRIGHTNESS);
-+}
-+
-+static int hx8369a_get_modes(struct drm_panel *panel)
-+{
-+	struct drm_connector *connector = panel->connector;
-+	struct drm_device *drm = panel->drm;
-+	struct hx8369a *ctx = panel_to_hx8369a(panel);
-+	struct drm_display_mode *mode;
-+	const struct drm_display_mode *m = ctx->pd->mode;
-+
-+	mode = drm_mode_duplicate(drm, m);
-+	if (!mode) {
-+		dev_err(drm->dev, "failed to add mode %ux%u@%u\n",
-+			m->hdisplay, m->vdisplay, m->vrefresh);
-+		return 0;
-+	}
-+
-+	drm_mode_set_name(mode);
-+	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
-+
-+	connector->display_info.bpc = 8;
-+	connector->display_info.width_mm = mode->width_mm;
-+	connector->display_info.height_mm = mode->height_mm;
-+
-+	drm_mode_probed_add(connector, mode);
-+
-+	return 1;
-+}
-+
-+static const struct drm_panel_funcs hx8369a_dsi_drm_funcs = {
-+	.disable = hx8369a_dsi_disable,
-+	.unprepare = hx8369a_dsi_unprepare,
-+	.prepare = hx8369a_dsi_prepare,
-+	.enable = hx8369a_dsi_enable,
-+	.get_modes = hx8369a_get_modes,
++static struct drm_encoder_helper_funcs imx_mipi_dsi_encoder_helper_funcs = {
++	.mode_fixup = imx_mipi_dsi_encoder_mode_fixup,
++	.prepare = imx_mipi_dsi_encoder_prepare,
++	.mode_set = imx_mipi_dsi_encoder_mode_set,
++	.commit = imx_mipi_dsi_encoder_commit,
++	.disable = imx_mipi_dsi_encoder_disable,
 +};
 +
-+static int hx8369a_power_on(struct hx8369a *ctx)
++static int imx_mipi_dsi_register(struct drm_device *drm,
++				 struct imx_mipi_dsi *dsi)
 +{
 +	int ret;
 +
-+	ret = regulator_bulk_enable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-+	if (ret < 0)
++	ret = imx_drm_encoder_parse_of(drm, &dsi->encoder, dsi->dev->of_node);
++	if (ret)
 +		return ret;
 +
-+	msleep(ctx->pd->power_on_delay);
-+
-+	gpiod_set_value(ctx->reset_gpio, 1);
-+	usleep_range(50, 60);
-+	gpiod_set_value(ctx->reset_gpio, 0);
-+
-+	msleep(ctx->pd->reset_delay);
-+
++	drm_encoder_helper_add(&dsi->encoder,
++			       &imx_mipi_dsi_encoder_helper_funcs);
++	drm_encoder_init(drm, &dsi->encoder, &imx_mipi_dsi_encoder_funcs,
++			 DRM_MODE_ENCODER_DSI);
 +	return 0;
 +}
 +
-+static int hx8369a_power_off(struct hx8369a *ctx)
++static enum drm_mode_status imx_mipi_dsi_mode_valid(
++					struct drm_connector *connector,
++					struct drm_display_mode *mode)
 +{
-+	return regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
++	/*
++	 * The VID_PKT_SIZE field in the DSI_VID_PKT_CFG
++	 * register is 11-bit.
++	 */
++	if (mode->hdisplay > 0x7ff)
++		return MODE_BAD_HVALUE;
++
++	/*
++	 * The V_ACTIVE_LINES field in the DSI_VTIMING_CFG
++	 * register is 11-bit.
++	 */
++	if (mode->vdisplay > 0x7ff)
++		return MODE_BAD_VVALUE;
++
++	return MODE_OK;
 +}
 +
-+static void hx8369a_vm_to_res_sel(struct hx8369a *ctx)
-+{
-+	const struct drm_display_mode *mode = ctx->pd->mode;
-+
-+	switch (mode->hdisplay) {
-+	case 480:
-+		switch (mode->vdisplay) {
-+		case 864:
-+			ctx->res_sel = HX8369A_RES_480_864;
-+			break;
-+		case 854:
-+			ctx->res_sel = HX8369A_RES_480_854;
-+			break;
-+		case 800:
-+			ctx->res_sel = HX8369A_RES_480_800;
-+			break;
-+		case 640:
-+			ctx->res_sel = HX8369A_RES_480_640;
-+			break;
-+		case 720:
-+			ctx->res_sel = HX8369A_RES_480_720;
-+			break;
-+		default:
-+			break;
-+		}
-+		break;
-+	case 360:
-+		if (mode->vdisplay == 640)
-+			ctx->res_sel = HX8369A_RES_360_640;
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
-+static const struct drm_display_mode truly_tft480800_16_e_mode = {
-+	.clock = 26400,
-+	.hdisplay = 480,
-+	.hsync_start = 480 + 8,
-+	.hsync_end = 480 + 8 + 8,
-+	.htotal = 480 + 8 + 8 + 8,
-+	.vdisplay = 800,
-+	.vsync_start = 800 + 6,
-+	.vsync_end = 800 + 6 + 6,
-+	.vtotal = 800 + 6 + 6 + 6,
-+	.vrefresh = 60,
-+	.width_mm = 45,
-+	.height_mm = 76,
++static struct dw_mipi_dsi_plat_data imx6q_mipi_dsi_drv_data = {
++	.max_data_lanes = 2,
++	.mode_valid = imx_mipi_dsi_mode_valid,
 +};
 +
-+static const struct hx8369a_panel_desc truly_tft480800_16_e_dsi = {
-+	.mode = &truly_tft480800_16_e_mode,
-+	.power_on_delay = 10,
-+	.reset_delay = 10,
-+	.dsi_lanes = 2,
-+};
-+
-+static const struct of_device_id hx8369a_dsi_of_match[] = {
++static const struct of_device_id imx_mipi_dsi_dt_ids[] = {
 +	{
-+		.compatible = "truly,tft480800-16-e-dsi",
-+		.data = &truly_tft480800_16_e_dsi,
-+	}, {
-+		/* sentinel */
++	 .compatible = "fsl,imx6q-mipi-dsi",
++	 .data = &imx6q_mipi_dsi_drv_data,
 +	},
++	{ /* sentinel */ }
 +};
-+MODULE_DEVICE_TABLE(of, hx8369a_dsi_of_match);
++MODULE_DEVICE_TABLE(of, imx_mipi_dsi_dt_ids);
 +
-+static int hx8369a_dsi_probe(struct mipi_dsi_device *dsi)
++static int imx_mipi_dsi_bind(struct device *dev, struct device *master,
++			     void *data)
 +{
-+	struct device *dev = &dsi->dev;
++	struct platform_device *pdev = to_platform_device(dev);
 +	const struct of_device_id *of_id =
-+			of_match_device(hx8369a_dsi_of_match, dev);
-+	struct hx8369a *ctx;
-+	int ret, i;
++			of_match_device(imx_mipi_dsi_dt_ids, dev);
++	const struct dw_mipi_dsi_plat_data *pdata = of_id->data;
++	struct drm_device *drm = data;
++	struct device_node *np = dev->of_node;
++	struct imx_mipi_dsi *dsi;
++	struct resource *res;
++	int ret;
 +
-+	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
-+	if (!ctx)
++	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
++	if (!dsi)
 +		return -ENOMEM;
 +
-+	ctx->dev = dev;
++	dsi->dev = dev;
 +
-+	if (of_id) {
-+		ctx->pd = of_id->data;
-+	} else {
-+		dev_err(dev, "cannot find compatible device\n");
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
 +		return -ENODEV;
-+	}
 +
-+	hx8369a_vm_to_res_sel(ctx);
++	dsi->regmap = syscon_regmap_lookup_by_phandle(np, "gpr");
++	if (IS_ERR(dsi->regmap))
++		return PTR_ERR(dsi->regmap);
 +
-+	ctx->supplies[0].supply = "vdd1";
-+	ctx->supplies[1].supply = "vdd2";
-+	ctx->supplies[2].supply = "vdd3";
-+	ctx->supplies[3].supply = "dsi-vcc";
-+	ctx->supplies[4].supply = "vpp";
-+	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(ctx->supplies),
-+				      ctx->supplies);
-+	if (ret < 0) {
-+		dev_info(dev, "failed to get regulators: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_LOW);
-+	if (IS_ERR(ctx->reset_gpio)) {
-+		dev_info(dev, "cannot get reset-gpios %ld\n",
-+			 PTR_ERR(ctx->reset_gpio));
-+		return PTR_ERR(ctx->reset_gpio);
-+	}
-+
-+	for (i = 0; i < 4; i++) {
-+		ctx->bs_gpio[i] = devm_gpiod_get_index_optional(dev, "bs", i,
-+								GPIOD_OUT_HIGH);
-+		if (!IS_ERR_OR_NULL(ctx->bs_gpio[i])) {
-+			dev_dbg(dev, "bs%d-gpio is configured\n", i);
-+		} else if (IS_ERR(ctx->bs_gpio[i])) {
-+			dev_info(dev, "failed to get bs%d-gpio\n", i);
-+			return PTR_ERR(ctx->bs_gpio[i]);
-+		}
-+	}
-+
-+	ret = hx8369a_power_on(ctx);
-+	if (ret < 0) {
-+		dev_err(dev, "cannot power on\n");
-+		return ret;
-+	}
-+
-+	drm_panel_init(&ctx->panel);
-+	ctx->panel.dev = dev;
-+	ctx->panel.funcs = &hx8369a_dsi_drm_funcs;
-+
-+	ret = drm_panel_add(&ctx->panel);
-+	if (ret < 0)
++	ret = imx_mipi_dsi_register(drm, dsi);
++	if (ret)
 +		return ret;
 +
-+	mipi_dsi_set_drvdata(dsi, ctx);
++	dev_set_drvdata(dev, dsi);
 +
-+	dsi->lanes = ctx->pd->dsi_lanes;
-+	dsi->format = MIPI_DSI_FMT_RGB888;
-+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO |
-+			  MIPI_DSI_MODE_VIDEO_BURST |
-+			  MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
-+	ret = mipi_dsi_attach(dsi);
-+	if (ret < 0)
-+		drm_panel_remove(&ctx->panel);
-+
-+	return ret;
++	return dw_mipi_dsi_bind(dev, master, data, &dsi->encoder, res, pdata);
 +}
 +
-+static int hx8369a_dsi_remove(struct mipi_dsi_device *dsi)
++static void imx_mipi_dsi_unbind(struct device *dev, struct device *master,
++	void *data)
 +{
-+	struct hx8369a *ctx = mipi_dsi_get_drvdata(dsi);
-+
-+	mipi_dsi_detach(dsi);
-+	drm_panel_remove(&ctx->panel);
-+	return hx8369a_power_off(ctx);
++	return dw_mipi_dsi_unbind(dev, master, data);
 +}
 +
-+static struct mipi_dsi_driver hx8369a_dsi_driver = {
-+	.probe = hx8369a_dsi_probe,
-+	.remove = hx8369a_dsi_remove,
-+	.driver = {
-+		.name = "panel-hx8369a-dsi",
-+		.of_match_table = hx8369a_dsi_of_match,
++static const struct component_ops imx_mipi_dsi_ops = {
++	.bind	= imx_mipi_dsi_bind,
++	.unbind	= imx_mipi_dsi_unbind,
++};
++
++static int imx_mipi_dsi_probe(struct platform_device *pdev)
++{
++	return component_add(&pdev->dev, &imx_mipi_dsi_ops);
++}
++
++static int imx_mipi_dsi_remove(struct platform_device *pdev)
++{
++	component_del(&pdev->dev, &imx_mipi_dsi_ops);
++	return 0;
++}
++
++static struct platform_driver imx_mipi_dsi_driver = {
++	.probe		= imx_mipi_dsi_probe,
++	.remove		= imx_mipi_dsi_remove,
++	.driver		= {
++		.of_match_table = imx_mipi_dsi_dt_ids,
++		.name	= DRIVER_NAME,
 +	},
 +};
-+module_mipi_dsi_driver(hx8369a_dsi_driver);
++module_platform_driver(imx_mipi_dsi_driver);
 +
-+MODULE_DESCRIPTION("Himax HX8369A panel driver");
++MODULE_DESCRIPTION("i.MX MIPI DSI host controller driver");
 +MODULE_AUTHOR("Liu Ying <Ying.Liu@freescale.com>");
-+MODULE_LICENSE("GPL v2");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRIVER_NAME);
 -- 
 2.1.0
 
