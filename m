@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaL3KCv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 05:02:51 -0500
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:37128 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756AbaL3KCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 05:02:49 -0500
+	id S1752179AbaL3KGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 05:06:32 -0500
+Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:42275 "EHLO
+	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751756AbaL3KGa convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 05:06:30 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=o+amxqHLy7+dd/uQ+LUqZyoNQm/aGJUjZTPtnbq5Ku0= c=1 sm=2
+ a=IkcTkHD0fZMA:10 a=P1BnusSwAAAA:8 a=6uuhSeQ8Oe1wFpPIMW8A:9 a=QEXdDO2ut3YA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al4GAOd3olTD7hTU/2dsb2JhbABcgwaBKoMFsQoBAQEBAQaYMwKBBxYBAQEBAX2EDAEBAQMBI1YFCwUEAhgCAhgOAgJXBhMRiBMMkiecaIZTjhwBAQEBBgIBH4EhhGKJEDEzB4JogUEFqFgigjKBPT0xgQOBQAEBAQ
+Date: Tue, 30 Dec 2014 11:06:28 +0100 (CET)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-media@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Message-ID: <598779387.288942.1419933988906.open-xchange@webmail.nmp.proximus.be>
+In-Reply-To: <3892296.djnqqbsP0R@avalon>
+References: <1419863387-24233-1-git-send-email-fabf@skynet.be> <1419863387-24233-10-git-send-email-fabf@skynet.be> <3892296.djnqqbsP0R@avalon>
+Subject: Re: [PATCH 09/11 linux-next] [media] uvcvideo: remove unnecessary
+ version.h inclusion
 MIME-Version: 1.0
-In-Reply-To: <20141230044826.GC4588@js1304-P5Q-DELUXE>
-References: <1419500608-11656-1-git-send-email-zhuhui@xiaomi.com>
- <1419500608-11656-2-git-send-email-zhuhui@xiaomi.com> <20141230044826.GC4588@js1304-P5Q-DELUXE>
-From: Hui Zhu <teawater@gmail.com>
-Date: Tue, 30 Dec 2014 18:02:09 +0800
-Message-ID: <CANFwon3U+chGmvLG_HdMf5_0Mb5OEEJSOUr+oPB5+US3rnfguA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] CMA: Fix the bug that CMA's page number is
- substructed twice
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Hui Zhu <zhuhui@xiaomi.com>, m.szyprowski@samsung.com, mina86@mina86.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        aneesh.kumar@linux.vnet.ibm.com, pintu.k@samsung.com,
-        weijie.yang@samsung.com, mgorman@suse.de, hannes@cmpxchg.org,
-        Rik van Riel <riel@redhat.com>, vbabka@suse.cz,
-        laurent.pinchart+renesas@ideasonboard.com, rientjes@google.com,
-        sasha.levin@oracle.com, liuweixing@xiaomi.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 12:48 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> On Thu, Dec 25, 2014 at 05:43:26PM +0800, Hui Zhu wrote:
->> In Joonsoo's CMA patch "CMA: always treat free cma pages as non-free on
->> watermark checking" [1], it changes __zone_watermark_ok to substruct CMA
->> pages number from free_pages if system use CMA:
->>       if (IS_ENABLED(CONFIG_CMA) && z->managed_cma_pages)
->>               free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
->
-> Hello,
->
-> In fact, without that patch, watermark checking has a problem in current kernel.
-> If there is reserved CMA region, watermark check for high order
-> allocation is done loosly. See following thread.
->
-> https://lkml.org/lkml/2014/5/30/320
->
-> Your patch can fix this situation, so, how about submitting this patch
-> separately?
->
-> Thanks.
->
 
-Hi Joonsoo,
 
-Thanks for your remind.  I will post a separate patch for current kernel.
+> On 30 December 2014 at 00:42 Laurent Pinchart
+> <laurent.pinchart@ideasonboard.com> wrote:
+>
+>
+> Hi Fabian,
+>
+> Thank you for the patch.
+>
+> On Monday 29 December 2014 15:29:43 Fabian Frederick wrote:
+> > Based on versioncheck.
+> >
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>
+> Should I take the patch in my tree or do you plan to send a pull request for
+> the whole series elsewhere ?
+>
+> > ---
+> >  drivers/media/usb/uvc/uvc_v4l2.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> >
+> > diff --git a/drivers/media/usb/uvc/uvc_v4l2.c
+> > b/drivers/media/usb/uvc/uvc_v4l2.c index 9c5cbcf..43e953f 100644
+> > --- a/drivers/media/usb/uvc/uvc_v4l2.c
+> > +++ b/drivers/media/usb/uvc/uvc_v4l2.c
+> > @@ -13,7 +13,6 @@
+> >
+> >  #include <linux/compat.h>
+> >  #include <linux/kernel.h>
+> > -#include <linux/version.h>
+> >  #include <linux/list.h>
+> >  #include <linux/module.h>
+> >  #include <linux/slab.h>
+>
+> --
+> Regards,
+>
+> Laurent Pinchart
+>
+Hi Laurent,
 
-Thanks,
-Hui
+        Thanks for the ack, you can take the patch.
+       
+(Maybe Greg will try later to apply the whole patchset on linux-next.
+It should not be a problem if some of them are already in.)
+
+Regards,
+Fabian
