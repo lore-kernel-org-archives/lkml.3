@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaL3SAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:00:08 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42677 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaL3SAG (ORCPT
+	id S1751533AbaL3SF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:05:56 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:62848 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303AbaL3SFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:00:06 -0500
-Date: Tue, 30 Dec 2014 19:00:02 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Nishanth Menon <nm@ti.com>
-Cc: Grazvydas Ignotas <notasas@gmail.com>, Sebastian Reichel <sre@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        dt list <devicetree@vger.kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Pali Rohar <pali.rohar@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] hwmon: Driver for OMAP3 temperature sensor
-Message-ID: <20141230180002.GC23142@amd>
-References: <20141226102933.GA28778@amd>
- <1419597294-21487-1-git-send-email-sre@kernel.org>
- <1419597294-21487-3-git-send-email-sre@kernel.org>
- <CANOLnON6rAQ2+jJEFDKseH2Htu6bqRkURDioGt7zp1Ze73f8Pw@mail.gmail.com>
- <CAGo_u6qO0ok+GBnm7SQtw6dJuwGN2OuP7CpKDEWawS3V2go4KA@mail.gmail.com>
- <20141229181556.GA26926@amd>
- <54A1BB2B.9060204@ti.com>
+	Tue, 30 Dec 2014 13:05:54 -0500
+Date: Tue, 30 Dec 2014 19:05:49 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Laurent Georget <laurent.georget@supelec.fr>
+Cc: linux-man <linux-man@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] adjtimex.2: Add details about ADJ_FREQUENCY
+Message-ID: <20141230180549.GB7403@localhost.localdomain>
+References: <54A2DEAD.2050708@supelec.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54A1BB2B.9060204@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54A2DEAD.2050708@supelec.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-12-29 14:35:55, Nishanth Menon wrote:
-> On 12/29/2014 12:15 PM, Pavel Machek wrote:
-> > On Mon 2014-12-29 12:01:03, Nishanth Menon wrote:
-> >> On Mon, Dec 29, 2014 at 11:52 AM, Grazvydas Ignotas <notasas@gmail.com> wrote:
-> >>> On Fri, Dec 26, 2014 at 2:34 PM, Sebastian Reichel <sre@kernel.org> wrote:
-> >>>> OMAP34xx and OMAP36xx processors contain a register in the syscon area,
-> >>>> which can be used to determine the SoCs temperature. This patch provides
-> >>>> a DT based driver for the temperature sensor based on an older driver
-> >>>> written by Peter De Schrijver for the Nokia N900 and N9.
-> >>>
-> >>> The sensor looks like an earlier iteration of sensors used in newer
-> >>> OMAPs, which are already supported by maybe
-> >>> drivers/thermal/ti-soc-thermal/ , maybe it would make sense to update
-> >>> that driver instead?
-> >>
-> >> Just to be clear - OMAP4 is the first time that the sensors were
-> >> reliable enough to be used.
-> > 
-> > When testing initial version of the patch, they seem to work very well
-> > in the omap3 case.
+On Tue, Dec 30, 2014 at 06:19:41PM +0100, Laurent Georget wrote:
+> Hi,
 > 
-> Just be careful when you try to make thermal policy like decisions
-> based on this sensor. Placement of the sensor w.r.t the actual logic
+> this is another patch for adjtimex(2) man page which fixes a FIXME by
+> giving the scaling unit of timex.freq and adds a detail about the value
+> expected by ADJ_FREQUENCY.
+> 
+> Laurent
+> 
+> diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
+> index 18823c8..2652fc6 100644
+> --- a/man2/adjtimex.2
+> +++ b/man2/adjtimex.2
+> @@ -55,8 +55,8 @@ struct timex {
+>                           status flag is set, otherwise
+>                           microseconds */
+>      long freq;        /* Frequency offset, as scaled PPM
+> -                         (parts per million) */
+> -.\" FIXME What is the scaling unit of timex.freq?  2^16 ?
 
-I guess we won't do that, certainly not anytime soon.
+Your text sounds funny and seems unclear to me.  How about something
+more like this:
 
-> Also notice http://www.ti.com/lit/er/sprz278f/sprz278f.pdf "Advisory
-> 3.1.1.186 MMC OCP Clock Not Gated When Thermal Sensor Is Used" I think
-> there were accuracy issues at certain values etc.. So remember to do a
-> off mode type PM tests as well before you consider requesting these to
-> be merged.
+	long freq	/* Frequency offset in PPM with a 16 bit
+			   factional field */
 
-Thanks a lot for a pointer. 3x 100uA power draw when you enable
-temperature sensor, because it also errorneously enables MMC. I wonder
-how the solution would look in the device tree...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +                         (parts per million) :
+> +                         the scaling unit of timex.freq is 2^16 usec =
+> 1000*2^16 nsec.
+
+Your mailer is wrapping lines here ...
+
+>      long maxerror;    /* Maximum error (microseconds) */
+>      long esterror;    /* Estimated error (microseconds) */
+>      int  status;      /* Clock command/status */
+> @@ -106,6 +106,10 @@ Set time offset from
+>  .BR ADJ_FREQUENCY
+>  Set frequency offset from
+>  .IR buf.freq .
+> +The clock frequency must be comprised between -500000 and 500000 scaled
+> ns/s.
+
+and here.
+
+The phrase "must be comprised" does not make any sense in this
+context. How about this instead?
+
+   The allowed frequency range is -500 PPM to +500 PPM.
+
+> +If the given value is outside those bounds, it is silently truncated. This
+> +corresponds to values between -32768000 and 32768000 for
+> +.IR buf.freq .
+>  .TP
+>  .BR ADJ_MAXERROR
+>  Set maximum time error from
+> 
+
+
