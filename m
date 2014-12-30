@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaL3QX6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 11:23:58 -0500
-Received: from www.osadl.org ([62.245.132.105]:52221 "EHLO www.osadl.org"
+	id S1751468AbaL3Qfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 11:35:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34087 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487AbaL3QX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 11:23:56 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [SCSI] mpt2sas: wait_for_completion_timeout timeout not reported
-Date: Tue, 30 Dec 2014 11:19:47 -0500
-Message-Id: <1419956387-28252-2-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1419956387-28252-1-git-send-email-der.herr@hofr.at>
-References: <1419956387-28252-1-git-send-email-der.herr@hofr.at>
+	id S1750977AbaL3Qfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 11:35:39 -0500
+Date: Tue, 30 Dec 2014 18:35:30 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, cornelia.huck@de.ibm.com
+Subject: [PATCH RFC v2 0/7] virtio-pci: towards virtio 1.0 guest support
+Message-ID: <1419957310-26009-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wait_for_completion_timeout reaching timeout was being ignored,
-this also should fail if timeout condition occurs.
-Thanks to Joe Lawrence <joe.lawrence@stratus.com> for confirmation.
+This is only very lightly tested, and I'll probably split it up and do minor
+changes for ease of review, but I thought I'd post it now that it actually
+works.
 
-this was only compile tested with
-x86_64_defconfig + CONFIG_SCSI_LOWLEVEL=y + CONFIG_SCSI_MPT2SAS=m
+Michael S Tsirkin (2):
+  pci: add pci_iomap_range
+  s390: add pci_iomap_range
 
-patch is against linux-next 3.19.0-rc1 -next-20141226
+Michael S. Tsirkin (4):
+  mn10300: drop dead code
+  virtio_pci: modern driver
+  virtio_pci: macros for PCI layout offsets.
+  virtio_pci: drop virtio_config dependency
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- drivers/scsi/mpt2sas/mpt2sas_config.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Rusty Russell (1):
+  virtio-pci: define layout for virtio 1.0
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_config.c b/drivers/scsi/mpt2sas/mpt2sas_config.c
-index c72a2ff..02dc2d8 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_config.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_config.c
-@@ -391,7 +391,7 @@ _config_request(struct MPT2SAS_ADAPTER *ioc, Mpi2ConfigRequest_t
- 	mpt2sas_base_put_smid_default(ioc, smid);
- 	timeleft = wait_for_completion_timeout(&ioc->config_cmds.done,
- 	    timeout*HZ);
--	if (!(ioc->config_cmds.status & MPT2_CMD_COMPLETE)) {
-+	if (timeleft == 0 || !(ioc->config_cmds.status & MPT2_CMD_COMPLETE)) {
- 		printk(MPT2SAS_ERR_FMT "%s: timeout\n",
- 		    ioc->name, __func__);
- 		_debug_dump_mf(mpi_request,
+ arch/s390/include/asm/pci_io.h        |   1 +
+ drivers/virtio/virtio_pci_common.h    |  29 +-
+ include/asm-generic/pci_iomap.h       |  10 +
+ include/uapi/linux/virtio_pci.h       |  94 ++++-
+ arch/mn10300/unit-asb2305/pci-iomap.c |  35 --
+ arch/s390/pci/pci.c                   |  34 +-
+ drivers/virtio/virtio_pci_common.c    |  13 +-
+ drivers/virtio/virtio_pci_modern.c    | 708 ++++++++++++++++++++++++++++++++++
+ lib/pci_iomap.c                       |  35 +-
+ drivers/virtio/Makefile               |   2 +-
+ 10 files changed, 908 insertions(+), 53 deletions(-)
+ delete mode 100644 arch/mn10300/unit-asb2305/pci-iomap.c
+ create mode 100644 drivers/virtio/virtio_pci_modern.c
+
 -- 
-1.7.10.4
+MST
 
