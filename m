@@ -1,130 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaL3HwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 02:52:09 -0500
-Received: from mail.windriver.com ([147.11.1.11]:34758 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838AbaL3HwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 02:52:07 -0500
-From: <zhe.he@windriver.com>
-To: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <x86@kernel.org>, <jason.wessel@windriver.com>,
-        <paul.gortmaker@windriver.com>
-CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
-Subject: [PATCH 1/1] x86, kgdb: correct kgdb_arch_remove_breakpoint
-Date: Tue, 30 Dec 2014 15:50:07 +0800
-Message-ID: <1419925807-31808-1-git-send-email-zhe.he@windriver.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752008AbaL3IFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 03:05:42 -0500
+Received: from m50-132.163.com ([123.125.50.132]:41900 "EHLO m50-132.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751683AbaL3IFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 03:05:40 -0500
+From: xuyongjiande@163.com
+To: shahed.shaikh@qlogic.com, Dept-GELinuxNICDev@qlogic.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yongjian Xu <xuyongjiande@gmail.com>
+Subject: [PATCH] qlcnic: Fix return value in qlcnic_probe()
+Date: Tue, 30 Dec 2014 16:03:46 +0800
+Message-Id: <1419926626-26624-1-git-send-email-xuyongjiande@163.com>
+X-Mailer: git-send-email 1.7.9.5
+X-CM-TRANSID: DNGowEAJfyJtXKJU0O_5AQ--.1208S3
+X-Coremail-Antispam: 1Uf129KBjvdXoWrZrykZw48XryDWF4DCry5twb_yoW3tFb_G3
+	WUZr18Xa1kJryqkw47trs8A34jgFnFqwn3C3WI9ay5J3srAa1UCr1DCrySqr4UW3y0vFyU
+	G3Z7Aayava4IyjkaLaAFLSUrUUUUjb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IUnOVy3UUUUU==
+X-Originating-IP: [166.111.131.12]
+X-CM-SenderInfo: p0x100pjmlt0lgh6il2tof0z/xtbBygVyW1O+Z2NchgAAsV
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: He Zhe <zhe.he@windriver.com>
+From: Yongjian Xu <xuyongjiande@gmail.com>
 
-On 3.19-rc2, kgdbts boot time test fails with default parameter V1F100
-"KGDB: BP remove failed: ffffffff81049070"
-Then system is hanged.
+If the check of adapter fails and goes into the 'else' branch, the
+return value 'err' should not still be zero.
 
-When CONFIG_DEBUG_RODATA is on, kgdb_arch_set_breakpoint firstly tries
-probe_kernel_write to set breakpoints and mark their type as BP_BREAKPOINT. If
-fails it would use text_poke and mark their type as BP_POKE_BREAKPOINT.
-
-On the other hand, kgdb_arch_remove_breakpoint uses probe_kernel_write to delete
-breakpoints if they are BP_BREAKPOINT, or uses text_poke if they are
-BP_POKE_BREAKPOINT.
-
-The kgdbts' boot time test case loops for do_fork and/or sys_open may run
-through initialization. During this procedure, the read only area is created. If
-a breakpoint is marked as BP_BREAKPOINT before creating read only area and then
-its address is put into that area, it would fail to be deleted due to
-kgdb_arch_remove_breakpoint would use wrong function.
-
-This patch:
- - Make kgdb_arch_remove_breakpoint work like kgdb_arch_set_breakpoint, trying
-probe_kernel_write first then trying text_poke if fails.
- - Remove BP_POKE_BREAKPOINT as it is only used in these two functions.
-
-Signed-off-by: He Zhe <zhe.he@windriver.com>
+Signed-off-by: Yongjian Xu <xuyongjiande@gmail.com>
 ---
- arch/x86/kernel/kgdb.c | 25 +++++++++++++------------
- include/linux/kgdb.h   |  1 -
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 7ec1d5f..f5f7772 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -749,7 +749,6 @@ int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
- 	char opc[BREAK_INSTR_SIZE];
- #endif /* CONFIG_DEBUG_RODATA */
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index 1aa25b1..a95b604 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -2603,6 +2603,7 @@ qlcnic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	} else {
+ 		dev_err(&pdev->dev,
+ 			"%s: failed. Please Reboot\n", __func__);
++		err = -ENODEV;
+ 		goto err_out_free_hw;
+ 	}
  
--	bpt->type = BP_BREAKPOINT;
- 	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
- 				BREAK_INSTR_SIZE);
- 	if (err)
-@@ -772,34 +771,36 @@ int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
- 		return err;
- 	if (memcmp(opc, arch_kgdb_ops.gdb_bpt_instr, BREAK_INSTR_SIZE))
- 		return -EINVAL;
--	bpt->type = BP_POKE_BREAKPOINT;
- #endif /* CONFIG_DEBUG_RODATA */
- 	return err;
- }
- 
- int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
- {
--#ifdef CONFIG_DEBUG_RODATA
- 	int err;
-+#ifdef CONFIG_DEBUG_RODATA
- 	char opc[BREAK_INSTR_SIZE];
-+#endif /* CONFIG_DEBUG_RODATA */
- 
--	if (bpt->type != BP_POKE_BREAKPOINT)
--		goto knl_write;
-+	err = probe_kernel_write((char *)bpt->bpt_addr,
-+				 (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
-+#ifdef CONFIG_DEBUG_RODATA
-+	if (!err)
-+		return err;
- 	/*
- 	 * It is safe to call text_poke() because normal kernel execution
- 	 * is stopped on all cores, so long as the text_mutex is not locked.
- 	 */
- 	if (mutex_is_locked(&text_mutex))
--		goto knl_write;
-+		return -EBUSY;
- 	text_poke((void *)bpt->bpt_addr, bpt->saved_instr, BREAK_INSTR_SIZE);
- 	err = probe_kernel_read(opc, (char *)bpt->bpt_addr, BREAK_INSTR_SIZE);
--	if (err || memcmp(opc, bpt->saved_instr, BREAK_INSTR_SIZE))
--		goto knl_write;
--	return err;
--knl_write:
-+	if (err)
-+		return err;
-+	if (memcmp(opc, bpt->saved_instr, BREAK_INSTR_SIZE))
-+		return -EINVAL;
- #endif /* CONFIG_DEBUG_RODATA */
--	return probe_kernel_write((char *)bpt->bpt_addr,
--				  (char *)bpt->saved_instr, BREAK_INSTR_SIZE);
-+	return err;
- }
- 
- struct kgdb_arch arch_kgdb_ops = {
-diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
-index fc513db..cded3c75 100644
---- a/include/linux/kgdb.h
-+++ b/include/linux/kgdb.h
-@@ -63,7 +63,6 @@ enum kgdb_bptype {
- 	BP_WRITE_WATCHPOINT,
- 	BP_READ_WATCHPOINT,
- 	BP_ACCESS_WATCHPOINT,
--	BP_POKE_BREAKPOINT,
- };
- 
- enum kgdb_bpstate {
 -- 
-1.8.3.1
+1.7.9.5
+
 
