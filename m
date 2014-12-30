@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaL3XhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 18:37:17 -0500
-Received: from mout.gmx.net ([212.227.15.18]:65289 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751631AbaL3XhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 18:37:15 -0500
-Date: Wed, 31 Dec 2014 00:37:26 +0100
-From: Sebastian Herbszt <herbszt@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Sebastian Herbszt <herbszt@gmx.de>
-Subject: blk-mq: should elv_iosched_store return ENXIO/EINVAL?
-Message-ID: <20141231003726.00002588@localhost>
-X-Mailer: Claws Mail 3.9.2-55-g74b05b (GTK+ 2.16.6; i586-pc-mingw32msvc)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751969AbaL3Xxz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 18:53:55 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:36786 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaL3Xxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 18:53:53 -0500
+Date: Tue, 30 Dec 2014 18:53:50 -0500 (EST)
+Message-Id: <20141230.185350.1886821773938320675.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next V2] virtio-net: don't do header check for
+ dodgy gso packets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1419390232-14906-1-git-send-email-jasowang@redhat.com>
+References: <1419390232-14906-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:TuXrY5Fo/WQszYOxJy9yV/fqdxMNbwGdZTnKn4Pj8zbkxvrZhPl
- neuaVgEith2Wikx2VexQBbp4Qfvok6+hBXnFJoTTPOyKE6YguPJA1vja1xOI9Q3SN1hFW1M
- GRm2yKckHT0VZQdv6pHXXfErwnU9u5t8zvbS5jvEiCpn7CWREcHRPq1Aw7JRgO5l5MJGDSJ
- TgufEeRsBaIby1rJwm5HA==
-X-UI-Out-Filterresults: notjunk:1;
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 30 Dec 2014 15:53:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Jason Wang <jasowang@redhat.com>
+Date: Wed, 24 Dec 2014 11:03:52 +0800
 
-setting an invalid elevator without blk-mq results in an error:
+> There's no need to do header check for virtio-net since:
+> 
+> - Host sets dodgy for all gso packets from guest and check the header.
+> - Host should be prepared for all kinds of evil packets from guest, since
+>   malicious guest can send any kinds of packet.
+> 
+> So this patch sets NETIF_F_GSO_ROBUST for virtio-net to skip the check.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Changes from V1:
+> - typo fixes
 
-# cat /sys/block/sda/queue/scheduler
-noop deadline [cfq]
-# echo foo > /sys/block/sda/queue/scheduler
--bash: echo: write error: Invalid argument
-# dmesg
-[  328.767088] elevator: type foo not found
-[  328.767097] elevator: switch to foo
- failed
-
-With blk-mq no error is returned:
-
-# cat /sys/block/sda/queue/scheduler
-none
-# echo foo > /sys/block/sda/queue/scheduler
-# echo $?
-0
-
-
-block/elevator.c got
-
- 988 ssize_t elv_iosched_store(struct request_queue *q, const char *name,
- 989                           size_t count)
- 990 {
- 991         int ret;
- 992
- 993         if (!q->elevator)
- 994                 return count;
- 995
- 996         ret = __elevator_change(q, name);
-
-and
-
- 952 static int __elevator_change(struct request_queue *q, const char *name)
- 953 {
- 954         char elevator_name[ELV_NAME_MAX];
- 955         struct elevator_type *e;
- 956
- 957         if (!q->elevator)
- 958                 return -ENXIO;
- 959
- 960         strlcpy(elevator_name, name, sizeof(elevator_name));
- 961         e = elevator_get(strstrip(elevator_name), true);
- 962         if (!e) {
- 963                 printk(KERN_ERR "elevator: type %s not found\n", elevator_name);
- 964                 return -EINVAL;
- 965         }
-
-
-So !q->elevator is checked in elv_iosched_store and __elevator_change.
-
-Should elv_iosched_store return ENXIO or EINVAL or should __elevator_change
-handle this?
-
-Sebastian
+Applied.
