@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaL3Lg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 06:36:57 -0500
-Received: from mail-bn1on0142.outbound.protection.outlook.com ([157.56.110.142]:48544
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751636AbaL3Lg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 06:36:56 -0500
-X-Greylist: delayed 34435 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 06:36:56 EST
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "crmafra@gmail.com" <crmafra@gmail.com>
-CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andreas.noever@gmail.com" <andreas.noever@gmail.com>,
-        "crmafra2@gmail.com" <crmafra2@gmail.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>
-Subject: Re: Bisected regression from 3.17 still present in 3.19-rc1
-Thread-Topic: Bisected regression from 3.17 still present in 3.19-rc1
-Thread-Index: AQHQIs7zn+FVxla+ME6mkETDKfie05yn7D/ugAAX8gA=
-Date: Tue, 30 Dec 2014 11:36:53 +0000
-Message-ID: <1419939412.25226.2.camel@nebula.com>
-References: <20141228185409.GA2015@linux-g29b.site>
-	 <1419902900.25226.0.camel@nebula.com>
-	 <20141230101624.GA5339@linux-g29b.site>
-In-Reply-To: <20141230101624.GA5339@linux-g29b.site>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [88.128.80.30]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=matthew.garrett@nebula.com; 
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB423;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB423;
-x-forefront-prvs: 04410E544A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(377424004)(24454002)(199003)(51704005)(31966008)(107046002)(2351001)(110136001)(120916001)(33646002)(66066001)(99286002)(106116001)(86362001)(2656002)(21056001)(122556002)(2950100001)(68736005)(105586002)(20776003)(106356001)(2900100001)(87936001)(1411001)(62966003)(77156002)(76176999)(4396001)(50986999)(46102003)(19580405001)(101416001)(54356999)(36756003)(103116003)(2501002)(97736003)(19580395003)(92566001)(40100003)(102836002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR05MB423;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <169249A6B2BFA1499B3A693AB05048AE@namprd05.prod.outlook.com>
+	id S1752104AbaL3LpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 06:45:01 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50038 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203AbaL3Lo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 06:44:59 -0500
+Message-ID: <54A29036.4020507@ti.com>
+Date: Tue, 30 Dec 2014 13:44:54 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 30 Dec 2014 11:36:53.0851
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: d9cc6df8-58db-46f5-bf3e-083732d8ac63
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR05MB423
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.19
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="qhuBLOxK9COm3Rf8d6G3PrWF9Mv6hUmHK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBUBbMo7020685
 
-On Tue, 2014-12-30 at 10:16 +0000, Carlos R. Mafra wrote:
-> On Tue, 30 Dec 2014 at  1:28:21 +0000, Matthew Garrett wrote:
-> > What is CONFIG_ACPI_SBS set to?
-> 
-> CONFIG_ACPI_SBS is not set
+--qhuBLOxK9COm3Rf8d6G3PrWF9Mv6hUmHK
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-There's your problem. The Darwin call results in the firmware exposing
-the battery via SBS, not as an ACPI control method battery. Enable
-CONFIG_ACPI_SBS and you should be good.
+Hi Linus,
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+The following changes since commit b7392d2247cfe6771f95d256374f1a8e6a6f48=
+d6:
+
+  Linux 3.19-rc2 (2014-12-28 16:49:37 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-fixes-3.19
+
+for you to fetch changes up to a32442d4f8b712b701ea577c841d6a0a7c5993c1:
+
+  OMAPDSS: SDI: fix output port_num (2014-12-30 11:18:30 +0200)
+
+----------------------------------------------------------------
+fbdev fixes for 3.19
+
+* Fix regression with Nokia N900 display
+* Fix crash on fbdev using freed __initdata logos
+* Fix fb_deferred_io_fsync() return value.
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      OMAPDSS: pll: NULL dereference in error handling
+
+Tomi Valkeinen (4):
+      OMAPDSS: HDMI: remove double initializer entries
+      video/logo: prevent use of logos after they have been freed
+      video/fbdev: fix defio's fsync
+      OMAPDSS: SDI: fix output port_num
+
+ drivers/video/fbdev/core/fb_defio.c      |  5 +++--
+ drivers/video/fbdev/omap2/dss/hdmi_pll.c |  2 --
+ drivers/video/fbdev/omap2/dss/pll.c      |  3 ++-
+ drivers/video/fbdev/omap2/dss/sdi.c      |  2 ++
+ drivers/video/logo/logo.c                | 17 ++++++++++++++++-
+ 5 files changed, 23 insertions(+), 6 deletions(-)
+
+
+--qhuBLOxK9COm3Rf8d6G3PrWF9Mv6hUmHK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUopA3AAoJEPo9qoy8lh71Zp4P/1mzbvgmquGW1/oQQjHn8d8t
+EJiXcwFeGAvhAwtGlmYK40brq/OdRh+Y3xlSLZYZSi+cXAMN2cNqUSwamKPQvB3o
+1zI8hFDNpz91ttoP1RALaEa860jZG/GgR5UqNJq6qZvqIWrOUXGIn5kYv66xP22/
+2TF+75ehv78zGr6jejCwXv2G0GHZypvsABY8fpaZJJiyEIHAFxoQKTfTKWM9FwYZ
+QU32M0WsdoyJhqY2CO9J+QTQdqDytiLDHXQK0bk3ku5Z4Z4FdbLKiwSTH/Dla++x
+NlyoJlY71k1L57dimM96u7LaSQH8S74kqTwJzSEEUA/Fqj/mjbLdjV5xvD5wZa9R
+qJsOLeFkTV3iw1lnZx4nEZU2MsrVhpKwvV2+8MhsbVSXtezROumEAaxbzcZzfFtW
+i46woHxQARGQ2s5CSb9ueUFqp6tx8xAPh55acOfYwMOfdCLt2TEVC3A7EUTXlm8Y
+5SWHvnNK3A842WTCqOg3t/S8ickDpFHlMsifvbnald/GTQ7hk20j+FFxzV32d3fZ
+hEgAHiEcM4sA34KAgw1jwd2qp3BjMhrE/qnU5v2svaBr2vpZ3GXObP1tjS3IhPU1
+IDPhJJcutQtLk04xvAbehL22QCQTctr2Wt0jaz+2mBULaZRoqg0G6zTf4+IQI/gP
+1/+01g8lXd9cIdSq4sXa
+=DWAl
+-----END PGP SIGNATURE-----
+
+--qhuBLOxK9COm3Rf8d6G3PrWF9Mv6hUmHK--
