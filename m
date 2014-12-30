@@ -1,72 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbaL3KQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 05:16:24 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:53238 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaL3KQW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 05:16:22 -0500
+	id S1752361AbaL3KRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 05:17:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752073AbaL3KQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 05:16:59 -0500
+Message-ID: <54A27B8D.8040404@redhat.com>
+Date: Tue, 30 Dec 2014 11:16:45 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Date: Tue, 30 Dec 2014 13:16:20 +0300
-Message-ID: <CACVxJT8sJBR7bZQfLDedvQWTsEo1GaT2UrLCNavz=38Kxe=PTg@mail.gmail.com>
-Subject: 3.17.7: list corruption(?) near epoll
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
+CC: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Andrew Duggan <aduggan@synaptics.com>,
+        Christopher Heiny <cheiny@synaptics.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: synaptics - switch ForcePad detection to PNP IDs
+References: <20141229225113.GA13847@dtor-ws>
+In-Reply-To: <20141229225113.GA13847@dtor-ws>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caught while browsing with chromium shortly after boot.
-Haven't seen something like that before.
+Hi,
 
-Several chromium tabs locked up, dmesg was full of
-similar messages. Box was more or less operational,
-then switched to text console with last panic message.
+Looks good to me:
 
-After reboot, that's all what was left:
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
- [<ffffffff8115155d>] ep_remove+0x1d/0xb0
- [<ffffffff81152740>] SyS_epoll_ctl+0x400/0xae0
- [<ffffffff8109780b>] ? local_clock+0x1b/0x30
- [<ffffffff8104803b>] ? syscall_trace_enter+0x16b/0x180
- [<ffffffff81485009>] tracesys+0xd0/0xd5
----[ end trace 3fc03b0916c7ab8d ]---
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1384 at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
-list_del corruption, ffff8800d99a7858->next is LIST_POISON1 (dead000000100100)
-Modules linked in: usbhid uhci_hcd
-CPU: 0 PID: 1384 Comm: Chrome_IOThread Tainted: G        W      3.17.7 #51
-Hardware name: Hewlett-Packard HP Compaq dc7800 Convertible
-Minitower/0AACh, BIOS 786F1 v01.28 02/26/2009
- 0000000000000009 ffff8800c6387d70 ffffffff8147f3c3 ffff8800c6387db8
- ffff8800c6387da8 ffffffff810761f3 ffff8800d99a7858 ffff8800d99a7840
- 0000000000000286 00000000000000fa fffffffffffffffe ffff8800c6387e08
-Call Trace:
- [<ffffffff8147f3c3>] dump_stack+0x4d/0x6f
- [<ffffffff810761f3>] warn_slowpath_common+0x73/0x90
- [<ffffffff81076257>] warn_slowpath_fmt+0x47/0x50
- [<ffffffff81076257>] ? warn_slowpath_fmt+0x47/0x50
- [<ffffffff81205983>] __list_del_entry+0x63/0xd0
- [<ffffffff812059fd>] list_del+0xd/0x30
- [<ffffffff810a12e1>] remove_wait_queue+0x21/0x40
- [<ffffffff8115150f>] ep_unregister_pollwait.isra.17+0x3f/0x70
- [<ffffffff8115155d>] ep_remove+0x1d/0xb0
- [<ffffffff81152740>] SyS_epoll_ctl+0x400/0xae0
- [<ffffffff8109780b>] ? local_clock+0x1b/0x30
- [<ffffffff8104803b>] ? syscall_trace_enter+0x16b/0x180
- [<ffffffff81485009>] tracesys+0xd0/0xd5
----[ end trace 3fc03b0916c7ab8e ]---
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1384 at lib/list_debug.c:56 __list_del_entry+0xc3/0xd0()
-list_del corruption, ffff8800d99a7828->prev is LIST_POISON2 (dead000000200200)
-Modules linked in: usbhid uhci_hcd
-CPU: 0 PID: 1384 Comm: Chrome_IOThread Tainted: G        W      3.17.7 #51
-Hardware name: Hewlett-Packard HP Compaq dc7800 Convertible
-Minitower/0AACh, BIOS 786F1 v01.28 02/26/2009
- 0000000000000009 ffff8800c6387d98 ffffffff8147f3c3 ffff8800c6387de0
- ffff8800c6387dd0 ffffffff810761f3 ffff8800d99a7828 ffff8800d8df8a00
- ffff8800d8df8a40 00000000000000fa fffffffffffffffe ffff8800c6387e30
-Call Trace:
+Regards,
+
+Hans
+
+On 29-12-14 23:51, Dmitry Torokhov wrote:
+> According to Synaptics devices with ForcePads use SYN300D and SYN3014 as
+> PNP IDs, so let's switch from DMI-bases detection scheme to PNP-based
+> one, which should be more reliable.
+>
+> Suggested-by: Hans de Goede <hdegoede@redhat.com>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>   drivers/input/mouse/synaptics.c | 35 ++++++++++++++---------------------
+>   drivers/input/mouse/synaptics.h |  1 +
+>   2 files changed, 15 insertions(+), 21 deletions(-)
+>
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index d2ab13a..f04017e 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -190,6 +190,13 @@ static const char * const topbuttonpad_pnp_ids[] = {
+>   	NULL
+>   };
+>
+> +/* This list has been kindly provided by Synaptics. */
+> +static const char * const forcepad_pnp_ids[] = {
+> +	"SYN300D",
+> +	"SYN3014",
+> +	NULL
+> +};
+> +
+>   /*****************************************************************************
+>    *	Synaptics communications functions
+>    ****************************************************************************/
+> @@ -601,8 +608,6 @@ static void synaptics_parse_agm(const unsigned char buf[],
+>   	}
+>   }
+>
+> -static bool is_forcepad;
+> -
+>   static int synaptics_parse_hw_state(const unsigned char buf[],
+>   				    struct synaptics_data *priv,
+>   				    struct synaptics_hw_state *hw)
+> @@ -632,7 +637,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>   		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+>   		hw->right = (buf[0] & 0x02) ? 1 : 0;
+>
+> -		if (is_forcepad) {
+> +		if (priv->is_forcepad) {
+>   			/*
+>   			 * ForcePads, like Clickpads, use middle button
+>   			 * bits to report primary button clicks.
+> @@ -1307,29 +1312,11 @@ static const struct dmi_system_id __initconst cr48_dmi_table[] = {
+>   	{ }
+>   };
+>
+> -static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
+> -#if defined(CONFIG_DMI) && defined(CONFIG_X86)
+> -	{
+> -		.matches = {
+> -			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+> -			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
+> -		},
+> -	},
+> -#endif
+> -	{ }
+> -};
+> -
+>   void __init synaptics_module_init(void)
+>   {
+>   	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
+>   	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
+>   	cr48_profile_sensor = dmi_check_system(cr48_dmi_table);
+> -
+> -	/*
+> -	 * Unfortunately ForcePad capability is not exported over PS/2,
+> -	 * so we have to resort to checking DMI.
+> -	 */
+> -	is_forcepad = dmi_check_system(forcepad_dmi_table);
+>   }
+>
+>   static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+> @@ -1364,6 +1351,12 @@ static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
+>   	if (SYN_ID_DISGEST_SUPPORTED(priv->identity))
+>   		priv->disable_gesture = true;
+>
+> +	/*
+> +	 * Unfortunately ForcePad capability is not exported over PS/2,
+> +	 * so we have to resort to checking PNP IDs.
+> +	 */
+> +	priv->is_forcepad = psmouse_matches_pnp_id(psmouse, forcepad_pnp_ids);
+> +
+>   	if (synaptics_set_mode(psmouse)) {
+>   		psmouse_err(psmouse, "Unable to initialize device.\n");
+>   		goto init_fail;
+> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+> index aedc329..fb3838c 100644
+> --- a/drivers/input/mouse/synaptics.h
+> +++ b/drivers/input/mouse/synaptics.h
+> @@ -168,6 +168,7 @@ struct synaptics_data {
+>   	unsigned long				press_start;
+>   	bool					press;
+>   	bool					report_press;
+> +	bool					is_forcepad;
+>   };
+>
+>   void synaptics_module_init(void);
+>
