@@ -1,125 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaL3WAb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 17:00:31 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:59377 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaL3WAa (ORCPT
+	id S1751920AbaL3WDD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 17:03:03 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:42716 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaL3WDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 17:00:30 -0500
-Message-ID: <54A3207B.3000601@codeaurora.org>
-Date: Tue, 30 Dec 2014 14:00:27 -0800
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 30 Dec 2014 17:03:01 -0500
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: "Stefan I. Strogin" <s.strogin@partner.samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
-        Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, rostedt@goodmis.org,
-        namhyung@kernel.org
-Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
-References: <cover.1419602920.git.s.strogin@partner.samsung.com> <20141229023639.GC27095@bbox> <54A1B11A.6020307@codeaurora.org> <20141230044726.GA22342@bbox>
-In-Reply-To: <20141230044726.GA22342@bbox>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+Date: Tue, 30 Dec 2014 23:02:31 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, kernel@pengutronix.de,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        =?UTF-8?Q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 08/12] ARM: allow MULTIPLATFORM with !MMU
+In-Reply-To: <CAL_JsqK94Pk2xPF1MMX0GU0CQEiwiDD2qv9v3k4WLg2znDVjgA@mail.gmail.com>
+References: <1419895935-22966-1-git-send-email-stefan@agner.ch>
+ <1419895935-22966-9-git-send-email-stefan@agner.ch>
+ <CAL_JsqK94Pk2xPF1MMX0GU0CQEiwiDD2qv9v3k4WLg2znDVjgA@mail.gmail.com>
+Message-ID: <8ec6bcf0fe2ec13898cf6c259d9da559@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Dec 30 23:01:43 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 54a320c712811718514784
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/2014 8:47 PM, Minchan Kim wrote:
+On 2014-12-30 22:42, Rob Herring wrote:
+> On Mon, Dec 29, 2014 at 5:32 PM, Stefan Agner <stefan@agner.ch> wrote:
+>> In order to support SoC with heterogenous CPU architectures (such
+>> as Freescale Vybrid/i.MXSX) it is preferable to use the same
+>> architecture (ARCH_MXC in this case) for the MMU enabled and !MMU
+>> CPU. Hence allow to select MULTIPLATFORM even without MMU.
+> 
+> This has been submitted before[1], but you obviously have a better
+> reason now. I also need this for my Versatile series to fix
+> allnoconfig. However, there are some issues with your implementation.
+> 
+>> Signed-off-by: Stefan Agner <stefan@agner.ch>
+>> ---
+>>  arch/arm/Kconfig | 21 ++++++++++-----------
+>>  1 file changed, 10 insertions(+), 11 deletions(-)
 >>
+>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+>> index 97d07ed..95007b9 100644
+>> --- a/arch/arm/Kconfig
+>> +++ b/arch/arm/Kconfig
+>> @@ -228,7 +228,7 @@ config VECTORS_BASE
+>>           in size.
 >>
->> I've been meaning to write something like this for a while so I'm
->> happy to see an attempt made to fix this. I can't speak for the
->> author's reasons for wanting this information but there are
->> several reasons why I was thinking of something similar.
+>>  config ARM_PATCH_PHYS_VIRT
+>> -       bool "Patch physical to virtual translations at runtime" if EMBEDDED
+>> +       bool "Patch physical to virtual translations at runtime" if EMBEDDED || (ARCH_MULTIPLATFORM && MMU)
+>>         default y
+>>         depends on !XIP_KERNEL && MMU
+>>         depends on !ARCH_REALVIEW || !SPARSEMEM
+>> @@ -303,15 +303,12 @@ config MMU
+>>  #
+>>  choice
+>>         prompt "ARM system type"
+>> -       default ARCH_VERSATILE if !MMU
+>> -       default ARCH_MULTIPLATFORM if MMU
+>> +       default ARCH_MULTIPLATFORM
 >>
->> The most common bug reports seen internally on CMA are 1) CMA is
->> too slow and 2) CMA failed to allocate memory. For #1, not all
->> allocations may be slow so it's useful to be able to keep track
->> of which allocations are taking too long. For #2, migration
->
-> Then, I don't think we could keep all of allocations. What we need
-> is only slow allocations. I hope we can do that with ftrace.
->
-> ex)
->
-> # cd /sys/kernel/debug/tracing
-> # echo 1 > options/stacktrace
-> # echo cam_alloc > set_ftrace_filter
-> # echo your_threshold > tracing_thresh
->
-> I know it doesn't work now but I think it's more flexible
-> and general way to handle such issues(ie, latency of some functions).
-> So, I hope we could enhance ftrace rather than new wheel.
-> Ccing ftrace people.
->
-> Futhermore, if we really need to have such information, we need more data
-> (ex, how many of pages were migrated out, how many pages were dropped
-> without migrated, how many pages were written back, how many pages were
-> retried with the page lock and so on).
-> In this case, event trace would be better.
->
->
-
-I agree ftrace is significantly more flexible in many respects but
-for the type of information we're actually trying to collect here
-ftrace may not be the right tool. Often times it won't be obvious there
-will be a problem when starting a test so all debugging information
-needs to be enabled. If the debugging information needs to be on
-almost all the time anyway it seems silly to allow it be configurable
-via ftrace.
-
->> failure is fairly common but it's still important to rule out
->> a memory leak from a dma client. Seeing all the allocations is
->> also very useful for memory tuning (e.g. how big does the CMA
->> region need to be, which clients are actually allocating memory).
->
-> Memory leak is really general problem and could we handle it with
-> page_owner?
->
-
-True, but it gets difficult to narrow down which are CMA pages allocated
-via the contiguous code path. page owner also can't differentiate between
-different CMA regions, this needs to be done separately. This may
-be a sign page owner needs some extensions independent of any CMA
-work.
-  
+>>  config ARCH_MULTIPLATFORM
+>>         bool "Allow multiple platforms to be selected"
+>> -       depends on MMU
+>>         select ARCH_WANT_OPTIONAL_GPIOLIB
+>>         select ARM_HAS_SG_CHAIN
+>> -       select ARM_PATCH_PHYS_VIRT
+>>         select AUTO_ZRELADDR
+>>         select CLKSRC_OF
+>>         select COMMON_CLK
+>> @@ -783,13 +780,13 @@ comment "CPU Core family selection"
 >>
->> ftrace is certainly usable for tracing CMA allocation callers and
->> latency. ftrace is still only a fixed size buffer though so it's
->> possible for information to be lost if other logging is enabled.
->
-> Sorry, I don't get with only above reasons why we need this. :(
->
+>>  config ARCH_MULTI_V4
+>>         bool "ARMv4 based platforms (FA526)"
+>> -       depends on !ARCH_MULTI_V6_V7
+>> +       depends on !ARCH_MULTI_V6_V7 && MMU
+> 
+> This is not right. !MMU does not mean the ARM arch does not have an
+> MMU, but rather the MMU is already setup with identity mapping (or
+> some other static mapping).
 
-I guess from my perspective the problem that is being solved here
-is a fairly fixed static problem. We know the information we always
-want to collect and have available so the ability to turn it off
-and on via ftrace doesn't seem necessary. The ftrace maintainers
-will probably disagree here but doing 'cat foo' on a file is
-easier than finding the particular events, setting thresholds,
-collecting the trace and possibly post processing. It seems like
-this is conflating tracing which ftrace does very well with getting
-a snapshot of the system at a fixed point in time which is what
-debugfs files are designed for. We really just want a snapshot of
-allocation history with some information about those allocations.
-There should be more ftrace events in the CMA path but I think those
-should be in supplement to the debugfs interface and not a replacement.
+Yes, I'm aware of that. However, there are several configuration
+depending on "!MMU". Allowing !MMU on ARCH_MULTI_V4...V7 would open up
+new combination of configurations... This patch avoids this as much as
+possible, by making !MMU only available for ARCH_MULTI_V7M.
 
-Thanks,
-Laura
+I'm not sure what tests/verification would be expected before allowing
+those new configurations... Personally, I also don't see much value in
+allowing these configurations.
 
--- 
-Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+--
+Stefan
+
+> 
+> Rob
+> 
+> [1] http://patchwork.ozlabs.org/patch/278996/
+
