@@ -1,243 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaL3EiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 23:38:17 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:38010 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaL3EiQ (ORCPT
+	id S1752431AbaL3EjW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 23:39:22 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47356 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaL3EjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 23:38:16 -0500
-X-Original-SENDERIP: 10.177.220.158
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 30 Dec 2014 13:38:14 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: "Stefan I. Strogin" <s.strogin@partner.samsung.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
-        Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Subject: Re: [PATCH 2/3] mm: cma: introduce /proc/cmainfo
-Message-ID: <20141230043814.GB4588@js1304-P5Q-DELUXE>
-References: <cover.1419602920.git.s.strogin@partner.samsung.com>
- <264ce8ad192124f2afec9a71a2fc28779d453ba7.1419602920.git.s.strogin@partner.samsung.com>
+	Mon, 29 Dec 2014 23:39:21 -0500
+Message-ID: <54A22C76.9000403@gmail.com>
+Date: Mon, 29 Dec 2014 21:39:18 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <264ce8ad192124f2afec9a71a2fc28779d453ba7.1419602920.git.s.strogin@partner.samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: perf-probe crash in dwarf_getcfi_elf
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 26, 2014 at 05:39:03PM +0300, Stefan I. Strogin wrote:
-> /proc/cmainfo contains a list of currently allocated CMA buffers for every
-> CMA area when CONFIG_CMA_DEBUG is enabled.
+Hi Namhyung:
 
-Hello,
+Using perf-probe from top of Linus' tree I get a segfault on both Fedora 
+16 and 18 (does not crash on Fedora 20). Command used is:
 
-I think that providing these information looks useful, but, we need better
-implementation. As Laura said, it is better to use debugfs. And,
-instead of re-implementing the wheel, how about using tracepoint
-to print these information? See below comments.
+perf probe -x /lib64/libc-2.14.90.so -a 'malloc  size=%di'
 
-> 
-> Format is:
-> 
-> <base_phys_addr> - <end_phys_addr> (<size> kB), allocated by <PID>\
-> 		(<command name>), latency <allocation latency> us
->  <stack backtrace when the buffer had been allocated>
-> 
-> Signed-off-by: Stefan I. Strogin <s.strogin@partner.samsung.com>
-> ---
->  mm/cma.c | 202 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 202 insertions(+)
-> 
-> diff --git a/mm/cma.c b/mm/cma.c
-> index a85ae28..ffaea26 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -34,6 +34,10 @@
->  #include <linux/cma.h>
->  #include <linux/highmem.h>
->  #include <linux/io.h>
-> +#include <linux/list.h>
-> +#include <linux/proc_fs.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/time.h>
->  
->  struct cma {
->  	unsigned long	base_pfn;
-> @@ -41,8 +45,25 @@ struct cma {
->  	unsigned long	*bitmap;
->  	unsigned int order_per_bit; /* Order of pages represented by one bit */
->  	struct mutex	lock;
-> +#ifdef CONFIG_CMA_DEBUG
-> +	struct list_head buffers_list;
-> +	struct mutex	list_lock;
-> +#endif
->  };
->  
-> +#ifdef CONFIG_CMA_DEBUG
-> +struct cma_buffer {
-> +	unsigned long pfn;
-> +	unsigned long count;
-> +	pid_t pid;
-> +	char comm[TASK_COMM_LEN];
-> +	unsigned int latency;
-> +	unsigned long trace_entries[16];
-> +	unsigned int nr_entries;
-> +	struct list_head list;
-> +};
-> +#endif
-> +
->  static struct cma cma_areas[MAX_CMA_AREAS];
->  static unsigned cma_area_count;
->  static DEFINE_MUTEX(cma_mutex);
-> @@ -132,6 +153,10 @@ static int __init cma_activate_area(struct cma *cma)
->  	} while (--i);
->  
->  	mutex_init(&cma->lock);
-> +#ifdef CONFIG_CMA_DEBUG
-> +	INIT_LIST_HEAD(&cma->buffers_list);
-> +	mutex_init(&cma->list_lock);
-> +#endif
->  	return 0;
->  
->  err:
-> @@ -347,6 +372,86 @@ err:
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_CMA_DEBUG
-> +/**
-> + * cma_buffer_list_add() - add a new entry to a list of allocated buffers
-> + * @cma:     Contiguous memory region for which the allocation is performed.
-> + * @pfn:     Base PFN of the allocated buffer.
-> + * @count:   Number of allocated pages.
-> + * @latency: Nanoseconds spent to allocate the buffer.
-> + *
-> + * This function adds a new entry to the list of allocated contiguous memory
-> + * buffers in a CMA area. It uses the CMA area specificated by the device
-> + * if available or the default global one otherwise.
-> + */
-> +static int cma_buffer_list_add(struct cma *cma, unsigned long pfn,
-> +			       int count, s64 latency)
-> +{
-> +	struct cma_buffer *cmabuf;
-> +	struct stack_trace trace;
-> +
-> +	cmabuf = kmalloc(sizeof(struct cma_buffer), GFP_KERNEL);
-> +	if (!cmabuf)
-> +		return -ENOMEM;
-> +
-> +	trace.nr_entries = 0;
-> +	trace.max_entries = ARRAY_SIZE(cmabuf->trace_entries);
-> +	trace.entries = &cmabuf->trace_entries[0];
-> +	trace.skip = 2;
-> +	save_stack_trace(&trace);
-> +
-> +	cmabuf->pfn = pfn;
-> +	cmabuf->count = count;
-> +	cmabuf->pid = task_pid_nr(current);
-> +	cmabuf->nr_entries = trace.nr_entries;
-> +	get_task_comm(cmabuf->comm, current);
-> +	cmabuf->latency = (unsigned int) div_s64(latency, NSEC_PER_USEC);
-> +
-> +	mutex_lock(&cma->list_lock);
-> +	list_add_tail(&cmabuf->list, &cma->buffers_list);
-> +	mutex_unlock(&cma->list_lock);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * cma_buffer_list_del() - delete an entry from a list of allocated buffers
-> + * @cma:   Contiguous memory region for which the allocation was performed.
-> + * @pfn:   Base PFN of the released buffer.
-> + *
-> + * This function deletes a list entry added by cma_buffer_list_add().
-> + */
-> +static void cma_buffer_list_del(struct cma *cma, unsigned long pfn)
-> +{
-> +	struct cma_buffer *cmabuf;
-> +
-> +	mutex_lock(&cma->list_lock);
-> +
-> +	list_for_each_entry(cmabuf, &cma->buffers_list, list)
-> +		if (cmabuf->pfn == pfn) {
-> +			list_del(&cmabuf->list);
-> +			kfree(cmabuf);
-> +			goto out;
-> +		}
-> +
+git bisect points to:
 
-Is there more elegant way to find buffer? This linear search overhead
-would change system behaviour if there are lots of buffers.
+commit 03d89412981a7681971bc77edba1669595763030
+Author: Namhyung Kim <namhyung@kernel.org>
+Date:   Mon Apr 7 16:05:48 2014 +0900
 
-> +	pr_err("%s(pfn %lu): couldn't find buffers list entry\n",
-> +	       __func__, pfn);
-> +
-> +out:
-> +	mutex_unlock(&cma->list_lock);
-> +}
-> +#else
-> +static int cma_buffer_list_add(struct cma *cma, unsigned long pfn,
-> +			       int count, s64 latency)
-> +{
-> +	return 0;
-> +}
-> +
-> +static void cma_buffer_list_del(struct cma *cma, unsigned long pfn)
-> +{
-> +}
-> +#endif /* CONFIG_CMA_DEBUG */
-> +
->  /**
->   * cma_alloc() - allocate pages from contiguous area
->   * @cma:   Contiguous memory region for which the allocation is performed.
-> @@ -361,11 +466,15 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->  	unsigned long mask, offset, pfn, start = 0;
->  	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
->  	struct page *page = NULL;
-> +	struct timespec ts1, ts2;
-> +	s64 latency;
->  	int ret;
->  
->  	if (!cma || !cma->count)
->  		return NULL;
->  
-> +	getnstimeofday(&ts1);
-> +
->  	pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
->  		 count, align);
->  
-> @@ -413,6 +522,19 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->  		start = bitmap_no + mask + 1;
->  	}
->  
-> +	getnstimeofday(&ts2);
-> +	latency = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
-> +
-> +	if (page) {
-> +		ret = cma_buffer_list_add(cma, pfn, count, latency);
-> +		if (ret) {
-> +			pr_warn("%s(): cma_buffer_list_add() returned %d\n",
-> +				__func__, ret);
-> +			cma_release(cma, page, count);
-> +			page = NULL;
-> +		}
+     perf probe: Use dwarf_getcfi_elf() instead of dwarf_getcfi()
 
-So, we would fail to allocate CMA memory if we can't allocate buffer
-for debugging. I don't think it makes sense. With tracepoint,
-we don't need to allocate buffer in runtime.
 
-Thanks.
+Backtrace at time of crash is:
 
+(gdb) bt
+#0  parse_eh_frame_hdr (hdr=0x0, hdr_size=2596, hdr_vaddr=71788, 
+ehdr=0x7fffffffd390, eh_frame_vaddr=
+     0x7fffffffd378, table_entries=0x8808d8, table_encoding=0x8808e0 "") 
+at dwarf_getcfi_elf.c:79
+#1  0x000000385f81615a in getcfi_scn_eh_frame (hdr_vaddr=71788, 
+hdr_scn=0x8839b0, shdr=0x7fffffffd2f0,
+     scn=<optimized out>, ehdr=0x7fffffffd390, elf=0x882b30) at 
+dwarf_getcfi_elf.c:231
+#2  getcfi_shdr (ehdr=0x7fffffffd390, elf=0x882b30) at 
+dwarf_getcfi_elf.c:283
+#3  dwarf_getcfi_elf (elf=0x882b30) at dwarf_getcfi_elf.c:309
+#4  0x00000000004d5bac in debuginfo__find_probes (pf=0x7fffffffd4f0, 
+dbg=Unhandled dwarf expression opcode 0xfa
+) at util/probe-finder.c:993
+#5  0x00000000004d634a in debuginfo__find_trace_events (dbg=0x880840, 
+pev=<optimized out>, tevs=0x880f88,
+     max_tevs=<optimized out>) at util/probe-finder.c:1200
+#6  0x00000000004aed6b in try_to_find_probe_trace_events 
+(target=0x881b20 "/lib64/libpthread-2.14.90.so",
+     max_tevs=128, tevs=0x880f88, pev=0x859b30) at util/probe-event.c:482
+#7  convert_to_probe_trace_events (target=0x881b20 
+"/lib64/libpthread-2.14.90.so", max_tevs=128, tevs=0x880f88,
+     pev=0x859b30) at util/probe-event.c:2356
+#8  add_perf_probe_events (pevs=<optimized out>, npevs=1, max_tevs=128, 
+target=
+     0x881b20 "/lib64/libpthread-2.14.90.so", force_add=false) at 
+util/probe-event.c:2391
+#9  0x000000000044014f in __cmd_probe (argc=<optimized out>, 
+argv=0x7fffffffe2f0, prefix=Unhandled dwarf expression opcode 0xfa
+)
+     at builtin-probe.c:488
+#10 0x0000000000440313 in cmd_probe (argc=5, argv=0x7fffffffe2f0, 
+prefix=<optimized out>) at builtin-probe.c:506
+#11 0x000000000041d133 in run_builtin (p=0x805680, argc=5, 
+argv=0x7fffffffe2f0) at perf.c:341
+#12 0x000000000041c8b2 in handle_internal_command (argv=<optimized out>, 
+argc=<optimized out>) at perf.c:400
+#13 run_argv (argv=<optimized out>, argcp=<optimized out>) at perf.c:444
+#14 main (argc=5, argv=0x7fffffffe2f0) at perf.c:559
+
+David
