@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbaL3Qye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 11:54:34 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55989 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaL3Qyd (ORCPT
+	id S1751517AbaL3Q6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 11:58:31 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33210 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaL3Q6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 11:54:33 -0500
-Date: Tue, 30 Dec 2014 16:53:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Zidan Wang <b50113@freescale.com>
-Cc: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "ckeepax@opensource.wolfsonmicro.com" 
-	<ckeepax@opensource.wolfsonmicro.com>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "patches@opensource.wolfsonmicro.com" 
-	<patches@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20141230165359.GN17800@sirena.org.uk>
-References: <1418103916-31295-1-git-send-email-b50113@freescale.com>
- <20141222181045.GH17800@sirena.org.uk>
- <BN3PR0301MB125132692CD535B9AC1795A98D510@BN3PR0301MB1251.namprd03.prod.outlook.com>
- <20141229160514.GQ17800@sirena.org.uk>
- <20141230022917.GA17807@b50113>
+	Tue, 30 Dec 2014 11:58:30 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5NVDATmc8A1f9nDP"
-Content-Disposition: inline
-In-Reply-To: <20141230022917.GA17807@b50113>
-X-Cookie: You have no real enemies.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 86.128.155.20
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel][PATCH v4] ASoC: wm8960: Let wm8960 codec driver
- manage its own MCLK
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20141230154808.GA21238@nazgul.tnic>
+References: <1419946102-17175-1-git-send-email-kuleshovmail@gmail.com>
+	<20141230154808.GA21238@nazgul.tnic>
+Date: Tue, 30 Dec 2014 22:58:29 +0600
+Message-ID: <CANCZXo4m-X0ZJG2oU-YABYxTJ6-0+B8eR-UONfcXatzJA=S=Mg@mail.gmail.com>
+Subject: Re: [PATCH v2] x86/boot/early_serial_console: Remove unnecessary check
+From: Alexander Kuleshov <kuleshovmail@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Do i need to send patch v3 to separate mail thread or add to it?
 
---5NVDATmc8A1f9nDP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+2014-12-30 21:48 GMT+06:00 Borislav Petkov <bp@alien8.de>:
+> On Tue, Dec 30, 2014 at 07:28:22PM +0600, Alexander Kuleshov wrote:
+>> There is already the same check before.
+>>
+>> Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+>> ---
+>>  arch/x86/boot/early_serial_console.c | 3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/boot/early_serial_console.c b/arch/x86/boot/early_serial_console.c
+>> index 5df2869..62abcc8 100644
+>> --- a/arch/x86/boot/early_serial_console.c
+>> +++ b/arch/x86/boot/early_serial_console.c
+>> @@ -74,8 +74,7 @@ static void parse_earlyprintk(void)
+>>                       static const int bases[] = { 0x3f8, 0x2f8 };
+>>                       int idx = 0;
+>>
+>> -                     if (!strncmp(arg + pos, "ttyS", 4))
+>> -                             pos += 4;
+>
+> You might need a comment to explain the advancing of pos to people who
+> look at this in the future, i.e. something like
+>
+>                         /* += strlen("ttyS"); */
+>                         pos += 4;
+>>
+>>                       if (arg[pos++] == '1')
+>>                               idx = 1;
+>
+> --
+> Regards/Gruss,
+>     Boris.
+> --
 
-On Tue, Dec 30, 2014 at 10:29:18AM +0800, Zidan Wang wrote:
 
-> I want put mclk enable to set_bias_level. Do you thinks it make sense?
 
-That should work as well, yes.
-
---5NVDATmc8A1f9nDP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUotimAAoJECTWi3JdVIfQyrMH/1CcjT3TC/aD8X7CGYLuCOXs
-Lg0TaPhdh9ll2D7vvq0OnoKgsCTeDJBm9Og2Njp/fGiHaM+9ZPfwLC7F+SwVhuJw
-8Osi70kBQdIYS3iqWsFgFNxTRLOnVsc9tVFBMS8d9xZ2LQylCFOrJ2t8NhZydeC6
-MWj+Hkk5SP9MH8N1fRUGUGjZdWxPIy2foFKSgTkMBx/CMmYCdbijU+EeUye8cYl1
-423JSe1PvqhVJa0BaX39USCFoU7iU1mn5Ec1mvSVH0L6WqSzNTEi9zYotlbIS6Ai
-NHvgkd+5SEIr/GbGzBTVYUs0RiYlOCIEAiG7HWulZ3JozmOvar7SulL9b3QPQMk=
-=Ubhv
------END PGP SIGNATURE-----
-
---5NVDATmc8A1f9nDP--
+-- 
+_________________________
+0xAX
