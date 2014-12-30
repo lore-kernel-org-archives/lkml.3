@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaL3EpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 23:45:20 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55709 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaL3EpT (ORCPT
+	id S1752510AbaL3Es3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 23:48:29 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:45757 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaL3Es2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 23:45:19 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 30 Dec 2014 13:47:26 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: "Stefan I. Strogin" <s.strogin@partner.samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
-        Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, rostedt@goodmis.org,
-        namhyung@kernel.org
-Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
-Message-ID: <20141230044726.GA22342@bbox>
-References: <cover.1419602920.git.s.strogin@partner.samsung.com>
- <20141229023639.GC27095@bbox>
- <54A1B11A.6020307@codeaurora.org>
+	Mon, 29 Dec 2014 23:48:28 -0500
+X-Original-SENDERIP: 10.177.220.158
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 30 Dec 2014 13:48:27 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Hui Zhu <zhuhui@xiaomi.com>
+Cc: m.szyprowski@samsung.com, mina86@mina86.com, akpm@linux-foundation.org,
+        aneesh.kumar@linux.vnet.ibm.com, pintu.k@samsung.com,
+        weijie.yang@samsung.com, mgorman@suse.de, hannes@cmpxchg.org,
+        riel@redhat.com, vbabka@suse.cz,
+        laurent.pinchart+renesas@ideasonboard.com, rientjes@google.com,
+        sasha.levin@oracle.com, liuweixing@xiaomi.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, teawater@gmail.com
+Subject: Re: [PATCH 1/3] CMA: Fix the bug that CMA's page number is
+ substructed twice
+Message-ID: <20141230044826.GC4588@js1304-P5Q-DELUXE>
+References: <1419500608-11656-1-git-send-email-zhuhui@xiaomi.com>
+ <1419500608-11656-2-git-send-email-zhuhui@xiaomi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54A1B11A.6020307@codeaurora.org>
+In-Reply-To: <1419500608-11656-2-git-send-email-zhuhui@xiaomi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 11:52:58AM -0800, Laura Abbott wrote:
-> On 12/28/2014 6:36 PM, Minchan Kim wrote:
-> >Hello,
-> >
-> >On Fri, Dec 26, 2014 at 05:39:01PM +0300, Stefan I. Strogin wrote:
-> >>Hello all,
-> >>
-> >>Here is a patch set that adds /proc/cmainfo.
-> >>
-> >>When compiled with CONFIG_CMA_DEBUG /proc/cmainfo will contain information
-> >>about about total, used, maximum free contiguous chunk and all currently
-> >>allocated contiguous buffers in CMA regions. The information about allocated
-> >>CMA buffers includes pid, comm, allocation latency and stacktrace at the
-> >>moment of allocation.
-> >
-> >It just says what you are doing but you didn't say why we need it.
-> >I can guess but clear description(ie, the problem what you want to
-> >solve with this patchset) would help others to review, for instance,
-> >why we need latency, why we need callstack, why we need new wheel
-> >rather than ftrace and so on.
-> >
-> >Thanks.
-> >
-> 
-> 
-> I've been meaning to write something like this for a while so I'm
-> happy to see an attempt made to fix this. I can't speak for the
-> author's reasons for wanting this information but there are
-> several reasons why I was thinking of something similar.
-> 
-> The most common bug reports seen internally on CMA are 1) CMA is
-> too slow and 2) CMA failed to allocate memory. For #1, not all
-> allocations may be slow so it's useful to be able to keep track
-> of which allocations are taking too long. For #2, migration
+On Thu, Dec 25, 2014 at 05:43:26PM +0800, Hui Zhu wrote:
+> In Joonsoo's CMA patch "CMA: always treat free cma pages as non-free on
+> watermark checking" [1], it changes __zone_watermark_ok to substruct CMA
+> pages number from free_pages if system use CMA:
+> 	if (IS_ENABLED(CONFIG_CMA) && z->managed_cma_pages)
+> 		free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
 
-Then, I don't think we could keep all of allocations. What we need
-is only slow allocations. I hope we can do that with ftrace.
+Hello, 
 
-ex)
+In fact, without that patch, watermark checking has a problem in current kernel.
+If there is reserved CMA region, watermark check for high order
+allocation is done loosly. See following thread.
 
-# cd /sys/kernel/debug/tracing
-# echo 1 > options/stacktrace
-# echo cam_alloc > set_ftrace_filter
-# echo your_threshold > tracing_thresh
+https://lkml.org/lkml/2014/5/30/320
 
-I know it doesn't work now but I think it's more flexible
-and general way to handle such issues(ie, latency of some functions).
-So, I hope we could enhance ftrace rather than new wheel.
-Ccing ftrace people.
+Your patch can fix this situation, so, how about submitting this patch
+separately?
 
-Futhermore, if we really need to have such information, we need more data
-(ex, how many of pages were migrated out, how many pages were dropped
-without migrated, how many pages were written back, how many pages were
-retried with the page lock and so on).
-In this case, event trace would be better.
+Thanks.
 
-
-> failure is fairly common but it's still important to rule out
-> a memory leak from a dma client. Seeing all the allocations is
-> also very useful for memory tuning (e.g. how big does the CMA
-> region need to be, which clients are actually allocating memory).
-
-Memory leak is really general problem and could we handle it with
-page_owner?
-
-> 
-> ftrace is certainly usable for tracing CMA allocation callers and
-> latency. ftrace is still only a fixed size buffer though so it's
-> possible for information to be lost if other logging is enabled.
-
-Sorry, I don't get with only above reasons why we need this. :(
-
-> For most of the CMA use cases, there is a very high cost if the
-> proper debugging information is not available so the more that
-> can be guaranteed the better.
-> 
-> It's also worth noting that the SLUB allocator has a sysfs
-> interface for showing allocation callers when CONFIG_SLUB_DEBUG
-> is enabled.
-> 
-> Thanks,
-> Laura
-> 
-> -- 
-> Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> a Linux Foundation Collaborative Project
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
