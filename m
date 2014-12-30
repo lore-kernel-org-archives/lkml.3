@@ -1,115 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649AbaL3Srn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:47:43 -0500
-Received: from smtp1-out.insa-rennes.fr ([193.52.94.24]:25268 "EHLO
-	smtp1-out.insa-rennes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374AbaL3Srm (ORCPT
+	id S1751774AbaL3Stp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:49:45 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:62432 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486AbaL3Stl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:47:42 -0500
-X-Greylist: delayed 5233 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 13:47:42 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqYEALXyolQKBQEm/2dsb2JhbABcziqCVQKBHwEBAQEBfYQNAQQBeAEFCwshFg8JAwIBAgFFBg0BBwEBiCDGCgEBAQEBAQQBAQEBAQEBG493B4QpBY9ggSeHDoR3g2OEMIM3AoQRgzEBAQE
-Message-ID: <54A2F339.2080208@supelec.fr>
-Date: Tue, 30 Dec 2014 19:47:21 +0100
-From: Laurent Georget <laurent.georget@supelec.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 30 Dec 2014 13:49:41 -0500
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-man <linux-man@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] adjtimex.2: Add details about ADJ_FREQUENCY
-References: <54A2DEAD.2050708@supelec.fr> <20141230180549.GB7403@localhost.localdomain>
-In-Reply-To: <20141230180549.GB7403@localhost.localdomain>
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae"
+In-Reply-To: <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
+References: <1419457167-15042-1-git-send-email-richard@nod.at> <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 30 Dec 2014 10:49:19 -0800
+Message-ID: <CALCETrV+NixixDf4TYF9DAJnvRWF+V5PSdsXeshFzDZ_6Lje6A@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
+To: Kees Cook <keescook@chromium.org>
+Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        DaeSeok Youn <daeseok.youn@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
-
-Hi again,
-
-Le 30/12/2014 19:05, Richard Cochran a =E9crit :
->> diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
->> index 18823c8..2652fc6 100644
->> --- a/man2/adjtimex.2
->> +++ b/man2/adjtimex.2
->> @@ -55,8 +55,8 @@ struct timex {
->>                           status flag is set, otherwise
->>                           microseconds */
->>      long freq;        /* Frequency offset, as scaled PPM
->> -                         (parts per million) */
->> -.\" FIXME What is the scaling unit of timex.freq?  2^16 ?
->=20
-> Your text sounds funny and seems unclear to me.  How about something
-> more like this:
->=20
-> 	long freq	/* Frequency offset in PPM with a 16 bit
-> 			   factional field */
+On Tue, Dec 30, 2014 at 10:40 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Dec 24, 2014 at 1:39 PM, Richard Weinberger <richard@nod.at> wrote:
+>> While exploring the offset2lib attack I remembered that
+>> grsecurity has an interesting feature to make such attacks
+>> much harder. Exploits can brute stack canaries often very easily
+>> if the target is a forking server like sshd or Apache httpd.
+>> The problem is that after fork() the child has by definition
+>> exactly the same memory as the parent and therefore also the same
+>> stack canaries.
+>> The attacker can guess the stack canaries byte by byte.
+>> After 256 times 7 forks() a good exploit can find the correct
+>> canary value.
+>>
+>> The basic idea behind this patch is to delay fork() if a child died
+>> due to a fatal error.
+>> Currently it delays fork() by 30 seconds if the parent tries to fork()
+>> within 60 seconds after a child died due to a fatal error.
+>>
+>> I'm sure you'll hate this patch but I want to find out how much you hate it
+>> and whether there is a little chance to get it mainline in a modified form.
+>> Later I'd make it depend on a new Kconfig option and off by default
+>> and the timing constants changeable via sysctl.
+>>
+>> Credit for the concept goes to grsecurity folks, I'll take the flames.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> ---
+>>  fs/coredump.c         | 10 ++++++++++
+>>  include/linux/sched.h |  1 +
+>>  kernel/fork.c         |  7 +++++++
+>>  3 files changed, 18 insertions(+)
+>>
+>> diff --git a/fs/coredump.c b/fs/coredump.c
+>> index b5c86ff..d7730c8 100644
+>> --- a/fs/coredump.c
+>> +++ b/fs/coredump.c
+>> @@ -512,6 +512,7 @@ void do_coredump(const siginfo_t *siginfo)
+>>         bool need_nonrelative = false;
+>>         bool core_dumped = false;
+>>         static atomic_t core_dump_count = ATOMIC_INIT(0);
+>> +       int sig = siginfo->si_signo;
+>>         struct coredump_params cprm = {
+>>                 .siginfo = siginfo,
+>>                 .regs = signal_pt_regs(),
+>> @@ -526,6 +527,15 @@ void do_coredump(const siginfo_t *siginfo)
+>>
+>>         audit_core_dumps(siginfo->si_signo);
+>>
+>> +       if (sig == SIGSEGV || sig == SIGBUS || sig == SIGKILL || sig == SIGILL) {
+>
+> I think we should add SIGSYS to this list.
+>
+>> +               rcu_read_lock();
+>> +               read_lock(&tasklist_lock);
+>> +               if (current->real_parent && (current->flags & PF_FORKNOEXEC))
+>> +                       current->real_parent->brute_expires = get_seconds() + (30 * 60);
+>> +               read_unlock(&tasklist_lock);
+>> +               rcu_read_unlock();
+>> +       }
+>> +
+>>         binfmt = mm->binfmt;
+>>         if (!binfmt || !binfmt->core_dump)
+>>                 goto fail;
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index 8db31ef..c616735 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -1701,6 +1701,7 @@ struct task_struct {
+>>  #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+>>         unsigned long   task_state_change;
+>>  #endif
+>> +       unsigned long brute_expires;
+>>  };
+>>
+>>  /* Future-safe accessor for struct task_struct's cpus_allowed. */
+>> diff --git a/kernel/fork.c b/kernel/fork.c
+>> index 4dc2dda..178c80e 100644
+>> --- a/kernel/fork.c
+>> +++ b/kernel/fork.c
+>> @@ -74,6 +74,7 @@
+>>  #include <linux/uprobes.h>
+>>  #include <linux/aio.h>
+>>  #include <linux/compiler.h>
+>> +#include <linux/delay.h>
+>>
+>>  #include <asm/pgtable.h>
+>>  #include <asm/pgalloc.h>
+>> @@ -352,6 +353,8 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+>>         tsk->splice_pipe = NULL;
+>>         tsk->task_frag.page = NULL;
+>>
+>> +       tsk->brute_expires = 0;
+>> +
+>>         account_kernel_stack(ti, 1);
+>>
+>>         return tsk;
+>> @@ -1669,6 +1672,10 @@ long do_fork(unsigned long clone_flags,
+>>                 if (clone_flags & CLONE_PARENT_SETTID)
+>>                         put_user(nr, parent_tidptr);
+>>
+>> +               if (unlikely(current->brute_expires) && time_before(get_seconds(),
+>> +                   current->brute_expires))
+>> +                       msleep(30 * 1000);
+>> +
+>>                 if (clone_flags & CLONE_VFORK) {
+>>                         p->vfork_done = &vfork;
+>>                         init_completion(&vfork);
+>> --
+>> 2.1.0
+>>
+>
+> Instead of open-coding the checks here, maybe it'd make sense to
+> extract the "attach" and "check" logic into explicit functions that
+> can be CONFIG stubbed out? This is how grsec handles it via their
+> gr_handle_brute_* functions.
+>
+> Regardless, I'm for adding this feature to mainline. :)
 >
 
-I tried to  phrase it as in the FIXME, but of course, that may not be
-the best thing to do. I'm not sure to understand what you mean however
-in your corrected comment for freq.
+If this is going to go into mainline, I think it needs better
+configurability (the timeouts, etc, should be settable by sysctl and
+possibly prctl), and I expect we'll need a prctl to turn it off.  I
+can imagine programs (e.g. anything Zygote-like) that will want to
+turn it off because it'll do more harm than good.
 
->> +                         (parts per million) :
->> +                         the scaling unit of timex.freq is 2^16 usec =
-=3D
->> 1000*2^16 nsec.
->=20
+But I like the concept, too.
 
-> Your mailer is wrapping lines here ...
+--Andy
 
-Indeed, it wrapped at 80 characters. I fixed it. Sorry about that.
-
->=20
->>      long maxerror;    /* Maximum error (microseconds) */
->>      long esterror;    /* Estimated error (microseconds) */
->>      int  status;      /* Clock command/status */
->> @@ -106,6 +106,10 @@ Set time offset from
->>  .BR ADJ_FREQUENCY
->>  Set frequency offset from
->>  .IR buf.freq .
->> +The clock frequency must be comprised between -500000 and 500000 scal=
-ed
->> ns/s.
->=20
-> and here.
->=20
-> The phrase "must be comprised" does not make any sense in this
-> context. How about this instead?
->=20
->    The allowed frequency range is -500 PPM to +500 PPM.
->=20
-
-Sorry for my poor english.
-I have a doubt about the calculations here.
-If I understand the code correctly (and I'd like to, as I'm using it)
-the input value is scaled with SHIFT_USEC whereas MAXFREQ is not. So,
-PPM is not exactly the same unit here and above (in struct timex). How
-should we phrase that?
-
-Thanks
-
-Laurent
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
 
 
---LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iF4EAREIAAYFAlSi8z4ACgkQRTidSplJch4p6wEAhpZ/0IDMSey2fwxWhoIvk0an
-vFL0+QnxnYXXserVQi0BAKp3QROvkItLIK3l/CrEVkwQOCfMkyx3oPR3ER2CfPt3
-=6Gfc
------END PGP SIGNATURE-----
-
---LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae--
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
