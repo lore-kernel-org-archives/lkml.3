@@ -1,94 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaL3OWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 09:22:09 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:35971 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440AbaL3OWH (ORCPT
+	id S1752161AbaL3OXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 09:23:05 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:42604 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaL3OXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 09:22:07 -0500
-Date: Tue, 30 Dec 2014 15:22:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix destination cgroup leak on task charges
- migration
-Message-ID: <20141230142202.GC15546@dhcp22.suse.cz>
-References: <1419868483-30612-1-git-send-email-vdavydov@parallels.com>
+	Tue, 30 Dec 2014 09:23:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419868483-30612-1-git-send-email-vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz>
+References: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz>
+Date: Tue, 30 Dec 2014 16:23:01 +0200
+Message-ID: <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com>
+Subject: Re: iwlwifi-driver card doesn't work with 3.19-rc2+
+From: Emmanuel Grumbach <egrumbach@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-12-14 18:54:43, Vladimir Davydov wrote:
-> We are supposed to take one css reference per each memory page and per
-> each swap entry accounted to a memory cgroup. However, during task
-> charges migration we take a reference to the destination cgroup twice
-> per each swap entry: first in mem_cgroup_do_precharge()->try_charge()
-> and then in mem_cgroup_move_swap_account(), permanently leaking the
-> destination cgroup.
+On Tue, Dec 30, 2014 at 3:33 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>
+> Hi,
+>
+> I just booted current Linus' tree (5faa0154fe33) on my x200s thinkpad, and
+> wifi doesn't work. iwconfig is telling me that wlan0 interface has no
+> wireless extensions.
+>
 
-Very well spotted!
+So why do you used them?
+They have been deprecated for a couple of years now. You should be
+using nl80211 based tools such as iw.
 
-> The hunk taking the second reference seems to be a leftover from the
-> pre-00501b531c472 ("mm: memcontrol: rewrite charge API") era. Remove it
-> to fix the leak.
+> Previous kernel that is known to work on this machine is 3.18-rc5. I can
+> do a bisect if needed, but wanted to ask in case this is a known problem.
+>
 
-This seems to be a fallout from e8ea14cc6ead (mm: memcontrol: take a
-css reference for each charged page) because we only took per-charge
-reference for swapped out pages before. In order to keep the balance
-correct we had to do that ugly css_get() in mem_cgroup_move_swap_account
-and uncharge the origin later on in __mem_cgroup_clear_mc.
+3.19 is the first kernel that actually removed the wireless extensions.
 
-The uncharge part for the from memcg should be OK because we do so from
-the page counter directly and that doesn't involve reference counting
-and then we do css_put_many explicitly.
-
-So unless I have missed something the culrpit is different and so it
-doesn't have to go to stable just should appear in a later 3.19 rc.
-
-Fixes: e8ea14cc6ead (mm: memcontrol: take a css reference for each charged page)
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c |   12 ------------
->  1 file changed, 12 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index ef91e856c7e4..d62c335dfef4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3043,18 +3043,6 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
->  	if (swap_cgroup_cmpxchg(entry, old_id, new_id) == old_id) {
->  		mem_cgroup_swap_statistics(from, false);
->  		mem_cgroup_swap_statistics(to, true);
-> -		/*
-> -		 * This function is only called from task migration context now.
-> -		 * It postpones page_counter and refcount handling till the end
-> -		 * of task migration(mem_cgroup_clear_mc()) for performance
-> -		 * improvement. But we cannot postpone css_get(to)  because if
-> -		 * the process that has been moved to @to does swap-in, the
-> -		 * refcount of @to might be decreased to 0.
-> -		 *
-> -		 * We are in attach() phase, so the cgroup is guaranteed to be
-> -		 * alive, so we can just call css_get().
-> -		 */
-> -		css_get(&to->css);
->  		return 0;
->  	}
->  	return -EINVAL;
-> -- 
-> 1.7.10.4
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+> Please find the relevant part of dmesg below. The card in question is
+> this:
+>
+> 03:00.0 Network controller [0280]: Intel Corporation PRO/Wireless 5100 AGN [Shiloh] Network Connection [8086:4237]
+>         Subsystem: Intel Corporation WiFi Link 5100 AGN [8086:1211]
+>         Flags: bus master, fast devsel, latency 0, IRQ 29
+>         Memory at f2500000 (64-bit, non-prefetchable) [size=8K]
+>         Capabilities: [c8] Power Management version 3
+>         Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+>         Capabilities: [e0] Express Endpoint, MSI 00
+>         Capabilities: [100] Advanced Error Reporting
+>         Capabilities: [140] Device Serial Number 00-22-fa-ff-ff-34-b0-4c
+>         Kernel driver in use: iwlwifi
+>         Kernel modules: iwlwifi
+>
+>
+>
+> === snip ===
+> [    6.357092] Intel(R) Wireless WiFi driver for Linux, in-tree:d
+> [    6.358637] Copyright(c) 2003- 2014 Intel Corporation
+> [    6.387473] iwlwifi 0000:03:00.0: loaded firmware version 8.83.5.1 build 33692 op_mode iwldvm
+> [    6.399552] e1000e 0000:00:19.0 eth0: (PCI Express:2.5GT/s:Width x1) 00:1f:16:15:7a:65
+> [    6.401162] e1000e 0000:00:19.0 eth0: Intel(R) PRO/1000 Network Connection
+> [    6.402751] e1000e 0000:00:19.0 eth0: MAC: 7, PHY: 8, PBA No: 1008FF-0FF
+> [    6.404838] i801_smbus 0000:00:1f.3: SMBus using PCI interrupt
+> [    6.407182] ACPI Warning: SystemIO range 0x0000000000001028-0x000000000000102f conflicts with OpRegion 0x0000000000001000-0x000000000000107f (\_SB_.PCI0.LPC_.PMIO) (20141107/utaddress-258)
+> [    6.410662] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+> [    6.412580] ACPI Warning: SystemIO range 0x00000000000011b0-0x00000000000011bf conflicts with OpRegion 0x0000000000001180-0x00000000000011ff (\_SB_.PCI0.LPC_.LPIO) (20141107/utaddress-258)
+> [    6.416296] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+> [    6.418145] ACPI Warning: SystemIO range 0x0000000000001180-0x00000000000011af conflicts with OpRegion 0x0000000000001180-0x00000000000011ff (\_SB_.PCI0.LPC_.LPIO) (20141107/utaddress-258)
+> [    6.422111] ACPI: If an ACPI driver is available for this device, you should use it instead of the native driver
+> [    6.424214] lpc_ich: Resource conflict(s) found affecting gpio_ich
+> [    6.432054] microcode: CPU0 sig=0x10676, pf=0x80, revision=0x60c
+> [    6.440414] microcode: CPU0 sig=0x10676, pf=0x80, revision=0x60c
+> [    6.444012] microcode: CPU0 updated to revision 0x60f, date = 2010-09-29
+> [    6.451926] microcode: CPU1 sig=0x10676, pf=0x80, revision=0x60c
+> [    6.479540] thinkpad_acpi: ThinkPad ACPI Extras v0.25
+> [    6.481632] thinkpad_acpi: http://ibm-acpi.sf.net/
+> [    6.483636] thinkpad_acpi: ThinkPad BIOS 6DET38WW (2.02 ), EC 7XHT21WW-1.03
+> [    6.485724] thinkpad_acpi: Lenovo ThinkPad X200s, model 7470BN2
+> [    6.513239] microcode: CPU1 sig=0x10676, pf=0x80, revision=0x60c
+> [    6.516007] microcode: CPU1 updated to revision 0x60f, date = 2010-09-29
+> [    6.525254] microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
+> [    6.557365] thinkpad_acpi: detected a 16-level brightness capable ThinkPad
+> [    6.561203] thinkpad_acpi: radio switch found; radios are enabled
+> [    6.563537] thinkpad_acpi: This ThinkPad has standard ACPI backlight brightness control, supported by the ACPI video driver
+> [    6.565722] thinkpad_acpi: Disabling thinkpad-acpi brightness events by default...
+> [    6.582468] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is blocked
+> [    6.613516] thinkpad_acpi: Standard ACPI backlight interface available, not loading native one
+> [    6.628357] input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input8
+> [    6.830228] sound hdaudioC0D0: CX20561 (Hermosa): BIOS auto-probing.
+> [    6.835254] sound hdaudioC0D0: autoconfig: line_outs=1 (0x1a/0x0/0x0/0x0/0x0) type:speaker
+> [    6.837530] sound hdaudioC0D0:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+> [    6.839860] sound hdaudioC0D0:    hp_outs=2 (0x19/0x16/0x0/0x0/0x0)
+> [    6.842102] sound hdaudioC0D0:    mono: mono_out=0x0
+> [    6.844365] sound hdaudioC0D0:    dig-out=0x1c/0x0
+> [    6.846498] sound hdaudioC0D0:    inputs:
+> [    6.848629] sound hdaudioC0D0:      Mic=0x18
+> [    6.850637] sound hdaudioC0D0:      Internal Mic=0x1d
+> [    6.850639] sound hdaudioC0D0:      Dock Mic=0x17
+> [    6.855780] sound hdaudioC0D0: Enable sync_write for stable communication
+> [    6.887289] input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/sound/card0/hdaudioC0D0/input9
+> [    6.895980] input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input10
+> [    6.899740] input: HDA Intel Dock Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
+> [    6.910154] input: HDA Intel Dock Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input12
+> [    6.919309] input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input13
+> [    6.935484] Adding 2104476k swap on /dev/sda1.  Priority:-1 extents:1 across:2104476k SS
+> [    6.959360] iwlwifi 0000:03:00.0: CONFIG_IWLWIFI_DEBUG enabled
+> [    6.961480] iwlwifi 0000:03:00.0: CONFIG_IWLWIFI_DEBUGFS enabled
+> [    6.963595] iwlwifi 0000:03:00.0: CONFIG_IWLWIFI_DEVICE_TRACING disabled
+> [    6.965638] iwlwifi 0000:03:00.0: Detected Intel(R) WiFi Link 5100 AGN, REV=0x54
+> [    6.968106] iwlwifi 0000:03:00.0: L1 Disabled - LTR Disabled
+> [    7.020451] ieee80211 phy0: Selected rate control algorithm 'iwl-agn-rs'
+> [    7.034582] iTCO_vendor_support: vendor-support=0
+> [    7.037422] cfg80211: World regulatory domain updated:
+> [    7.039411] cfg80211:  DFS Master region: unset
+> [    7.039440] cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp), (dfs_cac_time)
+> [    7.043249] cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (N/A, 2000 mBm), (N/A)
+> [    7.045119] cfg80211:   (2457000 KHz - 2482000 KHz @ 40000 KHz), (N/A, 2000 mBm), (N/A)
+> [    7.046891] cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (N/A, 2000 mBm), (N/A)
+> [    7.048649] cfg80211:   (5170000 KHz - 5250000 KHz @ 160000 KHz), (N/A, 2000 mBm), (N/A)
+> [    7.050432] cfg80211:   (5250000 KHz - 5330000 KHz @ 160000 KHz), (N/A, 2000 mBm), (0 s)
+> [    7.052058] cfg80211:   (5490000 KHz - 5730000 KHz @ 160000 KHz), (N/A, 2000 mBm), (0 s)
+> [    7.053637] cfg80211:   (5735000 KHz - 5835000 KHz @ 80000 KHz), (N/A, 2000 mBm), (N/A)
+> [    7.055220] cfg80211:   (57240000 KHz - 63720000 KHz @ 2160000 KHz), (N/A, 0 mBm), (N/A)
+> === snip ===
+>
+> --
+> Jiri Kosina
+> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
