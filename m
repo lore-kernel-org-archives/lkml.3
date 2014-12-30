@@ -1,63 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaL3FrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 00:47:24 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:40070 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaL3FrX (ORCPT
+	id S1751998AbaL3FuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 00:50:09 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:33735 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaL3FuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 00:47:23 -0500
+	Tue, 30 Dec 2014 00:50:07 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Tue, 30 Dec 2014 14:51:11 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 02/37] perf record: Use a software dummy event to track
+ task/mmap events
+Message-ID: <20141230055111.GE6081@sejong>
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
+ <1419405333-27952-3-git-send-email-namhyung@kernel.org>
+ <549D8C59.1000700@gmail.com>
+ <CAM9d7chzE5ffPO=AwmjBEpbHb38xLJt4nhg-=Cjgj7tz+jCLZA@mail.gmail.com>
+ <54A14FE4.9070601@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1419843707.30395.5.camel@ellerman.id.au>
-References: <1419700667-24888-1-git-send-email-bobby.prani@gmail.com>
- <1419700667-24888-2-git-send-email-bobby.prani@gmail.com> <1419843707.30395.5.camel@ellerman.id.au>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Tue, 30 Dec 2014 00:46:52 -0500
-Message-ID: <CAJhHMCDNGRxWn41Wo+4i3-Y4okpgCyiKwNFXxciZZF=T+nwmgw@mail.gmail.com>
-Subject: Re: [PATCH] powerpc/powernv: Select CONFIG_PRINTK to fix build failure
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
-        Michael Neuling <mikey@neuling.org>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        hegdevasant@linux.vnet.ibm.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54A14FE4.9070601@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 4:01 AM, Michael Ellerman <mpe@ellerman.id.au> wrote:
-> On Sat, 2014-12-27 at 12:17 -0500, Pranith Kumar wrote:
->> In an allnoconfig we get the following build failure:
->
-> An allnoconfig doesn't include CONFIG_PPC_POWERNV? But I think I know what you
-> mean.
->
->> arch/powerpc/platforms/built-in.o: In function `.__machine_initcall_powernv_opal_init':
->> opal.c:(.init.text+0x468): undefined reference to `.log_buf_addr_get'
->> opal.c:(.init.text+0x474): undefined reference to `.log_buf_len_get'
->> make: *** [vmlinux] Error 1
->>
->> This happens because powernv requires printk() support. Enable it in the config
->> file.
->
-> Sort of. It just requires those two routines. Or is there a stronger
-> dependency?
->
-> I think the better fix is for those two routines to be defined for
-> CONFIG_PRINTK=n, but return NULL and zero respectively.
->
-> And the opal code could skip registering the region when they return NULL/zero.
->
-> Care to do a couple of patches?
->
+Hi Adrian,
 
-Sure, I will give it a try. Thanks for the review!
+On Mon, Dec 29, 2014 at 02:58:12PM +0200, Adrian Hunter wrote:
+> On 27/12/14 07:28, Namhyung Kim wrote:
+> > Hi David,
+> > 
+> > On Sat, Dec 27, 2014 at 1:27 AM, David Ahern <dsahern@gmail.com> wrote:
+> >> On 12/24/14 12:14 AM, Namhyung Kim wrote:
+> >>>
+> >>> Prepend a software dummy event into evlist to track task/comm/mmap
+> >>> events separately.  This is a preparation of multi-file/thread support
+> >>> which will come later.
+> >>
+> >>
+> >> Are you are making this the first event because of how perf internals are
+> >> coded -- that the first event tracks tasks events? With the tracking bit in
+> >> evsel you should not need to do that. Is there another reason?
+> > 
+> > Yeah, I know the tracking bit can be set to any evsel in the evlist.
+> > But I'd like to keep it at a fixed index so that it can be easily
+> > identified at later stages (like perf report) too.  Ideally, it'd be
+> > great if we have a way to distinguish this auto-added dummy tracking
+> > event from other (user-added) (dummy?) tracking events if any.
+> > 
+> >>
+> >> ---8<---
+> >>
+> >>> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> >>> index cfbe2b99b9aa..72dff295237e 100644
+> >>> --- a/tools/perf/util/evlist.c
+> >>> +++ b/tools/perf/util/evlist.c
+> >>> @@ -193,6 +193,44 @@ int perf_evlist__add_default(struct perf_evlist
+> >>> *evlist)
+> >>>         return -ENOMEM;
+> >>>   }
+> >>>
+> >>> +int perf_evlist__prepend_dummy(struct perf_evlist *evlist)
+> >>> +{
+> >>> +       struct perf_event_attr attr = {
+> >>> +               .type = PERF_TYPE_SOFTWARE,
+> >>> +               .config = PERF_COUNT_SW_DUMMY,
+> 
+> Probably need .exclude_kernel = 1, here
 
+Ah, right.
 
--- 
-Pranith
+> 
+> >>> +       };
+> >>> +       struct perf_evsel *evsel, *pos;
+> >>> +
+> >>> +       event_attr_init(&attr);
+> >>> +
+> >>> +       evsel = perf_evsel__new(&attr);
+> >>> +       if (evsel == NULL)
+> >>> +               goto error;
+> >>> +
+> >>> +       /* use strdup() because free(evsel) assumes name is allocated */
+> >>> +       evsel->name = strdup("dummy");
+> >>> +       if (!evsel->name)
+> >>> +               goto error_free;
+> >>> +
+> >>> +       list_for_each_entry(pos, &evlist->entries, node) {
+> >>> +               pos->idx += 1;
+> >>> +               pos->tracking = false;
+> >>> +       }
+> >>> +
+> >>> +       list_add(&evsel->node, &evlist->entries);
+> >>> +       evsel->idx = 0;
+> >>> +       evsel->tracking = true;
+> >>
+> >>
+> >> perf_evlist__set_tracking_event()?
+> > 
+> > I found that after I wrote this, so yes, it can use the function
+> > instead of the oped-code.  But the loop traversal is needed anyway to
+> > fixup the evsel->idx.
+> 
+> perf_evlist__set_tracking_event() also ensures there is only one tracking
+> event so it is easy to identify. It is the only event with attr->mmap etc
+> set to 1. Then you can use perf_evlist__add().
+
+Well, yes, I think we can put the dummy tracking event anywhere in the
+evlist with this, but I still slightly prefer put it at a fixed
+location for a possible code simplification..
+
+Thanks,
+Namhyung
