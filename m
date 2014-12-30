@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaL3Dad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 22:30:33 -0500
-Received: from mail-bl2on0124.outbound.protection.outlook.com ([65.55.169.124]:14793
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1752632AbaL3Dap (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 22:30:45 -0500
+Received: from mail-bn1on0132.outbound.protection.outlook.com ([157.56.110.132]:65003
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752016AbaL3DaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 22:30:16 -0500
+	id S1752590AbaL3Dal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Dec 2014 22:30:41 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,37 +15,37 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v7 05/21] ARM: imx6q: clk: Add the video_27m clock
-Date: Tue, 30 Dec 2014 11:33:55 +0800
-Message-ID: <1419910451-15268-6-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v7 11/21] Documentation: dt-bindings: Add bindings for Synopsys DW MIPI DSI DRM bridge driver
+Date: Tue, 30 Dec 2014 11:34:01 +0800
+Message-ID: <1419910451-15268-12-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419910451-15268-1-git-send-email-Ying.Liu@freescale.com>
 References: <1419910451-15268-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.168.50)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(106466001)(48376002)(4396001)(229853001)(68736005)(76176999)(21056001)(89996001)(36756003)(2351001)(110136001)(92566001)(46102003)(105606002)(120916001)(97736003)(50986999)(99396003)(84676001)(31966008)(87936001)(6806004)(50466002)(2950100001)(19580405001)(104016003)(77096005)(62966003)(85426001)(107046002)(77156002)(47776003)(20776003)(19580395003)(86362001)(64706001)(50226001)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0628;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(979002)(6009001)(339900001)(189002)(199003)(20776003)(19580405001)(89996001)(110136001)(120916001)(6806004)(76176999)(99396003)(50986999)(31966008)(19580395003)(62966003)(107046002)(64706001)(229853001)(77156002)(50466002)(84676001)(36756003)(105606002)(47776003)(48376002)(104016003)(85426001)(2351001)(46102003)(106466001)(2950100001)(77096005)(97736003)(4396001)(86362001)(21056001)(92566001)(87936001)(50226001)(68736005)(217873001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0634;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR0301MB0628;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0634;
 X-Forefront-PRVS: 04410E544A
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0628;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 30 Dec 2014 03:30:13.0345
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 30 Dec 2014 03:30:38.4418
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0628
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0634
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch supports the video_27m clock which is a fixed factor
-clock of the pll3_pfd1_540m clock.
+This patch adds device tree bindings for Synopsys DesignWare MIPI DSI
+host controller DRM bridge driver.
 
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
@@ -53,49 +53,101 @@ v6->v7:
  * None.
 
 v5->v6:
- * None.
+ * Add the #address-cells and #size-cells properties in the example 'ports'
+   node.
+ * Remove the useless input-port properties from the example port@0 and port@1
+   nodes.
 
 v4->v5:
  * None.
 
 v3->v4:
- * None.
+ * Newly introduced in v4.  This is separated from the relevant driver patch
+   in v3 to address Stefan Wahren's comment.
 
-v2->v3:
- * None.
+ .../devicetree/bindings/drm/bridge/dw_mipi_dsi.txt | 73 ++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
 
-v1->v2:
- * None.
-
- arch/arm/mach-imx/clk-imx6q.c             | 1 +
- include/dt-bindings/clock/imx6qdl-clock.h | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
-index 4e79da7..9470df3 100644
---- a/arch/arm/mach-imx/clk-imx6q.c
-+++ b/arch/arm/mach-imx/clk-imx6q.c
-@@ -246,6 +246,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
- 	clk[IMX6QDL_CLK_PLL3_60M]  = imx_clk_fixed_factor("pll3_60m",  "pll3_usb_otg",   1, 8);
- 	clk[IMX6QDL_CLK_TWD]       = imx_clk_fixed_factor("twd",       "arm",            1, 2);
- 	clk[IMX6QDL_CLK_GPT_3M]    = imx_clk_fixed_factor("gpt_3m",    "osc",            1, 8);
-+	clk[IMX6QDL_CLK_VIDEO_27M] = imx_clk_fixed_factor("video_27m", "pll3_pfd1_540m", 1, 20);
- 	if (cpu_is_imx6dl()) {
- 		clk[IMX6QDL_CLK_GPU2D_AXI] = imx_clk_fixed_factor("gpu2d_axi", "mmdc_ch0_axi_podf", 1, 1);
- 		clk[IMX6QDL_CLK_GPU3D_AXI] = imx_clk_fixed_factor("gpu3d_axi", "mmdc_ch0_axi_podf", 1, 1);
-diff --git a/include/dt-bindings/clock/imx6qdl-clock.h b/include/dt-bindings/clock/imx6qdl-clock.h
-index b690cdb..25625bf 100644
---- a/include/dt-bindings/clock/imx6qdl-clock.h
-+++ b/include/dt-bindings/clock/imx6qdl-clock.h
-@@ -248,6 +248,7 @@
- #define IMX6QDL_PLL6_BYPASS			235
- #define IMX6QDL_PLL7_BYPASS			236
- #define IMX6QDL_CLK_GPT_3M			237
--#define IMX6QDL_CLK_END				238
-+#define IMX6QDL_CLK_VIDEO_27M			238
-+#define IMX6QDL_CLK_END				239
- 
- #endif /* __DT_BINDINGS_CLOCK_IMX6QDL_H */
+diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
+new file mode 100644
+index 0000000..f88a8d6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
+@@ -0,0 +1,73 @@
++Device-Tree bindings for Synopsys DesignWare MIPI DSI host controller
++
++The controller is a digital core that implements all protocol functions
++defined in the MIPI DSI specification, providing an interface between
++the system and the MIPI DPHY, and allowing communication with a MIPI DSI
++compliant display.
++
++Required properties:
++ - #address-cells: Should be <1>.
++ - #size-cells: Should be <0>.
++ - compatible: The compatible string should be "fsl,imx6q-mipi-dsi" for
++   i.MX6q/sdl SoCs.  For other SoCs, please refer to their specific
++   device tree binding documentations.
++ - reg: Represent the physical address range of the controller.
++ - interrupts: Represent the controller's interrupt to the CPU(s).
++ - clocks, clock-names: Phandles to the controller pll reference and
++   core configuration clocks, as described in [1].
++
++For more required properties, please refer to relevant device tree binding
++documentations which describe the controller embedded in specific SoCs.
++
++Required sub-nodes:
++ - A node to represent a DSI peripheral as described in [2].
++
++For more required sub-nodes, please refer to relevant device tree binding
++documentations which describe the controller embedded in specific SoCs.
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++[2] Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt
++
++example:
++	gpr: iomuxc-gpr@020e0000 {
++		/* ... */
++	};
++
++	mipi_dsi: mipi@021e0000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "fsl,imx6q-mipi-dsi";
++		reg = <0x021e0000 0x4000>;
++		interrupts = <0 102 IRQ_TYPE_LEVEL_HIGH>;
++		gpr = <&gpr>;
++		clocks = <&clks IMX6QDL_CLK_MIPI_CORE_CFG>,
++			 <&clks IMX6QDL_CLK_MIPI_CORE_CFG>;
++		clock-names = "pllref", "core_cfg";
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				reg = <0>;
++
++				mipi_mux_0: endpoint {
++					remote-endpoint = <&ipu1_di0_mipi>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++
++				mipi_mux_1: endpoint {
++					remote-endpoint = <&ipu1_di1_mipi>;
++				};
++			};
++		};
++
++		panel {
++			compatible = "truly,tft480800-16-e-dsi";
++			reg = <0>;
++			/* ... */
++		};
++	};
 -- 
 2.1.0
 
