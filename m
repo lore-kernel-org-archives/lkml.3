@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaL3EDN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 23:03:13 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:31143 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaL3EDM (ORCPT
+	id S1752024AbaL3ER2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Dec 2014 23:17:28 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:41298 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaL3ER0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 23:03:12 -0500
-Message-ID: <54A223F0.1000807@oracle.com>
-Date: Mon, 29 Dec 2014 22:02:56 -0600
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 29 Dec 2014 23:17:26 -0500
+Message-ID: <54A2275C.3030908@landley.net>
+Date: Mon, 29 Dec 2014 22:17:32 -0600
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: tytso@mit.edu, nick <xerofoify@gmail.com>,
-        jfs-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: Remove TO DO in jfs_xtree.c
-References: <549F55AC.9040308@gmail.com> <54A1D211.4080609@oracle.com> <20141230034807.GA12551@thunk.org>
-In-Reply-To: <20141230034807.GA12551@thunk.org>
-Content-Type: text/plain; charset=windows-1252
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: Christophe Fillot <cf@utc.fr>, linux-ima-user@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Linux-ima-user] Initramfs and IMA Appraisal
+References: <5463ABC8.10308@utc.fr>	 <1415827252.18773.33.camel@dhcp-9-2-203-236.watson.ibm.com>	 <547617AF.6000604@utc.fr>	 <1417039941.26016.46.camel@dhcp-9-2-203-236.watson.ibm.com>	 <5476EBAC.8090103@utc.fr>	 <1419860736.14143.13.camel@dhcp-9-2-203-236.watson.ibm.com>	 <54A1BAEE.6000101@landley.net>	 <1419889608.14143.40.camel@dhcp-9-2-203-236.watson.ibm.com>	 <54A2062C.2030909@landley.net> <1419909649.14143.86.camel@dhcp-9-2-203-236.watson.ibm.com>
+In-Reply-To: <1419909649.14143.86.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/2014 09:48 PM, tytso@mit.edu wrote:
-> On Mon, Dec 29, 2014 at 04:13:37PM -0600, Dave Kleikamp wrote:
->> On 12/27/2014 06:58 PM, nick wrote:
->>> Greetings Dave,
->>> I am wondering why there is a TO DO above this code:
->>>         * ToDo:  tlocks should be on doubly-linked list, so we can
->>>         * quickly remove it and add it to the end.
+On 12/29/2014 09:20 PM, Mimi Zohar wrote:
+> On Mon, 2014-12-29 at 19:55 -0600, Rob Landley wrote: 
+>>> Thanks Rob for the explanation.  The problem is that ramfs does not
+>>> support extended attributes, while tmpfs does.
 >>
->> I'm sure the idea was to avoid the for loop needed to find the previous
->> entry in the linked list. A doubly-linked list makes it much simpler to
->> remove an item from an arbitrary position in the list.
+>> If you're _using_ initramfs/initmpfs, there's no reason to specify a root=.
 > 
-> Hi Dave,
+> The menu entry looks like:
+> linux   /vmlinuz-3.17.0+ root=UUID=94595ff7-0fd4-4ea3-99f2-f7ddf8fbc91f
+> ro  ...
+> initrd  /initramfs-3.17.0+.img
 > 
-> Just in case you weren't aware, Nick has been banned from the LKML
-> list for being a troll.
+> Because "root=" is specified, rootfs is not using tmpfs.
 
-Thanks, Ted. Now I remember some earlier threads. Forgot it was the same
-person. Just figured him for a novice looking for something to contribute.
+Yes. Pilot error.
 
-Thanks,
-Shaggy
+If you want tmpfs to switch to UUID $THINGY you can do ROOT= and have it
+use that. You're asking for something to be interpreted by the kernel
+sometimes and passed on to userspace other times and have no side
+effects even though it's interpeted by the kernel.
+
+>>> The boot loader could
+>>> "measure" (trusted boot) the initramfs, but as the initramfs is
+>>> generated on the target system, the initramfs is not signed, preventing
+>>> it from being appraised (secure Boot). To close the initramfs integrity
+>>> appraisal gap requires verifying the individual initramfs file
+>>> signatures, which are stored as extended attributes.
+>>
+>> Faced with the phrases "trusted boot" and "integrity appraisal", I plead
+>> the third.
+> 
+> Fine.  Bottom line, rootfs needs to support extended attributes.
+
+I added a patch to make it work as tmpfs a year ago. You now know what
+trivial configuration mistake you make that's preventing it from
+working. If you'd like me to submit a documentation update patch to make
+it easier to avoid in future, I can do that.
+
+>> (In the wake of the Snowden infodump,
+> 
+> All the more reason to allow only those files that are properly signed
+> to be read/executed.
+
+Using the infrastructure the NSA provided, which is intentionally so
+complicated that "you are not expected to understand this".
+
+Good luck with that.
+
+> Mimi
+
+Rob
