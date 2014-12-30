@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaL3Qvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 11:51:49 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55951 "EHLO
+	id S1751672AbaL3QxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 11:53:07 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55965 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaL3Qvr (ORCPT
+	with ESMTP id S1751481AbaL3QxE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 11:51:47 -0500
-Date: Tue, 30 Dec 2014 16:51:10 +0000
+	Tue, 30 Dec 2014 11:53:04 -0500
+Date: Tue, 30 Dec 2014 16:52:38 +0000
 From: Mark Brown <broonie@kernel.org>
 To: Andrew Jackson <andrew.jackson@arm.com>
 Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
@@ -19,19 +19,19 @@ Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
         linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20141230165110.GK17800@sirena.org.uk>
+Message-ID: <20141230165238.GL17800@sirena.org.uk>
 References: <cover.1419936132.git.Andrew.Jackson@arm.com>
- <faa0193d388fe808c2fae461954bb1730ba29244.1419936132.git.Andrew.Jackson@arm.com>
+ <c310f40f0b3b3bcd72cb02a7e3963d56f21e9dd5.1419936132.git.Andrew.Jackson@arm.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qu+55eaNXpiLf04N"
+	protocol="application/pgp-signature"; boundary="PhxnRSt5kLYkr28Z"
 Content-Disposition: inline
-In-Reply-To: <faa0193d388fe808c2fae461954bb1730ba29244.1419936132.git.Andrew.Jackson@arm.com>
+In-Reply-To: <c310f40f0b3b3bcd72cb02a7e3963d56f21e9dd5.1419936132.git.Andrew.Jackson@arm.com>
 X-Cookie: You have no real enemies.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 86.128.155.20
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 2/6] ASoC: dwc: Prepare clock before use
+Subject: Re: [PATCH v5 5/6] ASoC: dwc: Add documentation for I2S DT
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -39,38 +39,33 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---qu+55eaNXpiLf04N
+--PhxnRSt5kLYkr28Z
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Dec 30, 2014 at 10:55:44AM +0000, Andrew Jackson wrote:
+On Tue, Dec 30, 2014 at 10:55:47AM +0000, Andrew Jackson wrote:
 > From: Andrew Jackson <Andrew.Jackson@arm.com>
 >=20
-> Some I2S clocks may require some time to get the clock ready
-> for operation and so need to be prepared before they are enabled.
-> So, prepare the clock as well as enabling it, but combine the
-> two through clk_prepare_enable.
+> Add documentation for Designware I2S hardware block.  The block requires
+> one clock (for audio sampling) and DMA channels for receive and transmit.
 
-Applied, though the changelog is inaccurate - the need to do things
-outside of hardirq context is the reason the common clock API has a
-prepare stage but it's just a flat out requirement of the common clock
-API to prepare clocks.
+Applied, thanks.
 
---qu+55eaNXpiLf04N
+--PhxnRSt5kLYkr28Z
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUotf9AAoJECTWi3JdVIfQsHYH/1MqZ5lyDjuDapIqu4M8WpCG
-XDtrgSBuB2YvZGPMGh0c7n9l4S7xS3I/C3zhbs3RBLAEpl8hUZzbu8SfQQfcM7tw
-neIyrAJ3VLxQGPN6U1t3lYPsFyCvcwUeBqLmOG/JwVVhBcWaL+pW39YDSt4NEt4H
-CsHoAFwwtlQoqKZojEvujdyx5RL9H/OfTsccOHrlNKkEasQDEWPUdDLfaIlKHIW1
-xENWBkv9smBLwzYS0rrjAtyWXvy5eKFwbBx/EAwrNFWd/ogwRHrPedRG1re0Pt2V
-Lm7RpUWls2n9vfDdnzDJ3lQeHrcNAcpAGXYNSuNehLlXLfVLUFuWRv1bDGWAxaU=
-=/tMT
+iQEcBAEBAgAGBQJUothVAAoJECTWi3JdVIfQl7sH+wU+zJVnvDCJKj06LlDv+Upo
+VhACzba2XfQR35i8lECPpEbEyDLp/jyvBHECtov/TrZrw3VfGbBwgGLTXrMtS4VW
+vvPhWg4kfvT6CnorRi2Y0KvEw6MIyOiOoyEIYbS7s/Ien0Po784kHqf2Q/YX55w4
+gxxDbYNr2aAHmnDhFb/OeE9SsHV1T5imF81CrC1nlGRPNUVT0S0XxQtSYd597yXC
+XhWUqqV1P3I2cmjbFN6BKWrvCu/rtZbrwYAWY8l3Derb/abi0UdGd8PfqCVtnqTO
+He1VPnsXhhA6TEvQeCKw4h8Aip7R5i9Nxf9xPTrVuFdK3uVpIyGJrfhdM7RYf8Y=
+=OCi0
 -----END PGP SIGNATURE-----
 
---qu+55eaNXpiLf04N--
+--PhxnRSt5kLYkr28Z--
