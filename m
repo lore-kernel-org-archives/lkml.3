@@ -1,129 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaL3JGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 04:06:11 -0500
-Received: from mga01.intel.com ([192.55.52.88]:13180 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752086AbaL3JGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 04:06:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,664,1413270000"; 
-   d="scan'208";a="630700765"
-Message-ID: <54A26A96.4080505@intel.com>
-Date: Tue, 30 Dec 2014 11:04:22 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752001AbaL3JU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 04:20:26 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:46767 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495AbaL3JUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 04:20:23 -0500
+Date: Tue, 30 Dec 2014 10:20:21 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ethan.kernel@gmail.com,
+        Ethan Zhao <ethan.zhao@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] PCI: export pci device assignment info as read only via
+ sysfs
+Message-ID: <20141230092021.GA8458@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 02/37] perf record: Use a software dummy event to track
- task/mmap events
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org> <1419405333-27952-3-git-send-email-namhyung@kernel.org> <549D8C59.1000700@gmail.com> <CAM9d7chzE5ffPO=AwmjBEpbHb38xLJt4nhg-=Cjgj7tz+jCLZA@mail.gmail.com> <54A14FE4.9070601@intel.com> <20141230055111.GE6081@sejong>
-In-Reply-To: <20141230055111.GE6081@sejong>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419927707-14462-1-git-send-email-ethan.zhao@oracle.com>
+X-Priority: none
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/12/14 07:51, Namhyung Kim wrote:
-> Hi Adrian,
-> 
-> On Mon, Dec 29, 2014 at 02:58:12PM +0200, Adrian Hunter wrote:
->> On 27/12/14 07:28, Namhyung Kim wrote:
->>> Hi David,
->>>
->>> On Sat, Dec 27, 2014 at 1:27 AM, David Ahern <dsahern@gmail.com> wrote:
->>>> On 12/24/14 12:14 AM, Namhyung Kim wrote:
->>>>>
->>>>> Prepend a software dummy event into evlist to track task/comm/mmap
->>>>> events separately.  This is a preparation of multi-file/thread support
->>>>> which will come later.
->>>>
->>>>
->>>> Are you are making this the first event because of how perf internals are
->>>> coded -- that the first event tracks tasks events? With the tracking bit in
->>>> evsel you should not need to do that. Is there another reason?
->>>
->>> Yeah, I know the tracking bit can be set to any evsel in the evlist.
->>> But I'd like to keep it at a fixed index so that it can be easily
->>> identified at later stages (like perf report) too.  Ideally, it'd be
->>> great if we have a way to distinguish this auto-added dummy tracking
->>> event from other (user-added) (dummy?) tracking events if any.
->>>
->>>>
->>>> ---8<---
->>>>
->>>>> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
->>>>> index cfbe2b99b9aa..72dff295237e 100644
->>>>> --- a/tools/perf/util/evlist.c
->>>>> +++ b/tools/perf/util/evlist.c
->>>>> @@ -193,6 +193,44 @@ int perf_evlist__add_default(struct perf_evlist
->>>>> *evlist)
->>>>>         return -ENOMEM;
->>>>>   }
->>>>>
->>>>> +int perf_evlist__prepend_dummy(struct perf_evlist *evlist)
->>>>> +{
->>>>> +       struct perf_event_attr attr = {
->>>>> +               .type = PERF_TYPE_SOFTWARE,
->>>>> +               .config = PERF_COUNT_SW_DUMMY,
->>
->> Probably need .exclude_kernel = 1, here
-> 
-> Ah, right.
-> 
->>
->>>>> +       };
->>>>> +       struct perf_evsel *evsel, *pos;
->>>>> +
->>>>> +       event_attr_init(&attr);
->>>>> +
->>>>> +       evsel = perf_evsel__new(&attr);
->>>>> +       if (evsel == NULL)
->>>>> +               goto error;
->>>>> +
->>>>> +       /* use strdup() because free(evsel) assumes name is allocated */
->>>>> +       evsel->name = strdup("dummy");
->>>>> +       if (!evsel->name)
->>>>> +               goto error_free;
->>>>> +
->>>>> +       list_for_each_entry(pos, &evlist->entries, node) {
->>>>> +               pos->idx += 1;
->>>>> +               pos->tracking = false;
->>>>> +       }
->>>>> +
->>>>> +       list_add(&evsel->node, &evlist->entries);
->>>>> +       evsel->idx = 0;
->>>>> +       evsel->tracking = true;
->>>>
->>>>
->>>> perf_evlist__set_tracking_event()?
->>>
->>> I found that after I wrote this, so yes, it can use the function
->>> instead of the oped-code.  But the loop traversal is needed anyway to
->>> fixup the evsel->idx.
->>
->> perf_evlist__set_tracking_event() also ensures there is only one tracking
->> event so it is easy to identify. It is the only event with attr->mmap etc
->> set to 1. Then you can use perf_evlist__add().
-> 
-> Well, yes, I think we can put the dummy tracking event anywhere in the
-> evlist with this, but I still slightly prefer put it at a fixed
-> location for a possible code simplification..
+Hi,
 
-Probably you should not be checking for the "tracking event" at all on the
-processing side and instead just have perf report ignore all dummy events.
-That generalizes things even more.
+Ethan Zhao wrote:
+> This patch exports assignment flag of PCI device via sysfs, so user
+> space application could know if PCI device was assigned to guest OS
+> or not via interface as following from viewpoint of host device
+> management:
+> 
+>  PCI device was assigned to guest OS
+>  $cat /sys/devices/pci0000:00/0000:00:1f.3/assigned
+>  1
+>  PCI device isn't assigned to guest OS
+>  $cat /sys/devices/pci0000:00/0000:00:1f.3/assigned
+>  0
 
-What is the code simplification?
+For such a sysfs API (and similar cases in general!),
+do we actually want this relatively simple interface of
+"assigned" false/true?
+Or should it rather be something like an "ownership" attribute
+which could then indicate interface-fixed(!) string values
+such as "system"/"vm_guest"/FUTURE_EXTENSION_POSSIBILITY?
 
+IOW, "assigned" is quite a bit less flexible (and quite possibly even less
+usability-suitable from a naming POV - "assigned"...??)
+but of course simpler (which may or may not pose an advantage from an
+interface versioning/evolution POV).
+
+To further clarify things, this "assigned" interface as-is
+can merely tell apart
+the "device is occupied" vs. "device is not occupied" cases
+yet it could easily provide exact ownership details instead.
+And I'm also wondering whether or not it's good
+to have it directly/symmetrically named "assigned"
+due to it currently(!!) being based internally
+on an equally-named pci_is_dev_assigned() API.
+
+
+I should probably read up on sysfs item design hints/guidelines
+which I'd trust to be accurately explained in a Documentation/ file ;)
+Hmm, seems Documentation/sysfs-rules.txt has only one closing remark
+which seems relevant:
+====
+  Userspace applications can, however, expect the format and contents of
+  the attribute files to remain consistent in the absence of a version
+  attribute change in the context of a given attribute.
+====
+This would be fulfilled by both the current and my suggested variant
+of this interface, AFAICS.
+
+Thanks,
+
+Andreas Mohr
