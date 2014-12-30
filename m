@@ -1,86 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaL3Tmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 14:42:44 -0500
-Received: from hofr.at ([212.69.189.236]:36489 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751563AbaL3Tmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 14:42:42 -0500
-Date: Tue, 30 Dec 2014 20:42:39 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>,
-        Michal Kazior <michal.kazior@tieto.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Chun-Yeow Yeoh <yeohchunyeow@gmail.com>,
-        Yanbo Li <yanbol@qti.qualcomm.com>, ath10k@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] ath10k: a few incorrect return handling fix-up
-Message-ID: <20141230194239.GA13655@opentech.at>
-References: <1419942046-17985-1-git-send-email-der.herr@hofr.at> <54A2DE7C.1050602@cogentembedded.com> <20141230182842.GA18361@opentech.at> <54A2F151.6040205@cogentembedded.com>
+	id S1751881AbaL3Tot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 14:44:49 -0500
+Received: from mail-bl2on0145.outbound.protection.outlook.com ([65.55.169.145]:53172
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751424AbaL3Tor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 14:44:47 -0500
+X-Greylist: delayed 74368 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 14:44:46 EST
+Message-ID: <1419968672.4961.4.camel@freescale.com>
+Subject: Re: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
+From: Scott Wood <scottwood@freescale.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Michael Ellerman" <mpe@ellerman.id.au>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "supporter:S390" <linux390@de.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>,
+        Anton Blanchard <anton@samba.org>,
+        Andy Fleming <afleming@freescale.com>,
+        Tiejun Chen <tiejun.chen@windriver.com>,
+        Daniel Walter <dwalter@google.com>,
+        "Jens Freimann" <jfrei@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:S390" <linux-s390@vger.kernel.org>
+Date: Tue, 30 Dec 2014 13:44:32 -0600
+In-Reply-To: <CAJhHMCDan+qaaZjVUucA-sUS8A3vSTYuVHg8XQv4rsHXxAzKLw@mail.gmail.com>
+References: <1419700667-24888-1-git-send-email-bobby.prani@gmail.com>
+	 <20141229110324.50f1339b@mschwide>
+	 <CAJhHMCDan+qaaZjVUucA-sUS8A3vSTYuVHg8XQv4rsHXxAzKLw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A2F151.6040205@cogentembedded.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: BLUPR05CA0068.namprd05.prod.outlook.com (10.141.20.38) To
+ BY2PR0301MB0727.namprd03.prod.outlook.com (25.160.63.17)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=scottwood@freescale.com; 
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0727;
+X-Forefront-PRVS: 04410E544A
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(377424004)(199003)(24454002)(189002)(23676002)(64706001)(105586002)(68736005)(46102003)(89996001)(87976001)(103116003)(21056001)(19580405001)(40100003)(20776003)(47776003)(31966008)(99396003)(76176999)(50986999)(50466002)(86362001)(106356001)(97736003)(92566001)(77156002)(122386002)(33646002)(2950100001)(120916001)(62966003)(4396001)(107046002)(36756003)(42186005)(50226001)(19580395003)(101416001)(110136001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0727;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 30 Dec 2014 19:44:39.5118
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0727
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0678;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0678;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0678;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Dec 2014, Sergei Shtylyov wrote:
+On Mon, 2014-12-29 at 23:32 -0500, Pranith Kumar wrote:
+> On Mon, Dec 29, 2014 at 5:03 AM, Martin Schwidefsky
+> <schwidefsky@de.ibm.com> wrote:
+> > On Sat, 27 Dec 2014 12:17:43 -0500
+> > Pranith Kumar <bobby.prani@gmail.com> wrote:
+> >
+> >> @@ -65,10 +65,13 @@
+> >>  #include <asm/kexec.h>
+> >>  #include <asm/mmu_context.h>
+> >>  #include <asm/code-patching.h>
+> >> -#include <asm/kvm_ppc.h>
+> >>  #include <asm/hugetlb.h>
+> >>  #include <asm/epapr_hcalls.h>
+> >>
+> >> +#if IS_ENABLED(CONFIG_KVM)
+> >> +#include <asm/kvm_ppc.h>
+> >> +#endif
+> >> +
+> >>  #ifdef DEBUG
+> >>  #define DBG(fmt...) udbg_printf(fmt)
+> >>  #else
+> >
+> > I always cringe when I see an include protected by an #ifdef.
+> > Is this really necessary? All that is done in asm-offsets.c is
+> > to calculate offsets, the code where the two offsets in question
+> > are used (entry64.S) does have the #ifdef for CONFIG_KVM.
+> 
+> I agree that this is not the ideal way to do this. But, it has been
+> the way things were already being done. If you see
+> arch/powerpc/kernel/asm-offsets.c, there are quite some includes which
+> are within ifdefs.
 
-> On 12/30/2014 09:28 PM, Nicholas Mc Guire wrote:
->
->>>> wait_for_completion_timeout does not return negative values so the tests
->>>> for <= 0 are not needed and the case differentiation in the error handling
->>>> path unnecessary.
->
->>>     I decided to verify your statement and I saw that it seems wrong.
->>> do_wait_for_common() can return -ERESTARTSYS and the return value gets
->>> returned by its callers unchanged.
->
->> the -ERESTARTSYS only can be returned if state matches but
->> wait_for_completion_timemout passes TASK_UNINTERRUPTIBLE
->> so signal_pending_state will return 0 and never negativ
->
->> my understanding of the callchain is:
->> wait_for_completion_timemout with TASK_UNINTERRUPTIBLE
->>    -> wait_for_common(...TASK_UNINTERRUPTIBLE)
->>      -> __wait_for_common(...TASK_UNINTERRUPTIBLE)
->>        -> do_wait_for_common(...TASK_UNINTERRUPTIBLE)
->>          -> signal_pending_state(TASK_UNINTERRUPTIBLE...)
->
->> static inline int signal_pending_state(long state, struct task_struct *p)
->> {
->>          if (!(state & (TASK_INTERRUPTIBLE | TASK_WAKEKILL)))
->>                  return 0;
->
->    Right. I didn't look into TASK_UNINTERRUPTIBLE thing before sending my mail.
->
->> so wait_for_completion_timemout should return 0 or 1 only
->
->    0 or the remaining time, to be precise.
->
+asm-offsets.c is unusual in that respect, and I think most of those
+ifdefs could go away without breaking anything (head_booke.h is not a
+normal header file, and kvm_book3s.h should just be removed as it will
+be pulled in by kvm_ppc.h if applicable).
 
-yup - thanks for the confirmation!
+> I've considered other alternatives (though not in-depth) and found
+> that they will require quite some refactoring. One simple idea is to
+> move this #ifdef to within kvm_ppc.h. That should make the inclusion
+> of this file a no-op in all the places where this is being included
+> without KVM being enabled. But I am not 100% sure of that approach.
+> 
+> Any suggestions are welcome.
 
->>>> patch was only compile tested x86_64_defconfig + CONFIG_ATH_CARDS=m
->>>> CONFIG_ATH10K=m
->
->>>> patch is against linux-next 3.19.0-rc1 -next-20141226
->
->>>     Rather patches. It would have been better to send one patch instead of
->>> 4 patches with the same name.
->
->> sorry for that - I had split it into separate patches as it was
->> in different files - giving them the same name of course was a bit
->> brain-dead.
->
->    You should have mentioned the modified files in the subject. But IMHO 
-> it would be better to have just one patch.
->
-resent as a single patch as v2
+As I suggested elsewhere in the thread, why not be more fine-grained in
+what you ifdef in the srcu header?  How will that require excessive
+refactoring?
 
-thx!
-hofrat
+Or, just stick with the linker error.
+
+I also wonder if this is worthwhile just to save around 2000 bytes.
+What other core synchronization mechanisms are optional?  What
+real-world configs will actually have this disabled?
+
+-Scott
+
+
