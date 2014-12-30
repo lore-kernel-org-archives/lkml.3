@@ -1,120 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaL3Sq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:46:28 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:33413 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaL3Sq1 convert rfc822-to-8bit (ORCPT
+	id S1751649AbaL3Srn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:47:43 -0500
+Received: from smtp1-out.insa-rennes.fr ([193.52.94.24]:25268 "EHLO
+	smtp1-out.insa-rennes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaL3Srm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:46:27 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: linux Kernel <linux-kernel@vger.kernel.org>, linux-audit@redhat.com
-Subject: Re: v3.19-rc2: crashes during boot (syslog-ng, rpcbind ...)
-Date: Tue, 30 Dec 2014 13:46:24 -0500
-Message-ID: <4559278.bMkG2euyQm@sifl>
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <5490032.bFDrnJqxyv@sifl>
-References: <54A17C49.5080102@gmx.de> <54A1B724.8070106@gmx.de> <5490032.bFDrnJqxyv@sifl>
+	Tue, 30 Dec 2014 13:47:42 -0500
+X-Greylist: delayed 5233 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 13:47:42 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqYEALXyolQKBQEm/2dsb2JhbABcziqCVQKBHwEBAQEBfYQNAQQBeAEFCwshFg8JAwIBAgFFBg0BBwEBiCDGCgEBAQEBAQQBAQEBAQEBG493B4QpBY9ggSeHDoR3g2OEMIM3AoQRgzEBAQE
+Message-ID: <54A2F339.2080208@supelec.fr>
+Date: Tue, 30 Dec 2014 19:47:21 +0100
+From: Laurent Georget <laurent.georget@supelec.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-man <linux-man@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] adjtimex.2: Add details about ADJ_FREQUENCY
+References: <54A2DEAD.2050708@supelec.fr> <20141230180549.GB7403@localhost.localdomain>
+In-Reply-To: <20141230180549.GB7403@localhost.localdomain>
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 30, 2014 09:11:32 AM Paul Moore wrote:
-> On Monday, December 29, 2014 09:18:44 PM Toralf Förster wrote:
-> > On 12/29/2014 08:41 PM, Paul Moore wrote:
-> > > To help verify that I'm heading down the right path, could you share
-> > > your audit configuration as well?  If that's not possible, can you at
-> > > least confirm that you using a few audit directory watches?
-> > 
-> > Well, it is just a victim system for trinity - but I did not configured
-> > auditd in a special manner - so it is just the plain default configuration
-> > of Gentoo:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
+
+Hi again,
+
+Le 30/12/2014 19:05, Richard Cochran a =E9crit :
+>> diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
+>> index 18823c8..2652fc6 100644
+>> --- a/man2/adjtimex.2
+>> +++ b/man2/adjtimex.2
+>> @@ -55,8 +55,8 @@ struct timex {
+>>                           status flag is set, otherwise
+>>                           microseconds */
+>>      long freq;        /* Frequency offset, as scaled PPM
+>> -                         (parts per million) */
+>> -.\" FIXME What is the scaling unit of timex.freq?  2^16 ?
+>=20
+> Your text sounds funny and seems unclear to me.  How about something
+> more like this:
+>=20
+> 	long freq	/* Frequency offset in PPM with a 16 bit
+> 			   factional field */
 >
-> Okay, thanks for the information; the file related syscall watches are
-> likely what triggered the problem code.  Until I've got the fix sorted out,
-> removing the syscall watches or just disabling auditd from starting at boot
-> should workaround the problem.
 
-I still want to go over the below patch a bit more to check a few things, but 
-it solves the problem for me and I believe it should solve the problem you are 
-seeing as well.  Can you give it a try and let me know what happens?
+I tried to  phrase it as in the FIXME, but of course, that may not be
+the best thing to do. I'm not sure to understand what you mean however
+in your corrected comment for freq.
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 287b3d3..d834770 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -72,6 +72,8 @@
- #include <linux/fs_struct.h>
- #include <linux/compat.h>
- #include <linux/ctype.h>
-+#include <linux/string.h>
-+#include <uapi/linux/limits.h>
- 
- #include "audit.h"
- 
-@@ -1862,7 +1864,7 @@ void __audit_inode(struct filename *name, const struct 
-dentry *dentry,
- 
- 	list_for_each_entry_reverse(n, &context->names_list, list) {
- 		/* does the name pointer match? */
--		if (!n->name || n->name->name != name->name)
-+		if (!n->name || strcmp(n->name->name, name->name))
- 			continue;
- 
- 		/* match the correct record type */
-@@ -1881,14 +1883,39 @@ out_alloc:
- 	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
- 	if (!n)
- 		return;
--	if (name)
--		/* since name is not NULL we know there is already a matching
--		 * name record, see audit_getname(), so there must be a type
--		 * mismatch; reuse the string path since the original name
--		 * record will keep the string valid until we free it in
--		 * audit_free_names() */
--		n->name = name;
-+	/* unfortunately, while we may have a path name to record with the
-+	 * inode, we can't always rely on the string lasting until the end of
-+	 * the syscall so we need to create our own copy, it may fail due to
-+	 * memory allocation issues, but we do our best */
-+	if (name) {
-+		/* we can't use getname_kernel() due to size limits */
-+		struct filename *new = __getname();
- 
-+		if (unlikely(!new))
-+			goto out;
-+
-+		memset(new, 0, sizeof(*new));
-+		if ((strlen(name->name) + 1) <= (PATH_MAX - sizeof(*new))) {
-+			char *new_name = (char *)(new) + sizeof(*new);
-+			new->name = new_name;
-+			new->separate = false;
-+		} else {
-+			/* this looks odd, but is due to final_putname() */
-+			struct filename *new2;
-+			new2 = kzalloc(sizeof(*new2), GFP_KERNEL);
-+			if (unlikely(!new2)) {
-+				__putname(new);
-+				goto out;
-+			}
-+			new2->name = (char *)new;
-+			new = new2;
-+			new->separate = true;
-+		}
-+		strcpy((char *)new->name, name->name);
-+		new->aname = n;
-+		n->name = new;
-+		n->name_put = true;
-+	}
- out:
- 	if (parent) {
- 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
+>> +                         (parts per million) :
+>> +                         the scaling unit of timex.freq is 2^16 usec =
+=3D
+>> 1000*2^16 nsec.
+>=20
 
--- 
-paul moore
-www.paul-moore.com
+> Your mailer is wrapping lines here ...
 
+Indeed, it wrapped at 80 characters. I fixed it. Sorry about that.
+
+>=20
+>>      long maxerror;    /* Maximum error (microseconds) */
+>>      long esterror;    /* Estimated error (microseconds) */
+>>      int  status;      /* Clock command/status */
+>> @@ -106,6 +106,10 @@ Set time offset from
+>>  .BR ADJ_FREQUENCY
+>>  Set frequency offset from
+>>  .IR buf.freq .
+>> +The clock frequency must be comprised between -500000 and 500000 scal=
+ed
+>> ns/s.
+>=20
+> and here.
+>=20
+> The phrase "must be comprised" does not make any sense in this
+> context. How about this instead?
+>=20
+>    The allowed frequency range is -500 PPM to +500 PPM.
+>=20
+
+Sorry for my poor english.
+I have a doubt about the calculations here.
+If I understand the code correctly (and I'd like to, as I'm using it)
+the input value is scaled with SHIFT_USEC whereas MAXFREQ is not. So,
+PPM is not exactly the same unit here and above (in struct timex). How
+should we phrase that?
+
+Thanks
+
+Laurent
+
+
+--LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iF4EAREIAAYFAlSi8z4ACgkQRTidSplJch4p6wEAhpZ/0IDMSey2fwxWhoIvk0an
+vFL0+QnxnYXXserVQi0BAKp3QROvkItLIK3l/CrEVkwQOCfMkyx3oPR3ER2CfPt3
+=6Gfc
+-----END PGP SIGNATURE-----
+
+--LrasO2uje6AfN0aLJU2xaRTrNkxwig1Ae--
