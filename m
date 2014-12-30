@@ -1,109 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaL3FG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 00:06:56 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:54313 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880AbaL3FGz (ORCPT
+	id S1751804AbaL3FhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 00:37:05 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:62091 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483AbaL3FhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 00:06:55 -0500
+	Tue, 30 Dec 2014 00:37:02 -0500
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Tue, 30 Dec 2014 14:38:13 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: "perf top -g" leaking ~300MB per second.
+Message-ID: <20141230053813.GD6081@sejong>
+References: <20141213084845.GA13453@x4>
+ <20141213090331.GB13453@x4>
+ <20141213152635.GG9845@kernel.org>
+ <548C828B.4040309@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1419894305.4961.2.camel@freescale.com>
-References: <1419700667-24888-1-git-send-email-bobby.prani@gmail.com> <1419894305.4961.2.camel@freescale.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Tue, 30 Dec 2014 00:06:22 -0500
-Message-ID: <CAJhHMCBTYOsfZOH92KhTAbqH+UqsjuBNUGzxRwUT+Ah7P0eJ2g@mail.gmail.com>
-Subject: Re: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
-To: Scott Wood <scottwood@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "supporter:S390" <linux390@de.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Anton Blanchard <anton@samba.org>,
-        Andy Fleming <afleming@freescale.com>,
-        Tiejun Chen <tiejun.chen@windriver.com>,
-        Daniel Walter <dwalter@google.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:S390" <linux-s390@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <548C828B.4040309@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 6:05 PM, Scott Wood <scottwood@freescale.com> wrote:
-> On Sat, 2014-12-27 at 12:17 -0500, Pranith Kumar wrote:
->> Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
->> is a compile time failure if srcu is used when not enabled. This was decided to
->> be better than waiting until link time for a failure to occur.
->
-> Yes, false positives and extra ifdefs are so much better. :-P
->
-> Why not just ifdef the functions/macros, and leave the types alone?  If
-> you're worried about direct access to struct members, you could even
-> ifdef the members away while leaving the struct itself.  It is not
-> normal practice in Linux to need ifdefs around #includes.
+Hi David and Markus,
 
-Yup, totally agree that this is not ideal. The idea here is to not
-even compile the structure for tinification purposes. ifdefs for
-headers are ugly, but given the current code structure, I was not able
-to figure out any other way around it without major overhaul.
+On Sat, Dec 13, 2014 at 11:16:43AM -0700, David Ahern wrote:
+> On 12/13/14 8:26 AM, Arnaldo Carvalho de Melo wrote:
+> >The callchain code was done initially for 'report' and when I made 'top'
+> >reuse the hist_entry code allowing 'top' to collect callchains was too
+> >easy, but then we need to go thru the callchain/hists/hist_entry code to
+> >make sure that they don't leak, will try to do it...
+> >
+> 
+> As I recall it is build up of the dead_threads list.
 
->
->> There are places which include kvm headers and utilize kvm data structures
->> without checking if KVM is enabled. In two such archs(s390, ppc64), the current
->> patch makes the uses of KVM conditional on KVM being enabled. The other option,
->> which is to enable KVM unconditionally seemed a bit too much as we could easily
->> figure out KVM only parts and enclose them in ifdefs.
->
-> Maybe not so easy (mpc85xx_smp_defconfig with NOTIFY stuff turned off so
-> that SRCU gets deselected):
->
-> In file included from /home/scott/fsl/git/linux/upstream/arch/powerpc/include/asm/kvm_ppc.h:30:0,
->                  from /home/scott/fsl/git/linux/upstream/arch/powerpc/kernel/smp.c:39:
-> /home/scott/fsl/git/linux/upstream/include/linux/kvm_host.h:366:21: error: field 'srcu' has incomplete type
-> /home/scott/fsl/git/linux/upstream/include/linux/kvm_host.h:367:21: error: field 'irq_srcu' has incomplete type
-> /home/scott/fsl/git/linux/upstream/scripts/Makefile.build:257: recipe for target 'arch/powerpc/kernel/smp.o' failed
-> make[2]: *** [arch/powerpc/kernel/smp.o] Error 1
-> /home/scott/fsl/git/linux/upstream/Makefile:955: recipe for target 'arch/powerpc/kernel' failed
-> make[1]: *** [arch/powerpc/kernel] Error 2
-> make[1]: *** Waiting for unfinished jobs....
->
-> Are you sure KVM is the only SRCU user so impacted?  It's also likely
-> that new such problems get introduced, because most people are going to
-> have SRCU enabled and thus not notice the breakage they're adding.
+Maybe.  But I guess it's because of leak of callchains..
 
-Well, it is the major one which I encountered until now. There might
-be other problems lurking which I will gladly try to fix if and when
-they are reported.
-
->
-> There's also at least one place that needs to be fixed, that currently
-> expects to get other headers indirectly via srcu.h:
->
-> /home/scott/fsl/git/linux/upstream/lib/assoc_array.c: In function 'assoc_array_apply_edit':
-> /home/scott/fsl/git/linux/upstream/lib/assoc_array.c:1425:2: error: implicit declaration of function 'call_rcu' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> /home/scott/fsl/git/linux/upstream/scripts/Makefile.build:257: recipe for target 'lib/assoc_array.o' failed
-
-I will send a patch fixing this(need to use rcupdate.h here
-explicitly). Thanks for reporting these!
-
->
-> -Scott
->
->
+Markus, could you please test below patch how much it affects?
 
 
+>From b29ccd79727654653986ab1170e0b1f5d6518035 Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 30 Dec 2014 14:28:45 +0900
+Subject: [PATCH] perf callchain: Free callchains when hist entries are deleted
 
+Markus reported that "perf top -g" can leak ~300MB per second on his
+machine.  This is partly because it missed to free callchains when
+hist entries are deleted.  Fix it.
+
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/callchain.c | 30 ++++++++++++++++++++++++++++++
+ tools/perf/util/callchain.h |  2 ++
+ tools/perf/util/hist.c      |  1 +
+ 3 files changed, 33 insertions(+)
+
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 64b377e591e4..14e7a123d43b 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -841,3 +841,33 @@ char *callchain_list__sym_name(struct callchain_list *cl,
+ 
+ 	return bf;
+ }
++
++static void free_callchain_node(struct callchain_node *node)
++{
++	struct callchain_list *list, *tmp;
++	struct callchain_node *child;
++	struct rb_node *n;
++
++	list_for_each_entry_safe(list, tmp, &node->val, list) {
++		list_del(&list->list);
++		free(list);
++	}
++
++	n = rb_first(&node->rb_root_in);
++	while (n) {
++		child = container_of(n, struct callchain_node, rb_node_in);
++		n = rb_next(n);
++		rb_erase(&child->rb_node_in, &node->rb_root_in);
++
++		free_callchain_node(child);
++		free(child);
++	}
++}
++
++void free_callchain(struct callchain_root *root)
++{
++	if (!symbol_conf.use_callchain)
++		return;
++
++	free_callchain_node(&root->node);
++}
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index dbc08cf5f970..c0ec1acc38e4 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -198,4 +198,6 @@ static inline int arch_skip_callchain_idx(struct thread *thread __maybe_unused,
+ char *callchain_list__sym_name(struct callchain_list *cl,
+ 			       char *bf, size_t bfsize, bool show_dso);
+ 
++void free_callchain(struct callchain_root *root);
++
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 30ff2cb92884..e17163fcb702 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -945,6 +945,7 @@ void hist_entry__delete(struct hist_entry *he)
+ 	zfree(&he->mem_info);
+ 	zfree(&he->stat_acc);
+ 	free_srcline(he->srcline);
++	free_callchain(he->callchain);
+ 	free(he);
+ }
+ 
 -- 
-Pranith
+2.1.3
+
