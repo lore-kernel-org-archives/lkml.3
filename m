@@ -1,60 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaL3Vyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 16:54:36 -0500
-Received: from mail.ludd.ltu.se ([130.240.16.30]:42731 "EHLO mail.ludd.ltu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751461AbaL3Vyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 16:54:35 -0500
-From: Jonas Lundqvist <jonas@gannon.se>
-To: airlied@linux.ie
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Jonas Lundqvist <jonas@gannon.se>
-Subject: [PATCH] drm: Move two seq_printf's outside of locked mutex
-Date: Tue, 30 Dec 2014 22:54:26 +0100
-Message-Id: <1419976466-2113-1-git-send-email-jonas@gannon.se>
-X-Mailer: git-send-email 2.1.4
+	id S1751814AbaL3WAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 17:00:31 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:59377 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaL3WAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 17:00:30 -0500
+Message-ID: <54A3207B.3000601@codeaurora.org>
+Date: Tue, 30 Dec 2014 14:00:27 -0800
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: "Stefan I. Strogin" <s.strogin@partner.samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
+        Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, rostedt@goodmis.org,
+        namhyung@kernel.org
+Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
+References: <cover.1419602920.git.s.strogin@partner.samsung.com> <20141229023639.GC27095@bbox> <54A1B11A.6020307@codeaurora.org> <20141230044726.GA22342@bbox>
+In-Reply-To: <20141230044726.GA22342@bbox>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drm_info.c: drm_bufs_info() and drm_vm_info() two seq_printf() was
-done unnecessarily while locking a mutex. This patch flips the order of
-the print and lock/unlock where applicable.
+On 12/29/2014 8:47 PM, Minchan Kim wrote:
+>>
+>>
+>> I've been meaning to write something like this for a while so I'm
+>> happy to see an attempt made to fix this. I can't speak for the
+>> author's reasons for wanting this information but there are
+>> several reasons why I was thinking of something similar.
+>>
+>> The most common bug reports seen internally on CMA are 1) CMA is
+>> too slow and 2) CMA failed to allocate memory. For #1, not all
+>> allocations may be slow so it's useful to be able to keep track
+>> of which allocations are taking too long. For #2, migration
+>
+> Then, I don't think we could keep all of allocations. What we need
+> is only slow allocations. I hope we can do that with ftrace.
+>
+> ex)
+>
+> # cd /sys/kernel/debug/tracing
+> # echo 1 > options/stacktrace
+> # echo cam_alloc > set_ftrace_filter
+> # echo your_threshold > tracing_thresh
+>
+> I know it doesn't work now but I think it's more flexible
+> and general way to handle such issues(ie, latency of some functions).
+> So, I hope we could enhance ftrace rather than new wheel.
+> Ccing ftrace people.
+>
+> Futhermore, if we really need to have such information, we need more data
+> (ex, how many of pages were migrated out, how many pages were dropped
+> without migrated, how many pages were written back, how many pages were
+> retried with the page lock and so on).
+> In this case, event trace would be better.
+>
+>
 
-Signed-off-by: Jonas Lundqvist <jonas@gannon.se>
----
- drivers/gpu/drm/drm_info.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+I agree ftrace is significantly more flexible in many respects but
+for the type of information we're actually trying to collect here
+ftrace may not be the right tool. Often times it won't be obvious there
+will be a problem when starting a test so all debugging information
+needs to be enabled. If the debugging information needs to be on
+almost all the time anyway it seems silly to allow it be configurable
+via ftrace.
 
-diff --git a/drivers/gpu/drm/drm_info.c b/drivers/gpu/drm/drm_info.c
-index 51efebd..981afe7 100644
---- a/drivers/gpu/drm/drm_info.c
-+++ b/drivers/gpu/drm/drm_info.c
-@@ -81,11 +81,10 @@ int drm_vm_info(struct seq_file *m, void *data)
- 	   _DRM_SCATTER_GATHER and _DRM_CONSISTENT */
- 	const char *types[] = { "FB", "REG", "SHM", "AGP", "SG", "PCI" };
- 	const char *type;
--	int i;
-+	int i = 0;
- 
--	mutex_lock(&dev->struct_mutex);
- 	seq_printf(m, "slot	 offset	      size type flags	 address mtrr\n\n");
--	i = 0;
-+	mutex_lock(&dev->struct_mutex);
- 	list_for_each_entry(r_list, &dev->maplist, head) {
- 		map = r_list->map;
- 		if (!map)
-@@ -147,8 +146,8 @@ int drm_bufs_info(struct seq_file *m, void *data)
- 			seq_printf(m, "\n");
- 		seq_printf(m, " %d", dma->buflist[i]->list);
- 	}
--	seq_printf(m, "\n");
- 	mutex_unlock(&dev->struct_mutex);
-+	seq_printf(m, "\n");
- 	return 0;
- }
- 
+>> failure is fairly common but it's still important to rule out
+>> a memory leak from a dma client. Seeing all the allocations is
+>> also very useful for memory tuning (e.g. how big does the CMA
+>> region need to be, which clients are actually allocating memory).
+>
+> Memory leak is really general problem and could we handle it with
+> page_owner?
+>
+
+True, but it gets difficult to narrow down which are CMA pages allocated
+via the contiguous code path. page owner also can't differentiate between
+different CMA regions, this needs to be done separately. This may
+be a sign page owner needs some extensions independent of any CMA
+work.
+  
+>>
+>> ftrace is certainly usable for tracing CMA allocation callers and
+>> latency. ftrace is still only a fixed size buffer though so it's
+>> possible for information to be lost if other logging is enabled.
+>
+> Sorry, I don't get with only above reasons why we need this. :(
+>
+
+I guess from my perspective the problem that is being solved here
+is a fairly fixed static problem. We know the information we always
+want to collect and have available so the ability to turn it off
+and on via ftrace doesn't seem necessary. The ftrace maintainers
+will probably disagree here but doing 'cat foo' on a file is
+easier than finding the particular events, setting thresholds,
+collecting the trace and possibly post processing. It seems like
+this is conflating tracing which ftrace does very well with getting
+a snapshot of the system at a fixed point in time which is what
+debugfs files are designed for. We really just want a snapshot of
+allocation history with some information about those allocations.
+There should be more ftrace events in the CMA path but I think those
+should be in supplement to the debugfs interface and not a replacement.
+
+Thanks,
+Laura
+
 -- 
-2.1.4
-
+Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
