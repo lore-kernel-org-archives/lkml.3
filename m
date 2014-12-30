@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774AbaL3Stp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:49:45 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:62432 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486AbaL3Stl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:49:41 -0500
+	id S1751830AbaL3Su0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:50:26 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751345AbaL3SuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 13:50:25 -0500
+Message-ID: <54A2F3E5.8080700@nod.at>
+Date: Tue, 30 Dec 2014 19:50:13 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
-References: <1419457167-15042-1-git-send-email-richard@nod.at> <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 30 Dec 2014 10:49:19 -0800
-Message-ID: <CALCETrV+NixixDf4TYF9DAJnvRWF+V5PSdsXeshFzDZ_6Lje6A@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
 To: Kees Cook <keescook@chromium.org>
-Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
+CC: LKML <linux-kernel@vger.kernel.org>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         David Rientjes <rientjes@google.com>,
         Aaron Tomlin <atomlin@redhat.com>,
@@ -25,13 +22,18 @@ Cc: Richard Weinberger <richard@nod.at>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
         Brad Spengler <spender@grsecurity.net>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
+References: <1419457167-15042-1-git-send-email-richard@nod.at> <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
+In-Reply-To: <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 10:40 AM, Kees Cook <keescook@chromium.org> wrote:
+Am 30.12.2014 um 19:40 schrieb Kees Cook:
 > On Wed, Dec 24, 2014 at 1:39 PM, Richard Weinberger <richard@nod.at> wrote:
 >> While exploring the offset2lib attack I remembered that
 >> grsecurity has an interesting feature to make such attacks
@@ -80,9 +82,9 @@ On Tue, Dec 30, 2014 at 10:40 AM, Kees Cook <keescook@chromium.org> wrote:
 >>         audit_core_dumps(siginfo->si_signo);
 >>
 >> +       if (sig == SIGSEGV || sig == SIGBUS || sig == SIGKILL || sig == SIGILL) {
->
+> 
 > I think we should add SIGSYS to this list.
->
+> 
 >> +               rcu_read_lock();
 >> +               read_lock(&tasklist_lock);
 >> +               if (current->real_parent && (current->flags & PF_FORKNOEXEC))
@@ -141,33 +143,18 @@ On Tue, Dec 30, 2014 at 10:40 AM, Kees Cook <keescook@chromium.org> wrote:
 >> --
 >> 2.1.0
 >>
->
+> 
 > Instead of open-coding the checks here, maybe it'd make sense to
 > extract the "attach" and "check" logic into explicit functions that
 > can be CONFIG stubbed out? This is how grsec handles it via their
 > gr_handle_brute_* functions.
->
+
+Of course. I've stripped down the patch as much as possible to outline the
+concept/idea. It is not intended to get merged as is.
+Beside of having a new Kconfig options it also needs some logging.
+Maybe "WARNING: forking very fast, broken daemon or exploit attempt?!"
+
 > Regardless, I'm for adding this feature to mainline. :)
->
 
-If this is going to go into mainline, I think it needs better
-configurability (the timeouts, etc, should be settable by sysctl and
-possibly prctl), and I expect we'll need a prctl to turn it off.  I
-can imagine programs (e.g. anything Zygote-like) that will want to
-turn it off because it'll do more harm than good.
-
-But I like the concept, too.
-
---Andy
-
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Thanks,
+//richard
