@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaL3Es3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Dec 2014 23:48:29 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:45757 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549AbaL3Es2 (ORCPT
+	id S1751765AbaL3FAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 00:00:46 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45399 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880AbaL3FAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Dec 2014 23:48:28 -0500
+	Tue, 30 Dec 2014 00:00:45 -0500
 X-Original-SENDERIP: 10.177.220.158
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 30 Dec 2014 13:48:27 +0900
+Date: Tue, 30 Dec 2014 14:00:38 +0900
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Hui Zhu <zhuhui@xiaomi.com>
 Cc: m.szyprowski@samsung.com, mina86@mina86.com, akpm@linux-foundation.org,
@@ -19,37 +19,34 @@ Cc: m.szyprowski@samsung.com, mina86@mina86.com, akpm@linux-foundation.org,
         laurent.pinchart+renesas@ideasonboard.com, rientjes@google.com,
         sasha.levin@oracle.com, liuweixing@xiaomi.com,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org, teawater@gmail.com
-Subject: Re: [PATCH 1/3] CMA: Fix the bug that CMA's page number is
- substructed twice
-Message-ID: <20141230044826.GC4588@js1304-P5Q-DELUXE>
+Subject: Re: [PATCH 3/3] CMA: Add cma_alloc_counter to make cma_alloc work
+ better if it meet busy range
+Message-ID: <20141230050038.GD4588@js1304-P5Q-DELUXE>
 References: <1419500608-11656-1-git-send-email-zhuhui@xiaomi.com>
- <1419500608-11656-2-git-send-email-zhuhui@xiaomi.com>
+ <1419500608-11656-4-git-send-email-zhuhui@xiaomi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419500608-11656-2-git-send-email-zhuhui@xiaomi.com>
+In-Reply-To: <1419500608-11656-4-git-send-email-zhuhui@xiaomi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 25, 2014 at 05:43:26PM +0800, Hui Zhu wrote:
-> In Joonsoo's CMA patch "CMA: always treat free cma pages as non-free on
-> watermark checking" [1], it changes __zone_watermark_ok to substruct CMA
-> pages number from free_pages if system use CMA:
-> 	if (IS_ENABLED(CONFIG_CMA) && z->managed_cma_pages)
-> 		free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
+On Thu, Dec 25, 2014 at 05:43:28PM +0800, Hui Zhu wrote:
+> In [1], Joonsoo said that cma_alloc_counter is useless because pageblock
+> is isolated.
+> But if alloc_contig_range meet a busy range, it will undo_isolate_page_range
+> before goto try next range. At this time, __rmqueue_cma can begin allocd
+> CMA memory from the range.
 
-Hello, 
+Is there any real issue from this?
+When failed, we will quickly re-isolate pageblock for adjacent page
+so there is no big problem I guess.
 
-In fact, without that patch, watermark checking has a problem in current kernel.
-If there is reserved CMA region, watermark check for high order
-allocation is done loosly. See following thread.
-
-https://lkml.org/lkml/2014/5/30/320
-
-Your patch can fix this situation, so, how about submitting this patch
-separately?
+If there is real issue, how about doing start_isolation/undo_isolation
+in cma_alloc()? It would reduce useless do/undo isolation due to
+failed trial.
 
 Thanks.
 
