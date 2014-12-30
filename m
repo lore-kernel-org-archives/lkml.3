@@ -1,74 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaL3LXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 06:23:51 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55546 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaL3LXs (ORCPT
+	id S1752080AbaL3LXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 06:23:38 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:40053 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaL3LXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 06:23:48 -0500
-Date: Tue, 30 Dec 2014 11:23:25 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-spi@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org
-Message-ID: <20141230112325.GH11764@sirena.org.uk>
-References: <1419846074-240217-1-git-send-email-mika.westerberg@linux.intel.com>
- <20141229160316.GO17800@sirena.org.uk>
- <20141230073714.GD1386@lahna.fi.intel.com>
+	Tue, 30 Dec 2014 06:23:34 -0500
+Message-ID: <54A28B22.7090305@linaro.org>
+Date: Tue, 30 Dec 2014 19:23:14 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1PQyblS8X/PkxCw+"
-Content-Disposition: inline
-In-Reply-To: <20141230073714.GD1386@lahna.fi.intel.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/spidev: Convert to use unified device property API
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org> <20141224171815.GD13399@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20141224171815.GD13399@e104818-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---1PQyblS8X/PkxCw+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 2014年12月25日 01:18, Catalin Marinas wrote:
+> Hi,
+>
+> Some thoughts before the end of the year. I won't be able to follow up
+> until around 5th of January though.
+>
+> On Fri, Oct 17, 2014 at 02:37:14PM +0100, Hanjun Guo wrote:
+>> --- /dev/null
+>> +++ b/Documentation/arm64/arm-acpi.txt
+>> @@ -0,0 +1,323 @@
+>> +ACPI on ARMv8 Servers
+>> +---------------------
+>> +ACPI can be used for ARMv8 general purpose servers designed to follow
+>> +the ARM SBSA (Server Base System Architecture) specification, currently
+>> +available to those with an ARM login at http://silver.arm.com.
+>
+> You should mention SBBR (Server Base Boot Requirements) here as well.
+> The arm-acpi.txt is complementary to arm-acpi.txt and longer term we
+> should aim to move parts of the Linux document into the more OS-agonstic
+> SBBR.
 
-On Tue, Dec 30, 2014 at 09:37:14AM +0200, Mika Westerberg wrote:
-> On Mon, Dec 29, 2014 at 04:03:16PM +0000, Mark Brown wrote:
+ok, I will update the doc. and I agree that moving parts of this doc
+into SBBR, actually part of the content is coming from SBBR, especially
+section "Booting using ACPI tables" (not include the command line part).
+please refer to section 4.2 ACPI Tables in SBBR.
 
-> > Which nobody should be doing since it's already totally broken for
-> > something to be using this on the DT side except in the one case of the
-> > Rohm device which is listed there.  I don't want to merge anything which
-> > allows the breakage we're seeing with people putting spidev in their DTs
-> > to be propagated into ACPI, at most we should have something that
-> > specifically identifies individual devices only.
+>
+>> +The ARMv8 kernel implements the reduced hardware model of ACPI version
+>> +5.1 and its corresponding errata.
+>
+> I would say 5.1 or later to avoid updating this document every time we
+> get a new ACPI release.
 
-> It is pretty convenient for testing SPI bus and that's why I thought
-> it would be good to have possibility to enumerate this in similar way
-> than DT does but I understand your point.
+sure, will update it.
 
-My intention is to break this for DT, at least make it scream loud
-warnings when it's used if not actually fail.
+>
+>> +If an ARMv8 system does not meet the requirements of the SBSA, or cannot
+>> +be described using the mechanisms defined in the required ACPI specifications,
+>> +then it is likely that Device Tree (DT) is more suitable than ACPI for the
+>> +hardware.
+>
+> Based on some private discussions, I think we could drop some of the
+> references to DT in this document. It should specify the requirements
+> for ACPI support and, if not met, the alternative SoC support is
+> automatically DT for Linux. That's just to make it easier to move parts
+> of this doc into SBBR.
+>
+>> +Relationship with Device Tree
+>> +-----------------------------
+>
+> This section is fine, Linux specific and it will stay in this document.
+>
+>> +ACPI support in drivers and subsystems for ARMv8 should never be mutually
+>> +exclusive with DT support at compile time.
+>> +
+>> +At boot time the kernel will only use one description method depending on
+>> +parameters passed from the bootloader (including kernel bootargs).
+>> +
+>> +Regardless of whether DT or ACPI is used, the kernel must always be capable
+>> +of booting with either scheme (in kernels with both schemes enabled at compile
+>> +time).
+>> +
+>> +When booting using ACPI tables, the /chosen node in DT will still be parsed
+>> +to extract the kernel command line and initrd path.  No other section of the
+>> +DT will be used.
+>
+> I don't think this paragraph is needed. That's a kernel detail when how
+> the EFI_STUB passes the information to the rest of the kernel. We
+> mandate UEFI booting for ACPI support, so I wouldn't expect an
+> ACPI-aware U-Boot.
 
---1PQyblS8X/PkxCw+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Agree, we can boot kernel ok without passing the dtb to kernel
+in the command line if ACPI presents.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+>
+>> +Booting using ACPI tables
+>> +-------------------------
+>> +The only defined method for passing ACPI tables to the kernel on ARMv8
+>> +is via the UEFI system configuration table.
+>> +
+>> +Processing of ACPI tables may be disabled by passing acpi=off on the kernel
+>> +command line; this is the default behavior.  If acpi=force is used, the kernel
+>> +will ONLY use device configuration information contained in the ACPI tables.
+>
+> See my comments to Al around the defaults. I think if only ACPI tables
+> are present, we shouldn't panic the kernel if acpi=force is missing but
+> continue with ACPI.
 
-iQEcBAEBAgAGBQJUoossAAoJECTWi3JdVIfQmcMH/3aXNTw3Dn5Uzl+BQQDa5+UU
-+LEp3o9PI5iGbH3LLfBTAqdT+kC7TF7kG8la93W3s1fhDODsPXgeu7+UdbzVihng
-3SpHg3TQSdClOg7+liGRV1hLAdTG6BjrqgsBg/sfuwKdb5wsRXTbw4ufzejAsUW0
-ED6yZM6jFmuIxXWxVcHKJ4Uyi3DAP4Mn+dyzKhBMYsH3S2zPHc0tvD5wbpPMJ6ds
-xC1JKjig32jLo0WytV97ko/KwM3IkiaCZlWm9AXqwpxRN6PLwtEmAAL85mhTtb4a
-N2QgTGLmOrtuTnVvba1ZeRUPCw1XsioQLr6IUKksAwcOAKpdp/8Inv4wjT81c2A=
-=sYNf
------END PGP SIGNATURE-----
+I think we need another patch to implement it, for this patch set,kernel
+will panic if no dtb and acpi=off. since passing no DT tables to OS but
+acpi=force is missing is a corner case, we can do a follow up patch to
+fix that, does it make sense?
 
---1PQyblS8X/PkxCw+--
+> If both DT and ACPI tables are present, DT will be
+> the default. You could say "this is the default behaviour if both ACPI
+> and DT tables are present".
+>
+>> +Device Enumeration
+>> +------------------
+>> +Device descriptions in ACPI should use standard recognized ACPI interfaces.
+>> +These can contain less information than is typically provided via a Device
+>
+> s/can/may/ ? Not sure, it just sounds better to me (not a native English
+> speaker).
+>
+>> +Tree description for the same device.  This is also one of the reasons that
+>> +ACPI can be useful -- the driver takes into account that it may have less
+>> +detailed information about the device and uses sensible defaults instead.
+>> +If done properly in the driver, the hardware can change and improve over
+>> +time without the driver having to change at all.
+>> +
+>> +Clocks provide an excellent example.  In DT, clocks need to be specified
+>> +and the drivers need to take them into account.  In ACPI, the assumption
+>> +is that UEFI will leave the device in a reasonable default state, including
+>> +any clock settings.  If for some reason the driver needs to change a clock
+>> +value, this can be done in an ACPI method; all the driver needs to do is
+>> +invoke the method and not concern itself with what the method needs to do
+>> +to change the clock.  Changing the hardware can then take place over time
+>> +by changing what the ACPI method does, and not the driver.
+>> +
+>> +ACPI drivers should only look at one specific ASL object -- the _DSD object
+>> +-- for device driver parameters (known in DT as "bindings", or "Device
+>> +Properties" in ACPI).  Not all DT bindings will be recognized.
+>
+> This last sentence kind of implies that many of the DT bindings will be
+> recognised. While it is useful to have some commonalities, I think this
+> gives the wrong message that _DSD is a copy of DT. We should avoid this.
+>
+>> The UEFI
+>> +Forum provides a mechanism for registering such bindings [URL TBD by ASWG]
+>
+> s/bindings/properties/ if we talk in the ACPI context.
+>
+>> +so that they may be used on any operating system supporting ACPI.  Device
+>> +properties that have not been registered with the UEFI Forum should not be
+>> +used.
+>
+> More about this further down.
+>
+>> +Drivers should look for device properties in the _DSD object ONLY; the _DSD
+>> +object is described in the ACPI specification section 6.2.5, but more
+>> +specifically, use the _DSD Device Properties UUID:
+>> +
+>> +   -- UUID: daffd814-6eba-4d8c-8a91-bc9bbf4aa301
+>> +
+>> +   -- http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf)
+>> +
+>> +The kernel has an interface for looking up device properties in a manner
+>> +independent of whether DT or ACPI is being used and that interface should
+>> +be used;
+>
+> I haven't followed the _DSD kernel support but does it provide a common
+> API to be shared with DT? I'm not entirely convinced it's a good idea.
+>
+>> it can eliminate some duplication of code paths in driver probing
+>> +functions and discourage divergence between DT bindings and ACPI device
+>> +properties.
+>
+> Given the current different mechanism of reviewing/approving bindings
+> between DT and ACPI (kernel community vs UEFI forum), I don't see how we
+> encourage convergence (unless we state that _DSD are Linux-only, Windows
+> should use a different mechanism like .inf files).
+>
+>> +ACPI tables are described with a formal language called ASL, the ACPI
+>> +Source Language (section 19 of the specification).  This means that there
+>> +are always multiple ways to describe the same thing -- including device
+>> +properties.  For example, device properties could use an ASL construct
+>> +that looks like this: Name(KEY0, "value0").  An ACPI device driver would
+>> +then retrieve the value of the property by evaluating the KEY0 object.
+>> +However, using Name() this way has multiple problems: (1) ACPI limits
+>> +names ("KEY0") to four characters unlike DT; (2) there is no industry
+>> +wide registry that maintains a list of names, minimzing re-use; (3)
+>> +there is also no registry for the definition of property values ("value0"),
+>> +again making re-use difficult; and (4) how does one maintain backward
+>> +compatibility as new hardware comes out?  The _DSD method was created
+>> +to solve precisely these sorts of problems; Linux drivers should ALWAYS
+>> +use the _DSD method for device properties and nothing else.
+>> +
+>> +The _DSM object (ACPI Section 9.14.1) could also be used for conveying
+>> +device properties to a driver.  Linux drivers should only expect it to
+>> +be used if _DSD cannot represent the data required, and there is no way
+>> +to create a new UUID for the _DSD object.  Note that there is even less
+>> +regulation of the use of _DSM than there is of _DSD.  Drivers that depend
+>> +on the contents of _DSM objects will be more difficult to maintain over
+>> +time because of this.
+>> +
+>> +The _DSD object is a very flexible mechanism in ACPI, as are the registered
+>> +Device Properties.  This flexibility allows _DSD to cover more than just the
+>> +generic server case and care should be taken in device drivers not to expect
+>> +it to replicate highly specific embedded behaviour from DT.
+>
+> While this is all good, we need to be more specific on what "embedded
+> behaviour" means. Maybe not for this document but the UEFI approval
+> process for new properties doesn't give any hint on what is and is not
+> sane (and I already disagree with some of the examples on uefi.org).
+>
+>> +Both DT bindings and ACPI device properties for device drivers have review
+>> +processes.  Use them.  And, before creating new device properties, check to
+>> +be sure that they have not been defined before and either registered in the
+>> +Linux kernel documentation or the UEFI Forum.  If the device drivers supports
+>> +ACPI and DT, please make sure the device properties are consistent in both
+>> +places.
+>
+> In the interest of progress, I think we need to *temporarily* ban the
+> use of _DSD on ARM platforms aimed at ACPI and state it clearly in this
+> document. Once we are happy with the UEFI forum review process, we'll
+> adjust the document accordingly.
+>
+> My problems with _DSD:
+>
+> a) no clear guidance on what a good property means, whether it covers
+>     just device specific information or it may include Linux behaviour
+>     (like "linux,default-trigger", I don't think it should)
+> b) the Linux kernel community does not seem to be involved in the UEFI
+>     forum _DSD review process. This means that we'll be faced with
+>     patches against drivers to support UEFI-published _DSD properties.
+>     I want to avoid such arguments, rejecting kernel code is too late
+>     after _DSD properties have been published
+>
+> The alternative to _DSD would be to program the hardware to some sane
+> state. For example, I'm sure a MAC address can be written by firmware to
+> some register and the driver can read and store it locally (I'm not even
+> sure why we need MAC address in ACPI tables, this is not really a
+> property of the hardware but a configuration that could be done in
+> firmware).
+>
+>> +Clocks
+>> +------
+>> +ACPI makes the assumption that clocks are initialized by the firmware --
+>> +UEFI, in this case -- to some working value before control is handed over
+>> +to the kernel.  This has implications for devices such as UARTs, or SoC
+>> +driven LCD displays, for example.
+>> +
+>> +When the kernel boots, the clock is assumed to be set to reasonable
+>> +working value.  If for some reason the frequency needs to change -- e.g.,
+>> +throttling for power management -- the device driver should expect that
+>> +process to be abstracted out into some ACPI method that can be invoked
+>> +(please see the ACPI specification for further recommendations on standard
+>> +methods to be expected).  If is not, there is no direct way for ACPI to
+>> +control the clocks.
+>
+> I would emphasize that there is no way for _Linux_ to directly control the
+> clocks on an ACPI-enabled platform.
+>
+>> +ASWG
+>> +----
+>> +The following areas are not yet fully defined for ARM in the 5.1 version
+>> +of the ACPI specification and are expected to be worked through in the
+>> +UEFI ACPI Specification Working Group (ASWG):
+>> +
+>> +   -- ACPI based CPU topology
+>> +   -- ACPI based Power management
+>> +   -- CPU idle control based on PSCI
+>> +   -- CPU performance control (CPPC)
+>> +   -- ACPI based SMMU
+>> +   -- ITS support for GIC in MADT
+>
+> In addition to the above and _DSD requirements/banning, I would also add
+> some clear statements around:
+>
+> _OSC: only global/published capabilities are allowed. For
+> device-specific _OSC we need a process or maybe we can ban them entirely
+> and rely on _DSD once we clarify the process.
+>
+> _OSI: firmware must not check for certain _OSI strings. Here I'm not
+> sure what we would have to do for ARM Linux. Reporting "Windows" does
+> not make any sense but not reporting anything can, as Matthew Garrett
+> pointed out, can be interpreted by firmware as "Linux". In addition to
+> any statements in this document, I suggest you patch
+> drivers/acpi/acpica/utosi.c accordingly, maybe report "Linux" for ARM
+> and print a kernel warning so that we notice earlier.
+>
+> ACPI_OS_NAME: this is globally defined as "Microsoft Windows NT". It
+> doesn't make much sense in the ARM context. Could we change it to
+> "Linux" when CONFIG_ARM64?
+>
+> Compatibility with older kernels: ACPI firmware must work, even though
+> not fully optimal, with the earliest kernel version implementing the
+> targeted ACPI spec. There may be a need for new drivers but otherwise
+> adding things like CPU power management should not break older kernel
+> versions. In addition, the ACPI firmware must also work with the latest
+> kernel version.
+>
+>
+> I strongly consider that we need to be very strict with the Linux ACPI
+> firmware and hardware requirements to avoid the need for supporting
+> non-standard implementations as much as possible. This is, however, a
+> live document, so we can relax it as we see fit (e.g. _DSD process
+> clarified).
+>
+> In the meantime, Merry Christmas ;). I'll follow up in January.
+
+I will send another version of patches based on 3.19-rc2, and I will
+address some comments in that patch set, we can continue our discussion
+here about doc for ACPI on ARM64.
+
+Thanks
+Hanjun
