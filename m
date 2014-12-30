@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaL3HQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 02:16:34 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:48101 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaL3HQd (ORCPT
+	id S1751955AbaL3Hfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 02:35:36 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:55738 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605AbaL3Hff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 02:16:33 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-0d-54a2514e0dd2
-Message-id: <54A25135.5030103@samsung.com>
-Date: Tue, 30 Dec 2014 08:16:05 +0100
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/4] kstrdup optimization
-References: <1419864510-24834-1-git-send-email-a.hajda@samsung.com>
- <87egrhws89.fsf@tassilo.jf.intel.com>
-In-reply-to: <87egrhws89.fsf@tassilo.jf.intel.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKLMWRmVeSWpSXmKPExsVy+t/xa7p+gYtCDPpemFscufad3eLyrjls
-	FvfW/Ge1WHvkLrsDi8f8nR8ZPTZ9msTu0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBlfm6+z
-	FnxirZjz5hNLA+Mdli5GTg4JAROJrY8vM0PYYhIX7q1n62Lk4hASWMoosenfWbAiIYFPjBLH
-	piqB2LwCWhInNn9k6mLk4GARUJU4+FQUJMwmoCnxd/NNNhBbVCBC4sOqr2wQ5YISPybfYwEp
-	FxFQkTh+ig8kzCyQLPH8xzp2EFtYwFBixe9lbBCbsiWe3jgIZnMKGEms+v2YFaSVWUBP4v5F
-	LYhWeYnNa94yT2AUmIVkwSyEqllIqhYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAna
-	LzsYFx+zOsQowMGoxMO74f3CECHWxLLiytxDjBIczEoivI0Gi0KEeFMSK6tSi/Lji0pzUosP
-	MTJxcEo1MLp9UxKdKV91uliijzu++VKj7+qjf1x5VM7kfd6zXLjPtW6616R5VnNu8faJdt1x
-	CvH8sfCpRPaCpRUOzlcX588zu/W31D1559HMXuMgxY/qLU334xuT3oTO89zb+DMs+FP8pTLu
-	Wo/48mfrJ1V7HuC4v/GgAfufpwbvnG8VM36o498o29DQpMRSnJFoqMVcVJwIAPPsvmo4AgAA
+	Tue, 30 Dec 2014 02:35:35 -0500
+Date: Mon, 29 Dec 2014 23:35:07 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult,
+ fan_max) from driver
+Message-ID: <20141230073507.GA11067@roeck-us.net>
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com>
+ <1566138.nEi3x1Fh8B@xps13>
+ <201412291322.52203@pali>
+ <1452807.aaSs3acGZG@xps13>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1452807.aaSs3acGZG@xps13>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54A255CB.009B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 8
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2014 07:45 AM, Andi Kleen wrote:
-> Andrzej Hajda <a.hajda@samsung.com> writes:
->
->> kstrdup if often used to duplicate strings where neither source neither
->> destination will be ever modified. In such case we can just reuse the source
->> instead of duplicating it. The problem is that we must be sure that
->> the source is non-modifiable and its life-time is long enough.
-> What happens if someone is to kfree() these strings?
->
-> -Andi
->
-kstrdup_const must be accompanied by kfree_const, I did not mention it
-in cover letter
-but it is described in the 1st patch commit message.
-Simpler alternative (but I am not sure if better) would be to add
-similar check
-(ie. if pointer is in .rodata) to kfree itself.
+On Mon, Dec 29, 2014 at 01:50:22PM +0100, Gabriele Mazzotta wrote:
+> On Monday 29 December 2014 13:22:52 Pali Rohár wrote:
+> > On Sunday 28 December 2014 17:17:14 Gabriele Mazzotta wrote:
+> > > OK, I wanted to double check in case I had something missing.
+> > > 
+> > > Patches tested on my XPS13: the correct values for fan_mult
+> > > and fan_man are automatically selected.
+> > 
+> > Great. Are there any other problems? Now probe time when loading 
+> > module should be lower and could not freeze system, right?
+> 
+> Yes, the system doesn't hang on module load. The only problem I have
+> right night now is that the system temporarily hangs when I read or set
+> the speed of the fan.
 
-Regards
-Andrzej
+This is a known problem on some Dell laptops; one of mine has the same problem.
+Nothing we can do about that, unfortunately. Only thing you can do is
+to not read the fan speed.
+
+Guenter
