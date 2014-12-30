@@ -1,100 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaL3T24 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 14:28:56 -0500
-Received: from mga14.intel.com ([192.55.52.115]:60196 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaL3T2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 14:28:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,666,1413270000"; 
-   d="scan'208";a="662555913"
-Message-ID: <1419967744.12456.0.camel@linux.intel.com>
-Subject: Re: [PATCH v1 0/4] mfd: reorganize Intel drivers
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Tue, 30 Dec 2014 21:29:04 +0200
-In-Reply-To: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751862AbaL3Tgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 14:36:54 -0500
+Received: from mail-bn1bon0115.outbound.protection.outlook.com ([157.56.111.115]:40688
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751779AbaL3Tgw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 14:36:52 -0500
+X-Greylist: delayed 769 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 14:36:52 EST
+From: Long Li <longli@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 1/4] Drivers: scsi: storvsc: In responce to a scan event,
+ scan the host
+Thread-Topic: [PATCH 1/4] Drivers: scsi: storvsc: In responce to a scan event,
+ scan the host
+Thread-Index: AQHQGWx2mqAc9mNU7EKB5dmAE3rJnpyomKpg
+Date: Tue, 30 Dec 2014 19:21:52 +0000
+Message-ID: <BLUPR03MB4075B290CA33C4BDFD03B7ACE5E0@BLUPR03MB407.namprd03.prod.outlook.com>
+References: <1418764880-11183-1-git-send-email-kys@microsoft.com>
+ <1418764905-11250-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1418764905-11250-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [76.22.8.192]
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=longli@microsoft.com; 
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0708;
+x-forefront-prvs: 04410E544A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(13464003)(189002)(377454003)(107046002)(21056001)(77156002)(2656002)(54356999)(76176999)(97736003)(50986999)(2501002)(105586002)(99286002)(33656002)(4396001)(54206007)(106116001)(31966008)(76576001)(106356001)(62966003)(87936001)(107886001)(2421001)(19580405001)(19580395003)(64706001)(101416001)(46102003)(122556002)(66066001)(54606007)(40100003)(68736005)(92566001)(15975445007)(1720100001)(77096005)(2900100001)(99396003)(20776003)(120916001)(2950100001)(102836002)(86612001)(2201001)(1511001)(74316001)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0708;H:BLUPR03MB407.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 30 Dec 2014 19:21:52.9680
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0708
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-11 at 17:53 +0200, Andy Shevchenko wrote:
-> This patchset creates a new folder under drivers/mfd and moves there Intel
-> related drivers.
+
+
+> -----Original Message-----
+> From: devel [mailto:driverdev-devel-bounces@linuxdriverproject.org] On
+> Behalf Of K. Y. Srinivasan
+> Sent: Tuesday, December 16, 2014 1:22 PM
+> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com;
+> jbottomley@parallels.com; hch@infradead.org; linux-scsi@vger.kernel.org
+> Subject: [PATCH 1/4] Drivers: scsi: storvsc: In responce to a scan event, scan
+> the host
 > 
-> There is no functional change. The names of the kernel configuration variables
-> are kept the same.
-
-Lee, gentle ping for this series. What do you think besides the
-necessity of updating MAINTAINERS file?
-
+> The virtual HBA that storvsc implements can support multiple channels and
+> targets. So, scan the host when the host notifies that a scan is needed.
 > 
-> Andy Shevchenko (4):
->   mfd: change a layout for the Intel related drivers
->   mfd: intel/lpc/sch: move driver to dedicated folder
->   mfd: intel/lpc/ich: move driver to dedicated folder
->   mfd: intel/pmic: move driver to dedicated folder
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Long Li <longli@microsoft.com>
+> ---
+>  drivers/scsi/storvsc_drv.c |   19 +++++++------------
+>  1 files changed, 7 insertions(+), 12 deletions(-)
 > 
->  .../platform/intel-mid/device_libs/platform_msic.c |  2 +-
->  .../intel-mid/device_libs/platform_msic_audio.c    |  2 +-
->  .../intel-mid/device_libs/platform_msic_battery.c  |  2 +-
->  .../intel-mid/device_libs/platform_msic_gpio.c     |  2 +-
->  .../intel-mid/device_libs/platform_msic_ocd.c      |  2 +-
->  .../device_libs/platform_msic_power_btn.c          |  2 +-
->  .../intel-mid/device_libs/platform_msic_thermal.c  |  2 +-
->  drivers/acpi/pmic/intel_pmic_crc.c                 |  2 +-
->  drivers/gpio/gpio-crystalcove.c                    |  2 +-
->  drivers/gpio/gpio-ich.c                            |  2 +-
->  drivers/gpio/gpio-msic.c                           |  2 +-
->  drivers/mfd/Kconfig                                | 42 ++--------------------
->  drivers/mfd/Makefile                               |  6 +---
->  drivers/mfd/intel/Kconfig                          | 19 ++++++++++
->  drivers/mfd/intel/Makefile                         |  9 +++++
->  drivers/mfd/intel/lpc/Kconfig                      | 17 +++++++++
->  drivers/mfd/intel/lpc/Makefile                     |  2 ++
->  drivers/mfd/{lpc_ich.c => intel/lpc/ich.c}         | 10 ++----
->  drivers/mfd/{lpc_sch.c => intel/lpc/sch.c}         |  2 +-
->  drivers/mfd/intel/mid/Kconfig                      |  8 +++++
->  drivers/mfd/intel/mid/Makefile                     |  1 +
->  drivers/mfd/{intel_msic.c => intel/mid/msic.c}     |  2 +-
->  .../{intel_soc_pmic_core.c => intel/pmic_core.c}   |  7 ++--
->  .../{intel_soc_pmic_core.h => intel/pmic_core.h}   |  2 +-
->  .../mfd/{intel_soc_pmic_crc.c => intel/pmic_crc.c} |  7 ++--
->  drivers/platform/x86/intel_mid_powerbtn.c          |  2 +-
->  drivers/platform/x86/intel_mid_thermal.c           |  2 +-
->  drivers/watchdog/iTCO_wdt.c                        |  2 +-
->  include/linux/mfd/{lpc_ich.h => intel/ich.h}       |  6 +---
->  include/linux/mfd/{intel_msic.h => intel/msic.h}   |  2 +-
->  .../linux/mfd/{intel_soc_pmic.h => intel/pmic.h}   |  0
->  31 files changed, 90 insertions(+), 80 deletions(-)
->  create mode 100644 drivers/mfd/intel/Kconfig
->  create mode 100644 drivers/mfd/intel/Makefile
->  create mode 100644 drivers/mfd/intel/lpc/Kconfig
->  create mode 100644 drivers/mfd/intel/lpc/Makefile
->  rename drivers/mfd/{lpc_ich.c => intel/lpc/ich.c} (98%)
->  rename drivers/mfd/{lpc_sch.c => intel/lpc/sch.c} (99%)
->  create mode 100644 drivers/mfd/intel/mid/Kconfig
->  create mode 100644 drivers/mfd/intel/mid/Makefile
->  rename drivers/mfd/{intel_msic.c => intel/mid/msic.c} (99%)
->  rename drivers/mfd/{intel_soc_pmic_core.c => intel/pmic_core.c} (97%)
->  rename drivers/mfd/{intel_soc_pmic_core.h => intel/pmic_core.h} (94%)
->  rename drivers/mfd/{intel_soc_pmic_crc.c => intel/pmic_crc.c} (96%)
->  rename include/linux/mfd/{lpc_ich.h => intel/ich.h} (81%)
->  rename include/linux/mfd/{intel_msic.h => intel/msic.h} (99%)
->  rename include/linux/mfd/{intel_soc_pmic.h => intel/pmic.h} (100%)
+> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c index
+> e3ba251..0a96fef 100644
+> --- a/drivers/scsi/storvsc_drv.c
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -426,21 +426,16 @@ done:
+>  	kfree(wrk);
+>  }
 > 
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+> -static void storvsc_bus_scan(struct work_struct *work)
+> +static void storvsc_host_scan(struct work_struct *work)
+>  {
+>  	struct storvsc_scan_work *wrk;
+> -	int id, order_id;
+> +	struct Scsi_Host *host;
+> 
+>  	wrk = container_of(work, struct storvsc_scan_work, work);
+> -	for (id = 0; id < wrk->host->max_id; ++id) {
+> -		if (wrk->host->reverse_ordering)
+> -			order_id = wrk->host->max_id - id - 1;
+> -		else
+> -			order_id = id;
+> -
+> -		scsi_scan_target(&wrk->host->shost_gendev, 0,
+> -				order_id, SCAN_WILD_CARD, 1);
+> -	}
+> +	host = wrk->host;
+> +
+> +	scsi_scan_host(host);
+> +
+>  	kfree(wrk);
+>  }
+> 
+> @@ -1198,7 +1193,7 @@ static void storvsc_on_receive(struct hv_device
+> *device,
+>  		if (!work)
+>  			return;
+> 
+> -		INIT_WORK(&work->work, storvsc_bus_scan);
+> +		INIT_WORK(&work->work, storvsc_host_scan);
+>  		work->host = stor_device->host;
+>  		schedule_work(&work->work);
+>  		break;
+> --
+> 1.7.4.1
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
