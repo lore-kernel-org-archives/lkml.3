@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaL3MZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 07:25:21 -0500
-Received: from www.osadl.org ([62.245.132.105]:51061 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977AbaL3MZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 07:25:19 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: Michal Kazior <michal.kazior@tieto.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Chun-Yeow Yeoh <yeohchunyeow@gmail.com>,
-        Yanbo Li <yanbol@qti.qualcomm.com>, ath10k@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH 1/4] ath10k: fixup wait_for_completion_timeout return handling
-Date: Tue, 30 Dec 2014 07:20:43 -0500
-Message-Id: <1419942046-17985-2-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1419942046-17985-1-git-send-email-der.herr@hofr.at>
-References: <1419942046-17985-1-git-send-email-der.herr@hofr.at>
+	id S1752590AbaL3MbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 07:31:14 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:39830 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013AbaL3MbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 07:31:13 -0500
+Message-ID: <54A29B0A.3060707@hurleysoftware.com>
+Date: Tue, 30 Dec 2014 07:31:06 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        Francesco Ruggeri <fruggeri@arista.com>
+Subject: Re: [PATCH] Revert "tty: Fix pty master poll() after slave closes
+ v2"
+References: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wait_for_completion_timeout does not return negative values so
-"ret" handling here should check for timeout only.
+On 12/30/2014 07:17 AM, Peter Hurley wrote:
+> This reverts commit c4dc304677e8d566572c4738d95c48be150c6606.
+> This fix is superseded by commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
+> 'pty, n_tty: Simplify input processing on final close'.
+> 
+> The final close now waits for input processing to complete before
+> destroying the pty, so poll() does not need to special case this
+> condition.
 
-patch was only compile tested for x86_64_defconfig + CONFIG_ATH_DEBUG=y
+Greg,
 
-patch is against linux-next 3.19.0-rc1 -next-20141226
+As noted in this commit log, commit c4dc304677e8d566572c4738d95c48be150c6606,
+'tty: Fix pty master poll() after slave closes v2', is not required
+after commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
+'pty, n_tty: Simplify input processing on final close'
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- drivers/net/wireless/ath/ath10k/debug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+However, 'tty: Fix pty master poll() after slave closes v2' is appropriate
+for stable back to v3.12.
 
-diff --git a/drivers/net/wireless/ath/ath10k/debug.c b/drivers/net/wireless/ath/ath10k/debug.c
-index a716758..7e1fe93 100644
---- a/drivers/net/wireless/ath/ath10k/debug.c
-+++ b/drivers/net/wireless/ath/ath10k/debug.c
-@@ -373,7 +373,7 @@ static int ath10k_debug_fw_stats_request(struct ath10k *ar)
- 
- 		ret = wait_for_completion_timeout(&ar->debug.fw_stats_complete,
- 						  1*HZ);
--		if (ret <= 0)
-+		if (ret == 0)
- 			return -ETIMEDOUT;
- 
- 		spin_lock_bh(&ar->data_lock);
--- 
-1.7.10.4
-
+Regards,
+Peter Hurley
