@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699AbaL3VDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 16:03:54 -0500
-Received: from mail.eperm.de ([89.247.134.16]:51095 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321AbaL3VDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 16:03:53 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v6 1/4] crypto: AF_ALG: add AEAD support
-Date: Tue, 30 Dec 2014 22:03:33 +0100
-Message-ID: <2836726.omC5yx5ZyR@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141229173340.GA15790@gondor.apana.org.au>
-References: <5682082.ffPqvQlSqN@tachyon.chronox.de> <29582980.qoHS2EjmLy@tachyon.chronox.de> <20141229173340.GA15790@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751827AbaL3VEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 16:04:11 -0500
+Received: from smtprelay0084.hostedemail.com ([216.40.44.84]:46965 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751788AbaL3VEG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 16:04:06 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3653:3865:3871:3874:4321:4605:5007:6261:8957:10004:10400:10848:11026:11473:11658:11914:12043:12438:12517:12519:12555:13069:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: roll31_404918f065634
+X-Filterd-Recvd-Size: 2400
+Message-ID: <1419973437.13502.2.camel@perches.com>
+Subject: [PATCH] checkpatch: Improve octal permissions tests
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 30 Dec 2014 13:03:57 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 30. Dezember 2014, 04:33:41 schrieb Herbert Xu:
+Add world writable permissions tests for the various
+functions like debugfs etc...
 
-Hi Herbert,
+Add $String type for $FuncArg so that string constants
+are matched.
 
-> 
-> > > PS we should add a length check for missing/partial auth tags
-> > > to crypto_aead_decrypt.  We can then remove such checks from
-> > > individual implementations.
-> > 
-> > I agree in full here. Shall I create such a patch together with the AEAD
-> > AF_ALG interface, or can we merge the AEAD without that patch now and
-> > create a separate patch later?
-> 
-> We should at least add a check in crypto_aead_decrypt first so as
-> to guarantee nothing slips through.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-I have prepared a patch for this which I will release shortly. IMHO that patch 
-should not have any significant performance penalty. I will also remove the 
-respective check from the algif_aead implementation.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index f0bb6d6..d1fd444 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -298,6 +298,7 @@ our $Binary	= qr{(?i)0b[01]+$Int_type?};
+ our $Hex	= qr{(?i)0x[0-9a-f]+$Int_type?};
+ our $Int	= qr{[0-9]+$Int_type?};
+ our $Octal	= qr{0[0-7]+$Int_type?};
++our $String	= qr{"[X\t]*"};
+ our $Float_hex	= qr{(?i)0x[0-9a-f]+p-?[0-9]+[fl]?};
+ our $Float_dec	= qr{(?i)(?:[0-9]+\.[0-9]*|[0-9]*\.[0-9]+)(?:e-?[0-9]+)?[fl]?};
+ our $Float_int	= qr{(?i)[0-9]+e-?[0-9]+[fl]?};
+@@ -517,7 +518,7 @@ our $Typecast	= qr{\s*(\(\s*$NonptrType\s*\)){0,1}\s*};
+ 
+ our $balanced_parens = qr/(\((?:[^\(\)]++|(?-1))*\))/;
+ our $LvalOrFunc	= qr{((?:[\&\*]\s*)?$Lval)\s*($balanced_parens{0,1})\s*};
+-our $FuncArg = qr{$Typecast{0,1}($LvalOrFunc|$Constant)};
++our $FuncArg = qr{$Typecast{0,1}($LvalOrFunc|$Constant|$String)};
+ 
+ our $declaration_macros = qr{(?x:
+ 	(?:$Storage\s+)?(?:[A-Z_][A-Z0-9]*_){0,2}(?:DEFINE|DECLARE)(?:_[A-Z0-9]+){1,2}\s*\(|
+@@ -5255,6 +5256,9 @@ sub process {
+ 					     length($val) ne 4)) {
+ 						ERROR("NON_OCTAL_PERMISSIONS",
+ 						      "Use 4 digit octal (0777) not decimal permissions\n" . $herecurr);
++					} elsif ($val =~ /^$Octal$/ && (oct($val) & 02)) {
++						ERROR("EXPORTED_WORLD_WRITABLE",
++						      "Exporting writable files is usually an error. Consider more restrictive permissions.\n" . $herecurr);
+ 					}
+ 				}
+ 			}
 
-In addition, I would suggest to add a similar check for the encryption 
-operation to verify that the ciphertext buffer is at least as large as the 
-blocks needed for plaintext plus the memory needed for the auth tag (note, my 
-first attempts working with AEAD lead to days of debugging of kernel crashers 
-as I did not understand I had too little memory allocated for the ciphertext 
-buffer). However, such check needs to traverse all plaintext scatterlist 
-entries which may have a noticeable performance hit.
 
-Do you see the need for such check? If yes, do you see a way to avoid 
-traversing all plaintext scatterlist entries?
-
-Thanks
--- 
-Ciao
-Stephan
