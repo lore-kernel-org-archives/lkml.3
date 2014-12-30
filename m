@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaL3W1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 17:27:13 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:45305 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaL3W1M convert rfc822-to-8bit (ORCPT
+	id S1751991AbaL3W1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 17:27:54 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:53039 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbaL3W1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 17:27:12 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH 3.13 106/162] KVM: x86: Fix far-jump to non-canonical check
-From: Nadav Amit <nadav.amit@gmail.com>
-In-Reply-To: <CAHTgTXXWqYd+wuDd+4_SAxFJO-beDrhJffXBB7fGz+PmeA0T3w@mail.gmail.com>
-Date: Wed, 31 Dec 2014 00:27:07 +0200
-Cc: Kamal Mostafa <kamal@canonical.com>, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A3DF4974-2E75-4585-BD15-9F2755C91C38@gmail.com>
-References: <1415313426-9622-1-git-send-email-kamal@canonical.com> <1415313426-9622-107-git-send-email-kamal@canonical.com> <CAHTgTXXWqYd+wuDd+4_SAxFJO-beDrhJffXBB7fGz+PmeA0T3w@mail.gmail.com>
-To: Vinson Lee <vlee@twopensource.com>
-X-Mailer: Apple Mail (2.1993)
+	Tue, 30 Dec 2014 17:27:52 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stefan Agner <stefan@agner.ch>
+Cc: Rob Herring <robherring2@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
+        kernel@pengutronix.de,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Uwe =?ISO-8859-1?Q?Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 08/12] ARM: allow MULTIPLATFORM with !MMU
+Date: Tue, 30 Dec 2014 23:27:20 +0100
+Message-ID: <1622755.AGsAr84gTH@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <8ec6bcf0fe2ec13898cf6c259d9da559@agner.ch>
+References: <1419895935-22966-1-git-send-email-stefan@agner.ch> <CAL_JsqK94Pk2xPF1MMX0GU0CQEiwiDD2qv9v3k4WLg2znDVjgA@mail.gmail.com> <8ec6bcf0fe2ec13898cf6c259d9da559@agner.ch>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:lhhGMzJZd7pLc8qSO/ULSIwDpsYBUlbWICvkX9B0w8DgOXMUPzY
+ RIXWuqwa4+4zUZQi+Ij6ra/F1Wx9PyK7MhHbyo8g1pxB2feFl5bwLYK8xPehAVH9Uc0161a
+ FWebU1WE/CTm6LiN7/lVLCpimk4KUuzuuag5fxA73HM+SWa0NOcM/yuFfwLkazSbx0J8VQo
+ P6dtDJvj1HaUAq8Z0AFJw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vinson Lee <vlee@twopensource.com> wrote:
-
-> On Thu, Nov 6, 2014 at 2:36 PM, Kamal Mostafa <kamal@canonical.com> wrote:
->> 3.13.11.11 -stable review patch.  If anyone has any objections, please let me know.
->> 
->> ------------------
->> 
->> From: Nadav Amit <namit@cs.technion.ac.il>
->> 
->> commit 7e46dddd6f6cd5dbf3c7bd04a7e75d19475ac9f2 upstream.
->> 
->> Commit d1442d85cc30 ("KVM: x86: Handle errors when RIP is set during far
->> jumps") introduced a bug that caused the fix to be incomplete.  Due to
->> incorrect evaluation, far jump to segment with L bit cleared (i.e., 32-bit
->> segment) and RIP with any of the high bits set (i.e, RIP[63:32] != 0) set may
->> not trigger #GP.  As we know, this imposes a security problem.
->> 
->> In addition, the condition for two warnings was incorrect.
->> 
->> Fixes: d1442d85cc30ea75f7d399474ca738e0bc96f715
->> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
->> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
->> [Add #ifdef CONFIG_X86_64 to avoid complaints of undefined behavior. - Paolo]
->> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
->> [ kamal: backport to 3.13-stable: omitted WARN_ON fixes (not in 3.13) ]
->> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
->> ---
->> arch/x86/kvm/emulate.c | 4 +++-
->> 1 file changed, 3 insertions(+), 1 deletion(-)
->> 
->> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
->> index a440bea..4ae37e7 100644
->> --- a/arch/x86/kvm/emulate.c
->> +++ b/arch/x86/kvm/emulate.c
->> @@ -581,12 +581,14 @@ static inline int assign_eip_far(struct x86_emulate_ctxt *ctxt, ulong dst,
->>        case 4:
->>                ctxt->_eip = (u32)dst;
->>                break;
->> +#ifdef CONFIG_X86_64
->>        case 8:
->>                if ((cs_l && is_noncanonical_address(dst)) ||
->> -                   (!cs_l && (dst & ~(u32)-1)))
->> +                   (!cs_l && (dst >> 32) != 0))
->>                        return emulate_gp(ctxt, 0);
->>                ctxt->_eip = dst;
->>                break;
->> +#endif
->>        default:
->>                WARN(1, "unsupported eip assignment size\n");
->>        }
->> --
->> 1.9.1
->> 
->> --
->> To unsubscribe from this list: send the line "unsubscribe stable" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Tuesday 30 December 2014 23:02:31 Stefan Agner wrote:
+> On 2014-12-30 22:42, Rob Herring wrote:
+> > On Mon, Dec 29, 2014 at 5:32 PM, Stefan Agner <stefan@agner.ch> wrote:
+> >> @@ -783,13 +780,13 @@ comment "CPU Core family selection"
+> >>
+> >>  config ARCH_MULTI_V4
+> >>         bool "ARMv4 based platforms (FA526)"
+> >> -       depends on !ARCH_MULTI_V6_V7
+> >> +       depends on !ARCH_MULTI_V6_V7 && MMU
+> > 
+> > This is not right. !MMU does not mean the ARM arch does not have an
+> > MMU, but rather the MMU is already setup with identity mapping (or
+> > some other static mapping).
 > 
+> Yes, I'm aware of that. However, there are several configuration
+> depending on "!MMU". Allowing !MMU on ARCH_MULTI_V4...V7 would open up
+> new combination of configurations... This patch avoids this as much as
+> possible, by making !MMU only available for ARCH_MULTI_V7M.
 > 
-> Hi.
-> 
-> Should the WARN_ON fixes have been included as well in 3.13.11.11?
-> 
-> WARN_ON hunks were added with the backport of "KVM: x86: Handle errors
-> when RIP is set during far jumps" in 3.13.11.11 commit
-> b8ba339d86fb627d54fea929492114d45f6835c2.
+> I'm not sure what tests/verification would be expected before allowing
+> those new configurations... Personally, I also don't see much value in
+> allowing these configurations.
 
-If it was added, it should be fixed. The WARN_ON mistakenly has
-double-negation.
+There is a much bigger question to be answered here. Traditionally we
+have allowed non-MMU configurations for all platforms, but with the
+introduction of multiplatform support, that was implicitly dropped
+for each platform that got converted. This was not really intended, but
+we also never got complaints from users that were missing functionality
+as a result of this.
 
-Nadav
+In 3.19, we have also removed support for the last ARMv4 platform that
+did not have an MMU (Atmel at91x40), so now we have four classes of
+nommu systems remaining:
 
+a) ARMv7-M: Cortex-M3 and M4 based platforms. We definitely need to
+   support these, as that is the entire point of your series and other
+   users want it too.
 
+b) ARMv7-R and ARMv7-A with MMU disabled: This is almost supported by
+   the kernel, except we don't have any platform using it. ARMv7-R
+   support is probably useful if anybody invests the time to make it
+   work, and being able to test those kernels on ARMv7-A hardware also
+   seems worthwhile.
+
+c) Out of mainline ARMv4t/ARMv5 platforms (based on arm7tdmi, arm9tdmi,
+   arm9e, arm740t, arm940t, arm946e, or some unsupported Faraday or
+   Marvell core), in theory also ARM Integrator with the respective
+   core tiles. It may just be time now to remove this support from the
+   kernel, as practically everyone with those cores is already stuck
+   on ancient kernels, maybe with the exception of Russell's OKI platform
+   port.
+   I've asked around at conferences among people that are still interested
+   in NOMMU hardware in general, and apparently running modern kernels
+   on this class of hardware isn't interesting to anyone I found.
+
+c) Any other hardware with MMU disabled. I personally don't see a reason
+   to keep it, but maybe I'm just not creative enough. I have an old
+   patch series to get this to compile for random configurations that
+   are currently broken. If we keep this enabled, we should at least
+   get allmodconfig with MMU disabled to build.
+
+	Arnd
