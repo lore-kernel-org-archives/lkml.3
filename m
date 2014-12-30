@@ -1,89 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751534AbaL3SjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:39:21 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:38064 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaL3SjT (ORCPT
+	id S1751667AbaL3SkT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:40:19 -0500
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:38943 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425AbaL3SkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:39:19 -0500
-Message-ID: <54A2F151.6040205@cogentembedded.com>
-Date: Tue, 30 Dec 2014 21:39:13 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 30 Dec 2014 13:40:16 -0500
 MIME-Version: 1.0
-To: Nicholas Mc Guire <der.herr@hofr.at>
-CC: Kalle Valo <kvalo@qca.qualcomm.com>,
-        Michal Kazior <michal.kazior@tieto.com>,
-        Ben Greear <greearb@candelatech.com>,
-        Chun-Yeow Yeoh <yeohchunyeow@gmail.com>,
-        Yanbo Li <yanbol@qti.qualcomm.com>, ath10k@lists.infradead.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] ath10k: a few incorrect return handling fix-up
-References: <1419942046-17985-1-git-send-email-der.herr@hofr.at> <54A2DE7C.1050602@cogentembedded.com> <20141230182842.GA18361@opentech.at>
-In-Reply-To: <20141230182842.GA18361@opentech.at>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1419457167-15042-1-git-send-email-richard@nod.at>
+References: <1419457167-15042-1-git-send-email-richard@nod.at>
+Date: Tue, 30 Dec 2014 10:40:15 -0800
+X-Google-Sender-Auth: iShV_9XoE839xPvx2xFPdP3s1lU
+Message-ID: <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
+From: Kees Cook <keescook@chromium.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        DaeSeok Youn <daeseok.youn@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2014 09:28 PM, Nicholas Mc Guire wrote:
+On Wed, Dec 24, 2014 at 1:39 PM, Richard Weinberger <richard@nod.at> wrote:
+> While exploring the offset2lib attack I remembered that
+> grsecurity has an interesting feature to make such attacks
+> much harder. Exploits can brute stack canaries often very easily
+> if the target is a forking server like sshd or Apache httpd.
+> The problem is that after fork() the child has by definition
+> exactly the same memory as the parent and therefore also the same
+> stack canaries.
+> The attacker can guess the stack canaries byte by byte.
+> After 256 times 7 forks() a good exploit can find the correct
+> canary value.
+>
+> The basic idea behind this patch is to delay fork() if a child died
+> due to a fatal error.
+> Currently it delays fork() by 30 seconds if the parent tries to fork()
+> within 60 seconds after a child died due to a fatal error.
+>
+> I'm sure you'll hate this patch but I want to find out how much you hate it
+> and whether there is a little chance to get it mainline in a modified form.
+> Later I'd make it depend on a new Kconfig option and off by default
+> and the timing constants changeable via sysctl.
+>
+> Credit for the concept goes to grsecurity folks, I'll take the flames.
+>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  fs/coredump.c         | 10 ++++++++++
+>  include/linux/sched.h |  1 +
+>  kernel/fork.c         |  7 +++++++
+>  3 files changed, 18 insertions(+)
+>
+> diff --git a/fs/coredump.c b/fs/coredump.c
+> index b5c86ff..d7730c8 100644
+> --- a/fs/coredump.c
+> +++ b/fs/coredump.c
+> @@ -512,6 +512,7 @@ void do_coredump(const siginfo_t *siginfo)
+>         bool need_nonrelative = false;
+>         bool core_dumped = false;
+>         static atomic_t core_dump_count = ATOMIC_INIT(0);
+> +       int sig = siginfo->si_signo;
+>         struct coredump_params cprm = {
+>                 .siginfo = siginfo,
+>                 .regs = signal_pt_regs(),
+> @@ -526,6 +527,15 @@ void do_coredump(const siginfo_t *siginfo)
+>
+>         audit_core_dumps(siginfo->si_signo);
+>
+> +       if (sig == SIGSEGV || sig == SIGBUS || sig == SIGKILL || sig == SIGILL) {
 
->>> wait_for_completion_timeout does not return negative values so the tests
->>> for <= 0 are not needed and the case differentiation in the error handling
->>> path unnecessary.
+I think we should add SIGSYS to this list.
 
->>     I decided to verify your statement and I saw that it seems wrong.
->> do_wait_for_common() can return -ERESTARTSYS and the return value gets
->> returned by its callers unchanged.
+> +               rcu_read_lock();
+> +               read_lock(&tasklist_lock);
+> +               if (current->real_parent && (current->flags & PF_FORKNOEXEC))
+> +                       current->real_parent->brute_expires = get_seconds() + (30 * 60);
+> +               read_unlock(&tasklist_lock);
+> +               rcu_read_unlock();
+> +       }
+> +
+>         binfmt = mm->binfmt;
+>         if (!binfmt || !binfmt->core_dump)
+>                 goto fail;
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 8db31ef..c616735 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1701,6 +1701,7 @@ struct task_struct {
+>  #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+>         unsigned long   task_state_change;
+>  #endif
+> +       unsigned long brute_expires;
+>  };
+>
+>  /* Future-safe accessor for struct task_struct's cpus_allowed. */
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 4dc2dda..178c80e 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -74,6 +74,7 @@
+>  #include <linux/uprobes.h>
+>  #include <linux/aio.h>
+>  #include <linux/compiler.h>
+> +#include <linux/delay.h>
+>
+>  #include <asm/pgtable.h>
+>  #include <asm/pgalloc.h>
+> @@ -352,6 +353,8 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+>         tsk->splice_pipe = NULL;
+>         tsk->task_frag.page = NULL;
+>
+> +       tsk->brute_expires = 0;
+> +
+>         account_kernel_stack(ti, 1);
+>
+>         return tsk;
+> @@ -1669,6 +1672,10 @@ long do_fork(unsigned long clone_flags,
+>                 if (clone_flags & CLONE_PARENT_SETTID)
+>                         put_user(nr, parent_tidptr);
+>
+> +               if (unlikely(current->brute_expires) && time_before(get_seconds(),
+> +                   current->brute_expires))
+> +                       msleep(30 * 1000);
+> +
+>                 if (clone_flags & CLONE_VFORK) {
+>                         p->vfork_done = &vfork;
+>                         init_completion(&vfork);
+> --
+> 2.1.0
+>
 
-> the -ERESTARTSYS only can be returned if state matches but
-> wait_for_completion_timemout passes TASK_UNINTERRUPTIBLE
-> so signal_pending_state will return 0 and never negativ
+Instead of open-coding the checks here, maybe it'd make sense to
+extract the "attach" and "check" logic into explicit functions that
+can be CONFIG stubbed out? This is how grsec handles it via their
+gr_handle_brute_* functions.
 
-> my understanding of the callchain is:
-> wait_for_completion_timemout with TASK_UNINTERRUPTIBLE
->    -> wait_for_common(...TASK_UNINTERRUPTIBLE)
->      -> __wait_for_common(...TASK_UNINTERRUPTIBLE)
->        -> do_wait_for_common(...TASK_UNINTERRUPTIBLE)
->          -> signal_pending_state(TASK_UNINTERRUPTIBLE...)
+Regardless, I'm for adding this feature to mainline. :)
 
-> static inline int signal_pending_state(long state, struct task_struct *p)
-> {
->          if (!(state & (TASK_INTERRUPTIBLE | TASK_WAKEKILL)))
->                  return 0;
+-Kees
 
-    Right. I didn't look into TASK_UNINTERRUPTIBLE thing before sending my mail.
-
-> so wait_for_completion_timemout should return 0 or 1 only
-
-    0 or the remaining time, to be precise.
-
->>> patch was only compile tested x86_64_defconfig + CONFIG_ATH_CARDS=m
->>> CONFIG_ATH10K=m
-
->>> patch is against linux-next 3.19.0-rc1 -next-20141226
-
->>     Rather patches. It would have been better to send one patch instead of
->> 4 patches with the same name.
-
-> sorry for that - I had split it into separate patches as it was
-> in different files - giving them the same name of course was a bit
-> brain-dead.
-
-    You should have mentioned the modified files in the subject. But IMHO it 
-would be better to have just one patch.
-
-> please do give it one more look - if the above argument is invalid
-> I apologize for the noise.
-
-    It's me who should apologize. :-<
-
-> thx!
-> hofrat
-
-WBR, Sergei
-
+-- 
+Kees Cook
+Chrome OS Security
