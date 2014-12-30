@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaL3Pml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 10:42:41 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59230 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaL3Pmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 10:42:39 -0500
-Date: Tue, 30 Dec 2014 16:36:54 +0100
-From: Sylvain BERTRAND <sylvain.bertrand@gmail.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] x86: tools: shell-ify calc_run_size perl-ism
-Message-ID: <20141230153654.GA5103@dhcppc1>
+	id S1751579AbaL3PsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 10:48:14 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44575 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880AbaL3PsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 10:48:13 -0500
+Date: Tue, 30 Dec 2014 16:48:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alexander Kuleshov <kuleshovmail@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86/boot/early_serial_console: Remove unnecessary
+ check
+Message-ID: <20141230154808.GA21238@nazgul.tnic>
+References: <1419946102-17175-1-git-send-email-kuleshovmail@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <1419946102-17175-1-git-send-email-kuleshovmail@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove perl script.
+On Tue, Dec 30, 2014 at 07:28:22PM +0600, Alexander Kuleshov wrote:
+> There is already the same check before.
+> 
+> Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+> ---
+>  arch/x86/boot/early_serial_console.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/boot/early_serial_console.c b/arch/x86/boot/early_serial_console.c
+> index 5df2869..62abcc8 100644
+> --- a/arch/x86/boot/early_serial_console.c
+> +++ b/arch/x86/boot/early_serial_console.c
+> @@ -74,8 +74,7 @@ static void parse_earlyprintk(void)
+>  			static const int bases[] = { 0x3f8, 0x2f8 };
+>  			int idx = 0;
+>  
+> -			if (!strncmp(arg + pos, "ttyS", 4))
+> -				pos += 4;
 
-Signed-off-by: Sylvain BERTRAND <sylvain.bertrand@gmail.com>
----
---- a/arch/x86/tools/calc_run_size.pl
-+++ b/arch/x86/tools/calc_run_size.pl
-@@ -1,39 +0,0 @@
--#!/usr/bin/perl
--#
--# Calculate the amount of space needed to run the kernel, including room for
--# the .bss and .brk sections.
--#
--# Usage:
--# objdump -h a.out | perl calc_run_size.pl
--use strict;
--
--my $mem_size = 0;
--my $file_offset = 0;
--
--my $sections=" *[0-9]+ \.(?:bss|brk) +";
--while (<>) {
--	if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
--		my $size = hex($1);
--		my $offset = hex($2);
--		$mem_size += $size;
--		if ($file_offset == 0) {
--			$file_offset = $offset;
--		} elsif ($file_offset != $offset) {
--			# BFD linker shows the same file offset in ELF.
--			# Gold linker shows them as consecutive.
--			next if ($file_offset + $mem_size == $offset + $size);
--
--			printf STDERR "file_offset: 0x%lx\n", $file_offset;
--			printf STDERR "mem_size: 0x%lx\n", $mem_size;
--			printf STDERR "offset: 0x%lx\n", $offset;
--			printf STDERR "size: 0x%lx\n", $size;
--
--			die ".bss and .brk are non-contiguous\n";
--		}
--	}
--}
--
--if ($file_offset == 0) {
--	die "Never found .bss or .brk file offset\n";
--}
--printf("%d\n", $mem_size + $file_offset);
+You might need a comment to explain the advancing of pos to people who
+look at this in the future, i.e. something like
+
+			/* += strlen("ttyS"); */
+			pos += 4;
+>  
+>  			if (arg[pos++] == '1')
+>  				idx = 1;
+
+-- 
+Regards/Gruss,
+    Boris.
+--
