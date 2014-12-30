@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaL3L3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 06:29:43 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55580 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaL3L3m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 06:29:42 -0500
-Date: Tue, 30 Dec 2014 11:29:38 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, lgirdwood@gmail.com, a_bouin@yahoo.fr,
-        timur@tabi.org, Xiubo.Lee@gmail.com, festevam@gmail.com
-Message-ID: <20141230112938.GN11764@sirena.org.uk>
-References: <1419898431-11336-1-git-send-email-nicoleotsuka@gmail.com>
+	id S1752140AbaL3Lg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 06:36:57 -0500
+Received: from mail-bn1on0142.outbound.protection.outlook.com ([157.56.110.142]:48544
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751636AbaL3Lg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 06:36:56 -0500
+X-Greylist: delayed 34435 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 06:36:56 EST
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "crmafra@gmail.com" <crmafra@gmail.com>
+CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andreas.noever@gmail.com" <andreas.noever@gmail.com>,
+        "crmafra2@gmail.com" <crmafra2@gmail.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>
+Subject: Re: Bisected regression from 3.17 still present in 3.19-rc1
+Thread-Topic: Bisected regression from 3.17 still present in 3.19-rc1
+Thread-Index: AQHQIs7zn+FVxla+ME6mkETDKfie05yn7D/ugAAX8gA=
+Date: Tue, 30 Dec 2014 11:36:53 +0000
+Message-ID: <1419939412.25226.2.camel@nebula.com>
+References: <20141228185409.GA2015@linux-g29b.site>
+	 <1419902900.25226.0.camel@nebula.com>
+	 <20141230101624.GA5339@linux-g29b.site>
+In-Reply-To: <20141230101624.GA5339@linux-g29b.site>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [88.128.80.30]
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=matthew.garrett@nebula.com; 
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB423;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB423;
+x-forefront-prvs: 04410E544A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(377424004)(24454002)(199003)(51704005)(31966008)(107046002)(2351001)(110136001)(120916001)(33646002)(66066001)(99286002)(106116001)(86362001)(2656002)(21056001)(122556002)(2950100001)(68736005)(105586002)(20776003)(106356001)(2900100001)(87936001)(1411001)(62966003)(77156002)(76176999)(4396001)(50986999)(46102003)(19580405001)(101416001)(54356999)(36756003)(103116003)(2501002)(97736003)(19580395003)(92566001)(40100003)(102836002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR05MB423;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <169249A6B2BFA1499B3A693AB05048AE@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D504LSv93hbJZH+j"
-Content-Disposition: inline
-In-Reply-To: <1419898431-11336-1-git-send-email-nicoleotsuka@gmail.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: fsl_esai: Fix incorrect xDC field width of xCCR
- registers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-OriginatorOrg: nebula.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 30 Dec 2014 11:36:53.0851
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: d9cc6df8-58db-46f5-bf3e-083732d8ac63
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR05MB423
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBUBbMo7020685
 
+On Tue, 2014-12-30 at 10:16 +0000, Carlos R. Mafra wrote:
+> On Tue, 30 Dec 2014 at  1:28:21 +0000, Matthew Garrett wrote:
+> > What is CONFIG_ACPI_SBS set to?
+> 
+> CONFIG_ACPI_SBS is not set
 
---D504LSv93hbJZH+j
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+There's your problem. The Darwin call results in the firmware exposing
+the battery via SBS, not as an ACPI control method battery. Enable
+CONFIG_ACPI_SBS and you should be good.
 
-On Mon, Dec 29, 2014 at 04:13:51PM -0800, Nicolin Chen wrote:
-> The xDC field should have 5 bit width according to Reference Manual.
-> Thus this patch fixes it.
-
-Applied, thanks - I also fixed the patch author up to be him.
-
---D504LSv93hbJZH+j
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUooyhAAoJECTWi3JdVIfQsscH/2tn78KxlqXHvPwBr5UzDLk+
-TQhZAiQNl57FMi65A/BbhqRNa8q+LBpwNnDHMi7rVOA8AMdsOQ4v9PxYaQZv3kb9
-nb5D5borblQZ2PUssBm3VB+veix+vH6r7gzBZJ+haYJICyN71ER2/pYcN9BWw856
-zqQQgEcEzC2g23vo/+c+1jpTHyHCfhfTiMi17dMJTsfmAXx9vG5vUY6bWye81naZ
-rG2jbiFv/3JoHyoVt6NsETa2MVTsvDRuEcAV0YFA4QLk2MMpoaEuuWyLRpAASWTF
-y0lwDMuD6i3uIRy2qWkjdGWfXUTvogldo3D+fDDt8jjzNRZhxNN7b8+doxhtcUQ=
-=kztK
------END PGP SIGNATURE-----
-
---D504LSv93hbJZH+j--
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
