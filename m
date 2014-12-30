@@ -1,143 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaL3JE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 04:04:26 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45280 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaL3JEW (ORCPT
+	id S1752083AbaL3JF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 04:05:56 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:37261 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756AbaL3JFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 04:04:22 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Tue, 30 Dec 2014 18:05:33 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mark Wielaard <mjw@redhat.com>
-Subject: Re: perf-probe crash in dwarf_getcfi_elf
-Message-ID: <20141230090533.GH6081@sejong>
-References: <54A22C76.9000403@gmail.com>
- <20141230084708.GG6081@sejong>
+	Tue, 30 Dec 2014 04:05:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141230084708.GG6081@sejong>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54A19C17.1020909@ti.com>
+References: <1419331716-8972-1-git-send-email-m.szyprowski@samsung.com>
+	<1419331716-8972-3-git-send-email-m.szyprowski@samsung.com>
+	<54A19C17.1020909@ti.com>
+Date: Tue, 30 Dec 2014 18:05:51 +0900
+Message-ID: <CA+Ln22G3kVA_-tsjAxbe2rqSHeLtdU2X_EhNL0uW3cUCgaWLgg@mail.gmail.com>
+Subject: Re: [PATCH v10 2/8] ARM: l2c: Refactor the driver to use commit-like interface
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, Daniel Drake <drake@endlessm.com>,
+        Jon Loeliger <loeliger@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kevin Hilman <khilman@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 05:47:08PM +0900, Namhyung Kim wrote:
-> On Mon, Dec 29, 2014 at 09:39:18PM -0700, David Ahern wrote:
-> > Hi Namhyung:
-> > 
-> > Using perf-probe from top of Linus' tree I get a segfault on both Fedora 16
-> > and 18 (does not crash on Fedora 20). Command used is:
-> > 
-> > perf probe -x /lib64/libc-2.14.90.so -a 'malloc  size=%di'
-> > 
-> > git bisect points to:
-> > 
-> > commit 03d89412981a7681971bc77edba1669595763030
-> > Author: Namhyung Kim <namhyung@kernel.org>
-> > Date:   Mon Apr 7 16:05:48 2014 +0900
-> > 
-> >     perf probe: Use dwarf_getcfi_elf() instead of dwarf_getcfi()
-> > 
-> 
-> It seems to be related to below commit in elfutils.  We might need to
-> check .eh_frame section has SHT_PROGBITS.  Will send a patch soon.
+Thanks a lot for investigating this, even before I could look into
+splitting this.
 
+2014-12-30 3:23 GMT+09:00 Nishanth Menon <nm@ti.com>:
+> On 12/23/2014 04:48 AM, Marek Szyprowski wrote:
+>
+>> -static void l2c310_resume(void)
+>> +static void l2c310_configure(void __iomem *base)
+>>  {
+>> -     void __iomem *base = l2x0_base;
+>> +     unsigned revision;
+>>
+>> -     if (!(readl_relaxed(base + L2X0_CTRL) & L2X0_CTRL_EN)) {
+>> -             unsigned revision;
+>> -
+>> -             /* restore pl310 setup */
+>> -             writel_relaxed(l2x0_saved_regs.tag_latency,
+>> -                            base + L310_TAG_LATENCY_CTRL);
+>> -             writel_relaxed(l2x0_saved_regs.data_latency,
+>> -                            base + L310_DATA_LATENCY_CTRL);
+>> -             writel_relaxed(l2x0_saved_regs.filter_end,
+>> -                            base + L310_ADDR_FILTER_END);
+>> -             writel_relaxed(l2x0_saved_regs.filter_start,
+>> -                            base + L310_ADDR_FILTER_START);
+>> -
+>> -             revision = readl_relaxed(base + L2X0_CACHE_ID) &
+>> -                             L2X0_CACHE_ID_RTL_MASK;
+>> -
+>> -             if (revision >= L310_CACHE_ID_RTL_R2P0)
+>> -                     l2c_write_sec(l2x0_saved_regs.prefetch_ctrl, base,
+>> -                                   L310_PREFETCH_CTRL);
+>> -             if (revision >= L310_CACHE_ID_RTL_R3P0)
+>> -                     l2c_write_sec(l2x0_saved_regs.pwr_ctrl, base,
+>> -                                   L310_POWER_CTRL);
+>> -
+>> -             l2c_enable(base, l2x0_saved_regs.aux_ctrl, 8);
+>> -
+>> -             /* Re-enable full-line-of-zeros for Cortex-A9 */
+>> -             if (l2x0_saved_regs.aux_ctrl & L310_AUX_CTRL_FULL_LINE_ZERO)
+>> -                     set_auxcr(get_auxcr() | BIT(3) | BIT(2) | BIT(1));
+>> -     }
+>> +     /* restore pl310 setup */
+>> +     writel_relaxed(l2x0_saved_regs.tag_latency,
+>> +                    base + L310_TAG_LATENCY_CTRL);
+>> +     writel_relaxed(l2x0_saved_regs.data_latency,
+>> +                    base + L310_DATA_LATENCY_CTRL);
+>> +     writel_relaxed(l2x0_saved_regs.filter_end,
+>> +                    base + L310_ADDR_FILTER_END);
+>> +     writel_relaxed(l2x0_saved_regs.filter_start,
+>> +                    base + L310_ADDR_FILTER_START);
+>> +
+>
+> ^^ The above change broke AM437xx. Looks like the change causes the
+> following behavior difference on AM437x. For some reason, touching any
+> of the above 4 registers(even with the values read from the same
+> registers) causes AM437x to go beserk. Comment the 4 writes and we
+> reach shell. looks like l2c310_resume is not invoked prior to this
+> series. :(.. now that we reuse that logic to actually do programming,
+> we start to see the problem.
 
->From f56964e74d60a9921214d0e2e5c3d082f5a910c1 Mon Sep 17 00:00:00 2001
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 30 Dec 2014 17:47:47 +0900
-Subject: [PATCH] perf probe: Fix a segfault on old libdw
+Hmm, but the thing is that .configure() should not be called if the
+controller is already configured, i.e. L2X0_CTRL_EN in L2X0_CTRL is
+set. Maybe I missed some check somewhere. Let me reread my code I
+wrote quite a long time ago and make sure.
 
-David reported that perf can segfault when adding an uprobe event like
-this:
+>
+> one option might be to write only those registers that differ from
+> saved_registers (example: unmodified values dont need reprogramming).
+>
+> Looks like the following also need addressing:
+> data->save is called twice (once more after l2cof_init)
+> l2c310_init_fns also needs l2c310_configure
+> will be nice to use l2x0_data only after we kmemdup data in __l2c_init
 
-  $ perf probe -x /lib64/libc-2.14.90.so -a 'malloc  size=%di'
+I'll check this.
 
-  (gdb) bt
-  #0  parse_eh_frame_hdr (hdr=0x0, hdr_size=2596, hdr_vaddr=71788,
-      ehdr=0x7fffffffd390, eh_frame_vaddr=
-      0x7fffffffd378, table_entries=0x8808d8, table_encoding=0x8808e0 "") at
-      dwarf_getcfi_elf.c:79
-  #1  0x000000385f81615a in getcfi_scn_eh_frame (hdr_vaddr=71788,
-      hdr_scn=0x8839b0, shdr=0x7fffffffd2f0, scn=<optimized out>,
-      ehdr=0x7fffffffd390, elf=0x882b30) at dwarf_getcfi_elf.c:231
-  #2  getcfi_shdr (ehdr=0x7fffffffd390, elf=0x882b30) at dwarf_getcfi_elf.c:283
-  #3  dwarf_getcfi_elf (elf=0x882b30) at dwarf_getcfi_elf.c:309
-  #4  0x00000000004d5bac in debuginfo__find_probes (pf=0x7fffffffd4f0,
-      dbg=Unhandled dwarf expression opcode 0xfa) at util/probe-finder.c:993
-  #5  0x00000000004d634a in debuginfo__find_trace_events (dbg=0x880840,
-      pev=<optimized out>, tevs=0x880f88, max_tevs=<optimized out>) at
-      util/probe-finder.c:1200
-  #6  0x00000000004aed6b in try_to_find_probe_trace_events (target=0x881b20
-      "/lib64/libpthread-2.14.90.so",
-      max_tevs=128, tevs=0x880f88, pev=0x859b30) at util/probe-event.c:482
-  #7  convert_to_probe_trace_events (target=0x881b20
-      "/lib64/libpthread-2.14.90.so", max_tevs=128, tevs=0x880f88,
-      pev=0x859b30) at util/probe-event.c:2356
-  #8  add_perf_probe_events (pevs=<optimized out>, npevs=1, max_tevs=128,
-      target=0x881b20 "/lib64/libpthread-2.14.90.so", force_add=false) at
-      util/probe-event.c:2391
-  #9  0x000000000044014f in __cmd_probe (argc=<optimized out>,
-      argv=0x7fffffffe2f0, prefix=Unhandled dwarf expression opcode 0xfa) at
-      at builtin-probe.c:488
-  #10 0x0000000000440313 in cmd_probe (argc=5, argv=0x7fffffffe2f0,
-      prefix=<optimized out>) at builtin-probe.c:506
-  #11 0x000000000041d133 in run_builtin (p=0x805680, argc=5,
-      argv=0x7fffffffe2f0) at perf.c:341
-  #12 0x000000000041c8b2 in handle_internal_command (argv=<optimized out>,
-      argc=<optimized out>) at perf.c:400
-  #13 run_argv (argv=<optimized out>, argcp=<optimized out>) at perf.c:444
-  #14 main (argc=5, argv=0x7fffffffe2f0) at perf.c:559
+>
+> if you'd like to split this up in pieces, [1] might be nice - will go
+> good to change the pl310, aurora etc in each chunks to enable better
+> review.
 
-And I found a related commit (5704c8c4fa71 "getcfi_scn_eh_frame: Don't
-crash and burn when .eh_frame bits aren't there.") in elfutils that
-can lead to a unexpected crash like this.  To safely use the function,
-it needs to check the .eh_frame section is a PROGBITS type.
+Thanks a lot, the split up version will be definitely useful. Just to
+make sure, the parts look quite bisectable, but have you verified that
+applying the changes one by one leave the L2 cache working on OMAP?
 
-Reported-by: David Ahern <dsahern@gmail.com>
-Cc: Mark Wielaard <mjw@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/probe-finder.c | 18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+>
+> [1]
+> https://github.com/nmenon/linux-2.6-playground/commits/temp/l2c-patch2-splitup
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index c7918f83b300..b5247d777f0e 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -989,8 +989,24 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
- 	int ret = 0;
- 
- #if _ELFUTILS_PREREQ(0, 142)
-+	Elf *elf;
-+	GElf_Ehdr ehdr;
-+	GElf_Shdr shdr;
-+
- 	/* Get the call frame information from this dwarf */
--	pf->cfi = dwarf_getcfi_elf(dwarf_getelf(dbg->dbg));
-+	elf = dwarf_getelf(dbg->dbg);
-+	if (elf == NULL)
-+		return -EINVAL;
-+
-+	if (gelf_getehdr(elf, &ehdr) == NULL)
-+		return -EINVAL;
-+
-+	if (elf_section_by_name(elf, &ehdr, &shdr, ".eh_frame", NULL) &&
-+	    shdr.sh_type == SHT_PROGBITS) {
-+		pf->cfi = dwarf_getcfi_elf(elf);
-+	} else {
-+		pf->cfi = dwarf_getcfi(dbg->dbg);
-+	}
- #endif
- 
- 	off = 0;
--- 
-2.1.3
-
+Best regards,
+Tomasz
