@@ -1,173 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaL3J5t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 04:57:49 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:40253 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756AbaL3J5r (ORCPT
+	id S1752138AbaL3KB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 05:01:26 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:59698 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751756AbaL3KBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 04:57:47 -0500
-Date: Tue, 30 Dec 2014 04:57:44 -0500
-From: Nicholas Parkanyi <n.parkanyi@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6655: Replace C99 comments in power.c and upc.h.
-Message-ID: <20141230095744.GA5619@nickChromebook.no-domain-set.bellcanada>
+	Tue, 30 Dec 2014 05:01:24 -0500
+From: Songjun Wu <songjun.wu@atmel.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nicolas.ferre@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: Songjun Wu <songjun.wu@atmel.com>
+Subject: [PATCH] USB: gadget: udc: atmel: fix possible oops when unloading module
+Date: Tue, 30 Dec 2014 17:49:27 +0800
+Message-ID: <1419932967-2694-1-git-send-email-songjun.wu@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl warnings:
+Executing the 'insmod g_hid.ko', then executing the
+'rmmod g_hid.ko', the NULL pointer oops will be triggered.
 
-ERROR: do not use C99 // comments
-+//
+When unloading the module 'g_hid.ko', the urb request will be
+dequeued and the completion routine will be excuted. If no urb
+packet, the urb request will not be added to the endpoint queue
+and the completion routine pointer in urb request is NULL.
+Accessing to the NULL function pointer will cause the oops issue.
+Add the code to check the urb request is in the endpoint queue
+or not.If the urb request is not in the endpoint queue, a negative
+error code will be returned.
 
-ERROR: do not use C99 // comments
-+//  For memory mapped IO
+This bug was introduced since the file 'atmel_usba_udc.c' was
+initialized. Fixes: 914a3f3b3754 (USB: add atmel_usba_udc driver)
+Cc: stable@vger.kernel.org # always been there...
 
-ERROR: do not use C99 // comments
-+//
+oops dump log is shown in the following.
+Unable to handle kernel NULL pointer dereference at virtual
+address 00000000
+pgd = dedf0000
+[00000000] *pgd=3ede5831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 80000007 [#1] ARM
+Modules linked in: g_hid(-) usb_f_hid libcomposite
 
-ERROR: do not use C99 // comments
-+#endif // __UPC_H__
-
-ERROR: do not use C99 // comments
-+	// set period of power up before TBTT
-
-ERROR: do not use C99 // comments
-+		// set AID
-
-ERROR: do not use C99 // comments
-+		// set ATIM Window
-
-ERROR: do not use C99 // comments
-+	// Set AutoSleep
-
-ERROR: do not use C99 // comments
-+	// Set HWUTSF
-
-ERROR: do not use C99 // comments
-+		// clear always listen beacon
-
-ERROR: do not use C99 // comments
-+		// first time set listen next beacon
-
-ERROR: do not use C99 // comments
-+		// always listen beacon
-
-ERROR: do not use C99 // comments
-+	// enable power saving hw function
-
-ERROR: do not use C99 // comments
-+	// disable power saving hw function
-
-ERROR: do not use C99 // comments
-+	//clear AutoSleep
-
-ERROR: do not use C99 // comments
-+	//clear HWUTSF
-
-ERROR: do not use C99 // comments
-+	// set always listen beacon
-
-Signed-off-by: Nicholas Parkanyi <n.parkanyi@gmail.com>
+Signed-off-by: Songjun Wu <songjun.wu@atmel.com>
 ---
- drivers/staging/vt6655/power.c | 26 +++++++++++++-------------
- drivers/staging/vt6655/upc.h   |  8 ++++----
- 2 files changed, 17 insertions(+), 17 deletions(-)
+ drivers/usb/gadget/udc/atmel_usba_udc.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/vt6655/power.c b/drivers/staging/vt6655/power.c
-index e826f07..be3c4e9 100644
---- a/drivers/staging/vt6655/power.c
-+++ b/drivers/staging/vt6655/power.c
-@@ -71,33 +71,33 @@ PSvEnablePowerSaving(
- 	struct vnt_private *pDevice = hDeviceContext;
- 	u16 wAID = pDevice->current_aid | BIT(14) | BIT(15);
- 
--	// set period of power up before TBTT
-+	/* set period of power up before TBTT */
- 	VNSvOutPortW(pDevice->PortOffset + MAC_REG_PWBT, C_PWBT);
- 	if (pDevice->op_mode != NL80211_IFTYPE_ADHOC) {
--		// set AID
-+		/* set AID */
- 		VNSvOutPortW(pDevice->PortOffset + MAC_REG_AIDATIM, wAID);
- 	} else {
--		// set ATIM Window
-+		/* set ATIM Window */
- #if 0 /* TODO atim window */
- 		MACvWriteATIMW(pDevice->PortOffset, pMgmt->wCurrATIMWindow);
- #endif
- 	}
--	// Set AutoSleep
-+	/* Set AutoSleep */
- 	MACvRegBitsOn(pDevice->PortOffset, MAC_REG_PSCFG, PSCFG_AUTOSLEEP);
--	// Set HWUTSF
-+	/* Set HWUTSF */
- 	MACvRegBitsOn(pDevice->PortOffset, MAC_REG_TFTCTL, TFTCTL_HWUTSF);
- 
- 	if (wListenInterval >= 2) {
--		// clear always listen beacon
-+		/* clear always listen beacon */
- 		MACvRegBitsOff(pDevice->PortOffset, MAC_REG_PSCTL, PSCTL_ALBCN);
--		// first time set listen next beacon
-+		/* first time set listen next beacon */
- 		MACvRegBitsOn(pDevice->PortOffset, MAC_REG_PSCTL, PSCTL_LNBCN);
- 	} else {
--		// always listen beacon
-+		/* always listen beacon */
- 		MACvRegBitsOn(pDevice->PortOffset, MAC_REG_PSCTL, PSCTL_ALBCN);
- 	}
- 
--	// enable power saving hw function
-+	/* enable power saving hw function */
- 	MACvRegBitsOn(pDevice->PortOffset, MAC_REG_PSCTL, PSCTL_PSEN);
- 	pDevice->bEnablePSMode = true;
- 
-@@ -122,13 +122,13 @@ PSvDisablePowerSaving(
+diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
+index ce88237..48629cc 100644
+--- a/drivers/usb/gadget/udc/atmel_usba_udc.c
++++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
+@@ -828,7 +828,7 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
  {
- 	struct vnt_private *pDevice = hDeviceContext;
+ 	struct usba_ep *ep = to_usba_ep(_ep);
+ 	struct usba_udc *udc = ep->udc;
+-	struct usba_request *req = to_usba_req(_req);
++	struct usba_request *req;
+ 	unsigned long flags;
+ 	u32 status;
  
--	// disable power saving hw function
-+	/* disable power saving hw function */
- 	MACbPSWakeup(pDevice->PortOffset);
--	//clear AutoSleep
-+	/* clear AutoSleep */
- 	MACvRegBitsOff(pDevice->PortOffset, MAC_REG_PSCFG, PSCFG_AUTOSLEEP);
--	//clear HWUTSF
-+	/* clear HWUTSF */
- 	MACvRegBitsOff(pDevice->PortOffset, MAC_REG_TFTCTL, TFTCTL_HWUTSF);
--	// set always listen beacon
-+	/* set always listen beacon */
- 	MACvRegBitsOn(pDevice->PortOffset, MAC_REG_PSCTL, PSCTL_ALBCN);
+@@ -837,6 +837,16 @@ static int usba_ep_dequeue(struct usb_ep *_ep, struct usb_request *_req)
  
- 	pDevice->bEnablePSMode = false;
-diff --git a/drivers/staging/vt6655/upc.h b/drivers/staging/vt6655/upc.h
-index c53703a..cc63dc8 100644
---- a/drivers/staging/vt6655/upc.h
-+++ b/drivers/staging/vt6655/upc.h
-@@ -33,9 +33,9 @@
+ 	spin_lock_irqsave(&udc->lock, flags);
  
- /*---------------------  Export Definitions -------------------------*/
- 
--//
--//  For memory mapped IO
--//
++	list_for_each_entry(req, &ep->queue, queue) {
++		if (&req->req == _req)
++			break;
++	}
 +
-+/* For memory mapped IO */
++	if (&req->req != _req) {
++		spin_unlock_irqrestore(&udc->lock, flags);
++		return -EINVAL;
++	}
 +
- 
- #define VNSvInPortB(dwIOAddress, pbyData)				\
- do {									\
-@@ -86,4 +86,4 @@ do {								\
- 
- /*---------------------  Export Functions  --------------------------*/
- 
--#endif // __UPC_H__
-+#endif /* __UPC_H__ */
+ 	if (req->using_dma) {
+ 		/*
+ 		 * If this request is currently being transferred,
 -- 
-1.9.3
+1.7.9.5
 
