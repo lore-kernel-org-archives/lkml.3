@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaL3Wp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 17:45:26 -0500
-Received: from smtpclu-3.eunet.rs ([194.247.192.228]:60915 "EHLO eunet.rs"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751425AbaL3WpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 17:45:24 -0500
-X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 17:45:24 EST
-Message-ID: <1419978894.54a3288ea7ec8@webmail.eunet.rs>
-Date: Tue, 30 Dec 2014 23:34:54 +0100
-From: Neil Trotter <smiljanam@EUnet.rs>
-Reply-to: nieltrotterdonations@outlook.com
-Subject: Cash Donation For You
+	id S1752169AbaL3Wpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 17:45:40 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:37273 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350AbaL3Wpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 17:45:39 -0500
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 17:45:38 EST
+Message-ID: <54A329C1.9030704@gmail.com>
+Date: Tue, 30 Dec 2014 23:40:01 +0100
+From: Piotr Karbowski <piotr.karbowski@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) 3.2.2
-X-Originating-IP: 41.203.64.133
-X-EUNET-AVAS-Milter-Version: 2.0.0
-X-AVAS-Virus-Status: clean
-X-AVAS-Spamd-Symbols: BAYES_50,DCC_CHECK,MISSING_HEADERS,RCVD_IN_SBL,RCVD_IN_SORBS_HTTP,RCVD_IN_SORBS_WEB,UNPARSEABLE_RELAY
-X-AVAS-Spam-Score: 5.6
-X-AVAS-Spam-Level: xxxxxxxxxxx
-To: unlisted-recipients:; (no To-header on input)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] rename() from outside of the target dir breaks /proc exe
+ symlink.
+References: <549EEEEA.1050306@gmail.com> <20141227181412.GG22149@ZenIV.linux.org.uk>
+In-Reply-To: <20141227181412.GG22149@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Al,
 
+On 12/27/2014 07:14 PM, Al Viro wrote:
+> That's because it never _had_ worked.  Note that opening the damn thing
+> will give the right file - it does not work by traversing the result of
+> readlink(2).  readlink(2) output on those is not promised to be useful
+> in all cases; often enough it is, but it won't work on cross-directory
+> renames, it can't be used to tell a filename that really ends with " (deleted)"
+> from a removed file, etc.  Moreover, it only very recently became usable for
+> victim names with the last component longer than 40 characters if you did an
+> overwriting rename.
+>
+> What are you trying to use it for?
 
-Hello friend!
+I am using it to track the origin of running processes. I am working 
+with continuous integration of a Linux embedded software. The tests goes 
+in Linux containers, multiple instances of binary with the same name in 
+a single container/namespace, all with cwd symlink pointing to / which 
+looks from outside virtually the same, the binaries are modified at 
+runtime by coping, modifing and replacing for another execution of the 
+same binary (using patchelf to add additional NEEDED to header or change 
+rpath or dynamic loader and such).
 
-my name is Neil Trotter, I'm from South London UK. In the month of March 2014
-I won £108m in the Euro Million Lottery after which i had to set up a charity
-project in other to spread this great fortune. Willingly am donating £1m each
-to five unknown individuals in my ongoing charity scheme. If you have received
-this mail then your are one of my lucky winners. Get back to me with your
-name,address and phone number for more details on how you can receive your
-donation.
+In my very usecase, the exe symlink is essential.
 
-See article of my winning below:
-http://www.bbc.com/news/uk-england-london-26627075
-
-Sincerely,
-Neil Trotter Donation Scheme.
-
-
+-- Piotr.
