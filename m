@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaL3WkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 17:40:20 -0500
-Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:46974 "EHLO
-	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751350AbaL3WkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 17:40:19 -0500
-X-Sender-Id: abbotti@mev.co.uk
-Message-ID: <54A329CB.9090808@mev.co.uk>
-Date: Tue, 30 Dec 2014 22:40:11 +0000
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1751968AbaL3Wmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 17:42:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54074 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748AbaL3Wmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 17:42:51 -0500
+Date: Tue, 30 Dec 2014 23:42:48 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+cc: Borislav Petkov <bp@alien8.de>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "egrumbach@gmail.com" <egrumbach@gmail.com>,
+        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>
+Subject: Re: iwlwifi-driver card doesn't work with 3.19-rc2+
+In-Reply-To: <54A328C2.5080606@lwfinger.net>
+Message-ID: <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz>
+References: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz> <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com> <54A2B807.1020202@hurleysoftware.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DC915@hasmsx107.ger.corp.intel.com>
+ <alpine.LNX.2.00.1412301610320.31609@pobox.suse.cz> <1419971304.30412.0.camel@egrumbacBox> <alpine.LNX.2.00.1412302135520.31609@pobox.suse.cz> <20141230212326.GA29263@pd.tnic> <54A328C2.5080606@lwfinger.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andreas Siegling <andreas.siegling@fau.de>, devel@linuxdriverproject.org
-CC: linux-kernel@i4.cs.fau.de, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, ebru.akagunduz@gmail.com,
-        chase.southwood@gmail.com, rickard_strandqvist@spectrumdigital.se,
-        Zhutao Lu <lvzhutao@gmail.com>
-Subject: Re: [PATCH 1/3] comedi: checkpatch error: tabs instead of spaces
-References: <1419792975-31519-1-git-send-email-andreas.siegling@fau.de> <1419792975-31519-2-git-send-email-andreas.siegling@fau.de>
-In-Reply-To: <1419792975-31519-2-git-send-email-andreas.siegling@fau.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/12/14 18:56, Andreas Siegling wrote:
-> This patch fixes all occurrences of 8 whitespaces instead of a tab.
-> It will remove the 8 whitespaces and replace them with a tab, thereby
-> the checkpatch-error:
-> 		ERROR: code indent should use tabs where possible
-> is removed from all files in drivers/staging/comedi/
-> It also brings some consistency of indentation in the comments.
->
-> Signed-off-by: Andreas Siegling <andreas.siegling@fau.de>
-> Signed-off-by: Zhutao Lu <lvzhutao@gmail.com>
-> ---
->   drivers/staging/comedi/drivers/daqboard2000.c | 62 +++++++++++++--------------
->   drivers/staging/comedi/drivers/das16m1.c      |  4 +-
->   drivers/staging/comedi/drivers/dmm32at.c      |  2 +-
->   drivers/staging/comedi/drivers/pcl818.c       | 36 ++++++++--------
->   4 files changed, 52 insertions(+), 52 deletions(-)
+On Tue, 30 Dec 2014, Larry Finger wrote:
 
-Most of these aren't worth doing as they only affect multi-line comments 
-that should be reformatted to the usual block comment style anyway.
+> > > If wireless maintainers think otherwise, I'll send a revert request to
+> > > Linus for consideration.
+> > 
+> > I wonder if the reaction would be like this one:
+> > 
+> > https://lkml.org/lkml/2012/12/23/75
+> > 
+> > :-)
+> 
+> It would be a little like that.
+> 
+> One thread of interest is https://lkml.org/lkml/2014/12/22/348. Commit
+> 24a0aa212ee2 ("cfg80211: make WEXT compatibility unselectable") made it
+> impossible to select the IPW2200. The patch to allow selecting the IPW2200,
+> which automatically selects CFG80211_WEXT has been added to wireless-drivers,
+> but it has not yet made it to mainline. Once it does, then choosing to build
+> the IPW2200 will provide a workaround.
+> 
+> In my opinion, the need for the IPW2200 to have CFG80211_WEXT means that the
+> original commit will likely be reverted, but your voice will help.
 
-
-> diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
-> index 6df298a..31919b8 100644
-> --- a/drivers/staging/comedi/drivers/dmm32at.c
-> +++ b/drivers/staging/comedi/drivers/dmm32at.c
-> @@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
->   	/* enable the ai conversion interrupt and the clock to start scans */
->   	outb(DMM32AT_INTCLK_ADINT |
->   	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
-> -             dev->iobase + DMM32AT_INTCLK_REG);
-> +	     dev->iobase + DMM32AT_INTCLK_REG);
->   }
->
-
-That bit of the patch is fine, but has already been tackled in a patch 
-by David Decotigny.
+Ok, thanks a lot for another datapoint. I am sending revert patch to Linus 
+tonight.
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
--=(                          Web: http://www.mev.co.uk/  )=-
+Jiri Kosina
+SUSE Labs
