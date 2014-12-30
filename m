@@ -1,31 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555AbaL3SNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 13:13:07 -0500
-Received: from smtp.2z.net ([209.23.134.46]:34827 "EHLO smtp.2z.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751340AbaL3SNB convert rfc822-to-8bit (ORCPT
+	id S1751576AbaL3STN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 13:19:13 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:48933 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbaL3STL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 13:13:01 -0500
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-To: Recipients <info@sk.net>
-From: "SK" <info@sk.net>
-Date: Tue, 30 Dec 2014 20:18:45 +0400
-Reply-To: sermonkwan121@sina.com
-X-WatchGuard-Spam-ID: str=0001.0A020201.54A2D0A1.0054,ss=4,sh,re=0.000,fgs=12
-X-WatchGuard-Spam-Score: 4, spam; 0, no virus
-X-WatchGuard-Mail-Client-IP: 93.158.192.26
-X-WatchGuard-Mail-From: info@sk.net
-Subject: *****SPAM***** RE
-X-WatchGuard-AntiVirus: part scanned. clean action=allow
-Message-Id: <20141230161852.9DC7C7297A@smtp.2z.net>
+	Tue, 30 Dec 2014 13:19:11 -0500
+From: Alexander Kuleshov <kuleshovmail@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Alexander Kuleshov <kuleshovmail@gmail.com>
+Subject: [PATCH v3] x86/boot/early_serial_console: Remove unnecessary check
+Date: Wed, 31 Dec 2014 00:18:58 +0600
+Message-Id: <1419963538-19275-1-git-send-email-kuleshovmail@gmail.com>
+X-Mailer: git-send-email 2.2.1.202.g44ae4ee.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to request your assistance to execute a lucrative project in Asia. Kindly respond.
+There is already the same check before.
 
-Sk
+Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+---
+ arch/x86/boot/early_serial_console.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/boot/early_serial_console.c b/arch/x86/boot/early_serial_console.c
+index 5df2869..c23bcae 100644
+--- a/arch/x86/boot/early_serial_console.c
++++ b/arch/x86/boot/early_serial_console.c
+@@ -73,9 +73,8 @@ static void parse_earlyprintk(void)
+ 		} else if (!strncmp(arg + pos, "ttyS", 4)) {
+ 			static const int bases[] = { 0x3f8, 0x2f8 };
+ 			int idx = 0;
+-
+-			if (!strncmp(arg + pos, "ttyS", 4))
+-				pos += 4;
++			/* += strlen("ttyS"); */
++			pos += 4;
+ 
+ 			if (arg[pos++] == '1')
+ 				idx = 1;
+-- 
+2.2.1.202.g44ae4ee.dirty
+
