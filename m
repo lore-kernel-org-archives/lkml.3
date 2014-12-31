@@ -1,63 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaLaORE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 09:17:04 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:43358 "EHLO mail.wdtv.com"
+	id S1751688AbaLaOST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 09:18:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53188 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237AbaLaORC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 09:17:02 -0500
-From: Gene Heskett <gheskett@wdtv.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: apparent loss of continuity in kernel .config?
-Date: Wed, 31 Dec 2014 09:16:57 -0500
+	id S1751445AbaLaOSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 09:18:18 -0500
+Date: Wed, 31 Dec 2014 15:17:44 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 16/37] perf tools: Add a test case for timed thread
+ handling
+Message-ID: <20141231141744.GE1256@krava.brq.redhat.com>
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
+ <1419405333-27952-17-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412310916.57808.gheskett@wdtv.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419405333-27952-17-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings;
+On Wed, Dec 24, 2014 at 04:15:12PM +0900, Namhyung Kim wrote:
 
-Usually, when I build a new kernel, just placing a copy of an older 
-versions .config in the unpacked src directory is sufficient that only 
-what has been changed has to be answered during a make oldconfig, perhaps 
-a couple dozen new features need to be answered yes or no, and I have a 
-.config that will usually build me a bootable kernel.  Not any more.
+SNIP
 
-Since my 3.16.0 has been suffering from stalls of up to 2 or 3 minutes 
-while both htop and gkrellm continue to report that there is nothing 
-hogging the machine, in a general description that matches the Dave Jone 
-saga, but w/o the log spew, probably because I don't have extreme 
-debugging enabled.
+>  		.func = NULL,
+>  	},
+>  };
+> diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+> index 43ac17780629..1090337f63e5 100644
+> --- a/tools/perf/tests/tests.h
+> +++ b/tools/perf/tests/tests.h
+> @@ -52,6 +52,7 @@ int test__switch_tracking(void);
+>  int test__fdarray__filter(void);
+>  int test__fdarray__add(void);
+>  int test__thread_comm(void);
+> +int test__thread_lookup_time(void);
+>  
+>  #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
+>  #ifdef HAVE_DWARF_UNWIND_SUPPORT
+> diff --git a/tools/perf/tests/thread-lookup-time.c b/tools/perf/tests/thread-lookup-time.c
+> new file mode 100644
+> index 000000000000..6237ecf8caae
+> --- /dev/null
+> +++ b/tools/perf/tests/thread-lookup-time.c
+> @@ -0,0 +1,174 @@
+> +#include "tests.h"
+> +#include "machine.h"
+> +#include "thread.h"
+> +#include "map.h"
+> +#include "debug.h"
+> +
+> +static int thread__print_cb(struct thread *th, void *arg __maybe_unused)
+> +{
+> +	printf("thread: %d, start time: %"PRIu64" %s\n",
+> +	       th->tid, th->start_time, th->dead ? "(dead)" : "");
+> +	return 0;
+> +}
+> +
+> +static int lookup_with_timestamp(struct machine *machine)
+> +{
+> +	struct thread *t1, *t2, *t3;
+> +	union perf_event fork = {
+> +		.fork = {
+> +			.pid = 0,
+> +			.tid = 0,
+> +			.ppid = 1,
+> +			.ptid = 1,
+> +		},
 
-But its strange in how it manifests itself as it will do it from a fresh 
-boot, and I get aggravated and reboot, and it doesn't do it till the next 
-reboot which may be a month later.  Almost an alternate boot phenomenon.
- 
-Attempting to go from 3.16.0 to 3.16.7 last night, a make oldconfig 
-started from scratch as if there were no .config's in the directory.  I 
-stood on the enter key to take the defaults, then ran a make xconfig to 
-discover it was totally wrong for an AMD phenom, no networking, no disc 
-drivers, video was an old ATI, when there is an nvidia card in it, yadda, 
-yadda.
+I've got following output from the test:
 
-I went thru this exercise 4 times, as I keep a gzipped copy on the config 
-that built the kernel version in the boot directory with my build script.
-And every time it was the same story.
+test child forked, pid 18483
+========= after t1 created ==========
+thread: 0, start time: 0 
+========= after t1 set comm ==========
+thread: 0, start time: 20000 
+========= after t2 forked ==========
+thread: 0, start time: 50000 
+thread: 1, start time: 0 
+thread: 0, start time: 10000 
+thread: 0, start time: 20000 (dead)
+========= after t3 forked ==========
+thread: 0, start time: 60000 
+thread: 1, start time: 0 
+thread: 0, start time: 10000 
+thread: 0, start time: 50000 (dead)
+thread: 0, start time: 20000 (dead)
+test child finished with 0
 
-Obviously I can't, at 80 yo, remember every item in a 28k .config file 
-from build to build, so what am I doing wrong that is destroying this 
-continuity?
+'after t2 forked' data shows 'thread 0 with time 50000' and
+newly added parent 'thread: 1, start time: 0'
 
-Thanks everybody.
+this makes me wonder if you wanted switch 0 and 1 for pid and ppid
+in above sample init and follow with forked pid 1 ... but not sure
+because you're using the same sample for fork 3 ;-)
 
-Cheers, Gene Heskett
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Genes Web page <http://geneslinuxbox.net:6309/gene>
-US V Castleman, SCOTUS, Mar 2014 is grounds for Impeaching SCOTUS
+my question is if that was intentional, because I've got
+confused in here
+
+> +	};
+> +	struct perf_sample sample = {
+> +		.time = 50000,
+> +	};
+> +
+> +	/* start_time is set to 0 */
+> +	t1 = machine__findnew_thread(machine, 0, 0);
+> +
+> +	if (verbose > 1) {
+> +		printf("========= after t1 created ==========\n");
+> +		machine__for_each_thread(machine, thread__print_cb, NULL);
+> +	}
+> +
+> +	TEST_ASSERT_VAL("wrong start time of old thread", t1->start_time == 0);
+> +
+> +	TEST_ASSERT_VAL("cannot find current thread",
+> +			machine__find_thread(machine, 0, 0) == t1);
+> +
+> +	TEST_ASSERT_VAL("cannot find current thread with time",
+> +			machine__findnew_thread_time(machine, 0, 0, 10000) == t1);
+> +
+> +	/* start_time is overwritten to new value */
+> +	thread__set_comm(t1, "/usr/bin/perf", 20000);
+> +
+> +	if (verbose > 1) {
+> +		printf("========= after t1 set comm ==========\n");
+> +		machine__for_each_thread(machine, thread__print_cb, NULL);
+> +	}
+> +
+> +	TEST_ASSERT_VAL("failed to update start time", t1->start_time == 20000);
+> +
+> +	TEST_ASSERT_VAL("should not find passed thread",
+> +			/* this will create yet another dead thread */
+> +			machine__findnew_thread_time(machine, 0, 0, 10000) != t1);
+
+also this comment say that calling machine__findnew_thread_time will
+create another dead thread, which actually did not happened based on
+above test output
+
+thanks,
+jirka
