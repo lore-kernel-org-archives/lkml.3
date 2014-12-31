@@ -1,181 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364AbaLaBVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 20:21:24 -0500
-Received: from smtp1.cypress.com ([157.95.67.100]:60387 "EHLO
-	smtp1.cypress.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaLaBR5 (ORCPT
+	id S1752410AbaLaBWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 20:22:22 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39033 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaLaBWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 20:17:57 -0500
-From: Dudley Du <dudl@cypress.com>
-To: dmitry.torokhov@gmail.com, jmmahler@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v17 03/12] input: cyapa: add power management interfaces support for the device
-Date: Wed, 31 Dec 2014 09:16:52 +0800
-Message-Id: <1419988621-2919-4-git-send-email-dudl@cypress.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1419988621-2919-1-git-send-email-dudl@cypress.com>
-References: <1419988621-2919-1-git-send-email-dudl@cypress.com>
+	Tue, 30 Dec 2014 20:22:20 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kbuild@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 00/19] lib: Some #include cleanups
+Date: Wed, 31 Dec 2014 02:21:35 +0100
+Message-Id: <1419988915-20730-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add suspend_scanrate_ms power management interfaces in device's
-power group, so users or applications can control the power management
-strategy of trackpad device as their requirements.
-TEST=test on Chromebooks.
+I'm contemplating doing some tree-wide spring cleaning, mostly
+consisting of removing redundant includes, but also refactoring some
+large and heterogeneous headers into smaller pieces.
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
----
- drivers/input/mouse/cyapa.c | 127 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 127 insertions(+)
+This patch series consists of low-hanging fruit I picked from
+lib/. I've verified that "objdump -d lib/builtin.o" produces identical
+output for {allyes,allno,def}config, but this is of course only for
+x86_64. There's a small but measurable build time improvement: A
+defconfig build of lib/ from a clean tree is consistently .5 seconds
+(2 %) faster with these patches. There are lots of other apparently
+unused headers in lib/*.c, but I've only removed those where it
+actually ends up disappearing from the .cmd dependency file (since
+that's where the potential build gain lies, and helps prove that the
+header is indeed redundant).
 
-diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index 725c84a..46d3830 100644
---- a/drivers/input/mouse/cyapa.c
-+++ b/drivers/input/mouse/cyapa.c
-@@ -604,6 +604,127 @@ out:
- 	return IRQ_HANDLED;
- }
- 
-+/*
-+ **************************************************************
-+ * sysfs interface
-+ **************************************************************
-+*/
-+#ifdef CONFIG_PM_SLEEP
-+static ssize_t cyapa_show_suspend_scanrate(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u8 pwr_cmd = cyapa->suspend_power_mode;
-+	u16 sleep_time;
-+	int len;
-+	int error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+	pwr_cmd = cyapa->suspend_power_mode;
-+	sleep_time = cyapa->suspend_sleep_time;
-+	mutex_unlock(&cyapa->state_sync_lock);
-+
-+	if (pwr_cmd == PWR_MODE_BTN_ONLY) {
-+		len = scnprintf(buf, PAGE_SIZE, "%s\n", BTN_ONLY_MODE_NAME);
-+	} else if (pwr_cmd == PWR_MODE_OFF) {
-+		len = scnprintf(buf, PAGE_SIZE, "%s\n", OFF_MODE_NAME);
-+	} else {
-+		if (cyapa->gen == CYAPA_GEN3)
-+			sleep_time = cyapa_pwr_cmd_to_sleep_time(pwr_cmd);
-+		len = scnprintf(buf, PAGE_SIZE, "%u\n", sleep_time);
-+	}
-+
-+	return len;
-+}
-+
-+static ssize_t cyapa_update_suspend_scanrate(struct device *dev,
-+					     struct device_attribute *attr,
-+					     const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u16 sleep_time;
-+	int error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+
-+	if (sysfs_streq(buf, BTN_ONLY_MODE_NAME)) {
-+		cyapa->suspend_power_mode = PWR_MODE_BTN_ONLY;
-+	} else if (sysfs_streq(buf, OFF_MODE_NAME)) {
-+		cyapa->suspend_power_mode = PWR_MODE_OFF;
-+	} else if (!kstrtou16(buf, 10, &sleep_time)) {
-+		cyapa->suspend_sleep_time = max_t(u16, sleep_time, 1000);
-+		cyapa->suspend_power_mode =
-+			cyapa_sleep_time_to_pwr_cmd(cyapa->suspend_sleep_time);
-+	} else {
-+		count = 0;
-+	}
-+
-+	mutex_unlock(&cyapa->state_sync_lock);
-+
-+	return count ? count : -EINVAL;
-+}
-+
-+static DEVICE_ATTR(suspend_scanrate_ms, S_IRUGO|S_IWUSR,
-+		   cyapa_show_suspend_scanrate,
-+		   cyapa_update_suspend_scanrate);
-+
-+static struct attribute *cyapa_power_wakeup_entries[] = {
-+	&dev_attr_suspend_scanrate_ms.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group cyapa_power_wakeup_group = {
-+	.name = power_group_name,
-+	.attrs = cyapa_power_wakeup_entries,
-+};
-+
-+static void cyapa_remove_power_wakeup_group(void *data)
-+{
-+	struct cyapa *cyapa = data;
-+
-+	sysfs_unmerge_group(&cyapa->client->dev.kobj,
-+				&cyapa_power_wakeup_group);
-+}
-+
-+static int cyapa_prepare_wakeup_controls(struct cyapa *cyapa)
-+{
-+	struct i2c_client *client = cyapa->client;
-+	struct device *dev = &client->dev;
-+	int error;
-+
-+	if (device_can_wakeup(dev)) {
-+		error = sysfs_merge_group(&client->dev.kobj,
-+					&cyapa_power_wakeup_group);
-+		if (error) {
-+			dev_err(dev, "failed to add power wakeup group: %d\n",
-+				error);
-+			return error;
-+		}
-+
-+		error = devm_add_action(dev,
-+				cyapa_remove_power_wakeup_group, cyapa);
-+		if (error) {
-+			cyapa_remove_power_wakeup_group(cyapa);
-+			dev_err(dev, "failed to add power cleanup action: %d\n",
-+				error);
-+			return error;
-+		}
-+	}
-+
-+	return 0;
-+}
-+#else
-+static inline int cyapa_prepare_wakeup_controls(struct cyapa *cyapa)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
- static int cyapa_probe(struct i2c_client *client,
- 		       const struct i2c_device_id *dev_id)
- {
-@@ -643,6 +764,12 @@ static int cyapa_probe(struct i2c_client *client,
- 		return error;
- 	}
- 
-+	error = cyapa_prepare_wakeup_controls(cyapa);
-+	if (error) {
-+		dev_err(dev, "failed to prepare wakeup controls: %d\n", error);
-+		return error;
-+	}
-+
- 	error = devm_request_threaded_irq(dev, client->irq,
- 					  NULL, cyapa_irq,
- 					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+I expect there is much larger speedups to gain from removing includes
+from .h files, but that is of course at the same time a huge can of
+worms, involving boatloads of tree-wide patches updating users to
+include what they use directly. So before I start doing that, I'd like
+to hear if people think it would be futile.
+
+Rasmus Villemoes (19):
+  lib/interval_tree.c: Simplify includes
+  lib/sort.c: Use simpler includes
+  lib/dynamic_queue_limits.c: Simplify includes
+  lib/halfmd4.c: Simplify includes
+  lib/idr.c: Remove redundant include
+  lib/genalloc.c: Remove redundant include
+  lib/list_sort.c: Rearrange includes
+  lib/md5.c: Simplify include
+  lib/llist.c: Remove redundant include
+  lib/kobject_uevent.c: Remove redundant include
+  lib/nlattr.c: Remove redundant include
+  lib/plist.c: Remove redundant include
+  lib/radix-tree.c: Change to simpler include
+  lib/show_mem.c: Remove redundant include
+  lib/sort.c: Move include inside #if 0
+  lib/stmp_device.c: Replace module.h include
+  lib/strncpy_from_user.c: Replace module.h include
+  lib/percpu_ida.c: Remove redundant includes
+  lib/lcm.c: Replace include
+
+ include/linux/cryptohash.h | 2 ++
+ lib/dynamic_queue_limits.c | 4 ++--
+ lib/genalloc.c             | 1 -
+ lib/halfmd4.c              | 2 +-
+ lib/idr.c                  | 1 -
+ lib/interval_tree.c        | 4 ++--
+ lib/kobject_uevent.c       | 1 -
+ lib/lcm.c                  | 2 +-
+ lib/list_sort.c            | 7 +++++--
+ lib/llist.c                | 1 -
+ lib/md5.c                  | 2 +-
+ lib/nlattr.c               | 1 -
+ lib/percpu_ida.c           | 3 ---
+ lib/plist.c                | 1 -
+ lib/radix-tree.c           | 2 +-
+ lib/show_mem.c             | 1 -
+ lib/sort.c                 | 6 +++---
+ lib/stmp_device.c          | 3 ++-
+ lib/strncpy_from_user.c    | 3 ++-
+ 19 files changed, 22 insertions(+), 25 deletions(-)
+
 -- 
-1.9.1
+2.1.3
 
