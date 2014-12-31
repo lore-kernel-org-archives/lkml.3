@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217AbaLaIYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 03:24:09 -0500
-Received: from mail-bn1on0146.outbound.protection.outlook.com ([157.56.110.146]:63756
+	id S1751771AbaLaITs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 03:19:48 -0500
+Received: from mail-bn1on0139.outbound.protection.outlook.com ([157.56.110.139]:32156
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751842AbaLaIUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 03:20:00 -0500
+	id S1751726AbaLaITp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 03:19:45 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,47 +15,44 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v8 09/21] ARM: dts: imx6qdl: Move existing MIPI DSI ports into a new 'ports' node
-Date: Wed, 31 Dec 2014 16:23:27 +0800
-Message-ID: <1420014219-915-10-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v8 05/21] ARM: imx6q: clk: Add the video_27m clock
+Date: Wed, 31 Dec 2014 16:23:23 +0800
+Message-ID: <1420014219-915-6-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420014219-915-1-git-send-email-Ying.Liu@freescale.com>
 References: <1420014219-915-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.158.2)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(92566001)(47776003)(110136001)(2351001)(31966008)(21056001)(77156002)(76176999)(104016003)(87936001)(107046002)(50226001)(106466001)(81156004)(62966003)(229853001)(64706001)(19580395003)(46102003)(4396001)(20776003)(48376002)(69596002)(97736003)(50986999)(6806004)(36756003)(89996001)(19580405001)(86362001)(68736005)(50466002)(84676001)(77096005)(99396003)(2950100001)(85426001)(120916001)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0630;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(97736003)(86362001)(21056001)(81156004)(4396001)(2950100001)(77096005)(68736005)(50226001)(87936001)(92566001)(99396003)(50986999)(76176999)(20776003)(19580405001)(6806004)(69596002)(89996001)(110136001)(120916001)(36756003)(106466001)(85426001)(84676001)(50466002)(47776003)(77156002)(48376002)(46102003)(229853001)(31966008)(19580395003)(62966003)(107046002)(104016003)(2351001)(64706001)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0634;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0634;
 X-Forefront-PRVS: 0442E569BC
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0634;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 08:19:57.2734
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 08:19:42.1392
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0630
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0634
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MIPI DSI node contains some ports which represent possible DRM CRTCs
-it can connect with.  Each port has a 'reg' property embedded.  This
-property will be wrongly interpretted by the MIPI DSI bus driver, because
-the driver will take each subnode which contains a 'reg' property as a
-DSI peripheral device.  This patch moves the existing MIPI DSI ports into
-a new 'ports' node so that the MIPI DSI bus driver may distinguish its
-DSI peripheral device(s) from the existing ports.
+This patch supports the video_27m clock which is a fixed factor
+clock of the pll3_pfd1_540m clock.
 
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
 v7->v8:
+ * None.
+
+v6->v7:
  * None.
 
 v5->v6:
@@ -68,88 +65,40 @@ v3->v4:
  * None.
 
 v2->v3:
- * Add Philipp's Ack.
+ * None.
 
 v1->v2:
- * Newly added, as suggested by Thierry Reding.
+ * None.
 
- arch/arm/boot/dts/imx6q.dtsi   | 20 +++++++++++---------
- arch/arm/boot/dts/imx6qdl.dtsi | 23 ++++++++++++++---------
- 2 files changed, 25 insertions(+), 18 deletions(-)
+ arch/arm/mach-imx/clk-imx6q.c             | 1 +
+ include/dt-bindings/clock/imx6qdl-clock.h | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-index e9f3646..9c0990b 100644
---- a/arch/arm/boot/dts/imx6q.dtsi
-+++ b/arch/arm/boot/dts/imx6q.dtsi
-@@ -292,19 +292,21 @@
- };
+diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
+index 4e79da7..9470df3 100644
+--- a/arch/arm/mach-imx/clk-imx6q.c
++++ b/arch/arm/mach-imx/clk-imx6q.c
+@@ -246,6 +246,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+ 	clk[IMX6QDL_CLK_PLL3_60M]  = imx_clk_fixed_factor("pll3_60m",  "pll3_usb_otg",   1, 8);
+ 	clk[IMX6QDL_CLK_TWD]       = imx_clk_fixed_factor("twd",       "arm",            1, 2);
+ 	clk[IMX6QDL_CLK_GPT_3M]    = imx_clk_fixed_factor("gpt_3m",    "osc",            1, 8);
++	clk[IMX6QDL_CLK_VIDEO_27M] = imx_clk_fixed_factor("video_27m", "pll3_pfd1_540m", 1, 20);
+ 	if (cpu_is_imx6dl()) {
+ 		clk[IMX6QDL_CLK_GPU2D_AXI] = imx_clk_fixed_factor("gpu2d_axi", "mmdc_ch0_axi_podf", 1, 1);
+ 		clk[IMX6QDL_CLK_GPU3D_AXI] = imx_clk_fixed_factor("gpu3d_axi", "mmdc_ch0_axi_podf", 1, 1);
+diff --git a/include/dt-bindings/clock/imx6qdl-clock.h b/include/dt-bindings/clock/imx6qdl-clock.h
+index b690cdb..25625bf 100644
+--- a/include/dt-bindings/clock/imx6qdl-clock.h
++++ b/include/dt-bindings/clock/imx6qdl-clock.h
+@@ -248,6 +248,7 @@
+ #define IMX6QDL_PLL6_BYPASS			235
+ #define IMX6QDL_PLL7_BYPASS			236
+ #define IMX6QDL_CLK_GPT_3M			237
+-#define IMX6QDL_CLK_END				238
++#define IMX6QDL_CLK_VIDEO_27M			238
++#define IMX6QDL_CLK_END				239
  
- &mipi_dsi {
--	port@2 {
--		reg = <2>;
-+	ports {
-+		port@2 {
-+			reg = <2>;
- 
--		mipi_mux_2: endpoint {
--			remote-endpoint = <&ipu2_di0_mipi>;
-+			mipi_mux_2: endpoint {
-+				remote-endpoint = <&ipu2_di0_mipi>;
-+			};
- 		};
--	};
- 
--	port@3 {
--		reg = <3>;
-+		port@3 {
-+			reg = <3>;
- 
--		mipi_mux_3: endpoint {
--			remote-endpoint = <&ipu2_di1_mipi>;
-+			mipi_mux_3: endpoint {
-+				remote-endpoint = <&ipu2_di1_mipi>;
-+			};
- 		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-index 9596ed5..96bf2a0 100644
---- a/arch/arm/boot/dts/imx6qdl.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl.dtsi
-@@ -1009,19 +1009,24 @@
- 				reg = <0x021e0000 0x4000>;
- 				status = "disabled";
- 
--				port@0 {
--					reg = <0>;
-+				ports {
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+
-+					port@0 {
-+						reg = <0>;
- 
--					mipi_mux_0: endpoint {
--						remote-endpoint = <&ipu1_di0_mipi>;
-+						mipi_mux_0: endpoint {
-+							remote-endpoint = <&ipu1_di0_mipi>;
-+						};
- 					};
--				};
- 
--				port@1 {
--					reg = <1>;
-+					port@1 {
-+						reg = <1>;
- 
--					mipi_mux_1: endpoint {
--						remote-endpoint = <&ipu1_di1_mipi>;
-+						mipi_mux_1: endpoint {
-+							remote-endpoint = <&ipu1_di1_mipi>;
-+						};
- 					};
- 				};
- 			};
+ #endif /* __DT_BINDINGS_CLOCK_IMX6QDL_H */
 -- 
 2.1.0
 
