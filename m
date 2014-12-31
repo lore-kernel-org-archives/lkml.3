@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751618AbaLaNKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 08:10:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59021 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734AbaLaNK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 08:10:28 -0500
-Date: Wed, 31 Dec 2014 14:10:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Arend van Spriel <arend@broadcom.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "egrumbach@gmail.com" <egrumbach@gmail.com>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility
- unselectable"
-In-Reply-To: <54A3D955.6020809@broadcom.com>
-Message-ID: <alpine.LNX.2.00.1412311408090.31609@pobox.suse.cz>
-References: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz> <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com> <54A2B807.1020202@hurleysoftware.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DC915@hasmsx107.ger.corp.intel.com>
- <alpine.LNX.2.00.1412301610320.31609@pobox.suse.cz> <1419971304.30412.0.camel@egrumbacBox> <alpine.LNX.2.00.1412302135520.31609@pobox.suse.cz> <20141230212326.GA29263@pd.tnic> <54A328C2.5080606@lwfinger.net> <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz>
- <alpine.LNX.2.00.1412302351030.31609@pobox.suse.cz> <54A3D955.6020809@broadcom.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751622AbaLaNQL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 08:16:11 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52185 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaLaNQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 08:16:08 -0500
+Date: Wed, 31 Dec 2014 05:16:02 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: question about the luto-misc tree
+Message-ID: <20141231131602.GP11609@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141214175747.2e6c506e@canb.auug.org.au>
+ <CALCETrXu19aHhudTfPAr5PM05FR0xKBiSHgbubVhh6QUrHCADw@mail.gmail.com>
+ <20141214120318.GA5310@linux.vnet.ibm.com>
+ <CALCETrWsy5sxVTmjNu7t+o-QvEVY-csQHkP-PXT1aMFiXnzzhQ@mail.gmail.com>
+ <20141214173715.GB5310@linux.vnet.ibm.com>
+ <CALCETrWT7SLO3E+nV2g=QzJHAeWU4FBRENq=7OvoNDrHA7W0fg@mail.gmail.com>
+ <20141214181744.GF5310@linux.vnet.ibm.com>
+ <CALCETrXfc5SpjOUfRuj7d5Kzushjucw-njcGT+XW6L26c3BFyA@mail.gmail.com>
+ <20141226123336.30fba599@canb.auug.org.au>
+ <CALCETrWaT019BZoyhp-CkcCiEXYEumvjF2pA6GHk0Mo-sPngTQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWaT019BZoyhp-CkcCiEXYEumvjF2pA6GHk0Mo-sPngTQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14123113-0029-0000-0000-000006DA6786
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Dec 2014, Arend van Spriel wrote:
+On Sun, Dec 28, 2014 at 07:33:43AM -0800, Andy Lutomirski wrote:
+> On Dec 25, 2014 5:33 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
+> >
+> > Hi Andy,
+> >
+> > On Mon, 22 Dec 2014 11:16:56 -0800 Andy Lutomirski <luto@amacapital.net>
+> wrote:
+> > >
+> > > I'm re-adding the branch, since 3.19-rc1 is out, the change appears to
+> > > still exist as-is in your tree, and it merges cleanly and builds in
+> > > the latest -next for me.  Let me know if this will be problematic for
+> > > any reason.
+> >
+> > So, now we have a problem because Paul has rebased a whole set of
+> > commits that you have in your tree.  Commits c6dc129cf2d1 to
+> > f58d100f65ae in your tree Paul has rebased on top of v3.19-rc1.  If you
+> > are going to base your tree on (part of) Paul's tree, then Paul has to
+> > agree to not rebase that part of his tree or you have to keep a watch
+> > on his tree and rebase you tree on top of those rebased commits.
+> > Really, the first should happen.
+> 
+> Are there any scripts out there that can do this for me?
+> 
+> Paul, when do you expect to be done rebasing?  Or, even better, when do you
+> expect to send all of this to -tip?  If the latter will be reasonably soon,
+> I can just wait for that.
 
-> You mentioned in the discussion and I quote: "*If* wireless maintainers 
-> think otherwise, I'll send a revert request to Linus for 
-> consideration.". However, you did not wait for any response from the 
-> wireless maintainers nor from the author of the patch you are reverting. 
-> Seems like an overreaction to me though personally I do not disgree with 
-> the revert itself.
+I believe that I have it where it will live from here on out, namely
+at 734d16801349 (rcu: Make rcu_nmi_enter() handle nesting) in -rcu.
+The only reason I would move it is if it turned out to be fatally buggy,
+but given your testing the odds of this happening are hopefully quite low.
+(Famous last words!)
 
-My understanding from the whole thread was that Emmanuel disagrees with 
-the revert, and I consider Emmanuel to definitely belong to the "wireless 
-maintainers" group. If my understanding was wrong on this, sorry for that.
+							Thaxnx, Paul
 
-One way or another, the revert really is a-must-have, as it causes visible 
-userspace regressions. I am really surprised that it's causing so lively 
-discussion and doubts.
-
--- 
-Jiri Kosina
-SUSE Labs
