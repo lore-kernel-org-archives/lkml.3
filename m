@@ -1,241 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaLaBOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 20:14:46 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:37265 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaLaBOp (ORCPT
+	id S1752020AbaLaBSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 20:18:05 -0500
+Received: from smtp1.cypress.com ([157.95.67.100]:60401 "EHLO
+	smtp1.cypress.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaLaBSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 20:14:45 -0500
-X-Original-SENDERIP: 10.186.123.76
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <54A34E01.2050405@lge.com>
-Date: Wed, 31 Dec 2014 10:14:41 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Stefan Strogin <stefan.strogin@gmail.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        "Stefan I. Strogin" <s.strogin@partner.samsung.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>, Hui Zhu <zhuhui@xiaomi.com>,
-        Minchan Kim <minchan@kernel.org>, Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-Subject: Re: [PATCH 2/3] mm: cma: introduce /proc/cmainfo
-References: <cover.1419602920.git.s.strogin@partner.samsung.com> <264ce8ad192124f2afec9a71a2fc28779d453ba7.1419602920.git.s.strogin@partner.samsung.com> <xa1tzjaaz9f9.fsf@mina86.com> <54A160B6.5030605@gmail.com>
-In-Reply-To: <54A160B6.5030605@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Dec 2014 20:18:02 -0500
+From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, jmmahler@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v17 05/12] input: cyapa: add sysfs interfaces support in the cyapa driver
+Date: Wed, 31 Dec 2014 09:16:54 +0800
+Message-Id: <1419988621-2919-6-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1419988621-2919-1-git-send-email-dudl@cypress.com>
+References: <1419988621-2919-1-git-send-email-dudl@cypress.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add device's basic control and features supported in cyapa driver through
+sysfs file system interfaces. These interfaces are commonly used in
+pre- and after production, for trackpad device state checking, managing
+and firmware image updating.
+These interfaces including mode, firmware_version and product_id interfaces
+for reading firmware version and trackpad device product id values,
+and including update_fw interface to command firmware image update
+process. Also including baseline and calibrate interfaces for
+reading and checking trackpad device's sensors states.
+TEST=test on Chromebooks.
 
+Signed-off-by: Dudley Du <dudl@cypress.com>
+---
+ drivers/input/mouse/cyapa.c | 302 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 302 insertions(+)
 
-2014-12-29 오후 11:09에 Stefan Strogin 이(가) 쓴 글:
-> Thanks for review Michał,
->
-> On 12/26/2014 07:02 PM, Michal Nazarewicz wrote:
->> On Fri, Dec 26 2014, "Stefan I. Strogin" <s.strogin@partner.samsung.com> wrote:
->>> /proc/cmainfo contains a list of currently allocated CMA buffers for every
->>> CMA area when CONFIG_CMA_DEBUG is enabled.
->>>
->>> Format is:
->>>
->>> <base_phys_addr> - <end_phys_addr> (<size> kB), allocated by <PID>\
->>>         (<command name>), latency <allocation latency> us
->>>   <stack backtrace when the buffer had been allocated>
->>>
->>> Signed-off-by: Stefan I. Strogin <s.strogin@partner.samsung.com>
->>> ---
->>>   mm/cma.c | 202 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>   1 file changed, 202 insertions(+)
->>>
->>> diff --git a/mm/cma.c b/mm/cma.c
->>> index a85ae28..ffaea26 100644
->>> --- a/mm/cma.c
->>> +++ b/mm/cma.c
->>> @@ -347,6 +372,86 @@ err:
->>>       return ret;
->>>   }
->>>
->>> +#ifdef CONFIG_CMA_DEBUG
->>> +/**
->>> + * cma_buffer_list_add() - add a new entry to a list of allocated buffers
->>> + * @cma:     Contiguous memory region for which the allocation is performed.
->>> + * @pfn:     Base PFN of the allocated buffer.
->>> + * @count:   Number of allocated pages.
->>> + * @latency: Nanoseconds spent to allocate the buffer.
->>> + *
->>> + * This function adds a new entry to the list of allocated contiguous memory
->>> + * buffers in a CMA area. It uses the CMA area specificated by the device
->>> + * if available or the default global one otherwise.
->>> + */
->>> +static int cma_buffer_list_add(struct cma *cma, unsigned long pfn,
->>> +                   int count, s64 latency)
->>> +{
->>> +    struct cma_buffer *cmabuf;
->>> +    struct stack_trace trace;
->>> +
->>> +    cmabuf = kmalloc(sizeof(struct cma_buffer), GFP_KERNEL);
->>
->>     cmabuf = kmalloc(sizeof *cmabuf, GFP_KERNEL);
->
->      cmabuf = kmalloc(sizeof(*cmabuf), GFP_KERNEL);
->
->>
->>> +    if (!cmabuf)
->>> +        return -ENOMEM;
->>> +
->>> +    trace.nr_entries = 0;
->>> +    trace.max_entries = ARRAY_SIZE(cmabuf->trace_entries);
->>> +    trace.entries = &cmabuf->trace_entries[0];
->>> +    trace.skip = 2;
->>> +    save_stack_trace(&trace);
->>> +
->>> +    cmabuf->pfn = pfn;
->>> +    cmabuf->count = count;
->>> +    cmabuf->pid = task_pid_nr(current);
->>> +    cmabuf->nr_entries = trace.nr_entries;
->>> +    get_task_comm(cmabuf->comm, current);
->>> +    cmabuf->latency = (unsigned int) div_s64(latency, NSEC_PER_USEC);
->>> +
->>> +    mutex_lock(&cma->list_lock);
->>> +    list_add_tail(&cmabuf->list, &cma->buffers_list);
->>> +    mutex_unlock(&cma->list_lock);
->>> +
->>> +    return 0;
->>> +}
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index 080b93f..e4d1a4d 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -32,6 +32,8 @@
+ #define CYAPA_ADAPTER_FUNC_SMBUS  2
+ #define CYAPA_ADAPTER_FUNC_BOTH   3
+ 
++#define CYAPA_FW_NAME		"cyapa.bin"
++
+ const char product_id[] = "CYTRA";
+ 
+ static int cyapa_reinitialize(struct cyapa *cyapa);
+@@ -475,6 +477,29 @@ static int cyapa_create_input_dev(struct cyapa *cyapa)
+ 	return 0;
+ }
+ 
++static void cyapa_enable_irq_for_cmd(struct cyapa *cyapa)
++{
++	struct input_dev *input = cyapa->input;
++
++	if (!input || !input->users) {
++		if (cyapa->operational)
++			cyapa->ops->set_power_mode(cyapa,
++				PWR_MODE_FULL_ACTIVE, 0);
++		enable_irq(cyapa->client->irq);
++	}
++}
++
++static void cyapa_disable_irq_for_cmd(struct cyapa *cyapa)
++{
++	struct input_dev *input = cyapa->input;
++
++	if (!input || !input->users) {
++		disable_irq(cyapa->client->irq);
++		if (cyapa->operational)
++			cyapa->ops->set_power_mode(cyapa, PWR_MODE_OFF, 0);
++	}
++}
++
+ /*
+  * cyapa_sleep_time_to_pwr_cmd and cyapa_pwr_cmd_to_sleep_time
+  *
+@@ -858,6 +883,270 @@ static int cyapa_start_runtime(struct cyapa *cyapa)
+ static inline int cyapa_start_runtime(struct cyapa *cyapa) { return 0; }
+ #endif /* CONFIG_PM_RUNTIME */
+ 
++static ssize_t cyapa_show_fm_ver(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	int error;
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++	error = scnprintf(buf, PAGE_SIZE, "%d.%d\n", cyapa->fw_maj_ver,
++			 cyapa->fw_min_ver);
++	mutex_unlock(&cyapa->state_sync_lock);
++	return error;
++}
++
++static ssize_t cyapa_show_product_id(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int size;
++	int error;
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++	size = scnprintf(buf, PAGE_SIZE, "%s\n", cyapa->product_id);
++	mutex_unlock(&cyapa->state_sync_lock);
++	return size;
++}
++
++static int cyapa_firmware(struct cyapa *cyapa, const char *fw_name)
++{
++	struct device *dev = &cyapa->client->dev;
++	const struct firmware *fw;
++	int error;
++
++	error = request_firmware(&fw, fw_name, dev);
++	if (error) {
++		dev_err(dev, "Could not load firmware from %s: %d\n",
++			fw_name, error);
++		return error;
++	}
++
++	error = cyapa->ops->check_fw(cyapa, fw);
++	if (error) {
++		dev_err(dev, "Invalid CYAPA firmware image: %s\n",
++				fw_name);
++		goto done;
++	}
++
++	/*
++	 * Resume the potentially suspended device because doing FW
++	 * update on a device not in the FULL mode has a chance to
++	 * fail.
++	 */
++	pm_runtime_get_sync(dev);
++
++	/* Require IRQ support for firmware update commands. */
++	cyapa_enable_irq_for_cmd(cyapa);
++
++	error = cyapa->ops->bl_enter(cyapa);
++	if (error) {
++		dev_err(dev, "bl_enter failed, %d\n", error);
++		goto err_detect;
++	}
++
++	error = cyapa->ops->bl_activate(cyapa);
++	if (error) {
++		dev_err(dev, "bl_activate failed, %d\n", error);
++		goto err_detect;
++	}
++
++	error = cyapa->ops->bl_initiate(cyapa, fw);
++	if (error) {
++		dev_err(dev, "bl_initiate failed, %d\n", error);
++		goto err_detect;
++	}
++
++	error = cyapa->ops->update_fw(cyapa, fw);
++	if (error) {
++		dev_err(dev, "update_fw failed, %d\n", error);
++		goto err_detect;
++	}
++
++err_detect:
++	cyapa_disable_irq_for_cmd(cyapa);
++	pm_runtime_put_noidle(dev);
++
++done:
++	release_firmware(fw);
++	return error;
++}
++
++static ssize_t cyapa_update_fw_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	char fw_name[NAME_MAX];
++	int ret, error;
++
++	if (count > NAME_MAX) {
++		dev_err(dev, "File name too long\n");
++		return -EINVAL;
++	}
++
++	memcpy(fw_name, buf, count);
++	if (fw_name[count - 1] == '\n')
++		fw_name[count - 1] = '\0';
++	else
++		fw_name[count] = '\0';
++
++	if (cyapa->input) {
++		/*
++		 * Force the input device to be registered after the firmware
++		 * image is updated, so if the corresponding parameters updated
++		 * in the new firmware image can taken effect immediately.
++		 */
++		input_unregister_device(cyapa->input);
++		cyapa->operational = false;
++		cyapa->input = NULL;
++	}
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error) {
++		/*
++		 * Whatever, do reinitialize to try to recover TP state to
++		 * previous state just as it entered fw update entrance.
++		 */
++		cyapa_reinitialize(cyapa);
++		return error;
++	}
++
++	error = cyapa_firmware(cyapa, fw_name);
++	if (error)
++		dev_err(dev, "firmware update failed: %d\n", error);
++	else
++		dev_dbg(dev, "firmware update successfully done.\n");
++
++	/*
++	 * Redetect trackpad device states because firmware update process
++	 * will reset trackpad device into bootloader mode.
++	 */
++	ret = cyapa_reinitialize(cyapa);
++	if (ret) {
++		dev_err(dev, "failed to redetect after updated: %d\n", ret);
++		error = error ? error : ret;
++	}
++
++	mutex_unlock(&cyapa->state_sync_lock);
++
++	return error ? error : count;
++}
++
++static ssize_t cyapa_calibrate_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int error;
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++
++	if (cyapa->operational) {
++		cyapa_enable_irq_for_cmd(cyapa);
++		error = cyapa->ops->calibrate_store(dev, attr, buf, count);
++		cyapa_disable_irq_for_cmd(cyapa);
++	} else {
++		error = -EBUSY;  /* Still running in bootloader mode. */
++	}
++
++	mutex_unlock(&cyapa->state_sync_lock);
++	return error < 0 ? error : count;
++}
++
++static ssize_t cyapa_show_baseline(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	ssize_t error;
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++
++	if (cyapa->operational) {
++		cyapa_enable_irq_for_cmd(cyapa);
++		error = cyapa->ops->show_baseline(dev, attr, buf);
++		cyapa_disable_irq_for_cmd(cyapa);
++	} else {
++		error = -EBUSY;  /* Still running in bootloader mode. */
++	}
++
++	mutex_unlock(&cyapa->state_sync_lock);
++	return error;
++}
++
++static char *cyapa_state_to_string(struct cyapa *cyapa)
++{
++	switch (cyapa->state) {
++	case CYAPA_STATE_BL_BUSY:
++		return "bootloader busy";
++	case CYAPA_STATE_BL_IDLE:
++		return "bootloader idle";
++	case CYAPA_STATE_BL_ACTIVE:
++		return "bootloader active";
++	case CYAPA_STATE_GEN5_BL:
++		return "bootloader";
++	case CYAPA_STATE_OP:
++	case CYAPA_STATE_GEN5_APP:
++		return "operational";  /* Normal valid state. */
++	default:
++		return "invalid mode";
++	}
++}
++
++static ssize_t cyapa_show_mode(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int size;
++	int error;
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++
++	size = scnprintf(buf, PAGE_SIZE, "gen%d %s\n",
++			cyapa->gen, cyapa_state_to_string(cyapa));
++
++	mutex_unlock(&cyapa->state_sync_lock);
++	return size;
++}
++
++static DEVICE_ATTR(firmware_version, S_IRUGO, cyapa_show_fm_ver, NULL);
++static DEVICE_ATTR(product_id, S_IRUGO, cyapa_show_product_id, NULL);
++static DEVICE_ATTR(update_fw, S_IWUSR, NULL, cyapa_update_fw_store);
++static DEVICE_ATTR(baseline, S_IRUGO, cyapa_show_baseline, NULL);
++static DEVICE_ATTR(calibrate, S_IWUSR, NULL, cyapa_calibrate_store);
++static DEVICE_ATTR(mode, S_IRUGO, cyapa_show_mode, NULL);
++
++static struct attribute *cyapa_sysfs_entries[] = {
++	&dev_attr_firmware_version.attr,
++	&dev_attr_product_id.attr,
++	&dev_attr_update_fw.attr,
++	&dev_attr_baseline.attr,
++	&dev_attr_calibrate.attr,
++	&dev_attr_mode.attr,
++	NULL,
++};
++
++static const struct attribute_group cyapa_sysfs_group = {
++	.attrs = cyapa_sysfs_entries,
++};
++
++static void cyapa_remove_sysfs_group(void *data)
++{
++	struct cyapa *cyapa = data;
++
++	sysfs_remove_group(&cyapa->client->dev.kobj, &cyapa_sysfs_group);
++}
++
+ static int cyapa_probe(struct i2c_client *client,
+ 		       const struct i2c_device_id *dev_id)
+ {
+@@ -897,6 +1186,19 @@ static int cyapa_probe(struct i2c_client *client,
+ 		return error;
+ 	}
+ 
++	error = sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group);
++	if (error) {
++		dev_err(dev, "failed to create sysfs entries: %d\n", error);
++		return error;
++	}
++
++	error = devm_add_action(dev, cyapa_remove_sysfs_group, cyapa);
++	if (error) {
++		cyapa_remove_sysfs_group(cyapa);
++		dev_err(dev, "failed to add sysfs cleanup action: %d\n", error);
++		return error;
++	}
++
+ 	error = cyapa_prepare_wakeup_controls(cyapa);
+ 	if (error) {
+ 		dev_err(dev, "failed to prepare wakeup controls: %d\n", error);
+-- 
+1.9.1
 
-Is it ok if the information is too big?
-I'm not sure but I remember that seq_printf has 4K limitation.
-
-So I made seq_operations with seq_list_start/next functions.
-
-EX)
-
-static void *debug_seq_start(struct seq_file *s, loff_t *pos)
-{
-»       mutex_lock(&debug_lock);
-»       return seq_list_start(&debug_list, *pos);
-}	
-
-static void debug_seq_stop(struct seq_file *s, void *data)
-{
-»       struct debug_header *header = data;
-
-»       if (header == NULL || &header->head_list == &debug_list) {
-»       »       seq_printf(s, "end of info");
-»       }
-
-»       mutex_unlock(&debug_lock);
-}
-
-static void *debug_seq_next(struct seq_file *s, void *data, loff_t *pos)
-{
-»       return seq_list_next(data, &debug_list, pos);
-}
-
-static int debug_seq_show(struct seq_file *sfile, void *data)
-{
-»       struct debug_header *header;
-»       char *p;
-
-»       header= list_entry(data,
-»       »       »          struct debug_header,	
-»       »       »          head_list);
-
-»       seq_printf(sfile, "print info");
-»       return 0;
-}
-static const struct seq_operations debug_seq_ops = {
-»       .start = debug_seq_start,	
-»       .next = debug_seq_next,	
-»       .stop = debug_seq_stop,	
-»       .show = debug_seq_show,	
-};
-
->> You do not have guarantee that CMA deallocations will match allocations
->> exactly.  User may allocate CMA region and then free it chunks.  I'm not
->> saying that the debug code must handle than case but at least I would
->> like to see a comment describing this shortcoming.
->
-> Thanks, I'll fix it. If a number of released pages is less than there
-> were allocated then the list entry shouldn't be deleted, but it's fields
-> should be updated.
->
->>
->>> @@ -361,11 +466,15 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->>>       unsigned long mask, offset, pfn, start = 0;
->>>       unsigned long bitmap_maxno, bitmap_no, bitmap_count;
->>>       struct page *page = NULL;
->>> +    struct timespec ts1, ts2;
->>> +    s64 latency;
->>>       int ret;
->>>
->>>       if (!cma || !cma->count)
->>>           return NULL;
->>>
->>> +    getnstimeofday(&ts1);
->>> +
->>
->> If CMA_DEBUG is disabled, you waste time on measuring latency.  Either
->> use #ifdef or IS_ENABLED, e.g.:
->>
->>     if (IS_ENABLED(CMA_DEBUG))
->>         getnstimeofday(&ts1);
->
-> Obviously! :)
->
->>
->>> @@ -413,6 +522,19 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
->>>           start = bitmap_no + mask + 1;
->>>       }
->>>
->>> +    getnstimeofday(&ts2);
->>> +    latency = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
->>> +
->>> +    if (page) {
->>
->>     if (IS_ENABLED(CMA_DEBUG) && page) {
->>         getnstimeofday(&ts2);
->>         latency = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
->>
->>> +        ret = cma_buffer_list_add(cma, pfn, count, latency);
->>
->> You could also change cma_buffer_list_add to take ts1 as an argument
->> instead of latency and then latency calculating would be hidden inside
->> of that function.  Initialising ts1 should still be guarded with
->> IS_ENABLED of course.
->
->      if (IS_ENABLED(CMA_DEBUG) && page) {
->          getnstimeofday(&ts2);
->          latency = timespec_to_ns(&ts2) - timespec_to_ns(&ts1);
->
-> It seem to me this variant is better readable, thanks.
->
->>
->>> +        if (ret) {
->>> +            pr_warn("%s(): cma_buffer_list_add() returned %d\n",
->>> +                __func__, ret);
->>> +            cma_release(cma, page, count);
->>> +            page = NULL;
->>
->> Harsh, but ok, if you want.
->
-> Excuse me, maybe you could suggest how to make a nicer fallback?
-> Or sure OK?
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
