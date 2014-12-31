@@ -1,159 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264AbaLaFFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 00:05:00 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48133 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710AbaLaFE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 00:04:59 -0500
-Message-ID: <54A383E5.8020605@linux.vnet.ibm.com>
-Date: Wed, 31 Dec 2014 10:34:37 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "peterz@infradead.org" <peterz@infradead.org>
-CC: "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>, LKP <lkp@01.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
-Subject: Re: [PATCH] tick/powerclamp: Remove tick_nohz_idle abuse
-References: <alpine.DEB.2.11.1412181110110.17382@nanos> <54930EB1.9080309@linux.vnet.ibm.com> <DD415AA12F8FF042BF4EA69DF123C1478AF91730@ORSMSX101.amr.corp.intel.com> <20141218115239.53d17e39@jacob-VirtualBox> <alpine.DEB.2.11.1412182209010.17382@nanos> <20141219103900.101f6c6d@jacob-VirtualBox> <alpine.DEB.2.11.1412192054130.17382@nanos> <5494D160.8060808@linux.vnet.ibm.com> <20141222185708.15bbdd17@jacob-VirtualBox>
-In-Reply-To: <20141222185708.15bbdd17@jacob-VirtualBox>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14123105-0037-0000-0000-0000003D0CAD
+	id S1751572AbaLaFUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 00:20:10 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:23020 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaLaFT5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 00:19:57 -0500
+X-AuditID: cbfee68f-f791c6d000004834-1c-54a3877abc6f
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: myungjoo.ham@samsung.com
+Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
+        rafael.j.wysocki@intel.com, mark.rutland@arm.com,
+        a.kesavan@samsung.com, tomasz.figa@gmail.com, k.kozlowski@samsung.com,
+        b.zolnierkie@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: [RFC PATCHv2 0/8] devfreq: Add generic exynos memory-bus frequency
+ driver
+Date: Wed, 31 Dec 2014 14:19:44 +0900
+Message-id: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkULeqfXGIQeMRaYvHaxYzWWycsZ7V
+	4vqX56wWk+5PYLF4/cLQonfBVTaLs01v2C02Pb7GanF51xw2i8+9RxgtZpzfx2Sx9PpFJovb
+	jSvYLB6veMtusWrXH0YHfo8189YweuycdZfdY/Gel0wem5fUe/RtWcXo8XmTXABbFJdNSmpO
+	Zllqkb5dAlfGlwsTWQtOi1VM+KXdwHhYsIuRk0NCwETiwsu1bBC2mMSFe+uBbC4OIYGljBKv
+	Xq1lhCna+PAjE0RiEaPEt1l7oKqamCSm3JrKAlLFJqAlsf/FDbBRIgIyElc3bmcBKWIW+M8k
+	8fjVclaQhLBAiMTP73+ZQWwWAVWJ/r9f2UFsXgEXicnP7kGtU5BYtnwmK0izhMAhdonJM96x
+	QzQISHybfAhoKgdQQlZi0wFmiHpJiYMrbrBMYBRcwMiwilE0tSC5oDgpvchYrzgxt7g0L10v
+	OT93EyMwHk7/e9a/g/HuAetDjAIcjEo8vDftFocIsSaWFVfmHmI0BdowkVlKNDkfGHV5JfGG
+	xmZGFqYmpsZG5pZmSuK8C6V+BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgXFJXfdqfYW5V
+	0UsxNvvyWTK2F2XDRK4bX79n+8l630vhDTOsvxU8vDBhzRqzTfJ6cxc+3Xdqa5TyPKH3k7/s
+	cV4XGG0bFjpn+c5poR923GWt4V4vn6Yy1+6P8B3VMKa5C1c7TBd4/FQhJnmnT9hzoWqHH3Gh
+	X+ZzVB765xTw2P5tRuZ++e+bUpRYijMSDbWYi4oTAe1iXJeCAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jAd2q9sUhBn1tQhaP1yxmstg4Yz2r
+	xfUvz1ktJt2fwGLx+oWhRe+Cq2wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8li6fWLTBa3
+	G1ewWTxe8ZbdYtWuP4wO/B5r5q1h9Ng56y67x+I9L5k8Ni+p9+jbsorR4/MmuQC2qAZGm4zU
+	xJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygk5UUyhJzSoFC
+	AYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGV8uTGQtOC1WMeGXdgPjYcEuRk4OCQET
+	iY0PPzJB2GISF+6tZ+ti5OIQEljEKPFt1h4op4lJYsqtqSwgVWwCWhL7X9xgA7FFBGQkrm7c
+	zgJSxCzwn0ni8avlrCAJYYEQiZ/f/zKD2CwCqhL9f7+yg9i8Ai4Sk5/dY4RYpyCxbPlM1gmM
+	3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfbM6kdjCsbLA4xCnAwKvHw3rBbHCLE
+	mlhWXJl7iFGCg1lJhPeyJlCINyWxsiq1KD++qDQntfgQoynQ9onMUqLJ+cBEkFcSb2hsYmZk
+	aWRuaGFkbK4kzqtk3xYiJJCeWJKanZpakFoE08fEwSnVwLgyPyJG7WmjuPTZU5rn74RPTnxp
+	6fVTWqv9h8mW3MJHGnqPv6/U/3WQSzBYkvvx+wWTZHacsbh11066nVHs3SnmkNtbfIXOcMav
+	Cduye+q3X7fynvB6P39xYq4ig+zmBsUVvKrO2iaRjfvWdzjcm2ilkta2dGJC68Q09t7Og1az
+	XO1LecSWTFViKc5INNRiLipOBAAFPXIZzAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacob,
+This patch-set adds the generic exynos bus frequency driver for memory bus
+with DEVFREQ framework. The Samsung Exynos SoCs have the common architecture
+for memory bus between DRAM memory and MMC/sub IP in SoC. This driver can
+support the memory bus frequency driver for Exynos SoCs.
 
-On 12/23/2014 08:27 AM, Jacob Pan wrote:
-> On Sat, 20 Dec 2014 07:01:12 +0530
-> Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> 
->> On 12/20/2014 01:26 AM, Thomas Gleixner wrote:
->>> On Fri, 19 Dec 2014, Jacob Pan wrote:
->>>
->>>> On Thu, 18 Dec 2014 22:12:57 +0100 (CET)
->>>> Thomas Gleixner <tglx@linutronix.de> wrote:
->>>>
->>>>> On Thu, 18 Dec 2014, Jacob Pan wrote:
->>>>>> OK I agree, also as I mentioned earlier, Peter already has a
->>>>>> patch for consolidated idle loop and remove
->>>>>> tick_nohz_idle_enter/exit call from powerclamp driver. I have
->>>>>> been working on a few tweaks to maintain the functionality and
->>>>>> efficiency with the consolidated idle loop. We can apply the
->>>>>> patches on top of yours.
->>>>>
->>>>> No. This is equally wrong as I pointed out before. The 'unified'
->>>>> idle loop is still fake and just pretending to be idle.
->>>>>
->>>> In terms of efficiency, the consolidated idle loop will allow
->>>> turning off sched tick during idle injection period. If we just
->>>> take out the tick_nohz_idle_xxx call, the effectiveness of
->>>> powerclamp is going down significantly. I am not arguing the
->>>> design but from fixing regression perspective or short term
->>>> solution.
->>>
->>> There is no perspective. Period.
->>>
->>> Its violates every rightful assumption of the nohz_IDLE_* code and
->>> just ever worked by chance. There is so much subtle wreckage lurking
->>> there that the only sane solution is to forbid it. End of story.
->>>
->>> Thanks,
->>>
->>> 	tglx
->>>
->> Hi Jacob,
->>
->> Like Thomas pointed out, we can design a sane solution for powerclamp.
->> Idle injection is nothing but throttling of runqueue. If the runqueue
->> is throttled, no fair tasks will be selected and the natural choice
->> in the absence of tasks from any other sched class is the idle task.
->>
->> The idle loop will automatically be called and the nohz state will
->> also fall in place. The cpu is really idle now: the runqueue has no
->> tasks and the task running on the cpu is the idle thread. The
->> throttled tasks are on a separate list.
->>
->> When the period of idle injection is over, we unthrottle the runqueue.
->> All this being taken care of my a non-deferrable timer. This design
->> ensures that the intention of powerclamp is not hampered while at the
->> same time maintaining a sane state for nohz; you will get the
->> efficiency you want.
->>
->> Of course there may be corner cases and challenges around
->> synchronization of package idle, which I am sure we can work around
->> with a better design such as the above. I am working on that patchset
->> and will post out in a day. You can take a look and let us know the
->> pieces we are missing.
->>
->> I find that implementing the above design is not too hard.
->>
-> Hi Preeti,
-> Yeah, it seems to be a good approach. looking forward to work with you
-> on this. Timer may scale better for larger systems. One question, will
-> timer irq gets unpredictable delays if run by ksoftirqd?
+Each memory bus block has a clock for memory bus speed and frequency
+table which is changed according to the utilization of memory bus on runtime.
+And then each memory bus group has the one more memory bus blocks and
+OPP table (including frequency and voltage), regulator, devfreq-event
+devices.
 
-I am sorry I could not respond earlier; I was on vacation as well. Yes,
-we may have a problem here. Let alone synchronization between cpus in
-performing clamping, there are two other functionality issues that I see.
+There are a little difference about the number of memory bus because each Exynos
+SoC have the different sub-IP and different memory bus speed. In spite of this
+difference among Exynos SoCs, we can support almost Exynos SoC by adding
+unique data of memory bus to devicetree file.
 
-1. Since periodic timers get executed in the softirq context,
-scheduler_tick() would have passed by by then. i.e.
-hrtimer_interrupt()
-|__tick_sched_handle()
-   |__scheduler_tick()
-   |__raise_softirq(TIMER_SOFTIRQ)
-ksoftirqd runs on local_bh_enable()-->powerclamp_timer handler runs
+This patch-set has the dependency on following patch-set[1]:
+[1] [PATCHv6 0/9] devfreq: Add devfreq-event class to provide raw data for devfreq device
+- https://lkml.org/lkml/2014/12/28/139
 
-Although runqueues are throttled in the powerclamp timer handler, it has
-to wait till the next scheduler tick to select an idle task to run.
-A precious 4-10ms depending on the config would have passed by then.
+Changes from v1:
+- This patchset is rebased on v3.19-rc2.
+- Fix bug after wake-up from suspend state. If devfreq device fail to get event,
+  exynos-busfreq retry to set the event for starting.
+- Add memory bus group of Exynos4x12/Exynos4210
+- Add divider clock id for Exynos4 memory bus frequency
+- Support memory bus frequency driver on Exynos4412-based TRATS2 board
 
-2. For the same reason as 1, when the ksoftirqd has to run on the cpus
-during the tick after the one in which throttling is enabled, cpus are
-unavailable to run the daemon because they are throttled. However there
-is no other way to unthrottle the runqueues now except by running the
-ksoftirqd; a chicken and egg problem.
+Chanwoo Choi (8):
+  devfreq: exynos: Add generic exynos memory bus frequency driver
+  devfreq: exynos: Add documentation for generic exynos memory bus frequency driver
+  ARM: dts: Add memory bus node for Exynos3250
+  clk: samsung: exynos4: Add divider clock id for memory bus frequency
+  ARM: dts: Add memory bus node for Exynos4x12
+  ARM: dts: Add memory bus node for Exynos4210
+  ARM: dts: Add memory bus node for Exynos3250-based Rinato board
+  ARM: dts: Add memory bus node for Exynos4412-based TRATS2 board
 
-I think both the above problems could be solved by using hrtimers
-instead of periodic timers to perform clamping/unclamping, since
-hrtimers are serviced in the interrupt context. But we cannot
-initialize/start/modify hrtimers on a remote cpu. We will end up using
-IPIs for handling the hrtimers during start/end of powerclamp or
-modification of the idle duration of clamping, which is not a tempting
-option either.
+ .../devicetree/bindings/devfreq/exynos-busfreq.txt | 184 +++++++
+ arch/arm/boot/dts/exynos3250-rinato.dts            |  12 +
+ arch/arm/boot/dts/exynos3250.dtsi                  | 125 +++++
+ arch/arm/boot/dts/exynos4210.dtsi                  |  93 ++++
+ arch/arm/boot/dts/exynos4412-trats2.dts            |  12 +
+ arch/arm/boot/dts/exynos4x12.dtsi                  | 121 +++++
+ drivers/clk/samsung/clk-exynos4.c                  |  10 +-
+ drivers/devfreq/Kconfig                            |  15 +
+ drivers/devfreq/Makefile                           |   1 +
+ drivers/devfreq/exynos-busfreq.c                   | 588 +++++++++++++++++++++
+ include/dt-bindings/clock/exynos4.h                |   7 +-
+ 11 files changed, 1162 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/devfreq/exynos-busfreq.txt
+ create mode 100644 drivers/devfreq/exynos-busfreq.c
 
-So I am currently stuck at this point. I would be glad to have some
-suggestions.
-
-Thanks
-
-Regards
-Preeti U Murthy
-
-> BTW, I may not be able to respond quickly during the holidays. If
-> things workout, it may benefit ACPI PAD driver as well.
-> 
-> 
-> Thanks,
-> 
-> Jacob
->> Regards
->> Preeti U Murthy
->>
-> 
-> [Jacob Pan]
-> 
+-- 
+1.8.5.5
 
