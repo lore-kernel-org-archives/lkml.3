@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaLaPLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 10:11:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55590 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750726AbaLaPLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 10:11:38 -0500
-Date: Wed, 31 Dec 2014 16:11:35 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Julian Calaby <julian.calaby@gmail.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        Jiri Kosina <jkosina@suse.cz>, Arend van Spriel <arend@broadcom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "egrumbach@gmail.com" <egrumbach@gmail.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility unselectable"
-Message-ID: <20141231151135.GF6332@pd.tnic>
-References: <54A328C2.5080606@lwfinger.net>
- <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz>
- <alpine.LNX.2.00.1412302351030.31609@pobox.suse.cz>
- <54A3D955.6020809@broadcom.com>
- <alpine.LNX.2.00.1412311408090.31609@pobox.suse.cz>
- <0BA3FCBA62E2DC44AF3030971E174FB31B5DD8D8@hasmsx107.ger.corp.intel.com>
- <54A3FECC.7050202@hurleysoftware.com>
- <CAGRGNgVMa=P9XbuFqfKHu5Gpiw=3h_OtOzSUYCsMbVLfTuL2Zw@mail.gmail.com>
- <20141231144617.GE6332@pd.tnic>
- <CAGRGNgWcoEf87ndwTpm7zc6vdJ3PWNOSP9CBca40iSrZ4+e17g@mail.gmail.com>
+	id S1751685AbaLaPNq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 10:13:46 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:43407 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaLaPNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 10:13:45 -0500
+Date: Wed, 31 Dec 2014 07:13:41 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Jonas Lundqvist <jonas@gannon.se>
+Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm: Move two seq_printf's outside of locked mutex
+Message-ID: <20141231151341.GA2162@newt.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Jonas Lundqvist <jonas@gannon.se>, airlied@linux.ie,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <1419976466-2113-1-git-send-email-jonas@gannon.se>
+ <20141230225211.GB31616@hudson.localdomain>
+ <54A3B9F7.4080808@gannon.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGRGNgWcoEf87ndwTpm7zc6vdJ3PWNOSP9CBca40iSrZ4+e17g@mail.gmail.com>
+In-Reply-To: <54A3B9F7.4080808@gannon.se>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 01, 2015 at 01:56:54AM +1100, Julian Calaby wrote:
-> The point is that WEXT has been depreciated for _years_. Nobody
-> seems to have listened. Yes, talking to maintainers will get the
-> last holdouts of the "big" tools (e.g. wicd) to fix them, but it's
-> not going to change all the people out there with hacked together
-> home-grown setups.
+Jonas,
 
-That's fine - you can fix the major tools first and then take a look at
-the home-grown fun later.
+On Wed, Dec 31, 2014 at 09:55:19AM +0100, Jonas Lundqvist wrote:
+> Hi Jeremiah,
+> 
+> On 12/30/2014 11:52 PM, Jeremiah Mahler wrote:
+> > You changed 'i' but you didn't explain in your log message why you did this.
+> 
+> I can change the commit message to something more generic. "Move code
+> outside of locked mutex" or similar.
+> 
+That still doesn't explain why you changed the 'i' variable.
 
-> Yes, a full WARN() will end up with loads of duplicated bugzillas -
-> and I wish I had the time to volunteer to close every last one with
-> "upgrade your userspace to use nl80211 / iw" - but I feel that
-> speaking quietly hasn't worked: maybe now we need to yell.
+> > Does this change really improve anything?  It may work the same with the
+> > locks moved around.  But if you look at the function as a whole, the
+> > locks encapsulate the body of this function nicely.  I like the original
+> > design better.
+> 
+> The locking was already done this way, ie after the seq_printf, in the
+> functions drm_clients_info() and drm_gem_name_info() in thr same file.
+> So this change is really more of an alignment.
+> 
+Your right, those two have have the lock after the seq_printf.
+But the drm_bufs_info() function has its lock before the seq_printf.
+So before your change about half are one way and half are the other.
 
-This goes to show once again how hard it is to design a userspace
-interface properly and how hard it is to change it once it gets exposed.
+I am still not convinced that either of these ways is better or makes
+any difference whatsoever.
 
-But yeah, screaming or not screaming, you will have to support it anyway
-as long as there are tools using it. This is why I think the proper and
-maybe faster way to address the situation is to go fix userspace tools
-instead of issuing warnings. People never look at those as long as it
-works, in my experience.
+> Best regards
+> Jonas
+> 
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+- Jeremiah Mahler
