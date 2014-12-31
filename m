@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaLaJCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 04:02:52 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:20670 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751522AbaLaJB6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 04:01:58 -0500
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <sebastian.hesselbarth@gmail.com>, <mturquette@linaro.org>,
-        <sboyd@codeaurora.org>, <alexandre.belloni@free-electrons.com>,
-        <antoine.tenart@free-electrons.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH 3/3] clk: berlin: bg2q: remove non-exist "smemc" gate clock
-Date: Wed, 31 Dec 2014 16:57:52 +0800
-Message-ID: <1420016272-6789-4-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
-References: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-31_03:2014-12-30,2014-12-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1412310092
+	id S1751986AbaLaJDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 04:03:51 -0500
+Received: from www.osadl.org ([62.245.132.105]:56732 "EHLO www.osadl.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751698AbaLaJDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 04:03:48 -0500
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH RFC] iio: iadc: wait_for_completion_timeout time in jiffies
+Date: Wed, 31 Dec 2014 03:59:46 -0500
+Message-Id: <1420016386-19638-1-git-send-email-der.herr@hofr.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "smemc" clock is removed on BG2Q SoCs. In fact, bit19 of clkenable
-register is for nfc. Current code use bit19 for non-exist "smemc"
-incorrectly, this prevents eMMC from working due to the sdhci's
-"core" clk is still gated.
+The timeout value to wait_for_completion_timeout is in jiffies but
+the value being passed seems like it was intended to by microseconds
+Note that the timeout was extremely long thus it might be too short
+now. In any case it probably should be passed through usecs_to_jiffies()
+or msecs_to_jiffies()
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Cc: stable@vger.kernel.org # 3.16+
+patch is against linux-next 3.19.0-rc1 -next-20141226
+
+patch was only compile-tested x86_64_defcofnig + CONFIG_SPMI=m
+CONFIG_IIO=m, CONFIG_QCOM_SPMI_IADC=m
+
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 ---
- drivers/clk/berlin/bg2q.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/iio/adc/qcom-spmi-iadc.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
-index 21784e4..440ef81 100644
---- a/drivers/clk/berlin/bg2q.c
-+++ b/drivers/clk/berlin/bg2q.c
-@@ -285,7 +285,6 @@ static const struct berlin2_gate_data bg2q_gates[] __initconst = {
- 	{ "pbridge",	"perif",	15, CLK_IGNORE_UNUSED },
- 	{ "sdio",	"perif",	16, CLK_IGNORE_UNUSED },
- 	{ "nfc",	"perif",	18 },
--	{ "smemc",	"perif",	19 },
- 	{ "pcie",	"perif",	22 },
- };
- 
+diff --git a/drivers/iio/adc/qcom-spmi-iadc.c b/drivers/iio/adc/qcom-spmi-iadc.c
+index b9666f2..3080562 100644
+--- a/drivers/iio/adc/qcom-spmi-iadc.c
++++ b/drivers/iio/adc/qcom-spmi-iadc.c
+@@ -296,7 +296,8 @@ static int iadc_do_conversion(struct iadc_chip *iadc, int chan, u16 *data)
+ 	if (iadc->poll_eoc) {
+ 		ret = iadc_poll_wait_eoc(iadc, wait);
+ 	} else {
+-		ret = wait_for_completion_timeout(&iadc->complete, wait);
++		ret = wait_for_completion_timeout(&iadc->complete,
++			usecs_to_jiffies(wait));
+ 		if (!ret)
+ 			ret = -ETIMEDOUT;
+ 		else
 -- 
-2.1.4
+1.7.10.4
 
