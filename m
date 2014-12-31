@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaLaIzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 03:55:32 -0500
-Received: from mail.ludd.ltu.se ([130.240.16.30]:33675 "EHLO mail.ludd.ltu.se"
+	id S1751736AbaLaI6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 03:58:17 -0500
+Received: from www.osadl.org ([62.245.132.105]:56675 "EHLO www.osadl.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487AbaLaIzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 03:55:31 -0500
-Message-ID: <54A3B9F7.4080808@gannon.se>
-Date: Wed, 31 Dec 2014 09:55:19 +0100
-From: Jonas Lundqvist <jonas@gannon.se>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: Jeremiah Mahler <jmmahler@gmail.com>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm: Move two seq_printf's outside of locked mutex
-References: <1419976466-2113-1-git-send-email-jonas@gannon.se> <20141230225211.GB31616@hudson.localdomain>
-In-Reply-To: <20141230225211.GB31616@hudson.localdomain>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="tXjPh5Uqja7uCCBHKVu4xtldnvNUnAHVT"
+	id S1751554AbaLaI6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 03:58:16 -0500
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
+Cc: Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH v3] scsi: mpt3sas: wait_for_completion_timeout timeout not reported
+Date: Wed, 31 Dec 2014 03:54:12 -0500
+Message-Id: <1420016053-19521-1-git-send-email-der.herr@hofr.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---tXjPh5Uqja7uCCBHKVu4xtldnvNUnAHVT
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+wait_for_completion_timeout reaching timeout was being ignored,
+this also should fail if timeout condition occurs.
 
-Hi Jeremiah,
+v3: proper labeling and attribution - no change of actual patch
 
-On 12/30/2014 11:52 PM, Jeremiah Mahler wrote:
-> You changed 'i' but you didn't explain in your log message why you did =
-this.
+this was only compile tested with x86_64_defconfig + 
+CONFIG_SCSI_LOWLEVEL=y, CONFIG_SCSI_MPT3SAS=m
 
-I can change the commit message to something more generic. "Move code
-outside of locked mutex" or similar.
+patch is against linux-next 3.19.0-rc1 -next-20141226
 
-> Does this change really improve anything?  It may work the same with th=
-e
-> locks moved around.  But if you look at the function as a whole, the
-> locks encapsulate the body of this function nicely.  I like the origina=
-l
-> design better.
+Acked-by: Joe Lawrence <joe.lawrence@stratus.com>
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+---
+ drivers/scsi/mpt3sas/mpt3sas_config.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The locking was already done this way, ie after the seq_printf, in the
-functions drm_clients_info() and drm_gem_name_info() in thr same file.
-So this change is really more of an alignment.
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_config.c b/drivers/scsi/mpt3sas/mpt3sas_config.c
+index 4472c2a..04ff21b 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_config.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_config.c
+@@ -393,7 +393,7 @@ _config_request(struct MPT3SAS_ADAPTER *ioc, Mpi2ConfigRequest_t
+ 	mpt3sas_base_put_smid_default(ioc, smid);
+ 	timeleft = wait_for_completion_timeout(&ioc->config_cmds.done,
+ 	    timeout*HZ);
+-	if (!(ioc->config_cmds.status & MPT3_CMD_COMPLETE)) {
++	if (timeleft == 0 || !(ioc->config_cmds.status & MPT3_CMD_COMPLETE)) {
+ 		pr_err(MPT3SAS_FMT "%s: timeout\n",
+ 		    ioc->name, __func__);
+ 		_debug_dump_mf(mpi_request,
+-- 
+1.7.10.4
 
-Best regards
-Jonas
-
-
---tXjPh5Uqja7uCCBHKVu4xtldnvNUnAHVT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUo7n7AAoJEBKd4UpXCeED+DsP/3H7VzYXnfEFB5y5uvmPU0rN
-BJQbd/xFhRHsFe2pN6dTRtsryV6N3mA4ce+yGnQ2eFjUgE20xRS3hjWnsPmRRF1K
-i5btlEs6PkH/3c09ShxUNLIJZSxFLmRcfFtTDTo3t82+AV7AY7Ti5BrCYpL5vfJh
-GDYnvYqAGzekEqrpGImDMBSe2MlL4As1I0F+EKunxgcs05aKkdn8kPUWis2urQw2
-KipKMaG3o0/WIZ2YJY1VhnHibKJ4TEPtZHBMKmlnoD4IdZKFLTNAkLltCg6OagkQ
-Q43GwA1BQNOz9tGfs3SMfOUToP6nDNxB4RHGWqys5LA9z7PGEIs0npn7HxY0Amk+
-hh3ETWPZffGcXRGZnbtfLRkmYgouE7EmZk6gmOcrnO8YS5xXsWPRUvo8B/SjryqT
-pL6T9z4zhr+RuscEg6TxwVTpaCQtEmPe8pNtDlU0zqSfNlEL/qT9Ic7UqZQgt1gl
-dh8ZPywOS3LnAcfgpegW1w8VmQD21Wk20ecWiOWSSNHcxiamkCyDT9GND1UuAVKg
-iqMTBSNEu/o8Xdp+WYqX4rSSQgCQQen3OpUaJMVtbyCC8ycj3zZxfDM60rOdAVOH
-/QCzP90/LFavHT8euhE/oLu/WDCVrNBW+9sAkjcBXooeCERzmrH68ocXBEb542gX
-VOAYTDIceLKlSdynqvq5
-=h2Db
------END PGP SIGNATURE-----
-
---tXjPh5Uqja7uCCBHKVu4xtldnvNUnAHVT--
