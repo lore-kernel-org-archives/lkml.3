@@ -1,42 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaLaWyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 17:54:50 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:32976 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362AbaLaWyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 17:54:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <3787508.5gHb8qD3XR@sifl>
-References: <3159430.4MhUX0bhoZ@sifl>
-	<CA+55aFzwqafHa6ARO-zkCDaHZozZDDvETBMmbnvNsnu1L9v2=w@mail.gmail.com>
-	<3787508.5gHb8qD3XR@sifl>
-Date: Wed, 31 Dec 2014 14:54:48 -0800
-X-Google-Sender-Auth: 6AuUSH0IRhcU-Ru2twFhlaZWB6E
-Message-ID: <CA+55aFxXvP9qXpFW=NeXquejaU5KiJGkFShGqrech_B03h9zHA@mail.gmail.com>
-Subject: Re: [GIT PULL] Audit fixes for 3.19 #2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul Moore <paul@paul-moore.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-audit@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751560AbaLaXPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 18:15:38 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29726 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143AbaLaXPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 18:15:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="435471132"
+Message-ID: <1420067735.31582.90.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] net: ethernet: intel: i40e: i40e_fcoe.c:  Remove unused
+ function
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Matthew Vick <matthew.vick@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 31 Dec 2014 15:15:35 -0800
+In-Reply-To: <1420044537-21077-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1420044537-21077-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-znfp226TldZk+lZADMli"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 2:08 PM, Paul Moore <paul@paul-moore.com> wrote:
->
-> The getname/putname hacks work in the normal file case, but it falls apart
-> when you start talking about AF_UNIX socket files where the filename string
-> doesn't go through the getname/putname refcount tricks.  In the past (no idea
-> how far back this goes off the top of my head) this wasn't an issue since the
-> code which recorded the filenames in the audit records was broken, but since
-> we just "fixed" that problem, the AF_UNIX socket problem is now making an
-> appearance.
 
-Ugh. Ok, I pulled the thing, even if I really hope for a better
-solution long-term. That better solution may well be to get rid of all
-the audit hackery in getname()/putname(), I wouldn't mind that at all.
+--=-znfp226TldZk+lZADMli
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-                         Linus
+On Wed, 2014-12-31 at 17:48 +0100, Rickard Strandqvist wrote:
+> Remove the function i40e_rx_is_fip() that is not used anywhere.
+>=20
+> This was partially found by using a static code analysis program
+> called cppcheck.
+>=20
+> Signed-off-by: Rickard Strandqvist
+> <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/net/ethernet/intel/i40e/i40e_fcoe.c |    9 ---------
+>  1 file changed, 9 deletions(-)
+
+Thanks Rickard!  I thought I had some patches in my queue that started
+to make use of that function, but come to find out, I don't... :-)
+
+I will add your patch to my queue, thanks!
+
+--=-znfp226TldZk+lZADMli
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUpIOXAAoJEOVv75VaS+3OWMsP/1rsarCCjudStqCyW5hOv/hg
+3P5yTHs6kS9aLePShPcKPBoclKuA+bW7tfzl6J1Uh/jMOuGqpcN0ps5fAOkzKisa
+Tv/doVLyEAOJk9qHkQDnod42HvBpjU0p6+Tn3nSPI+vINEWpEIc7IEs6CkLm6gvf
+e1c7nD8KqT0NrTg/7pd82XxLnHgqIG9Y12shGz3ZUD5LzLx9yOlfuUtTP7tfhsge
+i0BDPaUiqmJCwPvll2TZZ8mV65Igx4TiL69ve1LX0HkyF57kSVEwb0vD+I8g2DGq
+mTVETuz/oKMnJjwmkmbMXktNMZLs0NNDwbqxx++wzhGhd09l307CiEBI1Dzw0wC5
+NyPgeyTwFMtLLjjv1KBUouWS5Y6E1sAzC6jiSFHv7izQJ5UMeWyzKSsHftgXq643
+FGVNoHQ39DPpwCVoacggEbLrU9YKHhB9yoqHWENFOmkgQOi1al5gewCvdbcX4vxh
+a7y1qg4m95mfjwEoqioAVNcl9geibqc1eM6NCl9ipAVyxI0LOe11VYLr/P4mUk55
+5rZFVuNMirqdV1MXWRAK4TRD4dBAIeMaFEtcpm0gfN9inpK3+yEJRNqq7OYBaqX4
+vcIFlbWlQDxTVmo46p0aS0r2HUPwTa6cSnowWevV2myaVlIWZ5UX+Uq3cT5TwePD
+POvfkYEIXjcbC8Ri3kWd
+=TOEW
+-----END PGP SIGNATURE-----
+
+--=-znfp226TldZk+lZADMli--
+
