@@ -1,79 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450AbaLaL7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 06:59:00 -0500
-Received: from outbound-smtp05.blacknight.com ([81.17.249.38]:42895 "EHLO
-	outbound-smtp05.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750734AbaLaL66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 06:58:58 -0500
-Message-ID: <54A3E506.1000602@nexus-software.ie>
-Date: Wed, 31 Dec 2014 11:59:02 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Reply-To: pure.logic@nexus-software.ie
-Organization: Nexus Software
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751549AbaLaMBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 07:01:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757AbaLaMBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 07:01:40 -0500
+Date: Wed, 31 Dec 2014 13:01:12 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 08/37] perf tools: Handle multi-file session properly
+Message-ID: <20141231120112.GD1256@krava.brq.redhat.com>
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
+ <1419405333-27952-9-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
-        platform-driver-x86@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] x86: Add IMR support to Quark/Galileo
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <CAHp75VcRmm3raZ8juLJJOyuDpuxLLg44UHNprwQ=b2hhvqHOsA@mail.gmail.com>
-In-Reply-To: <CAHp75VcRmm3raZ8juLJJOyuDpuxLLg44UHNprwQ=b2hhvqHOsA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419405333-27952-9-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/12/14 10:12, Andy Shevchenko wrote:
-> On Mon, Dec 29, 2014 at 7:23 PM, Bryan O'Donoghue
-> <pure.logic@nexus-software.ie> wrote:
->> This patchset adds an IMR driver to the kernel plus platform code for
->> Intel Galileo Gen1/Gen2 boards.
+On Wed, Dec 24, 2014 at 04:15:04PM +0900, Namhyung Kim wrote:
+> When perf detects multi-file data directory, process header file first
+> and then rest data files in a row.  Note that the multi-file data is
+> recorded for each cpu/thread separately, it's already ordered with
+> respect to themselves so no need to use the ordered event queue
+> interface.
 > 
-> []
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/data.c    | 17 +++++++++++++++++
+>  tools/perf/util/session.c | 41 +++++++++++++++++++++++++++++++----------
+>  2 files changed, 48 insertions(+), 10 deletions(-)
 > 
->> Bryan O'Donoghue (2):
->>   x86: Add Isolated Memory Regions for Quark X1000
->>   platform/x86 Add Intel Galileo platform specific setup
-> 
-> I'm going to review this soon, but here few comments below.
-> 
->>  arch/x86/Kconfig                     |  23 ++
->>  arch/x86/include/asm/imr.h           |  79 ++++++
->>  arch/x86/include/asm/intel-quark.h   |  31 ++
-> 
-> Could it be just a quark.h? Like for ce4100.
-> Those intel- prefixes in the modules looks awkward especially when
-> pathname consists x86 already.
+> diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
+> index 8dacd34659cc..b6f7cdc4a39f 100644
+> --- a/tools/perf/util/data.c
+> +++ b/tools/perf/util/data.c
+> @@ -52,6 +52,21 @@ static int check_backup(struct perf_data_file *file)
+>  	return 0;
+>  }
+>  
+> +static void check_multi(struct perf_data_file *file)
+> +{
+> +	struct stat st;
+> +
+> +	/*
+> +	 * For write, it'll be determined by user (perf record -M)
+> +	 * whether to enable multi file data storage.
+> +	 */
+> +	if (perf_data_file__is_write(file))
+> +		return;
+> +
+> +	if (!stat(file->path, &st) && S_ISDIR(st.st_mode))
+> +		file->is_multi = true;
+> +}
+> +
+>  static int scandir_filter(const struct dirent *d)
+>  {
+>  	return !prefixcmp(d->d_name, "perf.data.");
+> @@ -206,6 +221,8 @@ int perf_data_file__open(struct perf_data_file *file)
+>  	if (check_pipe(file))
+>  		return 0;
+>  
+> +	check_multi(file);
+> +
+>  	if (!file->path)
+>  		file->path = default_data_path(file);
+>  
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 88aa2f09df93..4f0fcd2d3901 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -1252,11 +1252,10 @@ fetch_mmaped_event(struct perf_session *session,
+>  #define NUM_MMAPS 128
+>  #endif
+>  
+> -static int __perf_session__process_events(struct perf_session *session,
+> +static int __perf_session__process_events(struct perf_session *session, int fd,
+>  					  u64 data_offset, u64 data_size,
+>  					  u64 file_size, struct perf_tool *tool)
+>  {
+> -	int fd = perf_data_file__fd(session->file);
+>  	u64 head, page_offset, file_offset, file_pos, size;
+>  	int err, mmap_prot, mmap_flags, map_idx = 0;
+>  	size_t	mmap_size;
+> @@ -1362,18 +1361,40 @@ int perf_session__process_events(struct perf_session *session,
+>  				 struct perf_tool *tool)
+>  {
+>  	u64 size = perf_data_file__size(session->file);
+> -	int err;
+> +	int err, i;
+>  
+>  	if (perf_session__register_idle_thread(session) == NULL)
+>  		return -ENOMEM;
+>  
+> -	if (!perf_data_file__is_pipe(session->file))
+> -		err = __perf_session__process_events(session,
+> -						     session->header.data_offset,
+> -						     session->header.data_size,
+> -						     size, tool);
+> -	else
+> -		err = __perf_session__process_pipe_events(session, tool);
+> +	if (perf_data_file__is_pipe(session->file))
+> +		return __perf_session__process_pipe_events(session, tool);
+> +
+> +	err = __perf_session__process_events(session,
+> +					     perf_data_file__fd(session->file),
+> +					     session->header.data_offset,
+> +					     session->header.data_size,
+> +					     size, tool);
+> +	if (!session->file->is_multi || err)
+> +		return err;
 
-Sure thing. I agree there's no real logic to prefixing with intel.
+if we have file->is_multi true, the perf_data_file__fd(session->file)
+is the perf.header file right? So presumably, there's no data in it,
+and we dont need to call above __perf_session__process_events function?
 
+jirka
 
->>  arch/x86/kernel/Makefile             |   1 +
->>  arch/x86/kernel/imr.c                | 529 +++++++++++++++++++++++++++++++++++
->>  drivers/platform/x86/Kconfig         |  15 +
->>  drivers/platform/x86/Makefile        |   1 +
->>  drivers/platform/x86/intel_galileo.c | 175 ++++++++++++
+> +
+> +	/*
+> +	 * For multi-file data storage, events are processed for each
+> +	 * cpu/thread so it's already ordered.
+> +	 */
+> +	tool->ordered_events = false;
+> +
+> +	for (i = 0; i < session->file->nr_multi; i++) {
+> +		int fd = perf_data_file__multi_fd(session->file, i);
+> +
+> +		size = lseek(fd, 0, SEEK_END);
+> +		if (size == 0)
+> +			continue;
+> +
+> +		err = __perf_session__process_events(session, fd,
+> +						     0, size, size, tool);
+> +		if (err < 0)
+> +			break;
+> +	}
+>  
+>  	return err;
+>  }
+> -- 
+> 2.1.3
 > 
-> Here what about to make an hierarchy like:
-> intel/galileo.c
-> intel/mid/... would be those modules with intel_mid_ prefixes in
-> future. See my proposal regarding to drivers/mfd [1]
-> 
->>  8 files changed, 854 insertions(+)
->>  create mode 100644 arch/x86/include/asm/imr.h
->>  create mode 100644 arch/x86/include/asm/intel-quark.h
->>  create mode 100644 arch/x86/kernel/imr.c
->>  create mode 100644 drivers/platform/x86/intel_galileo.c
-> 
-> 
-> [1] http://www.spinics.net/lists/kernel/msg1886819.html
-
-That works for me will remember to include for V2.
-
-BOD
-
