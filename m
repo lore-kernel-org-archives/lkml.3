@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaLaFWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 00:22:22 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:23020 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaLaFUA (ORCPT
+	id S1751941AbaLaFWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 00:22:44 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:38595 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874AbaLaFT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 00:20:00 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-ea-54a3877aa982
+	Wed, 31 Dec 2014 00:19:59 -0500
+X-AuditID: cbfee68f-f791c6d000004834-2c-54a3877aaacd
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com
 Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
@@ -16,40 +16,41 @@ Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
         b.zolnierkie@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [RFC PATCHv2 2/8] devfreq: exynos: Add documentation for generic
- exynos memory bus frequency driver
-Date: Wed, 31 Dec 2014 14:19:46 +0900
-Message-id: <1420003192-5576-3-git-send-email-cw00.choi@samsung.com>
+        linux-samsung-soc@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: [RFC PATCHv2 4/8] clk: samsung: exynos4: Add divider clock id for
+ memory bus frequency
+Date: Wed, 31 Dec 2014 14:19:48 +0900
+Message-id: <1420003192-5576-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
 References: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSqFvVvjjEYM89DYvHaxYzWWycsZ7V
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42JZI2JSrFvVvjjE4O4JS4vHaxYzWWycsZ7V
 	4vqX56wWk+5PYLF4/cLQonfBVTaLs01v2C02Pb7GanF51xw2i8+9RxgtZpzfx2Sx9PpFJovb
-	jSvYLB6veMtusWrXH0YHfo8189YweuycdZfdY/Gel0wem5fUe/RtWcXo8XmTXABbFJdNSmpO
-	Zllqkb5dAldGb/MMxoI27Yr//9sZGxhXKnQxcnJICJhILJ61nxnCFpO4cG89WxcjF4eQwFJG
-	iW/vLjHBFG1ftI0VIrGIUeLw/qNQVU1MElNuTWUBqWIT0JLY/+IGG4gtIiAjcXXjdhaQImaB
-	/0wSj18tZwVJCAvkScz41w42lkVAVaLj53Qwm1fARWL37I3sEOsUJJYtnwlUz8HBKeAqMeGL
-	M0hYCKhkxpZmJpCZEgK32CUWtt9ngZgjIPFt8iEWkHoJAVmJTQeg3pGUOLjiBssERuEFjAyr
-	GEVTC5ILipPSi4z0ihNzi0vz0vWS83M3MQLj5/S/Z307GG8esD7EKMDBqMTDe8NucYgQa2JZ
-	cWXuIUZToA0TmaVEk/OBUZpXEm9obGZkYWpiamxkbmmmJM6bIPUzWEggPbEkNTs1tSC1KL6o
-	NCe1+BAjEwenVAOjReJ2y8TnUfc1ROTfqD+pu6TKmFj7fzLrkcKjwvwVwZwsZ4TX79c+Oe/Z
-	9wjtLzObL7zZs8JZ5EK93DbtibPXzpvO2N1Vc+rGiYM1n+56FAmwVk/RXPxjT1iXvKZUQ/2C
-	krUTZCx/HHkSd+X99uqJ37tjZml/+Hj3zdar5SeXszQL7Wovj2pLU2Ipzkg01GIuKk4EADnN
-	ifmaAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t9jAd2q9sUhBu9bFSwer1nMZLFxxnpW
+	jSvYLB6veMtucfhNO6vFql1/GB0EPNbMW8PosXPWXXaPxXteMnlsXlLv0bdlFaPH501yAWxR
+	XDYpqTmZZalF+nYJXBktlz4yFZyVrLh17xZTA+Nl0S5GTg4JAROJ00tWsEPYYhIX7q1n62Lk
+	4hASWMoo0fGzjwWmaMb3y8wQiUWMEi/bf7FAOE1MElNuTQWrYhPQktj/4gYbiC0iICNxdeN2
+	sCJmgTXMEh86NoHtEBZIlDhx5gEjiM0ioCrxqO0CE4jNK+AicebjVzaIdQoSy5bPZO1i5ODg
+	FHCVmPDFGSQsBFQyY0szE0TJS3aJz7s5IcYISHybfIgFpFxCQFZi0wFmiBJJiYMrbrBMYBRe
+	wMiwilE0tSC5oDgpvchYrzgxt7g0L10vOT93EyMwjk7/e9a/g/HuAetDjAIcjEo8vDftFocI
+	sSaWFVfmHmI0BdowkVlKNDkfGK15JfGGxmZGFqYmpsZG5pZmSuK8C6V+BgsJpCeWpGanphak
+	FsUXleakFh9iZOLglGpgZOHR3l1v3Vgb+prFWHjldmNhmZOiQkUbKyM9XJkrPmWys87Zayme
+	tsh3P3v7hC7BfqUA+5wZhsm/Mo//3XeQ7Xybw/n9LSW95R/S0uMDM447GR+UkP+oMWlKw5nD
+	QVJGL+e+0lJSM/gubBG8fqf2pxy2U2If5f6+4J5bekymxXnJedXN+SlKLMUZiYZazEXFiQDp
+	NUHIngIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9jAd2q9sUhBh0P9Cwer1nMZLFxxnpW
 	i+tfnrNaTLo/gcXi9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27xapdfxgd+D3WzFvD6LFz1l12j8V7XjJ5bF5S79G3ZRWjx+dNcgFsUQ2MNhmp
-	iSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJysplCXmlAKF
-	AhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM3qbZzAWtGlX/P/fztjAuFKhi5GTQ0LA
-	RGL7om2sELaYxIV769m6GLk4hAQWMUoc3n8UymlikphyayoLSBWbgJbE/hc32EBsEQEZiasb
-	t7OAFDEL/GeSePxqOdgoYYE8iRn/2plAbBYBVYmOn9PBbF4BF4ndszeyQ6xTkFi2fCZQPQcH
-	p4CrxIQvziBhIaCSGVuamSYw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERydz6R2
-	MK5ssDjEKMDBqMTDe8NucYgQa2JZcWXuIUYJDmYlEd7LmkAh3pTEyqrUovz4otKc1OJDjKZA
-	R01klhJNzgcmjrySeENjEzMjSyNzQwsjY3MlcV4l+7YQIYH0xJLU7NTUgtQimD4mDk6pBsad
-	0Tx5szbF/uBmFnPK3Xump+NXnftmx7qEXJNdW3LrTANt/n4M+vrvcljL8xK2Dc9r1OQL9oVL
-	7Jk/LXOK1usrpU8WuR2pmsV29dTn8/Lad/5qL3zta/a5IP1KfZ/T+dcPNNTu3rr5S1mc+c5F
-	0cLzV95WyJ8PuvquMbGnZZnzgc2mnuJ351oosRRnJBpqMRcVJwIAMnZNXeQCAAA=
+	N65gs3i84i27xeE37awWq3b9YXQQ8Fgzbw2jx85Zd9k9Fu95yeSxeUm9R9+WVYwenzfJBbBF
+	NTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDdraRQ
+	lphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMaLn0kangrGTFrXu3mBoYL4t2
+	MXJySAiYSMz4fpkZwhaTuHBvPVsXIxeHkMAiRomX7b9YIJwmJokpt6aygFSxCWhJ7H9xgw3E
+	FhGQkbi6cTtYEbPAGmaJDx2b2EESwgKJEifOPGAEsVkEVCUetV1gArF5BVwkznz8ygaxTkFi
+	2fKZrF2MHBycAq4SE744g4SFgEpmbGlmmsDIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+
+	7iZGcJw+k9rBuLLB4hCjAAejEg/vDbvFIUKsiWXFlbmHGCU4mJVEeC9rAoV4UxIrq1KL8uOL
+	SnNSiw8xmgIdNZFZSjQ5H5hC8kriDY1NzIwsjcwNLYyMzZXEeZXs20KEBNITS1KzU1MLUotg
+	+pg4OKUaGPvzJ8qw7D6yqUDwQ+HSNNWfzgrvw45cWWepk3VrnmijyjXrvDMOhk8TTPfevnsx
+	W5Zl6se3pfkSV27o5L4zPb3iwZvYvyHssn/djgow7f957fWGT8d1O8xvzPybHVz45vvrBzP1
+	mV8/6vq8JC+YLaLH1NnxQ9NUK9l430WlHbI+G/cFv/kY/lSJpTgj0VCLuag4EQDGk6h36QIA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,207 +58,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the documentation for generic exynos memory bus frequency
-driver.
+This patch adds the divider clock id for Exynos4 memory bus frequency.
+The clock id is used fo DVFS (Dynamic Voltage/Frequency Scaling)
+feature of exynos memory bus frequency.
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- .../devicetree/bindings/devfreq/exynos-busfreq.txt | 184 +++++++++++++++++++++
- 1 file changed, 184 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/devfreq/exynos-busfreq.txt
+ drivers/clk/samsung/clk-exynos4.c   | 10 +++++-----
+ include/dt-bindings/clock/exynos4.h |  7 ++++++-
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/devfreq/exynos-busfreq.txt b/Documentation/devicetree/bindings/devfreq/exynos-busfreq.txt
-new file mode 100644
-index 0000000..c601e88
---- /dev/null
-+++ b/Documentation/devicetree/bindings/devfreq/exynos-busfreq.txt
-@@ -0,0 +1,184 @@
-+
-+* Generic Exynos Memory Bus device
-+
-+The Samsung Exynos SoCs have many memory buses for data transfer between DRAM
-+memory and MMC/sub-IP in SoC. Almost Exynos SoCs have the common architecture
-+for memory buses. Generally, Exynos SoC express the memory bus by using memory
-+bus group and block. The memory bus group has one more memory bus blocks and
-+OPP table (including frequency and voltage for DVFS), regulator, devfreq-event
-+devices. Each memory bus block has a clock for own memory bus speen and
-+frequency table for DVFS. There are a little different among Exynos SoCs
-+because each Exynos SoC has the different sub-IP and differnt memory bus.
-+So, this difference should be specified in devicetree file.
-+
-+Required properties for memory bus group:
-+- compatible: Should be "samsung,exynos-memory-bus".
-+- operating-points: the OPP table including frequency/voltage information to
-+                  support DVFS (Dynamic Voltage/Frequency Scaling) feature.
-+- devfreq-events: the devfreq-event device to monitor the curret state of
-+                  memory bus group.
-+- vdd-mem-supply: the regulator to provide memory bus group with the voltage.
-+
-+Required properties for memory bus block:
-+- clock-names : the name of clock used by the memory bus, "memory-bus".
-+- clocks : phandles for clock specified in "clock-names" property.
-+- #clock-cells: should be 1.
-+- frequency: the frequency table to support DVFS feature.
-+
-+Example1 : Memory bus group/block in exynos3250.dtsi are listed below.
-+	Exynos3250 has two memory bus group (MIF, INT group). MIF memory bus
-+	group includes one memory bus block between DRAM and eMMC. Also, INT
-+	memory bus group includes eight memory bus blocks which support each
-+	sub-IPs between DRAM and sub-IPs.
-+
-+	memory_bus_mif: memory_bus@0 {
-+		compatible = "samsung,exynos-memory-bus";
-+
-+		operating-points = <
-+			400000 875000
-+			200000 800000
-+			133000 800000
-+			100000 800000
-+			50000  800000>;
-+		status = "disabled";
-+
-+		blocks {
-+			dmc_block: memory_bus_block1 {
-+				clocks = <&cmu_dmc CLK_DIV_DMC>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					400000
-+					200000
-+					133000
-+					100000
-+					50000>;
-+			};
-+		};
-+	};
-+
-+	memory_bus_int: memory_bus@1 {
-+		compatible = "samsung,exynos-memory-bus";
-+
-+		operating-points = <
-+			400000 950000
-+			200000 950000
-+			133000 925000
-+			100000 850000
-+			80000  850000
-+			50000  850000>;
-+
-+		status = "disabled";
-+
-+		blocks {
-+			peri_block: memory_bus_block1 {
-+				clocks = <&cmu CLK_DIV_ACLK_100>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					100000
-+					100000
-+					100000
-+					100000
-+					50000
-+					50000>;
-+			};
-+
-+			display_block: memory_bus_block2 {
-+				clocks = <&cmu CLK_DIV_ACLK_160>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					200000
-+					160000
-+					100000
-+					80000
-+					80000
-+					50000>;
-+			};
-+
-+			isp_block: memory_bus_block3 {
-+				clocks = <&cmu CLK_DIV_ACLK_200>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					200000
-+					200000
-+					100000
-+					80000
-+					50000
-+					50000>;
-+			};
-+
-+			gps_block: memory_bus_block4 {
-+				clocks = <&cmu CLK_DIV_ACLK_266>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					300000
-+					200000
-+					133000
-+					100000
-+					50000
-+					50000>;
-+			};
-+
-+			mcuisp_block: memory_bus_block5 {
-+				clocks = <&cmu CLK_DIV_ACLK_400_MCUISP>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					400000
-+					200000
-+					50000
-+					50000
-+					50000
-+					50000>;
-+			};
-+
-+			leftbus_block: memory_bus_block6 {
-+				clocks = <&cmu CLK_DIV_GDL>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					200000
-+					200000
-+					133000
-+					100000
-+					100000
-+					100000>;
-+			};
-+
-+			rightbus_block: memory_bus_block7 {
-+				clocks = <&cmu CLK_DIV_GDR>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					200000
-+					200000
-+					133000
-+					100000
-+					100000
-+					100000>;
-+			};
-+
-+			mfc_block: memory_bus_block8 {
-+				clocks = <&cmu CLK_SCLK_MFC>;
-+				clock-names = "memory-bus";
-+				frequency = <
-+					200000
-+					200000
-+					200000
-+					133000
-+					100000
-+					80000>;
-+			};
-+		};
-+	};
-+
-+Example2 : Usage case to handle the frequency/voltage of memory bus on runtime
-+	in exynos3250-rinato.dts are listed below.
-+
-+	&memory_bus_mif {
-+		devfreq-events = <&ppmu_dmc0_3>, <&ppmu_dmc1_3>;
-+		vdd-mem-supply = <&buck1_reg>;
-+		status = "okay";
-+	};
-+
-+	&memory_bus_int {
-+		devfreq-events = <&ppmu_leftbus_3>, <&ppmu_rightbus_3>;
-+		vdd-mem-supply = <&buck3_reg>;
-+		status = "okay";
-+	};
+diff --git a/drivers/clk/samsung/clk-exynos4.c b/drivers/clk/samsung/clk-exynos4.c
+index 88e8c6b..51462e8 100644
+--- a/drivers/clk/samsung/clk-exynos4.c
++++ b/drivers/clk/samsung/clk-exynos4.c
+@@ -703,12 +703,12 @@ static struct samsung_mux_clock exynos4x12_mux_clks[] __initdata = {
+ 
+ /* list of divider clocks supported in all exynos4 soc's */
+ static struct samsung_div_clock exynos4_div_clks[] __initdata = {
+-	DIV(0, "div_gdl", "mout_gdl", DIV_LEFTBUS, 0, 3),
++	DIV(CLK_DIV_GDL, "div_gdl", "mout_gdl", DIV_LEFTBUS, 0, 3),
+ 	DIV(0, "div_gpl", "div_gdl", DIV_LEFTBUS, 4, 3),
+ 	DIV(0, "div_clkout_leftbus", "mout_clkout_leftbus",
+ 			CLKOUT_CMU_LEFTBUS, 8, 6),
+ 
+-	DIV(0, "div_gdr", "mout_gdr", DIV_RIGHTBUS, 0, 3),
++	DIV(CLK_DIV_GDR, "div_gdr", "mout_gdr", DIV_RIGHTBUS, 0, 3),
+ 	DIV(0, "div_gpr", "div_gdr", DIV_RIGHTBUS, 4, 3),
+ 	DIV(0, "div_clkout_rightbus", "mout_clkout_rightbus",
+ 			CLKOUT_CMU_RIGHTBUS, 8, 6),
+@@ -781,10 +781,10 @@ static struct samsung_div_clock exynos4_div_clks[] __initdata = {
+ 			CLK_SET_RATE_PARENT, 0),
+ 	DIV(0, "div_clkout_top", "mout_clkout_top", CLKOUT_CMU_TOP, 8, 6),
+ 
+-	DIV(0, "div_acp", "mout_dmc_bus", DIV_DMC0, 0, 3),
++	DIV(CLK_DIV_ACP, "div_acp", "mout_dmc_bus", DIV_DMC0, 0, 3),
+ 	DIV(0, "div_acp_pclk", "div_acp", DIV_DMC0, 4, 3),
+ 	DIV(0, "div_dphy", "mout_dphy", DIV_DMC0, 8, 3),
+-	DIV(0, "div_dmc", "mout_dmc_bus", DIV_DMC0, 12, 3),
++	DIV(CLK_DIV_DMC, "div_dmc", "mout_dmc_bus", DIV_DMC0, 12, 3),
+ 	DIV(0, "div_dmcd", "div_dmc", DIV_DMC0, 16, 3),
+ 	DIV(0, "div_dmcp", "div_dmcd", DIV_DMC0, 20, 3),
+ 	DIV(0, "div_pwi", "mout_pwi", DIV_DMC1, 8, 4),
+@@ -829,7 +829,7 @@ static struct samsung_div_clock exynos4x12_div_clks[] __initdata = {
+ 	DIV_F(CLK_DIV_MCUISP1, "div_mcuisp1", "div_mcuisp0", E4X12_DIV_ISP1,
+ 						8, 3, CLK_GET_RATE_NOCACHE, 0),
+ 	DIV(CLK_SCLK_FIMG2D, "sclk_fimg2d", "mout_g2d", DIV_DMC1, 0, 4),
+-	DIV(0, "div_c2c", "mout_c2c", DIV_DMC1, 4, 3),
++	DIV(CLK_DIV_C2C, "div_c2c", "mout_c2c", DIV_DMC1, 4, 3),
+ 	DIV(0, "div_c2c_aclk", "div_c2c", DIV_DMC1, 12, 3),
+ };
+ 
+diff --git a/include/dt-bindings/clock/exynos4.h b/include/dt-bindings/clock/exynos4.h
+index 34fe28c..c4b1676 100644
+--- a/include/dt-bindings/clock/exynos4.h
++++ b/include/dt-bindings/clock/exynos4.h
+@@ -262,8 +262,13 @@
+ #define CLK_DIV_MCUISP1		453 /* Exynos4x12 only */
+ #define CLK_DIV_ACLK200		454 /* Exynos4x12 only */
+ #define CLK_DIV_ACLK400_MCUISP	455 /* Exynos4x12 only */
++#define CLK_DIV_ACP		456
++#define CLK_DIV_DMC		457
++#define CLK_DIV_C2C		458 /* Exynos4x12 only */
++#define CLK_DIV_GDL		459
++#define CLK_DIV_GDR		460
+ 
+ /* must be greater than maximal clock id */
+-#define CLK_NR_CLKS		456
++#define CLK_NR_CLKS		461
+ 
+ #endif /* _DT_BINDINGS_CLOCK_EXYNOS_4_H */
 -- 
 1.8.5.5
 
