@@ -1,356 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaLaPZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 10:25:42 -0500
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:37466 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbaLaPZk (ORCPT
+	id S1751517AbaLaPcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 10:32:39 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39240 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaLaPci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 10:25:40 -0500
+	Wed, 31 Dec 2014 10:32:38 -0500
 MIME-Version: 1.0
-In-Reply-To: <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie>
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
-	<1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie>
-Date: Wed, 31 Dec 2014 17:25:39 +0200
-Message-ID: <CAHp75VcL7hoOJThis-OS3ZfKFjD7M3985YTNvfPR+Atf7U43Pg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific setup
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
-        platform-driver-x86@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20141231141744.GE1256@krava.brq.redhat.com>
+References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
+ <1419405333-27952-17-git-send-email-namhyung@kernel.org> <20141231141744.GE1256@krava.brq.redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Thu, 1 Jan 2015 00:32:17 +0900
+X-Google-Sender-Auth: -HB5RATkOTZVz9EyecieezmqYs8
+Message-ID: <CAM9d7ci9CnMPGgcAbs=ZQcm_LAWeMSdfZcszji_C=1yzU9Yp1g@mail.gmail.com>
+Subject: Re: [PATCH 16/37] perf tools: Add a test case for timed thread handling
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 7:23 PM, Bryan O'Donoghue
-<pure.logic@nexus-software.ie> wrote:
-> Intel Galileo Gen1 and Gen2 boot to Linux from EFI and grub with IMR
-> registers enabled around the compressed kernel image and boot params data
-> structure.
+On Wed, Dec 31, 2014 at 11:17 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Wed, Dec 24, 2014 at 04:15:12PM +0900, Namhyung Kim wrote:
 >
-> The purpose of the IMRs around the compressed kernel and boot params data
-> structure is to ensure that no spurious data writes from any agent within
-> the Quark system can corrupt the kernel/boot-params data during boot.
+> SNIP
 >
-> The kernel needs to tear-down the IMRs placed around the compressed kernel
-> image and boot-params data structure since the EFI memory map marks the two
-> regions of memory as usable memory and the kernel will happily reuse these
-> memory regions. Without tearing down the boot-time IMRs drivers run the
-> significant risk of violating one of the stale IMRs since dma_alloc_coherent
-> can hand addresses to DMA capable south cluster peripherals such as the SD,
-> Ethernet, USB host/device, which will then cause an IMR access violation
-> when a DMA read/write occurs to the address ranges in question.
+>>               .func = NULL,
+>>       },
+>>  };
+>> diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+>> index 43ac17780629..1090337f63e5 100644
+>> --- a/tools/perf/tests/tests.h
+>> +++ b/tools/perf/tests/tests.h
+>> @@ -52,6 +52,7 @@ int test__switch_tracking(void);
+>>  int test__fdarray__filter(void);
+>>  int test__fdarray__add(void);
+>>  int test__thread_comm(void);
+>> +int test__thread_lookup_time(void);
+>>
+>>  #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
+>>  #ifdef HAVE_DWARF_UNWIND_SUPPORT
+>> diff --git a/tools/perf/tests/thread-lookup-time.c b/tools/perf/tests/thread-lookup-time.c
+>> new file mode 100644
+>> index 000000000000..6237ecf8caae
+>> --- /dev/null
+>> +++ b/tools/perf/tests/thread-lookup-time.c
+>> @@ -0,0 +1,174 @@
+>> +#include "tests.h"
+>> +#include "machine.h"
+>> +#include "thread.h"
+>> +#include "map.h"
+>> +#include "debug.h"
+>> +
+>> +static int thread__print_cb(struct thread *th, void *arg __maybe_unused)
+>> +{
+>> +     printf("thread: %d, start time: %"PRIu64" %s\n",
+>> +            th->tid, th->start_time, th->dead ? "(dead)" : "");
+>> +     return 0;
+>> +}
+>> +
+>> +static int lookup_with_timestamp(struct machine *machine)
+>> +{
+>> +     struct thread *t1, *t2, *t3;
+>> +     union perf_event fork = {
+>> +             .fork = {
+>> +                     .pid = 0,
+>> +                     .tid = 0,
+>> +                     .ppid = 1,
+>> +                     .ptid = 1,
+>> +             },
 >
-> Since the Quark EFI bringup code configures the system to reset on an IMR
-> violation, this means that common operations such as mouting an SD based
-> root filesystem, communicating with a USB device or sending Ethernet traffic
-> can cause an immediate system reset.
+> I've got following output from the test:
 >
-> IMR usage during system boot on Galileo is detailed in
-> Quark_SecureBoot_PRM_330234_001.pdf. This document details each IMR used
-> during the boot process and the data being protected by that IMR. The kernel
-> needs tidy-up IMRs used during the boot process to ensure an IMR violation
-> doesn't cause a system reset.
+> test child forked, pid 18483
+> ========= after t1 created ==========
+> thread: 0, start time: 0
+> ========= after t1 set comm ==========
+> thread: 0, start time: 20000
+> ========= after t2 forked ==========
+> thread: 0, start time: 50000
+> thread: 1, start time: 0
+> thread: 0, start time: 10000
+> thread: 0, start time: 20000 (dead)
+> ========= after t3 forked ==========
+> thread: 0, start time: 60000
+> thread: 1, start time: 0
+> thread: 0, start time: 10000
+> thread: 0, start time: 50000 (dead)
+> thread: 0, start time: 20000 (dead)
+> test child finished with 0
 >
-> This platform code does two things.
+> 'after t2 forked' data shows 'thread 0 with time 50000' and
+> newly added parent 'thread: 1, start time: 0'
 >
-> Firstly it tears down the boot-time IMRs used to protect the compressed
-> kernel image and boot params data structure.
+> this makes me wonder if you wanted switch 0 and 1 for pid and ppid
+> in above sample init and follow with forked pid 1 ... but not sure
+> because you're using the same sample for fork 3 ;-)
 >
-> Secondly it sets up an IMR around the kernel's text section from &_sinittext
-> - &_text ensuring that on the CPU in non-SMM mode can read/write this
-> address range. A spurious DMA write to the kernel's .text section will
-> then cause an IMR violation and system reset, consistent with the current
-> Galileo BSP behaviour.
+> my question is if that was intentional, because I've got
+> confused in here
+
+Yeah, it's intentional.  I'm testing machine__findnew_thread_time()
+and machine__process_fork_event() can generate threads properly.  The
+former creates a dead thread if the timestamp is before any of
+existing threads which have a same pid.  The latter can create two
+threads - one for tid and another for ptid (only if it doesn't exist).
+
+
 >
-> Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-> ---
->  drivers/platform/x86/Kconfig         |  15 +++
->  drivers/platform/x86/Makefile        |   1 +
->  drivers/platform/x86/intel_galileo.c | 175 +++++++++++++++++++++++++++++++++++
->  3 files changed, 191 insertions(+)
->  create mode 100644 drivers/platform/x86/intel_galileo.c
+>> +     };
+>> +     struct perf_sample sample = {
+>> +             .time = 50000,
+>> +     };
+>> +
+>> +     /* start_time is set to 0 */
+>> +     t1 = machine__findnew_thread(machine, 0, 0);
+>> +
+>> +     if (verbose > 1) {
+>> +             printf("========= after t1 created ==========\n");
+>> +             machine__for_each_thread(machine, thread__print_cb, NULL);
+>> +     }
+>> +
+>> +     TEST_ASSERT_VAL("wrong start time of old thread", t1->start_time == 0);
+>> +
+>> +     TEST_ASSERT_VAL("cannot find current thread",
+>> +                     machine__find_thread(machine, 0, 0) == t1);
+>> +
+>> +     TEST_ASSERT_VAL("cannot find current thread with time",
+>> +                     machine__findnew_thread_time(machine, 0, 0, 10000) == t1);
+>> +
+>> +     /* start_time is overwritten to new value */
+>> +     thread__set_comm(t1, "/usr/bin/perf", 20000);
+>> +
+>> +     if (verbose > 1) {
+>> +             printf("========= after t1 set comm ==========\n");
+>> +             machine__for_each_thread(machine, thread__print_cb, NULL);
+>> +     }
+>> +
+>> +     TEST_ASSERT_VAL("failed to update start time", t1->start_time == 20000);
+>> +
+>> +     TEST_ASSERT_VAL("should not find passed thread",
+>> +                     /* this will create yet another dead thread */
+>> +                     machine__findnew_thread_time(machine, 0, 0, 10000) != t1);
 >
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 638e7970..e384dcd 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -804,6 +804,21 @@ config INTEL_OAKTRAIL
->           enable/disable the Camera, WiFi, BT etc. devices. If in doubt, say Y
->           here; it will only load on supported platforms.
->
-> +config INTEL_GALILEO
-> +       bool "Intel Galileo Platform Support"
-> +       depends on X86_32 && PCI
-> +       select IOSF_MBI
-> +       select IMR
-> +       ---help---
-> +         Intel Galileo platform support. This code is used to tear-down
-> +         BIOS and Grub Isolated Memory Regions used during bootup.
-> +         This sanitises the IMR memory map to agree with the EFI/e820
-> +         memory map, without this code your IMR memory map will conflict
-> +         with the EFI memory map and it's highly likely DMA accesses initiated
-> +         by Ethernet, SD and/or USB will result in a system reset.
-> +
-> +         If in doubt, say Y here, the code will only run on a Galileo Gen1/Gen2
-> +
->  config SAMSUNG_Q10
->         tristate "Samsung Q10 Extras"
->         depends on ACPI
-> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-> index f82232b..a0c013d 100644
-> --- a/drivers/platform/x86/Makefile
-> +++ b/drivers/platform/x86/Makefile
-> @@ -51,6 +51,7 @@ obj-$(CONFIG_SAMSUNG_LAPTOP)  += samsung-laptop.o
->  obj-$(CONFIG_MXM_WMI)          += mxm-wmi.o
->  obj-$(CONFIG_INTEL_MID_POWER_BUTTON)   += intel_mid_powerbtn.o
->  obj-$(CONFIG_INTEL_OAKTRAIL)   += intel_oaktrail.o
-> +obj-$(CONFIG_INTEL_GALILEO)    += intel_galileo.o
->  obj-$(CONFIG_SAMSUNG_Q10)      += samsung-q10.o
->  obj-$(CONFIG_APPLE_GMUX)       += apple-gmux.o
->  obj-$(CONFIG_INTEL_RST)                += intel-rst.o
-> diff --git a/drivers/platform/x86/intel_galileo.c b/drivers/platform/x86/intel_galileo.c
-> new file mode 100644
-> index 0000000..2a555aa
-> --- /dev/null
-> +++ b/drivers/platform/x86/intel_galileo.c
-> @@ -0,0 +1,175 @@
-> +/*
-> + * intel_galileo.c - Intel Galileo platform support.
-> + *
-> + * Copyright(c) 2013 Intel Corporation.
-> + * Copyright(c) 2014 Bryan O'Donoghue <pure.logic@nexus-software.ie>
-> + *
-> + * This platform code provides an entry point to do Galileo specific
-> + * setup. Critically IMRs are policed to ensure the EFI provided memory
-> + * map informing the kernel of it's available memory is consistent with
-> + * the IMR lock-down
+> also this comment say that calling machine__findnew_thread_time will
+> create another dead thread, which actually did not happened based on
+> above test output
 
-Missed dot at the end.
+Oh, it's actually a dead thread - it's in the dead threads tree - but
+I just missed to set the dead flag. :)
 
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + */
-
-Define pr_fmt().
-
-> +#include <asm-generic/sections.h>
-> +#include <asm/imr.h>
-> +#include <asm/intel-quark.h>
-> +#include <linux/dmi.h>
-> +#include <linux/module.h>
-> +#include <linux/mm.h>
-> +#include <linux/init.h>
-> +#include <linux/io.h>
-> +#include <linux/platform_device.h>
-> +
-> +enum {
-> +       GALILEO_UNKNOWN = 0,
-> +       GALILEO_QRK_GEN1,
-> +       GALILEO_QRK_GEN2,
-> +};
-> +
-> +static struct dmi_system_id galileo_baseboards[] = {
-> +       {
-> +               .ident = "Galileo",
-> +               .matches = {
-> +                       DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-> +                       DMI_MATCH(DMI_BOARD_NAME, "Galileo"),
-> +               },
-> +               .driver_data = (void *)GALILEO_QRK_GEN1,
-> +       },
-> +       {
-> +               .ident = "GalileoGen2",
-> +               .matches = {
-> +                       DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
-> +                       DMI_MATCH(DMI_BOARD_NAME, "GalileoGen2"),
-> +               },
-> +               .driver_data = (void *)GALILEO_QRK_GEN2,
-> +       },
-> +       {}
-> +};
-> +
-> +#ifdef DEBUG
-
-Move this inside function.
-
-> +#define SANITY "IMR : sanity error "
-
-You may define this before function and undefine later. (Actually you
-missed undef)
-
-> +
-> +/**
-> + * intel_galileo_imr_sanity
-> + * Verify IMR sanity with some simple tests to verify
-> + * overlap, zero sized allocations
-> + *
-> + * @base: Physical base address of the kernel text section
-> + * @size: Extent of kernel memory to be covered from &_text to &_sinittext
-
-> + * @return: none
-
-Redundant.
-
-> + */
-> +static void __init
-> +intel_galileo_imr_sanity(unsigned long base, unsigned long size)
-> +{
-> +       /* Test zero zero */
-> +       if (imr_add(0, 0, 0, 0, true) == 0)
-> +               pr_err(SANITY "zero sized IMR @ 0x00000000\n");
-> +
-> +       /* Test overlap */
-> +       if (imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true) == 0)
-> +               pr_err(SANITY "overlapped IMR @ (0x%08lx - 0x%08lx)\n",
-> +                      base, base + size);
-> +
-> +       /* Try overlap - IMR_ALIGN */
-> +       base = base + size - IMR_ALIGN;
-
-base += size ...
-
-> +       if (imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true) == 0)
-> +               pr_err(SANITY "overlapped IMR @ (0x%08lx - 0x%08lx)\n",
-> +                      base, base + size);
-> +}
-> +#endif
-> +
-> +/**
-> + * intel_galileo_imr_init
-> + *
-> + * Tear down IMRs used during bootup. BIOS and Grub
-> + * both setup IMRs around compressed kernel, initrd memory
-> + * that need to be removed before the kernel hands out one
-> + * of the IMR encased addresses to a downstream DMA agent
-> + * such as the SD or Ethernet. IMRs on Galileo are setup to
-> + * immediately reset the system on violation - so if you're
-> + * running a root filesystem from SD - you'll need the IMRs
-> + * torn down or you'll find seemingly random resets when using
-> + * your filesystem.
-
-Split this to Summary and Description.
-
-> + */
-> +static void __init intel_galileo_imr_init(void)
-> +{
-> +       unsigned long base  = virt_to_phys(&_text);
-> +       unsigned long size = virt_to_phys(&_sinittext) - base - IMR_ALIGN;
-> +       int i, ret;
-> +
-> +       /* Tear down all existing unlocked IMRs */
-> +       for (i = 0; i <= QUARK_X1000_IMR_NUM; i++)
-
-NUM or last one? Again confusing.
-
-> +               imr_del(i, 0, 0);
-> +
-> +       /*
-> +        * Setup an IMR around the physical extent of the kernel
-> +        * Non-SMM mode core read/write from/to kernel physical region.
-> +        * IMR locked.
-> +        */
-> +       ret = imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true);
-> +       if (ret)
-> +               pr_err("Unable to setup IMR for kernel: (%p - %p)\n",
-> +                       &_text, &__init_begin);
-> +       else
-> +               pr_info("IMR protect kernel memory: %ldk (%p - %p)\n",
-> +                       size >> 10, &_text, &__init_begin);
-
-10 is a magic number. What is for?
-
-> +#ifdef DEBUG
-
-Move this inside the function.
-
-> +       intel_galileo_imr_sanity(base, size);
-> +#endif
-> +}
-> +
-> +/**
-> + * intel_galileo_init
-> + *
-> + * Identify a Galileo Gen1 or Gen2. If found run code to sanitise the
-> + * kernel memory space of IMRs that are inconsistent with the EFI memory map.
-
-Split this to parts.
-
-> + */
-> +static int __init intel_galileo_init(void)
-> +{
-> +       int ret = 0, type = GALILEO_UNKNOWN;
-> +       struct cpuinfo_x86 *c = &cpu_data(cpu);
-> +       const struct dmi_system_id *system_id;
-> +
-> +       if (!cpu_is_quark(c))
-
-x86_match_cpu() ?
-
-> +               return -ENODEV;
-> +
-> +       system_id = dmi_first_match(galileo_baseboards);
-> +
-> +       /* BIOS releases 0.7.5 and 0.8.0 do not provide DMI strings */
-> +       if (system_id != NULL) {
-> +               type = (int)system_id->driver_data;
-> +       } else {
-> +               pr_info("Galileo Gen1 BIOS version <= 0.8.0\n");
-> +               type = GALILEO_QRK_GEN1;
-> +       }
-> +
-> +       switch (type) {
-> +       case GALILEO_QRK_GEN1:
-> +       case GALILEO_QRK_GEN2:
-> +               intel_galileo_imr_init();
-> +               break;
-> +       default:
-> +               ret = -ENODEV;
-
-return -ENODEV; and remove ret variable.
-
-> +       }
-> +
-> +       return ret;
-
-return 0;
-
-> +}
-> +
-> +static void __exit intel_galileo_exit(void)
-> +{
-> +}
-
-Do we need empty exit function at all?
-
-> +
-> +module_init(intel_galileo_init);
-> +module_exit(intel_galileo_exit);
-> +
-> +MODULE_AUTHOR("Bryan O'Donoghue <pure.logic@nexus-software.ie>");
-> +MODULE_DESCRIPTION("Intel Galileo platform driver");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-With Best Regards,
-Andy Shevchenko
+Thanks,
+Namhyung
