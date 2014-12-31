@@ -1,412 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaLaPYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 10:24:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56240 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781AbaLaPWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 10:22:49 -0500
-From: Pratyush Anand <panand@redhat.com>
-To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Cc: tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com, oleg@redhat.com,
-        Pratyush Anand <panand@redhat.com>
-Subject: [RFC 2/8] ARM64: Refactor kprobes-arm64
-Date: Wed, 31 Dec 2014 20:51:18 +0530
-Message-Id: <9a86c217f387f45568c18b724024b0d3e040d2c6.1420038188.git.panand@redhat.com>
-In-Reply-To: <cover.1420038188.git.panand@redhat.com>
-References: <cover.1420038188.git.panand@redhat.com>
-In-Reply-To: <cover.1420038188.git.panand@redhat.com>
-References: <cover.1420038188.git.panand@redhat.com>
+	id S1752024AbaLaPZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 10:25:42 -0500
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:37466 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbaLaPZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 10:25:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie>
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
+	<1419873783-5161-3-git-send-email-pure.logic@nexus-software.ie>
+Date: Wed, 31 Dec 2014 17:25:39 +0200
+Message-ID: <CAHp75VcL7hoOJThis-OS3ZfKFjD7M3985YTNvfPR+Atf7U43Pg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] platform/x86: Add Intel Galileo platform specific setup
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
+        platform-driver-x86@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the stuff of kprobes-arm64.c can also be used by uprobes.c. So
-move all those part to common code area. In the process rename kprobe to
-probe whereever possible.
+On Mon, Dec 29, 2014 at 7:23 PM, Bryan O'Donoghue
+<pure.logic@nexus-software.ie> wrote:
+> Intel Galileo Gen1 and Gen2 boot to Linux from EFI and grub with IMR
+> registers enabled around the compressed kernel image and boot params data
+> structure.
+>
+> The purpose of the IMRs around the compressed kernel and boot params data
+> structure is to ensure that no spurious data writes from any agent within
+> the Quark system can corrupt the kernel/boot-params data during boot.
+>
+> The kernel needs to tear-down the IMRs placed around the compressed kernel
+> image and boot-params data structure since the EFI memory map marks the two
+> regions of memory as usable memory and the kernel will happily reuse these
+> memory regions. Without tearing down the boot-time IMRs drivers run the
+> significant risk of violating one of the stale IMRs since dma_alloc_coherent
+> can hand addresses to DMA capable south cluster peripherals such as the SD,
+> Ethernet, USB host/device, which will then cause an IMR access violation
+> when a DMA read/write occurs to the address ranges in question.
+>
+> Since the Quark EFI bringup code configures the system to reset on an IMR
+> violation, this means that common operations such as mouting an SD based
+> root filesystem, communicating with a USB device or sending Ethernet traffic
+> can cause an immediate system reset.
+>
+> IMR usage during system boot on Galileo is detailed in
+> Quark_SecureBoot_PRM_330234_001.pdf. This document details each IMR used
+> during the boot process and the data being protected by that IMR. The kernel
+> needs tidy-up IMRs used during the boot process to ensure an IMR violation
+> doesn't cause a system reset.
+>
+> This platform code does two things.
+>
+> Firstly it tears down the boot-time IMRs used to protect the compressed
+> kernel image and boot params data structure.
+>
+> Secondly it sets up an IMR around the kernel's text section from &_sinittext
+> - &_text ensuring that on the CPU in non-SMM mode can read/write this
+> address range. A spurious DMA write to the kernel's .text section will
+> then cause an IMR violation and system reset, consistent with the current
+> Galileo BSP behaviour.
+>
+> Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+> ---
+>  drivers/platform/x86/Kconfig         |  15 +++
+>  drivers/platform/x86/Makefile        |   1 +
+>  drivers/platform/x86/intel_galileo.c | 175 +++++++++++++++++++++++++++++++++++
+>  3 files changed, 191 insertions(+)
+>  create mode 100644 drivers/platform/x86/intel_galileo.c
+>
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index 638e7970..e384dcd 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -804,6 +804,21 @@ config INTEL_OAKTRAIL
+>           enable/disable the Camera, WiFi, BT etc. devices. If in doubt, say Y
+>           here; it will only load on supported platforms.
+>
+> +config INTEL_GALILEO
+> +       bool "Intel Galileo Platform Support"
+> +       depends on X86_32 && PCI
+> +       select IOSF_MBI
+> +       select IMR
+> +       ---help---
+> +         Intel Galileo platform support. This code is used to tear-down
+> +         BIOS and Grub Isolated Memory Regions used during bootup.
+> +         This sanitises the IMR memory map to agree with the EFI/e820
+> +         memory map, without this code your IMR memory map will conflict
+> +         with the EFI memory map and it's highly likely DMA accesses initiated
+> +         by Ethernet, SD and/or USB will result in a system reset.
+> +
+> +         If in doubt, say Y here, the code will only run on a Galileo Gen1/Gen2
+> +
+>  config SAMSUNG_Q10
+>         tristate "Samsung Q10 Extras"
+>         depends on ACPI
+> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+> index f82232b..a0c013d 100644
+> --- a/drivers/platform/x86/Makefile
+> +++ b/drivers/platform/x86/Makefile
+> @@ -51,6 +51,7 @@ obj-$(CONFIG_SAMSUNG_LAPTOP)  += samsung-laptop.o
+>  obj-$(CONFIG_MXM_WMI)          += mxm-wmi.o
+>  obj-$(CONFIG_INTEL_MID_POWER_BUTTON)   += intel_mid_powerbtn.o
+>  obj-$(CONFIG_INTEL_OAKTRAIL)   += intel_oaktrail.o
+> +obj-$(CONFIG_INTEL_GALILEO)    += intel_galileo.o
+>  obj-$(CONFIG_SAMSUNG_Q10)      += samsung-q10.o
+>  obj-$(CONFIG_APPLE_GMUX)       += apple-gmux.o
+>  obj-$(CONFIG_INTEL_RST)                += intel-rst.o
+> diff --git a/drivers/platform/x86/intel_galileo.c b/drivers/platform/x86/intel_galileo.c
+> new file mode 100644
+> index 0000000..2a555aa
+> --- /dev/null
+> +++ b/drivers/platform/x86/intel_galileo.c
+> @@ -0,0 +1,175 @@
+> +/*
+> + * intel_galileo.c - Intel Galileo platform support.
+> + *
+> + * Copyright(c) 2013 Intel Corporation.
+> + * Copyright(c) 2014 Bryan O'Donoghue <pure.logic@nexus-software.ie>
+> + *
+> + * This platform code provides an entry point to do Galileo specific
+> + * setup. Critically IMRs are policed to ensure the EFI provided memory
+> + * map informing the kernel of it's available memory is consistent with
+> + * the IMR lock-down
 
-No functional change.
+Missed dot at the end.
 
-Signed-off-by: Pratyush Anand <panand@redhat.com>
----
- arch/arm64/include/asm/probes.h                    | 25 +++----
- arch/arm64/kernel/Makefile                         |  2 +-
- arch/arm64/kernel/kprobes.c                        | 11 +--
- .../kernel/{kprobes-arm64.c => probes-arm64.c}     | 84 ++++++++++------------
- .../kernel/{kprobes-arm64.h => probes-arm64.h}     | 17 ++---
- arch/arm64/kernel/probes-condn-check.c             |  2 +-
- arch/arm64/kernel/probes-decode.h                  |  4 +-
- 7 files changed, 70 insertions(+), 75 deletions(-)
- rename arch/arm64/kernel/{kprobes-arm64.c => probes-arm64.c} (79%)
- rename arch/arm64/kernel/{kprobes-arm64.h => probes-arm64.h} (60%)
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
 
-diff --git a/arch/arm64/include/asm/probes.h b/arch/arm64/include/asm/probes.h
-index 9dba74d8ee86..daa2ff822a2e 100644
---- a/arch/arm64/include/asm/probes.h
-+++ b/arch/arm64/include/asm/probes.h
-@@ -15,36 +15,37 @@
- #ifndef _ARM_PROBES_H
- #define _ARM_PROBES_H
- 
--struct kprobe;
- struct arch_specific_insn;
- 
- typedef u32 kprobe_opcode_t;
--typedef unsigned long (kprobes_pstate_check_t)(unsigned long);
-+typedef u32 probe_opcode_t;
-+typedef unsigned long (probes_pstate_check_t)(unsigned long);
- typedef unsigned long
--(kprobes_condition_check_t)(struct kprobe *p, struct pt_regs *);
-+(probes_condition_check_t)(u32 opcode, struct arch_specific_insn *,
-+	struct pt_regs *);
- typedef void
--(kprobes_prepare_t)(struct kprobe *, struct arch_specific_insn *);
--typedef void (kprobes_handler_t) (u32 opcode, long addr, struct pt_regs *);
-+(probes_prepare_t)(u32 opcode, struct arch_specific_insn *);
-+typedef void (probes_handler_t) (u32 opcode, long addr, struct pt_regs *);
- 
- enum pc_restore_type {
- 	NO_RESTORE,
- 	RESTORE_PC,
- };
- 
--struct kprobe_pc_restore {
-+struct probe_pc_restore {
- 	enum pc_restore_type type;
- 	unsigned long addr;
- };
- 
- /* architecture specific copy of original instruction */
- struct arch_specific_insn {
--	kprobe_opcode_t *insn;
--	kprobes_pstate_check_t *pstate_cc;
--	kprobes_condition_check_t *check_condn;
--	kprobes_prepare_t *prepare;
--	kprobes_handler_t *handler;
-+	probe_opcode_t *insn;
-+	probes_pstate_check_t *pstate_cc;
-+	probes_condition_check_t *check_condn;
-+	probes_prepare_t *prepare;
-+	probes_handler_t *handler;
- 	/* restore address after step xol */
--	struct kprobe_pc_restore restore;
-+	struct probe_pc_restore restore;
- };
- 
- #endif
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 6e4dcde27742..0ed83ba3d46d 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -31,7 +31,7 @@ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
- arm64-obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
- arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
- arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
--arm64-obj-$(CONFIG_KPROBES)		+= kprobes.o kprobes-arm64.o		\
-+arm64-obj-$(CONFIG_KPROBES)		+= kprobes.o probes-arm64.o		\
- 					   probes-simulate-insn.o		\
- 					   probes-condn-check.o
- arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
-diff --git a/arch/arm64/kernel/kprobes.c b/arch/arm64/kernel/kprobes.c
-index be7c33070252..1cf5db159bc9 100644
---- a/arch/arm64/kernel/kprobes.c
-+++ b/arch/arm64/kernel/kprobes.c
-@@ -30,7 +30,7 @@
- #include <asm/insn.h>
- 
- #include "kprobes.h"
--#include "kprobes-arm64.h"
-+#include "probes-arm64.h"
- 
- #define MIN_STACK_SIZE(addr)	min((unsigned long)MAX_STACK_SIZE,	\
- 	(unsigned long)current_thread_info() + THREAD_START_SP - (addr))
-@@ -60,7 +60,7 @@ static void __kprobes arch_prepare_ss_slot(struct kprobe *p)
- static void __kprobes arch_prepare_simulate(struct kprobe *p)
- {
- 	if (p->ainsn.prepare)
--		p->ainsn.prepare(p, &p->ainsn);
-+		p->ainsn.prepare(p->opcode, &p->ainsn);
- 
- 	/* This instructions is not executed xol. No need to adjust the PC */
- 	p->ainsn.restore.addr = 0;
-@@ -91,7 +91,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 		return -EINVAL;
- 
- 	/* decode instruction */
--	switch (arm_kprobe_decode_insn(insn, &p->ainsn)) {
-+	switch (arm_probe_decode_insn(insn, &p->ainsn)) {
- 	case INSN_REJECTED:	/* insn not supported */
- 		return -EINVAL;
- 
-@@ -275,7 +275,8 @@ static int __kprobes reenter_kprobe(struct kprobe *p,
- 	switch (kcb->kprobe_status) {
- 	case KPROBE_HIT_SSDONE:
- 	case KPROBE_HIT_ACTIVE:
--		if (!p->ainsn.check_condn || p->ainsn.check_condn(p, regs)) {
-+		if (!p->ainsn.check_condn || p->ainsn.check_condn(p->opcode,
-+					&p->ainsn, regs)) {
- 			kprobes_inc_nmissed_count(p);
- 			setup_singlestep(p, regs, kcb, 1);
- 		} else	{
-@@ -408,7 +409,7 @@ void __kprobes kprobe_handler(struct pt_regs *regs)
- 			if (reenter_kprobe(p, regs, kcb))
- 				return;
- 		} else if (!p->ainsn.check_condn ||
--			   p->ainsn.check_condn(p, regs)) {
-+			   p->ainsn.check_condn(p->opcode, &p->ainsn, regs)) {
- 			/* Probe hit and conditional execution check ok. */
- 			set_current_kprobe(p);
- 			kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-diff --git a/arch/arm64/kernel/kprobes-arm64.c b/arch/arm64/kernel/probes-arm64.c
-similarity index 79%
-rename from arch/arm64/kernel/kprobes-arm64.c
-rename to arch/arm64/kernel/probes-arm64.c
-index bee7816cfd75..c258b390cbc1 100644
---- a/arch/arm64/kernel/kprobes-arm64.c
-+++ b/arch/arm64/kernel/probes-arm64.c
-@@ -1,5 +1,5 @@
- /*
-- * arch/arm64/kernel/kprobes-arm64.c
-+ * arch/arm64/kernel/probes-arm64.c
-  *
-  * Copyright (C) 2013 Linaro Limited.
-  *
-@@ -14,81 +14,73 @@
-  */
- 
- #include <linux/kernel.h>
--#include <linux/kprobes.h>
- #include <linux/module.h>
--#include <asm/kprobes.h>
-+#include <asm/probes.h>
- 
- #include "probes-decode.h"
--#include "kprobes-arm64.h"
-+#include "probes-arm64.h"
- #include "probes-simulate-insn.h"
- 
- /*
-- * condition check functions for kprobes simulation
-+ * condition check functions for (k/u)probes simulation
-  */
--static unsigned long __kprobes
--__check_pstate(struct kprobe *p, struct pt_regs *regs)
-+static unsigned long
-+__check_pstate(u32 opcode, struct arch_specific_insn *asi, struct pt_regs *regs)
- {
--	struct arch_specific_insn *asi = &p->ainsn;
- 	unsigned long pstate = regs->pstate & 0xffffffff;
- 
- 	return asi->pstate_cc(pstate);
- }
- 
--static unsigned long __kprobes
--__check_cbz(struct kprobe *p, struct pt_regs *regs)
-+static unsigned long
-+__check_cbz(u32 opcode, struct arch_specific_insn *asi, struct pt_regs *regs)
- {
--	return check_cbz((u32)p->opcode, regs);
-+	return check_cbz(opcode, regs);
- }
- 
--static unsigned long __kprobes
--__check_cbnz(struct kprobe *p, struct pt_regs *regs)
-+static unsigned long
-+__check_cbnz(u32 opcode, struct arch_specific_insn *asi, struct pt_regs *regs)
- {
--	return check_cbnz((u32)p->opcode, regs);
-+	return check_cbnz(opcode, regs);
- }
- 
--static unsigned long __kprobes
--__check_tbz(struct kprobe *p, struct pt_regs *regs)
-+static unsigned long
-+__check_tbz(u32 opcode, struct arch_specific_insn *asi, struct pt_regs *regs)
- {
--	return check_tbz((u32)p->opcode, regs);
-+	return check_tbz(opcode, regs);
- }
- 
--static unsigned long __kprobes
--__check_tbnz(struct kprobe *p, struct pt_regs *regs)
-+static unsigned long
-+__check_tbnz(u32 opcode, struct arch_specific_insn *asi, struct pt_regs *regs)
- {
--	return check_tbnz((u32)p->opcode, regs);
-+	return check_tbnz(opcode, regs);
- }
- 
- /*
-  * prepare functions for instruction simulation
-  */
--static void __kprobes
--prepare_none(struct kprobe *p, struct arch_specific_insn *asi)
-+static void
-+prepare_none(u32 opcode, struct arch_specific_insn *asi)
- {
- }
- 
--static void __kprobes
--prepare_bcond(struct kprobe *p, struct arch_specific_insn *asi)
-+static void
-+prepare_bcond(u32 opcode, struct arch_specific_insn *asi)
- {
--	kprobe_opcode_t insn = p->opcode;
--
- 	asi->check_condn = __check_pstate;
--	asi->pstate_cc = kprobe_condition_checks[insn & 0xf];
-+	asi->pstate_cc = probe_condition_checks[opcode & 0xf];
- }
- 
--static void __kprobes
--prepare_cbz_cbnz(struct kprobe *p, struct arch_specific_insn *asi)
-+static void
-+prepare_cbz_cbnz(u32 opcode, struct arch_specific_insn *asi)
- {
--	kprobe_opcode_t insn = p->opcode;
--
--	asi->check_condn = (insn & (1 << 24)) ? __check_cbnz : __check_cbz;
-+	asi->check_condn = (opcode & (1 << 24)) ? __check_cbnz : __check_cbz;
- }
- 
--static void __kprobes
--prepare_tbz_tbnz(struct kprobe *p, struct arch_specific_insn *asi)
-+static void
-+prepare_tbz_tbnz(u32 opcode, struct arch_specific_insn *asi)
- {
--	kprobe_opcode_t insn = p->opcode;
--
--	asi->check_condn = (insn & (1 << 24)) ? __check_tbnz : __check_tbz;
-+	asi->check_condn = (opcode & (1 << 24)) ? __check_tbnz : __check_tbz;
- }
- 
- 
-@@ -116,7 +108,7 @@ static const struct aarch64_decode_item load_literal_subtable[] = {
- 	DECODE_END,
- };
- 
--/* AArch64 instruction decode table for kprobes:
-+/* AArch64 instruction decode table for (k/u)probes:
-  * The instruction will fall into one of the 3 groups:
-  *  1. Single stepped out-of-the-line slot.
-  *     -Most instructions fall in this group, those does not
-@@ -194,7 +186,7 @@ static const struct aarch64_decode_item aarch64_decode_table[] = {
- 	 * Encoding: 1101 0101 00xx xxxx xxxx xxxx xxxx xxxx
- 	 *
- 	 * Note: MSR immediate (update PSTATE daif) is not safe handling
--	 * within kprobes, rejected.
-+	 * within (k/u)probes, rejected.
- 	 *
- 	 * Don't re-arrange these decode table entries.
- 	 */
-@@ -265,8 +257,8 @@ static const struct aarch64_decode_item aarch64_decode_table[] = {
- 	DECODE_END,
- };
- 
--static int __kprobes
--kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
-+static int
-+probe_decode_insn(probe_opcode_t insn, struct arch_specific_insn *asi,
- 		   const struct aarch64_decode_item *tbl)
- {
- 	unsigned int entry, ret = INSN_REJECTED;
-@@ -295,19 +287,19 @@ kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi,
- 
- 	case DECODE_TYPE_TABLE:
- 		/* recurse with next level decode table */
--		ret = kprobe_decode_insn(insn, asi,
-+		ret = probe_decode_insn(insn, asi,
- 					 decode_sub_table(tbl[entry]));
- 	};
- 	return ret;
- }
- 
- /* Return:
-- *   INSN_REJECTED     If instruction is one not allowed to kprobe,
-+ *   INSN_REJECTED     If instruction is one not allowed to (k/u)probe,
-  *   INSN_GOOD         If instruction is supported and uses instruction slot,
-  *   INSN_GOOD_NO_SLOT If instruction is supported but doesn't use its slot.
-  */
--enum kprobe_insn __kprobes
--arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi)
-+enum probe_insn
-+arm_probe_decode_insn(probe_opcode_t insn, struct arch_specific_insn *asi)
- {
--	return kprobe_decode_insn(insn, asi, aarch64_decode_table);
-+	return probe_decode_insn(insn, asi, aarch64_decode_table);
- }
-diff --git a/arch/arm64/kernel/kprobes-arm64.h b/arch/arm64/kernel/probes-arm64.h
-similarity index 60%
-rename from arch/arm64/kernel/kprobes-arm64.h
-rename to arch/arm64/kernel/probes-arm64.h
-index ff8a55f61cda..a748d0ddfeef 100644
---- a/arch/arm64/kernel/kprobes-arm64.h
-+++ b/arch/arm64/kernel/probes-arm64.h
-@@ -1,5 +1,5 @@
- /*
-- * arch/arm64/kernel/kprobes-arm64.h
-+ * arch/arm64/kernel/probes-arm64.h
-  *
-  * Copyright (C) 2013 Linaro Limited.
-  *
-@@ -13,18 +13,19 @@
-  * General Public License for more details.
-  */
- 
--#ifndef _ARM_KERNEL_KPROBES_ARM64_H
--#define _ARM_KERNEL_KPROBES_ARM64_H
-+#ifndef _ARM_KERNEL_PROBES_ARM64_H
-+#define _ARM_KERNEL_PROBES_ARM64_H
- 
--enum kprobe_insn {
-+enum probe_insn {
- 	INSN_REJECTED,
- 	INSN_GOOD_NO_SLOT,
- 	INSN_GOOD,
- };
- 
--extern kprobes_pstate_check_t * const kprobe_condition_checks[16];
-+typedef u32 probe_opcode_t;
-+extern probes_pstate_check_t * const probe_condition_checks[16];
- 
--enum kprobe_insn __kprobes
--arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi);
-+enum probe_insn
-+arm_probe_decode_insn(probe_opcode_t insn, struct arch_specific_insn *asi);
- 
--#endif /* _ARM_KERNEL_KPROBES_ARM64_H */
-+#endif /* _ARM_KERNEL_PROBES_ARM64_H */
-diff --git a/arch/arm64/kernel/probes-condn-check.c b/arch/arm64/kernel/probes-condn-check.c
-index e68aa0c86b94..8da70b6d59a6 100644
---- a/arch/arm64/kernel/probes-condn-check.c
-+++ b/arch/arm64/kernel/probes-condn-check.c
-@@ -114,7 +114,7 @@ static unsigned long __kprobes __check_al(unsigned long pstate)
- 	return true;
- }
- 
--kprobes_pstate_check_t * const kprobe_condition_checks[16] = {
-+probes_pstate_check_t * const probe_condition_checks[16] = {
- 	&__check_eq, &__check_ne, &__check_cs, &__check_cc,
- 	&__check_mi, &__check_pl, &__check_vs, &__check_vc,
- 	&__check_hi, &__check_ls, &__check_ge, &__check_lt,
-diff --git a/arch/arm64/kernel/probes-decode.h b/arch/arm64/kernel/probes-decode.h
-index 3650ab356251..887ffb217e17 100644
---- a/arch/arm64/kernel/probes-decode.h
-+++ b/arch/arm64/kernel/probes-decode.h
-@@ -37,8 +37,8 @@ struct aarch64_decode_header {
- };
- 
- struct aarch64_decode_actions {
--	kprobes_prepare_t *prepare;
--	kprobes_handler_t *handler;
-+	probes_prepare_t *prepare;
-+	probes_handler_t *handler;
- };
- 
- struct aarch64_decode_table {
+Define pr_fmt().
+
+> +#include <asm-generic/sections.h>
+> +#include <asm/imr.h>
+> +#include <asm/intel-quark.h>
+> +#include <linux/dmi.h>
+> +#include <linux/module.h>
+> +#include <linux/mm.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/platform_device.h>
+> +
+> +enum {
+> +       GALILEO_UNKNOWN = 0,
+> +       GALILEO_QRK_GEN1,
+> +       GALILEO_QRK_GEN2,
+> +};
+> +
+> +static struct dmi_system_id galileo_baseboards[] = {
+> +       {
+> +               .ident = "Galileo",
+> +               .matches = {
+> +                       DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
+> +                       DMI_MATCH(DMI_BOARD_NAME, "Galileo"),
+> +               },
+> +               .driver_data = (void *)GALILEO_QRK_GEN1,
+> +       },
+> +       {
+> +               .ident = "GalileoGen2",
+> +               .matches = {
+> +                       DMI_MATCH(DMI_BOARD_VENDOR, "Intel"),
+> +                       DMI_MATCH(DMI_BOARD_NAME, "GalileoGen2"),
+> +               },
+> +               .driver_data = (void *)GALILEO_QRK_GEN2,
+> +       },
+> +       {}
+> +};
+> +
+> +#ifdef DEBUG
+
+Move this inside function.
+
+> +#define SANITY "IMR : sanity error "
+
+You may define this before function and undefine later. (Actually you
+missed undef)
+
+> +
+> +/**
+> + * intel_galileo_imr_sanity
+> + * Verify IMR sanity with some simple tests to verify
+> + * overlap, zero sized allocations
+> + *
+> + * @base: Physical base address of the kernel text section
+> + * @size: Extent of kernel memory to be covered from &_text to &_sinittext
+
+> + * @return: none
+
+Redundant.
+
+> + */
+> +static void __init
+> +intel_galileo_imr_sanity(unsigned long base, unsigned long size)
+> +{
+> +       /* Test zero zero */
+> +       if (imr_add(0, 0, 0, 0, true) == 0)
+> +               pr_err(SANITY "zero sized IMR @ 0x00000000\n");
+> +
+> +       /* Test overlap */
+> +       if (imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true) == 0)
+> +               pr_err(SANITY "overlapped IMR @ (0x%08lx - 0x%08lx)\n",
+> +                      base, base + size);
+> +
+> +       /* Try overlap - IMR_ALIGN */
+> +       base = base + size - IMR_ALIGN;
+
+base += size ...
+
+> +       if (imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true) == 0)
+> +               pr_err(SANITY "overlapped IMR @ (0x%08lx - 0x%08lx)\n",
+> +                      base, base + size);
+> +}
+> +#endif
+> +
+> +/**
+> + * intel_galileo_imr_init
+> + *
+> + * Tear down IMRs used during bootup. BIOS and Grub
+> + * both setup IMRs around compressed kernel, initrd memory
+> + * that need to be removed before the kernel hands out one
+> + * of the IMR encased addresses to a downstream DMA agent
+> + * such as the SD or Ethernet. IMRs on Galileo are setup to
+> + * immediately reset the system on violation - so if you're
+> + * running a root filesystem from SD - you'll need the IMRs
+> + * torn down or you'll find seemingly random resets when using
+> + * your filesystem.
+
+Split this to Summary and Description.
+
+> + */
+> +static void __init intel_galileo_imr_init(void)
+> +{
+> +       unsigned long base  = virt_to_phys(&_text);
+> +       unsigned long size = virt_to_phys(&_sinittext) - base - IMR_ALIGN;
+> +       int i, ret;
+> +
+> +       /* Tear down all existing unlocked IMRs */
+> +       for (i = 0; i <= QUARK_X1000_IMR_NUM; i++)
+
+NUM or last one? Again confusing.
+
+> +               imr_del(i, 0, 0);
+> +
+> +       /*
+> +        * Setup an IMR around the physical extent of the kernel
+> +        * Non-SMM mode core read/write from/to kernel physical region.
+> +        * IMR locked.
+> +        */
+> +       ret = imr_add(base, size, IMR_NON_SMM, IMR_NON_SMM, true);
+> +       if (ret)
+> +               pr_err("Unable to setup IMR for kernel: (%p - %p)\n",
+> +                       &_text, &__init_begin);
+> +       else
+> +               pr_info("IMR protect kernel memory: %ldk (%p - %p)\n",
+> +                       size >> 10, &_text, &__init_begin);
+
+10 is a magic number. What is for?
+
+> +#ifdef DEBUG
+
+Move this inside the function.
+
+> +       intel_galileo_imr_sanity(base, size);
+> +#endif
+> +}
+> +
+> +/**
+> + * intel_galileo_init
+> + *
+> + * Identify a Galileo Gen1 or Gen2. If found run code to sanitise the
+> + * kernel memory space of IMRs that are inconsistent with the EFI memory map.
+
+Split this to parts.
+
+> + */
+> +static int __init intel_galileo_init(void)
+> +{
+> +       int ret = 0, type = GALILEO_UNKNOWN;
+> +       struct cpuinfo_x86 *c = &cpu_data(cpu);
+> +       const struct dmi_system_id *system_id;
+> +
+> +       if (!cpu_is_quark(c))
+
+x86_match_cpu() ?
+
+> +               return -ENODEV;
+> +
+> +       system_id = dmi_first_match(galileo_baseboards);
+> +
+> +       /* BIOS releases 0.7.5 and 0.8.0 do not provide DMI strings */
+> +       if (system_id != NULL) {
+> +               type = (int)system_id->driver_data;
+> +       } else {
+> +               pr_info("Galileo Gen1 BIOS version <= 0.8.0\n");
+> +               type = GALILEO_QRK_GEN1;
+> +       }
+> +
+> +       switch (type) {
+> +       case GALILEO_QRK_GEN1:
+> +       case GALILEO_QRK_GEN2:
+> +               intel_galileo_imr_init();
+> +               break;
+> +       default:
+> +               ret = -ENODEV;
+
+return -ENODEV; and remove ret variable.
+
+> +       }
+> +
+> +       return ret;
+
+return 0;
+
+> +}
+> +
+> +static void __exit intel_galileo_exit(void)
+> +{
+> +}
+
+Do we need empty exit function at all?
+
+> +
+> +module_init(intel_galileo_init);
+> +module_exit(intel_galileo_exit);
+> +
+> +MODULE_AUTHOR("Bryan O'Donoghue <pure.logic@nexus-software.ie>");
+> +MODULE_DESCRIPTION("Intel Galileo platform driver");
+> +MODULE_LICENSE("GPL v2");
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
 -- 
-2.1.0
-
+With Best Regards,
+Andy Shevchenko
