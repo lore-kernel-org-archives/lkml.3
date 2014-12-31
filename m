@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaLaFUS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 00:20:18 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:38595 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476AbaLaFUD (ORCPT
+	id S1751614AbaLaFUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 00:20:16 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:23020 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461AbaLaFUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 00:20:03 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-91-54a3877b3fe8
+	Wed, 31 Dec 2014 00:20:02 -0500
+X-AuditID: cbfee68f-f791c6d000004834-2e-54a3877bddf2
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com
 Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
@@ -17,38 +17,38 @@ Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [RFC PATCHv2 8/8] ARM: dts: Add memory bus node for Exynos4412-based
- TRATS2 board
-Date: Wed, 31 Dec 2014 14:19:52 +0900
-Message-id: <1420003192-5576-9-git-send-email-cw00.choi@samsung.com>
+Subject: [RFC PATCHv2 6/8] ARM: dts: Add memory bus node for Exynos4210
+Date: Wed, 31 Dec 2014 14:19:50 +0900
+Message-id: <1420003192-5576-7-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
 References: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSrFvdvjjEYO1mWYvHaxYzWWycsZ7V
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSqFvdvjjEYMMvDovHaxYzWWycsZ7V
 	4vqX56wWk+5PYLF4/cLQonfBVTaLs01v2C02Pb7GanF51xw2i8+9RxgtZpzfx2Sx9PpFJovb
 	jSvYLB6veMtusWrXH0YHfo8189YweuycdZfdY/Gel0wem5fUe/RtWcXo8XmTXABbFJdNSmpO
-	Zllqkb5dAlfGlkUuBXM5K7Zc/cjWwPiMvYuRg0NCwETizhyRLkZOIFNM4sK99WxdjFwcQgJL
-	GSX+Hm5lgam53mcHEV/EKHHm8A9GCKeJSWLKraksIN1sAloS+1/cYAOxRQRkJK5u3M4CUsQs
-	8J9J4vGr5awgCWGBGIkNN1ayg9gsAqoSCze9A2vmFXCR6L24jwXiDAWJZctnsoJs5hRwlZjw
-	xRkkLARUMmNLMxPITAmBe+wSi38dgZojIPFt8iGoS2UlNh1ghhgjKXFwxQ2WCYzCCxgZVjGK
-	phYkFxQnpReZ6BUn5haX5qXrJefnbmIERs7pf88m7GC8d8D6EKMAB6MSD+8Nu8UhQqyJZcWV
-	uYcYTYE2TGSWEk3OB8ZnXkm8obGZkYWpiamxkbmlmZI472upn8FCAumJJanZqakFqUXxRaU5
-	qcWHGJk4OKUaGLUZPALaX69j++rIns4SfuXYb5bbE2xbNnGIpa60/OIT+0nty1Uzm6clP9by
-	n9See+pT/NyiVTHhXSquzqKRF/6yKv06OD3w2Lk3+pzSlvZ/5Y55Gz+ZsU1+nlHoPrU1l4Rd
-	Un29dKe/SLQ2KJd2cVA88/u4x3aV4B8MxxebhP4Tf+X6+u8nHiWW4oxEQy3mouJEACF0FmWX	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t9jAd3q9sUhBt27xCwer1nMZLFxxnpW
-	i+tfnrNaTLo/gcXi9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27xapdfxgd+D3WzFvD6LFz1l12j8V7XjJ5bF5S79G3ZRWjx+dNcgFsUQ2MNhmp
-	iSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJysplCXmlAKF
-	AhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM7YscimYy1mx5epHtgbGZ+xdjBwcEgIm
-	Etf77LoYOYFMMYkL99azdTFycQgJLGKUOHP4ByOE08QkMeXWVBaQKjYBLYn9L26wgdgiAjIS
-	VzduZwEpYhb4zyTx+NVyVpCEsECMxIYbK9lBbBYBVYmFm96BNfMKuEj0XtzHArFOQWLZ8pms
-	IFdwCrhKTPjiDBIWAiqZsaWZaQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwZH5
-	TGoH48oGi0OMAhyMSjy8N+wWhwixJpYVV+YeYpTgYFYS4b2sCRTiTUmsrEotyo8vKs1JLT7E
-	aAp01ERmKdHkfGDSyCuJNzQ2MTOyNDI3tDAyNlcS51WybwsREkhPLEnNTk0tSC2C6WPi4JRq
-	YFxv32Ny7b56kJju3hdP/N+8P93/9un7B/XpF258sO25oRzW1Mvpcfnx4/zwc9lvrjAwbUuc
-	48b42edv8PtF7Y7+FinyJzSqrG/vP6T9wPCJ6MFHdfbu3g81l0ZI7pOreXXSa8nG9fkfO9kf
-	yHT+k9pdfvjzP+4+hf7/DvPaPgd3HBQ9ueTAqYlKLMUZiYZazEXFiQBX0Mfy4gIAAA==
+	Zllqkb5dAldGz6LlLAVbJCoevlzJ2sA4XaiLkZNDQsBEYtG/t8wQtpjEhXvr2boYuTiEBJYy
+	Sqw6t5sdpujm7bksEIlFjBKf31yAqmpikphyayoLSBWbgJbE/hc32EBsEQEZiasbt4N1MAv8
+	Z5J4/Go5K0hCWMBdoulIOyOIzSKgKrFgwSkmEJtXwEXi8bLHjBDrFCSWLZ8JVM/BwSngKjHh
+	izNIWAioZMaWZiaQmRICt9glDh95wgwxR0Di2+RDLCD1EgKyEpsOQL0jKXFwxQ2WCYzCCxgZ
+	VjGKphYkFxQnpRcZ6xUn5haX5qXrJefnbmIExs/pf8/6dzDePWB9iFGAg1GJh/em3eIQIdbE
+	suLK3EOMpkAbJjJLiSbnA6M0ryTe0NjMyMLUxNTYyNzSTEmcd6HUz2AhgfTEktTs1NSC1KL4
+	otKc1OJDjEwcnFINjDoeTu7PJT/K/1+77maFY8dp9pfM6lG1KnFTy/MO2yd3er98vzF5h3FF
+	guCnBfet5b8wJQo85RfVY/1SbP23+aXZY/5PzoJT7HeerUopMJn3n3m28qyt+23P6vzM8zmz
+	/3IFW4jyqbepRhM55R8dj0hKN1hfeUTMv8bl9k2j6WdDKiUmTFv/Q4mlOCPRUIu5qDgRALzx
+	SRmaAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t9jAd3q9sUhBp2qFo/XLGay2DhjPavF
+	9S/PWS0m3Z/AYvH6haFF74KrbBZnm96wW2x6fI3V4vKuOWwWn3uPMFrMOL+PyWLp9YtMFrcb
+	V7BZPF7xlt1i1a4/jA78HmvmrWH02DnrLrvH4j0vmTw2L6n36NuyitHj8ya5ALaoBkabjNTE
+	lNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCLlRTKEnNKgUIB
+	icXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZPYuWsxRskah4+HIlawPjdKEuRk4OCQET
+	iZu357JA2GISF+6tZ+ti5OIQEljEKPH5zQUop4lJYsqtqWBVbAJaEvtf3GADsUUEZCSubtzO
+	AlLELPCfSeLxq+WsIAlhAXeJpiPtjCA2i4CqxIIFp5hAbF4BF4nHyx4zQqxTkFi2fCZQPQcH
+	p4CrxIQvziBhIaCSGVuamSYw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERybz6R2
+	MK5ssDjEKMDBqMTDe8NucYgQa2JZcWXuIUYJDmYlEd7LmkAh3pTEyqrUovz4otKc1OJDjKZA
+	R01klhJNzgemjbySeENjEzMjSyNzQwsjY3MlcV4l+7YQIYH0xJLU7NTUgtQimD4mDk6pBkZn
+	qTIjKx6usucrWqd929tjrPpv0/4ZFyoPzA6U96zguKY8OdtRZjHHxEOXZHqYOpu7WW6XTP2e
+	w3vv7qG+CZLd3ZH7V9/5bzTz+0HGNqGApz0b/Pu/cYYlnJBfWe1yq6/z16/Lh5cJuhU8TOA8
+	PDds8evltWqBs3IWs2xN4f35+3pMgLZG93QlluKMREMt5qLiRAAM7Cod4wIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,42 +56,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the Exynos4412 memory-bus node which includes the regulator
-and devfreq-event phandle. The devfreq-event phandle is used for the
-governor of devfreq device and provide the current usage state of
-MIF (Memory Interface) / INT (Internal) memory bus group.
+This patch adds the memory bus node for Exynos4210 SoC. Exynos4210 SoC has
+one memory bus to translate data between DRAM and eMMC/sub-IPs because
+Exynos4210 must need only one regulator for memory bus.
+
+Following list specifies the detailed relation between memory bus clock and
+sub-IPs:
+- DMC/ACP clock : DMC (Dynamic Memory Controller)
+- ACLK200 clock : LCD0
+- ACLK100 clock : PERIL/PERIR/MFC(PCLK)
+- ACLK160 clock : CAM/TV/LCD0/LCD1
+- ACLK133 clock : FSYS/GPS
+- GDL/GDR clock : leftbus/rightbus
+- SCLK_MFC clock : MFC
 
 Cc: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- arch/arm/boot/dts/exynos4412-trats2.dts | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/boot/dts/exynos4210.dtsi | 93 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index bee0eed..21ba25e 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -917,6 +917,18 @@
+diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
+index b2598de..c039409 100644
+--- a/arch/arm/boot/dts/exynos4210.dtsi
++++ b/arch/arm/boot/dts/exynos4210.dtsi
+@@ -48,6 +48,99 @@
+ 		};
  	};
- };
  
-+&memory_bus_mif {
-+	devfreq-events = <&ppmu_dmc0_3>, <&ppmu_dmc1_3>;
-+	vdd-mem-supply = <&buck1_reg>;
-+	status = "okay";
-+};
++	memory_bus: memory_bus@0 {
++		compatible = "samsung,exynos-memory-bus";
 +
-+&memory_bus_int {
-+	devfreq-events = <&ppmu_leftbus_3>, <&ppmu_rightbus_3>;
-+	vdd-mem-supply = <&buck3_reg>;
-+	status = "okay";
-+};
++		operating-points = <
++			400000 1150000
++			267000 1050000
++			133000 1025000>;
++		status = "disabled";
 +
- &pinctrl_0 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&sleep0>;
++		blocks {
++			dmc_block: memory_bus_block1 {
++				clocks = <&clock CLK_DIV_DMC>;
++				clock-names = "memory-bus";
++				frequency = <
++					400000
++					267000
++					133000>;
++			};
++
++			acp_block: memory_bus_block2 {
++				clocks = <&clock CLK_DIV_ACP>;
++				clock-names = "memory-bus";
++				frequency = <
++					200000
++					160000
++					133000>;
++			};
++
++			peri_block: memory_bus_block3 {
++				clocks = <&clock CLK_ACLK100>;
++				clock-names = "memory-bus";
++				frequency = <
++					100000
++					100000
++					100000>;
++			};
++
++			fsys_block: memory_bus_block4 {
++				clocks = <&clock CLK_ACLK133>;
++				clock-names = "memory-bus";
++				frequency = <
++					133000
++					133000
++					100000>;
++			};
++
++			display_block: memory_bus_block5 {
++				clocks = <&clock CLK_ACLK160>;
++				clock-names = "memory-bus";
++				frequency = <
++					160000
++					133000
++					100000>;
++			};
++
++			lcd0_block: memory_bus_block6 {
++				clocks = <&clock CLK_ACLK200>;
++				clock-names = "memory-bus";
++				frequency = <
++					200000
++					160000
++					100000>;
++			};
++
++			leftbus_block: memory_bus_block7 {
++				clocks = <&clock CLK_DIV_GDL>;
++				clock-names = "memory-bus";
++				frequency = <
++					200000
++					160000
++					100000>;
++			};
++
++			rightbus_block: memory_bus_block8 {
++				clocks = <&clock CLK_DIV_GDR>;
++				clock-names = "memory-bus";
++				frequency = <
++					200000
++					160000
++					100000>;
++			};
++
++			mfc_block: memory_bus_block9 {
++				clocks = <&clock CLK_SCLK_MFC>;
++				clock-names = "memory-bus";
++				frequency = <
++					200000
++					160000
++					100000>;
++			};
++		};
++	};
++
+ 	pmu_system_controller: system-controller@10020000 {
+ 		clock-names = "clkout0", "clkout1", "clkout2", "clkout3",
+ 				"clkout4", "clkout8", "clkout9";
 -- 
 1.8.5.5
 
