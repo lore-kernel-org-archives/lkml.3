@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbaLaIUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 03:20:14 -0500
-Received: from mail-by2on0133.outbound.protection.outlook.com ([207.46.100.133]:31104
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1752181AbaLaIXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 03:23:09 -0500
+Received: from mail-bn1on0148.outbound.protection.outlook.com ([157.56.110.148]:18268
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751881AbaLaIUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 03:20:08 -0500
+	id S1751881AbaLaIUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 03:20:16 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,37 +15,36 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v8 11/21] Documentation: dt-bindings: Add bindings for Synopsys DW MIPI DSI DRM bridge driver
-Date: Wed, 31 Dec 2014 16:23:29 +0800
-Message-ID: <1420014219-915-12-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v8 13/21] Documentation: dt-bindings: Add bindings for i.MX specific Synopsys DW MIPI DSI driver
+Date: Wed, 31 Dec 2014 16:23:31 +0800
+Message-ID: <1420014219-915-14-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420014219-915-1-git-send-email-Ying.Liu@freescale.com>
 References: <1420014219-915-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.158.2)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(92566001)(47776003)(110136001)(2351001)(31966008)(21056001)(77156002)(76176999)(104016003)(87936001)(107046002)(50226001)(106466001)(81156004)(62966003)(229853001)(64706001)(19580395003)(46102003)(4396001)(20776003)(48376002)(69596002)(97736003)(50986999)(6806004)(36756003)(89996001)(19580405001)(86362001)(68736005)(50466002)(84676001)(77096005)(99396003)(2950100001)(85426001)(120916001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0630;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(979002)(6009001)(339900001)(199003)(189002)(110136001)(47776003)(89996001)(104016003)(4396001)(84676001)(50226001)(46102003)(6806004)(69596002)(20776003)(50986999)(19580395003)(19580405001)(120916001)(76176999)(97736003)(86362001)(87936001)(48376002)(62966003)(105606002)(77156002)(2950100001)(99396003)(64706001)(77096005)(68736005)(21056001)(2351001)(36756003)(229853001)(107046002)(50466002)(81156004)(31966008)(85426001)(92566001)(106466001)(217873001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0637;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0637;
 X-Forefront-PRVS: 0442E569BC
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 08:20:05.9172
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 08:20:13.4369
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0630
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0637
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree bindings for Synopsys DesignWare MIPI DSI
-host controller DRM bridge driver.
+This patch adds device tree bindings for i.MX specific Synopsys DW MIPI DSI driver.
 
 Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
@@ -58,8 +57,8 @@ v6->v7:
 v5->v6:
  * Add the #address-cells and #size-cells properties in the example 'ports'
    node.
- * Remove the useless input-port properties from the example port@0 and port@1
-   nodes.
+ * Remove the useless pllref_gate clock from the required clocks, clock-names
+   property.
 
 v4->v5:
  * None.
@@ -68,45 +67,50 @@ v3->v4:
  * Newly introduced in v4.  This is separated from the relevant driver patch
    in v3 to address Stefan Wahren's comment.
 
- .../devicetree/bindings/drm/bridge/dw_mipi_dsi.txt | 73 ++++++++++++++++++++++
- 1 file changed, 73 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
+ .../devicetree/bindings/drm/imx/mipi_dsi.txt       | 78 ++++++++++++++++++++++
+ 1 file changed, 78 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
 
-diff --git a/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt b/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
+diff --git a/Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt b/Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
 new file mode 100644
-index 0000000..f88a8d6
+index 0000000..75a7766
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt
-@@ -0,0 +1,73 @@
-+Device-Tree bindings for Synopsys DesignWare MIPI DSI host controller
++++ b/Documentation/devicetree/bindings/drm/imx/mipi_dsi.txt
+@@ -0,0 +1,78 @@
++i.MX specific Device-Tree bindings for Synopsys DesignWare MIPI DSI host controller
 +
-+The controller is a digital core that implements all protocol functions
-+defined in the MIPI DSI specification, providing an interface between
-+the system and the MIPI DPHY, and allowing communication with a MIPI DSI
-+compliant display.
++MIPI DSI host controller
++========================
++
++The MIPI DSI host controller is a Synopsys DesignWare IP.
++The common device tree documentation for this controller can be found
++at [1].
 +
 +Required properties:
 + - #address-cells: Should be <1>.
 + - #size-cells: Should be <0>.
-+ - compatible: The compatible string should be "fsl,imx6q-mipi-dsi" for
-+   i.MX6q/sdl SoCs.  For other SoCs, please refer to their specific
-+   device tree binding documentations.
-+ - reg: Represent the physical address range of the controller.
-+ - interrupts: Represent the controller's interrupt to the CPU(s).
-+ - clocks, clock-names: Phandles to the controller pll reference and
-+   core configuration clocks, as described in [1].
-+
-+For more required properties, please refer to relevant device tree binding
-+documentations which describe the controller embedded in specific SoCs.
++ - compatible: The compatible string should be "fsl,imx6q-mipi-dsi"
++   for i.MX6q/sdl SoCs.
++ - reg: Physical base address of the controller and length of memory
++   mapped region.
++ - interrupts: The controller's interrupt number to the CPU(s).
++ - gpr: Should be <&gpr>.
++   The phandle points to the iomuxc-gpr region containing the
++   multiplexer control register for the controller.
++ - clocks, clock-names: Phandles to the controller pllref and core_cfg clocks,
++   as described in [2] and [3].
 +
 +Required sub-nodes:
-+ - A node to represent a DSI peripheral as described in [2].
++ - ports: This node may contain up to four port nodes with endpoint
++   definitions as defined in [4], corresponding to the four inputs to
++   the controller multiplexer.
++ - A node to represent a DSI peripheral as described in [5].
 +
-+For more required sub-nodes, please refer to relevant device tree binding
-+documentations which describe the controller embedded in specific SoCs.
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+[2] Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt
++[1] Documentation/devicetree/bindings/drm/bridge/dw_mipi_dsi.txt.
++[2] Documentation/devicetree/bindings/clock/clock-bindings.txt
++[3] Documentation/devicetree/bindings/clock/imx6q-clock.txt
++[4] Documentation/devicetree/bindings/media/video-interfaces.txt
++[5] Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt
 +
 +example:
 +	gpr: iomuxc-gpr@020e0000 {
