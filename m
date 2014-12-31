@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaLaPWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 10:22:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56799 "EHLO mx1.redhat.com"
+	id S1751953AbaLaPXC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 10:23:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35148 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751856AbaLaPWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 10:22:52 -0500
+	id S1751856AbaLaPW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 10:22:57 -0500
 From: Pratyush Anand <panand@redhat.com>
 To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
 Cc: tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
@@ -13,9 +13,9 @@ Cc: tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
         linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
         masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com, oleg@redhat.com,
         Pratyush Anand <panand@redhat.com>
-Subject: [RFC 4/8] ARM64: Add instruction_pointer_set function
-Date: Wed, 31 Dec 2014 20:51:20 +0530
-Message-Id: <028aab951a24c56075b1060afa1c2b2d88c09083.1420038188.git.panand@redhat.com>
+Subject: [RFC 5/8] ARM64: Re-factor flush_ptrace_access
+Date: Wed, 31 Dec 2014 20:51:21 +0530
+Message-Id: <f41f96aaed90007076ce496b9a0746c6f1a01ddb.1420038188.git.panand@redhat.com>
 In-Reply-To: <cover.1420038188.git.panand@redhat.com>
 References: <cover.1420038188.git.panand@redhat.com>
 In-Reply-To: <cover.1420038188.git.panand@redhat.com>
@@ -24,31 +24,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-instruction_pointer_set is needed for uprobe implementation. Hence
-define it for ARM64.
+Re-factor flush_ptrace_access to reuse vma independent part.
 
 Signed-off-by: Pratyush Anand <panand@redhat.com>
 ---
- arch/arm64/include/asm/ptrace.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm64/mm/flush.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-index 24cc048ac3e7..29d9bf5e3635 100644
---- a/arch/arm64/include/asm/ptrace.h
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -206,6 +206,12 @@ static inline int valid_user_regs(struct user_pt_regs *regs)
- #define instruction_pointer(regs)	((regs)->pc)
- #define stack_pointer(regs)		((regs)->sp)
+diff --git a/arch/arm64/mm/flush.c b/arch/arm64/mm/flush.c
+index b6f14e8d2121..9a4dd6f39cfb 100644
+--- a/arch/arm64/mm/flush.c
++++ b/arch/arm64/mm/flush.c
+@@ -34,19 +34,25 @@ void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
+ 		__flush_icache_all();
+ }
  
-+static inline void instruction_pointer_set(struct pt_regs *regs,
-+					   unsigned long val)
++static void __flush_ptrace_access(struct page *page, unsigned long uaddr,
++		void *kaddr, unsigned long len)
 +{
-+	instruction_pointer(regs) = val;
++	unsigned long addr = (unsigned long)kaddr;
++
++	if (icache_is_aliasing()) {
++		__flush_dcache_area(kaddr, len);
++		__flush_icache_all();
++	} else {
++		flush_icache_range(addr, addr + len);
++	}
 +}
 +
- #ifdef CONFIG_SMP
- extern unsigned long profile_pc(struct pt_regs *regs);
- #else
+ static void flush_ptrace_access(struct vm_area_struct *vma, struct page *page,
+ 				unsigned long uaddr, void *kaddr,
+ 				unsigned long len)
+ {
+-	if (vma->vm_flags & VM_EXEC) {
+-		unsigned long addr = (unsigned long)kaddr;
+-		if (icache_is_aliasing()) {
+-			__flush_dcache_area(kaddr, len);
+-			__flush_icache_all();
+-		} else {
+-			flush_icache_range(addr, addr + len);
+-		}
+-	}
++	if (vma->vm_flags & VM_EXEC)
++		__flush_ptrace_access(page, uaddr, kaddr, len);
+ }
+ 
+ /*
 -- 
 2.1.0
 
