@@ -1,65 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500AbaLaQet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 11:34:49 -0500
-Received: from smtp-out-118.synserver.de ([212.40.185.118]:1057 "EHLO
-	smtp-out-118.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaLaQes (ORCPT
+	id S1751508AbaLaQnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 11:43:08 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:36218 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726AbaLaQnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 11:34:48 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 501
-Message-ID: <54A425A3.2070108@metafoo.de>
-Date: Wed, 31 Dec 2014 17:34:43 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Wed, 31 Dec 2014 11:43:06 -0500
+Date: Wed, 31 Dec 2014 17:43:02 +0100
+From: Sylvain BERTRAND <sylvain.bertrand@gmail.com>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/3] x86: tools: shell-ify calc_run_size perl-ism
+Message-ID: <20141231164302.GA1840@dhcppc1>
 MIME-Version: 1.0
-To: Andrew Jackson <andrew.jackson@arm.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ASoC: adi: Add missing return statement.
-References: <1420042837-3337-1-git-send-email-andrew.jackson@arm.com>
-In-Reply-To: <1420042837-3337-1-git-send-email-andrew.jackson@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2014 05:20 PM, Andrew Jackson wrote:
-> From: Andrew Jackson <Andrew.Jackson@arm.com>
->
-> The probe routine was disabling the clock even
-> if the system was configured successfully.  Add
-> a return statement to leave clocks enabled.
->
-> Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
+Choked while compiling linux on a lightweight system, i.e. freed from perl.
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+New script tested with dash shell and bash shell.
 
-Thanks, never noticed since the clock is shared with other peripherals.
+V2:
+	- chocked->choked typo
+	- early conversion from hexadecimal
+	- error messages on stderr
 
-> ---
-> Spotted while reviewing clock preparation
->
->   sound/soc/adi/axi-i2s.c |    2 ++
->   1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/sound/soc/adi/axi-i2s.c b/sound/soc/adi/axi-i2s.c
-> index 7752860..4c23381 100644
-> --- a/sound/soc/adi/axi-i2s.c
-> +++ b/sound/soc/adi/axi-i2s.c
-> @@ -240,6 +240,8 @@ static int axi_i2s_probe(struct platform_device *pdev)
->   	if (ret)
->   		goto err_clk_disable;
->
-> +	return 0;
-> +
->   err_clk_disable:
->   	clk_disable_unprepare(i2s->clk);
->   	return ret;
->
-
+-- 
+Sylvain
