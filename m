@@ -1,67 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaLaCNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 21:13:54 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:41470 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaLaCNv (ORCPT
+	id S1751993AbaLaCQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 21:16:22 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54555 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaLaCQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 21:13:51 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] lib/bitmap.c: Elide bitmap_copy_le on little-endian
-Date: Wed, 31 Dec 2014 03:13:32 +0100
-Message-Id: <1419992012-15545-2-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1419992012-15545-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1419992012-15545-1-git-send-email-linux@rasmusvillemoes.dk>
+	Tue, 30 Dec 2014 21:16:21 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 31 Dec 2014 11:18:31 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        "Stefan I. Strogin" <s.strogin@partner.samsung.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
+        Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, rostedt@goodmis.org,
+        namhyung@kernel.org
+Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
+Message-ID: <20141231021831.GD22342@bbox>
+References: <cover.1419602920.git.s.strogin@partner.samsung.com>
+ <20141229023639.GC27095@bbox>
+ <54A1B11A.6020307@codeaurora.org>
+ <20141230044726.GA22342@bbox>
+ <54A34A1C.90603@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54A34A1C.90603@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On little-endian, there's no reason to have an extra, presumably less
-efficient, way of copying a bitmap.
+Hey, Gioh
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/linux/bitmap.h | 4 ++++
- lib/bitmap.c           | 2 ++
- 2 files changed, 6 insertions(+)
+On Wed, Dec 31, 2014 at 09:58:04AM +0900, Gioh Kim wrote:
+> 
+> 
+> 2014-12-30 오후 1:47에 Minchan Kim 이(가) 쓴 글:
+> >On Mon, Dec 29, 2014 at 11:52:58AM -0800, Laura Abbott wrote:
+> >>On 12/28/2014 6:36 PM, Minchan Kim wrote:
+> >>>Hello,
+> >>>
+> >>>On Fri, Dec 26, 2014 at 05:39:01PM +0300, Stefan I. Strogin wrote:
+> >>>>Hello all,
+> >>>>
+> >>>>Here is a patch set that adds /proc/cmainfo.
+> >>>>
+> >>>>When compiled with CONFIG_CMA_DEBUG /proc/cmainfo will contain information
+> >>>>about about total, used, maximum free contiguous chunk and all currently
+> >>>>allocated contiguous buffers in CMA regions. The information about allocated
+> >>>>CMA buffers includes pid, comm, allocation latency and stacktrace at the
+> >>>>moment of allocation.
+> >>>
+> >>>It just says what you are doing but you didn't say why we need it.
+> >>>I can guess but clear description(ie, the problem what you want to
+> >>>solve with this patchset) would help others to review, for instance,
+> >>>why we need latency, why we need callstack, why we need new wheel
+> >>>rather than ftrace and so on.
+> >>>
+> >>>Thanks.
+> >>>
+> >>
+> >>
+> >>I've been meaning to write something like this for a while so I'm
+> >>happy to see an attempt made to fix this. I can't speak for the
+> >>author's reasons for wanting this information but there are
+> >>several reasons why I was thinking of something similar.
+> >>
+> >>The most common bug reports seen internally on CMA are 1) CMA is
+> >>too slow and 2) CMA failed to allocate memory. For #1, not all
+> >>allocations may be slow so it's useful to be able to keep track
+> >>of which allocations are taking too long. For #2, migration
+> >
+> >Then, I don't think we could keep all of allocations. What we need
+> >is only slow allocations. I hope we can do that with ftrace.
+> >
+> >ex)
+> >
+> ># cd /sys/kernel/debug/tracing
+> ># echo 1 > options/stacktrace
+> ># echo cam_alloc > set_ftrace_filter
+> ># echo your_threshold > tracing_thresh
+> >
+> >I know it doesn't work now but I think it's more flexible
+> >and general way to handle such issues(ie, latency of some functions).
+> >So, I hope we could enhance ftrace rather than new wheel.
+> >Ccing ftrace people.
+> 
+> For CMA performance test or code flow check, ftrace is better.
+> 
+> ex)
+> echo cma_alloc > /sys/kernel/debug/tracing/set_graph_function
+> echo function_graph > /sys/kernel/debug/tracing/current_tracer
+> echo funcgraph-proc > /sys/kernel/debug/tracing/trace_options
+> echo nosleep-time > /sys/kernel/debug/tracing/trace_options
+> echo funcgraph-tail > /sys/kernel/debug/tracing/trace_options
+> echo 1 > /sys/kernel/debug/tracing/tracing_on
 
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index bd1748919872..a1977e153e63 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -170,7 +170,11 @@ extern void bitmap_fold(unsigned long *dst, const unsigned long *orig,
- extern int bitmap_find_free_region(unsigned long *bitmap, unsigned int bits, int order);
- extern void bitmap_release_region(unsigned long *bitmap, unsigned int pos, int order);
- extern int bitmap_allocate_region(unsigned long *bitmap, unsigned int pos, int order);
-+#ifdef __BIG_ENDIAN
- extern void bitmap_copy_le(unsigned long *dst, const unsigned long *src, unsigned int nbits);
-+#else
-+#define bitmap_copy_le bitmap_copy
-+#endif
- extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int bits);
- extern int bitmap_print_to_pagebuf(bool list, char *buf,
- 				   const unsigned long *maskp, int nmaskbits);
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 5ded9180528b..8014996b1531 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -1207,6 +1207,7 @@ EXPORT_SYMBOL(bitmap_allocate_region);
-  *
-  * Require nbits % BITS_PER_LONG == 0.
-  */
-+#ifdef __BIG_ENDIAN
- void bitmap_copy_le(unsigned long *dst, const unsigned long *src, unsigned int nbits)
- {
- 	unsigned int i;
-@@ -1219,3 +1220,4 @@ void bitmap_copy_le(unsigned long *dst, const unsigned long *src, unsigned int n
- 	}
- }
- EXPORT_SYMBOL(bitmap_copy_le);
-+#endif
+I didn't know such detail. Thanks for the tip, Gioh.
+
+> 
+> This can trace every cam_alloc and allocation time.
+> I think ftrace is better to debug latency.
+> If a buffer had allocated and had peak latency and freed,
+> we can check it.
+
+Agree.
+
+> 
+> But ftrace doesn't provide current status how many buffers we have and what address it is.
+> So I think debugging information is useful.
+
+I didn't say debug information is useless.
+If we need to know snapshot of cma at the moment,
+describe why we need it and send a patch to implement the idea
+rather than dumping lots of information is always better.
+
+> 
+> 
+> 
+> >
+> >Futhermore, if we really need to have such information, we need more data
+> >(ex, how many of pages were migrated out, how many pages were dropped
+> >without migrated, how many pages were written back, how many pages were
+> >retried with the page lock and so on).
+> >In this case, event trace would be better.
+> >
+> >
+> >>failure is fairly common but it's still important to rule out
+> >>a memory leak from a dma client. Seeing all the allocations is
+> >>also very useful for memory tuning (e.g. how big does the CMA
+> >>region need to be, which clients are actually allocating memory).
+> >
+> >Memory leak is really general problem and could we handle it with
+> >page_owner?
+> >
+> >>
+> >>ftrace is certainly usable for tracing CMA allocation callers and
+> >>latency. ftrace is still only a fixed size buffer though so it's
+> >>possible for information to be lost if other logging is enabled.
+> >
+> >Sorry, I don't get with only above reasons why we need this. :(
+> >
+> >>For most of the CMA use cases, there is a very high cost if the
+> >>proper debugging information is not available so the more that
+> >>can be guaranteed the better.
+> >>
+> >>It's also worth noting that the SLUB allocator has a sysfs
+> >>interface for showing allocation callers when CONFIG_SLUB_DEBUG
+> >>is enabled.
+> >>
+> >>Thanks,
+> >>Laura
+> >>
+> >>--
+> >>Qualcomm Innovation Center, Inc.
+> >>Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> >>a Linux Foundation Collaborative Project
+> >>
+> >>--
+> >>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >>the body to majordomo@kvack.org.  For more info on Linux MM,
+> >>see: http://www.linux-mm.org/ .
+> >>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-2.1.3
-
+Kind regards,
+Minchan Kim
