@@ -1,242 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295AbaLaI0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 03:26:08 -0500
-Received: from mail.kernel.org ([198.145.29.136]:33724 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281AbaLaI0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 03:26:06 -0500
-Date: Wed, 31 Dec 2014 00:26:03 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-Message-ID: <20141231082442.GA39073@jaegeuk-mac02.mot-mobility.com>
-References: <20141222020317.GB3335@lcm>
- <000001d01db6$7d718770$78549650$@samsung.com>
- <20141222231604.GC8287@jaegeuk-mac02.mot.com>
- <002a01d01e5c$e2ba0250$a82e06f0$@samsung.com>
- <20141223073609.GA9946@jaegeuk-mac02.hsd1.ca.comcast.net>
- <006e01d01f4f$ef9fa940$cedefbc0$@samsung.com>
- <20141225083523.GA18401@jaegeuk-mac02.hsd1.ca.comcast.net>
- <003301d02337$e793a210$b6bae630$@samsung.com>
- <20141229212300.GB29975@jaegeuk-mac02.mot.com>
- <004b01d02418$f77db490$e6791db0$@samsung.com>
+	id S1751659AbaLaIfC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 03:35:02 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:56860 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaLaIfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 03:35:00 -0500
+Message-ID: <54A3B526.9040903@linaro.org>
+Date: Wed, 31 Dec 2014 16:34:46 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <004b01d02418$f77db490$e6791db0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: ashwinc@codeaurora.org, catalin.marinas@arm.com, rjw@rjwysocki.net,
+        mark.rutland@arm.com, olof@lixom.net, grant.likely@linaro.org,
+        will.deacon@arm.com
+CC: linaro-acpi@lists.linaro.org, Liviu.Dudau@arm.com, lv.zheng@intel.com,
+        robh@kernel.org, Lorenzo.Pieralisi@arm.com, al.stone@linaro.org,
+        daniel.lezcano@linaro.org, robert.moore@intel.com,
+        linux-acpi@vger.kernel.org, Charles.Garcia-Tobin@arm.com,
+        rric@kernel.org, jason@lakedaemon.net, arnd@arndb.de,
+        marc.zyngier@arm.com, jcm@redhat.com, broonie@kernel.org,
+        "bhelgaas@google.com." <linux-arm-kernel@lists.infradead.org>,
+        graeme.gregory@linaro.org, Kangkang.Shen@huawei.com,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        Sudeep.Holla@arm.com
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>    <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org>    <CAJ5Y-eZ5cu9_OhG24yAv+CZq7zKg0vU+eVGekyN+9dDzaz1OhQ@mail.gmail.com> <8fc9550c96a468b3e50d51a37db68a33.squirrel@www.codeaurora.org>
+In-Reply-To: <8fc9550c96a468b3e50d51a37db68a33.squirrel@www.codeaurora.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+On 2014年12月31日 04:13, ashwinc@codeaurora.org wrote:
+> Hi Hanjun,
+>
+> Overall the document looks good to us. Some minor clarifications below.
+>
+>> ---------- Forwarded message ----------
+>> From: Graeme Gregory <graeme.gregory@linaro.org>
+>>
+>> Add documentation for the guidelines of how to use ACPI
+>> on ARM64.
+>>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>   Documentation/arm64/arm-acpi.txt |  323
+>> ++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 323 insertions(+)
+>>   create mode 100644 Documentation/arm64/arm-acpi.txt
+>>
+>
+> [..]
+>
+>> +Relationship with Device Tree
+>> +-----------------------------
+>
+> [..]
+>
+>> +When booting using ACPI tables, the /chosen node in DT will still be
+>> parsed
+>> +to extract the kernel command line and initrd path.  No other section of
+>> the
+>> +DT will be used.
+>
+> Is this still true?
 
-On Tue, Dec 30, 2014 at 06:10:21PM +0800, Chao Yu wrote:
-> Hi Jaegeuk,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Tuesday, December 30, 2014 5:23 AM
-> > To: Chao Yu
-> > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> > Subject: Re: [RFC PATCH] f2fs: add extent cache base on rb-tree
-> > 
-> > Hi Chao,
-> > 
-> > On Mon, Dec 29, 2014 at 03:19:18PM +0800, Chao Yu wrote:
-> > 
-> > [snip]
-> > 
-> > Nice draft. :)
-> 
-> Thanks! :)
-> 
-> > 
-> > >
-> > > Please see the draft below.
-> > >
-> > > 1) Extent management:
-> > > If we use global management that managing all extents which are from different
-> > > inodes in sbi, we will face with serious lock contention when we access these
-> > > extents belong to different inodes concurrently, the loss may outweights the
-> > > gain.
-> > 
-> > Agreed.
-> > 
-> > > So we choose a local management for extent which means all extents are
-> > > managed by inode itself to avoid above lock contention. Addtionlly, we manage
-> > > all extents globally by linking all inode into a global lru list for extent
-> > > cache shrinker.
-> > > Approach:
-> > > 	a) build extent tree/rwlock/lru list/extent count in each inode.
-> > > 		*extent tree: link all extent in rb-tree;
-> > > 		*rwlock: protect fields when accessing extent cache concurrently;
-> > > 		*lru list: sort all extents in accessing time order;
-> > > 		*extent count: record total count of extents in cache.
-> > > 	b) use lru shrink list in sbi to manage all inode which cached extents.
-> > > 		*inode will be added or repostioned in this global list whenever
-> > > 		extent is being access in this inode.
-> > > 		*use spinlock to protect this shrink list.
-> > 
-> > 1. How about adding a data structure with inode number instead of referring
-> > inode pointer?
-> > 
-> > 2. How about managing extent entries globally and setting an upper bound to
-> > the number of extent entries instead of limiting them per each inode?
-> > (The rb-tree will handle many extents per inode.)
-> 
-> [assumption]
-> Approach A: global lru list;
-> Approach B: lru list per inode.
-> 
-> I have considered Approach A before writing the draft, although Approach A could
-> provide us higher ratio hit due to global lru, it may make lock contention more
-> intensively and has more memory overhead descripted below. So I choose more
-> conservative Approach B.
-> 1) as extent_entry will split in Cow, we may lock extent_list more times when
-> move these separated extent entries in extent_list, unless we have batch mode
-> interface.
-> 2) lock overhead between shrinker and lookuper and updater.
-> e.g. extent_list: (LRU) A -> B -> C -> D -> E -> F -> G (MRU)
-> (#1) has A, C, E, G in rb-tree
-> (#2) has B, D, F in rb-tree
-> shrinker op: lock list -> trylock #1 -> unlock list -> free A -> unlock #1
-> 	lock list -> trylock #2 -> unlock list -> free B -> unlock #2
-> 	lock list -> trylock #1 -> unlock list -> free C -> unlock #1
-> 	...
+No, we can booting the ACPI system in EFI stub without dtb. Catalin
+also pointed out this issue, I will remove this paragraph.
 
-lock_list -> list_del(A) -> unlock_list -> lock #1 -> remove_tree(A) -> unlock #1
--> free A.
+>
+>
+>> +Programmable Power Control Resources
+>> +------------------------------------
+>> +Programmable power control resources include such resources as
+>> voltage/current
+>> +providers (regulators) and clock sources.
+>> +
+>> +The kernel assumes that power control of these resources is represented
+>> with
+>> +Power Resource Objects (ACPI section 7.1).  The ACPI core will then
+>> handle
+>> +correctly enabling and disabling resources as they are needed.  In order
+>> to
+>> +get that to work, ACPI assumes each device has defined D-states and that
+>> these
+>> +can be controlled through the optional ACPI methods _PS0, _PS1, _PS2, and
+>> _PS3;
+>> +in ACPI, _PS0 is the method to invoke to turn a device full on, and _PS3
+>> is for
+>> +turning a device full off.
+>> +
+>> +The kernel ACPI code will also assume that the _PS? methods follow the
+>> normal
+>> +ACPI rules for such methods:
+>> +
+>> +   -- If either _PS0 or _PS3 is implemented, then the other method must
+>> also
+>> +      be implemented.
+>> +
+>> +   -- If a device requires usage or setup of a power resource when on,
+>> the ASL
+>> +      should organize that it is allocated/enabled using the _PS0 method.
+>> +
+>> +   -- Resources allocated or enabled in the _PS0 method should be
+>> disabled
+>> +      or de-allocated in the _PS3 method.
+>> +
+>> +   -- Firmware will leave the resources in a reasonable state before
+>> handing
+>> +      over control to the kernel.
+>> +
+>
+> We found this section could be improved a bit by explicitly calling out
+> the options for handling device PM. Platform vendor has two choices.
+> Resources can be managed in _PSx routine which gets called on entry to Dx.
+>   Or they can be declared separately as power resources with their own _ON
+> and _OFF methods.  They are then tied back to D-states for a particular
+> device via _PRx which specifies which power resources a device needs to be
+> on while in Dx.  Kernel then tracks number of devices using a power
+> resource and calls _ON/_OFF as needed.
 
-Or,
-lock_list -> list_del(A, B, C) -> unlock_list -> lock #1 -> remove_tree(A, C) ->
-unlock #1 -> free A, C -> lock #2 -> remove_tree(B) -> unlock #2
+Good point, this exactly what ACPI spec says, we need to update this
+paragraph a little bit.
 
-I think a couple of list operations do not cause severe lock contention.
-And, if we assing minimum length for extent caches, the contention would be
-distributed.
+>
+>> +Such code in _PS? methods will of course be very platform specific.  But,
+>> +this allows the driver to abstract out the interface for operating the
+>> device
+>> +and avoid having to read special non-standard values from ACPI tables.
+>> Further,
+>> +abstracting the use of these resources allows the hardware to change over
+>> time
+>> +without requiring updates to the driver.
+>> +
+>
+> I think its been mentioned in the past and you planned to add it here: we
+> should explicitly state that with ACPI, the kernel clock/vreg framework
+> are not expected to be used at all.
+>
+>> +
+>> +Clocks
+>> +------
+>> +ACPI makes the assumption that clocks are initialized by the firmware --
+>> +UEFI, in this case -- to some working value before control is handed over
+>> +to the kernel.  This has implications for devices such as UARTs, or SoC
+>> +driven LCD displays, for example.
+>> +
+>> +When the kernel boots, the clock is assumed to be set to reasonable
+>> +working value.  If for some reason the frequency needs to change -- e.g.,
+>> +throttling for power management -- the device driver should expect that
+>> +process to be abstracted out into some ACPI method that can be invoked
+>
+> Exception to this is CPU clocks where CPPC provides a much richer
+> interface than just blindly invoking some method.
+>
+>> +(please see the ACPI specification for further recommendations on
+>> standard
+>> +methods to be expected).  If is not, there is no direct way for ACPI to
+>> +control the clocks.
+>> +
+>> +
+>
+> [..]
+>
+>> +ASWG
+>> +----
+>> +The following areas are not yet fully defined for ARM in the 5.1 version
+>> +of the ACPI specification and are expected to be worked through in the
+>> +UEFI ACPI Specification Working Group (ASWG):
+>> +
+>> +   -- ACPI based CPU topology
+>> +   -- ACPI based Power management
+>
+> Should clarify this to idle management rather than generic power management.
 
-This means that, it needs to manage each of all the extents in the cache should
-have the length larger than minimum value.
+and I think it is CPU idle specific here, right?
 
-> *trylock/unlock* for all free extent entries belong to one inode will be separated
-> to lots of parts, resulting in more contention.
-> 3) it has more memory overhead in each extent entry:
-> Approach A: need add inode number for backref and list_head *
+>
+>> +   -- CPU idle control based on PSCI
+>> +   -- CPU performance control (CPPC)
+>
+> There is no ongoing work on CPPC. Additional enhancements may be explored
+> in the future, but spec is viable as is.
 
-It doesn't need to add ino. Just remain them, and shrinker can remove empty
-ino_entry_for_extents periodically.
+will remove it.
 
-> Approach B: need add list_head *
-> 
-> Or maybe it's not a problem because we can afford all these above.
-> 
-> Anyway, I'm not against.
-> 
-> > 
-> > 3. It needs to set a minimum length for the candidate of extent cache.
-> >  (e.g., 64)
-> 
-> Is this used for shrinker? Can you please explain more about this minimum length?
-> 
-> > 
-> > So, for example,
-> > struct ino_entry_for_extents {
-> > 	inode number;
-> > 	rb_tree for extent_entry objects;
-> > 	rwlock;
-> > };
-> > 
-> > struct extent_entry {
-> > 	blkaddr, len;
-> > 	list_head *;
-> 
-> We should add one other field 'inode number' here, as through it we can get
-> rb-tree root from ino_entry_for_extents for rb_erase when we free the extent
-> entry in shrinker.
-> 
-> > };
-> > 
-> > Something like this.
-> > 
-> > [A, B, C, ... are extent entry]
-> > 
-> > The sbi has
-> > 1. an extent_list: (LRU) A -> B -> C -> D -> E -> F -> G (MRU)
-> > 2. radix_tree:  ino_entry_for_extents (#10) has D, B in rb-tree
-> >               ` ino_entry_for_extents (#11) has A, C in rb-tree
-> >               ` ino_entry_for_extents (#12) has F    in rb-tree
-> >               ` ino_entry_for_extents (#13) has G, E in rb-tree
-> > 
-> > In f2fs_update_extent_cache and __get_data_block for #10,
-> >   ino_entry_for_extents (#10) was founded and updated D or B.
-> >   Then, updated entries are moved to MRU.
-> > 
-> > In f2fs_evict_inode for #11, A and C are moved to LRU.
-> > But, if this inode is unlinked, all the A, C, and ino_entry_for_extens (#11)
-> > should be released.
-> > 
-> > In f2fs_balance_fs_bg, some LRU extents are released according to the amount
-> > of consumed memory. Then, it frees any ino_entry_for_extents having no extent.
-> > 
-> > IMO, we don't need to consider readahead for this, since get_data_block will
-> > be called by VFS readahead.
-> 
-> In get_data_block we can cache only one blkaddr once after get_dnode_of_data
-> returned, it seems less efficient. So why not readahead selectively more
-> contiguous valid blkaddr in get_dnode_of_data once?
+Thanks for reviewing it!
 
-Why do you think only one blkaddr?
-get_data_block searches extents as many as possible.
-
-Thanks,
-
-> 
-> > 
-> > Furthermore, we need to think about whether LRU is really best or not.
-> > IMO, the extent cache aims to improve second access speed, rather than initial
-> > cold misses. So, maybe MRU or another algorithms would be better.
-> 
-> Agree, let's rethink about this. :)
-> 
-> Thanks,
-> 
-> > 
-> > Thanks,
-> > 
-> > >
-> > > 2) Limitation:
-> > > In one inode, as we split or add extent in extent cache when read/write, extent
-> > > number will enlarge, so memory and CPU overhead will increase.
-> > > In order to control the overhead of memory and CPU, we try to set a upper bound
-> > > number to limit total extent number in each inode, This number is global
-> > > configuration which is visable to all inode. This number will be exported to
-> > > sysfs for configuring according to requirement of user. By default, designed
-> > > number is 8.
-> > >
-> > > 3) Shrinker:
-> > > There are two shrink paths:
-> > > 	a) one is triggered when extent count has exceed the upper bound of
-> > > 	inode's extent cache. We will try to release extent(s) from head of
-> > > 	inode's inner extent lru list until extent count is equal to upper bound.
-> > > 	This operation could be in f2fs_update_extent_cache().
-> > > 	b) the other one is triggered when memory util exceed threshold, we try
-> > > 	get inode from head of global lru list(s), and release extent(s) with
-> > > 	fixed number (by default: 64 extents) in inode one by one.
-> > > 	This operation could be in f2fs_balance_fs_bg().
-> > >
-> > > 4) Revalidation:
-> > > In ->evict(), extent cache will be released, in order to reuse extent cache
-> > > of inode when reopen for high hit ratio, a proper way is to add cached extent
-> > > tree into a hash table (could be radix tree), revalidate extent tree and recover
-> > > it to inode when reopen.
-> > > Besides, a global lru list is needed here for shrinker.
-> > >
-> > > 5) Readahead:
-> > > Expand extent cache by readaheading when we call get_dnode_of_data in non-emergency
-> > > path. Note, ra can affect lock contention for both ->rwlock in extent cache and
-> > > ->lock of global shrink list.
-> > >
+Hanjun
