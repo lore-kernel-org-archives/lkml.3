@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaL3Xxz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 18:53:55 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36786 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425AbaL3Xxx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 18:53:53 -0500
-Date: Tue, 30 Dec 2014 18:53:50 -0500 (EST)
-Message-Id: <20141230.185350.1886821773938320675.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next V2] virtio-net: don't do header check for
- dodgy gso packets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1419390232-14906-1-git-send-email-jasowang@redhat.com>
-References: <1419390232-14906-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1751788AbaLaAWB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 19:22:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37556 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751424AbaLaAWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 19:22:00 -0500
+Message-ID: <1419985309.5162.79.camel@localhost>
+Subject: Re: fanotify bug on gdb -- hard crash
+From: Eric Paris <eparis@redhat.com>
+To: ivo welch <ivo.welch@gmail.com>
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>, linux-kernel@vger.kernel.org
+Date: Tue, 30 Dec 2014 19:21:49 -0500
+In-Reply-To: <CAPr7RtVSojwe5Q9k=EE6SSUAE1a46beqOV0TCZbkfhvrADQEGg@mail.gmail.com>
+References: <CAPr7RtWpX_kYiJRRnPVSZrL-U2GqoV5aBPM_AF7xBzV99jzJuw@mail.gmail.com>
+	 <549DAB95.3090003@gmx.de> <1419808412.5162.73.camel@localhost>
+	 <CAPr7RtWQ6bt4M8f-2-w0nbLvgpupb0kckE=VQDYbC8EXwiPDJg@mail.gmail.com>
+	 <1419827352.5162.77.camel@localhost>
+	 <CAPr7RtVSojwe5Q9k=EE6SSUAE1a46beqOV0TCZbkfhvrADQEGg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 30 Dec 2014 15:53:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Wed, 24 Dec 2014 11:03:52 +0800
+On Mon, 2014-12-29 at 13:06 +0800, ivo welch wrote:
+> thank you, eric.  will do.  I read up on it above and now understand it better.
 
-> There's no need to do header check for virtio-net since:
-> 
-> - Host sets dodgy for all gso packets from guest and check the header.
-> - Host should be prepared for all kinds of evil packets from guest, since
->   malicious guest can send any kinds of packet.
-> 
-> So this patch sets NETIF_F_GSO_ROBUST for virtio-net to skip the check.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Changes from V1:
-> - typo fixes
+Great let us know if it keeps giving you trouble!
 
-Applied.
+> the example in the man page seems somewhat misfortunate.  I would use
+> an example that does not, by default, lock up the user system.
+> (perhaps add a second example with the _PERM feature that shows how it
+> responds.)
+
+The link you gave does respond and allow permissions:
+
+               if (metadata->fd >= 0) {
+
+                       /* Handle open permission event */
+
+                       if (metadata->mask & FAN_OPEN_PERM) {
+                           printf("FAN_OPEN_PERM: ");
+
+                           /* Allow file to be opened */
+
+                           response.fd = metadata->fd;
+                           response.response = FAN_ALLOW;
+                           write(fd, &response,
+                                 sizeof(struct fanotify_response));
+                       }
+
+That's the key bit of the example...  If you use gdb and never get to
+there, you are in a bit of trouble, I agree!
+
