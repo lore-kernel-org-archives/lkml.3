@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaLaJDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 04:03:51 -0500
-Received: from www.osadl.org ([62.245.132.105]:56732 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751698AbaLaJDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 04:03:48 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH RFC] iio: iadc: wait_for_completion_timeout time in jiffies
-Date: Wed, 31 Dec 2014 03:59:46 -0500
-Message-Id: <1420016386-19638-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751953AbaLaJDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 04:03:50 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:10727 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751701AbaLaJDr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 04:03:47 -0500
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <sebastian.hesselbarth@gmail.com>, <mturquette@linaro.org>,
+        <sboyd@codeaurora.org>, <alexandre.belloni@free-electrons.com>,
+        <antoine.tenart@free-electrons.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH 1/3] ARM: dts: berlin: fix io clk and add missing core clk for BG2Q sdhci2 host
+Date: Wed, 31 Dec 2014 16:57:50 +0800
+Message-ID: <1420016272-6789-2-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
+References: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-31_04:2014-12-30,2014-12-31,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1412310093
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timeout value to wait_for_completion_timeout is in jiffies but
-the value being passed seems like it was intended to by microseconds
-Note that the timeout was extremely long thus it might be too short
-now. In any case it probably should be passed through usecs_to_jiffies()
-or msecs_to_jiffies()
+On BG2Q, the sdhci2 host uses nfcecc for "io" clk and nfc for "core" clk.
+The shdci2 can't work Without this patch due to the "core" clk is gated.
 
-patch is against linux-next 3.19.0-rc1 -next-20141226
-
-patch was only compile-tested x86_64_defcofnig + CONFIG_SPMI=m
-CONFIG_IIO=m, CONFIG_QCOM_SPMI_IADC=m
-
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Cc: stable@vger.kernel.org # 3.16+
 ---
- drivers/iio/adc/qcom-spmi-iadc.c |    3 ++-
+ arch/arm/boot/dts/berlin2q.dtsi | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/iio/adc/qcom-spmi-iadc.c b/drivers/iio/adc/qcom-spmi-iadc.c
-index b9666f2..3080562 100644
---- a/drivers/iio/adc/qcom-spmi-iadc.c
-+++ b/drivers/iio/adc/qcom-spmi-iadc.c
-@@ -296,7 +296,8 @@ static int iadc_do_conversion(struct iadc_chip *iadc, int chan, u16 *data)
- 	if (iadc->poll_eoc) {
- 		ret = iadc_poll_wait_eoc(iadc, wait);
- 	} else {
--		ret = wait_for_completion_timeout(&iadc->complete, wait);
-+		ret = wait_for_completion_timeout(&iadc->complete,
-+			usecs_to_jiffies(wait));
- 		if (!ret)
- 			ret = -ETIMEDOUT;
- 		else
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 35253c9..903f3bb 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -83,7 +83,8 @@
+ 			compatible = "mrvl,pxav3-mmc";
+ 			reg = <0xab1000 0x200>;
+ 			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&chip CLKID_SDIO1XIN>;
++			clocks = <&chip CLKID_NFC_ECC>, <&chip CLKID_NFC>;
++			clock-names = "io", "core";
+ 			status = "disabled";
+ 		};
+ 
 -- 
-1.7.10.4
+2.1.4
 
