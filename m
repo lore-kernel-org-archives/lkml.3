@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaLaTeL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 14:34:11 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:57271 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaLaTeK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 14:34:10 -0500
-Date: Wed, 31 Dec 2014 20:28:42 +0100
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Lorenzo Stoakes <lstoakes@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, gdonald@gmail.com,
-        tapaswenipathak@gmail.com, yejiayily@gmail.com,
-        mcgrof@do-not-panic.com, anarey@gmail.com,
-        linux-kernel@vger.kernel.org, rmfrfs@gmail.com, joe@perches.com
-Subject: Re: [PATCH 1/4] staging: rtl8192u: fix comments
-Message-ID: <20141231192842.GC25819@t400>
-References: <1420051376-31180-1-git-send-email-lstoakes@gmail.com>
- <20141231190044.GB25819@t400>
- <CAA5enKaHPBWvmQfDEkdG5T-ZMgq-qCD1arCDvUTBK4bQSmqTNg@mail.gmail.com>
+	id S1751555AbaLaTma (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 14:42:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751143AbaLaTm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 14:42:29 -0500
+Date: Wed, 31 Dec 2014 20:42:22 +0100
+From: Mark Wielaard <mjw@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf-probe crash in dwarf_getcfi_elf
+Message-ID: <20141231194222.GB2897@blokker.redhat.com>
+References: <54A22C76.9000403@gmail.com>
+ <20141230084708.GG6081@sejong>
+ <20141230090533.GH6081@sejong>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAA5enKaHPBWvmQfDEkdG5T-ZMgq-qCD1arCDvUTBK4bQSmqTNg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141230090533.GH6081@sejong>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31, Lorenzo Stoakes wrote:
-> On 31 December 2014 at 19:00, Konrad Zapalowicz <bergo.torino@gmail.com> wrote:
-> >
-> > You also fix the line length here which shall be the subject of a
-> > separate patch as this is not C99 comments related change.
-> >
-> 
-> Apologies - I missed this, will prepare a v2 with this separated out
-> into a different patch. Relatedly, the intent was to fix whitespace
-> issues rather than line length as I gather a specific line length
-> limit is still a matter of debate in kernel style? I didn't want to
+On Tue, Dec 30, 2014 at 06:05:33PM +0900, Namhyung Kim wrote:
+> And I found a related commit (5704c8c4fa71 "getcfi_scn_eh_frame: Don't
+> crash and burn when .eh_frame bits aren't there.") in elfutils that
+> can lead to a unexpected crash like this.  To safely use the function,
+> it needs to check the .eh_frame section is a PROGBITS type.
 
-Usually the kernel people like the line length of 80 characters. There
-are exceptions like for example for log messages because it makes easier
-to search for it however most of the time 80 is good and whenever
-possible it shall be applied.
+Sorry about that bug. It was fixed in elfutils 0.156, released July 2013.
+Latest elfutils release is 0.161.
 
-You can read about it in the
-https://www.kernel.org/doc/Documentation/CodingStyle document in second
-chapter.
+Checking .eh_frame is SHT_PROGBITS (and not SHT_NOBITS) looks like the
+correct workaround if you have to deal with older elfutils releases.
 
-cheers,
-konrad
+Note that dwarf_getcfi_elf gets the CFI information from the .eh_frame
+section associated with the ELF file underlying the Dwarf dbg and needs
+to be released with a call to dwarf_cfi_end (). dwarf_getcfi () gets the
+CFI information from the .debug_frame section data of the Dwarf dbg
+and gets automatically releassed when dwarf_end () is called (you should
+not call dwarf_cfi_end () on the result).
 
-> create additional noise by attempting to address that as well.
-> 
-> Best, Lorenzo
+If the Dwarf dbg handle is associated with a separate debuginfo file,
+then the .eh_frame section data will not be available (has SHT_NOBITS)
+and you can get the .eh_frame section (and call dwarf_getcfi_elf ()) on
+the original ELF file from which the Dwarf debuginfo file was split off.
+
+In your patch you call dwarf_getcfi () as backup to get some CFI
+information when you cannot call dwarf_getcfi_elf (). In general it
+might make sense to also do this when dwarf_getcfi_elf fails. Or try
+to get the CFI through both .eh_frame (from the executable ELF file)
+with dwarf_getcfi_elf () and .debug_frame (from the Dwarf dbg file)
+with dwarf_getcfi () and try to match an address in both tables
+if one or the other fails.
+
+Cheers,
+
+Mark
