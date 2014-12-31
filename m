@@ -1,248 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaLaQ7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 11:59:00 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:34976 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaLaQ67 (ORCPT
+	id S1751468AbaLaRRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 12:17:25 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44727 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750760AbaLaRRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 11:58:59 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        devel@acpica.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] acpi: acpica: utstring.c:  Remove some unused functions
-Date: Wed, 31 Dec 2014 18:01:57 +0100
-Message-Id: <1420045317-24091-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 31 Dec 2014 12:17:22 -0500
+Message-ID: <1420046240.2085.3.camel@HansenPartnership.com>
+Subject: Re: [PATCH repost 12/16] parisc/uaccess: fix sparse errors
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Helge Deller <deller@gmx.de>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org
+Date: Wed, 31 Dec 2014 09:17:20 -0800
+In-Reply-To: <20141227161414.GA2571@redhat.com>
+References: <1419499661-8566-1-git-send-email-mst@redhat.com>
+	 <1419499661-8566-13-git-send-email-mst@redhat.com>
+	 <549C91B9.8080009@gmx.de> <20141227161414.GA2571@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-acpi_ut_strlwr() acpi_ut_safe_strncat() acpi_ut_safe_strcat()
-acpi_ut_safe_strcpy() ut_convert_backslashes() acpi_ut_stricmp()
+On Sat, 2014-12-27 at 18:14 +0200, Michael S. Tsirkin wrote:
+> On Thu, Dec 25, 2014 at 11:37:45PM +0100, Helge Deller wrote:
+> > Hi Michael,
+> > 
+> > On 12/25/2014 10:29 AM, Michael S. Tsirkin wrote:
+> > >virtio wants to read bitwise types from userspace using get_user.  At the
+> > 
+> > I don't know the virtio code much yet, but does it makes sense to read bitwise types?
+> > Will virtio then get possible troubles because of endianess correct as well?
+> 
+> There's no conversion: we are reading from __virtio16 __user *
+> pointer into __virtio16 v value.
+> 
+> > Do you have a code example, or the sparse error message ?
+> > 
+> > Helge
+> 
+> Sure. the code is upstream now.
+> The warning is below.
+> 
+> sparse warnings: (new ones prefixed by >>)
+> 
+> >> drivers/vhost/vringh.c:554:18: sparse: cast to restricted __virtio16
+> 
+> vim +554 drivers/vhost/vringh.c
+> 
+>    538                                                           __virtio16 *p, u16 val))
+>    539  {
+>    540          if (!vrh->event_indices) {
+>    541                  /* Old-school; update flags. */
+>    542                  if (putu16(vrh, &vrh->vring.used->flags,
+>    543                             VRING_USED_F_NO_NOTIFY)) {
+>    544                          vringh_bad("Setting used flags %p",
+>    545                                     &vrh->vring.used->flags);
+>    546                  }
+>    547          }
+>    548  }
+>    549
+>    550  /* Userspace access helpers: in this case, addresses are really userspace. */
+>    551  static inline int getu16_user(const struct vringh *vrh, u16 *val, const __virtio16 *p)
+>    552  {
+>    553          __virtio16 v = 0;
+>  > 554          int rc = get_user(v, (__force __virtio16 __user *)p);
+>    555          *val = vringh16_to_cpu(vrh, v);
+>    556          return rc;
+>    557  }
+>    558
+>    559  static inline int putu16_user(const struct vringh *vrh, __virtio16 *p, u16 val)
+>    560  {
+>    561          __virtio16 v = cpu_to_vringh16(vrh, val);
+>    562          return put_user(v, (__force __virtio16 __user *)p);
 
-This was partially found by using a static code analysis program called cppcheck.
+OK, parisc developers still being dense, but this does look like an
+abuse of the bitwise type.  bitwise is supposed to be consumed by endian
+specific accessors.  get/put_user have no endian tags because they
+really can't do this ... the potential for width mismatch between the
+user and kernel address spaces could cause havoc if people get this
+wrong, so the warning looks correct to me.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/acpi/acpica/acutils.h  |   17 -----
- drivers/acpi/acpica/utstring.c |  157 ----------------------------------------
- 2 files changed, 174 deletions(-)
+If we take your proposed patch we lose the type checking on all
+accessors because of the __force.  Why not, instead, alter your code to
+tell the kernel you know what you're doing:
 
-diff --git a/drivers/acpi/acpica/acutils.h b/drivers/acpi/acpica/acutils.h
-index 486d342..8e082af 100644
---- a/drivers/acpi/acpica/acutils.h
-+++ b/drivers/acpi/acpica/acutils.h
-@@ -629,33 +629,16 @@ acpi_ut_get_resource_end_tag(union acpi_operand_object *obj_desc, u8 **end_tag);
-  */
- void acpi_ut_strupr(char *src_string);
- 
--void acpi_ut_strlwr(char *src_string);
--
--int acpi_ut_stricmp(char *string1, char *string2);
--
- acpi_status acpi_ut_strtoul64(char *string, u32 base, u64 *ret_integer);
- 
- void acpi_ut_print_string(char *string, u16 max_length);
- 
--void ut_convert_backslashes(char *pathname);
--
- u8 acpi_ut_valid_acpi_name(char *name);
- 
- u8 acpi_ut_valid_acpi_char(char character, u32 position);
- 
- void acpi_ut_repair_name(char *name);
- 
--#if defined (ACPI_DEBUGGER) || defined (ACPI_APPLICATION)
--u8 acpi_ut_safe_strcpy(char *dest, acpi_size dest_size, char *source);
--
--u8 acpi_ut_safe_strcat(char *dest, acpi_size dest_size, char *source);
--
--u8
--acpi_ut_safe_strncat(char *dest,
--		     acpi_size dest_size,
--		     char *source, acpi_size max_transfer_length);
--#endif
--
- /*
-  * utmutex - mutex support
-  */
-diff --git a/drivers/acpi/acpica/utstring.c b/drivers/acpi/acpica/utstring.c
-index 6dc54b3..d94d536 100644
---- a/drivers/acpi/acpica/utstring.c
-+++ b/drivers/acpi/acpica/utstring.c
-@@ -52,71 +52,6 @@ ACPI_MODULE_NAME("utstring")
-  * Non-ANSI C library functions - strlwr, strupr, stricmp, and a 64-bit
-  * version of strtoul.
-  */
--#ifdef ACPI_ASL_COMPILER
--/*******************************************************************************
-- *
-- * FUNCTION:    acpi_ut_strlwr (strlwr)
-- *
-- * PARAMETERS:  src_string      - The source string to convert
-- *
-- * RETURN:      None
-- *
-- * DESCRIPTION: Convert string to lowercase
-- *
-- * NOTE: This is not a POSIX function, so it appears here, not in utclib.c
-- *
-- ******************************************************************************/
--void acpi_ut_strlwr(char *src_string)
--{
--	char *string;
--
--	ACPI_FUNCTION_ENTRY();
--
--	if (!src_string) {
--		return;
--	}
--
--	/* Walk entire string, lowercasing the letters */
--
--	for (string = src_string; *string; string++) {
--		*string = (char)ACPI_TOLOWER(*string);
--	}
--
--	return;
--}
--
--/******************************************************************************
-- *
-- * FUNCTION:    acpi_ut_stricmp (stricmp)
-- *
-- * PARAMETERS:  string1             - first string to compare
-- *              string2             - second string to compare
-- *
-- * RETURN:      int that signifies string relationship. Zero means strings
-- *              are equal.
-- *
-- * DESCRIPTION: Implementation of the non-ANSI stricmp function (compare
-- *              strings with no case sensitivity)
-- *
-- ******************************************************************************/
--
--int acpi_ut_stricmp(char *string1, char *string2)
--{
--	int c1;
--	int c2;
--
--	do {
--		c1 = tolower((int)*string1);
--		c2 = tolower((int)*string2);
--
--		string1++;
--		string2++;
--	}
--	while ((c1 == c2) && (c1));
--
--	return (c1 - c2);
--}
--#endif
- 
- /*******************************************************************************
-  *
-@@ -554,95 +489,3 @@ void acpi_ut_repair_name(char *name)
- 	}
- }
- 
--#if defined ACPI_ASL_COMPILER || defined ACPI_EXEC_APP
--/*******************************************************************************
-- *
-- * FUNCTION:    ut_convert_backslashes
-- *
-- * PARAMETERS:  pathname        - File pathname string to be converted
-- *
-- * RETURN:      Modifies the input Pathname
-- *
-- * DESCRIPTION: Convert all backslashes (0x5C) to forward slashes (0x2F) within
-- *              the entire input file pathname string.
-- *
-- ******************************************************************************/
--
--void ut_convert_backslashes(char *pathname)
--{
--
--	if (!pathname) {
--		return;
--	}
--
--	while (*pathname) {
--		if (*pathname == '\\') {
--			*pathname = '/';
--		}
--
--		pathname++;
--	}
--}
--#endif
--
--#if defined (ACPI_DEBUGGER) || defined (ACPI_APPLICATION)
--/*******************************************************************************
-- *
-- * FUNCTION:    acpi_ut_safe_strcpy, acpi_ut_safe_strcat, acpi_ut_safe_strncat
-- *
-- * PARAMETERS:  Adds a "DestSize" parameter to each of the standard string
-- *              functions. This is the size of the Destination buffer.
-- *
-- * RETURN:      TRUE if the operation would overflow the destination buffer.
-- *
-- * DESCRIPTION: Safe versions of standard Clib string functions. Ensure that
-- *              the result of the operation will not overflow the output string
-- *              buffer.
-- *
-- * NOTE:        These functions are typically only helpful for processing
-- *              user input and command lines. For most ACPICA code, the
-- *              required buffer length is precisely calculated before buffer
-- *              allocation, so the use of these functions is unnecessary.
-- *
-- ******************************************************************************/
--
--u8 acpi_ut_safe_strcpy(char *dest, acpi_size dest_size, char *source)
--{
--
--	if (ACPI_STRLEN(source) >= dest_size) {
--		return (TRUE);
--	}
--
--	ACPI_STRCPY(dest, source);
--	return (FALSE);
--}
--
--u8 acpi_ut_safe_strcat(char *dest, acpi_size dest_size, char *source)
--{
--
--	if ((ACPI_STRLEN(dest) + ACPI_STRLEN(source)) >= dest_size) {
--		return (TRUE);
--	}
--
--	ACPI_STRCAT(dest, source);
--	return (FALSE);
--}
--
--u8
--acpi_ut_safe_strncat(char *dest,
--		     acpi_size dest_size,
--		     char *source, acpi_size max_transfer_length)
--{
--	acpi_size actual_transfer_length;
--
--	actual_transfer_length =
--	    ACPI_MIN(max_transfer_length, ACPI_STRLEN(source));
--
--	if ((ACPI_STRLEN(dest) + actual_transfer_length) >= dest_size) {
--		return (TRUE);
--	}
--
--	ACPI_STRNCAT(dest, source, max_transfer_length);
--	return (FALSE);
--}
--#endif
--- 
-1.7.10.4
+        __u16 v = 0;
+        int rc = get_user(v, (__force __u16 __user *)p);
+        *val = vringh16_to_cpu(vrh, (__force __virtio16)v);
+        return rc;
+
+That way the accessors still warn if anyone else tries this but your
+warning is gone and the code basically says you knew the u16 was really
+an endianness specific virtio quantity?
+
+James
+
 
