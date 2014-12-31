@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaLaBXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 20:23:53 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:51803 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481AbaLaBWc (ORCPT
+	id S1752614AbaLaBYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 20:24:19 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:43278 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461AbaLaBWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 20:22:32 -0500
+	Tue, 30 Dec 2014 20:22:30 -0500
 From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/19] lib/show_mem.c: Remove redundant include
-Date: Wed, 31 Dec 2014 02:21:49 +0100
-Message-Id: <1419988915-20730-15-git-send-email-linux@rasmusvillemoes.dk>
+Subject: [PATCH 12/19] lib/plist.c: Remove redundant include
+Date: Wed, 31 Dec 2014 02:21:47 +0100
+Message-Id: <1419988915-20730-13-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419988915-20730-1-git-send-email-linux@rasmusvillemoes.dk>
 References: <1419988915-20730-1-git-send-email-linux@rasmusvillemoes.dk>
@@ -20,26 +20,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-show_mem.c doesn't use anything from nmi.h. Removing it yields
-identical objdump -d output for each of {allyes,allno,def}config and
-eliminates more than 100 lines in the dependency file.
+Removing the include of linux/spinlock.h produces byte-identical
+output for {allno,def}config, and identical objdump -d output for
+allyesconfig. In the former two cases, more than a 100 lines are
+eliminated from the generated dependency file.
 
 Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- lib/show_mem.c | 1 -
+ lib/plist.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/lib/show_mem.c b/lib/show_mem.c
-index 7de89f4a36cf..adc98e1825ba 100644
---- a/lib/show_mem.c
-+++ b/lib/show_mem.c
-@@ -6,7 +6,6 @@
-  */
+diff --git a/lib/plist.c b/lib/plist.c
+index d408e774b746..3a30c53db061 100644
+--- a/lib/plist.c
++++ b/lib/plist.c
+@@ -25,7 +25,6 @@
  
- #include <linux/mm.h>
--#include <linux/nmi.h>
- #include <linux/quicklist.h>
- #include <linux/cma.h>
+ #include <linux/bug.h>
+ #include <linux/plist.h>
+-#include <linux/spinlock.h>
+ 
+ #ifdef CONFIG_DEBUG_PI_LIST
  
 -- 
 2.1.3
