@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaLaIUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 03:20:47 -0500
-Received: from mail-by2on0134.outbound.protection.outlook.com ([207.46.100.134]:64532
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1752095AbaLaIUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 03:20:52 -0500
+Received: from mail-bl2on0134.outbound.protection.outlook.com ([65.55.169.134]:30728
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751986AbaLaIUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 03:20:43 -0500
+	id S1751986AbaLaIUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 03:20:48 -0500
 From: Liu Ying <Ying.Liu@freescale.com>
 To: <dri-devel@lists.freedesktop.org>
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
@@ -15,41 +15,41 @@ CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
         <andyshrk@gmail.com>, <stefan.wahren@i2se.com>, <a.hajda@samsung.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v8 20/21] ARM: imx_v6_v7_defconfig: Add support for MIPI DSI host controller
-Date: Wed, 31 Dec 2014 16:23:38 +0800
-Message-ID: <1420014219-915-21-git-send-email-Ying.Liu@freescale.com>
+Subject: [PATCH RFC v8 21/21] ARM: imx_v6_v7_defconfig: Add support for Himax HX8369A panel
+Date: Wed, 31 Dec 2014 16:23:39 +0800
+Message-ID: <1420014219-915-22-git-send-email-Ying.Liu@freescale.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420014219-915-1-git-send-email-Ying.Liu@freescale.com>
 References: <1420014219-915-1-git-send-email-Ying.Liu@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.158.2)
  smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(50986999)(97736003)(575784001)(107046002)(77096005)(229853001)(106466001)(4396001)(92566001)(110136001)(6806004)(104016003)(81156004)(2351001)(19580405001)(86362001)(76176999)(20776003)(50226001)(31966008)(36756003)(50466002)(120916001)(2950100001)(21056001)(19580395003)(62966003)(64706001)(47776003)(48376002)(85426001)(68736005)(84676001)(99396003)(69596002)(46102003)(77156002)(89996001)(87936001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0638;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(69596002)(110136001)(85426001)(64706001)(89996001)(86362001)(92566001)(48376002)(229853001)(87936001)(50466002)(36756003)(575784001)(6806004)(99396003)(120916001)(50986999)(31966008)(84676001)(19580395003)(4396001)(104016003)(106466001)(2950100001)(62966003)(77156002)(2351001)(46102003)(97736003)(107046002)(21056001)(76176999)(81156004)(19580405001)(20776003)(77096005)(68736005)(50226001)(47776003)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0636;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0636;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0638;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0636;
 X-Forefront-PRVS: 0442E569BC
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0636;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 08:20:40.3189
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 08:20:44.7360
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0638
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0636
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for MIPI DSI host controller.
+This patch adds support for Himax HX8369A panel.
 
 The new imx_v6_v7_defconfig is generated in this way:
 * make ARCH=arm imx_v6_v7_defconfig
 * make ARCH=arm menuconfig and manually choose to build in
-  the MIPI DSI host controller driver
+  the Himax HX8369A panel driver
 * make ARCH=arm savedefconfig
 * cp defconfig arch/arm/configs/imx_v6_v7_defconfig
 
@@ -74,23 +74,23 @@ v2->v3:
  * None.
 
 v1->v2:
- * None.
+ * Add the HIMAX prefix in the Kconfig name.
 
  arch/arm/configs/imx_v6_v7_defconfig | 1 +
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index 0dbd0c3..3e0e589 100644
+index 3e0e589..27db91b 100644
 --- a/arch/arm/configs/imx_v6_v7_defconfig
 +++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -199,6 +199,7 @@ CONFIG_DRM_IMX_TVE=y
- CONFIG_DRM_IMX_LDB=y
- CONFIG_DRM_IMX_IPUV3=y
- CONFIG_DRM_IMX_HDMI=y
-+CONFIG_DRM_IMX_MIPI_DSI=y
- CONFIG_LCD_CLASS_DEVICE=y
- CONFIG_LCD_L4F00242T03=y
- CONFIG_LCD_PLATFORM=y
+@@ -192,6 +192,7 @@ CONFIG_SOC_CAMERA_OV2640=y
+ CONFIG_IMX_IPUV3_CORE=y
+ CONFIG_DRM=y
+ CONFIG_DRM_PANEL_SIMPLE=y
++CONFIG_DRM_PANEL_HIMAX_HX8369A=y
+ CONFIG_DRM_IMX=y
+ CONFIG_DRM_IMX_FB_HELPER=y
+ CONFIG_DRM_IMX_PARALLEL_DISPLAY=y
 -- 
 2.1.0
 
