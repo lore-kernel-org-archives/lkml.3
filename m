@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaLaN6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 08:58:01 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51268 "EHLO mail.skyhub.de"
+	id S1751529AbaLaOIC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 09:08:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59495 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751606AbaLaN6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 08:58:00 -0500
-Date: Wed, 31 Dec 2014 14:57:58 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alexander Kuleshov <kuleshovmail@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] x86/boot/early_serial_console: Remove unnecessary
- check
-Message-ID: <20141231135758.GB6332@pd.tnic>
-References: <1420009958-4803-1-git-send-email-kuleshovmail@gmail.com>
+	id S1750734AbaLaOIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 09:08:00 -0500
+Date: Wed, 31 Dec 2014 15:07:56 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Arend van Spriel <arend@broadcom.com>
+cc: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "egrumbach@gmail.com" <egrumbach@gmail.com>,
+        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility
+ unselectable"
+In-Reply-To: <54A3E1F1.7030807@broadcom.com>
+Message-ID: <alpine.LNX.2.00.1412311505100.31609@pobox.suse.cz>
+References: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz> <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com> <54A2B807.1020202@hurleysoftware.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DC915@hasmsx107.ger.corp.intel.com>
+ <alpine.LNX.2.00.1412301610320.31609@pobox.suse.cz> <1419971304.30412.0.camel@egrumbacBox> <alpine.LNX.2.00.1412302135520.31609@pobox.suse.cz> <20141230212326.GA29263@pd.tnic> <54A328C2.5080606@lwfinger.net> <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz>
+ <alpine.LNX.2.00.1412302351030.31609@pobox.suse.cz> <54A3D955.6020809@broadcom.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DD72E@hasmsx107.ger.corp.intel.com> <54A3E1F1.7030807@broadcom.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1420009958-4803-1-git-send-email-kuleshovmail@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 01:12:38PM +0600, Alexander Kuleshov wrote:
-> There is already the same check before.
-> 
-> Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+On Wed, 31 Dec 2014, Arend van Spriel wrote:
 
-Acked-by: Borislav Petkov <bp@suse.de>
+> The thing with WEXT is that it will stay as is. So if tools like wicd 
+> want to support new features like P2P it will need to make the switch. I 
+> checked out wicd repo and found a number of iwconfig calls and they kick 
+> off wpa_supplicant with wext driver.
+
+Unfortunately this is by no means just about wicd. I have already received 
+a few off-list mails from people who were wondering why their home-made 
+scripts / tools, which are running 'iwconfig' directly suddenly stopped to 
+work, and that it was indeed fallout of WEXT going away. Given the very 
+short time this has been in mainline, you can probably imagine the 
+fireworks once this appears in major release.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Jiri Kosina
+SUSE Labs
