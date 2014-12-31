@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaLaBWh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 20:22:37 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:42484 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490AbaLaBWc (ORCPT
+	id S1752519AbaLaBWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 20:22:35 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:51424 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502AbaLaBWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 20:22:32 -0500
+	Tue, 30 Dec 2014 20:22:33 -0500
 From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/19] lib/sort.c: Move include inside #if 0
-Date: Wed, 31 Dec 2014 02:21:50 +0100
-Message-Id: <1419988915-20730-16-git-send-email-linux@rasmusvillemoes.dk>
+Subject: [PATCH 16/19] lib/stmp_device.c: Replace module.h include
+Date: Wed, 31 Dec 2014 02:21:51 +0100
+Message-Id: <1419988915-20730-17-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1419988915-20730-1-git-send-email-linux@rasmusvillemoes.dk>
 References: <1419988915-20730-1-git-send-email-linux@rasmusvillemoes.dk>
@@ -20,36 +20,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sort function and its helpers don't do memory allocation, so the
-slab.h include is redundant. Move it inside the #if 0 protecting the
-self-test, similar to how it is done in lib/list_sort.c. This removes
-over 450 lines from the generated dependency file.
+stmp_device.c only needs EXPORT_SYMBOL, so just include compiler.h and
+export.h instead of the whole module.h machinery.
 
 Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- lib/sort.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/stmp_device.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/lib/sort.c b/lib/sort.c
-index 14fc1dfadb3f..43c9fe73ae2e 100644
---- a/lib/sort.c
-+++ b/lib/sort.c
-@@ -7,7 +7,6 @@
- #include <linux/types.h>
- #include <linux/export.h>
- #include <linux/sort.h>
--#include <linux/slab.h>
+diff --git a/lib/stmp_device.c b/lib/stmp_device.c
+index 8ac9bcc4289a..a904656f4fd7 100644
+--- a/lib/stmp_device.c
++++ b/lib/stmp_device.c
+@@ -15,7 +15,8 @@
+ #include <linux/io.h>
+ #include <linux/errno.h>
+ #include <linux/delay.h>
+-#include <linux/module.h>
++#include <linux/compiler.h>
++#include <linux/export.h>
+ #include <linux/stmp_device.h>
  
- static void u32_swap(void *a, void *b, int size)
- {
-@@ -85,6 +84,7 @@ void sort(void *base, size_t num, size_t size,
- EXPORT_SYMBOL(sort);
- 
- #if 0
-+#include <linux/slab.h>
- /* a simple boot-time regression test */
- 
- int cmpint(const void *a, const void *b)
+ #define STMP_MODULE_CLKGATE	(1 << 30)
 -- 
 2.1.3
 
