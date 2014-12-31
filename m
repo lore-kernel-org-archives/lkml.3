@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaLaJDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 04:03:50 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:10727 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751701AbaLaJDr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 04:03:47 -0500
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <sebastian.hesselbarth@gmail.com>, <mturquette@linaro.org>,
-        <sboyd@codeaurora.org>, <alexandre.belloni@free-electrons.com>,
-        <antoine.tenart@free-electrons.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH 1/3] ARM: dts: berlin: fix io clk and add missing core clk for BG2Q sdhci2 host
-Date: Wed, 31 Dec 2014 16:57:50 +0800
-Message-ID: <1420016272-6789-2-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
-References: <1420016272-6789-1-git-send-email-jszhang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-31_04:2014-12-30,2014-12-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1412310093
+	id S1751746AbaLaJHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 04:07:52 -0500
+Received: from www.osadl.org ([62.245.132.105]:56764 "EHLO www.osadl.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751558AbaLaJHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 04:07:50 -0500
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+Cc: linux-wimax@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH] wait_for_completion_timeout does not return < 0
+Date: Wed, 31 Dec 2014 04:04:03 -0500
+Message-Id: <1420016643-19707-1-git-send-email-der.herr@hofr.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On BG2Q, the sdhci2 host uses nfcecc for "io" clk and nfc for "core" clk.
-The shdci2 can't work Without this patch due to the "core" clk is gated.
+This is only removing the comment which is misleading as
+wait_for_completion_timeout does not return < 0 thus there
+never is anything to be passed on.
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-Cc: stable@vger.kernel.org # 3.16+
+patch is against linux-next 3.19.0-rc1 -next-20141226
+
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 ---
- arch/arm/boot/dts/berlin2q.dtsi | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wimax/i2400m/driver.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 35253c9..903f3bb 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -83,7 +83,8 @@
- 			compatible = "mrvl,pxav3-mmc";
- 			reg = <0xab1000 0x200>;
- 			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
--			clocks = <&chip CLKID_SDIO1XIN>;
-+			clocks = <&chip CLKID_NFC_ECC>, <&chip CLKID_NFC>;
-+			clock-names = "io", "core";
- 			status = "disabled";
- 		};
- 
+diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
+index 9c78090..0a6384e 100644
+--- a/drivers/net/wimax/i2400m/driver.c
++++ b/drivers/net/wimax/i2400m/driver.c
+@@ -197,7 +197,6 @@ int i2400m_op_reset(struct wimax_dev *wimax_dev)
+ 		result = -ETIMEDOUT;
+ 	else if (result > 0)
+ 		result = ctx.result;
+-	/* if result < 0, pass it on */
+ 	mutex_lock(&i2400m->init_mutex);
+ 	i2400m->reset_ctx = NULL;
+ 	mutex_unlock(&i2400m->init_mutex);
 -- 
-2.1.4
+1.7.10.4
 
