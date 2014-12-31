@@ -1,102 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaLaTsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 14:48:31 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:8127 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654AbaLaTsa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 14:48:30 -0500
-X-IronPort-AV: E=Sophos;i="5.07,674,1413270000"; 
-   d="scan'208";a="53857087"
-Message-ID: <54A45309.6080606@broadcom.com>
-Date: Wed, 31 Dec 2014 20:48:25 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1751532AbaLaT4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 14:56:39 -0500
+Received: from smtp.infotech.no ([82.134.31.41]:47055 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751080AbaLaT4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 14:56:37 -0500
+Message-ID: <54A454E2.4010207@interlog.com>
+Date: Wed, 31 Dec 2014 14:56:18 -0500
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Andreas Hartmann <andihartmann@freenet.de>
-CC: Jiri Kosina <jkosina@suse.cz>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "egrumbach@gmail.com" <egrumbach@gmail.com>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility unselectable"
-References: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz> <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com> <54A2B807.1020202@hurleysoftware.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DC915@hasmsx107.ger.corp.intel.com> <alpine.LNX.2.00.1412301610320.31609@pobox.suse.cz> <1419971304.30412.0.camel@egrumbacBox> <alpine.LNX.2.00.1412302135520.31609@pobox.suse.cz> <20141230212326.GA29263@pd.tnic> <54A328C2.5080606@lwfinger.net> <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz> <alpine.LNX.2.00.1412302351030.31609@pobox.suse.cz> <54A3D955.6020809@broadcom.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DD72E@hasmsx107.ger.corp.intel.com> <54A3E1F1.7030807@broadcom.com> <alpine.LNX.2.00.1412311505100.31609@pobox.suse.cz> <54A412CE.6010803@maya.org>
-In-Reply-To: <54A412CE.6010803@maya.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Sasha Levin <sasha.levin@oracle.com>, hch@lst.de
+CC: bvanassche@acm.org, hare@suse.de, JBottomley@parallels.com,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
+References: <54A43CFB.2080705@oracle.com>
+In-Reply-To: <54A43CFB.2080705@oracle.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/14 16:14, Andreas Hartmann wrote:
-> Jiri Kosina wrote:
->> On Wed, 31 Dec 2014, Arend van Spriel wrote:
->>
->>> The thing with WEXT is that it will stay as is. So if tools like wicd
->>> want to support new features like P2P it will need to make the switch. I
->>> checked out wicd repo and found a number of iwconfig calls and they kick
->>> off wpa_supplicant with wext driver.
->>
->> Unfortunately this is by no means just about wicd. I have already received
->> a few off-list mails from people who were wondering why their home-made
->> scripts / tools, which are running 'iwconfig' directly suddenly stopped to
->> work, and that it was indeed fallout of WEXT going away. Given the very
->> short time this has been in mainline, you can probably imagine the
->> fireworks once this appears in major release.
+On 14-12-31 01:14 PM, Sasha Levin wrote:
+> Hi Christoph,
 >
-> It is not just the userspace tools (I prefer them, too), which need
-> wext, but a lot of drivers, too, such as Mediathek drivers e.g. which
-> perform *much* better compared to rt2x00, especially concerning USB
-> chips like the one used by Linksys AE3000 (3x3 Mimo)
-> (https://wikidevi.com/wiki/Linksys_AE3000), which achieves average
-> throughputs around 14 MB/s *average* with scp of big (>  10 GB) crypted
-> files even through reinforced-concrete floor(!) - rt2x00 is *far* away
-> of providing such a performance.
+> I'm seeing an issue which was bisected down to 3c356bde1 ("scsi: stop passing
+> a gfp_mask argument down the command setup path"):
 >
-> Next bad point of rt2x00 e.g. is the huge CPU overhead - compare
-> rt5572sta on Raspi with rt2x00 running netperf and you will see the huge
-> problem of rt2x00 (which is covered on x86 by mostly oversized multi
-> core CPUs).
->
-> Another big advantage of rt5572sta is: it is *stable* over a lot of
-> kernel versions (as long as the kernel didn't break interfaces - but
-> there are patches to catch them).
->
-> Even ath9k, which usually is a really fine driver, is broken on some
-> kernel versions (link and throughput is not stable - my use case depends
-> *heavily* on very high and longterm stable throughput). That's why I'm
-> using a VM for my ath9k-device to be independent of these quality
-> problems of mac80211 (or maybe ath9k - don't know) over different kernel
-> versions.
->
->
-> All in all:
-> If you want to get rid of wext, you still have to go a *very* long way
-> to get the same *stable* and high throughput quality with *all* chips
-> depending on mac80211 and not just a few flagship drivers like Atheros.
+> [ 3395.328221] BUG: sleeping function called from invalid context at mm/mempool.c:206
+> [ 3395.329540] in_atomic(): 1, irqs_disabled(): 0, pid: 6399, name: trinity-c531
+> [ 3395.331104] no locks held by trinity-c531/6399.
+> [ 3395.331849] Preemption disabled blk_execute_rq_nowait (block/blk-exec.c:95)
+> [ 3395.333145]
+> [ 3395.333392] CPU: 5 PID: 6399 Comm: trinity-c531 Not tainted 3.19.0-rc1-next-20141226-sasha-00051-g2dd3d73 #1646
+> [ 3395.335266]  0000000000000000 0000000000000000 ffff880608948000 ffff880645a07548
+> [ 3395.337679]  ffffffff9137c79d 0000000000000000 ffff880608948000 ffff880645a07588
+> [ 3395.340220]  ffffffff814ad713 ffffffff9de20590 ffff880608948000 ffffffff926a166c
+> [ 3395.342643] Call Trace:
+> [ 3395.345099] dump_stack (lib/dump_stack.c:52)
+> [ 3395.346793] ___might_sleep (kernel/sched/core.c:7342)
+> [ 3395.348571] __might_sleep (kernel/sched/core.c:7308)
+> [ 3395.351944] mempool_alloc (mm/mempool.c:206 (discriminator 1))
+> [ 3395.355196] scsi_sg_alloc (drivers/scsi/scsi_lib.c:582)
+> [ 3395.356893] __sg_alloc_table (lib/scatterlist.c:282)
+> [ 3395.358844] ? sdev_disable_disk_events (drivers/scsi/scsi_lib.c:577)
+> [ 3395.360873] scsi_alloc_sgtable (drivers/scsi/scsi_lib.c:608)
+> [ 3395.362769] scsi_init_sgtable (drivers/scsi/scsi_lib.c:1087)
+> [ 3395.364583] ? lockdep_init_map (kernel/locking/lockdep.c:2986)
+> [ 3395.366354] scsi_init_io (drivers/scsi/scsi_lib.c:1122)
+> [ 3395.368092] ? do_init_timer (kernel/time/timer.c:669)
+> [ 3395.369837] scsi_setup_cmnd (drivers/scsi/scsi_lib.c:1220 drivers/scsi/scsi_lib.c:1268)
+> [ 3395.371743] scsi_queue_rq (drivers/scsi/scsi_lib.c:1875 drivers/scsi/scsi_lib.c:1980)
+> [ 3395.373471] __blk_mq_run_hw_queue (block/blk-mq.c:751)
+> [ 3395.375481] blk_mq_run_hw_queue (block/blk-mq.c:831)
+> [ 3395.377324] blk_mq_insert_request (block/blk-mq.h:92 block/blk-mq.c:974)
+> [ 3395.379377] ? blk_rq_map_user (block/blk-map.c:78 block/blk-map.c:142)
+> [ 3395.381307] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
+> [ 3395.383485] blk_execute_rq_nowait (block/blk-exec.c:95)
+> [ 3395.386995] sg_common_write.isra.2 (drivers/scsi/sg.c:823)
+> [ 3395.388712] ? might_fault (mm/memory.c:3730)
+> [ 3395.390624] sg_write (drivers/scsi/sg.c:686)
+> [ 3395.403014] do_loop_readv_writev (fs/read_write.c:722)
+> [ 3395.407429] do_readv_writev (fs/read_write.c:854)
+> [ 3395.415486] vfs_writev (fs/read_write.c:893)
+> [ 3395.417116] SyS_writev (fs/read_write.c:926 fs/read_write.c:917)
+> [ 3395.418851] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
+> [ 3395.420922] system_call_fastpath (arch/x86/kernel/entry_64.S:423)
 
-Hi Andreas,
+Looks interesting: vfs injecting SCSI commands with iovec
+through the sg driver's async interface.
 
-That's a nice list of unrelated stuff. This has all nothing to do with 
-WEXT. Actually, you can build rt5572sta with cfg80211 support 
-(RT_CFG80211_SUPPORT). This thread is about the configuration API and 
-not about driver performance.
 
-Regards,
-Arend
+The problem seems to be here in scsi_lib.c, mq=true:
 
-> Kind regards,
-> Andreas Hartmann
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+static int scsi_alloc_sgtable(struct scsi_data_buffer *sdb, int nents, bool mq)
+{
+         struct scatterlist *first_chunk = NULL;
+         gfp_t gfp_mask = mq ? GFP_NOIO : GFP_ATOMIC;
+         int ret;
+...
+
+What is the downside of setting gfp_mask to GFP_ATOMIC
+in all cases?
+
+Doug Gilbert
+
 
