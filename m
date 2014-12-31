@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaLaSOn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 13:14:43 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43130 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaLaSOl (ORCPT
+	id S1751518AbaLaSco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 13:32:44 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:47235 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaLaScn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 13:14:41 -0500
-Message-ID: <54A43CFB.2080705@oracle.com>
-Date: Wed, 31 Dec 2014 13:14:19 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 31 Dec 2014 13:32:43 -0500
+Date: Wed, 31 Dec 2014 10:32:38 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Bas Peters <baspeters93@gmail.com>
+Cc: hjlipp@web.de, tilman@imap.cc, isdn@linux-pingi.de,
+        gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Drivers: isdn: gigaset: checkpatch cleanup
+Message-ID: <20141231183238.GA2658@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Bas Peters <baspeters93@gmail.com>, hjlipp@web.de, tilman@imap.cc,
+	isdn@linux-pingi.de, gigaset307x-common@lists.sourceforge.net,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1420047298-7798-1-git-send-email-baspeters93@gmail.com>
+ <20141231174936.GB1922@hudson.localdomain>
+ <CAOgR63d6FNxntkBaSWM6ozibYGzajt07OLiM2XcszJarSaGX6A@mail.gmail.com>
 MIME-Version: 1.0
-To: hch@lst.de
-CC: bvanassche@acm.org, hare@suse.de, JBottomley@parallels.com,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: scsi: non atomic allocation in mempool_alloc in atomic context
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOgR63d6FNxntkBaSWM6ozibYGzajt07OLiM2XcszJarSaGX6A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+Bas,
 
-I'm seeing an issue which was bisected down to 3c356bde1 ("scsi: stop passing
-a gfp_mask argument down the command setup path"):
+On Wed, Dec 31, 2014 at 07:04:30PM +0100, Bas Peters wrote:
+> 2014-12-31 18:49 GMT+01:00 Jeremiah Mahler <jmmahler@gmail.com>:
+> > Bas,
+> >
+> > On Wed, Dec 31, 2014 at 06:34:58PM +0100, Bas Peters wrote:
+> >> Fixed many checkpatch.pl complaints, ranging from whitespace issues to
+> >> reportedly deprecated function and macro usage.
+> >>
+> > One patch should fix one type of problem.  This needs to be broken up
+> > in to individual patches.
+> >
+> >> I have not been able to test the code as I do not have access to the
+> >> hardware but since no new features were really added I don't think that
+> >> should pose a problem.
+> >>
+> >> There are still some checkpatch complaints, particularly concerning
+> >> potentially unnecessary 'out of memory' messages. I will provide patches
+> >> for these complaints when I figure out the reason behind it and what to
+> >> do about it.
+> >>
+> >> NOTE: This is my first patch (ever). I have attempted to follow all
+> >> guidelines provided, but I probably will have missed some. If you have
+> >> any comments regarding the quality of this patch or suggestions as to
+> >> what I could do better in the future, please let me know.
+> >>
+> > You are ambitious.  I would suggest trying a smaller patch first to
+> > make sure you are doing everything right.
+> 
+> With 'smaller patch', do you refer to less files at once or a different driver?
+> Is it generally preferred to send patches that relate to the same
+> issue (changes to a single file,
+> grouping of patches to tackle the same issue, such as conversion of a
+> specific function) over
+> patch(sets) that deal with an entire driver?
+> 
+> Thanks for the advice!
+> 
 
-[ 3395.328221] BUG: sleeping function called from invalid context at mm/mempool.c:206
-[ 3395.329540] in_atomic(): 1, irqs_disabled(): 0, pid: 6399, name: trinity-c531
-[ 3395.331104] no locks held by trinity-c531/6399.
-[ 3395.331849] Preemption disabled blk_execute_rq_nowait (block/blk-exec.c:95)
-[ 3395.333145]
-[ 3395.333392] CPU: 5 PID: 6399 Comm: trinity-c531 Not tainted 3.19.0-rc1-next-20141226-sasha-00051-g2dd3d73 #1646
-[ 3395.335266]  0000000000000000 0000000000000000 ffff880608948000 ffff880645a07548
-[ 3395.337679]  ffffffff9137c79d 0000000000000000 ffff880608948000 ffff880645a07588
-[ 3395.340220]  ffffffff814ad713 ffffffff9de20590 ffff880608948000 ffffffff926a166c
-[ 3395.342643] Call Trace:
-[ 3395.345099] dump_stack (lib/dump_stack.c:52)
-[ 3395.346793] ___might_sleep (kernel/sched/core.c:7342)
-[ 3395.348571] __might_sleep (kernel/sched/core.c:7308)
-[ 3395.351944] mempool_alloc (mm/mempool.c:206 (discriminator 1))
-[ 3395.355196] scsi_sg_alloc (drivers/scsi/scsi_lib.c:582)
-[ 3395.356893] __sg_alloc_table (lib/scatterlist.c:282)
-[ 3395.358844] ? sdev_disable_disk_events (drivers/scsi/scsi_lib.c:577)
-[ 3395.360873] scsi_alloc_sgtable (drivers/scsi/scsi_lib.c:608)
-[ 3395.362769] scsi_init_sgtable (drivers/scsi/scsi_lib.c:1087)
-[ 3395.364583] ? lockdep_init_map (kernel/locking/lockdep.c:2986)
-[ 3395.366354] scsi_init_io (drivers/scsi/scsi_lib.c:1122)
-[ 3395.368092] ? do_init_timer (kernel/time/timer.c:669)
-[ 3395.369837] scsi_setup_cmnd (drivers/scsi/scsi_lib.c:1220 drivers/scsi/scsi_lib.c:1268)
-[ 3395.371743] scsi_queue_rq (drivers/scsi/scsi_lib.c:1875 drivers/scsi/scsi_lib.c:1980)
-[ 3395.373471] __blk_mq_run_hw_queue (block/blk-mq.c:751)
-[ 3395.375481] blk_mq_run_hw_queue (block/blk-mq.c:831)
-[ 3395.377324] blk_mq_insert_request (block/blk-mq.h:92 block/blk-mq.c:974)
-[ 3395.379377] ? blk_rq_map_user (block/blk-map.c:78 block/blk-map.c:142)
-[ 3395.381307] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
-[ 3395.383485] blk_execute_rq_nowait (block/blk-exec.c:95)
-[ 3395.386995] sg_common_write.isra.2 (drivers/scsi/sg.c:823)
-[ 3395.388712] ? might_fault (mm/memory.c:3730)
-[ 3395.390624] sg_write (drivers/scsi/sg.c:686)
-[ 3395.403014] do_loop_readv_writev (fs/read_write.c:722)
-[ 3395.407429] do_readv_writev (fs/read_write.c:854)
-[ 3395.415486] vfs_writev (fs/read_write.c:893)
-[ 3395.417116] SyS_writev (fs/read_write.c:926 fs/read_write.c:917)
-[ 3395.418851] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
-[ 3395.420922] system_call_fastpath (arch/x86/kernel/entry_64.S:423)
+Your patch should solve one problem.  This could result in a single file
+being changed or many being changed.  For simple checkpatch errors I
+usually group all of one type of error for one file as a patch.
 
+The goal is to make it easy to review.  If you fixed 10 different types
+of issues in one patch it would difficult to review because I would have
+to remember whether the change I am looking at was for issue 3 or 8 or
+5 or ...?
 
-Thanks,
-Sasha
+Also, if the code had a bug, a bisect will point me to the patch.  But
+then I have to figure out which of the 10 changes in that one patch
+created the problem.  This is much easier if there was only one change
+in that one patch.
+
+Also have a look at Documentation/SubmittingPatches.  Specifically the
+section "Separate your changes".
+
+> >
+> >> Signed-off-by: Bas Peters <baspeters93@gmail.com>
+> >> ---
+> >>  drivers/isdn/gigaset/asyncdata.c   |  9 +++--
+> >>  drivers/isdn/gigaset/bas-gigaset.c | 80 ++++++++++++++++++++------------------
+> >>  drivers/isdn/gigaset/capi.c        |  5 ++-
+> >>  drivers/isdn/gigaset/common.c      |  8 ++--
+> >>  drivers/isdn/gigaset/ev-layer.c    | 38 +++++++++++-------
+> >>  drivers/isdn/gigaset/gigaset.h     |  4 +-
+> >>  drivers/isdn/gigaset/i4l.c         | 12 +++---
+> >>  drivers/isdn/gigaset/interface.c   | 10 ++---
+> >>  drivers/isdn/gigaset/isocdata.c    |  3 ++
+> >>  drivers/isdn/gigaset/proc.c        | 17 +++++---
+> >>  drivers/isdn/gigaset/usb-gigaset.c | 46 +++++++++++++++-------
+> >>  11 files changed, 141 insertions(+), 91 deletions(-)
+> >>
+> >> diff --git a/drivers/isdn/gigaset/asyncdata.c b/drivers/isdn/gigaset/asyncdata.c
+> > [...]
+> >
+> > --
+> > - Jeremiah Mahler
+
+-- 
+- Jeremiah Mahler
