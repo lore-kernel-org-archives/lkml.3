@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaLaIpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 03:45:53 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:40851 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaLaIpw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 03:45:52 -0500
+	id S1751658AbaLaIp6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 03:45:58 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38453 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751466AbaLaIpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 03:45:54 -0500
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL 0/3] phy: fixes for 3.19 -rc cycle
-Date: Wed, 31 Dec 2014 14:15:46 +0530
-Message-ID: <1420015549-20697-1-git-send-email-kishon@ti.com>
+Subject: [PATCH 1/3] phy: miphy28lp: unlock on error in miphy28lp_init()
+Date: Wed, 31 Dec 2014 14:15:47 +0530
+Message-ID: <1420015549-20697-2-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1420015549-20697-1-git-send-email-kishon@ti.com>
+References: <1420015549-20697-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Please find the pull request for 3.19 -rc cycle. This contains misc fixes
-in PHY drivers.
+We need to unlock before returning the -EINVAL here.
 
-Let me know if I have to change something.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/phy/phy-miphy28lp.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks
-Kishon
-
-The following changes since commit aa39477b5692611b91ac9455ae588738852b3f60:
-
-  Merge tag 'dm-3.19-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm (2014-12-22 14:47:17 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for-3.19-rc
-
-for you to fetch changes up to 0bc09f9cdc589e0b54724096138996a00b19babb:
-
-  phy: phy-ti-pipe3: fix inconsistent enumeration of PCIe gen2 cards (2014-12-23 15:44:32 +0530)
-
-----------------------------------------------------------------
-misc fixes in PHY drivers
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      phy: miphy28lp: unlock on error in miphy28lp_init()
-
-Hans de Goede (1):
-      phy-sun4i-usb: Change disconnect threshold value for sun6i
-
-Vignesh R (1):
-      phy: phy-ti-pipe3: fix inconsistent enumeration of PCIe gen2 cards
-
- drivers/phy/phy-miphy28lp.c          |    3 ++-
- drivers/phy/phy-omap-control.c       |    7 +++----
- drivers/phy/phy-sun4i-usb.c          |    3 ++-
- drivers/phy/phy-ti-pipe3.c           |   10 ++++++----
- include/linux/phy/omap_control_phy.h |    6 +++---
- 5 files changed, 16 insertions(+), 13 deletions(-)
-
+diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
+index e34da13..27fa62c 100644
+--- a/drivers/phy/phy-miphy28lp.c
++++ b/drivers/phy/phy-miphy28lp.c
+@@ -1050,7 +1050,8 @@ static int miphy28lp_init(struct phy *phy)
+ 		ret = miphy28lp_init_usb3(miphy_phy);
+ 		break;
+ 	default:
+-		return -EINVAL;
++		ret = -EINVAL;
++		break;
+ 	}
+ 
+ 	mutex_unlock(&miphy_dev->miphy_mutex);
 -- 
 1.7.9.5
 
