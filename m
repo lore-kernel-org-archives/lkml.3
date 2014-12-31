@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532AbaLaT4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 14:56:39 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:47055 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080AbaLaT4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 14:56:37 -0500
-Message-ID: <54A454E2.4010207@interlog.com>
-Date: Wed, 31 Dec 2014 14:56:18 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, hch@lst.de
-CC: bvanassche@acm.org, hare@suse.de, JBottomley@parallels.com,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
-References: <54A43CFB.2080705@oracle.com>
-In-Reply-To: <54A43CFB.2080705@oracle.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+	id S1751507AbaLaUXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 15:23:30 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:45563 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751026AbaLaUX2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 15:23:28 -0500
+Message-ID: <1420057406.2085.7.camel@HansenPartnership.com>
+Subject: Re: [PATCH repost 12/16] parisc/uaccess: fix sparse errors
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Helge Deller <deller@gmx.de>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        linux-parisc@vger.kernel.org
+Date: Wed, 31 Dec 2014 12:23:26 -0800
+In-Reply-To: <20141231183824.GA32430@redhat.com>
+References: <1419499661-8566-1-git-send-email-mst@redhat.com>
+	 <1419499661-8566-13-git-send-email-mst@redhat.com>
+	 <549C91B9.8080009@gmx.de> <20141227161414.GA2571@redhat.com>
+	 <1420046240.2085.3.camel@HansenPartnership.com>
+	 <20141231183824.GA32430@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-12-31 01:14 PM, Sasha Levin wrote:
-> Hi Christoph,
->
-> I'm seeing an issue which was bisected down to 3c356bde1 ("scsi: stop passing
-> a gfp_mask argument down the command setup path"):
->
-> [ 3395.328221] BUG: sleeping function called from invalid context at mm/mempool.c:206
-> [ 3395.329540] in_atomic(): 1, irqs_disabled(): 0, pid: 6399, name: trinity-c531
-> [ 3395.331104] no locks held by trinity-c531/6399.
-> [ 3395.331849] Preemption disabled blk_execute_rq_nowait (block/blk-exec.c:95)
-> [ 3395.333145]
-> [ 3395.333392] CPU: 5 PID: 6399 Comm: trinity-c531 Not tainted 3.19.0-rc1-next-20141226-sasha-00051-g2dd3d73 #1646
-> [ 3395.335266]  0000000000000000 0000000000000000 ffff880608948000 ffff880645a07548
-> [ 3395.337679]  ffffffff9137c79d 0000000000000000 ffff880608948000 ffff880645a07588
-> [ 3395.340220]  ffffffff814ad713 ffffffff9de20590 ffff880608948000 ffffffff926a166c
-> [ 3395.342643] Call Trace:
-> [ 3395.345099] dump_stack (lib/dump_stack.c:52)
-> [ 3395.346793] ___might_sleep (kernel/sched/core.c:7342)
-> [ 3395.348571] __might_sleep (kernel/sched/core.c:7308)
-> [ 3395.351944] mempool_alloc (mm/mempool.c:206 (discriminator 1))
-> [ 3395.355196] scsi_sg_alloc (drivers/scsi/scsi_lib.c:582)
-> [ 3395.356893] __sg_alloc_table (lib/scatterlist.c:282)
-> [ 3395.358844] ? sdev_disable_disk_events (drivers/scsi/scsi_lib.c:577)
-> [ 3395.360873] scsi_alloc_sgtable (drivers/scsi/scsi_lib.c:608)
-> [ 3395.362769] scsi_init_sgtable (drivers/scsi/scsi_lib.c:1087)
-> [ 3395.364583] ? lockdep_init_map (kernel/locking/lockdep.c:2986)
-> [ 3395.366354] scsi_init_io (drivers/scsi/scsi_lib.c:1122)
-> [ 3395.368092] ? do_init_timer (kernel/time/timer.c:669)
-> [ 3395.369837] scsi_setup_cmnd (drivers/scsi/scsi_lib.c:1220 drivers/scsi/scsi_lib.c:1268)
-> [ 3395.371743] scsi_queue_rq (drivers/scsi/scsi_lib.c:1875 drivers/scsi/scsi_lib.c:1980)
-> [ 3395.373471] __blk_mq_run_hw_queue (block/blk-mq.c:751)
-> [ 3395.375481] blk_mq_run_hw_queue (block/blk-mq.c:831)
-> [ 3395.377324] blk_mq_insert_request (block/blk-mq.h:92 block/blk-mq.c:974)
-> [ 3395.379377] ? blk_rq_map_user (block/blk-map.c:78 block/blk-map.c:142)
-> [ 3395.381307] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
-> [ 3395.383485] blk_execute_rq_nowait (block/blk-exec.c:95)
-> [ 3395.386995] sg_common_write.isra.2 (drivers/scsi/sg.c:823)
-> [ 3395.388712] ? might_fault (mm/memory.c:3730)
-> [ 3395.390624] sg_write (drivers/scsi/sg.c:686)
-> [ 3395.403014] do_loop_readv_writev (fs/read_write.c:722)
-> [ 3395.407429] do_readv_writev (fs/read_write.c:854)
-> [ 3395.415486] vfs_writev (fs/read_write.c:893)
-> [ 3395.417116] SyS_writev (fs/read_write.c:926 fs/read_write.c:917)
-> [ 3395.418851] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
-> [ 3395.420922] system_call_fastpath (arch/x86/kernel/entry_64.S:423)
+On Wed, 2014-12-31 at 20:38 +0200, Michael S. Tsirkin wrote:
+> On Wed, Dec 31, 2014 at 09:17:20AM -0800, James Bottomley wrote:
+[...]
+> > OK, parisc developers still being dense, but this does look like an
+> > abuse of the bitwise type.
+> 
+> To give you another example:
+> 
+> 	__le16 __user *p;
+> 	__le16 foo;
+> 	int rc = get_user(v, p);
+> 
+> really should be fine, ATM this gives a warning.
 
-Looks interesting: vfs injecting SCSI commands with iovec
-through the sg driver's async interface.
+OK, I think I've figured it out.  You're saying that casting __gu_val to
+a bitwise annotated type is an automatic sparse failure because it has
+to be a long in our assembly code to receive the load/store as a
+register.  However, this is required for sparse to do the correct lvalue
+type = rvalue type check in the assignment to x.  We were all thinking
+the __force just killed these sparse type checks.
 
+In that case, I think parisc is fine with this.
 
-The problem seems to be here in scsi_lib.c, mq=true:
-
-static int scsi_alloc_sgtable(struct scsi_data_buffer *sdb, int nents, bool mq)
-{
-         struct scatterlist *first_chunk = NULL;
-         gfp_t gfp_mask = mq ? GFP_NOIO : GFP_ATOMIC;
-         int ret;
-...
-
-What is the downside of setting gfp_mask to GFP_ATOMIC
-in all cases?
-
-Doug Gilbert
+James
 
 
