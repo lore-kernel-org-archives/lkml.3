@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaLaKNC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 05:13:02 -0500
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:47294 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaLaKM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 05:12:59 -0500
+	id S1751518AbaLaKXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 05:23:33 -0500
+Received: from sauhun.de ([89.238.76.85]:43306 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171AbaLaKXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 05:23:31 -0500
+Date: Wed, 31 Dec 2014 11:23:26 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 05/28] cpufreq: drop owner assignment from
+ platform_drivers
+Message-ID: <20141231102326.GA1461@katana>
+References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
+ <1419196495-9626-6-git-send-email-wsa@the-dreams.de>
+ <CAKohpok_G3Gf3XbcK06ELM3ocWQmNPepx1i72VXR8sNbK1L81Q@mail.gmail.com>
+ <2262992.pVJSfL5P4D@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
-Date: Wed, 31 Dec 2014 12:12:58 +0200
-Message-ID: <CAHp75VcRmm3raZ8juLJJOyuDpuxLLg44UHNprwQ=b2hhvqHOsA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] x86: Add IMR support to Quark/Galileo
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, dvhart@infradead.org,
-        platform-driver-x86@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2262992.pVJSfL5P4D@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 29, 2014 at 7:23 PM, Bryan O'Donoghue
-<pure.logic@nexus-software.ie> wrote:
-> This patchset adds an IMR driver to the kernel plus platform code for
-> Intel Galileo Gen1/Gen2 boards.
+On Mon, Dec 22, 2014 at 11:39:32PM +0100, Rafael J. Wysocki wrote:
+> On Monday, December 22, 2014 07:14:56 AM Viresh Kumar wrote:
+> > On 22 December 2014 at 02:44, Wolfram Sang <wsa@the-dreams.de> wrote:
+> > > This platform_driver does not need to set an owner, it will be populated by the
+> > > driver core.
+> > >
+> > > Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> > > ---
+> > > Generated with coccinelle. SmPL file is in the introductory msg. The big
+> > > cleanup was pulled in this merge window. This series catches the bits fallen
+> > > through. The patches shall go in via the subsystem trees.
+> > >
+> > >  drivers/cpufreq/ls1x-cpufreq.c | 1 -
+> > >  1 file changed, 1 deletion(-)
+> > >
+> > > diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
+> > > index 25fbd6a1374f..f0913eee2f50 100644
+> > > --- a/drivers/cpufreq/ls1x-cpufreq.c
+> > > +++ b/drivers/cpufreq/ls1x-cpufreq.c
+> > > @@ -210,7 +210,6 @@ out:
+> > >  static struct platform_driver ls1x_cpufreq_platdrv = {
+> > >         .driver = {
+> > >                 .name   = "ls1x-cpufreq",
+> > > -               .owner  = THIS_MODULE,
+> > >         },
+> > >         .probe          = ls1x_cpufreq_probe,
+> > >         .remove         = ls1x_cpufreq_remove,
+> > 
+> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > --
+> 
+> OK
+> 
+> Wolfram, please feel free to push this through whatever tree you think is
+> appropriate.
 
-[]
+I'd prefer if you take it. However, I'll send all leftover ones to Greg,
+so you can decide.
 
-> Bryan O'Donoghue (2):
->   x86: Add Isolated Memory Regions for Quark X1000
->   platform/x86 Add Intel Galileo platform specific setup
-
-I'm going to review this soon, but here few comments below.
-
->  arch/x86/Kconfig                     |  23 ++
->  arch/x86/include/asm/imr.h           |  79 ++++++
->  arch/x86/include/asm/intel-quark.h   |  31 ++
-
-Could it be just a quark.h? Like for ce4100.
-Those intel- prefixes in the modules looks awkward especially when
-pathname consists x86 already.
-
->  arch/x86/kernel/Makefile             |   1 +
->  arch/x86/kernel/imr.c                | 529 +++++++++++++++++++++++++++++++++++
->  drivers/platform/x86/Kconfig         |  15 +
->  drivers/platform/x86/Makefile        |   1 +
->  drivers/platform/x86/intel_galileo.c | 175 ++++++++++++
-
-Here what about to make an hierarchy like:
-intel/galileo.c
-intel/mid/... would be those modules with intel_mid_ prefixes in
-future. See my proposal regarding to drivers/mfd [1]
-
->  8 files changed, 854 insertions(+)
->  create mode 100644 arch/x86/include/asm/imr.h
->  create mode 100644 arch/x86/include/asm/intel-quark.h
->  create mode 100644 arch/x86/kernel/imr.c
->  create mode 100644 drivers/platform/x86/intel_galileo.c
-
-
-[1] http://www.spinics.net/lists/kernel/msg1886819.html
-
-
--- 
-With Best Regards,
-Andy Shevchenko
