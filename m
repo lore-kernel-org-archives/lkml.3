@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaLaSco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 13:32:44 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:47235 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026AbaLaScn (ORCPT
+	id S1751631AbaLaShn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 13:37:43 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:64743 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582AbaLaShm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 13:32:43 -0500
-Date: Wed, 31 Dec 2014 10:32:38 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Bas Peters <baspeters93@gmail.com>
-Cc: hjlipp@web.de, tilman@imap.cc, isdn@linux-pingi.de,
-        gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers: isdn: gigaset: checkpatch cleanup
-Message-ID: <20141231183238.GA2658@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Bas Peters <baspeters93@gmail.com>, hjlipp@web.de, tilman@imap.cc,
-	isdn@linux-pingi.de, gigaset307x-common@lists.sourceforge.net,
-	netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1420047298-7798-1-git-send-email-baspeters93@gmail.com>
- <20141231174936.GB1922@hudson.localdomain>
- <CAOgR63d6FNxntkBaSWM6ozibYGzajt07OLiM2XcszJarSaGX6A@mail.gmail.com>
+	Wed, 31 Dec 2014 13:37:42 -0500
+Date: Wed, 31 Dec 2014 18:37:39 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: EFI mixed mode + perf = rampant triple faults
+Message-ID: <20141231183739.GA28946@console-pimps.org>
+References: <5491B4A8.905@amacapital.net>
+ <CALCETrUyw5_E+FN8o8ZsOxN5XG81-Q8MVzeUHPZ_XBM+ifi6_w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOgR63d6FNxntkBaSWM6ozibYGzajt07OLiM2XcszJarSaGX6A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrUyw5_E+FN8o8ZsOxN5XG81-Q8MVzeUHPZ_XBM+ifi6_w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bas,
-
-On Wed, Dec 31, 2014 at 07:04:30PM +0100, Bas Peters wrote:
-> 2014-12-31 18:49 GMT+01:00 Jeremiah Mahler <jmmahler@gmail.com>:
-> > Bas,
-> >
-> > On Wed, Dec 31, 2014 at 06:34:58PM +0100, Bas Peters wrote:
-> >> Fixed many checkpatch.pl complaints, ranging from whitespace issues to
-> >> reportedly deprecated function and macro usage.
-> >>
-> > One patch should fix one type of problem.  This needs to be broken up
-> > in to individual patches.
-> >
-> >> I have not been able to test the code as I do not have access to the
-> >> hardware but since no new features were really added I don't think that
-> >> should pose a problem.
-> >>
-> >> There are still some checkpatch complaints, particularly concerning
-> >> potentially unnecessary 'out of memory' messages. I will provide patches
-> >> for these complaints when I figure out the reason behind it and what to
-> >> do about it.
-> >>
-> >> NOTE: This is my first patch (ever). I have attempted to follow all
-> >> guidelines provided, but I probably will have missed some. If you have
-> >> any comments regarding the quality of this patch or suggestions as to
-> >> what I could do better in the future, please let me know.
-> >>
-> > You are ambitious.  I would suggest trying a smaller patch first to
-> > make sure you are doing everything right.
+On Wed, 17 Dec, at 08:54:56AM, Andy Lutomirski wrote:
+> [trying again with .org spelled correctly.  also cc: bpetkov]
 > 
-> With 'smaller patch', do you refer to less files at once or a different driver?
-> Is it generally preferred to send patches that relate to the same
-> issue (changes to a single file,
-> grouping of patches to tackle the same issue, such as conversion of a
-> specific function) over
-> patch(sets) that deal with an entire driver?
-> 
-> Thanks for the advice!
-> 
-
-Your patch should solve one problem.  This could result in a single file
-being changed or many being changed.  For simple checkpatch errors I
-usually group all of one type of error for one file as a patch.
-
-The goal is to make it easy to review.  If you fixed 10 different types
-of issues in one patch it would difficult to review because I would have
-to remember whether the change I am looking at was for issue 3 or 8 or
-5 or ...?
-
-Also, if the code had a bug, a bisect will point me to the patch.  But
-then I have to figure out which of the 10 changes in that one patch
-created the problem.  This is much easier if there was only one change
-in that one patch.
-
-Also have a look at Documentation/SubmittingPatches.  Specifically the
-section "Separate your changes".
-
+> On Wed, Dec 17, 2014 at 8:51 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > I figured I should send this email before I forget about this issue:
 > >
-> >> Signed-off-by: Bas Peters <baspeters93@gmail.com>
-> >> ---
-> >>  drivers/isdn/gigaset/asyncdata.c   |  9 +++--
-> >>  drivers/isdn/gigaset/bas-gigaset.c | 80 ++++++++++++++++++++------------------
-> >>  drivers/isdn/gigaset/capi.c        |  5 ++-
-> >>  drivers/isdn/gigaset/common.c      |  8 ++--
-> >>  drivers/isdn/gigaset/ev-layer.c    | 38 +++++++++++-------
-> >>  drivers/isdn/gigaset/gigaset.h     |  4 +-
-> >>  drivers/isdn/gigaset/i4l.c         | 12 +++---
-> >>  drivers/isdn/gigaset/interface.c   | 10 ++---
-> >>  drivers/isdn/gigaset/isocdata.c    |  3 ++
-> >>  drivers/isdn/gigaset/proc.c        | 17 +++++---
-> >>  drivers/isdn/gigaset/usb-gigaset.c | 46 +++++++++++++++-------
-> >>  11 files changed, 141 insertions(+), 91 deletions(-)
-> >>
-> >> diff --git a/drivers/isdn/gigaset/asyncdata.c b/drivers/isdn/gigaset/asyncdata.c
-> > [...]
+> > If you run perf record across any EFI mixed mode call or otherwise
+> > receive an NMI or MCE, the machine triple-faults.  The cause is
+> > straightforward: there is no valid IDT when we have long mode disabled
+> > for the duration of the EFI call.
+
+Right, the lack of IDT is intentional since we disable interrupts while
+making the EFI call and so far I have side-stepped (ignored) the NMI/MCE
+issue.
+
+Perf is an interesting use case. I've admittedly never used it with EFI
+mixed mode, but yes, we should definitely get that working (if NMI/MCE
+handling wasn't justification enough).
+
+> > As far as I know, the only way to have continuously functional interrupt
+> > handling across a long mode transition is to install an interrupt vector
+> > table and hope that CPUs actually do something intelligent when
+> > receiving an interrupt with LME=1, LMA=1, and PG=0.  Yuck.
 > >
-> > --
-> > - Jeremiah Mahler
+> > Could we get away with issuing 32-bit EFI calls in compat mode, i.e.
+> > with a 32-bit CPL0 CS but while still in long mode?  I think that
+> > delivery of an IST interrupt (which includes both NMI and MCE) will
+> > correctly switch to a fully valid 64-bit state and would correctly
+> > switch back when we execute IRET at the end.  (Am I missing some reason
+> > that switching bitness without a privilege level change doesn't work
+> > well?  I haven't thought of anything, other than the lack of SS/SP controls
+> > on intra-ring interrupts, but that shouldn't be an issue here.)
+> >
+> > As an added benefit, this would considerably simplify the code.
+
+I can't immediately think of a reason that this wouldn't work, but I've
+Cc'd more x86 folks for additional insight.
+
+I will schedule some time to look into this issue in the new year.
+Thanks Andy.
 
 -- 
-- Jeremiah Mahler
+Matt Fleming, Intel Open Source Technology Center
