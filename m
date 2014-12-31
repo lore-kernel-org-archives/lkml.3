@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610AbaLaNyx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 08:54:53 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:47018 "EHLO mail.skyhub.de"
+	id S1751549AbaLaN4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 08:56:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59399 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751455AbaLaNyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 08:54:52 -0500
-Date: Wed, 31 Dec 2014 14:54:49 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Larry Finger <Larry.Finger@lwfinger.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "egrumbach@gmail.com" <egrumbach@gmail.com>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "johannes@sipsolutions.net" <johannes@sipsolutions.net>
-Subject: Re: iwlwifi-driver card doesn't work with 3.19-rc2+
-Message-ID: <20141231135448.GA6332@pd.tnic>
-References: <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com>
- <54A2B807.1020202@hurleysoftware.com>
- <0BA3FCBA62E2DC44AF3030971E174FB31B5DC915@hasmsx107.ger.corp.intel.com>
- <alpine.LNX.2.00.1412301610320.31609@pobox.suse.cz>
- <1419971304.30412.0.camel@egrumbacBox>
- <alpine.LNX.2.00.1412302135520.31609@pobox.suse.cz>
- <20141230212326.GA29263@pd.tnic>
- <54A328C2.5080606@lwfinger.net>
- <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz>
- <0BA3FCBA62E2DC44AF3030971E174FB31B5DD429@hasmsx107.ger.corp.intel.com>
+	id S1750760AbaLaN4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 08:56:10 -0500
+Message-ID: <54A40077.1080806@suse.cz>
+Date: Wed, 31 Dec 2014 14:56:07 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>, sedat.dilek@gmail.com
+CC: maximilian attems <max@stro.at>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: deb-pkg: Cleaning of debian/*tmp files when running 'make (dist)clean'
+References: <CA+icZUXPt=GM08PD8LOpCdxCYhNMrr-2MHxPyNRWPXqUjQXFrw@mail.gmail.com>	 <CA+icZUVfiQ1+k2zD9HXMM40N8rwg6rEmYLdKfHGsGt3xvJu+4w@mail.gmail.com> <1419619556.4705.136.camel@decadent.org.uk>
+In-Reply-To: <1419619556.4705.136.camel@decadent.org.uk>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <0BA3FCBA62E2DC44AF3030971E174FB31B5DD429@hasmsx107.ger.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 07:50:19AM +0000, Grumbach, Emmanuel wrote:
-> Now - basically all your argument is on Johannes's comment:
-> "deprecated enough". I think we have a chicken and egg problem here.
-> We can't break things towards userland. Good. But we do want to
-> deprecate this API because lots of valid purely technical reasons.
-> Unfortunately, I don't see what we could do to send a strong signal to
-> userspace tools developers to have them work / plan a move to a modern
-> API.
+On 2014-12-26 19:46, Ben Hutchings wrote:
+> On Fri, 2014-12-26 at 13:43 +0100, Sedat Dilek wrote:
+>> On Fri, Dec 26, 2014 at 1:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> [...]
+>>>
+>>> Any other make (PHONY) target I don't know?
+>>>
+>>
+>> I fell over "clean-dirs"...
+>>
+>> scripts/package/Makefile:93:clean-dirs += $(objtree)/debian/
+>>
+>> ...but did not really understood how it works.
+>> The main Makefile defines some clean-dirs PHONY#s.
+>> I can only speculate, someone with more skillz in Makefile handling
+>> should look at this.
+> 
+> It looks like this has not worked for a long time.  The scripts
+> directory is not included in the main recursive processes; it seems to
+> be special-cased for build and not for clean.
 
-I don't see what all the fuss is all about. If you're still unsure, go
-read Linus' message once more. You're absolutely not allowed to break
-userspace. Fullstop. No ifs and buts and whatever.
+It is special-cased for mrproper and thus distclean:
 
-Everything extra you wanna do is probably fine. You can go talk to
-userspace tools maintainers using the deprecated API, you can go and fix
-it yourself, and so on and so on...
+  mrproper-dirs      := $(addprefix _mrproper_,Documentation/DocBook
+scripts)
 
-And giving Jiri hard time for "bypassing" maintainers for something
-which is clearly a no-no and has to be reverted the moment it hits
-mainline shows yet again you haven't really understood the rule yet:
+The problem is that
 
-There is no breaking of userspace. Fullstop.
+  clean-dirs += $(objtree)/debian/
 
-Things like that get reverted ASAP. No "it needs to go through my tree",
-"I'm not sure, blabalba" ...
+results in
 
-So instead of giving him hard time, say "thank you for sending the
-revert and thank you for helping us maintainers". Now, before you say
-something, remember this: there is no breaking of userspace!
+  clean-dirs += ./debian/
 
--- 
-Regards/Gruss,
-    Boris.
+and scripts/Makefile.clean treats it as relative to scripts/package.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Michal
