@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaLaLeU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 06:34:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48492 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237AbaLaLeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 06:34:19 -0500
-Date: Wed, 31 Dec 2014 12:33:54 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 07/37] perf tools: Do not use
- __perf_session__process_events() directly
-Message-ID: <20141231113354.GC1256@krava.brq.redhat.com>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <1419405333-27952-8-git-send-email-namhyung@kernel.org>
+	id S1751466AbaLaLp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 06:45:59 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:16757 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaLaLp5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 06:45:57 -0500
+X-IronPort-AV: E=Sophos;i="5.07,672,1413270000"; 
+   d="scan'208";a="53834024"
+Message-ID: <54A3E1F1.7030807@broadcom.com>
+Date: Wed, 31 Dec 2014 12:45:53 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419405333-27952-8-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+CC: Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "egrumbach@gmail.com" <egrumbach@gmail.com>,
+        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility unselectable"
+References: <alpine.LNX.2.00.1412301427430.31609@pobox.suse.cz> <CANUX_P0=wJiKrR4cUgEN=LO+eQ2byprz0K9m9QxzJc+kf4+_bA@mail.gmail.com> <54A2B807.1020202@hurleysoftware.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DC915@hasmsx107.ger.corp.intel.com> <alpine.LNX.2.00.1412301610320.31609@pobox.suse.cz> <1419971304.30412.0.camel@egrumbacBox> <alpine.LNX.2.00.1412302135520.31609@pobox.suse.cz> <20141230212326.GA29263@pd.tnic> <54A328C2.5080606@lwfinger.net> <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz> <alpine.LNX.2.00.1412302351030.31609@pobox.suse.cz> <54A3D955.6020809@broadcom.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DD72E@hasmsx107.ger.corp.intel.com>
+In-Reply-To: <0BA3FCBA62E2DC44AF3030971E174FB31B5DD72E@hasmsx107.ger.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 04:15:03PM +0900, Namhyung Kim wrote:
-> It's only used for perf record to process build-id because its file
-> size it's not fixed at this time due to remaining header features.
-> However data offset and size is available so that we can use the
-> perf_session__process_events() once we set the file size as the
-> current offset like for now.
-> 
-> It turns out that we can staticize the function again as it's the only
-> user and add multi file support in a single place.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+On 12/31/14 12:10, Grumbach, Emmanuel wrote:
+>> On 12/30/14 23:52, Jiri Kosina wrote:
+>>> This reverts commit 24a0aa212ee2dbe44360288684478d76a8e20a0a.
+>>>
+>>> It's causing severe userspace breakage. Namely, all the utilities from
+>>> wireless-utils which are relying on CONFIG_WEXT (which means tools
+>>> like 'iwconfig', 'iwlist', etc) are not working anymore. There is a
+>>> 'iw' utility in newer wireless-tools, which is supposed to be a
+>>> replacement for all the "deprecated" binaries, but it's far away from
+>>> being massively adopted.
+>>>
+>>> Please see [1] for example of the userspace breakage this is causing.
+>>>
+>>> In addition to that, Larry Finger reports [2] that this patch is also
+>>> causing ipw2200 driver being impossible to build.
+>>>
+>>> To me this clearly shows that CONFIG_WEXT is far, far away from being
+>>> "deprecated enough" to be removed.
+>>
+>> Hi Jiri,
+>>
+>> You mentioned in the discussion and I quote: "*If* wireless maintainers think
+>> otherwise, I'll send a revert request to Linus for consideration.". However,
+>> you did not wait for any response from the wireless maintainers nor from the
+>> author of the patch you are reverting.
+>> Seems like an overreaction to me though personally I do not disgree with the
+>> revert itself.
+>
+> Not to mention the patch has already been applied on Linus's tree...
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
+Water under the bridge. The thing with WEXT is that it will stay as is. 
+So if tools like wicd want to support new features like P2P it will need 
+to make the switch. I checked out wicd repo and found a number of 
+iwconfig calls and they kick off wpa_supplicant with wext driver.
 
-> ---
->  tools/perf/builtin-record.c | 7 +++----
->  tools/perf/util/session.c   | 6 +++---
->  tools/perf/util/session.h   | 3 ---
->  3 files changed, 6 insertions(+), 10 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index 8c91f25b81f6..4f97657f14e7 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -196,12 +196,13 @@ static int process_buildids(struct record *rec)
->  {
->  	struct perf_data_file *file  = &rec->file;
->  	struct perf_session *session = rec->session;
-> -	u64 start = session->header.data_offset;
->  
->  	u64 size = lseek(perf_data_file__fd(file), 0, SEEK_CUR);
->  	if (size == 0)
->  		return 0;
->  
-> +	file->size = size;
-> +
->  	/*
->  	 * During this process, it'll load kernel map and replace the
->  	 * dso->long_name to a real pathname it found.  In this case
-> @@ -213,9 +214,7 @@ static int process_buildids(struct record *rec)
->  	 */
->  	symbol_conf.ignore_vmlinux_buildid = true;
->  
-> -	return __perf_session__process_events(session, start,
-> -					      size - start,
-> -					      size, &build_id__mark_dso_hit_ops);
-> +	return perf_session__process_events(session, &build_id__mark_dso_hit_ops);
->  }
->  
->  static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 6ac62ae6b8fa..88aa2f09df93 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -1252,9 +1252,9 @@ fetch_mmaped_event(struct perf_session *session,
->  #define NUM_MMAPS 128
->  #endif
->  
-> -int __perf_session__process_events(struct perf_session *session,
-> -				   u64 data_offset, u64 data_size,
-> -				   u64 file_size, struct perf_tool *tool)
-> +static int __perf_session__process_events(struct perf_session *session,
-> +					  u64 data_offset, u64 data_size,
-> +					  u64 file_size, struct perf_tool *tool)
->  {
->  	int fd = perf_data_file__fd(session->file);
->  	u64 head, page_offset, file_offset, file_pos, size;
-> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-> index dc26ebf60fe4..6d663dc76404 100644
-> --- a/tools/perf/util/session.h
-> +++ b/tools/perf/util/session.h
-> @@ -49,9 +49,6 @@ int perf_session__peek_event(struct perf_session *session, off_t file_offset,
->  			     union perf_event **event_ptr,
->  			     struct perf_sample *sample);
->  
-> -int __perf_session__process_events(struct perf_session *session,
-> -				   u64 data_offset, u64 data_size, u64 size,
-> -				   struct perf_tool *tool);
->  int perf_session__process_events(struct perf_session *session,
->  				 struct perf_tool *tool);
->  
-> -- 
-> 2.1.3
-> 
+With libnl python support wicd could use nl80211 directly avoiding 
+screen-scraping iw output, but it seems not included in distros.
+
+Regards,
+Arend
+
+>>
+>> Regards,
+>> Arend
+>>
+>>> [1] http://thread.gmane.org/gmane.linux.kernel/1857010
+>>> [2] http://thread.gmane.org/gmane.linux.network/343688
+>>>
+>>> Signed-off-by: Jiri Kosina<jkosina@suse.cz>
+>>> ---
+>>>    net/wireless/Kconfig | 2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/net/wireless/Kconfig b/net/wireless/Kconfig index
+>>> 22ba971..29c8675 100644
+>>> --- a/net/wireless/Kconfig
+>>> +++ b/net/wireless/Kconfig
+>>> @@ -175,7 +175,7 @@ config CFG80211_INTERNAL_REGDB
+>>>    	  Most distributions have a CRDA package.  So if unsure, say N.
+>>>
+>>>    config CFG80211_WEXT
+>>> -	bool
+>>> +	bool "cfg80211 wireless extensions compatibility"
+>>>    	depends on CFG80211
+>>>    	select WEXT_CORE
+>>>    	help
+>
+
