@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570AbaLaMfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 07:35:38 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60641 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362AbaLaMfg (ORCPT
+	id S1751607AbaLaMks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 07:40:48 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36344 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaLaMkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 07:35:36 -0500
-Date: Tue, 30 Dec 2014 17:59:16 -0800
+	Wed, 31 Dec 2014 07:40:46 -0500
+Date: Tue, 30 Dec 2014 17:45:21 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH] rcu: don't use __this_cpu_* from preemptible context
-Message-ID: <20141231015916.GM11609@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the rcu tree
+Message-ID: <20141231014521.GL11609@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <1419785381-26133-1-git-send-email-sasha.levin@oracle.com>
+References: <20141226185120.402d392f@canb.auug.org.au>
+ <20141226165401.GH11609@linux.vnet.ibm.com>
+ <CAJhHMCCErUVzD_9mYZOVo=Z_FuBQVV53XWMX_SMEfVUZmBEcRQ@mail.gmail.com>
+ <CAJhHMCBzF3ZgEP7SyLKzBTHxUmkn27fq7JyxyKe1nktiELXZPA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419785381-26133-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <CAJhHMCBzF3ZgEP7SyLKzBTHxUmkn27fq7JyxyKe1nktiELXZPA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14123112-0033-0000-0000-0000032BAF66
+x-cbid: 14123112-0017-0000-0000-0000078FABBC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 11:49:40AM -0500, Sasha Levin wrote:
-> Commit "rcu: Make cond_resched_rcu_qs() apply to normal RCU flavors" has added
-> debug code which tries to read from __this_cpu in a preemptible code, which
-> doesn't work too well.
+On Sat, Dec 27, 2014 at 12:20:50PM -0500, Pranith Kumar wrote:
+> On Sat, Dec 27, 2014 at 11:24 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> > On Fri, Dec 26, 2014 at 11:54 AM, Paul E. McKenney wrote:
+> >> Pranith, if Stephen has CONFIG_KVM=n, it might be best to move the
+> >> "select SRCU" to "config PPC" in arch/powerpc/Kconfig.  Are you able
+> >> to cross-build powerpc?
+> >>
+> >
+> > ppc 32 seems fine without selecting srcu unconditionally. So I added
+> > this select to PPC 64 which should fix this build failure.
 > 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> On looking at this further, I was able to figure out the parts on
+> ppc64 utilizing KVM and enabled them dependent on CONFIG_KVM being
+> enabled. I tested this with a ppc64 allnoconfig and it built
+> succesfully (depending on a unrelated patch to enable printk for
+> powernv).
+> 
+> I've sent the patch but it still seems that we will be playing
+> whack-a-mole for now with code which uses KVM indepedent of
+> CONFIG_KVM. May be fixing it incrementally is a better option than
+> lumping all these together?
 
-Good catch, queued for 3.20 (same as the offending commit).
+For PPC64, I suggest starting with something that can be trivially shown
+to work, even if it consumes more memory than required.  The PPC64 systems
+almost always have an abundance of memory, so having SRCU unnecessarily
+built into the system is not all that bad -- and is what happens today
+anyway.
+
+Given that starting point, you can then build a more precise patch for
+PPC64 on top of the starting-point patch.
+
+Make sense?
 
 							Thanx, Paul
-
-> ---
->  kernel/rcu/tree_trace.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/rcu/tree_trace.c b/kernel/rcu/tree_trace.c
-> index a9b79ca..fbb6240 100644
-> --- a/kernel/rcu/tree_trace.c
-> +++ b/kernel/rcu/tree_trace.c
-> @@ -122,7 +122,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
->  		   cpu_is_offline(rdp->cpu) ? '!' : ' ',
->  		   ulong2long(rdp->completed), ulong2long(rdp->gpnum),
->  		   rdp->passed_quiesce,
-> -		   rdp->rcu_qs_ctr_snap == __this_cpu_read(rcu_qs_ctr),
-> +		   rdp->rcu_qs_ctr_snap == per_cpu(rcu_qs_ctr, rdp->cpu),
->  		   rdp->qs_pending);
->  	seq_printf(m, " dt=%d/%llx/%d df=%lu",
->  		   atomic_read(&rdp->dynticks->dynticks),
-> -- 
-> 1.7.10.4
-> 
 
