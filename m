@@ -1,299 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455AbaLaGqv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 01:46:51 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:38814 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaLaGqt (ORCPT
+	id S1751540AbaLaGzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 01:55:51 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:36954 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaLaGzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 01:46:49 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Wed, 31 Dec 2014 15:47:59 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Minchan Kim <minchan@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
-        "Stefan I. Strogin" <s.strogin@partner.samsung.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
-        Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, rostedt@goodmis.org
-Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
-Message-ID: <20141231064759.GB1766@sejong>
-References: <cover.1419602920.git.s.strogin@partner.samsung.com>
- <20141229023639.GC27095@bbox>
- <54A1B11A.6020307@codeaurora.org>
- <20141230044726.GA22342@bbox>
- <54A34A1C.90603@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54A34A1C.90603@lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 31 Dec 2014 01:55:50 -0500
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fbdev: geocode: remove unneeded NULL check
+Date: Wed, 31 Dec 2014 12:25:38 +0530
+Message-Id: <1420008938-18423-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+the check for info is not required as we are checking it immediately
+after gx1fb_init_fbinfo() and returnig -ENOMEM if it is NULL.
 
-On Wed, Dec 31, 2014 at 09:58:04AM +0900, Gioh Kim wrote:
-> 2014-12-30 오후 1:47에 Minchan Kim 이(가) 쓴 글:
-> >On Mon, Dec 29, 2014 at 11:52:58AM -0800, Laura Abbott wrote:
-> >>I've been meaning to write something like this for a while so I'm
-> >>happy to see an attempt made to fix this. I can't speak for the
-> >>author's reasons for wanting this information but there are
-> >>several reasons why I was thinking of something similar.
-> >>
-> >>The most common bug reports seen internally on CMA are 1) CMA is
-> >>too slow and 2) CMA failed to allocate memory. For #1, not all
-> >>allocations may be slow so it's useful to be able to keep track
-> >>of which allocations are taking too long. For #2, migration
-> >
-> >Then, I don't think we could keep all of allocations. What we need
-> >is only slow allocations. I hope we can do that with ftrace.
-> >
-> >ex)
-> >
-> ># cd /sys/kernel/debug/tracing
-> ># echo 1 > options/stacktrace
-> ># echo cam_alloc > set_ftrace_filter
-> ># echo your_threshold > tracing_thresh
-> >
-> >I know it doesn't work now but I think it's more flexible
-> >and general way to handle such issues(ie, latency of some functions).
-> >So, I hope we could enhance ftrace rather than new wheel.
-> >Ccing ftrace people.
-> 
-> For CMA performance test or code flow check, ftrace is better.
-> 
-> ex)
-> echo cma_alloc > /sys/kernel/debug/tracing/set_graph_function
-> echo function_graph > /sys/kernel/debug/tracing/current_tracer
-> echo funcgraph-proc > /sys/kernel/debug/tracing/trace_options
-> echo nosleep-time > /sys/kernel/debug/tracing/trace_options
-> echo funcgraph-tail > /sys/kernel/debug/tracing/trace_options
-> echo 1 > /sys/kernel/debug/tracing/tracing_on
-> 
-> This can trace every cam_alloc and allocation time.
-> I think ftrace is better to debug latency.
-> If a buffer had allocated and had peak latency and freed,
-> we can check it.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ drivers/video/fbdev/geode/gx1fb_core.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-It'd be great if we can reuse the max latency tracing feature for the
-function graph tracer in order to track a latency problem of an
-arbitrary function more easily.  I've written a PoC code that can be
-used like below..
-
-  # cd /sys/kernel/debug/tracing
-  # echo 0 > tracing_on
-  # echo function_graph > current_tracer
-  # echo funcgraph-latency > trace_options
-  # echo cma_alloc > graph_latency_func
-  # echo 1 > tracing_on
-
-Now the tracing_max_latency file has a max latency of the cma_alloc()
-in usec and the snapshot file contains a snapshot of all the codepath
-to the function at the time.
-
-Would anybody like to play with it? :)
-
-Thanks,
-Namhyung
-
-
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 0eddfeb05fee..4a3d5ed2802c 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -723,6 +723,7 @@ extern char trace_find_mark(unsigned long long duration);
- #define TRACE_GRAPH_PRINT_ABS_TIME      0x20
- #define TRACE_GRAPH_PRINT_IRQS          0x40
- #define TRACE_GRAPH_PRINT_TAIL          0x80
-+#define TRACE_GRAPH_MAX_LATENCY         0x100
- #define TRACE_GRAPH_PRINT_FILL_SHIFT	28
- #define TRACE_GRAPH_PRINT_FILL_MASK	(0x3 << TRACE_GRAPH_PRINT_FILL_SHIFT)
- 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index ba476009e5de..7fc3e21d1354 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -8,6 +8,7 @@
-  */
- #include <linux/debugfs.h>
- #include <linux/uaccess.h>
-+#include <linux/module.h>
- #include <linux/ftrace.h>
- #include <linux/slab.h>
- #include <linux/fs.h>
-@@ -44,6 +45,10 @@ void ftrace_graph_stop(void)
- 
- /* When set, irq functions will be ignored */
- static int ftrace_graph_skip_irqs;
-+/* When set, record max latency of a given function */
-+static int ftrace_graph_max_latency;
-+
-+static unsigned long ftrace_graph_latency_func;
- 
- struct fgraph_cpu_data {
- 	pid_t		last_pid;
-@@ -84,6 +89,8 @@ static struct tracer_opt trace_opts[] = {
- 	{ TRACER_OPT(funcgraph-irqs, TRACE_GRAPH_PRINT_IRQS) },
- 	/* Display function name after trailing } */
- 	{ TRACER_OPT(funcgraph-tail, TRACE_GRAPH_PRINT_TAIL) },
-+	/* Record max latency of a given function } */
-+	{ TRACER_OPT(funcgraph-latency, TRACE_GRAPH_MAX_LATENCY) },
- 	{ } /* Empty entry */
- };
- 
-@@ -389,6 +396,22 @@ trace_graph_function(struct trace_array *tr,
- 	__trace_graph_function(tr, ip, flags, pc);
- }
- 
-+#ifdef CONFIG_TRACER_MAX_TRACE
-+static bool report_latency(struct trace_array *tr,
-+			   struct ftrace_graph_ret *trace)
-+{
-+	unsigned long long delta = trace->rettime - trace->calltime;
-+
-+	if (!ftrace_graph_max_latency)
-+		return false;
-+
-+	if (ftrace_graph_latency_func != trace->func)
-+		return false;
-+
-+	return tr->max_latency < delta;
-+}
-+#endif
-+
- void __trace_graph_return(struct trace_array *tr,
- 				struct ftrace_graph_ret *trace,
- 				unsigned long flags,
-@@ -428,6 +451,22 @@ void trace_graph_return(struct ftrace_graph_ret *trace)
- 	if (likely(disabled == 1)) {
- 		pc = preempt_count();
- 		__trace_graph_return(tr, trace, flags, pc);
-+
-+#ifdef CONFIG_TRACER_MAX_TRACE
-+		if (report_latency(tr, trace)) {
-+			static DEFINE_RAW_SPINLOCK(max_trace_lock);
-+			unsigned long long delta;
-+
-+			delta = trace->rettime - trace->calltime;
-+
-+			raw_spin_lock(&max_trace_lock);
-+			if (delta > tr->max_latency) {
-+				tr->max_latency = delta;
-+				update_max_tr(tr, current, cpu);
-+			}
-+			raw_spin_unlock(&max_trace_lock);
-+		}
-+#endif
+diff --git a/drivers/video/fbdev/geode/gx1fb_core.c b/drivers/video/fbdev/geode/gx1fb_core.c
+index 2794ba1..9bee874 100644
+--- a/drivers/video/fbdev/geode/gx1fb_core.c
++++ b/drivers/video/fbdev/geode/gx1fb_core.c
+@@ -374,10 +374,8 @@ static int gx1fb_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 		release_mem_region(gx1_gx_base() + 0x8300, 0x100);
  	}
- 	atomic_dec(&data->disabled);
- 	local_irq_restore(flags);
-@@ -456,6 +495,11 @@ static int graph_trace_init(struct trace_array *tr)
- 	int ret;
  
- 	set_graph_array(tr);
-+
-+#ifdef CONFIG_TRACE_MAX_LATENCY
-+	graph_array->max_latency = 0;
-+#endif
-+
- 	if (tracing_thresh)
- 		ret = register_ftrace_graph(&trace_graph_thresh_return,
- 					    &trace_graph_thresh_entry);
-@@ -1358,7 +1402,15 @@ func_graph_set_flag(struct trace_array *tr, u32 old_flags, u32 bit, int set)
- {
- 	if (bit == TRACE_GRAPH_PRINT_IRQS)
- 		ftrace_graph_skip_irqs = !set;
-+	else if (bit == TRACE_GRAPH_MAX_LATENCY) {
-+		ftrace_graph_max_latency = set;
+-	if (info) {
+-		fb_dealloc_cmap(&info->cmap);
+-		framebuffer_release(info);
+-	}
++	fb_dealloc_cmap(&info->cmap);
++	framebuffer_release(info);
  
-+		if (set && !tr->allocated_snapshot) {
-+			int ret = tracing_alloc_snapshot();
-+			if (ret < 0)
-+				return ret;
-+		}
-+	}
- 	return 0;
+ 	return ret;
  }
- 
-@@ -1425,6 +1477,43 @@ graph_depth_read(struct file *filp, char __user *ubuf, size_t cnt,
- 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, n);
- }
- 
-+static ssize_t
-+graph_latency_write(struct file *filp, const char __user *ubuf, size_t cnt,
-+		    loff_t *ppos)
-+{
-+	char buf[KSYM_SYMBOL_LEN];
-+	long ret;
-+
-+	ret = strncpy_from_user(buf, ubuf, cnt);
-+	if (ret <= 0)
-+		return ret;
-+
-+	if (buf[ret - 1] == '\n')
-+		buf[ret - 1] = '\0';
-+
-+	ftrace_graph_latency_func = kallsyms_lookup_name(buf);
-+	if (!ftrace_graph_latency_func)
-+		return -EINVAL;
-+
-+	*ppos += cnt;
-+
-+	return cnt;
-+}
-+
-+static ssize_t
-+graph_latency_read(struct file *filp, char __user *ubuf, size_t cnt,
-+		   loff_t *ppos)
-+{
-+	char buf[KSYM_SYMBOL_LEN];
-+
-+	if (!ftrace_graph_latency_func)
-+		return 0;
-+
-+	kallsyms_lookup(ftrace_graph_latency_func, NULL, NULL, NULL, buf);
-+
-+	return simple_read_from_buffer(ubuf, cnt, ppos, buf, strlen(buf));
-+}
-+
- static const struct file_operations graph_depth_fops = {
- 	.open		= tracing_open_generic,
- 	.write		= graph_depth_write,
-@@ -1432,6 +1521,13 @@ static const struct file_operations graph_depth_fops = {
- 	.llseek		= generic_file_llseek,
- };
- 
-+static const struct file_operations graph_latency_fops = {
-+	.open		= tracing_open_generic,
-+	.write		= graph_latency_write,
-+	.read		= graph_latency_read,
-+	.llseek		= generic_file_llseek,
-+};
-+
- static __init int init_graph_debugfs(void)
- {
- 	struct dentry *d_tracer;
-@@ -1442,6 +1538,10 @@ static __init int init_graph_debugfs(void)
- 
- 	trace_create_file("max_graph_depth", 0644, d_tracer,
- 			  NULL, &graph_depth_fops);
-+#ifdef CONFIG_TRACER_MAX_TRACE
-+	trace_create_file("graph_latency_func", 0644, d_tracer,
-+			  NULL, &graph_latency_fops);
-+#endif
- 
- 	return 0;
- }
+-- 
+1.8.1.2
+
