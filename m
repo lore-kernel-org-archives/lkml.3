@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaLaDuw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 22:50:52 -0500
+	id S1752056AbaLaDuu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 22:50:50 -0500
 Received: from mga09.intel.com ([134.134.136.24]:1574 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572AbaLaDug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 22:50:36 -0500
+	id S1751902AbaLaDuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 22:50:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,670,1413270000"; 
-   d="scan'208";a="631042319"
+   d="scan'208";a="631042323"
 From: Aaron Lu <aaron.lu@intel.com>
 To: Jingoo Han <jg1.han@samsung.com>, Lee Jones <lee.jones@linaro.org>,
         Zhang Rui <rui.zhang@intel.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org
-Subject: [PATCH 1/3] video / backlight: add two APIs for drivers to use
-Date: Wed, 31 Dec 2014 11:50:16 +0800
-Message-Id: <1419997818-19528-2-git-send-email-aaron.lu@intel.com>
+Subject: [PATCH 2/3] video / backlight: remove the backlight_device_registered API
+Date: Wed, 31 Dec 2014 11:50:17 +0800
+Message-Id: <1419997818-19528-3-git-send-email-aaron.lu@intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1419997818-19528-1-git-send-email-aaron.lu@intel.com>
 References: <1419997818-19528-1-git-send-email-aaron.lu@intel.com>
@@ -25,114 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is useful to get the backlight device's pointer and use it to set
-backlight in some cases(the following patch will make use of it) so add
-the two APIs and export them.
+Since we will need the backlight_device_get_by_type API, we can use it
+instead of the backlight_device_registered API whenever necessary so
+remove the backlight_device_registered API.
 
 Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 ---
- drivers/video/backlight/backlight.c | 44 ++++++++++++++++++++++++-------------
- include/linux/backlight.h           |  2 ++
- 2 files changed, 31 insertions(+), 15 deletions(-)
+ drivers/acpi/video.c                | 2 +-
+ drivers/video/backlight/backlight.c | 6 ------
+ include/linux/backlight.h           | 1 -
+ 3 files changed, 1 insertion(+), 8 deletions(-)
 
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 1eaadff2e198..98d3f0de811e 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -246,7 +246,7 @@ static bool acpi_video_use_native_backlight(void)
+ bool acpi_video_verify_backlight_support(void)
+ {
+ 	if (acpi_osi_is_win8() && acpi_video_use_native_backlight() &&
+-	    backlight_device_registered(BACKLIGHT_RAW))
++	    backlight_device_get_by_type(BACKLIGHT_RAW))
+ 		return false;
+ 	return acpi_video_backlight_support();
+ }
 diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-index bddc8b17a4d8..bea749329236 100644
+index bea749329236..aec173d9e1ee 100644
 --- a/drivers/video/backlight/backlight.c
 +++ b/drivers/video/backlight/backlight.c
-@@ -164,28 +164,19 @@ static ssize_t brightness_show(struct device *dev,
- 	return sprintf(buf, "%d\n", bd->props.brightness);
+@@ -406,12 +406,6 @@ struct backlight_device *backlight_device_get_by_type(enum backlight_type type)
  }
- 
--static ssize_t brightness_store(struct device *dev,
--		struct device_attribute *attr, const char *buf, size_t count)
-+int backlight_device_set_brightness(struct backlight_device *bd, int brightness)
- {
--	int rc;
--	struct backlight_device *bd = to_backlight_device(dev);
--	unsigned long brightness;
--
--	rc = kstrtoul(buf, 0, &brightness);
--	if (rc)
--		return rc;
--
--	rc = -ENXIO;
-+	int rc = -ENXIO;
- 
- 	mutex_lock(&bd->ops_lock);
- 	if (bd->ops) {
- 		if (brightness > bd->props.max_brightness)
- 			rc = -EINVAL;
- 		else {
--			pr_debug("set brightness to %lu\n", brightness);
-+			pr_debug("set brightness to %u\n", brightness);
- 			bd->props.brightness = brightness;
- 			backlight_update_status(bd);
--			rc = count;
-+			rc = 0;
- 		}
- 	}
- 	mutex_unlock(&bd->ops_lock);
-@@ -194,6 +185,23 @@ static ssize_t brightness_store(struct device *dev,
- 
- 	return rc;
- }
-+EXPORT_SYMBOL(backlight_device_set_brightness);
-+
-+static ssize_t brightness_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	int rc;
-+	struct backlight_device *bd = to_backlight_device(dev);
-+	unsigned long brightness;
-+
-+	rc = kstrtoul(buf, 0, &brightness);
-+	if (rc)
-+		return rc;
-+
-+	rc = backlight_device_set_brightness(bd, brightness);
-+
-+	return rc ? rc : count;
-+}
- static DEVICE_ATTR_RW(brightness);
- 
- static ssize_t type_show(struct device *dev, struct device_attribute *attr,
-@@ -380,7 +388,7 @@ struct backlight_device *backlight_device_register(const char *name,
- }
- EXPORT_SYMBOL(backlight_device_register);
+ EXPORT_SYMBOL(backlight_device_get_by_type);
  
 -bool backlight_device_registered(enum backlight_type type)
-+struct backlight_device *backlight_device_get_by_type(enum backlight_type type)
- {
- 	bool found = false;
- 	struct backlight_device *bd;
-@@ -394,7 +402,13 @@ bool backlight_device_registered(enum backlight_type type)
- 	}
- 	mutex_unlock(&backlight_dev_list_mutex);
- 
--	return found;
-+	return found ? bd : NULL;
-+}
-+EXPORT_SYMBOL(backlight_device_get_by_type);
-+
-+bool backlight_device_registered(enum backlight_type type)
-+{
-+	return backlight_device_get_by_type(type) ? true : false;
- }
- EXPORT_SYMBOL(backlight_device_registered);
- 
+-{
+-	return backlight_device_get_by_type(type) ? true : false;
+-}
+-EXPORT_SYMBOL(backlight_device_registered);
+-
+ /**
+  * backlight_device_unregister - unregisters a backlight device object.
+  * @bd: the backlight device object to be unregistered and freed.
 diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-index adb14a8616df..c59a020df3f8 100644
+index c59a020df3f8..287a4460054c 100644
 --- a/include/linux/backlight.h
 +++ b/include/linux/backlight.h
-@@ -140,6 +140,8 @@ extern void backlight_force_update(struct backlight_device *bd,
- extern bool backlight_device_registered(enum backlight_type type);
+@@ -137,7 +137,6 @@ extern void devm_backlight_device_unregister(struct device *dev,
+ 					struct backlight_device *bd);
+ extern void backlight_force_update(struct backlight_device *bd,
+ 				   enum backlight_update_reason reason);
+-extern bool backlight_device_registered(enum backlight_type type);
  extern int backlight_register_notifier(struct notifier_block *nb);
  extern int backlight_unregister_notifier(struct notifier_block *nb);
-+extern struct backlight_device *backlight_device_get_by_type(enum backlight_type type);
-+extern int backlight_device_set_brightness(struct backlight_device *bd, int brightness);
- 
- #define to_backlight_device(obj) container_of(obj, struct backlight_device, dev)
- 
+ extern struct backlight_device *backlight_device_get_by_type(enum backlight_type type);
 -- 
 2.1.0
 
