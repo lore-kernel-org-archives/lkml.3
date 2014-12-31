@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747AbaLaKkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 05:40:40 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:63936 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaLaKkj (ORCPT
+	id S1751517AbaLaKvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 05:51:24 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:51726 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaLaKvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 05:40:39 -0500
-Date: Wed, 31 Dec 2014 11:40:29 +0100
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
-Cc: Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
+	Wed, 31 Dec 2014 05:51:22 -0500
+Date: Wed, 31 Dec 2014 16:20:18 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        linux-wimax@intel.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: lustre: linux-prim.c: fix sparse warnings
- about static declaration
-Message-ID: <20141231104029.GA25819@t400>
-References: <20141231084833.GA6643@fedora.localdomain>
+Subject: Re: [PATCH] wait_for_completion_timeout does not return < 0
+Message-ID: <20141231105018.GA26258@sudip-PC>
+References: <1420016643-19707-1-git-send-email-der.herr@hofr.at>
+ <20141231103157.GA20842@sudip-PC>
+ <20141231103711.GA30533@opentech.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141231084833.GA6643@fedora.localdomain>
+In-Reply-To: <20141231103711.GA30533@opentech.at>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31, Serguey Parkhomovsky wrote:
-> Fixes the following sparse warnings:
+On Wed, Dec 31, 2014 at 11:37:11AM +0100, Nicholas Mc Guire wrote:
+> On Wed, 31 Dec 2014, Sudip Mukherjee wrote:
 > 
-> drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c:198:1: warning: symbol 'libcfs_arch_init' was not declared. Should it be static?
-> drivers/staging/lustre/lustre/libcfs/linux/linux-prim.c:204:1: warning: symbol 'libcfs_arch_cleanup' was not declared. Should it be static?
-
-This lines are way too long. You should break the commit message line
-around 72nd column so that it looks nice when emailed.
-
-You can also omit the filename from the topic line as this is already in
-the diff.
-
-Thanks,
-Konrad
- 
-> Signed-off-by: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
-> ---
-> v2: Don't break the build, and fix the warnings by defining the functions in libcfs.h.
->  drivers/staging/lustre/include/linux/libcfs/libcfs.h | 3 +++
->  drivers/staging/lustre/lustre/libcfs/module.c        | 2 --
->  2 files changed, 3 insertions(+), 2 deletions(-)
+> > On Wed, Dec 31, 2014 at 04:04:03AM -0500, Nicholas Mc Guire wrote:
+> > > This is only removing the comment which is misleading as
+> > > wait_for_completion_timeout does not return < 0 thus there
+> > > never is anything to be passed on.
+> > 
+> > a small doubt - 
+> > i am seeing that:
+> > unsigned long wait_for_completion_timeout() is calling
+> > long wait_for_common()  which is again calling 
+> > long __wait_for_common which is again calling
+> > long do_wait_for_common()
+> > 
+> > now the return value from do_wait_for_common can be -ERESTARTSYS,
+> > so then what happens when wait_for_completion_timeout return this -ERESTARTSYS as an unsigned value ?
+> > it becomes a positive value, and ultimately ctx.result (which is 0) is returned.
+> > so then are we just ignoring the error value from do_wait_for_common() ?
+> >
+>  
+> ESTARTSYS only can be returned if state matches in do_wait_for_common
+> but wait_for_completion_timemout passes TASK_UNINTERRUPTIBLE
+> so signal_pending_state will return 0 and thus it will never
+> return -ERESTARTSYS.
 > 
-> diff --git a/drivers/staging/lustre/include/linux/libcfs/libcfs.h b/drivers/staging/lustre/include/linux/libcfs/libcfs.h
-> index a6b2f90..4410d7f 100644
-> --- a/drivers/staging/lustre/include/linux/libcfs/libcfs.h
-> +++ b/drivers/staging/lustre/include/linux/libcfs/libcfs.h
-> @@ -85,6 +85,9 @@ static inline int __is_po2(unsigned long long val)
->  
->  #include <linux/list.h>
->  
-> +int libcfs_arch_init(void);
-> +void libcfs_arch_cleanup(void);
-> +
->  /* libcfs tcpip */
->  int libcfs_ipif_query(char *name, int *up, __u32 *ip, __u32 *mask);
->  int libcfs_ipif_enumerate(char ***names);
-> diff --git a/drivers/staging/lustre/lustre/libcfs/module.c b/drivers/staging/lustre/lustre/libcfs/module.c
-> index 2c4fc74..31a4d19 100644
-> --- a/drivers/staging/lustre/lustre/libcfs/module.c
-> +++ b/drivers/staging/lustre/lustre/libcfs/module.c
-> @@ -334,8 +334,6 @@ extern struct mutex cfs_trace_thread_mutex;
->  extern struct cfs_wi_sched *cfs_sched_rehash;
->  
->  extern void libcfs_init_nidstrings(void);
-> -extern int libcfs_arch_init(void);
-> -extern void libcfs_arch_cleanup(void);
->  
->  static int init_libcfs_module(void)
->  {
-> -- 
-> 1.9.3
+> my understanding of the callchain is:
+> wait_for_completion_timemout which is uninterruptible
+>   -> wait_for_common(...TASK_UNINTERRUPTIBLE)
+>     -> __wait_for_common(...TASK_UNINTERRUPTIBLE)
+>       -> do_wait_for_common(...TASK_UNINTERRUPTIBLE)
+>         -> signal_pending_state(TASK_UNINTERRUPTIBLE...)
 > 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> static inline int signal_pending_state(long state, struct task_struct *p)
+> {
+>         if (!(state & (TASK_INTERRUPTIBLE | TASK_WAKEKILL)))
+>                 return 0;
+> 
+> so wait_for_completion_timemout should return >=0 only
+
+doubt cleared.
+
+thanks
+sudip
+> 
+> thx!
+> hofrat
+> 
+> > > 
+> > > patch is against linux-next 3.19.0-rc1 -next-20141226
+> > > 
+> > > Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> > > ---
+> > >  drivers/net/wimax/i2400m/driver.c |    1 -
+> > >  1 file changed, 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
+> > > index 9c78090..0a6384e 100644
+> > > --- a/drivers/net/wimax/i2400m/driver.c
+> > > +++ b/drivers/net/wimax/i2400m/driver.c
+> > > @@ -197,7 +197,6 @@ int i2400m_op_reset(struct wimax_dev *wimax_dev)
+> > >  		result = -ETIMEDOUT;
+> > >  	else if (result > 0)
+> > >  		result = ctx.result;
+> > > -	/* if result < 0, pass it on */
+> > >  	mutex_lock(&i2400m->init_mutex);
+> > >  	i2400m->reset_ctx = NULL;
+> > >  	mutex_unlock(&i2400m->init_mutex);
+> > > -- 
+> > > 1.7.10.4
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
