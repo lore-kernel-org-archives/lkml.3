@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaLaFUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 00:20:10 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:23020 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaLaFT5 (ORCPT
+	id S1751672AbaLaFUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 00:20:18 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:38595 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbaLaFUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 00:19:57 -0500
-X-AuditID: cbfee68f-f791c6d000004834-1c-54a3877abc6f
+	Wed, 31 Dec 2014 00:20:03 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-91-54a3877b3fe8
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com
 Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
@@ -17,36 +17,38 @@ Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [RFC PATCHv2 0/8] devfreq: Add generic exynos memory-bus frequency
- driver
-Date: Wed, 31 Dec 2014 14:19:44 +0900
-Message-id: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
+Subject: [RFC PATCHv2 8/8] ARM: dts: Add memory bus node for Exynos4412-based
+ TRATS2 board
+Date: Wed, 31 Dec 2014 14:19:52 +0900
+Message-id: <1420003192-5576-9-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkULeqfXGIQeMRaYvHaxYzWWycsZ7V
+In-reply-to: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
+References: <1420003192-5576-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42JZI2JSrFvdvjjEYO1mWYvHaxYzWWycsZ7V
 	4vqX56wWk+5PYLF4/cLQonfBVTaLs01v2C02Pb7GanF51xw2i8+9RxgtZpzfx2Sx9PpFJovb
 	jSvYLB6veMtusWrXH0YHfo8189YweuycdZfdY/Gel0wem5fUe/RtWcXo8XmTXABbFJdNSmpO
-	Zllqkb5dAlfGlwsTWQtOi1VM+KXdwHhYsIuRk0NCwETiwsu1bBC2mMSFe+uBbC4OIYGljBKv
-	Xq1lhCna+PAjE0RiEaPEt1l7oKqamCSm3JrKAlLFJqAlsf/FDbBRIgIyElc3bmcBKWIW+M8k
-	8fjVclaQhLBAiMTP73+ZQWwWAVWJ/r9f2UFsXgEXicnP7kGtU5BYtnwmK0izhMAhdonJM96x
-	QzQISHybfAhoKgdQQlZi0wFmiHpJiYMrbrBMYBRcwMiwilE0tSC5oDgpvchYrzgxt7g0L10v
-	OT93EyMwHk7/e9a/g/HuAetDjAIcjEo8vDftFocIsSaWFVfmHmI0BdowkVlKNDkfGHV5JfGG
-	xmZGFqYmpsZG5pZmSuK8C6V+BgsJpCeWpGanphakFsUXleakFh9iZOLglGpgXFJXfdqfYW5V
-	0UsxNvvyWTK2F2XDRK4bX79n+8l630vhDTOsvxU8vDBhzRqzTfJ6cxc+3Xdqa5TyPKH3k7/s
-	cV4XGG0bFjpn+c5poR923GWt4V4vn6Yy1+6P8B3VMKa5C1c7TBd4/FQhJnmnT9hzoWqHH3Gh
-	X+ZzVB765xTw2P5tRuZ++e+bUpRYijMSDbWYi4oTAe1iXJeCAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jAd2q9sUhBn1tQhaP1yxmstg4Yz2r
-	xfUvz1ktJt2fwGLx+oWhRe+Cq2wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8li6fWLTBa3
-	G1ewWTxe8ZbdYtWuP4wO/B5r5q1h9Ng56y67x+I9L5k8Ni+p9+jbsorR4/MmuQC2qAZGm4zU
-	xJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygk5UUyhJzSoFC
-	AYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGV8uTGQtOC1WMeGXdgPjYcEuRk4OCQET
-	iY0PPzJB2GISF+6tZ+ti5OIQEljEKPFt1h4op4lJYsqtqSwgVWwCWhL7X9xgA7FFBGQkrm7c
-	zgJSxCzwn0ni8avlrCAJYYEQiZ/f/zKD2CwCqhL9f7+yg9i8Ai4Sk5/dY4RYpyCxbPlM1gmM
-	3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfbM6kdjCsbLA4xCnAwKvHw3rBbHCLE
-	mlhWXJl7iFGCg1lJhPeyJlCINyWxsiq1KD++qDQntfgQoynQ9onMUqLJ+cBEkFcSb2hsYmZk
-	aWRuaGFkbK4kzqtk3xYiJJCeWJKanZpakFoE08fEwSnVwLgyPyJG7WmjuPTZU5rn74RPTnxp
-	6fVTWqv9h8mW3MJHGnqPv6/U/3WQSzBYkvvx+wWTZHacsbh11066nVHs3SnmkNtbfIXOcMav
-	Cduye+q3X7fynvB6P39xYq4ig+zmBsUVvKrO2iaRjfvWdzjcm2ilkta2dGJC68Q09t7Og1az
-	XO1LecSWTFViKc5INNRiLipOBAAFPXIZzAIAAA==
+	Zllqkb5dAlfGlkUuBXM5K7Zc/cjWwPiMvYuRg0NCwETizhyRLkZOIFNM4sK99WxdjFwcQgJL
+	GSX+Hm5lgam53mcHEV/EKHHm8A9GCKeJSWLKraksIN1sAloS+1/cYAOxRQRkJK5u3M4CUsQs
+	8J9J4vGr5awgCWGBGIkNN1ayg9gsAqoSCze9A2vmFXCR6L24jwXiDAWJZctnsoJs5hRwlZjw
+	xRkkLARUMmNLMxPITAmBe+wSi38dgZojIPFt8iGoS2UlNh1ghhgjKXFwxQ2WCYzCCxgZVjGK
+	phYkFxQnpReZ6BUn5haX5qXrJefnbmIERs7pf88m7GC8d8D6EKMAB6MSD+8Nu8UhQqyJZcWV
+	uYcYTYE2TGSWEk3OB8ZnXkm8obGZkYWpiamxkbmlmZI472upn8FCAumJJanZqakFqUXxRaU5
+	qcWHGJk4OKUaGLUZPALaX69j++rIns4SfuXYb5bbE2xbNnGIpa60/OIT+0nty1Uzm6clP9by
+	n9See+pT/NyiVTHhXSquzqKRF/6yKv06OD3w2Lk3+pzSlvZ/5Y55Gz+ZsU1+nlHoPrU1l4Rd
+	Un29dKe/SLQ2KJd2cVA88/u4x3aV4B8MxxebhP4Tf+X6+u8nHiWW4oxEQy3mouJEACF0FmWX	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsVy+t9jAd3q9sUhBt27xCwer1nMZLFxxnpW
+	i+tfnrNaTLo/gcXi9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
+	N65gs3i84i27xapdfxgd+D3WzFvD6LFz1l12j8V7XjJ5bF5S79G3ZRWjx+dNcgFsUQ2MNhmp
+	iSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJysplCXmlAKF
+	AhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM7YscimYy1mx5epHtgbGZ+xdjBwcEgIm
+	Etf77LoYOYFMMYkL99azdTFycQgJLGKUOHP4ByOE08QkMeXWVBaQKjYBLYn9L26wgdgiAjIS
+	VzduZwEpYhb4zyTx+NVyVpCEsECMxIYbK9lBbBYBVYmFm96BNfMKuEj0XtzHArFOQWLZ8pms
+	IFdwCrhKTPjiDBIWAiqZsaWZaQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwZH5
+	TGoH48oGi0OMAhyMSjy8N+wWhwixJpYVV+YeYpTgYFYS4b2sCRTiTUmsrEotyo8vKs1JLT7E
+	aAp01ERmKdHkfGDSyCuJNzQ2MTOyNDI3tDAyNlcS51WybwsREkhPLEnNTk0tSC2C6WPi4JRq
+	YFxv32Ny7b56kJju3hdP/N+8P93/9un7B/XpF258sO25oRzW1Mvpcfnx4/zwc9lvrjAwbUuc
+	48b42edv8PtF7Y7+FinyJzSqrG/vP6T9wPCJ6MFHdfbu3g81l0ZI7pOreXXSa8nG9fkfO9kf
+	yHT+k9pdfvjzP+4+hf7/DvPaPgd3HBQ9ueTAqYlKLMUZiYZazEXFiQBX0Mfy4gIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,59 +56,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set adds the generic exynos bus frequency driver for memory bus
-with DEVFREQ framework. The Samsung Exynos SoCs have the common architecture
-for memory bus between DRAM memory and MMC/sub IP in SoC. This driver can
-support the memory bus frequency driver for Exynos SoCs.
+This patch adds the Exynos4412 memory-bus node which includes the regulator
+and devfreq-event phandle. The devfreq-event phandle is used for the
+governor of devfreq device and provide the current usage state of
+MIF (Memory Interface) / INT (Internal) memory bus group.
 
-Each memory bus block has a clock for memory bus speed and frequency
-table which is changed according to the utilization of memory bus on runtime.
-And then each memory bus group has the one more memory bus blocks and
-OPP table (including frequency and voltage), regulator, devfreq-event
-devices.
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ arch/arm/boot/dts/exynos4412-trats2.dts | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-There are a little difference about the number of memory bus because each Exynos
-SoC have the different sub-IP and different memory bus speed. In spite of this
-difference among Exynos SoCs, we can support almost Exynos SoC by adding
-unique data of memory bus to devicetree file.
-
-This patch-set has the dependency on following patch-set[1]:
-[1] [PATCHv6 0/9] devfreq: Add devfreq-event class to provide raw data for devfreq device
-- https://lkml.org/lkml/2014/12/28/139
-
-Changes from v1:
-- This patchset is rebased on v3.19-rc2.
-- Fix bug after wake-up from suspend state. If devfreq device fail to get event,
-  exynos-busfreq retry to set the event for starting.
-- Add memory bus group of Exynos4x12/Exynos4210
-- Add divider clock id for Exynos4 memory bus frequency
-- Support memory bus frequency driver on Exynos4412-based TRATS2 board
-
-Chanwoo Choi (8):
-  devfreq: exynos: Add generic exynos memory bus frequency driver
-  devfreq: exynos: Add documentation for generic exynos memory bus frequency driver
-  ARM: dts: Add memory bus node for Exynos3250
-  clk: samsung: exynos4: Add divider clock id for memory bus frequency
-  ARM: dts: Add memory bus node for Exynos4x12
-  ARM: dts: Add memory bus node for Exynos4210
-  ARM: dts: Add memory bus node for Exynos3250-based Rinato board
-  ARM: dts: Add memory bus node for Exynos4412-based TRATS2 board
-
- .../devicetree/bindings/devfreq/exynos-busfreq.txt | 184 +++++++
- arch/arm/boot/dts/exynos3250-rinato.dts            |  12 +
- arch/arm/boot/dts/exynos3250.dtsi                  | 125 +++++
- arch/arm/boot/dts/exynos4210.dtsi                  |  93 ++++
- arch/arm/boot/dts/exynos4412-trats2.dts            |  12 +
- arch/arm/boot/dts/exynos4x12.dtsi                  | 121 +++++
- drivers/clk/samsung/clk-exynos4.c                  |  10 +-
- drivers/devfreq/Kconfig                            |  15 +
- drivers/devfreq/Makefile                           |   1 +
- drivers/devfreq/exynos-busfreq.c                   | 588 +++++++++++++++++++++
- include/dt-bindings/clock/exynos4.h                |   7 +-
- 11 files changed, 1162 insertions(+), 6 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/devfreq/exynos-busfreq.txt
- create mode 100644 drivers/devfreq/exynos-busfreq.c
-
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index bee0eed..21ba25e 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -917,6 +917,18 @@
+ 	};
+ };
+ 
++&memory_bus_mif {
++	devfreq-events = <&ppmu_dmc0_3>, <&ppmu_dmc1_3>;
++	vdd-mem-supply = <&buck1_reg>;
++	status = "okay";
++};
++
++&memory_bus_int {
++	devfreq-events = <&ppmu_leftbus_3>, <&ppmu_rightbus_3>;
++	vdd-mem-supply = <&buck3_reg>;
++	status = "okay";
++};
++
+ &pinctrl_0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sleep0>;
 -- 
 1.8.5.5
 
