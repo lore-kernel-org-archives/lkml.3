@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaLaKYA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 05:24:00 -0500
-Received: from sauhun.de ([89.238.76.85]:43309 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaLaKX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 05:23:58 -0500
-Date: Wed, 31 Dec 2014 11:23:50 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org
-Subject: Re: [PATCH 06/28] dma: drop owner assignment from platform_drivers
-Message-ID: <20141231102350.GB1461@katana>
-References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
- <1419196495-9626-7-git-send-email-wsa@the-dreams.de>
- <20141222153822.GP16827@intel.com>
+	id S1751520AbaLaKcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 05:32:10 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:42390 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaLaKcI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 05:32:08 -0500
+Date: Wed, 31 Dec 2014 16:01:57 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        linux-wimax@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wait_for_completion_timeout does not return < 0
+Message-ID: <20141231103157.GA20842@sudip-PC>
+References: <1420016643-19707-1-git-send-email-der.herr@hofr.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141222153822.GP16827@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420016643-19707-1-git-send-email-der.herr@hofr.at>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 09:08:22PM +0530, Vinod Koul wrote:
-> On Sun, Dec 21, 2014 at 10:14:27PM +0100, Wolfram Sang wrote:
-> > This platform_driver does not need to set an owner, it will be populated by the
-> > driver core.
-> > 
-> After susbstem name if fixed
+On Wed, Dec 31, 2014 at 04:04:03AM -0500, Nicholas Mc Guire wrote:
+> This is only removing the comment which is misleading as
+> wait_for_completion_timeout does not return < 0 thus there
+> never is anything to be passed on.
+
+a small doubt - 
+i am seeing that:
+unsigned long wait_for_completion_timeout() is calling
+long wait_for_common()  which is again calling 
+long __wait_for_common which is again calling
+long do_wait_for_common()
+
+now the return value from do_wait_for_common can be -ERESTARTSYS,
+so then what happens when wait_for_completion_timeout return this -ERESTARTSYS as an unsigned value ?
+it becomes a positive value, and ultimately ctx.result (which is 0) is returned.
+so then are we just ignoring the error value from do_wait_for_common() ?
+
+sudip
+
 > 
-> Acked-by: Vinod Koul <vinod.koul@intel.com>
-
-Since I'd prefer this to go via your tree, can you fix it or shall I
-resend?
-
+> patch is against linux-next 3.19.0-rc1 -next-20141226
+> 
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
+>  drivers/net/wimax/i2400m/driver.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/net/wimax/i2400m/driver.c b/drivers/net/wimax/i2400m/driver.c
+> index 9c78090..0a6384e 100644
+> --- a/drivers/net/wimax/i2400m/driver.c
+> +++ b/drivers/net/wimax/i2400m/driver.c
+> @@ -197,7 +197,6 @@ int i2400m_op_reset(struct wimax_dev *wimax_dev)
+>  		result = -ETIMEDOUT;
+>  	else if (result > 0)
+>  		result = ctx.result;
+> -	/* if result < 0, pass it on */
+>  	mutex_lock(&i2400m->init_mutex);
+>  	i2400m->reset_ctx = NULL;
+>  	mutex_unlock(&i2400m->init_mutex);
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
