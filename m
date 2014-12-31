@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaLaPWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 10:22:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56239 "EHLO mx1.redhat.com"
+	id S1751790AbaLaPWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 10:22:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43195 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667AbaLaPWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751659AbaLaPWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 31 Dec 2014 10:22:48 -0500
 From: Pratyush Anand <panand@redhat.com>
 To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
@@ -13,61 +13,74 @@ Cc: tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
         linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
         masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com, oleg@redhat.com,
         Pratyush Anand <panand@redhat.com>
-Subject: [RFC 0/8] ARM64: Uprobe support added
-Date: Wed, 31 Dec 2014 20:51:16 +0530
-Message-Id: <cover.1420038188.git.panand@redhat.com>
+Subject: [RFC 3/8] Kernel/uprobe: Define arch_uprobe_exception_notify as __weak
+Date: Wed, 31 Dec 2014 20:51:19 +0530
+Message-Id: <c40bb09f1edad6899c3855eb56bf4a4f541c49f7.1420038188.git.panand@redhat.com>
+In-Reply-To: <cover.1420038188.git.panand@redhat.com>
+References: <cover.1420038188.git.panand@redhat.com>
+In-Reply-To: <cover.1420038188.git.panand@redhat.com>
+References: <cover.1420038188.git.panand@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches have been prepared on top of ARM64 kprobe v3 patches [1]
-under review.
+Both ARM and ARM64 handle uprobe exceptions through their own hooks.So
+nothing to be done in arch_uprobe_exception_notify except to return
+NOTIFY_DONE. Implement this as weak default function and remove
+definition from arm arch code.
 
-Unit test for following has been done so far and they have been found
-working
-    1. Normal instruction, which can be probed like sub, ldr, add etc.
-    2. Instructions which can be simulated like ret.
-    3. uretprobe
+Signed-off-by: Pratyush Anand <panand@redhat.com>
+---
+ arch/arm/kernel/uprobes.c |  6 ------
+ kernel/events/uprobes.c   | 18 ++++++++++++++++++
+ 2 files changed, 18 insertions(+), 6 deletions(-)
 
-
-
-[1]https://lkml.org/lkml/2014/11/18/33
-
-Pratyush Anand (8):
-  ARM64: Move BRK opcodes defines from kprobes.h to insn.h
-  ARM64: Refactor kprobes-arm64
-  Kernel/uprobe: Define arch_uprobe_exception_notify as __weak
-  ARM64: Add instruction_pointer_set function
-  ARM64: Re-factor flush_ptrace_access
-  ARM64: Handle TRAP_HWBRKPT for user mode as well
-  ARM64: Handle TRAP_BRKPT for user mode as well
-  ARM64: Add uprobe support
-
- arch/arm/kernel/uprobes.c                          |   6 -
- arch/arm64/Kconfig                                 |   3 +
- arch/arm64/include/asm/insn.h                      |   8 +
- arch/arm64/include/asm/probes.h                    |  26 ++-
- arch/arm64/include/asm/ptrace.h                    |   7 +
- arch/arm64/include/asm/thread_info.h               |   5 +-
- arch/arm64/include/asm/uprobes.h                   |  43 ++++
- arch/arm64/kernel/Makefile                         |   5 +-
- arch/arm64/kernel/debug-monitors.c                 |  14 +-
- arch/arm64/kernel/kprobes.c                        |  11 +-
- arch/arm64/kernel/kprobes.h                        |   7 +-
- .../kernel/{kprobes-arm64.c => probes-arm64.c}     |  84 +++----
- .../kernel/{kprobes-arm64.h => probes-arm64.h}     |  17 +-
- arch/arm64/kernel/probes-condn-check.c             |   2 +-
- arch/arm64/kernel/probes-decode.h                  |   4 +-
- arch/arm64/kernel/signal.c                         |   4 +-
- arch/arm64/kernel/uprobes.c                        | 255 +++++++++++++++++++++
- arch/arm64/mm/flush.c                              |  30 ++-
- kernel/events/uprobes.c                            |  18 ++
- 19 files changed, 445 insertions(+), 104 deletions(-)
- create mode 100644 arch/arm64/include/asm/uprobes.h
- rename arch/arm64/kernel/{kprobes-arm64.c => probes-arm64.c} (79%)
- rename arch/arm64/kernel/{kprobes-arm64.h => probes-arm64.h} (60%)
- create mode 100644 arch/arm64/kernel/uprobes.c
-
+diff --git a/arch/arm/kernel/uprobes.c b/arch/arm/kernel/uprobes.c
+index 56adf9c1fde0..0f3663ca82fc 100644
+--- a/arch/arm/kernel/uprobes.c
++++ b/arch/arm/kernel/uprobes.c
+@@ -178,12 +178,6 @@ void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 	instruction_pointer_set(regs, utask->vaddr);
+ }
+ 
+-int arch_uprobe_exception_notify(struct notifier_block *self,
+-				 unsigned long val, void *data)
+-{
+-	return NOTIFY_DONE;
+-}
+-
+ static int uprobe_trap_handler(struct pt_regs *regs, unsigned int instr)
+ {
+ 	unsigned long flags;
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index cb346f26a22d..027e39ccb778 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1973,6 +1973,24 @@ int uprobe_post_sstep_notifier(struct pt_regs *regs)
+ 	return 1;
+ }
+ 
++/**
++ * arch_uprobe_exception_notify - Pass uprobe exception notigfication to
++ * architecture
++ * @self: Pointer to notifier_block
++ * @val: Type of exception
++ * @data: Exception specific data
++ * Default implementation of arch_uprobe_exception_notify
++ * Returns NOTIFY_DONE.
++ *
++ * Few architectures like arm and arm64 handle uprobe exceptions through
++ * their own hooks.So nothing to be done here.
++ */
++int __weak arch_uprobe_exception_notify(struct notifier_block *self,
++				 unsigned long val, void *data)
++{
++	return NOTIFY_DONE;
++}
++
+ static struct notifier_block uprobe_exception_nb = {
+ 	.notifier_call		= arch_uprobe_exception_notify,
+ 	.priority		= INT_MAX-1,	/* notified after kprobes, kgdb */
 -- 
 2.1.0
 
