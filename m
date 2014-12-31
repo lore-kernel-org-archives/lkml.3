@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaLaVog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 16:44:36 -0500
-Received: from imap.thunk.org ([74.207.234.97]:48015 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080AbaLaVoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 16:44:34 -0500
-Date: Wed, 31 Dec 2014 16:44:21 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "egrumbach@gmail.com" <egrumbach@gmail.com>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility unselectable"
-Message-ID: <20141231214421.GA29273@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Arend van Spriel <arend@broadcom.com>,
-	Jiri Kosina <jkosina@suse.cz>,
-	"Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Borislav Petkov <bp@alien8.de>,
-	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"egrumbach@gmail.com" <egrumbach@gmail.com>,
-	"peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-	"ilw@linux.intel.com" <ilw@linux.intel.com>,
-	"Berg, Johannes" <johannes.berg@intel.com>,
-	Larry Finger <Larry.Finger@lwfinger.net>
-References: <54A328C2.5080606@lwfinger.net>
- <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz>
- <alpine.LNX.2.00.1412302351030.31609@pobox.suse.cz>
- <54A3D955.6020809@broadcom.com>
- <0BA3FCBA62E2DC44AF3030971E174FB31B5DD72E@hasmsx107.ger.corp.intel.com>
- <54A3E1F1.7030807@broadcom.com>
- <alpine.LNX.2.00.1412311505100.31609@pobox.suse.cz>
- <54A41000.3040306@broadcom.com>
- <20141231173113.GA443@thunk.org>
- <54A45D4D.7070302@broadcom.com>
+	id S1751540AbaLaVxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 16:53:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:20814 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbaLaVxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 16:53:23 -0500
+Message-ID: <54A4703B.2000006@oracle.com>
+Date: Wed, 31 Dec 2014 15:52:59 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A45D4D.7070302@broadcom.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: sedat.dilek@gmail.com
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Ming Lei <ming.lei@canonical.com>
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com> <CA+icZUV17qR-kBRnYa+r0DfchQ0QtaBy-6c3f3QuXn0EGwuJzQ@mail.gmail.com>
+In-Reply-To: <CA+icZUV17qR-kBRnYa+r0DfchQ0QtaBy-6c3f3QuXn0EGwuJzQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 09:32:13PM +0100, Arend van Spriel wrote:
+On 12/31/2014 02:38 PM, Sedat Dilek wrote:
 > 
-> Agree. I can't even recall using "ip" ever. iw help system does provide
-> command specific help. The phy keyword is both a command and a selector key,
-> which I realize is confusing to the user, eg. 'iw help info' does provide
-> help for the 'info' subcommand.
+> What has happened to that aio_loop patchset?
+> Is it in Linux-next?
+> ( /me started to play with "block: loop: convert to blk-mq (v3)", so I
+> recalled this other improvement. )
 
-Yeah, the confusing part is that "ip" tends to use "verb object"
-scheme, which is consistent with the Cisco IOS command set it was
-trying to emulate.   So for ip, you do something like
+It met with some harsh resistance, so I backed off on it. Then Al Viro
+got busy re-writing the iov_iter infrastructure and I put my patchset on
+the shelf to look at later. Then Ming Lei submitted more up-to-date
+patchset: https://lkml.org/lkml/2014/8/6/175
 
-ip link info eth0
+It looks like Ming is currently only pushing the first half of that
+patchset. I don't know what his plans are for the last three patches:
 
-Where as for "iw" it's almost exactly backwards, i.e.:
+aio: add aio_kernel_() interface
+fd/direct-io: introduce should_dirty for kernel aio
+block: loop: support to submit I/O via kernel aio based
 
-iw wlan0 info
-
-It's actually rather unfortunate that there is no consistency between
-many of these tools, for example:
-
-ethtool --show-features eth0
-
-If we were going to create a new interface, wouldn't be nice if we
-could have some kind of consistency?  Sigh; oh well, water under the
-bridge at this point.
-
-> Thanks. If there are still drivers, upstream or out-of-tree, providing only
-> WEXT API this will not work unless iwconfig/iwlist can distinguish those
-> from cfg80211-based drivers (which is possible) and fallback to WEXT ioctl
-> syscalls. Just not sure if it is worth the effort. As you stated below, it
-> does not seem "evil" to retain WEXT if that is providing users what they
-> need.
-
-Is it really that much effort?  Unless there is some license
-incompatibility nonsense (i.e., GPLv2 vs GPLv3), the code's already
-there in the wireless-tools source.  It would just be a matter of
-trying the new ioctls first, and then falling back to the WEXT ones if
-needed, right?
-
-Cheers,
-
-					- Ted
+Dave
