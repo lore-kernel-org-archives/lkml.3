@@ -1,152 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaLaOST (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 09:18:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53188 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751445AbaLaOSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 09:18:18 -0500
-Date: Wed, 31 Dec 2014 15:17:44 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 16/37] perf tools: Add a test case for timed thread
- handling
-Message-ID: <20141231141744.GE1256@krava.brq.redhat.com>
-References: <1419405333-27952-1-git-send-email-namhyung@kernel.org>
- <1419405333-27952-17-git-send-email-namhyung@kernel.org>
+	id S1751585AbaLaOWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 09:22:18 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36057 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaLaOWQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 09:22:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419405333-27952-17-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <54A40077.1080806@suse.cz>
+References: <CA+icZUXPt=GM08PD8LOpCdxCYhNMrr-2MHxPyNRWPXqUjQXFrw@mail.gmail.com>
+	<CA+icZUVfiQ1+k2zD9HXMM40N8rwg6rEmYLdKfHGsGt3xvJu+4w@mail.gmail.com>
+	<1419619556.4705.136.camel@decadent.org.uk>
+	<54A40077.1080806@suse.cz>
+Date: Wed, 31 Dec 2014 15:16:34 +0100
+Message-ID: <CA+icZUWzEpgoQO8MEVF2PWOy-bQ9oYMdipBe3T+s2Os4tzKVZw@mail.gmail.com>
+Subject: Re: deb-pkg: Cleaning of debian/*tmp files when running 'make (dist)clean'
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Ben Hutchings <ben@decadent.org.uk>, maximilian attems <max@stro.at>,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 04:15:12PM +0900, Namhyung Kim wrote:
+On Wed, Dec 31, 2014 at 2:56 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On 2014-12-26 19:46, Ben Hutchings wrote:
+>> On Fri, 2014-12-26 at 13:43 +0100, Sedat Dilek wrote:
+>>> On Fri, Dec 26, 2014 at 1:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> [...]
+>>>>
+>>>> Any other make (PHONY) target I don't know?
+>>>>
+>>>
+>>> I fell over "clean-dirs"...
+>>>
+>>> scripts/package/Makefile:93:clean-dirs += $(objtree)/debian/
+>>>
+>>> ...but did not really understood how it works.
+>>> The main Makefile defines some clean-dirs PHONY#s.
+>>> I can only speculate, someone with more skillz in Makefile handling
+>>> should look at this.
+>>
+>> It looks like this has not worked for a long time.  The scripts
+>> directory is not included in the main recursive processes; it seems to
+>> be special-cased for build and not for clean.
+>
+> It is special-cased for mrproper and thus distclean:
+>
+>   mrproper-dirs      := $(addprefix _mrproper_,Documentation/DocBook
+> scripts)
+>
+> The problem is that
+>
+>   clean-dirs += $(objtree)/debian/
+>
+> results in
+>
+>   clean-dirs += ./debian/
+>
+> and scripts/Makefile.clean treats it as relative to scripts/package.
+>
 
-SNIP
+Thanks for your reply.
 
->  		.func = NULL,
->  	},
->  };
-> diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-> index 43ac17780629..1090337f63e5 100644
-> --- a/tools/perf/tests/tests.h
-> +++ b/tools/perf/tests/tests.h
-> @@ -52,6 +52,7 @@ int test__switch_tracking(void);
->  int test__fdarray__filter(void);
->  int test__fdarray__add(void);
->  int test__thread_comm(void);
-> +int test__thread_lookup_time(void);
->  
->  #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
->  #ifdef HAVE_DWARF_UNWIND_SUPPORT
-> diff --git a/tools/perf/tests/thread-lookup-time.c b/tools/perf/tests/thread-lookup-time.c
-> new file mode 100644
-> index 000000000000..6237ecf8caae
-> --- /dev/null
-> +++ b/tools/perf/tests/thread-lookup-time.c
-> @@ -0,0 +1,174 @@
-> +#include "tests.h"
-> +#include "machine.h"
-> +#include "thread.h"
-> +#include "map.h"
-> +#include "debug.h"
-> +
-> +static int thread__print_cb(struct thread *th, void *arg __maybe_unused)
-> +{
-> +	printf("thread: %d, start time: %"PRIu64" %s\n",
-> +	       th->tid, th->start_time, th->dead ? "(dead)" : "");
-> +	return 0;
-> +}
-> +
-> +static int lookup_with_timestamp(struct machine *machine)
-> +{
-> +	struct thread *t1, *t2, *t3;
-> +	union perf_event fork = {
-> +		.fork = {
-> +			.pid = 0,
-> +			.tid = 0,
-> +			.ppid = 1,
-> +			.ptid = 1,
-> +		},
+IIRC I looked through some commits touching this area.
+>From your description, is the simplification ("kbuild: simplify build,
+clean, modbuiltin shorthands") in [1] the cause for this?
 
-I've got following output from the test:
+[ I haven't tried to revert it, returned home today, still looking
+through my inbox :-). ]
 
-test child forked, pid 18483
-========= after t1 created ==========
-thread: 0, start time: 0 
-========= after t1 set comm ==========
-thread: 0, start time: 20000 
-========= after t2 forked ==========
-thread: 0, start time: 50000 
-thread: 1, start time: 0 
-thread: 0, start time: 10000 
-thread: 0, start time: 20000 (dead)
-========= after t3 forked ==========
-thread: 0, start time: 60000 
-thread: 1, start time: 0 
-thread: 0, start time: 10000 
-thread: 0, start time: 50000 (dead)
-thread: 0, start time: 20000 (dead)
-test child finished with 0
+- Sedat -
 
-'after t2 forked' data shows 'thread 0 with time 50000' and
-newly added parent 'thread: 1, start time: 0'
-
-this makes me wonder if you wanted switch 0 and 1 for pid and ppid
-in above sample init and follow with forked pid 1 ... but not sure
-because you're using the same sample for fork 3 ;-)
-
-my question is if that was intentional, because I've got
-confused in here
-
-> +	};
-> +	struct perf_sample sample = {
-> +		.time = 50000,
-> +	};
-> +
-> +	/* start_time is set to 0 */
-> +	t1 = machine__findnew_thread(machine, 0, 0);
-> +
-> +	if (verbose > 1) {
-> +		printf("========= after t1 created ==========\n");
-> +		machine__for_each_thread(machine, thread__print_cb, NULL);
-> +	}
-> +
-> +	TEST_ASSERT_VAL("wrong start time of old thread", t1->start_time == 0);
-> +
-> +	TEST_ASSERT_VAL("cannot find current thread",
-> +			machine__find_thread(machine, 0, 0) == t1);
-> +
-> +	TEST_ASSERT_VAL("cannot find current thread with time",
-> +			machine__findnew_thread_time(machine, 0, 0, 10000) == t1);
-> +
-> +	/* start_time is overwritten to new value */
-> +	thread__set_comm(t1, "/usr/bin/perf", 20000);
-> +
-> +	if (verbose > 1) {
-> +		printf("========= after t1 set comm ==========\n");
-> +		machine__for_each_thread(machine, thread__print_cb, NULL);
-> +	}
-> +
-> +	TEST_ASSERT_VAL("failed to update start time", t1->start_time == 20000);
-> +
-> +	TEST_ASSERT_VAL("should not find passed thread",
-> +			/* this will create yet another dead thread */
-> +			machine__findnew_thread_time(machine, 0, 0, 10000) != t1);
-
-also this comment say that calling machine__findnew_thread_time will
-create another dead thread, which actually did not happened based on
-above test output
-
-thanks,
-jirka
+[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/scripts/Makefile.clean?id=5b2389b45d1a9c12b9f4b976e38c36264bfc42f5
