@@ -1,187 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaLaAW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 19:22:59 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:45847 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012AbaLaAW5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 19:22:57 -0500
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 31 Dec 2014 09:25:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: "Stefan I. Strogin" <s.strogin@partner.samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dmitry Safonov <d.safonov@partner.samsung.com>,
-        Pintu Kumar <pintu.k@samsung.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
-        Dyasly Sergey <s.dyasly@samsung.com>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, rostedt@goodmis.org,
-        namhyung@kernel.org
-Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
-Message-ID: <20141231002502.GB22342@bbox>
-References: <cover.1419602920.git.s.strogin@partner.samsung.com>
- <20141229023639.GC27095@bbox>
- <54A1B11A.6020307@codeaurora.org>
- <20141230044726.GA22342@bbox>
- <54A3207B.3000601@codeaurora.org>
+	id S1751856AbaLaAjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 19:39:43 -0500
+Received: from mout.gmx.net ([212.227.17.22]:50400 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751424AbaLaAjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 19:39:42 -0500
+Message-ID: <54A34538.2020802@gmx.de>
+Date: Wed, 31 Dec 2014 01:37:12 +0100
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <54A3207B.3000601@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: ARM: dts: sun9i: Allwinner A80 dtsi - missing clock-frequency property
+References: <1412773376-25212-1-git-send-email-wens@csie.org> <1412773376-25212-3-git-send-email-wens@csie.org>
+In-Reply-To: <1412773376-25212-3-git-send-email-wens@csie.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:h3tYos5wanwivW1hhJg9skFYruWI3Grm9VI4jnledYPUZGYMb4g
+ X/QeowZ1YOd5vktBaCzRJ3ZkGvHZZzbe1geRi6L96RsLZxg2pudjrIx4kIUla6ntok9mvB0
+ T7SaKdRa8S6O/ZuAxfgIYMIK0UZArLy8zAkBJ7pOyBt8xEIRkqrPliXNT+xFgBhKGacXk1F
+ a0POleLUpRBHLqA8xuzCA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 02:00:27PM -0800, Laura Abbott wrote:
-> On 12/29/2014 8:47 PM, Minchan Kim wrote:
-> >>
-> >>
-> >>I've been meaning to write something like this for a while so I'm
-> >>happy to see an attempt made to fix this. I can't speak for the
-> >>author's reasons for wanting this information but there are
-> >>several reasons why I was thinking of something similar.
-> >>
-> >>The most common bug reports seen internally on CMA are 1) CMA is
-> >>too slow and 2) CMA failed to allocate memory. For #1, not all
-> >>allocations may be slow so it's useful to be able to keep track
-> >>of which allocations are taking too long. For #2, migration
-> >
-> >Then, I don't think we could keep all of allocations. What we need
-> >is only slow allocations. I hope we can do that with ftrace.
-> >
-> >ex)
-> >
-> ># cd /sys/kernel/debug/tracing
-> ># echo 1 > options/stacktrace
-> ># echo cam_alloc > set_ftrace_filter
-> ># echo your_threshold > tracing_thresh
-> >
-> >I know it doesn't work now but I think it's more flexible
-> >and general way to handle such issues(ie, latency of some functions).
-> >So, I hope we could enhance ftrace rather than new wheel.
-> >Ccing ftrace people.
-> >
-> >Futhermore, if we really need to have such information, we need more data
-> >(ex, how many of pages were migrated out, how many pages were dropped
-> >without migrated, how many pages were written back, how many pages were
-> >retried with the page lock and so on).
-> >In this case, event trace would be better.
-> >
-> >
-> 
-> I agree ftrace is significantly more flexible in many respects but
-> for the type of information we're actually trying to collect here
-> ftrace may not be the right tool. Often times it won't be obvious there
-> will be a problem when starting a test so all debugging information
-> needs to be enabled. If the debugging information needs to be on
-> almost all the time anyway it seems silly to allow it be configurable
-> via ftrace.
+When booting Linux 3.19-rc2 on a Merrii Optimusboard using 
+arch/arm/boot/dts/sun9i-a80-optimus.dts adn 
+arch/arm/boot/dts/sun9i-a80.dtsi I get errors
+[    0.061192] /cpus/cpu@0 missing clock-frequency property
+[    0.061209] /cpus/cpu@1 missing clock-frequency property
+[    0.061223] /cpus/cpu@2 missing clock-frequency property
+[    0.061237] /cpus/cpu@3 missing clock-frequency property
+[    0.061251] /cpus/cpu@100 missing clock-frequency property
+[    0.061266] /cpus/cpu@101 missing clock-frequency property
+[    0.061283] /cpus/cpu@102 missing clock-frequency property
+[    0.061300] /cpus/cpu@103 missing clock-frequency property
 
-There is a trade off. Instead, ftrace will collect the information
-with small overhead in runtime, even alomost zero-overhead when
-we turns off so we could investigate the problem in live machine
-without rebooting/rebuiling.
+The dtsi was provided by patch
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=4ab328f06e305bf3ea254f4e3c94bb4d820998c1
 
-If the problem you are trying to solve is latency, I think ftrace
-with more data(ie, # of migrated page, # of stall by dirty or
-locking and so on) would be better. As current interface, something
-did cma_alloc which was really slow but it just cma_release right before
-we looked at the /proc/cmainfo. In that case, we will miss the
-information. It means someone should poll cmainfo continuously to
-avoid the missing so we should make reading part of cmainfo fast
-or make notification mechanism or keep only top 10 entries.
+According to file pack/chips/sun9iw1p1/optimus/sys_config.fex supplied 
+in the OptimusBoard SDK the big cluster can run at up to 1800 MHz, and
+the LITTLE cluster can run at up to 1200 MHz,depending on the CPU voltage:
 
-Let's think as different view. If we know via cmainfo some function
-was slow, it's always true? Slowness of cma_alloc depends migration
-latency as well as cma region fragmentation so the function which
-was really slow would be fast in future if we are luck while
-fast function in old could be slower in future if there are lots of
-dirty pages or small small contiguous space in CMA region.
-I mean some funcion itself is slow or fast is not a important parameter
-to pinpoint cma's problem if we should take care of CMA's slowness or
-failing.
+big
+1.08V (1608Mhz, 1800Mhz]
+1.00V (1536Mhz, 1608Mhz]
+0.96V (1440Mhz, 1536Mhz]
+0.90V (1296Mhz, 1440Mhz]
+0.84V (   0Mhz, 1296Mhz]
 
-Anyway, I'm not saying I don't want to add any debug facility
-to CMA. My point is this patchset doesn't say why author need it
-so it's hard to review the code. Depending on the problem author
-is looking, we should review what kinds of data, what kinds of
-interface, what kinds of implementation need.
-So please say more specific rather than just having better.
+LITTLE
+1.02V (1128Mhz, 1200Mhz]
+0.96V (1008Mhz, 1128Mhz]
+0.90V ( 864Mhz, 1008Mhz]
+0.84V (   0Mhz,  864Mhz]
 
-> 
-> >>failure is fairly common but it's still important to rule out
-> >>a memory leak from a dma client. Seeing all the allocations is
-> >>also very useful for memory tuning (e.g. how big does the CMA
-> >>region need to be, which clients are actually allocating memory).
-> >
-> >Memory leak is really general problem and could we handle it with
-> >page_owner?
-> >
-> 
-> True, but it gets difficult to narrow down which are CMA pages allocated
-> via the contiguous code path. page owner also can't differentiate between
+I guess the proper way to specify the data is the one described in
+Documentation/devicetree/bindings/cpufreq/arm_big_little_dt.txt
 
-I don't get it. The page_owner provides backtrace so why is it hard
-to parse contiguous code path?
+Other boards might run at other frequencies. Hence we might want to put 
+this information into the board file
+arch/arm/boot/dts/sun9i-a80-optimus.dts.
 
-> different CMA regions, this needs to be done separately. This may
+Documentation/devicetree/bindings/cpufreq/arm_big_little_dt.txt,
+arch/arm/boot/dts/exynos5260.dtsi, and
+arch/arm/boot/dts/exynos5420.dtsi, all assume that
+cpu@0-cpu@3 are A15 (big) and cpu@101-cpu@103 are A7 (LITTLE).
 
-Page owner just report PFN and we know which pfn range is any CMA regions
-so can't we do postprocessing?
+Shouldn't arch/arm/boot/dts/sun9i-a80.dtsi stick to this convention?
 
-> be a sign page owner needs some extensions independent of any CMA
-> work.
-> >>
-> >>ftrace is certainly usable for tracing CMA allocation callers and
-> >>latency. ftrace is still only a fixed size buffer though so it's
-> >>possible for information to be lost if other logging is enabled.
-> >
-> >Sorry, I don't get with only above reasons why we need this. :(
-> >
-> 
-> I guess from my perspective the problem that is being solved here
-> is a fairly fixed static problem. We know the information we always
-> want to collect and have available so the ability to turn it off
-> and on via ftrace doesn't seem necessary. The ftrace maintainers
-> will probably disagree here but doing 'cat foo' on a file is
-> easier than finding the particular events, setting thresholds,
-> collecting the trace and possibly post processing. It seems like
-> this is conflating tracing which ftrace does very well with getting
-> a snapshot of the system at a fixed point in time which is what
-> debugfs files are designed for. We really just want a snapshot of
-> allocation history with some information about those allocations.
-> There should be more ftrace events in the CMA path but I think those
-> should be in supplement to the debugfs interface and not a replacement.
+The scripts to create the uImage and to reproduce the problem are in
+https://github.com/xypron/kernel-optimusboard/tree/35d06c020f6584b5023e0e4bef67cc5a625f65bb
 
-Again say, please more specific what kinds of problem you want to solve.
-If it includes several problems(you said latency, leak), please
-divide the patchset to solve each problem. Without it, there is no worth
-to dive into code.
+Best regards
 
-> 
-> Thanks,
-> Laura
-> 
-> -- 
-> Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> a Linux Foundation Collaborative Project
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Heinrich Schuchardt
 
--- 
-Kind regards,
-Minchan Kim
+
