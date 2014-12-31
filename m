@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaLaDiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 22:38:24 -0500
-Received: from mail-bl2on0133.outbound.protection.outlook.com ([65.55.169.133]:42555
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1752049AbaLaDid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 22:38:33 -0500
+Received: from mail-bn1bon0148.outbound.protection.outlook.com ([157.56.111.148]:14359
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751374AbaLaDiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 22:38:22 -0500
+	id S1751374AbaLaDi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Dec 2014 22:38:27 -0500
+X-Greylist: delayed 89668 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Dec 2014 22:38:26 EST
 From: Zidan Wang <b50113@freescale.com>
 To: <broonie@kernel.org>
 CC: <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
@@ -14,154 +15,196 @@ CC: <lgirdwood@gmail.com>, <perex@perex.cz>, <tiwai@suse.de>,
         <Li.Xiubo@freescale.com>, <patches@opensource.wolfsonmicro.com>,
         <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
         Zidan Wang <b50113@freescale.com>
-Subject: [alsa-devel][PATCH 1/4] ASoC: wm8960: Let wm8960 codec driver manage its own MCLK
-Date: Wed, 31 Dec 2014 11:39:11 +0800
-Message-ID: <1419997154-860-1-git-send-email-b50113@freescale.com>
+Subject: [alsa-devel][PATCH 2/4] ASoC: wm8960: Let wm8960 driver configure its bit clock and frame clock
+Date: Wed, 31 Dec 2014 11:39:12 +0800
+Message-ID: <1419997154-860-2-git-send-email-b50113@freescale.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1419997154-860-1-git-send-email-b50113@freescale.com>
+References: <1419997154-860-1-git-send-email-b50113@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.158.2)
  smtp.mailfrom=B50113@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(89996001)(50226001)(50466002)(120916001)(85426001)(77156002)(4396001)(19580395003)(64706001)(62966003)(87936001)(20776003)(46102003)(50986999)(106466001)(21056001)(48376002)(19580405001)(81156004)(99396003)(6806004)(104016003)(33646002)(84676001)(36756003)(47776003)(69596002)(229853001)(2351001)(68736005)(97736003)(92566001)(86362001)(107046002)(77096005)(31966008)(110136001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1252;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(20776003)(89996001)(84676001)(21056001)(64706001)(4396001)(87936001)(92566001)(50226001)(50986999)(97736003)(50466002)(19580395003)(85426001)(81156004)(31966008)(86362001)(47776003)(62966003)(46102003)(77156002)(33646002)(99396003)(69596002)(229853001)(107046002)(77096005)(106466001)(48376002)(2950100001)(2351001)(68736005)(104016003)(6806004)(19580405001)(120916001)(110136001)(36756003)(76176999)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB1260;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DmarcAction: None
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB1252;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1260;
 X-Forefront-PRVS: 0442E569BC
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 03:38:18.6309
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 03:38:22.7849
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1252
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB1260
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we want to use wm8960 codec, we should enable its MCLK in machine driver.
-It's reasonable for wm8960 codec driver to manage its own MCLK.
-
-When current bias_level is SND_SOC_BIAS_ON, it is preparing for a transition
-away from ON. In this case, disable the codec mclk. When current bias_level
-is not SND_SOC_BIAS_ON, it preparing for a transition to ON. In this case,
-enable the codec mclk.
+wm8960 codec driver missing configure its bit clock and frame clock, so add
+support for it. It will calculate a appropriate frequency dividing ratio
+according to the system clock, bit clock and frame clock, then set the
+corresponding registers.
 
 Signed-off-by: Zidan Wang <b50113@freescale.com>
 ---
- sound/soc/codecs/wm8960.c | 40 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 39 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8960.c | 108 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 108 insertions(+)
 
 diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
-index 031a1ae..1a5f47b 100644
+index 1a5f47b..86a5489 100644
 --- a/sound/soc/codecs/wm8960.c
 +++ b/sound/soc/codecs/wm8960.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/delay.h>
- #include <linux/pm.h>
-+#include <linux/clk.h>
- #include <linux/i2c.h>
- #include <linux/slab.h>
- #include <sound/core.h>
-@@ -117,6 +118,7 @@ static bool wm8960_volatile(struct device *dev, unsigned int reg)
- }
+@@ -127,6 +127,8 @@ struct wm8960_priv {
+ 	struct snd_soc_dapm_widget *out3;
+ 	bool deemph;
+ 	int playback_fs;
++	int bclk;
++	int sysclk;
+ 	struct wm8960_data pdata;
+ };
  
- struct wm8960_priv {
-+	struct clk *mclk;
- 	struct regmap *regmap;
- 	int (*set_bias_level)(struct snd_soc_codec *,
- 			      enum snd_soc_bias_level level);
-@@ -618,6 +620,7 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
- 				      enum snd_soc_bias_level level)
- {
- 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
-+	int ret;
+@@ -563,6 +565,79 @@ static struct {
+ 	{  8000, 5 },
+ };
  
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
-@@ -626,6 +629,20 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
- 	case SND_SOC_BIAS_PREPARE:
- 		/* Set VMID to 2x50k */
- 		snd_soc_update_bits(codec, WM8960_POWER1, 0x180, 0x80);
++/* Multiply 256 for internal 256 div */
++static const int dac_divs[] = { 256, 384, 512, 768, 1024, 1408, 1536 };
 +
-+		if (!IS_ERR(wm8960->mclk)) {
-+			if (codec->dapm.bias_level == SND_SOC_BIAS_ON)
-+				clk_disable_unprepare(wm8960->mclk);
-+			else {
-+				ret = clk_prepare_enable(wm8960->mclk);
-+				if (ret) {
-+					dev_err(codec->dev,
-+						"Failed to enable MCLK: %d\n",
-+						ret);
-+					return ret;
++/* Multiply 10 to eliminate decimials */
++static const int bclk_divs[] = {
++	10, 15, 20, 30, 40, 55, 60, 80, 110,
++	120, 160, 220, 240, 320, 320, 320
++};
++
++static void wm8960_configure_clocking(struct snd_soc_codec *codec,
++		int stream, int lrclk)
++{
++	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
++	u16 iface1 = snd_soc_read(codec, WM8960_IFACE1);
++	u16 iface2 = snd_soc_read(codec, WM8960_IFACE2);
++	int i, j;
++
++	if (!(iface1 & (1<<6))) {
++		dev_dbg(codec->dev,
++			"Codec is slave mode, no need to configure clock\n");
++		return;
++	}
++
++	if (!wm8960->sysclk) {
++		dev_dbg(codec->dev, "No SYSCLK configured\n");
++		return;
++	}
++
++	if (!wm8960->bclk || !lrclk) {
++		dev_dbg(codec->dev, "No audio clocks configured\n");
++		return;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(dac_divs); ++i) {
++		if (wm8960->sysclk == lrclk * dac_divs[i]) {
++			for (j = 0; j < ARRAY_SIZE(bclk_divs); ++j) {
++				if (wm8960->sysclk ==  wm8960->bclk *
++						bclk_divs[j] / 10) {
++					/* configure frame clock */
++					if (iface2 & (1<<6))
++						/* If ADCLRC configure as GPIO
++						 * pin, DACLRC pin is used as
++						 * a frame clock for ADCs and
++						 * DACs */
++						snd_soc_update_bits(codec,
++								WM8960_CLOCK1,
++								0x7 << 3,
++								i << 3);
++					else if (SNDRV_PCM_STREAM_PLAYBACK
++								== stream)
++						snd_soc_update_bits(codec,
++								WM8960_CLOCK1,
++								0x7 << 3,
++								i << 3);
++					else if (SNDRV_PCM_STREAM_CAPTURE
++								== stream)
++						snd_soc_update_bits(codec,
++								WM8960_CLOCK1,
++								0x7 << 6,
++								i << 6);
++
++					/* configure bit clock */
++					snd_soc_update_bits(codec,
++							WM8960_CLOCK2, 0xf, j);
++					return;
 +				}
 +			}
 +		}
- 		break;
- 
- 	case SND_SOC_BIAS_STANDBY:
-@@ -661,6 +678,7 @@ static int wm8960_set_bias_level_out3(struct snd_soc_codec *codec,
- 
- 		/* Disable VMID and VREF, let them discharge */
- 		snd_soc_write(codec, WM8960_POWER1, 0);
-+
- 		msleep(600);
- 		break;
- 	}
-@@ -674,7 +692,7 @@ static int wm8960_set_bias_level_capless(struct snd_soc_codec *codec,
- 					 enum snd_soc_bias_level level)
- {
- 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
--	int reg;
-+	int reg, ret;
- 
- 	switch (level) {
- 	case SND_SOC_BIAS_ON:
-@@ -715,9 +733,22 @@ static int wm8960_set_bias_level_capless(struct snd_soc_codec *codec,
- 					    WM8960_VREF, WM8960_VREF);
- 
- 			msleep(100);
-+
-+			if (!IS_ERR(wm8960->mclk)) {
-+				ret = clk_prepare_enable(wm8960->mclk);
-+				if (ret) {
-+					dev_err(codec->dev,
-+						"Failed to enable MCLK: %d\n",
-+						ret);
-+					return ret;
-+				}
-+			}
- 			break;
- 
- 		case SND_SOC_BIAS_ON:
-+			if (!IS_ERR(wm8960->mclk))
-+				clk_disable_unprepare(wm8960->mclk);
-+
- 			/* Enable anti-pop mode */
- 			snd_soc_update_bits(codec, WM8960_APOP1,
- 					    WM8960_POBCTRL | WM8960_SOFT_ST |
-@@ -728,6 +759,7 @@ static int wm8960_set_bias_level_capless(struct snd_soc_codec *codec,
- 			/* Disable VMID and VREF */
- 			snd_soc_update_bits(codec, WM8960_POWER1,
- 					    WM8960_VREF | WM8960_VMID_MASK, 0);
-+
- 			break;
- 
- 		case SND_SOC_BIAS_OFF:
-@@ -1002,6 +1034,12 @@ static int wm8960_i2c_probe(struct i2c_client *i2c,
- 	if (wm8960 == NULL)
- 		return -ENOMEM;
- 
-+	wm8960->mclk = devm_clk_get(&i2c->dev, "codec_mclk");
-+	if (IS_ERR(wm8960->mclk)) {
-+		if (PTR_ERR(wm8960->mclk) == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
 +	}
 +
- 	wm8960->regmap = devm_regmap_init_i2c(i2c, &wm8960_regmap);
- 	if (IS_ERR(wm8960->regmap))
- 		return PTR_ERR(wm8960->regmap);
++	dev_err(codec->dev, "Unsupported sysclk %d\n", wm8960->sysclk);
++}
++
+ static int wm8960_hw_params(struct snd_pcm_substream *substream,
+ 			    struct snd_pcm_hw_params *params,
+ 			    struct snd_soc_dai *dai)
+@@ -572,6 +647,10 @@ static int wm8960_hw_params(struct snd_pcm_substream *substream,
+ 	u16 iface = snd_soc_read(codec, WM8960_IFACE1) & 0xfff3;
+ 	int i;
+ 
++	wm8960->bclk = snd_soc_params_to_bclk(params);
++	if (params_channels(params) == 1)
++		wm8960->bclk *= 2;
++
+ 	/* bit size */
+ 	switch (params_width(params)) {
+ 	case 16:
+@@ -602,6 +681,10 @@ static int wm8960_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	/* set iface */
+ 	snd_soc_write(codec, WM8960_IFACE1, iface);
++
++	wm8960_configure_clocking(codec, substream->stream,
++			params_rate(params));
++
+ 	return 0;
+ }
+ 
+@@ -943,6 +1026,30 @@ static int wm8960_set_bias_level(struct snd_soc_codec *codec,
+ 	return wm8960->set_bias_level(codec, level);
+ }
+ 
++static int wm8960_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
++					unsigned int freq, int dir)
++{
++	struct snd_soc_codec *codec = dai->codec;
++	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
++
++	switch (clk_id) {
++	case WM8960_SYSCLK_MCLK:
++		snd_soc_update_bits(codec, WM8960_CLOCK1,
++					0x1, WM8960_SYSCLK_MCLK);
++		break;
++	case WM8960_SYSCLK_PLL:
++		snd_soc_update_bits(codec, WM8960_CLOCK1,
++					0x1, WM8960_SYSCLK_PLL);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	wm8960->sysclk = freq;
++
++	return 0;
++}
++
+ #define WM8960_RATES SNDRV_PCM_RATE_8000_48000
+ 
+ #define WM8960_FORMATS \
+@@ -955,6 +1062,7 @@ static const struct snd_soc_dai_ops wm8960_dai_ops = {
+ 	.set_fmt = wm8960_set_dai_fmt,
+ 	.set_clkdiv = wm8960_set_dai_clkdiv,
+ 	.set_pll = wm8960_set_dai_pll,
++	.set_sysclk = wm8960_set_dai_sysclk,
+ };
+ 
+ static struct snd_soc_dai_driver wm8960_dai = {
 -- 
 1.9.1
 
