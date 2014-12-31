@@ -1,118 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaLaCAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Dec 2014 21:00:53 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:51580 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaLaCAw (ORCPT
+	id S1751650AbaLaCNu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Dec 2014 21:13:50 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:41004 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaLaCNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Dec 2014 21:00:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALCETrWxPBdjY0+gCmPSwjYLB0u4Z4JgGtuR-XU=qwVzoDEBpA@mail.gmail.com>
-References: <1419315745-20767-1-git-send-email-user@chenggang-laptop>
- <c027bde0-5f4f-441f-8d45-3e7f6f702231@alibaba-inc.com> <CALCETrVVvbnO-7bnyPCYhPbDoEg-hqmvVbfXL9ONbQPBTJNUZg@mail.gmail.com>
- <20141230190327.GB23965@worktop.programming.kicks-ass.net> <CALCETrWxPBdjY0+gCmPSwjYLB0u4Z4JgGtuR-XU=qwVzoDEBpA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 30 Dec 2014 18:00:30 -0800
-Message-ID: <CALCETrUEDuWoXyN+JrB5nWfL6B5odQJU37_y=-tzXN0vxr4tOQ@mail.gmail.com>
-Subject: =?UTF-8?B?UmU6IOetlOWkje+8mltQQVRDSF0gcGVyZiBjb3JlOiBVc2UgS1NUS19FU1AoKSBpbnN0ZQ==?=
-	=?UTF-8?B?YWQgb2YgcHRfcmVncy0+c3Agd2hpbGUgb3V0cHV0IHVzZXIgcmVncw==?=
-To: Peter Zijlstra <peterz@infradead.org>, Jan Beulich <jbeulich@suse.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, root <chenggang.qin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@taobao.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Namhyung Kim <namhyung@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= 
-	<chenggang.qcg@alibaba-inc.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 30 Dec 2014 21:13:49 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] lib/bitmap.c: Change prototype of bitmap_copy_le
+Date: Wed, 31 Dec 2014 03:13:31 +0100
+Message-Id: <1419992012-15545-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 3:29 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Dec 30, 2014 11:03 AM, "Peter Zijlstra" <peterz@infradead.org> wrote:
->>
->> On Thu, Dec 25, 2014 at 07:48:28AM -0800, Andy Lutomirski wrote:
->> > On a quick look, there are plenty of other bugs in there besides just
->> > the stack pointer issue.  The ABI check that uses TIF_IA32 in the perf
->> > core is completely wrong.  TIF_IA32 may be equal to the actual
->> > userspace bitness by luck, but, if so, that's more or less just luck.
->> > And there's a user_mode test that should be user_mode_vm.
->> >
->> > Also, it's not just sp that's wrong.  There are various places that
->> > you can interrupt in which many of the registers have confusing
->> > locations.  You could try using the cfi unwind data, but that's
->> > unlikely to work for regs like cs and ss, and, during context switch,
->> > this has very little chance of working.
->> >
->> > What's the point of this feature?  Honestly, my suggestion would be to
->> > delete it instead of trying to fix it.  It's also not clear to me that
->> > there aren't serious security problems here -- it's entirely possible
->> > for sensitive *kernel* values to and up in task_pt_regs at certain
->> > times, and if you run during context switch and there's no code to
->> > suppress this dump during context switch, then you could be showing
->> > regs that belong to the wrong task.
->>
->> Of course the people who actually wrote the code are not on CC :/
->>
->> There's two users of this iirc;
->>
->>  1) the dwarf stack unwinder thingy, which basically dumps the userspace
->>  regs and the top of userspace stack on 'event'.
->>
->
-> Given how the x86_64* entry code works, using task_pt_regs from
-> anywhere except explicitly supported contexts (including exceptions
-> that originated in userspace and a small handful of system calls) is
-> asking for trouble.  NMI context is especially bad.
->
-> How important is this feature, and which registers matter?  It might
-> be possible to use a dwarf unwinder on the kernel call stack to get
-> most of the regs from most contexts, and it might also be possible to
-> make small changes to the entry code to make it possible to get some
-> of the registers reliably, but it's not currently possible to safely
-> use task_pt_regs *at all* from NMI context unless you've at least
-> blacklisted a handful of origin RIP values that give dangerously bogus
-> results.  (Using do_nmi's regs parameter if user_mode_vm(regs) is a
-> different story.)
+Make the prototype of bitmap_copy_le the same as bitmap_copy's. All
+other bitmap_* functions take unsigned long* parameters; there's no
+reason this should be special.
 
-It's actually worse than just knowing the interrupted kernel RIP.  If
-the call chain goes usermode -> IST exception -> NMI, then
-task_pt_regs is entirely uninitialized.  Assuming all the CFI
-annotations are correct, the unwinder could still do it from the
-kernel.
+The only current user is the static inline uwb_mas_bm_copy_le, which
+already does the void* laundering, so the end users can pass their u8
+or __le32 buffers without a cast.
 
-Note that, as far as I know, Jan Beulich is the only person who uses
-the unwinder on kernel code.  Jan, how do you do this?
+Furthermore, this allows us to simply let bitmap_copy_le be an alias
+for bitmap_copy on little-endian; see next patch.
 
->
-> * I'm not nearly as familiar with the 32-bit entry code, so I don't
-> know whether we have the same issues there.
->
->>  2) the recent sample_regs_intr, which dumps the register set at
->>  'event', be it kernel or userspace.
->>
->
-> What's wrong with the PMI's pt_regs for that?  If we interrupted the
-> kernel, they'll be kernel regs (with all their attendant security
-> issues) and, if we interrupted userspace, then they'll be the full,
-> correct userspace registers.
->
-> --Andy
->
->>
->> The first is somewhat usable when lacking framepointers while still
->> desiring some unwind information, the second is useful to things like
->> call argument profiling and the like.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ include/linux/bitmap.h | 2 +-
+ lib/bitmap.c           | 9 ++++-----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-
-
+diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
+index 202e4034fe26..bd1748919872 100644
+--- a/include/linux/bitmap.h
++++ b/include/linux/bitmap.h
+@@ -170,7 +170,7 @@ extern void bitmap_fold(unsigned long *dst, const unsigned long *orig,
+ extern int bitmap_find_free_region(unsigned long *bitmap, unsigned int bits, int order);
+ extern void bitmap_release_region(unsigned long *bitmap, unsigned int pos, int order);
+ extern int bitmap_allocate_region(unsigned long *bitmap, unsigned int pos, int order);
+-extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
++extern void bitmap_copy_le(unsigned long *dst, const unsigned long *src, unsigned int nbits);
+ extern int bitmap_ord_to_pos(const unsigned long *bitmap, int n, int bits);
+ extern int bitmap_print_to_pagebuf(bool list, char *buf,
+ 				   const unsigned long *maskp, int nmaskbits);
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 324ea9eab8c1..5ded9180528b 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -1207,16 +1207,15 @@ EXPORT_SYMBOL(bitmap_allocate_region);
+  *
+  * Require nbits % BITS_PER_LONG == 0.
+  */
+-void bitmap_copy_le(void *dst, const unsigned long *src, int nbits)
++void bitmap_copy_le(unsigned long *dst, const unsigned long *src, unsigned int nbits)
+ {
+-	unsigned long *d = dst;
+-	int i;
++	unsigned int i;
+ 
+ 	for (i = 0; i < nbits/BITS_PER_LONG; i++) {
+ 		if (BITS_PER_LONG == 64)
+-			d[i] = cpu_to_le64(src[i]);
++			dst[i] = cpu_to_le64(src[i]);
+ 		else
+-			d[i] = cpu_to_le32(src[i]);
++			dst[i] = cpu_to_le32(src[i]);
+ 	}
+ }
+ EXPORT_SYMBOL(bitmap_copy_le);
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+2.1.3
+
