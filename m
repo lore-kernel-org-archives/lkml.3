@@ -1,103 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaLaGCL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 01:02:11 -0500
-Received: from mail-bl2on0125.outbound.protection.outlook.com ([65.55.169.125]:52049
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750734AbaLaGCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 01:02:10 -0500
-Message-ID: <1420005717.4961.9.camel@freescale.com>
-Subject: Re: [PATCH] tty: 8250: Add 64byte UART support for FSL platforms
-From: Scott Wood <scottwood@freescale.com>
-To: Vijay Rai <vijay.rai@freescale.com>
-CC: <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        "Poonam Aggrwal" <poonam.aggrwal@freescale.com>,
-        Priyanka Jain <Priyanka.Jain@freescale.com>
-Date: Wed, 31 Dec 2014 00:01:57 -0600
-In-Reply-To: <1419932288-17562-1-git-send-email-vijay.rai@freescale.com>
-References: <1419932288-17562-1-git-send-email-vijay.rai@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1751362AbaLaGXH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 01:23:07 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:37604 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710AbaLaGXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 01:23:04 -0500
+Date: Wed, 31 Dec 2014 01:23:03 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Arthur Marsh <arthur.marsh@internode.on.net>,
+        Colin Watson <cjwatson@debian.org>, 772807@bugs.debian.org,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: Bug#772807: binfmt-support: unable to close
+ /proc/sys/fs/binfmt_misc/register: Invalid argument
+Message-ID: <20141231062303.GE3906@vapier.wh0rd.info>
+Mail-Followup-To: Al Viro <viro@ZenIV.linux.org.uk>,
+	Arthur Marsh <arthur.marsh@internode.on.net>,
+	Colin Watson <cjwatson@debian.org>, 772807@bugs.debian.org,
+	linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+References: <20141211102439.5047.90481.reportbug@localhost>
+ <20141211104408.GQ3020@riva.ucam.org>
+ <548987B8.8090202@internode.on.net>
+ <20141211124024.GR3020@riva.ucam.org>
+ <548A6D63.3010106@internode.on.net>
+ <20141212060138.GC22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BLUPR05CA0075.namprd05.prod.outlook.com (10.141.20.45) To
- BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0728;
-X-Forefront-PRVS: 0442E569BC
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(51704005)(24454002)(377424004)(20776003)(47776003)(64706001)(92566001)(33646002)(68736005)(50466002)(76176999)(31966008)(2950100001)(19580405001)(23676002)(62966003)(106356001)(19580395003)(87976001)(101416001)(103116003)(107046002)(99396003)(77156002)(105586002)(110136001)(122386002)(97736003)(50986999)(89996001)(86362001)(120916001)(21056001)(50226001)(36756003)(46102003)(42186005)(40100003)(4396001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 31 Dec 2014 06:02:05.2550
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0728
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="19uQFt6ulqmgNgg1"
+Content-Disposition: inline
+In-Reply-To: <20141212060138.GC22149@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-30 at 15:08 +0530, Vijay Rai wrote:
-> Some of FSL SoCs like T1040 has new version of UART controller which
-> can support 64byte FiFo.
-> To enable 64 byte support, following needs to be done:
-> -FCR[EN64] needs to be programmed to 1 to enable it.
-> -Also, when FCR[EN64]==1, RTL bits to be used as below
-> to define various Receive Trigger Levels:
->         -FCR[RTL] = 00  1 byte
->         -FCR[RTL] = 01  16 bytes
->         -FCR[RTL] = 10  32 bytes
->         -FCR[RTL] = 11  56 bytes
-> -tx_loadsz is set to 32-bytes instead of 64-bytes to implement
->  workaround of errata A-008006 which states that tx_loadsz should
->  be configured less than Maximum supported fifo bytes
 
-Why 32 and not 63?
+--19uQFt6ulqmgNgg1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Signed-off-by: Vijay Rai <vijay.rai@freescale.com>
-> Signed-off-by: Priyanka Jain <Priyanka.Jain@freescale.com>
-> Signed-off-by: Poonam Aggrwal <poonam.aggrwal@freescale.com>
-> ---
->  drivers/tty/serial/8250/8250_core.c |   20 +++++++++++++++++++-
->  include/uapi/linux/serial_core.h    |    3 ++-
->  include/uapi/linux/serial_reg.h     |    3 ++-
->  3 files changed, 23 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-> index 11c6685..565748c 100644
-> --- a/drivers/tty/serial/8250/8250_core.c
-> +++ b/drivers/tty/serial/8250/8250_core.c
-> @@ -329,6 +329,14 @@ static const struct serial8250_config uart_config[] = {
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
->  		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
->  	},
-> +	[PORT_16550A_FSL64] = {
-> +		.name		= "16550A_FSL64",
-> +		.fifo_size	= 64,
-> +		.tx_loadsz	= 32,
+On 12 Dec 2014 06:01, Al Viro wrote:
+> On Fri, Dec 12, 2014 at 02:51:55PM +1030, Arthur Marsh wrote:
+> > 6b899c4e9a049dfca759d990bd53b14f81c3626c is the first bad commit
+> > commit 6b899c4e9a049dfca759d990bd53b14f81c3626c
+> > Author: Mike Frysinger <vapier@gentoo.org>
+> > Date:   Wed Dec 10 15:52:08 2014 -0800
+> >=20
+> >     binfmt_misc: add comments & debug logs
+> >=20
+> >     When trying to develop a custom format handler, the errors returned=
+ all
+> >     effectively get bucketed as EINVAL with no kernel messages.  The ot=
+her
+> >     errors (ENOMEM/EFAULT) are internal/obvious and basic.  Thus any ti=
+me a
+> >     bad handler is rejected, the developer has to walk the dense code a=
+nd
+> >     try to guess where it went wrong.  Needing to dive into kernel code=
+ is
+> >     itself a fairly high barrier for a lot of people.
+> >=20
+> >     To improve this situation, let's deploy extensive pr_debug markers =
+at
+> >     logical parse points, and add comments to the dense parsing logic. =
+ It
+> >     let's you see exactly where the parsing aborts, the string the kern=
+el
+> >     received (useful when dealing with shell code), how it translated t=
+he
+> >     buffers to binary data, and how it will apply the mask at runtime.
+>=20
+> ... and looking at it shows the following garbage:
+>                 p[-1] =3D '\0';
+> -               if (!e->magic[0])
+> +               if (p =3D=3D e->magic)
+>=20
+> That code makes no sense whatsoever - if p *was* equal to e->magic, the
+> assignment before it would be obviously broken.  And a few lines later we
+> have another chunk just like that.
+>=20
+> Moreover, if you look at further context, you'll see that it's
+>                 e->magic =3D p;
+>                 p =3D scanarg(p, del);
+>                 if (!p)
+>                         sod off
+>                 p[-1] =3D '\0';
+>                 if (p =3D=3D e->magic)
+> 			sod off
+> Now, that condition could be true only if scanarg(p, del) would return p,
+> right?  Let's take a look at scanarg():
+> static char *scanarg(char *s, char del)
+> {
+>         char c;
+>=20
+>         while ((c =3D *s++) !=3D del) {
+>                 if (c =3D=3D '\\' && *s =3D=3D 'x') {
+>                         s++; =20
+>                         if (!isxdigit(*s++))=20
+>                                 return NULL;
+>                         if (!isxdigit(*s++))
+>                                 return NULL;
+>                 }
+>         }
+>         return s;
+> }
+>=20
+> See that s++ in the loop condition?  There's no way in hell it would *not*
+> increment s.  If we return non-NULL, we know that c was equal to del *and*
+> c is equal to previous_value_of_s[0], i.e. s[-1].  IOW, return value poin=
+ts
+> to the byte following the first instance of delimeter starting at the arg=
+ument.
+>=20
+> And p[-1] =3D '\0' replaces delimiter with NUL.  IOW, the checks used to =
+be
+> correct.  And got buggered.
 
-Put a comment here mentioning the erratum.
+the checks are not correct.  magic & mask are binary fields hence checking =
+for a=20
+NUL byte to indicate string parsing failed makes no sense.  your patch rest=
+ores=20
+the bug i attempted to fix -- if i wanted to ignore the first byte of the f=
+ile=20
+by setting the mask or magic to 0, then binfmt_misc will wrongly reject it.
 
-> diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
-> index c172180..a3b4491 100644
-> --- a/include/uapi/linux/serial_core.h
-> +++ b/include/uapi/linux/serial_core.h
-> @@ -55,7 +55,8 @@
->  #define PORT_ALTR_16550_F64 27	/* Altera 16550 UART with 64 FIFOs */
->  #define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
->  #define PORT_RT2880	29	/* Ralink RT2880 internal UART */
-> -#define PORT_MAX_8250	29	/* max port ID */
-> +#define PORT_16550A_FSL64 30	/* Freescale 16550 UART with 64 FIFOs */
-> +#define PORT_MAX_8250	31	/* max port ID */
+the current code does reject some bad inputs -- namely, when the magic or m=
+ask=20
+is not specified.  i was counting on the scanarg not incrementing the point=
+er in=20
+that case, but as you pointed out, that doesn't work since the func always=
+=20
+increments the pointer.  i'll see if i can handle both cases.
 
-Why are you adding 2 to PORT_MAX_8250 when you only add one new type?
- 
--Scott
+> Subject: unfuck fs/binfmt_misc.c
+>=20
+> Undo some of the "prettifying" braindamage.
 
+commit 7d65cf10e3d7747033b83fa18c5f3d2a498f66bc has merged at this point, b=
+ut=20
+the attribution to e6084d4 is wrong.  of course coding style changes &=20
+functional changes shouldn't be done which is why i didn't do it.  the chan=
+ge=20
+you're referring to above has nothing to do e6084d4 as it was added before =
+that=20
+in 6b899c4e9a049dfca759d990bd53b14f81c3626c (where i added extended debug=
+=20
+output).  arguably those few non-debug related lines shouldn't be in that=
+=20
+commit, but it's a long cry from style changes.
+-mike
 
+--19uQFt6ulqmgNgg1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUo5ZHAAoJEEFjO5/oN/WBcd0P/1SXJ6tXiB5XMALeZkxs20ff
+uDi355wc5Qqt9pu30tUtpexzkxcaj1ve8BMRr3OvIGHC77r++gy8qYO8X7/gNWHJ
+LuoRv4weVZznHr7zfCNhiw7MlqGfI3jdASRdhD150Uib19fPICZZuhM7mQGxs9eJ
+VecivFOWZlo6sRikdNbIXh6/dzj+JabwkS1o7ucmPk8n/teFQ9g4gxus2yuYGmG3
+0y5hfQlKNDYTGpHkyc7GPB1rkaVmCZzna1WruxqTRXk1ZyXwSGPcL7cCrKVG7F+K
+xOoR3Fk00Slmonf6uKNYlD6Ejq/j4UmUpZpC45LqLMeRWcb1cpna2UHWIws4w3GQ
+VLy426s/xTiAvqoChoyREFbJ403xLqTRP7ASYcirscId3YqcjCFrpZuEnPxKKX4m
+uqYe9qi3mgJU1J3ofzIDpe2sp8fsJr4o763t8rZuRcQ954e/3KwcPV/JAp/Gcc2k
+aWpQWlz24FWW6b8GgMHgyNSWwxQJalxhrqebryU1Io0hUgF0BlaptaJa6S3hv2PB
+/zNA8qBEj8RPAMUlpU+DIs3TYzODTuN1s3He7z1KT9d9riVC2Wp9+5UAssd7KyzG
+aH7sv2lIIi/HHrivSyotFKjct+FJZykVBP9MfTRmAvx7RmkpaeX/womcsllqKPgn
+Eqht26z6mRyA4gibxKgs
+=zqr6
+-----END PGP SIGNATURE-----
+
+--19uQFt6ulqmgNgg1--
