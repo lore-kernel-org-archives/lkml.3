@@ -1,35 +1,59 @@
+Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1750987AbaLOGF3 (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Mon, 15 Dec 2014 01:05:29 -0500
-Received: from [87.229.103.13] ([87.229.103.13]:43347 "EHLO
-        web.tozsdeiskola.hu" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-        with ESMTP id S1750781AbaLOGF1 (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Mon, 15 Dec 2014 01:05:27 -0500
-To: undisclosed-recipients:;
-Subject: Dear Webmail user
-X-PHP-Originating-Script: 33:rcube.php
+	id S1753582AbbAEMNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:13:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48164 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252AbbAEMNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 07:13:19 -0500
+Message-ID: <54A3FFCA.9030501@suse.cz>
+Date: Wed, 31 Dec 2014 14:53:14 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
- format=flowed
+To: Ben Hutchings <ben@decadent.org.uk>, sedat.dilek@gmail.com
+CC: maximilian attems <max@stro.at>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: deb-pkg: Cleaning of debian/*tmp files when running 'make (dist)clean'
+References: <CA+icZUXPt=GM08PD8LOpCdxCYhNMrr-2MHxPyNRWPXqUjQXFrw@mail.gmail.com>	 <CA+icZUVfiQ1+k2zD9HXMM40N8rwg6rEmYLdKfHGsGt3xvJu+4w@mail.gmail.com> <1419619556.4705.136.camel@decadent.org.uk>
+In-Reply-To: <1419619556.4705.136.camel@decadent.org.uk>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Date: Mon, 15 Dec 2014 07:03:08 +0100
-From: WEB ADMIN <info@webmaster.org>
-Message-ID: <1e1052503f99a610bfb53609f550b0a9@tozsdeiskola.hu>
-User-Agent: Roundcube Webmail/1.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 
+On 2014-12-26 19:46, Ben Hutchings wrote:
+> On Fri, 2014-12-26 at 13:43 +0100, Sedat Dilek wrote:
+>> On Fri, Dec 26, 2014 at 1:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> [...]
+>>>
+>>> Any other make (PHONY) target I don't know?
+>>>
+>>
+>> I fell over "clean-dirs"...
+>>
+>> scripts/package/Makefile:93:clean-dirs += $(objtree)/debian/
+>>
+>> ...but did not really understood how it works.
+>> The main Makefile defines some clean-dirs PHONY#s.
+>> I can only speculate, someone with more skillz in Makefile handling
+>> should look at this.
+> 
+> It looks like this has not worked for a long time.  The scripts
+> directory is not included in the main recursive processes; it seems to
+> be special-cased for build and not for clean.
 
+It actually is special-cased for mrproper, which is a subset if
+distclean. The real problem is that
 
--- 
-Attention User;
-Your email Quota is almost exceeded. Starting from December 15th, we are 
-migrating to new email interface. So we are currently doing a 
-maintenance on our server. Please, click the link below to Enter and 
-update your account and avoid losing your inbox.
->>>> http://www.jakkies.co.za/images/helpdesk/upgrade.php
-WEBMASTER Technical Team HELPDESK SERVICE
-@verification.edu.Security
+clean-dirs += $(objtree)/debian/
+
+expands to
+
+clean-dirs += ./debian/
+
+and scripts/Makefile.clean things that this is relative to the
+scripts/package directory.
+
+Michal
