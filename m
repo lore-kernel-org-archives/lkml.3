@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaLaM7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 07:59:53 -0500
-Received: from usfwa1cip1.exelisinc.com ([151.190.252.21]:7496 "EHLO
-	usfwa1cip1.exelisinc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaLaM7v convert rfc822-to-8bit (ORCPT
+	id S1751558AbaLaNFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 08:05:18 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:40877 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaLaNFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 07:59:51 -0500
-X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Wed, 31 Dec 2014 07:59:51 EST
-X-IronPort-AV: E=Sophos;i="5.07,672,1413244800"; 
-   d="scan'208";a="346877687"
-From: "Pittigher, Raymond - Exelis" <Raymond.Pittigher@exelisinc.com>
-To: Margaret M Sanders <msanders@swri.org>, Paul Moore <paul@paul-moore.com>,
-        =?iso-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-CC: "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        linux Kernel <linux-kernel@vger.kernel.org>
-Subject: RE: WASP for Linux 7?
-Thread-Topic: WASP for Linux 7?
-Thread-Index: AdAjryo1q8S2IFoLSLus7jMJEFjx8gBSOznp
-Date: Wed, 31 Dec 2014 12:49:59 +0000
-Message-ID: <32C7A2F6C25D3144BCAB45821D6F6D443766BEBB@USFWA1E14-02.corp.exelisinc.com>
-References: <2AAF61416E46C443A2E009DC0ECCF02C0D89CC@swri16exbe1.electro.swri.edu>
-In-Reply-To: <2AAF61416E46C443A2E009DC0ECCF02C0D89CC@swri16exbe1.electro.swri.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.32.17.51]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 31 Dec 2014 08:05:16 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-ce-54a3f489a498
+Message-id: <54A3F488.8060904@samsung.com>
+Date: Wed, 31 Dec 2014 14:05:12 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: linux-mm@kvack.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/4] kstrdup optimization
+References: <1419864510-24834-1-git-send-email-a.hajda@samsung.com>
+In-reply-to: <1419864510-24834-1-git-send-email-a.hajda@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t/xq7qdXxaHGLTMlre4vGsOm8W9Nf9Z
+	LdYeucvuwOyx6dMkdo++LasYPT5vkgtgjuKySUnNySxLLdK3S+DKeL9wIWvBR7aK438kGhh7
+	WbsYOTkkBEwk3q3bwghhi0lcuLeeDcQWEljKKDHrZnQXIxeQ/YlR4ta+60xdjBwcvAJaEsum
+	BoHUsAioSvx+0MACYrMJaEr83XwTrFdUIELiw6qvYDavgKDEj8n3wGr4gHZN3N3LDGKLAO36
+	eOYymM0s4Csx+9J7JhBbWMBQYsXvZVA3OEv8XDKFHWQtp4CLxN+uOBCTWUBP4v5FLYhOeYnN
+	a94yT2AUnIVk2SyEqllIqhYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAnbLzsYFx+z
+	OsQowMGoxMPbYLM4RIg1say4MvcQowQHs5IIr/tloBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZG
+	pwXJKRURy9k922SnLdb4kPBKLfWN7LMXXXcrnTatr++Yoty9ekrHzFDvjUclFfvMJZ60bdFb
+	v3xRf4Lf9KMNnbf6zc8nm+e92vlzaf6SUJ6P1s8WN9hdt5YRm/fEyyptB38xm252bqZl9uqH
+	Iq2Fnn3Xtj2p2PbtXEKf06I1ATts5b+3XLNWYinOSDTUYi4qTgQA8Ng2GzkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/29/2014 03:48 PM, Andrzej Hajda wrote:
 
-________________________________________
-From: linux-audit-bounces@redhat.com [linux-audit-bounces@redhat.com] on behalf of Margaret M Sanders [msanders@swri.org]
-Sent: Monday, December 29, 2014 4:35 PM
-To: Paul Moore; Toralf Förster
-Cc: linux-audit@redhat.com; linux Kernel
-Subject: WASP for Linux 7?
+(...)
 
-Expertise:
+> As I have tested it on mobile platform (exynos4210-trats) it saves above 2600
+> string duplications. Below simple stats about the most frequent duplications:
+> Count String
+>   880 power
+>   874 subsystem
+>   130 device
+>   126 parameters
+>    61 iommu_group
+>    40 driver
+>    28 bdi
+>    28 none
+>    25 sclk_mpll
+>    23 sclk_usbphy0
+>    23 sclk_hdmi24m
+>    23 xusbxti
+>    22 sclk_vpll
+>    22 sclk_epll
+>    22 xxti
+>    20 sclk_hdmiphy
+>    11 aclk100
 
-Is there a WASP for Linux 7? What is the accepted and accredited security scanning app for Linux 7--is it SECSCN?
+Minor update, printk buffer was too short during tests so I have not
+catched everything. In fact the patchset saves 3260 duplications. Below
+stats per kstrdup_const caller:
+   2260 __kernfs_new_node+0x28/0xc4
+    631 clk_register+0xc8/0x1b8
+    318 clk_register+0x34/0x1b8
+     51 kmem_cache_create+0x7c/0x1c8
 
-Thank you,
+Regards
+Andrzej
 
-MS
-SwRI
-ISSO/ATA
-
------Original Message-----
-From: linux-audit-bounces@redhat.com [mailto:linux-audit-bounces@redhat.com] On Behalf Of Paul Moore
-Sent: Monday, December 29, 2014 1:42 PM
-To: Toralf Förster
-Cc: linux-audit@redhat.com; linux Kernel
-Subject: Re: v3.19-rc2: crashes during boot (syslog-ng, rpcbind ...)
-
-On Monday, December 29, 2014 05:24:38 PM Toralf Förster wrote:
-> On 12/29/2014 05:21 PM, Paul Moore wrote:
-> > On Mon, Dec 29, 2014 at 11:07 AM, Toralf Förster wrote:
-> >> A x86 KVM guest running at a 64 bit Gentoo hardened host system the
-> >> following crashes appeared reproducible (screen shots attached.
-> >>
-> >> If I removed syslog-ng from the runlevel default, then the crash
-> >> just appeared a little bit later at another subsystem>
-> >
-> > It looks like it doesn't like something in
-> > audit_compare_dname_path(); I'll take a look and see what I can
-> > find, there is a patch in -rc2 which touched some related code.
-> >
-> > I didn't see this problem in my earlier testing, can you share your
-> > .config?
->
-> ofc - attached
-
-[NOTE: added linux-audit to the CC line, I should have done that earlier]
-
-I believe I can reproduce this now; I'm seeing slightly different panics, but it is "close enough" and based on some quality time with the code I believe they are both symptoms of the same root cause.
-
-To help verify that I'm heading down the right path, could you share your audit configuration as well?  If that's not possible, can you at least confirm that you using a few audit directory watches?
-
---
-paul moore
-www.paul-moore.com
-
-
-
-Try Using OpenSCAP. I do not think that RHEL7 has been approved yet and I do not see the rules on NIPR or SIPR.
-
-________________________________
-
-This e-mail and any files transmitted with it may be proprietary and are intended solely for the use of the individual or entity to whom they are addressed. If you have received this e-mail in error please notify the sender. Please note that any views or opinions presented in this e-mail are solely those of the author and do not necessarily represent those of Exelis Inc. The recipient should check this e-mail and any attachments for the presence of viruses. Exelis Inc. accepts no liability for any damage caused by any virus transmitted by this e-mail.
