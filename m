@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaLaVXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 16:23:16 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:61123 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaLaVXP (ORCPT
+	id S1751685AbaLaV2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 16:28:08 -0500
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:42214 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296AbaLaV2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 16:23:15 -0500
+	Wed, 31 Dec 2014 16:28:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <3159430.4MhUX0bhoZ@sifl>
-References: <3159430.4MhUX0bhoZ@sifl>
-Date: Wed, 31 Dec 2014 13:23:14 -0800
-X-Google-Sender-Auth: BOiW0FqlthRS0lHq0sH2li_3iTw
-Message-ID: <CA+55aFzwqafHa6ARO-zkCDaHZozZDDvETBMmbnvNsnu1L9v2=w@mail.gmail.com>
-Subject: Re: [GIT PULL] Audit fixes for 3.19 #2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Paul Moore <paul@paul-moore.com>, Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-audit@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1420060806.6066.1.camel@perches.com>
+References: <1420060243-10685-1-git-send-email-lstoakes@gmail.com>
+	<1420060243-10685-2-git-send-email-lstoakes@gmail.com>
+	<1420060806.6066.1.camel@perches.com>
+Date: Wed, 31 Dec 2014 21:28:06 +0000
+Message-ID: <CAA5enKZgR7a4cyKsM7MWrkR=KwP40tigViYpEU7=_6ZyYvk6sw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] staging: rtl8192u: fix whitespace
+From: Lorenzo Stoakes <lstoakes@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: gregkh@linuxfoundation.org, Ana Rey <anarey@gmail.com>,
+        mcgrof@do-not-panic.com, tapaswenipathak@gmail.com,
+        Rui Silva <rmfrfs@gmail.com>, Jiayi Ye <yejiayily@gmail.com>,
+        Greg Donald <gdonald@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 12:33 PM, Paul Moore <paul@paul-moore.com> wrote:
+On 31 December 2014 at 21:20, Joe Perches <joe@perches.com> wrote:
+
+> It'd be nicer to use the same form and indentation
+> for both entries.
 >
-> One audit patch to resolve a panic/oops when recording filenames in the audit
-> log, see the mail archive link below.  The fix isn't as nice as I would like,
-> as it involves an allocate/copy of the filename, but it solves the problem and
-> the overhead should only affect users who have configured audit rules
-> involving file names.
+> Probably be nicer to use:
+>
+> static u32 edca_setting_DL[HT_IOT_PEER_MAX] = {
+>         0x5e4322, 0x5e4322, 0x5e4322, 0x604322, 0x00a44f, 0x5ea44f
+> };
+> static u32 edca_setting_UL[HT_IOT_PEER_MAX] = {
+>         0x5e4322, 0x00a44f, 0x5e4322, 0x604322, 0x5ea44f, 0x5ea44f
+> };
+>
+> so that the entries align too.
 
-This fix looks wrong.
+Ack... I am a bit of a beginner at the kernel, I think you can tell
+;-) I didn't mean for this to have different indentation, in fixing up
+other issues I missed this one, will fix. Will also add the 00 prefix,
+good idea (+ update the commit message to accommodate.)
 
-The kernel "getname()" function already has hacks explicitly for this
-audit usage. Why aren't those hacks working? See the whole
-"audit_getname()" and "audit_putname()" thing in fs/namei.c.
+>
+> Would it be better to use const?
+>
 
-So why does audit now need to copy the name *again*, when the whole -
-and only - point of the current fs/namei.c audit hackery is exactly so
-that audit can control the lifetime of the pathnames?
+I think this would be better as a separate patch as that is getting
+into changing actual semantics rather than just simple style fixes,
+there is a lot that could be improved here in that realm I think :)
 
-Hmm? Alternatively, could we just remove the fs/namei.c hackery
-entirely, and rely on audit always copying the filenames for its own
-use?
-
-                      Linus
+Best, Lorenzo
