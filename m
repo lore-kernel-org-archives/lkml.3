@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859AbbAARGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 12:06:30 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:42116 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbbAARG3 (ORCPT
+	id S1751960AbbAARM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 12:12:56 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:42944 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbbAARMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 12:06:29 -0500
+	Thu, 1 Jan 2015 12:12:54 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: David Airlie <airlied@linux.ie>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>
+To: Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu: drm: qxl: qxl_cmd.c:  Remove some unused functions
-Date: Thu,  1 Jan 2015 18:09:29 +0100
-Message-Id: <1420132169-31802-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        devel@acpica.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] acpi: acpica: utmisc.c:  Remove unused function
+Date: Thu,  1 Jan 2015 18:15:54 +0100
+Message-Id: <1420132554-32049-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-qxl_io_flush_surfaces() qxl_io_flush_release()
+Remove the function acpi_ut_is_aml_table() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/gpu/drm/qxl/qxl_cmd.c |   10 ----------
- drivers/gpu/drm/qxl/qxl_drv.h |    2 --
- 2 files changed, 12 deletions(-)
+ drivers/acpi/acpica/acutils.h |    2 --
+ drivers/acpi/acpica/utmisc.c  |   28 ----------------------------
+ 2 files changed, 30 deletions(-)
 
-diff --git a/drivers/gpu/drm/qxl/qxl_cmd.c b/drivers/gpu/drm/qxl/qxl_cmd.c
-index 9782364..f62d857 100644
---- a/drivers/gpu/drm/qxl/qxl_cmd.c
-+++ b/drivers/gpu/drm/qxl/qxl_cmd.c
-@@ -360,16 +360,6 @@ void qxl_io_notify_oom(struct qxl_device *qdev)
- 	outb(0, qdev->io_base + QXL_IO_NOTIFY_OOM);
- }
+diff --git a/drivers/acpi/acpica/acutils.h b/drivers/acpi/acpica/acutils.h
+index 486d342..ec5da45 100644
+--- a/drivers/acpi/acpica/acutils.h
++++ b/drivers/acpi/acpica/acutils.h
+@@ -570,8 +570,6 @@ const struct acpi_exception_info *acpi_ut_validate_exception(acpi_status
  
--void qxl_io_flush_release(struct qxl_device *qdev)
+ u8 acpi_ut_is_pci_root_bridge(char *id);
+ 
+-u8 acpi_ut_is_aml_table(struct acpi_table_header *table);
+-
+ acpi_status
+ acpi_ut_walk_package_tree(union acpi_operand_object *source_object,
+ 			  void *target_object,
+diff --git a/drivers/acpi/acpica/utmisc.c b/drivers/acpi/acpica/utmisc.c
+index 2e2bb14..a9440af 100644
+--- a/drivers/acpi/acpica/utmisc.c
++++ b/drivers/acpi/acpica/utmisc.c
+@@ -77,34 +77,6 @@ u8 acpi_ut_is_pci_root_bridge(char *id)
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_ut_is_aml_table
+- *
+- * PARAMETERS:  table               - An ACPI table
+- *
+- * RETURN:      TRUE if table contains executable AML; FALSE otherwise
+- *
+- * DESCRIPTION: Check ACPI Signature for a table that contains AML code.
+- *              Currently, these are DSDT,SSDT,PSDT. All other table types are
+- *              data tables that do not contain AML code.
+- *
+- ******************************************************************************/
+-
+-u8 acpi_ut_is_aml_table(struct acpi_table_header *table)
 -{
--	outb(0, qdev->io_base + QXL_IO_FLUSH_RELEASE);
+-
+-	/* These are the only tables that contain executable AML */
+-
+-	if (ACPI_COMPARE_NAME(table->signature, ACPI_SIG_DSDT) ||
+-	    ACPI_COMPARE_NAME(table->signature, ACPI_SIG_PSDT) ||
+-	    ACPI_COMPARE_NAME(table->signature, ACPI_SIG_SSDT)) {
+-		return (TRUE);
+-	}
+-
+-	return (FALSE);
 -}
 -
--void qxl_io_flush_surfaces(struct qxl_device *qdev)
--{
--	wait_for_io_cmd(qdev, 0, QXL_IO_FLUSH_SURFACES_ASYNC);
--}
--
- 
- void qxl_io_destroy_primary(struct qxl_device *qdev)
- {
-diff --git a/drivers/gpu/drm/qxl/qxl_drv.h b/drivers/gpu/drm/qxl/qxl_drv.h
-index 7c6cafe..c84cd95 100644
---- a/drivers/gpu/drm/qxl/qxl_drv.h
-+++ b/drivers/gpu/drm/qxl/qxl_drv.h
-@@ -467,8 +467,6 @@ int qxl_io_update_area(struct qxl_device *qdev, struct qxl_bo *surf,
- void qxl_io_reset(struct qxl_device *qdev);
- void qxl_io_monitors_config(struct qxl_device *qdev);
- int qxl_ring_push(struct qxl_ring *ring, const void *new_elt, bool interruptible);
--void qxl_io_flush_release(struct qxl_device *qdev);
--void qxl_io_flush_surfaces(struct qxl_device *qdev);
- 
- union qxl_release_info *qxl_release_map(struct qxl_device *qdev,
- 					struct qxl_release *release);
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_ut_dword_byte_swap
+  *
+  * PARAMETERS:  value           - Value to be converted
 -- 
 1.7.10.4
 
