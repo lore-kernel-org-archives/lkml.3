@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701AbbAAKG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 05:06:57 -0500
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:46319 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbbAAKG4 (ORCPT
+	id S1751654AbbAAKMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 05:12:13 -0500
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:62622 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbbAAKMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 05:06:56 -0500
+	Thu, 1 Jan 2015 05:12:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150101062816.GA2710@sudip-PC>
-References: <1420060243-10685-2-git-send-email-lstoakes@gmail.com>
-	<1420061623-11136-1-git-send-email-lstoakes@gmail.com>
-	<20150101044756.GA3645@sudip-PC>
-	<1420090813.6066.9.camel@perches.com>
-	<20150101062816.GA2710@sudip-PC>
-Date: Thu, 1 Jan 2015 10:06:55 +0000
-Message-ID: <CAA5enKbPoAWc9bZk36F4ASex08VTf5C9Pz7bVFWgpE-ro9W7KQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/4] staging: rtl8192u: fix whitespace
+In-Reply-To: <20150101045848.GC3645@sudip-PC>
+References: <1420060243-10685-1-git-send-email-lstoakes@gmail.com>
+	<1420060243-10685-3-git-send-email-lstoakes@gmail.com>
+	<20150101044956.GB3645@sudip-PC>
+	<20150101045848.GC3645@sudip-PC>
+Date: Thu, 1 Jan 2015 10:12:09 +0000
+Message-ID: <CAA5enKYLZuZxuRPQec8r-4rohb-nJKWM=4sTagP3PgkXfVMp=g@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] staging: rtl8192u: remove redundant code
 From: Lorenzo Stoakes <lstoakes@gmail.com>
 To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Joe Perches <joe@perches.com>, gregkh@linuxfoundation.org,
-        Ana Rey <anarey@gmail.com>, mcgrof@do-not-panic.com,
-        tapaswenipathak@gmail.com, Rui Silva <rmfrfs@gmail.com>,
+Cc: gregkh@linuxfoundation.org, Ana Rey <anarey@gmail.com>,
+        mcgrof@do-not-panic.com, tapaswenipathak@gmail.com,
+        Joe Perches <joe@perches.com>, Rui Silva <rmfrfs@gmail.com>,
         Jiayi Ye <yejiayily@gmail.com>, Greg Donald <gdonald@gmail.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
@@ -29,27 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 January 2015 at 06:28, Sudip Mukherjee <sudipm.mukherjee@gmail.com> wrote:
-
->> > i may be wrong, but looks like you are doing many different things in the patch, not just whitespace errors.
->> > marked a few, please see inline -
-...
-> sorry for not trimming that. I noticed the big size while sending, but at that time the damage has already been done.
-> but is it ok if we mention one thing in the commit log and do other things also? shouldn't we atleast mention that in the commit?
+On 1 January 2015 at 04:58, Sudip Mukherjee <sudipm.mukherjee@gmail.com> wrote:
+> On Thu, Jan 01, 2015 at 10:19:56AM +0530, Sudip Mukherjee wrote:
+>> but this is just removal of unnecessary braces. this is not removal of redundant code.
 
 Hi Sudip,
 
-I felt that 'additionally it removes inconsistent whitespace
-throughout.' covered these cases, given there's a lot I also felt it'd
-be more irritating for the community to receive several separate
-patches for each individual *sub* type of whitespace removal beyond
-those fixing checkpatch.pl messages, of course that kind of separation
-could get pretty big and these patches are already big enough as it is
-(this file had a lot of issues :)
+Again in the same theme as the whitespace changes I felt I could
+fairly reasonably package up a set of similar changes which remove
+redundant *symbols* of one kind or another, which though they might
+not constitute significant reduction in redundant code could
+reasonably come under that header.
 
-As someone who's new to kernel development I'd be more than happy to
-adjust this if the consensus is towards a different approach, however
-I feel this is the least painful means of doing this particular patch
-set.
+Again I'm more than happy to edit the message to describe this change
+more correctly and/or split further though, as before, I'm wary of
+splitting too much as to cause irritation to reviewers.
+
+> and, missed writing in the last mail.
+> your [PATCH v2 2/4] and [PATCH v2 3/4] are same.
+
+Apologies for this, I simply batched up the whole set once again
+without checking what would remain the same or not. I don't make this
+mistake for the v3 of patch 2 and will be careful to avoid this in
+future!
 
 Best, Lorenzo
