@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbbAAQQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 11:16:15 -0500
-Received: from mail.windriver.com ([147.11.1.11]:47710 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbbAAQQO (ORCPT
+	id S1751902AbbAAQUR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 11:20:17 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:51434 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbbAAQUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 11:16:14 -0500
-Date: Thu, 1 Jan 2015 11:16:15 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-CC: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
-        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch: mips: pci: pci-ip27.c:  Remove unused function
-Message-ID: <20150101161615.GH23085@windriver.com>
-References: <1420126326-27198-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1420126326-27198-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Jan 2015 11:20:15 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Insop Song <insop.song@gainspeed.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        =?UTF-8?q?Micha=C5=82=20Bartoszkiewicz?= 
+	<mbartoszkiewicz@gmail.com>,
+        Rocco Folino <lordzen87@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: gs_fpgaboot: io.c:  Remove unused function
+Date: Thu,  1 Jan 2015 17:23:13 +0100
+Message-Id: <1420129393-29038-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[[PATCH] arch: mips: pci: pci-ip27.c:  Remove unused function] On 01/01/2015 (Thu 16:32) Rickard Strandqvist wrote:
+Remove the function bitswap() that is not used anywhere.
 
-> Remove the function pci_enable_swapping() that is not used anywhere.
+This was partially found by using a static code analysis program called cppcheck.
 
-A quick search shows it has been orphanware since the git epoch (~2005)
-so removing it should be fine AFAICT.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/staging/gs_fpgaboot/io.c |    9 ---------
+ 1 file changed, 9 deletions(-)
 
-P.
---
+diff --git a/drivers/staging/gs_fpgaboot/io.c b/drivers/staging/gs_fpgaboot/io.c
+index b260e45..819db53 100644
+--- a/drivers/staging/gs_fpgaboot/io.c
++++ b/drivers/staging/gs_fpgaboot/io.c
+@@ -79,15 +79,6 @@ void xl_shift_bytes_out(enum wbus bus_byte, unsigned char *pdata)
+ /*
+  * generic bit swap for xilinx SYSTEMMAP FPGA programming
+  */
+-static inline unsigned char bitswap(unsigned char s)
+-{
+-	unsigned char d;
+-
+-	d = (((s&0x80)>>7) | ((s&0x40)>>5) | ((s&0x20)>>3) | ((s&0x10)>>1) |
+-		((s&0x08)<<1) | ((s&0x04)<<3) | ((s&0x02)<<5) | ((s&0x01)<<7));
+-	return d;
+-}
+-
+ void xl_program_b(int32_t i)
+ {
+ }
+-- 
+1.7.10.4
 
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  arch/mips/pci/pci-ip27.c |   11 -----------
->  1 file changed, 11 deletions(-)
-> 
-> diff --git a/arch/mips/pci/pci-ip27.c b/arch/mips/pci/pci-ip27.c
-> index 0f09eaf..55e3332 100644
-> --- a/arch/mips/pci/pci-ip27.c
-> +++ b/arch/mips/pci/pci-ip27.c
-> @@ -200,17 +200,6 @@ static inline void pci_disable_swapping(struct pci_dev *dev)
->  	bridge->b_widget.w_tflush;	/* Flush */
->  }
->  
-> -static inline void pci_enable_swapping(struct pci_dev *dev)
-> -{
-> -	struct bridge_controller *bc = BRIDGE_CONTROLLER(dev->bus);
-> -	bridge_t *bridge = bc->base;
-> -	int slot = PCI_SLOT(dev->devfn);
-> -
-> -	/* Turn on byte swapping */
-> -	bridge->b_device[slot].reg |= BRIDGE_DEV_SWAP_DIR;
-> -	bridge->b_widget.w_tflush;	/* Flush */
-> -}
-> -
->  static void pci_fixup_ioc3(struct pci_dev *d)
->  {
->  	pci_disable_swapping(d);
-> -- 
-> 1.7.10.4
-> 
