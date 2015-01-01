@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbbAAPnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 10:43:12 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:35270 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766AbbAAPnK (ORCPT
+	id S1751828AbbAAQKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 11:10:23 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:38543 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbbAAQKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 10:43:10 -0500
+	Thu, 1 Jan 2015 11:10:21 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefano Brivio <stefano.brivio@polimi.it>
+To: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Kalle Valo <kvalo@adurom.com>, linux-wireless@vger.kernel.org,
-        b43-dev@lists.infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: wireless: b43legacy: radio.c:  Remove unused function
-Date: Thu,  1 Jan 2015 16:46:10 +0100
-Message-Id: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] media: i2c: adv7604.c:  Remove some unused functions
+Date: Thu,  1 Jan 2015 17:13:20 +0100
+Message-Id: <1420128800-28746-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function b43legacy_radio_set_tx_iq() that is not used anywhere.
+Removes some functions that are not used anywhere:
+vblanking() hblanking()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/net/wireless/b43legacy/radio.c |   19 -------------------
- drivers/net/wireless/b43legacy/radio.h |    1 -
- 2 files changed, 20 deletions(-)
+ drivers/media/i2c/adv7604.c |   10 ----------
+ drivers/media/i2c/adv7842.c |   10 ----------
+ drivers/media/i2c/ths8200.c |   10 ----------
+ 3 files changed, 30 deletions(-)
 
-diff --git a/drivers/net/wireless/b43legacy/radio.c b/drivers/net/wireless/b43legacy/radio.c
-index 8961776..9501420 100644
---- a/drivers/net/wireless/b43legacy/radio.c
-+++ b/drivers/net/wireless/b43legacy/radio.c
-@@ -1743,25 +1743,6 @@ u16 freq_r3A_value(u16 frequency)
- 	return value;
+diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
+index 47795ff..0ecca94 100644
+--- a/drivers/media/i2c/adv7604.c
++++ b/drivers/media/i2c/adv7604.c
+@@ -333,21 +333,11 @@ static inline struct adv7604_state *to_state(struct v4l2_subdev *sd)
+ 	return container_of(sd, struct adv7604_state, sd);
  }
  
--void b43legacy_radio_set_tx_iq(struct b43legacy_wldev *dev)
+-static inline unsigned hblanking(const struct v4l2_bt_timings *t)
 -{
--	static const u8 data_high[5] = { 0x00, 0x40, 0x80, 0x90, 0xD0 };
--	static const u8 data_low[5]  = { 0x00, 0x01, 0x05, 0x06, 0x0A };
--	u16 tmp = b43legacy_radio_read16(dev, 0x001E);
--	int i;
--	int j;
--
--	for (i = 0; i < 5; i++) {
--		for (j = 0; j < 5; j++) {
--			if (tmp == (data_high[i] | data_low[j])) {
--				b43legacy_phy_write(dev, 0x0069, (i - j) << 8 |
--						    0x00C0);
--				return;
--			}
--		}
--	}
+-	return V4L2_DV_BT_BLANKING_WIDTH(t);
 -}
 -
- int b43legacy_radio_selectchannel(struct b43legacy_wldev *dev,
- 				  u8 channel,
- 				  int synthetic_pu_workaround)
-diff --git a/drivers/net/wireless/b43legacy/radio.h b/drivers/net/wireless/b43legacy/radio.h
-index bccb3d7..dd2976d 100644
---- a/drivers/net/wireless/b43legacy/radio.h
-+++ b/drivers/net/wireless/b43legacy/radio.h
-@@ -92,7 +92,6 @@ void b43legacy_nrssi_hw_write(struct b43legacy_wldev *dev, u16 offset, s16 val);
- void b43legacy_nrssi_hw_update(struct b43legacy_wldev *dev, u16 val);
- void b43legacy_nrssi_mem_update(struct b43legacy_wldev *dev);
+ static inline unsigned htotal(const struct v4l2_bt_timings *t)
+ {
+ 	return V4L2_DV_BT_FRAME_WIDTH(t);
+ }
  
--void b43legacy_radio_set_tx_iq(struct b43legacy_wldev *dev);
- u16 b43legacy_radio_calibrationvalue(struct b43legacy_wldev *dev);
+-static inline unsigned vblanking(const struct v4l2_bt_timings *t)
+-{
+-	return V4L2_DV_BT_BLANKING_HEIGHT(t);
+-}
+-
+ static inline unsigned vtotal(const struct v4l2_bt_timings *t)
+ {
+ 	return V4L2_DV_BT_FRAME_HEIGHT(t);
+diff --git a/drivers/media/i2c/adv7842.c b/drivers/media/i2c/adv7842.c
+index 48b628b..d89898c 100644
+--- a/drivers/media/i2c/adv7842.c
++++ b/drivers/media/i2c/adv7842.c
+@@ -220,21 +220,11 @@ static inline struct v4l2_subdev *to_sd(struct v4l2_ctrl *ctrl)
+ 	return &container_of(ctrl->handler, struct adv7842_state, hdl)->sd;
+ }
  
- #endif /* B43legacy_RADIO_H_ */
+-static inline unsigned hblanking(const struct v4l2_bt_timings *t)
+-{
+-	return V4L2_DV_BT_BLANKING_WIDTH(t);
+-}
+-
+ static inline unsigned htotal(const struct v4l2_bt_timings *t)
+ {
+ 	return V4L2_DV_BT_FRAME_WIDTH(t);
+ }
+ 
+-static inline unsigned vblanking(const struct v4l2_bt_timings *t)
+-{
+-	return V4L2_DV_BT_BLANKING_HEIGHT(t);
+-}
+-
+ static inline unsigned vtotal(const struct v4l2_bt_timings *t)
+ {
+ 	return V4L2_DV_BT_FRAME_HEIGHT(t);
+diff --git a/drivers/media/i2c/ths8200.c b/drivers/media/i2c/ths8200.c
+index 656d889..4ebd329 100644
+--- a/drivers/media/i2c/ths8200.c
++++ b/drivers/media/i2c/ths8200.c
+@@ -58,21 +58,11 @@ static inline struct ths8200_state *to_state(struct v4l2_subdev *sd)
+ 	return container_of(sd, struct ths8200_state, sd);
+ }
+ 
+-static inline unsigned hblanking(const struct v4l2_bt_timings *t)
+-{
+-	return V4L2_DV_BT_BLANKING_WIDTH(t);
+-}
+-
+ static inline unsigned htotal(const struct v4l2_bt_timings *t)
+ {
+ 	return V4L2_DV_BT_FRAME_WIDTH(t);
+ }
+ 
+-static inline unsigned vblanking(const struct v4l2_bt_timings *t)
+-{
+-	return V4L2_DV_BT_BLANKING_HEIGHT(t);
+-}
+-
+ static inline unsigned vtotal(const struct v4l2_bt_timings *t)
+ {
+ 	return V4L2_DV_BT_FRAME_HEIGHT(t);
 -- 
 1.7.10.4
 
