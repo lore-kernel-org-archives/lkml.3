@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbbAAKeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 05:34:24 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55167 "EHLO
+	id S1751625AbbAAKiC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 05:38:02 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55200 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbbAAKeV (ORCPT
+	with ESMTP id S1750824AbbAAKiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 05:34:21 -0500
-Message-ID: <54A522AB.1020401@kernel.org>
-Date: Thu, 01 Jan 2015 10:34:19 +0000
+	Thu, 1 Jan 2015 05:38:00 -0500
+Message-ID: <54A52385.8060700@kernel.org>
+Date: Thu, 01 Jan 2015 10:37:57 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
@@ -19,127 +19,102 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Baluta, Daniel" <daniel.baluta@intel.com>,
         Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
         Peter Meerwald <pmeerw@pmeerw.net>
-Subject: Re: [PATCH 3/8] iio: core: Introduce SPEED channel type
-References: <1419029879-12024-1-git-send-email-irina.tirdea@intel.com> <1419029879-12024-4-git-send-email-irina.tirdea@intel.com> <549D6274.8030601@kernel.org> <1F3AC3675D538145B1661F571FE1805F199F7B6F@irsmsx105.ger.corp.intel.com>
-In-Reply-To: <1F3AC3675D538145B1661F571FE1805F199F7B6F@irsmsx105.ger.corp.intel.com>
+Subject: Re: [PATCH 4/8] iio: core: Introduce IO_CHAN_INFO_CALIBWEIGHT
+References: <1419029879-12024-1-git-send-email-irina.tirdea@intel.com> <1419029879-12024-5-git-send-email-irina.tirdea@intel.com> <549D632E.4000004@kernel.org> <1F3AC3675D538145B1661F571FE1805F199F7B06@irsmsx105.ger.corp.intel.com>
+In-Reply-To: <1F3AC3675D538145B1661F571FE1805F199F7B06@irsmsx105.ger.corp.intel.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/12/14 18:13, Tirdea, Irina wrote:
+On 29/12/14 15:05, Tirdea, Irina wrote:
 > 
 > 
 >> -----Original Message-----
 >> From: Jonathan Cameron [mailto:jic23@kernel.org]
->> Sent: 26 December, 2014 15:28
+>> Sent: 26 December, 2014 15:31
 >> To: Tirdea, Irina; linux-iio@vger.kernel.org
 >> Cc: linux-kernel@vger.kernel.org; Dogaru, Vlad; Baluta, Daniel; Hartmut Knaack; Lars-Peter Clausen; Peter Meerwald
->> Subject: Re: [PATCH 3/8] iio: core: Introduce SPEED channel type
+>> Subject: Re: [PATCH 4/8] iio: core: Introduce IO_CHAN_INFO_CALIBWEIGHT
 >>
 >> On 19/12/14 22:57, Irina Tirdea wrote:
->>> Some devices export the current speed value of the user.
->>>
->>> One of this devices is Freescale's MMA9553L
+>>> Some devices need the weight of the user to compute other
+>>> parameters. One of this devices is Freescale's MMA9553L
 >>> (http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf)
->>> that computes the speed of the user based on the number of steps and
->>> stride length.
+>>> that needs the weight of the user to compute the number of calories burnt.
 >>>
->>> Introduce a new channel type SPEED to export these values.
->>>
->> A fun question raised by this is whether we are going to end up with
->> both speed and velocity (depending on whether it is signed or not).
->> I suppose there isn't much to be done about that though and this looks fine
->> to me (as does the previous one).
-> 
-> We might be able to unify speed and velocity if we use modifiers.
-> 
-> I am not sure how a device would export velocity information, but I
-> assume it would be similar to acceleration (since we are talking
-> about a vector as well). In this case we would need one channel type
-> IIO_VELOCITY with modifiers for the 3 axes (IIO_MOD_X, IIO_MOD_Y,
-> IIO_MOD_Z). We can further compute speed as the magnitude or the norm
-> of the velocity vector (root of the sum squared values for x, y, z),
-> so we can export it as an additional modifier IIO_MOD_NORM.
-Good, except for the last bit. We already have IIO_MOD_ROOT_SUM_SQUARED_X_Y so
-should add IIO_MOD_ROOT_SUM_SQUARED_X_Y_Z for 3D devices and use that.  A little
-confusing perhaps for people just looking for a speed though.  Meh. Most
-people will use this through a library anyway so that can wrap up the
-measurement as speed if it wants to.
-Note resulting attribute names will end up as the somewhat convoluted
-
-in_velocity_sqrt(x^2+y^2+z^2)_* 
-
-I suppose that's clear enough...
-> 
-> The pedometer only gives speed information without keeping track of
-> the direction, so in this case we will have one channel IIO_VELOCITY
-> with one modifier IIO_MOD_NORM.
-> 
-> Would this be a better approach than just exporting IIO_SPEED?> 
-Saves us some confusion later, so yes I prefer this.
-> Thanks,
-> Irina
-> 
 >>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 >>> ---
->>>  Documentation/ABI/testing/sysfs-bus-iio |    9 +++++++++
+>>>  Documentation/ABI/testing/sysfs-bus-iio |    7 +++++++
 >>>  drivers/iio/industrialio-core.c         |    1 +
->>>  include/linux/iio/types.h               |    1 +
->>>  3 files changed, 11 insertions(+)
+>>>  include/linux/iio/iio.h                 |    1 +
+>>>  3 files changed, 9 insertions(+)
 >>>
 >>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
->>> index a5c1dcc..07acef7 100644
+>>> index 07acef7..e480175 100644
 >>> --- a/Documentation/ABI/testing/sysfs-bus-iio
 >>> +++ b/Documentation/ABI/testing/sysfs-bus-iio
->>> @@ -295,6 +295,7 @@ What:		/sys/bus/iio/devices/iio:deviceX/in_rot_from_north_true_tilt_comp_scale
->>>  What:		/sys/bus/iio/devices/iio:deviceX/in_pressureY_scale
->>>  What:		/sys/bus/iio/devices/iio:deviceX/in_pressure_scale
->>>  What:		/sys/bus/iio/devices/iio:deviceX/in_humidityrelative_scale
->>> +What:		/sys/bus/iio/devices/iio:deviceX/in_speed_scale
->>>  KernelVersion:	2.6.35
->>>  Contact:	linux-iio@vger.kernel.org
->>>  Description:
->>> @@ -1146,6 +1147,14 @@ Description:
->>>  		present, output should be considered as processed with the
->>>  		unit in milliamps.
+>>> @@ -351,6 +351,13 @@ Description:
+>>>  		to compute the stride length, distance, speed and activity
+>>>  		type.
 >>>
->>> +What:		/sys/.../iio:deviceX/in_speed_input
->>> +What:		/sys/.../iio:deviceX/in_speed_raw
+>>> +What:		/sys/bus/iio/devices/iio:deviceX/in_steps_calibweight
 >>> +KernelVersion:	3.19
 >>> +Contact:	linux-iio@vger.kernel.org
 >>> +Description:
->>> +		This attribute is used to read the current speed value of the user.
->>> +		Units after application of scale are m/s.
+>>> +		Weight of the user (in kg). It is needed by some pedometers
+>>> +		to compute the calories burnt by the user.
+>> How about grams?  Nice to keep to SI units going forward (I appreciate we
+>> have broken that for what seemed like good reasons at the time) in one
+>> or two places, but it makes it much harder to define consistent interfaces in the
+>> long run.
+> 
+> According to SI [1] kg is the base unit for mass, so this was the obvious first choice.
+I'd forgotten that piece if 'entirely intuitive' unit choice ;)
+
+> I have nothing against using grams, but it is not clear to me why using grams would make it easier to define consistent interfaces in the long run.
+> I am probably missing something, so could you please clarify this?
+kg fine as we have a good argument for why ;)
+
+The consistent interface bit comes when we start getting compound units if we had picked
+non SI choices (such is mA and mV - which we are stuck with unfortunately).
+Now as Joules are kg m^2 s^-2 for example, we are on good grounds with the kg.
+> 
+> Thanks,
+> Irina
+> 
+> [1] http://www.bipm.org/en/measurement-units/
+> 
+>> J
 >>> +
->>>  What:		/sys/.../iio:deviceX/in_steps_en
->>>  KernelVersion:	3.19
->>>  Contact:	linux-iio@vger.kernel.org
+>>>  What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale_available
+>>>  What:		/sys/.../iio:deviceX/in_voltageX_scale_available
+>>>  What:		/sys/.../iio:deviceX/in_voltage-voltage_scale_available
 >>> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
->>> index 4a10d31..5e50aca 100644
+>>> index 5e50aca..4c435c8 100644
 >>> --- a/drivers/iio/industrialio-core.c
 >>> +++ b/drivers/iio/industrialio-core.c
->>> @@ -74,6 +74,7 @@ static const char * const iio_chan_type_name_spec[] = {
->>>  	[IIO_STEPS] = "steps",
->>>  	[IIO_CALORIES] = "calories",
->>>  	[IIO_DISTANCE] = "distance",
->>> +	[IIO_SPEED] = "speed",
+>>> @@ -124,6 +124,7 @@ static const char * const iio_chan_info_postfix[] = {
+>>>  	[IIO_CHAN_INFO_INT_TIME] = "integration_time",
+>>>  	[IIO_CHAN_INFO_ENABLE] = "en",
+>>>  	[IIO_CHAN_INFO_CALIBHEIGHT] = "calibheight",
+>>> +	[IIO_CHAN_INFO_CALIBWEIGHT] = "calibweight",
 >>>  };
 >>>
->>>  static const char * const iio_modifier_names[] = {
->>> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
->>> index b98f751..c848f45 100644
->>> --- a/include/linux/iio/types.h
->>> +++ b/include/linux/iio/types.h
->>> @@ -34,6 +34,7 @@ enum iio_chan_type {
->>>  	IIO_STEPS,
->>>  	IIO_CALORIES,
->>>  	IIO_DISTANCE,
->>> +	IIO_SPEED,
+>>>  /**
+>>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+>>> index 878d861..752a929 100644
+>>> --- a/include/linux/iio/iio.h
+>>> +++ b/include/linux/iio/iio.h
+>>> @@ -40,6 +40,7 @@ enum iio_chan_info_enum {
+>>>  	IIO_CHAN_INFO_INT_TIME,
+>>>  	IIO_CHAN_INFO_ENABLE,
+>>>  	IIO_CHAN_INFO_CALIBHEIGHT,
+>>> +	IIO_CHAN_INFO_CALIBWEIGHT,
 >>>  };
 >>>
->>>  enum iio_modifier {
+>>>  enum iio_shared_by {
 >>>
 > 
 
