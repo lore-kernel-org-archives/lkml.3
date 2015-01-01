@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbbAAAzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 19:55:32 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:28195 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560AbbAAAza (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 19:55:30 -0500
-X-IronPort-AV: E=Sophos;i="5.07,676,1413270000"; 
-   d="scan'208";a="54155283"
-Message-ID: <54A49B01.6020002@broadcom.com>
-Date: Wed, 31 Dec 2014 16:55:29 -0800
-From: Jonathan Richardson <jonathar@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751570AbbAACAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 21:00:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751208AbbAACAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 21:00:09 -0500
+Message-ID: <54A4A9F5.6070800@redhat.com>
+Date: Thu, 01 Jan 2015 07:29:17 +0530
+From: Pratyush Anand <panand@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Ray Jui <rjui@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] Input: touchscreen-iproc: Add Broadcom iProc touchscreen
- driver
-References: <Jonathan Richardson <jonathar@broadcom.com>  <1419027470-7969-1-git-send-email-jonathar@broadcom.com>  <1419027470-7969-2-git-send-email-jonathar@broadcom.com> <1419028015.25129.14.camel@perches.com> <5494AEB8.8060606@broadcom.com>
-In-Reply-To: <5494AEB8.8060606@broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        David Long <dave.long@linaro.org>
+CC: tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com, oleg@redhat.com
+Subject: Re: [RFC 0/8] ARM64: Uprobe support added
+References: <cover.1420038188.git.panand@redhat.com>
+In-Reply-To: <cover.1420038188.git.panand@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
++Dave
 
-Would anyone be able to look at this to help us move forward? Thanks.
+Sorry, I took all cc list from your kprobe patches and forgot to add you. :(
 
-On 14-12-19 03:03 PM, Jonathan Richardson wrote:
-> On 14-12-19 02:26 PM, Joe Perches wrote:
->> On Fri, 2014-12-19 at 14:17 -0800, Jonathan Richardson wrote:
->>> Add initial version of the Broadcom touchscreen driver.
->>
->> more trivia:
->>
->>> diff --git a/drivers/input/touchscreen/bcm_iproc_tsc.c b/drivers/input/touchscreen/bcm_iproc_tsc.c
->> []
->>> +static int get_tsc_config(struct device_node *np, struct iproc_ts_priv *priv)
->>> +{
->>> +	u32 val;
->> []
->>> +	if (of_property_read_u32(np, "debounce_timeout", &val) >= 0) {
->>> +		if (val < 0 || val > 255) {
->>> +			dev_err(dev, "debounce_timeout must be [0-255]\n");
->>> +			return -EINVAL;
->>> +		}
->>> +		priv->cfg_params.debounce_timeout = val;
->>
->> Doesn't the compiler generate a warning message
->> about an impossible "unsigned < 0" test for all
->> of these "val < 0" uses?
->>
-> 
-> Actually no it doesn't. The gcc output shows that neither -Wtype-limits
-> nor -Wextra are used to compile that file. I assume this is because
-> there would be just too many warnings.
-> 
-> 
->>> +	}
->>> +
->>> +	if (of_property_read_u32(np, "settling_timeout", &val) >= 0) {
->>> +		if (val < 0 || val > 11) {
->> []
->>> +	if (of_property_read_u32(np, "touch_timeout", &val) >= 0) {
->>> +		if (val < 0 || val > 255) {
->> []
->>> +	if (of_property_read_u32(np, "average_data", &val) >= 0) {
->>> +		if (val < 0 || val > 8) {
->> []
->>> +	if (of_property_read_u32(np, "fifo_threshold", &val) >= 0) {
->>> +		if (val < 0 || val > 31) {
->>
->>
-> 
+Please review.
 
+On Wednesday 31 December 2014 08:51 PM, Pratyush Anand wrote:
+> These patches have been prepared on top of ARM64 kprobe v3 patches [1]
+> under review.
+>
+> Unit test for following has been done so far and they have been found
+> working
+>      1. Normal instruction, which can be probed like sub, ldr, add etc.
+>      2. Instructions which can be simulated like ret.
+>      3. uretprobe
+>
+>
+>
+> [1]https://lkml.org/lkml/2014/11/18/33
+>
+> Pratyush Anand (8):
+>    ARM64: Move BRK opcodes defines from kprobes.h to insn.h
+>    ARM64: Refactor kprobes-arm64
+>    Kernel/uprobe: Define arch_uprobe_exception_notify as __weak
+>    ARM64: Add instruction_pointer_set function
+>    ARM64: Re-factor flush_ptrace_access
+>    ARM64: Handle TRAP_HWBRKPT for user mode as well
+>    ARM64: Handle TRAP_BRKPT for user mode as well
+>    ARM64: Add uprobe support
+>
+>   arch/arm/kernel/uprobes.c                          |   6 -
+>   arch/arm64/Kconfig                                 |   3 +
+>   arch/arm64/include/asm/insn.h                      |   8 +
+>   arch/arm64/include/asm/probes.h                    |  26 ++-
+>   arch/arm64/include/asm/ptrace.h                    |   7 +
+>   arch/arm64/include/asm/thread_info.h               |   5 +-
+>   arch/arm64/include/asm/uprobes.h                   |  43 ++++
+>   arch/arm64/kernel/Makefile                         |   5 +-
+>   arch/arm64/kernel/debug-monitors.c                 |  14 +-
+>   arch/arm64/kernel/kprobes.c                        |  11 +-
+>   arch/arm64/kernel/kprobes.h                        |   7 +-
+>   .../kernel/{kprobes-arm64.c => probes-arm64.c}     |  84 +++----
+>   .../kernel/{kprobes-arm64.h => probes-arm64.h}     |  17 +-
+>   arch/arm64/kernel/probes-condn-check.c             |   2 +-
+>   arch/arm64/kernel/probes-decode.h                  |   4 +-
+>   arch/arm64/kernel/signal.c                         |   4 +-
+>   arch/arm64/kernel/uprobes.c                        | 255 +++++++++++++++++++++
+>   arch/arm64/mm/flush.c                              |  30 ++-
+>   kernel/events/uprobes.c                            |  18 ++
+>   19 files changed, 445 insertions(+), 104 deletions(-)
+>   create mode 100644 arch/arm64/include/asm/uprobes.h
+>   rename arch/arm64/kernel/{kprobes-arm64.c => probes-arm64.c} (79%)
+>   rename arch/arm64/kernel/{kprobes-arm64.h => probes-arm64.h} (60%)
+>   create mode 100644 arch/arm64/kernel/uprobes.c
+>
