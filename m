@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbbAAAwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 19:52:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:46193 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbbAAAww (ORCPT
+	id S1751658AbbAAAzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 19:55:32 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:28195 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560AbbAAAza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 19:52:52 -0500
+	Wed, 31 Dec 2014 19:55:30 -0500
+X-IronPort-AV: E=Sophos;i="5.07,676,1413270000"; 
+   d="scan'208";a="54155283"
+Message-ID: <54A49B01.6020002@broadcom.com>
+Date: Wed, 31 Dec 2014 16:55:29 -0800
+From: Jonathan Richardson <jonathar@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUXarbLJt5yL_JJHntDFRkBZyvNMHxUGcOLNjULUQ8FhHw@mail.gmail.com>
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-	<CA+icZUV17qR-kBRnYa+r0DfchQ0QtaBy-6c3f3QuXn0EGwuJzQ@mail.gmail.com>
-	<54A4703B.2000006@oracle.com>
-	<CA+icZUXarbLJt5yL_JJHntDFRkBZyvNMHxUGcOLNjULUQ8FhHw@mail.gmail.com>
-Date: Thu, 1 Jan 2015 08:52:49 +0800
-Message-ID: <CACVXFVP+30g1k8nf3FR1ZFg=CBay_yg=guZfoM+DFdco64AhyQ@mail.gmail.com>
-Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
-From: Ming Lei <ming.lei@canonical.com>
-To: sedat.dilek@gmail.com
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>
-Content-Type: text/plain; charset=UTF-8
+To: Joe Perches <joe@perches.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Ray Jui <rjui@broadcom.com>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] Input: touchscreen-iproc: Add Broadcom iProc touchscreen
+ driver
+References: <Jonathan Richardson <jonathar@broadcom.com>  <1419027470-7969-1-git-send-email-jonathar@broadcom.com>  <1419027470-7969-2-git-send-email-jonathar@broadcom.com> <1419028015.25129.14.camel@perches.com> <5494AEB8.8060606@broadcom.com>
+In-Reply-To: <5494AEB8.8060606@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 6:35 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Dec 31, 2014 at 10:52 PM, Dave Kleikamp
-> <dave.kleikamp@oracle.com> wrote:
->> On 12/31/2014 02:38 PM, Sedat Dilek wrote:
->>>
->>> What has happened to that aio_loop patchset?
->>> Is it in Linux-next?
->>> ( /me started to play with "block: loop: convert to blk-mq (v3)", so I
->>> recalled this other improvement. )
+Hi,
+
+Would anyone be able to look at this to help us move forward? Thanks.
+
+On 14-12-19 03:03 PM, Jonathan Richardson wrote:
+> On 14-12-19 02:26 PM, Joe Perches wrote:
+>> On Fri, 2014-12-19 at 14:17 -0800, Jonathan Richardson wrote:
+>>> Add initial version of the Broadcom touchscreen driver.
 >>
->> It met with some harsh resistance, so I backed off on it. Then Al Viro
->> got busy re-writing the iov_iter infrastructure and I put my patchset on
->> the shelf to look at later. Then Ming Lei submitted more up-to-date
->> patchset: https://lkml.org/lkml/2014/8/6/175
+>> more trivia:
 >>
->> It looks like Ming is currently only pushing the first half of that
->> patchset. I don't know what his plans are for the last three patches:
+>>> diff --git a/drivers/input/touchscreen/bcm_iproc_tsc.c b/drivers/input/touchscreen/bcm_iproc_tsc.c
+>> []
+>>> +static int get_tsc_config(struct device_node *np, struct iproc_ts_priv *priv)
+>>> +{
+>>> +	u32 val;
+>> []
+>>> +	if (of_property_read_u32(np, "debounce_timeout", &val) >= 0) {
+>>> +		if (val < 0 || val > 255) {
+>>> +			dev_err(dev, "debounce_timeout must be [0-255]\n");
+>>> +			return -EINVAL;
+>>> +		}
+>>> +		priv->cfg_params.debounce_timeout = val;
 >>
->> aio: add aio_kernel_() interface
->> fd/direct-io: introduce should_dirty for kernel aio
->> block: loop: support to submit I/O via kernel aio based
+>> Doesn't the compiler generate a warning message
+>> about an impossible "unsigned < 0" test for all
+>> of these "val < 0" uses?
 >>
->
-> I tested with block-mq-v3 (for next-20141231) [1] and this looks promising [2].
->
-> Maybe Ming can say what the plan is with the missing parts.
+> 
+> Actually no it doesn't. The gcc output shows that neither -Wtype-limits
+> nor -Wextra are used to compile that file. I assume this is because
+> there would be just too many warnings.
+> 
+> 
+>>> +	}
+>>> +
+>>> +	if (of_property_read_u32(np, "settling_timeout", &val) >= 0) {
+>>> +		if (val < 0 || val > 11) {
+>> []
+>>> +	if (of_property_read_u32(np, "touch_timeout", &val) >= 0) {
+>>> +		if (val < 0 || val > 255) {
+>> []
+>>> +	if (of_property_read_u32(np, "average_data", &val) >= 0) {
+>>> +		if (val < 0 || val > 8) {
+>> []
+>>> +	if (of_property_read_u32(np, "fifo_threshold", &val) >= 0) {
+>>> +		if (val < 0 || val > 31) {
+>>
+>>
+> 
 
-I have compared kernel aio based loop-mq(the other 3 aio patches
-against loop-mq v2, [1]) with loop-mq v3, looks the data isn't
-better than loop-mq v3.
-
-kernel aio based approach requires direct I/O, at least direct write
-shouldn't be good as page cache write, IMO.
-
-So I think we need to investigate kernel aio based approach further
-wrt. loop improvement.
-
-[1] http://marc.info/?l=linux-kernel&m=140941494422520&w=2
-
-Thanks,
-Ming Lei
->
-> - Sedat -
->
-> [1] http://marc.info/?l=linux-kernel&m=142003226701471&w=2
-> [2]http://marc.info/?l=linux-kernel&m=142006516408381&w=2
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
