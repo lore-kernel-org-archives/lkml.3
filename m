@@ -1,117 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbbAAQKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 11:10:23 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:38543 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbbAAQKV (ORCPT
+	id S1751886AbbAAQQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 11:16:15 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47710 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbbAAQQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 11:10:21 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] media: i2c: adv7604.c:  Remove some unused functions
-Date: Thu,  1 Jan 2015 17:13:20 +0100
-Message-Id: <1420128800-28746-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 1 Jan 2015 11:16:14 -0500
+Date: Thu, 1 Jan 2015 11:16:15 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+CC: Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: mips: pci: pci-ip27.c:  Remove unused function
+Message-ID: <20150101161615.GH23085@windriver.com>
+References: <1420126326-27198-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1420126326-27198-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-vblanking() hblanking()
+[[PATCH] arch: mips: pci: pci-ip27.c:  Remove unused function] On 01/01/2015 (Thu 16:32) Rickard Strandqvist wrote:
 
-This was partially found by using a static code analysis program called cppcheck.
+> Remove the function pci_enable_swapping() that is not used anywhere.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/media/i2c/adv7604.c |   10 ----------
- drivers/media/i2c/adv7842.c |   10 ----------
- drivers/media/i2c/ths8200.c |   10 ----------
- 3 files changed, 30 deletions(-)
+A quick search shows it has been orphanware since the git epoch (~2005)
+so removing it should be fine AFAICT.
 
-diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
-index 47795ff..0ecca94 100644
---- a/drivers/media/i2c/adv7604.c
-+++ b/drivers/media/i2c/adv7604.c
-@@ -333,21 +333,11 @@ static inline struct adv7604_state *to_state(struct v4l2_subdev *sd)
- 	return container_of(sd, struct adv7604_state, sd);
- }
- 
--static inline unsigned hblanking(const struct v4l2_bt_timings *t)
--{
--	return V4L2_DV_BT_BLANKING_WIDTH(t);
--}
--
- static inline unsigned htotal(const struct v4l2_bt_timings *t)
- {
- 	return V4L2_DV_BT_FRAME_WIDTH(t);
- }
- 
--static inline unsigned vblanking(const struct v4l2_bt_timings *t)
--{
--	return V4L2_DV_BT_BLANKING_HEIGHT(t);
--}
--
- static inline unsigned vtotal(const struct v4l2_bt_timings *t)
- {
- 	return V4L2_DV_BT_FRAME_HEIGHT(t);
-diff --git a/drivers/media/i2c/adv7842.c b/drivers/media/i2c/adv7842.c
-index 48b628b..d89898c 100644
---- a/drivers/media/i2c/adv7842.c
-+++ b/drivers/media/i2c/adv7842.c
-@@ -220,21 +220,11 @@ static inline struct v4l2_subdev *to_sd(struct v4l2_ctrl *ctrl)
- 	return &container_of(ctrl->handler, struct adv7842_state, hdl)->sd;
- }
- 
--static inline unsigned hblanking(const struct v4l2_bt_timings *t)
--{
--	return V4L2_DV_BT_BLANKING_WIDTH(t);
--}
--
- static inline unsigned htotal(const struct v4l2_bt_timings *t)
- {
- 	return V4L2_DV_BT_FRAME_WIDTH(t);
- }
- 
--static inline unsigned vblanking(const struct v4l2_bt_timings *t)
--{
--	return V4L2_DV_BT_BLANKING_HEIGHT(t);
--}
--
- static inline unsigned vtotal(const struct v4l2_bt_timings *t)
- {
- 	return V4L2_DV_BT_FRAME_HEIGHT(t);
-diff --git a/drivers/media/i2c/ths8200.c b/drivers/media/i2c/ths8200.c
-index 656d889..4ebd329 100644
---- a/drivers/media/i2c/ths8200.c
-+++ b/drivers/media/i2c/ths8200.c
-@@ -58,21 +58,11 @@ static inline struct ths8200_state *to_state(struct v4l2_subdev *sd)
- 	return container_of(sd, struct ths8200_state, sd);
- }
- 
--static inline unsigned hblanking(const struct v4l2_bt_timings *t)
--{
--	return V4L2_DV_BT_BLANKING_WIDTH(t);
--}
--
- static inline unsigned htotal(const struct v4l2_bt_timings *t)
- {
- 	return V4L2_DV_BT_FRAME_WIDTH(t);
- }
- 
--static inline unsigned vblanking(const struct v4l2_bt_timings *t)
--{
--	return V4L2_DV_BT_BLANKING_HEIGHT(t);
--}
--
- static inline unsigned vtotal(const struct v4l2_bt_timings *t)
- {
- 	return V4L2_DV_BT_FRAME_HEIGHT(t);
--- 
-1.7.10.4
+P.
+--
 
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  arch/mips/pci/pci-ip27.c |   11 -----------
+>  1 file changed, 11 deletions(-)
+> 
+> diff --git a/arch/mips/pci/pci-ip27.c b/arch/mips/pci/pci-ip27.c
+> index 0f09eaf..55e3332 100644
+> --- a/arch/mips/pci/pci-ip27.c
+> +++ b/arch/mips/pci/pci-ip27.c
+> @@ -200,17 +200,6 @@ static inline void pci_disable_swapping(struct pci_dev *dev)
+>  	bridge->b_widget.w_tflush;	/* Flush */
+>  }
+>  
+> -static inline void pci_enable_swapping(struct pci_dev *dev)
+> -{
+> -	struct bridge_controller *bc = BRIDGE_CONTROLLER(dev->bus);
+> -	bridge_t *bridge = bc->base;
+> -	int slot = PCI_SLOT(dev->devfn);
+> -
+> -	/* Turn on byte swapping */
+> -	bridge->b_device[slot].reg |= BRIDGE_DEV_SWAP_DIR;
+> -	bridge->b_widget.w_tflush;	/* Flush */
+> -}
+> -
+>  static void pci_fixup_ioc3(struct pci_dev *d)
+>  {
+>  	pci_disable_swapping(d);
+> -- 
+> 1.7.10.4
+> 
