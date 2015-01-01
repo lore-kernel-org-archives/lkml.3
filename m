@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570AbbAACAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 21:00:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60052 "EHLO mx1.redhat.com"
+	id S1751614AbbAACGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 21:06:48 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:53206 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208AbbAACAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 21:00:09 -0500
-Message-ID: <54A4A9F5.6070800@redhat.com>
-Date: Thu, 01 Jan 2015 07:29:17 +0530
-From: Pratyush Anand <panand@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751450AbbAACGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 21:06:46 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: David Miller <davem@davemloft.net>
+Cc: roger.chen@rock-chips.com, peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        kever.yang@rock-chips.com, eddie.cai@rock-chips.com
+Subject: Re: [PATCH v3 0/6] support GMAC driver for RK3288
+Date: Thu, 01 Jan 2015 03:06:31 +0100
+Message-ID: <1493383.y3pPThNXY3@phil>
+User-Agent: KMail/4.14.2 (Linux/3.16-3-amd64; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <20141231.191538.585375391107637966.davem@davemloft.net>
+References: <1419846152-14531-1-git-send-email-roger.chen@rock-chips.com> <20141231.191538.585375391107637966.davem@davemloft.net>
 MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        David Long <dave.long@linaro.org>
-CC: tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com, oleg@redhat.com
-Subject: Re: [RFC 0/8] ARM64: Uprobe support added
-References: <cover.1420038188.git.panand@redhat.com>
-In-Reply-To: <cover.1420038188.git.panand@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Dave
+Hi David,
 
-Sorry, I took all cc list from your kprobe patches and forgot to add you. :(
+Am Mittwoch, 31. Dezember 2014, 19:15:38 schrieb David Miller:
+> From: Roger Chen <roger.chen@rock-chips.com>
+> Date: Mon, 29 Dec 2014 17:42:32 +0800
+> 
+> > Roger Chen (6):
+> >   patch1: add driver for Rockchip RK3288 SoCs integrated GMAC
+> >   patch2: define clock ID used for GMAC
+> >   patch3: modify CRU config for Rockchip RK3288 SoCs integrated GMAC
+> >   patch4: dts: rockchip: add gmac info for rk3288
+> >   patch5: dts: rockchip: enable gmac on RK3288 evb board
+> >   patch6: add document for Rockchip RK3288 GMAC
+> > 
+> > Tested on rk3288 evb board:
+> > Execute the following command to enable ethernet,
+> > set local IP and ping a remote host.
+> > 
+> > busybox ifconfig eth0 up
+> > busybox ifconfig eth0 192.168.1.111
+> > ping 192.168.1.1
+> 
+> Series applied to net-next, thanks.
 
-Please review.
+could we split this up a bit instead?
 
-On Wednesday 31 December 2014 08:51 PM, Pratyush Anand wrote:
-> These patches have been prepared on top of ARM64 kprobe v3 patches [1]
-> under review.
->
-> Unit test for following has been done so far and they have been found
-> working
->      1. Normal instruction, which can be probed like sub, ldr, add etc.
->      2. Instructions which can be simulated like ret.
->      3. uretprobe
->
->
->
-> [1]https://lkml.org/lkml/2014/11/18/33
->
-> Pratyush Anand (8):
->    ARM64: Move BRK opcodes defines from kprobes.h to insn.h
->    ARM64: Refactor kprobes-arm64
->    Kernel/uprobe: Define arch_uprobe_exception_notify as __weak
->    ARM64: Add instruction_pointer_set function
->    ARM64: Re-factor flush_ptrace_access
->    ARM64: Handle TRAP_HWBRKPT for user mode as well
->    ARM64: Handle TRAP_BRKPT for user mode as well
->    ARM64: Add uprobe support
->
->   arch/arm/kernel/uprobes.c                          |   6 -
->   arch/arm64/Kconfig                                 |   3 +
->   arch/arm64/include/asm/insn.h                      |   8 +
->   arch/arm64/include/asm/probes.h                    |  26 ++-
->   arch/arm64/include/asm/ptrace.h                    |   7 +
->   arch/arm64/include/asm/thread_info.h               |   5 +-
->   arch/arm64/include/asm/uprobes.h                   |  43 ++++
->   arch/arm64/kernel/Makefile                         |   5 +-
->   arch/arm64/kernel/debug-monitors.c                 |  14 +-
->   arch/arm64/kernel/kprobes.c                        |  11 +-
->   arch/arm64/kernel/kprobes.h                        |   7 +-
->   .../kernel/{kprobes-arm64.c => probes-arm64.c}     |  84 +++----
->   .../kernel/{kprobes-arm64.h => probes-arm64.h}     |  17 +-
->   arch/arm64/kernel/probes-condn-check.c             |   2 +-
->   arch/arm64/kernel/probes-decode.h                  |   4 +-
->   arch/arm64/kernel/signal.c                         |   4 +-
->   arch/arm64/kernel/uprobes.c                        | 255 +++++++++++++++++++++
->   arch/arm64/mm/flush.c                              |  30 ++-
->   kernel/events/uprobes.c                            |  18 ++
->   19 files changed, 445 insertions(+), 104 deletions(-)
->   create mode 100644 arch/arm64/include/asm/uprobes.h
->   rename arch/arm64/kernel/{kprobes-arm64.c => probes-arm64.c} (79%)
->   rename arch/arm64/kernel/{kprobes-arm64.h => probes-arm64.h} (60%)
->   create mode 100644 arch/arm64/kernel/uprobes.c
->
+If everything goes through your tree, we'll end up with a lot of conflicts with 
+other pending stuff, so I'd really appreciate if you could leave out patches
+ 
+   patch2: define clock ID used for GMAC
+   patch3: modify CRU config for Rockchip RK3288 SoCs integrated GMAC
+   patch4: dts: rockchip: add gmac info for rk3288
+   patch5: dts: rockchip: enable gmac on RK3288 evb board
+
+so only take the driver itself and the dt-binding and I would take these 4 
+above through the appropriate trees (clk and arm-soc)
+
+
+Thanks and happy new year
+Heiko
