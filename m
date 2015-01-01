@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbbAAA3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 19:29:39 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54765 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407AbbAAA3i (ORCPT
+	id S1751563AbbAAAwx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 19:52:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:46193 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208AbbAAAww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 19:29:38 -0500
+	Wed, 31 Dec 2014 19:52:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUU7Pet-22m8uxFSBFkG8U1drK7XzpdGaFQQBFBNVRTgJQ@mail.gmail.com>
-References: <CA+icZUXCCopMw4ZUyUYPT0seMVT4W0GuNhn3Z5Erte+LMhxzkQ@mail.gmail.com>
-	<CA+icZUXcpmFhCJ0=eiVe=XMbVFRCSLxUpaNNh2E7vEStMwjg=A@mail.gmail.com>
-	<CA+icZUU=FPioz0SbMA+GYTcsz41ADfE1oCq5zFB3SGrvZyCc6A@mail.gmail.com>
-	<CACVXFVMR=-CGq=EWWCorD-DBge=stygvrgY1kuR7rBh_96mA=A@mail.gmail.com>
-	<CA+icZUU7Pet-22m8uxFSBFkG8U1drK7XzpdGaFQQBFBNVRTgJQ@mail.gmail.com>
-Date: Thu, 1 Jan 2015 08:29:37 +0800
-Message-ID: <CACVXFVOt=A=NzPBqXp8LeHRYNxhwzxwohbnZf7ZnRvqYDgq6+A@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] block: loop: convert to blk-mq
-From: Ming Lei <tom.leiming@gmail.com>
+In-Reply-To: <CA+icZUXarbLJt5yL_JJHntDFRkBZyvNMHxUGcOLNjULUQ8FhHw@mail.gmail.com>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+	<CA+icZUV17qR-kBRnYa+r0DfchQ0QtaBy-6c3f3QuXn0EGwuJzQ@mail.gmail.com>
+	<54A4703B.2000006@oracle.com>
+	<CA+icZUXarbLJt5yL_JJHntDFRkBZyvNMHxUGcOLNjULUQ8FhHw@mail.gmail.com>
+Date: Thu, 1 Jan 2015 08:52:49 +0800
+Message-ID: <CACVXFVP+30g1k8nf3FR1ZFg=CBay_yg=guZfoM+DFdco64AhyQ@mail.gmail.com>
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+From: Ming Lei <ming.lei@canonical.com>
 To: sedat.dilek@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 8:18 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, Jan 1, 2015 at 1:01 AM, Ming Lei <tom.leiming@gmail.com> wrote:
->> Hi Sedat,
+On Thu, Jan 1, 2015 at 6:35 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Dec 31, 2014 at 10:52 PM, Dave Kleikamp
+> <dave.kleikamp@oracle.com> wrote:
+>> On 12/31/2014 02:38 PM, Sedat Dilek wrote:
+>>>
+>>> What has happened to that aio_loop patchset?
+>>> Is it in Linux-next?
+>>> ( /me started to play with "block: loop: convert to blk-mq (v3)", so I
+>>> recalled this other improvement. )
 >>
->> On Thu, Jan 1, 2015 at 6:32 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> Forgot to CC LKML and linux-fsdevel.
->>>
->>> - Sedat -
+>> It met with some harsh resistance, so I backed off on it. Then Al Viro
+>> got busy re-writing the iov_iter infrastructure and I put my patchset on
+>> the shelf to look at later. Then Ming Lei submitted more up-to-date
+>> patchset: https://lkml.org/lkml/2014/8/6/175
 >>
->>>
->>> OK, I have installed fio (1.59-1) and libaio1 (0.3.109-2ubuntu1) here.
->>>
->>> You say in [1]:
->>>
->>> "In the following test:
->>> - base: v3.19-rc2-2041231
->>> - loop over file in ext4 file system on SSD disk
->>> - bs: 4k, libaio, io depth: 64, O_DIRECT, num of jobs: 1
->>> - throughput: IOPS"
->>>
->>> I tried to reproduce that inspired by [2]...
->>>
->>> root# fio --name=randread --rw=randread --bs=4k --ioengine=libaio
->>> --iodepth=64 --direct=1 --numjobs=1 --size=1G
->>>
->>> ...you had no size given (here: 1GiB) - fio requires that parameter to run.
->>>
->>> This results in 165 VS. 515 IOPS here.
+>> It looks like Ming is currently only pushing the first half of that
+>> patchset. I don't know what his plans are for the last three patches:
 >>
->> Thanks for your test.
->>
->> Also if your disk is quick enough, you will observe improvement on
->> read test too.
+>> aio: add aio_kernel_() interface
+>> fd/direct-io: introduce should_dirty for kernel aio
+>> block: loop: support to submit I/O via kernel aio based
 >>
 >
-> This is no SSD here.
+> I tested with block-mq-v3 (for next-20141231) [1] and this looks promising [2].
 >
-> # dmesg | egrep -i 'hitachi|ata1|sda'
-> [    0.457892] ata1: SATA max UDMA/133 abar m2048@0xf0708000 port
-> 0xf0708100 irq 25
-> [    0.777445] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [    0.778759] ata1.00: ATA-8: Hitachi HTS545050A7E380, GG2OA6C0, max UDMA/133
-> [    0.778778] ata1.00: 976773168 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
-> [    0.780154] ata1.00: configured for UDMA/133
-> [    0.780970] scsi 0:0:0:0: Direct-Access     ATA      Hitachi
-> HTS54505 A6C0 PQ: 0 ANSI: 5
-> [    0.782050] sd 0:0:0:0: [sda] 976773168 512-byte logical blocks:
-> (500 GB/465 GiB)
-> [    0.782058] sd 0:0:0:0: [sda] 4096-byte physical blocks
-> [    0.782255] sd 0:0:0:0: [sda] Write Protect is off
-> [    0.782262] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
-> [    0.782339] sd 0:0:0:0: [sda] Write cache: enabled, read cache:
-> enabled, doesn't support DPO or FUA
-> [    0.800644]  sda: sda1 sda2 sda3
-> [    0.802029] sd 0:0:0:0: [sda] Attached SCSI disk
->
-> How did you test with fio (your fio lines)?
+> Maybe Ming can say what the plan is with the missing parts.
 
-Your fio command line is basically same with my fio config, and you
-can attach one image to loop via:  losetup -f file_name. Looks your
-randread result is good, and I can observe ~80 IOPS vs. ~200 IOPS
-on my slow HDD. in the randread test too.
+I have compared kernel aio based loop-mq(the other 3 aio patches
+against loop-mq v2, [1]) with loop-mq v3, looks the data isn't
+better than loop-mq v3.
 
-#################fio config##########################
-[global]
-direct=1
-size=128G
-bsrange=4k-4k
-timeout=30
-numjobs=1
-ioengine=libaio
-iodepth=64
-filename=/dev/loop0
-group_reporting=1
+kernel aio based approach requires direct I/O, at least direct write
+shouldn't be good as page cache write, IMO.
 
-[f]
-rw=${RW}
+So I think we need to investigate kernel aio based approach further
+wrt. loop improvement.
 
-
+[1] http://marc.info/?l=linux-kernel&m=140941494422520&w=2
 
 Thanks,
 Ming Lei
+>
+> - Sedat -
+>
+> [1] http://marc.info/?l=linux-kernel&m=142003226701471&w=2
+> [2]http://marc.info/?l=linux-kernel&m=142006516408381&w=2
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
