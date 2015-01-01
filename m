@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560AbbAAUET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 15:04:19 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:57878 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbbAAUER (ORCPT
+	id S1751761AbbAAUL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 15:11:59 -0500
+Received: from www.xora.org.uk ([80.68.91.202]:33464 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487AbbAAUL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 15:04:17 -0500
+	Thu, 1 Jan 2015 15:11:58 -0500
+X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jan 2015 15:11:57 EST
+Date: Thu, 1 Jan 2015 20:04:24 +0000
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: ashwinc@codeaurora.org, catalin.marinas@arm.com, rjw@rjwysocki.net,
+        mark.rutland@arm.com, olof@lixom.net, grant.likely@linaro.org,
+        will.deacon@arm.com, linaro-acpi@lists.linaro.org, Liviu.Dudau@arm.com,
+        lv.zheng@intel.com, robh@kernel.org, Lorenzo.Pieralisi@arm.com,
+        al.stone@linaro.org, daniel.lezcano@linaro.org, robert.moore@intel.com,
+        linux-acpi@vger.kernel.org, Charles.Garcia-Tobin@arm.com,
+        rric@kernel.org, jason@lakedaemon.net, arnd@arndb.de,
+        marc.zyngier@arm.com, jcm@redhat.com, broonie@kernel.org,
+        "bhelgaas@google.com." <linux-arm-kernel@lists.infradead.org>,
+        graeme.gregory@linaro.org, Kangkang.Shen@huawei.com,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        Sudeep.Holla@arm.com
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+Message-ID: <20150101200424.GB12770@xora-haswell.xora.org.uk>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org>
+ <CAJ5Y-eZ5cu9_OhG24yAv+CZq7zKg0vU+eVGekyN+9dDzaz1OhQ@mail.gmail.com>
+ <8fc9550c96a468b3e50d51a37db68a33.squirrel@www.codeaurora.org>
+ <54A3B526.9040903@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1420131342-30418-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420131342-30418-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Thu, 1 Jan 2015 21:04:15 +0100
-Message-ID: <CAMeQTsZv2x5CMM2Kf6hwohy9tGHB64DusiEwk9oGFJHp2oYvyg@mail.gmail.com>
-Subject: Re: [PATCH] gpu: drm: gma500: mmu.c: Remove unused function
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: David Airlie <airlied@linux.ie>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54A3B526.9040903@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 5:55 PM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
-> Remove the function psb_get_default_pd_addr() that is not used anywhere.
->
-> This was partially found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+On Wed, Dec 31, 2014 at 04:34:46PM +0800, Hanjun Guo wrote:
+> On 2014年12月31日 04:13, ashwinc@codeaurora.org wrote:
+> >Hi Hanjun,
+> >
+> >Overall the document looks good to us. Some minor clarifications below.
+> >
+> >>---------- Forwarded message ----------
+> >>From: Graeme Gregory <graeme.gregory@linaro.org>
+> >>
+> >>Add documentation for the guidelines of how to use ACPI
+> >>on ARM64.
+> >>
+> >>Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> >>Signed-off-by: Al Stone <al.stone@linaro.org>
+> >>Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> >>---
+> >>  Documentation/arm64/arm-acpi.txt |  323
+> >>++++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 323 insertions(+)
+> >>  create mode 100644 Documentation/arm64/arm-acpi.txt
+> >>
+> >
+> >[..]
+> >
+> >>+Relationship with Device Tree
+> >>+-----------------------------
+> >
+> >[..]
+> >
+> >>+When booting using ACPI tables, the /chosen node in DT will still be
+> >>parsed
+> >>+to extract the kernel command line and initrd path.  No other section of
+> >>the
+> >>+DT will be used.
+> >
+> >Is this still true?
+> 
+> No, we can booting the ACPI system in EFI stub without dtb. Catalin
+> also pointed out this issue, I will remove this paragraph.
+> 
 
-Hej Rickard
+The paragraph is still correct, the /chosen node is always present even
+if nothing else is.
 
-I'd like to keep that function since it's relevant to getting the MSVDX running.
-I'm not working on it but someone else might be.
+Graeme
 
-> ---
->  drivers/gpu/drm/gma500/mmu.c |    9 ---------
->  1 file changed, 9 deletions(-)
->
-> diff --git a/drivers/gpu/drm/gma500/mmu.c b/drivers/gpu/drm/gma500/mmu.c
-> index 0eaf11c..557cae7 100644
-> --- a/drivers/gpu/drm/gma500/mmu.c
-> +++ b/drivers/gpu/drm/gma500/mmu.c
-> @@ -426,15 +426,6 @@ struct psb_mmu_pd *psb_mmu_get_default_pd(struct psb_mmu_driver *driver)
->         return pd;
->  }
->
-> -/* Returns the physical address of the PD shared by sgx/msvdx */
-> -uint32_t psb_get_default_pd_addr(struct psb_mmu_driver *driver)
-> -{
-> -       struct psb_mmu_pd *pd;
-> -
-> -       pd = psb_mmu_get_default_pd(driver);
-> -       return page_to_pfn(pd->p) << PAGE_SHIFT;
-> -}
-> -
->  void psb_mmu_driver_takedown(struct psb_mmu_driver *driver)
->  {
->         struct drm_device *dev = driver->dev;
-> --
-> 1.7.10.4
->
