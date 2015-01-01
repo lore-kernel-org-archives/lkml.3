@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560AbaLaXPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 18:15:38 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29726 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751143AbaLaXPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 18:15:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="435471132"
-Message-ID: <1420067735.31582.90.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] net: ethernet: intel: i40e: i40e_fcoe.c:  Remove unused
- function
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mitch Williams <mitch.a.williams@intel.com>,
-        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 31 Dec 2014 15:15:35 -0800
-In-Reply-To: <1420044537-21077-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420044537-21077-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-znfp226TldZk+lZADMli"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1751543AbbAAABx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 19:01:53 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51458 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbbAAABw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 19:01:52 -0500
+Date: Thu, 1 Jan 2015 00:01:49 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Paul Moore <paul@paul-moore.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Audit fixes for 3.19 #2
+Message-ID: <20150101000149.GP22149@ZenIV.linux.org.uk>
+References: <3159430.4MhUX0bhoZ@sifl>
+ <CA+55aFzwqafHa6ARO-zkCDaHZozZDDvETBMmbnvNsnu1L9v2=w@mail.gmail.com>
+ <3787508.5gHb8qD3XR@sifl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3787508.5gHb8qD3XR@sifl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 31, 2014 at 05:08:12PM -0500, Paul Moore wrote:
 
---=-znfp226TldZk+lZADMli
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> The getname/putname hacks work in the normal file case, but it falls apart 
+> when you start talking about AF_UNIX socket files where the filename string 
+> doesn't go through the getname/putname refcount tricks.  In the past (no idea 
+> how far back this goes off the top of my head) this wasn't an issue since the 
+> code which recorded the filenames in the audit records was broken, but since 
+> we just "fixed" that problem, the AF_UNIX socket problem is now making an 
+> appearance.
+> 
+> At least that is how it looks to me right now, if I'm wrong about this and I'm 
+> missing an obvious fix I'm all ears/eyes/etc.
 
-On Wed, 2014-12-31 at 17:48 +0100, Rickard Strandqvist wrote:
-> Remove the function i40e_rx_is_fip() that is not used anywhere.
->=20
-> This was partially found by using a static code analysis program
-> called cppcheck.
->=20
-> Signed-off-by: Rickard Strandqvist
-> <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/net/ethernet/intel/i40e/i40e_fcoe.c |    9 ---------
->  1 file changed, 9 deletions(-)
-
-Thanks Rickard!  I thought I had some patches in my queue that started
-to make use of that function, but come to find out, I don't... :-)
-
-I will add your patch to my queue, thanks!
-
---=-znfp226TldZk+lZADMli
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUpIOXAAoJEOVv75VaS+3OWMsP/1rsarCCjudStqCyW5hOv/hg
-3P5yTHs6kS9aLePShPcKPBoclKuA+bW7tfzl6J1Uh/jMOuGqpcN0ps5fAOkzKisa
-Tv/doVLyEAOJk9qHkQDnod42HvBpjU0p6+Tn3nSPI+vINEWpEIc7IEs6CkLm6gvf
-e1c7nD8KqT0NrTg/7pd82XxLnHgqIG9Y12shGz3ZUD5LzLx9yOlfuUtTP7tfhsge
-i0BDPaUiqmJCwPvll2TZZ8mV65Igx4TiL69ve1LX0HkyF57kSVEwb0vD+I8g2DGq
-mTVETuz/oKMnJjwmkmbMXktNMZLs0NNDwbqxx++wzhGhd09l307CiEBI1Dzw0wC5
-NyPgeyTwFMtLLjjv1KBUouWS5Y6E1sAzC6jiSFHv7izQJ5UMeWyzKSsHftgXq643
-FGVNoHQ39DPpwCVoacggEbLrU9YKHhB9yoqHWENFOmkgQOi1al5gewCvdbcX4vxh
-a7y1qg4m95mfjwEoqioAVNcl9geibqc1eM6NCl9ipAVyxI0LOe11VYLr/P4mUk55
-5rZFVuNMirqdV1MXWRAK4TRD4dBAIeMaFEtcpm0gfN9inpK3+yEJRNqq7OYBaqX4
-vcIFlbWlQDxTVmo46p0aS0r2HUPwTa6cSnowWevV2myaVlIWZ5UX+Uq3cT5TwePD
-POvfkYEIXjcbC8Ri3kWd
-=TOEW
------END PGP SIGNATURE-----
-
---=-znfp226TldZk+lZADMli--
-
+Umm...  How about just adding a function that would be used instead of
+all those
+        struct filename filename = { .name = name };
+and created an object that would be destroyed later by putname()?
