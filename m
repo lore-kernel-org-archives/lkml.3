@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548AbbAASdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 13:33:35 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:34255 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbbAASdd (ORCPT
+	id S1751574AbbAASlL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 13:41:11 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56974 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbbAASlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 13:33:33 -0500
+	Thu, 1 Jan 2015 13:41:10 -0500
+Date: Thu, 1 Jan 2015 18:41:08 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Paul Moore <paul@paul-moore.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Audit fixes for 3.19 #2
+Message-ID: <20150101184108.GA28149@ZenIV.linux.org.uk>
+References: <3159430.4MhUX0bhoZ@sifl>
+ <CA+55aFzwqafHa6ARO-zkCDaHZozZDDvETBMmbnvNsnu1L9v2=w@mail.gmail.com>
+ <3787508.5gHb8qD3XR@sifl>
+ <20150101000149.GP22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1420126692-9552-1-git-send-email-waydi1@gmail.com>
-References: <1420126692-9552-1-git-send-email-waydi1@gmail.com>
-Date: Thu, 1 Jan 2015 19:33:31 +0100
-Message-ID: <CA+icZUWj+raXW8zBr7gmYe36EA9wuq4xN_3pC+mhhV+qiOJV7g@mail.gmail.com>
-Subject: Re: [PATCH] ovl: Prevent rw remount when it should be ro mount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Seunghun Lee <waydi1@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150101000149.GP22149@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 4:38 PM, Seunghun Lee <waydi1@gmail.com> wrote:
-> Overlayfs should be mounted read-only when upper fs is r/o or nonexistend.
-> But now it can be remounted read-write and this can causes kernel panic.
-> So we should prevent read-write remount when the above situation.
->
+On Thu, Jan 01, 2015 at 12:01:49AM +0000, Al Viro wrote:
 
-Cannot say much to the code, but you have some typos in your commit-message.
-Here some corrections... wording, style etc.
+> Umm...  How about just adding a function that would be used instead of
+> all those
+>         struct filename filename = { .name = name };
+> and created an object that would be destroyed later by putname()?
 
-...when upper-fs (with a dash) is read-only (if you write read-write
-below) or nonexisten*t*...
-...this can cause (without s at the end)...
-...when the above situation *happens* (missing word)...
+... such as getname_kernel(), actually.  There are 5 places like that:
+fs/exec.c:open_exec(), fs/namei.c:do_path_lookup(),
+fs/namei.c:kern_path_mountpoint(), fs/namei.c:do_file_open_root(),
+fs/open.c:filp_open().  Said that, I'm not sure that no call chains
+allow names just under PATH_MAX, so getname_kernel() might need to be
+taught to handle those.
 
-- Sedat -
-
-> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
-> ---
->  fs/overlayfs/super.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
->
-> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-> index 84f3144..8944651 100644
-> --- a/fs/overlayfs/super.c
-> +++ b/fs/overlayfs/super.c
-> @@ -522,10 +522,21 @@ static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
->         return 0;
->  }
->
-> +static int ovl_remount(struct super_block *sb, int *flags, char *data)
-> +{
-> +       struct ovl_fs *ufs = sb->s_fs_info;
-> +
-> +       if (!ufs->upper_mnt || (ufs->upper_mnt->mnt_sb->s_flags & MS_RDONLY))
-> +               *flags |= MS_RDONLY;
-> +
-> +       return 0;
-> +}
-> +
->  static const struct super_operations ovl_super_operations = {
->         .put_super      = ovl_put_super,
->         .statfs         = ovl_statfs,
->         .show_options   = ovl_show_options,
-> +       .remount_fs     = ovl_remount,
->  };
->
->  enum {
-> --
-> 2.1.3
->
