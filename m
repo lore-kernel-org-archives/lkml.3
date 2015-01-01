@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbbAARv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 12:51:29 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:55510 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020AbbAARv1 (ORCPT
+	id S1752066AbbAARwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 12:52:14 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:52948 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584AbbAARwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 12:51:27 -0500
+	Thu, 1 Jan 2015 12:52:12 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Steven Miao <realmz6@gmail.com>, adi-buildroot-devel@lists.sourceforge.net
+To: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: blackfin: kernel: kgdb:  Remove unused function
-Date: Thu,  1 Jan 2015 18:54:26 +0100
-Message-Id: <1420134867-1594-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] arch: arm: mach-rpc: ecard:  Remove some unused functions
+Date: Thu,  1 Jan 2015 18:55:12 +0100
+Message-Id: <1420134912-1742-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function kgdb_post_primary_code() that is not used anywhere.
+Removes some functions that are not used anywhere:
+ecard_disablefiq() ecard_enablefiq()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/blackfin/kernel/kgdb.c |   13 -------------
- 1 file changed, 13 deletions(-)
+ arch/arm/mach-rpc/ecard.c |   29 -----------------------------
+ 1 file changed, 29 deletions(-)
 
-diff --git a/arch/blackfin/kernel/kgdb.c b/arch/blackfin/kernel/kgdb.c
-index fa53fae..b1cc04f 100644
---- a/arch/blackfin/kernel/kgdb.c
-+++ b/arch/blackfin/kernel/kgdb.c
-@@ -359,19 +359,6 @@ void kgdb_roundup_cpu(int cpu, unsigned long flags)
- static unsigned long kgdb_arch_imask;
- #endif
+diff --git a/arch/arm/mach-rpc/ecard.c b/arch/arm/mach-rpc/ecard.c
+index fcb1d59..e5c8caf 100644
+--- a/arch/arm/mach-rpc/ecard.c
++++ b/arch/arm/mach-rpc/ecard.c
+@@ -462,35 +462,6 @@ static struct irq_chip ecard_chip = {
+ 	.irq_unmask	= ecard_irq_unmask,
+ };
  
--void kgdb_post_primary_code(struct pt_regs *regs, int e_vector, int err_code)
+-void ecard_enablefiq(unsigned int fiqnr)
 -{
--	if (kgdb_single_step)
--		preempt_enable();
+-	ecard_t *ec = slot_to_ecard(fiqnr);
 -
--#ifdef CONFIG_IPIPE
--	if (kgdb_arch_imask) {
--		cpu_pda[raw_smp_processor_id()].ex_imask = kgdb_arch_imask;
--		kgdb_arch_imask = 0;
+-	if (ec) {
+-		if (!ec->ops)
+-			ec->ops = &ecard_default_ops;
+-
+-		if (ec->claimed && ec->ops->fiqenable)
+-			ec->ops->fiqenable(ec, fiqnr);
+-		else
+-			printk(KERN_ERR "ecard: rejecting request to "
+-				"enable FIQs for %d\n", fiqnr);
 -	}
--#endif
 -}
 -
- int kgdb_arch_handle_exception(int vector, int signo,
- 			       int err_code, char *remcom_in_buffer,
- 			       char *remcom_out_buffer,
+-void ecard_disablefiq(unsigned int fiqnr)
+-{
+-	ecard_t *ec = slot_to_ecard(fiqnr);
+-
+-	if (ec) {
+-		if (!ec->ops)
+-			ec->ops = &ecard_default_ops;
+-
+-		if (ec->ops->fiqdisable)
+-			ec->ops->fiqdisable(ec, fiqnr);
+-	}
+-}
+-
+ static void ecard_dump_irq_state(void)
+ {
+ 	ecard_t *ec;
 -- 
 1.7.10.4
 
