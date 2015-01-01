@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbbAARTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 12:19:39 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:55955 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbbAARTi (ORCPT
+	id S1751582AbbAARo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 12:44:26 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:41081 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbbAARoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 12:19:38 -0500
+	Thu, 1 Jan 2015 12:44:24 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: mips: fw: arc: misc.c:  Remove some unused functions
-Date: Thu,  1 Jan 2015 18:22:37 +0100
-Message-Id: <1420132958-32622-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] mailbox: pl320-ipc:  Remove some unused functions
+Date: Thu,  1 Jan 2015 18:47:24 +0100
+Message-Id: <1420134444-388-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Removes some functions that are not used anywhere:
-ArcGetSystemId() ArcSaveConfiguration() ArcRestart() ArcPowerDown() ArcHalt()
+clear_destination() set_destination()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/mips/fw/arc/misc.c |   40 ----------------------------------------
- 1 file changed, 40 deletions(-)
+ drivers/mailbox/pl320-ipc.c |   12 ------------
+ 1 file changed, 12 deletions(-)
 
-diff --git a/arch/mips/fw/arc/misc.c b/arch/mips/fw/arc/misc.c
-index f9f5307..214dc88 100644
---- a/arch/mips/fw/arc/misc.c
-+++ b/arch/mips/fw/arc/misc.c
-@@ -20,34 +20,6 @@
- #include <asm/bootinfo.h>
+diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
+index f3755e0..adb969b 100644
+--- a/drivers/mailbox/pl320-ipc.c
++++ b/drivers/mailbox/pl320-ipc.c
+@@ -56,18 +56,6 @@ static DEFINE_MUTEX(ipc_m1_lock);
+ static DECLARE_COMPLETION(ipc_completion);
+ static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
  
- VOID
--ArcHalt(VOID)
+-static inline void set_destination(int source, int mbox)
 -{
--	bc_disable();
--	local_irq_disable();
--	ARC_CALL0(halt);
--never:	goto never;
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
 -}
 -
--VOID
--ArcPowerDown(VOID)
+-static inline void clear_destination(int source, int mbox)
 -{
--	bc_disable();
--	local_irq_disable();
--	ARC_CALL0(pdown);
--never:	goto never;
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
+-	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
 -}
 -
--/* XXX is this a soft reset basically? XXX */
--VOID
--ArcRestart(VOID)
--{
--	bc_disable();
--	local_irq_disable();
--	ARC_CALL0(restart);
--never:	goto never;
--}
--
--VOID
- ArcReboot(VOID)
+ static void __ipc_send(int mbox, u32 *data)
  {
- 	bc_disable();
-@@ -65,18 +37,6 @@ ArcEnterInteractiveMode(VOID)
- never:	goto never;
- }
- 
--LONG
--ArcSaveConfiguration(VOID)
--{
--	return ARC_CALL0(cfg_save);
--}
--
--struct linux_sysid *
--ArcGetSystemId(VOID)
--{
--	return (struct linux_sysid *) ARC_CALL0(get_sysid);
--}
--
- VOID __init
- ArcFlushAllCaches(VOID)
- {
+ 	int i;
 -- 
 1.7.10.4
 
