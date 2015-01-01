@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbbAARAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 12:00:37 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:37269 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbbAARAg (ORCPT
+	id S1752162AbbAARBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 12:01:54 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:35609 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbbAARBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 12:00:36 -0500
+	Thu, 1 Jan 2015 12:01:52 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>
+To: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Sakari Ailus <sakari.ailus@linux.intel.com>,
-        Mikhail Domrachev <mihail.domrychev@comexp.ru>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] media: pci: saa7134: saa7134-video.c:  Remove unused function
-Date: Thu,  1 Jan 2015 18:03:35 +0100
-Message-Id: <1420131815-31335-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH] power: ab8500_fg.c:  Remove unused function
+Date: Thu,  1 Jan 2015 18:04:52 +0100
+Message-Id: <1420131892-31486-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function saa7134_queue() that is not used anywhere.
+Remove the function ab8500_fg_reinit() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/media/pci/saa7134/saa7134-video.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/power/ab8500_fg.c            |   14 --------------
+ include/linux/mfd/abx500/ab8500-bm.h |    1 -
+ 2 files changed, 15 deletions(-)
 
-diff --git a/drivers/media/pci/saa7134/saa7134-video.c b/drivers/media/pci/saa7134/saa7134-video.c
-index fc4a427..cf40573 100644
---- a/drivers/media/pci/saa7134/saa7134-video.c
-+++ b/drivers/media/pci/saa7134/saa7134-video.c
-@@ -1098,11 +1098,6 @@ static int saa7134_s_ctrl(struct v4l2_ctrl *ctrl)
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index 217da4b..72c82ab 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -2434,20 +2434,6 @@ static void ab8500_fg_reinit_work(struct work_struct *work)
+ 	}
+ }
  
- /* ------------------------------------------------------------------ */
- 
--static inline struct vb2_queue *saa7134_queue(struct file *file)
+-/**
+- * ab8500_fg_reinit() - forces FG algorithm to reinitialize with current values
+- *
+- * This function can be used to force the FG algorithm to recalculate a new
+- * voltage based battery capacity.
+- */
+-void ab8500_fg_reinit(void)
 -{
--	return video_devdata(file)->queue;
+-	struct ab8500_fg *di = ab8500_fg_get();
+-	/* User won't be notified if a null pointer returned. */
+-	if (di != NULL)
+-		queue_delayed_work(di->fg_wq, &di->fg_reinit_work, 0);
 -}
 -
- static int video_open(struct file *file)
- {
- 	struct video_device *vdev = video_devdata(file);
+ /* Exposure to the sysfs interface */
+ 
+ struct ab8500_fg_sysfs_entry {
+diff --git a/include/linux/mfd/abx500/ab8500-bm.h b/include/linux/mfd/abx500/ab8500-bm.h
+index cc892a8..12a5b39 100644
+--- a/include/linux/mfd/abx500/ab8500-bm.h
++++ b/include/linux/mfd/abx500/ab8500-bm.h
+@@ -461,7 +461,6 @@ struct ab8500_fg;
+ #ifdef CONFIG_AB8500_BM
+ extern struct abx500_bm_data ab8500_bm_data;
+ 
+-void ab8500_fg_reinit(void);
+ void ab8500_charger_usb_state_changed(u8 bm_usb_state, u16 mA);
+ struct ab8500_btemp *ab8500_btemp_get(void);
+ int ab8500_btemp_get_batctrl_temp(struct ab8500_btemp *btemp);
 -- 
 1.7.10.4
 
