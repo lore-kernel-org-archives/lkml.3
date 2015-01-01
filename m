@@ -1,176 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbbAAIJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 03:09:05 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:42287 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164AbbAAIJD (ORCPT
+	id S1751683AbbAAJQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 04:16:53 -0500
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:38578 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701AbbAAJQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 03:09:03 -0500
-Message-ID: <54A50094.5070902@linux.vnet.ibm.com>
-Date: Thu, 01 Jan 2015 13:38:52 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
-        Paul.Clothier@imgtec.com, davem@davemloft.net, peterz@infradead.org,
-        palves@redhat.com, shuahkh@osg.samsung.com, oleg@redhat.com,
-        dhowells@redhat.com, kirjanov@gmail.com, davej@redhat.com,
-        tglx@linutronix.de, sukadev@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, sam.bobroff@au1.ibm.com,
-        Ulrich Weigand <uweigand@de.ibm.com>
-Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
-References: <20141203052204.9DA8F1400DD@ozlabs.org> <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com> <54947C64.4030206@linux.vnet.ibm.com>
-In-Reply-To: <54947C64.4030206@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010108-0017-0000-0000-00000309C79E
+	Thu, 1 Jan 2015 04:16:47 -0500
+X-Mailbox-Line: From 0f9aa2b093f298e09bb50dd7474f45ea95a15da1 Mon Sep 17 00:00:00 2001
+Message-Id: <0f9aa2b093f298e09bb50dd7474f45ea95a15da1.1420102454.git.moinejf@free.fr>
+In-Reply-To: <cover.1420102454.git.moinejf@free.fr>
+References: <cover.1420102454.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Thu, 1 Jan 2015 09:15:01 +0100
+Subject: [PATCH v6 1/3] ASoC: simple-card: prepare multi-CODECs
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2014 12:58 AM, Edjunior Barbosa Machado wrote:
-> On 12/08/2014 08:08 AM, Anshuman Khandual wrote:
->> On 12/03/2014 12:18 PM, Anshuman Khandual wrote:
->>> On 12/03/2014 10:52 AM, Michael Ellerman wrote:
->>>> On Tue, 2014-02-12 at 07:56:45 UTC, Anshuman Khandual wrote:
->>>>> This patch adds four new ELF core note sections for powerpc
->>>>> transactional memory and one new ELF core note section for
->>>>> powerpc general miscellaneous debug registers. These addition
->>>>> of new ELF core note sections extends the existing ELF ABI
->>>>> without affecting it in any manner.
->>>>>
->>>>> Acked-by: Andrew Morton <akpm@linux-foundation.org>
->>>>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
->>>>> ---
->>>>>  include/uapi/linux/elf.h | 5 +++++
->>>>>  1 file changed, 5 insertions(+)
->>>>>
->>>>> diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
->>>>> index ea9bf25..2260fc0 100644
->>>>> --- a/include/uapi/linux/elf.h
->>>>> +++ b/include/uapi/linux/elf.h
->>>>> @@ -379,6 +379,11 @@ typedef struct elf64_shdr {
->>>>>  #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
->>>>>  #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
->>>>>  #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
->>>>> +#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
->>>>> +#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
->>>>> +#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
->>>>> +#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
->>>>> +#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
->>>>
->>>> This is a really terrible name, "MISC".
->>>>
->>>> Having said that, I guess it's accurate. We have a whole bunch of regs that
->>>> have accrued over recent years that aren't accessible via ptrace.
->>>>
->>>> It seems to me if we're adding a misc regset we should be adding everything we
->>>> might want to it that is currenty architected.
->>>
->>> But I believe they also need to be part of the thread_struct structure to be
->>> accessible from ptrace.
->>
->> Currently we dont context save/restore the PMC count registers (PMC1-PMC6)
->> during the process context switch. So the values of PMC1..PMC6 are not
->> thread specific in the structure. To be able to access them in ptrace
->> when the tracee has stopped, we need to context save these counters
->> in the thread struct. Shall we do that ? Then we can add them to the
->> MISC regset bucket irrespective of whats the value we get in there when
->> we probe through ptrace.
->>
->> The same goes for MMCRA, CFAR registers as well.
->>
->>>  
->>>>
->>>> But currently you only include the PPR, TAR & DSCR.
->>>
->>> Yeah, thats what we started with.
->>>
->>>>
->>>> Looking at Power ISA v2.07, I see the following that could be included:
->>>>
->>>>   MMCR2
->>>>   MMCRA
->>>>   PMC1
->>>>   PMC2
->>>>   PMC3
->>>>   PMC4
->>>>   PMC5
->>>>   PMC6
->>>>   MMCR0
->>>>   EBBHR
->>>>   EBBRR
->>>>   BESCR
->>>>   SIAR
->>>>   SDAR
->>>>   CFAR?
->>>
->>> MMCRA, PMC[1..6], EBBHR, BESCR, EBBRR, CFAR are not part of the thread struct.
->>
->> Sorry. EBBRR, EBBHR, BESCR registers are part of the thread struct.
->>
->>>
->>>>
->>>> Those are all new in 2.07 except for CFAR.
->>>>
->>>> There might be more I missed, that was just a quick scan.
->>>>
->>>> Some are only accessible when EBB is in use, maybe those could be a separate
->>>> regset.
->>>
->>> Yeah we can have one more regset for EBB specific registers.
->>
->> Should the new EBB specific regset include only EBBRR, EBBHR, BESCR registers
->> or should it also include SIAR, SDAR, SIER, MMCR0, MMCR2 registers as well. I
->> was thinking about putting these five registers into the MISC bucket instead.
->> But from the perf code, it looks like these five registers are also related to
->> the EBB context as well.
->>
->> Some clarity on these points would really help.
-> 
-> Hi,
-> 
-> from the provided testcase using ptrace interface, reviewing with the help
-> of Ulrich, it looks OK from GDB perspective, with the exception of a few
-> concerns:
-> 
-> The patchset seems to change the "original" ptrace requests (i.e.
-> PTRACE_GETREGS/GETFPREGS/GETVRREGS...) to return the "transactional" state, and
-> adds new register sets to return the "checkpointed" state. Considering that
-> whenever you get a debugger interception inside a transactional block, the
-> transaction will abort, we're wondering if it wouldn't make more sense to 
-> display the 'checkpointed' state as the normal registers since this is where the
-> execution will continue from.
+The function asoc_simple_card_sub_parse_of() is used to parse either
+the CPU or CODEC DAI.
+To prepare support of many CODECs in a DAI link, the parsing of the
+phandle and DAI name must be moved to the upper function
+asoc_simple_card_dai_link_of().
 
-Debugger interception (trace interrupt) in between any transaction block will abort
-it ? I doubt that. The tracee process will just stop, it's context gets saved in the
-kernel so that it can again start executing from the exact same point onward when it
-resumes. If this happens when inside any transaction block, the transaction's running
-context and check pointed context will get saved. The execution will again start from
-the running context values instead of check pointed when the process resumes. Check
-pointed values will be loaded back into the context when the transaction finishes.
-Inside transaction both running and check pointed values can be probed independently.
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+ sound/soc/generic/simple-card.c | 57 ++++++++++++++++++++---------------------
+ 1 file changed, 28 insertions(+), 29 deletions(-)
 
-> 
-> Also, we've noticed that the 'misc' regset contains registers from different ISA
-> versions (dscr and ppr appear in ISA 2.05, tar is from 2.07). I'm not sure if
-> there is a way to detect presence/validity of such registers, but perhaps it
-> might be a good idea to separate registers from different ISAs in different
-> regsets.
-
-Thats right, will use feature CPU_FTR_ARCH_207S (which checks whether we are v2.07
-compliant) to detect whether TAR register is available or not. 
-
-> 
-> Regarding the inclusion of other registers along with the EBB-related ones, I'm
-> sorry but I'm not familiar with them.
-
-Michael Ellerman mentioned that we can look into them separately sometime later
-not in this patch series.
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index fb9240f..170de17 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -172,34 +172,12 @@ static int asoc_simple_card_dai_init(struct snd_soc_pcm_runtime *rtd)
+ static int
+ asoc_simple_card_sub_parse_of(struct device_node *np,
+ 			      struct asoc_simple_dai *dai,
+-			      struct device_node **p_node,
+-			      const char **name,
+-			      int *args_count)
++			      struct device_node *dai_np)
+ {
+-	struct of_phandle_args args;
+ 	struct clk *clk;
+ 	u32 val;
+ 	int ret;
+ 
+-	/*
+-	 * Get node via "sound-dai = <&phandle port>"
+-	 * it will be used as xxx_of_node on soc_bind_dai_link()
+-	 */
+-	ret = of_parse_phandle_with_args(np, "sound-dai",
+-					 "#sound-dai-cells", 0, &args);
+-	if (ret)
+-		return ret;
+-
+-	*p_node = args.np;
+-
+-	if (args_count)
+-		*args_count = args.args_count;
+-
+-	/* Get dai->name */
+-	ret = snd_soc_of_get_dai_name(np, name);
+-	if (ret < 0)
+-		return ret;
+-
+ 	/* Parse TDM slot */
+ 	ret = snd_soc_of_parse_tdm_slot(np, &dai->slots, &dai->slot_width);
+ 	if (ret)
+@@ -222,7 +200,7 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
+ 	} else if (!of_property_read_u32(np, "system-clock-frequency", &val)) {
+ 		dai->sysclk = val;
+ 	} else {
+-		clk = of_clk_get(args.np, 0);
++		clk = of_clk_get(dai_np, 0);
+ 		if (!IS_ERR(clk))
+ 			dai->sysclk = clk_get_rate(clk);
+ 	}
+@@ -286,6 +264,7 @@ static int asoc_simple_card_dai_link_of(struct device_node *node,
+ 	struct simple_dai_props *dai_props = simple_priv_to_props(priv, idx);
+ 	struct device_node *cpu = NULL;
+ 	struct device_node *codec = NULL;
++	struct of_phandle_args args;
+ 	char *name;
+ 	char prop[128];
+ 	char *prefix = "";
+@@ -312,16 +291,36 @@ static int asoc_simple_card_dai_link_of(struct device_node *node,
+ 	if (ret < 0)
+ 		goto dai_link_of_err;
+ 
++	/* Get the CPU node and name */
++	ret = of_parse_phandle_with_args(cpu, "sound-dai",
++					 "#sound-dai-cells", 0, &args);
++	if (ret)
++		goto dai_link_of_err;
++	dai_link->cpu_of_node = args.np;
++	cpu_args = args.args_count;
++
++	ret = snd_soc_of_get_dai_name(cpu, &dai_link->cpu_dai_name);
++	if (ret < 0)
++		goto dai_link_of_err;
++
+ 	ret = asoc_simple_card_sub_parse_of(cpu, &dai_props->cpu_dai,
+-					    &dai_link->cpu_of_node,
+-					    &dai_link->cpu_dai_name,
+-					    &cpu_args);
++					    dai_link->cpu_of_node);
+ 	if (ret < 0)
+ 		goto dai_link_of_err;
+ 
++	/* Get the node and name of the CODEC */
++	ret = of_parse_phandle_with_args(codec, "sound-dai",
++					 "#sound-dai-cells", 0, &args);
++	if (ret < 0)
++		goto dai_link_of_err;
++	dai_link->codec_of_node = args.np;
++
++	ret = snd_soc_of_get_dai_name(codec, &dai_link->codec_dai_name);
++	if (ret < 0)
++		goto dai_link_of_err;
++
+ 	ret = asoc_simple_card_sub_parse_of(codec, &dai_props->codec_dai,
+-					    &dai_link->codec_of_node,
+-					    &dai_link->codec_dai_name, NULL);
++					    dai_link->codec_of_node);
+ 	if (ret < 0)
+ 		goto dai_link_of_err;
+ 
+-- 
+2.1.4
 
