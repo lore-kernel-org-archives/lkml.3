@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831AbbAAPY5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 10:24:57 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:54929 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbbAAPYz (ORCPT
+	id S1751978AbbAAP1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 10:27:33 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:39536 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766AbbAAP13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 10:24:55 -0500
+	Thu, 1 Jan 2015 10:27:29 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAFLxGvxWoC_mekWjLQhrk9dExNUHKJ1vB+vT6HMV=xJ=DYm+Kg@mail.gmail.com>
-References: <1420088862-3549-1-git-send-email-waydi1@gmail.com>
-	<CAFLxGvxWoC_mekWjLQhrk9dExNUHKJ1vB+vT6HMV=xJ=DYm+Kg@mail.gmail.com>
-Date: Thu, 1 Jan 2015 16:24:53 +0100
-Message-ID: <CA+icZUVfdo=BN0TC6sFmOj3SqfLjsJHN-1YAUh8JS=TVF9XPgg@mail.gmail.com>
-Subject: Re: [PATCH] ovl: Prevent rw remount when it should be ro mount
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Seunghun Lee <waydi1@gmail.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+In-Reply-To: <1418831474-24428-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1418831474-24428-1-git-send-email-ricardo.ribalda@gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Thu, 1 Jan 2015 16:27:07 +0100
+Message-ID: <CAPybu_0zkL5MokpWtckz7tC1XWXcEUXoUvriiUZ2Q7yt6p5-MQ@mail.gmail.com>
+Subject: Re: [PATCH v5 0/7]gpio/xilinx: Add support for PCI mapped devices and rmmod
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 4:13 PM, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Thu, Jan 1, 2015 at 6:07 AM, Seunghun Lee <waydi1@gmail.com> wrote:
->> Overlayfs should be mounted read-only when upper fs is r/o or nonexistend.
->> But now it can be remounted read-write and this can causes kernel panic.
->> So we should prevent read-write remount when the above situation.
->>
->> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
->
-> This patch makes zero sense, did you use the wrong diff?
->
+Hello
 
-Hmm, was also my 1st thoughts when I saw squashfs_remount() in overlayfs code.
+I am back from holidays. If there is any change that you want on this
+series please share.
 
-- Sedat -
+Thanks and happy new year :)
 
->> ---
->>  fs/overlayfs/super.c | 8 ++++++++
->>  1 file changed, 8 insertions(+)
->>
->> diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
->> index 84f3144..1faa5e5 100644
->> --- a/fs/overlayfs/super.c
->> +++ b/fs/overlayfs/super.c
->> @@ -522,6 +522,14 @@ static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
->>         return 0;
->>  }
->>
->> +static int squashfs_remount(struct super_block *sb, int *flags, char *data)
->> +{
->> +       if (!ufs->upper_mnt || (ufs->upper_mnt->mnt_sb->s_flags & MS_RDONLY))
->> +               *flags |= MS_RDONLY;
->> +
->> +       return 0;
->> +}
->> +
->>  static const struct super_operations ovl_super_operations = {
->>         .put_super      = ovl_put_super,
->>         .statfs         = ovl_statfs,
->> --
->> 2.1.3
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+On Wed, Dec 17, 2014 at 4:51 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> The main purpose of this patchset is to use the driver on a PCI mapped fpga.
+>
+> This patchset also converts the driver to platform device, so it will support
+> hot plugged devices and rmmod.
+>
+> Changeset:
+> v5:
+> Suggested by Alexandre Courbot <gnurou@gmail.com>
+> -Create a single gpio chip on dual cores
+> -Create new function of_mm_gpiochip_remove
+>
+> v4:
+> Suggested by Michal Simek <michal.simek@xilinx.com>
+> -Add missing module_exit
+>
+> v3
+> Suggested by Michal Simek <michal.simek@xilinx.com>
+> -Add patch for fixing kernel-doc
+> -Leave the driver at subsys_initcall
 >
 >
+> v2
+> Suggested by Alexandre Courbot <gnurou@gmail.com>
+> Merge 2 and 3 (convert to platform device and implement remove)
+>
+> Ricardo Ribalda Delgado (7):
+>   gpio/xilinx: Remove offset property
+>   gpio/xilinx: Convert the driver to platform device interface
+>   gpio/xilinx: Add support for X86 Arch
+>   gpio/xilinx: Fix kernel-doc
+>   gpio/xilinx: Create a single gpio chip on dual cores
+>   gpio/gpiolib-of: Create of_mm_gpiochip_remove
+>   gpio/xilinx: Use of_mm_gpiochip_remove
+>
+>  drivers/gpio/Kconfig       |   4 +-
+>  drivers/gpio/gpio-xilinx.c | 284 ++++++++++++++++++++++++++-------------------
+>  drivers/gpio/gpiolib-of.c  |  17 +++
+>  include/linux/of_gpio.h    |   1 +
+>  4 files changed, 182 insertions(+), 124 deletions(-)
 >
 > --
-> Thanks,
-> //richard
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 2.1.3
+>
+
+
+
+-- 
+Ricardo Ribalda
