@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbbAAPJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 10:09:48 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55912 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbbAAPJq (ORCPT
+	id S1751955AbbAAPRi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 10:17:38 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:61213 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbbAAPRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 10:09:46 -0500
+	Thu, 1 Jan 2015 10:17:37 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sound: drivers: portman2x4.c:  Remove some unused functions
-Date: Thu,  1 Jan 2015 16:12:45 +0100
-Message-Id: <1420125165-26527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] crypto: amcc: crypto4xx_sa.c:  Remove unused function
+Date: Thu,  1 Jan 2015 16:13:47 +0100
+Message-Id: <1420125228-26679-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-portman_read_data() portman_read_command()
+Remove the function get_dynamic_sa_offset_iv_field() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- sound/drivers/portman2x4.c |   10 ----------
- 1 file changed, 10 deletions(-)
+ drivers/crypto/amcc/crypto4xx_sa.c |   23 -----------------------
+ 1 file changed, 23 deletions(-)
 
-diff --git a/sound/drivers/portman2x4.c b/sound/drivers/portman2x4.c
-index 78ccfa4..b5b6b4e 100644
---- a/sound/drivers/portman2x4.c
-+++ b/sound/drivers/portman2x4.c
-@@ -198,21 +198,11 @@ static inline void portman_write_command(struct portman *pm, u8 value)
- 	parport_write_control(pm->pardev->port, value);
- }
+diff --git a/drivers/crypto/amcc/crypto4xx_sa.c b/drivers/crypto/amcc/crypto4xx_sa.c
+index de8a7a4..69182e2 100644
+--- a/drivers/crypto/amcc/crypto4xx_sa.c
++++ b/drivers/crypto/amcc/crypto4xx_sa.c
+@@ -34,29 +34,6 @@
+ #include "crypto4xx_sa.h"
+ #include "crypto4xx_core.h"
  
--static inline u8 portman_read_command(struct portman *pm)
+-u32 get_dynamic_sa_offset_iv_field(struct crypto4xx_ctx *ctx)
 -{
--	return parport_read_control(pm->pardev->port);
+-	u32 offset;
+-	union dynamic_sa_contents cts;
+-
+-	if (ctx->direction == DIR_INBOUND)
+-		cts.w = ((struct dynamic_sa_ctl *)(ctx->sa_in))->sa_contents;
+-	else
+-		cts.w = ((struct dynamic_sa_ctl *)(ctx->sa_out))->sa_contents;
+-	offset = cts.bf.key_size
+-		+ cts.bf.inner_size
+-		+ cts.bf.outer_size
+-		+ cts.bf.spi
+-		+ cts.bf.seq_num0
+-		+ cts.bf.seq_num1
+-		+ cts.bf.seq_num_mask0
+-		+ cts.bf.seq_num_mask1
+-		+ cts.bf.seq_num_mask2
+-		+ cts.bf.seq_num_mask3;
+-
+-	return sizeof(struct dynamic_sa_ctl) + offset * 4;
 -}
 -
- static inline u8 portman_read_status(struct portman *pm)
+ u32 get_dynamic_sa_offset_state_ptr_field(struct crypto4xx_ctx *ctx)
  {
- 	return parport_read_status(pm->pardev->port);
- }
- 
--static inline u8 portman_read_data(struct portman *pm)
--{
--	return parport_read_data(pm->pardev->port);
--}
--
- static inline void portman_write_data(struct portman *pm, u8 value)
- {
- 	parport_write_data(pm->pardev->port, value);
+ 	u32 offset;
 -- 
 1.7.10.4
 
