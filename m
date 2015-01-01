@@ -1,90 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbbAAAXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 19:23:43 -0500
-Received: from mail.lang.hm ([64.81.33.126]:46445 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533AbbAAAXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 19:23:42 -0500
-Date: Wed, 31 Dec 2014 16:22:47 -0800 (PST)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Arend van Spriel <arend@broadcom.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jiri Kosina <jkosina@suse.cz>,
-        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "egrumbach@gmail.com" <egrumbach@gmail.com>,
-        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility
- unselectable"
-In-Reply-To: <54A47B7F.9000403@broadcom.com>
-Message-ID: <alpine.DEB.2.02.1412311620140.3337@nftneq.ynat.uz>
-References: <54A328C2.5080606@lwfinger.net> <alpine.LNX.2.00.1412302341290.31609@pobox.suse.cz> <alpine.LNX.2.00.1412302351030.31609@pobox.suse.cz> <54A3D955.6020809@broadcom.com> <0BA3FCBA62E2DC44AF3030971E174FB31B5DD72E@hasmsx107.ger.corp.intel.com>
- <54A3E1F1.7030807@broadcom.com> <alpine.LNX.2.00.1412311505100.31609@pobox.suse.cz> <54A41000.3040306@broadcom.com> <20141231173113.GA443@thunk.org> <54A45D4D.7070302@broadcom.com> <20141231214421.GA29273@thunk.org> <CA+55aFzp2bWctqpiHyZVC9ZCtW3wN_bPsGjcbqKFgu9KOZtAJw@mail.gmail.com>
- <54A47B7F.9000403@broadcom.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751620AbbAAA3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 19:29:39 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54765 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407AbbAAA3i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 31 Dec 2014 19:29:38 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <CA+icZUU7Pet-22m8uxFSBFkG8U1drK7XzpdGaFQQBFBNVRTgJQ@mail.gmail.com>
+References: <CA+icZUXCCopMw4ZUyUYPT0seMVT4W0GuNhn3Z5Erte+LMhxzkQ@mail.gmail.com>
+	<CA+icZUXcpmFhCJ0=eiVe=XMbVFRCSLxUpaNNh2E7vEStMwjg=A@mail.gmail.com>
+	<CA+icZUU=FPioz0SbMA+GYTcsz41ADfE1oCq5zFB3SGrvZyCc6A@mail.gmail.com>
+	<CACVXFVMR=-CGq=EWWCorD-DBge=stygvrgY1kuR7rBh_96mA=A@mail.gmail.com>
+	<CA+icZUU7Pet-22m8uxFSBFkG8U1drK7XzpdGaFQQBFBNVRTgJQ@mail.gmail.com>
+Date: Thu, 1 Jan 2015 08:29:37 +0800
+Message-ID: <CACVXFVOt=A=NzPBqXp8LeHRYNxhwzxwohbnZf7ZnRvqYDgq6+A@mail.gmail.com>
+Subject: Re: [PATCH v3 0/5] block: loop: convert to blk-mq
+From: Ming Lei <tom.leiming@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 31 Dec 2014, Arend van Spriel wrote:
-
-> On 12/31/14 22:57, Linus Torvalds wrote:
->> On Wed, Dec 31, 2014 at 1:44 PM, Theodore Ts'o<tytso@mit.edu>  wrote:
->>> 
->>> Yeah, the confusing part is that "ip" tends to use "verb object"
->>> scheme, which is consistent with the Cisco IOS command set it was
->>> trying to emulate.
->> 
->> Side note: does anybody think that was really a good idea to begin
->> with? I mean, Cisco iOS is just _soooo_ universally loved, right?
->
-> I think I sense a bit cynical (under)tone here ;-)
->
->> And yeah, I refuse to use "ip link" or other insane commands. Let's
->> face it, "ifconfig" and "route" are perfectly fine commands, and a
->> whole lot less confusing than "ip" with random crap after it.  I'm
->> really not seeing why that "ip" command was seen as an improvement.
->
-> So does "ip" provide the same functionality as "ifconfig" and "route" or does 
-> the package have more to offer.
-
-there are things that you can do with "ip" that you can't do with "ifconfig", 
-but they tend to be rather esoteric things (hundreds of IP addresses on "eth0" 
-without using eth0:1, eth0:2, etc as one example)
-
-The trouble is that doing simple things is harder with "ip" than "ifconfig"
-
-David Lang
-
-> The "iw" tool provides much more subcommands to perform different wireless 
-> tasks that are not provided by "iwconfig" and friends. So functionally "iw" 
-> provides a superset. Just have to get equivalent output format to mimic 
-> "iwconfig" as Ted suggested.
->
-> Well, that's something for next year as we are getting close to midnight over 
-> here.
->
-> Regards,
-> Arend
->
->> (Ok, "ip route" isn't any more complex than "route", but "ip link"
->> sure as hell isn't simpler than "ifconfig" for most things I can think
->> of)
+On Thu, Jan 1, 2015 at 8:18 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Thu, Jan 1, 2015 at 1:01 AM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> Hi Sedat,
 >>
->>                       Linus
+>> On Thu, Jan 1, 2015 at 6:32 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> Forgot to CC LKML and linux-fsdevel.
+>>>
+>>> - Sedat -
+>>
+>>>
+>>> OK, I have installed fio (1.59-1) and libaio1 (0.3.109-2ubuntu1) here.
+>>>
+>>> You say in [1]:
+>>>
+>>> "In the following test:
+>>> - base: v3.19-rc2-2041231
+>>> - loop over file in ext4 file system on SSD disk
+>>> - bs: 4k, libaio, io depth: 64, O_DIRECT, num of jobs: 1
+>>> - throughput: IOPS"
+>>>
+>>> I tried to reproduce that inspired by [2]...
+>>>
+>>> root# fio --name=randread --rw=randread --bs=4k --ioengine=libaio
+>>> --iodepth=64 --direct=1 --numjobs=1 --size=1G
+>>>
+>>> ...you had no size given (here: 1GiB) - fio requires that parameter to run.
+>>>
+>>> This results in 165 VS. 515 IOPS here.
+>>
+>> Thanks for your test.
+>>
+>> Also if your disk is quick enough, you will observe improvement on
+>> read test too.
+>>
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> This is no SSD here.
 >
+> # dmesg | egrep -i 'hitachi|ata1|sda'
+> [    0.457892] ata1: SATA max UDMA/133 abar m2048@0xf0708000 port
+> 0xf0708100 irq 25
+> [    0.777445] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [    0.778759] ata1.00: ATA-8: Hitachi HTS545050A7E380, GG2OA6C0, max UDMA/133
+> [    0.778778] ata1.00: 976773168 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
+> [    0.780154] ata1.00: configured for UDMA/133
+> [    0.780970] scsi 0:0:0:0: Direct-Access     ATA      Hitachi
+> HTS54505 A6C0 PQ: 0 ANSI: 5
+> [    0.782050] sd 0:0:0:0: [sda] 976773168 512-byte logical blocks:
+> (500 GB/465 GiB)
+> [    0.782058] sd 0:0:0:0: [sda] 4096-byte physical blocks
+> [    0.782255] sd 0:0:0:0: [sda] Write Protect is off
+> [    0.782262] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
+> [    0.782339] sd 0:0:0:0: [sda] Write cache: enabled, read cache:
+> enabled, doesn't support DPO or FUA
+> [    0.800644]  sda: sda1 sda2 sda3
+> [    0.802029] sd 0:0:0:0: [sda] Attached SCSI disk
+>
+> How did you test with fio (your fio lines)?
+
+Your fio command line is basically same with my fio config, and you
+can attach one image to loop via:  losetup -f file_name. Looks your
+randread result is good, and I can observe ~80 IOPS vs. ~200 IOPS
+on my slow HDD. in the randread test too.
+
+#################fio config##########################
+[global]
+direct=1
+size=128G
+bsrange=4k-4k
+timeout=30
+numjobs=1
+ioengine=libaio
+iodepth=64
+filename=/dev/loop0
+group_reporting=1
+
+[f]
+rw=${RW}
+
+
+
+Thanks,
+Ming Lei
