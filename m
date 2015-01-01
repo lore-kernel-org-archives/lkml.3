@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbbAAEuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 23:50:08 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52876 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbbAAEuG (ORCPT
+	id S1751599AbbAAE7G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 23:59:06 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:52495 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbbAAE7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 23:50:06 -0500
-Date: Thu, 1 Jan 2015 10:19:56 +0530
+	Wed, 31 Dec 2014 23:59:05 -0500
+Date: Thu, 1 Jan 2015 10:28:49 +0530
 From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
 To: Lorenzo Stoakes <lstoakes@gmail.com>
 Cc: gregkh@linuxfoundation.org, anarey@gmail.com, mcgrof@do-not-panic.com,
@@ -15,358 +15,49 @@ Cc: gregkh@linuxfoundation.org, anarey@gmail.com, mcgrof@do-not-panic.com,
         yejiayily@gmail.com, gdonald@gmail.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v2 3/4] staging: rtl8192u: remove redundant code
-Message-ID: <20150101044956.GB3645@sudip-PC>
+Message-ID: <20150101045848.GC3645@sudip-PC>
 References: <1420060243-10685-1-git-send-email-lstoakes@gmail.com>
  <1420060243-10685-3-git-send-email-lstoakes@gmail.com>
+ <20150101044956.GB3645@sudip-PC>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420060243-10685-3-git-send-email-lstoakes@gmail.com>
+In-Reply-To: <20150101044956.GB3645@sudip-PC>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 09:10:42PM +0000, Lorenzo Stoakes wrote:
-> This patch fixes warnings/errors raised by checkpatch.pl relating to redundant
-> code in r8192U_dm.c.
-> 
-> Signed-off-by: Lorenzo Stoakes <lstoakes@gmail.com>
-> ---
->  drivers/staging/rtl8192u/r8192U_dm.c | 176 +++++++++++++++++------------------
->  1 file changed, 84 insertions(+), 92 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8192u/r8192U_dm.c b/drivers/staging/rtl8192u/r8192U_dm.c
-> index 862d2ab..ed566bb 100644
-> --- a/drivers/staging/rtl8192u/r8192U_dm.c
-> +++ b/drivers/staging/rtl8192u/r8192U_dm.c
-> @@ -410,9 +410,9 @@ static void dm_check_rate_adaptive(struct net_device *dev)
-> 
->  			ratr_value = targetRATR;
->  			RT_TRACE(COMP_RATE, "currentRATR = %x, targetRATR = %x\n", currentRATR, targetRATR);
-> -			if (priv->rf_type == RF_1T2R) {
-> +			if (priv->rf_type == RF_1T2R)
->  				ratr_value &= ~(RATE_ALL_OFDM_2SS);
-> -			}
-> +
-but this is just removal of unnecessary braces. this is not removal of redundant code.
+On Thu, Jan 01, 2015 at 10:19:56AM +0530, Sudip Mukherjee wrote:
+> On Wed, Dec 31, 2014 at 09:10:42PM +0000, Lorenzo Stoakes wrote:
+> > This patch fixes warnings/errors raised by checkpatch.pl relating to redundant
+> > code in r8192U_dm.c.
+> > 
+> > Signed-off-by: Lorenzo Stoakes <lstoakes@gmail.com>
+> > ---
+> >  drivers/staging/rtl8192u/r8192U_dm.c | 176 +++++++++++++++++------------------
+> >  1 file changed, 84 insertions(+), 92 deletions(-)
+> > 
+> > diff --git a/drivers/staging/rtl8192u/r8192U_dm.c b/drivers/staging/rtl8192u/r8192U_dm.c
+> > index 862d2ab..ed566bb 100644
+> > --- a/drivers/staging/rtl8192u/r8192U_dm.c
+> > +++ b/drivers/staging/rtl8192u/r8192U_dm.c
+> > @@ -410,9 +410,9 @@ static void dm_check_rate_adaptive(struct net_device *dev)
+> > 
+> >  			ratr_value = targetRATR;
+> >  			RT_TRACE(COMP_RATE, "currentRATR = %x, targetRATR = %x\n", currentRATR, targetRATR);
+> > -			if (priv->rf_type == RF_1T2R) {
+> > +			if (priv->rf_type == RF_1T2R)
+> >  				ratr_value &= ~(RATE_ALL_OFDM_2SS);
+> > -			}
+> > +
+> but this is just removal of unnecessary braces. this is not removal of redundant code.
+and, missed writing in the last mail.
+your [PATCH v2 2/4] and [PATCH v2 3/4] are same.
 
->  			write_nic_dword(dev, RATR0, ratr_value);
->  			write_nic_byte(dev, UFWP, 1);
+thanks
+sudip
 > 
-> @@ -440,18 +440,17 @@ static void dm_bandwidth_autoswitch(struct net_device *dev)
->  {
->  	struct r8192_priv *priv = ieee80211_priv(dev);
-> 
-> -	if (priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20 || !priv->ieee80211->bandwidth_auto_switch.bautoswitch_enable) {
-> +	if (priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20 || !priv->ieee80211->bandwidth_auto_switch.bautoswitch_enable)
->  		return;
-> -	} else {
-> -		if (priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz == false) { /* If send packets in 40 Mhz in 20/40 */
-> -			if (priv->undecorated_smoothed_pwdb <= priv->ieee80211->bandwidth_auto_switch.threshold_40Mhzto20Mhz)
-> -				priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = true;
-> -		} else { /* in force send packets in 20 Mhz in 20/40 */
-> -			if (priv->undecorated_smoothed_pwdb >= priv->ieee80211->bandwidth_auto_switch.threshold_20Mhzto40Mhz)
-> -				priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = false;
-> 
-> -		}
-> +	if (priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz == false) { /* If send packets in 40 Mhz in 20/40 */
-> +		if (priv->undecorated_smoothed_pwdb <= priv->ieee80211->bandwidth_auto_switch.threshold_40Mhzto20Mhz)
-> +			priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = true;
-> +	} else { /* in force send packets in 20 Mhz in 20/40 */
-> +		if (priv->undecorated_smoothed_pwdb >= priv->ieee80211->bandwidth_auto_switch.threshold_20Mhzto40Mhz)
-> +			priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = false;
->  	}
-> +
->  }	/* dm_BandwidthAutoSwitch */
-> 
->  /* OFDM default at 0db, index=6. */
-> @@ -538,9 +537,8 @@ static void dm_TXPowerTrackingCallback_TSSI(struct net_device *dev)
->  		tx_cmd.Length = 4;
->  		tx_cmd.Value = Value;
->  		rtStatus = SendTxCommandPacket(dev, &tx_cmd, 12);
-> -		if (rtStatus == RT_STATUS_FAILURE) {
-> +		if (rtStatus == RT_STATUS_FAILURE)
->  			RT_TRACE(COMP_POWER_TRACKING, "Set configuration with tx cmd queue fail!\n");
-> -		}
->  		mdelay(1);
->  		/*DbgPrint("hi, vivi, strange\n");*/
->  		for (i = 0; i <= 30; i++) {
-> @@ -580,9 +578,8 @@ static void dm_TXPowerTrackingCallback_TSSI(struct net_device *dev)
->  				break;
->  			}
-> 
-> -			for (k = 0; k < 5; k++) {
-> +			for (k = 0; k < 5; k++)
->  				Avg_TSSI_Meas_from_driver += tmp_report[k];
-> -			}
-> 
->  			Avg_TSSI_Meas_from_driver = Avg_TSSI_Meas_from_driver*100/5;
->  			RT_TRACE(COMP_POWER_TRACKING, "Avg_TSSI_Meas_from_driver = %d\n", Avg_TSSI_Meas_from_driver);
-> @@ -605,56 +602,55 @@ static void dm_TXPowerTrackingCallback_TSSI(struct net_device *dev)
->  				RT_TRACE(COMP_POWER_TRACKING, "priv->cck_present_attentuation_difference = %d\n", priv->cck_present_attentuation_difference);
->  				RT_TRACE(COMP_POWER_TRACKING, "priv->cck_present_attentuation = %d\n", priv->cck_present_attentuation);
->  				return;
-> -			} else {
-> -				if (Avg_TSSI_Meas_from_driver < TSSI_13dBm - E_FOR_TX_POWER_TRACK) {
-> -					if (priv->rfa_txpowertrackingindex > 0) {
-> -						priv->rfa_txpowertrackingindex--;
-> -						if (priv->rfa_txpowertrackingindex_real > 4) {
-> -							priv->rfa_txpowertrackingindex_real--;
-> -							rtl8192_setBBreg(dev, rOFDM0_XATxIQImbalance, bMaskDWord, priv->txbbgain_table[priv->rfa_txpowertrackingindex_real].txbbgain_value);
-> -						}
-> -					}
-> -				} else {
-> -					if (priv->rfa_txpowertrackingindex < 36) {
-> -						priv->rfa_txpowertrackingindex++;
-> -						priv->rfa_txpowertrackingindex_real++;
-> +			}
-> +			if (Avg_TSSI_Meas_from_driver < TSSI_13dBm - E_FOR_TX_POWER_TRACK) {
-> +				if (priv->rfa_txpowertrackingindex > 0) {
-> +					priv->rfa_txpowertrackingindex--;
-> +					if (priv->rfa_txpowertrackingindex_real > 4) {
-> +						priv->rfa_txpowertrackingindex_real--;
->  						rtl8192_setBBreg(dev, rOFDM0_XATxIQImbalance, bMaskDWord, priv->txbbgain_table[priv->rfa_txpowertrackingindex_real].txbbgain_value);
-> -
->  					}
->  				}
-> -				priv->cck_present_attentuation_difference
-> -					= priv->rfa_txpowertrackingindex - priv->rfa_txpowertracking_default;
-> +			} else {
-> +				if (priv->rfa_txpowertrackingindex < 36) {
-> +					priv->rfa_txpowertrackingindex++;
-> +					priv->rfa_txpowertrackingindex_real++;
-> +					rtl8192_setBBreg(dev, rOFDM0_XATxIQImbalance, bMaskDWord, priv->txbbgain_table[priv->rfa_txpowertrackingindex_real].txbbgain_value);
-> 
-> -				if (priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20)
-> -					priv->cck_present_attentuation
-> -						= priv->cck_present_attentuation_20Mdefault + priv->cck_present_attentuation_difference;
-> -				else
-> -					priv->cck_present_attentuation
-> -						= priv->cck_present_attentuation_40Mdefault + priv->cck_present_attentuation_difference;
-> -
-> -				if (priv->cck_present_attentuation > -1 && priv->cck_present_attentuation < 23) {
-> -					if (priv->ieee80211->current_network.channel == 14 && !priv->bcck_in_ch14) {
-> -						priv->bcck_in_ch14 = TRUE;
-> -						dm_cck_txpower_adjust(dev, priv->bcck_in_ch14);
-> -					} else if (priv->ieee80211->current_network.channel != 14 && priv->bcck_in_ch14) {
-> -						priv->bcck_in_ch14 = FALSE;
-> -						dm_cck_txpower_adjust(dev, priv->bcck_in_ch14);
-> -					} else
-> -						dm_cck_txpower_adjust(dev, priv->bcck_in_ch14);
->  				}
-> -				RT_TRACE(COMP_POWER_TRACKING, "priv->rfa_txpowertrackingindex = %d\n", priv->rfa_txpowertrackingindex);
-> -				RT_TRACE(COMP_POWER_TRACKING, "priv->rfa_txpowertrackingindex_real = %d\n", priv->rfa_txpowertrackingindex_real);
-> -				RT_TRACE(COMP_POWER_TRACKING, "priv->cck_present_attentuation_difference = %d\n", priv->cck_present_attentuation_difference);
-> -				RT_TRACE(COMP_POWER_TRACKING, "priv->cck_present_attentuation = %d\n", priv->cck_present_attentuation);
-> +			}
-> +			priv->cck_present_attentuation_difference
-> +				= priv->rfa_txpowertrackingindex - priv->rfa_txpowertracking_default;
-> 
-> -				if (priv->cck_present_attentuation_difference <= -12 || priv->cck_present_attentuation_difference >= 24) {
-> -					priv->ieee80211->bdynamic_txpower_enable = TRUE;
-> -					write_nic_byte(dev, 0x1ba, 0);
-> -					RT_TRACE(COMP_POWER_TRACKING, "tx power track--->limited\n");
-> -					return;
-> -				}
-> +			if (priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20)
-> +				priv->cck_present_attentuation
-> +					= priv->cck_present_attentuation_20Mdefault + priv->cck_present_attentuation_difference;
-> +			else
-> +				priv->cck_present_attentuation
-> +					= priv->cck_present_attentuation_40Mdefault + priv->cck_present_attentuation_difference;
-> +
-> +			if (priv->cck_present_attentuation > -1 && priv->cck_present_attentuation < 23) {
-> +				if (priv->ieee80211->current_network.channel == 14 && !priv->bcck_in_ch14) {
-> +					priv->bcck_in_ch14 = TRUE;
-> +					dm_cck_txpower_adjust(dev, priv->bcck_in_ch14);
-> +				} else if (priv->ieee80211->current_network.channel != 14 && priv->bcck_in_ch14) {
-> +					priv->bcck_in_ch14 = FALSE;
-> +					dm_cck_txpower_adjust(dev, priv->bcck_in_ch14);
-> +				} else
-> +					dm_cck_txpower_adjust(dev, priv->bcck_in_ch14);
-> +			}
-> +			RT_TRACE(COMP_POWER_TRACKING, "priv->rfa_txpowertrackingindex = %d\n", priv->rfa_txpowertrackingindex);
-> +			RT_TRACE(COMP_POWER_TRACKING, "priv->rfa_txpowertrackingindex_real = %d\n", priv->rfa_txpowertrackingindex_real);
-> +			RT_TRACE(COMP_POWER_TRACKING, "priv->cck_present_attentuation_difference = %d\n", priv->cck_present_attentuation_difference);
-> +			RT_TRACE(COMP_POWER_TRACKING, "priv->cck_present_attentuation = %d\n", priv->cck_present_attentuation);
-> 
-> +			if (priv->cck_present_attentuation_difference <= -12 || priv->cck_present_attentuation_difference >= 24) {
-> +				priv->ieee80211->bdynamic_txpower_enable = TRUE;
-> +				write_nic_byte(dev, 0x1ba, 0);
-> +				RT_TRACE(COMP_POWER_TRACKING, "tx power track--->limited\n");
-> +				return;
->  			}
-> +
->  			write_nic_byte(dev, 0x1ba, 0);
->  			Avg_TSSI_Meas_from_driver = 0;
->  			for (k = 0; k < 5; k++)
-> @@ -1324,12 +1320,11 @@ static void dm_CheckTXPowerTracking_TSSI(struct net_device *dev)
-> 
->  	if (!priv->btxpower_tracking)
->  		return;
-> -	else {
-> -		if ((tx_power_track_counter % 30 == 0) && (tx_power_track_counter != 0)) {
-> -			queue_delayed_work(priv->priv_wq, &priv->txpower_tracking_wq, 0);
-> -		}
-> -		tx_power_track_counter++;
-> -	}
-> +
-> +	if ((tx_power_track_counter % 30 == 0) && (tx_power_track_counter != 0))
-> +		queue_delayed_work(priv->priv_wq, &priv->txpower_tracking_wq, 0);
-> +
-> +	tx_power_track_counter++;
->  }
-> 
->  static void dm_CheckTXPowerTracking_ThermalMeter(struct net_device *dev)
-> @@ -1339,11 +1334,10 @@ static void dm_CheckTXPowerTracking_ThermalMeter(struct net_device *dev)
->  	/*DbgPrint("dm_CheckTXPowerTracking()\n");*/
->  	if (!priv->btxpower_tracking)
->  		return;
-> -	else {
-> -		if (priv->txpower_count  <= 2) {
-> -			priv->txpower_count++;
-> -			return;
-> -		}
-> +
-> +	if (priv->txpower_count  <= 2) {
-> +		priv->txpower_count++;
-> +		return;
->  	}
-> 
->  	if (!TM_Trigger) {
-> @@ -1358,11 +1352,11 @@ static void dm_CheckTXPowerTracking_ThermalMeter(struct net_device *dev)
->  		rtl8192_phy_SetRFReg(dev, RF90_PATH_A, 0x02, bMask12Bits, 0x4f);
->  		TM_Trigger = 1;
->  		return;
-> -	} else {
-> -		/*DbgPrint("Schedule TxPowerTrackingWorkItem\n");*/
-> -			queue_delayed_work(priv->priv_wq, &priv->txpower_tracking_wq, 0);
-> -		TM_Trigger = 0;
->  	}
-> +
-> +	/*DbgPrint("Schedule TxPowerTrackingWorkItem\n");*/
-> +	queue_delayed_work(priv->priv_wq, &priv->txpower_tracking_wq, 0);
-> +	TM_Trigger = 0;
->  }
-> 
->  static void dm_check_txpower_tracking(struct net_device *dev)
-> @@ -1834,16 +1828,16 @@ static void dm_ctrl_initgain_byrssi_by_fwfalse_alarm(
->  	DM_DigTable.RssiHighThresh, DM_DigTable.Dig_State);*/
->  	/* 1. When RSSI decrease, We have to judge if it is smaller than a threshold
->  		  and then execute the step below. */
-> -	if ((priv->undecorated_smoothed_pwdb <= dm_digtable.rssi_low_thresh)) {
-> +	if (priv->undecorated_smoothed_pwdb <= dm_digtable.rssi_low_thresh) {
->  		/* 2008/02/05 MH When we execute silent reset, the DIG PHY parameters
->  		   will be reset to init value. We must prevent the condition. */
->  		if (dm_digtable.dig_state == DM_STA_DIG_OFF &&
->  		    (priv->reset_count == reset_cnt)) {
->  			return;
-> -		} else {
-> -			reset_cnt = priv->reset_count;
->  		}
-> 
-> +		reset_cnt = priv->reset_count;
-> +
->  		/* If DIG is off, DIG high power state must reset. */
->  		dm_digtable.dig_highpwr_state = DM_STA_DIG_MAX;
->  		dm_digtable.dig_state = DM_STA_DIG_OFF;
-> @@ -1884,20 +1878,20 @@ static void dm_ctrl_initgain_byrssi_by_fwfalse_alarm(
-> 
->  	/* 2. When RSSI increase, We have to judge if it is larger than a threshold
->  		  and then execute the step below.  */
-> -	if ((priv->undecorated_smoothed_pwdb >= dm_digtable.rssi_high_thresh)) {
-> +	if (priv->undecorated_smoothed_pwdb >= dm_digtable.rssi_high_thresh) {
->  		u8 reset_flag = 0;
-> 
->  		if (dm_digtable.dig_state == DM_STA_DIG_ON &&
->  			(priv->reset_count == reset_cnt)) {
->  			dm_ctrl_initgain_byrssi_highpwr(dev);
->  			return;
-> -		} else {
-> -			if (priv->reset_count != reset_cnt)
-> -				reset_flag = 1;
-> -
-> -			reset_cnt = priv->reset_count;
->  		}
-> 
-> +		if (priv->reset_count != reset_cnt)
-> +			reset_flag = 1;
-> +
-> +		reset_cnt = priv->reset_count;
-> +
->  		dm_digtable.dig_state = DM_STA_DIG_ON;
->  		/*DbgPrint("DIG ON\n\r");*/
-> 
-> @@ -1989,8 +1983,8 @@ static void dm_ctrl_initgain_byrssi_highpwr(
->  		if (dm_digtable.dig_highpwr_state == DM_STA_DIG_ON &&
->  			(priv->reset_count == reset_cnt_highpwr))
->  			return;
-> -		else
-> -			dm_digtable.dig_highpwr_state = DM_STA_DIG_ON;
-> +
-> +		dm_digtable.dig_highpwr_state = DM_STA_DIG_ON;
-> 
->  		/* 3.1 Higher PD_TH for OFDM for high power state. */
->  		if (priv->CurrentChannelBW != HT_CHANNEL_WIDTH_20) {
-> @@ -2006,8 +2000,8 @@ static void dm_ctrl_initgain_byrssi_highpwr(
->  		if (dm_digtable.dig_highpwr_state == DM_STA_DIG_OFF &&
->  			(priv->reset_count == reset_cnt_highpwr))
->  			return;
-> -		else
-> -			dm_digtable.dig_highpwr_state = DM_STA_DIG_OFF;
-> +
-> +		dm_digtable.dig_highpwr_state = DM_STA_DIG_OFF;
-> 
->  		if (priv->undecorated_smoothed_pwdb < dm_digtable.rssi_high_power_lowthresh &&
->  			 priv->undecorated_smoothed_pwdb >= dm_digtable.rssi_high_thresh) {
-> @@ -2104,7 +2098,7 @@ static void dm_pd_th(
->  		if (dm_digtable.cur_connect_state == DIG_CONNECT) {
->  			if (dm_digtable.rssi_val >= dm_digtable.rssi_high_power_highthresh)
->  				dm_digtable.curpd_thstate = DIG_PD_AT_HIGH_POWER;
-> -			else if ((dm_digtable.rssi_val <= dm_digtable.rssi_low_thresh))
-> +			else if (dm_digtable.rssi_val <= dm_digtable.rssi_low_thresh)
->  				dm_digtable.curpd_thstate = DIG_PD_AT_LOW_POWER;
->  			else if ((dm_digtable.rssi_val >= dm_digtable.rssi_high_thresh) &&
->  					(dm_digtable.rssi_val < dm_digtable.rssi_high_power_lowthresh))
-> @@ -2186,9 +2180,9 @@ static	void dm_cs_ratio(
-> 
->  	if (dm_digtable.pre_connect_state == dm_digtable.cur_connect_state) {
->  		if (dm_digtable.cur_connect_state == DIG_CONNECT) {
-> -			if ((dm_digtable.rssi_val <= dm_digtable.rssi_low_thresh))
-> +			if (dm_digtable.rssi_val <= dm_digtable.rssi_low_thresh)
->  				dm_digtable.curcs_ratio_state = DIG_CS_RATIO_LOWER;
-> -			else if ((dm_digtable.rssi_val >= dm_digtable.rssi_high_thresh))
-> +			else if (dm_digtable.rssi_val >= dm_digtable.rssi_high_thresh)
->  				dm_digtable.curcs_ratio_state = DIG_CS_RATIO_HIGHER;
->  			else
->  				dm_digtable.curcs_ratio_state = dm_digtable.precs_ratio_state;
-> @@ -3091,11 +3085,10 @@ static void dm_dynamic_txpower(struct net_device *dev)
->  				priv->bDynamicTxHighPower = false;
-> 
->  			/* low power state check */
-> -			if (priv->undecorated_smoothed_pwdb < 35) {
-> +			if (priv->undecorated_smoothed_pwdb < 35)
->  				priv->bDynamicTxLowPower = true;
-> -			} else if (priv->undecorated_smoothed_pwdb >= 40) {
-> +			else if (priv->undecorated_smoothed_pwdb >= 40)
->  				priv->bDynamicTxLowPower = false;
-> -			}
->  		}
->  	} else {
->  		/*pHalData->bTXPowerCtrlforNearFarRange = !pHalData->bTXPowerCtrlforNearFarRange;*/
-> @@ -3146,7 +3139,6 @@ static void dm_send_rssi_tofw(struct net_device *dev)
->  	 * 0x1e0(byte) to notify driver.
->  	 */
->  	write_nic_byte(dev, DRIVER_RSSI, (u8)priv->undecorated_smoothed_pwdb);
-> -	return;
->  }
-> 
->  /*---------------------------Define function prototype------------------------*/
-> --
-> 2.2.1
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+<snip>
+> >  			write_nic_dword(dev, RATR0, ratr_value);
+> >  			write_nic_byte(dev, UFWP, 1);
