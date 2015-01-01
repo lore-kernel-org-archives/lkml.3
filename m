@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbbAATPx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 14:15:53 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44035 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbbAATPw (ORCPT
+	id S1751896AbbAATNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 14:13:35 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:39162 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751164AbbAATNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 14:15:52 -0500
-Date: Thu, 1 Jan 2015 20:15:48 +0100
-From: Pavel Machek <pavel@denx.de>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Tobias Klauser <tklauser@distanz.ch>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, lftan.linux@gmail.com,
-        linux-serial@vger.kernel.org, nios2-dev@lists.rocketboards.org
-Subject: Re: [PATCH] serial: altera-uart: fix NULL device in log message
-Message-ID: <20150101191548.GA465@amd>
-References: <1418714914-2836-1-git-send-email-lftan@altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418714914-2836-1-git-send-email-lftan@altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 1 Jan 2015 14:13:34 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Ralf Baechle <ralf@linux-mips.org>,
+        Markos Chandras <markos.chandras@imgtec.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: mips: net: bpf_jit:  Remove unused function
+Date: Thu,  1 Jan 2015 20:16:34 +0100
+Message-Id: <1420139794-3417-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-12-16 15:28:34, Ley Foon Tan wrote:
-> Add device pointer to port->dev.
-> 
-> Before:
-> 
-> "(NULL device *): ttyAL0 at MMIO 0x2020 (irq = 6, base_baud = 3125000)
-> is a Altera UART"
-> 
-> After:
-> "altera_uart 2020.serial: ttyAL0 at MMIO 0x2020 (irq = 6, base_baud = 3125000)
-> is a Altera UART"
-> 
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+Remove the function emit_daddiu() that is not used anywhere.
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+This was partially found by using a static code analysis program called cppcheck.
 
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/mips/net/bpf_jit.c |   10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
+index 9b55143..5b942f8 100644
+--- a/arch/mips/net/bpf_jit.c
++++ b/arch/mips/net/bpf_jit.c
+@@ -231,16 +231,6 @@ static inline void emit_ori(unsigned int dst, unsigned src, u32 imm,
+ 	}
+ }
+ 
+-static inline void emit_daddiu(unsigned int dst, unsigned int src,
+-			       int imm, struct jit_ctx *ctx)
+-{
+-	/*
+-	 * Only used for stack, so the imm is relatively small
+-	 * and it fits in 15-bits
+-	 */
+-	emit_instr(ctx, daddiu, dst, src, imm);
+-}
+-
+ static inline void emit_addiu(unsigned int dst, unsigned int src,
+ 			      u32 imm, struct jit_ctx *ctx)
+ {
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.10.4
+
