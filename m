@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbbAAQwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 11:52:43 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51533 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbbAAQwm (ORCPT
+	id S1752050AbbAAQze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 11:55:34 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:41744 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693AbbAAQzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 11:52:42 -0500
+	Thu, 1 Jan 2015 11:55:32 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: David Airlie <airlied@linux.ie>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Yehuda Sadeh <yehuda@inktank.com>, Sage Weil <sage@inktank.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu: drm: gma500: mmu.c:  Remove unused function
-Date: Thu,  1 Jan 2015 17:55:42 +0100
-Message-Id: <1420131342-30418-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        Alex Elder <elder@kernel.org>, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] block: rbd.c:  Remove unused function
+Date: Thu,  1 Jan 2015 17:58:32 +0100
+Message-Id: <1420131512-30585-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function psb_get_default_pd_addr() that is not used anywhere.
+Remove the function copy_token() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/gpu/drm/gma500/mmu.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/block/rbd.c |   30 ------------------------------
+ 1 file changed, 30 deletions(-)
 
-diff --git a/drivers/gpu/drm/gma500/mmu.c b/drivers/gpu/drm/gma500/mmu.c
-index 0eaf11c..557cae7 100644
---- a/drivers/gpu/drm/gma500/mmu.c
-+++ b/drivers/gpu/drm/gma500/mmu.c
-@@ -426,15 +426,6 @@ struct psb_mmu_pd *psb_mmu_get_default_pd(struct psb_mmu_driver *driver)
- 	return pd;
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index 27b71a0..922f1ab 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -4776,36 +4776,6 @@ static inline size_t next_token(const char **buf)
  }
  
--/* Returns the physical address of the PD shared by sgx/msvdx */
--uint32_t psb_get_default_pd_addr(struct psb_mmu_driver *driver)
+ /*
+- * Finds the next token in *buf, and if the provided token buffer is
+- * big enough, copies the found token into it.  The result, if
+- * copied, is guaranteed to be terminated with '\0'.  Note that *buf
+- * must be terminated with '\0' on entry.
+- *
+- * Returns the length of the token found (not including the '\0').
+- * Return value will be 0 if no token is found, and it will be >=
+- * token_size if the token would not fit.
+- *
+- * The *buf pointer will be updated to point beyond the end of the
+- * found token.  Note that this occurs even if the token buffer is
+- * too small to hold it.
+- */
+-static inline size_t copy_token(const char **buf,
+-				char *token,
+-				size_t token_size)
 -{
--	struct psb_mmu_pd *pd;
+-        size_t len;
 -
--	pd = psb_mmu_get_default_pd(driver);
--	return page_to_pfn(pd->p) << PAGE_SHIFT;
+-	len = next_token(buf);
+-	if (len < token_size) {
+-		memcpy(token, *buf, len);
+-		*(token + len) = '\0';
+-	}
+-	*buf += len;
+-
+-        return len;
 -}
 -
- void psb_mmu_driver_takedown(struct psb_mmu_driver *driver)
- {
- 	struct drm_device *dev = driver->dev;
+-/*
+  * Finds the next token in *buf, dynamically allocates a buffer big
+  * enough to hold a copy of it, and copies the token into the new
+  * buffer.  The copy is guaranteed to be terminated with '\0'.  Note
 -- 
 1.7.10.4
 
