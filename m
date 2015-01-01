@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065AbbAAPcC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 10:32:02 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:55067 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789AbbAAPb7 (ORCPT
+	id S1752073AbbAAPdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 10:33:19 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:49443 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbbAAPdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 10:31:59 -0500
+	Thu, 1 Jan 2015 10:33:16 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+To: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Archit Taneja <archit@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jingoo Han <jg1.han@samsung.com>,
-        Sathya Prakash M R <sathyap@ti.com>, Fabian Frederick <fabf@skynet.be>,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH] video: fbdev: omap2: dss: dss.c:  Remove unused function
-Date: Thu,  1 Jan 2015 16:34:58 +0100
-Message-Id: <1420126498-27648-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: mn10300: boot: compressed: misc.c:  Remove some unused functions
+Date: Thu,  1 Jan 2015 16:36:16 +0100
+Message-Id: <1420126576-27792-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function dss_get_hdmi_venc_clk_source() that is not used anywhere.
+Removes some functions that are not used anywhere:
+close_output_buffer_if_we_run_high() setup_output_buffer_if_we_run_high()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/video/fbdev/omap2/dss/dss.c |   14 --------------
- drivers/video/fbdev/omap2/dss/dss.h |    1 -
- 2 files changed, 15 deletions(-)
+ arch/mn10300/boot/compressed/misc.c |   34 ----------------------------------
+ 1 file changed, 34 deletions(-)
 
-diff --git a/drivers/video/fbdev/omap2/dss/dss.c b/drivers/video/fbdev/omap2/dss/dss.c
-index 14bcd6c..d9482c8 100644
---- a/drivers/video/fbdev/omap2/dss/dss.c
-+++ b/drivers/video/fbdev/omap2/dss/dss.c
-@@ -550,20 +550,6 @@ void dss_select_hdmi_venc_clk_source(enum dss_hdmi_venc_clk_source_select src)
- 		REG_FLD_MOD(DSS_CONTROL, src, 15, 15);	/* VENC_HDMI_SWITCH */
- }
+diff --git a/arch/mn10300/boot/compressed/misc.c b/arch/mn10300/boot/compressed/misc.c
+index 42cbd77..6e4a519 100644
+--- a/arch/mn10300/boot/compressed/misc.c
++++ b/arch/mn10300/boot/compressed/misc.c
+@@ -337,40 +337,6 @@ struct moveparams {
+ 	int hcount;
+ };
  
--enum dss_hdmi_venc_clk_source_select dss_get_hdmi_venc_clk_source(void)
+-void setup_output_buffer_if_we_run_high(struct moveparams *mv)
 -{
--	enum omap_display_type displays;
--
--	displays = dss_feat_get_supported_displays(OMAP_DSS_CHANNEL_DIGIT);
--	if ((displays & OMAP_DISPLAY_TYPE_HDMI) == 0)
--		return DSS_VENC_TV_CLK;
--
--	if ((displays & OMAP_DISPLAY_TYPE_VENC) == 0)
--		return DSS_HDMI_M_PCLK;
--
--	return REG_GET(DSS_CONTROL, 15, 15);
+-	high_buffer_start = (uch *)(((ulg) &end) + HEAP_SIZE);
+-#ifdef STANDARD_MEMORY_BIOS_CALL
+-	if (EXT_MEM_K < (3 * 1024))
+-		error("Less than 4MB of memory.\n");
+-#else
+-	if ((ALT_MEM_K > EXT_MEM_K ? ALT_MEM_K : EXT_MEM_K) < (3 * 1024))
+-		error("Less than 4MB of memory.\n");
+-#endif
+-	mv->low_buffer_start = output_data = (char *) LOW_BUFFER_START;
+-	high_loaded = 1;
+-	free_mem_end_ptr = (long) high_buffer_start;
+-	if (0x100000 + LOW_BUFFER_SIZE > (ulg) high_buffer_start) {
+-		high_buffer_start = (uch *)(0x100000 + LOW_BUFFER_SIZE);
+-		mv->hcount = 0; /* say: we need not to move high_buffer */
+-	} else {
+-		mv->hcount = -1;
+-	}
+-	mv->high_buffer_start = high_buffer_start;
 -}
 -
- static int dss_dpi_select_source_omap2_omap3(enum omap_channel channel)
- {
- 	if (channel != OMAP_DSS_CHANNEL_LCD)
-diff --git a/drivers/video/fbdev/omap2/dss/dss.h b/drivers/video/fbdev/omap2/dss/dss.h
-index 8ff22c1..f4bb25b 100644
---- a/drivers/video/fbdev/omap2/dss/dss.h
-+++ b/drivers/video/fbdev/omap2/dss/dss.h
-@@ -211,7 +211,6 @@ void dss_uninit_platform_driver(void);
- unsigned long dss_get_dispc_clk_rate(void);
- int dss_dpi_select_source(enum omap_channel channel);
- void dss_select_hdmi_venc_clk_source(enum dss_hdmi_venc_clk_source_select);
--enum dss_hdmi_venc_clk_source_select dss_get_hdmi_venc_clk_source(void);
- const char *dss_get_generic_clk_source_name(enum omap_dss_clk_source clk_src);
- void dss_dump_clocks(struct seq_file *s);
- 
+-void close_output_buffer_if_we_run_high(struct moveparams *mv)
+-{
+-	mv->lcount = bytes_out;
+-	if (bytes_out > LOW_BUFFER_SIZE) {
+-		mv->lcount = LOW_BUFFER_SIZE;
+-		if (mv->hcount)
+-			mv->hcount = bytes_out - LOW_BUFFER_SIZE;
+-	} else {
+-		mv->hcount = 0;
+-	}
+-}
+-
+ #undef DEBUGFLAG
+ #ifdef DEBUGFLAG
+ int debugflag;
 -- 
 1.7.10.4
 
