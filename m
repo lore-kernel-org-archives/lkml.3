@@ -1,104 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761AbbAAASZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 19:18:25 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:44836 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbbAAASW (ORCPT
+	id S1751807AbbAAATw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 19:19:52 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47784 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbbAAATv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 19:18:22 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CACVXFVMR=-CGq=EWWCorD-DBge=stygvrgY1kuR7rBh_96mA=A@mail.gmail.com>
-References: <CA+icZUXCCopMw4ZUyUYPT0seMVT4W0GuNhn3Z5Erte+LMhxzkQ@mail.gmail.com>
-	<CA+icZUXcpmFhCJ0=eiVe=XMbVFRCSLxUpaNNh2E7vEStMwjg=A@mail.gmail.com>
-	<CA+icZUU=FPioz0SbMA+GYTcsz41ADfE1oCq5zFB3SGrvZyCc6A@mail.gmail.com>
-	<CACVXFVMR=-CGq=EWWCorD-DBge=stygvrgY1kuR7rBh_96mA=A@mail.gmail.com>
-Date: Thu, 1 Jan 2015 01:18:21 +0100
-Message-ID: <CA+icZUU7Pet-22m8uxFSBFkG8U1drK7XzpdGaFQQBFBNVRTgJQ@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] block: loop: convert to blk-mq
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 31 Dec 2014 19:19:51 -0500
+Date: Wed, 31 Dec 2014 19:19:48 -0500 (EST)
+Message-Id: <20141231.191948.2052520407791755413.davem@davemloft.net>
+To: Julia.Lawall@lip6.fr
+Cc: anirudh@xilinx.com, kernel-janitors@vger.kernel.org, John.Linn@xilinx.com,
+        michal.simek@xilinx.com, soren.brinkmann@xilinx.com,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] net: axienet: fix error return code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1419872683-32709-8-git-send-email-Julia.Lawall@lip6.fr>
+References: <1419872683-32709-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1419872683-32709-8-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 31 Dec 2014 16:19:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 1:01 AM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Hi Sedat,
->
-> On Thu, Jan 1, 2015 at 6:32 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> Forgot to CC LKML and linux-fsdevel.
->>
->> - Sedat -
->
->>
->> OK, I have installed fio (1.59-1) and libaio1 (0.3.109-2ubuntu1) here.
->>
->> You say in [1]:
->>
->> "In the following test:
->> - base: v3.19-rc2-2041231
->> - loop over file in ext4 file system on SSD disk
->> - bs: 4k, libaio, io depth: 64, O_DIRECT, num of jobs: 1
->> - throughput: IOPS"
->>
->> I tried to reproduce that inspired by [2]...
->>
->> root# fio --name=randread --rw=randread --bs=4k --ioengine=libaio
->> --iodepth=64 --direct=1 --numjobs=1 --size=1G
->>
->> ...you had no size given (here: 1GiB) - fio requires that parameter to run.
->>
->> This results in 165 VS. 515 IOPS here.
->
-> Thanks for your test.
->
-> Also if your disk is quick enough, you will observe improvement on
-> read test too.
->
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+Date: Mon, 29 Dec 2014 18:04:42 +0100
 
-This is no SSD here.
+> Return a negative error code on failure.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+...
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-# dmesg | egrep -i 'hitachi|ata1|sda'
-[    0.457892] ata1: SATA max UDMA/133 abar m2048@0xf0708000 port
-0xf0708100 irq 25
-[    0.777445] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[    0.778759] ata1.00: ATA-8: Hitachi HTS545050A7E380, GG2OA6C0, max UDMA/133
-[    0.778778] ata1.00: 976773168 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
-[    0.780154] ata1.00: configured for UDMA/133
-[    0.780970] scsi 0:0:0:0: Direct-Access     ATA      Hitachi
-HTS54505 A6C0 PQ: 0 ANSI: 5
-[    0.782050] sd 0:0:0:0: [sda] 976773168 512-byte logical blocks:
-(500 GB/465 GiB)
-[    0.782058] sd 0:0:0:0: [sda] 4096-byte physical blocks
-[    0.782255] sd 0:0:0:0: [sda] Write Protect is off
-[    0.782262] sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
-[    0.782339] sd 0:0:0:0: [sda] Write cache: enabled, read cache:
-enabled, doesn't support DPO or FUA
-[    0.800644]  sda: sda1 sda2 sda3
-[    0.802029] sd 0:0:0:0: [sda] Attached SCSI disk
-
-How did you test with fio (your fio lines)?
-
-- Sedat -
-
->> # grep "iops=" test-*
->> test-1-next20141231.txt:  read : io=1024.0MB, bw=678578 B/s, iops=165
->> , runt=1582340msec
->> test-2-next20141231-block-mq-v3.txt:  read : io=1024.0MB,
->> bw=2063.4KB/s, iops=515 , runt=508182msec
->>
->> Full fio-logs and some other useful configs/logs/patches attached.
->>
->> - Sedat -
->>
->> [1] http://marc.info/?l=linux-kernel&m=142003220301459&w=2
->> [2] http://wiki.mikejung.biz/Benchmarking#Fio_Random_Write_Test_using_libaio_and_direct_flags
->
->
->
-> Thanks,
-> Ming Lei
+Applied.
