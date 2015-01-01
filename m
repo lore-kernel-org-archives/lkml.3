@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbbAAT0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 14:26:33 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:34104 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751754AbbAAT0c (ORCPT
+	id S1751567AbbAATeY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 14:34:24 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:43815 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbbAATeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 14:26:32 -0500
-Date: Thu, 1 Jan 2015 20:26:24 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+	Thu, 1 Jan 2015 14:34:23 -0500
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
 To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: arm: mm: ioremap:  Remove unused function
-Message-ID: <20150101202624.25df9f6d@free-electrons.com>
-In-Reply-To: <1420139451-2671-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420139451-2671-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+CC: Ralf Baechle <ralf@linux-mips.org>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        Paul Burton <Paul.Burton@imgtec.com>,
+        "John Crispin" <blogic@openwrt.org>,
+        James Hogan <James.Hogan@imgtec.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arch: mips: kernel: traps:  Remove some unused functions
+Thread-Topic: [PATCH] arch: mips: kernel: traps:  Remove some unused
+ functions
+Thread-Index: AdAl+e3bJBj/Brmew0+e5CVv+GWfig==
+Date: Thu, 1 Jan 2015 19:34:16 +0000
+Message-ID: <dwx6b40n6g9nofnhskqseq3h.1420140853072@email.android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <163F68C90CE2D84EB4D28D0851E25839@imgtec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t01JYgcX027204
 
-Dear Rickard Strandqvist,
+Is it a New Year joke?
 
-On Thu,  1 Jan 2015 20:10:51 +0100, Rickard Strandqvist wrote:
-> Remove the function pci_ioremap_set_mem_type() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Did you try to build vmlinux MIPS binary?
 
-Hum, I was supposed to use this in arch/arm/mach-mvebu/ to make sure
-that PCI I/O regions are mapped strongly-ordered. We're indeed doing it
-for PCI mem regions, but we never did it for PCI I/O regions. I
-remember there has been some discussions about this, but I don't
-remember the outcome, and whether it has affected the fact that mapping
-PCI I/O regions strongly-ordered for mach-mvebu was never merged.
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+- Leonid
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
