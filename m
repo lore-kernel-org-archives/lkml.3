@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751286AbbAAIDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 03:03:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36685 "EHLO mx2.suse.de"
+	id S1751591AbbAAIDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 03:03:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36689 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750701AbbAAIDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 03:03:23 -0500
-Date: Thu, 01 Jan 2015 09:03:19 +0100
-Message-ID: <s5hppazexmg.wl-tiwai@suse.de>
+	id S1751486AbbAAID3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Jan 2015 03:03:29 -0500
+Date: Thu, 01 Jan 2015 09:03:28 +0100
+Message-ID: <s5hoaqjexm7.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Eliot Blennerhassett <eliot@blennerhassett.gen.nz>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Newsgroups: gmane.linux.kernel,gmane.linux.alsa.devel
 Subject: Re: [PATCH v2] sound: pci: asihpi: hpifunc.c: Remove some unused functions
 In-Reply-To: <54A46CEF.3030108@blennerhassett.gen.nz>
 References: <1420039022-10018-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
