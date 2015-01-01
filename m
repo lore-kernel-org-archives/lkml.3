@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbbAAAUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 19:20:33 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:47799 "EHLO
+	id S1751966AbbAAAVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 19:21:43 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:47807 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbbAAAUb (ORCPT
+	with ESMTP id S1751507AbbAAAVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 19:20:31 -0500
-Date: Wed, 31 Dec 2014 19:20:26 -0500 (EST)
-Message-Id: <20141231.192026.1227963371078197478.davem@davemloft.net>
-To: Julia.Lawall@lip6.fr
-Cc: hykim@myri.com, kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] myri10ge: fix error return code
+	Wed, 31 Dec 2014 19:21:42 -0500
+Date: Wed, 31 Dec 2014 19:21:34 -0500 (EST)
+Message-Id: <20141231.192134.2243740801309285028.davem@davemloft.net>
+To: xuyongjiande@163.com
+Cc: shahed.shaikh@qlogic.com, Dept-GELinuxNICDev@qlogic.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        xuyongjiande@gmail.com
+Subject: Re: [PATCH] qlcnic: Fix return value in qlcnic_probe()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1419872683-32709-3-git-send-email-Julia.Lawall@lip6.fr>
-References: <1419872683-32709-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1419872683-32709-3-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1419926626-26624-1-git-send-email-xuyongjiande@163.com>
+References: <1419926626-26624-1-git-send-email-xuyongjiande@163.com>
 X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 31 Dec 2014 16:20:30 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 31 Dec 2014 16:21:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-Date: Mon, 29 Dec 2014 18:04:37 +0100
+From: xuyongjiande@163.com
+Date: Tue, 30 Dec 2014 16:03:46 +0800
 
-> Return a negative error code on failure.
+> From: Yongjian Xu <xuyongjiande@gmail.com>
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
- ...
- The patch also modifies the test of mgp->cmd to satisfy checkpatch.
+> If the check of adapter fails and goes into the 'else' branch, the
+> return value 'err' should not still be zero.
 > 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> Signed-off-by: Yongjian Xu <xuyongjiande@gmail.com>
 
-Applied.
+Applied, thank you.
