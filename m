@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbbAAKps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 05:45:48 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:38959 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbbAAKpq (ORCPT
+	id S1751790AbbAAKkO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 05:40:14 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:37442 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbbAAKkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 05:45:46 -0500
-X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Jan 2015 05:45:45 EST
+	Thu, 1 Jan 2015 05:40:09 -0500
 From: Richard Cochran <richardcochran@gmail.com>
 To: <netdev@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH net-next 1/7] timecounter: provide a macro to initialize the cyclecounter mask field.
-Date: Thu,  1 Jan 2015 11:39:55 +0100
-Message-Id: <1f1bee3e2aa0cc530d006d99a621992a1497a442.1420108214.git.richardcochran@gmail.com>
+Subject: [PATCH net-next 2/7] bnx2x: convert to CYCLECOUNTER_MASK macro.
+Date: Thu,  1 Jan 2015 11:39:56 +0100
+Message-Id: <1abe118084e21fd1e84502ff344cada70d3fdcb1.1420108214.git.richardcochran@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <20141231.183347.862533634176009078.davem@davemloft.net>
 References: <20141231.183347.862533634176009078.davem@davemloft.net>
@@ -26,37 +25,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need for users of the timecounter/cyclecounter code to include
-clocksource.h just for a single macro.
-
 Signed-off-by: Richard Cochran <richardcochran@gmail.com>
 ---
- include/linux/timecounter.h |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/timecounter.h b/include/linux/timecounter.h
-index 74f4549..4382035 100644
---- a/include/linux/timecounter.h
-+++ b/include/linux/timecounter.h
-@@ -19,6 +19,9 @@
- 
- #include <linux/types.h>
- 
-+/* simplify initialization of mask field */
-+#define CYCLECOUNTER_MASK(bits) (cycle_t)((bits) < 64 ? ((1ULL<<(bits))-1) : -1)
-+
- /**
-  * struct cyclecounter - hardware abstraction for a free running counter
-  *	Provides completely state-free accessors to the underlying hardware.
-@@ -29,7 +32,7 @@
-  * @read:		returns the current cycle value
-  * @mask:		bitmask for two's complement
-  *			subtraction of non 64 bit counters,
-- *			see CLOCKSOURCE_MASK() helper macro
-+ *			see CYCLECOUNTER_MASK() helper macro
-  * @mult:		cycle to nanosecond multiplier
-  * @shift:		cycle to nanosecond divisor (power of two)
-  */
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index 2c95132..0758c8b 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -14610,7 +14610,7 @@ static void bnx2x_init_cyclecounter(struct bnx2x *bp)
+ {
+ 	memset(&bp->cyclecounter, 0, sizeof(bp->cyclecounter));
+ 	bp->cyclecounter.read = bnx2x_cyclecounter_read;
+-	bp->cyclecounter.mask = CLOCKSOURCE_MASK(64);
++	bp->cyclecounter.mask = CYCLECOUNTER_MASK(64);
+ 	bp->cyclecounter.shift = 1;
+ 	bp->cyclecounter.mult = 1;
+ }
 -- 
 1.7.10.4
 
