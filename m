@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbbAAQ6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 11:58:34 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:34258 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbbAAQ60 (ORCPT
+	id S1752115AbbAAQ7N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 11:59:13 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62251 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbbAAQ7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 11:58:26 -0500
+	Thu, 1 Jan 2015 11:59:12 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Subject: [PATCH] net: fddi: skfp: smt.c:  Remove unused function
-Date: Thu,  1 Jan 2015 18:01:26 +0100
-Message-Id: <1420131686-30895-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+To: Joshua Thompson <funaho@jurai.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: m68k: mac: misc.c:  Remove some unused functions
+Date: Thu,  1 Jan 2015 18:02:12 +0100
+Message-Id: <1420131732-31039-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function smt_ifconfig() that is not used anywhere.
+Removes some functions that are not used anywhere:
+mac_pram_write() mac_pram_read()
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/net/fddi/skfp/smt.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ arch/m68k/mac/misc.c |   46 ----------------------------------------------
+ 1 file changed, 46 deletions(-)
 
-diff --git a/drivers/net/fddi/skfp/smt.c b/drivers/net/fddi/skfp/smt.c
-index 9edada8..cd78b7c 100644
---- a/drivers/net/fddi/skfp/smt.c
-+++ b/drivers/net/fddi/skfp/smt.c
-@@ -1736,18 +1736,6 @@ char *addr_to_string(struct fddi_addr *addr)
- }
- #endif
- 
--#ifdef	AM29K
--int smt_ifconfig(int argc, char *argv[])
--{
--	if (argc >= 2 && !strcmp(argv[0],"opt_bypass") &&
--	    !strcmp(argv[1],"yes")) {
--		smc->mib.fddiSMTBypassPresent = 1 ;
--		return 0;
--	}
--	return amdfddi_config(0, argc, argv);
--}
--#endif
--
- /*
-  * return static mac index
+diff --git a/arch/m68k/mac/misc.c b/arch/m68k/mac/misc.c
+index 707b61a..6fe7eb6 100644
+--- a/arch/m68k/mac/misc.c
++++ b/arch/m68k/mac/misc.c
+@@ -453,52 +453,6 @@ void pmu_shutdown(void)
+  *-------------------------------------------------------------------
   */
+ 
+-void mac_pram_read(int offset, __u8 *buffer, int len)
+-{
+-	__u8 (*func)(int);
+-	int i;
+-
+-	switch(macintosh_config->adb_type) {
+-	case MAC_ADB_IISI:
+-		func = maciisi_read_pram; break;
+-	case MAC_ADB_PB1:
+-	case MAC_ADB_PB2:
+-		func = pmu_read_pram; break;
+-	case MAC_ADB_CUDA:
+-		func = cuda_read_pram; break;
+-	default:
+-		func = via_read_pram;
+-	}
+-	if (!func)
+-		return;
+-	for (i = 0 ; i < len ; i++) {
+-		buffer[i] = (*func)(offset++);
+-	}
+-}
+-
+-void mac_pram_write(int offset, __u8 *buffer, int len)
+-{
+-	void (*func)(int, __u8);
+-	int i;
+-
+-	switch(macintosh_config->adb_type) {
+-	case MAC_ADB_IISI:
+-		func = maciisi_write_pram; break;
+-	case MAC_ADB_PB1:
+-	case MAC_ADB_PB2:
+-		func = pmu_write_pram; break;
+-	case MAC_ADB_CUDA:
+-		func = cuda_write_pram; break;
+-	default:
+-		func = via_write_pram;
+-	}
+-	if (!func)
+-		return;
+-	for (i = 0 ; i < len ; i++) {
+-		(*func)(offset++, buffer[i]);
+-	}
+-}
+-
+ void mac_poweroff(void)
+ {
+ 	/*
 -- 
 1.7.10.4
 
