@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbbAAQpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 11:45:25 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:37104 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693AbbAAQpY (ORCPT
+	id S1751999AbbAAQqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 11:46:13 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:54503 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbbAAQqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 11:45:24 -0500
+	Thu, 1 Jan 2015 11:46:11 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+To: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] arch: mips: lasat: sysctl.c:  Remove unused function
-Date: Thu,  1 Jan 2015 17:48:23 +0100
-Message-Id: <1420130903-29616-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [PATCH] arch: m68k: mvme147: config.c:  Remove unused function
+Date: Thu,  1 Jan 2015 17:49:11 +0100
+Message-Id: <1420130951-29766-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function proc_dolasatint() that is not used anywhere.
+Remove the function mvme147_init_console_port() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- arch/mips/lasat/sysctl.c |   15 ---------------
- 1 file changed, 15 deletions(-)
+ arch/m68k/mvme147/config.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
-diff --git a/arch/mips/lasat/sysctl.c b/arch/mips/lasat/sysctl.c
-index 3b7f65c..9d65f1e 100644
---- a/arch/mips/lasat/sysctl.c
-+++ b/arch/mips/lasat/sysctl.c
-@@ -53,21 +53,6 @@ int proc_dolasatstring(struct ctl_table *table, int write,
- 	return 0;
+diff --git a/arch/m68k/mvme147/config.c b/arch/m68k/mvme147/config.c
+index 1bb3ce6..5da5e6e 100644
+--- a/arch/m68k/mvme147/config.c
++++ b/arch/m68k/mvme147/config.c
+@@ -209,8 +209,3 @@ void m147_scc_write (struct console *co, const char *str, unsigned count)
+ 	}
+ 	local_irq_restore(flags);
  }
- 
--/* proc function to write EEPROM after changing int entry */
--int proc_dolasatint(struct ctl_table *table, int write,
--		       void *buffer, size_t *lenp, loff_t *ppos)
+-
+-void mvme147_init_console_port (struct console *co, int cflag)
 -{
--	int r;
--
--	r = proc_dointvec(table, write, buffer, lenp, ppos);
--	if ((!write) || r)
--		return r;
--
--	lasat_write_eeprom_info();
--
--	return 0;
+-	co->write    = m147_scc_write;
 -}
--
- #ifdef CONFIG_DS1603
- static int rtctmp;
- 
 -- 
 1.7.10.4
 
