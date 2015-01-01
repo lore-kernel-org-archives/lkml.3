@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbbAAABx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Dec 2014 19:01:53 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51458 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbbAAABw (ORCPT
+	id S1751617AbbAAACI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Dec 2014 19:02:08 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46704 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbbAAABz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Dec 2014 19:01:52 -0500
-Date: Thu, 1 Jan 2015 00:01:49 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Paul Moore <paul@paul-moore.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-audit@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Audit fixes for 3.19 #2
-Message-ID: <20150101000149.GP22149@ZenIV.linux.org.uk>
-References: <3159430.4MhUX0bhoZ@sifl>
- <CA+55aFzwqafHa6ARO-zkCDaHZozZDDvETBMmbnvNsnu1L9v2=w@mail.gmail.com>
- <3787508.5gHb8qD3XR@sifl>
+	Wed, 31 Dec 2014 19:01:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3787508.5gHb8qD3XR@sifl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+icZUU=FPioz0SbMA+GYTcsz41ADfE1oCq5zFB3SGrvZyCc6A@mail.gmail.com>
+References: <CA+icZUXCCopMw4ZUyUYPT0seMVT4W0GuNhn3Z5Erte+LMhxzkQ@mail.gmail.com>
+	<CA+icZUXcpmFhCJ0=eiVe=XMbVFRCSLxUpaNNh2E7vEStMwjg=A@mail.gmail.com>
+	<CA+icZUU=FPioz0SbMA+GYTcsz41ADfE1oCq5zFB3SGrvZyCc6A@mail.gmail.com>
+Date: Thu, 1 Jan 2015 08:01:54 +0800
+Message-ID: <CACVXFVMR=-CGq=EWWCorD-DBge=stygvrgY1kuR7rBh_96mA=A@mail.gmail.com>
+Subject: Re: [PATCH v3 0/5] block: loop: convert to blk-mq
+From: Ming Lei <tom.leiming@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 05:08:12PM -0500, Paul Moore wrote:
+Hi Sedat,
 
-> The getname/putname hacks work in the normal file case, but it falls apart 
-> when you start talking about AF_UNIX socket files where the filename string 
-> doesn't go through the getname/putname refcount tricks.  In the past (no idea 
-> how far back this goes off the top of my head) this wasn't an issue since the 
-> code which recorded the filenames in the audit records was broken, but since 
-> we just "fixed" that problem, the AF_UNIX socket problem is now making an 
-> appearance.
-> 
-> At least that is how it looks to me right now, if I'm wrong about this and I'm 
-> missing an obvious fix I'm all ears/eyes/etc.
+On Thu, Jan 1, 2015 at 6:32 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> Forgot to CC LKML and linux-fsdevel.
+>
+> - Sedat -
 
-Umm...  How about just adding a function that would be used instead of
-all those
-        struct filename filename = { .name = name };
-and created an object that would be destroyed later by putname()?
+>
+> OK, I have installed fio (1.59-1) and libaio1 (0.3.109-2ubuntu1) here.
+>
+> You say in [1]:
+>
+> "In the following test:
+> - base: v3.19-rc2-2041231
+> - loop over file in ext4 file system on SSD disk
+> - bs: 4k, libaio, io depth: 64, O_DIRECT, num of jobs: 1
+> - throughput: IOPS"
+>
+> I tried to reproduce that inspired by [2]...
+>
+> root# fio --name=randread --rw=randread --bs=4k --ioengine=libaio
+> --iodepth=64 --direct=1 --numjobs=1 --size=1G
+>
+> ...you had no size given (here: 1GiB) - fio requires that parameter to run.
+>
+> This results in 165 VS. 515 IOPS here.
+
+Thanks for your test.
+
+Also if your disk is quick enough, you will observe improvement on
+read test too.
+
+> # grep "iops=" test-*
+> test-1-next20141231.txt:  read : io=1024.0MB, bw=678578 B/s, iops=165
+> , runt=1582340msec
+> test-2-next20141231-block-mq-v3.txt:  read : io=1024.0MB,
+> bw=2063.4KB/s, iops=515 , runt=508182msec
+>
+> Full fio-logs and some other useful configs/logs/patches attached.
+>
+> - Sedat -
+>
+> [1] http://marc.info/?l=linux-kernel&m=142003220301459&w=2
+> [2] http://wiki.mikejung.biz/Benchmarking#Fio_Random_Write_Test_using_libaio_and_direct_flags
+
+
+
+Thanks,
+Ming Lei
