@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbbABJmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 04:42:51 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:25255 "EHLO
+	id S1752232AbbABJnA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 04:43:00 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:25278 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbbABJmo (ORCPT
+	with ESMTP id S1752200AbbABJmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 04:42:44 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-78-54a66812a824
+	Fri, 2 Jan 2015 04:42:53 -0500
+X-AuditID: cbfee68d-f79296d000004278-a4-54a6681b88c7
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
         Ashish Sangwan <a.sangwan@samsung.com>,
         Brian Foster <bfoster@redhat.com>
-Subject: [PATCH v7 9/11] xfstests: generic/043: Test multiple fallocate
- insert/collapse range calls
-Date: Fri, 02 Jan 2015 18:42:41 +0900
-Message-id: <004701d02670$73dcb0a0$5b9611e0$@samsung.com>
+Subject: [PATCH v7 10/11]  xfstests: fsstress: Add fallocate insert range
+ operation
+Date: Fri, 02 Jan 2015 18:42:51 +0900
+Message-id: <004801d02670$79bd5bf0$6d3813d0$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAmb7FIVvw3UFAaQdC7xO8IHm0eYA==
+Thread-index: AdAmb9IfZ2V2rPOwQ8ewSgB4b5rvuw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsWyRsSkRFcoY1mIwYsrhhZLJ15itnj3ucpi
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsWyRsSkRFc6Y1mIwe41FhZLJ15itnj3ucpi
 	y7F7jBYz591hs9iz9ySLxeVdc9gsWnt+slss6rvF6MDhcWqRhEfTmaPMHqsvbGX0eL/vKptH
-	35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZZz8+ZSt4IpSxfXNuQ2ME2W6GDk5JARMJGY3zGOD
-	sMUkLtxbD2YLCSxllNixWBymZsWV5yxdjFxA8UWMEp/eb2WFcP4ySuz8exKog4ODTUBb4s8W
-	UZAGEQFXiXl3vzOC1DALnGCUWD95CQtIQlggVaJx0nl2EJtFQFXi/sl7zCA2r4ClxLYb31gh
-	bEGJH5PvgdUzC2hJrN95nAnClpfYvOYtM8RFChI7zr5mBNkrIqAn8fmLAESJiMS+F+/A9koI
-	3GKXOPR4GxvELgGJb5MPsYDUSwjISmw6ADVGUuLgihssExjFZiHZPAvJ5llINs9CsmIBI8sq
-	RtHUguSC4qT0IlO94sTc4tK8dL3k/NxNjMDYPP3v2cQdjPcPWB9iFOBgVOLhVbi2NESINbGs
-	uDL3EKMp0EUTmaVEk/OBCSCvJN7Q2MzIwtTE1NjI3NJMSZxXR/pnsJBAemJJanZqakFqUXxR
-	aU5q8SFGJg5OqQbGwvM6lyaGGxx6FbQ9mZ9z2fpXDqefv7r1/dznjfHsi01qf+75O0GgPbgq
-	56cUI3uHcOZ+H+17VQma/1xn5Pm8SDFferaglXfuc4PoVJUTNv/EvCSfLtrtZ8O/p/DDf82N
-	mvz7n7vJNUzrlJdhUGco9Hzp9P5lRXDb9s3bj3anb/xgt01OLbhJiaU4I9FQi7moOBEAdfBH
-	P8gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgleLIzCtJLcpLzFFi42I5/e+xgK5QxrIQg8UPNSyWTrzEbPHuc5XF
+	35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZfw4NJe5YJZoxdVFHYwNjD8Fuhg5OSQETCSm3rzF
+	BmGLSVy4tx7I5uIQEljKKNF88CILTFHf5XXMEInpjBKH7ixghXD+Mkr8OD6TsYuRg4NNQFvi
+	zxZRkAYRAVeJeXe/M4LUMAucYJRYP3kJ2CRhgVCJ+Q+fMYHYLAKqEgc/TmAEsXkFLCUOdt9k
+	hrAFJX5MvgdWzyygJbF+53EmCFteYvOat8wQFylI7Dj7mhFimZ7E+2cHoepFJPa9eAe2WELg
+	HrtE46Qd7BDLBCS+TT7EAnKohICsxKYDUHMkJQ6uuMEygVFsFpLVs5CsnoVk9SwkKxYwsqxi
+	FE0tSC4oTkovMtQrTswtLs1L10vOz93ECIzQ0/+e9e5gvH3A+hCjAAejEg+vwrWlIUKsiWXF
+	lbmHGE2BLprILCWanA9MA3kl8YbGZkYWpiamxkbmlmZK4ryKUj+DhQTSE0tSs1NTC1KL4otK
+	c1KLDzEycXBKNTBeTHzmlHWrouO7fO285YYOX0PZrtWaTW6tjPZ15td+mJSl66KV96FJulX8
+	+ZGtn3ha2pu8J394YmGV3il/d5rTZ4fCDkdvj09GNysLHbWUww7PVZtU8vJCwbT5unpszPoH
+	gzLbf62V9RPKaV/3f5Nj73RetpVHLniqdv0617xinRXP0k+mu5RYijMSDbWYi4oTAZPVZyDL	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xoK50xrIQgwfLDCyWTrzEbPHuc5XF
 	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
 	vi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hx8udTtoIr
-	ShXXN+c2ME6U6WLk5JAQMJFYceU5C4QtJnHh3nq2LkYuDiGBRYwSn95vZYVw/jJK7Px7EijD
-	wcEmoC3xZ4soSIOIgKvEvLvfGUFqmAVOMEqsn7wEbJKwQKpE46Tz7CA2i4CqxP2T95hBbF4B
-	S4ltN76xQtiCEj8m3wOrZxbQkli/8zgThC0vsXnNW2aIixQkdpx9zQiyV0RAT+LzFwGIEhGJ
-	fS/eMU5gFJiFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBsf9M
-	egfjqgaLQ4wCHIxKPLwK15aGCLEmlhVX5h5ilOBgVhLh7ZNbEiLEm5JYWZValB9fVJqTWnyI
-	0RTo0YnMUqLJ+cC0lFcSb2hsYmZkaWRuaGFkbK4kzqtk3xYiJJCeWJKanZpakFoE08fEwSnV
-	wCjW/tqSvTs5M3HRir5amWjDbOOiRZsMJ8nlbt5jZb9W3Vp+lmCk2Yl5h6yc5C8X1LNadasc
-	iZ+uzvFz8g+DQ30VzaUCH5Us/uVvK73qNS05/vJOwVg37vx5Dc1mc2uLFp2YYX9UWH5liHW5
-	YXhlRGdfnveUzFWds9Jmn4369nC3gKeJ1+lNSizFGYmGWsxFxYkATm8i4BMDAAA=
+	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jx49Bc5oJZ
+	ohVXF3UwNjD+FOhi5OSQEDCR6Lu8jhnCFpO4cG89WxcjF4eQwHRGiUN3FrBCOH8ZJX4cn8nY
+	xcjBwSagLfFniyhIg4iAq8S8u98ZQWqYBU4wSqyfvIQFJCEsECox/+EzJhCbRUBV4uDHCYwg
+	Nq+ApcTB7pvMELagxI/J98DqmQW0JNbvPM4EYctLbF7zFuoiBYkdZ18zQizTk3j/7CBUvYjE
+	vhfvGCcwCsxCMmoWklGzkIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg+H8m
+	tYNxZYPFIUYBDkYlHl6Fa0tDhFgTy4orcw8xSnAwK4nw9sktCRHiTUmsrEotyo8vKs1JLT7E
+	aAr06URmKdHkfGBqyiuJNzQ2MTOyNDI3tDAyNlcS51WybwsREkhPLEnNTk0tSC2C6WPi4JRq
+	YOy6+OHN7986j/UW/VYt2Owj+J25dVb0w6d6+2o0+hcKlMe4cwZc7Hi5r6i/+2upwhTB/3cP
+	Lte5fNzh3sRKn7kfJyXtusP6KT/+qGrhgl4pAYvEBZWTeYo4Fn8uvORvnmAqu85z6R7vuPrO
+	2LfTGvt/l239KfehV25WSb2Y+gwrqxN7vkYusVRiKc5INNRiLipOBADVBBHSFQMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,158 +56,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This testcase(043) tries to test finsert range a single alternate block
-mulitiple times and test merge code of collase range.
+This commit adds insert operation support for fsstress, which is
+meant to exercise fallocate FALLOC_FL_INSERT_RANGE support.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Cc: Brian Foster <bfoster@redhat.com>
 ---
- tests/generic/043     | 107 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tests/generic/043.out |   7 ++++
- tests/generic/group   |   1 +
- 3 files changed, 115 insertions(+)
- create mode 100644 tests/generic/043
- create mode 100644 tests/generic/043.out
+ ltp/fsstress.c | 19 ++++++++++++++++---
+ src/global.h   |  4 ++++
+ 2 files changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/tests/generic/043 b/tests/generic/043
-new file mode 100644
-index 0000000..6aebc1e
---- /dev/null
-+++ b/tests/generic/043
-@@ -0,0 +1,107 @@
-+#! /bin/bash
-+# FS QA Test No. generic/043
-+#
-+# Test multiple fallocate insert/collapse range calls on same file.
-+# For different blocksizes, Call insert range a single alternate block
-+# multiple times until the file is left with 100 extents and as much
-+# number of extents. And Call collapse range about the previously inserted
-+# ranges to test merge code of collapse range.
-+# Also check for file system consistency after completing this operation
-+# for each blocksize.
-+#-----------------------------------------------------------------------
-+# Copyright (c) 2014 Samsung Electronics.  All Rights Reserved.
-+#
-+# This program is free software; you can redistribute it and/or
-+# modify it under the terms of the GNU General Public License as
-+# published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope that it would be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write the Free Software Foundation,
-+# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+#
-+#-----------------------------------------------------------------------
-+#
+diff --git a/ltp/fsstress.c b/ltp/fsstress.c
+index b56fe5c..aa3e0c3 100644
+--- a/ltp/fsstress.c
++++ b/ltp/fsstress.c
+@@ -72,6 +72,7 @@ typedef enum {
+ 	OP_PUNCH,
+ 	OP_ZERO,
+ 	OP_COLLAPSE,
++	OP_INSERT,
+ 	OP_READ,
+ 	OP_READLINK,
+ 	OP_RENAME,
+@@ -170,6 +171,7 @@ void	mknod_f(int, long);
+ void	punch_f(int, long);
+ void	zero_f(int, long);
+ void	collapse_f(int, long);
++void	insert_f(int, long);
+ void	read_f(int, long);
+ void	readlink_f(int, long);
+ void	rename_f(int, long);
+@@ -209,6 +211,7 @@ opdesc_t	ops[] = {
+ 	{ OP_PUNCH, "punch", punch_f, 1, 1 },
+ 	{ OP_ZERO, "zero", zero_f, 1, 1 },
+ 	{ OP_COLLAPSE, "collapse", collapse_f, 1, 1 },
++	{ OP_INSERT, "insert", insert_f, 1, 1 },
+ 	{ OP_READ, "read", read_f, 1, 0 },
+ 	{ OP_READLINK, "readlink", readlink_f, 1, 0 },
+ 	{ OP_RENAME, "rename", rename_f, 2, 1 },
+@@ -2176,6 +2179,7 @@ struct print_flags falloc_flags [] = {
+ 	{ FALLOC_FL_NO_HIDE_STALE, "NO_HIDE_STALE"},
+ 	{ FALLOC_FL_COLLAPSE_RANGE, "COLLAPSE_RANGE"},
+ 	{ FALLOC_FL_ZERO_RANGE, "ZERO_RANGE"},
++	{ FALLOC_FL_INSERT_RANGE, "INSERT_RANGE"},
+ 	{ -1, NULL}
+ };
+ 
+@@ -2227,10 +2231,11 @@ do_fallocate(int opno, long r, int mode)
+ 	off %= maxfsize;
+ 	len = (off64_t)(random() % (1024 * 1024));
+ 	/*
+-	 * Collapse range requires off and len to be block aligned, make it
+-	 * more likely to be the case.
++	 * Collapse/insert range requires off and len to be block aligned,
++	 * make it more likely to be the case.
+ 	 */
+-	if ((mode & FALLOC_FL_COLLAPSE_RANGE) && (opno % 2)) {
++	if ((mode & (FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_INSERT_RANGE)) &&
++		(opno % 2)) {
+ 		off = ((off + stb.st_blksize - 1) & ~(stb.st_blksize - 1));
+ 		len = ((len + stb.st_blksize - 1) & ~(stb.st_blksize - 1));
+ 	}
+@@ -2656,6 +2661,14 @@ collapse_f(int opno, long r)
+ }
+ 
+ void
++insert_f(int opno, long r)
++{
++#ifdef HAVE_LINUX_FALLOC_H
++	do_fallocate(opno, r, FALLOC_FL_INSERT_RANGE);
++#endif
++}
 +
-+seq=`basename $0`
-+seqres=$RESULT_DIR/$seq
-+echo "QA output created by $seq"
++void
+ read_f(int opno, long r)
+ {
+ 	char		*buf;
+diff --git a/src/global.h b/src/global.h
+index 8180f66..f63246b 100644
+--- a/src/global.h
++++ b/src/global.h
+@@ -172,6 +172,10 @@
+ #define FALLOC_FL_ZERO_RANGE		0x10
+ #endif
+ 
++#ifndef FALLOC_FL_INSERT_RANGE
++#define FALLOC_FL_INSERT_RANGE		0x20
++#endif
 +
-+here=`pwd`
-+tmp=/tmp/$$
-+status=1	# failure is the default!
-+trap "rm -f $tmp.*; exit \$status" 0 1 2 3 15
-+
-+# get standard environment, filters and checks
-+. ./common/rc
-+. ./common/filter
-+
-+# real QA test starts here
-+_supported_fs generic
-+_supported_os Linux
-+
-+_require_scratch
-+_require_xfs_io_command "fiemap"
-+_require_xfs_io_command "finsert"
-+_require_xfs_io_command "fcollapse"
-+_do_die_on_error=y
-+testfile=$SCRATCH_MNT/$seq.$$
-+BLOCKS=100
-+
-+for (( BSIZE = 1024; BSIZE <= 4096; BSIZE *= 2 )); do
-+
-+	length=$(($BLOCKS * $BSIZE))
-+	case $FSTYP in
-+	xfs)
-+	_scratch_mkfs -b size=$BSIZE >> $seqres.full 2>&1
-+	;;
-+	ext4)
-+	_scratch_mkfs -b $BSIZE >> $seqres.full 2>&1
-+	;;
-+	esac
-+	_scratch_mount >> $seqres.full 2>&1
-+
-+	# Write file
-+	$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
-+
-+
-+	# Insert alternate blocks 
-+	for (( j=0; j < $(($BLOCKS/2)); j++ )); do
-+		offset=$((($j*$BSIZE)*2))
-+		$XFS_IO_PROG -c "finsert $offset $BSIZE" $testfile > /dev/null
-+	done
-+
-+	# Check if 100 extents are present
-+	$XFS_IO_PROG -c "fiemap -v" $testfile | grep "^ *[0-9]*:" |wc -l
-+
-+	_check_scratch_fs
-+	if [ $? -ne 0 ]; then
-+		status=1
-+		exit
-+	fi
-+
-+	# Collapse alternate blocks 
-+	for (( j=0; j < $(($BLOCKS/2)); j++ )); do
-+		offset=$((($j*$BSIZE)))
-+		$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
-+	done
-+
-+	# Check if 1 extents are present
-+	$XFS_IO_PROG -c "fiemap -v" $testfile | grep "^ *[0-9]*:" |wc -l
-+
-+	_check_scratch_fs
-+	if [ $? -ne 0 ]; then
-+		status=1
-+		exit
-+	fi
-+
-+	umount $SCRATCH_MNT
-+done
-+
-+# success, all done
-+status=0
-+exit
-diff --git a/tests/generic/043.out b/tests/generic/043.out
-new file mode 100644
-index 0000000..fd4b804
---- /dev/null
-+++ b/tests/generic/043.out
-@@ -0,0 +1,7 @@
-+QA output created by 043
-+100
-+1
-+100
-+1
-+100
-+1
-diff --git a/tests/generic/group b/tests/generic/group
-index c0944b3..0a10bdd 100644
---- a/tests/generic/group
-+++ b/tests/generic/group
-@@ -45,6 +45,7 @@
- 040 auto quick prealloc
- 041 auto quick prealloc
- 042 auto quick prealloc
-+043 auto quick prealloc
- 053 acl repair auto quick
- 062 attr udf auto quick
- 068 other auto freeze dangerous stress
+ #endif /* HAVE_LINUX_FALLOC_H */
+ 
+ #endif /* GLOBAL_H */
 -- 
-1.8.5.5
+1.7.11-rc0
 
