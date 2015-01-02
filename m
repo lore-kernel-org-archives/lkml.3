@@ -1,118 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470AbbABVAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:00:46 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49416 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888AbbABVAp (ORCPT
+	id S1752562AbbABVB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 16:01:26 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:61989 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933AbbABVBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:00:45 -0500
+	Fri, 2 Jan 2015 16:01:24 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>
+To: Russell King <rmk+kernel@arm.linux.org.uk>,
+        David Airlie <airlied@linux.ie>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] tools: perf: util: dso:  Remove some unused functions
-Date: Fri,  2 Jan 2015 22:03:45 +0100
-Message-Id: <1420232625-3628-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] gpu: drm: armada: armada_drv:  Remove unused function
+Date: Fri,  2 Jan 2015 22:04:25 +0100
+Message-Id: <1420232665-3837-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-dso__data_size() dso__data_status_seen()
+Remove the function armada_drm_vbl_event_remove_unlocked() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- tools/perf/util/dso.c |   34 ----------------------------------
- tools/perf/util/dso.h |    3 ---
- 2 files changed, 37 deletions(-)
+ drivers/gpu/drm/armada/armada_drm.h |    2 --
+ drivers/gpu/drm/armada/armada_drv.c |   10 ----------
+ 2 files changed, 12 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 0247acf..8f0b6a3 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -359,18 +359,6 @@ out:
- 	return dso->data.fd;
+diff --git a/drivers/gpu/drm/armada/armada_drm.h b/drivers/gpu/drm/armada/armada_drm.h
+index ea63c6c..5f6aef0 100644
+--- a/drivers/gpu/drm/armada/armada_drm.h
++++ b/drivers/gpu/drm/armada/armada_drm.h
+@@ -46,8 +46,6 @@ void armada_drm_vbl_event_add(struct armada_crtc *,
+ 	struct armada_vbl_event *);
+ void armada_drm_vbl_event_remove(struct armada_crtc *,
+ 	struct armada_vbl_event *);
+-void armada_drm_vbl_event_remove_unlocked(struct armada_crtc *,
+-	struct armada_vbl_event *);
+ #define armada_drm_vbl_event_init(_e, _f, _d) do {	\
+ 	struct armada_vbl_event *__e = _e;		\
+ 	INIT_LIST_HEAD(&__e->node);			\
+diff --git a/drivers/gpu/drm/armada/armada_drv.c b/drivers/gpu/drm/armada/armada_drv.c
+index 908e531..f862bae 100644
+--- a/drivers/gpu/drm/armada/armada_drv.c
++++ b/drivers/gpu/drm/armada/armada_drv.c
+@@ -253,16 +253,6 @@ void armada_drm_vbl_event_remove(struct armada_crtc *dcrtc,
+ 	}
  }
  
--bool dso__data_status_seen(struct dso *dso, enum dso_data_status_seen by)
+-void armada_drm_vbl_event_remove_unlocked(struct armada_crtc *dcrtc,
+-	struct armada_vbl_event *evt)
 -{
--	u32 flag = 1 << by;
+-	unsigned long flags;
 -
--	if (dso->data.status_seen & flag)
--		return true;
--
--	dso->data.status_seen |= flag;
--
--	return false;
+-	spin_lock_irqsave(&dcrtc->irq_lock, flags);
+-	armada_drm_vbl_event_remove(dcrtc, evt);
+-	spin_unlock_irqrestore(&dcrtc->irq_lock, flags);
 -}
 -
- static void
- dso_cache__free(struct rb_root *root)
+ /* These are called under the vbl_lock. */
+ static int armada_drm_enable_vblank(struct drm_device *dev, int crtc)
  {
-@@ -546,28 +534,6 @@ static int data_file_size(struct dso *dso)
- 	return 0;
- }
- 
--/**
-- * dso__data_size - Return dso data size
-- * @dso: dso object
-- * @machine: machine object
-- *
-- * Return: dso data size
-- */
--off_t dso__data_size(struct dso *dso, struct machine *machine)
--{
--	int fd;
--
--	fd = dso__data_fd(dso, machine);
--	if (fd < 0)
--		return fd;
--
--	if (data_file_size(dso))
--		return -1;
--
--	/* For now just estimate dso data size is close to file size */
--	return dso->data.file_size;
--}
--
- static ssize_t data_read_offset(struct dso *dso, u64 offset,
- 				u8 *data, ssize_t size)
- {
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index acb651a..bd99f25 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -184,7 +184,6 @@ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type t
-  * The dso__data_* external interface provides following functions:
-  *   dso__data_fd
-  *   dso__data_close
-- *   dso__data_size
-  *   dso__data_read_offset
-  *   dso__data_read_addr
-  *
-@@ -222,13 +221,11 @@ int dso__read_binary_type_filename(const struct dso *dso, enum dso_binary_type t
- int dso__data_fd(struct dso *dso, struct machine *machine);
- void dso__data_close(struct dso *dso);
- 
--off_t dso__data_size(struct dso *dso, struct machine *machine);
- ssize_t dso__data_read_offset(struct dso *dso, struct machine *machine,
- 			      u64 offset, u8 *data, ssize_t size);
- ssize_t dso__data_read_addr(struct dso *dso, struct map *map,
- 			    struct machine *machine, u64 addr,
- 			    u8 *data, ssize_t size);
--bool dso__data_status_seen(struct dso *dso, enum dso_data_status_seen by);
- 
- struct map *dso__new_map(const char *name);
- struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
 -- 
 1.7.10.4
 
