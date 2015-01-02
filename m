@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403AbbABR1B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:27:01 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:56693 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbbABR1A (ORCPT
+	id S1752458AbbABR1P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:27:15 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:40811 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752422AbbABR1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:27:00 -0500
-From: Seunghun Lee <waydi1@gmail.com>
-To: miklos@szeredi.hu
-Cc: sedat.dilek@gmail.com, richard.weinberger@gmail.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Seunghun Lee <waydi1@gmail.com>
-Subject: [PATCH] ovl: Prevent rw remount when it should be ro mount
-Date: Sat,  3 Jan 2015 02:26:49 +0900
-Message-Id: <1420219609-2568-1-git-send-email-waydi1@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Fri, 2 Jan 2015 12:27:11 -0500
+Date: Fri, 2 Jan 2015 12:27:10 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <robtongue@gmail.com>
+Subject: Re: [PATCH] USB_EHCI_TT_NEWSCHED in *86 defconfig
+In-Reply-To: <212826.1420215597@turing-police.cc.vt.edu>
+Message-ID: <Pine.LNX.4.44L0.1501021226020.13693-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Overlayfs should be mounted read-only when upper-fs is read-only or nonexistent.
-But now it can be remounted read-write and this can cause kernel panic.
-So we should prevent read-write remount when the above situation happens.
+On Fri, 2 Jan 2015, Valdis Kletnieks wrote:
 
-Signed-off-by: Seunghun Lee <waydi1@gmail.com>
----
- fs/overlayfs/super.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+> Some Gentoo users are encountering problems because USB_EHCI_TT_NEWSCHED isn't
+> set in the defconfig (and Gentoo differs from other distros in not providing a
+> distro .config).  Alan Stern has said there's no reason to not set it, and the
+> ability to turn it off at all should probably be yanked.
+> 
+> http://article.gmane.org/gmane.linux.usb.general/119920
+> 
+> This addresses issue https://bugs.gentoo.org/show_bug.cgi?id=533472
+> 
+> (The problem also theoretically affects the sh, arm, mips, powerpc, and
+> sparc archs, but those would be other patches if this one that fixes 98% of
+> the problem is accepted).
+> 
+> Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> 
+> --- a/arch/x86/configs/i386_defconfig.dist	2014-12-19 12:38:51.467027402 -0500
+> +++ b/arch/x86/configs/i386_defconfig	2015-01-02 11:03:55.817776347 -0500
+> @@ -248,7 +248,7 @@ CONFIG_USB=y
+>  CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+>  CONFIG_USB_MON=y
+>  CONFIG_USB_EHCI_HCD=y
+> -# CONFIG_USB_EHCI_TT_NEWSCHED is not set
+> +CONFIG_USB_EHCI_TT_NEWSCHED=y
+>  CONFIG_USB_OHCI_HCD=y
+>  CONFIG_USB_UHCI_HCD=y
+>  CONFIG_USB_PRINTER=y
+> --- a/arch/x86/configs/x86_64_defconfig.dist	2014-12-19 12:38:51.467027402 -0500
+> +++ b/arch/x86/configs/x86_64_defconfig	2015-01-02 11:04:10.233816380 -0500
+> @@ -243,7 +243,7 @@ CONFIG_USB=y
+>  CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+>  CONFIG_USB_MON=y
+>  CONFIG_USB_EHCI_HCD=y
+> -# CONFIG_USB_EHCI_TT_NEWSCHED is not set
+> +CONFIG_USB_EHCI_TT_NEWSCHED=y
+>  CONFIG_USB_OHCI_HCD=y
+>  CONFIG_USB_UHCI_HCD=y
+>  CONFIG_USB_PRINTER=y
 
-diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
-index 84f3144..8944651 100644
---- a/fs/overlayfs/super.c
-+++ b/fs/overlayfs/super.c
-@@ -522,10 +522,21 @@ static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
- 	return 0;
- }
- 
-+static int ovl_remount(struct super_block *sb, int *flags, char *data)
-+{
-+	struct ovl_fs *ufs = sb->s_fs_info;
-+
-+	if (!ufs->upper_mnt || (ufs->upper_mnt->mnt_sb->s_flags & MS_RDONLY))
-+		*flags |= MS_RDONLY;
-+
-+	return 0;
-+}
-+
- static const struct super_operations ovl_super_operations = {
- 	.put_super	= ovl_put_super,
- 	.statfs		= ovl_statfs,
- 	.show_options	= ovl_show_options,
-+	.remount_fs	= ovl_remount,
- };
- 
- enum {
--- 
-2.1.3
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
+This should have been done years ago.  Thanks.
+
+Alan Stern
 
