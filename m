@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbbABVB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:01:26 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61989 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbbABVBY (ORCPT
+	id S1751947AbbABVCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 16:02:15 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:63336 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbbABVCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:01:24 -0500
+	Fri, 2 Jan 2015 16:02:13 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Airlie <airlied@linux.ie>
+To: Geert Uytterhoeven <geert@linux-m68k.org>, Greg Ungerer <gerg@uclinux.org>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] gpu: drm: armada: armada_drv:  Remove unused function
-Date: Fri,  2 Jan 2015 22:04:25 +0100
-Message-Id: <1420232665-3837-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch: m68k: 68360: config:  Remove unused function
+Date: Fri,  2 Jan 2015 22:05:14 +0100
+Message-Id: <1420232714-3989-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function armada_drm_vbl_event_remove_unlocked() that is not used anywhere.
+Remove the function BSP_set_clock_mmss() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/gpu/drm/armada/armada_drm.h |    2 --
- drivers/gpu/drm/armada/armada_drv.c |   10 ----------
- 2 files changed, 12 deletions(-)
+ arch/m68k/68360/config.c |   13 -------------
+ 1 file changed, 13 deletions(-)
 
-diff --git a/drivers/gpu/drm/armada/armada_drm.h b/drivers/gpu/drm/armada/armada_drm.h
-index ea63c6c..5f6aef0 100644
---- a/drivers/gpu/drm/armada/armada_drm.h
-+++ b/drivers/gpu/drm/armada/armada_drm.h
-@@ -46,8 +46,6 @@ void armada_drm_vbl_event_add(struct armada_crtc *,
- 	struct armada_vbl_event *);
- void armada_drm_vbl_event_remove(struct armada_crtc *,
- 	struct armada_vbl_event *);
--void armada_drm_vbl_event_remove_unlocked(struct armada_crtc *,
--	struct armada_vbl_event *);
- #define armada_drm_vbl_event_init(_e, _f, _d) do {	\
- 	struct armada_vbl_event *__e = _e;		\
- 	INIT_LIST_HEAD(&__e->node);			\
-diff --git a/drivers/gpu/drm/armada/armada_drv.c b/drivers/gpu/drm/armada/armada_drv.c
-index 908e531..f862bae 100644
---- a/drivers/gpu/drm/armada/armada_drv.c
-+++ b/drivers/gpu/drm/armada/armada_drv.c
-@@ -253,16 +253,6 @@ void armada_drm_vbl_event_remove(struct armada_crtc *dcrtc,
- 	}
+diff --git a/arch/m68k/68360/config.c b/arch/m68k/68360/config.c
+index 17ec416..fd1f948 100644
+--- a/arch/m68k/68360/config.c
++++ b/arch/m68k/68360/config.c
+@@ -106,19 +106,6 @@ void hw_timer_init(irq_handler_t handler)
+   pquicc->timer_tgcr  = tgcr_save;
  }
  
--void armada_drm_vbl_event_remove_unlocked(struct armada_crtc *dcrtc,
--	struct armada_vbl_event *evt)
+-int BSP_set_clock_mmss(unsigned long nowtime)
 -{
--	unsigned long flags;
+-#if 0
+-  short real_seconds = nowtime % 60, real_minutes = (nowtime / 60) % 60;
 -
--	spin_lock_irqsave(&dcrtc->irq_lock, flags);
--	armada_drm_vbl_event_remove(dcrtc, evt);
--	spin_unlock_irqrestore(&dcrtc->irq_lock, flags);
+-  tod->second1 = real_seconds / 10;
+-  tod->second2 = real_seconds % 10;
+-  tod->minute1 = real_minutes / 10;
+-  tod->minute2 = real_minutes % 10;
+-#endif
+-  return 0;
 -}
 -
- /* These are called under the vbl_lock. */
- static int armada_drm_enable_vblank(struct drm_device *dev, int crtc)
+ void BSP_reset (void)
  {
+   local_irq_disable();
 -- 
 1.7.10.4
 
