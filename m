@@ -1,160 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbbABWA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 17:00:57 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:39333 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553AbbABWAw (ORCPT
+	id S1752732AbbABWDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 17:03:55 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34063 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516AbbABWDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 17:00:52 -0500
-From: Thomas Graf <tgraf@suug.ch>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        herbert@gondor.apana.org.au, paulmck@linux.vnet.ibm.com,
-        edumazet@google.com, john.r.fastabend@intel.com, josh@joshtriplett.org
-Subject: [PATCH 9/9] netlink: Lockless lookup with RCU grace period in socket release
-Date: Fri,  2 Jan 2015 23:00:22 +0100
-Message-Id: <daae84cd33bfde8518b849176e25dcf3eea8014b.1420230585.git.tgraf@suug.ch>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1420230585.git.tgraf@suug.ch>
-References: <cover.1420230585.git.tgraf@suug.ch>
-In-Reply-To: <cover.1420230585.git.tgraf@suug.ch>
-References: <cover.1420230585.git.tgraf@suug.ch>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@suug.ch> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 2 Jan 2015 17:03:54 -0500
+Date: Fri, 2 Jan 2015 22:03:52 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Oscar Forner Martinez <oscar.forner.martinez@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs: isofs: Fix bug in the way to check if the year is a
+ leap year
+Message-ID: <20150102220352.GW22149@ZenIV.linux.org.uk>
+References: <1420214928-7104-1-git-send-email-oscar.forner.martinez@gmail.com>
+ <20150102171030.GR22149@ZenIV.linux.org.uk>
+ <CADZ0XgJMzsgSBZEJdQ5FqEWVB+Y_ZHD0Vy5HFy-hbWVjwqy7KA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADZ0XgJMzsgSBZEJdQ5FqEWVB+Y_ZHD0Vy5HFy-hbWVjwqy7KA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Defers the release of the socket reference using call_rcu() to
-allow using an RCU read-side protected call to rhashtable_lookup()
+On Fri, Jan 02, 2015 at 09:26:35PM +0000, Oscar Forner Martinez wrote:
 
-This restores behaviour and performance gains as previously
-introduced by e341694 ("netlink: Convert netlink_lookup() to use
-RCU protected hash table") without the side effect of severely
-delayed socket destruction.
+> I did not know that function.
 
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
----
- net/netlink/af_netlink.c | 32 ++++++++++++++++----------------
- net/netlink/af_netlink.h |  1 +
- 2 files changed, 17 insertions(+), 16 deletions(-)
+Neither did I ;-)  What I'd done was
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 738c3bf..298e1df 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -97,12 +97,12 @@ static int netlink_dump(struct sock *sk);
- static void netlink_skb_destructor(struct sk_buff *skb);
- 
- /* nl_table locking explained:
-- * Lookup and traversal are protected with nl_sk_hash_lock or nl_table_lock
-- * combined with an RCU read-side lock. Insertion and removal are protected
-- * with nl_sk_hash_lock while using RCU list modification primitives and may
-- * run in parallel to nl_table_lock protected lookups. Destruction of the
-- * Netlink socket may only occur *after* nl_table_lock has been acquired
-- * either during or after the socket has been removed from the list.
-+ * Lookup and traversal are protected with an RCU read-side lock. Insertion
-+ * and removal are protected with nl_sk_hash_lock while using RCU list
-+ * modification primitives and may run in parallel to RCU protected lookups.
-+ * Destruction of the Netlink socket may only occur *after* nl_table_lock has
-+ * been acquired * either during or after the socket has been removed from
-+ * the list and after an RCU grace period.
-  */
- DEFINE_RWLOCK(nl_table_lock);
- EXPORT_SYMBOL_GPL(nl_table_lock);
-@@ -1003,13 +1003,11 @@ static struct sock *netlink_lookup(struct net *net, int protocol, u32 portid)
- 	struct netlink_table *table = &nl_table[protocol];
- 	struct sock *sk;
- 
--	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	sk = __netlink_lookup(table, portid, net);
- 	if (sk)
- 		sock_hold(sk);
- 	rcu_read_unlock();
--	read_unlock(&nl_table_lock);
- 
- 	return sk;
- }
-@@ -1183,6 +1181,13 @@ out_module:
- 	goto out;
- }
- 
-+static void deferred_put_nlk_sk(struct rcu_head *head)
-+{
-+	struct netlink_sock *nlk = container_of(head, struct netlink_sock, rcu);
-+
-+	sock_put(&nlk->sk);
-+}
-+
- static int netlink_release(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
-@@ -1248,7 +1253,7 @@ static int netlink_release(struct socket *sock)
- 	local_bh_disable();
- 	sock_prot_inuse_add(sock_net(sk), &netlink_proto, -1);
- 	local_bh_enable();
--	sock_put(sk);
-+	call_rcu(&nlk->rcu, deferred_put_nlk_sk);
- 	return 0;
- }
- 
-@@ -1263,7 +1268,6 @@ static int netlink_autobind(struct socket *sock)
- 
- retry:
- 	cond_resched();
--	netlink_table_grab();
- 	rcu_read_lock();
- 	if (__netlink_lookup(table, portid, net)) {
- 		/* Bind collision, search negative portid values. */
-@@ -1271,11 +1275,9 @@ retry:
- 		if (rover > -4097)
- 			rover = -4097;
- 		rcu_read_unlock();
--		netlink_table_ungrab();
- 		goto retry;
- 	}
- 	rcu_read_unlock();
--	netlink_table_ungrab();
- 
- 	err = netlink_insert(sk, net, portid);
- 	if (err == -EADDRINUSE)
-@@ -2910,9 +2912,8 @@ static struct sock *netlink_seq_socket_idx(struct seq_file *seq, loff_t pos)
- }
- 
- static void *netlink_seq_start(struct seq_file *seq, loff_t *pos)
--	__acquires(nl_table_lock) __acquires(RCU)
-+	__acquires(RCU)
- {
--	read_lock(&nl_table_lock);
- 	rcu_read_lock();
- 	return *pos ? netlink_seq_socket_idx(seq, *pos - 1) : SEQ_START_TOKEN;
- }
-@@ -2964,10 +2965,9 @@ static void *netlink_seq_next(struct seq_file *seq, void *v, loff_t *pos)
- }
- 
- static void netlink_seq_stop(struct seq_file *seq, void *v)
--	__releases(RCU) __releases(nl_table_lock)
-+	__releases(RCU)
- {
- 	rcu_read_unlock();
--	read_unlock(&nl_table_lock);
- }
- 
- 
-diff --git a/net/netlink/af_netlink.h b/net/netlink/af_netlink.h
-index f123a88..fd96fa7 100644
---- a/net/netlink/af_netlink.h
-+++ b/net/netlink/af_netlink.h
-@@ -50,6 +50,7 @@ struct netlink_sock {
- #endif /* CONFIG_NETLINK_MMAP */
- 
- 	struct rhash_head	node;
-+	struct rcu_head		rcu;
- };
- 
- static inline struct netlink_sock *nlk_sk(struct sock *sk)
--- 
-1.9.3
+; git grep -n -w date.*seconds
+drivers/rtc/rtc-lib.c:117: * Convert Gregorian date to seconds since 01-01-1970 00:00:00.
+fs/fat/misc.c:192:/* Convert a FAT time/date pair to a UNIX date (seconds since 1 1 70). */
+fs/ncpfs/dir.c:1193:/* Convert a MS-DOS time/date pair to a UNIX date (seconds since 1 1 70). */
+fs/nfs/nfs4proc.c:6868:                 clp->cl_implid->date.seconds,
+fs/nfs/nfs4proc.c:6869:                 clp->cl_implid->date.nseconds);
+fs/nfs/nfs4xdr.c:5532:          p = xdr_decode_hyper(p, &res->impl_id->date.seconds);
+fs/nfs/nfs4xdr.c:5533:          res->impl_id->date.nseconds = be32_to_cpup(p);
+fs/nfs/super.c:762:                        impl_id->date.seconds, impl_id->date.nseconds);
+kernel/time/time.c:308: * mktime64 - Converts date to seconds.
+kernel/time/time.c:309: * Converts Gregorian date to seconds since 1970-01-01 00:00:00.
+scripts/analyze_suspend.py:165:                 utcoffset = int((datetime.now() - datetime.utcnow()).total_seconds())
+;
 
+and that was it.  While we are at it, drivers/rtc hit is a wrapper around
+mktime64(), fs/nfs ones are obviously noise from quick and dirty search
+pattern and so's scripts/analyze_suspend.py one.  fs/fat/misc.c and
+fs/ncpfs/dir.c ones, though, are really asking for being converted to
+mktime64().
+
+While we are grepping, git grep -n '\<31\>.*\<28\>.*\<31\>' also finds
+something interesting -
+arch/m68k/bvme6000/rtc.c:34:{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+arch/m68k/mvme16x/rtc.c:33:{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+drivers/char/ds1302.c:153:    {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+drivers/char/genrtc.c:83:{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+drivers/char/rtc.c:212:{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+are all about the same thing - open-coded
+rtc_month_days(), if not open-coded rtc_valid_tm().  Might be worth looking
+into...  And another hit (arch/powerpc/kernel/time.c:to_tm()) is downright
+obscene:
+        /* Number of months in days left */
+        if (leapyear(tm->tm_year))
+                days_in_month(FEBRUARY) = 29;
+        for (i = 1; day >= days_in_month(i); i++)
+                day -= days_in_month(i);
+        days_in_month(FEBRUARY) = 28;
+(whadday mean, "locking"?)  Almost certainly wants to switch to time_to_tm()...
