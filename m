@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbbABWCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 17:02:24 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:39302 "EHLO
+	id S1752643AbbABWAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 17:00:47 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:39309 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbbABWAm (ORCPT
+	with ESMTP id S1752553AbbABWAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 17:00:42 -0500
+	Fri, 2 Jan 2015 17:00:45 -0500
 From: Thomas Graf <tgraf@suug.ch>
 To: davem@davemloft.net
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         herbert@gondor.apana.org.au, paulmck@linux.vnet.ibm.com,
-        edumazet@google.com, john.r.fastabend@intel.com, josh@joshtriplett.org,
-        netfilter-devel@vger.kernel.org
-Subject: [PATCH 5/9] nft_hash: Remove rhashtable_remove_pprev()
-Date: Fri,  2 Jan 2015 23:00:18 +0100
-Message-Id: <257e56ba4e6b8c7d556de5c8cfe86e048f1aa264.1420230585.git.tgraf@suug.ch>
+        edumazet@google.com, john.r.fastabend@intel.com, josh@joshtriplett.org
+Subject: [PATCH 6/9] spinlock: Add spin_lock_bh_nested()
+Date: Fri,  2 Jan 2015 23:00:19 +0100
+Message-Id: <f858445f9a939d8c543fe9b34246ef7165072413.1420230585.git.tgraf@suug.ch>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1420230585.git.tgraf@suug.ch>
 References: <cover.1420230585.git.tgraf@suug.ch>
@@ -27,123 +26,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The removal function of nft_hash currently stores a reference to the
-previous element during lookup which is used to optimize removal later
-on. This was possible because a lock is held throughout calling
-rhashtable_lookup() and rhashtable_remove().
-
-With the introdution of deferred table resizing in parallel to lookups
-and insertions, the nftables lock will no longer synchronize all
-table mutations and the stored pprev may become invalid.
-
-Removing this optimization makes removal slightly more expensive on
-average but allows taking the resize cost out of the insert and
-remove path.
-
 Signed-off-by: Thomas Graf <tgraf@suug.ch>
-Cc: netfilter-devel@vger.kernel.org
 ---
- include/linux/rhashtable.h |  2 --
- lib/rhashtable.c           | 34 +++++++---------------------------
- net/netfilter/nft_hash.c   | 11 +++--------
- 3 files changed, 10 insertions(+), 37 deletions(-)
+ include/linux/spinlock.h         | 8 ++++++++
+ include/linux/spinlock_api_smp.h | 2 ++
+ include/linux/spinlock_api_up.h  | 1 +
+ kernel/locking/spinlock.c        | 8 ++++++++
+ 4 files changed, 19 insertions(+)
 
-diff --git a/include/linux/rhashtable.h b/include/linux/rhashtable.h
-index b54e24a..f624d4b 100644
---- a/include/linux/rhashtable.h
-+++ b/include/linux/rhashtable.h
-@@ -105,8 +105,6 @@ int rhashtable_init(struct rhashtable *ht, struct rhashtable_params *params);
+diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+index 262ba4e..3e18379 100644
+--- a/include/linux/spinlock.h
++++ b/include/linux/spinlock.h
+@@ -190,6 +190,8 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # define raw_spin_lock_nested(lock, subclass) \
+ 	_raw_spin_lock_nested(lock, subclass)
++# define raw_spin_lock_bh_nested(lock, subclass) \
++	_raw_spin_lock_bh_nested(lock, subclass)
  
- void rhashtable_insert(struct rhashtable *ht, struct rhash_head *node);
- bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *node);
--void rhashtable_remove_pprev(struct rhashtable *ht, struct rhash_head *obj,
--			     struct rhash_head __rcu **pprev);
+ # define raw_spin_lock_nest_lock(lock, nest_lock)			\
+ 	 do {								\
+@@ -205,6 +207,7 @@ static inline void do_raw_spin_unlock(raw_spinlock_t *lock) __releases(lock)
+ # define raw_spin_lock_nested(lock, subclass)		\
+ 	_raw_spin_lock(((void)(subclass), (lock)))
+ # define raw_spin_lock_nest_lock(lock, nest_lock)	_raw_spin_lock(lock)
++# define raw_spin_lock_bh_nested(lock, subclass)	_raw_spin_lock_bh(lock)
+ #endif
  
- bool rht_grow_above_75(const struct rhashtable *ht, size_t new_size);
- bool rht_shrink_below_30(const struct rhashtable *ht, size_t new_size);
-diff --git a/lib/rhashtable.c b/lib/rhashtable.c
-index 0bd29c1..e6b85c4 100644
---- a/lib/rhashtable.c
-+++ b/lib/rhashtable.c
-@@ -345,32 +345,6 @@ void rhashtable_insert(struct rhashtable *ht, struct rhash_head *obj)
- EXPORT_SYMBOL_GPL(rhashtable_insert);
+ #if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
+@@ -324,6 +327,11 @@ do {								\
+ 	raw_spin_lock_nested(spinlock_check(lock), subclass);	\
+ } while (0)
  
- /**
-- * rhashtable_remove_pprev - remove object from hash table given previous element
-- * @ht:		hash table
-- * @obj:	pointer to hash head inside object
-- * @pprev:	pointer to previous element
-- *
-- * Identical to rhashtable_remove() but caller is alreayd aware of the element
-- * in front of the element to be deleted. This is in particular useful for
-- * deletion when combined with walking or lookup.
-- */
--void rhashtable_remove_pprev(struct rhashtable *ht, struct rhash_head *obj,
--			     struct rhash_head __rcu **pprev)
--{
--	struct bucket_table *tbl = rht_dereference(ht->tbl, ht);
--
--	ASSERT_RHT_MUTEX(ht);
--
--	RCU_INIT_POINTER(*pprev, obj->next);
--	ht->nelems--;
--
--	if (ht->p.shrink_decision &&
--	    ht->p.shrink_decision(ht, tbl->size))
--		rhashtable_shrink(ht);
--}
--EXPORT_SYMBOL_GPL(rhashtable_remove_pprev);
--
--/**
-  * rhashtable_remove - remove object from hash table
-  * @ht:		hash table
-  * @obj:	pointer to hash head inside object
-@@ -403,7 +377,13 @@ bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *obj)
- 			continue;
- 		}
- 
--		rhashtable_remove_pprev(ht, he, pprev);
-+		RCU_INIT_POINTER(*pprev, he->next);
-+		ht->nelems--;
++#define spin_lock_bh_nested(lock, subclass)			\
++do {								\
++	raw_spin_lock_bh_nested(spinlock_check(lock), subclass);\
++} while (0)
 +
-+		if (ht->p.shrink_decision &&
-+		    ht->p.shrink_decision(ht, tbl->size))
-+			rhashtable_shrink(ht);
-+
- 		return true;
- 	}
+ #define spin_lock_nest_lock(lock, nest_lock)				\
+ do {									\
+ 	raw_spin_lock_nest_lock(spinlock_check(lock), nest_lock);	\
+diff --git a/include/linux/spinlock_api_smp.h b/include/linux/spinlock_api_smp.h
+index 42dfab8..5344268 100644
+--- a/include/linux/spinlock_api_smp.h
++++ b/include/linux/spinlock_api_smp.h
+@@ -22,6 +22,8 @@ int in_lock_functions(unsigned long addr);
+ void __lockfunc _raw_spin_lock(raw_spinlock_t *lock)		__acquires(lock);
+ void __lockfunc _raw_spin_lock_nested(raw_spinlock_t *lock, int subclass)
+ 								__acquires(lock);
++void __lockfunc _raw_spin_lock_bh_nested(raw_spinlock_t *lock, int subclass)
++								__acquires(lock);
+ void __lockfunc
+ _raw_spin_lock_nest_lock(raw_spinlock_t *lock, struct lockdep_map *map)
+ 								__acquires(lock);
+diff --git a/include/linux/spinlock_api_up.h b/include/linux/spinlock_api_up.h
+index d0d1888..d3afef9 100644
+--- a/include/linux/spinlock_api_up.h
++++ b/include/linux/spinlock_api_up.h
+@@ -57,6 +57,7 @@
  
-diff --git a/net/netfilter/nft_hash.c b/net/netfilter/nft_hash.c
-index d93f1f4..7f903cf 100644
---- a/net/netfilter/nft_hash.c
-+++ b/net/netfilter/nft_hash.c
-@@ -83,15 +83,10 @@ static void nft_hash_remove(const struct nft_set *set,
- 			    const struct nft_set_elem *elem)
- {
- 	struct rhashtable *priv = nft_set_priv(set);
--	struct rhash_head *he, __rcu **pprev;
--
--	pprev = elem->cookie;
--	he = rht_dereference((*pprev), priv);
--
--	rhashtable_remove_pprev(priv, he, pprev);
- 
-+	rhashtable_remove(priv, elem->cookie);
- 	synchronize_rcu();
--	kfree(he);
-+	kfree(elem->cookie);
+ #define _raw_spin_lock(lock)			__LOCK(lock)
+ #define _raw_spin_lock_nested(lock, subclass)	__LOCK(lock)
++#define _raw_spin_lock_bh_nested(lock, subclass) __LOCK(lock)
+ #define _raw_read_lock(lock)			__LOCK(lock)
+ #define _raw_write_lock(lock)			__LOCK(lock)
+ #define _raw_spin_lock_bh(lock)			__LOCK_BH(lock)
+diff --git a/kernel/locking/spinlock.c b/kernel/locking/spinlock.c
+index 4b082b5..db3ccb1 100644
+--- a/kernel/locking/spinlock.c
++++ b/kernel/locking/spinlock.c
+@@ -363,6 +363,14 @@ void __lockfunc _raw_spin_lock_nested(raw_spinlock_t *lock, int subclass)
  }
+ EXPORT_SYMBOL(_raw_spin_lock_nested);
  
- struct nft_compare_arg {
-@@ -105,7 +100,7 @@ static bool nft_hash_compare(void *ptr, void *arg)
- 	struct nft_compare_arg *x = arg;
- 
- 	if (!nft_data_cmp(&he->key, &x->elem->key, x->set->klen)) {
--		x->elem->cookie = &he->node;
-+		x->elem->cookie = he;
- 		x->elem->flags = 0;
- 		if (x->set->flags & NFT_SET_MAP)
- 			nft_data_copy(&x->elem->data, he->data);
++void __lockfunc _raw_spin_lock_bh_nested(raw_spinlock_t *lock, int subclass)
++{
++	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_LOCK_OFFSET);
++	spin_acquire(&lock->dep_map, subclass, 0, _RET_IP_);
++	LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
++}
++EXPORT_SYMBOL(_raw_spin_lock_bh_nested);
++
+ unsigned long __lockfunc _raw_spin_lock_irqsave_nested(raw_spinlock_t *lock,
+ 						   int subclass)
+ {
 -- 
 1.9.3
 
