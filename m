@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbbABLq1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 06:46:27 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:57485
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750761AbbABLq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 06:46:26 -0500
-X-IronPort-AV: E=Sophos;i="5.07,684,1413237600"; 
-   d="scan'208";a="95155749"
-Date: Fri, 2 Jan 2015 12:46:15 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Nicholas Mc Guire <der.herr@hofr.at>
-cc: Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
-        Andreas Platschek <platschek@ict.tuwien.ac.at>, cocci@systeme.lip6.fr,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3 RFC] Coccinelle: completion API checking
-In-Reply-To: <1420192752-4889-1-git-send-email-der.herr@hofr.at>
-Message-ID: <alpine.DEB.2.10.1501021241550.2558@hadrien>
-References: <1420192752-4889-1-git-send-email-der.herr@hofr.at>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752069AbbABLrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 06:47:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58714 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751018AbbABLrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 06:47:21 -0500
+Message-ID: <54A68540.7090808@redhat.com>
+Date: Fri, 02 Jan 2015 06:47:12 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Nicholas Mc Guire <der.herr@hofr.at>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Rashika <rashika.kheria@gmail.com>, Dave Jiang <dave.jiang@intel.com>,
+        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ioat: fail self-test if wait_for_completion times out
+References: <1419763047-15414-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1419763047-15414-1-git-send-email-der.herr@hofr.at>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Fri, 2 Jan 2015, Nicholas Mc Guire wrote:
+On 12/28/2014 05:37 AM, Nicholas Mc Guire wrote:
+> wait_for_completion_timeout reaching timeout was being ignored,
+> fail the self-test if timeout condition occurs.
+> 
+> Not sure about the indentations used (CodingStyle:Chapter 2)
+> 
+> this was only compile tested with
+> x86_64_defconfig + CONFIG_DMA_ENGINE=y + CONFIG_INTEL_IOATDMA=y
+> 
+> patch is against linux-next 3.19.0-rc1 -next-20141226
+> 
 
->
-> This little set of semantic patches is for partially checking the
-> completion API. It seems to be working correctly and has not yet
-> produced any false-positive.
->
-> The cases being detected are:
->
-> 1/3 - duplicate init_completions.
-> 2/3 - incorrect static initialization of completion on stack.
-> 3/3 - re-initialization of completion with init_completion() rather
->       than reinit_completion().
->
-> semantic patch                  findings   files  confirmed
-> duplicate_init_completion.cocci    2         2        2
-> false_declare_completion.cocci     6         5        3
-> false_init_compltion.cocci         9         6        5
->
-> Note: false_declare_completion.cocci runs extremely slow on my system
->       roughly a factor 10 slower than the other two - not clear why.
+Seems straightforward to me, although I don't think I've ever seen a failure in
+this code.
 
-The problem is the use of <... ...>.  That is good because it allows
-DECLARE_COMPLETION not to appear on some execution paths, but it is not so
-good because it allows DECLARE_COMPLETION to appear on no execution paths
-at all.  So the semantic patch is considered to be relevant to every file,
-and every file has to be parsed, which takes a lot of time.
+Acked-by: Prarit Bhargava <prarit@redhat.com>
 
-To fix the problem, you can first check whether the call actually exists
-in each function:
+P.
 
-@pre_e exists@
-identifier f;
-declarer name DECLARE_COMPLETION;
-@@
-
-f(...) {
-  <+...
-  DECLARE_COMPLETION(...);
-  ...+>
-}
-
-Then only run the second rules on functions for which pre_e is satisfied.
-That is, in the rule e, instead of putting identifier f, you can put
-identifier pre_e.f.  You can do the same in the rule ep.  Ep is already
-looking for the existence of an execution path, so for ep you could also
-just replace the <... ...> by <+... ...+> instead of relying on pre_e.
-
-julia
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
+>  drivers/dma/ioat/dma_v3.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index be307182..0659215 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -1311,7 +1311,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+> 
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+> 
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
+> +			!= DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test xor timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> @@ -1377,7 +1378,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+> 
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+> 
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
+> +			!= DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test validate timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> @@ -1429,7 +1431,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+> 
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+> 
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
+> +			!= DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test 2nd validate timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> --
+> 1.7.10.4
+> 
