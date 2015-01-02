@@ -1,202 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbbABTqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 14:46:14 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42741 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751569AbbABTqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 14:46:13 -0500
-From: Dave Gerlach <d-gerlach@ti.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, Suman Anna <s-anna@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
-        Dave Gerlach <d-gerlach@ti.com>
-Subject: [PATCH] remoteproc: Introduce rproc_get_by_phandle API
-Date: Fri, 2 Jan 2015 13:45:21 -0600
-Message-ID: <1420227921-40853-1-git-send-email-d-gerlach@ti.com>
-X-Mailer: git-send-email 2.1.0
+	id S1752206AbbABTqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 14:46:23 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33447 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbbABTqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 14:46:20 -0500
+Date: Fri, 2 Jan 2015 20:46:16 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Richard Weinberger <richard@nod.at>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        DaeSeok Youn <daeseok.youn@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
+Message-ID: <20150102194616.GA27538@amd>
+References: <1419457167-15042-1-git-send-email-richard@nod.at>
+ <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
+ <20150102051142.GF4873@amd>
+ <54A67A38.3000207@nod.at>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A67A38.3000207@nod.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow users of remoteproc the ability to get a handle to an rproc by
-passing a phandle supplied in the user's device tree node. This is
-useful in situations that require manual booting of the rproc.
+On Fri 2015-01-02 12:00:08, Richard Weinberger wrote:
+> Am 02.01.2015 um 06:11 schrieb Pavel Machek:
+> > On Tue 2014-12-30 10:40:15, Kees Cook wrote:
+> >> On Wed, Dec 24, 2014 at 1:39 PM, Richard Weinberger <richard@nod.at> wrote:
+> >>> While exploring the offset2lib attack I remembered that
+> >>> grsecurity has an interesting feature to make such attacks
+> >>> much harder. Exploits can brute stack canaries often very easily
+> >>> if the target is a forking server like sshd or Apache httpd.
+> >>> The problem is that after fork() the child has by definition
+> >>> exactly the same memory as the parent and therefore also the same
+> >>> stack canaries.
+> >>> The attacker can guess the stack canaries byte by byte.
+> >>> After 256 times 7 forks() a good exploit can find the correct
+> >>> canary value.
+> >>>
+> >>> The basic idea behind this patch is to delay fork() if a child died
+> >>> due to a fatal error.
+> >>> Currently it delays fork() by 30 seconds if the parent tries to fork()
+> >>> within 60 seconds after a child died due to a fatal error.
+> >>>
+> >>> I'm sure you'll hate this patch but I want to find out how much you hate it
+> >>> and whether there is a little chance to get it mainline in a modified form.
+> >>> Later I'd make it depend on a new Kconfig option and off by default
+> >>> and the timing constants changeable via sysctl.
+> > 
+> > Does this break trinity, crashme, and similar programs?
+> 
+> If they fork() without execve() and a child dies very fast the next fork()
+> will be throttled.
+> This is why I'd like to make this feature disabled by default.
+> 
+> > Can you detect it died due to the stack canary? Then, the patch might
+> > be actually acceptable.
+> 
+> I don't think so as this is glibc specific.
 
-This patch uses the code removed by commit 40e575b1d0b3 ("remoteproc:
-remove the get_by_name/put API") for the ref counting a rproc klist
-code but has rproc_get_by_name replaced with an rproc_get_by_phandle API.
+Can the slowdown be impelmented in glibc, then?
 
-Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
----
- Documentation/remoteproc.txt         |  6 +++
- drivers/remoteproc/remoteproc_core.c | 85 ++++++++++++++++++++++++++++++++++++
- include/linux/remoteproc.h           |  1 +
- 3 files changed, 92 insertions(+)
-
-diff --git a/Documentation/remoteproc.txt b/Documentation/remoteproc.txt
-index e6469fd..81b5240 100644
---- a/Documentation/remoteproc.txt
-+++ b/Documentation/remoteproc.txt
-@@ -51,6 +51,12 @@ cost.
-         rproc_shutdown() returns, and users can still use it with a subsequent
-         rproc_boot(), if needed.
- 
-+  struct rproc *rproc_get_by_phandle(const char *name)
-+    - Find an rproc handle using a device tree phandle. Returns the rproc
-+      handle on success, and NULL on failure. This function increments
-+      the remote processor's refcount, so always use rproc_put() to
-+      decrement it back once rproc isn't needed anymore.
-+
- 3. Typical usage
- 
- #include <linux/remoteproc.h>
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index e2bd869..6b78ba4 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -27,6 +27,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/device.h>
-+#include <linux/of.h>
- #include <linux/slab.h>
- #include <linux/mutex.h>
- #include <linux/dma-mapping.h>
-@@ -36,6 +37,7 @@
- #include <linux/remoteproc.h>
- #include <linux/iommu.h>
- #include <linux/idr.h>
-+#include <linux/klist.h>
- #include <linux/elf.h>
- #include <linux/crc32.h>
- #include <linux/virtio_ids.h>
-@@ -44,6 +46,17 @@
- 
- #include "remoteproc_internal.h"
- 
-+static void klist_rproc_get(struct klist_node *n);
-+static void klist_rproc_put(struct klist_node *n);
-+
-+/*
-+ * klist of the available remote processors.
-+ *
-+ * We need this in order to support rproc lookups (needed by the
-+ * rproc_get_by_phandle()).
-+ */
-+static DEFINE_KLIST(rprocs, klist_rproc_get, klist_rproc_put);
-+
- typedef int (*rproc_handle_resources_t)(struct rproc *rproc,
- 				struct resource_table *table, int len);
- typedef int (*rproc_handle_resource_t)(struct rproc *rproc,
-@@ -1234,6 +1247,72 @@ out:
- }
- EXPORT_SYMBOL(rproc_shutdown);
- 
-+/* will be called when an rproc is added to the rprocs klist */
-+static void klist_rproc_get(struct klist_node *n)
-+{
-+	struct rproc *rproc = container_of(n, struct rproc, node);
-+
-+	get_device(&rproc->dev);
-+}
-+
-+/* will be called when an rproc is removed from the rprocs klist */
-+static void klist_rproc_put(struct klist_node *n)
-+{
-+	struct rproc *rproc = container_of(n, struct rproc, node);
-+
-+	put_device(&rproc->dev);
-+}
-+
-+static struct rproc *next_rproc(struct klist_iter *i)
-+{
-+	struct klist_node *n;
-+
-+	n = klist_next(i);
-+	if (!n)
-+		return NULL;
-+
-+	return container_of(n, struct rproc, node);
-+}
-+
-+/**
-+ * rproc_get_by_phandle() - find a remote processor by phandle and boot it
-+ * @phandle: phandle to the rproc
-+ *
-+ * Finds an rproc handle using the remote processor's phandle, and then
-+ * boot it. If it's already powered on, then just immediately return
-+ * (successfully).
-+ *
-+ * Returns the rproc handle on success, and NULL on failure.
-+ *
-+ * This function increments the remote processor's refcount, so always
-+ * use rproc_put() to decrement it back once rproc isn't needed anymore.
-+ *
-+ * Note: currently this function (and its counterpart rproc_put()) are not
-+ * being used. We need to scrutinize the use cases
-+ * that still need them, and see if we can migrate them to use the non
-+ * name-based boot/shutdown interface.
-+ */
-+struct rproc *rproc_get_by_phandle(uint32_t phandle)
-+{
-+	struct rproc *rproc;
-+	struct klist_iter i;
-+	struct device_node *np;
-+
-+	np = of_find_node_by_phandle(phandle);
-+
-+	/* find the remote processor, and upref its refcount */
-+	klist_iter_init(&rprocs, &i);
-+	while ((rproc = next_rproc(&i)) != NULL)
-+		if (rproc->dev.parent && rproc->dev.parent->of_node == np) {
-+			get_device(&rproc->dev);
-+			break;
-+		}
-+	klist_iter_exit(&i);
-+
-+	return rproc;
-+}
-+EXPORT_SYMBOL(rproc_get_by_phandle);
-+
- /**
-  * rproc_add() - register a remote processor
-  * @rproc: the remote processor handle to register
-@@ -1263,6 +1342,9 @@ int rproc_add(struct rproc *rproc)
- 	if (ret < 0)
- 		return ret;
- 
-+	/* expose to rproc_get_by_phandle users */
-+	klist_add_tail(&rproc->node, &rprocs);
-+
- 	dev_info(dev, "%s is available\n", rproc->name);
- 
- 	dev_info(dev, "Note: remoteproc is still under development and considered experimental.\n");
-@@ -1452,6 +1534,9 @@ int rproc_del(struct rproc *rproc)
- 	/* Free the copy of the resource table */
- 	kfree(rproc->cached_table);
- 
-+	/* the rproc is downref'ed as soon as it's removed from the klist */
-+	klist_del(&rproc->node);
-+
- 	device_del(&rproc->dev);
- 
- 	return 0;
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index 2a25ee8..9bf7b52 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -522,6 +522,7 @@ struct rproc_vdev {
- 	u32 rsc_offset;
- };
- 
-+struct rproc *rproc_get_by_phandle(uint32_t phandle);
- struct rproc *rproc_alloc(struct device *dev, const char *name,
- 				const struct rproc_ops *ops,
- 				const char *firmware, int len);
+If not, can glibc provide enough information to the kernel to allow us
+to do the right thing?
+									Pavel
 -- 
-2.1.0
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
