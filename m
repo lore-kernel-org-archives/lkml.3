@@ -1,238 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbbABJnP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 04:43:15 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:57743 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbbABJnJ (ORCPT
+	id S1751490AbbABJqg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 04:46:36 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:37884 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbbABJqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 04:43:09 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-5d-54a6682b3703
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
-        Ashish Sangwan <a.sangwan@samsung.com>,
-        Brian Foster <bfoster@redhat.com>
-Subject: [PATCH v7 11/11] xfstests: fsx: Add fallocate insert range operation
-Date: Fri, 02 Jan 2015 18:43:07 +0900
-Message-id: <004901d02670$835ac120$8a104360$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAmb+b4hB7if8ceQOKQqTqsl6mwjw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkQFc7Y1mIwbV+Y4ulEy8xW7z7XGWx
-	5dg9RouZ8+6wWezZe5LF4vKuOWwWrT0/2S0W9d1idODwOLVIwqPpzFFmj9UXtjJ6vN93lc2j
-	b8sqRo/Pm+QC2KK4bFJSczLLUov07RK4Mi6c28NW8ESzorMnu4HxhEIXIyeHhICJRO/hI2wQ
-	tpjEhXvrgWwuDiGBpYwS094+Y4Ypur/mNCtEYjqjRP/2fywQzl9GiXO3GoBaODjYBLQl/mwR
-	BWkQEXCVmHf3OyNIDbPACUaJ9ZOXsIAkhAV8JW40fQabyiKgKvHi9S9WEJtXwFJi8bLHbBC2
-	oMSPyffA6pkFtCTW7zzOBGHLS2xe8xbqIgWJHWdfM0Is05N409/NDFEjIrHvxTuwxRICt9gl
-	5rxexgKxTEDi2+RDLCCHSgjISmw6ADVHUuLgihssExjFZiFZPQvJ6llIVs9CsmIBI8sqRtHU
-	guSC4qT0IiO94sTc4tK8dL3k/NxNjMD4PP3vWd8OxpsHrA8xCnAwKvHwKlxbGiLEmlhWXJl7
-	iNEU6KKJzFKiyfnAJJBXEm9obGZkYWpiamxkbmmmJM6bIPUzWEggPbEkNTs1tSC1KL6oNCe1
-	+BAjEwenVANj0NR3hm3LmmbwOKx+qNDvM63jgfqXKY258lr+byVarZg4Pl5m4/P973jz9OUp
-	a6+nFqwxN/A+EnM1uW738pP85l8SArM6eC4v3Op7w/lb9n3tYzfWZGwNa+pU+vdFwDjszdp/
-	hZHtZT69zNMKq89n/p7sVrZV+cyb7k8+95Kal9vf/h+YG86oxFKckWioxVxUnAgAfd74O8oC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xoK52xrIQg5PPtCyWTrzEbPHuc5XF
-	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
-	vi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hx4dwetoIn
-	mhWdPdkNjCcUuhg5OSQETCTurznNCmGLSVy4t56ti5GLQ0hgOqNE//Z/LBDOX0aJc7cagDIc
-	HGwC2hJ/toiCNIgIuErMu/udEaSGWeAEo8T6yUtYQBLCAr4SN5o+M4PYLAKqEi9e/wLbwCtg
-	KbF42WM2CFtQ4sfke2D1zAJaEut3HmeCsOUlNq95ywxxkYLEjrOvGSGW6Um86e9mhqgRkdj3
-	4h3jBEaBWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERz9z6R3
-	MK5qsDjEKMDBqMTDq3BtaYgQa2JZcWXuIUYJDmYlEd4+uSUhQrwpiZVVqUX58UWlOanFhxhN
-	gT6dyCwlmpwPTEx5JfGGxiZmRpZG5oYWRsbmSuK8SvZtIUIC6YklqdmpqQWpRTB9TBycUg2M
-	S/V5du8TM/H/aRAl8/f8kQ/CF1pvq0yK+XIicldUaGfC13+LJi03yOpS2z/9Xtnq7Oeqf2b2
-	Xvs9J9E9ZXtN2YfjOV3HXie/jxFSOiKjfVB5+nmWrL/LL7DpmpqFpKdwTu5Kzss+fiV8y8Wd
-	O9gm+QqFbV5cab1j7VvdLz94lEwzjm6fP2XLPyWW4oxEQy3mouJEANuuVdMUAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 2 Jan 2015 04:46:31 -0500
+Date: Fri, 2 Jan 2015 10:46:25 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Chen Gang <gang.chen@sunrus.com.cn>
+Cc: schwidefsky@de.ibm.com, linux390@de.ibm.com, holzheu@linux.vnet.ibm.com,
+        linux-s390@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] s390: include: timex: Use macro CLOCK_STORE_SIZE instead
+ of hard code number
+Message-ID: <20150102094625.GA4059@osiris>
+References: <54A55954.6000002@sunrus.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A55954.6000002@sunrus.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010209-0025-0000-0000-0000032600D8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds fallocate FALLOC_FL_INSERT_RANGE support for fsx.
+On Thu, Jan 01, 2015 at 10:27:32PM +0800, Chen Gang wrote:
+> For C language, it treats array parameter as a pointer, so sizeof for an
+> array parameter is equal to sizeof for a pointer, which causes compiler
+> warning (with allmodconfig by gcc 5):
+> 
+>     CC      arch/s390/kernel/asm-offsets.s
+>   In file included from include/linux/timex.h:65:0,
+>                    from include/linux/sched.h:19,
+>                    from include/linux/kvm_host.h:15,
+>                    from arch/s390/kernel/asm-offsets.c:10:
+>   ./arch/s390/include/asm/timex.h: In function 'get_tod_clock_ext':
+>   ./arch/s390/include/asm/timex.h:76:32: warning: 'sizeof' on array function parameter 'clk' will return size of 'char *' [-Wsizeof-array-argument]
+>     typedef struct { char _[sizeof(clk)]; } addrtype;
+>                                   ^
+> 
+> Can use macro CLOCK_STORE_SIZE instead of all related hard code numbers,
+> which also can avoid this warning. And also add a tab to CLOCK_TICK_RATE
+> definition to match coding styles.
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+Thanks. I applied the slightly changed version below.
+
+>From 77e1e6fd8f5ce0d96c035056f9e963ca7d9198b2 Mon Sep 17 00:00:00 2001
+From: Chen Gang <gang.chen@sunrus.com.cn>
+Date: Thu, 1 Jan 2015 22:27:32 +0800
+Subject: [PATCH] s390/timex: fix get_tod_clock_ext() inline assembly
+
+For C language, it treats array parameter as a pointer, so sizeof for an
+array parameter is equal to sizeof for a pointer, which causes compiler
+warning (with allmodconfig by gcc 5):
+
+  ./arch/s390/include/asm/timex.h: In function 'get_tod_clock_ext':
+  ./arch/s390/include/asm/timex.h:76:32: warning: 'sizeof' on array function parameter 'clk' will return size of 'char *' [-Wsizeof-array-argument]
+    typedef struct { char _[sizeof(clk)]; } addrtype;
+                                  ^
+Can use macro CLOCK_STORE_SIZE instead of all related hard code numbers,
+which also can avoid this warning. And also add a tab to CLOCK_TICK_RATE
+definition to match coding styles.
+
+[heiko.carstens@de.ibm.com]:
+Chen's patch actually fixes a bug within the get_tod_clock_ext() inline assembly
+where we incorrectly tell the compiler that only 8 bytes of memory get changed
+instead of 16 bytes.
+This would allow gcc to generate incorrect code. Right now this doesn't seem to
+be the case.
+Also slightly changed the patch a bit.
+- renamed CLOCK_STORE_SIZE to STORE_CLOCK_SIZE
+- changed get_tod_clock_ext() to receive a char pointer parameter
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- ltp/fsx.c | 96 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 94 insertions(+), 2 deletions(-)
+ arch/s390/hypfs/hypfs_vm.c    |  2 +-
+ arch/s390/include/asm/timex.h | 10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/ltp/fsx.c b/ltp/fsx.c
-index 47d3ee8..9dc1655 100644
---- a/ltp/fsx.c
-+++ b/ltp/fsx.c
-@@ -95,7 +95,8 @@ int			logcount = 0;	/* total ops */
- #define OP_PUNCH_HOLE		6
- #define OP_ZERO_RANGE		7
- #define OP_COLLAPSE_RANGE	8
--#define OP_MAX_FULL		9
-+#define OP_INSERT_RANGE	9
-+#define OP_MAX_FULL		10
- 
- /* operation modifiers */
- #define OP_CLOSEOPEN	100
-@@ -145,6 +146,7 @@ int     fallocate_calls = 1;            /* -F flag disables */
- int     punch_hole_calls = 1;           /* -H flag disables */
- int     zero_range_calls = 1;           /* -z flag disables */
- int	collapse_range_calls = 1;	/* -C flag disables */
-+int	insert_range_calls = 1;		/* -i flag disables */
- int 	mapped_reads = 1;		/* -R flag disables it */
- int	fsxgoodfd = 0;
- int	o_direct;			/* -Z */
-@@ -339,6 +341,14 @@ logdump(void)
- 						     lp->args[0] + lp->args[1])
- 				prt("\t******CCCC");
- 			break;
-+		case OP_INSERT_RANGE:
-+			prt("INSERT 0x%x thru 0x%x\t(0x%x bytes)",
-+			    lp->args[0], lp->args[0] + lp->args[1] - 1,
-+			    lp->args[1]);
-+			if (badoff >= lp->args[0] && badoff <
-+						     lp->args[0] + lp->args[1])
-+				prt("\t******CCCC");
-+			break;
- 		case OP_SKIPPED:
- 			prt("SKIPPED (no operation)");
- 			break;
-@@ -1012,6 +1022,59 @@ do_collapse_range(unsigned offset, unsigned length)
+diff --git a/arch/s390/hypfs/hypfs_vm.c b/arch/s390/hypfs/hypfs_vm.c
+index 32040ace00ea..99a3e6b395ab 100644
+--- a/arch/s390/hypfs/hypfs_vm.c
++++ b/arch/s390/hypfs/hypfs_vm.c
+@@ -231,7 +231,7 @@ failed:
+ struct dbfs_d2fc_hdr {
+ 	u64	len;		/* Length of d2fc buffer without header */
+ 	u16	version;	/* Version of header */
+-	char	tod_ext[16];	/* TOD clock for d2fc */
++	char	tod_ext[STORE_CLOCK_SIZE]; /* TOD clock for d2fc */
+ 	u64	count;		/* Number of VM guests in d2fc buffer */
+ 	char	reserved[30];
+ } __attribute__ ((packed));
+diff --git a/arch/s390/include/asm/timex.h b/arch/s390/include/asm/timex.h
+index 8beee1cceba4..582be106ab4a 100644
+--- a/arch/s390/include/asm/timex.h
++++ b/arch/s390/include/asm/timex.h
+@@ -67,20 +67,22 @@ static inline void local_tick_enable(unsigned long long comp)
+ 	set_clock_comparator(S390_lowcore.clock_comparator);
  }
- #endif
  
-+#ifdef FALLOC_FL_INSERT_RANGE
-+void
-+do_insert_range(unsigned offset, unsigned length)
-+{
-+	unsigned end_offset;
-+	int mode = FALLOC_FL_INSERT_RANGE;
-+
-+	if (length == 0) {
-+		if (!quiet && testcalls > simulatedopcount)
-+			prt("skipping zero length insert range\n");
-+		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-+		return;
-+	}
-+
-+	if ((loff_t)offset >= file_size) {
-+		if (!quiet && testcalls > simulatedopcount)
-+			prt("skipping insert range behind EOF\n");
-+		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-+		return;
-+	}
-+
-+	log4(OP_INSERT_RANGE, offset, length, 0);
-+
-+	if (testcalls <= simulatedopcount)
-+		return;
-+
-+	end_offset = offset + length;
-+	if ((progressinterval && testcalls % progressinterval == 0) ||
-+	    (debug && (monitorstart == -1 || monitorend == -1 ||
-+		      end_offset <= monitorend))) {
-+		prt("%lu insert\tfrom 0x%x to 0x%x, (0x%x bytes)\n", testcalls,
-+			offset, offset+length, length);
-+	}
-+	if (fallocate(fd, mode, (loff_t)offset, (loff_t)length) == -1) {
-+		prt("insert range: %x to %x\n", offset, length);
-+		prterr("do_insert_range: fallocate");
-+		report_failure(161);
-+	}
-+
-+	memmove(good_buf + end_offset, good_buf + offset,
-+		file_size - offset);
-+	memset(good_buf + offset, '\0', length);
-+	file_size += length;
-+}
-+
-+#else
-+void
-+do_insert_range(unsigned offset, unsigned length)
-+{
-+	return;
-+}
-+#endif
-+
- #ifdef HAVE_LINUX_FALLOC_H
- /* fallocate is basically a no-op unless extending, then a lot like a truncate */
- void
-@@ -1192,6 +1255,12 @@ test(void)
- 			goto out;
- 		}
- 		break;
-+	case OP_INSERT_RANGE:
-+		if (!insert_range_calls) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
-+		break;
- 	}
+-#define CLOCK_TICK_RATE	1193180 /* Underlying HZ */
++#define CLOCK_TICK_RATE		1193180 /* Underlying HZ */
++#define STORE_CLOCK_SIZE	16	/* number of bytes store clock writes */
  
- 	switch (op) {
-@@ -1244,6 +1313,21 @@ test(void)
- 		}
- 		do_collapse_range(offset, size);
- 		break;
-+	case OP_INSERT_RANGE:
-+		TRIM_OFF_LEN(offset, size, (maxfilelen - 1) - file_size);
-+		offset = offset & ~(block_size - 1);
-+		size = size & ~(block_size - 1);
-+		if (size == 0) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
-+		if (file_size + size > maxfilelen) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
+ typedef unsigned long long cycles_t;
+ 
+-static inline void get_tod_clock_ext(char clk[16])
++static inline void get_tod_clock_ext(char *clk)
+ {
+-	typedef struct { char _[sizeof(clk)]; } addrtype;
++	typedef struct { char _[STORE_CLOCK_SIZE]; } addrtype;
+ 
+ 	asm volatile("stcke %0" : "=Q" (*(addrtype *) clk) : : "cc");
+ }
+ 
+ static inline unsigned long long get_tod_clock(void)
+ {
+-	unsigned char clk[16];
++	unsigned char clk[STORE_CLOCK_SIZE];
 +
-+		do_insert_range(offset, size);
-+		break;
- 	default:
- 		prterr("test: unknown operation");
- 		report_failure(42);
-@@ -1307,6 +1391,9 @@ usage(void)
- #ifdef FALLOC_FL_COLLAPSE_RANGE
- "	-C: Do not use collapse range calls\n"
- #endif
-+#ifdef FALLOC_FL_INSERT_RANGE
-+"	-i: Do not use insert range calls\n"
-+#endif
- "	-L: fsxLite - no file creations & no file size changes\n\
- 	-N numops: total # operations to do (default infinity)\n\
- 	-O: use oplen (see -o flag) for every op (default random)\n\
-@@ -1493,7 +1580,7 @@ main(int argc, char **argv)
- 
- 	setvbuf(stdout, (char *)0, _IOLBF, 0); /* line buffered stdout */
- 
--	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCLN:OP:RS:WZ"))
-+	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCiLN:OP:RS:WZ"))
- 	       != EOF)
- 		switch (ch) {
- 		case 'b':
-@@ -1599,6 +1686,9 @@ main(int argc, char **argv)
- 		case 'C':
- 			collapse_range_calls = 0;
- 			break;
-+		case 'i':
-+			insert_range_calls = 0;
-+			break;
- 		case 'L':
- 		        lite = 1;
- 			break;
-@@ -1758,6 +1848,8 @@ main(int argc, char **argv)
- 		zero_range_calls = test_fallocate(FALLOC_FL_ZERO_RANGE);
- 	if (collapse_range_calls)
- 		collapse_range_calls = test_fallocate(FALLOC_FL_COLLAPSE_RANGE);
-+	if (insert_range_calls)
-+		insert_range_calls = test_fallocate(FALLOC_FL_INSERT_RANGE);
- 
- 	while (numops == -1 || numops--)
- 		test();
+ 	get_tod_clock_ext(clk);
+ 	return *((unsigned long long *)&clk[1]);
+ }
 -- 
-1.7.11-rc0
+1.8.5.6
 
