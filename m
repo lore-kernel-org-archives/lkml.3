@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272AbbABTr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 14:47:58 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:43974 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbbABTr4 (ORCPT
+	id S1752356AbbABTsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 14:48:04 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40961 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbbABTsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 14:47:56 -0500
-Message-ID: <54A6F5C8.2050008@ti.com>
-Date: Fri, 2 Jan 2015 13:47:20 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: "santosh.shilimkar@oracle.com" <santosh.shilimkar@oracle.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Santosh <ssantosh@kernel.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH V2 0/2] ARM: l2c: OMAP4/AM437x: Additional register programming
- support.
-References: <1420220628-23742-1-git-send-email-nm@ti.com> <54A6E79E.7010203@oracle.com>
-In-Reply-To: <54A6E79E.7010203@oracle.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Jan 2015 14:48:00 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org (open list:VIRTIO CORE,
+	NET...)
+Subject: [PATCH 1/2] virtio_pci: double free and invalid memory access of device vqs
+Date: Fri,  2 Jan 2015 14:47:39 -0500
+Message-Id: <1420228060-18721-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2015 12:46 PM, santosh.shilimkar@oracle.com wrote:
-> On 1/2/15 9:43 AM, Nishanth Menon wrote:
->> Hi,
->> OMAP4 and AM437x ROM code provides services to program PL310's latency
->> registers and AM437x provides service for programming Address filter
->> registers.
->>
->> Provide support in the kernel for the same.
->>
->> V2 of the series contains documentation update and a bug fix due to a
->> typo introduced during patch split :(
->>
->> Nishanth Menon (2):
->>    ARM: l2c: OMAP4/AM437x: Introduce support for cache latency
->>      programming
->>    ARM: l2c: AM437x: Introduce support for cache filter programming
->>
-> Looks fine to me ...
-> Feel free to add my ack if you need one ...
-> 
-> Minor: The subject looks like I2C though it is L2C ;-)
-> 
-Yeah, the thought did occur to me, but decided instead to go with the
-existing $subject conventions of arch/arm/mach-omap2/omap4-common.c
-ARM: l2c: omap2+: get rid of init call
-ARM: l2c: omap2+: get rid of redundant cache replacement policy setting
-ARM: l2c: omap2: remove explicit non-secure access bits
-ARM: l2c: omap2: remove cache size override
-ARM: l2c: omap2: remove explicit SMI calls to enable L2 cache
-ARM: l2c: omap2: implement new write_sec method
-ARM: l2c: remove platforms/SoCs setting early BRESP
-ARM: l2c: fix register naming
-ARM: l2c: omap2: remove ES1.0 support
+Device VQs were getting freed twice: once in every devices removal functions,
+and then again in virtio_pci_legacy_remove().
 
-..
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ drivers/virtio/virtio_pci_legacy.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-If folks feel strongly about this, I can capitalize the same and post
-a v3 to help confusing fonts on certain mail clients and terminals.
-let me know if folks want me to.
-
-
+diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
+index 6c76f0f..913ca23 100644
+--- a/drivers/virtio/virtio_pci_legacy.c
++++ b/drivers/virtio/virtio_pci_legacy.c
+@@ -298,7 +298,6 @@ void virtio_pci_legacy_remove(struct pci_dev *pci_dev)
+ 
+ 	unregister_virtio_device(&vp_dev->vdev);
+ 
+-	vp_del_vqs(&vp_dev->vdev);
+ 	pci_iounmap(pci_dev, vp_dev->ioaddr);
+ 	pci_release_regions(pci_dev);
+ 	pci_disable_device(pci_dev);
 -- 
-Regards,
-Nishanth Menon
+1.7.10.4
+
