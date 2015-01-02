@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbbABVP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:15:29 -0500
-Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:12987 "EHLO
-	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751815AbbABVP1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:15:27 -0500
-Date: Fri, 2 Jan 2015 15:15:21 -0600
-From: Jeff Epler <jepler@unpythonic.net>
-To: Laurent Georget <laurent.georget@supelec.fr>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        linux-man <linux-man@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] adjtimex: PPM scaling is by 2^-16
-Message-ID: <20150102211519.GA55815@unpythonic.net>
-References: <54A2DEAD.2050708@supelec.fr>
- <20150102024118.GA8293@unpythonic.net>
- <20150102062920.GB4221@localhost.localdomain>
- <54A6C9B5.4050904@supelec.fr>
+	id S1752358AbbABVUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 16:20:25 -0500
+Received: from gloria.sntech.de ([95.129.55.99]:60291 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751832AbbABVUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 16:20:24 -0500
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Chris Zhong <zyw@rock-chips.com>, Mike Turquette <mturquette@linaro.org>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, sboyd@codeaurora.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: rockchip: rk3288: Make s2r reliable by switching PLLs to slow mode
+Date: Fri, 02 Jan 2015 22:20:12 +0100
+Message-ID: <2520772.QQVueoUhik@phil>
+User-Agent: KMail/4.14.2 (Linux/3.16-3-amd64; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <1419276708-28294-1-git-send-email-dianders@chromium.org>
+References: <1419276708-28294-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A6C9B5.4050904@supelec.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 05:39:17PM +0100, Laurent Georget wrote:
-> +    long freq;        /* Frequency offset, in units of 2^-16 PPM
-> +                         (parts per million) (see NOTES below) */
-...
-> +.SH NOTES
-> +In struct
-> +.IR timex ,
-> +.IR freq ,
-> +.IR ppsfreq ,
-> +and
-> +.I stabil
-> +are PPM (parts per million) with a 16-bits fractional part, which means that a
-> +value of 1 in one of those fields actually means 2^-16 PPM, and 2^16=65535 is
-> +1 PPM. This is the case for both input values (in the case of
-> +.IR freq )
-> +and output values.
+Am Montag, 22. Dezember 2014, 11:31:48 schrieb Doug Anderson:
+> We've been seeing some crashes at resume time on rk3288-based systems.
+> On some machines they simply never wake up from suspend.  Symptoms
+> include:
+> 
+> - System clearly got to sleep OK.  Power consumption is low, the PWM
+>   for the PWM regulator has stopped, and the "global_pwroff" output
+>   shows that the system is down.
+> 
+> - When system tries to wake up power consumption goes up.
+> 
+> - No kernel resume code (which was left in PMU SRAM) ran.  We added
+>   some basic logging to this code (write to a location in SRAM right
+>   at resume time) and didn't see the logging run.
+> 
+> It appears that we can fix the problem by slowing down APLL before we
+> suspend.  On the system I tested things seemed reliable if I disabled
+> 1.8GHz and 1.7GHz.  The Mask ROM itself tries to slow things down
+> (which is why PLLs are in slow mode by the time we get to the kernel),
+> but apparently it is crashing before it even gets there.
+> 
+> We'll be super paranoid and not just go down to 1.6GHz but we'll match
+> what the Mask ROM seems to be doing and go into slow mode.  We'll also
+> be safe and put all PLLs (not just APLL) into slow mode (well, except
+> DPLL which is needed for SDRAM).  We'll even put NPLL into slow mode
+> which the Mask ROM didn't do (not that it's used for much important
+> stuff at early resume time).
+> 
+> Note that the old Rockchip reference code did something just like
+> this, though they jammed it into pm.c instead of putting it in the
+> syscore ops of the clock driver.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-I appreciate the addition of the NOTES section, this is likely to be
-unclear to first-time readers and that section should clear it up
-nicely.  Giving the definition of PPM as "parts per million" is good
-too.
+applied to my clk branch for 3.20
 
-However, the patch got line-wrapped again (I fixed it manually above).
-With line-wrapped fix, consider it
+As I already talked about with Doug on IRC (last year), I see this as a sort-
+of stop-gap solution till we know the suspend requirements of the older/other 
+Rockchip SoCs that do suspend slightly different and can generalize the whole 
+clk suspend handling at this point.
 
-Reviewed-by: Jeff Epler <jepler@unpythonic.net>
 
-hm, as a separate issue, "ppm" seems to typically be written in
-lowercase.  see e.g., http://en.wikipedia.org/wiki/Parts-per_notation
-
-Jeff
+Heiko
