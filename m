@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750989AbbABJHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 04:07:39 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:15198 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbbABJHf (ORCPT
+	id S1750998AbbABJNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 04:13:48 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:46066 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbbABJNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 04:07:35 -0500
-Message-ID: <54A65FD4.10600@imgtec.com>
-Date: Fri, 2 Jan 2015 09:07:32 +0000
-From: Qais Yousef <qais.yousef@imgtec.com>
+	Fri, 2 Jan 2015 04:13:45 -0500
+Message-ID: <54A66143.2080506@gmail.com>
+Date: Fri, 02 Jan 2015 18:13:39 +0900
+From: Tomasz Figa <tomasz.figa@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: <alsa-devel@alsa-project.org>, Vinod Koul <vinod.koul@intel.com>,
-        "Liam Girdwood" <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, "Takashi Iwai" <tiwai@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ALSA: ASoC: soc-compress.c: fix NULL dereference
-References: <1419325767-30602-1-git-send-email-qais.yousef@imgtec.com> <20141229161303.GU17800@sirena.org.uk>
-In-Reply-To: <20141229161303.GU17800@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Nishanth Menon <nm@ti.com>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, Daniel Drake <drake@endlessm.com>,
+        Jon Loeliger <loeliger@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH v10 2/8] ARM: l2c: Refactor the driver to use commit-like
+ interface
+References: <1419331716-8972-1-git-send-email-m.szyprowski@samsung.com>	<1419331716-8972-3-git-send-email-m.szyprowski@samsung.com>	<54A19C17.1020909@ti.com> <CA+Ln22G3kVA_-tsjAxbe2rqSHeLtdU2X_EhNL0uW3cUCgaWLgg@mail.gmail.com> <54A2BBDC.1020900@ti.com>
+In-Reply-To: <54A2BBDC.1020900@ti.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/2014 04:13 PM, Mark Brown wrote:
-> On Tue, Dec 23, 2014 at 09:09:27AM +0000, Qais Yousef wrote:
->> In soc_new_compress() when rtd->dai_link->daynmic is set, we create the pcm
->> substreams with this call:
+On 30.12.2014 23:51, Nishanth Menon wrote:
+>>> Looks like the following also need addressing:
+>>> data->save is called twice (once more after l2cof_init)
+>>> l2c310_init_fns also needs l2c310_configure
+>>> will be nice to use l2x0_data only after we kmemdup data in __l2c_init
 >>
->>     ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
->>                                     1, 0, &be_pcm);
->>
->> which passes 0 as capture_count leading to
->>
->>     be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream
->>
->> being NULL, hence when trying to set rtd a few lines below we get an oops.
->> Fix by removing this line of code since CAPTURE substream will always be NULL.
-> Why will the capture stream always be NULL?  There should be no
-> intrinsic reason why we can't have hardware support for capturing
-> compressed audio.
+>> I'll check this.
+> Thanks.
+>
 
-I think because we pass 0 as capture_count in snd_pcm_new_internal(). If 
-I read the code correctly this will lead to _snd_pcm_new() to be called 
-which in return will call snd_pcm_new_stream(pcm, 
-SNDRV_PCM_STREAM_CAPTURE, capture_count) which will cause no substream 
-to be allocated for the capture case, hence being NULL. I get an oops in 
-my experimental driver when I set dynamic = 1 in FE dai link. If I did 
-something wrong there that caused this, it's not obvious to me how.
+Apparently the second save in __l2c_init() is not needed and it should 
+have been removed. However it might be a good idea to actually do second 
+save in l2c_enable() after l2c_configure() so that the values actually 
+permitted by hardware and/or secure firmware are stored.
 
-Maybe a better fix would be to replace the 1 and 0 in 
-snd_pcm_new_internal() call with rtd->dai_link->dpcm_playback and 
-rtd->dai_link->dpcm_capture.
+l2c310_init_fns needs to be updated indeed.
+
+However I'm not sure about your concern about using l2x0_data before 
+kmemdup(). I don't see any code potentially doing this.
+
+Best regards,
+Tomasz
