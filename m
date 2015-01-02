@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838AbbABLHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 06:07:48 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43629 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbbABLHq (ORCPT
+	id S1751837AbbABLTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 06:19:17 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:53929 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761AbbABLTN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 06:07:46 -0500
-X-Greylist: delayed 172003 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jan 2015 06:07:45 EST
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: dvhart@linux.intel.com, pali.rohar@gmail.com, computersforpeace@gmail.com,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        A.Sloman@cs.bham.ac.uk, Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Subject: [PATCH] Documentation: dell-laptop: correct als_setting description
-Date: Fri,  2 Jan 2015 12:06:50 +0100
-Message-Id: <1420196810-8855-1-git-send-email-gabriele.mzt@gmail.com>
-X-Mailer: git-send-email 2.1.4
+	Fri, 2 Jan 2015 06:19:13 -0500
 MIME-Version: 1.0
+In-Reply-To: <20150102102727.3918a684@wiggum>
+References: <1420184041-6788-1-git-send-email-xerofoify@gmail.com>
+	<20150102102727.3918a684@wiggum>
+Date: Fri, 2 Jan 2015 12:19:12 +0100
+Message-ID: <CACna6rxP5dB7ng5pf1jeJL7TTOq4xPC9B=wmrX+yeYK-hfF5uw@mail.gmail.com>
+Subject: Re: [PATCH] drivers:net:wireless: Add proper locking for the
+ function, b43_op_beacon_set_tim in main.c
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: =?UTF-8?Q?Michael_B=C3=BCsch?= <m@bues.ch>
+Cc: Nicholas Krause <xerofoify@gmail.com>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>,
+        Kalle Valo <kvalo@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was incorrectly stated that als_setting is to enable and disable
-the ambient light sensor on supported system rather than setting a
-threshold value. Correct the description and add a note to make more
-clear what could be the effect of changing als_setting.
+On 2 January 2015 at 10:27, Michael Büsch <m@bues.ch> wrote:
+> On Fri,  2 Jan 2015 02:34:01 -0500
+> Nicholas Krause <xerofoify@gmail.com> wrote:
+>
+>> This adds proper locking for the function, b43_op_beacon_set_tim in main.c by using the mutex lock
+>> in the structure pointer wl, as embedded into this pointer as a mutex in order to protect against
+>> multiple access to the pointer wl when updating the templates for this pointer in the function,
+>> b43_update_templates internally in the function, b43_op_beacon_set_tim.
+>>
+>> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+>> ---
+>>  drivers/net/wireless/b43/main.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+>> index 47731cb..d568fc8 100644
+>> --- a/drivers/net/wireless/b43/main.c
+>> +++ b/drivers/net/wireless/b43/main.c
+>> @@ -5094,8 +5094,9 @@ static int b43_op_beacon_set_tim(struct ieee80211_hw *hw,
+>>  {
+>>       struct b43_wl *wl = hw_to_b43_wl(hw);
+>>
+>> -     /* FIXME: add locking */
+>> +     mutex_lock(&wl->mutex);
+>>       b43_update_templates(wl);
+>> +     mutex_unlock(&wl->mutex);
+>>
+>>       return 0;
+>>  }
+>
+> Thanks for the patch.
+>
+> However, this does not work. We are in atomic context here.
+> Please see the b43-dev mailing list archives for a recent thread about that.
 
-Reported-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
----
- Documentation/ABI/testing/sysfs-platform-dell-laptop | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+Michael: guess who it was who sent the patch doing the same back in November.
 
-diff --git a/Documentation/ABI/testing/sysfs-platform-dell-laptop b/Documentation/ABI/testing/sysfs-platform-dell-laptop
-index 7969443..a40c217 100644
---- a/Documentation/ABI/testing/sysfs-platform-dell-laptop
-+++ b/Documentation/ABI/testing/sysfs-platform-dell-laptop
-@@ -4,10 +4,12 @@ KernelVersion:	3.19
- Contact:	Gabriele Mazzotta <gabriele.mzt@gmail.com>,
- 		Pali Rohár <pali.rohar@gmail.com>
- Description:
--		This file allows to control the automatic keyboard
--		illumination mode on some systems that have an ambient
--		light sensor. Write 1 to this file to enable the auto
--		mode, 0 to disable it.
-+		This file allows to set at which value reported by the
-+		ambient light sensor the keyboard backlight has to be
-+		turned on or off.
-+
-+		Note that the 'als' trigger must be supported and enabled
-+		for this setting to have any effect.
- 
- What:		/sys/class/leds/dell::kbd_backlight/start_triggers
- Date:		December 2014
-@@ -32,6 +34,13 @@ Description:
- 
- 		Note that not all the available triggers can be configured.
- 
-+		Note also that enabling the 'als' trigger could simply
-+		alter the behavior of the other triggers and not allow
-+		the ambient light sensor control the keyboard illumination
-+		independently. It could prevent other triggers from turning
-+		the keyboard backlight on or force them to turn it off
-+		depending on the current ambient light and als_setting.
-+
- What:		/sys/class/leds/dell::kbd_backlight/stop_timeout
- Date:		December 2014
- KernelVersion:	3.19
+Yes, the same troll.
+
 -- 
-2.1.4
-
+Rafał
