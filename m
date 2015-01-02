@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750807AbbABJk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 04:40:29 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:24990 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbbABJk0 (ORCPT
+	id S1751531AbbABJkp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 04:40:45 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33831 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825AbbABJkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 04:40:26 -0500
-X-AuditID: cbfee68f-f791c6d000004834-65-54a66787f027
+	Fri, 2 Jan 2015 04:40:36 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-60-54a667912e8f
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
         Ashish Sangwan <a.sangwan@samsung.com>,
         Brian Foster <bfoster@redhat.com>
-Subject: [PATCH v7 0/11] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
-Date: Fri, 02 Jan 2015 18:40:23 +0900
-Message-id: <003e01d02670$21a8d610$64fa8230$@samsung.com>
+Subject: [PATCH v7 1/11] fs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+Date: Fri, 02 Jan 2015 18:40:33 +0900
+Message-id: <003f01d02670$27a5e300$76f1a900$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAmbn5noWoxQOXAQj2al0iMc/79mA==
+Thread-index: AdAmbqf4pP2mGmCLTbqtd03Gd/z5ww==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkQLc9fVmIwZln1hZLJ15itnj3ucpi
-	y7F7jBYz591hs9iz9ySLxeVdc9gsWnt+slss6rvF6MDhcWqRhEfTmaPMHqsvbGX0eL/vKptH
-	35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZaybupW5YCV/xdSJDewNjDt5uhg5OCQETCQ6/md3
-	MXICmWISF+6tZ+ti5OIQEljKKPHpygpmiISJxNVN+1kgEtMZJQ4/uMkI4fxllHi77TITyCQ2
-	AW2JP1tEQRpEBFwl5t39DlbDLHCCUeLI91ksIAlhAW+Jp58nsoPYLAKqEr2fT4DFeQUsJd6e
-	PssMYQtK/Jh8DyzOLKAlsX7ncSYIW15i85q3UBcpSOw4+5oRYpmexOVHy9kgakQk9r14B7ZY
-	QuAWu8SdvuWMEMsEJL5NPsQC8bKsxKYDUHMkJQ6uuMEygVFsFpLVs5CsnoVk9SwkKxYwsqxi
-	FE0tSC4oTkovMtYrTswtLs1L10vOz93ECIzP0/+e9e9gvHvA+hCjAAejEg+vwrWlIUKsiWXF
-	lbmHGE2BLprILCWanA9MAnkl8YbGZkYWpiamxkbmlmZK4rwLpX4GCwmkJ5akZqemFqQWxReV
-	5qQWH2Jk4uCUamDc/XabQM31hV5JSW0ibyYHzPl/Uu7qgVDDhksV6yM4H3r1FyQL8d97oV+t
-	//FZUFvZEoM1B6fwsVz79STUPORt2Q+PY/kuW9oL9n877qfokasv82biXpWrCSFzAjaKvYrR
-	v3Pm89Wgbwt0fmtnK8itlj7K1JQ77/qvoFyGnQ6bNfx+xGYXth1VYinOSDTUYi4qTgQAulU9
-	/8oCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xoG57+rIQg8vrjS2WTrzEbPHuc5XF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkRHdi+rIQg4ffrC2WTrzEbPHuc5XF
 	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
-	vi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
-	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ixbupW5oKV
-	/BVTJzawNzDu5Oli5OSQEDCRuLppPwuELSZx4d56ti5GLg4hgemMEocf3GSEcP4ySrzddpmp
-	i5GDg01AW+LPFlGQBhEBV4l5d7+D1TALnGCUOPJ9FtgkYQFviaefJ7KD2CwCqhK9n0+AxXkF
-	LCXenj7LDGELSvyYfA8sziygJbF+53EmCFteYvOat8wQFylI7Dj7mhFimZ7E5UfL2SBqRCT2
-	vXjHOIFRYBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgTH/zPp
-	HYyrGiwOMQpwMCrx8CpcWxoixJpYVlyZe4hRgoNZSYS3T25JiBBvSmJlVWpRfnxRaU5q8SFG
-	U6BPJzJLiSbnA1NTXkm8obGJmZGlkbmhhZGxuZI4r5J9W4iQQHpiSWp2ampBahFMHxMHp1QD
-	Y7n6jeyFlvKf3Y/lW3g+3dR/zbfhyKtlskfy52bU9P6uPpP9WqX361m3eaXT7T7G3PLT/P0y
-	uGULX/WP1qyJky5yP1iz/I7Tj+5+v9Rc+Y0903I4eD5McjdxmZT36aDsyTeGDCdav7ssNGae
-	GHAhOTx9xwHpoKeLl0xn5As48SW9Zb4Wf8qZn0osxRmJhlrMRcWJAAcXGe0VAwAA
+	vi2rGD0+b5ILYIvisklJzcksSy3St0vgyvi4djJjwVXRijUtxxkbGA8IdjFyckgImEj0nOxi
+	grDFJC7cW8/WxcjFISSwlFFi8YmXLDBFkxY/AbOFBKYzSmy+GgRR9JdR4szMFtYuRg4ONgFt
+	iT9bREFqRARcJebd/c4IUsMscIJRYv3kJWDNwgK+Es/WrwSzWQRUJRo3XmYDsXkFLCU2L1jH
+	AmELSvyYfA/MZhbQkli/8zgThC0vsXnNW2aIgxQkdpx9zQixTE/ixbPD7BA1IhL7XrwDWywh
+	cItdYs3OL0wQywQkvk0+xAJyqISArMSmA1BzJCUOrrjBMoFRbBaS1bOQrJ6FZPUsJCsWMLKs
+	YhRNLUguKE5KLzLRK07MLS7NS9dLzs/dxAiMz9P/nk3YwXjvgPUhRgEORiUeXoVrS0OEWBPL
+	iitzDzGaAl00kVlKNDkfmATySuINjc2MLExNTI2NzC3NlMR5X0v9DBYSSE8sSc1OTS1ILYov
+	Ks1JLT7EyMTBKdXAOEfhvYsq66stbvV1Uzc73/5fzzH93+8e1/eiE49cfnKI0X0a42eBlktt
+	m9W/7Lsh5Hhp/6bUUOtnVxbrTdLwczidd0lt5c+DQVHRKclVE55ITFy+jD9YRDDhaonEkUnV
+	DuEHpv0xaf5vWKs7XSPYbQdznOPba0sk3c32Oqxxt4rbs7jWs+naciWW4oxEQy3mouJEAG5F
+	sujKAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xoO7E9GUhBie/GlssnXiJ2eLd5yqL
+	LcfuMVrMnHeHzWLP3pMsFpd3zWGzaO35yW6xqO8WowOHx6lFEh5NZ44ye6y+sJXR4/2+q2we
+	fVtWMXp83iQXwBbVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk
+	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHj49rJjAVX
+	RSvWtBxnbGA8INjFyMkhIWAiMWnxExYIW0ziwr31bCC2kMB0RonNV4O6GLmA7L+MEmdmtrB2
+	MXJwsAloS/zZIgpSIyLgKjHv7ndGkBpmgROMEusnLwEbJCzgK/Fs/Uowm0VAVaJx42WwobwC
+	lhKbF6xjgbAFJX5MvgdmMwtoSazfeZwJwpaX2LzmLTPEQQoSO86+ZoRYpifx4tlhdogaEYl9
+	L94xTmAUmIVk1Cwko2YhGTULScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHR/0x6
+	B+OqBotDjAIcjEo8vArXloYIsSaWFVfmHmKU4GBWEuHtk1sSIsSbklhZlVqUH19UmpNafIjR
+	FOjTicxSosn5wMSUVxJvaGxiZmRpZG5oYWRsriTOq2TfFiIkkJ5YkpqdmlqQWgTTx8TBKdXA
+	qOCVXqled6js9KlqZhlPwfsrBX6W/Oia78ER57UnWTqxMChjvgu3q7LT7k2J3aZ6a2Y382m3
+	ejJdcGfZbsFmVJCSfCCeu64/rEno1v4/J03W/6zZNffAj32Wv0PDDibbRWvfUzSbeyOkxfHm
+	Jh/R/Xp5ooeWvZjrv4b52ut6v4PCX24zJNkrsRRnJBpqMRcVJwIApSgEBhQDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,43 +56,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In continuation of the work of making the process of non linear editing of
-media files faster, we introduce here the new flag FALLOC_FL_INSERT_RANGE
-for fallocate.
+FALLOC_FL_INSERT_RANGE command is the opposite command of
+FALLOC_FL_COLLAPSE_RANGE that is needed for advertisers or someone who want to
+add some data in the middle of file. FALLOC_FL_INSERT_RANGE will create space
+for writing new data within a file after shifting extents to right as given
+length. and this command also has same limitation as FALLOC_FL_COLLAPSE_RANGE,
+that is block boundary and use ftruncate(2) for crosses EOF.
 
-This flag will work opposite to the FALLOC_FL_COLLAPSE_RANGE flag.
-As such, specifying FALLOC_FL_INSERT_RANGE flag will create new space inside file
-by inserting a hole within the range specified by offset and len. 
-User can write new data in this space. e.g. ads.
-Like collapse range, currently we have the limitation that offset and len should
-be block size aligned for both XFS and Ext4.
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+---
+ fs/open.c                   |  8 +++++++-
+ include/uapi/linux/falloc.h | 15 +++++++++++++++
+ 2 files changed, 22 insertions(+), 1 deletion(-)
 
-The semantics of the flag are :
-1) It creates space within file by inserting a hole of  len bytes starting
-   at offset byte without overwriting any existing data. All the data blocks
-   from offset to EOF are shifted towards right to make hole space.
-2) It should be used exclusively. No other fallocate flag in combination.
-3) Offset and length supplied to fallocate should be fs block size aligned
-   in case of xfs and ext4.
-4) Insert range does not work for the case when offset is overlapping/beyond
-   i_size. If the user wants to insert space at the end of file they are
-   advised to use either ftruncate(2) or fallocate(2) with mode 0.
-5) It increses the size of file by len bytes.
-
-
-Namjae Jeon (11):
- fs: Add support FALLOC_FL_INSERT_RANGE for fallocate
- xfs: Add support FALLOC_FL_INSERT_RANGE for fallocate
- ext4: Add support FALLOC_FL_INSERT_RANGE for fallocate
- xfsprogs: xfs_io: add finsert command for insert range via fallocate
- xfstests: generic/039: Standard insert range tests
- xfstests: generic/040: Delayed allocation insert range
- xfstests: generic/041: Multi insert range tests
- xfstests: generic/042: Delayed allocation multi insert
- xfstests: generic/043: Test multiple fallocate insert/collapse range calls
- xfstests: fsstress: Add fallocate insert range operation
- xfstests: fsx: Add fallocate insert range operation
-
+diff --git a/fs/open.c b/fs/open.c
+index 36662d0..74ed498 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -232,7 +232,8 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 
+ 	/* Return error if mode is not supported */
+ 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+-		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
++		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
++		     FALLOC_FL_INSERT_RANGE))
+ 		return -EOPNOTSUPP;
+ 
+ 	/* Punch hole and zero range are mutually exclusive */
+@@ -250,6 +251,11 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 	    (mode & ~FALLOC_FL_COLLAPSE_RANGE))
+ 		return -EINVAL;
+ 
++	/* Insert range should only be used exclusively. */
++	if ((mode & FALLOC_FL_INSERT_RANGE) &&
++	    (mode & ~FALLOC_FL_INSERT_RANGE))
++		return -EINVAL;
++
+ 	if (!(file->f_mode & FMODE_WRITE))
+ 		return -EBADF;
+ 
+diff --git a/include/uapi/linux/falloc.h b/include/uapi/linux/falloc.h
+index d1197ae..1f20723 100644
+--- a/include/uapi/linux/falloc.h
++++ b/include/uapi/linux/falloc.h
+@@ -41,4 +41,19 @@
+  */
+ #define FALLOC_FL_ZERO_RANGE		0x10
+ 
++/*
++ * FALLOC_FL_INSERT_RANGE is use to insert space within the file size without
++ * overwriting any existing data. The contents of the file beyond offset are
++ * shifted towards right by len bytes to create a hole.  As such, this
++ * operation will increase the size of the file by len bytes.
++ * Different filesystems may implement different limitations on the granularity
++ * of the operation. Most will limit operations to filesystem block size
++ * boundaries, but this boundary may be larger or smaller depending on
++ * the filesystem and/or the configuration of the filesystem or file.
++ * Attempting to insert space using this flag at OR beyond the end of
++ * the file is considered an illegal operation - just use ftruncate(2) or
++ * fallocate(2) with mode 0 for such type of operations.
++ */
++#define FALLOC_FL_INSERT_RANGE		0x20
++
+ #endif /* _UAPI_FALLOC_H_ */
 -- 
 1.7.11-rc0
 
