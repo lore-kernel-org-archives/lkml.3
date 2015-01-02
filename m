@@ -1,139 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbbABQmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 11:42:00 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51135 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750913AbbABQl7 (ORCPT
+	id S1752101AbbABQr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 11:47:57 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:36500 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbbABQrz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 11:41:59 -0500
-Message-ID: <1420216917.2072.1.camel@HansenPartnership.com>
-Subject: [GIT PULL] SCSI fixes for 3.19-rc2
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 02 Jan 2015 08:41:57 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Jan 2015 11:47:55 -0500
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+From: Catalin Marinas <catalin.marinas@arm.com>
+X-Mailer: iPhone Mail (12B440)
+In-Reply-To: <54A664AB.3030101@linaro.org>
+Date: Fri, 2 Jan 2015 16:47:51 +0000
+Cc: Graeme Gregory <gg@slimlogic.co.uk>,
+        "ashwinc@codeaurora.org" <ashwinc@codeaurora.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "lv.zheng@intel.com" <lv.zheng@intel.com>,
+        "robh@kernel.org" <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "al.stone@linaro.org" <al.stone@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "robert.moore@intel.com" <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "rric@kernel.org" <rric@kernel.org>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "bhelgaas@google.com." <linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Message-Id: <EE1B062D-90AC-491F-90E7-D7EACF1F5B06@arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org> <CAJ5Y-eZ5cu9_OhG24yAv+CZq7zKg0vU+eVGekyN+9dDzaz1OhQ@mail.gmail.com> <8fc9550c96a468b3e50d51a37db68a33.squirrel@www.codeaurora.org> <54A3B526.9040903@linaro.org> <20150101200424.GB12770@xora-haswell.xora.org.uk> <54A664AB.3030101@linaro.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 02 Jan 2015 16:47:50.0162 (UTC) FILETIME=[D829B720:01D026AB]
+X-MC-Unique: 115010216475200601
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a set of three fixes: one to correct an abort path thinko
-causing failures (and a panic) in USB on device misbehaviour, One to fix
-an out of order issue in the fnic driver and one to match discard
-expectations to qemu which otherwise cause Linux to behave badly as a
-guest.
+On 2 Jan 2015, at 09:28, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>>> On 2015年01月02日 04:04, Graeme Gregory wrote:
+>>>> On Wed, Dec 31, 2014 at 04:34:46PM +0800, Hanjun Guo wrote:
+>>>> On 2014年12月31日 04:13, ashwinc@codeaurora.org wrote:
+>>>> Hi Hanjun,
+>>>> 
+>>>> Overall the document looks good to us. Some minor clarifications below.
+>>>> 
+>>>>> ---------- Forwarded message ----------
+>>>>> From: Graeme Gregory <graeme.gregory@linaro.org>
+>>>>> 
+>>>>> Add documentation for the guidelines of how to use ACPI
+>>>>> on ARM64.
+>>>>> 
+>>>>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>>>>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>>>>> ---
+>>>>> Documentation/arm64/arm-acpi.txt |  323
+>>>>> ++++++++++++++++++++++++++++++++++++++
+>>>>> 1 file changed, 323 insertions(+)
+>>>>> create mode 100644 Documentation/arm64/arm-acpi.txt
+>>>> 
+>>>> [..]
+>>>> 
+>>>>> +Relationship with Device Tree
+>>>>> +-----------------------------
+>>>> 
+>>>> [..]
+>>>> 
+>>>>> +When booting using ACPI tables, the /chosen node in DT will still be
+>>>>> parsed
+>>>>> +to extract the kernel command line and initrd path.  No other section of
+>>>>> the
+>>>>> +DT will be used.
+>>>> 
+>>>> Is this still true?
+>>> 
+>>> No, we can booting the ACPI system in EFI stub without dtb. Catalin
+>>> also pointed out this issue, I will remove this paragraph.
+>> 
+>> The paragraph is still correct, the /chosen node is always present even
+>> if nothing else is.
+> 
+> Sorry for the confusing, I mean no dtb needed for the command line if
+> ACPI tables are available.
+> 
+> efi will create a empty dtb if no dtb found, and add the cmd line into
+> the new created dtb, I'm just wondering, can we remove the limitation
+> for passing the cmd line in /chosen node in the future?
 
-The patch is available here:
+My point is that on an ACPI based system, we don't really care how EFI_STUB passes
+the command line to the rest of the kernel. Since UEFI doesn't need to know about
+such detail and since ACPI is only supported with EFI_STUB, we don't need to mention
+the chosen node in this document. 
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+At some point we may even change the way EFI_STUB passes the command line to the 
+kernel but this is still irrelevant to ACPI. 
 
-The short changelog is:
-
-Alan Stern (1):
-      SCSI: fix regression in scsi_send_eh_cmnd()
-
-Anil Chintalapati (achintal) (1):
-      fnic: IOMMU Fault occurs when IO and abort IO is out of order
-
-Martin K. Petersen (1):
-      sd: tweak discard heuristics to work around QEMU SCSI issue
-
-The diffstat is:
-
- drivers/scsi/fnic/fnic.h      |  2 +-
- drivers/scsi/fnic/fnic_scsi.c | 15 +++++++++++++++
- drivers/scsi/scsi_error.c     |  4 ++--
- drivers/scsi/sd.c             |  5 +++--
- 4 files changed, 21 insertions(+), 5 deletions(-)
-
-With full diff below.
-
-James
-
----
-
-diff --git a/drivers/scsi/fnic/fnic.h b/drivers/scsi/fnic/fnic.h
-index 3b73b96..26270c3 100644
---- a/drivers/scsi/fnic/fnic.h
-+++ b/drivers/scsi/fnic/fnic.h
-@@ -39,7 +39,7 @@
- 
- #define DRV_NAME		"fnic"
- #define DRV_DESCRIPTION		"Cisco FCoE HBA Driver"
--#define DRV_VERSION		"1.6.0.16"
-+#define DRV_VERSION		"1.6.0.17"
- #define PFX			DRV_NAME ": "
- #define DFX                     DRV_NAME "%d: "
- 
-diff --git a/drivers/scsi/fnic/fnic_scsi.c b/drivers/scsi/fnic/fnic_scsi.c
-index 2097de4..155b286 100644
---- a/drivers/scsi/fnic/fnic_scsi.c
-+++ b/drivers/scsi/fnic/fnic_scsi.c
-@@ -1892,6 +1892,21 @@ int fnic_abort_cmd(struct scsi_cmnd *sc)
- 		goto fnic_abort_cmd_end;
- 	}
- 
-+	/* IO out of order */
-+
-+	if (!(CMD_FLAGS(sc) & (FNIC_IO_ABORTED | FNIC_IO_DONE))) {
-+		spin_unlock_irqrestore(io_lock, flags);
-+		FNIC_SCSI_DBG(KERN_DEBUG, fnic->lport->host,
-+			"Issuing Host reset due to out of order IO\n");
-+
-+		if (fnic_host_reset(sc) == FAILED) {
-+			FNIC_SCSI_DBG(KERN_DEBUG, fnic->lport->host,
-+				"fnic_host_reset failed.\n");
-+		}
-+		ret = FAILED;
-+		goto fnic_abort_cmd_end;
-+	}
-+
- 	CMD_STATE(sc) = FNIC_IOREQ_ABTS_COMPLETE;
- 
- 	/*
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index e42fff6..8afb016 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1041,7 +1041,7 @@ retry:
- 		}
- 		/* signal not to enter either branch of the if () below */
- 		timeleft = 0;
--		rtn = NEEDS_RETRY;
-+		rtn = FAILED;
- 	} else {
- 		timeleft = wait_for_completion_timeout(&done, timeout);
- 		rtn = SUCCESS;
-@@ -1081,7 +1081,7 @@ retry:
- 			rtn = FAILED;
- 			break;
- 		}
--	} else if (!rtn) {
-+	} else if (rtn != FAILED) {
- 		scsi_abort_eh_cmnd(scmd);
- 		rtn = FAILED;
- 	}
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index fedab3c..3995169 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2623,8 +2623,9 @@ static void sd_read_block_limits(struct scsi_disk *sdkp)
- 				sd_config_discard(sdkp, SD_LBP_WS16);
- 
- 		} else {	/* LBP VPD page tells us what to use */
--
--			if (sdkp->lbpws)
-+			if (sdkp->lbpu && sdkp->max_unmap_blocks && !sdkp->lbprz)
-+				sd_config_discard(sdkp, SD_LBP_UNMAP);
-+			else if (sdkp->lbpws)
- 				sd_config_discard(sdkp, SD_LBP_WS16);
- 			else if (sdkp->lbpws10)
- 				sd_config_discard(sdkp, SD_LBP_WS10);
-
+Catalin
 
