@@ -1,139 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbbABVgZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:36:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51287 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504AbbABVgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:36:23 -0500
-Date: Sat, 3 Jan 2015 10:33:57 +1300
-From: NeilBrown <neilb@suse.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
-Message-ID: <20150103103357.2406fc23@notabene.brown>
-In-Reply-To: <20141228142010.GA3922@amd>
-References: <20141211214801.4127.93914.stgit@notabene.brown>
- <20141211215943.4127.24792.stgit@notabene.brown>
- <20141228142010.GA3922@amd>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
+	id S1752276AbbABVeu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 16:34:50 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57471 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbbABVes convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 16:34:48 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/=KJcYShUfD=bzjiCpEP2ocb"; protocol="application/pgp-signature"
+In-Reply-To: <CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
+References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
+	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
+	<CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
+	<CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
+Date: Fri, 2 Jan 2015 22:34:47 +0100
+Message-ID: <CACna6rxTYUWvxvu0rFydWxkjbYdHfhV=o+9A+ViCpbV-LFx7fw@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=KJcYShUfD=bzjiCpEP2ocb
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2 January 2015 at 18:46, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> 2015-01-02 13:14 GMT+01:00 Sedat Dilek <sedat.dilek@gmail.com>:
+>>
+>> On Fri, Jan 2, 2015 at 1:06 PM, Rafał Miłecki <zajec5@gmail.com> wrote:
+>> > On 2 January 2015 at 13:05, Rafał Miłecki <zajec5@gmail.com> wrote:
+>> >> On 1 January 2015 at 16:46, Rickard Strandqvist
+>> >> <rickard_strandqvist@spectrumdigital.se> wrote:
+>> >>> Remove the function b43legacy_radio_set_tx_iq() that is not used
+>> >>> anywhere.
+>> >>>
+>> >>> This was partially found by using a static code analysis program
+>> >>> called cppcheck.
+>> >>
+>> >> It seems to be for A-PHY based hardware (with 0x2060 radio id) which
+>> >> is not handled by b43legacy. Should be safe to drop this code (we
+>> >> won't likely need it).
+>> >>
+>> >> Ack
+>> >
+>> > For future, we prefix patches with just a driver name. So this could
+>> > be simply called
+>> > b43legacy: radio.c: Remove unused function
+>> >
+>>
+>> Alternatively...
+>>
+>> "b43legacy: Remove unused function in radio.c"
+>>
+>> BTW, as Arnd Bergmann pointed out [1] how did you test with cppcheck
+>> to get such stuff?
+>>
+>> - Sedat -
+>>
+>> [1] https://lkml.org/lkml/2015/1/2/51
+>
+>
+>
+> Hi Rafal and Sedat
+>
+> Rafal do you mean I should remove the entire b43legacy part?
 
-On Sun, 28 Dec 2014 15:20:10 +0100 Pavel Machek <pavel@ucw.cz> wrote:
+1) I gave you Ack for the changes
+2) You could drop "net: wireless: " or better use something Sedat proposed
 
-> Hi!
->=20
-> > index 8c4fd0332028..b59501ee2f21 100644
-> > --- a/Documentation/devicetree/bindings/serial/of-serial.txt
-> > +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
-> > @@ -39,6 +39,10 @@ Optional properties:
-> >    driver is allowed to detect support for the capability even without =
-this
-> >    property.
-> > =20
-> > +Optional child node:
-> > +- a platform device listed as a child node will be probed and
-> > +  powered-on whenever the tty is in use (open).
-> > +
-> >  Example:
-> > =20
-> >  	uart@80230000 {
->=20
-> Hmm. Other devices may want it the other way around: probe the device
-> behind the uart, make it control power and open/close of the uart, and
-> hide the /dev/ttyXX from userspace...
-> 								Pavel
-> 							=09
-
-I've been thinking a bit about this.
-
-The current "tty" seems to be a combination of two things:
- - a line discipline
- - a char_dev
-
-But some line disciplines don't really want the char_dev.
-N_MOUSE wants a serio device.
-N_HCI wants an HCI device
-N_GSM07010 wants 63 different tty char_devs.
-N_IRDA and N_PPP ultimately want a net_dev.
-etc.
-
-It would be really nice if the uart would register the line disciple as a
-child device, then the line discipline would register whatever it wants.
-
-Then if a uart had no children, it would register the 'N_TTY' line discipli=
-ne
-and get a tty char_dev.  If it had a child, it would probe the child device
-and leave it to register and appropriate line discipline.
-
-The child device could interpose itself in the control flow somehow so my
-driver could add power control at open/close.
-
-But that isn't how it works.  The line discipline doesn't talk to the uart.
-Rather the tty layer talks to the uart (through tty_operations) and to the
-line discipline (through tty_ldisc_ops) and also registers the char_dev.
-
-One of the several difficulties with allowing a child device to select a li=
-ne
-discipline is the different line disciplines activate differently.
-
-N_HCI activates (registers the hci dev) on HCIUARTSETPROTO ioctl.  A child
-  device would need a way to specify the protocol I resume.
-N_MOUSE activates on a 'read' on the tty - and deactivates when the read
-  completes.
-N_GSM0710 activates immediately that the ldisc is activated, as does N_IRDA
-N_PPP seems to want a PPPIOCNEWUNIT ioctl to fully register.
-
-Doing any of these in a driver for a uart slave device would certainly be
-possible.  I wonder if it is something we really want to do in the kernel
-though.  What is the gain over providing sufficient information in the
-KOBJ_ADD uevent so that udev can do the required work in user-space?
-
-I'm not against the idea, I am just finding it hard to justify.
-
-However I do like the idea of having the UART probe the child instead of
-registering a tty.  It could pass the tty_operations structure to the child,
-and the child could then register a tty with a slightly different
-tty_operations structure, allowing it to capture any operations that it wan=
-ts
-to capture (such as open/close).
-I might try coding that and see what it looks like...
-
-Thanks,
-NeilBrown
-
---Sig_/=KJcYShUfD=bzjiCpEP2ocb
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVKcOzDnsnt1WYoG5AQIAVg/9E/l1EHik+sHxcMgzTbXJvOYGeAVQrAQX
-opbo9CPFmjUARlVKP7SAEi7URCJ7mUmLWlZ2HY9EltCxYXUfedUsCFK8BGaJ/mfX
-bxReJkGQfIBmMcDUcbrIJZ1yiEY3CHAETNQzxygXb2Hztbd1kXc1bcIr35FnQ5+F
-KygtxfHBsh6RlP2eYtxQk6zsokWKOxayEx56G9IefQwYPNnbZpi6UWuxN/Djk+m9
-ftAWNoKgg9Y+w4EMSyOmCNVu5RrzZnBT0OzoXAhLoIMghaBwX8ykRhEsJLg8rofE
-Q6ZO0ojXStzOF/d+VobXhpPltbBdlX0JqFMncgAD7rjxxMdUScqLInC8lAPuzpl9
-TLlk/6R3/Br1rg4+MulUl9P/CkAkwR0mHso4ouZg0HCcDH6nbjgy4nhRyVNp7fFe
-W4JGc3dNe+rHMnIz5eQV6PgMwxg2TkHruMOQxJ4WZG8xkgsAMst8GVKR1tvzp7yK
-g3yyLnPuljBtprHNt3HVUlgtkwk/LuorVDoAe8qPdwAC33TRlUezZ4lZzIpgTVqR
-/mFqQDkeYaPukNcWavhrIGBM8ekm7BAhuNDr7R08QHIcnpkltPfJBv6DRnN2hRk+
-Ptn5CHbz/J558oAlsAeHW4O/QXpoDE6lZotN7NksT8NI3kzL/Ts3wGMAa8PSYK/l
-1T2YgklM27Q=
-=PfUb
------END PGP SIGNATURE-----
-
---Sig_/=KJcYShUfD=bzjiCpEP2ocb--
+-- 
+Rafał
