@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbbABDDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 22:03:34 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36652 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523AbbABDDc (ORCPT
+	id S1751856AbbABDlE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 22:41:04 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63505 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbbABDk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 22:03:32 -0500
+	Thu, 1 Jan 2015 22:40:58 -0500
 From: Masanari Iida <standby24x7@gmail.com>
-To: corbet@lwn.net, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: linux-mm@kvack.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] Documentation: mm: Fix typo in vm.txt
-Date: Fri,  2 Jan 2015 12:03:19 +0900
-Message-Id: <1420167799-9587-1-git-send-email-standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, herbert@gondor.apana.org.au,
+        davem@davemloft.net, linux-crypto@vger.kernel.org
+Cc: akpm@linux-foundation.org, joe@perches.com,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] crypto: Remove unnecessary KERN_ERR in bfin_crc.c
+Date: Fri,  2 Jan 2015 12:40:46 +0900
+Message-Id: <1420170046-10269-1-git-send-email-standby24x7@gmail.com>
 X-Mailer: git-send-email 2.2.1.62.g3f15098
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix a spelling typo in Documentation/sysctl/vm.txt
+This patch removes unnecessary KERN_ERR from bfin_crypto_crc_mod_init().
 
 Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- Documentation/sysctl/vm.txt | 2 +-
+ drivers/crypto/bfin_crc.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 4415aa9..de3afef 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -728,7 +728,7 @@ The default value is 60.
+diff --git a/drivers/crypto/bfin_crc.c b/drivers/crypto/bfin_crc.c
+index 9ae149b..33cf9eb 100644
+--- a/drivers/crypto/bfin_crc.c
++++ b/drivers/crypto/bfin_crc.c
+@@ -744,7 +744,7 @@ static int __init bfin_crypto_crc_mod_init(void)
  
- - user_reserve_kbytes
+ 	ret = platform_driver_register(&bfin_crypto_crc_driver);
+ 	if (ret) {
+-		pr_info(KERN_ERR "unable to register driver\n");
++		pr_err("unable to register driver\n");
+ 		return ret;
+ 	}
  
--When overcommit_memory is set to 2, "never overommit" mode, reserve
-+When overcommit_memory is set to 2, "never overcommit" mode, reserve
- min(3% of current process size, user_reserve_kbytes) of free memory.
- This is intended to prevent a user from starting a single memory hogging
- process, such that they cannot recover (kill the hog).
 -- 
 2.2.1.62.g3f15098
 
