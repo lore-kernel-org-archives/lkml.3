@@ -1,265 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546AbbABU67 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 15:58:59 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:56161 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523AbbABU65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 15:58:57 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: track move_lock state internally
-Date: Fri,  2 Jan 2015 15:58:47 -0500
-Message-Id: <1420232327-13316-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.2.0
+	id S1752519AbbABU6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 15:58:21 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:58538 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164AbbABU6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 15:58:19 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        devel@acpica.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] acpi: acpica: utstate:  Remove unused function
+Date: Fri,  2 Jan 2015 22:01:20 +0100
+Message-Id: <1420232480-3252-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The complexity of memcg page stat synchronization is currently leaking
-into the callsites, forcing them to keep track of the move_lock state
-and the IRQ flags.  Simplify the API by tracking it in the memcg.
+Remove the function acpi_ut_create_pkg_state_and_push() that is not used anywhere.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+This was partially found by using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- include/linux/memcontrol.h |  6 ++--
- mm/memcontrol.c            | 68 ++++++++++++++++++++++++++--------------------
- mm/page-writeback.c        | 12 +++-----
- mm/rmap.c                  | 12 +++-----
- 4 files changed, 49 insertions(+), 49 deletions(-)
+ drivers/acpi/acpica/acutils.h |    8 --------
+ drivers/acpi/acpica/utstate.c |   33 ---------------------------------
+ 2 files changed, 41 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index fb212e1d700d..04d3c2028782 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -138,12 +138,10 @@ static inline bool mem_cgroup_disabled(void)
- 	return false;
- }
+diff --git a/drivers/acpi/acpica/acutils.h b/drivers/acpi/acpica/acutils.h
+index 486d342..ef2ad3c 100644
+--- a/drivers/acpi/acpica/acutils.h
++++ b/drivers/acpi/acpica/acutils.h
+@@ -539,14 +539,6 @@ acpi_ut_create_update_state_and_push(union acpi_operand_object *object,
+ 				     u16 action,
+ 				     union acpi_generic_state **state_list);
  
--struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page, bool *locked,
--					      unsigned long *flags);
--void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool *locked,
--			      unsigned long *flags);
-+struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page);
- void mem_cgroup_update_page_stat(struct mem_cgroup *memcg,
- 				 enum mem_cgroup_stat_index idx, int val);
-+void mem_cgroup_end_page_stat(struct mem_cgroup *memcg);
+-#ifdef	ACPI_FUTURE_USAGE
+-acpi_status
+-acpi_ut_create_pkg_state_and_push(void *internal_object,
+-				  void *external_object,
+-				  u16 index,
+-				  union acpi_generic_state **state_list);
+-#endif				/* ACPI_FUTURE_USAGE */
+-
+ union acpi_generic_state *acpi_ut_create_control_state(void);
  
- static inline void mem_cgroup_inc_page_stat(struct mem_cgroup *memcg,
- 					    enum mem_cgroup_stat_index idx)
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a855848627a5..eccc0ed3b6f3 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -325,9 +325,11 @@ struct mem_cgroup {
- 	/*
- 	 * set > 0 if pages under this cgroup are moving to other cgroup.
- 	 */
--	atomic_t	moving_account;
-+	atomic_t		moving_account;
- 	/* taken only while moving_account > 0 */
--	spinlock_t	move_lock;
-+	spinlock_t		move_lock;
-+	struct task_struct	*move_lock_task;
-+	unsigned long		move_lock_flags;
- 	/*
- 	 * percpu counter.
- 	 */
-@@ -1977,34 +1979,33 @@ cleanup:
- /**
-  * mem_cgroup_begin_page_stat - begin a page state statistics transaction
-  * @page: page that is going to change accounted state
-- * @locked: &memcg->move_lock slowpath was taken
-- * @flags: IRQ-state flags for &memcg->move_lock
+ void acpi_ut_delete_generic_state(union acpi_generic_state *state);
+diff --git a/drivers/acpi/acpica/utstate.c b/drivers/acpi/acpica/utstate.c
+index 1cc97a7..fa932e9 100644
+--- a/drivers/acpi/acpica/utstate.c
++++ b/drivers/acpi/acpica/utstate.c
+@@ -49,39 +49,6 @@ ACPI_MODULE_NAME("utstate")
+ 
+ /*******************************************************************************
   *
-  * This function must mark the beginning of an accounted page state
-  * change to prevent double accounting when the page is concurrently
-  * being moved to another memcg:
+- * FUNCTION:    acpi_ut_create_pkg_state_and_push
+- *
+- * PARAMETERS:  object          - Object to be added to the new state
+- *              action          - Increment/Decrement
+- *              state_list      - List the state will be added to
+- *
+- * RETURN:      Status
+- *
+- * DESCRIPTION: Create a new state and push it
+- *
+- ******************************************************************************/
+-acpi_status
+-acpi_ut_create_pkg_state_and_push(void *internal_object,
+-				  void *external_object,
+-				  u16 index,
+-				  union acpi_generic_state **state_list)
+-{
+-	union acpi_generic_state *state;
+-
+-	ACPI_FUNCTION_ENTRY();
+-
+-	state =
+-	    acpi_ut_create_pkg_state(internal_object, external_object, index);
+-	if (!state) {
+-		return (AE_NO_MEMORY);
+-	}
+-
+-	acpi_ut_push_generic_state(state_list, state);
+-	return (AE_OK);
+-}
+-
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_ut_push_generic_state
   *
-- *   memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-+ *   memcg = mem_cgroup_begin_page_stat(page);
-  *   if (TestClearPageState(page))
-  *     mem_cgroup_update_page_stat(memcg, state, -1);
-- *   mem_cgroup_end_page_stat(memcg, locked, flags);
-- *
-- * The RCU lock is held throughout the transaction.  The fast path can
-- * get away without acquiring the memcg->move_lock (@locked is false)
-- * because page moving starts with an RCU grace period.
-- *
-- * The RCU lock also protects the memcg from being freed when the page
-- * state that is going to change is the only thing preventing the page
-- * from being uncharged.  E.g. end-writeback clearing PageWriteback(),
-- * which allows migration to go ahead and uncharge the page before the
-- * account transaction might be complete.
-+ *   mem_cgroup_end_page_stat(memcg);
-  */
--struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page,
--					      bool *locked,
--					      unsigned long *flags)
-+struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page)
- {
- 	struct mem_cgroup *memcg;
-+	unsigned long flags;
- 
-+	/*
-+	 * The RCU lock is held throughout the transaction.  The fast
-+	 * path can get away without acquiring the memcg->move_lock
-+	 * because page moving starts with an RCU grace period.
-+	 *
-+	 * The RCU lock also protects the memcg from being freed when
-+	 * the page state that is going to change is the only thing
-+	 * preventing the page from being uncharged.
-+	 * E.g. end-writeback clearing PageWriteback(), which allows
-+	 * migration to go ahead and uncharge the page before the
-+	 * account transaction might be complete.
-+	 */
- 	rcu_read_lock();
- 
- 	if (mem_cgroup_disabled())
-@@ -2014,16 +2015,22 @@ again:
- 	if (unlikely(!memcg))
- 		return NULL;
- 
--	*locked = false;
- 	if (atomic_read(&memcg->moving_account) <= 0)
- 		return memcg;
- 
--	spin_lock_irqsave(&memcg->move_lock, *flags);
-+	spin_lock_irqsave(&memcg->move_lock, flags);
- 	if (memcg != page->mem_cgroup) {
--		spin_unlock_irqrestore(&memcg->move_lock, *flags);
-+		spin_unlock_irqrestore(&memcg->move_lock, flags);
- 		goto again;
- 	}
--	*locked = true;
-+
-+	/*
-+	 * When charge migration first begins, we can have locked and
-+	 * unlocked page stat updates happening concurrently.  Track
-+	 * the task who has the lock for mem_cgroup_end_page_stat().
-+	 */
-+	memcg->move_lock_task = current;
-+	memcg->move_lock_flags = flags;
- 
- 	return memcg;
- }
-@@ -2031,14 +2038,17 @@ again:
- /**
-  * mem_cgroup_end_page_stat - finish a page state statistics transaction
-  * @memcg: the memcg that was accounted against
-- * @locked: value received from mem_cgroup_begin_page_stat()
-- * @flags: value received from mem_cgroup_begin_page_stat()
-  */
--void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool *locked,
--			      unsigned long *flags)
-+void mem_cgroup_end_page_stat(struct mem_cgroup *memcg)
- {
--	if (memcg && *locked)
--		spin_unlock_irqrestore(&memcg->move_lock, *flags);
-+	if (memcg && memcg->move_lock_task == current) {
-+		unsigned long flags = memcg->move_lock_flags;
-+
-+		memcg->move_lock_task = NULL;
-+		memcg->move_lock_flags = 0;
-+
-+		spin_unlock_irqrestore(&memcg->move_lock, flags);
-+	}
- 
- 	rcu_read_unlock();
- }
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 6f4335238e33..fb71e9deca85 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -2308,12 +2308,10 @@ EXPORT_SYMBOL(clear_page_dirty_for_io);
- int test_clear_page_writeback(struct page *page)
- {
- 	struct address_space *mapping = page_mapping(page);
--	unsigned long memcg_flags;
- 	struct mem_cgroup *memcg;
--	bool locked;
- 	int ret;
- 
--	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
-+	memcg = mem_cgroup_begin_page_stat(page);
- 	if (mapping) {
- 		struct backing_dev_info *bdi = mapping->backing_dev_info;
- 		unsigned long flags;
-@@ -2338,19 +2336,17 @@ int test_clear_page_writeback(struct page *page)
- 		dec_zone_page_state(page, NR_WRITEBACK);
- 		inc_zone_page_state(page, NR_WRITTEN);
- 	}
--	mem_cgroup_end_page_stat(memcg, &locked, &memcg_flags);
-+	mem_cgroup_end_page_stat(memcg);
- 	return ret;
- }
- 
- int __test_set_page_writeback(struct page *page, bool keep_write)
- {
- 	struct address_space *mapping = page_mapping(page);
--	unsigned long memcg_flags;
- 	struct mem_cgroup *memcg;
--	bool locked;
- 	int ret;
- 
--	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
-+	memcg = mem_cgroup_begin_page_stat(page);
- 	if (mapping) {
- 		struct backing_dev_info *bdi = mapping->backing_dev_info;
- 		unsigned long flags;
-@@ -2380,7 +2376,7 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
- 		mem_cgroup_inc_page_stat(memcg, MEM_CGROUP_STAT_WRITEBACK);
- 		inc_zone_page_state(page, NR_WRITEBACK);
- 	}
--	mem_cgroup_end_page_stat(memcg, &locked, &memcg_flags);
-+	mem_cgroup_end_page_stat(memcg);
- 	return ret;
- 
- }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index c325f8bd2cc4..5e995a9da902 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1112,24 +1112,20 @@ void page_add_new_anon_rmap(struct page *page,
- void page_add_file_rmap(struct page *page)
- {
- 	struct mem_cgroup *memcg;
--	unsigned long flags;
--	bool locked;
- 
--	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-+	memcg = mem_cgroup_begin_page_stat(page);
- 	if (atomic_inc_and_test(&page->_mapcount)) {
- 		__inc_zone_page_state(page, NR_FILE_MAPPED);
- 		mem_cgroup_inc_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
- 	}
--	mem_cgroup_end_page_stat(memcg, &locked, &flags);
-+	mem_cgroup_end_page_stat(memcg);
- }
- 
- static void page_remove_file_rmap(struct page *page)
- {
- 	struct mem_cgroup *memcg;
--	unsigned long flags;
--	bool locked;
- 
--	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-+	memcg = mem_cgroup_begin_page_stat(page);
- 
- 	/* page still mapped by someone else? */
- 	if (!atomic_add_negative(-1, &page->_mapcount))
-@@ -1150,7 +1146,7 @@ static void page_remove_file_rmap(struct page *page)
- 	if (unlikely(PageMlocked(page)))
- 		clear_page_mlock(page);
- out:
--	mem_cgroup_end_page_stat(memcg, &locked, &flags);
-+	mem_cgroup_end_page_stat(memcg);
- }
- 
- /**
+  * PARAMETERS:  list_head           - Head of the state stack
 -- 
-2.2.0
+1.7.10.4
 
