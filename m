@@ -1,660 +1,671 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbbABURr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 15:17:47 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:43524 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779AbbABURo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 15:17:44 -0500
-Date: Fri, 2 Jan 2015 14:16:43 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Dave Gerlach <d-gerlach@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Suman Anna <s-anna@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 2/3] soc: ti: Add wkup_m3_ipc driver
-Message-ID: <20150102201643.GE4920@saruman>
-Reply-To: <balbi@ti.com>
-References: <1420228817-41310-1-git-send-email-d-gerlach@ti.com>
- <1420228817-41310-3-git-send-email-d-gerlach@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wTWi5aaYRw9ix9vO"
-Content-Disposition: inline
-In-Reply-To: <1420228817-41310-3-git-send-email-d-gerlach@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752267AbbABUXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 15:23:04 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:46322 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832AbbABUXB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 15:23:01 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Kalle Valo <kvalo@adurom.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: wireless: rtlwifi: btcoexist: halbtc8821a2ant:  Remove some unused functions
+Date: Fri,  2 Jan 2015 21:26:01 +0100
+Message-Id: <1420230361-1862-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---wTWi5aaYRw9ix9vO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Removes some functions that are not used anywhere:
+ex_halbtc8821a2ant_periodical() ex_halbtc8821a2ant_halt_notify()
+ex_halbtc8821a2ant_bt_info_notify()
+ex_halbtc8821a2ant_special_packet_notify()
+ex_halbtc8821a2ant_connect_notify() ex_halbtc8821a2ant_scan_notify()
+ex_halbtc8821a2ant_lps_notify() ex_halbtc8821a2ant_ips_notify()
+ex_halbtc8821a2ant_display_coex_info() ex_halbtc8821a2ant_init_coex_dm()
+ex_halbtc8821a2ant_init_hwconfig()
 
-On Fri, Jan 02, 2015 at 02:00:16PM -0600, Dave Gerlach wrote:
-> Introduce a wkup_m3_ipc driver to handle communication between the MPU
-> and Cortex M3 wkup_m3 present on am335x.
->=20
-> This driver is responsible for actually booting the wkup_m3_rproc and
-> also handling all IPC which is done using the IPC registers in the control
-> module, a mailbox, and a separate interrupt back from the wkup_m3. A small
-> API is exposed for executing specific power commands, which include
-> configuring for low power mode, request a transition to a low power mode,
-> and status info on a previous transition.
->=20
-> Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
-> ---
->  drivers/soc/ti/Kconfig       |  11 ++
->  drivers/soc/ti/Makefile      |   1 +
->  drivers/soc/ti/wkup_m3_ipc.c | 451 +++++++++++++++++++++++++++++++++++++=
-++++++
->  include/linux/wkup_m3_ipc.h  |  33 ++++
->  4 files changed, 496 insertions(+)
->  create mode 100644 drivers/soc/ti/wkup_m3_ipc.c
->  create mode 100644 include/linux/wkup_m3_ipc.h
->=20
-> diff --git a/drivers/soc/ti/Kconfig b/drivers/soc/ti/Kconfig
-> index 7266b21..61cda85 100644
-> --- a/drivers/soc/ti/Kconfig
-> +++ b/drivers/soc/ti/Kconfig
-> @@ -28,4 +28,15 @@ config KEYSTONE_NAVIGATOR_DMA
-> =20
->  	  If unsure, say N.
-> =20
-> +config WKUP_M3_IPC
-> +	bool "TI AM33XX Wkup-M3 IPC Driver"
+This was partially found by using a static code analysis program called cppcheck.
 
-tristate ?
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ .../wireless/rtlwifi/btcoexist/halbtc8821a2ant.c   |  548 --------------------
+ .../wireless/rtlwifi/btcoexist/halbtc8821a2ant.h   |   51 --
+ 2 files changed, 599 deletions(-)
 
-> +	depends on WKUP_M3_RPROC
-> +	select MAILBOX
-> +	select OMAP2PLUS_MBOX
+diff --git a/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.c b/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.c
+index cf819f0..7d7b81d 100644
+--- a/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.c
++++ b/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.c
+@@ -3290,346 +3290,6 @@ static void halbtc8821a2ant_run_coexist_mechanism(struct btc_coexist *btcoexist)
+  * extern function start with EXhalbtc8821a2ant_
+  *============================================================
+  */
+-void ex_halbtc8821a2ant_init_hwconfig(struct btc_coexist *btcoexist)
+-{
+-	u8 u1tmp = 0;
+-
+-	BTC_PRINT(BTC_MSG_INTERFACE, INTF_INIT,
+-		  "[BTCoex], 2Ant Init HW Config!!\n");
+-
+-	/* backup rf 0x1e value */
+-	coex_dm->bt_rf0x1e_backup =
+-		btcoexist->btc_get_rf_reg(btcoexist, BTC_RF_A, 0x1e, 0xfffff);
+-
+-	/* 0x790[5:0] = 0x5 */
+-	u1tmp = btcoexist->btc_read_1byte(btcoexist, 0x790);
+-	u1tmp &= 0xc0;
+-	u1tmp |= 0x5;
+-	btcoexist->btc_write_1byte(btcoexist, 0x790, u1tmp);
+-
+-	/*Antenna config */
+-	halbtc8821a2ant_set_ant_path(btcoexist,
+-				     BTC_ANT_WIFI_AT_MAIN, true, false);
+-
+-	/* PTA parameter */
+-	halbtc8821a2ant_coex_table(btcoexist,
+-				   FORCE_EXEC, 0x55555555, 0x55555555,
+-				   0xffff, 0x3);
+-
+-	/* Enable counter statistics */
+-	/*0x76e[3] = 1, WLAN_Act control by PTA*/
+-	btcoexist->btc_write_1byte(btcoexist, 0x76e, 0xc);
+-	btcoexist->btc_write_1byte(btcoexist, 0x778, 0x3);
+-	btcoexist->btc_write_1byte_bitmask(btcoexist, 0x40, 0x20, 0x1);
+-}
+-
+-void
+-ex_halbtc8821a2ant_init_coex_dm(
+-	struct btc_coexist *btcoexist
+-	)
+-{
+-	BTC_PRINT(BTC_MSG_INTERFACE, INTF_INIT,
+-		  "[BTCoex], Coex Mechanism Init!!\n");
+-
+-	halbtc8821a2ant_init_coex_dm(btcoexist);
+-}
+-
+-void
+-ex_halbtc8821a2ant_display_coex_info(
+-	struct btc_coexist *btcoexist
+-	)
+-{
+-	struct btc_board_info *board_info = &btcoexist->board_info;
+-	struct btc_stack_info *stack_info = &btcoexist->stack_info;
+-	struct rtl_priv *rtlpriv = btcoexist->adapter;
+-	u8 u1tmp[4], i, bt_info_ext, ps_tdma_case = 0;
+-	u32 u4tmp[4];
+-	bool roam = false, scan = false, link = false, wifi_under_5g = false;
+-	bool bt_hs_on = false, wifi_busy = false;
+-	long wifi_rssi = 0, bt_hs_rssi = 0;
+-	u32 wifi_bw, wifi_traffic_dir;
+-	u8 wifi_dot_11_chnl, wifi_hs_chnl;
+-	u32 fw_ver = 0, bt_patch_ver = 0;
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n ============[BT Coexist info]============");
+-
+-	if (!board_info->bt_exist) {
+-		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n BT not exists !!!");
+-		return;
+-	}
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %d/ %d ", "Ant PG number/ Ant mechanism:",
+-		   board_info->pg_ant_num, board_info->btdm_ant_num);
+-
+-	if (btcoexist->manual_control) {
+-		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-			   "\r\n %-35s", "[Action Manual control]!!");
+-	}
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %s / %d", "BT stack/ hci ext ver",
+-		   ((stack_info->profile_notified) ? "Yes" : "No"),
+-		   stack_info->hci_version);
+-
+-	btcoexist->btc_get(btcoexist, BTC_GET_U4_BT_PATCH_VER, &bt_patch_ver);
+-	btcoexist->btc_get(btcoexist, BTC_GET_U4_WIFI_FW_VER, &fw_ver);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %d_%d/ 0x%x/ 0x%x(%d)",
+-		   "CoexVer/ FwVer/ PatchVer",
+-		   glcoex_ver_date_8821a_2ant, glcoex_ver_8821a_2ant,
+-		   fw_ver, bt_patch_ver, bt_patch_ver);
+-
+-	btcoexist->btc_get(btcoexist,
+-		BTC_GET_BL_HS_OPERATION, &bt_hs_on);
+-	btcoexist->btc_get(btcoexist,
+-		BTC_GET_U1_WIFI_DOT11_CHNL, &wifi_dot_11_chnl);
+-	btcoexist->btc_get(btcoexist,
+-		BTC_GET_U1_WIFI_HS_CHNL, &wifi_hs_chnl);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %d / %d(%d)",
+-		   "Dot11 channel / HsMode(HsChnl)",
+-		   wifi_dot_11_chnl, bt_hs_on, wifi_hs_chnl);
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %02x %02x %02x ",
+-		   "H2C Wifi inform bt chnl Info",
+-		   coex_dm->wifi_chnl_info[0], coex_dm->wifi_chnl_info[1],
+-		   coex_dm->wifi_chnl_info[2]);
+-
+-	btcoexist->btc_get(btcoexist, BTC_GET_S4_WIFI_RSSI, &wifi_rssi);
+-	btcoexist->btc_get(btcoexist, BTC_GET_S4_HS_RSSI, &bt_hs_rssi);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %ld/ %ld", "Wifi rssi/ HS rssi",
+-		   wifi_rssi, bt_hs_rssi);
+-
+-	btcoexist->btc_get(btcoexist, BTC_GET_BL_WIFI_SCAN, &scan);
+-	btcoexist->btc_get(btcoexist, BTC_GET_BL_WIFI_LINK, &link);
+-	btcoexist->btc_get(btcoexist, BTC_GET_BL_WIFI_ROAM, &roam);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %d/ %d/ %d ", "Wifi link/ roam/ scan",
+-		   link, roam, scan);
+-
+-	btcoexist->btc_get(btcoexist,
+-		BTC_GET_BL_WIFI_UNDER_5G, &wifi_under_5g);
+-	btcoexist->btc_get(btcoexist,
+-		BTC_GET_U4_WIFI_BW, &wifi_bw);
+-	btcoexist->btc_get(btcoexist,
+-		BTC_GET_BL_WIFI_BUSY, &wifi_busy);
+-	btcoexist->btc_get(btcoexist,
+-		BTC_GET_U4_WIFI_TRAFFIC_DIRECTION, &wifi_traffic_dir);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %s / %s/ %s ", "Wifi status",
+-		   (wifi_under_5g ? "5G" : "2.4G"),
+-		   ((BTC_WIFI_BW_LEGACY == wifi_bw) ? "Legacy" :
+-		    (((BTC_WIFI_BW_HT40 == wifi_bw) ? "HT40" : "HT20"))),
+-		   ((!wifi_busy) ? "idle" :
+-		    ((BTC_WIFI_TRAFFIC_TX == wifi_traffic_dir) ?
+-		     "uplink" : "downlink")));
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = [%s/ %d/ %d] ", "BT [status/ rssi/ retryCnt]",
+-		   ((coex_sta->c2h_bt_inquiry_page) ? ("inquiry/page scan") :
+-		    ((BT_8821A_2ANT_BT_STATUS_IDLE == coex_dm->bt_status)
+-		     ? "idle" : ((BT_8821A_2ANT_BT_STATUS_CON_IDLE ==
+-		     coex_dm->bt_status) ? "connected-idle" : "busy"))),
+-		    coex_sta->bt_rssi, coex_sta->bt_retry_cnt);
+-
+-	if (stack_info->profile_notified) {
+-		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-			   "\r\n %-35s = %d / %d / %d / %d", "SCO/HID/PAN/A2DP",
+-			   stack_info->sco_exist, stack_info->hid_exist,
+-			   stack_info->pan_exist, stack_info->a2dp_exist);
+-
+-		btcoexist->btc_disp_dbg_msg(btcoexist,
+-					    BTC_DBG_DISP_BT_LINK_INFO);
+-	}
+-
+-	bt_info_ext = coex_sta->bt_info_ext;
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = %s",
+-		   "BT Info A2DP rate",
+-		   (bt_info_ext&BIT0) ? "Basic rate" : "EDR rate");
+-
+-	for (i = 0; i < BT_INFO_SRC_8821A_2ANT_MAX; i++) {
+-		if (coex_sta->bt_info_c2h_cnt[i]) {
+-			RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-				   "\r\n %-35s = %02x %02x %02x %02x %02x %02x %02x(%d)",
+-				   glbt_info_src_8821a_2ant[i],
+-				   coex_sta->bt_info_c2h[i][0],
+-				   coex_sta->bt_info_c2h[i][1],
+-				   coex_sta->bt_info_c2h[i][2],
+-				   coex_sta->bt_info_c2h[i][3],
+-				   coex_sta->bt_info_c2h[i][4],
+-				   coex_sta->bt_info_c2h[i][5],
+-				   coex_sta->bt_info_c2h[i][6],
+-				   coex_sta->bt_info_c2h_cnt[i]);
+-		}
+-	}
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = %s/%s",
+-		   "PS state, IPS/LPS",
+-		   ((coex_sta->under_ips ? "IPS ON" : "IPS OFF")),
+-		   ((coex_sta->under_lps ? "LPS ON" : "LPS OFF")));
+-	btcoexist->btc_disp_dbg_msg(btcoexist, BTC_DBG_DISP_FW_PWR_MODE_CMD);
+-
+-	/* Sw mechanism*/
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s",
+-		   "============[Sw mechanism]============");
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %d/ %d/ %d/ %d ",
+-		   "SM1[ShRf/ LpRA/ LimDig/ btLna]",
+-		   coex_dm->cur_rf_rx_lpf_shrink, coex_dm->cur_low_penalty_ra,
+-		   coex_dm->limited_dig, coex_dm->cur_bt_lna_constrain);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = %d/ %d/ %d(0x%x) ",
+-		   "SM2[AgcT/ AdcB/ SwDacSwing(lvl)]",
+-		   coex_dm->cur_agc_table_en, coex_dm->cur_adc_back_off,
+-		   coex_dm->cur_dac_swing_on, coex_dm->cur_dac_swing_lvl);
+-
+-	/* Fw mechanism*/
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s",
+-		   "============[Fw mechanism]============");
+-
+-	if (!btcoexist->manual_control) {
+-		ps_tdma_case = coex_dm->cur_ps_tdma;
+-		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-			   "\r\n %-35s = %02x %02x %02x %02x %02x case-%d",
+-			   "PS TDMA",
+-			   coex_dm->ps_tdma_para[0], coex_dm->ps_tdma_para[1],
+-			   coex_dm->ps_tdma_para[2], coex_dm->ps_tdma_para[3],
+-			   coex_dm->ps_tdma_para[4], ps_tdma_case);
+-
+-		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-			   "\r\n %-35s = %d/ %d ", "DecBtPwr/ IgnWlanAct",
+-			   coex_dm->cur_dec_bt_pwr,
+-			   coex_dm->cur_ignore_wlan_act);
+-	}
+-
+-	/* Hw setting*/
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s", "============[Hw setting]============");
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG,
+-		   "\r\n %-35s = 0x%x", "RF-A, 0x1e initVal",
+-		   coex_dm->bt_rf0x1e_backup);
+-
+-	u1tmp[0] = btcoexist->btc_read_1byte(btcoexist, 0x778);
+-	u1tmp[1] = btcoexist->btc_read_1byte(btcoexist, 0x6cc);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x ",
+-		   "0x778 (W_Act)/ 0x6cc (CoTab Sel)",
+-		   u1tmp[0], u1tmp[1]);
+-
+-	u1tmp[0] = btcoexist->btc_read_1byte(btcoexist, 0x8db);
+-	u1tmp[1] = btcoexist->btc_read_1byte(btcoexist, 0xc5b);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x",
+-		   "0x8db(ADC)/0xc5b[29:25](DAC)",
+-		   ((u1tmp[0]&0x60)>>5), ((u1tmp[1]&0x3e)>>1));
+-
+-	u4tmp[0] = btcoexist->btc_read_4byte(btcoexist, 0xcb4);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x",
+-		   "0xcb4[7:0](ctrl)/ 0xcb4[29:28](val)",
+-		   u4tmp[0]&0xff, ((u4tmp[0]&0x30000000)>>28));
+-
+-	u1tmp[0] = btcoexist->btc_read_1byte(btcoexist, 0x40);
+-	u4tmp[0] = btcoexist->btc_read_4byte(btcoexist, 0x4c);
+-	u4tmp[1] = btcoexist->btc_read_4byte(btcoexist, 0x974);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x/ 0x%x",
+-		   "0x40/ 0x4c[24:23]/ 0x974",
+-		   u1tmp[0], ((u4tmp[0]&0x01800000)>>23), u4tmp[1]);
+-
+-	u4tmp[0] = btcoexist->btc_read_4byte(btcoexist, 0x550);
+-	u1tmp[0] = btcoexist->btc_read_1byte(btcoexist, 0x522);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x",
+-		   "0x550(bcn ctrl)/0x522",
+-		   u4tmp[0], u1tmp[0]);
+-
+-	u4tmp[0] = btcoexist->btc_read_4byte(btcoexist, 0xc50);
+-	u1tmp[0] = btcoexist->btc_read_1byte(btcoexist, 0xa0a);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x",
+-		   "0xc50(DIG)/0xa0a(CCK-TH)",
+-		   u4tmp[0], u1tmp[0]);
+-
+-	u4tmp[0] = btcoexist->btc_read_4byte(btcoexist, 0xf48);
+-	u1tmp[0] = btcoexist->btc_read_1byte(btcoexist, 0xa5b);
+-	u1tmp[1] = btcoexist->btc_read_1byte(btcoexist, 0xa5c);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x",
+-		   "OFDM-FA/ CCK-FA",
+-		   u4tmp[0], (u1tmp[0]<<8) + u1tmp[1]);
+-
+-	u4tmp[0] = btcoexist->btc_read_4byte(btcoexist, 0x6c0);
+-	u4tmp[1] = btcoexist->btc_read_4byte(btcoexist, 0x6c4);
+-	u4tmp[2] = btcoexist->btc_read_4byte(btcoexist, 0x6c8);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x/ 0x%x/ 0x%x",
+-		   "0x6c0/0x6c4/0x6c8",
+-		   u4tmp[0], u4tmp[1], u4tmp[2]);
+-
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = %d/ %d",
+-		   "0x770 (hi-pri Rx/Tx)",
+-		   coex_sta->high_priority_rx, coex_sta->high_priority_tx);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = %d/ %d",
+-		   "0x774(low-pri Rx/Tx)",
+-		   coex_sta->low_priority_rx, coex_sta->low_priority_tx);
+-
+-	/* Tx mgnt queue hang or not, 0x41b should = 0xf, ex: 0xd ==>hang*/
+-	u1tmp[0] = btcoexist->btc_read_1byte(btcoexist, 0x41b);
+-	RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, "\r\n %-35s = 0x%x",
+-		   "0x41b (mgntQ hang chk == 0xf)",
+-		   u1tmp[0]);
+-
+-	btcoexist->btc_disp_dbg_msg(btcoexist, BTC_DBG_DISP_COEX_STATISTICS);
+-}
+-
+-void ex_halbtc8821a2ant_ips_notify(struct btc_coexist *btcoexist, u8 type)
+-{
+-	if (BTC_IPS_ENTER == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], IPS ENTER notify\n");
+-		coex_sta->under_ips = true;
+-		halbtc8821a2ant_coex_all_off(btcoexist);
+-	} else if (BTC_IPS_LEAVE == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], IPS LEAVE notify\n");
+-		coex_sta->under_ips = false;
+-		/*halbtc8821a2ant_init_coex_dm(btcoexist);*/
+-	}
+-}
+-
+-void ex_halbtc8821a2ant_lps_notify(struct btc_coexist *btcoexist, u8 type)
+-{
+-	if (BTC_LPS_ENABLE == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], LPS ENABLE notify\n");
+-		coex_sta->under_lps = true;
+-	} else if (BTC_LPS_DISABLE == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], LPS DISABLE notify\n");
+-		coex_sta->under_lps = false;
+-	}
+-}
+-
+-void ex_halbtc8821a2ant_scan_notify(struct btc_coexist *btcoexist, u8 type)
+-{
+-	if (BTC_SCAN_START == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], SCAN START notify\n");
+-	} else if (BTC_SCAN_FINISH == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], SCAN FINISH notify\n");
+-	}
+-}
+-
+-void ex_halbtc8821a2ant_connect_notify(struct btc_coexist *btcoexist, u8 type)
+-{
+-	if (BTC_ASSOCIATE_START == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], CONNECT START notify\n");
+-	} else if (BTC_ASSOCIATE_FINISH == type) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], CONNECT FINISH notify\n");
+-	}
+-}
+-
+ void ex_halbtc8821a2ant_media_status_notify(struct btc_coexist *btcoexist,
+ 					    u8 type)
+ {
+@@ -3669,211 +3329,3 @@ void ex_halbtc8821a2ant_media_status_notify(struct btc_coexist *btcoexist,
+ 
+ 	btcoexist->btc_fill_h2c(btcoexist, 0x66, 3, h2c_parameter);
+ }
+-
+-void ex_halbtc8821a2ant_special_packet_notify(struct btc_coexist *btcoexist,
+-					      u8 type) {
+-	if (type == BTC_PACKET_DHCP) {
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-			  "[BTCoex], DHCP Packet notify\n");
+-	}
+-}
+-
+-void ex_halbtc8821a2ant_bt_info_notify(struct btc_coexist *btcoexist,
+-				       u8 *tmp_buf, u8 length)
+-{
+-	u8		bt_info = 0;
+-	u8		i, rsp_source = 0;
+-	static u32	set_bt_lna_cnt, set_bt_psd_mode;
+-	bool		bt_busy = false, limited_dig = false;
+-	bool		wifi_connected = false, bt_hs_on = false;
+-
+-	coex_sta->c2h_bt_info_req_sent = false;
+-
+-	rsp_source = tmp_buf[0]&0xf;
+-	if (rsp_source >= BT_INFO_SRC_8821A_2ANT_MAX)
+-		rsp_source = BT_INFO_SRC_8821A_2ANT_WIFI_FW;
+-	coex_sta->bt_info_c2h_cnt[rsp_source]++;
+-
+-	BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-		  "[BTCoex], Bt info[%d], length = %d, hex data = [",
+-		  rsp_source, length);
+-	for (i = 0; i < length; i++) {
+-		coex_sta->bt_info_c2h[rsp_source][i] = tmp_buf[i];
+-		if (i == 1)
+-			bt_info = tmp_buf[i];
+-		if (i == length-1) {
+-			BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-				  "0x%02x]\n", tmp_buf[i]);
+-		} else {
+-			BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-				  "0x%02x, ", tmp_buf[i]);
+-		}
+-	}
+-
+-	if (BT_INFO_SRC_8821A_2ANT_WIFI_FW != rsp_source) {
+-		coex_sta->bt_retry_cnt =	/* [3:0]*/
+-			coex_sta->bt_info_c2h[rsp_source][2]&0xf;
+-
+-		coex_sta->bt_rssi =
+-			coex_sta->bt_info_c2h[rsp_source][3]*2+10;
+-
+-		coex_sta->bt_info_ext =
+-			coex_sta->bt_info_c2h[rsp_source][4];
+-
+-		/* Here we need to resend some wifi info to BT*/
+-		/* because bt is reset and loss of the info.*/
+-		if ((coex_sta->bt_info_ext & BIT1)) {
+-			btcoexist->btc_get(btcoexist,
+-				BTC_GET_BL_WIFI_CONNECTED, &wifi_connected);
+-			if (wifi_connected) {
+-				ex_halbtc8821a2ant_media_status_notify(btcoexist,
+-					BTC_MEDIA_CONNECT);
+-			} else {
+-				ex_halbtc8821a2ant_media_status_notify(btcoexist,
+-					BTC_MEDIA_DISCONNECT);
+-			}
+-
+-			set_bt_psd_mode = 0;
+-		}
+-		if (set_bt_psd_mode <= 3) {
+-			halbtc8821a2ant_set_bt_psd_mode(btcoexist, FORCE_EXEC,
+-							0x0); /*fix CH-BW mode*/
+-			set_bt_psd_mode++;
+-		}
+-
+-		if (coex_dm->cur_bt_lna_constrain) {
+-			if (!(coex_sta->bt_info_ext & BIT2)) {
+-				if (set_bt_lna_cnt <= 3) {
+-					btc8821a2_set_bt_lna_const(btcoexist,
+-								   FORCE_EXEC,
+-								   true);
+-					set_bt_lna_cnt++;
+-				}
+-			}
+-		} else {
+-			set_bt_lna_cnt = 0;
+-		}
+-
+-		if ((coex_sta->bt_info_ext & BIT3)) {
+-			halbtc8821a2ant_ignore_wlan_act(btcoexist,
+-							FORCE_EXEC, false);
+-		} else {
+-			/* BT already NOT ignore Wlan active, do nothing here.*/
+-		}
+-
+-		if ((coex_sta->bt_info_ext & BIT4)) {
+-			/* BT auto report already enabled, do nothing*/
+-		} else {
+-			halbtc8821a2ant_bt_auto_report(btcoexist,
+-						       FORCE_EXEC, true);
+-		}
+-	}
+-
+-	btcoexist->btc_get(btcoexist, BTC_GET_BL_HS_OPERATION, &bt_hs_on);
+-	/* check BIT2 first ==> check if bt is under inquiry or page scan*/
+-	if (bt_info & BT_INFO_8821A_2ANT_B_INQ_PAGE) {
+-		coex_sta->c2h_bt_inquiry_page = true;
+-		coex_dm->bt_status = BT_8821A_2ANT_BT_STATUS_NON_IDLE;
+-	} else {
+-		coex_sta->c2h_bt_inquiry_page = false;
+-		if (bt_info == 0x1) {
+-			/* connection exists but not busy*/
+-			coex_sta->bt_link_exist = true;
+-			coex_dm->bt_status = BT_8821A_2ANT_BT_STATUS_CON_IDLE;
+-		} else if (bt_info & BT_INFO_8821A_2ANT_B_CONNECTION) {
+-			/* connection exists and some link is busy*/
+-			coex_sta->bt_link_exist = true;
+-			if (bt_info & BT_INFO_8821A_2ANT_B_FTP)
+-				coex_sta->pan_exist = true;
+-			else
+-				coex_sta->pan_exist = false;
+-			if (bt_info & BT_INFO_8821A_2ANT_B_A2DP)
+-				coex_sta->a2dp_exist = true;
+-			else
+-				coex_sta->a2dp_exist = false;
+-			if (bt_info & BT_INFO_8821A_2ANT_B_HID)
+-				coex_sta->hid_exist = true;
+-			else
+-				coex_sta->hid_exist = false;
+-			if (bt_info & BT_INFO_8821A_2ANT_B_SCO_ESCO)
+-				coex_sta->sco_exist = true;
+-			else
+-				coex_sta->sco_exist = false;
+-			coex_dm->bt_status = BT_8821A_2ANT_BT_STATUS_NON_IDLE;
+-		} else {
+-			coex_sta->bt_link_exist = false;
+-			coex_sta->pan_exist = false;
+-			coex_sta->a2dp_exist = false;
+-			coex_sta->hid_exist = false;
+-			coex_sta->sco_exist = false;
+-			coex_dm->bt_status = BT_8821A_2ANT_BT_STATUS_IDLE;
+-		}
+-
+-		if (bt_hs_on)
+-			coex_dm->bt_status = BT_8821A_2ANT_BT_STATUS_NON_IDLE;
+-	}
+-
+-	if (BT_8821A_2ANT_BT_STATUS_NON_IDLE == coex_dm->bt_status)
+-		bt_busy = true;
+-	else
+-		bt_busy = false;
+-	btcoexist->btc_set(btcoexist, BTC_SET_BL_BT_TRAFFIC_BUSY, &bt_busy);
+-
+-	if (BT_8821A_2ANT_BT_STATUS_IDLE != coex_dm->bt_status)
+-		limited_dig = true;
+-	else
+-		limited_dig = false;
+-	coex_dm->limited_dig = limited_dig;
+-	btcoexist->btc_set(btcoexist,
+-		BTC_SET_BL_BT_LIMITED_DIG, &limited_dig);
+-
+-	halbtc8821a2ant_run_coexist_mechanism(btcoexist);
+-}
+-
+-void ex_halbtc8821a2ant_halt_notify(struct btc_coexist *btcoexist)
+-{
+-	BTC_PRINT(BTC_MSG_INTERFACE, INTF_NOTIFY,
+-		  "[BTCoex], Halt notify\n");
+-
+-	halbtc8821a2ant_ignore_wlan_act(btcoexist, FORCE_EXEC, true);
+-	ex_halbtc8821a2ant_media_status_notify(btcoexist, BTC_MEDIA_DISCONNECT);
+-}
+-
+-void ex_halbtc8821a2ant_periodical(struct btc_coexist *btcoexist)
+-{
+-	static u8	dis_ver_info_cnt;
+-	u32		fw_ver = 0, bt_patch_ver = 0;
+-	struct btc_board_info *board_info = &btcoexist->board_info;
+-	struct btc_stack_info *stack_info = &btcoexist->stack_info;
+-
+-	BTC_PRINT(BTC_MSG_ALGORITHM, ALGO_TRACE,
+-		  "[BTCoex], ==========================Periodical===========================\n");
+-
+-	if (dis_ver_info_cnt <= 5) {
+-		dis_ver_info_cnt += 1;
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_INIT,
+-			  "[BTCoex], ****************************************************************\n");
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_INIT,
+-			  "[BTCoex], Ant PG Num/ Ant Mech/ Ant Pos = %d/ %d/ %d\n",
+-			  board_info->pg_ant_num,
+-			  board_info->btdm_ant_num,
+-			  board_info->btdm_ant_pos);
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_INIT,
+-			  "[BTCoex], BT stack/ hci ext ver = %s / %d\n",
+-			  ((stack_info->profile_notified) ? "Yes" : "No"),
+-			  stack_info->hci_version);
+-		btcoexist->btc_get(btcoexist, BTC_GET_U4_BT_PATCH_VER,
+-				   &bt_patch_ver);
+-		btcoexist->btc_get(btcoexist, BTC_GET_U4_WIFI_FW_VER, &fw_ver);
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_INIT,
+-			  "[BTCoex], CoexVer/ FwVer/ PatchVer = %d_%x/ 0x%x/ 0x%x(%d)\n",
+-			  glcoex_ver_date_8821a_2ant, glcoex_ver_8821a_2ant,
+-			  fw_ver, bt_patch_ver, bt_patch_ver);
+-		BTC_PRINT(BTC_MSG_INTERFACE, INTF_INIT,
+-			  "[BTCoex], ****************************************************************\n");
+-	}
+-
+-	halbtc8821a2ant_query_bt_info(btcoexist);
+-	halbtc8821a2ant_monitor_bt_ctr(btcoexist);
+-	btc8821a2ant_mon_bt_en_dis(btcoexist);
+-}
+diff --git a/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.h b/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.h
+index b4cf1f5..4c95842 100644
+--- a/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.h
++++ b/drivers/net/wireless/rtlwifi/btcoexist/halbtc8821a2ant.h
+@@ -148,58 +148,7 @@ struct coex_sta_8821a_2ant {
+  *===========================================
+  */
+ void
+-ex_halbtc8821a2ant_init_hwconfig(
+-	struct btc_coexist *btcoexist
+-	);
+-void
+-ex_halbtc8821a2ant_init_coex_dm(
+-	struct btc_coexist *btcoexist
+-	);
+-void
+-ex_halbtc8821a2ant_ips_notify(
+-	struct btc_coexist *btcoexist,
+-	u8 type
+-	);
+-void
+-ex_halbtc8821a2ant_lps_notify(
+-	struct btc_coexist *btcoexist,
+-	u8 type
+-	);
+-void
+-ex_halbtc8821a2ant_scan_notify(
+-	struct btc_coexist *btcoexist,
+-	u8 type
+-	);
+-void
+-ex_halbtc8821a2ant_connect_notify(
+-	struct btc_coexist *btcoexist,
+-	u8 type
+-	);
+-void
+ ex_halbtc8821a2ant_media_status_notify(
+ 	struct btc_coexist *btcoexist,
+ 	u8 type
+ 	);
+-void
+-ex_halbtc8821a2ant_special_packet_notify(
+-	struct btc_coexist *btcoexist,
+-	u8 type
+-	);
+-void
+-ex_halbtc8821a2ant_bt_info_notify(
+-	struct btc_coexist *btcoexist,
+-	u8 *tmp_buf,
+-	u8 length
+-	);
+-void
+-ex_halbtc8821a2ant_halt_notify(
+-	struct btc_coexist *btcoexist
+-	);
+-void
+-ex_halbtc8821a2ant_periodical(
+-	struct btc_coexist *btcoexist
+-	);
+-void
+-ex_halbtc8821a2ant_display_coex_info(
+-	struct btc_coexist *btcoexist
+-	);
+-- 
+1.7.10.4
 
-selects are usually frowned upon.
-
-> +	help
-> +	  TI AM33XX has a Cortex M3 to handle low power transitions. This IPC
-> +	  driver provides the necessary API to communicate and use the wkup m3
-> +	  for PM features like Suspend/Resume and boots the wkup_m3 using
-> +	  wkup_m3_rproc driver.
-> +
->  endif # SOC_TI
-> diff --git a/drivers/soc/ti/Makefile b/drivers/soc/ti/Makefile
-> index 6bed611..b6b8c8b 100644
-> --- a/drivers/soc/ti/Makefile
-> +++ b/drivers/soc/ti/Makefile
-> @@ -3,3 +3,4 @@
->  #
->  obj-$(CONFIG_KEYSTONE_NAVIGATOR_QMSS)	+=3D knav_qmss_queue.o knav_qmss_a=
-cc.o
->  obj-$(CONFIG_KEYSTONE_NAVIGATOR_DMA)	+=3D knav_dma.o
-> +obj-$(CONFIG_WKUP_M3_IPC)		+=3D wkup_m3_ipc.o
-> diff --git a/drivers/soc/ti/wkup_m3_ipc.c b/drivers/soc/ti/wkup_m3_ipc.c
-> new file mode 100644
-> index 0000000..4dcf748
-> --- /dev/null
-> +++ b/drivers/soc/ti/wkup_m3_ipc.c
-> @@ -0,0 +1,451 @@
-> +/*
-> + * AMx3 Wkup M3 IPC driver
-> + *
-> + * Copyright (C) 2014 Texas Instruments, Inc.
-> + *
-> + * Dave Gerlach <d-gerlach@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/kernel.h>
-> +#include <linux/kthread.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/mailbox_client.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/omap-mailbox.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/remoteproc.h>
-> +#include <linux/suspend.h>
-> +#include <linux/wkup_m3_ipc.h>
-> +
-> +#define AM33XX_CTRL_IPC_REG_COUNT	0x8
-> +#define AM33XX_CTRL_IPC_REG_OFFSET(m)	(0x4 + 4 * (m))
-> +
-> +/* AM33XX M3_TXEV_EOI register */
-> +#define AM33XX_CONTROL_M3_TXEV_EOI	0x00
-> +
-> +#define AM33XX_M3_TXEV_ACK		(0x1 << 0)
-> +#define AM33XX_M3_TXEV_ENABLE		(0x0 << 0)
-> +
-> +#define IPC_CMD_DS0			0x4
-> +#define IPC_CMD_STANDBY			0xc
-> +#define IPC_CMD_RESET			0xe
-> +#define DS_IPC_DEFAULT			0xffffffff
-> +#define M3_VERSION_UNKNOWN		0x0000ffff
-> +#define M3_BASELINE_VERSION		0x187
-> +#define M3_STATUS_RESP_MASK		(0xffff << 16)
-> +#define M3_FW_VERSION_MASK		0xffff
-> +
-> +#define M3_STATE_UNKNOWN		0
-> +#define M3_STATE_RESET			1
-> +#define M3_STATE_INITED			2
-> +#define M3_STATE_MSG_FOR_LP		3
-> +#define M3_STATE_MSG_FOR_RESET		4
-> +
-> +struct wkup_m3_ipc {
-> +	struct rproc *rproc;
-> +
-> +	void __iomem *ipc_mem_base;
-> +	struct device *dev;
-> +
-> +	int mem_type;
-> +	unsigned long resume_addr;
-> +	int state;
-> +
-> +	struct mbox_client mbox_client;
-> +	struct mbox_chan *mbox;
-> +};
-> +
-> +static struct wkup_m3_ipc m3_ipc_state;
-> +
-> +static DECLARE_COMPLETION(m3_ipc_sync);
-
-either move this inside struct wkup_m3_ipc or make this
-DECLARE_COMPLETION_ONSTACK();
-
-> +
-> +static inline void am33xx_txev_eoi(struct wkup_m3_ipc *m3_ipc)
-> +{
-> +	writel(AM33XX_M3_TXEV_ACK,
-> +	       m3_ipc->ipc_mem_base + AM33XX_CONTROL_M3_TXEV_EOI);
-> +}
-> +
-> +static inline void am33xx_txev_enable(struct wkup_m3_ipc *m3_ipc)
-> +{
-> +	writel(AM33XX_M3_TXEV_ENABLE,
-> +	       m3_ipc->ipc_mem_base + AM33XX_CONTROL_M3_TXEV_EOI);
-> +}
-> +
-> +static inline void wkup_m3_ctrl_ipc_write(struct wkup_m3_ipc *m3_ipc,
-> +					  u32 val, int ipc_reg_num)
-> +{
-> +	if (ipc_reg_num < 0 || ipc_reg_num > AM33XX_CTRL_IPC_REG_COUNT)
-> +		return;
-
-you should probably add a WARN() here as this should never happen. Also,
-you might want to remove all "inline" modifiers and let compiler decide
-what to inline.
-
-> +
-> +	writel(val, m3_ipc->ipc_mem_base +
-> +	       AM33XX_CTRL_IPC_REG_OFFSET(ipc_reg_num));
-> +}
-> +
-> +static inline unsigned int wkup_m3_ctrl_ipc_read(struct wkup_m3_ipc *m3_=
-ipc,
-> +						 int ipc_reg_num)
-> +{
-> +	if (ipc_reg_num < 0 || ipc_reg_num > AM33XX_CTRL_IPC_REG_COUNT)
-> +		return 0;
-> +
-> +	return readl(m3_ipc->ipc_mem_base +
-> +		     AM33XX_CTRL_IPC_REG_OFFSET(ipc_reg_num));
-> +}
-> +
-> +static int wkup_m3_fw_version_read(void)
-
-you can very easily pass struct wkup_m3_ipc pointer as argument here.
-
-> +{
-> +	int val;
-> +
-> +	val =3D wkup_m3_ctrl_ipc_read(&m3_ipc_state, 2);
-> +
-> +	return val & M3_FW_VERSION_MASK;
-> +}
-> +
-> +static irqreturn_t wkup_m3_txev_handler(int irq, void *ipc_data)
-> +{
-> +	struct wkup_m3_ipc *m3_ipc =3D (struct wkup_m3_ipc *)ipc_data;
-
-unnecessary cast
-
-> +	struct device *dev =3D m3_ipc->dev;
-> +	int ver =3D 0;
-> +
-> +	am33xx_txev_eoi(m3_ipc);
-> +
-> +	switch (m3_ipc->state) {
-> +	case M3_STATE_RESET:
-> +		ver =3D wkup_m3_fw_version_read();
-> +
-> +		if (ver =3D=3D M3_VERSION_UNKNOWN ||
-> +		    ver < M3_BASELINE_VERSION) {
-> +			dev_warn(dev, "CM3 Firmware Version %x not supported\n",
-> +				 ver);
-> +		} else {
-> +			dev_info(dev, "CM3 Firmware Version =3D 0x%x\n", ver);
-> +		}
-> +
-> +		m3_ipc->state =3D M3_STATE_INITED;
-> +		complete(&m3_ipc_sync);
-> +		break;
-> +	case M3_STATE_MSG_FOR_RESET:
-> +		m3_ipc->state =3D M3_STATE_INITED;
-> +		complete(&m3_ipc_sync);
-> +		break;
-> +	case M3_STATE_MSG_FOR_LP:
-> +		complete(&m3_ipc_sync);
-> +		break;
-> +	case M3_STATE_UNKNOWN:
-> +		dev_warn(dev, "Unknown CM3 State\n");
-> +	}
-> +
-> +	am33xx_txev_enable(m3_ipc);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static void wkup_m3_mbox_callback(struct mbox_client *client, void *data)
-> +{
-> +	struct wkup_m3_ipc *m3_ipc =3D container_of(client, struct wkup_m3_ipc,
-> +						  mbox_client);
-> +
-> +	omap_mbox_disable_irq(m3_ipc->mbox, IRQ_RX);
-> +}
-> +
-> +static int wkup_m3_ping(void)
-
-same here, pass wkup_m3_ipc pointer as argument.
-
-> +{
-> +	struct device *dev =3D m3_ipc_state.dev;
-> +	mbox_msg_t dummy_msg =3D 0;
-> +	int ret;
-> +
-> +	if (!m3_ipc_state.mbox) {
-> +		dev_err(m3_ipc_state.dev,
-
-you already have a local dev pointer, why don't you use it ?
-
-> +			"No IPC channel to communicate with wkup_m3!\n");
-> +		return -EIO;
-> +	}
-> +
-> +	/*
-> +	 * Write a dummy message to the mailbox in order to trigger the RX
-> +	 * interrupt to alert the M3 that data is available in the IPC
-> +	 * registers. We must enable the IRQ here and disable it after in
-> +	 * the RX callback to avoid multiple interrupts being received
-> +	 * by the CM3.
-> +	 */
-> +	omap_mbox_enable_irq(m3_ipc_state.mbox, IRQ_RX);
-> +	ret =3D mbox_send_message(m3_ipc_state.mbox, (void *)dummy_msg);
-
-unnecessary cast.
-
-> +	if (ret < 0) {
-> +		dev_err(dev, "%s: mbox_send_message() failed: %d\n",
-> +			__func__, ret);
-> +		return ret;
-> +	}
-> +
-> +	ret =3D wait_for_completion_timeout(&m3_ipc_sync,
-
-yeah, why couldn't you ?
-
-	wait_for_completion_timeout(&m3_ipc_state->complete, [...]
-
-why does it have to be declared on the stack as a global variable ?
-
-> +					  msecs_to_jiffies(500));
-> +	if (!ret) {
-> +		dev_err(dev, "MPU<->CM3 sync failure\n");
-> +		m3_ipc_state.state =3D M3_STATE_UNKNOWN;
-> +		return -EIO;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int wkup_m3_is_available(void)
-
-should pass wkup_m3_ipc pointer as argument.
-
-> +{
-> +	return (m3_ipc_state.state !=3D M3_STATE_RESET);
-> +}
-> +
-> +/* Public functions */
-> +/**
-> + * wkup_m3_set_mem_type - Pass wkup_m3 which type of memory is in use
-> + * @mem_type: memory type value read directly from emif
-> + *
-> + * wkup_m3 must know what memory type is in use to properly suspend
-> + * and resume.
-> + */
-> +void wkup_m3_set_mem_type(int mem_type)
-> +{
-> +	m3_ipc_state.mem_type =3D mem_type;
-> +}
-> +
-> +/**
-> + * wkup_m3_set_resume_address - Pass wkup_m3 resume address
-> + * @addr: Physical address from which resume code should execute
-> + */
-> +void wkup_m3_set_resume_address(void *addr)
-> +{
-> +	m3_ipc_state.resume_addr =3D (unsigned long)addr;
-> +}
-> +
-> +/**
-> + * wkup_m3_set_resume_address - Retrieve wkup_m3 status code after suspe=
-nd
-> + *
-> + * Returns code representing the status of a low power mode transition.
-> + *	0 - Successful transition
-> + *	1 - Failure to transition to low power state
-> + */
-> +int wkup_m3_request_pm_status(void)
-> +{
-> +	unsigned int i;
-> +	int val;
-> +
-> +	val =3D wkup_m3_ctrl_ipc_read(&m3_ipc_state, 1);
-> +
-> +	i =3D M3_STATUS_RESP_MASK & val;
-> +	i >>=3D __ffs(M3_STATUS_RESP_MASK);
-> +
-> +	return i;
-> +}
-> +
-> +/**
-> + * wkup_m3_prepare_low_power - Request preparation for transition to
-> + *			       low power state
-> + * @state: A kernel suspend state to enter, either MEM or STANDBY
-> + *
-> + * Returns 0 if preparation was successful, otherwise returns error code
-> + */
-> +int wkup_m3_prepare_low_power(int state)
-> +{
-> +	struct device *dev =3D m3_ipc_state.dev;
-> +	int m3_power_state;
-> +	int ret =3D 0;
-> +
-> +	if (!wkup_m3_is_available()) {
-> +		dev_err(dev, "wkup_m3 not available. DeepSleep entry not possible.\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	switch (state) {
-> +	case PM_SUSPEND_MEM:
-> +		m3_power_state =3D IPC_CMD_DS0;
-> +		break;
-> +	default:
-> +		return 1;
-> +	}
-> +
-> +	/* Program each required IPC register then write defaults to others */
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, m3_ipc_state.resume_addr, 0);
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, m3_power_state, 1);
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, m3_ipc_state.mem_type, 4);
-> +
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, DS_IPC_DEFAULT, 2);
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, DS_IPC_DEFAULT, 3);
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, DS_IPC_DEFAULT, 5);
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, DS_IPC_DEFAULT, 6);
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, DS_IPC_DEFAULT, 7);
-> +
-> +	m3_ipc_state.state =3D M3_STATE_MSG_FOR_LP;
-> +
-> +	ret =3D wkup_m3_ping();
-> +	if (ret) {
-> +		dev_err(dev, "Unable to ping CM3\n");
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * wkup_m3_finish_low_power - Return m3 to reset state
-> + *
-> + * Returns 0 if reset was successful, otherwise returns error code
-> + */
-> +int wkup_m3_finish_low_power(void)
-> +{
-> +	struct device *dev =3D m3_ipc_state.dev;
-> +	int ret =3D 0;
-> +
-> +	if (!wkup_m3_is_available())
-> +		return -ENODEV;
-> +
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, IPC_CMD_RESET, 1);
-> +	wkup_m3_ctrl_ipc_write(&m3_ipc_state, DS_IPC_DEFAULT, 2);
-> +
-> +	m3_ipc_state.state =3D M3_STATE_MSG_FOR_RESET;
-> +
-> +	ret =3D wkup_m3_ping();
-> +	if (ret) {
-> +		dev_err(dev, "Unable to ping CM3\n");
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-
-I'm very much against exposed functions like this, but at least declare
-them as EXPORT_SYMBOL_GPL().
-
-> +static void wkup_m3_rproc_boot_thread(struct rproc *rproc)
-> +{
-> +	struct device *dev =3D &rproc->dev;
-> +	int ret;
-> +
-> +	wait_for_completion(&rproc->firmware_loading_complete);
-> +
-> +	ret =3D rproc_boot(rproc);
-> +	if (ret)
-> +		dev_err(dev, "rproc_boot failed\n");
-> +
-> +	do_exit(0);
-> +}
-> +
-> +static int wkup_m3_ipc_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev =3D &pdev->dev;
-> +	int irq, ret;
-> +	uint32_t rproc_phandle;
-> +	struct rproc *m3_rproc;
-> +	struct resource *res;
-> +	struct task_struct *task;
-> +
-> +	res =3D platform_get_resource_byname(pdev, IORESOURCE_MEM, "ipc_regs");
-> +	m3_ipc_state.ipc_mem_base =3D devm_ioremap_resource(dev, res);
-> +	if (IS_ERR(m3_ipc_state.ipc_mem_base)) {
-> +		dev_err(dev, "could not ioremap ipc_mem\n");
-> +		ret =3D PTR_ERR(m3_ipc_state.ipc_mem_base);
-> +		goto err;
-> +	}
-> +
-> +	irq =3D platform_get_irq(pdev, 0);
-> +	if (!irq) {
-> +		dev_err(&pdev->dev, "no irq resource\n");
-> +		ret =3D -ENXIO;
-> +		goto err;
-> +	}
-> +
-> +	ret =3D devm_request_irq(dev, irq, wkup_m3_txev_handler,
-> +			       IRQF_DISABLED, "wkup_m3_txev", &m3_ipc_state);
-> +	if (ret) {
-> +		dev_err(dev, "request_irq failed\n");
-> +		goto err;
-> +	}
-> +
-> +	m3_ipc_state.mbox_client.dev =3D dev;
-> +	m3_ipc_state.mbox_client.tx_done =3D NULL;
-> +	m3_ipc_state.mbox_client.rx_callback =3D wkup_m3_mbox_callback;
-> +	m3_ipc_state.mbox_client.tx_block =3D false;
-> +	m3_ipc_state.mbox_client.knows_txdone =3D false;
-> +
-> +	m3_ipc_state.mbox =3D mbox_request_channel(&m3_ipc_state.mbox_client, 0=
-);
-> +	if (IS_ERR(m3_ipc_state.mbox)) {
-> +		dev_err(dev, "IPC Request for A8->M3 Channel failed! %ld\n",
-> +			PTR_ERR(m3_ipc_state.mbox));
-> +		ret =3D PTR_ERR(m3_ipc_state.mbox);
-> +		m3_ipc_state.mbox =3D NULL;
-> +		return ret;
-> +	}
-> +
-> +	if (of_property_read_u32(dev->of_node, "ti,rproc", &rproc_phandle)) {
-> +		dev_err(&pdev->dev, "could not get rproc phandle\n");
-> +		ret =3D -ENODEV;
-> +		goto err;
-> +	}
-> +
-> +	m3_rproc =3D rproc_get_by_phandle(rproc_phandle);
-> +	if (!m3_rproc) {
-> +		dev_err(&pdev->dev, "could not get rproc handle\n");
-> +		ret =3D -EPROBE_DEFER;
-> +		goto err;
-> +	}
-> +
-> +	m3_ipc_state.rproc =3D m3_rproc;
-> +	m3_ipc_state.dev =3D dev;
-> +	m3_ipc_state.state =3D M3_STATE_RESET;
-> +
-> +	/*
-> +	 * Wait for firmware loading completion in a thread so we
-> +	 * can boot the wkup_m3 as soon as it's ready without holding
-> +	 * up kernel boot
-> +	 */
-> +	task =3D kthread_run((void *)wkup_m3_rproc_boot_thread, m3_rproc,
-> +			   "wkup_m3_rproc_loader");
-
-I wonder two things:
-
-1) This thread will only be used during boot up. Do we really need a
-thread or would request_firmware_nowait() be enough ?
-
-2) what's the size of the firmware ? Is it really so large that we must
-run this as a separate thread ? Meaning, why isn't request_firmware()
-enough ? How much time would we be waiting ?
-
-> +
-> +	if (IS_ERR(task)) {
-> +		dev_err(dev, "can't create rproc_boot thread\n");
-> +		goto err_put_rproc;
-> +	}
-> +
-> +	return 0;
-> +
-> +err_put_rproc:
-> +	rproc_put(m3_rproc);
-> +err:
-> +	mbox_free_channel(m3_ipc_state.mbox);
-> +	return ret;
-> +}
-> +
-> +static int wkup_m3_ipc_remove(struct platform_device *pdev)
-> +{
-
-	struct wkup_m3_ipc *m3 =3D platform_get_drvdata(pdev);
-
-> +	if (m3_ipc_state.mbox)
-
-if your request mailbox fails, you're bailing out on probe, this check
-is useless.
-
-> +		mbox_free_channel(m3_ipc_state.mbox);
-> +
-> +	if (m3_ipc_state.rproc) {
-
-likewise.
-
-> +		rproc_shutdown(m3_ipc_state.rproc);
-> +		rproc_put(m3_ipc_state.rproc);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id wkup_m3_ipc_of_match[] =3D {
-> +	{ .compatible =3D "ti,am3353-wkup-m3-ipc", .data =3D NULL, },
-
-unnnecessary zero initialization.
-
-> +	{},
-> +};
-> +
-> +static struct platform_driver wkup_m3_ipc_driver =3D {
-> +	.probe =3D wkup_m3_ipc_probe,
-> +	.remove =3D wkup_m3_ipc_remove,
-> +	.driver =3D {
-> +		.name =3D "wkup_m3_ipc",
-> +		.of_match_table =3D wkup_m3_ipc_of_match,
-> +	},
-> +};
-> +
-> +module_platform_driver(wkup_m3_ipc_driver);
-> +
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_DESCRIPTION("wkup m3 remote processor ipc driver");
-
-MODULE_AUTHOR() ??
-
-> diff --git a/include/linux/wkup_m3_ipc.h b/include/linux/wkup_m3_ipc.h
-> new file mode 100644
-> index 0000000..a0c2722
-> --- /dev/null
-> +++ b/include/linux/wkup_m3_ipc.h
-> @@ -0,0 +1,33 @@
-> +/*
-> + * TI Wakeup M3 for AMx3 SoCs Power Management Routines
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-
-actually, it's 2015 already, so you probably want:
-
-* Copyright (C) 2013-2015 Texas Instruments Incorporated - http://www.ti.co=
-m/
-
---=20
-balbi
-
---wTWi5aaYRw9ix9vO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUpvyrAAoJEIaOsuA1yqREqPkQAJFRjXiyxYdJdLWe0lGDJPgD
-NpUzhxgAVkcwcUPbdG1GCUMiCqpHnjOSx187fMepJS5ki+DFud/IlPFAjwwMPtwW
-Q1KgYcl0eb8or11BB/X4JVcBMX3khIrgpLx5YaSnLjQ+BpBROVaeLFveqVR0x93G
-6rJHQw2ziuqNo/PSxgPCwdf+o5kllxUl6aNqRJPR0poKURM6HESp44yWXQmZIaWY
-RR2vRXni8mgaG+1MLG2uIVKVQoJHthG5JrpdElOHVcy/4kkevHJcY+D8xZlR9Dd2
-R8+oyQTu1nlClwXyyojmCDvhAajdbsQVFTiTGyLZF2F1cKVki/CPyb+E0b5n6w7Q
-swI+60oxOzyhnzauTZm6r5MrUA3p7l+/dGrMa/PVTm8VVLlzaHQLnX9GIsfWHZjI
-El7BsbmjPmbdxwPhc5ohN/1ZRQ1/WJ9zfX+6/GTdFOGS326sB2/WR42iG1YPW0nD
-TN7I0xqARxXZwfgXV40nKkkXErf52iR3f34ODZZKgPAQqQMIJo61PZSMfRKcboZp
-MtwvM9XrOz6fqgWiu3BgQgfyyVVMygsSCgbzjZ9oIL5ADuBcXhTf6UHR5r4kRX63
-U7/xE562xq1ZO8L3eQ4skMHXe0HznIM9nOQcPz8P1zTvbp7Usfq1RhYDK07tKzx2
-dkANMPhEHT2RjR7vKf04
-=/Xk6
------END PGP SIGNATURE-----
-
---wTWi5aaYRw9ix9vO--
