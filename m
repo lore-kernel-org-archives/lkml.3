@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbbABVUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:20:25 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:60291 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751832AbbABVUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:20:24 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Zhong <zyw@rock-chips.com>, Mike Turquette <mturquette@linaro.org>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, sboyd@codeaurora.org,
+	id S1752387AbbABVXC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 16:23:02 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:51281 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbbABVXA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 16:23:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: rockchip: rk3288: Make s2r reliable by switching PLLs to slow mode
-Date: Fri, 02 Jan 2015 22:20:12 +0100
-Message-ID: <2520772.QQVueoUhik@phil>
-User-Agent: KMail/4.14.2 (Linux/3.16-3-amd64; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <1419276708-28294-1-git-send-email-dianders@chromium.org>
-References: <1419276708-28294-1-git-send-email-dianders@chromium.org>
+Subject: Re: [PATCH] arch: arm: mach-omap2: voltage.c: Remove some unused functions
+Date: Fri, 02 Jan 2015 22:22:49 +0100
+Message-ID: <1495149.Vn5ZbzJ5yF@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKXHbyPnTzOxWBBL0eiCNOPfF=htKpFRSt+R5h8o45ERp7zi1A@mail.gmail.com>
+References: <1420131994-31636-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <3966855.LUXW4xbVYM@wuerfel> <CAKXHbyPnTzOxWBBL0eiCNOPfF=htKpFRSt+R5h8o45ERp7zi1A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:l+O01FFZ8sEh5nK+Q27AdgdDxVbf5+eZVJ1/HsebmLGUz1R62Ww
+ Klo21UqpqJ59aoiaEArswRQRzPpeAVgOLUMr6Ot0EgPdp0b28yRwCyf0b9Zdwxs5CwWh3Jk
+ EyV4bR8NYqhTsXxm+5/qd0SFSKPFUt3L/+ac+/Cy+IwID9s2+7i6YrpsG5PWMuAbX/vJGfr
+ t2ir2i4G/Tdch2GOTd3Eg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 22. Dezember 2014, 11:31:48 schrieb Doug Anderson:
-> We've been seeing some crashes at resume time on rk3288-based systems.
-> On some machines they simply never wake up from suspend.  Symptoms
-> include:
+On Friday 02 January 2015 17:02:21 Rickard Strandqvist wrote:
+> 2015-01-02 10:46 GMT+01:00 Arnd Bergmann <arnd@arndb.de>:
+> > On Thursday 01 January 2015 18:06:34 Rickard Strandqvist wrote:
+> >
+> > You have correctly spotted the only place that references
+> > voltdm_for_each_pwrdm
+> > and changed the comment, but you failed to notice that it no longer makes
+> > sense to call voltdm_add_pwrdm or keep the voltdm->pwrdm_list pointer
+> > at all, so this function, and the associated list heads can all be removed
+> > as well.
+> >
+> >         Arnd
+> >
 > 
-> - System clearly got to sleep OK.  Power consumption is low, the PWM
->   for the PWM regulator has stopped, and the "global_pwroff" output
->   shows that the system is down.
 > 
-> - When system tries to wake up power consumption goes up.
+> Hi Arnd
 > 
-> - No kernel resume code (which was left in PMU SRAM) ran.  We added
->   some basic logging to this code (write to a location in SRAM right
->   at resume time) and didn't see the logging run.
+> Thanks for your reply.
 > 
-> It appears that we can fix the problem by slowing down APLL before we
-> suspend.  On the system I tested things seemed reliable if I disabled
-> 1.8GHz and 1.7GHz.  The Mask ROM itself tries to slow things down
-> (which is why PLLs are in slow mode by the time we get to the kernel),
-> but apparently it is crashing before it even gets there.
-> 
-> We'll be super paranoid and not just go down to 1.6GHz but we'll match
-> what the Mask ROM seems to be doing and go into slow mode.  We'll also
-> be safe and put all PLLs (not just APLL) into slow mode (well, except
-> DPLL which is needed for SDRAM).  We'll even put NPLL into slow mode
-> which the Mask ROM didn't do (not that it's used for much important
-> stuff at early resume time).
-> 
-> Note that the old Rockchip reference code did something just like
-> this, though they jammed it into pm.c instead of putting it in the
-> syscore ops of the clock driver.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> I see what you mean, but you are aware that voltdm_add_pwrdm() also be
+> called from:
+> arch/arm/mach-omap2/powerdomain.c in _pwrdm_register()
 
-applied to my clk branch for 3.20
+Yes, that call needs to be removed as well of course.
 
-As I already talked about with Doug on IRC (last year), I see this as a sort-
-of stop-gap solution till we know the suspend requirements of the older/other 
-Rockchip SoCs that do suspend slightly different and can generalize the whole 
-clk suspend handling at this point.
+> I have also removde the voltdm_for_each()
 
+Ok, sounds good. That list of course has to stay though, so removing
+_voltdm_register would be bad ;-)
 
-Heiko
+	Arnd
