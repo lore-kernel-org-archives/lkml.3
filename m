@@ -1,84 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751271AbbABKKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 05:10:22 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55412 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750723AbbABKKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 05:10:17 -0500
-Message-ID: <54A66E69.8020506@ti.com>
-Date: Fri, 2 Jan 2015 12:09:45 +0200
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751983AbbABKLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 05:11:14 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:60386 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbbABKLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 05:11:09 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        lee.jones@linaro.org
+Subject: Re: [PATCH] arch: arm: mach-ux500: board-mop500-regulators.c: Remove unused function
+Date: Fri, 02 Jan 2015 11:10:23 +0100
+Message-ID: <5939350.DKrZ01egfS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420126805-28098-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1420126805-28098-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Jean-Francois Moine <moinejf@free.fr>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, <alsa-devel@alsa-project.org>,
-        <devicetree@vger.kernel.org>, <dri-devel@lists.freedesktop.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 0/2] ASoC: tda998x: add a codec to the HDMI transmitter
-References: <cover.1414053169.git.moinejf@free.fr> <20141229165246.GZ17800@sirena.org.uk> <54A19151.3090506@ti.com> <20141230170001.GO17800@sirena.org.uk>
-In-Reply-To: <20141230170001.GO17800@sirena.org.uk>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Ffz6ceoIgs2UB639u69yjbRFlB8eU68dH7YMYyq0f0uMYzD2pkQ
+ Jd+qqlaGQAGUkuxat6xctViOe4x2JS14w9gUCZxYlKmQexccPxkb/ACscKL/k+Vd/Ll0d/n
+ T70XkvbL3PF2U1WNFxvVv/1fmEN0AhicAcwbdO7ij31IrTn8o3btAi1+yupZZ9Tw2Mo7SbQ
+ 6UisNY6MXo0bnDdGCk/bA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2014 07:00 PM, Mark Brown wrote:
-> On Mon, Dec 29, 2014 at 07:37:21PM +0200, Jyri Sarha wrote:
->> On 12/29/2014 06:52 PM, Mark Brown wrote:
->
->>> So, I'm not seeing *any* interest here from any other HDMI users.  This
->>> is a continuing theme with HDMI patches and is really very concerning,
->>> everyone appears to be working in their own bubbles coming up with their
->>> own things and ignoring everyone else's work - what little review I'm
->
->> I have not seen any significant new development since v7 of these patches.
->> My comments for v6 were mostly[1] addressed and I can live with these
->> changes, even develop this approach further if it gets merged.
->
-> OK, so this sort of feedback is really useful - even a qualified
-> Reviwed-by is useful.  Total silence could mean anything.
->
->> However, as a general note I see a need for a generic ASoC hdmi codec
->> abstraction and I don't think this is generic enough. More of the audio
->> specific implementation and HDMI standard specific things should be pushed
->> away from the hdmi encoder driver (tda998x in this case) to the generic ASoC
->> side hdmi codec driver (or library).
->
-> This is something I'm expecting, yes - what I don't have is a clear
-> enough picture of how consistent the different hardware is in how it
-> models these things.
->
+On Thursday 01 January 2015 16:40:05 Rickard Strandqvist wrote:
+> Remove the function mop500_regulator_init() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-After taking another look the patchesthere is not much functionality 
-that could be moved away from tda998x. It is just that the ASoC side 
-(and tda998x) could do more in terms of HDMI standard, but that is fine 
-because all that stuff can be added later if/when needed. However, 
-instantiating snd_soc_dai_driver etc. in DRM side makes a nasty 
-dependency between DRM and ASoC. All that stuff could be in ASoC side 
-and simple enum/bitfield parameters defining i2s/spdif selection could 
-be passed between DRM and ASoC side.
+This looks wrong: For one thing, you failed to notice that now another function
+in the same file becomes unused, or that half of the file is not used
+anyway.
 
+It also seems that the fact that this function is not called was an accident
+and it should in fact be called. Maybe Lee has some more insight in this,
+as he added the function in the first place.
 
->> [1] I personally do not like the hdmi_get_cdev() approach. I would rather go
->> with only a library for registering from ASoC codec component under the HDMI
->> encoder device or a completely separate device with only a reference to the
->> HDMI encoder.
->
-> It does seem somewhat complicated, yes.  I don't know if matches idioms
-> for DRM somehow?
->
+Finally (unrelated to your patch, but triggered by looking at it), I suspect
+we should just move the ab8500_regulator_plat_data and everything it references
+to drivers/regulator/ab8500-ext.c, because we only have one instance of it
+and won't ever have more.
 
-Me neither. A more straight forward option would be adding an "audio 
-header" to the beginning of hdmi encoders drvdata. However, it would be 
-tempting to add a pointer for drvdata to snd_soc_dai_driver to add audio 
-specific driver data to any device that provides a DAI in addition to 
-other functionality. It could even simplify drivers for some audio only 
-devices with multiple DAIs.
+	Arnd
 
-Best regards,
-Jyri
+> ---
+>  arch/arm/mach-ux500/board-mop500-regulators.c |   41 -------------------------
+>  arch/arm/mach-ux500/board-mop500-regulators.h |    2 --
+>  2 files changed, 43 deletions(-)
+> 
+> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
+> index 32d744e..156e83b 100644
+> --- a/arch/arm/mach-ux500/board-mop500-regulators.c
+> +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
+> @@ -1022,44 +1022,3 @@ static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
+>  
+>  	BUG_ON(1);
+>  }
+> -
+> -void mop500_regulator_init(void)
+> -{
+> -	struct regulator_init_data *regulator;
+> -
+> -	/*
+> -	 * Temporarily turn on Vaux2 on 8520 machine
+> -	 */
+> -	if (cpu_is_u8520()) {
+> -		/* Vaux2 initialized to be on */
+> -		ab8500_modify_reg_init(AB8505_VAUX12REGU, 0x0f, 0x05);
+> -	}
+> -
+> -	/*
+> -	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
+> -	 * all HREFP_V20 boards)
+> -	 */
+> -	if (cpu_is_u8500v20()) {
+> -		/* VextSupply2RequestCtrl =  HP/OFF depending on VxRequest */
+> -		ab8500_modify_reg_init(AB8500_REGUREQUESTCTRL3, 0x01, 0x01);
+> -
+> -		/* VextSupply2SysClkReq1HPValid = SysClkReq1 controlled */
+> -		ab8500_modify_reg_init(AB8500_REGUSYSCLKREQ1HPVALID2,
+> -			0x20, 0x20);
+> -
+> -		/* VextSupply2 = force HP at initialization */
+> -		ab8500_modify_reg_init(AB8500_EXTSUPPLYREGU, 0x0c, 0x04);
+> -
+> -		/* enable VextSupply2 during platform active */
+> -		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
+> -		regulator->constraints.always_on = 1;
+> -
+> -		/* disable VextSupply2 in suspend */
+> -		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
+> -		regulator->constraints.state_mem.disabled = 1;
+> -		regulator->constraints.state_standby.disabled = 1;
+> -
+> -		/* enable VextSupply2 HW control (used in suspend) */
+> -		regulator->driver_data = (void *)&ab8500_ext_supply2;
+> -	}
+> -}
+> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
+> index 9bece38..dc3ee77 100644
+> --- a/arch/arm/mach-ux500/board-mop500-regulators.h
+> +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
+> @@ -19,6 +19,4 @@ extern struct ab8500_regulator_platform_data ab8505_regulator_plat_data;
+>  extern struct regulator_init_data tps61052_regulator;
+>  extern struct regulator_init_data gpio_en_3v3_regulator;
+>  
+> -void mop500_regulator_init(void);
+> -
+>  #endif
+> 
+
