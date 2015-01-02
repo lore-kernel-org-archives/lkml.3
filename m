@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255AbbABRGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:06:55 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:58925 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbbABRGw (ORCPT
+	id S1752240AbbABRJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:09:15 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49578 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbbABRJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:06:52 -0500
+	Fri, 2 Jan 2015 12:09:14 -0500
+Message-ID: <54A6D0B6.7090700@gmail.com>
+Date: Fri, 02 Jan 2015 10:09:10 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFqGW2NaN+5mUrpBWrhM5ZfUSx70-Yyk9qmNaC1ft_ibpw@mail.gmail.com>
-References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
-	<CAPDyKFpxvE4x_-PV=KN0HKY5cNug-ss9m5KCjNdebR1LDOJi5w@mail.gmail.com>
-	<CAD=FV=UCyOXfMqu_MYbd5pKOpgXPB87LQ7hCegeeY9vzsy6QAg@mail.gmail.com>
-	<CAPDyKFqGW2NaN+5mUrpBWrhM5ZfUSx70-Yyk9qmNaC1ft_ibpw@mail.gmail.com>
-Date: Fri, 2 Jan 2015 09:06:51 -0800
-X-Google-Sender-Auth: OqQ0v5e87aztV_bdSW9meZjDTVA
-Message-ID: <CAD=FV=UzJo=KE7Snb2v=dNodmf_ky97o3xyUHUAZqb1Kq10d1A@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] Fixes for SDIO interrupts for dw_mmc
-From: Doug Anderson <dianders@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Tony Lindgren <tony@atomide.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
+To: Shaohua Li <shli@fb.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>,
-        Joe Perches <joe@perches.com>, Axel Lin <axel.lin@ingics.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
+References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com> <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com> <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com> <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com> <20141219112350.GJ30905@twins.programming.kicks-ass.net> <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com> <20141219170334.GM30905@twins.programming.kicks-ass.net> <20150102025953.GA1253265@devbig257.prn2.facebook.com> <54A6B9D5.5040804@gmail.com> <20150102170223.GA2381637@devbig257.prn2.facebook.com>
+In-Reply-To: <20150102170223.GA2381637@devbig257.prn2.facebook.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulf,
-
-On Tue, Dec 30, 2014 at 2:29 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->>> In v5, I don't find a patch 1/4. Anyway, I have taken patch 2->4.
+On 1/2/15 10:02 AM, Shaohua Li wrote:
+> On Fri, Jan 02, 2015 at 08:31:33AM -0700, David Ahern wrote:
+>> On 1/1/15 7:59 PM, Shaohua Li wrote:
+>>> I'm wondering how we could use the perf to implament a clock_gettime.
+>>> reading the perf fd or using ioctl is slow so reading the mmap
+>>> ringbuffer is the only option. But as far as I know the ringbuffer has
+>>> data only when an event is generated. Between two events, there is
+>>> nothing we can read from the ringbuffer. Then how can application get
+>>> time info in the interval?
 >>
->> Ah, maybe because it wasn't sent to linux-mmc?  I messed that up and
->> will try to do better in the future.  Sorry.  :(  You were in the To
->> line, though.  You can see at
->> <https://patchwork.kernel.org/patch/5425241/>.
->>
->> Do you want me to repost it and CC linux-mmc with Tony's Ack?
+>> Are you wanting to read perf_clock from userspace?
 >
-> I suggest you have a look at my next branch and to verify that I
-> haven't screwed things up. If so, either I should drop the patches and
-> you make a resend or if it's possible to just send an incremental path
-> on top?
+> Yep, in some sort of form. Basically I want to read the time a task
+> runs. Peter suggests we can read the activation time of a perf event.
+> But I don't want to use any system call, as it's slow and likes
+> clock_gettime.
 
-The patches that landed look good to me, but I think you might break
-omap3pandora's WiFi until you land patch #1 in the series.  It has
-Tony's Ack so I think he intends for you to land it in your tree.
+Since we cannot get the capability committed upstream a number of folks 
+are using this method:
 
-[v5,1/4] ARM: OMAP2+: Make sure pandora_wl1251_init_card() applies to SDIO only
+     https://github.com/dsahern/linux/blob/perf-full-monty/README.ahern
 
--Doug
+ie., a KLM exports perf_clock and apps can use:
+
+#define CLOCK_PERF 14
+if (clock_gettime(CLOCK_PERF, &ts) != 0) {
+}
+
+No vdso acceleration, but works with an unmodified kernel.
+
+David
