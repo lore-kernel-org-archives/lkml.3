@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994AbbABPVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 10:21:45 -0500
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:50404 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751018AbbABPVo (ORCPT
+	id S1752132AbbABPYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:24:30 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60135 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100AbbABPY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 10:21:44 -0500
-X-Sasl-enc: kcienkVA3S7UYIDNSGZn2Go1CKGeU+b9l8tMwwAq8gB6 1420212103
-Message-ID: <54A6B787.1000500@imap.cc>
-Date: Fri, 02 Jan 2015 16:21:43 +0100
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: nick <xerofoify@gmail.com>
-CC: hjlipp@web.de, isdn@linux-pingi.de,
-        gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:isdn: Remove uneeded fix me comment in capi.c
- for the function,decode_ie
-References: <1420053714-24661-1-git-send-email-xerofoify@gmail.com> <54A5B9BB.7050107@imap.cc> <54A5FAF9.1090907@gmail.com>
-In-Reply-To: <54A5FAF9.1090907@gmail.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 8bit
+	Fri, 2 Jan 2015 10:24:28 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>, Kevin Hilman <khilman@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH RESEND 0/4] Small updates to Snow and Peach Pit/Pi DTS
+Date: Fri,  2 Jan 2015 16:24:13 +0100
+Message-Id: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.01.2015 um 02:57 schrieb nick:
-> In that case has anyone tested this on actual hardware supported to see if 
-> removing these two lines breaks anything. If not I feel it's best to just 
-> leave the comment for now.
+Hello Kukjin,
 
-I haven't tested it. The comment was intended as a reminder to myself to
-do so eventually but obviously didn't succeed. :-)
+This series adds some DTS snippets that were missing in the mainline
+Snow and Peach Pit/Pi Device Trees but are present in the downstream
+ChromeOS kernel.
 
-So let's leave it for now.
+The series is composed of the following patches:
 
-Thanks,
-Tilman
+Javier Martinez Canillas (4):
+  ARM: dts: Add power and lid GPIO keys pinctrl for exynos5250-snow
+  ARM: dts: Add lid GPIO key device node for Peach boards
+  ARM: dts: Set Peach boards USB WebCam regulators to always on
+  ARM: dts: Configure regulators for suspend on exynos Peach boards
 
--- 
-Tilman Schmidt                              E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
+ arch/arm/boot/dts/exynos5250-snow.dts      |  16 +++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts | 100 +++++++++++++++++++++++++++-
+ arch/arm/boot/dts/exynos5800-peach-pi.dts  | 101 ++++++++++++++++++++++++++++-
+ 3 files changed, 215 insertions(+), 2 deletions(-)
+
+Patch #1 adds some pinctrl lines for the GPIO keys in the Snow DTS.
+
+Patch #2 adds a device node and pinctrl lines for the lid GPIO in
+the Peach boards DTS.
+
+Patch #3 sets the regulators that supply voltage to the USB WebCam
+in Peach boards as always on.
+
+Patch #4 configures the max77802 regulators on the Peach Pit and Pi
+boards to be enabled or disabled during system suspend.
+
+Best regards,
+Javier
+
