@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbbABLAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 06:00:19 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761AbbABLAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 06:00:15 -0500
-Message-ID: <54A67A38.3000207@nod.at>
-Date: Fri, 02 Jan 2015 12:00:08 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751838AbbABLHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 06:07:48 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:43629 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbbABLHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 06:07:46 -0500
+X-Greylist: delayed 172003 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jan 2015 06:07:45 EST
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: dvhart@linux.intel.com, pali.rohar@gmail.com, computersforpeace@gmail.com,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        A.Sloman@cs.bham.ac.uk, Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Subject: [PATCH] Documentation: dell-laptop: correct als_setting description
+Date: Fri,  2 Jan 2015 12:06:50 +0100
+Message-Id: <1420196810-8855-1-git-send-email-gabriele.mzt@gmail.com>
+X-Mailer: git-send-email 2.1.4
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Kees Cook <keescook@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>,
-        DaeSeok Youn <daeseok.youn@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Brad Spengler <spender@grsecurity.net>
-Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
-References: <1419457167-15042-1-git-send-email-richard@nod.at> <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com> <20150102051142.GF4873@amd>
-In-Reply-To: <20150102051142.GF4873@amd>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.01.2015 um 06:11 schrieb Pavel Machek:
-> On Tue 2014-12-30 10:40:15, Kees Cook wrote:
->> On Wed, Dec 24, 2014 at 1:39 PM, Richard Weinberger <richard@nod.at> wrote:
->>> While exploring the offset2lib attack I remembered that
->>> grsecurity has an interesting feature to make such attacks
->>> much harder. Exploits can brute stack canaries often very easily
->>> if the target is a forking server like sshd or Apache httpd.
->>> The problem is that after fork() the child has by definition
->>> exactly the same memory as the parent and therefore also the same
->>> stack canaries.
->>> The attacker can guess the stack canaries byte by byte.
->>> After 256 times 7 forks() a good exploit can find the correct
->>> canary value.
->>>
->>> The basic idea behind this patch is to delay fork() if a child died
->>> due to a fatal error.
->>> Currently it delays fork() by 30 seconds if the parent tries to fork()
->>> within 60 seconds after a child died due to a fatal error.
->>>
->>> I'm sure you'll hate this patch but I want to find out how much you hate it
->>> and whether there is a little chance to get it mainline in a modified form.
->>> Later I'd make it depend on a new Kconfig option and off by default
->>> and the timing constants changeable via sysctl.
-> 
-> Does this break trinity, crashme, and similar programs?
+It was incorrectly stated that als_setting is to enable and disable
+the ambient light sensor on supported system rather than setting a
+threshold value. Correct the description and add a note to make more
+clear what could be the effect of changing als_setting.
 
-If they fork() without execve() and a child dies very fast the next fork()
-will be throttled.
-This is why I'd like to make this feature disabled by default.
+Reported-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+---
+ Documentation/ABI/testing/sysfs-platform-dell-laptop | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
-> Can you detect it died due to the stack canary? Then, the patch might
-> be actually acceptable.
+diff --git a/Documentation/ABI/testing/sysfs-platform-dell-laptop b/Documentation/ABI/testing/sysfs-platform-dell-laptop
+index 7969443..a40c217 100644
+--- a/Documentation/ABI/testing/sysfs-platform-dell-laptop
++++ b/Documentation/ABI/testing/sysfs-platform-dell-laptop
+@@ -4,10 +4,12 @@ KernelVersion:	3.19
+ Contact:	Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+ 		Pali Rohár <pali.rohar@gmail.com>
+ Description:
+-		This file allows to control the automatic keyboard
+-		illumination mode on some systems that have an ambient
+-		light sensor. Write 1 to this file to enable the auto
+-		mode, 0 to disable it.
++		This file allows to set at which value reported by the
++		ambient light sensor the keyboard backlight has to be
++		turned on or off.
++
++		Note that the 'als' trigger must be supported and enabled
++		for this setting to have any effect.
+ 
+ What:		/sys/class/leds/dell::kbd_backlight/start_triggers
+ Date:		December 2014
+@@ -32,6 +34,13 @@ Description:
+ 
+ 		Note that not all the available triggers can be configured.
+ 
++		Note also that enabling the 'als' trigger could simply
++		alter the behavior of the other triggers and not allow
++		the ambient light sensor control the keyboard illumination
++		independently. It could prevent other triggers from turning
++		the keyboard backlight on or force them to turn it off
++		depending on the current ambient light and als_setting.
++
+ What:		/sys/class/leds/dell::kbd_backlight/stop_timeout
+ Date:		December 2014
+ KernelVersion:	3.19
+-- 
+2.1.4
 
-I don't think so as this is glibc specific.
-
-Thanks,
-//richard
