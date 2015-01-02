@@ -1,114 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbbABShM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 13:37:12 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:61089 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbbABShK convert rfc822-to-8bit (ORCPT
+	id S1752433AbbABSmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 13:42:45 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:45417 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbbABSmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 13:37:10 -0500
+	Fri, 2 Jan 2015 13:42:43 -0500
+Date: Fri, 2 Jan 2015 14:40:29 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: Re: [PATCH v2 2/8] thermal: Provide stub for thermal_cdev_update()
+ function
+Message-ID: <20150102184028.GA12371@developer>
+References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
+ <1419265668-32283-1-git-send-email-l.majewski@samsung.com>
+ <1419265668-32283-3-git-send-email-l.majewski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <cover.1418504883.git.richardcochran@gmail.com>
-References: <cover.1418504883.git.richardcochran@gmail.com>
-Date: Fri, 2 Jan 2015 10:37:09 -0800
-Message-ID: <CALAqxLUVU3XmBMiNGH-X5KjGbEjDYtaR2WRXDOHfGNads9caOw@mail.gmail.com>
-Subject: Re: [PATCH net-next 00/11] Time Counter fixes and improvements
-From: John Stultz <john.stultz@linaro.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: netdev@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Amir Vadai <amirv@mellanox.com>, Ariel Elior <ariel.elior@qlogic.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        David Miller <davem@davemloft.net>, Frank Li <Frank.Li@freescale.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Matthew Vick <matthew.vick@intel.com>,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tom Lendacky <thomas.lendacky@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Disposition: inline
+In-Reply-To: <1419265668-32283-3-git-send-email-l.majewski@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 10:46 AM, Richard Cochran
-<richardcochran@gmail.com> wrote:
-> Several PTP Hardware Clock (PHC) drivers implement the clock in
-> software using the timecounter/cyclecounter code. This series adds one
-> simple improvement and one more subtle fix to the shared timecounter
-> facility. Credit for this series goes to Janusz Użycki, who pointed
-> the issues out to me off list.
->
-> Patch #1 simply move the timecounter code into its own file. When
-> working on this series, it was really annoying to see half the kernel
-> recompile after every tweak to the timecounter stuff. There is no
-> reason to keep this together with the clocksource code.
 
-I did have some faint hope we could merge the cyclecounter and
-clocksource struct at some point, and while we've gotten closer with
-much of the time-specific values being kept in the timekeeper, the
-full cleanup hasn't happened in a few years here, so its clearly not
-something I've prioritized.
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So no objection in concept.
+On Mon, Dec 22, 2014 at 05:27:42PM +0100, Lukasz Majewski wrote:
+> Odroid U3 fan can work without being registered as OF cooling device
+> (with CONFIG_THERMAL_OF disabled).
+> In this situation it can be controlled via PWM entry at
+> /sys/class/hwmon/hwmon0/pwm1.
+>=20
+> Therefore, the thermal_cdev_update() function needs a stub
+> to allow clean compilation.
 
+I am not sure I understand what you are attempting to do here. What is
+the relation that you see between CONFIG_OF_THERMAL and
+thermal_cdev_update?=20
 
-> Patch #2 implements an improved adjtime() method, and patches 3-10
-> convert all of the drivers over to the new method.
->
-> Patch #11 fixes a subtle but important issue with the timecounter WRT
-> frequency adjustment. As it stands now, a timecounter based PHC will
-> exhibit a variable frequency resolution (and variable time error)
-> depending on how often the clock is read.
->
-> In timecounter_read_delta(), the expression
->
->    (delta * cc->mult) >> cc->shift;
->
-> can lose resolution from the adjusted value of 'mult'. If the value
-> of 'delta' is too small, then small changes in 'mult' have no effect.
-> However, if the delta value is large enough, then small changes in
-> 'mult' will have an effect.
->
-> Reading the clock too often means smaller 'delta' values which in turn
-> will spoil the fine adjustments made to 'mult'. Up until now, this
-> effect did not show up in my testing. The following example explains
-> why.
->
-> The CPTS has an input clock of 250 MHz, and the clock source uses
-> mult=0x80000000 and shift=29, making the ticks to nanoseconds
-> conversion like this:
->
->    ticks * 2^31
->    ------------
->        2^29
->
-> Imagine what happens if the clock is read every 10 milliseconds. Ten
-> milliseconds are about 2500000 ticks, which corresponds to about 21
-> bits. The product in the numerator has then 52 bits. After the shift
-> operation, 23 bits are preserved. This results in a frequency
-> adjustment resolution of about 0.1 ppm (not _too_ bad.)
->
-> A frequency resolution of 1 ppm requires 20 bits.
-> A frequency resolution of 1 ppb requires 30 bits.
->
-> For the 250 MHz CPTS clock, reading every 4 seconds yields a 1 ppb
-> resolution (which is the finest that our API allows).
->
-> However, the error can be much higher if the clock is read too often
-> or if time stamps occur close in time to read operations. In general
-> it is really not acceptable to allow the rate of clock readings to
-> influence the clock accuracy.
+>=20
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> ---
+> Changes for v2:
+> - New patch
+> ---
+>  include/linux/thermal.h | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index 871123c..b3515b5 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -332,6 +332,7 @@ struct thermal_cooling_device *
+>  thermal_of_cooling_device_register(struct device_node *np,
+>  				   char *type, void *devdata,
+>  				   const struct thermal_cooling_device_ops *);
+> +void thermal_cdev_update(struct thermal_cooling_device *);
+>  #else
+>  static inline struct thermal_zone_device *
+>  thermal_zone_of_sensor_register(struct device *dev, int id, void *data,
+> @@ -353,6 +354,10 @@ thermal_of_cooling_device_register(struct device_nod=
+e *np,
+>  {
+>  	return NULL;
+>  }
+> +
+> +static inline void thermal_cdev_update(struct thermal_cooling_device *cd=
+ev)
+> +{
+> +}
+>  #endif
+>  struct thermal_zone_device *thermal_zone_device_register(const char *, i=
+nt, int,
+>  		void *, struct thermal_zone_device_ops *,
+> @@ -375,7 +380,6 @@ int thermal_zone_get_temp(struct thermal_zone_device =
+*tz, unsigned long *temp);
+>  int get_tz_trend(struct thermal_zone_device *, int);
+>  struct thermal_instance *get_thermal_instance(struct thermal_zone_device=
+ *,
+>  		struct thermal_cooling_device *, int);
+> -void thermal_cdev_update(struct thermal_cooling_device *);
+>  void thermal_notify_framework(struct thermal_zone_device *, int);
+> =20
+>  #ifdef CONFIG_NET
+> --=20
+> 2.0.0.rc2
+>=20
 
-Though, this does start to sound like issues the timekeeping code had
-to resolve, so while its probably time to let some flowers bloom and
-see what happens, we should be somewhat watchful for too much logic
-duplication.
+--h31gzZEtNLTqOjlF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The patch set itself seems fairly straight forward (at least to my
-back from vacation brain), so..
-Acked-by: John Stultz <john.stultz@linaro.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-thanks
--john
+iQEcBAEBAgAGBQJUpuYSAAoJEMLUO4d9pOJWor4IAINd5mQoeQJ/awjaWQXnVnYl
+JGk6RFP7Ai9JY7QP4udjOmievjqlIG5RMlarb5jF5DdJ6rBUiIz4a2WypCazUZv6
+A65X9xnemOuMb3jBGw8afE5VcFp3NZ3jo/AxNRHufDoo441P82U/ysvwS3yhQ2/F
+htsuIL/14ltdWELzO87pgI3vEshSawi+0Eyv8J6hbWIX9b+DinCGwm/+npVI5z74
+kyDktfZNxYLaJ/R/a4XdwPRXmbAerLABLuYqT8B9vq7zrB1myKVYCqOzr0xNXg/R
+Wv7lCGQVNS7Bg5YOhvurJ7FMxbhxJJAgv8ySj8hj2AC+PDabmJBXLlagbXobMBE=
+=x4Gp
+-----END PGP SIGNATURE-----
+
+--h31gzZEtNLTqOjlF--
