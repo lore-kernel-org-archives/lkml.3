@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbbABPzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 10:55:16 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:58059 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388AbbABPzP convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 2 Jan 2015 10:55:15 -0500
-Message-Id: <54A6BF5F02000078000C4AD1@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Fri, 02 Jan 2015 15:55:11 +0000
-From: "Jan Beulich" <jbeulich@suse.com>
-To: <david.vrabel@citrix.com>, <boris.ostrovsky@oracle.com>,
-        <konrad.wilk@oracle.com>
-Cc: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] xen/x86: properly retrieve NMI reason
-References: <54945D760200007800051157@mail.emea.novell.com>
- <54994B7B.20309@citrix.com>
-In-Reply-To: <54994B7B.20309@citrix.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752589AbbABPzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:55:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48397 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750962AbbABPzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 10:55:44 -0500
+Message-ID: <54A6BF7E.8070003@suse.cz>
+Date: Fri, 02 Jan 2015 16:55:42 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Sylvain BERTRAND <sylvain.bertrand@gmail.com>,
+        linux-kbuild@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org
+Subject: Re: [PATCH] scripts: fix link-vmlinux.sh bash-ism
+References: <20141229163456.GB27533@dhcppc1>
+In-Reply-To: <20141229163456.GB27533@dhcppc1>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> David Vrabel <david.vrabel@citrix.com> 12/23/14 12:01 PM >>>
->On 19/12/14 16:16, Jan Beulich wrote:
->> Using the native code here can't work properly, as the hypervisor would
->> normally have cleared the two reason bits by the time Dom0 gets to see
->> the NMI (if passed to it at all). There's a shared info field for this,
->> and there's an existing hook to use - just fit the two together. Note
->> that the hook can (and should) be used irrespective of whether being in
->> Dom0, as accessing port 0x61 in a DomU would be even worse, while the
->> shared info field would just hold zero all the time.
->
->What's the user visible impact of this fix?
+On 2014-12-29 17:34, Sylvain BERTRAND wrote:
+> Chocked while compiling linux with dash shell instead of bash shell.
+> See:
+> http://pubs.opengroup.org/onlinepubs/000095399/utilities/trap.html
 
-Depends on what "user visible" is: It ought to prevent "Dazed and confused..."
-messages when not really applicable, and allow to get forwarded particularly
-SERR ones to APEI (GHES) code instead. I can't say I've seen this work in
-practice, as I lack ways to force SERR on otherwise well behaving hardware,
-but code inspection shows that the way it is now it can't work as intended.
+Please describe the actual problem in the changelog. I guess it's
+because of the 'ERR' trap?
 
-Jan
 
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Sylvain BERTRAND <sylvain.bertrand@gmail.com>
+> ---
+> --- a/scripts/link-vmlinux.sh	2014-12-29 15:10:29.436431249 +0000
+> +++ b/scripts/link-vmlinux.sh	2014-12-29 16:23:06.010853608 +0000
+> @@ -111,7 +111,6 @@
+>  }
+>  
+>  # Delete output files in case of error
+> -trap cleanup SIGHUP SIGINT SIGQUIT SIGTERM ERR
+>  cleanup()
+>  {
+>  	rm -f .old_version
+> @@ -124,6 +123,20 @@
+>  	rm -f vmlinux.o
+>  }
+>  
+> +on_exit()
+> +{
+> +	if [ $? -ne 0 ]; then
+> +		cleanup
+> +	fi
+> +}
+> +trap on_exit EXIT
+> +
+> +on_signals()
+> +{
+> +	exit 1
+> +}
+> +trap on_signals HUP INT QUIT TERM
+
+Why not use 'cleanup' directly as a handler?
+
+Michal
