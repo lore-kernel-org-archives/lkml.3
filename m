@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbbABJme (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 04:42:34 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:57609 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbbABJm1 (ORCPT
+	id S1752173AbbABJmg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 04:42:36 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33980 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbbABJm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 Jan 2015 04:42:27 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-b9-54a667ef36f7
+X-AuditID: cbfee690-f79ab6d0000046f7-64-54a66801dc33
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
         Ashish Sangwan <a.sangwan@samsung.com>,
         Brian Foster <bfoster@redhat.com>
-Subject: [PATCH v7 7/11] xfstests: generic/041: Multi insert range tests
-Date: Fri, 02 Jan 2015 18:42:06 +0900
-Message-id: <004501d02670$5f3cff10$1db6fd30$@samsung.com>
+Subject: [PATCH v7 8/11] xfstests: generic/042: Delayed allocation multi insert
+Date: Fri, 02 Jan 2015 18:42:25 +0900
+Message-id: <004601d02670$6a3c1720$3eb44560$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAmb3Ohghdy1q2yRR+Y5xVEQvFaog==
+Thread-index: AdAmb5QXsZEVoK/3SFCj8CUpkucXaw==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkRPd9+rIQg2sb+C2WTrzEbPHuc5XF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkUJcxY1mIweQjWhZLJ15itnj3ucpi
+	y7F7jBYz591hs9iz9ySLxeVdc9gsWnt+slss6rvF6MDhcWqRhEfTmaPMHqsvbGX0eL/vKptH
+	35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZRz6foixYKNmxbujr1kbGFcpdTFyckgImEjM2tHJ
+	BmGLSVy4tx7I5uIQEljKKHH/1QMmmKKFj54zQiSmM0qsPbyKFcL5yyjxcvc/IIeDg01AW+LP
+	FlGQBhEBV4l5d7+DNTALnGCUWD95CQtIQljAX2Ji7z1GkHoWAVWJYxczQcK8ApYSUxufs0DY
+	ghI/Jt8Ds5kFtCTW7zzOBGHLS2xe85YZ4iAFiR1nXzNC7NKTuL3gJRtEjYjEvhfvwPZKCNxj
+	l7g55QFYgkVAQOLb5EMsIHslBGQlNh2AmiMpcXDFDZYJjGKzkKyehWT1LCSrZyFZsYCRZRWj
+	aGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGYHye/vdswg7GewesDzEKcDAq8fAqXFsaIsSaWFZc
+	mXuI0RTooonMUqLJ+cAkkFcSb2hsZmRhamJqbGRuaaYkzvta6mewkEB6YklqdmpqQWpRfFFp
+	TmrxIUYmDk6pBkbBHfv+8pZYJ9ye1XTzxBUp43yF59XSv8su8uUX9Jkt2at/WOehkucx09IP
+	/Kc5TNhYgi/cbl8rdq751/oLWn5hgof3l7Ew3ll9qCKoul89Ypm55/xgtsggq2KbAybXnutP
+	fs7R9m5v1K8sjUnzg50NU4sY5Bp3+77ZaprFG+XxvaP03U+1CUosxRmJhlrMRcWJAFkroUzK	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xoC5jxrIQgz0LlSyWTrzEbPHuc5XF
 	lmP3GC1mzrvDZrFn70kWi8u75rBZtPb8ZLdY1HeL0YHD49QiCY+mM0eZPVZf2Mro8X7fVTaP
-	vi2rGD0+b5ILYIvisklJzcksSy3St0vgyjjx/jNzwT+Niqc75zE1MP5X7GLk4JAQMJE4dUqv
-	i5ETyBSTuHBvPVsXIxeHkMBSRokN+++zQiRMJLY8mM8KkZjOKDH/5m0o5y+jxMTpExlBJrEJ
-	aEv82SIK0iAi4Cox7+53RpAaZoETjBLrJy9hAUkIC3hI3Dn0lhHEZhFQlej6s4AdxOYVsJQ4
-	3HWDBcIWlPgx+R6YzSygJbF+53EmCFteYvOat8wQFylI7Dj7mhFimZ7Epc8L2SFqRCT2vXgH
-	tlhC4B67xORN76GWCUh8m3yIBeJlWYlNB6DmSEocXHGDZQKj2Cwkq2chWT0LyepZSFYsYGRZ
-	xSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREYn6f/PZuwg/HeAetDjAIcjEo8vArXloYIsSaW
-	FVfmHmI0BbpoIrOUaHI+MAnklcQbGpsZWZiamBobmVuaKYnzvpb6GSwkkJ5YkpqdmlqQWhRf
-	VJqTWnyIkYmDU6qBsfug2M1T8/j0/x39G5qwhNV68vYQtwUxs7qmcV95xST+mHO/4MF6/x1/
-	7by3b2md557ZrqX/+PjRdbX552eLxKX/8PBzulq9beND9rXy092kud0ubneP/Bq39d3HOKc9
-	1ksyfmwwvRBT8Wndgs2761t0DJPOcS6QfNu85YHw6ymXtj02bH7f0arEUpyRaKjFXFScCACB
-	VxDrygIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xoO779GUhBttes1ksnXiJ2eLd5yqL
-	LcfuMVrMnHeHzWLP3pMsFpd3zWGzaO35yW6xqO8WowOHx6lFEh5NZ44ye6y+sJXR4/2+q2we
-	fVtWMXp83iQXwBbVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk
-	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjHjxPvPzAX/
-	NCqe7pzH1MD4X7GLkZNDQsBEYsuD+awQtpjEhXvr2boYuTiEBKYzSsy/eZsVwvnLKDFx+kTG
-	LkYODjYBbYk/W0RBGkQEXCXm3f3OCFLDLHCCUWL95CUsIAlhAQ+JO4feMoLYLAKqEl1/FrCD
-	2LwClhKHu26wQNiCEj8m3wOzmQW0JNbvPM4EYctLbF7zlhniIgWJHWdfM0Is05O49HkhO0SN
-	iMS+F+8YJzAKzEIyahaSUbOQjJqFpGUBI8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOD4
-	fya9g3FVg8UhRgEORiUeXoVrS0OEWBPLiitzDzFKcDArifD2yS0JEeJNSaysSi3Kjy8qzUkt
-	PsRoCvTpRGYp0eR8YGrKK4k3NDYxM7I0Mje0MDI2VxLnVbJvCxESSE8sSc1OTS1ILYLpY+Lg
-	lGpgXBP8uLl9B3/jnMUPN6byrAgPXDOF3/58lpdyoM6JjRedAxS3bD+2K/rTm+VrbcwuHXZx
-	bHXMmvvEPUfTQ+vSUeFjkYdjP+2XeN+1Mdr1jvvpYA+VSUcK1tx3qji2t/2OyWT9dLdbJj2e
-	4mnP/vclu9XILH2VP8fQyr2izK7tzLmscqaG1W0ZSizFGYmGWsxFxYkAod8x9BUDAAA=
+	vi2rGD0+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
+	8QnQdcvMAbpHSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hx6PshxoKN
+	mhXvjr5mbWBcpdTFyMkhIWAisfDRc0YIW0ziwr31bF2MXBxCAtMZJdYeXsUK4fxllHi5+x+Q
+	w8HBJqAt8WeLKEiDiICrxLy73xlBapgFTjBKrJ+8hAUkISzgLzGx9x4jSD2LgKrEsYuZIGFe
+	AUuJqY3PWSBsQYkfk++B2cwCWhLrdx5ngrDlJTavecsMcZCCxI6zrxkhdulJ3F7wkg2iRkRi
+	34t3jBMYBWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw9D+T
+	3sG4qsHiEKMAB6MSD6/CtaUhQqyJZcWVuYcYJTiYlUR4++SWhAjxpiRWVqUW5ccXleakFh9i
+	NAV6dCKzlGhyPjAx5ZXEGxqbmBlZGpkbWhgZmyuJ8yrZt4UICaQnlqRmp6YWpBbB9DFxcEo1
+	MEZ/09y54Lraj11aBhNrzG8bSOXuledP/i7u6OkafOmu+9HINwsflEg9/Ns/3eqV+Q9d47l1
+	VTe6Lr48/dJb/46ugHo41/orf9v2bNELvGPGeuzisgc9IXtuaXIwRX4w/6STzjr70fflr1/K
+	JT5K51+zWae42jBqg8U2g6tuX53Dp//+Xj7pxWIlluKMREMt5qLiRADAl1b3FAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,29 +55,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This testcase(041) tries to test various corner cases with pre-existing holes
-for finsert range functionality over different type of extents.
+This testcase(042) tries to test various corner cases with delayed extents and
+pre-existing holes for finsert range functionality over different type of
+extents.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- tests/generic/041     | 65 +++++++++++++++++++++++++++++++++++++++++
- tests/generic/041.out | 80 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/042     | 65 +++++++++++++++++++++++++++++++++++++++++
+ tests/generic/042.out | 80 +++++++++++++++++++++++++++++++++++++++++++++++++++
  tests/generic/group   |  1 +
  3 files changed, 146 insertions(+)
- create mode 100644 tests/generic/041
- create mode 100644 tests/generic/041.out
+ create mode 100644 tests/generic/042
+ create mode 100644 tests/generic/042.out
 
-diff --git a/tests/generic/041 b/tests/generic/041
+diff --git a/tests/generic/042 b/tests/generic/042
 new file mode 100644
-index 0000000..29e0f31
+index 0000000..ea9fd3c
 --- /dev/null
-+++ b/tests/generic/041
++++ b/tests/generic/042
 @@ -0,0 +1,65 @@
 +#! /bin/bash
-+# FS QA Test No. generic/041
++# FS QA Test No. generic/042
 +#
-+# Multi insert range tests
++# Delayed allocation multi insert range tests
 +# This testcase is one of the 4 testcases which tries to
 +# test various corner cases for finsert range functionality over different
 +# type of extents. These tests are based on generic/255 test case.
@@ -135,18 +135,18 @@ index 0000000..29e0f31
 +
 +testfile=$TEST_DIR/$seq.$$
 +
-+_test_generic_punch -k falloc fpunch finsert fiemap _filter_hole_fiemap $testfile
++_test_generic_punch -d -k falloc fpunch finsert fiemap _filter_hole_fiemap $testfile
 +_check_test_fs
 +
 +status=0
 +exit
-diff --git a/tests/generic/041.out b/tests/generic/041.out
+diff --git a/tests/generic/042.out b/tests/generic/042.out
 new file mode 100644
-index 0000000..5fe3c5e
+index 0000000..1618e9d
 --- /dev/null
-+++ b/tests/generic/041.out
++++ b/tests/generic/042.out
 @@ -0,0 +1,80 @@
-+QA output created by 041
++QA output created by 042
 +	1. into a hole
 +cf845a781c107ec1346e849c9dd1b7e8
 +	2. into allocated space
@@ -227,14 +227,14 @@ index 0000000..5fe3c5e
 +1: [16..55]: extent
 +86c9d033be2761385c9cfa203c426bb2
 diff --git a/tests/generic/group b/tests/generic/group
-index 518cf49..62660cc 100644
+index 62660cc..c0944b3 100644
 --- a/tests/generic/group
 +++ b/tests/generic/group
-@@ -43,6 +43,7 @@
- 038 auto stress
+@@ -44,6 +44,7 @@
  039 auto quick prealloc
  040 auto quick prealloc
-+041 auto quick prealloc
+ 041 auto quick prealloc
++042 auto quick prealloc
  053 acl repair auto quick
  062 attr udf auto quick
  068 other auto freeze dangerous stress
