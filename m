@@ -1,128 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341AbbABU0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 15:26:25 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52814 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815AbbABU0Y (ORCPT
+	id S1752428AbbABU14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 15:27:56 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:46917 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbbABU1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 15:26:24 -0500
+	Fri, 2 Jan 2015 15:27:55 -0500
+X-Greylist: delayed 98661 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jan 2015 15:27:55 EST
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Christian Benvenuti <benve@cisco.com>, Sujith Sankar <ssujith@cisco.com>
+To: Hannes Reinecke <hare@suse.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
 Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Govindarajulu Varadarajan <_govind@gmx.com>,
-        Neel Patel <neepatel@cisco.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: ethernet: cisco: enic: enic_dev:  Remove some unused functions
-Date: Fri,  2 Jan 2015 21:29:24 +0100
-Message-Id: <1420230564-2060-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: aic7xxx: aic7770:  Remove unused function
+Date: Fri,  2 Jan 2015 21:30:56 +0100
+Message-Id: <1420230656-2240-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-enic_dev_enable2_done() enic_dev_enable2() enic_dev_deinit_done()
-enic_dev_init_prov2() enic_vnic_dev_deinit()
+Remove the function aic7770_find_device() that is not used anywhere.
 
 This was partially found by using a static code analysis program called cppcheck.
 
 Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/net/ethernet/cisco/enic/enic_dev.c |   56 ----------------------------
- drivers/net/ethernet/cisco/enic/enic_dev.h |    5 ---
- 2 files changed, 61 deletions(-)
+ drivers/scsi/aic7xxx/aic7770.c |   14 --------------
+ drivers/scsi/aic7xxx/aic7xxx.h |    1 -
+ 2 files changed, 15 deletions(-)
 
-diff --git a/drivers/net/ethernet/cisco/enic/enic_dev.c b/drivers/net/ethernet/cisco/enic/enic_dev.c
-index 87ddc44..f8d2a6a 100644
---- a/drivers/net/ethernet/cisco/enic/enic_dev.c
-+++ b/drivers/net/ethernet/cisco/enic/enic_dev.c
-@@ -177,40 +177,6 @@ int enic_dev_intr_coal_timer_info(struct enic *enic)
- 	return err;
- }
+diff --git a/drivers/scsi/aic7xxx/aic7770.c b/drivers/scsi/aic7xxx/aic7770.c
+index 5000bd6..cbe10755 100644
+--- a/drivers/scsi/aic7xxx/aic7770.c
++++ b/drivers/scsi/aic7xxx/aic7770.c
+@@ -107,20 +107,6 @@ struct aic7770_identity aic7770_ident_table[] =
+ };
+ const int ahc_num_aic7770_devs = ARRAY_SIZE(aic7770_ident_table);
  
--int enic_vnic_dev_deinit(struct enic *enic)
+-struct aic7770_identity *
+-aic7770_find_device(uint32_t id)
 -{
--	int err;
+-	struct	aic7770_identity *entry;
+-	int	i;
 -
--	spin_lock_bh(&enic->devcmd_lock);
--	err = vnic_dev_deinit(enic->vdev);
--	spin_unlock_bh(&enic->devcmd_lock);
--
--	return err;
+-	for (i = 0; i < ahc_num_aic7770_devs; i++) {
+-		entry = &aic7770_ident_table[i];
+-		if (entry->full_id == (id & entry->id_mask))
+-			return (entry);
+-	}
+-	return (NULL);
 -}
 -
--int enic_dev_init_prov2(struct enic *enic, struct vic_provinfo *vp)
--{
--	int err;
--
--	spin_lock_bh(&enic->devcmd_lock);
--	err = vnic_dev_init_prov2(enic->vdev,
--		(u8 *)vp, vic_provinfo_size(vp));
--	spin_unlock_bh(&enic->devcmd_lock);
--
--	return err;
--}
--
--int enic_dev_deinit_done(struct enic *enic, int *status)
--{
--	int err;
--
--	spin_lock_bh(&enic->devcmd_lock);
--	err = vnic_dev_deinit_done(enic->vdev, status);
--	spin_unlock_bh(&enic->devcmd_lock);
--
--	return err;
--}
--
- /* rtnl lock is held */
- int enic_vlan_rx_add_vid(struct net_device *netdev, __be16 proto, u16 vid)
+ int
+ aic7770_config(struct ahc_softc *ahc, struct aic7770_identity *entry, u_int io)
  {
-@@ -237,28 +203,6 @@ int enic_vlan_rx_kill_vid(struct net_device *netdev, __be16 proto, u16 vid)
- 	return err;
- }
+diff --git a/drivers/scsi/aic7xxx/aic7xxx.h b/drivers/scsi/aic7xxx/aic7xxx.h
+index f695774..ead8924 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx.h
++++ b/drivers/scsi/aic7xxx/aic7xxx.h
+@@ -1144,7 +1144,6 @@ void			 ahc_pci_resume(struct ahc_softc *ahc);
+ #endif
  
--int enic_dev_enable2(struct enic *enic, int active)
--{
--	int err;
--
--	spin_lock_bh(&enic->devcmd_lock);
--	err = vnic_dev_enable2(enic->vdev, active);
--	spin_unlock_bh(&enic->devcmd_lock);
--
--	return err;
--}
--
--int enic_dev_enable2_done(struct enic *enic, int *status)
--{
--	int err;
--
--	spin_lock_bh(&enic->devcmd_lock);
--	err = vnic_dev_enable2_done(enic->vdev, status);
--	spin_unlock_bh(&enic->devcmd_lock);
--
--	return err;
--}
--
- int enic_dev_status_to_errno(int devcmd_status)
- {
- 	switch (devcmd_status) {
-diff --git a/drivers/net/ethernet/cisco/enic/enic_dev.h b/drivers/net/ethernet/cisco/enic/enic_dev.h
-index 10bb970..f5bb058 100644
---- a/drivers/net/ethernet/cisco/enic/enic_dev.h
-+++ b/drivers/net/ethernet/cisco/enic/enic_dev.h
-@@ -55,11 +55,6 @@ int enic_dev_set_ig_vlan_rewrite_mode(struct enic *enic);
- int enic_dev_enable(struct enic *enic);
- int enic_dev_disable(struct enic *enic);
- int enic_dev_intr_coal_timer_info(struct enic *enic);
--int enic_vnic_dev_deinit(struct enic *enic);
--int enic_dev_init_prov2(struct enic *enic, struct vic_provinfo *vp);
--int enic_dev_deinit_done(struct enic *enic, int *status);
--int enic_dev_enable2(struct enic *enic, int arg);
--int enic_dev_enable2_done(struct enic *enic, int *status);
- int enic_dev_status_to_errno(int devcmd_status);
- 
- #endif /* _ENIC_DEV_H_ */
+ /*************************** EISA/VL Front End ********************************/
+-struct aic7770_identity *aic7770_find_device(uint32_t);
+ int			 aic7770_config(struct ahc_softc *ahc,
+ 					struct aic7770_identity *,
+ 					u_int port);
 -- 
 1.7.10.4
 
