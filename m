@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbbABTvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 14:51:16 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:43224 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbbABTvO (ORCPT
+	id S1752512AbbABTvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 14:51:37 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:52068 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbbABTvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 14:51:14 -0500
+	Fri, 2 Jan 2015 14:51:15 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH 0/2] time: tip/timers/urgent: Validate potential mult overflows
-Date: Fri,  2 Jan 2015 11:51:06 -0800
-Message-Id: <1420228268-2161-1-git-send-email-john.stultz@linaro.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 1/2] time: settimeofday: Validate the values of tv from user
+Date: Fri,  2 Jan 2015 11:51:07 -0800
+Message-Id: <1420228268-2161-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420228268-2161-1-git-send-email-john.stultz@linaro.org>
+References: <1420228268-2161-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Ingo, Thomas,
+From: Sasha Levin <sasha.levin@oracle.com>
 
- Here are two mult overflow validation fixes from Sasha for
-tip/timers/urgent that I didn't manage to send out before the holidays.
-
-Let me know if you have any objections.
-
-thanks
--john
+An unvalidated user input is multiplied by a constant, which can result in
+an undefined behaviour for large values. While this is validated later,
+we should avoid triggering undefined behaviour.
 
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-
-If you want they can be pulled via:
-
-The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d71d:
-
-  Linux 3.18 (2014-12-07 14:21:05 -0800)
-
-are available in the git repository at:
-
-  https://git.linaro.org/people/john.stultz/linux.git fortglx/3.19-stable/time
-
-for you to fetch changes up to ac1e640cd8d3f5baf48103fdbf794788034bf50c:
-
-  time: adjtimex: Validate the ADJ_FREQUENCY values (2014-12-19 12:07:10 -0800)
-
-----------------------------------------------------------------
-Sasha Levin (2):
-      time: settimeofday: Validate the values of tv from user
-      time: adjtimex: Validate the ADJ_FREQUENCY values
-
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
  include/linux/time.h | 13 +++++++++++++
- kernel/time/ntp.c    |  7 +++++++
  kernel/time/time.c   |  4 ++++
- 3 files changed, 24 insertions(+)
+ 2 files changed, 17 insertions(+)
 
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 8c42cf8..7a10ec1 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -99,6 +99,19 @@ static inline bool timespec_valid_strict(const struct timespec *ts)
+ 	return true;
+ }
+ 
++static inline bool timeval_valid(const struct timeval *tv)
++{
++	/* Dates before 1970 are bogus */
++	if (tv->tv_sec < 0)
++		return false;
++
++	/* Can't have more miliseconds then a second */
++	if (tv->tv_usec < 0 || tv->tv_usec >= USEC_PER_SEC)
++		return false;
++
++	return true;
++}
++
+ extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+ 
+ #define CURRENT_TIME		(current_kernel_time())
+diff --git a/kernel/time/time.c b/kernel/time/time.c
+index a9ae20f..22d5d3b 100644
+--- a/kernel/time/time.c
++++ b/kernel/time/time.c
+@@ -196,6 +196,10 @@ SYSCALL_DEFINE2(settimeofday, struct timeval __user *, tv,
+ 	if (tv) {
+ 		if (copy_from_user(&user_tv, tv, sizeof(*tv)))
+ 			return -EFAULT;
++
++		if (!timeval_valid(&user_tv))
++			return -EINVAL;
++
+ 		new_ts.tv_sec = user_tv.tv_sec;
+ 		new_ts.tv_nsec = user_tv.tv_usec * NSEC_PER_USEC;
+ 	}
 -- 
 1.9.1
 
