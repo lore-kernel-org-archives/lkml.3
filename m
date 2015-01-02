@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750879AbbABIRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 03:17:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44786 "EHLO mx2.suse.de"
+	id S1750770AbbABIxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 03:53:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45064 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711AbbABIRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 03:17:13 -0500
-Date: Fri, 02 Jan 2015 09:17:12 +0100
-Message-ID: <s5hfvbtfvg7.wl-tiwai@suse.de>
+	id S1750714AbbABIxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 03:53:52 -0500
+Date: Fri, 02 Jan 2015 09:53:49 +0100
+Message-ID: <s5h7fx5ftr6.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+To: Linus Torvalds <torvalds@linuxfoundation.org>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: drivers: portman2x4.c:  Remove some unused functions
-In-Reply-To: <1420125165-26527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420125165-26527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Subject: [GIT PULL] sound fixes for 3.19-rc3
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,56 +22,369 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu,  1 Jan 2015 16:12:45 +0100,
-Rickard Strandqvist wrote:
-> 
-> Removes some functions that are not used anywhere:
-> portman_read_data() portman_read_command()
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  sound/drivers/portman2x4.c |   10 ----------
->  1 file changed, 10 deletions(-)
-> 
-> diff --git a/sound/drivers/portman2x4.c b/sound/drivers/portman2x4.c
-> index 78ccfa4..b5b6b4e 100644
-> --- a/sound/drivers/portman2x4.c
-> +++ b/sound/drivers/portman2x4.c
-> @@ -198,21 +198,11 @@ static inline void portman_write_command(struct portman *pm, u8 value)
->  	parport_write_control(pm->pardev->port, value);
->  }
->  
-> -static inline u8 portman_read_command(struct portman *pm)
-> -{
-> -	return parport_read_control(pm->pardev->port);
-> -}
-> -
->  static inline u8 portman_read_status(struct portman *pm)
->  {
->  	return parport_read_status(pm->pardev->port);
->  }
->  
-> -static inline u8 portman_read_data(struct portman *pm)
-> -{
-> -	return parport_read_data(pm->pardev->port);
-> -}
-> -
->  static inline void portman_write_data(struct portman *pm, u8 value)
->  {
->  	parport_write_data(pm->pardev->port, value);
+Linus,
 
-Rickard, your works are highly appreciated, but please think twice
-before submitting patches: is it worth for the whole?
+please pull sound fixes for v3.19-rc3 from:
 
-For example, in this case: the removals are static inline functions.
-So there is no gain by removing this regarding the object size.  OTOH, 
-they are obviously wrapper accessors, thus dropping blindly would
-result in inconsistency.  That is, a reader may wonder later why some
-are write only and some not.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git tags/sound-3.19-rc3
 
+The topmost commit is 62f64a880af2e82d1b41cb02cb43b88d30413993
 
-thanks,
+----------------------------------------------------------------
 
-Takashi
+sound fixes for 3.19-rc3
+
+Nothing too exciting as a new year's start here: most of fixes are for
+ASoC, a boot crash fix on OMAP for deferred probe, a few driver
+specific fixes (Intel, dwc, rockchip, rt5677), in addition to typo
+fixes in kerneldoc comments for PCM.
+
+----------------------------------------------------------------
+
+Andrew Jackson (2):
+      ASoC: dwc: Ensure FIFOs are flushed to prevent channel swap
+      ASoC: dwc: Iterate over all channels
+
+Fang, Yang A (1):
+      ASoC: rt5677: fixed rt5677_dsp_vad_put rt5677_dsp_vad_get panic
+
+Jarkko Nikula (3):
+      ASoC: Intel: Add I2C dependency to two new machines
+      ASoC: Intel: Fix BYTCR firmware name
+      ASoC: Intel: Fix BYTCR machine driver MODULE_ALIAS
+
+Jianqun Xu (2):
+      ASoC: rockchip: i2s: fix error defination of transmit data level
+      ASoC: rockchip: i2s: fix maxburst of dma data to 4
+
+Jie Yang (1):
+      ASoC: Intel: correct the fixed free block allocation
+
+Lars-Peter Clausen (1):
+      ALSA: pcm: Fix kerneldoc for params_*() functions
+
+Mark Brown (1):
+      ASoC: dapm: Remove snd_soc_of_parse_audio_routing() due to deferred probe
+
+---
+ include/sound/pcm.h                 | 10 ++++----
+ sound/soc/codecs/rt5677.c           |  9 ++++---
+ sound/soc/dwc/designware_i2s.c      | 49 +++++++++++++++++++++++--------------
+ sound/soc/intel/Kconfig             |  4 +--
+ sound/soc/intel/bytcr_dpcm_rt5640.c |  2 +-
+ sound/soc/intel/sst-firmware.c      |  6 ++++-
+ sound/soc/intel/sst/sst_acpi.c      |  2 +-
+ sound/soc/rockchip/rockchip_i2s.c   |  4 +--
+ sound/soc/rockchip/rockchip_i2s.h   |  2 +-
+ sound/soc/soc-core.c                | 14 ++++-------
+ 10 files changed, 57 insertions(+), 45 deletions(-)
+
+diff --git a/include/sound/pcm.h b/include/sound/pcm.h
+index 1e7f74acc2ec..b429b73e875e 100644
+--- a/include/sound/pcm.h
++++ b/include/sound/pcm.h
+@@ -857,7 +857,7 @@ static inline unsigned int params_channels(const struct snd_pcm_hw_params *p)
+ }
+ 
+ /**
+- * params_channels - Get the sample rate from the hw params
++ * params_rate - Get the sample rate from the hw params
+  * @p: hw params
+  */
+ static inline unsigned int params_rate(const struct snd_pcm_hw_params *p)
+@@ -866,7 +866,7 @@ static inline unsigned int params_rate(const struct snd_pcm_hw_params *p)
+ }
+ 
+ /**
+- * params_channels - Get the period size (in frames) from the hw params
++ * params_period_size - Get the period size (in frames) from the hw params
+  * @p: hw params
+  */
+ static inline unsigned int params_period_size(const struct snd_pcm_hw_params *p)
+@@ -875,7 +875,7 @@ static inline unsigned int params_period_size(const struct snd_pcm_hw_params *p)
+ }
+ 
+ /**
+- * params_channels - Get the number of periods from the hw params
++ * params_periods - Get the number of periods from the hw params
+  * @p: hw params
+  */
+ static inline unsigned int params_periods(const struct snd_pcm_hw_params *p)
+@@ -884,7 +884,7 @@ static inline unsigned int params_periods(const struct snd_pcm_hw_params *p)
+ }
+ 
+ /**
+- * params_channels - Get the buffer size (in frames) from the hw params
++ * params_buffer_size - Get the buffer size (in frames) from the hw params
+  * @p: hw params
+  */
+ static inline unsigned int params_buffer_size(const struct snd_pcm_hw_params *p)
+@@ -893,7 +893,7 @@ static inline unsigned int params_buffer_size(const struct snd_pcm_hw_params *p)
+ }
+ 
+ /**
+- * params_channels - Get the buffer size (in bytes) from the hw params
++ * params_buffer_bytes - Get the buffer size (in bytes) from the hw params
+  * @p: hw params
+  */
+ static inline unsigned int params_buffer_bytes(const struct snd_pcm_hw_params *p)
+diff --git a/sound/soc/codecs/rt5677.c b/sound/soc/codecs/rt5677.c
+index 81fe1464d268..c0fbe1881439 100644
+--- a/sound/soc/codecs/rt5677.c
++++ b/sound/soc/codecs/rt5677.c
+@@ -784,8 +784,8 @@ static unsigned int bst_tlv[] = {
+ static int rt5677_dsp_vad_get(struct snd_kcontrol *kcontrol,
+ 		struct snd_ctl_elem_value *ucontrol)
+ {
+-	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+-	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
++	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
++	struct rt5677_priv *rt5677 = snd_soc_component_get_drvdata(component);
+ 
+ 	ucontrol->value.integer.value[0] = rt5677->dsp_vad_en;
+ 
+@@ -795,8 +795,9 @@ static int rt5677_dsp_vad_get(struct snd_kcontrol *kcontrol,
+ static int rt5677_dsp_vad_put(struct snd_kcontrol *kcontrol,
+ 		struct snd_ctl_elem_value *ucontrol)
+ {
+-	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+-	struct rt5677_priv *rt5677 = snd_soc_codec_get_drvdata(codec);
++	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
++	struct rt5677_priv *rt5677 = snd_soc_component_get_drvdata(component);
++	struct snd_soc_codec *codec = snd_soc_component_to_codec(component);
+ 
+ 	rt5677->dsp_vad_en = !!ucontrol->value.integer.value[0];
+ 
+diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
+index b93168d4f648..8d18bbda661b 100644
+--- a/sound/soc/dwc/designware_i2s.c
++++ b/sound/soc/dwc/designware_i2s.c
+@@ -209,16 +209,9 @@ static int dw_i2s_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	switch (config->chan_nr) {
+ 	case EIGHT_CHANNEL_SUPPORT:
+-		ch_reg = 3;
+-		break;
+ 	case SIX_CHANNEL_SUPPORT:
+-		ch_reg = 2;
+-		break;
+ 	case FOUR_CHANNEL_SUPPORT:
+-		ch_reg = 1;
+-		break;
+ 	case TWO_CHANNEL_SUPPORT:
+-		ch_reg = 0;
+ 		break;
+ 	default:
+ 		dev_err(dev->dev, "channel not supported\n");
+@@ -227,18 +220,22 @@ static int dw_i2s_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	i2s_disable_channels(dev, substream->stream);
+ 
+-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+-		i2s_write_reg(dev->i2s_base, TCR(ch_reg), xfer_resolution);
+-		i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
+-		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+-		i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
+-		i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
+-	} else {
+-		i2s_write_reg(dev->i2s_base, RCR(ch_reg), xfer_resolution);
+-		i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
+-		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+-		i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x03);
+-		i2s_write_reg(dev->i2s_base, RER(ch_reg), 1);
++	for (ch_reg = 0; ch_reg < (config->chan_nr / 2); ch_reg++) {
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++			i2s_write_reg(dev->i2s_base, TCR(ch_reg),
++				      xfer_resolution);
++			i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
++			irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
++			i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
++			i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
++		} else {
++			i2s_write_reg(dev->i2s_base, RCR(ch_reg),
++				      xfer_resolution);
++			i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
++			irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
++			i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x03);
++			i2s_write_reg(dev->i2s_base, RER(ch_reg), 1);
++		}
+ 	}
+ 
+ 	i2s_write_reg(dev->i2s_base, CCR, ccr);
+@@ -263,6 +260,19 @@ static void dw_i2s_shutdown(struct snd_pcm_substream *substream,
+ 	snd_soc_dai_set_dma_data(dai, substream, NULL);
+ }
+ 
++static int dw_i2s_prepare(struct snd_pcm_substream *substream,
++			  struct snd_soc_dai *dai)
++{
++	struct dw_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		i2s_write_reg(dev->i2s_base, TXFFR, 1);
++	else
++		i2s_write_reg(dev->i2s_base, RXFFR, 1);
++
++	return 0;
++}
++
+ static int dw_i2s_trigger(struct snd_pcm_substream *substream,
+ 		int cmd, struct snd_soc_dai *dai)
+ {
+@@ -294,6 +304,7 @@ static struct snd_soc_dai_ops dw_i2s_dai_ops = {
+ 	.startup	= dw_i2s_startup,
+ 	.shutdown	= dw_i2s_shutdown,
+ 	.hw_params	= dw_i2s_hw_params,
++	.prepare	= dw_i2s_prepare,
+ 	.trigger	= dw_i2s_trigger,
+ };
+ 
+diff --git a/sound/soc/intel/Kconfig b/sound/soc/intel/Kconfig
+index e989ecf046c9..f86de1211b96 100644
+--- a/sound/soc/intel/Kconfig
++++ b/sound/soc/intel/Kconfig
+@@ -89,7 +89,7 @@ config SND_SOC_INTEL_BROADWELL_MACH
+ 
+ config SND_SOC_INTEL_BYTCR_RT5640_MACH
+ 	tristate "ASoC Audio DSP Support for MID BYT Platform"
+-	depends on X86
++	depends on X86 && I2C
+ 	select SND_SOC_RT5640
+ 	select SND_SST_MFLD_PLATFORM
+ 	select SND_SST_IPC_ACPI
+@@ -101,7 +101,7 @@ config SND_SOC_INTEL_BYTCR_RT5640_MACH
+ 
+ config SND_SOC_INTEL_CHT_BSW_RT5672_MACH
+         tristate "ASoC Audio driver for Intel Cherrytrail & Braswell with RT5672 codec"
+-        depends on X86_INTEL_LPSS
++        depends on X86_INTEL_LPSS && I2C
+         select SND_SOC_RT5670
+         select SND_SST_MFLD_PLATFORM
+         select SND_SST_IPC_ACPI
+diff --git a/sound/soc/intel/bytcr_dpcm_rt5640.c b/sound/soc/intel/bytcr_dpcm_rt5640.c
+index f5d0fc1ab10c..eef0c56ec32e 100644
+--- a/sound/soc/intel/bytcr_dpcm_rt5640.c
++++ b/sound/soc/intel/bytcr_dpcm_rt5640.c
+@@ -227,4 +227,4 @@ module_platform_driver(snd_byt_mc_driver);
+ MODULE_DESCRIPTION("ASoC Intel(R) Baytrail CR Machine driver");
+ MODULE_AUTHOR("Subhransu S. Prusty <subhransu.s.prusty@intel.com>");
+ MODULE_LICENSE("GPL v2");
+-MODULE_ALIAS("platform:bytrt5640-audio");
++MODULE_ALIAS("platform:bytt100_rt5640");
+diff --git a/sound/soc/intel/sst-firmware.c b/sound/soc/intel/sst-firmware.c
+index 4a5bde9c686b..ef2e8b5766a1 100644
+--- a/sound/soc/intel/sst-firmware.c
++++ b/sound/soc/intel/sst-firmware.c
+@@ -763,8 +763,12 @@ static int block_alloc_fixed(struct sst_dsp *dsp, struct sst_block_allocator *ba
+ 		/* does block span more than 1 section */
+ 		if (ba->offset >= block->offset && ba->offset < block_end) {
+ 
++			/* add block */
++			list_move(&block->list, &dsp->used_block_list);
++			list_add(&block->module_list, block_list);
+ 			/* align ba to block boundary */
+-			ba->offset = block->offset;
++			ba->size -= block_end - ba->offset;
++			ba->offset = block_end;
+ 
+ 			err = block_alloc_contiguous(dsp, ba, block_list);
+ 			if (err < 0)
+diff --git a/sound/soc/intel/sst/sst_acpi.c b/sound/soc/intel/sst/sst_acpi.c
+index 3abc29e8a928..2ac72eb5e75d 100644
+--- a/sound/soc/intel/sst/sst_acpi.c
++++ b/sound/soc/intel/sst/sst_acpi.c
+@@ -343,7 +343,7 @@ int sst_acpi_remove(struct platform_device *pdev)
+ }
+ 
+ static struct sst_machines sst_acpi_bytcr[] = {
+-	{"10EC5640", "T100", "bytt100_rt5640", NULL, "fw_sst_0f28.bin",
++	{"10EC5640", "T100", "bytt100_rt5640", NULL, "intel/fw_sst_0f28.bin",
+ 						&byt_rvp_platform_data },
+ 	{},
+ };
+diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
+index 26ec5117b35c..13d8507333b8 100644
+--- a/sound/soc/rockchip/rockchip_i2s.c
++++ b/sound/soc/rockchip/rockchip_i2s.c
+@@ -454,11 +454,11 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
+ 
+ 	i2s->playback_dma_data.addr = res->start + I2S_TXDR;
+ 	i2s->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	i2s->playback_dma_data.maxburst = 16;
++	i2s->playback_dma_data.maxburst = 4;
+ 
+ 	i2s->capture_dma_data.addr = res->start + I2S_RXDR;
+ 	i2s->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	i2s->capture_dma_data.maxburst = 16;
++	i2s->capture_dma_data.maxburst = 4;
+ 
+ 	i2s->dev = &pdev->dev;
+ 	dev_set_drvdata(&pdev->dev, i2s);
+diff --git a/sound/soc/rockchip/rockchip_i2s.h b/sound/soc/rockchip/rockchip_i2s.h
+index 89a5d8bc6ee7..93f456f518a9 100644
+--- a/sound/soc/rockchip/rockchip_i2s.h
++++ b/sound/soc/rockchip/rockchip_i2s.h
+@@ -127,7 +127,7 @@
+ #define I2S_DMACR_TDE_DISABLE	(0 << I2S_DMACR_TDE_SHIFT)
+ #define I2S_DMACR_TDE_ENABLE	(1 << I2S_DMACR_TDE_SHIFT)
+ #define I2S_DMACR_TDL_SHIFT	0
+-#define I2S_DMACR_TDL(x)	((x - 1) << I2S_DMACR_TDL_SHIFT)
++#define I2S_DMACR_TDL(x)	((x) << I2S_DMACR_TDL_SHIFT)
+ #define I2S_DMACR_TDL_MASK	(0x1f << I2S_DMACR_TDL_SHIFT)
+ 
+ /*
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 985052b3fbed..2c62620abca6 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -3230,7 +3230,7 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 				   const char *propname)
+ {
+ 	struct device_node *np = card->dev->of_node;
+-	int num_routes, old_routes;
++	int num_routes;
+ 	struct snd_soc_dapm_route *routes;
+ 	int i, ret;
+ 
+@@ -3248,9 +3248,7 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 		return -EINVAL;
+ 	}
+ 
+-	old_routes = card->num_dapm_routes;
+-	routes = devm_kzalloc(card->dev,
+-			      (old_routes + num_routes) * sizeof(*routes),
++	routes = devm_kzalloc(card->dev, num_routes * sizeof(*routes),
+ 			      GFP_KERNEL);
+ 	if (!routes) {
+ 		dev_err(card->dev,
+@@ -3258,11 +3256,9 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 		return -EINVAL;
+ 	}
+ 
+-	memcpy(routes, card->dapm_routes, old_routes * sizeof(*routes));
+-
+ 	for (i = 0; i < num_routes; i++) {
+ 		ret = of_property_read_string_index(np, propname,
+-			2 * i, &routes[old_routes + i].sink);
++			2 * i, &routes[i].sink);
+ 		if (ret) {
+ 			dev_err(card->dev,
+ 				"ASoC: Property '%s' index %d could not be read: %d\n",
+@@ -3270,7 +3266,7 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 			return -EINVAL;
+ 		}
+ 		ret = of_property_read_string_index(np, propname,
+-			(2 * i) + 1, &routes[old_routes + i].source);
++			(2 * i) + 1, &routes[i].source);
+ 		if (ret) {
+ 			dev_err(card->dev,
+ 				"ASoC: Property '%s' index %d could not be read: %d\n",
+@@ -3279,7 +3275,7 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 		}
+ 	}
+ 
+-	card->num_dapm_routes += num_routes;
++	card->num_dapm_routes = num_routes;
+ 	card->dapm_routes = routes;
+ 
+ 	return 0;
