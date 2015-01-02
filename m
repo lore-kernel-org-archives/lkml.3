@@ -1,92 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbbABVKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:10:21 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:37142 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbbABVKT (ORCPT
+	id S1752481AbbABVMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 16:12:49 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46339 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbbABVMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:10:19 -0500
-Date: Fri, 2 Jan 2015 21:10:17 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Roger Quadros <rogerq@ti.com>
-cc: tony@atomide.com, t-kristo@ti.com, nm@ti.com, nsekhar@ti.com,
-        bcousson@baylibre.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        s-anna@ti.com
-Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
- without sysc
-In-Reply-To: <5492F84E.7020706@ti.com>
-Message-ID: <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com>
-References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 Jan 2015 16:12:46 -0500
+Message-ID: <54A709A5.1000801@ti.com>
+Date: Fri, 2 Jan 2015 16:12:05 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma
+ configuration
+References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com> <CAL_JsqJtVnP_5zAiUvMwL00JQV0mjw-R_hEkxiv13ZuNrQ8nAA@mail.gmail.com> <54A6D375.6050604@ti.com> <1450683.bjnXzaM6nd@wuerfel>
+In-Reply-To: <1450683.bjnXzaM6nd@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Suman, lakml
+On 01/02/2015 03:57 PM, Arnd Bergmann wrote:
+> On Friday 02 January 2015 12:20:53 Murali Karicheri wrote:
+>> Initially I had the same idea to re-use the existing function
+>> of_dma_configure() for this. I wanted to defer this until we have an
+>> agreement on the changes required for the subject functionality. My
+>> quick review of the code suggestio this would require additional API
+>> changes as below. I did a quick test of the changes and it works for
+>> Keystone, but need to be reviewed by everyone as I touch the IOMMU
+>> functionality here and I don't have a platform with IOMMU. Need test by
+>> someone to make sure I don't break anything.
+>>
+>> Here are the changes required to implement this suggestion.
+>>
+>> 1. Move the of_dma_configure() to drivers/of/device.c (include the API
+>> in of_device.h) and make it global (using proper EXPORT macro).
+>> Otherwise, we will have to include of_platform.h in drivers/of/of_pci.c
+>> assuming the prototype is defined in of_platform.h which doesn't look
+>> appropriate to me. Would require following additional include files in
+>> drivers/of/device.c as well.
+>>
+>> +#include<linux/of_address.h>
+>> +#include<linux/of_iommu.h>
+>> +#include<linux/dma-mapping.h>
+>
+> Yes, sounds good.
+>
+>> 2. drivers/iommu/of_iommu.c. This is needed so that of_iommu_configure()
+>> can take confuguration from the root bus DT as you have suggested.
+>>
+>> -struct iommu_ops *of_iommu_configure(struct device *dev)
+>> +struct iommu_ops *of_iommu_configure(struct device *dev, struct
+>> device_node *node)
+>>    {
+>>           struct of_phandle_args iommu_spec;
+>>           struct device_node *np;
+>> @@ -145,7 +145,7 @@ struct iommu_ops *of_iommu_configure(struct device *dev)
+>>            * See the `Notes:' section of
+>>            * Documentation/devicetree/bindings/iommu/iommu.txt
+>>            */
+>> -       while (!of_parse_phandle_with_args(dev->of_node, "iommus",
+>> +       while (!of_parse_phandle_with_args(node, "iommus",
+>>                                              "#iommu-cells", idx,
+>>                                              &iommu_spec)) {
+>
+> Right.
+>
+>> 3. drivers/of/of_pci.c. The existing function (added in this patch) will
+>> make call to of_dma_configure() as
+>>
+>> parent_np = of_get_pci_root_bridge_parent(pci_dev);
+>> of_dma_configure(dev, parent_np);
+>
+> With dev =&pci_dev->dev, I assume?
 
-Hi Roger
+Yes
 
-On Thu, 18 Dec 2014, Roger Quadros wrote:
+>
+>> 4. drivers/of/platform.c. Add a wrapper function
+>> of_platform_dma_configure() that calls of_dma_configure() as
+>> of_dma_configure(dev, dev->of_node). All existing calls converted to
+>> this wrapper.
+>
+> There are only two callers, I don't think we need a wrapper for it,
+> just change the calling conventions along with step 2.
 
-> Fixing up Paul's email id.
-> 
-> cheers,
-> -roger
-> 
-> On 18/12/14 17:49, Roger Quadros wrote:
-> > There are quite a few hwmods that don't have sysconfig register and so
-> > _find_mpu_rt_port(oh) will return NULL thus preventing ready state check
-> > on those modules after the module is enabled.
+Ok. That is what Rob's comment as well.
 
-Hmm.  Any IP block that exposes registers that are accessible by the MPU 
-should have an MPU register target port, even if there's no SYSCONFIG 
-register.  And if an IP block doesn't have registers that are accessible 
-from the MPU, then there shouldn't be much point to waiting for the module 
-to become ready.
-
-Looks like the real problem is the test for oh->class->sysc before the 
-call to _init_mpu_rt_base().  That was introduced by commit 6423d6df1440 
-("ARM: OMAP2+: hwmod: check for module address space during init"). It's 
-not clear to me why that test was added, since _init_mpu_rt_base() doesn't 
-do anything with oh->class->sysc or SYSCONFIG registers.
-
-Could you please test the following patch?
-I don't have an AM437x-gp-evm.  
+>
+>> If the above looks good, I can post v3 of the patch with these changes.
+>
+> With that one minor change, sounds perfect to me. The same can also
+> be used by other bus types if we ever need it.
+>
+> 	Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
-- Paul
-
----
- arch/arm/mach-omap2/omap_hwmod.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index cbb908dc5cf0..ce6d11f3eda7 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2451,14 +2451,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
- 				oh->name, np->name);
- 	}
- 
--	if (oh->class->sysc) {
--		r = _init_mpu_rt_base(oh, NULL, index, np);
--		if (r < 0) {
--			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
--			     oh->name);
--			return 0;
--		}
--	}
-+	r = _init_mpu_rt_base(oh, NULL, index, np);
-+	if (r < 0)
-+		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
-+			 oh->name);
- 
- 	r = _init_clocks(oh, NULL);
- 	if (r < 0) {
 -- 
-2.1.4
-
+Murali Karicheri
+Linux Kernel, Texas Instruments
