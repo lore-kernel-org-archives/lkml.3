@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033AbbABJbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 04:31:08 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:51616 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbbABJbC (ORCPT
+	id S1752037AbbABJcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 04:32:45 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:58270 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbbABJcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 04:31:02 -0500
+	Fri, 2 Jan 2015 04:32:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH] power: ab8500_fg.c:  Remove unused function
+Date: Fri, 02 Jan 2015 10:32:32 +0100
+Message-ID: <1460774.MbDnb649Ak@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420131892-31486-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1420131892-31486-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-In-Reply-To: <201412310916.57808.gheskett@wdtv.com>
-References: <201412310916.57808.gheskett@wdtv.com>
-Date: Fri, 2 Jan 2015 10:31:00 +0100
-X-Google-Sender-Auth: iWj4ROJuUj5WBXzAiRcBPUN8PTo
-Message-ID: <CAMuHMdU5fPrD-ZLTxQZH0FB3_9VkRNU+aMYkOSNZYS-VoE=fVA@mail.gmail.com>
-Subject: Re: apparent loss of continuity in kernel .config?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Gene Heskett <gheskett@wdtv.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:PFJVPlTgTM9ktpz3PUxHqzWc2BZCtPHKsrFLf07zjBaWUtJHIas
+ FMQyWHgPveYdB7lIPHLw37rmHXxgKhGhJz1C662FzBb7LdfNAmvNbTu+24u/g6l5YvhGkvM
+ 34+zSAXUbx8SnB6WJraKPeTHXsXFQKga02P2zNjblVVSuo4JAeiM+q3orBLhI6F/2XW4jkj
+ 2ae5Aow44q8qqTPh4sqGQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gene,
+On Thursday 01 January 2015 18:04:52 Rickard Strandqvist wrote:
+> Remove the function ab8500_fg_reinit() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-On Wed, Dec 31, 2014 at 3:16 PM, Gene Heskett <gheskett@wdtv.com> wrote:
-> Attempting to go from 3.16.0 to 3.16.7 last night, a make oldconfig
-> started from scratch as if there were no .config's in the directory.  I
-> stood on the enter key to take the defaults, then ran a make xconfig to
-> discover it was totally wrong for an AMD phenom, no networking, no disc
-> drivers, video was an old ATI, when there is an nvidia card in it, yadda,
-> yadda.
-
-Being someone who runs "make oldconfig" and compares .config.old and .config
-all the time, I never saw this. However, those are almost never x86 oldconfigs.
-
-Did it change from 64BIT=y to no or vice versa?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Acked-by: Arnd Bergmann <arnd@arndb.de>
