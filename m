@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbbABS4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 13:56:43 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:43647 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbbABS4l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 13:56:41 -0500
-Date: Fri, 2 Jan 2015 13:56:39 -0500
-From: Matthew Emerson <emersonmde@gmail.com>
-To: Jes Sorensen <Jes.Sorensen@redhat.com>
-Cc: Larry.Finger@lwfinger.net, gregkh@linuxfoundation.org,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: changes stop ap mode to use reset
- function
-Message-ID: <20150102185639.GA12315@gmail.com>
-Mail-Followup-To: Jes Sorensen <Jes.Sorensen@redhat.com>,
-	Larry.Finger@lwfinger.net, gregkh@linuxfoundation.org,
-	linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1419819736-4861-1-git-send-email-emersonmde@gmail.com>
- <wrfjoaqhmb91.fsf@redhat.com>
+	id S1752335AbbABS7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 13:59:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745AbbABS7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 13:59:33 -0500
+Date: Fri, 2 Jan 2015 13:59:07 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alexander Kuleshov <kuleshovmail@gmail.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kexec: Fix a typo in comment
+Message-ID: <20150102185907.GB3733@redhat.com>
+References: <1420221379-4553-1-git-send-email-kuleshovmail@gmail.com>
+ <87vbkpvx0s.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <wrfjoaqhmb91.fsf@redhat.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <87vbkpvx0s.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 10:51:38AM -0500, Jes Sorensen wrote:
-> Matthew Emerson <emersonmde@gmail.com> writes:
-> > Changes stop_ap_mode23a() to use rtw_reset_securitypriv23a. This makes
-> > the code cleaner and fixes two checkpatch.pl errors, one line over 80
-> > characters, and one spacing issue.
-> >
-> > Signed-off-by: Matthew Emerson <emersonmde@gmail.com>
+On Fri, Jan 02, 2015 at 12:48:51PM -0600, Eric W. Biederman wrote:
+> Alexander Kuleshov <kuleshovmail@gmail.com> writes:
+> 
+> > Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+> Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+[ CC akpm ]
+
+Simple fix.
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Thanks
+Vivek
+
+> 
 > > ---
-> >  drivers/staging/rtl8723au/core/rtw_ap.c | 6 ++----
-> >  1 file changed, 2 insertions(+), 4 deletions(-)
+> >  kernel/kexec.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > >
-> > diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-> > index e394d12c36b0..510ee212496f 100644
-> > --- a/drivers/staging/rtl8723au/core/rtw_ap.c
-> > +++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-> > @@ -1870,10 +1870,8 @@ void stop_ap_mode23a(struct rtw_adapter *padapter)
-> >  	pmlmepriv->update_bcn = false;
-> >  	pmlmeext->bstart_bss = false;
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index 9a8a01a..75a8b7e 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -444,7 +444,7 @@ arch_kexec_apply_relocations(const Elf_Ehdr *ehdr, Elf_Shdr *sechdrs,
+> >  }
 > >  
-> > -	/* reset and init security priv , this can refine with rtw_reset_securitypriv23a */
-> > -	memset((unsigned char *)&padapter->securitypriv, 0, sizeof (struct security_priv));
-> > -	padapter->securitypriv.ndisauthtype = Ndis802_11AuthModeOpen;
-> > -	padapter->securitypriv.ndisencryptstatus = Ndis802_11WEPDisabled;
-> > +	/* reset and init security priv */
-> > +	rtw_reset_securitypriv23a(padapter);
-> 
-> This is broken, rtw_reset_securitypriv23a() takes different actions
-> based on the value of adapter->securitypriv.dot11AuthAlgrthm - you leave
-> it at it's old value, which does not have the same effect as the above.
-> 
-> If anything you should remove the memset() and call
-> rtw_reset_securitypriv23a() after the two assignments.
-> 
-> NACK
-> 
-> Jes
-
-Thank you for you feedback! I had noticed that the two assignments above
-(for .ndisauthtype and .ndisencryptstatus) take place in both branches
-of the if statement in rtw_reset_securitypriv23a() so I thought removing
-them here would be okay. I'll be sure to make the changes you suggested.
-
-Thanks for your time,
-Matthew Emerson
+> >  /*
+> > - * Free up memory used by kernel, initrd, and comand line. This is temporary
+> > + * Free up memory used by kernel, initrd, and command line. This is temporary
+> >   * memory allocation which is not needed any more after these buffers have
+> >   * been loaded into separate segments and have been copied elsewhere.
+> >   */
