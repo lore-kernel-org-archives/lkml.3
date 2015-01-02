@@ -1,125 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbbABPiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 10:38:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55586 "EHLO mx1.redhat.com"
+	id S1752704AbbABPjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:39:40 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:42854 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431AbbABPiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 10:38:06 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 30/30] perf tools: Disable test code
-Date: Fri,  2 Jan 2015 16:36:12 +0100
-Message-Id: <1420212972-21595-31-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
-References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
+	id S1752113AbbABPj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 10:39:26 -0500
+Message-ID: <54A6BB85.70805@ti.com>
+Date: Fri, 2 Jan 2015 09:38:45 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, Daniel Drake <drake@endlessm.com>,
+        Jon Loeliger <loeliger@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH v10 2/8] ARM: l2c: Refactor the driver to use commit-like
+ interface
+References: <1419331716-8972-1-git-send-email-m.szyprowski@samsung.com>	<1419331716-8972-3-git-send-email-m.szyprowski@samsung.com>	<54A19C17.1020909@ti.com> <CA+Ln22G3kVA_-tsjAxbe2rqSHeLtdU2X_EhNL0uW3cUCgaWLgg@mail.gmail.com> <54A2BBDC.1020900@ti.com> <54A66143.2080506@gmail.com>
+In-Reply-To: <54A66143.2080506@gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NOTE: hack
+On 01/02/2015 03:13 AM, Tomasz Figa wrote:
 
-Forcing test objects not to be compiled into perf code.
-This saves almost 1MB of perf binary size on my setup:
+> However I'm not sure about your concern about using l2x0_data before 
+> kmemdup(). I don't see any code potentially doing this.
 
-  # standard perf binary
-  $ ls -l perf
-  -rwxrwxr-x 1 jolsa jolsa 10283684 Jan  1 15:52 perf
+It is not terribly important, but anyways [1] is what I had in mind..
 
-  # current perf binary
-  $ ls -l perf
-  -rwxrwxr-x 1 jolsa jolsa 9303174 Jan  1 15:58 perf
 
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/builtin-cmds.h | 2 +-
- tools/perf/config.default | 2 +-
- tools/perf/perf-sys.h     | 2 +-
- tools/perf/perf.c         | 4 ++++
- 4 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-cmds.h b/tools/perf/builtin-cmds.h
-index 5ceb4b58cfdd..d0993b91932e 100644
---- a/tools/perf/builtin-cmds.h
-+++ b/tools/perf/builtin-cmds.h
-@@ -23,7 +23,7 @@
- #define CONFIG_BUILTIN_HELP
- #define CONFIG_BUILTIN_PROBE
- #define CONFIG_BUILTIN_MEM
--#define CONFIG_BUILTIN_TEST
-+//#define CONFIG_BUILTIN_TEST
- 
- #endif /* BUILTIN_CMDS_H */
- 
-diff --git a/tools/perf/config.default b/tools/perf/config.default
-index 2781af21b70b..8a31a9d7b940 100644
---- a/tools/perf/config.default
-+++ b/tools/perf/config.default
-@@ -20,4 +20,4 @@ CONFIG_BUILTIN_INJECT        := y
- CONFIG_BUILTIN_MEM           := y
- CONFIG_BUILTIN_TRACE         := y
- CONFIG_BUILTIN_PROBE         := y
--CONFIG_BUILTIN_TEST          := y
-+CONFIG_BUILTIN_TEST          := n
-diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
-index a3b13d7dc1d4..48831388db1d 100644
---- a/tools/perf/perf-sys.h
-+++ b/tools/perf/perf-sys.h
-@@ -181,7 +181,7 @@ sys_perf_event_open(struct perf_event_attr *attr,
- 	fd = syscall(__NR_perf_event_open, attr, pid, cpu,
- 		     group_fd, flags);
- 
--#ifdef HAVE_ATTR_TEST
-+#if defined(CONFIG_BUILTIN_TEST) && defined(HAVE_ATTR_TEST)
- 	if (unlikely(test_attr__enabled))
- 		test_attr__open(attr, pid, cpu, fd, group_fd, flags);
- #endif
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 7c5ceff22d47..ef7c92cf9f25 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -57,7 +57,9 @@ static struct cmd_struct commands[] = {
- 	{ "kmem",	cmd_kmem,	0 },
- 	{ "lock",	cmd_lock,	0 },
- 	{ "kvm",	cmd_kvm,	0 },
-+#ifdef CONFIG_BUILTIN_TEST
- 	{ "test",	cmd_test,	0 },
-+#endif
- #ifdef HAVE_LIBAUDIT_SUPPORT
- 	{ "trace",	cmd_trace,	0 },
- #endif
-@@ -539,7 +541,9 @@ int main(int argc, const char **argv)
- 	}
- 	cmd = argv[0];
- 
-+#ifdef CONFIG_BUILTIN_TEST
- 	test_attr__init();
-+#endif
- 
- 	/*
- 	 * We use PATH to find perf commands, but we prepend some higher
+[1]
+https://github.com/nmenon/linux-2.6-playground/commit/40f65e4707856f7b35872cf2225bf8beaf43552c#diff-56925866b8b499d75763bf5a1d7f1666L883
+
 -- 
-1.9.3
-
+Regards,
+Nishanth Menon
