@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbbABPiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 10:38:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50392 "EHLO mx1.redhat.com"
+	id S1752729AbbABPly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:41:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50407 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471AbbABPiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 10:38:09 -0500
+	id S1752471AbbABPiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 10:38:11 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,19 +19,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 13/30] perf build: Add gtk objects building
-Date: Fri,  2 Jan 2015 16:35:55 +0100
-Message-Id: <1420212972-21595-14-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 14/30] perf build: Add scripts objects building
+Date: Fri,  2 Jan 2015 16:35:56 +0100
+Message-Id: <1420212972-21595-15-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
 References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the gtk objects building under build framework.
-
-Add new gtk build object so it's separated from
-the rest of the code and could be librarized.
+Move the scripts objects building under build framework
+to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
@@ -46,103 +44,151 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Build           |  2 ++
- tools/perf/Build.include   |  3 ++-
- tools/perf/Makefile.perf   | 17 +++++------------
- tools/perf/config/Makefile |  1 +
- tools/perf/ui/gtk/Build    |  9 +++++++++
- 5 files changed, 19 insertions(+), 13 deletions(-)
- create mode 100644 tools/perf/ui/gtk/Build
+ tools/perf/Build                                |  1 +
+ tools/perf/Makefile.perf                        | 22 ----------------------
+ tools/perf/config/Makefile                      |  7 +++++++
+ tools/perf/scripts/Build                        |  2 ++
+ tools/perf/scripts/perl/Perf-Trace-Util/Build   |  3 +++
+ tools/perf/scripts/python/Perf-Trace-Util/Build |  3 +++
+ tools/perf/util/Build                           |  2 ++
+ tools/perf/util/scripting-engines/Build         |  6 ++++++
+ 8 files changed, 24 insertions(+), 22 deletions(-)
+ create mode 100644 tools/perf/scripts/Build
+ create mode 100644 tools/perf/scripts/perl/Perf-Trace-Util/Build
+ create mode 100644 tools/perf/scripts/python/Perf-Trace-Util/Build
+ create mode 100644 tools/perf/util/scripting-engines/Build
 
 diff --git a/tools/perf/Build b/tools/perf/Build
-index e84ced325147..a9ff8fd0bff9 100644
+index a9ff8fd0bff9..7035a51deff8 100644
 --- a/tools/perf/Build
 +++ b/tools/perf/Build
-@@ -35,3 +35,5 @@ CFLAGS_builtin-timechart.o += $(paths)
+@@ -35,5 +35,6 @@ CFLAGS_builtin-timechart.o += $(paths)
  libperf-y += util/
  libperf-y += arch/
  libperf-y += ui/
-+
-+gtk-y += ui/gtk/
-diff --git a/tools/perf/Build.include b/tools/perf/Build.include
-index a3f325397fc7..6a990b018e6d 100644
---- a/tools/perf/Build.include
-+++ b/tools/perf/Build.include
-@@ -70,5 +70,6 @@ if_changed = $(if $(strip $(any-prereq) $(arg-check)),             \
- # - depfile generation
- # - global $(CFLAGS)
- # - per target C flags
-+# - per object C flags
- # - BUILD_STR macro to allow '-D"$(variable)"' constructs
--c_flags = -Wp,-MD,$(depfile),-MT,$@ $(CFLAGS) -D"BUILD_STR(s)=\#s" $(CFLAGS_$(basetarget).o)
-+c_flags = -Wp,-MD,$(depfile),-MT,$@ $(CFLAGS) -D"BUILD_STR(s)=\#s" $(CFLAGS_$(basetarget).o) $(CFLAGS_$(obj))
++libperf-$(CONFIG_SCRIPT) += scripts/
+ 
+ gtk-y += ui/gtk/
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 64836605a116..686e28073898 100644
+index 686e28073898..9793dd61931e 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -341,14 +341,7 @@ endif
+@@ -349,16 +349,6 @@ install-gtk: $(OUTPUT)libperf-gtk.so
+ 		$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
+ endif
  
- ifndef NO_GTK2
-   ALL_PROGRAMS += $(OUTPUT)libperf-gtk.so
+-ifndef NO_LIBPERL
+-  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
+-  LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-endif
 -
--  GTK_OBJS += $(OUTPUT)ui/gtk/browser.o
--  GTK_OBJS += $(OUTPUT)ui/gtk/hists.o
--  GTK_OBJS += $(OUTPUT)ui/gtk/setup.o
--  GTK_OBJS += $(OUTPUT)ui/gtk/util.o
--  GTK_OBJS += $(OUTPUT)ui/gtk/helpline.o
--  GTK_OBJS += $(OUTPUT)ui/gtk/progress.o
--  GTK_OBJS += $(OUTPUT)ui/gtk/annotate.o
-+  GTK_IN := $(OUTPUT)gtk-in.o
+-ifndef NO_LIBPYTHON
+-  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-  LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+-endif
+-
+ ifeq ($(NO_PERF_REGS),0)
+   ifeq ($(ARCH),x86)
+     LIB_H += arch/x86/include/perf_regs.h
+@@ -460,18 +450,6 @@ $(OUTPUT)%.o: %.S
+ $(OUTPUT)%.s: %.S
+ 	$(QUIET_CC)$(CC) -o $@ -E $(CFLAGS) $<
  
- install-gtk: $(OUTPUT)libperf-gtk.so
- 	$(call QUIET_INSTALL, 'GTK UI') \
-@@ -417,10 +410,10 @@ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(PERF_IN)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
-                $(BUILTIN_OBJS) $(PERF_IN) $(LIBS) -o $@
+-$(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default $<
+-
+-$(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default $<
+-
+-$(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/trace-event-python.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
+-
+-$(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
+-
+ $(OUTPUT)perf-%: %.o $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
  
--$(GTK_OBJS): $(OUTPUT)%.o: %.c $(LIB_H)
--	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
-+$(GTK_IN): FORCE
-+	@$(MAKE) $(build)=gtk
- 
--$(OUTPUT)libperf-gtk.so: $(GTK_OBJS) $(PERFLIBS)
-+$(OUTPUT)libperf-gtk.so: $(GTK_IN) $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) -o $@ -shared $(LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
- 
- $(OUTPUT)common-cmds.h: util/generate-cmdlist.sh command-list.txt
-@@ -700,7 +693,7 @@ config-clean:
- 	@$(MAKE) -C config/feature-checks clean >/dev/null
- 
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
--	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
-+	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS)
- 	@find $(if $(OUTPUT),$(OUTPUT),.) -name \*.o | xargs $(RM)
- 	@$(RM) .config-detected
- 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index db4957af8569..b1320ef2ca9b 100644
+index b1320ef2ca9b..9392ce9d2e63 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -839,3 +839,4 @@ $(call detected_var,mandir_SQ)
- $(call detected_var,ETC_PERFCONFIG_SQ)
+@@ -512,6 +512,8 @@ else
+   else
+     LDFLAGS += $(PERL_EMBED_LDFLAGS)
+     EXTLIBS += $(PERL_EMBED_LIBADD)
++    $(call detected,CONFIG_LIBPERL)
++    CONFIG_SCRIPT := y
+   endif
+ endif
+ 
+@@ -571,6 +573,8 @@ else
+           LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+           EXTLIBS += $(PYTHON_EMBED_LIBADD)
+           LANG_BINDINGS += $(obj-perf)python/perf.so
++          $(call detected,CONFIG_LIBPYTHON)
++          CONFIG_SCRIPT := y
+         endif
+       endif
+     endif
+@@ -840,3 +844,6 @@ $(call detected_var,ETC_PERFCONFIG_SQ)
  $(call detected_var,prefix_SQ)
  $(call detected_var,LIBDIR)
-+$(call detected_var,GTK_CFLAGS)
-diff --git a/tools/perf/ui/gtk/Build b/tools/perf/ui/gtk/Build
+ $(call detected_var,GTK_CFLAGS)
++$(call detected_var,PERL_EMBED_CCOPTS)
++$(call detected_var,PYTHON_EMBED_CCOPTS)
++$(call detected_var,CONFIG_SCRIPT)
+diff --git a/tools/perf/scripts/Build b/tools/perf/scripts/Build
 new file mode 100644
-index 000000000000..ec22e899a224
+index 000000000000..41efd7e368b3
 --- /dev/null
-+++ b/tools/perf/ui/gtk/Build
-@@ -0,0 +1,9 @@
-+CFLAGS_gtk += -fPIC $(GTK_CFLAGS)
++++ b/tools/perf/scripts/Build
+@@ -0,0 +1,2 @@
++libperf-$(CONFIG_LIBPERL)   += perl/Perf-Trace-Util/
++libperf-$(CONFIG_LIBPYTHON) += python/Perf-Trace-Util/
+diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Build b/tools/perf/scripts/perl/Perf-Trace-Util/Build
+new file mode 100644
+index 000000000000..928e110179cb
+--- /dev/null
++++ b/tools/perf/scripts/perl/Perf-Trace-Util/Build
+@@ -0,0 +1,3 @@
++libperf-y += Context.o
 +
-+gtk-y += browser.o
-+gtk-y += hists.o
-+gtk-y += setup.o
-+gtk-y += util.o
-+gtk-y += helpline.o
-+gtk-y += progress.o
-+gtk-y += annotate.o
++CFLAGS_Context.o += $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default
+diff --git a/tools/perf/scripts/python/Perf-Trace-Util/Build b/tools/perf/scripts/python/Perf-Trace-Util/Build
+new file mode 100644
+index 000000000000..aefc15c9444a
+--- /dev/null
++++ b/tools/perf/scripts/python/Perf-Trace-Util/Build
+@@ -0,0 +1,3 @@
++libperf-y += Context.o
++
++CFLAGS_Context.o += $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs
+diff --git a/tools/perf/util/Build b/tools/perf/util/Build
+index 0302566002f5..a9e7a97ea7b7 100644
+--- a/tools/perf/util/Build
++++ b/tools/perf/util/Build
+@@ -88,6 +88,8 @@ libperf-$(CONFIG_DWARF) += dwarf-aux.o
+ libperf-$(CONFIG_LIBDW_DWARF_UNWIND) += unwind-libdw.o
+ libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
+ 
++libperf-$(CONFIG_SCRIPT) += scripting-engines/
++
+ CFLAGS_config.o   += -DETC_PERFCONFIG="BUILD_STR($(ETC_PERFCONFIG_SQ))"
+ CFLAGS_exec_cmd.o += -DPERF_EXEC_PATH="BUILD_STR($(perfexecdir_SQ))" -DPREFIX="BUILD_STR($(prefix_SQ))"
+ 
+diff --git a/tools/perf/util/scripting-engines/Build b/tools/perf/util/scripting-engines/Build
+new file mode 100644
+index 000000000000..6516e220c247
+--- /dev/null
++++ b/tools/perf/util/scripting-engines/Build
+@@ -0,0 +1,6 @@
++libperf-$(CONFIG_LIBPERL)   += trace-event-perl.o
++libperf-$(CONFIG_LIBPYTHON) += trace-event-python.o
++
++CFLAGS_trace-event-perl.o += $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default
++
++CFLAGS_trace-event-python.o += $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow
 -- 
 1.9.3
 
