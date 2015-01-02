@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbbABVMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:12:49 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46339 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbbABVMq (ORCPT
+	id S1752506AbbABVP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 16:15:29 -0500
+Received: from rrcs-76-79-27-186.west.biz.rr.com ([76.79.27.186]:12987 "EHLO
+	rrcs-76-79-27-186.west.biz.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751815AbbABVP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:12:46 -0500
-Message-ID: <54A709A5.1000801@ti.com>
-Date: Fri, 2 Jan 2015 16:12:05 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 2 Jan 2015 16:15:27 -0500
+Date: Fri, 2 Jan 2015 15:15:21 -0600
+From: Jeff Epler <jepler@unpythonic.net>
+To: Laurent Georget <laurent.georget@supelec.fr>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        linux-man <linux-man@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] adjtimex: PPM scaling is by 2^-16
+Message-ID: <20150102211519.GA55815@unpythonic.net>
+References: <54A2DEAD.2050708@supelec.fr>
+ <20150102024118.GA8293@unpythonic.net>
+ <20150102062920.GB4221@localhost.localdomain>
+ <54A6C9B5.4050904@supelec.fr>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma
- configuration
-References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com> <CAL_JsqJtVnP_5zAiUvMwL00JQV0mjw-R_hEkxiv13ZuNrQ8nAA@mail.gmail.com> <54A6D375.6050604@ti.com> <1450683.bjnXzaM6nd@wuerfel>
-In-Reply-To: <1450683.bjnXzaM6nd@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A6C9B5.4050904@supelec.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2015 03:57 PM, Arnd Bergmann wrote:
-> On Friday 02 January 2015 12:20:53 Murali Karicheri wrote:
->> Initially I had the same idea to re-use the existing function
->> of_dma_configure() for this. I wanted to defer this until we have an
->> agreement on the changes required for the subject functionality. My
->> quick review of the code suggestio this would require additional API
->> changes as below. I did a quick test of the changes and it works for
->> Keystone, but need to be reviewed by everyone as I touch the IOMMU
->> functionality here and I don't have a platform with IOMMU. Need test by
->> someone to make sure I don't break anything.
->>
->> Here are the changes required to implement this suggestion.
->>
->> 1. Move the of_dma_configure() to drivers/of/device.c (include the API
->> in of_device.h) and make it global (using proper EXPORT macro).
->> Otherwise, we will have to include of_platform.h in drivers/of/of_pci.c
->> assuming the prototype is defined in of_platform.h which doesn't look
->> appropriate to me. Would require following additional include files in
->> drivers/of/device.c as well.
->>
->> +#include<linux/of_address.h>
->> +#include<linux/of_iommu.h>
->> +#include<linux/dma-mapping.h>
->
-> Yes, sounds good.
->
->> 2. drivers/iommu/of_iommu.c. This is needed so that of_iommu_configure()
->> can take confuguration from the root bus DT as you have suggested.
->>
->> -struct iommu_ops *of_iommu_configure(struct device *dev)
->> +struct iommu_ops *of_iommu_configure(struct device *dev, struct
->> device_node *node)
->>    {
->>           struct of_phandle_args iommu_spec;
->>           struct device_node *np;
->> @@ -145,7 +145,7 @@ struct iommu_ops *of_iommu_configure(struct device *dev)
->>            * See the `Notes:' section of
->>            * Documentation/devicetree/bindings/iommu/iommu.txt
->>            */
->> -       while (!of_parse_phandle_with_args(dev->of_node, "iommus",
->> +       while (!of_parse_phandle_with_args(node, "iommus",
->>                                              "#iommu-cells", idx,
->>                                              &iommu_spec)) {
->
-> Right.
->
->> 3. drivers/of/of_pci.c. The existing function (added in this patch) will
->> make call to of_dma_configure() as
->>
->> parent_np = of_get_pci_root_bridge_parent(pci_dev);
->> of_dma_configure(dev, parent_np);
->
-> With dev =&pci_dev->dev, I assume?
+On Fri, Jan 02, 2015 at 05:39:17PM +0100, Laurent Georget wrote:
+> +    long freq;        /* Frequency offset, in units of 2^-16 PPM
+> +                         (parts per million) (see NOTES below) */
+...
+> +.SH NOTES
+> +In struct
+> +.IR timex ,
+> +.IR freq ,
+> +.IR ppsfreq ,
+> +and
+> +.I stabil
+> +are PPM (parts per million) with a 16-bits fractional part, which means that a
+> +value of 1 in one of those fields actually means 2^-16 PPM, and 2^16=65535 is
+> +1 PPM. This is the case for both input values (in the case of
+> +.IR freq )
+> +and output values.
 
-Yes
+I appreciate the addition of the NOTES section, this is likely to be
+unclear to first-time readers and that section should clear it up
+nicely.  Giving the definition of PPM as "parts per million" is good
+too.
 
->
->> 4. drivers/of/platform.c. Add a wrapper function
->> of_platform_dma_configure() that calls of_dma_configure() as
->> of_dma_configure(dev, dev->of_node). All existing calls converted to
->> this wrapper.
->
-> There are only two callers, I don't think we need a wrapper for it,
-> just change the calling conventions along with step 2.
+However, the patch got line-wrapped again (I fixed it manually above).
+With line-wrapped fix, consider it
 
-Ok. That is what Rob's comment as well.
+Reviewed-by: Jeff Epler <jepler@unpythonic.net>
 
->
->> If the above looks good, I can post v3 of the patch with these changes.
->
-> With that one minor change, sounds perfect to me. The same can also
-> be used by other bus types if we ever need it.
->
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+hm, as a separate issue, "ppm" seems to typically be written in
+lowercase.  see e.g., http://en.wikipedia.org/wiki/Parts-per_notation
 
-
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+Jeff
