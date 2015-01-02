@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750819AbbABIKO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 03:10:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44762 "EHLO mx2.suse.de"
+	id S1750879AbbABIRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 03:17:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44786 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711AbbABIKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 03:10:11 -0500
-Date: Fri, 02 Jan 2015 09:10:09 +0100
-Message-ID: <s5hh9w9fvry.wl-tiwai@suse.de>
+	id S1750711AbbABIRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 03:17:13 -0500
+Date: Fri, 02 Jan 2015 09:17:12 +0100
+Message-ID: <s5hfvbtfvg7.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Shakil A Khan <shakilk1729@gmail.com>
-Cc: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Removed unused variable i from sound/soc/soc-pcm.c Signed-off-by: Shakil A Khan <shakilk1729@gmail.com>
-In-Reply-To: <1420131681-74211-1-git-send-email-shakilk1729@gmail.com>
-References: <1420131681-74211-1-git-send-email-shakilk1729@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: drivers: portman2x4.c:  Remove some unused functions
+In-Reply-To: <1420125165-26527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1420125165-26527-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,25 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu,  1 Jan 2015 09:01:21 -0800,
-Shakil A Khan wrote:
+At Thu,  1 Jan 2015 16:12:45 +0100,
+Rickard Strandqvist wrote:
 > 
+> Removes some functions that are not used anywhere:
+> portman_read_data() portman_read_command()
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  sound/soc/soc-pcm.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  sound/drivers/portman2x4.c |   10 ----------
+>  1 file changed, 10 deletions(-)
 > 
-> diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
-> index d6e8d6b..6b0136e 100644
-> --- a/sound/soc/soc-pcm.c
-> +++ b/sound/soc/soc-pcm.c
-> @@ -304,7 +304,7 @@ static bool soc_pcm_has_symmetry(struct snd_pcm_substream *substream)
->  static void soc_pcm_set_msb(struct snd_pcm_substream *substream, int bits)
+> diff --git a/sound/drivers/portman2x4.c b/sound/drivers/portman2x4.c
+> index 78ccfa4..b5b6b4e 100644
+> --- a/sound/drivers/portman2x4.c
+> +++ b/sound/drivers/portman2x4.c
+> @@ -198,21 +198,11 @@ static inline void portman_write_command(struct portman *pm, u8 value)
+>  	parport_write_control(pm->pardev->port, value);
+>  }
+>  
+> -static inline u8 portman_read_command(struct portman *pm)
+> -{
+> -	return parport_read_control(pm->pardev->port);
+> -}
+> -
+>  static inline u8 portman_read_status(struct portman *pm)
 >  {
->  	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-> -	int ret, i;
-> +	int ret;
+>  	return parport_read_status(pm->pardev->port);
+>  }
+>  
+> -static inline u8 portman_read_data(struct portman *pm)
+> -{
+> -	return parport_read_data(pm->pardev->port);
+> -}
+> -
+>  static inline void portman_write_data(struct portman *pm, u8 value)
+>  {
+>  	parport_write_data(pm->pardev->port, value);
 
-Thanks, but this has been already fixed.
+Rickard, your works are highly appreciated, but please think twice
+before submitting patches: is it worth for the whole?
 
+For example, in this case: the removals are static inline functions.
+So there is no gain by removing this regarding the object size.  OTOH, 
+they are obviously wrapper accessors, thus dropping blindly would
+result in inconsistency.  That is, a reader may wonder later why some
+are write only and some not.
+
+
+thanks,
 
 Takashi
