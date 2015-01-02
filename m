@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbbABVk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 16:40:26 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53833 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbbABVkW (ORCPT
+	id S1752511AbbABWAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 17:00:33 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:39252 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752201AbbABWAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 16:40:22 -0500
-Date: Fri, 02 Jan 2015 16:40:19 -0500 (EST)
-Message-Id: <20150102.164019.754021420669768265.davem@davemloft.net>
-To: rickard_strandqvist@spectrumdigital.se
-Cc: benve@cisco.com, ssujith@cisco.com, _govind@gmx.com, neepatel@cisco.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ethernet: cisco: enic: enic_dev: Remove some
- unused functions
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1420230564-2060-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420230564-2060-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 02 Jan 2015 13:40:21 -0800 (PST)
+	Fri, 2 Jan 2015 17:00:32 -0500
+From: Thomas Graf <tgraf@suug.ch>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.apana.org.au, paulmck@linux.vnet.ibm.com,
+        edumazet@google.com, john.r.fastabend@intel.com, josh@joshtriplett.org
+Subject: [PATCH 0/9 net-next v2] rhashtable: Per bucket locks & deferred table resizing
+Date: Fri,  2 Jan 2015 23:00:13 +0100
+Message-Id: <cover.1420230585.git.tgraf@suug.ch>
+X-Mailer: git-send-email 1.9.3
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@suug.ch> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Fri,  2 Jan 2015 21:29:24 +0100
+Prepares for and introduces per bucket spinlocks and deferred table
+resizing. This allows for parallel table mutations in different hash
+buckets from atomic context. The resizing occurs in the background
+in a separate worker thread while lookups, inserts, and removals can
+continue.
 
-> Removes some functions that are not used anywhere:
-> enic_dev_enable2_done() enic_dev_enable2() enic_dev_deinit_done()
-> enic_dev_init_prov2() enic_vnic_dev_deinit()
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Also modified the chain linked list to be terminated with a special
+nulls marker to allow entries to move between multiple lists.
 
-Applied.
+Last but not least, reintroduces lockless netlink_lookup() with
+deferred Netlink socket destruction to avoid the side effect of
+increased netlink_release() runtime.
+
+Thomas Graf (9):
+  rhashtable: Do hashing inside of rhashtable_lookup_compare()
+  rhashtable: Use rht_obj() instead of manual offset calculation
+  rhashtable: Convert bucket iterators to take table and index
+  rhashtable: Factor out bucket_tail() function
+  nft_hash: Remove rhashtable_remove_pprev()
+  spinlock: Add spin_lock_bh_nested()
+  rhashtable: Per bucket locks & deferred expansion/shrinking
+  rhashtable: Supports for nulls marker
+  netlink: Lockless lookup with RCU grace period in socket release
+
+ include/linux/list_nulls.h       |   3 +-
+ include/linux/rhashtable.h       | 258 ++++++++++++-----
+ include/linux/spinlock.h         |   8 +
+ include/linux/spinlock_api_smp.h |   2 +
+ include/linux/spinlock_api_up.h  |   1 +
+ kernel/locking/spinlock.c        |   8 +
+ lib/rhashtable.c                 | 607 ++++++++++++++++++++++++++-------------
+ net/netfilter/nft_hash.c         |  92 +++---
+ net/netlink/af_netlink.c         |  64 ++---
+ net/netlink/af_netlink.h         |   1 +
+ net/netlink/diag.c               |   4 +-
+ 11 files changed, 693 insertions(+), 355 deletions(-)
+
+-- 
+1.9.3
+
