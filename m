@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355AbbABRrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:47:52 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:40583 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbbABRrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:47:51 -0500
+	id S1752138AbbABRwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:52:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736AbbABRwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 12:52:37 -0500
+Date: Fri, 2 Jan 2015 18:51:15 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pratyush Anand <panand@redhat.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com
+Subject: Re: [RFC 5/8] ARM64: Re-factor flush_ptrace_access
+Message-ID: <20150102175115.GB6761@redhat.com>
+References: <cover.1420038188.git.panand@redhat.com> <f41f96aaed90007076ce496b9a0746c6f1a01ddb.1420038188.git.panand@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20150102025953.GA1253265@devbig257.prn2.facebook.com>
-References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
- <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
- <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
- <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
- <20141219112350.GJ30905@twins.programming.kicks-ass.net> <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com>
- <20141219170334.GM30905@twins.programming.kicks-ass.net> <20150102025953.GA1253265@devbig257.prn2.facebook.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 2 Jan 2015 09:47:29 -0800
-Message-ID: <CALCETrW=Z14X-TyOwsaMGKbY+w=JkUgjRFDsasBgWy83ZtkaeQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
-To: Shaohua Li <shli@fb.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f41f96aaed90007076ce496b9a0746c6f1a01ddb.1420038188.git.panand@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 6:59 PM, Shaohua Li <shli@fb.com> wrote:
-> On Fri, Dec 19, 2014 at 06:03:34PM +0100, Peter Zijlstra wrote:
->> On Fri, Dec 19, 2014 at 08:48:07AM -0800, Andy Lutomirski wrote:
->> > On Fri, Dec 19, 2014 at 3:23 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > > On Thu, Dec 18, 2014 at 04:22:59PM -0800, Andy Lutomirski wrote:
->> > >> Bad news: this patch is incorrect, I think.  Take a look at
->> > >> update_rq_clock -- it does fancy things involving irq time and
->> > >> paravirt steal time.  So this patch could result in extremely
->> > >> non-monotonic results.
->> > >
->> > > Yeah, I'm not sure how (and if) we could make all that work :/
->> >
->> > I obviously can't comment on what Facebook needs, but if I were
->> > rigging something up to profile my own code*, I'd want a count of
->> > elapsed time, including user, system, and probably interrupt as well.
->> > I would probably not want to count time during which I'm not
->> > scheduled, and I would also probably not want to count steal time.
->> > The latter makes any implementation kind of nasty.
->> >
->> > The API presumably doesn't need to be any particular clock id for
->> > clock_gettime, and it may not even need to be clock_gettime at all.
->> >
->> > Is perf self-monitoring good enough for this?  If not, can we make it
->> > good enough?
->>
->> Yeah, I think you should be able to use that. You could count a NOP
->> event and simply use its activated time. We have PERF_COUNT_SW_DUMMY for
->> such purposes iirc.
->>
->> The advantage of using perf self profiling is that it (obviously)
->> extends to more than just walltime.
+On 12/31, Pratyush Anand wrote:
 >
-> Hi Peter & Andy,
-> I'm wondering how we could use the perf to implament a clock_gettime.
-> reading the perf fd or using ioctl is slow so reading the mmap
-> ringbuffer is the only option. But as far as I know the ringbuffer has
-> data only when an event is generated. Between two events, there is
-> nothing we can read from the ringbuffer. Then how can application get
-> time info in the interval?
+> Re-factor flush_ptrace_access to reuse vma independent part.
 
-Don't use the ringbuffer.  Instead, use a counting event, mmap it, and
-look at struct perf_event_mmap_page's comments to see how to read the
-time stamps.
+But for what? The changelog should explain this.
 
-There's some code here that does this:
-
-https://github.com/andikleen/pmu-tools
-
-but you won't actually need the rdpmc part, since you just want
-overall times instead of hardware event counts.
-
---Andy
-
+> Signed-off-by: Pratyush Anand <panand@redhat.com>
+> ---
+>  arch/arm64/mm/flush.c | 24 +++++++++++++++---------
+>  1 file changed, 15 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/arm64/mm/flush.c b/arch/arm64/mm/flush.c
+> index b6f14e8d2121..9a4dd6f39cfb 100644
+> --- a/arch/arm64/mm/flush.c
+> +++ b/arch/arm64/mm/flush.c
+> @@ -34,19 +34,25 @@ void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
+>  		__flush_icache_all();
+>  }
 >
-> Thanks,
-> Shaohua
+> +static void __flush_ptrace_access(struct page *page, unsigned long uaddr,
+> +		void *kaddr, unsigned long len)
+> +{
+> +	unsigned long addr = (unsigned long)kaddr;
+> +
+> +	if (icache_is_aliasing()) {
+> +		__flush_dcache_area(kaddr, len);
+> +		__flush_icache_all();
+> +	} else {
+> +		flush_icache_range(addr, addr + len);
+> +	}
+> +}
+> +
+>  static void flush_ptrace_access(struct vm_area_struct *vma, struct page *page,
+>  				unsigned long uaddr, void *kaddr,
+>  				unsigned long len)
+>  {
+> -	if (vma->vm_flags & VM_EXEC) {
+> -		unsigned long addr = (unsigned long)kaddr;
+> -		if (icache_is_aliasing()) {
+> -			__flush_dcache_area(kaddr, len);
+> -			__flush_icache_all();
+> -		} else {
+> -			flush_icache_range(addr, addr + len);
+> -		}
+> -	}
+> +	if (vma->vm_flags & VM_EXEC)
+> +		__flush_ptrace_access(page, uaddr, kaddr, len);
+>  }
 
+So why uprobes can't use flush_ptrace_access() ? flush_uprobe_xol_access() is
+called by arch_uprobe_copy_ixol(), and xol vma has VM_EXEC bit set.
 
+Oleg.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
