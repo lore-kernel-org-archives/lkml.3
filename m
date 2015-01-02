@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845AbbABJ2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 04:28:41 -0500
-Received: from bues.ch ([80.190.117.144]:52782 "EHLO bues.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266AbbABJ22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 04:28:28 -0500
-Date: Fri, 2 Jan 2015 10:27:27 +0100
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: stefano.brivio@polimi.it, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, b43-dev@lists.infradead.org,
-        kvalo@codeaurora.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:net:wireless: Add proper locking for the
- function, b43_op_beacon_set_tim in main.c
-Message-ID: <20150102102727.3918a684@wiggum>
-In-Reply-To: <1420184041-6788-1-git-send-email-xerofoify@gmail.com>
-References: <1420184041-6788-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1750987AbbABJ2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 04:28:20 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:60277 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbbABJ2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 04:28:18 -0500
+Message-ID: <54A664AB.1060100@gmail.com>
+Date: Fri, 02 Jan 2015 18:28:11 +0900
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/4=3cVwV.+4XCgS2Xp2Vl//c"; protocol="application/pgp-signature"
+To: Nishanth Menon <nm@ti.com>
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, Daniel Drake <drake@endlessm.com>,
+        Jon Loeliger <loeliger@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH v10 2/8] ARM: l2c: Refactor the driver to use commit-like
+ interface
+References: <1419331716-8972-1-git-send-email-m.szyprowski@samsung.com>	<1419331716-8972-3-git-send-email-m.szyprowski@samsung.com>	<54A19C17.1020909@ti.com> <CA+Ln22G3kVA_-tsjAxbe2rqSHeLtdU2X_EhNL0uW3cUCgaWLgg@mail.gmail.com> <54A2BBDC.1020900@ti.com> <54A66143.2080506@gmail.com>
+In-Reply-To: <54A66143.2080506@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/4=3cVwV.+4XCgS2Xp2Vl//c
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Fri,  2 Jan 2015 02:34:01 -0500
-Nicholas Krause <xerofoify@gmail.com> wrote:
 
-> This adds proper locking for the function, b43_op_beacon_set_tim in main.=
-c by using the mutex lock
-> in the structure pointer wl, as embedded into this pointer as a mutex in =
-order to protect against
-> multiple access to the pointer wl when updating the templates for this po=
-inter in the function,
-> b43_update_templates internally in the function, b43_op_beacon_set_tim.
->=20
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/net/wireless/b43/main.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/m=
-ain.c
-> index 47731cb..d568fc8 100644
-> --- a/drivers/net/wireless/b43/main.c
-> +++ b/drivers/net/wireless/b43/main.c
-> @@ -5094,8 +5094,9 @@ static int b43_op_beacon_set_tim(struct ieee80211_h=
-w *hw,
->  {
->  	struct b43_wl *wl =3D hw_to_b43_wl(hw);
-> =20
-> -	/* FIXME: add locking */
-> +	mutex_lock(&wl->mutex);
->  	b43_update_templates(wl);
-> +	mutex_unlock(&wl->mutex);
-> =20
->  	return 0;
->  }
+On 02.01.2015 18:13, Tomasz Figa wrote:
+> On 30.12.2014 23:51, Nishanth Menon wrote:
+>>>> Looks like the following also need addressing:
+>>>> data->save is called twice (once more after l2cof_init)
+>>>> l2c310_init_fns also needs l2c310_configure
+>>>> will be nice to use l2x0_data only after we kmemdup data in __l2c_init
+>>>
+>>> I'll check this.
+>> Thanks.
+>>
+>
+> Apparently the second save in __l2c_init() is not needed and it should
+> have been removed. However it might be a good idea to actually do second
+> save in l2c_enable() after l2c_configure() so that the values actually
+> permitted by hardware and/or secure firmware are stored.
+>
+> l2c310_init_fns needs to be updated indeed.
 
-Thanks for the patch.
+Hmm, apparently current patch already adds this (and I missed it reading 
+it at first), so I'm not sure what's your concern about it.
 
-However, this does not work. We are in atomic context here.
-Please see the b43-dev mailing list archives for a recent thread about that.
-I'm also pretty sure that this is safe without lock, due to the higher leve=
-l locks in mac80211.
-
---=20
-Michael
-
---Sig_/4=3cVwV.+4XCgS2Xp2Vl//c
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUpmR/AAoJEPUyvh2QjYsO9HMP/1grj8MIOkjcTxNQzX5aAiY4
-zjYNw3NRpUq8s874oflk5gZ2Lnahg57fyjvN3uRyG+1wIlSgwi5dz+tw1+Z+RbEf
-fq+cNMbsbYTRIaQ2wIdzDi49iwuMcSshkYstxcuJIqDjYM90hkSCLE8hzkNFVeHL
-rqCqYTacbv8cnLyY9s+vr3/fNUfq+AtSphgb+DgwPzZMHr4xYNZHA7W+jwn+B2D+
-4PDMBptkY0lnMzsWwdmfJ+/wR1QGTgxkBPMmiH+FtJv9XNTOW4XL6ziIWZzCzqXJ
-GhMDNHraNAenUweClnFfAikBJao5YTn8bHiwpAZy1VUDAxIsygcc+E6q58Lzh66F
-oUEC0ORpnN9Y7IIR8lAr5BokoREuNODrckABUts+g/f5alq+75KsvK4NZYdypqOH
-e7no7waxTtEyb3cYObFZzXsIZUR+wwruILflSWYsXXimovtJEGXCNYDeC1txS4s7
-c0lD/tmIUNNljo8nr7Uo0JxEl30WzZaAgpeQNhzChXKDj/oP/Erotnn1ok3Jk2Sr
-3z4cn2PgEQAHqO9XwK+GAsO8lN6Uflmpbbi4ZHd1IhcrdvJELseOgbX7TffuJsTg
-uEANa/7kHM9lBhgCMo4R/OzXRV2P6j8m5eh5q9YMbZo0ueYCHNKud0LIfFEzbcBm
-tOgsxphhcUUPbU2ItbzG
-=Pn1c
------END PGP SIGNATURE-----
-
---Sig_/4=3cVwV.+4XCgS2Xp2Vl//c--
+Best regards,
+Tomasz
