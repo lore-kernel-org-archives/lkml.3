@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbbABQLu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 11:11:50 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60206 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbbABQLs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 11:11:48 -0500
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>, Kevin Hilman <khilman@linaro.org>,
-        Olof Johansson <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH RESEND] ARM: exynos_defconfig: Enable options for display panel support
-Date: Fri,  2 Jan 2015 17:11:29 +0100
-Message-Id: <1420215089-2093-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.3
+	id S1752208AbbABQME (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 11:12:04 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:33263 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbbABQMA convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:13:1>);
+	Fri, 2 Jan 2015 11:12:00 -0500
+Message-Id: <54A6C34C02000078000C4AE4@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 02 Jan 2015 16:11:56 +0000
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <luto@amacapital.net>, <peterz@infradead.org>
+Cc: <chenggang.qcg@alibaba-inc.com>, <chenggang.qin@gmail.com>,
+        <dsahern@gmail.com>, <namhyung@gmail.com>, <efault@gmx.de>,
+        <eranian@google.com>, <fengguang.wu@intel.com>,
+        <yanmin.zhang@intel.com>, <akpm@linux-foundation.org>,
+        <arjan@linux.intel.com>, <jolsa@redhat.com>, <mingo@redhat.com>,
+        <paulus@samba.org>, <chenggang.qcg@taobao.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: =?UTF-8?Q?Re:=20=E7=AD=94=E5=A4=8D=EF=BC=9A[PATCH]=20perf=20core?=
+ =?UTF-8?Q?:=20Use=20KSTK=5FESP()=20instead=20of=20pt=5Fregs->sp=20while?=
+ =?UTF-8?Q?=20output=20user=20regs?=
+References: <1419315745-20767-1-git-send-email-user@chenggang-laptop>
+ <c027bde0-5f4f-441f-8d45-3e7f6f702231@alibaba-inc.com>
+ <CALCETrVVvbnO-7bnyPCYhPbDoEg-hqmvVbfXL9ONbQPBTJNUZg@mail.gmail.com>
+ <20141230190327.GB23965@worktop.programming.kicks-ass.net>
+ <CALCETrWxPBdjY0+gCmPSwjYLB0u4Z4JgGtuR-XU=qwVzoDEBpA@mail.gmail.com>
+ <CALCETrUEDuWoXyN+JrB5nWfL6B5odQJU37_y=-tzXN0vxr4tOQ@mail.gmail.com>
+In-Reply-To: <CALCETrUEDuWoXyN+JrB5nWfL6B5odQJU37_y=-tzXN0vxr4tOQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many Exynos devices have a display panel. Most of them just have
-a simple panel while others have more complex configurations that
-requires an embedded DisplayPort (eDP) to LVDS bridges.
+>>> Andy Lutomirski <luto@amacapital.net> 12/31/14 3:00 AM >>>
+>On Tue, Dec 30, 2014 at 3:29 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Given how the x86_64* entry code works, using task_pt_regs from
+>> anywhere except explicitly supported contexts (including exceptions
+>> that originated in userspace and a small handful of system calls) is
+>> asking for trouble.  NMI context is especially bad.
+>>
+>> How important is this feature, and which registers matter?  It might
+>> be possible to use a dwarf unwinder on the kernel call stack to get
+>> most of the regs from most contexts, and it might also be possible to
+>> make small changes to the entry code to make it possible to get some
+>> of the registers reliably, but it's not currently possible to safely
+>> use task_pt_regs *at all* from NMI context unless you've at least
+>> blacklisted a handful of origin RIP values that give dangerously bogus
+>> results.  (Using do_nmi's regs parameter if user_mode_vm(regs) is a
+>> different story.)
+>
+>It's actually worse than just knowing the interrupted kernel RIP.  If
+>the call chain goes usermode -> IST exception -> NMI, then
+>task_pt_regs is entirely uninitialized.  Assuming all the CFI
+>annotations are correct, the unwinder could still do it from the
+>kernel.
+>
+>Note that, as far as I know, Jan Beulich is the only person who uses
+>the unwinder on kernel code.  Jan, how do you do this?
 
-This patch enables the following features to be built in the kernel
-image to support both setups:
+Trying to guess what you mean by "this": A stack switch gets expressed by
+CFI annotations just like any other frame pointer adjustments. See for example
+the CFI_DEF_CFA_REGISTER use in the SAVE_ARGS_IRQ macro.
 
-- Direct Rendering Manager (DRM)
-- DRM bridge registration and lookup framework
-- Parade ps8622/ps8625 eDP/LVDS bridge
-- NXP ptn3460 eDP/LVDS bridge
-- Exynos Fully Interactive Mobile Display controller (FIMD)
-- Panel registration and lookup framework
-- Simple panels
-- Backlight & LCD device support
+If that wasn't your question, please be more precise.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Tested-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
----
-
-Hello Kukjin,
-
-You dropped this patch since exynos drm was causing boot hangs on some
-platforms but the fix for that issue is already in linux-next (commit:
-f1e9203 clk: samsung: Fix Exynos 5420 pinctrl setup and clock disable
-failure due to domain being gated) so I think it makes sense to enable
-the display options again.
-
-NOTE: Display panel is still not working since patch "arm: dts: Exynos5:
-Use pmu_system_controller phandle for dp phy" is needed [0] but I think
-we should enable display options to catch the regressions easier.
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/11/24/10
-
- arch/arm/configs/exynos_defconfig | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-index 22beed3..27cdd52 100644
---- a/arch/arm/configs/exynos_defconfig
-+++ b/arch/arm/configs/exynos_defconfig
-@@ -111,11 +111,26 @@ CONFIG_REGULATOR_S2MPA01=y
- CONFIG_REGULATOR_S2MPS11=y
- CONFIG_REGULATOR_S5M8767=y
- CONFIG_REGULATOR_TPS65090=y
-+CONFIG_DRM=y
-+CONFIG_DRM_BRIDGE=y
-+CONFIG_DRM_PTN3460=y
-+CONFIG_DRM_PS8622=y
-+CONFIG_DRM_EXYNOS=y
-+CONFIG_DRM_EXYNOS_FIMD=y
-+CONFIG_DRM_EXYNOS_DP=y
-+CONFIG_DRM_PANEL=y
-+CONFIG_DRM_PANEL_SIMPLE=y
- CONFIG_FB=y
- CONFIG_FB_MODE_HELPERS=y
- CONFIG_FB_SIMPLE=y
- CONFIG_EXYNOS_VIDEO=y
- CONFIG_EXYNOS_MIPI_DSI=y
-+CONFIG_BACKLIGHT_LCD_SUPPORT=y
-+CONFIG_LCD_CLASS_DEVICE=y
-+CONFIG_LCD_PLATFORM=y
-+CONFIG_BACKLIGHT_CLASS_DEVICE=y
-+CONFIG_BACKLIGHT_GENERIC=y
-+CONFIG_BACKLIGHT_PWM=y
- CONFIG_FRAMEBUFFER_CONSOLE=y
- CONFIG_FONTS=y
- CONFIG_FONT_7x14=y
--- 
-2.1.3
+Jan
 
