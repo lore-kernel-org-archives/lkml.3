@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbbABRBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:01:46 -0500
-Received: from plane.gmane.org ([80.91.229.3]:51628 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750801AbbABRBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:01:44 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-Mail-Followup-To: linux-kernel@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-From: rh_ <richard_hubbe11@lavabit.com>
-Subject: Re: apparent loss of continuity in kernel .config?
-Date: Fri, 2 Jan 2015 08:59:52 -0800
-Organization: L2N
-Message-ID: <20150102085952.27a7ce3b@127>
-References: <201412310916.57808.gheskett@wdtv.com>
-	<20150101112424.2accee4e@127>
-	<201501011843.03418.gheskett@wdtv.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: ip68-6-109-86.sb.sd.cox.net
-User-Agent: dsodnetnin
-X-Gmane-NNTP-Posting-Host: EZnn0.37p
-Original-Received: from slem by 1.1 with local
-X-No-Archive: yes
-Archive: no
-X-Archive: encrypt
-X-Operating-System: Barebones_6.1
-X-Gmane-NNTP-Posting-Host: 192.168.1.1
-X-NNTP-Posting-Host: 192.168.1.1
-Mail-Copies-To: never
-X-Archive: expiry=79
-X-Mailer: EZnn0.37u
-X-Newsreader: EZnn0.37u
+	id S1752270AbbABRDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:03:05 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:53013 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751018AbbABRDE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 12:03:04 -0500
+Date: Fri, 2 Jan 2015 09:02:23 -0800
+From: Shaohua Li <shli@fb.com>
+To: David Ahern <dsahern@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, <Kernel-team@fb.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
+Message-ID: <20150102170223.GA2381637@devbig257.prn2.facebook.com>
+References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
+ <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
+ <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
+ <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
+ <20141219112350.GJ30905@twins.programming.kicks-ass.net>
+ <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com>
+ <20141219170334.GM30905@twins.programming.kicks-ass.net>
+ <20150102025953.GA1253265@devbig257.prn2.facebook.com>
+ <54A6B9D5.5040804@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <54A6B9D5.5040804@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-02_07:2014-12-31,2015-01-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=32.5693786074327
+ compositescore=0.165414387340259 urlsuspect_oldscore=0.165414387340259
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.165414387340259 spamscore=0
+ recipient_to_sender_domain_totalscore=35 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501020166
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Jan 2015 18:43:03 -0500
-Gene Heskett <gheskett@wdtv.com> wrote:
-
+On Fri, Jan 02, 2015 at 08:31:33AM -0700, David Ahern wrote:
+> On 1/1/15 7:59 PM, Shaohua Li wrote:
+> >I'm wondering how we could use the perf to implament a clock_gettime.
+> >reading the perf fd or using ioctl is slow so reading the mmap
+> >ringbuffer is the only option. But as far as I know the ringbuffer has
+> >data only when an event is generated. Between two events, there is
+> >nothing we can read from the ringbuffer. Then how can application get
+> >time info in the interval?
 > 
-> IMO that is NOT how its supposed to work.  So I guess I'll waste a
+> Are you wanting to read perf_clock from userspace?
 
-I agree.
+Yep, in some sort of form. Basically I want to read the time a task
+runs. Peter suggests we can read the activation time of a perf event.
+But I don't want to use any system call, as it's slow and likes
+clock_gettime.
 
-> tree and print a working  3.16.0 & use that to build a new one. I do
-> not believe it even makes an attempt to read the old one, but simply
-> goes wandering in the vineyard, making frequent stops to recycle the
-> barrel sampling.
-
-I used to try to make it work but I usually give up and stick with
-the config that works. Maybe I'm doing it all wrong. My laptop works
-fine though. But it wasn't easy building a static kernel for it.
-
-> 
-> Indeed, but it no doubt will take quite a few boxes.  The funny thing
-
-Probably true.
-
-> lots of people find hard to believe is that Ed wrote that in about
-> 1940.  His long view obviously started before mine as mine didn't
-> start will late in '34.  It took me till the middle 60's to decide
-> its broken.  And every libtard fix breaks it worse...
-
-Smedley Butler and lots of others knew a long time ago too.
-G.E. Griffin and friends have lots to say.
-
-The long-con is always hard to see.
-
-> 
-> 
-> Thanks & lets hope 2015 is a better year.
-
-Can do.
-
-> 
-> Cheers, Gene Heskett
-> -- 
-> "There are four boxes to be used in defense of liberty:
->  soap, ballot, jury, and ammo. Please use in that order."
-> -Ed Howdershelt (Author)
-> Genes Web page <http://geneslinuxbox.net:6309/gene>
-> US V Castleman, SCOTUS, Mar 2014 is grounds for Impeaching SCOTUS
-
+Thanks,
+Shaohua
