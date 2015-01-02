@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbbABR0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:26:15 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46883 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbbABR0O (ORCPT
+	id S1752403AbbABR1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:27:01 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:56693 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbbABR1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:26:14 -0500
-Message-ID: <54A6D4B2.9070609@gmail.com>
-Date: Fri, 02 Jan 2015 10:26:10 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Shaohua Li <shli@fb.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
-References: <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com> <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com> <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com> <20141219112350.GJ30905@twins.programming.kicks-ass.net> <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com> <20141219170334.GM30905@twins.programming.kicks-ass.net> <20150102025953.GA1253265@devbig257.prn2.facebook.com> <54A6B9D5.5040804@gmail.com> <20150102170223.GA2381637@devbig257.prn2.facebook.com> <54A6D0B6.7090700@gmail.com> <20150102171738.GB2381637@devbig257.prn2.facebook.com>
-In-Reply-To: <20150102171738.GB2381637@devbig257.prn2.facebook.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Jan 2015 12:27:00 -0500
+From: Seunghun Lee <waydi1@gmail.com>
+To: miklos@szeredi.hu
+Cc: sedat.dilek@gmail.com, richard.weinberger@gmail.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seunghun Lee <waydi1@gmail.com>
+Subject: [PATCH] ovl: Prevent rw remount when it should be ro mount
+Date: Sat,  3 Jan 2015 02:26:49 +0900
+Message-Id: <1420219609-2568-1-git-send-email-waydi1@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/2/15 10:17 AM, Shaohua Li wrote:
-> On Fri, Jan 02, 2015 at 10:09:10AM -0700, David Ahern wrote:
->> On 1/2/15 10:02 AM, Shaohua Li wrote:
->>> On Fri, Jan 02, 2015 at 08:31:33AM -0700, David Ahern wrote:
->>>> On 1/1/15 7:59 PM, Shaohua Li wrote:
->>>>> I'm wondering how we could use the perf to implament a clock_gettime.
->>>>> reading the perf fd or using ioctl is slow so reading the mmap
->>>>> ringbuffer is the only option. But as far as I know the ringbuffer has
->>>>> data only when an event is generated. Between two events, there is
->>>>> nothing we can read from the ringbuffer. Then how can application get
->>>>> time info in the interval?
->>>>
->>>> Are you wanting to read perf_clock from userspace?
->>>
->>> Yep, in some sort of form. Basically I want to read the time a task
->>> runs. Peter suggests we can read the activation time of a perf event.
->>> But I don't want to use any system call, as it's slow and likes
->>> clock_gettime.
->>
->> Since we cannot get the capability committed upstream a number of
->> folks are using this method:
->>
->>      https://github.com/dsahern/linux/blob/perf-full-monty/README.ahern
->>
->> ie., a KLM exports perf_clock and apps can use:
->>
->> #define CLOCK_PERF 14
->> if (clock_gettime(CLOCK_PERF, &ts) != 0) {
->> }
->>
->> No vdso acceleration, but works with an unmodified kernel.
->
-> no, that's not what I want. as I said, we don't want any syscall (unless
-> it's vdso based).
+Overlayfs should be mounted read-only when upper-fs is read-only or nonexistent.
+But now it can be remounted read-write and this can cause kernel panic.
+So we should prevent read-write remount when the above situation happens.
 
-A number of clocks are vdso based (e.g., CLOCK_MONOTONIC). Those are not 
-good enough?
+Signed-off-by: Seunghun Lee <waydi1@gmail.com>
+---
+ fs/overlayfs/super.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-David
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index 84f3144..8944651 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -522,10 +522,21 @@ static int ovl_show_options(struct seq_file *m, struct dentry *dentry)
+ 	return 0;
+ }
+ 
++static int ovl_remount(struct super_block *sb, int *flags, char *data)
++{
++	struct ovl_fs *ufs = sb->s_fs_info;
++
++	if (!ufs->upper_mnt || (ufs->upper_mnt->mnt_sb->s_flags & MS_RDONLY))
++		*flags |= MS_RDONLY;
++
++	return 0;
++}
++
+ static const struct super_operations ovl_super_operations = {
+ 	.put_super	= ovl_put_super,
+ 	.statfs		= ovl_statfs,
+ 	.show_options	= ovl_show_options,
++	.remount_fs	= ovl_remount,
+ };
+ 
+ enum {
+-- 
+2.1.3
+
