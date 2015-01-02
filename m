@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbbABPGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 10:06:18 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:52034 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbbABPGQ (ORCPT
+	id S1752116AbbABPI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:08:56 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:55427 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768AbbABPIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 10:06:16 -0500
+	Fri, 2 Jan 2015 10:08:55 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <54A6B2C1.5090104@suse.cz>
-References: <54A40743.8080401@suse.cz>
-	<1420040119-32669-1-git-send-email-mmarek@suse.cz>
-	<CA+icZUUpYCGTJ7mC1jCNUQi7fgw4qSAa+ga8JGPXhkYEK+Bmtw@mail.gmail.com>
-	<54A6B2C1.5090104@suse.cz>
-Date: Fri, 2 Jan 2015 16:06:15 +0100
-Message-ID: <CA+icZUXtBRT1CpxL4VysrsjxFDuxrT3wNtHrECiWkoWK69pMkw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] kbuild: Fix removal of the debian/ directory
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Ben Hutchings <ben@decadent.org.uk>, max@stro.at,
-        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+In-Reply-To: <1419937657-35292-1-git-send-email-xiakaixu@huawei.com>
+References: <1419937657-35292-1-git-send-email-xiakaixu@huawei.com>
+Date: Fri, 2 Jan 2015 08:08:54 -0700
+Message-ID: <CANLsYky7DE2ej3vvk59p0bCX5B295sRKHpvrEfXVLvfr71jFxg@mail.gmail.com>
+Subject: Re: [PATCH] coresight: remove the unused macro CORESIGHT_DEBUGFS_ENTRY
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Kaixu Xia <xiakaixu@huawei.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pratik Patel <pratikp@codeaurora.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 2, 2015 at 4:01 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 2014-12-31 16:50, Sedat Dilek wrote:
->> On Wed, Dec 31, 2014 at 4:35 PM, Michal Marek <mmarek@suse.cz> wrote:
->>> scripts/Makefile.clean treats absolute path specially, but
->>> $(objtree)/debian is no longer an absolute path since 7e1c0477 (kbuild:
->>> Use relative path for $(objtree). Work around this by checking if the
->>> path starts with $(objtree)/.
->>>
->>> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
->>> Fixes: 7e1c0477 (kbuild: Use relative path for $(objtree)
->>> Signed-off-by: Michal Marek <mmarek@suse.cz>
->>
->> After applying your patchset, thing work as expected.
->>
->> Feel free to add my Tested-by.
->>
->> Hope this will get into v3.19-rc3?
+On 30 December 2014 at 04:07, Kaixu Xia <xiakaixu@huawei.com> wrote:
+> From: Xia Kaixu <xiakaixu@huawei.com>
 >
-> I pushed the patch to kbuild.git#rc-fixes. The 'clean-rule' removal is
-> in kbuild.git#kbuild.
+> Debugfs isn't used for coresight configuration, so the macro
+> CORESIGHT_DEBUGFS_ENTRY is unnecessary, just remove it.
+>
+> Signed-off-by: Xia Kaixu <xiakaixu@huawei.com>
+> ---
+>  include/linux/coresight.h | 9 ---------
+>  1 file changed, 9 deletions(-)
+>
+> diff --git a/include/linux/coresight.h b/include/linux/coresight.h
+> index 5d3c543..7cbfecb 100644
+> --- a/include/linux/coresight.h
+> +++ b/include/linux/coresight.h
+> @@ -179,15 +179,6 @@ struct coresight_device {
+>  #define sink_ops(csdev)                csdev->ops->sink_ops
+>  #define link_ops(csdev)                csdev->ops->link_ops
+>
+> -#define CORESIGHT_DEBUGFS_ENTRY(__name, __entry_name,                  \
+> -                                __mode, __get, __set, __fmt)           \
+> -DEFINE_SIMPLE_ATTRIBUTE(__name ## _ops, __get, __set, __fmt);          \
+> -static const struct coresight_ops_entry __name ## _entry = {           \
+> -       .name = __entry_name,                                           \
+> -       .mode = __mode,                                                 \
+> -       .ops  = &__name ## _ops                                         \
+> -}
+> -
+>  /**
+>   * struct coresight_ops_sink - basic operations for a sink
+>   * Operations available for sinks
+> --
+> 2.2.1
 >
 
-Thanks.
-I had already pulled them into my local for-3.19/kbuild-fixes.
-
-Can you take care of the long outstanding builddeb fix I posted a few
-minutes ago ?
-I you plan a git-pull request, can we have this in rc-fixes?
-It's trivial - don't think we need any ACKs (which I got 2012/2013).
-
-- Sedat -
+Applied - thanks.
