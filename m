@@ -1,122 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbbABKLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 05:11:14 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:60386 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbbABKLJ (ORCPT
+	id S1751640AbbABKQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 05:16:14 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:33866 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbbABKQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 05:11:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        lee.jones@linaro.org
-Subject: Re: [PATCH] arch: arm: mach-ux500: board-mop500-regulators.c: Remove unused function
-Date: Fri, 02 Jan 2015 11:10:23 +0100
-Message-ID: <5939350.DKrZ01egfS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1420126805-28098-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420126805-28098-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Fri, 2 Jan 2015 05:16:12 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:Ffz6ceoIgs2UB639u69yjbRFlB8eU68dH7YMYyq0f0uMYzD2pkQ
- Jd+qqlaGQAGUkuxat6xctViOe4x2JS14w9gUCZxYlKmQexccPxkb/ACscKL/k+Vd/Ll0d/n
- T70XkvbL3PF2U1WNFxvVv/1fmEN0AhicAcwbdO7ij31IrTn8o3btAi1+yupZZ9Tw2Mo7SbQ
- 6UisNY6MXo0bnDdGCk/bA==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1419473469.7238.0.camel@mtksdaap41>
+References: <1416902662-19281-1-git-send-email-yingjoe.chen@mediatek.com>
+	<1416902662-19281-4-git-send-email-yingjoe.chen@mediatek.com>
+	<1419473469.7238.0.camel@mtksdaap41>
+Date: Fri, 2 Jan 2015 11:16:10 +0100
+Message-ID: <CABuKBeKj_+-7r-bUe_vuDdyE2V-uugfZ03dMwcbaqnNz8fLEXA@mail.gmail.com>
+Subject: Re: [PATCH v8 3/4] ARM: mediatek: Add sysirq in mt6589/mt8135/mt8127 dtsi
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        HC Yen <hc.yen@mediatek.com>,
+        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh+dt@kernel.org>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 January 2015 16:40:05 Rickard Strandqvist wrote:
-> Remove the function mop500_regulator_init() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Hi Joe,
 
-This looks wrong: For one thing, you failed to notice that now another function
-in the same file becomes unused, or that half of the file is not used
-anyway.
+2014-12-25 3:11 GMT+01:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
+>
+> Hi Matthias,
+>
+> On Tue, 2014-11-25 at 16:04 +0800, Yingjoe Chen wrote:
+>> Add sysirq settings for mt6589/mt8135/mt8127
+>> This also correct timer interrupt flag. The old setting works
+>> because boot loader already set polarity for timer interrupt.
+>> Without intpol support, the setting was not changed so gic
+>> can get the irq correctly.
+>>
+>> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+>> ---
+>>  arch/arm/boot/dts/mt6589.dtsi | 14 ++++++++++++--
+>>  arch/arm/boot/dts/mt8127.dtsi | 14 ++++++++++++--
+>>  arch/arm/boot/dts/mt8135.dtsi | 14 ++++++++++++--
+>>  3 files changed, 36 insertions(+), 6 deletions(-)
+>
+> It seems this patch is not merged in 3.19-rc1. This do have dependency
+> on other patches, and all the other patches in this series are merged.
+>
+> Is this planed to merge later or do we need to send additional pull
+> request for it?
 
-It also seems that the fact that this function is not called was an accident
-and it should in fact be called. Maybe Lee has some more insight in this,
-as he added the function in the first place.
+This patch got somehow lost, sorry for that. I apply it for v3.20.
 
-Finally (unrelated to your patch, but triggered by looking at it), I suspect
-we should just move the ab8500_regulator_plat_data and everything it references
-to drivers/regulator/ab8500-ext.c, because we only have one instance of it
-and won't ever have more.
+>
+> Joe.C
+>
+>
 
-	Arnd
 
-> ---
->  arch/arm/mach-ux500/board-mop500-regulators.c |   41 -------------------------
->  arch/arm/mach-ux500/board-mop500-regulators.h |    2 --
->  2 files changed, 43 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-> index 32d744e..156e83b 100644
-> --- a/arch/arm/mach-ux500/board-mop500-regulators.c
-> +++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-> @@ -1022,44 +1022,3 @@ static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
->  
->  	BUG_ON(1);
->  }
-> -
-> -void mop500_regulator_init(void)
-> -{
-> -	struct regulator_init_data *regulator;
-> -
-> -	/*
-> -	 * Temporarily turn on Vaux2 on 8520 machine
-> -	 */
-> -	if (cpu_is_u8520()) {
-> -		/* Vaux2 initialized to be on */
-> -		ab8500_modify_reg_init(AB8505_VAUX12REGU, 0x0f, 0x05);
-> -	}
-> -
-> -	/*
-> -	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
-> -	 * all HREFP_V20 boards)
-> -	 */
-> -	if (cpu_is_u8500v20()) {
-> -		/* VextSupply2RequestCtrl =  HP/OFF depending on VxRequest */
-> -		ab8500_modify_reg_init(AB8500_REGUREQUESTCTRL3, 0x01, 0x01);
-> -
-> -		/* VextSupply2SysClkReq1HPValid = SysClkReq1 controlled */
-> -		ab8500_modify_reg_init(AB8500_REGUSYSCLKREQ1HPVALID2,
-> -			0x20, 0x20);
-> -
-> -		/* VextSupply2 = force HP at initialization */
-> -		ab8500_modify_reg_init(AB8500_EXTSUPPLYREGU, 0x0c, 0x04);
-> -
-> -		/* enable VextSupply2 during platform active */
-> -		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
-> -		regulator->constraints.always_on = 1;
-> -
-> -		/* disable VextSupply2 in suspend */
-> -		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
-> -		regulator->constraints.state_mem.disabled = 1;
-> -		regulator->constraints.state_standby.disabled = 1;
-> -
-> -		/* enable VextSupply2 HW control (used in suspend) */
-> -		regulator->driver_data = (void *)&ab8500_ext_supply2;
-> -	}
-> -}
-> diff --git a/arch/arm/mach-ux500/board-mop500-regulators.h b/arch/arm/mach-ux500/board-mop500-regulators.h
-> index 9bece38..dc3ee77 100644
-> --- a/arch/arm/mach-ux500/board-mop500-regulators.h
-> +++ b/arch/arm/mach-ux500/board-mop500-regulators.h
-> @@ -19,6 +19,4 @@ extern struct ab8500_regulator_platform_data ab8505_regulator_plat_data;
->  extern struct regulator_init_data tps61052_regulator;
->  extern struct regulator_init_data gpio_en_3v3_regulator;
->  
-> -void mop500_regulator_init(void);
-> -
->  #endif
-> 
 
+-- 
+motzblog.wordpress.com
