@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbbABW3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 17:29:40 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52053 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253AbbABW3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 17:29:39 -0500
-Date: Fri, 2 Jan 2015 23:29:36 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Richard Weinberger <richard@nod.at>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+	id S1752544AbbABWcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 17:32:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51682 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752294AbbABWcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 17:32:42 -0500
+Date: Fri, 2 Jan 2015 23:32:35 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Pavel Machek <pavel@ucw.cz>
+cc: Richard Weinberger <richard@nod.at>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         David Rientjes <rientjes@google.com>,
         Aaron Tomlin <atomlin@redhat.com>,
@@ -23,50 +24,33 @@ Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
         Andy Lutomirski <luto@amacapital.net>,
         Brad Spengler <spender@grsecurity.net>
 Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
-Message-ID: <20150102222936.GA29018@amd>
-References: <1419457167-15042-1-git-send-email-richard@nod.at>
- <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com>
- <20150102051142.GF4873@amd>
- <54A67A38.3000207@nod.at>
- <20150102194616.GA27538@amd>
- <54A7103E.6020500@nod.at>
+In-Reply-To: <20150102222936.GA29018@amd>
+Message-ID: <alpine.LRH.2.00.1501022331060.30884@twin.jikos.cz>
+References: <1419457167-15042-1-git-send-email-richard@nod.at> <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com> <20150102051142.GF4873@amd> <54A67A38.3000207@nod.at> <20150102194616.GA27538@amd> <54A7103E.6020500@nod.at>
+ <20150102222936.GA29018@amd>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A7103E.6020500@nod.at>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2015-01-02 22:40:14, Richard Weinberger wrote:
-> Am 02.01.2015 um 20:46 schrieb Pavel Machek:
-> >>> Does this break trinity, crashme, and similar programs?
-> >>
-> >> If they fork() without execve() and a child dies very fast the next fork()
-> >> will be throttled.
-> >> This is why I'd like to make this feature disabled by default.
-> >>
-> >>> Can you detect it died due to the stack canary? Then, the patch might
-> >>> be actually acceptable.
-> >>
-> >> I don't think so as this is glibc specific.
+On Fri, 2 Jan 2015, Pavel Machek wrote:
+
+> > > Can the slowdown be impelmented in glibc, then?
 > > 
-> > Can the slowdown be impelmented in glibc, then?
+> > glibc has a lot of asserts where it can detect stack smashing and kills the
+> > current process using abort(). Here it could of course also call
+> > sleep().
 > 
-> glibc has a lot of asserts where it can detect stack smashing and kills the
-> current process using abort(). Here it could of course also call
-> sleep().
+> Please do it in glibc, then.
 
-Please do it in glibc, then.
+You also want to protect against binaries that are evil on purpose, right?
 
-> > If not, can glibc provide enough information to the kernel to allow us
-> > to do the right thing?
-> 
-> IMHO we should not strictly focus on the stack canary.
+There is no guarantee that those will calling the kernel through glibc at 
+all.
 
-IMO we should. We want it enabled by default.
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jiri Kosina
+SUSE Labs
+
