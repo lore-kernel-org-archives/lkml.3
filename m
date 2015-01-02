@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbbABQr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 11:47:57 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:36500 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbbABQrz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 11:47:55 -0500
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
-From: Catalin Marinas <catalin.marinas@arm.com>
-X-Mailer: iPhone Mail (12B440)
-In-Reply-To: <54A664AB.3030101@linaro.org>
-Date: Fri, 2 Jan 2015 16:47:51 +0000
-Cc: Graeme Gregory <gg@slimlogic.co.uk>,
-        "ashwinc@codeaurora.org" <ashwinc@codeaurora.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, "olof@lixom.net" <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "lv.zheng@intel.com" <lv.zheng@intel.com>,
-        "robh@kernel.org" <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "al.stone@linaro.org" <al.stone@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "robert.moore@intel.com" <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "rric@kernel.org" <rric@kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "bhelgaas@google.com." <linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "rdunlap@infradead.org" <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Message-Id: <EE1B062D-90AC-491F-90E7-D7EACF1F5B06@arm.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org> <CAJ5Y-eZ5cu9_OhG24yAv+CZq7zKg0vU+eVGekyN+9dDzaz1OhQ@mail.gmail.com> <8fc9550c96a468b3e50d51a37db68a33.squirrel@www.codeaurora.org> <54A3B526.9040903@linaro.org> <20150101200424.GB12770@xora-haswell.xora.org.uk> <54A664AB.3030101@linaro.org>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-X-OriginalArrivalTime: 02 Jan 2015 16:47:50.0162 (UTC) FILETIME=[D829B720:01D026AB]
-X-MC-Unique: 115010216475200601
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752298AbbABRBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:01:46 -0500
+Received: from plane.gmane.org ([80.91.229.3]:51628 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750801AbbABRBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 12:01:44 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+Mail-Followup-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+From: rh_ <richard_hubbe11@lavabit.com>
+Subject: Re: apparent loss of continuity in kernel .config?
+Date: Fri, 2 Jan 2015 08:59:52 -0800
+Organization: L2N
+Message-ID: <20150102085952.27a7ce3b@127>
+References: <201412310916.57808.gheskett@wdtv.com>
+	<20150101112424.2accee4e@127>
+	<201501011843.03418.gheskett@wdtv.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: ip68-6-109-86.sb.sd.cox.net
+User-Agent: dsodnetnin
+X-Gmane-NNTP-Posting-Host: EZnn0.37p
+Original-Received: from slem by 1.1 with local
+X-No-Archive: yes
+Archive: no
+X-Archive: encrypt
+X-Operating-System: Barebones_6.1
+X-Gmane-NNTP-Posting-Host: 192.168.1.1
+X-NNTP-Posting-Host: 192.168.1.1
+Mail-Copies-To: never
+X-Archive: expiry=79
+X-Mailer: EZnn0.37u
+X-Newsreader: EZnn0.37u
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 Jan 2015, at 09:28, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>> On 2015年01月02日 04:04, Graeme Gregory wrote:
->>>> On Wed, Dec 31, 2014 at 04:34:46PM +0800, Hanjun Guo wrote:
->>>> On 2014年12月31日 04:13, ashwinc@codeaurora.org wrote:
->>>> Hi Hanjun,
->>>> 
->>>> Overall the document looks good to us. Some minor clarifications below.
->>>> 
->>>>> ---------- Forwarded message ----------
->>>>> From: Graeme Gregory <graeme.gregory@linaro.org>
->>>>> 
->>>>> Add documentation for the guidelines of how to use ACPI
->>>>> on ARM64.
->>>>> 
->>>>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
->>>>> Signed-off-by: Al Stone <al.stone@linaro.org>
->>>>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->>>>> ---
->>>>> Documentation/arm64/arm-acpi.txt |  323
->>>>> ++++++++++++++++++++++++++++++++++++++
->>>>> 1 file changed, 323 insertions(+)
->>>>> create mode 100644 Documentation/arm64/arm-acpi.txt
->>>> 
->>>> [..]
->>>> 
->>>>> +Relationship with Device Tree
->>>>> +-----------------------------
->>>> 
->>>> [..]
->>>> 
->>>>> +When booting using ACPI tables, the /chosen node in DT will still be
->>>>> parsed
->>>>> +to extract the kernel command line and initrd path.  No other section of
->>>>> the
->>>>> +DT will be used.
->>>> 
->>>> Is this still true?
->>> 
->>> No, we can booting the ACPI system in EFI stub without dtb. Catalin
->>> also pointed out this issue, I will remove this paragraph.
->> 
->> The paragraph is still correct, the /chosen node is always present even
->> if nothing else is.
+On Thu, 1 Jan 2015 18:43:03 -0500
+Gene Heskett <gheskett@wdtv.com> wrote:
+
 > 
-> Sorry for the confusing, I mean no dtb needed for the command line if
-> ACPI tables are available.
+> IMO that is NOT how its supposed to work.  So I guess I'll waste a
+
+I agree.
+
+> tree and print a working  3.16.0 & use that to build a new one. I do
+> not believe it even makes an attempt to read the old one, but simply
+> goes wandering in the vineyard, making frequent stops to recycle the
+> barrel sampling.
+
+I used to try to make it work but I usually give up and stick with
+the config that works. Maybe I'm doing it all wrong. My laptop works
+fine though. But it wasn't easy building a static kernel for it.
+
 > 
-> efi will create a empty dtb if no dtb found, and add the cmd line into
-> the new created dtb, I'm just wondering, can we remove the limitation
-> for passing the cmd line in /chosen node in the future?
+> Indeed, but it no doubt will take quite a few boxes.  The funny thing
 
-My point is that on an ACPI based system, we don't really care how EFI_STUB passes
-the command line to the rest of the kernel. Since UEFI doesn't need to know about
-such detail and since ACPI is only supported with EFI_STUB, we don't need to mention
-the chosen node in this document. 
+Probably true.
 
-At some point we may even change the way EFI_STUB passes the command line to the 
-kernel but this is still irrelevant to ACPI. 
+> lots of people find hard to believe is that Ed wrote that in about
+> 1940.  His long view obviously started before mine as mine didn't
+> start will late in '34.  It took me till the middle 60's to decide
+> its broken.  And every libtard fix breaks it worse...
 
-Catalin
+Smedley Butler and lots of others knew a long time ago too.
+G.E. Griffin and friends have lots to say.
+
+The long-con is always hard to see.
+
+> 
+> 
+> Thanks & lets hope 2015 is a better year.
+
+Can do.
+
+> 
+> Cheers, Gene Heskett
+> -- 
+> "There are four boxes to be used in defense of liberty:
+>  soap, ballot, jury, and ammo. Please use in that order."
+> -Ed Howdershelt (Author)
+> Genes Web page <http://geneslinuxbox.net:6309/gene>
+> US V Castleman, SCOTUS, Mar 2014 is grounds for Impeaching SCOTUS
 
