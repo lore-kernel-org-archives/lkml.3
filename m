@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbbABRwi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:52:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49074 "EHLO mx1.redhat.com"
+	id S1752256AbbABRxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:53:16 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39293 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736AbbABRwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:52:37 -0500
-Date: Fri, 2 Jan 2015 18:51:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pratyush Anand <panand@redhat.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com
-Subject: Re: [RFC 5/8] ARM64: Re-factor flush_ptrace_access
-Message-ID: <20150102175115.GB6761@redhat.com>
-References: <cover.1420038188.git.panand@redhat.com> <f41f96aaed90007076ce496b9a0746c6f1a01ddb.1420038188.git.panand@redhat.com>
+	id S1751038AbbABRxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 12:53:14 -0500
+Message-ID: <54A6DAE8.90609@ti.com>
+Date: Fri, 2 Jan 2015 11:52:40 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <f41f96aaed90007076ce496b9a0746c6f1a01ddb.1420038188.git.panand@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tony Lindgren <tony@atomide.com>
+CC: Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Santosh <ssantosh@kernel.org>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 0/2] ARM: l2c: OMAP4/AM437x: Additional register programming
+ support.
+References: <1420219072-6521-1-git-send-email-nm@ti.com> <20150102173859.GE3298@atomide.com>
+In-Reply-To: <20150102173859.GE3298@atomide.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31, Pratyush Anand wrote:
->
-> Re-factor flush_ptrace_access to reuse vma independent part.
-
-But for what? The changelog should explain this.
-
-> Signed-off-by: Pratyush Anand <panand@redhat.com>
-> ---
->  arch/arm64/mm/flush.c | 24 +++++++++++++++---------
->  1 file changed, 15 insertions(+), 9 deletions(-)
+On 01/02/2015 11:38 AM, Tony Lindgren wrote:
+> * Nishanth Menon <nm@ti.com> [150102 09:20]:
+>> Hi,
+>>
+>> OMAP4 and AM437x ROM code provides services to program PL310's latency
+>> registers and AM437x provides service for programming Address filter
+>> registers.
+>>
+>> Provide support in the kernel for the same.
+>>
+>> This provides some support to the series: http://marc.info/?l=linux-arm-kernel&m=141933190912495&w=2
 > 
-> diff --git a/arch/arm64/mm/flush.c b/arch/arm64/mm/flush.c
-> index b6f14e8d2121..9a4dd6f39cfb 100644
-> --- a/arch/arm64/mm/flush.c
-> +++ b/arch/arm64/mm/flush.c
-> @@ -34,19 +34,25 @@ void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
->  		__flush_icache_all();
->  }
->
-> +static void __flush_ptrace_access(struct page *page, unsigned long uaddr,
-> +		void *kaddr, unsigned long len)
-> +{
-> +	unsigned long addr = (unsigned long)kaddr;
-> +
-> +	if (icache_is_aliasing()) {
-> +		__flush_dcache_area(kaddr, len);
-> +		__flush_icache_all();
-> +	} else {
-> +		flush_icache_range(addr, addr + len);
-> +	}
-> +}
-> +
->  static void flush_ptrace_access(struct vm_area_struct *vma, struct page *page,
->  				unsigned long uaddr, void *kaddr,
->  				unsigned long len)
->  {
-> -	if (vma->vm_flags & VM_EXEC) {
-> -		unsigned long addr = (unsigned long)kaddr;
-> -		if (icache_is_aliasing()) {
-> -			__flush_dcache_area(kaddr, len);
-> -			__flush_icache_all();
-> -		} else {
-> -			flush_icache_range(addr, addr + len);
-> -		}
-> -	}
-> +	if (vma->vm_flags & VM_EXEC)
-> +		__flush_ptrace_access(page, uaddr, kaddr, len);
->  }
+> Are these to be applied before Thomasz's series as fixes? If we
+> don't need these as fixes for the -rc, then probably makes sense
+> for RMK to merge them all together for v3.20.
+> 
+These dont need to go in fixes. Can easily wait till 3.20. Thomaz
+series wont exercise these path by default until someone modifies the
+DT properties. Yes, will be nice to have them along with other changes
+in v3.20. just for the record, i made a couple of typos in v1 of this
+series and have updated a retested v2 of the series.
 
-So why uprobes can't use flush_ptrace_access() ? flush_uprobe_xol_access() is
-called by arch_uprobe_copy_ixol(), and xol vma has VM_EXEC bit set.
 
-Oleg.
-
+-- 
+Regards,
+Nishanth Menon
