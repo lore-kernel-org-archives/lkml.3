@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776AbbABPnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 10:43:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55479 "EHLO mx1.redhat.com"
+	id S1752410AbbABPhy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:37:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752350AbbABPhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 10:37:46 -0500
+	id S1752380AbbABPhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 10:37:51 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,16 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 22/30] perf build: Add arch s390 objects building
-Date: Fri,  2 Jan 2015 16:36:04 +0100
-Message-Id: <1420212972-21595-23-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 23/30] perf build: Add arch sh objects building
+Date: Fri,  2 Jan 2015 16:36:05 +0100
+Message-Id: <1420212972-21595-24-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
 References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the s390 arch objects building under build framework
+Move the sh arch objects building under build framework
 to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
@@ -44,40 +44,34 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/arch/s390/Build      | 1 +
- tools/perf/arch/s390/Makefile   | 3 ---
- tools/perf/arch/s390/util/Build | 4 ++++
- 3 files changed, 5 insertions(+), 3 deletions(-)
- create mode 100644 tools/perf/arch/s390/util/Build
+ tools/perf/arch/sh/Build      | 1 +
+ tools/perf/arch/sh/Makefile   | 1 -
+ tools/perf/arch/sh/util/Build | 1 +
+ 3 files changed, 2 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/arch/sh/util/Build
 
-diff --git a/tools/perf/arch/s390/Build b/tools/perf/arch/s390/Build
-index e69de29bb2d1..54afe4a467e7 100644
---- a/tools/perf/arch/s390/Build
-+++ b/tools/perf/arch/s390/Build
+diff --git a/tools/perf/arch/sh/Build b/tools/perf/arch/sh/Build
+index e69de29bb2d1..add469481bfd 100644
+--- a/tools/perf/arch/sh/Build
++++ b/tools/perf/arch/sh/Build
 @@ -0,0 +1 @@
-+libperf-y += util/
-diff --git a/tools/perf/arch/s390/Makefile b/tools/perf/arch/s390/Makefile
-index 798ac7379c5f..21322e0385b8 100644
---- a/tools/perf/arch/s390/Makefile
-+++ b/tools/perf/arch/s390/Makefile
-@@ -1,7 +1,4 @@
++libperf-$(CONFIG_DWARF) += util/
+diff --git a/tools/perf/arch/sh/Makefile b/tools/perf/arch/sh/Makefile
+index 15130b50dfe3..7fbca175099e 100644
+--- a/tools/perf/arch/sh/Makefile
++++ b/tools/perf/arch/sh/Makefile
+@@ -1,4 +1,3 @@
  ifndef NO_DWARF
  PERF_HAVE_DWARF_REGS := 1
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
  endif
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
- HAVE_KVM_STAT_SUPPORT := 1
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/kvm-stat.o
-diff --git a/tools/perf/arch/s390/util/Build b/tools/perf/arch/s390/util/Build
+diff --git a/tools/perf/arch/sh/util/Build b/tools/perf/arch/sh/util/Build
 new file mode 100644
-index 000000000000..8a61372bb47a
+index 000000000000..332f01243f2f
 --- /dev/null
-+++ b/tools/perf/arch/s390/util/Build
-@@ -0,0 +1,4 @@
-+libperf-y += header.o
-+libperf-y += kvm-stat.o
-+
-+libperf-$(CONFIG_DWARF) += dwarf-regs.o
++++ b/tools/perf/arch/sh/util/Build
+@@ -0,0 +1 @@
++libperf-y += dwarf-regs.o
 -- 
 1.9.3
 
