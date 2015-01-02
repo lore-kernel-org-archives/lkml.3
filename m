@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbbABKXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 05:23:41 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:59778 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbbABKXj (ORCPT
+	id S1752005AbbABKYM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 05:24:12 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:58461 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935AbbABKYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 05:23:39 -0500
+	Fri, 2 Jan 2015 05:24:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <1413983529-21887-3-git-send-email-eddie.huang@mediatek.com>
+In-Reply-To: <1413983529-21887-4-git-send-email-eddie.huang@mediatek.com>
 References: <1413983529-21887-1-git-send-email-eddie.huang@mediatek.com>
-	<1413983529-21887-3-git-send-email-eddie.huang@mediatek.com>
-Date: Fri, 2 Jan 2015 11:23:36 +0100
-Message-ID: <CABuKBeJ-bBiJSbh9jKH1+T2MhKCjxnkryStrhG_kFX7HuBnevQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] ARM: mediatek: add UART dts for mt8127 and mt8135
+	<1413983529-21887-4-git-send-email-eddie.huang@mediatek.com>
+Date: Fri, 2 Jan 2015 11:24:06 +0100
+Message-ID: <CABuKBeL9r6Gm19fdKwx5HUDiyJKgC1xcLp1j1B9JbOa=c+3Epg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] DTS: serial: Add bindings document for the Mediatek UARTs
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: Eddie Huang <eddie.huang@mediatek.com>
 Cc: Rob Herring <robh+dt@kernel.org>,
@@ -38,118 +38,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 2014-10-22 15:12 GMT+02:00 Eddie Huang <eddie.huang@mediatek.com>:
-> This add dts support for mt8127 and mt8135 SOC UART
+> This patch add s devicetree document for Mediatek UART.
 >
 > Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
 > ---
->  arch/arm/boot/dts/mt8127.dtsi | 34 ++++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/mt8135.dtsi | 36 ++++++++++++++++++++++++++++++++++++
->  2 files changed, 70 insertions(+)
+>  Documentation/devicetree/bindings/serial/mtk-uart.txt | 2 ++
+>  1 file changed, 2 insertions(+)
 >
-> diff --git a/arch/arm/boot/dts/mt8127.dtsi b/arch/arm/boot/dts/mt8127.dtsi
-> index 25c9f69..249c218 100644
-> --- a/arch/arm/boot/dts/mt8127.dtsi
-> +++ b/arch/arm/boot/dts/mt8127.dtsi
-> @@ -64,6 +64,12 @@
->                         clock-frequency = <32000>;
->                         #clock-cells = <0>;
->                 };
-> +
-> +               uart_clk: dummy26m {
-> +                       compatible = "fixed-clock";
-> +                       clock-frequency = <26000000>;
-> +                       #clock-cells = <0>;
-> +                };
->         };
+> diff --git a/Documentation/devicetree/bindings/serial/mtk-uart.txt b/Documentation/devicetree/bindings/serial/mtk-uart.txt
+> index 48358a3..0eebbfe 100644
+> --- a/Documentation/devicetree/bindings/serial/mtk-uart.txt
+> +++ b/Documentation/devicetree/bindings/serial/mtk-uart.txt
+> @@ -2,6 +2,8 @@
 >
->         soc {
-> @@ -89,5 +95,33 @@
->                               <0 0x10214000 0 0x2000>,
->                               <0 0x10216000 0 0x2000>;
->                 };
-> +
-> +               uart0: serial@11006000 {
-> +                       compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11002000 0 0x400>;
-> +                       interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
-> +
-> +               uart1: serial@11007000 {
-> +                       compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11003000 0 0x400>;
-> +                       interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
-> +
-> +               uart2: serial@11008000 {
-> +                       compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11004000 0 0x400>;
-> +                       interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
-> +
-> +               uart3: serial@11009000 {
-> +                       compatible = "mediatek,mt8127-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11005000 0 0x400>;
-> +                       interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
->         };
->  };
-> diff --git a/arch/arm/boot/dts/mt8135.dtsi b/arch/arm/boot/dts/mt8135.dtsi
-> index 90a56ad..683b761 100644
-> --- a/arch/arm/boot/dts/mt8135.dtsi
-> +++ b/arch/arm/boot/dts/mt8135.dtsi
-> @@ -86,6 +86,13 @@
->                         clock-frequency = <32000>;
->                         #clock-cells = <0>;
->                 };
-> +
-> +               uart_clk: dummy26m {
-> +                       compatible = "fixed-clock";
-> +                       clock-frequency = <26000000>;
-> +                       #clock-cells = <0>;
-> +               };
-> +
->         };
->
->         soc {
-> @@ -111,5 +118,34 @@
->                               <0 0x10214000 0 0x2000>,
->                               <0 0x10216000 0 0x2000>;
->                 };
-> +
-> +               uart0: serial@11006000 {
-> +                       compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11006000 0 0x400>;
-> +                       interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
-> +
-> +               uart1: serial@11007000 {
-> +                       compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11007000 0 0x400>;
-> +                       interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
-> +
-> +               uart2: serial@11008000 {
-> +                       compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11008000 0 0x400>;
-> +                       interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
-> +
-> +               uart3: serial@11009000 {
-> +                       compatible = "mediatek,mt8135-uart","mediatek,mt6577-uart";
-> +                       reg = <0 0x11009000 0 0x400>;
-> +                       interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
-> +                       clocks = <&uart_clk>;
-> +               };
-> +
->         };
->  };
+>  Required properties:
+>  - compatible should contain:
+> +  * "mediatek,mt8135-uart" for MT8135 compatible UARTS
+> +  * "mediatek,mt8127-uart" for MT8127 compatible UARTS
+>    * "mediatek,mt6589-uart" for MT6589 compatible UARTS
+>    * "mediatek,mt6582-uart" for MT6582 compatible UARTS
+>    * "mediatek,mt6577-uart" for all compatible UARTS (MT6589, MT6582, MT6577)
 > --
 > 1.8.1.1.dirty
 >
