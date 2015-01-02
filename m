@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbbABKuX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 05:50:23 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35625 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036AbbABKuT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 05:50:19 -0500
-Subject: Re: [PATCH v7 2/4] fpga manager: add sysfs interface document
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20150102051200.GI4873@amd>
-Date: Fri, 2 Jan 2015 12:50:10 +0200
-Cc: atull <atull@opensource.altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
-        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <20FF5ACF-DA9F-4FBA-AA87-490A73D02A2E@konsulko.com>
-References: <1419007551-10040-1-git-send-email-atull@opensource.altera.com> <1419007551-10040-3-git-send-email-atull@opensource.altera.com> <20150102051200.GI4873@amd>
-To: Pavel Machek <pavel@denx.de>
-X-Mailer: Apple Mail (2.1993)
+	id S1751630AbbABLAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 06:00:19 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761AbbABLAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 06:00:15 -0500
+Message-ID: <54A67A38.3000207@nod.at>
+Date: Fri, 02 Jan 2015 12:00:08 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>, Kees Cook <keescook@chromium.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        DaeSeok Youn <daeseok.youn@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
+References: <1419457167-15042-1-git-send-email-richard@nod.at> <CAGXu5jKxzyjzoY_khgZu7TbxMhfG3jiXGObiaiUhx6g5-k9c6Q@mail.gmail.com> <20150102051142.GF4873@amd>
+In-Reply-To: <20150102051142.GF4873@amd>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
-
-> On Jan 2, 2015, at 07:12 , Pavel Machek <pavel@denx.de> wrote:
+Am 02.01.2015 um 06:11 schrieb Pavel Machek:
+> On Tue 2014-12-30 10:40:15, Kees Cook wrote:
+>> On Wed, Dec 24, 2014 at 1:39 PM, Richard Weinberger <richard@nod.at> wrote:
+>>> While exploring the offset2lib attack I remembered that
+>>> grsecurity has an interesting feature to make such attacks
+>>> much harder. Exploits can brute stack canaries often very easily
+>>> if the target is a forking server like sshd or Apache httpd.
+>>> The problem is that after fork() the child has by definition
+>>> exactly the same memory as the parent and therefore also the same
+>>> stack canaries.
+>>> The attacker can guess the stack canaries byte by byte.
+>>> After 256 times 7 forks() a good exploit can find the correct
+>>> canary value.
+>>>
+>>> The basic idea behind this patch is to delay fork() if a child died
+>>> due to a fatal error.
+>>> Currently it delays fork() by 30 seconds if the parent tries to fork()
+>>> within 60 seconds after a child died due to a fatal error.
+>>>
+>>> I'm sure you'll hate this patch but I want to find out how much you hate it
+>>> and whether there is a little chance to get it mainline in a modified form.
+>>> Later I'd make it depend on a new Kconfig option and off by default
+>>> and the timing constants changeable via sysctl.
 > 
-> 
->> +What:		/sys/class/fpga_manager/<fpga>/firmware
->> +Date:		October 2014
->> +KernelVersion:	3.18
->> +Contact:	Alan Tull <atull@opensource.altera.com>
->> +Description:	Name of the FPGA image file to load using firmware class.
-> 
-> This is wrong interface, right? The only use of this string is to pass
-> it to udev. We should simply pass "fpga-0" as a firware name, and let
-> udev figure it out, no need to to prepare name in separate component,
-> then pass it to kernel, which passes it back to udev.
-> 
+> Does this break trinity, crashme, and similar programs?
 
-No. No dependencies on udev please. This should hook directly to the firmware
-loader interface which does not rely on userspace at all.
+If they fork() without execve() and a child dies very fast the next fork()
+will be throttled.
+This is why I'd like to make this feature disabled by default.
 
->> +What:		/sys/class/fpga_manager/<fpga>/reset
->> +Date:		October 2014
->> +KernelVersion:	3.18
->> +Contact:	Alan Tull <atull@opensource.altera.com>
->> +Description:	Write 1 to reset the FPGA
-> 
-> Does 0 need to be written there to pull the fpga out of reset? Is this
-> a suitable interface?
-> 
-> 								Pavel
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> Can you detect it died due to the stack canary? Then, the patch might
+> be actually acceptable.
 
-Regards
+I don't think so as this is glibc specific.
 
-— Pantelis
-
+Thanks,
+//richard
