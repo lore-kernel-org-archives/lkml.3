@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbbABDlE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Jan 2015 22:41:04 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:63505 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbbABDk6 (ORCPT
+	id S1751862AbbABEEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Jan 2015 23:04:45 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:51380 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544AbbABEEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Jan 2015 22:40:58 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, herbert@gondor.apana.org.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org
-Cc: akpm@linux-foundation.org, joe@perches.com,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] crypto: Remove unnecessary KERN_ERR in bfin_crc.c
-Date: Fri,  2 Jan 2015 12:40:46 +0900
-Message-Id: <1420170046-10269-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.2.1.62.g3f15098
+	Thu, 1 Jan 2015 23:04:40 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Thu, 1 Jan 2015 23:04:37 -0500
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Arend van Spriel <arend@broadcom.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "egrumbach@gmail.com" <egrumbach@gmail.com>,
+        "peter@hurleysoftware.com" <peter@hurleysoftware.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] Revert "cfg80211: make WEXT compatibility unselectable"
+Message-ID: <20150102040437.GS24110@csclub.uwaterloo.ca>
+References: <0BA3FCBA62E2DC44AF3030971E174FB31B5DD72E@hasmsx107.ger.corp.intel.com>
+ <54A3E1F1.7030807@broadcom.com>
+ <alpine.LNX.2.00.1412311505100.31609@pobox.suse.cz>
+ <54A41000.3040306@broadcom.com>
+ <20141231173113.GA443@thunk.org>
+ <54A45D4D.7070302@broadcom.com>
+ <20141231214421.GA29273@thunk.org>
+ <CA+55aFzp2bWctqpiHyZVC9ZCtW3wN_bPsGjcbqKFgu9KOZtAJw@mail.gmail.com>
+ <20150101194417.GN24112@csclub.uwaterloo.ca>
+ <CA+55aFzFT94xrfC+4tdeQOxDnPaxy0f72N+HEQ7NgRxHdvqbGQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzFT94xrfC+4tdeQOxDnPaxy0f72N+HEQ7NgRxHdvqbGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes unnecessary KERN_ERR from bfin_crypto_crc_mod_init().
+On Thu, Jan 01, 2015 at 12:14:15PM -0800, Linus Torvalds wrote:
+> So I'm not saying "ifconfig is wonderful". It's not.
+> 
+> But I *am* saying that "changing user interfaces and then expecting
+> people to change is f*cking stupid".
+> 
+> The fact is, ifconfig is simple for the simple cases, but more
+> importantly, a lot of people learnt how to use it. Saying "you should
+> all change, because we made up a new syntax" is not good policy.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/crypto/bfin_crc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Perhaps it would be good to at least fix the buggy bits of ifconfig and
+perhaps make it work with netlink instead of parsing /proc.  Maybe not
+add features, but at least fix the broken bits and make it use modern
+interfaces.  The interface to the user can stay.  And of course if it
+happens to encounter a really old kernel, it should still remember how
+to speak to it with the old interface.
 
-diff --git a/drivers/crypto/bfin_crc.c b/drivers/crypto/bfin_crc.c
-index 9ae149b..33cf9eb 100644
---- a/drivers/crypto/bfin_crc.c
-+++ b/drivers/crypto/bfin_crc.c
-@@ -744,7 +744,7 @@ static int __init bfin_crypto_crc_mod_init(void)
- 
- 	ret = platform_driver_register(&bfin_crypto_crc_driver);
- 	if (ret) {
--		pr_info(KERN_ERR "unable to register driver\n");
-+		pr_err("unable to register driver\n");
- 		return ret;
- 	}
- 
+> The people who did "ip" could have fairly easily have done a wrapper
+> around the same code that also left the old "ifconfig" syntax. Then,
+> distros could have trivially just dropped the old "ifconfig" package,
+> and entirely replaced it with the new "ip" package.
+
+Hmm, that might be a better idea.
+
+> As it is, we have two different models, and they'll basically stay
+> around forever.
+> 
+> For something like ifconfig, very few people care. But *all* the same
+> arguments are true wrt "iw" and "iwconfig".
+> 
+> The people who are trying to deprecate the WEXT interfaces should put
+> the blame firmly where it belongs - on the people who thought that
+> "we'll just ignore all old history".
+> 
+> Because people who think that "we'll just redesign everything" are
+> actually f*cking morons. Really.
+> 
+> There's a real reason the kernel has the "no regression" policy. And
+> that reason is that I'm not a moron.
+> 
+> History matter. Legacy uses matter.
+
+Sounds good to me.
+
 -- 
-2.2.1.62.g3f15098
-
+Len Sorensen
