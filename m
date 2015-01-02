@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbbABRPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:15:15 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61749 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750717AbbABRPN (ORCPT
+	id S1752284AbbABRSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:18:12 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:51973 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750913AbbABRSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:15:13 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX198eC0k2NIGFhXSbp9nJPnZ
-Date: Fri, 2 Jan 2015 09:11:23 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
+	Fri, 2 Jan 2015 12:18:10 -0500
+Date: Fri, 2 Jan 2015 09:17:38 -0800
+From: Shaohua Li <shli@fb.com>
+To: David Ahern <dsahern@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Andy Lutomirski <luto@amacapital.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        =?utf-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>,
-        Joe Perches <joe@perches.com>, Axel Lin <axel.lin@ingics.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 0/4] Fixes for SDIO interrupts for dw_mmc
-Message-ID: <20150102171123.GC3298@atomide.com>
-References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
- <CAPDyKFpxvE4x_-PV=KN0HKY5cNug-ss9m5KCjNdebR1LDOJi5w@mail.gmail.com>
- <CAD=FV=UCyOXfMqu_MYbd5pKOpgXPB87LQ7hCegeeY9vzsy6QAg@mail.gmail.com>
- <CAPDyKFqGW2NaN+5mUrpBWrhM5ZfUSx70-Yyk9qmNaC1ft_ibpw@mail.gmail.com>
- <CAD=FV=UzJo=KE7Snb2v=dNodmf_ky97o3xyUHUAZqb1Kq10d1A@mail.gmail.com>
+        X86 ML <x86@kernel.org>, <Kernel-team@fb.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
+Message-ID: <20150102171738.GB2381637@devbig257.prn2.facebook.com>
+References: <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
+ <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
+ <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com>
+ <20141219112350.GJ30905@twins.programming.kicks-ass.net>
+ <CALCETrXRs5mXYq8OPH-WYqWPoD=35WccnHh7Bcm-YZMjW3ADcw@mail.gmail.com>
+ <20141219170334.GM30905@twins.programming.kicks-ass.net>
+ <20150102025953.GA1253265@devbig257.prn2.facebook.com>
+ <54A6B9D5.5040804@gmail.com>
+ <20150102170223.GA2381637@devbig257.prn2.facebook.com>
+ <54A6D0B6.7090700@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=UzJo=KE7Snb2v=dNodmf_ky97o3xyUHUAZqb1Kq10d1A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54A6D0B6.7090700@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-02_07:2014-12-31,2015-01-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=50.6482119179177
+ compositescore=0.128743225232898 urlsuspect_oldscore=0.128743225232898
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.128743225232898 spamscore=0
+ recipient_to_sender_domain_totalscore=46 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501020167
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Doug Anderson <dianders@chromium.org> [150102 09:09]:
-> Ulf,
-> 
-> On Tue, Dec 30, 2014 at 2:29 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> >>> In v5, I don't find a patch 1/4. Anyway, I have taken patch 2->4.
+On Fri, Jan 02, 2015 at 10:09:10AM -0700, David Ahern wrote:
+> On 1/2/15 10:02 AM, Shaohua Li wrote:
+> >On Fri, Jan 02, 2015 at 08:31:33AM -0700, David Ahern wrote:
+> >>On 1/1/15 7:59 PM, Shaohua Li wrote:
+> >>>I'm wondering how we could use the perf to implament a clock_gettime.
+> >>>reading the perf fd or using ioctl is slow so reading the mmap
+> >>>ringbuffer is the only option. But as far as I know the ringbuffer has
+> >>>data only when an event is generated. Between two events, there is
+> >>>nothing we can read from the ringbuffer. Then how can application get
+> >>>time info in the interval?
 > >>
-> >> Ah, maybe because it wasn't sent to linux-mmc?  I messed that up and
-> >> will try to do better in the future.  Sorry.  :(  You were in the To
-> >> line, though.  You can see at
-> >> <https://patchwork.kernel.org/patch/5425241/>.
-> >>
-> >> Do you want me to repost it and CC linux-mmc with Tony's Ack?
+> >>Are you wanting to read perf_clock from userspace?
 > >
-> > I suggest you have a look at my next branch and to verify that I
-> > haven't screwed things up. If so, either I should drop the patches and
-> > you make a resend or if it's possible to just send an incremental path
-> > on top?
+> >Yep, in some sort of form. Basically I want to read the time a task
+> >runs. Peter suggests we can read the activation time of a perf event.
+> >But I don't want to use any system call, as it's slow and likes
+> >clock_gettime.
 > 
-> The patches that landed look good to me, but I think you might break
-> omap3pandora's WiFi until you land patch #1 in the series.  It has
-> Tony's Ack so I think he intends for you to land it in your tree.
+> Since we cannot get the capability committed upstream a number of
+> folks are using this method:
 > 
-> [v5,1/4] ARM: OMAP2+: Make sure pandora_wl1251_init_card() applies to SDIO only
+>     https://github.com/dsahern/linux/blob/perf-full-monty/README.ahern
+> 
+> ie., a KLM exports perf_clock and apps can use:
+> 
+> #define CLOCK_PERF 14
+> if (clock_gettime(CLOCK_PERF, &ts) != 0) {
+> }
+> 
+> No vdso acceleration, but works with an unmodified kernel.
 
-Yes please pick that one up too to avoid breakage. The changes to the
-mach-omap2/board-*.c files are only minimal fixes, so it should not
-conflict with anything I'll be applying.
+no, that's not what I want. as I said, we don't want any syscall (unless
+it's vdso based). 
 
-Regards,
-
-Tony
+Thanks,
+Shaohua
