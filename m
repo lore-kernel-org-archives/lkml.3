@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107AbbABMJu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 07:09:50 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:36750 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbbABMJt (ORCPT
+	id S1752068AbbABMOu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 07:14:50 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:53496 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768AbbABMOt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 07:09:49 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-media@vger.kernel.org
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] media: platform: vsp1: vsp1_hsit:  Remove unused function
-Date: Fri, 02 Jan 2015 14:09:58 +0200
-Message-ID: <3534952.jhm28o5kMm@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1420134690-993-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1420134690-993-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Fri, 2 Jan 2015 07:14:49 -0500
+X-Greylist: delayed 71028 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Jan 2015 07:14:48 EST
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
+References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
+	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
+Date: Fri, 2 Jan 2015 13:14:47 +0100
+Message-ID: <CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rickard,
+On Fri, Jan 2, 2015 at 1:06 PM, Rafał Miłecki <zajec5@gmail.com> wrote:
+> On 2 January 2015 at 13:05, Rafał Miłecki <zajec5@gmail.com> wrote:
+>> On 1 January 2015 at 16:46, Rickard Strandqvist
+>> <rickard_strandqvist@spectrumdigital.se> wrote:
+>>> Remove the function b43legacy_radio_set_tx_iq() that is not used anywhere.
+>>>
+>>> This was partially found by using a static code analysis program called cppcheck.
+>>
+>> It seems to be for A-PHY based hardware (with 0x2060 radio id) which
+>> is not handled by b43legacy. Should be safe to drop this code (we
+>> won't likely need it).
+>>
+>> Ack
+>
+> For future, we prefix patches with just a driver name. So this could
+> be simply called
+> b43legacy: radio.c: Remove unused function
+>
 
-Thank you for the patch.
+Alternatively...
 
-On Thursday 01 January 2015 18:51:30 Rickard Strandqvist wrote:
-> Remove the function vsp1_hsit_read() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called
-> cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+"b43legacy: Remove unused function in radio.c"
 
-Acked-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+BTW, as Arnd Bergmann pointed out [1] how did you test with cppcheck
+to get such stuff?
 
-I've taken the patch in my tree and will send a pull request for v3.20.
+- Sedat -
 
-> ---
->  drivers/media/platform/vsp1/vsp1_hsit.c |    5 -----
->  1 file changed, 5 deletions(-)
-> 
-> diff --git a/drivers/media/platform/vsp1/vsp1_hsit.c
-> b/drivers/media/platform/vsp1/vsp1_hsit.c index db2950a..9fb003b 100644
-> --- a/drivers/media/platform/vsp1/vsp1_hsit.c
-> +++ b/drivers/media/platform/vsp1/vsp1_hsit.c
-> @@ -26,11 +26,6 @@
->   * Device Access
->   */
-> 
-> -static inline u32 vsp1_hsit_read(struct vsp1_hsit *hsit, u32 reg)
-> -{
-> -	return vsp1_read(hsit->entity.vsp1, reg);
-> -}
-> -
->  static inline void vsp1_hsit_write(struct vsp1_hsit *hsit, u32 reg, u32
-> data) {
->  	vsp1_write(hsit->entity.vsp1, reg, data);
-
--- 
-Regards,
-
-Laurent Pinchart
-
+[1] https://lkml.org/lkml/2015/1/2/51
