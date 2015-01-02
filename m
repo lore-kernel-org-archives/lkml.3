@@ -1,46 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbbABSfL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 13:35:11 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:52998 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbbABSfJ (ORCPT
+	id S1752248AbbABShM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 13:37:12 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:61089 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbbABShK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 13:35:09 -0500
-From: jitendra kumar khasdev <jkhasdev@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        pankaj.saraf@nektech.in, jitendra kumar khasdev <jkhasdev@gmail.com>
-Subject: [PATCH 1/2] Staging: comedi: tab space coding style issue in pcl818.c
-Date: Sat,  3 Jan 2015 00:04:49 +0530
-Message-Id: <1420223689-23586-1-git-send-email-jkhasdev@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 2 Jan 2015 13:37:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <cover.1418504883.git.richardcochran@gmail.com>
+References: <cover.1418504883.git.richardcochran@gmail.com>
+Date: Fri, 2 Jan 2015 10:37:09 -0800
+Message-ID: <CALAqxLUVU3XmBMiNGH-X5KjGbEjDYtaR2WRXDOHfGNads9caOw@mail.gmail.com>
+Subject: Re: [PATCH net-next 00/11] Time Counter fixes and improvements
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: netdev@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Amir Vadai <amirv@mellanox.com>, Ariel Elior <ariel.elior@qlogic.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        David Miller <davem@davemloft.net>, Frank Li <Frank.Li@freescale.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Matthew Vick <matthew.vick@intel.com>,
+        Miroslav Lichvar <mlichvar@redhat.com>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tom Lendacky <thomas.lendacky@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is patch to the pcl818.c that fix up a use tab error
-found by the checkpatch.pl tool
+On Sun, Dec 21, 2014 at 10:46 AM, Richard Cochran
+<richardcochran@gmail.com> wrote:
+> Several PTP Hardware Clock (PHC) drivers implement the clock in
+> software using the timecounter/cyclecounter code. This series adds one
+> simple improvement and one more subtle fix to the shared timecounter
+> facility. Credit for this series goes to Janusz Użycki, who pointed
+> the issues out to me off list.
+>
+> Patch #1 simply move the timecounter code into its own file. When
+> working on this series, it was really annoying to see half the kernel
+> recompile after every tweak to the timecounter stuff. There is no
+> reason to keep this together with the clocksource code.
 
-Signed-off-by: Jitendra kumar khasdev <jkhasdev@gmail.com>
----
- drivers/staging/comedi/drivers/pcl818.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I did have some faint hope we could merge the cyclecounter and
+clocksource struct at some point, and while we've gotten closer with
+much of the time-specific values being kept in the timekeeper, the
+full cleanup hasn't happened in a few years here, so its clearly not
+something I've prioritized.
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index 8edea35..c29223b 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -45,7 +45,7 @@ A word or two about DMA. Driver support DMA operations at two ways:
-     [1] - IRQ	(0=disable, 2, 3, 4, 5, 6, 7)
-     [2] - DMA	(0=disable, 1, 3)
-     [3] - 0, 10=10MHz clock for 8254
--              1= 1MHz clock for 8254
-+		1= 1MHz clock for 8254
-     [4] - 0,  5=A/D input  -5V.. +5V
-           1, 10=A/D input -10V..+10V
-     [5] - 0,  5=D/A output 0-5V  (internal reference -5V)
--- 
-1.9.1
+So no objection in concept.
 
+
+> Patch #2 implements an improved adjtime() method, and patches 3-10
+> convert all of the drivers over to the new method.
+>
+> Patch #11 fixes a subtle but important issue with the timecounter WRT
+> frequency adjustment. As it stands now, a timecounter based PHC will
+> exhibit a variable frequency resolution (and variable time error)
+> depending on how often the clock is read.
+>
+> In timecounter_read_delta(), the expression
+>
+>    (delta * cc->mult) >> cc->shift;
+>
+> can lose resolution from the adjusted value of 'mult'. If the value
+> of 'delta' is too small, then small changes in 'mult' have no effect.
+> However, if the delta value is large enough, then small changes in
+> 'mult' will have an effect.
+>
+> Reading the clock too often means smaller 'delta' values which in turn
+> will spoil the fine adjustments made to 'mult'. Up until now, this
+> effect did not show up in my testing. The following example explains
+> why.
+>
+> The CPTS has an input clock of 250 MHz, and the clock source uses
+> mult=0x80000000 and shift=29, making the ticks to nanoseconds
+> conversion like this:
+>
+>    ticks * 2^31
+>    ------------
+>        2^29
+>
+> Imagine what happens if the clock is read every 10 milliseconds. Ten
+> milliseconds are about 2500000 ticks, which corresponds to about 21
+> bits. The product in the numerator has then 52 bits. After the shift
+> operation, 23 bits are preserved. This results in a frequency
+> adjustment resolution of about 0.1 ppm (not _too_ bad.)
+>
+> A frequency resolution of 1 ppm requires 20 bits.
+> A frequency resolution of 1 ppb requires 30 bits.
+>
+> For the 250 MHz CPTS clock, reading every 4 seconds yields a 1 ppb
+> resolution (which is the finest that our API allows).
+>
+> However, the error can be much higher if the clock is read too often
+> or if time stamps occur close in time to read operations. In general
+> it is really not acceptable to allow the rate of clock readings to
+> influence the clock accuracy.
+
+Though, this does start to sound like issues the timekeeping code had
+to resolve, so while its probably time to let some flowers bloom and
+see what happens, we should be somewhat watchful for too much logic
+duplication.
+
+The patch set itself seems fairly straight forward (at least to my
+back from vacation brain), so..
+Acked-by: John Stultz <john.stultz@linaro.org>
+
+thanks
+-john
