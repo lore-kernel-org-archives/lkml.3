@@ -1,40 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbbABSsR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 13:48:17 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:54764 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbbABSsP (ORCPT
+	id S1752482AbbABSsU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 13:48:20 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:60502 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317AbbABSsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 13:48:15 -0500
+	Fri, 2 Jan 2015 13:48:17 -0500
 From: Matthias Brugger <matthias.bgg@gmail.com>
 To: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
         mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
         galak@codeaurora.org, linux@arm.linux.org.uk, matthias.bgg@gmail.com
 Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 0/2] ARM: mediatek: Enable uart for mt6589
-Date: Fri,  2 Jan 2015 19:48:03 +0100
-Message-Id: <1420224485-11043-1-git-send-email-matthias.bgg@gmail.com>
+Subject: [PATCH 1/2] ARM: mediatek: dts: Add uart to mt6589
+Date: Fri,  2 Jan 2015 19:48:04 +0100
+Message-Id: <1420224485-11043-2-git-send-email-matthias.bgg@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420224485-11043-1-git-send-email-matthias.bgg@gmail.com>
+References: <1420224485-11043-1-git-send-email-matthias.bgg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds uart ports for the mt6589 SoC from Mediatek.
-It also enables the uart port for the mt6589 based Aquaris5 mobile phone.
+This patch adds the uart ports to the device tree of Mediatek mt6589 SoC.
 
-This series is based on 3.19-rc1 and assumes that sysirq patch from Yingjoe Chen is added to the SoC [0].
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+---
+ arch/arm/boot/dts/mt6589.dtsi | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
-[0] https://lkml.org/lkml/2014/11/25/132
-
-Matthias Brugger (2):
-  ARM: mediatek: dts: Add uart to mt6589
-  ARM: mediatek: dts: Add uart to Aquaris5
-
- arch/arm/boot/dts/mt6589-aquaris5.dts |  8 +++++++-
- arch/arm/boot/dts/mt6589.dtsi         | 38 +++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 1 deletion(-)
-
+diff --git a/arch/arm/boot/dts/mt6589.dtsi b/arch/arm/boot/dts/mt6589.dtsi
+index c91b2a9..106b61b 100644
+--- a/arch/arm/boot/dts/mt6589.dtsi
++++ b/arch/arm/boot/dts/mt6589.dtsi
+@@ -65,6 +65,12 @@
+ 			clock-frequency = <32000>;
+ 			#clock-cells = <0>;
+ 		};
++
++		uart_clk: dummy26m {
++			compatible = "fixed-clock";
++			clock-frequency = <26000000>;
++			#clock-cells = <0>;
++		};
+ 	};
+ 
+ 	soc {
+@@ -100,5 +106,37 @@
+ 			      <0x10214000 0x2000>,
+ 			      <0x10216000 0x2000>;
+ 		};
++
++		uart0: serial@11006000 {
++			compatible = "mediatek,mt6577-uart";
++			reg = <0x11006000 0x400>;
++			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_LOW>;
++			clocks = <&uart_clk>;
++			status = "disabled";
++		};
++
++		uart1: serial@11007000 {
++			compatible = "mediatek,mt6577-uart";
++			reg = <0x11007000 0x400>;
++			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_LOW>;
++			clocks = <&uart_clk>;
++			status = "disabled";
++		};
++
++		uart2: serial@11008000 {
++			compatible = "mediatek,mt6577-uart";
++			reg = <0x11008000 0x400>;
++			interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_LOW>;
++			clocks = <&uart_clk>;
++			status = "disabled";
++		};
++
++		uart3: serial@11009000 {
++			compatible = "mediatek,mt6577-uart";
++			reg = <0x11009000 0x400>;
++			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_LOW>;
++			clocks = <&uart_clk>;
++			status = "disabled";
++		};
+ 	};
+ };
 -- 
 1.9.1
 
