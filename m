@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbbABRmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 12:42:37 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58589 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbbABRmf (ORCPT
+	id S1752126AbbABRkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 12:40:16 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:22935 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717AbbABRkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 12:42:35 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+n2oyS+yuHhcM10XIMEsbN
-Date: Fri, 2 Jan 2015 09:38:59 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Santosh <ssantosh@kernel.org>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 0/2] ARM: l2c: OMAP4/AM437x: Additional register
- programming support.
-Message-ID: <20150102173859.GE3298@atomide.com>
-References: <1420219072-6521-1-git-send-email-nm@ti.com>
+	Fri, 2 Jan 2015 12:40:14 -0500
+Message-ID: <54A6D7F9.3090203@fb.com>
+Date: Fri, 2 Jan 2015 10:40:09 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420219072-6521-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Ming Lei <ming.lei@canonical.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: fix checking return value of blk_mq_init_queue
+References: <1420208727-9563-1-git-send-email-ming.lei@canonical.com> <54A6BEE7.3020601@fb.com> <20150102173447.GS22149@ZenIV.linux.org.uk>
+In-Reply-To: <20150102173447.GS22149@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-02_07:2014-12-31,2015-01-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=7.37055184658041
+ compositescore=0.98609165920913 urlsuspect_oldscore=0.98609165920913
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.98609165920913 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501020170
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [150102 09:20]:
-> Hi,
-> 
-> OMAP4 and AM437x ROM code provides services to program PL310's latency
-> registers and AM437x provides service for programming Address filter
-> registers.
-> 
-> Provide support in the kernel for the same.
-> 
-> This provides some support to the series: http://marc.info/?l=linux-arm-kernel&m=141933190912495&w=2
+On 01/02/2015 10:34 AM, Al Viro wrote:
+> On Fri, Jan 02, 2015 at 08:53:11AM -0700, Jens Axboe wrote:
+>> On 01/02/2015 07:25 AM, Ming Lei wrote:
+>>> Check IS_ERR_OR_NULL(return value) instead of just return value.
+>>
+>> Thanks Ming, applied.
+>
+> Umm...  Looking at the callers, I'd suggest making it _never_ return NULL -
+> it's always treates as ERR_PTR(-ENOMEM) anyway.  Then the checks would be
+> just IS_ERR(...).
+>
+> IS_ERR_OR_NULL() is very often a sign of lousy calling conventions and
+> this case is no exception...
 
-Are these to be applied before Thomasz's series as fixes? If we
-don't need these as fixes for the -rc, then probably makes sense
-for RMK to merge them all together for v3.20.
+I actually made that change when committing it:
 
-Regards,
+http://git.kernel.dk/?p=linux-block.git;a=commit;h=35b489d32fcc37e8735f41aa794b24cf9d1e74f5
 
-Tony
- 
-> Nishanth Menon (2):
->   ARM: l2c: OMAP4/AM437x: Introduce support for cache latency
->     programming
->   ARM: l2c: AM437x: Introduce support for cache filter programming
-> 
->  arch/arm/mach-omap2/common.h       |    1 +
->  arch/arm/mach-omap2/omap-secure.h  |    2 ++
->  arch/arm/mach-omap2/omap-smc.S     |   20 ++++++++++++++++++++
->  arch/arm/mach-omap2/omap4-common.c |   36 ++++++++++++++++++++++++++++++++++++
->  4 files changed, 59 insertions(+)
-> 
-> Regards,
-> Nishanth Menon
-> 
-> -- 
-> 1.7.9.5
-> 
+
+-- 
+Jens Axboe
+
