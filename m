@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750818AbbABIEC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 03:04:02 -0500
+	id S1750971AbbABIET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 03:04:19 -0500
 Received: from mailout3.samsung.com ([203.254.224.33]:21228 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbbABIEA (ORCPT
+	with ESMTP id S1750756AbbABIEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 03:04:00 -0500
-X-AuditID: cbfee68f-f791c6d000004834-dc-54a650ed7cc2
+	Fri, 2 Jan 2015 03:04:01 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-2e-54a650ed9510
 From: Inha Song <ideal.song@samsung.com>
 To: broonie@kernel.org, lee.jones@linaro.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -16,39 +16,39 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         patches@opensource.wolfsonmicro.com,
         Inha Song <ideal.song@samsung.com>
-Subject: [alsa-devel] [PATCH v2 RESEND 1/2] mfd: arizona: Add support for
- OUTn_MONO register control
-Date: Fri, 02 Jan 2015 17:03:48 +0900
-Message-id: <1420185829-24886-2-git-send-email-ideal.song@samsung.com>
+Subject: [alsa-devel] [PATCH v2 RESEND 2/2] mfd: arizona: Update DT binding to
+ support OUTn_MONO init_data
+Date: Fri, 02 Jan 2015 17:03:49 +0900
+Message-id: <1420185829-24886-3-git-send-email-ideal.song@samsung.com>
 X-Mailer: git-send-email 2.0.0.390.gcb682f8
 In-reply-to: <1420185829-24886-1-git-send-email-ideal.song@samsung.com>
 References: <1420185829-24886-1-git-send-email-ideal.song@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42JZI2JSovs2YFmIwfvrBhZTHz5hs/g35Qa7
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSqPs2YFmIwcVfFhZTHz5hs/g35Qa7
 	xfwj51gt+t8sZLXY9fc+o8W5VysZLe5/PcpocXnXHDaLpdcvMlksf/ufzWLC9LUsFq17j7Bb
 	nO5mdeD1WDNvDaPH5b5eJo+Vy7+weWxa1cnmcefaHjaPeScDPV5O/M3m0bdlFaPH501yAZxR
-	XDYpqTmZZalF+nYJXBlXGjvZC35xVExvl25gXMrexcjJISFgIvF++mRGCFtM4sK99WwgtpDA
-	UkaJP9sjYWq2rnjA2sXIBRRfxCix89M/NghnDpPEredXmUGq2AQ0JL5/3gxmiwjoSHz+eIwZ
-	pIhZYA+TxKQFq8HWCQukSeyY9pGli5GDg0VAVaLpQxBImFfATWLhurVQV2hL7GuYCXYFp4C7
-	xMMVN1ghLnKT+L9hBdgVEgKP2CX23F8O1sAiICDxbfIhsJkSArISmw4wQ8yRlDi44gbLBEbh
-	BYwMqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNzNzECo+j0v2f9OxjvHrA+xCjAwajEw6twbWmI
-	EGtiWXFl7iFGU6ANE5mlRJPzgbGaVxJvaGxmZGFqYmpsZG5ppiTOu1DqZ7CQQHpiSWp2ampB
-	alF8UWlOavEhRiYOTqkGRoEvvhvbk9dI34s6spw5WEnFaFPUpLCqiS+eZveK5N7T/VnxJvhi
-	om/7/vSFjr8uXPsxp95JpzTS4OnbGweUTVxc316suL82PKRJbuKDG9+PMckqv13tdGBXaLsR
-	78FTSpub2bx/OFVd8Fi3urTrN0vuSa4/wm9yDF5ytxXlLrGv5Nmyeu6X1UosxRmJhlrMRcWJ
-	ADN7FmydAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAd23ActCDBas1rSY+vAJm8W/KTfY
+	XDYpqTmZZalF+nYJXBm9z6azFhzkrth6awlTA+Muzi5GTg4JAROJc3NeMUHYYhIX7q1n62Lk
+	4hASWMooceRCJxtM0ffOu1CJRYwSn17PZIRw5jBJ3Hp+lRmkik1AQ+L7581gtoiAjsTnj8eY
+	QYqYBfYwSUxasJodJCEskCMxo+ckI4jNIqAqsfhEB9huXgE3iRenlkGt05bY1zATzOYUcJd4
+	uOIGK4gtBFTzf8MKVpChEgKP2CXWbF/NCjFIQOLb5EMsXYwcQAlZiU0HmCHmSEocXHGDZQKj
+	8AJGhlWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsYgbF0+t+zvh2MNw9YH2IU4GBU4uFVuLY0
+	RIg1say4MvcQoynQhonMUqLJ+cCIzSuJNzQ2M7IwNTE1NjK3NFMS502Q+hksJJCeWJKanZpa
+	kFoUX1Sak1p8iJGJg1OqgXHpnANW7GGBXQ+NNt0tdfpnbxF180Uea+VSZeX6idtn3Xk5VXtP
+	6s2F757POfquKd5xyYdzy4/liv+1Tbt0SsL201LjnbPWZGRY6bYq9dwuvRHU+vO8numKhXcu
+	vvGbUMen73rRcOm+g3neO743XT478XvKycpHW9Pc03du28+mcu1oxIqDrEUPlFiKMxINtZiL
+	ihMBjmTsKqACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jAd23ActCDF7+MLCY+vAJm8W/KTfY
 	LeYfOcdq0f9mIavFrr/3GS3OvVrJaHH/61FGi8u75rBZLL1+kcli+dv/bBYTpq9lsWjde4Td
 	4nQ3qwOvx5p5axg9Lvf1MnmsXP6FzWPTqk42jzvX9rB5zDsZ6PFy4m82j74tqxg9Pm+SC+CM
 	amC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6W0mh
-	LDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYcaWxk73gF0fF9HbpBsal7F2M
-	nBwSAiYSW1c8YIWwxSQu3FvP1sXIxSEksIhRYuenf1DOHCaJW8+vMoNUsQloSHz/vBnMFhHQ
-	kfj88RgzSBGzwB4miUkLVoONFRZIk9gx7SNLFyMHB4uAqkTThyCQMK+Am8TCdWsZIbZpS+xr
-	mMkGYnMKuEs8XHED7AohoJr/G1awTmDkXcDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMj
-	OEqfSe9gXNVgcYhRgINRiYdX4drSECHWxLLiytxDjBIczEoivH1yS0KEeFMSK6tSi/Lji0pz
-	UosPMZoCHTWRWUo0OR+YQPJK4g2NTcyMLI3MDS2MjM2VxHmV7NtChATSE0tSs1NTC1KLYPqY
-	ODilGhhTPS9kbF/+Vn3+4qsKy/dnqNgnT7Fivv3hr7OFeUS/wd6o6Vx12kmLP1qrxCnEKJ5d
-	ZPFT4c4ctV/XuOWstq+U3uua8crl+JSS2EXfXjAtLujkDk+XbXToU3l3fc+KLoXzk3Qu+NXu
-	c/u2+tVPMd/E/FnmJ+1zdx5qqRUoV+DcEe9+L20mB4MSS3FGoqEWc1FxIgBH300m6AIAAA==
+	LDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOY0ftsOmvBQe6KrbeWMDUw7uLs
+	YuTkkBAwkfjeeZcNwhaTuHBvPZDNxSEksIhR4tPrmYwQzhwmiVvPrzKDVLEJaEh8/7wZzBYR
+	0JH4/PEYM0gRs8AeJolJC1azgySEBXIkZvScZASxWQRUJRaf6GACsXkF3CRenFoGtU5bYl/D
+	TDCbU8Bd4uGKG6wgthBQzf8NK1gnMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc
+	qc+kdzCuarA4xCjAwajEw6twbWmIEGtiWXFl7iFGCQ5mJRHePrklIUK8KYmVValF+fFFpTmp
+	xYcYTYGumsgsJZqcD0wieSXxhsYmZkaWRuaGFkbG5krivEr2bSFCAumJJanZqakFqUUwfUwc
+	nFINjEunxuyuZHgZ/9L9jkk7o0Zw5ffOq2tNdt9j/fWl7kjK3q86B9t3lx47sjnldHDFbo7u
+	M3+3qFvrMWsxrTh3+8an5oaMKadvL3b8P7eaNbno+taS7XcWLS0uLRMqXtz6Ztq0/8/de8uD
+	q1m6Sw6d5P4t7cW8ROrz1ZSTpxVFe/bMfMm0e2OutJsSS3FGoqEWc1FxIgB9jrH66gIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,42 +56,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some boards need to set the OUTn_MONO register to configurates
-the output signal path as a mono differential output. This
-wlf,out-mono property is optional. If present, values must be
-specified less than or equal to the number of output signals.
-If values less than the number of output signals, elements
-that has not been specified are set to 0 by default.
-
-Example:
- - wlf,out-mono = <1 0 1>; /* set OUT1,OUT3 to mono differential */
+This patch update DT binding to support OUTn_MONO init_data. Each
+output signal can be configurated as a mono differential output.
+The mono differential configuration is selected using the OUTn_MONO
+registers.
 
 Signed-off-by: Inha Song <ideal.song@samsung.com>
 ---
- drivers/mfd/arizona-core.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ Documentation/devicetree/bindings/mfd/arizona.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index bce7c07..cc2927d 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -561,6 +561,16 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
- 		count++;
- 	}
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 7bd1273..cf11d42 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -49,6 +49,13 @@ Optional properties:
+     input singals. If values less than the number of input signals, elements
+     that has not been specifed are set to 0 by default.
  
-+	count = 0;
-+	of_property_for_each_u32(arizona->dev->of_node,
-+				 "wlf,out-mono", prop, cur, val) {
-+		if (count >= ARRAY_SIZE(arizona->pdata.out_mono))
-+			break;
++  - wlf,out-mono : A list of OUTn_MONO register values, where n is the number
++    of output signals. Valid values are 0 (Disabled) and 1 (Enabled). If absent,
++    OUTn_MONO registers set to 0 by default. If present, values must be specified
++    less than or equal to the number of output signals. If values less than the
++    number of input signals, elements that has not been specified are set to 0
++    by default.
 +
-+		arizona->pdata.out_mono[count] = !!val;
-+		count++;
-+	}
-+
- 	return 0;
- }
- 
+   - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
+     they are being externally supplied. As covered in
+     Documentation/devicetree/bindings/regulator/regulator.txt
 -- 
 2.0.0.390.gcb682f8
 
