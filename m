@@ -1,123 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433AbbABSmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 13:42:45 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:45417 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbbABSmn (ORCPT
+	id S1752352AbbABSlQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 13:41:16 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:38835 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbbABSlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 13:42:43 -0500
-Date: Fri, 2 Jan 2015 14:40:29 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>
-Subject: Re: [PATCH v2 2/8] thermal: Provide stub for thermal_cdev_update()
- function
-Message-ID: <20150102184028.GA12371@developer>
-References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
- <1419265668-32283-1-git-send-email-l.majewski@samsung.com>
- <1419265668-32283-3-git-send-email-l.majewski@samsung.com>
+	Fri, 2 Jan 2015 13:41:14 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
-Content-Disposition: inline
-In-Reply-To: <1419265668-32283-3-git-send-email-l.majewski@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141229172555.GE17800@sirena.org.uk>
+References: <1418612879-16094-1-git-send-email-zyw@rock-chips.com>
+	<1418612879-16094-3-git-send-email-zyw@rock-chips.com>
+	<20141229172555.GE17800@sirena.org.uk>
+Date: Fri, 2 Jan 2015 10:41:13 -0800
+X-Google-Sender-Auth: wgZZ3qwE1JbcrtPu6inszoFLM40
+Message-ID: <CAD=FV=VUp2xvH28g77PTC5x7__+kiiz5VRWxwmSr7V9XV_paRg@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] regulator: rk808: add dvs support
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark,
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 29, 2014 at 9:25 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Dec 15, 2014 at 11:07:58AM +0800, Chris Zhong wrote:
+>
+>> +     sel <<= ffs(rdev->desc->vsel_mask) - 1;
+>> +     sel |= old_sel & ~rdev->desc->vsel_mask;
+>> +
+>> +     ret = regmap_write(rdev->regmap, reg, sel);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     gpiod_set_value(gpio, !gpio_level);
+>
+> So, this seems a bit odd.  What we appear to be doing here is
+> alternating between the two different voltage setting registers which is
+> all well and good but makes me wonder why we're bothering - it's a bit
+> more work than just sticking with one.  We do get...
 
-On Mon, Dec 22, 2014 at 05:27:42PM +0100, Lukasz Majewski wrote:
-> Odroid U3 fan can work without being registered as OF cooling device
-> (with CONFIG_THERMAL_OF disabled).
-> In this situation it can be controlled via PWM entry at
-> /sys/class/hwmon/hwmon0/pwm1.
->=20
-> Therefore, the thermal_cdev_update() function needs a stub
-> to allow clean compilation.
+It's odd, but the rk808 is odd.
 
-I am not sure I understand what you are attempting to do here. What is
-the relation that you see between CONFIG_OF_THERMAL and
-thermal_cdev_update?=20
+Specifically if you don't use the "DVFS" pins like this then the
+hardware ignores the ramp rate that's programmed into it.  When I
+submitted (8af2522 regulator: rk808: Add function for ramp delay for
+buck1/buck2) upstream I verified my change by looking at the register
+values that were being set (ran i2cget in userspace).  I didn't
+measure the waveforms myself.  Later, Chris found that my change was
+not doing anything at all because the ramp delay has no effect if you
+are setting the voltage using an i2c write--it only has an effect if
+you're setting the voltage using DVFS pins.
 
->=20
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> ---
-> Changes for v2:
-> - New patch
-> ---
->  include/linux/thermal.h | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->=20
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index 871123c..b3515b5 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -332,6 +332,7 @@ struct thermal_cooling_device *
->  thermal_of_cooling_device_register(struct device_node *np,
->  				   char *type, void *devdata,
->  				   const struct thermal_cooling_device_ops *);
-> +void thermal_cdev_update(struct thermal_cooling_device *);
->  #else
->  static inline struct thermal_zone_device *
->  thermal_zone_of_sensor_register(struct device *dev, int id, void *data,
-> @@ -353,6 +354,10 @@ thermal_of_cooling_device_register(struct device_nod=
-e *np,
->  {
->  	return NULL;
->  }
-> +
-> +static inline void thermal_cdev_update(struct thermal_cooling_device *cd=
-ev)
-> +{
-> +}
->  #endif
->  struct thermal_zone_device *thermal_zone_device_register(const char *, i=
-nt, int,
->  		void *, struct thermal_zone_device_ops *,
-> @@ -375,7 +380,6 @@ int thermal_zone_get_temp(struct thermal_zone_device =
-*tz, unsigned long *temp);
->  int get_tz_trend(struct thermal_zone_device *, int);
->  struct thermal_instance *get_thermal_instance(struct thermal_zone_device=
- *,
->  		struct thermal_cooling_device *, int);
-> -void thermal_cdev_update(struct thermal_cooling_device *);
->  void thermal_notify_framework(struct thermal_zone_device *, int);
-> =20
->  #ifdef CONFIG_NET
-> --=20
-> 2.0.0.rc2
->=20
+If you write the voltage directly using an i2c write the rk808 will
+ramp as fast as it possibly can, which will probably lead to an
+overshoot.  You could fix this by changing the voltage more slowly in
+software, but it seems better to use the DVFS pin if we have it...
 
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+>> +     /*
+>> +      * dvsok pin would be pull down when dvs1/2 pin changed, and
+>> +      * it would be pull up once the voltage regulate complete.
+>> +      * No need to wait dvsok signal when voltage falling.
+>> +      */
+>
+> ...this but unless the voltage typically ramps much faster than spec
+> it's never clear to me that we're actually winning by polling the pin
+> instead of just dead reckoning the time, it's more work for the CPU to
+> poll the GPIO than to sleep after all.
 
-iQEcBAEBAgAGBQJUpuYSAAoJEMLUO4d9pOJWor4IAINd5mQoeQJ/awjaWQXnVnYl
-JGk6RFP7Ai9JY7QP4udjOmievjqlIG5RMlarb5jF5DdJ6rBUiIz4a2WypCazUZv6
-A65X9xnemOuMb3jBGw8afE5VcFp3NZ3jo/AxNRHufDoo441P82U/ysvwS3yhQ2/F
-htsuIL/14ltdWELzO87pgI3vEshSawi+0Eyv8J6hbWIX9b+DinCGwm/+npVI5z74
-kyDktfZNxYLaJ/R/a4XdwPRXmbAerLABLuYqT8B9vq7zrB1myKVYCqOzr0xNXg/R
-Wv7lCGQVNS7Bg5YOhvurJ7FMxbhxJJAgv8ySj8hj2AC+PDabmJBXLlagbXobMBE=
-=x4Gp
------END PGP SIGNATURE-----
+Possibly even fewer CPU cycles: we could configure this GPIO as an
+interrupt.  Then we can look for the rising edge in hardware.  ...you
+might need to make sure that the pin actually falls and goes back up,
+though.  If you changed between two voltages that were pretty close to
+begin with I wonder if the edge could be missed.  I guess you could
+make it high-level sensitive and put the 1us delay before unmasking
+it...
 
---h31gzZEtNLTqOjlF--
+
+> One thing we can do with hardware like this is to program in a voltage
+> we're likely to want to switch to quickly and then use the GPIO to get
+> there.  That can be a bit hard to arrange with the regulator API as it
+> currently stands since we don't exactly have an interface for it.
+>
+> We can just check to see what the two values are current set to before
+> switching and skip the register write if it's the same (making things
+> faster since we're typically avoiding an I2C or SPI transaction by doing
+> that) but that's a bit meh.  We can also try to do things like keep the
+> top voltage from the voltage ranges we're being given programmed which
+> for DVS typically ends up doing a reasonable job since governors often
+> like to jump straight to top speed when things get busy so that's one of
+> the common cases where we most want to change voltages as quickly as
+> possible.
+
+You're right that there could be some cool optimizations here, but
+since we really need to do a switch from A-to-B on every voltage
+change to get the ramp speed right then I don't think we can do them.
+
+Note that the MFD driver sets things up using regcache, so we
+shouldn't ever do a needless i2c transaction.
+
+-Doug
