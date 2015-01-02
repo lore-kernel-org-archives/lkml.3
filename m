@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281AbbABPha (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 10:37:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31519 "EHLO mx1.redhat.com"
+	id S1752343AbbABPhk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:37:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55429 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752248AbbABPh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 10:37:26 -0500
+	id S1752301AbbABPhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 10:37:33 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,17 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/30] perf build: Add bench objects building
-Date: Fri,  2 Jan 2015 16:35:46 +0100
-Message-Id: <1420212972-21595-5-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 05/30] perf build: Add tests objects building
+Date: Fri,  2 Jan 2015 16:35:47 +0100
+Message-Id: <1420212972-21595-6-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
 References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move bench objects building under build framework
-and enable perf-in.o rule.
+Move test objects building under build framework.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
@@ -44,104 +43,205 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Build           |  2 ++
- tools/perf/Makefile.perf   | 21 ++-------------------
- tools/perf/bench/Build     | 11 +++++++++++
- tools/perf/config/Makefile |  2 ++
- 4 files changed, 17 insertions(+), 19 deletions(-)
- create mode 100644 tools/perf/bench/Build
+ tools/perf/Build           |  1 +
+ tools/perf/Build.include   |  3 ++-
+ tools/perf/Makefile.perf   | 55 ----------------------------------------------
+ tools/perf/config/Makefile | 10 +++++++++
+ tools/perf/tests/Build     | 43 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 56 insertions(+), 56 deletions(-)
+ create mode 100644 tools/perf/tests/Build
 
 diff --git a/tools/perf/Build b/tools/perf/Build
-index e69de29bb2d1..9ea828de3fde 100644
+index 9ea828de3fde..b4b6a7ca760b 100644
 --- a/tools/perf/Build
 +++ b/tools/perf/Build
-@@ -0,0 +1,2 @@
-+perf-y += builtin-bench.o
-+perf-y += bench/
+@@ -1,2 +1,3 @@
+ perf-y += builtin-bench.o
+ perf-y += bench/
++perf-y += tests/
+diff --git a/tools/perf/Build.include b/tools/perf/Build.include
+index 5947f8a5a6b1..a3f325397fc7 100644
+--- a/tools/perf/Build.include
++++ b/tools/perf/Build.include
+@@ -70,4 +70,5 @@ if_changed = $(if $(strip $(any-prereq) $(arg-check)),             \
+ # - depfile generation
+ # - global $(CFLAGS)
+ # - per target C flags
+-c_flags = -Wp,-MD,$(depfile),-MT,$@ $(CFLAGS) $(CFLAGS_$(basetarget).o)
++# - BUILD_STR macro to allow '-D"$(variable)"' constructs
++c_flags = -Wp,-MD,$(depfile),-MT,$@ $(CFLAGS) -D"BUILD_STR(s)=\#s" $(CFLAGS_$(basetarget).o)
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index f578e1a91250..6d0be78763ec 100644
+index 6d0be78763ec..48f614c57246 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -459,19 +459,6 @@ LIB_OBJS += $(OUTPUT)tests/thread-mg-share.o
- LIB_OBJS += $(OUTPUT)tests/switch-tracking.o
+@@ -419,45 +419,6 @@ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
--BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
--# Benchmark modules
--BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
--BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
--ifeq ($(RAW_ARCH),x86_64)
--BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
--BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+ LIB_OBJS += $(OUTPUT)arch/common.o
+ 
+-LIB_OBJS += $(OUTPUT)tests/parse-events.o
+-LIB_OBJS += $(OUTPUT)tests/dso-data.o
+-LIB_OBJS += $(OUTPUT)tests/attr.o
+-LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
+-LIB_OBJS += $(OUTPUT)tests/open-syscall.o
+-LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
+-LIB_OBJS += $(OUTPUT)tests/open-syscall-tp-fields.o
+-LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
+-LIB_OBJS += $(OUTPUT)tests/perf-record.o
+-LIB_OBJS += $(OUTPUT)tests/rdpmc.o
+-LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
+-LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
+-LIB_OBJS += $(OUTPUT)tests/fdarray.o
+-LIB_OBJS += $(OUTPUT)tests/pmu.o
+-LIB_OBJS += $(OUTPUT)tests/hists_common.o
+-LIB_OBJS += $(OUTPUT)tests/hists_link.o
+-LIB_OBJS += $(OUTPUT)tests/hists_filter.o
+-LIB_OBJS += $(OUTPUT)tests/hists_output.o
+-LIB_OBJS += $(OUTPUT)tests/hists_cumulate.o
+-LIB_OBJS += $(OUTPUT)tests/python-use.o
+-LIB_OBJS += $(OUTPUT)tests/bp_signal.o
+-LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
+-LIB_OBJS += $(OUTPUT)tests/task-exit.o
+-LIB_OBJS += $(OUTPUT)tests/sw-clock.o
+-ifeq ($(ARCH),x86)
+-LIB_OBJS += $(OUTPUT)tests/perf-time-to-tsc.o
 -endif
--BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
--BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
--BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
--BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
+-LIB_OBJS += $(OUTPUT)tests/code-reading.o
+-LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+-LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
+-ifndef NO_DWARF_UNWIND
+-ifeq ($(ARCH),$(filter $(ARCH),x86 arm))
+-LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
+-endif
+-endif
+-LIB_OBJS += $(OUTPUT)tests/mmap-thread-lookup.o
+-LIB_OBJS += $(OUTPUT)tests/thread-mg-share.o
+-LIB_OBJS += $(OUTPUT)tests/switch-tracking.o
 -
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
  BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
- BUILTIN_OBJS += $(OUTPUT)builtin-help.o
-@@ -590,10 +577,6 @@ ifeq ($(NO_PERF_REGS),0)
-   LIB_OBJS += $(OUTPUT)util/perf_regs.o
- endif
+@@ -477,7 +438,6 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+-BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
  
--ifndef NO_LIBNUMA
--  BUILTIN_OBJS += $(OUTPUT)bench/numa.o
--endif
+ PERFLIBS = $(LIB_FILE) $(LIBAPIKFS) $(LIBTRACEEVENT)
+@@ -519,7 +479,6 @@ endif
+ ifndef NO_LIBUNWIND
+   LIB_OBJS += $(OUTPUT)util/unwind-libunwind.o
+ endif
+-LIB_OBJS += $(OUTPUT)tests/keep-tracking.o
+ 
+ ifndef NO_LIBAUDIT
+   BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
+@@ -694,20 +653,6 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+ 		'-DPREFIX="$(prefix_SQ)"' \
+ 		$<
+ 
+-$(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+-		'-DBINDIR="$(bindir_SQ)"' -DPYTHON='"$(PYTHON_WORD)"' \
+-		$<
 -
- ifndef NO_ZLIB
-   LIB_OBJS += $(OUTPUT)util/zlib.o
- endif
-@@ -633,9 +616,9 @@ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
- 		$(CFLAGS) -c $(filter %.c,$^) -o $@
+-$(OUTPUT)tests/python-use.o: tests/python-use.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+-		-DPYTHONPATH='"$(OUTPUT)python"' \
+-		-DPYTHON='"$(PYTHON_WORD)"' \
+-		$<
+-
+-$(OUTPUT)tests/dwarf-unwind.o: tests/dwarf-unwind.c
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -fno-optimize-sibling-calls $<
+-
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
  
--$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
-+$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(PERF_IN)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
--               $(BUILTIN_OBJS) $(LIBS) -o $@
-+               $(BUILTIN_OBJS) $(PERF_IN) $(LIBS) -o $@
- 
- $(GTK_OBJS): $(OUTPUT)%.o: %.c $(LIB_H)
- 	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
-diff --git a/tools/perf/bench/Build b/tools/perf/bench/Build
-new file mode 100644
-index 000000000000..5ce98023d518
---- /dev/null
-+++ b/tools/perf/bench/Build
-@@ -0,0 +1,11 @@
-+perf-y += sched-messaging.o
-+perf-y += sched-pipe.o
-+perf-y += mem-memcpy.o
-+perf-y += futex-hash.o
-+perf-y += futex-wake.o
-+perf-y += futex-requeue.o
-+
-+perf-$(CONFIG_X86_64) += mem-memcpy-x86-64-asm.o
-+perf-$(CONFIG_X86_64) += mem-memset-x86-64-asm.o
-+
-+perf-$(CONFIG_NUMA) += numa.o
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f6538544c740..3c73e11954ea 100644
+index 3c73e11954ea..af41fcf91edf 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -28,6 +28,7 @@ ifeq ($(ARCH),x86)
+@@ -20,10 +20,13 @@ CFLAGS := $(EXTRA_CFLAGS) $(EXTRA_WARNINGS)
+ 
+ include $(src-perf)/config/Makefile.arch
+ 
++$(call detected_var,ARCH)
++
+ NO_PERF_REGS := 1
+ 
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),x86)
++  $(call detected,CONFIG_X86)
+   ifeq (${IS_X86_64}, 1)
      CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
      ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
-     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
-+    $(call detected,CONFIG_X86_64)
-   else
-     LIBUNWIND_LIBS = -lunwind -lunwind-x86
-   endif
-@@ -633,6 +634,7 @@ ifndef NO_LIBNUMA
-   else
-     CFLAGS += -DHAVE_LIBNUMA_SUPPORT
-     EXTLIBS += -lnuma
-+    $(call detected,CONFIG_NUMA)
-   endif
- endif
+@@ -418,6 +421,7 @@ endif
  
+ ifeq ($(dwarf-post-unwind),1)
+   CFLAGS += -DHAVE_DWARF_UNWIND_SUPPORT
++  $(call detected,CONFIG_DWARF_UNWIND)
+ else
+   NO_DWARF_UNWIND := 1
+ endif
+@@ -815,3 +819,9 @@ endif
+ ifeq ($(display_lib),1)
+   $(info )
+ endif
++
++$(call detected_var,bindir_SQ)
++$(call detected_var,PYTHON_WORD)
++ifneq ($(OUTPUT),)
++$(call detected_var,OUTPUT)
++endif
+diff --git a/tools/perf/tests/Build b/tools/perf/tests/Build
+new file mode 100644
+index 000000000000..06d82b0311de
+--- /dev/null
++++ b/tools/perf/tests/Build
+@@ -0,0 +1,43 @@
++perf-y += builtin-test.o
++
++perf-y += parse-events.o
++perf-y += dso-data.o
++perf-y += attr.o
++perf-y += vmlinux-kallsyms.o
++perf-y += open-syscall.o
++perf-y += open-syscall-all-cpus.o
++perf-y += open-syscall-tp-fields.o
++perf-y += mmap-basic.o
++perf-y += perf-record.o
++perf-y += rdpmc.o
++perf-y += evsel-roundtrip-name.o
++perf-y += evsel-tp-sched.o
++perf-y += fdarray.o
++perf-y += pmu.o
++perf-y += hists_common.o
++perf-y += hists_link.o
++perf-y += hists_filter.o
++perf-y += hists_output.o
++perf-y += hists_cumulate.o
++perf-y += python-use.o
++perf-y += bp_signal.o
++perf-y += bp_signal_overflow.o
++perf-y += task-exit.o
++perf-y += sw-clock.o
++perf-y += mmap-thread-lookup.o
++perf-y += thread-mg-share.o
++perf-y += switch-tracking.o
++perf-y += keep-tracking.o
++perf-y += code-reading.o
++perf-y += sample-parsing.o
++perf-y += parse-no-sample-id-all.o
++
++perf-$(CONFIG_X86) += perf-time-to-tsc.o
++
++ifeq ($(ARCH),$(filter $(ARCH),x86 arm))
++perf-$(CONFIG_DWARF_UNWIND) += dwarf-unwind.o
++endif
++
++CFLAGS_attr.o         += -DBINDIR="BUILD_STR($(bindir_SQ))" -DPYTHON="BUILD_STR($(PYTHON_WORD))"
++CFLAGS_python-use.o   += -DPYTHONPATH="BUILD_STR($(OUTPUT)python)" -DPYTHON="BUILD_STR($(PYTHON_WORD))"
++CFLAGS_dwarf-unwind.o += -fno-optimize-sibling-calls
 -- 
 1.9.3
 
