@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058AbbABO5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 09:57:42 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:40296 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbbABO5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 09:57:41 -0500
-Date: Fri, 2 Jan 2015 20:27:29 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@intel.com>
-Subject: Re: WARNING: at drivers/gpu/drm/i915/intel_display.c:11375 [i915] in
- 3.19-rc2
-Message-ID: <20150102145728.GA2643@sudip-PC>
-References: <20150101142215.GA2570@yulia-desktop>
+	id S1752106AbbABPBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 10:01:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47739 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761AbbABPBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 10:01:23 -0500
+Message-ID: <54A6B2C1.5090104@suse.cz>
+Date: Fri, 02 Jan 2015 16:01:21 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150101142215.GA2570@yulia-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: sedat.dilek@gmail.com
+CC: Ben Hutchings <ben@decadent.org.uk>, max@stro.at,
+        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/2] kbuild: Fix removal of the debian/ directory
+References: <54A40743.8080401@suse.cz>	<1420040119-32669-1-git-send-email-mmarek@suse.cz> <CA+icZUUpYCGTJ7mC1jCNUQi7fgw4qSAa+ga8JGPXhkYEK+Bmtw@mail.gmail.com>
+In-Reply-To: <CA+icZUUpYCGTJ7mC1jCNUQi7fgw4qSAa+ga8JGPXhkYEK+Bmtw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 01, 2015 at 05:22:15PM +0300, Andrey Skvortsov wrote:
-> Hi,
+On 2014-12-31 16:50, Sedat Dilek wrote:
+> On Wed, Dec 31, 2014 at 4:35 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> scripts/Makefile.clean treats absolute path specially, but
+>> $(objtree)/debian is no longer an absolute path since 7e1c0477 (kbuild:
+>> Use relative path for $(objtree). Work around this by checking if the
+>> path starts with $(objtree)/.
+>>
+>> Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+>> Fixes: 7e1c0477 (kbuild: Use relative path for $(objtree)
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
 > 
-> this warning does not exist in 3.19-rc1, but it happens every boot in
-> 3.19-rc2. If you need any other information or data, I would be glad
-> to help to debug it. 
+> After applying your patchset, thing work as expected.
+> 
+> Feel free to add my Tested-by.
+> 
+> Hope this will get into v3.19-rc3?
 
-mine is also i915, but i am not seeing any warning. if you send me your .config, then i can try booting using that.
-the current kernel version is : 3.19.0-rc2-next-20141231+
+I pushed the patch to kbuild.git#rc-fixes. The 'clean-rule' removal is
+in kbuild.git#kbuild.
 
-thanks
-sudip
+Michal
 
-> 
-> [   12.848428] ------------[ cut here ]------------
-> [   12.848479] WARNING: CPU: 1 PID: 328 at drivers/gpu/drm/i915/intel_display.c:11375 intel_crtc_set_config+0x3de/0xb36 [i915]()
-> [   12.848649] ---[ end trace da6972fb56a05968 ]---
-> 
-> -- 
-> Best regards,
-> Andrey Skvortsov
-> 
-> Secure e-mail with gnupg: See http://www.gnupg.org/
-> PGP Key ID: 0x57A3AEAD
-> 
-> 
