@@ -1,118 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbbABQDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 11:03:53 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:50675 "EHLO
-	imgpgp01.kl.imgtec.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751871AbbABQDu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 11:03:50 -0500
-X-PGP-Universal: processed;
-	by imgpgp01.kl.imgtec.org on Fri, 02 Jan 2015 16:03:48 +0000
-Message-ID: <54A6C161.30300@imgtec.com>
-Date: Fri, 2 Jan 2015 16:03:45 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752262AbbABQEr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 11:04:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48469 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871AbbABQEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 11:04:45 -0500
+Message-ID: <54A6C19A.3080001@suse.cz>
+Date: Fri, 02 Jan 2015 17:04:42 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        <akpm@linux-foundation.org>
-CC: <peterz@infradead.org>, <mingo@kernel.org>, <davej@redhat.com>,
-        <sasha.levin@oracle.com>, <hughd@google.com>, <linux-mm@kvack.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 22/38] metag: drop _PAGE_FILE and pte_file()-related helpers
-References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com> <1419423766-114457-23-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1419423766-114457-23-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="OEPKX6FcXiONUNlg4Bbe1hW0RMjh59KTI"
-X-Originating-IP: [192.168.154.101]
-X-ESG-ENCRYPT-TAG: da4c5968
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>, linux-kbuild@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] kbuild: merge bounds.h and asm-offsets.h rules
+References: <1419403765-3377-1-git-send-email-yamada.m@jp.panasonic.com> <1419403765-3377-2-git-send-email-yamada.m@jp.panasonic.com>
+In-Reply-To: <1419403765-3377-2-git-send-email-yamada.m@jp.panasonic.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---OEPKX6FcXiONUNlg4Bbe1hW0RMjh59KTI
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 2014-12-24 07:49, Masahiro Yamada wrote:
+> The rules "cmd_bounds" and "cmd_offsets" are almost the same.
+> (The difference is only the include guards.)  They can be merged.
 
-On 24/12/14 12:22, Kirill A. Shutemov wrote:
-> We've replaced remap_file_pages(2) implementation with emulation.
-> Nobody creates non-linear mapping anymore.
->=20
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: James Hogan <james.hogan@imgtec.com>
+Good idea.
 
-Acked-by: James Hogan <james.hogan@imgtec.com>
 
-Cheers
-James
-
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 > ---
->  arch/metag/include/asm/pgtable.h | 6 ------
->  1 file changed, 6 deletions(-)
->=20
-> diff --git a/arch/metag/include/asm/pgtable.h b/arch/metag/include/asm/=
-pgtable.h
-> index 0d9dc5487296..d0604c0a8702 100644
-> --- a/arch/metag/include/asm/pgtable.h
-> +++ b/arch/metag/include/asm/pgtable.h
-> @@ -47,7 +47,6 @@
->   */
->  #define _PAGE_ACCESSED		_PAGE_ALWAYS_ZERO_1
->  #define _PAGE_DIRTY		_PAGE_ALWAYS_ZERO_2
-> -#define _PAGE_FILE		_PAGE_ALWAYS_ZERO_3
-> =20
->  /* Pages owned, and protected by, the kernel. */
->  #define _PAGE_KERNEL		_PAGE_PRIV
-> @@ -219,7 +218,6 @@ extern unsigned long empty_zero_page;
->  static inline int pte_write(pte_t pte)   { return pte_val(pte) & _PAGE=
-_WRITE; }
->  static inline int pte_dirty(pte_t pte)   { return pte_val(pte) & _PAGE=
-_DIRTY; }
->  static inline int pte_young(pte_t pte)   { return pte_val(pte) & _PAGE=
-_ACCESSED; }
-> -static inline int pte_file(pte_t pte)    { return pte_val(pte) & _PAGE=
-_FILE; }
->  static inline int pte_special(pte_t pte) { return 0; }
-> =20
->  static inline pte_t pte_wrprotect(pte_t pte) { pte_val(pte) &=3D (~_PA=
-GE_WRITE); return pte; }
-> @@ -327,10 +325,6 @@ static inline void update_mmu_cache(struct vm_area=
-_struct *vma,
->  #define __pte_to_swp_entry(pte)		((swp_entry_t) { pte_val(pte) })
->  #define __swp_entry_to_pte(x)		((pte_t) { (x).val })
-> =20
-> -#define PTE_FILE_MAX_BITS	22
-> -#define pte_to_pgoff(x)		(pte_val(x) >> 10)
-> -#define pgoff_to_pte(x)		__pte(((x) << 10) | _PAGE_FILE)
+> 
+>  Kbuild | 59 +++++++++++++++++++++--------------------------------------
+>  1 file changed, 21 insertions(+), 38 deletions(-)
+> 
+> diff --git a/Kbuild b/Kbuild
+> index 5d7c729..55a639f 100644
+> --- a/Kbuild
+> +++ b/Kbuild
+> @@ -5,19 +5,20 @@
+>  # 2) Generate asm-offsets.h (may need bounds.h)
+>  # 3) Check for missing system calls
+>  
+> -#####
+> -# 1) Generate bounds.h
 > -
->  #define kern_addr_valid(addr)	(1)
-> =20
->  /*
->=20
+> -bounds-file := include/generated/bounds.h
+> -
+> -always  := $(bounds-file)
+> -targets := $(bounds-file) kernel/bounds.s
+> +# Default sed regexp - multiline due to syntax constraints
+> +define sed-y
+> +	"/^->/{s:->#\(.*\):/* \1 */:; \
+> +	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
+> +	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
+> +	s:->::; p;}"
+> +endef
+>  
+> -quiet_cmd_bounds = GEN     $@
+> -define cmd_bounds
+> +quiet_cmd_offsets = GEN     $@
+> +define cmd_offsets
+>  	(set -e; \
+> -	 echo "#ifndef __LINUX_BOUNDS_H__"; \
+> -	 echo "#define __LINUX_BOUNDS_H__"; \
+> +	 INCLUDE_GUARD=$$(echo __$(notdir $@)__ | tr '[a-z].-' '[A-Z]__'); \
+> +	 echo "#ifndef $$INCLUDE_GUARD"; \
+> +	 echo "#define $$INCLUDE_GUARD"; \
 
+I think it would be more readable to write it as
 
---OEPKX6FcXiONUNlg4Bbe1hW0RMjh59KTI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+  echo "#ifndef $(2)"; \
+  ...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+and pass the include guard name as an argument to cmd_offsets.
 
-iQIcBAEBAgAGBQJUpsFiAAoJEGwLaZPeOHZ6JkQP+gNnOu1OENdTa9KbPViKpmFu
-MTNoT7DjQnPG6KkCjL8ITrXbuqTNGFtAC5LHe/ZBRPgnV5X8/z6HN9EQf7mdl1nt
-2Hb3Ze/CQGeoydM1cQiymkdoLJP68Bc2eMPkvDYNwo0RCwKmJmbEofxqT+Cc+a1r
-B1qJXIHTLBj6EC4dRcTF0WageFamWQedN1uz/x4yqCCTIOablwbwnvOpoFeCgH/l
-oFkc2CLl1aUO9LJSUvA4WDxQmnBKvG9wV7Br52VVyJQvYNGI3+HBdRLYAUdRM3Sm
-5u3wZWBbiWterYpfO3b+6JOGDZqyhQ43hjzePksi+awYVL5QRPbGayacC6cmFsdV
-77nAvXcGwtqkkWYFibgtAXpoRdf/FRYYBm041Bb9JgJ1PA58bm5qiKsE5ycVAB0M
-BQ1PcDvYzA3jk6rJKgI79NpETkkjlDI3HqnXWTXywwTyOjvgkMzHkHhOwgncIZK6
-LrWfXZgxekVDAG9xh9tiWwQGGYwtmgba5t3cmtZLJQGUOyxhB5p2aGYKaYH2Sjgq
-81Eb0u57aksJa4DEHuRPEjm/3Mh7J0u9L4LxO1wRiACtKqK/1CyD3IE0alL2JMe8
-pJr1yT5u4A741vtTj8fC2x2sxVjqhijdpyBcBcMazHjSUYQqTGKAtylolKtljecg
-X9bBbKVvbNwJWdEn4Cdd
-=RL0O
------END PGP SIGNATURE-----
+Otherwise it's a great cleanup.
 
---OEPKX6FcXiONUNlg4Bbe1hW0RMjh59KTI--
+Michal
