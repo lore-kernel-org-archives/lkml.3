@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbbABTvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 14:51:20 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41196 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbbABTvQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 14:51:16 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 2/2] time: adjtimex: Validate the ADJ_FREQUENCY values
-Date: Fri,  2 Jan 2015 11:51:08 -0800
-Message-Id: <1420228268-2161-3-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420228268-2161-1-git-send-email-john.stultz@linaro.org>
-References: <1420228268-2161-1-git-send-email-john.stultz@linaro.org>
+	id S1752545AbbABTwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 14:52:38 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49307 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752190AbbABTwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 14:52:36 -0500
+From: Dave Gerlach <d-gerlach@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: Benoit Cousson <bcousson@baylibre.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Suman Anna <s-anna@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Dave Gerlach <d-gerlach@ti.com>
+Subject: [PATCH 0/3] remoteproc: Introduce wkup_m3_rproc driver
+Date: Fri, 2 Jan 2015 13:51:56 -0600
+Message-ID: <1420228319-41085-1-git-send-email-d-gerlach@ti.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
+Hi,
+This patch series adds a wkup_m3_rproc driver for TI AM335x SoCs.
+This family of SoCs contains an ARM Cortex M3 coprocessor that is
+responsible for low-level power tasks that cannot be handled by
+the main ARM Cortex A8 so firmware running from the CM3 can be
+used instead. This driver handles loading of the firmware and
+reset of the CM3 once it is booted.
 
-Verify that the frequency value from userspace is valid and makes sense.
+This patch was split off from v4 of the am335x suspend series,
+found here [1]. I have pushed a branch based on v3.19-rc1
+containing all dependencies here [2] for am33xx suspend
+for a higher level view of the entire series of patch sets. This
+series is required for a coming series "drivers: soc: ti:
+Introduce wkup_m3_ipc driver" that boots this rproc driver and
+handles the communication layer between the SoC and this remote
+processor.
 
-Unverified values can cause overflows later on.
+This patch set depends on series "couple of generic remoteproc
+enhancements" by Suman Anna found here [3]. The driver expects to
+load firmware am335x-pm-firmware.elf from /lib/firmware which is
+found here [4].
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-[jstultz: Fix up bug for negative values and drop redunent cap check]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/time/ntp.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Regards,
+Dave
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 87a346f..28bf91c 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -633,6 +633,13 @@ int ntp_validate_timex(struct timex *txc)
- 	if ((txc->modes & ADJ_SETOFFSET) && (!capable(CAP_SYS_TIME)))
- 		return -EPERM;
- 
-+	if (txc->modes & ADJ_FREQUENCY) {
-+		if (LONG_MIN / PPM_SCALE > txc->freq)
-+			return -EINVAL;
-+		if (LONG_MAX / PPM_SCALE < txc->freq)
-+			return -EINVAL;
-+	}
-+
- 	return 0;
- }
- 
+[1] http://www.spinics.net/lists/linux-omap/msg109331.html
+[2] https://github.com/dgerlach/linux-pm/tree/pm-am335x-v3.19-rc1
+[3] http://www.spinics.net/lists/arm-kernel/msg362961.html
+[4] https://git.ti.com/ti-cm3-pm-firmware/amx3-cm3/commits/next
+
+
+Dave Gerlach (3):
+  ARM: OMAP2+: Use pdata-quirks for wkup_m3 deassert_hardreset
+  Documentation: dt: add ti,am3353-wkup-m3 bindings
+  remoteproc: wkup_m3: Add wkup_m3 remote proc driver
+
+ .../bindings/remoteproc/wkup_m3_rproc.txt          |  32 ++++
+ arch/arm/mach-omap2/pdata-quirks.c                 |  13 ++
+ drivers/remoteproc/Kconfig                         |  12 ++
+ drivers/remoteproc/Makefile                        |   1 +
+ drivers/remoteproc/wkup_m3_rproc.c                 | 175 +++++++++++++++++++++
+ include/linux/platform_data/wkup_m3.h              |  23 +++
+ 6 files changed, 256 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/remoteproc/wkup_m3_rproc.txt
+ create mode 100644 drivers/remoteproc/wkup_m3_rproc.c
+ create mode 100644 include/linux/platform_data/wkup_m3.h
+
 -- 
-1.9.1
+2.1.0
 
