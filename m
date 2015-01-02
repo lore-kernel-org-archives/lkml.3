@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbbABXIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 18:08:00 -0500
-Received: from smtp2-out.insa-rennes.fr ([193.52.94.25]:31883 "EHLO
-	smtp2-out.insa-rennes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbbABXH6 (ORCPT
+	id S1752616AbbABXIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 18:08:41 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56471 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377AbbABXIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 18:07:58 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlUFAK8jp1QKBQEl/2dsb2JhbABUCIQwgwXJIQKBHQEBAQEBfYQNAQUjVQEQCyEWCwICCQMCAQIBRQYNAQUCAQGyT5QoAQEBAQEFAQEBAQEBARuPFgoBVgeCaIFBBY9ggSeHDoR3IYspAoQRboEEgT8BAQE
-Message-ID: <54A724BE.8050409@supelec.fr>
-Date: Sat, 03 Jan 2015 00:07:42 +0100
-From: Laurent Georget <laurent.georget@supelec.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 2 Jan 2015 18:08:40 -0500
+Date: Sat, 3 Jan 2015 00:08:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jiri Kosina <jkosina@suse.cz>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>,
+        DaeSeok Youn <daeseok.youn@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
+        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
+Message-ID: <20150102230837.GA4482@amd>
+References: <20150102051142.GF4873@amd>
+ <54A67A38.3000207@nod.at>
+ <20150102194616.GA27538@amd>
+ <54A7103E.6020500@nod.at>
+ <20150102222936.GA29018@amd>
+ <alpine.LRH.2.00.1501022331060.30884@twin.jikos.cz>
+ <20150102224646.GB29018@amd>
+ <alpine.LNX.2.00.1501022348070.16297@pobox.suse.cz>
+ <20150102225420.GC29018@amd>
+ <54A72306.2050908@nod.at>
 MIME-Version: 1.0
-To: linux-man <linux-man@vger.kernel.org>
-CC: linux-kernel@vger.kernel.org, Jeff Epler <jepler@unpythonic.net>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH 2/2] adjtimex.2: Change 'PPM' (parts per million) to 'ppm'
-References: <54A2DEAD.2050708@supelec.fr> <54A72360.3070807@supelec.fr>
-In-Reply-To: <54A72360.3070807@supelec.fr>
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="4Q5xOQXmvFeuoMsBiUQA8rFkGrf9horje"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A72306.2050908@nod.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---4Q5xOQXmvFeuoMsBiUQA8rFkGrf9horje
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Sat 2015-01-03 00:00:22, Richard Weinberger wrote:
+> Am 02.01.2015 um 23:54 schrieb Pavel Machek:
+> > On Fri 2015-01-02 23:49:52, Jiri Kosina wrote:
+> >> On Fri, 2 Jan 2015, Pavel Machek wrote:
+> >>
+> >>>> You also want to protect against binaries that are evil on purpose,
+> >>>> right?
+> >>>
+> >>> Umm. No. Not by default. We don't want to break crashme or trinity by
+> >>> default.
+> >>
+> >> I thought trinity is issuing syscalls directly (would make more sense than 
+> >> going through glibc, wouldn't it?) ... haven't checked the source though.
+> > 
+> > Patch in this thread wanted to insert delays into kernel on SIGSEGV
+> > processing. That's bad idea by default.
+> 
+> No. This is not what this patch does.
+> 
+> > But changing glibc to do sleep(30); abort(); instead of abort(); to
+> > slow down bruteforcing of canaries makes some kind of sense... and
+> > should be ok by default.
+> 
+> As I saidn only focusing one the specific stack canary case is not enough.
 
-Hi again,
+Ok, so I am now saying "adding random delays to the kernel, hoping
+they slow attacker down" is bad idea. Feel free to add my NAK to the
+patch.
 
-this is the second patch of the new series of patchs for adjtimex.2.=20
+If really neccessary, "kill_me_slowly()" syscall would be acceptable,
+but it seems just sleep(); abort(); combination is enough.
 
-This is a trivia patch correcting "PPM" (parts per million) to the more u=
-sual "ppm".
-Credits to Jeff Epler <jepler@unpythonic.net>.
-
----
- man2/adjtimex.2 | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
-index ff4b23e..dbb2333 100644
---- a/man2/adjtimex.2
-+++ b/man2/adjtimex.2
-@@ -54,7 +54,7 @@ struct timex {
-     long offset;      /* Time offset; nanoseconds, if STA_NANO
-                          status flag is set, otherwise
-                          microseconds */
--    long freq;        /* Frequency offset, in units of 2^-16 PPM
-+    long freq;        /* Frequency offset, in units of 2^-16 ppm
-                          (parts per million) (see NOTES below) */
-     long maxerror;    /* Maximum error (microseconds) */
-     long esterror;    /* Estimated error (microseconds) */
-@@ -62,8 +62,7 @@ struct timex {
-     long constant;    /* PLL (phase-locked loop) time constant */
-     long precision;   /* Clock precision (microseconds,
-                          read-only) */
--    long tolerance;   /* Clock frequency tolerance (PPM,
--                         read-only) */
-+    long tolerance;   /* Clock frequency tolerance (ppm, read-only) */
-     struct timeval time;
-                       /* Current time (read-only, except for
-                          ADJ_SETOFFSET); upon return, time.tv_usec
-@@ -71,13 +70,13 @@ struct timex {
-                          flag is set, otherwise microseconds */
-     long tick;        /* Microseconds between clock ticks */
-     long ppsfreq;     /* PPS (pulse per second) frequency
--                         (2^-16 PPM (see NOTES), read-only) */
-+                         (2^-16 ppm (see NOTES), read-only) */
-     long jitter;      /* PPS jitter (read-only); nanoseconds, if
-                          STA_NANO status flag is set, otherwise
-                          microseconds */
-     int  shift;       /* PPS interval duration
-                          (seconds, read-only) */
--    long stabil;      /* PPS stability (2^-16 PPM (see NOTES), read-only=
-) */
-+    long stabil;      /* PPS stability (2^-16 ppm (see NOTES), read-only=
-) */
-     long jitcnt;      /* PPS jitter limit exceeded (read-only) */
-     long calcnt;      /* PPS calibration intervals (read-only) */
-     long errcnt;      /* PPS calibration errors (read-only) */
-@@ -349,9 +348,9 @@ In struct
- .IR ppsfreq ,
- and=20
- .I stabil
--are PPM (parts per million) with a 16-bits fractional part, which means =
-that a
--value of 1 in one of those fields actually means 2^-16 PPM, and 2^16=3D6=
-5535 is=20
--1 PPM. This is the case for both input values (in the case of
-+are ppm (parts per million) with a 16-bits fractional part, which means =
-that a
-+value of 1 in one of those fields actually means 2^-16 ppm, and 2^16=3D6=
-5535 is=20
-+1 ppm. This is the case for both input values (in the case of
- .IR freq )
- and output values.
- .SH CONFORMING TO
---=20
-2.0.4
-
-
-
---4Q5xOQXmvFeuoMsBiUQA8rFkGrf9horje
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iF4EAREIAAYFAlSnJMMACgkQRTidSplJch4hWAD/XWMZLdN1ckTN4he587ni4nb6
-WkmX3boSE1QNl1D1O60BALp335+1rGv8uy3mLlC7dh/FOZfjQ8jTLhlHCbCQaQL1
-=qq9J
------END PGP SIGNATURE-----
-
---4Q5xOQXmvFeuoMsBiUQA8rFkGrf9horje--
+glibc should cover 99% cases where this matters, please just fix glibc,
+others will follow.
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
