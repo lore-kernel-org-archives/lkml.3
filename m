@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363AbbACMcO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 07:32:14 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:63602 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269AbbACMcL (ORCPT
+	id S1752449AbbACMcT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 07:32:19 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:58992 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379AbbACMcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 07:32:11 -0500
+	Sat, 3 Jan 2015 07:32:17 -0500
 From: jitendra kumar khasdev <jkhasdev@gmail.com>
 To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
         gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         pankaj.saraf@nektech.in, jitendra kumar khasdev <jkhasdev@gmail.com>
-Subject: [PATCH v2 4/5] Staging: comedi: fix line over 80 characters warning
-Date: Sat,  3 Jan 2015 18:01:28 +0530
-Message-Id: <1420288289-4477-5-git-send-email-jkhasdev@gmail.com>
+Subject: [PATCH v2 5/5] Staging: comedi: fix line over 80 characters warning
+Date: Sat,  3 Jan 2015 18:01:29 +0530
+Message-Id: <1420288289-4477-6-git-send-email-jkhasdev@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420288289-4477-1-git-send-email-jkhasdev@gmail.com>
 References: <1420288289-4477-1-git-send-email-jkhasdev@gmail.com>
@@ -31,18 +31,18 @@ Singed-off-by: Jitendra Kumar Khasdev <jkhasdev@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/comedi/drivers/pcl812.c b/drivers/staging/comedi/drivers/pcl812.c
-index aae934e7..5aeb695 100644
+index 5aeb695..f06347f 100644
 --- a/drivers/staging/comedi/drivers/pcl812.c
 +++ b/drivers/staging/comedi/drivers/pcl812.c
-@@ -525,7 +525,7 @@ struct pcl812_private {
- 	unsigned int last_dma_run;	/*  how many bytes to transfer on last
- 					 *  DMA buffer
- 					 */
--	unsigned int max_812_ai_mode0_rangewait;	/*  setling time for gain */
-+	unsigned int max_812_ai_mode0_rangewait; /*  setling time for gain */
- 	unsigned int divisor1;
- 	unsigned int divisor2;
- 	unsigned int use_diff:1;
+@@ -1240,7 +1240,7 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		for (i = 0; i < 2; i++) {
+ 			unsigned long dmabuf;
+ 
+-			dmabuf =  __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
++			dmabuf = __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
+ 			if (!dmabuf)
+ 				return -ENOMEM;
+ 
 -- 
 1.9.1
 
