@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbbACC4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 21:56:04 -0500
-Received: from mail.kernel.org ([198.145.29.136]:42887 "EHLO mail.kernel.org"
+	id S1752189AbbACC4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 21:56:06 -0500
+Received: from mail.kernel.org ([198.145.29.136]:42898 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750761AbbACCzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 21:55:51 -0500
+	id S1751888AbbACCzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 21:55:54 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Mark Wielaard <mjw@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        yrl.pp-manager.tt@hitachi.com,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/4] perf probe: Fix to fall back to find probe point in symbols
-Date: Fri,  2 Jan 2015 23:55:34 -0300
-Message-Id: <1420253737-2488-2-git-send-email-acme@kernel.org>
+Subject: [PATCH 2/4] perf probe: Fix crash in dwarf_getcfi_elf
+Date: Fri,  2 Jan 2015 23:55:35 -0300
+Message-Id: <1420253737-2488-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1420253737-2488-1-git-send-email-acme@kernel.org>
 References: <1420253737-2488-1-git-send-email-acme@kernel.org>
@@ -23,86 +22,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-Fix to fall back to find a probe point in symbols if perf fails to find
-it in debuginfo.
+David reported that perf can segfault when adding an uprobe event like
+this:
 
-This can happen when the target function is an alias of another
-function. Such alias doesn't have an entry in debuginfo but in symbols.
+  $ perf probe -x /lib64/libc-2.14.90.so -a 'malloc  size=%di'
 
-David Ahern reported this problem in https://lkml.org/lkml/2014/12/29/355
+  (gdb) bt
+  #0  parse_eh_frame_hdr (hdr=0x0, hdr_size=2596, hdr_vaddr=71788,
+      ehdr=0x7fffffffd390, eh_frame_vaddr=
+      0x7fffffffd378, table_entries=0x8808d8, table_encoding=0x8808e0 "") at
+      dwarf_getcfi_elf.c:79
+  #1  0x000000385f81615a in getcfi_scn_eh_frame (hdr_vaddr=71788,
+      hdr_scn=0x8839b0, shdr=0x7fffffffd2f0, scn=<optimized out>,
+      ehdr=0x7fffffffd390, elf=0x882b30) at dwarf_getcfi_elf.c:231
+  #2  getcfi_shdr (ehdr=0x7fffffffd390, elf=0x882b30) at dwarf_getcfi_elf.c:283
+  #3  dwarf_getcfi_elf (elf=0x882b30) at dwarf_getcfi_elf.c:309
+  #4  0x00000000004d5bac in debuginfo__find_probes (pf=0x7fffffffd4f0,
+      dbg=Unhandled dwarf expression opcode 0xfa) at util/probe-finder.c:993
+  #5  0x00000000004d634a in debuginfo__find_trace_events (dbg=0x880840,
+      pev=<optimized out>, tevs=0x880f88, max_tevs=<optimized out>) at
+      util/probe-finder.c:1200
+  #6  0x00000000004aed6b in try_to_find_probe_trace_events (target=0x881b20
+      "/lib64/libpthread-2.14.90.so",
+      max_tevs=128, tevs=0x880f88, pev=0x859b30) at util/probe-event.c:482
+  #7  convert_to_probe_trace_events (target=0x881b20
+      "/lib64/libpthread-2.14.90.so", max_tevs=128, tevs=0x880f88,
+      pev=0x859b30) at util/probe-event.c:2356
+  #8  add_perf_probe_events (pevs=<optimized out>, npevs=1, max_tevs=128,
+      target=0x881b20 "/lib64/libpthread-2.14.90.so", force_add=false) at
+      util/probe-event.c:2391
+  #9  0x000000000044014f in __cmd_probe (argc=<optimized out>,
+      argv=0x7fffffffe2f0, prefix=Unhandled dwarf expression opcode 0xfa) at
+      at builtin-probe.c:488
+  #10 0x0000000000440313 in cmd_probe (argc=5, argv=0x7fffffffe2f0,
+      prefix=<optimized out>) at builtin-probe.c:506
+  #11 0x000000000041d133 in run_builtin (p=0x805680, argc=5,
+      argv=0x7fffffffe2f0) at perf.c:341
+  #12 0x000000000041c8b2 in handle_internal_command (argv=<optimized out>,
+      argc=<optimized out>) at perf.c:400
+  #13 run_argv (argv=<optimized out>, argcp=<optimized out>) at perf.c:444
+  #14 main (argc=5, argv=0x7fffffffe2f0) at perf.c:559
 
-I ensured the problem and deeper investigation discovers it.
- -----
- eu-readelf --debug-dump=info /usr/lib/debug/lib/x86_64-linux-gnu/libc-2.19.so | grep \"malloc\" -A6
-             name                 (strp) "malloc"
-             decl_file            (data1) 25
-             decl_line            (data2) 466
-             prototyped           (flag_present)
-             type                 (ref4) [  81b5]
-             declaration          (flag_present)
- [  8f58]      formal_parameter
- --
-             name                 (strp) "malloc"
-             decl_file            (data1) 23
-             decl_line            (data2) 466
-             prototyped           (flag_present)
-             type                 (ref4) [  9f4a]
-             declaration          (flag_present)
-             sibling              (ref4) [  bb29]
- ...
- -----
-All these entires have no instances (all of them are declarations)
-This is why the perf probe failed to find it in debuginfo.
-
-However, there are some malloc instances in symbols.
- -----
- eu-readelf --symbols /usr/lib/debug/lib/x86_64-linux-gnu/libc-2.19.so | grep malloc$
-  1181: 0000000000080700   5332 FUNC    LOCAL  DEFAULT       12 _int_malloc
-  4537: 00000000000831d0    339 FUNC    LOCAL  DEFAULT       12 __GI___libc_malloc
-  5545: 00000000000831d0    339 FUNC    LOCAL  DEFAULT       12 __malloc
-  6063: 00000000000831d0    339 FUNC    GLOBAL DEFAULT       12 malloc
-  7302: 00000000000831d0    339 FUNC    GLOBAL DEFAULT       12 __libc_malloc
- -----
-As you an see, malloc and __libc_malloc have same address, and actually
-__libc_malloc has an entry in debuginfo. So you can set up a probe on
-__libc_malloc.
-
-To fix this problem shortly, perf probe simply falls back to find probe
-point(malloc) in symbols if it is not found in debuginfo.
+And I found a related commit (5704c8c4fa71 "getcfi_scn_eh_frame: Don't
+crash and burn when .eh_frame bits aren't there.") in elfutils that can
+lead to a unexpected crash like this.  To safely use the function, it
+needs to check the .eh_frame section is a PROGBITS type.
 
 Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+Tested-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20141231062747.2087.80961.stgit@localhost.localdomain
+Cc: Mark Wielaard <mjw@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/20141230090533.GH6081@sejong
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ tools/perf/util/probe-finder.c | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 28eb1417cb2a..7f9b8632e433 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -495,9 +495,11 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 	}
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index c7918f83b300..b5247d777f0e 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -989,8 +989,24 @@ static int debuginfo__find_probes(struct debuginfo *dbg,
+ 	int ret = 0;
  
- 	if (ntevs == 0)	{	/* No error but failed to find probe point. */
--		pr_warning("Probe point '%s' not found.\n",
-+		pr_warning("Probe point '%s' not found in debuginfo.\n",
- 			   synthesize_perf_probe_point(&pev->point));
--		return -ENOENT;
-+		if (need_dwarf)
-+			return -ENOENT;
-+		return 0;
- 	}
- 	/* Error path : ntevs < 0 */
- 	pr_debug("An error occurred in debuginfo analysis (%d).\n", ntevs);
+ #if _ELFUTILS_PREREQ(0, 142)
++	Elf *elf;
++	GElf_Ehdr ehdr;
++	GElf_Shdr shdr;
++
+ 	/* Get the call frame information from this dwarf */
+-	pf->cfi = dwarf_getcfi_elf(dwarf_getelf(dbg->dbg));
++	elf = dwarf_getelf(dbg->dbg);
++	if (elf == NULL)
++		return -EINVAL;
++
++	if (gelf_getehdr(elf, &ehdr) == NULL)
++		return -EINVAL;
++
++	if (elf_section_by_name(elf, &ehdr, &shdr, ".eh_frame", NULL) &&
++	    shdr.sh_type == SHT_PROGBITS) {
++		pf->cfi = dwarf_getcfi_elf(elf);
++	} else {
++		pf->cfi = dwarf_getcfi(dbg->dbg);
++	}
+ #endif
+ 
+ 	off = 0;
 -- 
 1.9.3
 
