@@ -1,82 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbbACCZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 21:25:12 -0500
-Received: from mail.kernel.org ([198.145.29.136]:42572 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805AbbACCZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 21:25:10 -0500
-Date: Fri, 2 Jan 2015 23:25:04 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 6/7] perf tools: Append callchains only when requested
-Message-ID: <20150103022504.GB24430@kernel.org>
-References: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
- <1419223455-4362-7-git-send-email-namhyung@kernel.org>
+	id S1752209AbbACCbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 21:31:33 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:44192 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776AbbACCba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 21:31:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419223455-4362-7-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150102105008.GA31364@pd.tnic>
+References: <d71411fd1be84d99af5936138cbcc9c7@BL2FFO11FD014.protection.gbl>
+	<20150102105008.GA31364@pd.tnic>
+Date: Sat, 3 Jan 2015 08:01:29 +0530
+X-Google-Sender-Auth: 1f1nCMCiDai0pPc3zfL2Wpd0YTw
+Message-ID: <CAGnW=BbrpMoMGSVmFXUAYsnyOPGpkz=HbL6mRzB7PqRhbq5HTA@mail.gmail.com>
+Subject: Re: [PATCH v7] edac: synps: Added EDAC support for zynq ddr ecc controller
+From: punnaiah choudary kalluri <punnaia@xilinx.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
+        dougthompson@xmission.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-edac@vger.kernel.org,
+        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Punnaiah Choudary <kpc528@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 22, 2014 at 01:44:14PM +0900, Namhyung Kim escreveu:
-> The perf report --children can be called with callchain disabled so no
-> need to append callchains.  Actually the root of callchain tree is not
-> initialized properly in this case.
+On Fri, Jan 2, 2015 at 4:20 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Jan 02, 2015 at 09:52:20AM +0530, Punnaiah Choudary Kalluri wrote:
+>> +/**
+>> + * synps_edac_handle_error - Handle controller error types CE and UE
+>> + * @mci:     Pointer to the edac memory controller instance
+>> + * @p:               Pointer to the synopsys ecc status structure
+>> + *
+>> + * Handles the controller ECC correctable and un correctable error.
+>> + */
+>> +static void synps_edac_handle_error(struct mem_ctl_info *mci,
+>> +                                 struct synps_ecc_status *p)
+>> +{
+>> +     char message[SYNPS_EDAC_MSG_SIZE];
+>
+> This is still on the stack. My previous comment:
+>
+> "You could preallocate this on driver init so you don't do relatively
+> big stack allocations on the error reporting path and remain lean."
 
-Hi Namhyung,
+Oh. sorry its my mistake. I will update
 
-	I should have caught this using 'perf test', but it slipped
-thru, please try running 'perf test cumulation', I noticed that it fails
-and that if I revert this changeset it works again, can you please
-check?
+>
+>> +     struct ecc_error_info *pinf;
+>> +
+>> +     if (p->ce_cnt) {
+>> +             pinf = &p->ceinfo;
+>> +             snprintf(message, SYNPS_EDAC_MSG_SIZE,
+>> +                      "DDR ECC error type :%s Row %d Bank %d Col %d ",
+>> +                      "CE", pinf->row, pinf->bank, pinf->col);
+>> +             edac_mc_handle_error(HW_EVENT_ERR_CORRECTED, mci,
+>> +                                  p->ce_cnt, 0, 0, 0, 0, 0, -1,
+>> +                                  message, "");
+>> +     }
+>> +
+>> +     if (p->ue_cnt) {
+>> +             pinf = &p->ueinfo;
+>> +             snprintf(message, SYNPS_EDAC_MSG_SIZE,
+>> +                      "DDR ECC error type :%s Row %d Bank %d Col %d ",
+>> +                      "UE", pinf->row, pinf->bank, pinf->col);
+>> +             edac_mc_handle_error(HW_EVENT_ERR_UNCORRECTED, mci,
+>> +                                  p->ue_cnt, 0, 0, 0, 0, 0, -1,
+>> +                                  message, "");
+>> +     }
+>
+> From the previous review:
+>
+> "If you memset(p, 0,...) here, after consumption, you don't need to do
+> it anywhere else and be sure that *p would be always clean and ready for
+> the next error."
 
-- Arnaldo
- 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/hist.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index bd4a2cd73236..30ff2cb92884 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -300,7 +300,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template,
->  	size_t callchain_size = 0;
->  	struct hist_entry *he;
->  
-> -	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain)
-> +	if (symbol_conf.use_callchain)
->  		callchain_size = sizeof(struct callchain_root);
->  
->  	he = zalloc(sizeof(*he) + callchain_size);
-> @@ -735,7 +735,7 @@ iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
->  	iter->he = he;
->  	he_cache[iter->curr++] = he;
->  
-> -	callchain_append(he->callchain, &callchain_cursor, sample->period);
-> +	hist_entry__append_callchain(he, sample);
->  
->  	/*
->  	 * We need to re-initialize the cursor since callchain_append()
-> @@ -808,7 +808,8 @@ iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
->  	iter->he = he;
->  	he_cache[iter->curr++] = he;
->  
-> -	callchain_append(he->callchain, &cursor, sample->period);
-> +	if (symbol_conf.use_callchain)
-> +		callchain_append(he->callchain, &cursor, sample->period);
->  	return 0;
->  }
->  
-> -- 
-> 2.1.3
+p is pointing to the stack memory. so, if we do memset after consumption, then
+it will not guarantee that next time we will get the clean memory.
+Here i am clearing
+this memory only when the controller reports error and before
+consumption by the edac
+core to ensure that there is no garbage data.
+
+here is the call stack
+
+int synps_edac_geterror_info(void __iomem *base,
+                                            struct synps_ecc_status *p)
+
+{
+            ...
+            regval = readl(base + STAT_OFST);
+             if (!regval)
+                 return 1;
+
+             memset(p, 0, sizeof(*p));
+           ...
+}
+
+
+static void synps_edac_check(struct mem_ctl_info *mci) {
+            struct synps_ecc_status stat;
+       ...
+       status = synps_edac_geterror_info(priv->baseaddr, &stat);
+       ...
+       synps_edac_handle_error(mci, &stat);
+      ...
+}
+
+
+>
+> Looks like you've missed those two points.
+>
+>> +static int synps_edac_mc_probe(struct platform_device *pdev)
+>> +{
+>> +     struct mem_ctl_info *mci;
+>> +     struct edac_mc_layer layers[2];
+>> +     struct synps_edac_priv *priv;
+>> +     int rc;
+>> +     struct resource *res;
+>> +     void __iomem *baseaddr;
+>> +
+>> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +     baseaddr = devm_ioremap_resource(&pdev->dev, res);
+>> +     if (IS_ERR(baseaddr))
+>> +             return PTR_ERR(baseaddr);
+>> +
+>> +     if (!synps_edac_get_eccstate(baseaddr)) {
+>> +             edac_printk(KERN_INFO, EDAC_MC, "ECC not enabled\n");
+>> +             return -ENXIO;
+>> +     }
+>> +
+>> +     layers[0].type = EDAC_MC_LAYER_CHIP_SELECT;
+>> +     layers[0].size = SYNPS_EDAC_NR_CSROWS;
+>> +     layers[0].is_virt_csrow = true;
+>> +     layers[1].type = EDAC_MC_LAYER_CHANNEL;
+>> +     layers[1].size = SYNPS_EDAC_NR_CHANS;
+>> +     layers[1].is_virt_csrow = false;
+>> +
+>> +     mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers,
+>> +                         sizeof(struct synps_edac_priv));
+>> +     if (!mci) {
+>> +             edac_printk(KERN_ERR, EDAC_MC,
+>> +                         "Failed memory allocation for mc instance\n");
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     priv = mci->pvt_info;
+>> +     priv->baseaddr = baseaddr;
+>> +     rc = synps_edac_mc_init(mci, pdev);
+>> +     if (rc) {
+>> +             edac_printk(KERN_ERR, EDAC_MC,
+>> +                         "Failed to initialize instance\n");
+>> +             goto free_edac_mc;
+>> +     }
+>> +
+>> +     rc = edac_mc_add_mc(mci);
+>> +     if (rc) {
+>> +             edac_printk(KERN_ERR, EDAC_MC,
+>> +                         "Failed to register with EDAC core\n");
+>> +             goto free_edac_mc;
+>> +     }
+>
+> With all the more or less redundant commenting in this driver, the *one*
+> line which definitely needs a comment is without one:
+>
+>         /*
+>          * Start capturing the correctable and uncorrectable errors. A write of
+>          * 0 starts the counters.
+>          */
+
+Ok.
+
+Thanks,
+Punnaiah
+>> +     writel(0x0, baseaddr + ECC_CTRL_OFST);
+>> +     return rc;
+>> +
+>> +free_edac_mc:
+>> +     edac_mc_free(mci);
+>> +
+>> +     return rc;
+>> +}
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
