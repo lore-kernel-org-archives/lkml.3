@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751181AbbACJbP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 04:31:15 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:43234 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbbACJbK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 04:31:10 -0500
+	id S1751330AbbACJee (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 04:34:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750936AbbACJec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jan 2015 04:34:32 -0500
+Message-ID: <54A7B7A3.7060002@redhat.com>
+Date: Sat, 03 Jan 2015 10:34:27 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20150102171123.GC3298@atomide.com>
-References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
-	<CAPDyKFpxvE4x_-PV=KN0HKY5cNug-ss9m5KCjNdebR1LDOJi5w@mail.gmail.com>
-	<CAD=FV=UCyOXfMqu_MYbd5pKOpgXPB87LQ7hCegeeY9vzsy6QAg@mail.gmail.com>
-	<CAPDyKFqGW2NaN+5mUrpBWrhM5ZfUSx70-Yyk9qmNaC1ft_ibpw@mail.gmail.com>
-	<CAD=FV=UzJo=KE7Snb2v=dNodmf_ky97o3xyUHUAZqb1Kq10d1A@mail.gmail.com>
-	<20150102171123.GC3298@atomide.com>
-Date: Sat, 3 Jan 2015 10:31:09 +0100
-Message-ID: <CAPDyKFo6eQ7P5XjSWDKGPMz0NAwwENPK=YAbnY5WY8HFbDK5mA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] Fixes for SDIO interrupts for dw_mmc
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Tony Lindgren <tony@atomide.com>, Doug Anderson <dianders@chromium.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>,
-        Joe Perches <joe@perches.com>, Axel Lin <axel.lin@ingics.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, Joe Mario <jmario@redhat.com>
+Subject: Re: [PATCH akpm/next] lib: crc32: conditionally constify crc32 lookup
+ table
+References: <1420052608-30515-1-git-send-email-dborkman@redhat.com> <20150102153537.2251ca287e96446eaf229ae2@linux-foundation.org> <54A733FB.8010904@redhat.com> <20150102170828.3bb15c0a.akpm@linux-foundation.org>
+In-Reply-To: <20150102170828.3bb15c0a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 January 2015 at 18:11, Tony Lindgren <tony@atomide.com> wrote:
-> * Doug Anderson <dianders@chromium.org> [150102 09:09]:
->> Ulf,
->>
->> On Tue, Dec 30, 2014 at 2:29 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->> >>> In v5, I don't find a patch 1/4. Anyway, I have taken patch 2->4.
->> >>
->> >> Ah, maybe because it wasn't sent to linux-mmc?  I messed that up and
->> >> will try to do better in the future.  Sorry.  :(  You were in the To
->> >> line, though.  You can see at
->> >> <https://patchwork.kernel.org/patch/5425241/>.
->> >>
->> >> Do you want me to repost it and CC linux-mmc with Tony's Ack?
->> >
->> > I suggest you have a look at my next branch and to verify that I
->> > haven't screwed things up. If so, either I should drop the patches and
->> > you make a resend or if it's possible to just send an incremental path
->> > on top?
->>
->> The patches that landed look good to me, but I think you might break
->> omap3pandora's WiFi until you land patch #1 in the series.  It has
->> Tony's Ack so I think he intends for you to land it in your tree.
->>
->> [v5,1/4] ARM: OMAP2+: Make sure pandora_wl1251_init_card() applies to SDIO only
+On 01/03/2015 02:08 AM, Andrew Morton wrote:
+> On Sat, 03 Jan 2015 01:12:43 +0100 Daniel Borkmann <dborkman@redhat.com> wrote:
 >
-> Yes please pick that one up too to avoid breakage. The changes to the
-> mach-omap2/board-*.c files are only minimal fixes, so it should not
-> conflict with anything I'll be applying.
-
-Tony, Doug,
-
-I have picked it up from the arm patch tracker and applied it for my
-next branch. I have put it prior the following patch:
-"mmc: core: Support the optional init_card() callback for MMC and SD".
-
-Kind regards
-Uffe
-
+>>> Seems a lot of fuss.  Why are these tables cacheline aligned anyway?
+>>> To avoid one cache miss (most of the time, presumably) in a 16k table.
+>>> Pretty marginal benefit, I suspect.
+>>
+>> I guess, it actually came in with the slice-by-8 algorithm (e.g. used
+>> in SCTP checksumming if no offloading is available) that was added back
+>> then, that is, commit 324eb0f17d9dc ("crc32: add slice-by-8 algorithm
+>> to existing code").
 >
-> Regards,
+> non-responsive ;)  By far the simplest solution is to remove the
+> cacheline alignment.
+
+Alternatively, I'm thinking of const + ____cacheline_aligned (w/o the gcc
+test case). In case some people run gcc versions that have the bug, it's
+worst case just as good as const only, and in the majority of cases aligned
+as expected.
+
+> Are there other places where CC_HAVE_CONST_ALIGN can be used?  I'm seeing
 >
-> Tony
+> z:/usr/src/linux-3.19-rc2> grep -r cacheline_aligned . | grep const
+> ./arch/x86/um/sys_call_table_32.c:const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
+> ./arch/x86/um/sys_call_table_64.c:const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
+
+I'll investigate these two above and send a patch, thanks. They should
+actually be using ____cacheline_aligned instead!
+
+> ./include/net/netfilter/nf_tables.h:    const struct nft_set_ops        *ops ____cacheline_aligned;
+> ./net/ethernet/eth.c:const struct header_ops eth_header_ops ____cacheline_aligned = {
