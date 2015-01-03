@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbbACTpf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 14:45:35 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44217 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbbACTpc (ORCPT
+	id S1752573AbbACTr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 14:47:29 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55549 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327AbbACTr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 14:45:32 -0500
-Date: Sat, 03 Jan 2015 14:45:30 -0500 (EST)
-Message-Id: <20150103.144530.1032237292364564169.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, richardcochran@gmail.com,
-        jeffrey.t.kirsher@intel.com
-Subject: Re: linux-next: build failure after merge of the net-next tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20150103091101.04b2c11e@canb.auug.org.au>
-References: <20150103091101.04b2c11e@canb.auug.org.au>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 03 Jan 2015 11:45:31 -0800 (PST)
+	Sat, 3 Jan 2015 14:47:28 -0500
+Date: Sat, 3 Jan 2015 20:47:25 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCHv5 0/2] INPUT: Route keyboard LEDs through the generic
+ LEDs layer
+Message-ID: <20150103194725.GA13390@amd>
+References: <20141226232116.GA5069@type>
+ <20150102195350.GB27538@amd>
+ <20150102201117.GD25336@type.youpi.perso.aquilenet.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150102201117.GD25336@type.youpi.perso.aquilenet.fr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Sat, 3 Jan 2015 09:11:01 +1100
-
-> After merging the net-next tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+On Fri 2015-01-02 21:11:17, Samuel Thibault wrote:
+> Pavel Machek, le Fri 02 Jan 2015 20:53:51 +0100, a écrit :
+> > input4::capsl/trigger was none by default, that can't be right, right?
 > 
-> drivers/net/ethernet/mellanox/mlx4/en_clock.c: In function 'mlx4_en_init_timestamp':
-> drivers/net/ethernet/mellanox/mlx4/en_clock.c:249:2: error: implicit declaration of function 'CLOCKSOURCE_MASK' [-Werror=implicit-function-declaration]
->   mdev->cycles.mask = CLOCKSOURCE_MASK(48);
+> Indeed. And I don't see how it can be that way, since the input4::capsl
+> LED and the input4-capsl trigger get initialized at the same time in
+> input_led_connect... (and the order does not matter since both will
+> try to connect to the other on registration).
+> 
+> > I tried putting kbd-capslock and input4-capsl there, but that did not
+> > seem to help.
+> 
+> That should have.
+> 
+> > It works with heartbeat trigger, but not with input4-numl
+> > trigger.
+> 
+> It should have worked with input4-numl too.
+> 
+> > vt::capsl/brightness controls capslock led, even when
+> > input4-capsl/trigger is set to input4-numl.
+> 
+> It shouldn't.
+> 
+> > Confused,
+> 
+> I guess I'm even more.  I had tested everything that you have described,
+> without any issue, on both an internal laptop keyboard and an external
+> USB keyboard, and have tested again just now, with the same success.
+> 
+> Which hardware setup do you have, more precisely?
 
-Stephen please let me know if this failure is persisting.
+I tested on Thinkpad X60, with internal keyboard. (PS/2, I'd say). I
+let Debian boot into graphical login prompt, switched to text console,
+and did the testing there.
+
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
