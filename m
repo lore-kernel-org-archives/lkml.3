@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbbACQtk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 11:49:40 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:49993 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017AbbACQti (ORCPT
+	id S1752092AbbACQzI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 11:55:08 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:55313 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036AbbACQzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 11:49:38 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm: mach-versatile: core:  Remove unused function
-Date: Sat,  3 Jan 2015 17:52:39 +0100
-Message-Id: <1420303959-12898-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 3 Jan 2015 11:55:04 -0500
+From: Andrey Skvortsov <andrej.skvortzov@gmail.com>
+X-Google-Original-From: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>
+Date: Sat, 3 Jan 2015 19:54:59 +0300
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Subject: Re: WARNING: at drivers/gpu/drm/i915/intel_display.c:11375 [i915] in
+ 3.19-rc2
+Message-ID: <20150103165459.GA3020@yulia-desktop>
+Mail-Followup-To: Andrey Skvortsov <Andrej.Skvortzov@gmail.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+	Daniel Vetter <daniel.vetter@intel.com>
+References: <20150101142215.GA2570@yulia-desktop>
+ <87bnmh1vee.fsf@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <87bnmh1vee.fsf@intel.com>
+X-PGP-Key: fp="21AF 2E6F 04EC 7E11 21C6  E399 2236 2F26 57A3 AEAD";
+ id="0x57A3AEAD";
+ get=<hkp://pgp.mit.edu/pks/lookup?search=0x22362F2657A3AEAD&op=get>;
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function versatile_leds_event() that is not used anywhere.
 
-This was partially found by using a static code analysis program called cppcheck.
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- arch/arm/mach-versatile/core.c |   37 -------------------------------------
- 1 file changed, 37 deletions(-)
+On Fri, Jan 02, 2015 at 09:42:01AM +0200, Jani Nikula wrote:
+> On Thu, 01 Jan 2015, Andrey Skvortsov <andrej.skvortzov@gmail.com> wrote:
+> > Hi,
+> >
+> > this warning does not exist in 3.19-rc1, but it happens every boot in
+> > 3.19-rc2. If you need any other information or data, I would be glad
+> > to help to debug it.
+>=20
+> Hmm, at a glance I can't find a commit that could be the culprit. Can
+> you bisect between rc1 and rc2 to find the bad commit?
 
-diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
-index 08fb8c8..6ea09fe 100644
---- a/arch/arm/mach-versatile/core.c
-+++ b/arch/arm/mach-versatile/core.c
-@@ -728,43 +728,6 @@ struct of_dev_auxdata versatile_auxdata_lookup[] __initdata = {
- };
- #endif
- 
--#ifdef CONFIG_LEDS
--#define VA_LEDS_BASE (__io_address(VERSATILE_SYS_BASE) + VERSATILE_SYS_LED_OFFSET)
--
--static void versatile_leds_event(led_event_t ledevt)
--{
--	unsigned long flags;
--	u32 val;
--
--	local_irq_save(flags);
--	val = readl(VA_LEDS_BASE);
--
--	switch (ledevt) {
--	case led_idle_start:
--		val = val & ~VERSATILE_SYS_LED0;
--		break;
--
--	case led_idle_end:
--		val = val | VERSATILE_SYS_LED0;
--		break;
--
--	case led_timer:
--		val = val ^ VERSATILE_SYS_LED1;
--		break;
--
--	case led_halted:
--		val = 0;
--		break;
--
--	default:
--		break;
--	}
--
--	writel(val, VA_LEDS_BASE);
--	local_irq_restore(flags);
--}
--#endif	/* CONFIG_LEDS */
--
- void versatile_restart(enum reboot_mode mode, const char *cmd)
- {
- 	void __iomem *sys = __io_address(VERSATILE_SYS_BASE);
--- 
-1.7.10.4
+Sorry, my first message was not fully correct. As I tested this more,
+it happens unfortunately not every boot. And this is not a regression,
+because it happened couple of times with 3.19-rc1 too.
 
+This warning seems to depend on the previously booted kernel. If I
+boot the same kernel every time, it occurs very seldom. To
+reproduce the warning I booted v3.19-rc2 and v3.19-rc1-g08b022a965 one after
+another many times. In this case the warning happens with probability aroun=
+d 50%.
+
+> > [   12.848428] ------------[ cut here ]------------
+> > [   12.848479] WARNING: CPU: 1 PID: 328 at drivers/gpu/drm/i915/intel_d=
+isplay.c:11375 intel_crtc_set_config+0x3de/0xb36 [i915]()
+> > [   12.848482] WARN_ON(!set->fb && (set->num_connectors !=3D 0))
+
+--=20
+Best regards,
+Andrey Skvortsov
+
+Secure e-mail with gnupg: See http://www.gnupg.org/
+PGP Key ID: 0x57A3AEAD
+
+
+
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJUqB7jAAoJEAF8y6L1SLCtePAP/Rb4Qv/7JNhpEOtOkSo0l43G
+ejFd/j9BE41R0guaM5G0VfwUo79yp3S9BmHSPOH/ExYSt8Z1cQ1loLYomKPyNkFV
+/1HBochlU8OHn2GIUjH5KIa/IlmN+aQJ2FwKTmBg6PRfPeUHEp/0/MWNBSUPfMRv
+59/EAjV920WpG++tf1yzSARJQw1Ok21GWueSnOAe2z1gUCL8wS/nAO9CmKaVJISp
+kOnm3cDYDnEjqj5tcCJCfGQEl9bKhIe5rCCIKnUfyKSmd7FAqAaw83L+CvOlg4Kt
+U2ZTM7y/rn/Eh0Pj9on/6wxdmRjWItpvxcW6bv824oEFWlnYGdJutiqO3HIGMLSX
+jY2Pjz1EtgN18peAhb70IxnYlYsGM7jQN2IfxU0DvRpC45r77hpYQVc3Pgwb8SqQ
+gFYXzRRj9Cn4UarV7FJCKCd//Ag3OKnbB0or33hw7WXyllCeFBfGLqrFbkLKy4sv
+oNAY3quGK1+/M2HtNUboqynJ90MAfLQS9rWKaFxY2AGeI1P+8dzkQaprjf8lWX3C
+it//fdI63DTJp3eKQr7SbvcHUeNXAm1LaHIoINAYgXRDRiG6i9rpEUNJm24y/YA6
+tleLqclmKTiPLdC8T7ZjaE1qA/fAVGfJtmDb33URwaJV099y/OESKNWI7ynGs+O6
+xSh1JnrBCNAob1Poedrm
+=xOhg
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
