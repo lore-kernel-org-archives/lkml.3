@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbbACNZp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 08:25:45 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:55449 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbbACNZm (ORCPT
+	id S1751191AbbACNog (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 08:44:36 -0500
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:14182 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750917AbbACNoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 08:25:42 -0500
-Date: Sat, 3 Jan 2015 18:55:31 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: jitendra kumar khasdev <jkhasdev@gmail.com>
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, pankaj.saraf@nektech.in
-Subject: Re: [PATCH 1/5] Staging: comedi: fix line over 80 characters warning
-Message-ID: <20150103132531.GA5918@sudip-PC>
-References: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 3 Jan 2015 08:44:34 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApUKADPxp1RXQzKq/2dsb2JhbABcgwaBKrNwBQEBAQEBAQUBd5c0gQUXAQEBAQF9hGkjgRo3iDABrymOFQErhgOJdB2EEwWXCIlnh2kigUWCKj0xgkMBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Jaroslav Kysela <perex@perex.cz>,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/1 linux-next] hp100: simplify hp100_module_init
+Date: Sat,  3 Jan 2015 14:44:16 +0100
+Message-Id: <1420292656-14429-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 03, 2015 at 06:16:31PM +0530, jitendra kumar khasdev wrote:
-> This is patch to file pcl812.c that fix up warning line
-> over 80 character which is found by checkpatch tool.
-> 
-> Signed-off-by: Jitendra Kumar Khasdev <jkhasdev@gmail.com>
+-Avoid double goto and directly return err where possible.
+-Remove unused labels which fixes:
 
-I am assuming this one you wanted to make as v3.
-but why you are sending different patches to do the same type of change in comedi?
+drivers/net/ethernet/hp/hp100.c:3047:2: warning: label
+'out3' defined but not used [-Wunused-label]
 
-usually we send different patches to do different types of change, but for the same type of change it can be a single patch.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+This is untested.
 
-sudip
+ drivers/net/ethernet/hp/hp100.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-> ---
->  drivers/staging/comedi/drivers/pcl812.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/pcl812.c b/drivers/staging/comedi/drivers/pcl812.c
-> index ac243ca..24eb601 100644
-> --- a/drivers/staging/comedi/drivers/pcl812.c
-> +++ b/drivers/staging/comedi/drivers/pcl812.c
-> @@ -510,7 +510,8 @@ struct pcl812_private {
->  	unsigned char dma;	/*  >0 use dma ( usedDMA channel) */
->  	unsigned char range_correction;	/*  =1 we must add 1 to range number */
->  	unsigned int last_ai_chanspec;
-> -	unsigned char mode_reg_int;	/*  there is stored INT number for some card */
-> +	unsigned char mode_reg_int;	/*  there is stored INT number
-> +					    for some card */
->  	unsigned int ai_poll_ptr;	/*  how many sampes transfer poll */
->  	unsigned int dmapages;
->  	unsigned int hwdmasize;
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/net/ethernet/hp/hp100.c b/drivers/net/ethernet/hp/hp100.c
+index ae6e30d..7155938 100644
+--- a/drivers/net/ethernet/hp/hp100.c
++++ b/drivers/net/ethernet/hp/hp100.c
+@@ -3031,26 +3031,25 @@ static int __init hp100_module_init(void)
+ 
+ 	err = hp100_isa_init();
+ 	if (err && err != -ENODEV)
+-		goto out;
++		return err;
+ #ifdef CONFIG_EISA
+ 	err = eisa_driver_register(&hp100_eisa_driver);
+ 	if (err && err != -ENODEV)
+-		goto out2;
++		goto out_eisa;
++	else
++		return err;
+ #endif
+ #ifdef CONFIG_PCI
+ 	err = pci_register_driver(&hp100_pci_driver);
+-	if (err && err != -ENODEV)
+-		goto out3;
++	if (!err || err == -ENODEV)
++		return err;
+ #endif
+- out:
+-	return err;
+- out3:
+ #ifdef CONFIG_EISA
+ 	eisa_driver_unregister (&hp100_eisa_driver);
+- out2:
++ out_eisa:
+ #endif
+ 	hp100_isa_cleanup();
+-	goto out;
++	return err;
+ }
+ 
+ 
+-- 
+2.1.0
+
