@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbbACMrG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 07:47:06 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:41476 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbbACMrB (ORCPT
+	id S1752088AbbACMrW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 07:47:22 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:49948 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbbACMrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 07:47:01 -0500
+	Sat, 3 Jan 2015 07:47:06 -0500
 From: jitendra kumar khasdev <jkhasdev@gmail.com>
 To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
         gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         pankaj.saraf@nektech.in, jitendra kumar khasdev <jkhasdev@gmail.com>
-Subject: [PATCH 1/5] Staging: comedi: fix line over 80 characters warning
-Date: Sat,  3 Jan 2015 18:16:31 +0530
-Message-Id: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
+Subject: [PATCH 2/5] Staging: comedi: fix line over 80 characters warning
+Date: Sat,  3 Jan 2015 18:16:32 +0530
+Message-Id: <1420289195-5012-2-git-send-email-jkhasdev@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
+References: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,23 +27,24 @@ over 80 character which is found by checkpatch tool.
 
 Signed-off-by: Jitendra Kumar Khasdev <jkhasdev@gmail.com>
 ---
- drivers/staging/comedi/drivers/pcl812.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/pcl812.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/staging/comedi/drivers/pcl812.c b/drivers/staging/comedi/drivers/pcl812.c
-index ac243ca..24eb601 100644
+index 24eb601..069af70 100644
 --- a/drivers/staging/comedi/drivers/pcl812.c
 +++ b/drivers/staging/comedi/drivers/pcl812.c
-@@ -510,7 +510,8 @@ struct pcl812_private {
- 	unsigned char dma;	/*  >0 use dma ( usedDMA channel) */
- 	unsigned char range_correction;	/*  =1 we must add 1 to range number */
- 	unsigned int last_ai_chanspec;
--	unsigned char mode_reg_int;	/*  there is stored INT number for some card */
-+	unsigned char mode_reg_int;	/*  there is stored INT number
-+					    for some card */
- 	unsigned int ai_poll_ptr;	/*  how many sampes transfer poll */
- 	unsigned int dmapages;
- 	unsigned int hwdmasize;
+@@ -519,7 +519,9 @@ struct pcl812_private {
+ 	unsigned int hwdmaptr[2];	/*  HW PTR to DMA buf */
+ 	unsigned int dmabytestomove[2];	/*  how many bytes DMA transfer */
+ 	int next_dma_buf;	/*  which buffer is next to use */
+-	unsigned int dma_runs_to_end;	/*  how many times we must switch DMA buffers */
++	unsigned int dma_runs_to_end;	/*  how many times we must switch
++					 *  DMA buffers
++					 */
+ 	unsigned int last_dma_run;	/*  how many bytes to transfer on last DMA buffer */
+ 	unsigned int max_812_ai_mode0_rangewait;	/*  setling time for gain */
+ 	unsigned int divisor1;
 -- 
 1.9.1
 
