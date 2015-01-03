@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871AbbACOvg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 09:51:36 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:38753 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955AbbACOvc (ORCPT
+	id S1752313AbbACOxf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 09:53:35 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50634 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbbACOxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 09:51:32 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAKXHbyPm+2gy3E_FAVY82ggvJhWe-E_xtrhgeAPxUyRS-FutaA@mail.gmail.com>
-References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
-	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
-	<CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
-	<CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
-	<CACna6rxTYUWvxvu0rFydWxkjbYdHfhV=o+9A+ViCpbV-LFx7fw@mail.gmail.com>
-	<CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
-	<CA+icZUUJfemKC85=p7Huyw7xwfUdXBhePseJCnUKLx9edgpT4w@mail.gmail.com>
-	<CAKXHbyPm+2gy3E_FAVY82ggvJhWe-E_xtrhgeAPxUyRS-FutaA@mail.gmail.com>
-Date: Sat, 3 Jan 2015 15:51:30 +0100
-Message-ID: <CA+icZUUfFr2PQjp4ppMNj5UQE3U7-ArmO1LSDoZZf5c1Y85OMw@mail.gmail.com>
-Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefano Brivio <stefano.brivio@polimi.it>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        b43-dev <b43-dev@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 3 Jan 2015 09:53:33 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH] next: microblaze: Fix build failure
+Date: Sat,  3 Jan 2015 06:53:20 -0800
+Message-Id: <1420296800-17045-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 2.1.0
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.54A80276.0082,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 3, 2015 at 3:45 PM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
-[ ... ]
->> > I just got one more complaining about my subject-line in "net: wireless: "
->> > I use some sed call for this, so it's easy to fix. I will now remove that
->> > part hereinafter.
->> > I check in Documentation/ but did not find any clear info for this.
->> >
->>
->> The easiest way to make (sub)maintainers happy is to check the git-log...
->>
->> $ git log --oneline /path/to/file
->>
->> ...and look how other contributors labeled their patches.
->>
->> [1] is the 1st address to look at on how to submit patches to Linux-kernel.
->> To promote the good work of Greg, see [2,3] for a video and tutorial
->> on that topic, too.
->>
->> - Sedat -
->>
->> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/SubmittingPatches
->> [2] https://www.youtube.com/watch?v=XXix80GCvpo
->> [3] https://github.com/gregkh/kernel-tutorial
->
->
->
-> Hi Sedat
->
-> Thanks for the tip :)
->
-> To bad with the audio in the video thow. Have read SubmittingPatches before.
->
+Microblaze build in linux-next fails with
 
-AFAICS there is another (earlier) video "Write and Submit your first
-Linux kernel Patch" from FOSDEM 2010.
+arch/microblaze/kernel/timer.c:224:2: error:
+	implicit declaration of function 'timecounter_init'
 
-For German readers I can recommend the book from [2] (no I get no
-money for promotion).
+Caused by missing include file in microblaze timer code.
 
-- Sedat -
+Fixes: 74d23cc704d1 ("time: move the timecounter/cyclecounter code into its own file")
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/microblaze/kernel/timer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-[1] https://www.youtube.com/watch?v=LLBrBBImJt4
-[2] http://www.opensourcepress.de/de/produkte/Git/33227/978-3-95539-119-5-
+diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+index dd96f0e..c897745 100644
+--- a/arch/microblaze/kernel/timer.c
++++ b/arch/microblaze/kernel/timer.c
+@@ -17,6 +17,7 @@
+ #include <linux/clockchips.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
++#include <linux/timecounter.h>
+ #include <asm/cpuinfo.h>
+ 
+ static void __iomem *timer_baseaddr;
+-- 
+2.1.0
 
->
-> But I have now added a line in my script that does a:
->
-> git log -10 --oneline
->
-> So I can at least see the other subjekt lines, and make adjustments if
-> necessary.
->
->
->
-> Kind regards
-> Rickard Strandqvist
