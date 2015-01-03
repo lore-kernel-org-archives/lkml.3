@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750856AbbACHB3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 02:01:29 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:59129 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778AbbACHB1 (ORCPT
+	id S1750866AbbACHKS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 02:10:18 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:47502 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbbACHKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 02:01:27 -0500
+	Sat, 3 Jan 2015 02:10:14 -0500
 From: Alexander Kuleshov <kuleshovmail@gmail.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         Alexander Kuleshov <kuleshovmail@gmail.com>
-Subject: [PATCH] x86,setup: Rename myisspace to isspace and move it to ctype.h
-Date: Sat,  3 Jan 2015 13:01:20 +0600
-Message-Id: <1420268480-962-1-git-send-email-kuleshovmail@gmail.com>
+Subject: [PATCH v2] x86,setup: Rename myisspace to isspace and move it to ctype.h
+Date: Sat,  3 Jan 2015 13:10:05 +0600
+Message-Id: <1420269005-2290-1-git-send-email-kuleshovmail@gmail.com>
 X-Mailer: git-send-email 2.2.1.202.g44ae4ee.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-isspace is a subset of ctype.h functionality, so move it to ctype.h
-
 Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
 ---
  arch/x86/boot/cmdline.c | 19 +++++++------------
- arch/x86/boot/ctype.h   |  9 +++++++--
- 2 files changed, 14 insertions(+), 14 deletions(-)
+ arch/x86/boot/ctype.h   |  5 +++++
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
 index 625d21b..bc1e25f 100644
@@ -105,18 +103,9 @@ index 625d21b..bc1e25f 100644
  			break;
  		}
 diff --git a/arch/x86/boot/ctype.h b/arch/x86/boot/ctype.h
-index 25e1340..c172741 100644
+index 25e1340..eb909b5 100644
 --- a/arch/x86/boot/ctype.h
 +++ b/arch/x86/boot/ctype.h
-@@ -1,6 +1,6 @@
--#ifndef BOOT_ISDIGIT_H
-+#ifndef BOOT_CTYPE_H
- 
--#define BOOT_ISDIGIT_H
-+#define BOOT_CTYPE_H
- 
- static inline int isdigit(int ch)
- {
 @@ -18,4 +18,9 @@ static inline int isxdigit(int ch)
  	return (ch >= 'A') && (ch <= 'F');
  }
