@@ -1,164 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369AbbACC4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 21:56:45 -0500
-Received: from mail.kernel.org ([198.145.29.136]:42931 "EHLO mail.kernel.org"
+	id S1752111AbbACDBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 22:01:54 -0500
+Received: from ozlabs.org ([103.22.144.67]:44176 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030AbbACC4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 21:56:03 -0500
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 4/4] perf diff: Fix to sort by baseline field by default
-Date: Fri,  2 Jan 2015 23:55:37 -0300
-Message-Id: <1420253737-2488-5-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1420253737-2488-1-git-send-email-acme@kernel.org>
-References: <1420253737-2488-1-git-send-email-acme@kernel.org>
+	id S1750801AbbACDBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 22:01:52 -0500
+Date: Sat, 3 Jan 2015 14:01:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Cochran <richardcochran@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Message-ID: <20150103140145.3cd6b79c@canb.auug.org.au>
+In-Reply-To: <20150103091101.04b2c11e@canb.auug.org.au>
+References: <20150103091101.04b2c11e@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/znWSccTcOy8hr3rl/cMSN4R"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+--Sig_/znWSccTcOy8hr3rl/cMSN4R
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The currently perf diff didn't add the baseline and delta (or other
-compute) fields to the sort list so output will be sorted by other
-fields like alphabetical order of DSO or symbol as below example.
+Hi all,
 
-Fix it by adding hpp formats for the fields and provides default compare
-functions.
+On Sat, 3 Jan 2015 09:11:01 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> After merging the net-next tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>=20
+> drivers/net/ethernet/mellanox/mlx4/en_clock.c: In function 'mlx4_en_init_=
+timestamp':
+> drivers/net/ethernet/mellanox/mlx4/en_clock.c:249:2: error: implicit decl=
+aration of function 'CLOCKSOURCE_MASK' [-Werror=3Dimplicit-function-declara=
+tion]
+>   mdev->cycles.mask =3D CLOCKSOURCE_MASK(48);
+>   ^
+> drivers/net/ethernet/mellanox/mlx4/en_clock.c:257:3: error: implicit decl=
+aration of function 'clocksource_khz2mult' [-Werror=3Dimplicit-function-dec=
+laration]
+>    clocksource_khz2mult(1000 * dev->caps.hca_core_clock, mdev->cycles.shi=
+ft);
+>    ^
+> drivers/net/ethernet/intel/ixgbe/ixgbe_ptp.c: In function 'ixgbe_ptp_star=
+t_cyclecounter':
+> drivers/net/ethernet/intel/ixgbe/ixgbe_ptp.c:796:2: error: implicit decla=
+ration of function 'CLOCKSOURCE_MASK' [-Werror=3Dimplicit-function-declarat=
+ion]
+>   adapter->cc.mask =3D CLOCKSOURCE_MASK(64);
+>   ^
+>=20
 
-Before:
+My powerpc allyesconfig build also produced this:
 
-  $ perf diff
-  # Event 'cycles'
-  #
-  # Baseline    Delta  Shared Object       Symbol
-  # ........  .......  ..................  ...............................
-  #
-                       [bridge]            [k] ip_sabotage_in
-                       [btrfs]             [k] __etree_search.constprop.47
-       0.01%           [btrfs]             [k] btrfs_file_mmap
-       0.01%   -0.01%  [btrfs]             [k] btrfs_getattr
-                       [e1000e]            [k] e1000_watchdog
-       0.00%           [kernel.vmlinux]    [k] PageHuge
-       0.00%           [kernel.vmlinux]    [k] __acct_update_integrals
-       0.00%           [kernel.vmlinux]    [k] __activate_page
-                       [kernel.vmlinux]    [k] __alloc_fd
-       0.02%   +0.02%  [kernel.vmlinux]    [k] __alloc_pages_nodemask
-       ...
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c: In function 'bnx2x_init_c=
+yclecounter':
+drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c:14613:2: error: implicit d=
+eclaration of function 'CLOCKSOURCE_MASK' [-Werror=3Dimplicit-function-decl=
+aration]
+  bp->cyclecounter.mask =3D CLOCKSOURCE_MASK(64);
+  ^
 
-After:
+So I added this patch:
 
-  # Baseline    Delta  Shared Object       Symbol
-  # ........  .......  ..................  ................................
-  #
-      24.73%   -4.62%  perf                [.] append_chain_children
-       7.96%   -1.29%  perf                [.] dso__find_symbol
-       6.97%   -2.07%  libc-2.20.so        [.] vfprintf
-       4.61%   +0.88%  libc-2.20.so        [.] __fprintf_chk
-       4.41%   +2.43%  perf                [.] sort__comm_cmp
-       4.10%   -0.16%  perf                [.] comm__str
-       4.03%   -0.93%  perf                [.] machine__findnew_thread_time
-       3.82%   +3.09%  perf                [.] __hists__add_entry
-       2.95%   -0.18%  perf                [.] sort__dso_cmp
-       ...
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Sat, 3 Jan 2015 12:15:37 +1100
+Subject: [PATCH] bnx2x: Include clocksource.h to get CLOCKSOURCE_MASK
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1419656793-32756-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- tools/perf/builtin-diff.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 44 insertions(+)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 303c1e151dcf..1fd96c13f199 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -545,6 +545,42 @@ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
- 	return __hist_entry__cmp_compute(p_left, p_right, c);
- }
- 
-+static int64_t
-+hist_entry__cmp_nop(struct hist_entry *left __maybe_unused,
-+		    struct hist_entry *right __maybe_unused)
-+{
-+	return 0;
-+}
-+
-+static int64_t
-+hist_entry__cmp_baseline(struct hist_entry *left, struct hist_entry *right)
-+{
-+	if (sort_compute)
-+		return 0;
-+
-+	if (left->stat.period == right->stat.period)
-+		return 0;
-+	return left->stat.period > right->stat.period ? 1 : -1;
-+}
-+
-+static int64_t
-+hist_entry__cmp_delta(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return hist_entry__cmp_compute(right, left, COMPUTE_DELTA);
-+}
-+
-+static int64_t
-+hist_entry__cmp_ratio(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return hist_entry__cmp_compute(right, left, COMPUTE_RATIO);
-+}
-+
-+static int64_t
-+hist_entry__cmp_wdiff(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return hist_entry__cmp_compute(right, left, COMPUTE_WEIGHTED_DIFF);
-+}
-+
- static void insert_hist_entry_by_compute(struct rb_root *root,
- 					 struct hist_entry *he,
- 					 int c)
-@@ -1038,27 +1074,35 @@ static void data__hpp_register(struct data__file *d, int idx)
- 	fmt->header = hpp__header;
- 	fmt->width  = hpp__width;
- 	fmt->entry  = hpp__entry_global;
-+	fmt->cmp    = hist_entry__cmp_nop;
-+	fmt->collapse = hist_entry__cmp_nop;
- 
- 	/* TODO more colors */
- 	switch (idx) {
- 	case PERF_HPP_DIFF__BASELINE:
- 		fmt->color = hpp__color_baseline;
-+		fmt->sort  = hist_entry__cmp_baseline;
- 		break;
- 	case PERF_HPP_DIFF__DELTA:
- 		fmt->color = hpp__color_delta;
-+		fmt->sort  = hist_entry__cmp_delta;
- 		break;
- 	case PERF_HPP_DIFF__RATIO:
- 		fmt->color = hpp__color_ratio;
-+		fmt->sort  = hist_entry__cmp_ratio;
- 		break;
- 	case PERF_HPP_DIFF__WEIGHTED_DIFF:
- 		fmt->color = hpp__color_wdiff;
-+		fmt->sort  = hist_entry__cmp_wdiff;
- 		break;
- 	default:
-+		fmt->sort  = hist_entry__cmp_nop;
- 		break;
- 	}
- 
- 	init_header(d, dfmt);
- 	perf_hpp__column_register(fmt);
-+	perf_hpp__register_sort_field(fmt);
- }
- 
- static void ui_init(void)
--- 
-1.9.3
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net=
+/ethernet/broadcom/bnx2x/bnx2x_main.c
+index 2c951326a85d..119c190721da 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -57,6 +57,7 @@
+ #include <linux/semaphore.h>
+ #include <linux/stringify.h>
+ #include <linux/vmalloc.h>
++#include <linux/clocksource.h>
+=20
+ #include "bnx2x.h"
+ #include "bnx2x_init.h"
+--=20
+2.1.4
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/znWSccTcOy8hr3rl/cMSN4R
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUp1udAAoJEMDTa8Ir7ZwVRMkP/iJ4ewJJT3FY4Jk/mGquAfsm
+LJwmkeC6WrR+sJHf3jtWM8M9uiZzGh9O4TcS9Otg9oc/Kw4SuKYxI50dGR/TQFQ/
+b+uH1g/rY38v2GThRWxHtmwcnwCS0RPElY9FJWjsgS7MewnNvpjAuIzlE+z6jTRF
+HtOcuqU0uP+d0nEJXDnym7Z3j6kO442Z72/Xk+86dOB7w36Hjp69uQ9zR+h+sMrG
+2GqG9wTCIRI0owsGLc/ICw5yUtoCeqIoE9qNR8Dgh4v+jp8jM+Xruh9+f9p5ALk0
+NS9Gwu5z+rYNC16i40P1N8ON4Rq+PjjA4anluc5Z9PBDODu4L77Uy9p4jWFJXLrj
+x44ISFlpoUvjxRnGbiuN+rYNJihQFaoKVKSsJjdZ2ek+es1aZJf1raEB0bDRg7Mk
+m8XrHl/mB3bDd3xkOlOT5zqJjehNbg0AeN0KlV4XDLRHhYOxIalIGKm8MMeCDwwo
+WjgGs0eEl5zqArlFO6INStcX0jDP2tyLEYpHtNYeaOi5H3EGF8VEY7dBuajfqY+J
+grSOoXUY0KWbLfVGv5pNYodwm521BBSDijgacFAP7burgI/WkXEdBAHMEXzWEKXR
++/jUBGKmI2S8k0Z275JRkMvS38/NPjRdGvdzQGsqYcT48UCx7dmCH4b8DpVZ4TjZ
+7eYXd92n5NaJ+o1422Dk
+=UE9R
+-----END PGP SIGNATURE-----
+
+--Sig_/znWSccTcOy8hr3rl/cMSN4R--
