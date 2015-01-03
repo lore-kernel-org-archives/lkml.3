@@ -1,70 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbbACW2v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 17:28:51 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:65368 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750735AbbACW2r (ORCPT
+	id S1752309AbbACWfr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 17:35:47 -0500
+Received: from smtp02.smtpout.orange.fr ([80.12.242.124]:48761 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbbACWfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 17:28:47 -0500
-Message-ID: <1420324124.9624.60.camel@x220>
-Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sat, 03 Jan 2015 23:28:44 +0100
-In-Reply-To: <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
-References: <1420297188.2397.3.camel@tiscali.nl>
-	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>
-	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jan 2015 22:28:44.0564 (UTC) FILETIME=[A2598540:01D027A4]
-X-RcptDomain: vger.kernel.org
+	Sat, 3 Jan 2015 17:35:44 -0500
+X-ME-Helo: beldin.home
+X-ME-Date: Sat, 03 Jan 2015 23:35:41 +0100
+X-ME-IP: 90.38.169.186
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [PATCH v2] mfd: lubbock_io: add lubbock_io board
+Date: Sat,  3 Jan 2015 23:35:15 +0100
+Message-Id: <1420324515-7444-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2015-01-03 at 10:07 -0800, Linus Torvalds wrote:
-> On Sat, Jan 3, 2015 at 10:02 AM, Marcel Holtmann <marcel@holtmann.org> wrote:
-> >
-> > why would you revert this? It is obviously the correct change to actually select CFG80211_WEXT.
-> 
-> I don't know about obvious, but yeah, I think the select in this case
-> is actually the better idea anyway.
+Lubbock () board is the IO motherboard of the Intel PXA25x Development
+Platform, which supports the Lubbock pxa25x soc board.
 
-Obviously it wasn't obvious to me!
+Historically, this support was in arch/arm/mach-pxa/lubbock.c. When
+gpio-pxa was moved to drivers/pxa, it became a driver, and its
+initialization and probing happened at postcore initcall. The lubbock
+code used to install the chained lubbock interrupt handler at init_irq()
+time.
 
-My reasoning was that the "ipw2200: select CFG80211_WEXT" commit was
-_solely_ a workaround for the breakage introduced by that other patch.
-And since that one is now reverted the workaround wasn't needed anymore.
+The consequence of the gpio-pxa change is that the installed chained irq
+handler lubbock_irq_handler() was overwritten in pxa_gpio_probe(_dt)(),
+removing :
+ - the handler
+ - the falling edge detection setting of GPIO0, which revealed the
+   interrupt request from the lubbock IO board.
 
-Besied, I thought we try to avoid select-ing symbols that can also be
-set manually. As that makes it more likely to trigger circular
-dependency problems in the kconfig tools, doesn't it?
+As a fix, move the gpio0 chained handler setup to a place where we have
+the guarantee that pxa_gpio_probe() was called before, so that lubbock
+handler becomes the true IRQ chained handler of GPIO0, demuxing the
+lubbock IO board interrupts.
 
-> We could make the CFG80211_WEXT help message be very negative so that
-> people aren't encouraged to select it even if they can, but then if
-> they need the ipw driver it gets selected because of that. Because the
-> ipw driver is probably the more important of the two if you just
-> happen to have old hardware but are upgrading yout software (and
-> anybody who recompiles their own kernel is obviously doing the
-> latter).
+This patch moves all that handling to a mfd driver. It's only purpose
+for the time being is the interrupt handling, but in the future it
+should encompass all the motherboard CPLDs handling :
+ - leds
+ - switches
+ - hexleds
 
-Side note: am I correct in thinking that there's some successor to
-CFG80211_WEXT and that the ipw2200 driver could, at least in theory, be
-ported to that successor? (ipw2200 hardware appears to be a bit old, so
-probably no one would care enough to actually do that.)
-net/wireless/kconfig doesn't mention anything like that, so probably I'm
-just confused.
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+Since v1: change the name from cottula to lubbock_io
+            Dmitry pointed out the Cottula was the pxa25x family name,
+	    lubbock was the pxa25x development board name. Therefore the
+	    name was changed to lubbock_io (lubbock IO board)
+	  change the resources to bi-irq ioresource
+	    Discussion between Arnd and Robert to change the gpio
+	    request by a irq request.
+---
+ drivers/mfd/Kconfig   |  10 +++
+ drivers/mfd/Makefile  |   1 +
+ drivers/mfd/lubbock.c | 193 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 204 insertions(+)
+ create mode 100644 drivers/mfd/lubbock.c
 
-
-Paul Bolle
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 2e6b731..4d8939f 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -91,6 +91,16 @@ config MFD_AXP20X
+ 	  components like regulators or the PEK (Power Enable Key) under the
+ 	  corresponding menus.
+ 
++config MFD_LUBBOCK
++	bool "Lubbock Motherboard"
++	def_bool ARCH_LUBBOCK
++	select MFD_CORE
++	help
++	  This driver supports the Lubbock multifunction chip found on the
++	  pxa25x development platform system (named Lubbock). This IO board
++	  supports the interrupts handling, ethernet controller, flash chips,
++	  etc ...
++
+ config MFD_CROS_EC
+ 	tristate "ChromeOS Embedded Controller"
+ 	select MFD_CORE
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 53467e2..aff1f4f 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
+ obj-$(CONFIG_MFD_SM501)		+= sm501.o
+ obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+ obj-$(CONFIG_MFD_BCM590XX)	+= bcm590xx.o
++obj-$(CONFIG_MFD_LUBBOCK)	+= lubbock.o
+ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
+ obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+ obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
+diff --git a/drivers/mfd/lubbock.c b/drivers/mfd/lubbock.c
+new file mode 100644
+index 0000000..c6ce82c
+--- /dev/null
++++ b/drivers/mfd/lubbock.c
+@@ -0,0 +1,193 @@
++/*
++ * Intel Cotulla MFD - lubbock motherboard
++ *
++ * Copyright (C) 2014 Robert Jarzmik
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * Lubbock motherboard driver, supporting lubbock (aka. pxa25x) soc board.
++ *
++ */
++
++#include <linux/bitops.h>
++#include <linux/gpio.h>
++#include <linux/gpio/consumer.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/mfd/core.h>
++#include <linux/module.h>
++#include <linux/of_platform.h>
++
++#define COT_IRQ_MASK_EN 0xc0
++#define COT_IRQ_SET_CLR 0xd0
++
++#define LUBBOCK_NB_IRQ	8
++
++struct lubbock {
++	void __iomem	*base;
++	int irq;
++	unsigned int irq_mask;
++	struct gpio_desc *gpio0;
++	struct irq_domain *irqdomain;
++};
++
++static irqreturn_t lubbock_irq_handler(int in_irq, void *d)
++{
++	struct lubbock *cot = d;
++	unsigned long pending;
++	unsigned int bit;
++
++	pending = readl(cot->base + COT_IRQ_SET_CLR) & cot->irq_mask;
++	for_each_set_bit(bit, &pending, LUBBOCK_NB_IRQ)
++		generic_handle_irq(irq_find_mapping(cot->irqdomain, bit));
++	return IRQ_HANDLED;
++}
++
++static void lubbock_irq_mask_ack(struct irq_data *d)
++{
++	struct lubbock *cot = irq_data_get_irq_chip_data(d);
++	unsigned int lubbock_irq = irqd_to_hwirq(d);
++	unsigned int set, bit = BIT(lubbock_irq);
++
++	cot->irq_mask &= ~bit;
++	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
++	set = readl(cot->base + COT_IRQ_SET_CLR);
++	writel(set & ~bit, cot->base + COT_IRQ_SET_CLR);
++}
++
++static void lubbock_irq_unmask(struct irq_data *d)
++{
++	struct lubbock *cot = irq_data_get_irq_chip_data(d);
++	unsigned int lubbock_irq = irqd_to_hwirq(d);
++	unsigned int bit = BIT(lubbock_irq);
++
++	cot->irq_mask |= bit;
++	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
++}
++
++static struct irq_chip lubbock_irq_chip = {
++	.name		= "lubbock",
++	.irq_mask_ack	= lubbock_irq_mask_ack,
++	.irq_unmask	= lubbock_irq_unmask,
++	.flags		= IRQCHIP_MASK_ON_SUSPEND | IRQCHIP_SKIP_SET_WAKE,
++};
++
++static int lubbock_irq_domain_map(struct irq_domain *d, unsigned int irq,
++				   irq_hw_number_t hwirq)
++{
++	struct lubbock *cot = d->host_data;
++
++	irq_set_chip_and_handler(irq, &lubbock_irq_chip, handle_level_irq);
++	irq_set_chip_data(irq, cot);
++	return 0;
++}
++
++static const struct irq_domain_ops lubbock_irq_domain_ops = {
++	.xlate = irq_domain_xlate_twocell,
++	.map = lubbock_irq_domain_map,
++};
++
++static int lubbock_resume(struct platform_device *pdev)
++{
++	struct lubbock *cot = platform_get_drvdata(pdev);
++
++	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
++	return 0;
++}
++
++static int lubbock_probe(struct platform_device *pdev)
++{
++	struct resource *res;
++	struct lubbock *cot;
++	int ret;
++	unsigned int base_irq = 0;
++
++	cot = devm_kzalloc(&pdev->dev, sizeof(*cot), GFP_KERNEL);
++	if (!cot)
++		return -ENOMEM;
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (res)
++		cot->irq = (unsigned int)res->start;
++	if (!cot->irq)
++		return -ENODEV;
++
++	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
++	if (res)
++		base_irq = (unsigned int)res->start;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	cot->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(cot->base))
++		return PTR_ERR(cot->base);
++
++	platform_set_drvdata(pdev, cot);
++
++	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
++	writel(0, cot->base + COT_IRQ_SET_CLR);
++	ret = devm_request_irq(&pdev->dev, cot->irq, lubbock_irq_handler, 0,
++			       dev_name(&pdev->dev), cot);
++	if (ret == -ENOSYS)
++		return -EPROBE_DEFER;
++	if (ret) {
++		dev_err(&pdev->dev, "Couldn't request GPIO : ret = %d\n", ret);
++		return ret;
++	}
++	irq_set_irq_type(cot->irq, IRQ_TYPE_EDGE_FALLING);
++	irq_set_irq_wake(cot->irq, 1);
++
++	cot->irqdomain =
++		irq_domain_add_linear(pdev->dev.of_node, LUBBOCK_NB_IRQ,
++				      &lubbock_irq_domain_ops, cot);
++	if (!cot->irqdomain)
++		return -ENODEV;
++
++	ret = 0;
++	if (base_irq)
++		ret = irq_create_strict_mappings(cot->irqdomain, base_irq, 0,
++						 LUBBOCK_NB_IRQ);
++	if (ret) {
++		dev_err(&pdev->dev, "Couldn't create the irq mapping %d..%d\n",
++			base_irq, base_irq + LUBBOCK_NB_IRQ);
++		return ret;
++	}
++
++	dev_info(&pdev->dev, "base=%p, irq=%d, base_irq=%d\n",
++		 cot->base, cot->irq, base_irq);
++
++	return 0;
++}
++
++static int lubbock_remove(struct platform_device *pdev)
++{
++	struct lubbock *cot = platform_get_drvdata(pdev);
++
++	irq_set_chip_and_handler(cot->irq, NULL, NULL);
++	return 0;
++}
++
++static const struct of_device_id lubbock_id_table[] = {
++	{ .compatible = "marvell,lubbock_io", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, lubbock_id_table);
++
++static struct platform_driver lubbock_driver = {
++	.driver		= {
++		.name	= "lubbock_io",
++		.of_match_table = of_match_ptr(lubbock_id_table),
++	},
++	.probe		= lubbock_probe,
++	.remove		= lubbock_remove,
++	.resume		= lubbock_resume,
++};
++
++module_platform_driver(lubbock_driver);
++
++MODULE_DESCRIPTION("Lubbock driver");
++MODULE_AUTHOR("Robert Jarzmik");
++MODULE_LICENSE("GPL");
+-- 
+2.1.0
 
