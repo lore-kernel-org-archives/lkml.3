@@ -1,58 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbbACQfX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 11:35:23 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:47705 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025AbbACQfR (ORCPT
+	id S1751091AbbACOpi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 09:45:38 -0500
+Received: from mail-ie0-f193.google.com ([209.85.223.193]:51806 "EHLO
+	mail-ie0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbbACOpg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 11:35:17 -0500
-Date: Sat, 3 Jan 2015 16:34:42 +0200
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] can: kvaser_usb: Don't free packets when tight on URBs
-Message-ID: <20150103143442.GA24998@Darwish.PC>
-References: <20141223154654.GB6460@vivalin-002>
- <20150101135913.6205ce0e@urahara>
+	Sat, 3 Jan 2015 09:45:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150101135913.6205ce0e@urahara>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [85.24.246.111]
+In-Reply-To: <CA+icZUUJfemKC85=p7Huyw7xwfUdXBhePseJCnUKLx9edgpT4w@mail.gmail.com>
+References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
+	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
+	<CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
+	<CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
+	<CACna6rxTYUWvxvu0rFydWxkjbYdHfhV=o+9A+ViCpbV-LFx7fw@mail.gmail.com>
+	<CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
+	<CA+icZUUJfemKC85=p7Huyw7xwfUdXBhePseJCnUKLx9edgpT4w@mail.gmail.com>
+Date: Sat, 3 Jan 2015 15:45:33 +0100
+Message-ID: <CAKXHbyPm+2gy3E_FAVY82ggvJhWe-E_xtrhgeAPxUyRS-FutaA@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 01, 2015 at 01:59:13PM -0800, Stephen Hemminger wrote:
-> On Tue, 23 Dec 2014 17:46:54 +0200
-> "Ahmed S. Darwish" <darwish.07@gmail.com> wrote:
-> 
-> >  	int ret = NETDEV_TX_OK;
-> > +	bool kfree_skb_on_error = true;
-> >  
-> >  	if (can_dropped_invalid_skb(netdev, skb))
-> >  		return NETDEV_TX_OK;
-> > @@ -1336,6 +1337,7 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
-> >  
-> >  	if (!context) {
-> >  		netdev_warn(netdev, "cannot find free context\n");
-> > +		kfree_skb_on_error = false;
-> >  		ret =  NETDEV_TX_BUSY;
-> 
-> You already have a flag value (ret == NETDEV_TX_BUSY), why
-> not use that instead of introducing another variable?
+2015-01-03 14:19 GMT+01:00 Sedat Dilek <sedat.dilek@gmail.com>:
+>
+> On Sat, Jan 3, 2015 at 1:28 PM, Rickard Strandqvist
+> <rickard_strandqvist@spectrumdigital.se> wrote:
+> > 2015-01-02 22:34 GMT+01:00 Rafał Miłecki <zajec5@gmail.com>:
+> >>
+> >> On 2 January 2015 at 18:46, Rickard Strandqvist
+> >> <rickard_strandqvist@spectrumdigital.se> wrote:
+> >> > 2015-01-02 13:14 GMT+01:00 Sedat Dilek <sedat.dilek@gmail.com>:
+> >> >>
+> >> >> On Fri, Jan 2, 2015 at 1:06 PM, Rafał Miłecki <zajec5@gmail.com> wrote:
+> >> >> > On 2 January 2015 at 13:05, Rafał Miłecki <zajec5@gmail.com> wrote:
+> >> >> >> On 1 January 2015 at 16:46, Rickard Strandqvist
+> >> >> >> <rickard_strandqvist@spectrumdigital.se> wrote:
+> >> >> >>> Remove the function b43legacy_radio_set_tx_iq() that is not used
+> >> >> >>> anywhere.
+> >> >> >>>
+> >> >> >>> This was partially found by using a static code analysis program
+> >> >> >>> called cppcheck.
+> >> >> >>
+> >> >> >> It seems to be for A-PHY based hardware (with 0x2060 radio id) which
+> >> >> >> is not handled by b43legacy. Should be safe to drop this code (we
+> >> >> >> won't likely need it).
+> >> >> >>
+> >> >> >> Ack
+> >> >> >
+> >> >> > For future, we prefix patches with just a driver name. So this could
+> >> >> > be simply called
+> >> >> > b43legacy: radio.c: Remove unused function
+> >> >> >
+> >> >>
+> >> >> Alternatively...
+> >> >>
+> >> >> "b43legacy: Remove unused function in radio.c"
+> >> >>
+> >> >> BTW, as Arnd Bergmann pointed out [1] how did you test with cppcheck
+> >> >> to get such stuff?
+> >> >>
+> >> >> - Sedat -
+> >> >>
+> >> >> [1] https://lkml.org/lkml/2015/1/2/51
+> >> >
+> >> >
+> >> >
+> >> > Hi Rafal and Sedat
+> >> >
+> >> > Rafal do you mean I should remove the entire b43legacy part?
+> >>
+> >> 1) I gave you Ack for the changes
+> >> 2) You could drop "net: wireless: " or better use something Sedat proposed
+> >>
+> >> --
+> >> Rafał
+> >
+> >
+> >
+> > Hi
+> >
+> > Nice, yes I miss the Ack :)
+> >
+> > I just got one more complaining about my subject-line in "net: wireless: "
+> > I use some sed call for this, so it's easy to fix. I will now remove that
+> > part hereinafter.
+> > I check in Documentation/ but did not find any clear info for this.
+> >
+>
+> The easiest way to make (sub)maintainers happy is to check the git-log...
+>
+> $ git log --oneline /path/to/file
+>
+> ...and look how other contributors labeled their patches.
+>
+> [1] is the 1st address to look at on how to submit patches to Linux-kernel.
+> To promote the good work of Greg, see [2,3] for a video and tutorial
+> on that topic, too.
+>
+> - Sedat -
+>
+> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/SubmittingPatches
+> [2] https://www.youtube.com/watch?v=XXix80GCvpo
+> [3] https://github.com/gregkh/kernel-tutorial
 
-Yes, that variable got implicitly removed in v2 patch 1/4.
 
-Thanks,
 
---
-Darwish
+Hi Sedat
+
+Thanks for the tip :)
+
+To bad with the audio in the video thow. Have read SubmittingPatches before.
+
+
+But I have now added a line in my script that does a:
+
+git log -10 --oneline
+
+So I can at least see the other subjekt lines, and make adjustments if
+necessary.
+
+
+
+Kind regards
+Rickard Strandqvist
