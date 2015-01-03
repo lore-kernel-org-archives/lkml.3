@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223AbbACXbo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 18:31:44 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:50957 "EHLO mail.ispras.ru"
+	id S1752486AbbACXkG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 18:40:06 -0500
+Received: from mail.kernel.org ([198.145.29.136]:57632 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926AbbACXbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 18:31:43 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] drm/radeon: do not left queue acquired if timeout happens in kgd_hqd_destroy()
-Date: Sun,  4 Jan 2015 02:31:20 +0300
-Message-Id: <1420327880-25415-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1750926AbbACXkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Jan 2015 18:40:03 -0500
+Date: Sun, 4 Jan 2015 00:39:50 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH V3] ARM: dts: am57xx-beagle-x15: Add GPIO controlled fan
+ node
+Message-ID: <20150103233949.GA4108@earth.universe>
+References: <1420309826-7904-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="fUYQa+Pmc3FrFX/N"
+Content-Disposition: inline
+In-Reply-To: <1420309826-7904-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If timeout happens, kgd_hqd_destroy() just returns -ETIME leaving queue acquired.
-It may cause a deadlock, so the patch proposes to release queue before return.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+--fUYQa+Pmc3FrFX/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/gpu/drm/radeon/radeon_kfd.c | 1 +
- 1 file changed, 1 insertion(+)
+Hi Nishanth,
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kfd.c b/drivers/gpu/drm/radeon/radeon_kfd.c
-index 242fd8b1b221..335e29dbab05 100644
---- a/drivers/gpu/drm/radeon/radeon_kfd.c
-+++ b/drivers/gpu/drm/radeon/radeon_kfd.c
-@@ -556,6 +556,7 @@ static int kgd_hqd_destroy(struct kgd_dev *kgd, uint32_t reset_type,
- 		if (timeout == 0) {
- 			pr_err("kfd: cp queue preemption time out (%dms)\n",
- 				temp);
-+			release_queue(kgd);
- 			return -ETIME;
- 		}
- 		msleep(20);
--- 
-1.9.1
+On Sat, Jan 03, 2015 at 12:30:26PM -0600, Nishanth Menon wrote:
+> [...]
+> +		gpio-fan,speed-map = <0    0
+> +				      13000 1>;
+> [...]
 
+iirc DT maintainers prefer this format:
+
+gpio-fan,speed-map = <0     0>,
+                     <13000 1>;
+
+This should result in the same .dtb, but is a bit easier to read.
+
+-- Sebastian
+
+--fUYQa+Pmc3FrFX/N
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUqH3CAAoJENju1/PIO/qaXV8P/0GKBTc3KrsIhA0jX0IzRV4v
+ujGllhzLjN6dMdOrsAPO1WLLqmJ+/Db2PyHfiVQJO0Dke3nx7PR9QHieX30NKMOW
+Ac49CHAr+e2qiXn0nMvxEOWhMF3p7XNeF8JornndY5bBFGTPaLNtu0y3CK5mpr1q
+m/dXT4x7EMfHRFVxabhLQ2ypMp50PwCyA1PekahccTbiO+fc+uDFzfq1ylOEN1sG
+vMy+kXIMdeN2PcglTK3htm5sWbVQhOscdS863CnsjX8O08afgOHvKNwff2fS4ymC
+JiRydfLG/0eIhKYPyLbtxLroNIP6sW2y5rM53WdwWfVWMEJGfhcKCxjuEBieWCMH
+YP86R644qA66zDLylvzYykgwXK+840GGsXHvmVJ0MW0MHgLrLBf27Ucj0sIreSm9
+Khl76dpsNivhl5og60GfYxFDuDvyqBmo19rmMINVRZJNkLuusm8pfQ4arjtRx8TS
+HFJCH7Yo398GEst7pMrTCkE7TcYkn3cNabd1DoQkpv4AfpXxH9s9UyAZwN1LPicg
+CxmCeanXCTp5s7p6rxsLcXnSHeFz20gl6KUg40WN0AjvWXZOU4PjJnAWUd9oF228
+HA8/mB78XD2LTYqZZCMxKjT5nfA2Q0e4Jl0Zrw/8QEIfDOXxb748QTx6dOxw23G3
+TXUqAGbpg48Jg0tQe4/c
+=5uFp
+-----END PGP SIGNATURE-----
+
+--fUYQa+Pmc3FrFX/N--
