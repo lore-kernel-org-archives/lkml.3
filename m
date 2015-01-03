@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbbACO7z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 09:59:55 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:49728 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750961AbbACO7w (ORCPT
+	id S1752442AbbACPBu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 10:01:50 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:49091 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbbACPBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 09:59:52 -0500
-Message-ID: <1420297188.2397.3.camel@tiscali.nl>
-Subject: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Kalle Valo <kvalo@codeaurora.org>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 03 Jan 2015 15:59:48 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9 (3.12.9-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 03 Jan 2015 14:59:49.0800 (UTC) FILETIME=[EBFAB280:01D02765]
-X-RcptDomain: vger.kernel.org
+	Sat, 3 Jan 2015 10:01:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150103022504.GB24430@kernel.org>
+References: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
+ <1419223455-4362-7-git-send-email-namhyung@kernel.org> <20150103022504.GB24430@kernel.org>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Sun, 4 Jan 2015 00:01:26 +0900
+X-Google-Sender-Auth: KRoMRi2miLa037gjSmwxl-HyHt4
+Message-ID: <CAM9d7ciu4dVKv+mT3fHPE=BdBfLXdU+6zD9STVEkzxET2REUuQ@mail.gmail.com>
+Subject: Re: [PATCH 6/7] perf tools: Append callchains only when requested
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit dddd60220f41775e634258efd1b54c6fa81ce706.
+Hi Arnaldo,
 
-The raison d'être of commit dddd60220f41 ("ipw2200: select
-CFG80211_WEXT") was reverted in commit 2d36e008739e ("Revert "cfg80211:
-make WEXT compatibility unselectable""). So revert this commit too.
+On Sat, Jan 3, 2015 at 11:25 AM, Arnaldo Carvalho de Melo
+<acme@kernel.org> wrote:
+> Em Mon, Dec 22, 2014 at 01:44:14PM +0900, Namhyung Kim escreveu:
+>> The perf report --children can be called with callchain disabled so no
+>> need to append callchains.  Actually the root of callchain tree is not
+>> initialized properly in this case.
+>
+> Hi Namhyung,
+>
+>         I should have caught this using 'perf test', but it slipped
+> thru, please try running 'perf test cumulation', I noticed that it fails
+> and that if I revert this changeset it works again, can you please
+> check?
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- drivers/net/wireless/ipw2x00/Kconfig | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+This change should not affect the test result, but I guess the test
+somehow relied on the undefined behavior.  Actually I posted a patch
+to fix this problem.  So please take a look at the link below:
 
-diff --git a/drivers/net/wireless/ipw2x00/Kconfig b/drivers/net/wireless/ipw2x00/Kconfig
-index 21de4fe6cf2d..91c0cb3c368e 100644
---- a/drivers/net/wireless/ipw2x00/Kconfig
-+++ b/drivers/net/wireless/ipw2x00/Kconfig
-@@ -65,8 +65,7 @@ config IPW2100_DEBUG
- 
- config IPW2200
- 	tristate "Intel PRO/Wireless 2200BG and 2915ABG Network Connection"
--	depends on PCI && CFG80211
--	select CFG80211_WEXT
-+	depends on PCI && CFG80211 && CFG80211_WEXT
- 	select WIRELESS_EXT
- 	select WEXT_SPY
- 	select WEXT_PRIV
--- 
-2.1.0
+https://lkml.org/lkml/2014/12/22/561
 
+Thanks,
+Namhyung
