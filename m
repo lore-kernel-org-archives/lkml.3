@@ -1,109 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbbACPlu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 10:41:50 -0500
-Received: from mail-ie0-f195.google.com ([209.85.223.195]:49052 "EHLO
-	mail-ie0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191AbbACPlp (ORCPT
+	id S1752082AbbACPzy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 10:55:54 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:35949 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbbACPzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 10:41:45 -0500
-MIME-Version: 1.0
-X-Originating-IP: [85.24.246.111]
-In-Reply-To: <CA+icZUUfFr2PQjp4ppMNj5UQE3U7-ArmO1LSDoZZf5c1Y85OMw@mail.gmail.com>
-References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
-	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
-	<CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
-	<CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
-	<CACna6rxTYUWvxvu0rFydWxkjbYdHfhV=o+9A+ViCpbV-LFx7fw@mail.gmail.com>
-	<CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
-	<CA+icZUUJfemKC85=p7Huyw7xwfUdXBhePseJCnUKLx9edgpT4w@mail.gmail.com>
-	<CAKXHbyPm+2gy3E_FAVY82ggvJhWe-E_xtrhgeAPxUyRS-FutaA@mail.gmail.com>
-	<CA+icZUUfFr2PQjp4ppMNj5UQE3U7-ArmO1LSDoZZf5c1Y85OMw@mail.gmail.com>
-Date: Sat, 3 Jan 2015 16:41:44 +0100
-Message-ID: <CAKXHbyN2Vud5skK38KHFNo+FEG9at4SAQh8X5QYYK7qD3-34YQ@mail.gmail.com>
-Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
+	Sat, 3 Jan 2015 10:55:52 -0500
 From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefano Brivio <stefano.brivio@polimi.it>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        b43-dev <b43-dev@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kevin Hilman <khilman@kernel.org>, Nishanth Menon <nm@ti.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] power: avs: smartreflex:  Remove unused function
+Date: Sat,  3 Jan 2015 16:58:50 +0100
+Message-Id: <1420300731-8910-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-03 15:51 GMT+01:00 Sedat Dilek <sedat.dilek@gmail.com>:
-> On Sat, Jan 3, 2015 at 3:45 PM, Rickard Strandqvist
-> <rickard_strandqvist@spectrumdigital.se> wrote:
-> [ ... ]
->>> > I just got one more complaining about my subject-line in "net: wireless: "
->>> > I use some sed call for this, so it's easy to fix. I will now remove that
->>> > part hereinafter.
->>> > I check in Documentation/ but did not find any clear info for this.
->>> >
->>>
->>> The easiest way to make (sub)maintainers happy is to check the git-log...
->>>
->>> $ git log --oneline /path/to/file
->>>
->>> ...and look how other contributors labeled their patches.
->>>
->>> [1] is the 1st address to look at on how to submit patches to Linux-kernel.
->>> To promote the good work of Greg, see [2,3] for a video and tutorial
->>> on that topic, too.
->>>
->>> - Sedat -
->>>
->>> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/SubmittingPatches
->>> [2] https://www.youtube.com/watch?v=XXix80GCvpo
->>> [3] https://github.com/gregkh/kernel-tutorial
->>
->>
->>
->> Hi Sedat
->>
->> Thanks for the tip :)
->>
->> To bad with the audio in the video thow. Have read SubmittingPatches before.
->>
->
-> AFAICS there is another (earlier) video "Write and Submit your first
-> Linux kernel Patch" from FOSDEM 2010.
->
-> For German readers I can recommend the book from [2] (no I get no
-> money for promotion).
->
-> - Sedat -
->
-> [1] https://www.youtube.com/watch?v=LLBrBBImJt4
-> [2] http://www.opensourcepress.de/de/produkte/Git/33227/978-3-95539-119-5-
->
->>
->> But I have now added a line in my script that does a:
->>
->> git log -10 --oneline
->>
->> So I can at least see the other subjekt lines, and make adjustments if
->> necessary.
->>
->>
->>
->> Kind regards
->> Rickard Strandqvist
+Remove the function sr_configure_minmax() that is not used anywhere.
 
+This was partially found by using a static code analysis program called cppcheck.
 
-Hi
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/power/avs/smartreflex.c   |   86 -------------------------------------
+ include/linux/power/smartreflex.h |    1 -
+ 2 files changed, 87 deletions(-)
 
-Good video!
-Wish I had seen this a year ago.
+diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
+index db9973b..62b8351 100644
+--- a/drivers/power/avs/smartreflex.c
++++ b/drivers/power/avs/smartreflex.c
+@@ -460,92 +460,6 @@ int sr_disable_errgen(struct omap_sr *sr)
+ }
+ 
+ /**
+- * sr_configure_minmax() - Configures the SmartReflex to perform AVS using the
+- *			 minmaxavg module.
+- * @sr:			SR module to be configured.
+- *
+- * This API is to be called from the smartreflex class driver to
+- * configure the minmaxavg module inside the smartreflex module.
+- * SR settings if using the ERROR module inside Smartreflex.
+- * SR CLASS 3 by default uses only the ERROR module where as
+- * SR CLASS 2 can choose between ERROR module and MINMAXAVG
+- * module. Returns 0 on success and error value in case of failure.
+- */
+-int sr_configure_minmax(struct omap_sr *sr)
+-{
+-	u32 sr_config, sr_avgwt;
+-	u32 senp_en = 0, senn_en = 0;
+-	u8 senp_shift, senn_shift;
+-
+-	if (!sr) {
+-		pr_warn("%s: NULL omap_sr from %pF\n", __func__,
+-			(void *)_RET_IP_);
+-		return -EINVAL;
+-	}
+-
+-	if (!sr->clk_length)
+-		sr_set_clk_length(sr);
+-
+-	senp_en = sr->senp_mod;
+-	senn_en = sr->senn_mod;
+-
+-	sr_config = (sr->clk_length << SRCONFIG_SRCLKLENGTH_SHIFT) |
+-		SRCONFIG_SENENABLE |
+-		(sr->accum_data << SRCONFIG_ACCUMDATA_SHIFT);
+-
+-	switch (sr->ip_type) {
+-	case SR_TYPE_V1:
+-		sr_config |= SRCONFIG_DELAYCTRL;
+-		senn_shift = SRCONFIG_SENNENABLE_V1_SHIFT;
+-		senp_shift = SRCONFIG_SENPENABLE_V1_SHIFT;
+-		break;
+-	case SR_TYPE_V2:
+-		senn_shift = SRCONFIG_SENNENABLE_V2_SHIFT;
+-		senp_shift = SRCONFIG_SENPENABLE_V2_SHIFT;
+-		break;
+-	default:
+-		dev_err(&sr->pdev->dev, "%s: Trying to Configure smartreflex"
+-			"module without specifying the ip\n", __func__);
+-		return -EINVAL;
+-	}
+-
+-	sr_config |= ((senn_en << senn_shift) | (senp_en << senp_shift));
+-	sr_write_reg(sr, SRCONFIG, sr_config);
+-	sr_avgwt = (sr->senp_avgweight << AVGWEIGHT_SENPAVGWEIGHT_SHIFT) |
+-		(sr->senn_avgweight << AVGWEIGHT_SENNAVGWEIGHT_SHIFT);
+-	sr_write_reg(sr, AVGWEIGHT, sr_avgwt);
+-
+-	/*
+-	 * Enabling the interrupts if MINMAXAVG module is used.
+-	 * TODO: check if all the interrupts are mandatory
+-	 */
+-	switch (sr->ip_type) {
+-	case SR_TYPE_V1:
+-		sr_modify_reg(sr, ERRCONFIG_V1,
+-			(ERRCONFIG_MCUACCUMINTEN | ERRCONFIG_MCUVALIDINTEN |
+-			ERRCONFIG_MCUBOUNDINTEN),
+-			(ERRCONFIG_MCUACCUMINTEN | ERRCONFIG_MCUACCUMINTST |
+-			 ERRCONFIG_MCUVALIDINTEN | ERRCONFIG_MCUVALIDINTST |
+-			 ERRCONFIG_MCUBOUNDINTEN | ERRCONFIG_MCUBOUNDINTST));
+-		break;
+-	case SR_TYPE_V2:
+-		sr_write_reg(sr, IRQSTATUS,
+-			IRQSTATUS_MCUACCUMINT | IRQSTATUS_MCVALIDINT |
+-			IRQSTATUS_MCBOUNDSINT | IRQSTATUS_MCUDISABLEACKINT);
+-		sr_write_reg(sr, IRQENABLE_SET,
+-			IRQENABLE_MCUACCUMINT | IRQENABLE_MCUVALIDINT |
+-			IRQENABLE_MCUBOUNDSINT | IRQENABLE_MCUDISABLEACKINT);
+-		break;
+-	default:
+-		dev_err(&sr->pdev->dev, "%s: Trying to Configure smartreflex"
+-			"module without specifying the ip\n", __func__);
+-		return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+-/**
+  * sr_enable() - Enables the smartreflex module.
+  * @sr:		pointer to which the SR module to be configured belongs to.
+  * @volt:	The voltage at which the Voltage domain associated with
+diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
+index d8b187c3..ffd31af 100644
+--- a/include/linux/power/smartreflex.h
++++ b/include/linux/power/smartreflex.h
+@@ -303,7 +303,6 @@ int sr_enable(struct omap_sr *sr, unsigned long volt);
+ void sr_disable(struct omap_sr *sr);
+ int sr_configure_errgen(struct omap_sr *sr);
+ int sr_disable_errgen(struct omap_sr *sr);
+-int sr_configure_minmax(struct omap_sr *sr);
+ 
+ /* API to register the smartreflex class driver with the smartreflex driver */
+ int sr_register_class(struct omap_sr_class_data *class_data);
+-- 
+1.7.10.4
 
-Sorry, no German for me :)
-
-
-Kind regards
-Rickard Strandqvist
