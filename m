@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbbACMrb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 07:47:31 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:53131 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbbACMrT (ORCPT
+	id S1752498AbbACMuU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 07:50:20 -0500
+Received: from mail-la0-f68.google.com ([209.85.215.68]:53822 "EHLO
+	mail-la0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091AbbACMuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 07:47:19 -0500
-From: jitendra kumar khasdev <jkhasdev@gmail.com>
-To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        pankaj.saraf@nektech.in, jitendra kumar khasdev <jkhasdev@gmail.com>
-Subject: [PATCH 5/5] Staging: comedi: fix line over 80 characters warning
-Date: Sat,  3 Jan 2015 18:16:35 +0530
-Message-Id: <1420289195-5012-5-git-send-email-jkhasdev@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
-References: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
+	Sat, 3 Jan 2015 07:50:17 -0500
+MIME-Version: 1.0
+Date: Sat, 3 Jan 2015 18:20:15 +0530
+Message-ID: <CAEonGa7t=AYOXZTKz+TK4Qe1Qsn+LbLDKSYV2iLs259y5Tfsrw@mail.gmail.com>
+Subject: DMA/TCE and Interrupt Remapping Linux Kernel equivalent on IBM system
+From: marc spencer <i.am.mark.spencer@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is patch to file pcl812.c that fix up warning line
-over 80 character which is found by checkpatch tool.
+Hi,
 
-Signed-off-by: Jitendra Kumar Khasdev <jkhasdev@gmail.com>
----
- drivers/staging/comedi/drivers/pcl812.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can anyone please explain what do the following Linux kernel options do?
 
-diff --git a/drivers/staging/comedi/drivers/pcl812.c b/drivers/staging/comedi/drivers/pcl812.c
-index 5aeb695..f06347f 100644
---- a/drivers/staging/comedi/drivers/pcl812.c
-+++ b/drivers/staging/comedi/drivers/pcl812.c
-@@ -1240,7 +1240,7 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		for (i = 0; i < 2; i++) {
- 			unsigned long dmabuf;
- 
--			dmabuf =  __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
-+			dmabuf = __get_dma_pages(GFP_KERNEL, devpriv->dmapages);
- 			if (!dmabuf)
- 				return -ENOMEM;
- 
--- 
-1.9.1
+- Enable Intel DMA Remapping Devices by default
+- Support for Interrupt Remapping
 
+Now lets say I am not using Intel but instead using IBM POWER, what
+would be the similar
+options?
+Are these enabled by default on IBM POWER?
+
+All kinds of help is truly appreciated.
+
+
+Thanks!
+
+
+Marc
