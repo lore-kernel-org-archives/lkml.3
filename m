@@ -1,106 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292AbbACNMa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 08:12:30 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:47694 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbbACNM1 (ORCPT
+	id S1751174AbbACNTk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 08:19:40 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:36779 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbbACNTh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 08:12:27 -0500
+	Sat, 3 Jan 2015 08:19:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141224215352.GA26482@sysresccd>
-References: <20141224215352.GA26482@sysresccd>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Sat, 3 Jan 2015 14:12:06 +0100
-Message-ID: <CAAVeFuJcWizqtW4mmD8ow5eg2841vgXhZ=7bHDiO3ZJfE2ezog@mail.gmail.com>
-Subject: Re: Linux GPIO internals
-To: Michael Welling <mwelling@emacinc.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "acourbot@nvidia.com" <acourbot@nvidia.com>,
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
+References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
+	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
+	<CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
+	<CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
+	<CACna6rxTYUWvxvu0rFydWxkjbYdHfhV=o+9A+ViCpbV-LFx7fw@mail.gmail.com>
+	<CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
+Date: Sat, 3 Jan 2015 14:19:35 +0100
+Message-ID: <CA+icZUUJfemKC85=p7Huyw7xwfUdXBhePseJCnUKLx9edgpT4w@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Roland Stigge <stigge@antcom.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, tstratman@emacinc.com,
-        Rojhalat Ibrahim <imr@rtschenk.de>
+        b43-dev <b43-dev@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael, sorry for the delayed reply on this interesting issue.
+On Sat, Jan 3, 2015 at 1:28 PM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> 2015-01-02 22:34 GMT+01:00 Rafał Miłecki <zajec5@gmail.com>:
+>>
+>> On 2 January 2015 at 18:46, Rickard Strandqvist
+>> <rickard_strandqvist@spectrumdigital.se> wrote:
+>> > 2015-01-02 13:14 GMT+01:00 Sedat Dilek <sedat.dilek@gmail.com>:
+>> >>
+>> >> On Fri, Jan 2, 2015 at 1:06 PM, Rafał Miłecki <zajec5@gmail.com> wrote:
+>> >> > On 2 January 2015 at 13:05, Rafał Miłecki <zajec5@gmail.com> wrote:
+>> >> >> On 1 January 2015 at 16:46, Rickard Strandqvist
+>> >> >> <rickard_strandqvist@spectrumdigital.se> wrote:
+>> >> >>> Remove the function b43legacy_radio_set_tx_iq() that is not used
+>> >> >>> anywhere.
+>> >> >>>
+>> >> >>> This was partially found by using a static code analysis program
+>> >> >>> called cppcheck.
+>> >> >>
+>> >> >> It seems to be for A-PHY based hardware (with 0x2060 radio id) which
+>> >> >> is not handled by b43legacy. Should be safe to drop this code (we
+>> >> >> won't likely need it).
+>> >> >>
+>> >> >> Ack
+>> >> >
+>> >> > For future, we prefix patches with just a driver name. So this could
+>> >> > be simply called
+>> >> > b43legacy: radio.c: Remove unused function
+>> >> >
+>> >>
+>> >> Alternatively...
+>> >>
+>> >> "b43legacy: Remove unused function in radio.c"
+>> >>
+>> >> BTW, as Arnd Bergmann pointed out [1] how did you test with cppcheck
+>> >> to get such stuff?
+>> >>
+>> >> - Sedat -
+>> >>
+>> >> [1] https://lkml.org/lkml/2015/1/2/51
+>> >
+>> >
+>> >
+>> > Hi Rafal and Sedat
+>> >
+>> > Rafal do you mean I should remove the entire b43legacy part?
+>>
+>> 1) I gave you Ack for the changes
+>> 2) You could drop "net: wireless: " or better use something Sedat proposed
+>>
+>> --
+>> Rafał
+>
+>
+>
+> Hi
+>
+> Nice, yes I miss the Ack :)
+>
+> I just got one more complaining about my subject-line in "net: wireless: "
+> I use some sed call for this, so it's easy to fix. I will now remove that
+> part hereinafter.
+> I check in Documentation/ but did not find any clear info for this.
+>
 
-On Wed, Dec 24, 2014 at 10:53 PM, Michael Welling <mwelling@emacinc.com> wrote:
-> All,
->
-> For years now EMAC has provided an out-of-tree series of class drivers
-> for accessing various devices. The EMAC GPIO class and character
-> interfaces predate the introduction of the gpiolib interface and have
-> been ported across several kernel versions.
->
-> http://wiki.emacinc.com/wiki/Using_the_EMAC_GPIO_Class
->
-> Recently we have come to the conclusion that continuing to provide
-> support for these drivers is getting out of hand. It was agreed that we
-> move away from our non-standard drivers and use mainstream drivers for our
-> newest products.
->
-> That being said, we would like to be able to provide the capabilities
-> of our old drivers but it is not the case with the current gpiolib
-> implementation.
->
-> Here are the major concerns that we have with the gpiolib implementation:
-> - There is no mechanism to provide simultaneous access to multiple
->   GPIOs from userspace.
-> - The sysfs interface seems to vastly slower than the character
->   interface and it is far more cumbersome to handle access from a
->   userspace C program.
->
-> It seems that the first concern was attempted to be addressed by the
-> following patch:
-> https://lkml.org/lkml/2012/12/23/66
->
-> It seems this effort dropped off the radar in January of 2013.
-> What happened to this patch?
->
-> As for the second issue, I am not sure how to resolve this and am open
-> to ideas. I have seen similar concerns in other subsystem that use the
-> sysfs interface.
->
-> IIO example:
-> http://www.spinics.net/lists/linux-iio/msg15344.html
->
-> Suggestions?
+The easiest way to make (sub)maintainers happy is to check the git-log...
 
-It seems like your mail is coming just at the right time. We have
-recently merged a patch that allows setting several GPIOs at the same
-time, if the hardware supports it:
+$ git log --oneline /path/to/file
 
-http://patchwork.ozlabs.org/patch/406666/
+...and look how other contributors labeled their patches.
 
-It lacks sysfs support, but we are also increasingly feeling the
-pressure of the old sysfs interface and are planning to develop a new
-one:
+[1] is the 1st address to look at on how to submit patches to Linux-kernel.
+To promote the good work of Greg, see [2,3] for a video and tutorial
+on that topic, too.
 
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/311158.html
+- Sedat -
 
-Our main gripe with the old sysfs interface is its use of the
-(potentially varying) integer GPIO namespace, and we would like one
-that relies on the new gpiod_ functions. But while we are at it, we
-could just as well support GPIO groups and try to make things faster,
-although I am not sure why sysfs would be slower than a character
-device.
-
-On the top of my head, I think we could have an export interface that
-allows to export a group of GPIOs under a given name, and to
-manipulate them using gpiod_set/get_array(). Single GPIOs could be
-exported as a group of 1.
-
-I have looked at the EMAC GPIO class (very low level, and clearly tied
-to a given subset of GPIO hardware), and anything that makes it
-upstream would need to feature considerably more abstraction, but we
-can certainly try to work something out.
-
-Considering the constraints that we have (no GPIO integers for
-exporting, sysfs-based, uses gpiod_*array()), do you think we could
-satisfy your goals as well?
+[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/SubmittingPatches
+[2] https://www.youtube.com/watch?v=XXix80GCvpo
+[3] https://github.com/gregkh/kernel-tutorial
