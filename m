@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226AbbACPII (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 10:08:08 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51288 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbbACPIE (ORCPT
+	id S1752227AbbACPJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 10:09:56 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:52481 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbbACPJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 10:08:04 -0500
+	Sat, 3 Jan 2015 10:09:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141231194222.GB2897@blokker.redhat.com>
-References: <54A22C76.9000403@gmail.com> <20141230084708.GG6081@sejong>
- <20141230090533.GH6081@sejong> <20141231194222.GB2897@blokker.redhat.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Sun, 4 Jan 2015 00:07:43 +0900
-X-Google-Sender-Auth: yIJIqAUGj1DEiSOiCa-1RQ3Kj_w
-Message-ID: <CAM9d7cjbMqC-f+f08wqatn__u9obXEdUyRRS9WYXrL0YA7to5Q@mail.gmail.com>
-Subject: Re: perf-probe crash in dwarf_getcfi_elf
-To: Mark Wielaard <mjw@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1420158432-645-1-git-send-email-sasha.levin@oracle.com>
+References: <1420158432-645-1-git-send-email-sasha.levin@oracle.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 3 Jan 2015 08:09:30 -0700
+Message-ID: <CAErSpo6cBsE2nggKJ+D-oC-t6qrZu3WPCYXqw2orv6ZhsRujoQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI/sysfs: off by two and memory corruption in
+ driver_override parameter
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "open list:PCI SUBSYSTEM" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Thu, Jan 1, 2015 at 4:42 AM, Mark Wielaard <mjw@redhat.com> wrote:
-> On Tue, Dec 30, 2014 at 06:05:33PM +0900, Namhyung Kim wrote:
->> And I found a related commit (5704c8c4fa71 "getcfi_scn_eh_frame: Don't
->> crash and burn when .eh_frame bits aren't there.") in elfutils that
->> can lead to a unexpected crash like this.  To safely use the function,
->> it needs to check the .eh_frame section is a PROGBITS type.
+On Thu, Jan 1, 2015 at 5:27 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> There are two different issues fixed here:
 >
-> Sorry about that bug. It was fixed in elfutils 0.156, released July 2013.
-> Latest elfutils release is 0.161.
+>  - On nun-NULL terminated input a random byte of memory would get flipped
+> from '\n' to '\0'.
+>  - When printing the driver_override parameter when it is 4095 and 4094 bytes
+> long the printing code would access invalid memory.
+
+Thanks, Sasha.
+
+Can you please:
+
+  - Split these two fixes into two separate patches
+  - Look up the commit that introduced this code
+  - CC the author
+  - Add "Fixes: " lines
+  - Add stable tags for the relevant kernels
+
+Bjorn
+
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  drivers/pci/pci-sysfs.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 >
-> Checking .eh_frame is SHT_PROGBITS (and not SHT_NOBITS) looks like the
-> correct workaround if you have to deal with older elfutils releases.
-
-Thanks for confirming this.
-
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index aa012fb..be6b2b1 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -521,17 +521,17 @@ static ssize_t driver_override_store(struct device *dev,
+>         struct pci_dev *pdev = to_pci_dev(dev);
+>         char *driver_override, *old = pdev->driver_override, *cp;
 >
-> Note that dwarf_getcfi_elf gets the CFI information from the .eh_frame
-> section associated with the ELF file underlying the Dwarf dbg and needs
-> to be released with a call to dwarf_cfi_end (). dwarf_getcfi () gets the
-> CFI information from the .debug_frame section data of the Dwarf dbg
-> and gets automatically releassed when dwarf_end () is called (you should
-> not call dwarf_cfi_end () on the result).
-
-Ah, it's good to know.  I have to check the code..
-
+> -       if (count > PATH_MAX)
+> +       /* We need to keep extra room for a newline */
+> +       if (count >= (PATH_MAX - 1))
+>                 return -EINVAL;
 >
-> If the Dwarf dbg handle is associated with a separate debuginfo file,
-> then the .eh_frame section data will not be available (has SHT_NOBITS)
-> and you can get the .eh_frame section (and call dwarf_getcfi_elf ()) on
-> the original ELF file from which the Dwarf debuginfo file was split off.
+>         driver_override = kstrndup(buf, count, GFP_KERNEL);
+>         if (!driver_override)
+>                 return -ENOMEM;
 >
-> In your patch you call dwarf_getcfi () as backup to get some CFI
-> information when you cannot call dwarf_getcfi_elf (). In general it
-> might make sense to also do this when dwarf_getcfi_elf fails. Or try
-> to get the CFI through both .eh_frame (from the executable ELF file)
-> with dwarf_getcfi_elf () and .debug_frame (from the Dwarf dbg file)
-> with dwarf_getcfi () and try to match an address in both tables
-> if one or the other fails.
-
-Thanks for your advice, I'll make a follow-up patch to address your comments.
-
-Thanks,
-Namhyung
+> -       cp = strchr(driver_override, '\n');
+> -       if (cp)
+> -               *cp = '\0';
+> -
+> +       driver_override[count] = '\0';
+> +       if (driver_override[count - 1] == '\n')
+> +               driver_override[count - 1] = 0;
+>         if (strlen(driver_override)) {
+>                 pdev->driver_override = driver_override;
+>         } else {
+> --
+> 1.7.10.4
+>
