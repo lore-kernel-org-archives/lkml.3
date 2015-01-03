@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbbACTOC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 14:14:02 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:48787 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbbACTN7 (ORCPT
+	id S1752191AbbACTpD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 14:45:03 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:44210 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199AbbACTpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 14:13:59 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH] MAINTAINERS: Add linux-omap to list of reviewers for TI Thermal
-Date: Sat, 3 Jan 2015 13:13:30 -0600
-Message-ID: <1420312410-4469-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sat, 3 Jan 2015 14:45:00 -0500
+Date: Sat, 03 Jan 2015 14:44:55 -0500 (EST)
+Message-Id: <20150103.144455.345230130702474137.davem@davemloft.net>
+To: tgraf@suug.ch
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.apana.org.au, paulmck@linux.vnet.ibm.com,
+        edumazet@google.com, john.r.fastabend@intel.com, josh@joshtriplett.org
+Subject: Re: [PATCH 0/9 net-next v2] rhashtable: Per bucket locks &
+ deferred table resizing
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1420230585.git.tgraf@suug.ch>
+References: <cover.1420230585.git.tgraf@suug.ch>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 03 Jan 2015 11:44:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add linux-omap mailing list to the TI THERMAL list for wider review.
+From: Thomas Graf <tgraf@suug.ch>
+Date: Fri,  2 Jan 2015 23:00:13 +0100
 
-Reported-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- MAINTAINERS |    1 +
- 1 file changed, 1 insertion(+)
+> Prepares for and introduces per bucket spinlocks and deferred table
+> resizing. This allows for parallel table mutations in different hash
+> buckets from atomic context. The resizing occurs in the background
+> in a separate worker thread while lookups, inserts, and removals can
+> continue.
+> 
+> Also modified the chain linked list to be terminated with a special
+> nulls marker to allow entries to move between multiple lists.
+> 
+> Last but not least, reintroduces lockless netlink_lookup() with
+> deferred Netlink socket destruction to avoid the side effect of
+> increased netlink_release() runtime.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ddb9ac8..dc9efd5 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9533,6 +9533,7 @@ F:	drivers/platform/x86/thinkpad_acpi.c
- TI BANDGAP AND THERMAL DRIVER
- M:	Eduardo Valentin <edubezval@gmail.com>
- L:	linux-pm@vger.kernel.org
-+L:	linux-omap@vger.kernel.org
- S:	Supported
- F:	drivers/thermal/ti-soc-thermal/
- 
--- 
-1.7.9.5
+I'm sure that this might need a minor tweak or two still, but I really
+like how you implemented this so I'll apply this series now.
 
+Thanks!
