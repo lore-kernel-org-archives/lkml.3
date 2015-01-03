@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328AbbACQEs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 11:04:48 -0500
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:28138 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751100AbbACQEp (ORCPT
+	id S1752147AbbACQQF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 11:16:05 -0500
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:36252 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbbACQQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 11:04:45 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApkKAAgSqFRXQzKq/2dsb2JhbABcgwYigQizcAUBAQEBAQEFAXeROYV7gQUXAQEBAQF9hDovI4EaN4gwAa8hjjeGA4l0HYIXDECBMAWFJ44sgzWJZ4dpIoFFAWyBPT0xgkMBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, linux-mm@kvack.org
-Subject: [PATCH 1/1 linux-next] mm,compaction: move suitable_migration_target() under CONFIG_COMPACTION
-Date: Sat,  3 Jan 2015 17:04:28 +0100
-Message-Id: <1420301068-19447-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 2.1.0
+	Sat, 3 Jan 2015 11:16:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150103153446.GA23591@kahuna>
+References: <1420220628-23742-1-git-send-email-nm@ti.com>
+	<1420220628-23742-3-git-send-email-nm@ti.com>
+	<CA+Ln22Epd8VpA9DQPFYBdjewUY3ejODhaRHgBSNZAQCYjx5saw@mail.gmail.com>
+	<20150103153446.GA23591@kahuna>
+Date: Sun, 4 Jan 2015 01:16:02 +0900
+Message-ID: <CA+Ln22Ejvwd9J=jnWAUeb=nn-cvWiptqOydax+z4BeMrww_xqg@mail.gmail.com>
+Subject: Re: [PATCH V2 2/2] ARM: l2c: AM437x: Introduce support for cache
+ filter programming
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Santosh <ssantosh@kernel.org>, Sekhar Nori <nsekhar@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-suitable_migration_target() is only used by isolate_freepages()
-Define it under CONFIG_COMPACTION || CONFIG_CMA is not needed.
+2015-01-04 0:34 GMT+09:00 Nishanth Menon <nm@ti.com>:
+> On 15:40-20150103, Tomasz Figa wrote:
+>> Hi Nishanth,
+>>
+>> 2015-01-03 2:43 GMT+09:00 Nishanth Menon <nm@ti.com>:
+>> > AM437x generation of processors support programming the PL310 L2Cache
+>> > controller's address filter start and end registers using a secure
+>> > montior service.
+>>
+>> typo: s/montior/monitor/
+>>
+>> [snip]
+>
+> Uggh.. yes indeed. I will post a v3 updating the comments. If the
+> following is ok.
+>>
+>> > +               base = omap4_get_l2cache_base();
+>> > +               filter_start = (reg == L310_ADDR_FILTER_START) ? val :
+>> > +                              readl_relaxed(base + L310_ADDR_FILTER_START);
+>> > +               filter_end = (reg == L310_ADDR_FILTER_END) ? val :
+>> > +                              readl_relaxed(base + L310_ADDR_FILTER_END);
+>> > +               omap_smc1_2(AM43X_MON_L2X0_SETFILTER_INDEX, filter_start,
+>> > +                           filter_end);
+>> > +               return;
+>>
+>> I don't have any significant comments about this patch in particular,
+>> but just noticed that you need to do read-backs here (and the typo
+>> thanks to the spell checker of my mailing app). Maybe you should
+>> consider switching to the .configure() API I introduced in my series?
+>> This would let you get rid of the hardcoded static mapping.
+>
+> Yeah, I have two choices there.. Either I provide the fundamental
+> write function for the generic l2c code to use OR I provide a
+> duplicate of resultant l2c_configure(aux write) + l2c310_configure.
+>
+> To allow for reuse of improvements or anything like errata
+> implementations in the future, OMAP L2C implementation has chosen to provide the
+> low level code and allow the higherlevel configure/write/whatever of the
+> future to stay in arch/arm/mm/cache-l2x0.c. The write_sec operation is
+> not too complicated enough to warrant a replication of l2c310_configure.
+>
+> So, I prefer the current implementation than providing a .configure
+> handler for outer_cache.configure from SoC level.
+>
+> Let me know if anyone has a strong objection to this.
 
-Fix the following warning:
-mm/compaction.c:311:13: warning: 'suitable_migration_target' defined
-but not used [-Wunused-function]
+Well, what l2c310_configure() does after my series is just writing the
+registers. If they cannot be written normally (without some tricks
+such as reading back other registers) then IMHO a separate function
+should be provided.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- mm/compaction.c | 44 ++++++++++++++++++++++----------------------
- 1 file changed, 22 insertions(+), 22 deletions(-)
+This is becomes possible after patch 3/8 (ARM: l2c: Add interface to
+ask hypervisor to configure L2C) and what is used on Exynos which also
+updates multiple registers in single SMC calls. You can find an
+example of use in patch 6/8 (ARM: EXYNOS: Add .write_sec outer cache
+callback for L2C-310). What's even more interesting is that approaches
+similar to the one currently used on OMAP had been NAKed, when
+proposed for Exynos and this is why we have the solution proposed by
+my patches.
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 546e571..38b151c 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -307,28 +307,6 @@ static inline bool compact_should_abort(struct compact_control *cc)
- 	return false;
- }
- 
--/* Returns true if the page is within a block suitable for migration to */
--static bool suitable_migration_target(struct page *page)
--{
--	/* If the page is a large free page, then disallow migration */
--	if (PageBuddy(page)) {
--		/*
--		 * We are checking page_order without zone->lock taken. But
--		 * the only small danger is that we skip a potentially suitable
--		 * pageblock, so it's not worth to check order for valid range.
--		 */
--		if (page_order_unsafe(page) >= pageblock_order)
--			return false;
--	}
--
--	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
--	if (migrate_async_suitable(get_pageblock_migratetype(page)))
--		return true;
--
--	/* Otherwise skip the block */
--	return false;
--}
--
- /*
-  * Isolate free pages onto a private freelist. If @strict is true, will abort
-  * returning 0 on any invalid PFNs or non-free pages inside of the pageblock
-@@ -802,6 +780,28 @@ isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
- 
- #endif /* CONFIG_COMPACTION || CONFIG_CMA */
- #ifdef CONFIG_COMPACTION
-+/* Returns true if the page is within a block suitable for migration to */
-+static bool suitable_migration_target(struct page *page)
-+{
-+	/* If the page is a large free page, then disallow migration */
-+	if (PageBuddy(page)) {
-+		/*
-+		 * We are checking page_order without zone->lock taken. But
-+		 * the only small danger is that we skip a potentially suitable
-+		 * pageblock, so it's not worth to check order for valid range.
-+		 */
-+		if (page_order_unsafe(page) >= pageblock_order)
-+			return false;
-+	}
-+
-+	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-+	if (migrate_async_suitable(get_pageblock_migratetype(page)))
-+		return true;
-+
-+	/* Otherwise skip the block */
-+	return false;
-+}
-+
- /*
-  * Based on information in the current compact_control, find blocks
-  * suitable for isolating free pages from and then isolate them.
--- 
-2.1.0
+Note that .write_sec() callback is still used for L2X0_CTRL and
+L2X0_DEBUG_CTRL registers, because there might be a need to write them
+separately (e.g. to disable the controller and to perform debug
+operations/workarounds when the controller is already enabled).
 
+Best regards,
+Tomasz
