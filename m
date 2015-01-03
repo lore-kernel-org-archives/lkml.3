@@ -1,119 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbbACAMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Jan 2015 19:12:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207AbbACAMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Jan 2015 19:12:47 -0500
-Message-ID: <54A733FB.8010904@redhat.com>
-Date: Sat, 03 Jan 2015 01:12:43 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752592AbbACA05 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Jan 2015 19:26:57 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60223 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752498AbbACA0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Jan 2015 19:26:55 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18p5SD/DuZp4GhQ6SAj/hwz
+Date: Fri, 2 Jan 2015 16:23:17 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: "santosh.shilimkar@oracle.com" <santosh.shilimkar@oracle.com>,
+        Russell King <linux@arm.linux.org.uk>, Santosh <ssantosh@kernel.org>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH V2 0/2] ARM: l2c: OMAP4/AM437x: Additional register
+ programming support.
+Message-ID: <20150103002317.GH3298@atomide.com>
+References: <1420220628-23742-1-git-send-email-nm@ti.com>
+ <54A6E79E.7010203@oracle.com>
+ <54A6F5C8.2050008@ti.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Joe Mario <jmario@redhat.com>
-Subject: Re: [PATCH akpm/next] lib: crc32: conditionally constify crc32 lookup
- table
-References: <1420052608-30515-1-git-send-email-dborkman@redhat.com> <20150102153537.2251ca287e96446eaf229ae2@linux-foundation.org>
-In-Reply-To: <20150102153537.2251ca287e96446eaf229ae2@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A6F5C8.2050008@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2015 12:35 AM, Andrew Morton wrote:
-> On Wed, 31 Dec 2014 20:03:28 +0100 Daniel Borkmann <dborkman@redhat.com> wrote:
->
->> Commit 8f243af42ade ("sections: fix const sections for crc32 table")
->
-> The 8f243af42ade changelog is rather poor :(.  With the help of this
-> changelog I can now see what 8f243af42ade was doing.  I must have been
-> asleep at the time.
->
->> removed the compile-time generated crc32 tables from the RO sections,
->> because it conflicts with the definition of __cacheline_aligned
->> which puts all such aligned data into .data..cacheline_aligned section
->> optimized for wasting less space, and causes const align issues with
->> some GCC versions (see #52181, for example).
->
-> (searches several bugzilla databases)
->
-> "https://gcc.gnu.org/bugzilla/show_bug.cgi?id=52181" would be more
-> reader-friendly.
+* Nishanth Menon <nm@ti.com> [150102 11:50]:
+> On 01/02/2015 12:46 PM, santosh.shilimkar@oracle.com wrote:
+> > On 1/2/15 9:43 AM, Nishanth Menon wrote:
+> >> Hi,
+> >> OMAP4 and AM437x ROM code provides services to program PL310's latency
+> >> registers and AM437x provides service for programming Address filter
+> >> registers.
+> >>
+> >> Provide support in the kernel for the same.
+> >>
+> >> V2 of the series contains documentation update and a bug fix due to a
+> >> typo introduced during patch split :(
+> >>
+> >> Nishanth Menon (2):
+> >>    ARM: l2c: OMAP4/AM437x: Introduce support for cache latency
+> >>      programming
+> >>    ARM: l2c: AM437x: Introduce support for cache filter programming
+> >>
+> > Looks fine to me ...
+> > Feel free to add my ack if you need one ...
+> > 
+> > Minor: The subject looks like I2C though it is L2C ;-)
+> > 
+> Yeah, the thought did occur to me, but decided instead to go with the
+> existing $subject conventions of arch/arm/mach-omap2/omap4-common.c
+> ARM: l2c: omap2+: get rid of init call
+> ARM: l2c: omap2+: get rid of redundant cache replacement policy setting
+> ARM: l2c: omap2: remove explicit non-secure access bits
+> ARM: l2c: omap2: remove cache size override
+> ARM: l2c: omap2: remove explicit SMI calls to enable L2 cache
+> ARM: l2c: omap2: implement new write_sec method
+> ARM: l2c: remove platforms/SoCs setting early BRESP
+> ARM: l2c: fix register naming
+> ARM: l2c: omap2: remove ES1.0 support
+> 
+> ..
+> 
+> If folks feel strongly about this, I can capitalize the same and post
+> a v3 to help confusing fonts on certain mail clients and terminals.
+> let me know if folks want me to.
 
-Okay, will add it like that.
+I guess no need to :)
 
->> We can fix that in two steps: 1) by using the ____cacheline_aligned
->> version, which only aligns the data but doesn't move it into specific
->> sections, 2) test GCC and in problematic cases fall back to the current
->> code, otherwise use const and proper alignment for the lookup tables.
->>
->> After patch tables are in RO:
->>
->> $ nm -v lib/crc32.o | grep -1 -E "crc32c?table"
->> 0000000000000000 t arch_local_irq_enable
->> 0000000000000000 r crc32ctable_le
->> 0000000000000000 t crc32_exit
->> --
->> 0000000000000960 t test_buf
->> 0000000000002000 r crc32table_be
->> 0000000000004000 r crc32table_le
->> 000000001d1056e5 A __crc_crc32_be
->>
->> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
->> Cc: Joe Mario <jmario@redhat.com>
->> ---
->>   Makefile                   |  5 +++++
->>   lib/Makefile               |  3 +++
->>   lib/gen_crc32table.c       | 21 +++++++++++++++------
->>   scripts/gcc-const-align.sh | 21 +++++++++++++++++++++
->>   4 files changed, 44 insertions(+), 6 deletions(-)
->
-> Seems a lot of fuss.  Why are these tables cacheline aligned anyway?
-> To avoid one cache miss (most of the time, presumably) in a 16k table.
-> Pretty marginal benefit, I suspect.
+Looks like these still won't fix the issue we found in the
+series posted by Tomasz though. At least I'm still getting errors
+on am437x with these and the patches from Tomasz applied.
 
-I guess, it actually came in with the slice-by-8 algorithm (e.g. used
-in SCTP checksumming if no offloading is available) that was added back
-then, that is, commit 324eb0f17d9dc ("crc32: add slice-by-8 algorithm
-to existing code").
+Regards,
 
->> --- a/lib/Makefile
->> +++ b/lib/Makefile
->> @@ -171,6 +171,9 @@ obj-$(CONFIG_FONT_SUPPORT) += fonts/
->>   hostprogs-y	:= gen_crc32table
->>   clean-files	:= crc32table.h
->>
->> +# We need to transfer this flag to the host compiler if present
->> +HOSTCFLAGS_gen_crc32table.o := $(findstring -DCC_HAVE_CONST_ALIGN,$(KBUILD_CFLAGS))
->> +
->>   $(obj)/crc32.o: $(obj)/crc32table.h
->>
->>   quiet_cmd_crc32 = GEN     $@
->> diff --git a/lib/gen_crc32table.c b/lib/gen_crc32table.c
->> index 71fcfcd..2f06893 100644
->> --- a/lib/gen_crc32table.c
->> +++ b/lib/gen_crc32table.c
->> @@ -21,6 +21,14 @@
->>   # define BE_TABLE_SIZE (1 << CRC_BE_BITS)
->>   #endif
->>
->> +#ifdef CC_HAVE_CONST_ALIGN
->> +# define TABLE_CONST_ATTR "const"
->> +# define TABLE_ALIGNMENT  "____cacheline_aligned"
->> +#else
->> +# define TABLE_CONST_ATTR ""
->> +# define TABLE_ALIGNMENT  "__cacheline_aligned"
->> +#endif
->
-> Pity out poor readers, trying to work out what all this does and why it
-> is here.  It is totally unobvious that this is working around some gcc
-> bug.  Can we please have a nice comment which explains everything?
-
-Will add a comment, sure.
-
-Thanks, Andrew!
-
-I'll send out v2 with your feedback tomorrow.
+Tony
