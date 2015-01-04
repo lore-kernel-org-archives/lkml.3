@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbbADLcK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 06:32:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57892 "EHLO mx1.redhat.com"
+	id S1752698AbbADLgU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 06:36:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55123 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751263AbbADLcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 06:32:09 -0500
-Date: Sun, 4 Jan 2015 13:32:01 +0200
+	id S1751263AbbADLgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 06:36:19 -0500
+Date: Sun, 4 Jan 2015 13:36:13 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] virtio_pci: device-specific release callback
-Message-ID: <1420371047-4702-1-git-send-email-mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/3] Sharing MSIX irq for tx/rx queue pairs
+Message-ID: <20150104113613.GC4336@redhat.com>
+References: <1419562425-20614-1-git-send-email-jasowang@redhat.com>
+ <20141228075226.GA25704@redhat.com>
+ <54A8FBF9.7000105@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
+In-Reply-To: <54A8FBF9.7000105@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It turns out we need to add device-specific code
-in release callback. Move it to virtio_pci_legacy.c.
+On Sun, Jan 04, 2015 at 04:38:17PM +0800, Jason Wang wrote:
+> 
+> On 12/28/2014 03:52 PM, Michael S. Tsirkin wrote:
+> > On Fri, Dec 26, 2014 at 10:53:42AM +0800, Jason Wang wrote:
+> >> Hi all:
+> >>
+> >> This series try to share MSIX irq for each tx/rx queue pair. This is
+> >> done through:
+> >>
+> >> - introducing virtio pci channel which are group of virtqueues that
+> >>   sharing a single MSIX irq (Patch 1)
+> >> - expose channel setting to virtio core api (Patch 2)
+> >> - try to use channel setting in virtio-net (Patch 3)
+> >>
+> >> For the transport that does not support channel, channel paramters
+> >> were simply ignored. For devices that does not use channel, it can
+> >> simply pass NULL or zero to virito core.
+> >>
+> >> With the patch, 1 MSIX irq were saved for each TX/RX queue pair.
+> >>
+> >> Please review.
+> > How does this sharing affect performance?
+> >
+> 
+> Patch 3 only checks more_used() for tx ring which in fact reduces the
+> effect of event index and may introduce more tx interrupts. After fixing
+> this issue, tested with 1 vcpu and 1 queue. No obvious changes in
+> performance were noticed.
+> 
+> Thanks
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+Is this with or without MQ?
+With MQ, it seems easy to believe as interrupts are
+distributed between CPUs.
 
-This is intended as dependency for Sasha's patch adding
-code to release callback.
+Without MQ, it should be possible to create UDP workloads where
+processing incoming and outgoing interrupts
+on separate CPUs is a win.
 
- drivers/virtio/virtio_pci_common.h | 1 -
- drivers/virtio/virtio_pci_common.c | 9 ---------
- drivers/virtio/virtio_pci_legacy.c | 9 +++++++++
- 3 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/virtio/virtio_pci_common.h b/drivers/virtio/virtio_pci_common.h
-index 1584833..24956c5 100644
---- a/drivers/virtio/virtio_pci_common.h
-+++ b/drivers/virtio/virtio_pci_common.h
-@@ -146,7 +146,6 @@ const char *vp_bus_name(struct virtio_device *vdev);
-  * - ignore the affinity request if we're using INTX
-  */
- int vp_set_vq_affinity(struct virtqueue *vq, int cpu);
--void virtio_pci_release_dev(struct device *);
- 
- int virtio_pci_legacy_probe(struct pci_dev *pci_dev,
- 			    const struct pci_device_id *id);
-diff --git a/drivers/virtio/virtio_pci_common.c b/drivers/virtio/virtio_pci_common.c
-index 7bc69a4..08d0b04 100644
---- a/drivers/virtio/virtio_pci_common.c
-+++ b/drivers/virtio/virtio_pci_common.c
-@@ -421,15 +421,6 @@ int vp_set_vq_affinity(struct virtqueue *vq, int cpu)
- 	return 0;
- }
- 
--void virtio_pci_release_dev(struct device *_d)
--{
--	/*
--	 * No need for a release method as we allocate/free
--	 * all devices together with the pci devices.
--	 * Provide an empty one to avoid getting a warning from core.
--	 */
--}
--
- #ifdef CONFIG_PM_SLEEP
- static int virtio_pci_freeze(struct device *dev)
- {
-diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
-index 6c76f0f..08d1915 100644
---- a/drivers/virtio/virtio_pci_legacy.c
-+++ b/drivers/virtio/virtio_pci_legacy.c
-@@ -211,6 +211,15 @@ static const struct virtio_config_ops virtio_pci_config_ops = {
- 	.set_vq_affinity = vp_set_vq_affinity,
- };
- 
-+static void virtio_pci_release_dev(struct device *_d)
-+{
-+	/*
-+	 * No need for a release method as we allocate/free
-+	 * all devices together with the pci devices.
-+	 * Provide an empty one to avoid getting a warning from core.
-+	 */
-+}
-+
- /* the PCI probing function */
- int virtio_pci_legacy_probe(struct pci_dev *pci_dev,
- 			    const struct pci_device_id *id)
 -- 
 MST
