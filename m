@@ -1,159 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbbADKwk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 05:52:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53832 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbbADKwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 05:52:37 -0500
-Date: Sun, 4 Jan 2015 12:52:18 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-metag@vger.kernel.org
-Subject: Re: [PATCH repost 09/16] metag/uaccess: fix sparse errors
-Message-ID: <20150104105218.GA3208@redhat.com>
-References: <1419499661-8566-1-git-send-email-mst@redhat.com>
- <1419499661-8566-10-git-send-email-mst@redhat.com>
- <54A6BC0E.50008@imgtec.com>
+	id S1752756AbbADKyN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 05:54:13 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48132 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbbADKyL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 05:54:11 -0500
+Message-ID: <54A91BD0.8070106@kernel.org>
+Date: Sun, 04 Jan 2015 10:54:08 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A6BC0E.50008@imgtec.com>
+To: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>
+CC: lars@metafoo.de, pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH 08/10] iio: imu: kmx61: Remove unnecessary REG_INS1 read
+References: <1419340953-23161-1-git-send-email-daniel.baluta@intel.com> <1419340953-23161-9-git-send-email-daniel.baluta@intel.com> <54A550E7.7040808@gmx.de>
+In-Reply-To: <54A550E7.7040808@gmx.de>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 03:41:02PM +0000, James Hogan wrote:
-> Hi,
+On 01/01/15 13:51, Hartmut Knaack wrote:
+> Daniel Baluta schrieb am 23.12.2014 um 14:22:
+>> Useful in the debugging phase, not needed now.
+>>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> Acked-by: Hartmut Knaack <knaack.h@gmx.de>
+Applied.
+>> ---
+>>  drivers/iio/imu/kmx61.c | 2 --
+>>  1 file changed, 2 deletions(-)
+>>
+>> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
+>> index 5b5be2b..eb3900e 100644
+>> --- a/drivers/iio/imu/kmx61.c
+>> +++ b/drivers/iio/imu/kmx61.c
+>> @@ -1196,8 +1196,6 @@ ack_intr:
+>>  	if (ret < 0)
+>>  		dev_err(&data->client->dev, "Error reading reg_inl\n");
+>>  
+>> -	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INS1);
+>> -
+>>  	return IRQ_HANDLED;
+>>  }
+>>  
+>>
 > 
-> On 25/12/14 09:29, Michael S. Tsirkin wrote:
-> > virtio wants to read bitwise types from userspace using get_user.  At the
-> > moment this triggers sparse errors, since the value is passed through an
-> > integer.
-> > 
-> > Fix that up using __force.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> I still see these sparse warnings with metag even with your patch:
-> 
->   CHECK   drivers/vhost/vhost.c
-> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> 
-> Which something like the following hunk fixes in a similar way to yours:
-> 
-> diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
-> index 0748b0a97986..594497053748 100644
-> --- a/arch/metag/include/asm/uaccess.h
-> +++ b/arch/metag/include/asm/uaccess.h
-> @@ -112,13 +112,17 @@ do {                                                            \
->  	retval = 0;                                             \
->  	switch (size) {                                         \
->  	case 1:								\
-> -		retval = __put_user_asm_b((unsigned int)x, ptr); break;	\
-> +		retval = __put_user_asm_b((__force unsigned int)x, ptr); \
-> +		break;							\
->  	case 2:								\
-> -		retval = __put_user_asm_w((unsigned int)x, ptr); break;	\
-> +		retval = __put_user_asm_w((__force unsigned int)x, ptr); \
-> +		break;							\
->  	case 4:								\
-> -		retval = __put_user_asm_d((unsigned int)x, ptr); break;	\
-> +		retval = __put_user_asm_d((__force unsigned int)x, ptr); \
-> +		break;							\
->  	case 8:								\
-> -		retval = __put_user_asm_l((unsigned long long)x, ptr); break; \
-> +		retval = __put_user_asm_l((__force unsigned long long)x, ptr); \
-> +		break;							\
->  	default:							\
->  		__put_user_bad();					\
->  	}	
-> 
-> As far as I understand it, using __force on the value (as opposed to the
-> pointer) is safe here, in the sense of not masking any genuine defects.
-> Do you agree? Do you want to apply that hunk with your patch too?
-
-what about this code:
-             u16 v = 0;
-             int rc = get_user(v, (__force __le16 __user *)p);
-
-it should trigger a warning, does it?
-
-
-
-> Note, this change also suppresses warnings for writing a pointer to
-> userland due to the casts to unsigned int / unsigned long long, such as
-> the following (each 4 times due to 4 cases above):
-> 
-> kernel/signal.c:2740:25: warning: cast removes address space of expression
-> kernel/signal.c:2747:24: warning: cast removes address space of expression
-> kernel/signal.c:2760:24: warning: cast removes address space of expression
-> kernel/signal.c:2761:24: warning: cast removes address space of expression
-> kernel/signal.c:2775:24: warning: cast removes address space of expression
-> kernel/signal.c:2779:24: warning: cast removes address space of expression
-> kernel/signal.c:3202:25: warning: cast removes address space of expression
-> kernel/signal.c:3225:17: warning: cast removes address space of expression
-> kernel/futex.c:2769:16: warning: cast removes address space of expression
-> 
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  arch/metag/include/asm/uaccess.h | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
-> > index 0748b0a..c314b45 100644
-> > --- a/arch/metag/include/asm/uaccess.h
-> > +++ b/arch/metag/include/asm/uaccess.h
-> > @@ -135,7 +135,7 @@ extern long __get_user_bad(void);
-> >  ({                                                              \
-> >  	long __gu_err, __gu_val;                                \
-> >  	__get_user_size(__gu_val, (ptr), (size), __gu_err);	\
-> > -	(x) = (__typeof__(*(ptr)))__gu_val;                     \
-> > +	(x) = (__force __typeof__(*(ptr)))__gu_val;                     \
-> 
-> Can you adjust the position of the \ to line up please
-> 
-> >  	__gu_err;                                               \
-> >  })
-> >  
-> > @@ -145,7 +145,7 @@ extern long __get_user_bad(void);
-> >  	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
-> >  	if (access_ok(VERIFY_READ, __gu_addr, size))			\
-> >  		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
-> > -	(x) = (__typeof__(*(ptr)))__gu_val;                             \
-> > +	(x) = (__force __typeof__(*(ptr)))__gu_val;                             \
-> 
-> same here (this one causes a checkpatch error due to 80 column limit)
-> 
-> >  	__gu_err;                                                       \
-> >  })
-> >  
-> > 
-> 
-> With those changes,
-> Acked-by: James Hogan <james.hogan@imgtec.com>
-> 
-> Cheers
-> James
-> 
-
 
