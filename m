@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670AbbADLMv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 06:12:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53418 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752593AbbADLMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 06:12:50 -0500
-Date: Sun, 4 Jan 2015 13:12:40 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "open list:VIRTIO CORE, NET..." 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 1/2] virtio_pci: double free and invalid memory access of
- device vqs
-Message-ID: <20150104111240.GA4336@redhat.com>
-References: <1420228060-18721-1-git-send-email-sasha.levin@oracle.com>
+	id S1752685AbbADLRE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 06:17:04 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48329 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbbADLRB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 06:17:01 -0500
+Message-ID: <54A9212B.8050709@kernel.org>
+Date: Sun, 04 Jan 2015 11:16:59 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420228060-18721-1-git-send-email-sasha.levin@oracle.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH RFC] iio: iadc: wait_for_completion_timeout time in jiffies
+References: <1420016386-19638-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1420016386-19638-1-git-send-email-der.herr@hofr.at>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 02:47:39PM -0500, Sasha Levin wrote:
-> Device VQs were getting freed twice: once in every devices removal functions,
-> and then again in virtio_pci_legacy_remove().
+On 31/12/14 08:59, Nicholas Mc Guire wrote:
+> The timeout value to wait_for_completion_timeout is in jiffies but
+> the value being passed seems like it was intended to by microseconds
+> Note that the timeout was extremely long thus it might be too short
+> now. In any case it probably should be passed through usecs_to_jiffies()
+> or msecs_to_jiffies()
 > 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> patch is against linux-next 3.19.0-rc1 -next-20141226
+> 
+> patch was only compile-tested x86_64_defcofnig + CONFIG_SPMI=m
+> CONFIG_IIO=m, CONFIG_QCOM_SPMI_IADC=m
+> 
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Certainly suspicious and I'd draw the same conclusion you did!
+Anyhow just waiting for Ivan to take a look as it's his driver.
 
-I see.  This used to be harmless because it used to be idempotent,
-and safe to call any number of times.
+Thanks,
 
-I think your patch is right for 3.20:
-
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-but for 3.19 I'd prefer a more conservative approach of making
-del_vqs idempotent again.
-
-I'll post a patch like this shortly.
-
-
+Jonathan
 > ---
->  drivers/virtio/virtio_pci_legacy.c |    1 -
->  1 file changed, 1 deletion(-)
+>  drivers/iio/adc/qcom-spmi-iadc.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
-> index 6c76f0f..913ca23 100644
-> --- a/drivers/virtio/virtio_pci_legacy.c
-> +++ b/drivers/virtio/virtio_pci_legacy.c
-> @@ -298,7 +298,6 @@ void virtio_pci_legacy_remove(struct pci_dev *pci_dev)
->  
->  	unregister_virtio_device(&vp_dev->vdev);
->  
-> -	vp_del_vqs(&vp_dev->vdev);
->  	pci_iounmap(pci_dev, vp_dev->ioaddr);
->  	pci_release_regions(pci_dev);
->  	pci_disable_device(pci_dev);
-> -- 
-> 1.7.10.4
+> diff --git a/drivers/iio/adc/qcom-spmi-iadc.c b/drivers/iio/adc/qcom-spmi-iadc.c
+> index b9666f2..3080562 100644
+> --- a/drivers/iio/adc/qcom-spmi-iadc.c
+> +++ b/drivers/iio/adc/qcom-spmi-iadc.c
+> @@ -296,7 +296,8 @@ static int iadc_do_conversion(struct iadc_chip *iadc, int chan, u16 *data)
+>  	if (iadc->poll_eoc) {
+>  		ret = iadc_poll_wait_eoc(iadc, wait);
+>  	} else {
+> -		ret = wait_for_completion_timeout(&iadc->complete, wait);
+> +		ret = wait_for_completion_timeout(&iadc->complete,
+> +			usecs_to_jiffies(wait));
+>  		if (!ret)
+>  			ret = -ETIMEDOUT;
+>  		else
+> 
+
