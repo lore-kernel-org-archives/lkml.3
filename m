@@ -1,96 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbbADNlr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 08:41:47 -0500
-Received: from mout.web.de ([212.227.17.12]:52794 "EHLO mout.web.de"
+	id S1752666AbbADNuo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 08:50:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34122 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599AbbADNlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 08:41:45 -0500
-Message-ID: <54A94313.1070207@users.sourceforge.net>
-Date: Sun, 04 Jan 2015 14:41:39 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
+	id S1752586AbbADNum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 08:50:42 -0500
+Message-ID: <54A944ED.5010408@redhat.com>
+Date: Sun, 04 Jan 2015 19:19:33 +0530
+From: Pratyush Anand <panand@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 13/13] ALSA: msnd: Fix centralized exiting from snd_msnd_attach()
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54A9355F.4050102@users.sourceforge.net>
-In-Reply-To: <54A9355F.4050102@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com
+Subject: Re: [RFC 8/8] ARM64: Add uprobe support
+References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150102172333.GA6264@redhat.com>
+In-Reply-To: <20150102172333.GA6264@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:NESZ7L0JZyIrfaUcuTPsnxwlZNj+h0IZ3Bd/hYv16oYD/ojTi4L
- r4I7ZgHD5IwY7trJ7keFzuWHIHc1jvu9DCAkKA0wRwaXPyI9lDVo2Ti3oyvqUu3krafxbEp
- 9/aI05c1a5LBmKpmeiZSn2mcpAwEk8HVurdvWWu3td3YOB2fQ33z2crWSA5Ug9VFItafXoY
- YaC+eXr8LzWEDBnuGBX2w==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 4 Jan 2015 11:47:17 +0100
 
-Two return statements were used by the snd_msnd_attach() function at source
-code places where the Linux coding style recommends an alternative approach.
 
-Let us improve the affected implementation details with adjustments for
-corresponding jump targets.
+On Friday 02 January 2015 10:53 PM, Oleg Nesterov wrote:
+> Hi Pratyush,
+>
+> I'll try to actually read this patch (and the whole series) later, just
+> a couple of quick questions for now.
+>
+> On 12/31, Pratyush Anand wrote:
+>>
+>> --- a/arch/arm64/include/asm/ptrace.h
+>> +++ b/arch/arm64/include/asm/ptrace.h
+>> @@ -205,6 +205,7 @@ static inline int valid_user_regs(struct user_pt_regs *regs)
+>>
+>>   #define instruction_pointer(regs)	((regs)->pc)
+>>   #define stack_pointer(regs)		((regs)->sp)
+>> +#define procedure_link_pointer(regs)	((regs)->regs[30])
+>
+> perhaps it makes sense to change (at least) arch_prepare_kretprobe() to use
+> the new helper? OK, we can do this later.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- sound/isa/msnd/msnd_pinnacle.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+Yes.
 
-diff --git a/sound/isa/msnd/msnd_pinnacle.c b/sound/isa/msnd/msnd_pinnacle.c
-index e2e940d..0e66e5e 100644
---- a/sound/isa/msnd/msnd_pinnacle.c
-+++ b/sound/isa/msnd/msnd_pinnacle.c
-@@ -552,17 +552,16 @@ static int snd_msnd_attach(struct snd_card *card)
- 		return err;
- 	}
- 	if (request_region(chip->io, DSP_NUMIO, card->shortname) == NULL) {
--		free_irq(chip->irq, chip);
--		return -EBUSY;
-+		err = -EBUSY;
-+		goto free_an_irq;
- 	}
- 
- 	if (!request_mem_region(chip->base, BUFFSIZE, card->shortname)) {
- 		printk(KERN_ERR LOGNAME
- 			": unable to grab memory region 0x%lx-0x%lx\n",
- 			chip->base, chip->base + BUFFSIZE - 1);
--		release_region(chip->io, DSP_NUMIO);
--		free_irq(chip->irq, chip);
--		return -EBUSY;
-+		err = -EBUSY;
-+		goto release_resource_region;
- 	}
- 	chip->mappedbase = ioremap_nocache(chip->base, 0x8000);
- 	if (!chip->mappedbase) {
-@@ -570,7 +569,7 @@ static int snd_msnd_attach(struct snd_card *card)
- 			": unable to map memory region 0x%lx-0x%lx\n",
- 			chip->base, chip->base + BUFFSIZE - 1);
- 		err = -EIO;
--		goto err_release_region;
-+		goto release_memory_region;
- 	}
- 
- 	err = snd_msnd_dsp_full_reset(card);
-@@ -628,9 +627,11 @@ static int snd_msnd_attach(struct snd_card *card)
- 
- io_unmap:
- 	iounmap(chip->mappedbase);
--err_release_region:
-+release_memory_region:
- 	release_mem_region(chip->base, BUFFSIZE);
-+release_resource_region:
- 	release_region(chip->io, DSP_NUMIO);
-+free_an_irq:
- 	free_irq(chip->irq, chip);
- 	return err;
- }
--- 
-2.2.1
+>
+>> +/* Single step context for uprobe */
+>> +struct uprobe_step_ctx {
+>> +	struct list_head node;
+>> +	unsigned long match_addr;
+>> +};
+>
+> I don't understand this... please see below.
+>
+>> +struct arch_uprobe_task {
+>> +	unsigned long saved_fault_code;
+>> +	u64 saved_user_pc;
+>> +	struct uprobe_step_ctx ss_ctx;
+>> +};
+>
+> saved_user_pc looks unneeded, you can rely on uprobe_task->vaddr ?
 
+Probably yes. Will change.
+
+>
+>> +++ b/arch/arm64/kernel/uprobes.c
+>> @@ -0,0 +1,255 @@
+>> +/*
+>> + * Copyright (C) 2014 Pratyush Anand <panand@redhat.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +#include <linux/highmem.h>
+>> +#include <linux/ptrace.h>
+>> +#include <linux/uprobes.h>
+>> +#include <asm/debug-monitors.h>
+>> +#include <asm/probes.h>
+>> +
+>> +#include "probes-arm64.h"
+>> +
+>> +#define UPROBE_INV_FAULT_CODE	UINT_MAX
+>> +
+>> +static LIST_HEAD(step_ctx);
+>> +static DEFINE_RWLOCK(step_ctx_lock);
+>> +
+>> +static void add_ss_context(struct uprobe_task *utask)
+>> +{
+>> +	struct uprobe_step_ctx *ss_ctx = &utask->autask.ss_ctx;
+>> +
+>> +	ss_ctx->match_addr = utask->xol_vaddr;
+>> +	write_lock(&step_ctx_lock);
+>> +	list_add(&ss_ctx->node, &step_ctx);
+>> +	write_unlock(&step_ctx_lock);
+>> +}
+>> +
+>> +static struct uprobe_step_ctx *find_ss_context(unsigned long vaddr)
+>> +{
+>> +	struct uprobe_step_ctx *ss_ctx;
+>> +
+>> +	read_lock(&step_ctx_lock);
+>> +	list_for_each_entry(ss_ctx, &step_ctx, node)	{
+>> +		if (ss_ctx->match_addr == vaddr) {
+>> +			read_unlock(&step_ctx_lock);
+>> +			return ss_ctx;
+>> +		}
+>> +	}
+>> +	read_unlock(&step_ctx_lock);
+>> +
+>> +	return NULL;
+>> +}
+>
+> This looks very wrong to me, but perhaps because I do not understand
+> why do we need these *_ss_context() helpers.
+>
+>> +static void del_ss_context(struct uprobe_task *utask)
+>> +{
+>> +	struct uprobe_step_ctx *ss_ctx = find_ss_context(utask->xol_vaddr);
+>> +
+>> +	if (ss_ctx) {
+>> +		write_lock(&step_ctx_lock);
+>> +		list_del(&ss_ctx->node);
+>> +		write_unlock(&step_ctx_lock);
+>> +	} else {
+>> +		WARN_ON(1);
+>> +	}
+>> +}
+>
+> Don't we need del_ss_context() in arch_uprobe_abort_xol() ? But this is
+> minor.
+
+Thanks. Yes, we need del_ss_context() in arch_uprobe_abort_xol().
+
+>
+> Why we can trust find_ss_context() ? What if another thread also called
+> add_ss_context() with the same (virtual) ->xol_vaddr ?
+
+OK..So xol_vaddr is not unique, then need to look for something else 
+which could be unique for each probe.
+
+>
+> But the main question is: why do we need add/find_ss_context ?? Please
+> explain.
+>
+
+See arch/arm64/kernel/debug-monitors.c: call_step_hook
+
+Unlike breakpoint exception, there is no ESR info check for step 
+exception. So, it is the responsibility of step handler 
+(uprobe_single_step_handler) to make sure that exception was generated 
+for it.
+
+>> +int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>> +{
+>> +	struct uprobe_task *utask = current->utask;
+>> +
+>> +	/* saved fault code is restored in post_xol */
+>> +	utask->autask.saved_fault_code = current->thread.fault_code;
+>> +
+>> +	/* An invalid fault code between pre/post xol event */
+>> +	current->thread.fault_code = UPROBE_INV_FAULT_CODE;
+>> +
+>> +	/* Save user pc */
+>> +	utask->autask.saved_user_pc = task_pt_regs(current)->user_regs.pc;
+>> +
+>> +	/* Instruction point to execute ol */
+>> +	instruction_pointer_set(regs, utask->xol_vaddr);
+>> +
+>> +	add_ss_context(utask);
+>> +
+>> +	user_enable_single_step(current);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>> +{
+>> +	struct uprobe_task *utask = current->utask;
+>> +
+>> +	WARN_ON_ONCE(current->thread.fault_code != UPROBE_INV_FAULT_CODE);
+>> +
+>> +	/* restore fault code */
+>> +	current->thread.fault_code = utask->autask.saved_fault_code;
+>> +
+>> +	/* restore user pc */
+>> +	task_pt_regs(current)->user_regs.pc = utask->autask.saved_user_pc;
+>> +
+>> +	/* Instruction point to execute next to breakpoint address */
+>> +	instruction_pointer_set(regs, utask->vaddr + 4);
+>> +
+>> +	del_ss_context(utask);
+>> +
+>> +	user_disable_single_step(current);
+>> +
+>> +	return 0;
+>> +}
+>
+> task_pt_regs() above looks strange. We we can't use "struct pt_regs *regs"
+> passed as an argument?
+>
+> See also the note about .saved_user_pc above. I think you can use
+> utask->vaddr instead.
+>
+> And why do you need to play with ->user_regs.pc?? instruction_pointer_set()
+> after that modifies the same word?
+>
+> Or it is possible that regs != task_pt_regs(current) ? (to remind, I do not
+> know arm ;)
+>
+> Could you also explain
+>
+> 	instruction_pointer_set(regs, utask->vaddr + 4);
+>
+> ?
+>
+
+Correct, saved_user_pc is not needed and also no need to play with 
+->user_regs.pc. instruction_pointer_set should be sufficient.
+
+
+> I mean, I do not understand why this is always correct. What if the probed
+> insn is "jmp" (I do not know arm64's name for jump) ?
+>
+> Probably this is correct because in this case arm_probe_decode_insn() should
+> return INSN_GOOD_NO_SLOT and this insn will be emulated? If yes, this needs a
+> comment, imo.
+>
+
+Yes, a branch instruction like b or bl or ret will be simulated.
+
+>> +static int uprobe_breakpoint_handler(struct pt_regs *regs, unsigned int esr)
+>> +{
+>> +	unsigned long flags;
+>> +
+>> +	local_irq_save(flags);
+>> +	uprobe_pre_sstep_notifier(regs);
+>> +	local_irq_restore(flags);
+>> +
+>> +	return 0;
+>> +}
+>
+> Again, you do not need to disable irqs around uprobe_pre_sstep_notifier().
+
+OK. (Actually took it from arch/arm/kernel/uprobe.c)
+
+>
+> And I am not sure I understand the logic... "return 0" actually means
+> "return DBG_HOOK_HANDLED", right?
+
+Yes. So better I will put return DBG_HOOK_HANDLED;
+
+>
+> I do not understand this register_break_hook() interface and the usage
+> of .esr_mask/esr_val. But given that this patch adds BRK64_ESR_UPROBES
+> and uses BRK64_OPCODE_UPROBES, I will assume that uprobe_breakpoint_handler()
+> will be called if this exception was triggered by UPROBE_SWBP_INSN.
+
+Correct.
+
+>
+> In this case, why the unconditional DBG_HOOK_HANDLED is correct? For example,
+> what if the application itself or debugger use UPROBE_SWBP_INSN for (self)
+> debugging and this task has no uprobes? In this case uprobe_pre_sstep_notifier()
+> will do nothing, it won't set TIF_UPROBES and handle_swbp() won't be called.
+>
+> IOW, shouldn't it do
+>
+> 	if (user_mode(regs) && uprobe_pre_sstep_notifier(regs))
+> 		return DBG_HOOK_HANDLED;
+> 	return DBG_HOOK_ERROR;
+>
+> ?
+
+Thanks for pointing out this bug with the code.
+Your point seems pretty valid.
+
+>
+>> +static int uprobe_single_step_handler(struct pt_regs *regs, unsigned int esr)
+>> +{
+>> +	unsigned long flags;
+>> +
+>> +	if (!find_ss_context(regs->pc - 4))
+>> +		return DBG_HOOK_ERROR;
+>> +
+>> +	local_irq_save(flags);
+>> +	uprobe_post_sstep_notifier(regs);
+>> +	local_irq_restore(flags);
+>> +
+>> +	return 0;
+>> +}
+>
+> The same. No need to clear irqs, and please explain why we can't rely
+> on user_mode() && uprobe_post_sstep_notifier(), and why do we
+> need find_ss_context().
+>
+
+I had not looked into uprobe_post_sstep_notifier implementtaion.I think, 
+you are right.
+
+
+Thanks for all these valuable comments.
+
+~Pratyush
+
+
+>> +void flush_uprobe_xol_access(struct page *page, unsigned long uaddr,
+>> +		void *kaddr, unsigned long len)
+>> +{
+>> +	__flush_ptrace_access(page, uaddr, kaddr, len);
+>> +}
+>
+> I have some concerns... I'll reply to 5/8 which adds __flush_ptrace_access.
+>
+> Oleg.
+>
