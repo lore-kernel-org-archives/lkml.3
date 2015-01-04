@@ -1,139 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbbADElQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 23:41:16 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:45616 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067AbbADElM (ORCPT
+	id S1750976AbbADFFq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 00:05:46 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34888 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbbADFFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 23:41:12 -0500
-Message-ID: <54A8C461.3000305@hitachi.com>
-Date: Sun, 04 Jan 2015 13:41:05 +0900
+	Sun, 4 Jan 2015 00:05:44 -0500
+Message-ID: <54A8CA21.1060009@hitachi.com>
+Date: Sun, 04 Jan 2015 14:05:37 +0900
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Organization: Hitachi, Ltd., Japan
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        David Ahern <dsahern@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH] [BUGFIX] perf-probe: Fix to fall back to find
- probe point in symbols
-References: <54A2285F.3040200@gmail.com> <20141231062747.2087.80961.stgit@localhost.localdomain> <20141231080233.GC1766@sejong>
-In-Reply-To: <20141231080233.GC1766@sejong>
-Content-Type: text/plain; charset=UTF-8
+To: Wang Nan <wangnan0@huawei.com>
+Cc: tixy@linaro.org, linux@arm.linux.org.uk, lizefan@huawei.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v18 10/11] ARM: kprobes: check register usage for probed
+ instruction.
+References: <54A07FBE.3010206@hitachi.com> <1419826043-27935-1-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <1419826043-27935-1-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/31 17:02), Namhyung Kim wrote:
-> Hi Masami,
-> 
-> On Wed, Dec 31, 2014 at 03:27:47PM +0900, Masami Hiramatsu wrote:
->> Fix to fall back to find a probe point in symbols if perf fails
->> to find it in debuginfo.
->>
->> This can happen when the target function is an alias of another
->> function. Such alias doesn't have an entry in debuginfo but in
->> symbols.
->>
->> David Ahern reported this problem in https://lkml.org/lkml/2014/12/29/355
->>
->> I ensured the problem and deeper investigation discovers it.
->>  -----
->>  eu-readelf --debug-dump=info /usr/lib/debug/lib/x86_64-linux-gnu/libc-2.19.so | grep \"malloc\" -A6
->>              name                 (strp) "malloc"
->>              decl_file            (data1) 25
->>              decl_line            (data2) 466
->>              prototyped           (flag_present)
->>              type                 (ref4) [  81b5]
->>              declaration          (flag_present)
->>  [  8f58]      formal_parameter
->>  --
->>              name                 (strp) "malloc"
->>              decl_file            (data1) 23
->>              decl_line            (data2) 466
->>              prototyped           (flag_present)
->>              type                 (ref4) [  9f4a]
->>              declaration          (flag_present)
->>              sibling              (ref4) [  bb29]
->>  ...
->>  -----
->> All these entires have no instances (all of them are declarations)
->> This is why the perf probe failed to find it in debuginfo.
->>
->> However, there are some malloc instances in symbols.
->>  -----
->>  eu-readelf --symbols /usr/lib/debug/lib/x86_64-linux-gnu/libc-2.19.so | grep malloc$
->>   1181: 0000000000080700   5332 FUNC    LOCAL  DEFAULT       12 _int_malloc
->>   4537: 00000000000831d0    339 FUNC    LOCAL  DEFAULT       12 __GI___libc_malloc
->>   5545: 00000000000831d0    339 FUNC    LOCAL  DEFAULT       12 __malloc
->>   6063: 00000000000831d0    339 FUNC    GLOBAL DEFAULT       12 malloc
->>   7302: 00000000000831d0    339 FUNC    GLOBAL DEFAULT       12 __libc_malloc
->>  -----
->> As you an see, malloc and __libc_malloc have same address, and actually
->> __libc_malloc has an entry in debuginfo. So you can set up a probe on
->> __libc_malloc.
->>
->> To fix this problem shortly, perf probe simply falls back to find probe
->> point(malloc) in symbols if it is not found in debuginfo.
-> 
-> Idealy, it'd be great if it can go to the definition.  I think perf
-> only keeps a single symbol at a same address so if there're multiple
-> aliases at a specific address it might be missed even with this patch.
+Hi Wang,
 
-Hmm, anyway, that should be fixed by improving perf's map, instead of
-introducing new symbol finder.
+(2014/12/29 13:07), Wang Nan wrote:
+> This patch utilizes previous introduced checker to check register usage
+> for probed ARM instruction and saves it in a mask. Futher patch will
+> use such information to avoid simuation or emulation.
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> ---
+>  arch/arm/include/asm/probes.h          |  12 ++++
+>  arch/arm/probes/decode.c               |   7 ++
+>  arch/arm/probes/kprobes/actions-arm.c  |   2 +-
+>  arch/arm/probes/kprobes/checkers-arm.c | 124 +++++++++++++++++++++++++++++++++
+>  arch/arm/probes/kprobes/checkers.h     |   1 +
+>  5 files changed, 145 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+> index f0a1ee8..ee04067 100644
+> --- a/arch/arm/include/asm/probes.h
+> +++ b/arch/arm/include/asm/probes.h
+> @@ -41,6 +41,18 @@ struct arch_probes_insn {
+>  	probes_insn_singlestep_t	*insn_singlestep;
+>  	probes_insn_fn_t		*insn_fn;
+>  	int stack_space;
+> +
+> +	/* Use 2 bits for a register. One more bit for extension */
 
-> But that will be a rare case, so
-> 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
+Would you have any concrete idea for the extend bits? If not, we don't need
+it at this point. I think we don't need to care about future binary compatibility :)
+(moreover, if you need another bitflag, you can add another flag)
 
-Thank you!
+> +#define REG_NO_USE	(0)
+> +#define REG_USE		(1)
+> +#define REG_MASK	(3)
+> +#define __register_usage_flag(n, f)	((f) << ((n) * 2))
+> +#define __register_usage_mask(n)	(REG_MASK << ((n) * 2))
+> +#define __clean_register_flag(m, n)	((m) & (~(__register_usage_mask(n))))
+> +#define __set_register_flag(m, n, f)	(__clean_register_flag(m, n) | __register_usage_flag(n, f))
+> +#define set_register_nouse(m, n)	do {(m) = __set_register_flag(m, n, REG_NO_USE);} while(0)
+> +#define set_register_use(m, n)		do {(m) = __set_register_flag(m, n, REG_USE);} while(0)
+> +	int register_usage_mask;
 
-> 
-> Thanks,
-> Namhyung
-> 
-> 
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Reported-by: David Ahern <dsahern@gmail.com>
->> ---
->>  tools/perf/util/probe-event.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
->> index 28eb141..7f9b863 100644
->> --- a/tools/perf/util/probe-event.c
->> +++ b/tools/perf/util/probe-event.c
->> @@ -495,9 +495,11 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
->>  	}
->>  
->>  	if (ntevs == 0)	{	/* No error but failed to find probe point. */
->> -		pr_warning("Probe point '%s' not found.\n",
->> +		pr_warning("Probe point '%s' not found in debuginfo.\n",
->>  			   synthesize_perf_probe_point(&pev->point));
->> -		return -ENOENT;
->> +		if (need_dwarf)
->> +			return -ENOENT;
->> +		return 0;
->>  	}
->>  	/* Error path : ntevs < 0 */
->>  	pr_debug("An error occurred in debuginfo analysis (%d).\n", ntevs);
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Is this a mask or flag? It seems a bit flag, if so, it should be "register_usage_flag".
+
+Thank you,
+
+>  };
+>  
+>  #endif /* __ASSEMBLY__ */
+> diff --git a/arch/arm/probes/decode.c b/arch/arm/probes/decode.c
+> index f9d7c42..d60a1b2 100644
+> --- a/arch/arm/probes/decode.c
+> +++ b/arch/arm/probes/decode.c
+> @@ -435,6 +435,13 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+>  	 */
+>  	asi->stack_space = 0;
+>  
+> +	/*
+> +	 * Similay to stack_space, register_usage_mask is filled by
+> +	 * checkers. Its default value is set to ~0, which is 'all
+> +	 * registers are used', to prevent any potential optimization.
+> +	 */
+> +	asi->register_usage_mask = ~(0UL);
+> +
+>  	if (emulate)
+>  		insn = prepare_emulated_insn(insn, asi, thumb);
+>  
+> diff --git a/arch/arm/probes/kprobes/actions-arm.c b/arch/arm/probes/kprobes/actions-arm.c
+> index 4fedd4c..26e435b 100644
+> --- a/arch/arm/probes/kprobes/actions-arm.c
+> +++ b/arch/arm/probes/kprobes/actions-arm.c
+> @@ -340,4 +340,4 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+>  	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
+>  };
+>  
+> -const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, NULL};
+> +const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, arm_regs_checker, NULL};
+> diff --git a/arch/arm/probes/kprobes/checkers-arm.c b/arch/arm/probes/kprobes/checkers-arm.c
+> index f817663..df1d77b 100644
+> --- a/arch/arm/probes/kprobes/checkers-arm.c
+> +++ b/arch/arm/probes/kprobes/checkers-arm.c
+> @@ -97,3 +97,127 @@ const struct decode_checker arm_stack_checker[NUM_PROBES_ARM_ACTIONS] = {
+>  	[PROBES_STORE] = {.checker = arm_check_stack},
+>  	[PROBES_LDMSTM] = {.checker = arm_check_stack},
+>  };
+> +
+> +static enum probes_insn __kprobes arm_check_regs_nouse(probes_opcode_t insn,
+> +		struct arch_probes_insn *asi,
+> +		const struct decode_header *h)
+> +{
+> +	asi->register_usage_mask = 0;
+> +	return INSN_GOOD;
+> +}
+> +
+> +static void __arm_check_regs(probes_opcode_t insn,
+> +		const struct decode_header *h,
+> +		int *quintuple)
+> +{
+> +	int i;
+> +	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
+> +	probes_opcode_t mask, shifted;
+> +
+> +	memset(quintuple, 0xff, sizeof(int) * 5);
+> +	for (i = 0, shifted = insn, mask = 0xf; regs != 0;
+> +			regs >>= 4, mask <<= 4, shifted >>= 4, i++)
+> +		if (regs & 0xf)
+> +			quintuple[i] = shifted & 0xf;
+> +}
+> +
+> +static enum probes_insn arm_check_regs_normal(probes_opcode_t insn,
+> +		struct arch_probes_insn *asi,
+> +		const struct decode_header *h)
+> +{
+> +	int quintuple[5], i;
+> +	asi->register_usage_mask = 0;
+> +	__arm_check_regs(insn, h, quintuple);
+> +	for (i = 0; i < 5; i++) {
+> +		int r = quintuple[i];
+> +		if (r < 0)
+> +			continue;
+> +		set_register_use(asi->register_usage_mask, r);
+> +	}
+> +
+> +	return INSN_GOOD;
+> +}
+> +
+> +static enum probes_insn arm_check_regs_ldmstm(probes_opcode_t insn,
+> +		struct arch_probes_insn *asi,
+> +		const struct decode_header *h)
+> +{
+> +	unsigned int reglist = insn & 0xffff;
+> +	unsigned int rn = (insn >> 16) & 0xf;
+> +	int i;
+> +
+> +	set_register_use(asi->register_usage_mask, rn);
+> +	for (i = 0; reglist > 0; i++, reglist >>= 1)
+> +		if (reglist & 1)
+> +			set_register_use(asi->register_usage_mask, i);
+> +	return INSN_GOOD;
+> +}
+> +
+> +static enum probes_insn arm_check_regs_mov_ip_sp(probes_opcode_t insn,
+> +		struct arch_probes_insn *asi,
+> +		const struct decode_header *h)
+> +{
+> +	/* should be 'mov ip, sp' */
+> +	set_register_use(asi->register_usage_mask, 12);
+> +	set_register_use(asi->register_usage_mask, 13);
+> +	return INSN_GOOD;
+> +}
+> +
+> +/*
+> + *                                    | Rn |Rt/d|         | Rm |
+> + * LDRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx
+> + * STRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx
+> + *                                    | Rn |Rt/d|         |imm4L|
+> + * LDRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx
+> + * STRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx
+> + *
+> + * Such instructions access Rt/d and its next register, so different
+> + * from others, a specific checker is required for Rt/d and Rt2/d2.
+> + */
+> +static enum probes_insn arm_check_regs_ldrdstrd(probes_opcode_t insn,
+> +		struct arch_probes_insn *asi,
+> +		const struct decode_header *h)
+> +{
+> +	int quintuple[5], rn, rdt, rm;
+> +	asi->register_usage_mask = 0;
+> +	__arm_check_regs(insn, h, quintuple);
+> +
+> +	rn = quintuple[4];
+> +	rdt = quintuple[3];
+> +	rm = quintuple[0];
+> +        set_register_use(asi->register_usage_mask, rn);
+> +        set_register_use(asi->register_usage_mask, rdt);
+> +        set_register_use(asi->register_usage_mask, rdt + 1);
+> +	if (rm >= 0)
+> +		set_register_use(asi->register_usage_mask, rm);
+> +
+> +	return INSN_GOOD;
+> +}
+> +
+> +
+> +const struct decode_checker arm_regs_checker[NUM_PROBES_ARM_ACTIONS] = {
+> +	[PROBES_EMULATE_NONE] = {.checker = arm_check_regs_nouse},
+> +	[PROBES_SIMULATE_NOP] = {.checker = arm_check_regs_nouse},
+> +	[PROBES_MRS] = {.checker = arm_check_regs_normal},
+> +	[PROBES_SATURATING_ARITHMETIC] = {.checker = arm_check_regs_normal},
+> +	[PROBES_MUL1] = {.checker = arm_check_regs_normal},
+> +	[PROBES_MUL2] = {.checker = arm_check_regs_normal},
+> +	[PROBES_MUL_ADD_LONG] = {.checker = arm_check_regs_normal},
+> +	[PROBES_MUL_ADD] = {.checker = arm_check_regs_normal},
+> +	[PROBES_LOAD] = {.checker = arm_check_regs_normal},
+> +	[PROBES_LOAD_EXTRA] = {.checker = arm_check_regs_normal},
+> +	[PROBES_STORE] = {.checker = arm_check_regs_normal},
+> +	[PROBES_STORE_EXTRA] = {.checker = arm_check_regs_normal},
+> +	[PROBES_DATA_PROCESSING_REG] = {.checker = arm_check_regs_normal},
+> +	[PROBES_DATA_PROCESSING_IMM] = {.checker = arm_check_regs_normal},
+> +	[PROBES_SATURATE] = {.checker = arm_check_regs_normal},
+> +	[PROBES_REV] = {.checker = arm_check_regs_normal},
+> +	[PROBES_MMI] = {.checker = arm_check_regs_normal},
+> +	[PROBES_PACK] = {.checker = arm_check_regs_normal},
+> +	[PROBES_EXTEND] = {.checker = arm_check_regs_normal},
+> +	[PROBES_EXTEND_ADD] = {.checker = arm_check_regs_normal},
+> +	[PROBES_BITFIELD] = {.checker = arm_check_regs_normal},
+> +	[PROBES_LDMSTM] = {.checker = arm_check_regs_ldmstm},
+> +	[PROBES_MOV_IP_SP] = {.checker = arm_check_regs_mov_ip_sp},
+> +	[PROBES_LDRSTRD] = {.checker = arm_check_regs_ldrdstrd},
+> +};
+> diff --git a/arch/arm/probes/kprobes/checkers.h b/arch/arm/probes/kprobes/checkers.h
+> index bddfa0e..cf6c9e7 100644
+> --- a/arch/arm/probes/kprobes/checkers.h
+> +++ b/arch/arm/probes/kprobes/checkers.h
+> @@ -47,6 +47,7 @@ extern const union decode_action stack_check_actions[];
+>  
+>  #ifndef CONFIG_THUMB2_KERNEL
+>  extern const struct decode_checker arm_stack_checker[];
+> +extern const struct decode_checker arm_regs_checker[];
+>  #else
+>  #endif
+>  extern const struct decode_checker t32_stack_checker[];
 > 
 
 
