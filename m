@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980AbbADK4o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 05:56:44 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:49952 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961AbbADK4l (ORCPT
+	id S1753003AbbADK4t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 05:56:49 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:55229 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983AbbADK4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 05:56:41 -0500
+	Sun, 4 Jan 2015 05:56:46 -0500
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -26,9 +26,9 @@ Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
         suravee.suthikulpanit@amd.com, linux-acpi@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v6 11/17] ACPI / processor: Make it possible to get CPU hardware ID via GICC
-Date: Sun,  4 Jan 2015 18:55:12 +0800
-Message-Id: <1420368918-5086-12-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH v6 12/17] ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and register device's gsi
+Date: Sun,  4 Jan 2015 18:55:13 +0800
+Message-Id: <1420368918-5086-13-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
 References: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
@@ -36,141 +36,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a new function map_gicc_mpidr() to allow MPIDRs to be obtained
-from the GICC Structure introduced by ACPI 5.1.
+Introduce ACPI_IRQ_MODEL_GIC which is needed for ARM64 as GIC is
+used, and then register device's gsi with the core IRQ subsystem.
 
-MPIDR is the CPU hardware ID as local APIC ID on x86 platform, so we use
-MPIDR not the GIC CPU interface ID to identify CPUs.
+acpi_register_gsi() is similar to DT based irq_of_parse_and_map(),
+since gsi is unique in the system, so use hwirq number directly
+for the mapping.
 
+Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- arch/arm64/include/asm/acpi.h | 29 +++++++++++++++++++++++++++++
- arch/arm64/kernel/acpi.c      |  1 -
- drivers/acpi/processor_core.c | 37 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 66 insertions(+), 1 deletion(-)
+ arch/arm64/kernel/acpi.c | 73 ++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/bus.c       |  3 ++
+ include/linux/acpi.h     |  1 +
+ 3 files changed, 77 insertions(+)
 
-diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-index c82d4a1..639bb2a 100644
---- a/arch/arm64/include/asm/acpi.h
-+++ b/arch/arm64/include/asm/acpi.h
-@@ -12,6 +12,8 @@
- #ifndef _ASM_ACPI_H
- #define _ASM_ACPI_H
- 
-+#include <asm/smp_plat.h>
-+
- /* Basic configuration for ACPI */
- #ifdef	CONFIG_ACPI
- #define acpi_strict 1	/* No out-of-spec workarounds on ARM64 */
-@@ -45,6 +47,33 @@ static inline void enable_acpi(void)
- 	acpi_noirq = 0;
- }
- 
-+/* MPIDR value provided in GICC structure is 64 bits, but the
-+ * existing apic_id (CPU hardware ID) using in acpi processor
-+ * driver is 32-bit, to conform to the same datatype we need
-+ * to repack the GICC structure MPIDR.
-+ *
-+ * Only 32 bits of MPIDR are used:
-+ *
-+ * Bits [0:7] Aff0;
-+ * Bits [8:15] Aff1;
-+ * Bits [16:23] Aff2;
-+ * Bits [32:39] Aff3;
-+ */
-+static inline u32 pack_mpidr(u64 mpidr)
-+{
-+	return (u32) ((mpidr & 0xff00000000) >> 8) | mpidr;
-+}
-+
-+/*
-+ * The ACPI processor driver for ACPI core code needs this macro
-+ * to find out this cpu was already mapped (mapping from CPU hardware
-+ * ID to CPU logical ID) or not.
-+ *
-+ * cpu_logical_map(cpu) is the mapping of MPIDR and the logical cpu,
-+ * and MPIDR is the cpu hardware ID we needed to pack.
-+ */
-+#define cpu_physical_id(cpu) pack_mpidr(cpu_logical_map(cpu))
-+
- /*
-  * It's used from ACPI core in kdump to boot UP system with SMP kernel,
-  * with this check the ACPI core will not override the CPU index
 diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-index c01bf7f..e8bb9eb 100644
+index e8bb9eb..d6d83ea 100644
 --- a/arch/arm64/kernel/acpi.c
 +++ b/arch/arm64/kernel/acpi.c
-@@ -24,7 +24,6 @@
- #include <linux/bootmem.h>
- #include <linux/smp.h>
+@@ -37,6 +37,12 @@ EXPORT_SYMBOL(acpi_pci_disabled);
+ static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
  
--#include <asm/smp_plat.h>
- #include <asm/cputype.h>
- #include <asm/cpu_ops.h>
- 
-diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-index 02e4839..e634b14 100644
---- a/drivers/acpi/processor_core.c
-+++ b/drivers/acpi/processor_core.c
-@@ -64,6 +64,38 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
- 	return 0;
+ /*
++ * Since we're on ARM, the default interrupt routing model
++ * clearly has to be GIC.
++ */
++enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_GIC;
++
++/*
+  * __acpi_map_table() will be called before page_init(), so early_ioremap()
+  * or early_memremap() should be called here to for ACPI table mapping.
+  */
+@@ -184,6 +190,73 @@ void __init acpi_smp_init_cpus(void)
+ 	pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
  }
  
-+/*
-+ * On ARM platform, MPIDR value is the hardware ID as apic ID
-+ * on Intel platforms
-+ */
-+static int map_gicc_mpidr(struct acpi_subtable_header *entry,
-+		int device_declaration, u32 acpi_id, int *mpidr)
++int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
 +{
-+	struct acpi_madt_generic_interrupt *gicc =
-+	    container_of(entry, struct acpi_madt_generic_interrupt, header);
++	*irq = irq_find_mapping(NULL, gsi);
 +
-+	if (!(gicc->flags & ACPI_MADT_ENABLED))
-+		return -ENODEV;
-+
-+	/* In the GIC interrupt model, logical processors are
-+	 * required to have a Processor Device object in the DSDT,
-+	 * so we should check device_declaration here
-+	 */
-+	if (device_declaration && (gicc->uid == acpi_id)) {
-+		/*
-+		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
-+		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
-+		 * fields into a single 32 bit identifier to accommodate the
-+		 * acpi processor drivers.
-+		 */
-+		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
-+			 | gicc->arm_mpidr;
-+		return 0;
-+	}
-+
-+	return -EINVAL;
++	return 0;
 +}
++EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
 +
- static int map_madt_entry(int type, u32 acpi_id)
++/*
++ * success: return IRQ number (>0)
++ * failure: return =< 0
++ */
++int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
++{
++	unsigned int irq;
++	unsigned int irq_type;
++
++	/*
++	 * ACPI have no bindings to indicate SPI or PPI, so we
++	 * use different mappings from DT in ACPI.
++	 *
++	 * For FDT
++	 * PPI interrupt: in the range [0, 15];
++	 * SPI interrupt: in the range [0, 987];
++	 *
++	 * For ACPI, GSI should be unique so using
++	 * the hwirq directly for the mapping:
++	 * PPI interrupt: in the range [16, 31];
++	 * SPI interrupt: in the range [32, 1019];
++	 */
++
++	if (trigger == ACPI_EDGE_SENSITIVE &&
++				polarity == ACPI_ACTIVE_LOW)
++		irq_type = IRQ_TYPE_EDGE_FALLING;
++	else if (trigger == ACPI_EDGE_SENSITIVE &&
++				polarity == ACPI_ACTIVE_HIGH)
++		irq_type = IRQ_TYPE_EDGE_RISING;
++	else if (trigger == ACPI_LEVEL_SENSITIVE &&
++				polarity == ACPI_ACTIVE_LOW)
++		irq_type = IRQ_TYPE_LEVEL_LOW;
++	else if (trigger == ACPI_LEVEL_SENSITIVE &&
++				polarity == ACPI_ACTIVE_HIGH)
++		irq_type = IRQ_TYPE_LEVEL_HIGH;
++	else
++		irq_type = IRQ_TYPE_NONE;
++
++	/*
++	 * Since only one GIC is supported in ACPI 5.0, we can
++	 * create mapping refer to the default domain
++	 */
++	irq = irq_create_mapping(NULL, gsi);
++	if (!irq)
++		return irq;
++
++	/* Set irq type if specified and different than the current one */
++	if (irq_type != IRQ_TYPE_NONE &&
++		irq_type != irq_get_trigger_type(irq))
++		irq_set_irq_type(irq, irq_type);
++	return irq;
++}
++EXPORT_SYMBOL_GPL(acpi_register_gsi);
++
++void acpi_unregister_gsi(u32 gsi)
++{
++}
++EXPORT_SYMBOL_GPL(acpi_unregister_gsi);
++
+ static int __init acpi_parse_fadt(struct acpi_table_header *table)
  {
- 	unsigned long madt_end, entry;
-@@ -99,6 +131,9 @@ static int map_madt_entry(int type, u32 acpi_id)
- 		} else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC) {
- 			if (!map_lsapic_id(header, type, acpi_id, &phys_id))
- 				break;
-+		} else if (header->type == ACPI_MADT_TYPE_GENERIC_INTERRUPT) {
-+			if (!map_gicc_mpidr(header, type, acpi_id, &phys_id))
-+				break;
- 		}
- 		entry += header->length;
- 	}
-@@ -131,6 +166,8 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
- 		map_lsapic_id(header, type, acpi_id, &phys_id);
- 	else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC)
- 		map_x2apic_id(header, type, acpi_id, &phys_id);
-+	else if (header->type == ACPI_MADT_TYPE_GENERIC_INTERRUPT)
-+		map_gicc_mpidr(header, type, acpi_id, &phys_id);
+ 	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index 8b67bd0..c412fdb 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -448,6 +448,9 @@ static int __init acpi_bus_init_irq(void)
+ 	case ACPI_IRQ_MODEL_IOSAPIC:
+ 		message = "IOSAPIC";
+ 		break;
++	case ACPI_IRQ_MODEL_GIC:
++		message = "GIC";
++		break;
+ 	case ACPI_IRQ_MODEL_PLATFORM:
+ 		message = "platform specific model";
+ 		break;
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index d459cd1..87f365e 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -72,6 +72,7 @@ enum acpi_irq_model_id {
+ 	ACPI_IRQ_MODEL_IOAPIC,
+ 	ACPI_IRQ_MODEL_IOSAPIC,
+ 	ACPI_IRQ_MODEL_PLATFORM,
++	ACPI_IRQ_MODEL_GIC,
+ 	ACPI_IRQ_MODEL_COUNT
+ };
  
- exit:
- 	kfree(buffer.pointer);
 -- 
 1.9.1
 
