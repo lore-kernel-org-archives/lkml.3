@@ -1,173 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844AbbADQGP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 11:06:15 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:37039 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbbADQGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 11:06:13 -0500
+	id S1752740AbbADQLo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 11:11:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630AbbADQLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 11:11:43 -0500
+Date: Sun, 4 Jan 2015 17:10:49 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= 
+	<chenggang.qcg@alibaba-inc.com>,
+        root <chenggang.qin@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@taobao.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: =?utf-8?B?562U5aSN77yaW1BBVENIXSBwZXJm?= =?utf-8?Q?_core=3A_Us?=
+ =?utf-8?Q?e?= KSTK_ESP() instead of pt_regs->sp while output user regs
+Message-ID: <20150104161049.GB22707@krava.brq.redhat.com>
+References: <1419315745-20767-1-git-send-email-user@chenggang-laptop>
+ <c027bde0-5f4f-441f-8d45-3e7f6f702231@alibaba-inc.com>
+ <CALCETrVVvbnO-7bnyPCYhPbDoEg-hqmvVbfXL9ONbQPBTJNUZg@mail.gmail.com>
+ <20141230190327.GB23965@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-X-Originating-IP: [85.24.246.111]
-In-Reply-To: <20150103175346.GB20341@kahuna>
-References: <1420300731-8910-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20150103175346.GB20341@kahuna>
-Date: Sun, 4 Jan 2015 17:06:12 +0100
-Message-ID: <CAKXHbyPiWcVxPwVicz15hQ0GWETkZUPW6n5b9zCJnH+cFrAhaw@mail.gmail.com>
-Subject: Re: [PATCH] power: avs: smartreflex: Remove unused function
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Nishanth Menon <nm@ti.com>
-Cc: Kevin Hilman <khilman@kernel.org>, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141230190327.GB23965@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-03 18:53 GMT+01:00 Nishanth Menon <nm@ti.com>:
-> On 16:58-20150103, Rickard Strandqvist wrote:
->> Remove the function sr_configure_minmax() that is not used anywhere.
->>
->> This was partially found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/power/avs/smartreflex.c   |   86 -------------------------------------
->>  include/linux/power/smartreflex.h |    1 -
->>  2 files changed, 87 deletions(-)
->>
->> diff --git a/drivers/power/avs/smartreflex.c b/drivers/power/avs/smartreflex.c
->> index db9973b..62b8351 100644
->> --- a/drivers/power/avs/smartreflex.c
->> +++ b/drivers/power/avs/smartreflex.c
->> @@ -460,92 +460,6 @@ int sr_disable_errgen(struct omap_sr *sr)
->>  }
->>
->>  /**
->> - * sr_configure_minmax() - Configures the SmartReflex to perform AVS using the
->> - *                    minmaxavg module.
->> - * @sr:                      SR module to be configured.
->> - *
->> - * This API is to be called from the smartreflex class driver to
->> - * configure the minmaxavg module inside the smartreflex module.
->> - * SR settings if using the ERROR module inside Smartreflex.
->> - * SR CLASS 3 by default uses only the ERROR module where as
->> - * SR CLASS 2 can choose between ERROR module and MINMAXAVG
->> - * module. Returns 0 on success and error value in case of failure.
->> - */
->> -int sr_configure_minmax(struct omap_sr *sr)
->> -{
->> -     u32 sr_config, sr_avgwt;
->> -     u32 senp_en = 0, senn_en = 0;
->> -     u8 senp_shift, senn_shift;
->> -
->> -     if (!sr) {
->> -             pr_warn("%s: NULL omap_sr from %pF\n", __func__,
->> -                     (void *)_RET_IP_);
->> -             return -EINVAL;
->> -     }
->> -
->> -     if (!sr->clk_length)
->> -             sr_set_clk_length(sr);
->> -
->> -     senp_en = sr->senp_mod;
->> -     senn_en = sr->senn_mod;
->> -
->> -     sr_config = (sr->clk_length << SRCONFIG_SRCLKLENGTH_SHIFT) |
->> -             SRCONFIG_SENENABLE |
->> -             (sr->accum_data << SRCONFIG_ACCUMDATA_SHIFT);
->> -
->> -     switch (sr->ip_type) {
->> -     case SR_TYPE_V1:
->> -             sr_config |= SRCONFIG_DELAYCTRL;
->> -             senn_shift = SRCONFIG_SENNENABLE_V1_SHIFT;
->> -             senp_shift = SRCONFIG_SENPENABLE_V1_SHIFT;
->> -             break;
->> -     case SR_TYPE_V2:
->> -             senn_shift = SRCONFIG_SENNENABLE_V2_SHIFT;
->> -             senp_shift = SRCONFIG_SENPENABLE_V2_SHIFT;
->> -             break;
->> -     default:
->> -             dev_err(&sr->pdev->dev, "%s: Trying to Configure smartreflex"
->> -                     "module without specifying the ip\n", __func__);
->> -             return -EINVAL;
->> -     }
->> -
->> -     sr_config |= ((senn_en << senn_shift) | (senp_en << senp_shift));
->> -     sr_write_reg(sr, SRCONFIG, sr_config);
->> -     sr_avgwt = (sr->senp_avgweight << AVGWEIGHT_SENPAVGWEIGHT_SHIFT) |
->> -             (sr->senn_avgweight << AVGWEIGHT_SENNAVGWEIGHT_SHIFT);
->> -     sr_write_reg(sr, AVGWEIGHT, sr_avgwt);
->> -
->> -     /*
->> -      * Enabling the interrupts if MINMAXAVG module is used.
->> -      * TODO: check if all the interrupts are mandatory
->> -      */
->> -     switch (sr->ip_type) {
->> -     case SR_TYPE_V1:
->> -             sr_modify_reg(sr, ERRCONFIG_V1,
->> -                     (ERRCONFIG_MCUACCUMINTEN | ERRCONFIG_MCUVALIDINTEN |
->> -                     ERRCONFIG_MCUBOUNDINTEN),
->> -                     (ERRCONFIG_MCUACCUMINTEN | ERRCONFIG_MCUACCUMINTST |
->> -                      ERRCONFIG_MCUVALIDINTEN | ERRCONFIG_MCUVALIDINTST |
->> -                      ERRCONFIG_MCUBOUNDINTEN | ERRCONFIG_MCUBOUNDINTST));
->> -             break;
->> -     case SR_TYPE_V2:
->> -             sr_write_reg(sr, IRQSTATUS,
->> -                     IRQSTATUS_MCUACCUMINT | IRQSTATUS_MCVALIDINT |
->> -                     IRQSTATUS_MCBOUNDSINT | IRQSTATUS_MCUDISABLEACKINT);
->> -             sr_write_reg(sr, IRQENABLE_SET,
->> -                     IRQENABLE_MCUACCUMINT | IRQENABLE_MCUVALIDINT |
->> -                     IRQENABLE_MCUBOUNDSINT | IRQENABLE_MCUDISABLEACKINT);
->> -             break;
->> -     default:
->> -             dev_err(&sr->pdev->dev, "%s: Trying to Configure smartreflex"
->> -                     "module without specifying the ip\n", __func__);
->> -             return -EINVAL;
->> -     }
->> -
->> -     return 0;
->> -}
->> -
->> -/**
->>   * sr_enable() - Enables the smartreflex module.
->>   * @sr:              pointer to which the SR module to be configured belongs to.
->>   * @volt:    The voltage at which the Voltage domain associated with
->> diff --git a/include/linux/power/smartreflex.h b/include/linux/power/smartreflex.h
->> index d8b187c3..ffd31af 100644
->> --- a/include/linux/power/smartreflex.h
->> +++ b/include/linux/power/smartreflex.h
->> @@ -303,7 +303,6 @@ int sr_enable(struct omap_sr *sr, unsigned long volt);
->>  void sr_disable(struct omap_sr *sr);
->>  int sr_configure_errgen(struct omap_sr *sr);
->>  int sr_disable_errgen(struct omap_sr *sr);
->> -int sr_configure_minmax(struct omap_sr *sr);
->>
->>  /* API to register the smartreflex class driver with the smartreflex driver */
->>  int sr_register_class(struct omap_sr_class_data *class_data);
->> --
->> 1.7.10.4
->>
->
-> This is potentially used by downstream drivers which are pending cleanup
-> of remaining OMAP infrastructure since the transition from hwmod to
-> devicetree has multiple impact including the conversion of vc/vp back
-> into devicetree supported world (proper regulator framework). while we
-> can throw away code by looking at a specific snapshot, it might just
-> confuse the future transition.
->
-> --
-> Regards,
-> Nishanth Menon
+On Tue, Dec 30, 2014 at 08:03:27PM +0100, Peter Zijlstra wrote:
+> On Thu, Dec 25, 2014 at 07:48:28AM -0800, Andy Lutomirski wrote:
+> > On a quick look, there are plenty of other bugs in there besides just
+> > the stack pointer issue.  The ABI check that uses TIF_IA32 in the perf
+> > core is completely wrong.  TIF_IA32 may be equal to the actual
+> > userspace bitness by luck, but, if so, that's more or less just luck.
+> > And there's a user_mode test that should be user_mode_vm.
+> > 
+> > Also, it's not just sp that's wrong.  There are various places that
+> > you can interrupt in which many of the registers have confusing
+> > locations.  You could try using the cfi unwind data, but that's
+> > unlikely to work for regs like cs and ss, and, during context switch,
+> > this has very little chance of working.
+> > 
+> > What's the point of this feature?  Honestly, my suggestion would be to
+> > delete it instead of trying to fix it.  It's also not clear to me that
+> > there aren't serious security problems here -- it's entirely possible
+> > for sensitive *kernel* values to and up in task_pt_regs at certain
+> > times, and if you run during context switch and there's no code to
+> > suppress this dump during context switch, then you could be showing
+> > regs that belong to the wrong task.
+> 
+> Of course the people who actually wrote the code are not on CC :/
+> 
+> There's two users of this iirc;
+> 
+>  1) the dwarf stack unwinder thingy, which basically dumps the userspace
+>  regs and the top of userspace stack on 'event'.
 
+looks like this solves the issue I was trying to fix
+long time ago:
+  http://marc.info/?l=linux-kernel&m=134934717011451&w=2
 
-Hi
+this seems a lot simpler ;-) I'll test..
 
-Quite ok, I'm just trying to draw attention to the I discover, then
-it's up to you if it is something that should be addressed.
-
-
-Kind regards
-Rickard Strandqvist
+jirka
