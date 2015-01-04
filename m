@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbbADWbf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 17:31:35 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:36946 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789AbbADWbe (ORCPT
+	id S1752944AbbADWsD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 17:48:03 -0500
+Received: from khitomer.mortis.eu ([185.27.175.75]:30688 "EHLO
+	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788AbbADWsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 17:31:34 -0500
-Date: Sun, 4 Jan 2015 23:31:29 +0100
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Piotr Kubus <p.t.kubus@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, abbotti@mev.co.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: dmm32at: Fixed a code indent issue
-Message-ID: <20150104223129.GF25819@t400>
-References: <1420384955-27336-1-git-send-email-p.t.kubus@gmail.com>
+	Sun, 4 Jan 2015 17:48:01 -0500
+X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jan 2015 17:48:01 EST
+Date: Sun, 4 Jan 2015 23:38:00 +0100
+From: Giel van Schijndel <me@mortis.eu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "open list:SCSI SUBSYSTEM" <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] Cleanup: snprintf() always NUL-terminates: depend on it
+Message-ID: <20150104223800.GA4806@salidar.dom.custoft.eu>
+References: <1420394759-20345-1-git-send-email-me@mortis.eu>
+ <CA+55aFw8aMBF5uXekxATymQPTqwZHGJTL-jQx8zDqOwbaft+4g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
 Content-Disposition: inline
-In-Reply-To: <1420384955-27336-1-git-send-email-p.t.kubus@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFw8aMBF5uXekxATymQPTqwZHGJTL-jQx8zDqOwbaft+4g@mail.gmail.com>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04, Piotr Kubus wrote:
-> This is a patch to the dmm32at.c file that fixes up a code indent error found by the checkpatch.pl tool.
 
-Nice however improve your commit message. The rule is that the lines
-should wrap at 72nd column except for quoted material such as compiler
-output, etc...
+--ZGiS0Q5IWpPtfppv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The 72-character columns are important for allowing quoting and they
-play nicely with standard indentation from git log.
+On Sun, Jan 04, 2015 at 11:34:43 -0800, Linus Torvalds wrote:
+> On Sun, Jan 4, 2015 at 10:05 AM, Giel van Schijndel <me@mortis.eu> wrote:
+>> Especially since one very strange piece of code seems to be written in
+>> such a way that a NUL needs to be placed where a NUL is present already.
+>=20
+> Actually, it's worse than that. This:
+>=20
+>>         len =3D snprintf(fname, 99, "%s", buf);
+>> -       fname[len-1] =3D '\0';
+>=20
+> is complete garbage, since the return value of snprintf() is not the
+> length of the result, but length of what the result *would* have been.
+>=20
+> So if the string doesn't fit in 99 bytes, it will actively corrupt
+> some random memory after the string. It's not writing zero to what was
+> already zero, it's corrupting memory.
 
-Thanks,
-Konrad
+Ah yes, I didn't even notice that nasty side effect. I just deleted that
+"really, really" NUL-termination line because it was based on a
+misunderstanding of snprintf()'s postcondition. Even if
+len=3D=3Dsizeof(fname) this still would have given the wrong example for
+others to follow.
 
-> Signed-off-by: Piotr Kubus <p.t.kubus@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/dmm32at.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
-> index 6df298a..31919b8 100644
-> --- a/drivers/staging/comedi/drivers/dmm32at.c
-> +++ b/drivers/staging/comedi/drivers/dmm32at.c
-> @@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
->  	/* enable the ai conversion interrupt and the clock to start scans */
->  	outb(DMM32AT_INTCLK_ADINT |
->  	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
-> -             dev->iobase + DMM32AT_INTCLK_REG);
-> +	     dev->iobase + DMM32AT_INTCLK_REG);
->  }
->  
->  static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
-> -- 
-> 1.9.1
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> Anyway, from a quick glance your patches look fine, but you need to
+> sign off on them. See Documentation/SubmittingPatches.
+
+Ah yes, forgot that. Would it be sufficient if I sent a reply to all
+those patch mails with next line tacked on, or would it require a
+resubmission?
+> Signed-off-by: Giel van Schijndel <me@mortis.eu>
+
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+--
+"Always code as if the guy who ends up maintaining your code will be a
+ violent psychopath who knows where you live."
+  -- Rick Osborne
+
+--ZGiS0Q5IWpPtfppv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iEYEARECAAYFAlSpwMQACgkQZBYm/87l50KTpQCgrH/WGx/W9Hhislo1AfEkx2XR
+p1wAoKIDhwHCBMjvNVQl/rHdYFfdZbGc
+=P3iw
+-----END PGP SIGNATURE-----
+
+--ZGiS0Q5IWpPtfppv--
