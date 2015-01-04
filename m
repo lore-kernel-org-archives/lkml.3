@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbbADMnT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 07:43:19 -0500
-Received: from mout.web.de ([212.227.17.11]:55238 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbbADMnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 07:43:17 -0500
-Message-ID: <54A9355F.4050102@users.sourceforge.net>
-Date: Sun, 04 Jan 2015 13:43:11 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752728AbbADMoE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 07:44:04 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:54136 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701AbbADMoB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 07:44:01 -0500
 MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 0/13] ALSA: Deletion of some unnecessary checks
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:DAlSvQ90SOcaQmdXwetT3IF2n7l1E5fspXnDlfP2M0R22BaN3Pm
- ecoQI3pU1oyhnqno7J95QQJYy/YhPB0TIMQA0DMp9oYQFxLLSy8Otam9Vt9osUOdFFQhHyB
- cHWxZCsxcktgDwNRFBrQcTqF+sieNSSx5nxIX/Z/os4b7/PiTFoGo9jygr/tEwi2J9mfjDO
- PXozC6FCCbaXtWN43kz4g==
-X-UI-Out-Filterresults: notjunk:1;
+X-Originating-IP: [85.24.246.111]
+In-Reply-To: <54A8DBF4.4050202@lwfinger.net>
+References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<54A8DBF4.4050202@lwfinger.net>
+Date: Sun, 4 Jan 2015 13:43:59 +0100
+Message-ID: <CAKXHbyN6LH_pFw1uoLXRzgJv-NcjbTLJvMZXfwYXDwuk9QDszA@mail.gmail.com>
+Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>, Kalle Valo <kvalo@adurom.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        brcm80211-dev-list@broadcom.com,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 4 Jan 2015 11:50:12 +0100
+2015-01-04 7:21 GMT+01:00 Larry Finger <Larry.Finger@lwfinger.net>:
+> On 01/03/2015 06:47 PM, Rickard Strandqvist wrote:
+>>
+>> Removes some functions that are not used anywhere:
+>> dma_txflush() dma_txsuspended()
+>>
+>> This was partially found by using a static code analysis program called
+>> cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist
+>> <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>   drivers/net/wireless/brcm80211/brcmsmac/dma.c |   19 -------------------
+>>   drivers/net/wireless/brcm80211/brcmsmac/dma.h |    2 --
+>>   2 files changed, 21 deletions(-)
+>
+>
+> Just because file dma.c is involved, it does not need to be, nor should it
+> be in the subject line. You could specify the driver names in the file tree
+> after wireless. In this instance, one possible subject would be "brcm80211:
+> brcmsmac: Remove some unused functions". On the other hand, if you look at
+> "git log" to see past patches, the driver maintainers even leave off the
+> brcm80211 part, thus to match them, the subject should be "brcmsmac: Remove
+> some unused functions".
+>
+> As was suggested earlier, you need to look at the precedents. Keeping a
+> uniform method of patch naming helps when looking for patches in the git
+> log.
+>
+> Larry
+>
 
-Further update suggestions were taken into account after several patches
-were applied from static source code analysis.
 
-Markus Elfring (3):
-  seq: Deletion of unnecessary checks before the function call "snd_midi_event_free"
-  oss: Deletion of unnecessary checks before the function call "vfree"
-  emu10k1: Delete an unnecessary check before the function call "kfree"
-  oxygen: Delete an unnecessary check before the function call "snd_pcm_suspend"
-  emux: Delete an unnecessary check before the function call "snd_sf_free"
-  ASoC: Intel: Delete an unnecessary check before the function call "sst_dma_free"
-  ASoC: fsi: Deletion of unnecessary checks before the function call "clk_enable"
-  ASoC: Intel: Delete an unnecessary check before the function call "release_firmware"
-  i2sbus: Delete an unnecessary check before the function call "snd_pcm_suspend_all"
-  sb: Delete an unnecessary check before the function call "snd_emux_free"
-  Deletion of checks before the function call "iounmap"
-  msnd: One function call less in snd_msnd_attach() after error detection
-  msnd: Fix centralized exiting from snd_msnd_attach()
+Hi Larry
 
- sound/aoa/soundbus/i2sbus/core.c | 13 ++++++-------
- sound/arm/aaci.c                 |  4 ++--
- sound/drivers/ml403-ac97cr.c     |  3 +--
- sound/isa/msnd/msnd_pinnacle.c   | 31 ++++++++++++++++---------------
- sound/parisc/harmony.c           |  4 +---
- sound/pci/ad1889.c               |  5 +----
- sound/pci/asihpi/hpioctl.c       |  6 ++----
- sound/pci/atiixp.c               |  3 +--
- sound/pci/atiixp_modem.c         |  3 +--
- sound/pci/aw2/aw2-alsa.c         |  4 +---
- sound/pci/bt87x.c                |  3 +--
- sound/pci/cs4281.c               |  6 ++----
- sound/pci/cs46xx/cs46xx_lib.c    |  4 ++--
- sound/pci/ctxfi/cthw20k1.c       |  5 +----
- sound/pci/ctxfi/cthw20k2.c       |  5 +----
- sound/pci/echoaudio/echoaudio.c  |  6 +-----
- sound/pci/hda/hda_intel.c        |  3 +--
- sound/pci/lola/lola.c            |  6 ++----
- sound/pci/mixart/mixart.c        |  7 +++----
- sound/pci/nm256/nm256.c          |  6 ++----
- sound/pci/rme9652/hdsp.c         |  4 +---
- sound/pci/rme9652/hdspm.c        |  4 +---
- sound/pci/rme9652/rme9652.c      |  3 +--
- sound/pci/sis7019.c              |  5 +----
- sound/pci/ymfpci/ymfpci_main.c   |  3 +--
- sound/ppc/pmac.c                 | 15 +++++----------
- 26 files changed, 58 insertions(+), 103 deletions(-)
+As I hope you can see I have made some changes regarding the
+subject-line. Thought it was an advantage to be able to see which file
+I actually removed something from.
+There seems to be a big focus on getting right on subject-line right
+in recent weeks.
 
--- 
-2.2.1
+I wonder why there is a script that takes a file name, and respond
+with an appropriate subject line?
 
+But ok, I change my script accordingly. Should I submit the patch again?
+
+
+Kind regards
+Rickard Strandqvist
