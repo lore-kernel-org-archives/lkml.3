@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbbADUwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 15:52:17 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59485 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778AbbADUwQ (ORCPT
+	id S1752897AbbADU4L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 15:56:11 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:53590 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789AbbADU4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 15:52:16 -0500
-Date: Sun, 4 Jan 2015 21:52:14 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
+	Sun, 4 Jan 2015 15:56:09 -0500
+Date: Sun, 4 Jan 2015 15:56:06 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Pavel Machek <pavel@ucw.cz>
+cc: marc.zyngier@arm.com, rmk+kernel@arm.linux.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         kernel list <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
  pyaudio (and probably more)
-Message-ID: <20150104205214.GA32421@amd>
-References: <20150104190123.GA20153@amd>
- <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
- <CA+55aFxMbicJZXzzHc8=vdwCzhz4kdrmZEKjLadZXr7aySZ4zg@mail.gmail.com>
- <20150104204323.GA12302@n2100.arm.linux.org.uk>
+In-Reply-To: <20150104203724.GA16372@amd>
+Message-ID: <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+References: <20150104190123.GA20153@amd> <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr> <20150104201026.GA23427@amd> <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr> <20150104203724.GA16372@amd>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150104204323.GA12302@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2015-01-04 20:43:23, Russell King - ARM Linux wrote:
-> On Sun, Jan 04, 2015 at 12:22:36PM -0800, Linus Torvalds wrote:
-> > On Sun, Jan 4, 2015 at 12:03 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > >
-> > > NAK.
+On Sun, 4 Jan 2015, Pavel Machek wrote:
+
+> On Sun 2015-01-04 15:25:02, Nicolas Pitre wrote:
+> > On Sun, 4 Jan 2015, Pavel Machek wrote:
 > > 
-> > To quote the standard response for people who ignore regressions:
+> > > On Sun 2015-01-04 15:03:02, Nicolas Pitre wrote:
+> > > > If that is still unacceptable to you for whatever reason, then the least 
+> > > > wrong compromize should be:
+> > > > 
+> > > > 	seq_printf(m, "BogoMIPS\t: 1.00\n");
+> > > > 
+> > > > That'D allow for those broken applications to run while making clear 
+> > > > that the provided value is phony. I was about to suggest 0.00 but that 
+> > > > could trigger a divide by zero error somewhere I suppose.
+> > > 
+> > > I don't know what 1.00 will cause, and neither do you, so what about
+> > > simply reverting the bad patch?
 > > 
-> >   "SHUT THE FUCK UP"
-> > 
-> > you cannot NAK regression fixes. Seriously.
+> > Because the patch wasn't "bad".  It did solve a recurring support 
+> > problem where people did actually complain on the list because the value 
+> > was not what they would have liked.  Removing this meaningless value did 
+> > actually fix that support issue as no more complaints came through for 
+> > the last 1.3 year, and is actually the only way for user space to be 
+> > fixed too.
 > 
-> How about we calm down and take some informed view instead of throwing
-> mud?  I'd never thought I'd have to be doing this but it seems necessary.
-> 
-> Yes, it's bad that we now have a userspace breakage from removing the
-> bogomips, but a simple revert of the patch doesn't fix it properly.  It
-> _may_ seem to get things going again by providing a value, but that
-> value may not be what was once provided back in the days that these
-> programs were written.
+> People complain on the list, so what? People complain about systemd,
+> too. We ignore them.
 
-It is the value we had there in 2013, and it seems to be close enough
-to value userspace expects there. It is certainly safer/better/closer
-than "1.0" Nicolas proposes.
+Are you kidding? By that measure, maybe we should ignore you, too?
 
-> So, merely reverting the patch doesn't fix the problem.  So, Nico's
-> NAK on the simple revert is quite right.
+> Alternatively, just don't touch the bogomips computation. It is not
+> that much of maintainance burden.
 
-> Instead of throwing insults, what we need to do is to approach this
-> calmly, and work out what we can do to fix it properly.
+It causes problems to those applications actually taking that value for 
+granted when it is wrong.  This wasn't removed for fun, but rather 
+because it caused other kind of troubles by being there.
 
-Looking at 9fc2105aeaaf56b0cf75296a84702d0f9e64437b's changelog, I'd
-say that insults are not out of place.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> You can probably also get away with
+> replacing bogomips with actual cpu frequency.
+
+Where do you get that CPU frequency from?  If it was that easy, that's 
+what we would have done already.
+
+> Replacing it with 1 is asking for trouble.
+
+What about 100 then?  Or 1000?  Choose your pick.
+
+> See the links I quoted. Removing the value caused real problems. (And
+> I still did not hear so much as "sorry".) Now you propose to put
+> obviously wrong value in there, and claim it is not a
+> problem... because it takes time before someone debugs breakage you
+> want to cause.
+
+It wasted a lot of people's time before by simply being there and wrong 
+before it was removed.  It's only a matter of whose time you want to 
+waste.  Really.
+
+
+Nicolas
