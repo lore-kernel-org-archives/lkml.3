@@ -1,126 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbbADPfa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:35:30 -0500
-Received: from smtp209.alice.it ([82.57.200.105]:57956 "EHLO smtp209.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586AbbADPf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:35:29 -0500
-X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jan 2015 10:35:28 EST
-Date: Sun, 4 Jan 2015 16:29:09 +0100
-From: Antonio Ospite <ao2@ao2.it>
-To: Joe Howse <josephhowse@nummist.com>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] gspca: Add high-speed modes for PS3 Eye camera
-Message-Id: <20150104162909.f29952436894222f8074862f@ao2.it>
-In-Reply-To: <1419865203-3967-1-git-send-email-josephhowse@nummist.com>
-References: <1419865203-3967-1-git-send-email-josephhowse@nummist.com>
-X-Mailer: Sylpheed 3.5.0beta1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752745AbbADP3r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:29:47 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:51299 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593AbbADP3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 10:29:46 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Kamil Debski <k.debski@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] media: s5p-jpeg: Remove some unused functions
+Date: Sun,  4 Jan 2015 16:32:45 +0100
+Message-Id: <1420385565-12091-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Dec 2014 11:00:03 -0400
-Joe Howse <josephhowse@nummist.com> wrote:
+Removes some functions that are not used anywhere:
+s5p_jpeg_input_raw_y16() s5p_jpeg_timer_disable() s5p_jpeg_timer_enable()
 
-> Add support in the PS3 Eye driver for QVGA capture at higher
-> frame rates: 187, 150, and 137 FPS. This functionality is valuable
-> because the PS3 Eye is popular for computer vision projects and no
-> other camera in its price range supports such high frame rates.
-> 
-> Correct a QVGA mode that was listed as 40 FPS. It is really 37 FPS
-> (half of 75 FPS).
-> 
-> Tests confirm that the nominal frame rates are achieved.
-> 
-> Signed-off-by: Joe Howse <josephhowse@nummist.com>
+This was partially found by using a static code analysis program called cppcheck.
 
-Tested-by: Antonio Ospite <ao2@ao2.it>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.c |   32 -------------------------
+ drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.h |    3 ---
+ 2 files changed, 35 deletions(-)
 
-Thanks Joe.
-
-I noticed that qv4l2 displays max 60fps even though from the video I can
-perceive the higher framerate, and same happens in guvcview.
-
-gst-inspect-1.0 won't even let me set framerates higher than 75 so
-I didn't test with GStreamer.
-
-I know that the camera is also able to stream raw Bayer data which
-requires less bandwidth than the default YUYV, although the driver does
-not currently expose that; maybe some higher framerates can be achieved
-also at VGA with Bayer output.
-
-In case you wanted to explore that remember to set supported framerates
-appropriately in ov772x_framerates for the 4 combinations of formats and
-resolutions (i.e. Bayer outputs will support more framerates).
-
-Ciao,
-   Antonio
-
-> ---
->  drivers/media/usb/gspca/ov534.c | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/media/usb/gspca/ov534.c b/drivers/media/usb/gspca/ov534.c
-> index 90f0d63..a9c866d 100644
-> --- a/drivers/media/usb/gspca/ov534.c
-> +++ b/drivers/media/usb/gspca/ov534.c
-> @@ -12,6 +12,8 @@
->   * PS3 Eye camera enhanced by Richard Kaswy http://kaswy.free.fr
->   * PS3 Eye camera - brightness, contrast, awb, agc, aec controls
->   *                  added by Max Thrun <bear24rw@gmail.com>
-> + * PS3 Eye camera - FPS range extended by Joseph Howse
-> + *                  <josephhowse@nummist.com> http://nummist.com
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License as published by
-> @@ -116,7 +118,7 @@ static const struct v4l2_pix_format ov767x_mode[] = {
->  		.colorspace = V4L2_COLORSPACE_JPEG},
->  };
->  
-> -static const u8 qvga_rates[] = {125, 100, 75, 60, 50, 40, 30};
-> +static const u8 qvga_rates[] = {187, 150, 137, 125, 100, 75, 60, 50, 37, 30};
->  static const u8 vga_rates[] = {60, 50, 40, 30, 15};
->  
->  static const struct framerates ov772x_framerates[] = {
-> @@ -769,12 +771,16 @@ static void set_frame_rate(struct gspca_dev *gspca_dev)
->  		{15, 0x03, 0x41, 0x04},
->  	};
->  	static const struct rate_s rate_1[] = {	/* 320x240 */
-> +/*		{205, 0x01, 0xc1, 0x02},  * 205 FPS: video is partly corrupt */
-> +		{187, 0x01, 0x81, 0x02}, /* 187 FPS or below: video is valid */
-> +		{150, 0x01, 0xc1, 0x04},
-> +		{137, 0x02, 0xc1, 0x02},
->  		{125, 0x02, 0x81, 0x02},
->  		{100, 0x02, 0xc1, 0x04},
->  		{75, 0x03, 0xc1, 0x04},
->  		{60, 0x04, 0xc1, 0x04},
->  		{50, 0x02, 0x41, 0x04},
-> -		{40, 0x03, 0x41, 0x04},
-> +		{37, 0x03, 0x41, 0x04},
->  		{30, 0x04, 0x41, 0x04},
->  	};
->  
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+diff --git a/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.c b/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.c
+index e3b8e67..b5f20e7 100644
+--- a/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.c
++++ b/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.c
+@@ -51,18 +51,6 @@ void s5p_jpeg_input_raw_mode(void __iomem *regs, unsigned long mode)
+ 	writel(reg, regs + S5P_JPGCMOD);
+ }
+ 
+-void s5p_jpeg_input_raw_y16(void __iomem *regs, bool y16)
+-{
+-	unsigned long reg;
+-
+-	reg = readl(regs + S5P_JPGCMOD);
+-	if (y16)
+-		reg |= S5P_MODE_Y16;
+-	else
+-		reg &= ~S5P_MODE_Y16_MASK;
+-	writel(reg, regs + S5P_JPGCMOD);
+-}
+-
+ void s5p_jpeg_proc_mode(void __iomem *regs, unsigned long mode)
+ {
+ 	unsigned long reg, m;
+@@ -208,26 +196,6 @@ void s5p_jpeg_final_mcu_num_int_enable(void __iomem *regs, bool enbl)
+ 	writel(reg, regs + S5P_JPGINTSE);
+ }
+ 
+-void s5p_jpeg_timer_enable(void __iomem *regs, unsigned long val)
+-{
+-	unsigned long reg;
+-
+-	reg = readl(regs + S5P_JPG_TIMER_SE);
+-	reg |= S5P_TIMER_INT_EN;
+-	reg &= ~S5P_TIMER_INIT_MASK;
+-	reg |= val & S5P_TIMER_INIT_MASK;
+-	writel(reg, regs + S5P_JPG_TIMER_SE);
+-}
+-
+-void s5p_jpeg_timer_disable(void __iomem *regs)
+-{
+-	unsigned long reg;
+-
+-	reg = readl(regs + S5P_JPG_TIMER_SE);
+-	reg &= ~S5P_TIMER_INT_EN_MASK;
+-	writel(reg, regs + S5P_JPG_TIMER_SE);
+-}
+-
+ int s5p_jpeg_timer_stat(void __iomem *regs)
+ {
+ 	return (int)((readl(regs + S5P_JPG_TIMER_ST) & S5P_TIMER_INT_STAT_MASK)
+diff --git a/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.h b/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.h
+index c11ebe8..f208fa3 100644
+--- a/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.h
++++ b/drivers/media/platform/s5p-jpeg/jpeg-hw-s5p.h
+@@ -29,7 +29,6 @@
+ void s5p_jpeg_reset(void __iomem *regs);
+ void s5p_jpeg_poweron(void __iomem *regs);
+ void s5p_jpeg_input_raw_mode(void __iomem *regs, unsigned long mode);
+-void s5p_jpeg_input_raw_y16(void __iomem *regs, bool y16);
+ void s5p_jpeg_proc_mode(void __iomem *regs, unsigned long mode);
+ void s5p_jpeg_subsampling_mode(void __iomem *regs, unsigned int mode);
+ unsigned int s5p_jpeg_get_subsampling_mode(void __iomem *regs);
+@@ -42,8 +41,6 @@ void s5p_jpeg_x(void __iomem *regs, unsigned int x);
+ void s5p_jpeg_rst_int_enable(void __iomem *regs, bool enable);
+ void s5p_jpeg_data_num_int_enable(void __iomem *regs, bool enable);
+ void s5p_jpeg_final_mcu_num_int_enable(void __iomem *regs, bool enbl);
+-void s5p_jpeg_timer_enable(void __iomem *regs, unsigned long val);
+-void s5p_jpeg_timer_disable(void __iomem *regs);
+ int s5p_jpeg_timer_stat(void __iomem *regs);
+ void s5p_jpeg_clear_timer_stat(void __iomem *regs);
+ void s5p_jpeg_enc_stream_int(void __iomem *regs, unsigned long size);
 -- 
-Antonio Ospite
-http://ao2.it
+1.7.10.4
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
