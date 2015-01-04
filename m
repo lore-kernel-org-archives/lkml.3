@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611AbbADBlZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 20:41:25 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:34364 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551AbbADBlY (ORCPT
+	id S1752495AbbADBuY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Jan 2015 20:50:24 -0500
+Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:39899 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751478AbbADBuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 20:41:24 -0500
-Date: Sun, 4 Jan 2015 02:41:19 +0100
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        pankaj.saraf@nektech.in, linux-kernel@vger.kernel.org,
-        abbotti@mev.co.uk, jitendra kumar khasdev <jkhasdev@gmail.com>
-Subject: Re: [PATCH 0/5] *** SUBJECT HERE ***
-Message-ID: <20150104014119.GE25819@t400>
-References: <1420274187-6779-1-git-send-email-jkhasdev@gmail.com>
- <20150103164516.GB30268@kroah.com>
- <1420325674.9624.65.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420325674.9624.65.camel@x220>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 3 Jan 2015 20:50:20 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3866:3867:4321:5007:6261:6642:9592:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:13069:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ant27_1fb1a0a4a1956
+X-Filterd-Recvd-Size: 2036
+Message-ID: <1420336216.2619.9.camel@perches.com>
+Subject: [PATCH net-next] qlcnic: Fix dump_skb output
+From: Joe Perches <joe@perches.com>
+To: Shahed Shaikh <shahed.shaikh@qlogic.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 03 Jan 2015 17:50:16 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03, Paul Bolle wrote:
-> On Sat, 2015-01-03 at 08:45 -0800, Greg KH wrote:
-> > On Sat, Jan 03, 2015 at 02:06:22PM +0530, jitendra kumar khasdev wrote:
-> > > *** BLURB HERE ***
-> > 
-> > What blurb?  What subject?
-> 
-> jitendra used git-send-email to send this series. You'd expect
-> git-send-email to die with an error if the cover letter, which it should
-> see first, still contains these "*** [...] HERE ***" markers. What's the
-> reason it doesn't do that?
+Use normal facilities to avoid printing each byte
+on a separate line.
 
-git send-email does one thing and one thing only - sends stuff via
-email. I do not see why it should parse the emails and decide whether to
-complete the operation or break based on what is in the emails. It could
-warn though however since the cover letter is a product of different
-command introducing this logic would tightly couple those which is not
-good.
+Now emits at KERN_DEBUG instead of KERN_INFO.
 
-I guess that it is better that people who send stuff acctually care what
-they are sending. I mean that pretty quickly you learn to send the
-series of patches first to yourself and review before it goes out to the
-public.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+index 18e5de7..d166e53 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_io.c
+@@ -10,6 +10,7 @@
+ #include <net/ip.h>
+ #include <linux/ipv6.h>
+ #include <net/checksum.h>
++#include <linux/printk.h>
  
-> 
-> Paul Bolle
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+ #include "qlcnic.h"
+ 
+@@ -1465,14 +1466,14 @@ void qlcnic_post_rx_buffers(struct qlcnic_adapter *adapter,
+ 
+ static void dump_skb(struct sk_buff *skb, struct qlcnic_adapter *adapter)
+ {
+-	int i;
+-	unsigned char *data = skb->data;
+-
+-	pr_info(KERN_INFO "\n");
+-	for (i = 0; i < skb->len; i++) {
+-		QLCDB(adapter, DRV, "%02x ", data[i]);
+-		if ((i & 0x0f) == 8)
+-			pr_info(KERN_INFO "\n");
++	if (adapter->ahw->msg_enable & NETIF_MSG_DRV) {
++		char prefix[30];
++
++		scnprintf(prefix, sizeof(prefix), "%s: %s: ",
++			  dev_name(&adapter->pdev->dev), __func__);
++
++		print_hex_dump_debug(prefix, DUMP_PREFIX_NONE, 16, 1,
++				     skb->data, skb->len, true);
+ 	}
+ }
+ 
+
+
