@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbbADF3p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 00:29:45 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39631 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbbADF3n (ORCPT
+	id S1751213AbbADGVp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 01:21:45 -0500
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:40524 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbbADGVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 00:29:43 -0500
-Message-ID: <54A8CFBE.2010209@hitachi.com>
-Date: Sun, 04 Jan 2015 14:29:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sun, 4 Jan 2015 01:21:43 -0500
+Message-ID: <54A8DBF4.4050202@lwfinger.net>
+Date: Sun, 04 Jan 2015 00:21:40 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, mmarek@suse.cz,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        mingo@redhat.com, davem@davemloft.net, keescook@chromium.org,
-        tranmanphong@gmail.com, mpe@ellerman.id.au, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [PATCH v3 05/20] selftests/ftrace: add install target
- to enable test install
-References: <cover.1419387513.git.shuahkh@osg.samsung.com> <e84eeeecde70ecb3ab82c5f825fec359f9e967ff.1419387513.git.shuahkh@osg.samsung.com> <20150102104526.29df5641@gandalf.local.home>
-In-Reply-To: <20150102104526.29df5641@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Brett Rudley <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>
+CC: Hante Meuleman <meuleman@broadcom.com>, Kalle Valo <kvalo@adurom.com>,
+        Fabian Frederick <fabf@skynet.be>, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
+References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/03 0:45), Steven Rostedt wrote:
-> On Wed, 24 Dec 2014 09:27:41 -0700
-> Shuah Khan <shuahkh@osg.samsung.com> wrote:
-> 
->> Add a new make target to enable installing test. This target
->> installs test in the kselftest install location and add to the
->> kselftest script to run the test. Install target can be run
->> only from top level kernel source directory.
->>
->> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->> ---
->>  tools/testing/selftests/ftrace/Makefile | 11 ++++++++++-
->>  1 file changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/tools/testing/selftests/ftrace/Makefile b/tools/testing/selftests/ftrace/Makefile
->> index 76cc9f1..7c7cf42 100644
->> --- a/tools/testing/selftests/ftrace/Makefile
->> +++ b/tools/testing/selftests/ftrace/Makefile
->> @@ -1,7 +1,16 @@
->> +TEST_STR = /bin/sh ./ftracetest || echo ftrace selftests: [FAIL]
-> 
-> Is it ok that this removes the quotes around the echo string? I don't
-> see anything wrong about it, but I don't know if there's a shell out
-> there that will fail due to it.
+On 01/03/2015 06:47 PM, Rickard Strandqvist wrote:
+> Removes some functions that are not used anywhere:
+> dma_txflush() dma_txsuspended()
+>
+> This was partially found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>   drivers/net/wireless/brcm80211/brcmsmac/dma.c |   19 -------------------
+>   drivers/net/wireless/brcm80211/brcmsmac/dma.h |    2 --
+>   2 files changed, 21 deletions(-)
 
-Agreed, if possible, we'd better add quotes around the echo string
-as you did in 2/20 in this series.
+Just because file dma.c is involved, it does not need to be, nor should it be in 
+the subject line. You could specify the driver names in the file tree after 
+wireless. In this instance, one possible subject would be "brcm80211: brcmsmac: 
+Remove some unused functions". On the other hand, if you look at "git log" to 
+see past patches, the driver maintainers even leave off the brcm80211 part, thus 
+to match them, the subject should be "brcmsmac: Remove some unused functions".
 
-Anyway, you can also add my ack to this patch.
+As was suggested earlier, you need to look at the precedents. Keeping a uniform 
+method of patch naming helps when looking for patches in the git log.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you!
-
-> 
-> Other than than,
-> 
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> -- Steve
-> 
-> 
->> +
->>  all:
->>  
->> +install:
->> +ifdef INSTALL_KSFT_PATH
->> +	install ./ftracetest $(INSTALL_KSFT_PATH)
->> +	@cp -r test.d $(INSTALL_KSFT_PATH)
->> +	echo "$(TEST_STR)" >> $(KSELFTEST)
->> +endif
->> +
->>  run_tests:
->> -	@/bin/sh ./ftracetest || echo "ftrace selftests: [FAIL]"
->> +	@$(TEST_STR)
->>  
->>  clean:
->>  	rm -rf logs/*
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Larry
 
 
