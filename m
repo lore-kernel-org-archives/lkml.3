@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbbADTeq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 14:34:46 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:43465 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbbADTeo (ORCPT
+	id S1752841AbbADThF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 14:37:05 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:40276 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749AbbADThB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 14:34:44 -0500
+	Sun, 4 Jan 2015 14:37:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <1420394759-20345-1-git-send-email-me@mortis.eu>
-References: <1420394759-20345-1-git-send-email-me@mortis.eu>
-Date: Sun, 4 Jan 2015 11:34:43 -0800
-X-Google-Sender-Auth: Vew02XAeg-vI8rrWRB-8iaV2ebE
-Message-ID: <CA+55aFw8aMBF5uXekxATymQPTqwZHGJTL-jQx8zDqOwbaft+4g@mail.gmail.com>
-Subject: Re: [PATCH] Cleanup: snprintf() always NUL-terminates: depend on it
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Brian King <brking@us.ibm.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "open list:SCSI SUBSYSTEM" <linux-scsi@vger.kernel.org>
+In-Reply-To: <alpine.LNX.2.00.1501041045020.15927@nippy.intranet>
+References: <1420131732-31039-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<alpine.LNX.2.00.1501041045020.15927@nippy.intranet>
+Date: Sun, 4 Jan 2015 20:36:59 +0100
+X-Google-Sender-Auth: NSXx-rPQbeGa5fcUkTR_n0DVd-E
+Message-ID: <CAMuHMdXFu3n4d0dMZop186UF+QG=MtLHV=oQr+VszftpEA1kFQ@mail.gmail.com>
+Subject: Re: [PATCH] arch: m68k: mac: misc.c: Remove some unused functions
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Joshua Thompson <funaho@jurai.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 4, 2015 at 10:05 AM, Giel van Schijndel <me@mortis.eu> wrote:
-> Especially since one very strange piece of code seems to be written in
-> such a way that a NUL needs to be placed where a NUL is present already.
+On Sun, Jan 4, 2015 at 8:21 AM, Finn Thain <fthain@telegraphics.com.au> wrote:
+> On Thu, 1 Jan 2015, Rickard Strandqvist wrote:
+>> Removes some functions that are not used anywhere:
+>> mac_pram_write() mac_pram_read()
+>
+> If you remove those functions, you'd then find that all of the called
+> functions become unused:
+>
+> maciisi_read_pram
+> maciisi_write_pram
+> pmu_read_pram
+> pmu_write_pram
+> cuda_read_pram
+> cuda_write_pram
+> via_read_pram
+> via_write_pram
+>
+> I'd rather not remove all of this code. Better to finish the
+> implementation.
 
-Actually, it's worse than that. This:
+Indeed.
 
->         len = snprintf(fname, 99, "%s", buf);
-> -       fname[len-1] = '\0';
+> Would it be acceptable to utilize drivers/char/generic_nvram.c and
+> CONFIG_GENERIC_NVRAM? This is the PowerMac PRAM driver but looks generic
+> enough that it may not need any modification for 68k Macs.
 
-is complete garbage, since the return value of snprintf() is not the
-length of the result, but length of what the result *would* have been.
+Yes, that would be great.
 
-So if the string doesn't fit in 99 bytes, it will actively corrupt
-some random memory after the string. It's not writing zero to what was
-already zero, it's corrupting memory.
+Gr{oetje,eeting}s,
 
-Anyway, from a quick glance your patches look fine, but you need to
-sign off on them. See Documentation/SubmittingPatches.
+                        Geert
 
-                       Linus
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
