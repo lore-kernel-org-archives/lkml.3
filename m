@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbbADKSx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 05:18:53 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39918 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbbADKSv (ORCPT
+	id S1752639AbbADKlY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 05:41:24 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48018 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751743AbbADKlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 05:18:51 -0500
-Date: Sun, 4 Jan 2015 11:18:47 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: NeilBrown <neilb@suse.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
-Message-ID: <20150104101847.GA6122@amd>
-References: <20141211214801.4127.93914.stgit@notabene.brown>
- <20141211215943.4127.24792.stgit@notabene.brown>
- <20141228142010.GA3922@amd>
- <20150103103357.2406fc23@notabene.brown>
+	Sun, 4 Jan 2015 05:41:22 -0500
+Message-ID: <54A918D0.9060603@kernel.org>
+Date: Sun, 04 Jan 2015 10:41:20 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150103103357.2406fc23@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>
+CC: lars@metafoo.de, pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH 01/10] iio: imu: kmx61: Save odr_bits for later use
+References: <1419340953-23161-1-git-send-email-daniel.baluta@intel.com> <1419340953-23161-2-git-send-email-daniel.baluta@intel.com> <54A54F6B.1010307@gmx.de>
+In-Reply-To: <54A54F6B.1010307@gmx.de>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > +Optional child node:
-> > > +- a platform device listed as a child node will be probed and
-> > > +  powered-on whenever the tty is in use (open).
-> > > +
-> > >  Example:
-> > >  
-> > >  	uart@80230000 {
-> > 
-
-> But some line disciplines don't really want the char_dev.
-> N_MOUSE wants a serio device.
-> N_HCI wants an HCI device
-> N_GSM07010 wants 63 different tty char_devs.
-> N_IRDA and N_PPP ultimately want a net_dev.
-> etc.
+On 01/01/15 13:45, Hartmut Knaack wrote:
+> Daniel Baluta schrieb am 23.12.2014 um 14:22:
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> Reviewed-by: Hartmut Knaack <knaack.h@gmx.de>
+Applied to the togreg branch of iio.git - initially pushed out as testing
+for the autobuilders to play.
+>> ---
+>>  drivers/iio/imu/kmx61.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
+>> index 972424b..fe0cee7 100644
+>> --- a/drivers/iio/imu/kmx61.c
+>> +++ b/drivers/iio/imu/kmx61.c
+>> @@ -465,6 +465,8 @@ static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
+>>  	if (ret < 0)
+>>  		return ret;
+>>  
+>> +	data->odr_bits = odr_bits;
+>> +
+>>  	if (device & KMX61_ACC) {
+>>  		ret = kmx61_set_wake_up_odr(data, val, val2);
+>>  		if (ret)
+>>
 > 
-> It would be really nice if the uart would register the line disciple as a
-> child device, then the line discipline would register whatever it wants.
-
-Yes.
-
-> N_HCI activates (registers the hci dev) on HCIUARTSETPROTO ioctl.  A child
->   device would need a way to specify the protocol I resume.
-> N_MOUSE activates on a 'read' on the tty - and deactivates when the read
->   completes.
-> N_GSM0710 activates immediately that the ldisc is activated, as does N_IRDA
-> N_PPP seems to want a PPPIOCNEWUNIT ioctl to fully register.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> Doing any of these in a driver for a uart slave device would certainly be
-> possible.  I wonder if it is something we really want to do in the kernel
-> though.  What is the gain over providing sufficient information in the
-> KOBJ_ADD uevent so that udev can do the required work in user-space?
 
-Consistency. If you have bluetooth on USB, it automatically works,
-without userspace help. If we have mouse on USB, it automatically
-works, etc...
-
-> However I do like the idea of having the UART probe the child instead of
-> registering a tty.  It could pass the tty_operations structure to the child,
-> and the child could then register a tty with a slightly different
-> tty_operations structure, allowing it to capture any operations that it wants
-> to capture (such as open/close).
-> I might try coding that and see what it looks like...
-
-Lets have a look...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
