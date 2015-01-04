@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771AbbADSAp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 13:00:45 -0500
-Received: from borg.tf-network.de ([62.75.218.204]:46024 "EHLO
-	borg.tf-network.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667AbbADSAo (ORCPT
+	id S1752936AbbADTKr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 14:10:47 -0500
+Received: from khitomer.mortis.eu ([185.27.175.75]:11418 "EHLO
+	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782AbbADTK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 13:00:44 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jan 2015 13:00:43 EST
-From: Thomas D <whissi@whissi.de>
+	Sun, 4 Jan 2015 14:10:29 -0500
+From: Giel van Schijndel <me@mortis.eu>
 To: linux-kernel@vger.kernel.org
-Cc: Thomas D <whissi@whissi.de>,
-        Mark Asselstine <mark.asselstine@windriver.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH] tools/power: turbostat: Use $(CURDIR) instead of $(PWD) in Makefile
-Date: Sun,  4 Jan 2015 18:52:43 +0100
-Message-Id: <1420393963-30645-1-git-send-email-whissi@whissi.de>
-X-Mailer: git-send-email 2.2.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Cc: Giel van Schijndel <me@mortis.eu>, Kalle Valo <kvalo@codeaurora.org>,
+        Eliad Peller <eliad@wizery.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arik Nemtsov <arik@wizery.com>,
+        linux-wireless@vger.kernel.org (open list:TI WILINK WIRELES...),
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS)
+Subject: [PATCH 1/2] Align member-assigns in a structure-copy block
+Date: Sun,  4 Jan 2015 19:00:22 +0100
+Message-Id: <1420394427-19509-1-git-send-email-me@mortis.eu>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit ee0778a30153 ("tools/power: turbostat: make Makefile a bit
-more capable") turbostat’s Makefile is using
-
-  [...]
-  BUILD_OUTPUT    := $(PWD)
-  [...]
-
-which obviously causes trouble when building "turbostat" with
-
-  make -C /usr/src/linux/tools/power/x86/turbostat ARCH=x86 turbostat
-
-because GNU make doesn’t update nor guarantee that $PWD is set.
-
-This patch changes the Makefile to use $CURDIR instead, which GNU make
-guarantees to set and update (i.e. when using "make –C ...").
-
-Link: https://bugs.gentoo.org/show_bug.cgi?id=533918
-Fixes: ee0778a30153 ("tools/power: turbostat: make Makefile a bit more capable")
-Signed-off-by: Thomas D. <whissi@whissi.de>
-Cc: Mark Asselstine <mark.asselstine@windriver.com>
-Cc: Len Brown <len.brown@intel.com>
+This highlights the differences (errors).
 ---
- tools/power/x86/turbostat/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ti/wlcore/acx.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
-index d1b3a36..6dd4cad 100644
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -1,5 +1,5 @@
- CC		= $(CROSS_COMPILE)gcc
--BUILD_OUTPUT	:= $(PWD)
-+BUILD_OUTPUT	:= $(CURDIR)
- PREFIX		:= /usr
- DESTDIR		:=
+diff --git a/drivers/net/wireless/ti/wlcore/acx.c b/drivers/net/wireless/ti/wlcore/acx.c
+index b924cea..beb354c 100644
+--- a/drivers/net/wireless/ti/wlcore/acx.c
++++ b/drivers/net/wireless/ti/wlcore/acx.c
+@@ -1715,17 +1715,17 @@ int wl12xx_acx_config_hangover(struct wl1271 *wl)
+ 		goto out;
+ 	}
  
+-	acx->recover_time = cpu_to_le32(conf->recover_time);
+-	acx->hangover_period = conf->hangover_period;
+-	acx->dynamic_mode = conf->dynamic_mode;
+-	acx->early_termination_mode = conf->early_termination_mode;
+-	acx->max_period = conf->max_period;
+-	acx->min_period = conf->min_period;
+-	acx->increase_delta = conf->increase_delta;
+-	acx->decrease_delta = conf->decrease_delta;
+-	acx->quiet_time = conf->quiet_time;
+-	acx->increase_time = conf->increase_time;
+-	acx->window_size = acx->window_size;
++	acx->recover_time               = cpu_to_le32(conf->recover_time);
++	acx->hangover_period            = conf->hangover_period;
++	acx->dynamic_mode               = conf->dynamic_mode;
++	acx->early_termination_mode     = conf->early_termination_mode;
++	acx->max_period                 = conf->max_period;
++	acx->min_period                 = conf->min_period;
++	acx->increase_delta             = conf->increase_delta;
++	acx->decrease_delta             = conf->decrease_delta;
++	acx->quiet_time                 = conf->quiet_time;
++	acx->increase_time              = conf->increase_time;
++	acx->window_size                = acx->window_size;
+ 
+ 	ret = wl1271_cmd_configure(wl, ACX_CONFIG_HANGOVER, acx,
+ 				   sizeof(*acx));
 -- 
-2.2.1
+2.1.4
 
