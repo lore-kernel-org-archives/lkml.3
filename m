@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbbADPtJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:49:09 -0500
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630AbbADPtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:49:07 -0500
-From: Richard Weinberger <richard@nod.at>
-To: ssantosh@kernel.org
-Cc: linux-kernel@vger.kernel.org, d.walter@0x90.at,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] ddr: Use less generic identifiers
-Date: Sun,  4 Jan 2015 16:48:55 +0100
-Message-Id: <1420386535-22530-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
+	id S1752766AbbADPvE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:51:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42405 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630AbbADPvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 10:51:01 -0500
+Date: Sun, 4 Jan 2015 16:49:43 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Mark Salter <msalter@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [RFC/PATCHSET 00/30] perf tools: New build framework
+Message-ID: <20150104154943.GA22707@krava.brq.redhat.com>
+References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
+ <20150102173612.GA5941@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150102173612.GA5941@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At least on UML this identifiers clash with register names.
-Use something less generic than Rx, Cx and Cx.
+On Fri, Jan 02, 2015 at 06:36:12PM +0100, Ingo Molnar wrote:
+> 
+> * Jiri Olsa <jolsa@kernel.org> wrote:
+> 
+> > [...] The basic idea is the same as in kbuild system, with some 
+> > minor changes to allow for multiple binaries build definitions.
+> 
+> >  tools/perf/Build                                |  48 ++
+> >  tools/perf/Build.include                        |  75 ++++
+> >  tools/perf/Documentation/Build                  | 123 +++++
+> >  tools/perf/Makefile.build                       | 122 +++++
+> >  tools/perf/Makefile.perf                        | 566 +++---------------------
+> 
+> >  47 files changed, 827 insertions(+), 541 deletions(-)
+> 
+> Even the diffstat looks pretty good: only a modest line count 
+> increase.
+> 
+> It would be useful to put this (and other build features - such 
+> as features/parallelisation support) into tools/kbuild/ though, 
+> so that other tooling can make easy use of it as well. For 
+> example tools/kvm/ (an external project) started off with an 
+> earlier version of the perf build system.
 
-  CC      lib//jedec_ddr_data.o
-In file included from ./arch/um/include/asm/ptrace-generic.h:11:0,
-                 from ./arch/x86/um/asm/ptrace.h:8,
-                 from ./arch/x86/include/asm/alternative.h:8,
-                 from ./arch/x86/include/asm/bitops.h:16,
-                 from include/linux/bitops.h:36,
-                 from include/linux/kernel.h:10,
-                 from include/linux/list.h:8,
-                 from include/linux/module.h:9,
-                 from lib//jedec_ddr_data.c:14:
-./arch/x86/include/uapi/asm/ptrace-abi.h:28:0: warning: "R15" redefined [enabled by default]
- #define R15 0
+right, I'll put it in tools/build.. looks like the tools/lib/*
+could use it, probably others as well
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
-Please note that this patch is untested.
+thanks,
+jirka
 
-Thanks,
-//richard
----
- drivers/memory/emif.c      |  4 ++--
- include/memory/jedec_ddr.h | 36 ++++++++++++++++++------------------
- lib/jedec_ddr_data.c       | 20 ++++++++++----------
- 3 files changed, 30 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 04644e7..e0aa09f 100644
---- a/drivers/memory/emif.c
-+++ b/drivers/memory/emif.c
-@@ -439,7 +439,7 @@ static u32 get_sdram_tim_1_shdw(const struct lpddr2_timings *timings,
- 	val = max(min_tck->tWTR, DIV_ROUND_UP(timings->tWTR, t_ck)) - 1;
- 	tim1 |= val << T_WTR_SHIFT;
- 
--	if (addressing->num_banks == B8)
-+	if (addressing->num_banks == DDR_BANK_8)
- 		val = DIV_ROUND_UP(timings->tFAW, t_ck*4);
- 	else
- 		val = max(min_tck->tRRD, DIV_ROUND_UP(timings->tRRD, t_ck));
-@@ -476,7 +476,7 @@ static u32 get_sdram_tim_1_shdw_derated(const struct lpddr2_timings *timings,
- 	 * tFAW is approximately 4 times tRRD. So add 1875*4 = 7500ps
- 	 * to tFAW for de-rating
- 	 */
--	if (addressing->num_banks == B8) {
-+	if (addressing->num_banks == DDR_BANK_8) {
- 		val = DIV_ROUND_UP(timings->tFAW + 7500, 4 * t_ck) - 1;
- 	} else {
- 		val = DIV_ROUND_UP(timings->tRRD + 1875, t_ck);
-diff --git a/include/memory/jedec_ddr.h b/include/memory/jedec_ddr.h
-index ddad0f8..39144d0 100644
---- a/include/memory/jedec_ddr.h
-+++ b/include/memory/jedec_ddr.h
-@@ -40,28 +40,28 @@
- #define DDR_IO_WIDTH_32		4
- 
- /* Number of Row bits */
--#define R9			9
--#define R10			10
--#define R11			11
--#define R12			12
--#define R13			13
--#define R14			14
--#define R15			15
--#define R16			16
-+#define DDR_ROW_9		9
-+#define DDR_ROW_10		10
-+#define DDR_ROW_11		11
-+#define DDR_ROW_12		12
-+#define DDR_ROW_13		13
-+#define DDR_ROW_14		14
-+#define DDR_ROW_15		15
-+#define DDR_ROW_16		16
- 
- /* Number of Column bits */
--#define C7			7
--#define C8			8
--#define C9			9
--#define C10			10
--#define C11			11
--#define C12			12
-+#define DDR_COL_7		7
-+#define DDR_COL_8		8
-+#define DDR_COL_9		9
-+#define DDR_COL_10		10
-+#define DDR_COL_11		11
-+#define DDR_COL_12		12
- 
- /* Number of Banks */
--#define B1			0
--#define B2			1
--#define B4			2
--#define B8			3
-+#define DDR_BANK_1		0
-+#define DDR_BANK_2		1
-+#define DDR_BANK_4		2
-+#define DDR_BANK_8		3
- 
- /* Refresh rate in nano-seconds */
- #define T_REFI_15_6		15600
-diff --git a/lib/jedec_ddr_data.c b/lib/jedec_ddr_data.c
-index 6d2cbf1..2181be4 100644
---- a/lib/jedec_ddr_data.c
-+++ b/lib/jedec_ddr_data.c
-@@ -16,16 +16,16 @@
- /* LPDDR2 addressing details from JESD209-2 section 2.4 */
- const struct lpddr2_addressing
- 	lpddr2_jedec_addressing_table[NUM_DDR_ADDR_TABLE_ENTRIES] = {
--	{B4, T_REFI_15_6, T_RFC_90}, /* 64M */
--	{B4, T_REFI_15_6, T_RFC_90}, /* 128M */
--	{B4, T_REFI_7_8,  T_RFC_90}, /* 256M */
--	{B4, T_REFI_7_8,  T_RFC_90}, /* 512M */
--	{B8, T_REFI_7_8, T_RFC_130}, /* 1GS4 */
--	{B8, T_REFI_3_9, T_RFC_130}, /* 2GS4 */
--	{B8, T_REFI_3_9, T_RFC_130}, /* 4G */
--	{B8, T_REFI_3_9, T_RFC_210}, /* 8G */
--	{B4, T_REFI_7_8, T_RFC_130}, /* 1GS2 */
--	{B4, T_REFI_3_9, T_RFC_130}, /* 2GS2 */
-+	{DDR_BANK_4, T_REFI_15_6, T_RFC_90}, /* 64M */
-+	{DDR_BANK_4, T_REFI_15_6, T_RFC_90}, /* 128M */
-+	{DDR_BANK_4, T_REFI_7_8,  T_RFC_90}, /* 256M */
-+	{DDR_BANK_4, T_REFI_7_8,  T_RFC_90}, /* 512M */
-+	{DDR_BANK_8, T_REFI_7_8, T_RFC_130}, /* 1GS4 */
-+	{DDR_BANK_8, T_REFI_3_9, T_RFC_130}, /* 2GS4 */
-+	{DDR_BANK_8, T_REFI_3_9, T_RFC_130}, /* 4G */
-+	{DDR_BANK_8, T_REFI_3_9, T_RFC_210}, /* 8G */
-+	{DDR_BANK_4, T_REFI_7_8, T_RFC_130}, /* 1GS2 */
-+	{DDR_BANK_4, T_REFI_3_9, T_RFC_130}, /* 2GS2 */
- };
- EXPORT_SYMBOL_GPL(lpddr2_jedec_addressing_table);
- 
--- 
-1.8.4.5
-
+> 
+> Sharing that would make quite a bit of sense, as tooling (and 
+> most user-space project) build systems are usually have pretty 
+> poor quality.
+> 
+> Thanks,
+> 
+> 	Ingo
