@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931AbbADIVt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 03:21:49 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:37825 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbbADIVr (ORCPT
+	id S1752613AbbADIYn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 03:24:43 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:35475 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbbADIYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 03:21:47 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUUkp4OrPWfw7PEpt2DDEyrf+z1SAQcXpREOXoA7JQ0stg@mail.gmail.com>
-References: <CA+icZUUkp4OrPWfw7PEpt2DDEyrf+z1SAQcXpREOXoA7JQ0stg@mail.gmail.com>
-Date: Sun, 4 Jan 2015 09:21:46 +0100
-Message-ID: <CA+icZUV8Zu=fE5Jj-Fo5a3TTz-C2r2L5zWJzEcrfSbdq5Zf4sA@mail.gmail.com>
-Subject: Re: libaio tarballs on <kernel.org>
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Guillem Jover <guillem@debian.org>, linux-aio <linux-aio@kvack.org>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 4 Jan 2015 03:24:41 -0500
+From: Ning Zhou <zhou.ning.gd@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: gulsah.1004@gmail.com, daniel.dy.ngu@gmail.com, josh@joshtriplett.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ning Zhou <zhou.ning.gd@gmail.com>
+Subject: [PATCH] staging: gdm724x: fix space coding style issue in gdm_mux.c
+Date: Sun,  4 Jan 2015 09:23:44 +0100
+Message-Id: <1420359824-7081-1-git-send-email-zhou.ning.gd@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 1, 2015 at 10:23 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> [ CC libaio Debian/Ubuntu maintainer ]
->
-> Hi Jeff,
->
-> I am playing with fio (manually compiled v2.2.3) and wanted to update
-> also my libaio development package on Ubuntu/precise.
->
-> Both dsc (description) files of Debian and Ubuntu libaio source
-> packages v0.3.110 [1,2] point to a URL on <kernel.org> [3].
-> This space is empty.
->
-> Google told me about [4].
->
-> My question: Where does someone get official libaio tarballs?
->
-> Thanks in advance.
->
-> Regards,
-> - Sedat -
->
-> [0.1] http://brick.kernel.dk/snaps/fio-2.2.3.tar.bz2
-> [0.2] http://git.kernel.org/cgit/linux/kernel/git/axboe/fio.git/tree/README#n101
-> [1] http://ftp.de.debian.org/debian/pool/main/liba/libaio/libaio_0.3.110-1.dsc
-> [2] http://archive.ubuntu.com/ubuntu/pool/main/liba/libaio/libaio_0.3.110-1.dsc
-> [3] https://www.kernel.org/pub/linux/libs/aio/
-> [4] https://git.fedorahosted.org/cgit/libaio.git/
+This is a patch to fix a space error found by the checkpatch.pl in
+file gdm_mux.c.
 
-[ CC Ben and linux-aio ML ]
+Signed-off-by: Ning Zhou <zhou.ning.gd@gmail.com>
+---
+ drivers/staging/gdm724x/gdm_mux.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I have also seen... with outdated material?
+diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
+index b5b063a..d1ab996 100644
+--- a/drivers/staging/gdm724x/gdm_mux.c
++++ b/drivers/staging/gdm724x/gdm_mux.c
+@@ -220,7 +220,7 @@ static int up_to_host(struct mux_rx *r)
+ static void do_rx(struct work_struct *work)
+ {
+ 	struct mux_dev *mux_dev =
+-		container_of(work, struct mux_dev , work_rx.work);
++		container_of(work, struct mux_dev, work_rx.work);
+ 	struct mux_rx *r;
+ 	struct rx_cxt *rx = (struct rx_cxt *)&mux_dev->rx;
+ 	unsigned long flags;
+-- 
+1.9.1
 
-- Sedat -
-
-[5] http://www.kvack.org/~bcrl/aio/
-[6] https://www.kernel.org/pub/linux/kernel/people/bcrl/aio/
