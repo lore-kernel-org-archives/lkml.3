@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbbADUnm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 15:43:42 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42972 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752778AbbADUnk (ORCPT
+	id S1752877AbbADUp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 15:45:26 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:44098 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752778AbbADUpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 15:43:40 -0500
-Date: Sun, 4 Jan 2015 20:43:23 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+	Sun, 4 Jan 2015 15:45:25 -0500
+Date: Sun, 4 Jan 2015 15:45:22 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        Marc Zyngier <marc.zyngier@arm.com>,
+cc: Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         kernel list <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
  pyaudio (and probably more)
-Message-ID: <20150104204323.GA12302@n2100.arm.linux.org.uk>
-References: <20150104190123.GA20153@amd>
- <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
- <CA+55aFxMbicJZXzzHc8=vdwCzhz4kdrmZEKjLadZXr7aySZ4zg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <CA+55aFxMbicJZXzzHc8=vdwCzhz4kdrmZEKjLadZXr7aySZ4zg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Message-ID: <alpine.LFD.2.11.1501041526390.18844@knanqh.ubzr>
+References: <20150104190123.GA20153@amd> <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr> <CA+55aFxMbicJZXzzHc8=vdwCzhz4kdrmZEKjLadZXr7aySZ4zg@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 12:22:36PM -0800, Linus Torvalds wrote:
+On Sun, 4 Jan 2015, Linus Torvalds wrote:
+
 > On Sun, Jan 4, 2015 at 12:03 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
 > >
 > > NAK.
@@ -38,31 +36,44 @@ On Sun, Jan 04, 2015 at 12:22:36PM -0800, Linus Torvalds wrote:
 >   "SHUT THE FUCK UP"
 > 
 > you cannot NAK regression fixes. Seriously.
+> 
+> I don't understand how people can't get this simple thing.
 
-How about we calm down and take some informed view instead of throwing
-mud?  I'd never thought I'd have to be doing this but it seems necessary.
+OK, let's look at the issue more deeply then.
 
-Yes, it's bad that we now have a userspace breakage from removing the
-bogomips, but a simple revert of the patch doesn't fix it properly.  It
-_may_ seem to get things going again by providing a value, but that
-value may not be what was once provided back in the days that these
-programs were written.
+We're talking about exporting a bogomips entry via /proc/cpuinfo.
 
-The problem is that we now have hardware timers providing the kernel's
-delay implementation, which makes the published "bogomips" value no
-longer meaningful for the CPU speed.
+On ARM the calibration loop is no longer performed because udelay() is 
+based on a hardware counter these days.  Why? because the calibration 
+was completely unreliable in the presence of CPU frequency scaling, and 
+other modern hardware niceties.  
 
-So, merely reverting the patch doesn't fix the problem.  So, Nico's
-NAK on the simple revert is quite right.
+Still, for a while, we did export the calibration loop value for 
+/proc/cpuinfo's sake.  Yet people complained because the exported value 
+was "wrong".  Of course it is wrong as it is just impossible to get 
+"right", unless you have antique hardware that is.
 
-Instead of throwing insults, what we need to do is to approach this
-calmly, and work out what we can do to fix it properly.
+> No regressions. If user mode breaks, it is absolutely *never*
+> acceptable to blame user mode.
+> 
+> Occasionally there may be major overriding reasons (security issue,
+> whatever), but even then we bend over *backwards* trying to make sure
+> breakage is minimal.
 
-I'm *not* going to be looking at this until at least mid-week because
-I'm still on my Christmas break, but also I'm unwell which has left me
-severely lacking sleep.  If others want to do all the necessary
-research, then be my guest.
+I'm all for ensuring breakage is minimal.  That'd imply settling on a 
+good phony bogomips value that is no more broken than the real one was 
+when it was exported.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+> Christ people. Why does this even have to be discussed any more?
+
+Because we're discussing a choice between two evils.  The actual 
+regression happened when people upgraded their antique hardware and 
+expected the bogomips to still work with new hardware.  Even if the 
+$subject commit is reverted, that won't solve the wrong bogomips problem 
+and different people will start complaining again.
+
+As I mentioned earlier, putting the entry back is not a problem if we 
+may find the best phony number to go along with it.
+
+
+Nicolas
