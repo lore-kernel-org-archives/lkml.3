@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbbADA5A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Jan 2015 19:57:00 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:63511 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbbADA46 (ORCPT
+	id S1754250AbbAET5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:57:52 -0500
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:61515 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336AbbAET5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Jan 2015 19:56:58 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] btrfs: reada: Remove unused function
-Date: Sun,  4 Jan 2015 01:59:57 +0100
-Message-Id: <1420333197-6245-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 5 Jan 2015 14:57:50 -0500
+Date: Sat, 3 Jan 2015 21:00:53 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Pankaj Jangra <jangra.pankaj9@gmail.com>
+Cc: Anson Huang <b20788@freescale.com>, linux-pm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rui.zhang@intel.com
+Subject: Re: [PATCH] Thermal: imx: add clk disable/enable for suspend/resume
+Message-ID: <20150104010051.GA26438@developer>
+References: <1420468153-19142-1-git-send-email-b20788@freescale.com>
+ <CADTbHxpExF7Qzz9-HCVWWbU24ymBV1wLt4ON_6avY_oLkknFaQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
+Content-Disposition: inline
+In-Reply-To: <CADTbHxpExF7Qzz9-HCVWWbU24ymBV1wLt4ON_6avY_oLkknFaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function btrfs_reada_detach() that is not used anywhere.
 
-This was partially found by using a static code analysis program called cppcheck.
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- fs/btrfs/ctree.h |    1 -
- fs/btrfs/reada.c |    9 +--------
- 2 files changed, 1 insertion(+), 9 deletions(-)
+Hello,
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index fe69edd..030a7b5 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -4111,7 +4111,6 @@ struct reada_control {
- struct reada_control *btrfs_reada_add(struct btrfs_root *root,
- 			      struct btrfs_key *start, struct btrfs_key *end);
- int btrfs_reada_wait(void *handle);
--void btrfs_reada_detach(void *handle);
- int btree_readahead_hook(struct btrfs_root *root, struct extent_buffer *eb,
- 			 u64 start, int err);
- 
-diff --git a/fs/btrfs/reada.c b/fs/btrfs/reada.c
-index b63ae20..97073c0c 100644
---- a/fs/btrfs/reada.c
-+++ b/fs/btrfs/reada.c
-@@ -37,7 +37,7 @@
-  * To trigger a readahead, btrfs_reada_add must be called. It will start
-  * a read ahead for the given range [start, end) on tree root. The returned
-  * handle can either be used to wait on the readahead to finish
-- * (btrfs_reada_wait), or to send it to the background (btrfs_reada_detach).
-+ * (btrfs_reada_wait).
-  *
-  * The read ahead works as follows:
-  * On btrfs_reada_add, the root of the tree is inserted into a radix_tree.
-@@ -986,10 +986,3 @@ int btrfs_reada_wait(void *handle)
- 	return 0;
- }
- #endif
--
--void btrfs_reada_detach(void *handle)
--{
--	struct reada_control *rc = handle;
--
--	kref_put(&rc->refcnt, reada_control_release);
--}
--- 
-1.7.10.4
+On Mon, Jan 05, 2015 at 10:34:11PM +0530, Pankaj Jangra wrote:
+> Hi Anson,
+>=20
+> On Mon, Jan 5, 2015 at 7:59 PM, Anson Huang <b20788@freescale.com> wrote:
+>=20
+> > Thermal sensor's clk is from pll3_usb_otg, per hardware
+> > design requirement, need to make sure pll3_usb_otg is disabled
+> > before STOP mode is entered, otherwise, all PFDs under it may
+> > enter incorrect state, this patch disables pll3_usb_otg before
+> > suspend and enables it after resume.
+> >
+> > Signed-off-by: Anson Huang <b20788@freescale.com>
+> >
+> > +++ b/drivers/thermal/imx_thermal.c
+> > @@ -600,6 +600,8 @@ static int imx_thermal_suspend(struct device *dev)
+> >         regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP=
+);
+> >         regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
+> >         data->mode =3D THERMAL_DEVICE_DISABLED;
+> > +       if (!IS_ERR(data->thermal_clk))
+> >
+> I think you do not need to check for the error condition here. Because
+> during the probe of driver, this condition is already checked and if the
+> clock get is failed,
+> it will fail the driver probing itself.
+>=20
 
+Agreed here, no need for this extra check.
+
+> +               clk_disable_unprepare(data->thermal_clk);
+>=20
+>=20
+> >         return 0;
+> >  }
+> > @@ -609,6 +611,8 @@ static int imx_thermal_resume(struct device *dev)
+> >         struct imx_thermal_data *data =3D dev_get_drvdata(dev);
+> >         struct regmap *map =3D data->tempmon;
+> >
+> > +       if (!IS_ERR(data->thermal_clk))
+> >
+> Same as above.
+>=20
+> > +               clk_prepare_enable(data->thermal_clk);
+> >         /* Enabled thermal sensor after resume */
+> >         regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
+> >         regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP=
+);
+> > --
+> >
+>=20
+> Else changes looks good to me.
+>=20
+> -- Pankaj Jangra
+>=20
+> > 1.9.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUqJC6AAoJEMLUO4d9pOJW0UoIAIQl8dL45l3dijE6jZaQPpqt
+4V2M9iYDzsE4cBg49Fmk+Y3nSDO6Vjn5eleOxgKIQNNnAdNuCZxWJyOXwQrOvsr1
+x4UPyI+9n/iMoQPtmnL5kMBOTNmymeoctW4m6w9M06gInIXk8dksi8YwThylFle3
+587BF2cFFo9RY6J2dnd2k2+1t2HTVV44kT7OtWkMbmIrIxqSma0VRdLhtAOoa+sg
+GYYf13vS9CQZIvM+GpuooMIphwBfYnFTxtvUM25o8HygztOw1DPtCQRsNflaSDgX
+bZEQZ6h0UM++ltAvl4DM+EhnOVWDvHFke2RKoxnI7rp5umU9s8zJoOsbLZ/EJ3I=
+=WRjH
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
