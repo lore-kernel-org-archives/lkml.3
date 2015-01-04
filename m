@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbbADPlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:41:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586AbbADPlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:41:05 -0500
-Date: Sun, 4 Jan 2015 17:40:49 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "open list:VIRTIO CORE, NET..." 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 2/2] virtio: don't free memory until the underlying
- struct device has been released
-Message-ID: <20150104154049.GA6546@redhat.com>
-References: <1420228060-18721-1-git-send-email-sasha.levin@oracle.com>
- <1420228060-18721-2-git-send-email-sasha.levin@oracle.com>
- <20150104112641.GB4336@redhat.com>
- <54A9563F.3070902@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A9563F.3070902@oracle.com>
+	id S1752752AbbADPky (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:40:54 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:60606 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586AbbADPkw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 10:40:52 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Kalle Valo <kvalo@adurom.com>, Pavel Machek <pavel@ucw.cz>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        David Gnedt <david.gnedt@davizone.at>,
+        George Spelvin <linux@horizon.com>,
+        Surendra Patil <surendra.tux@gmail.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] wl1251: Remove unused function
+Date: Sun,  4 Jan 2015 16:43:52 +0100
+Message-Id: <1420386232-12344-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 10:03:27AM -0500, Sasha Levin wrote:
-> On 01/04/2015 06:26 AM, Michael S. Tsirkin wrote:
-> > On Fri, Jan 02, 2015 at 02:47:40PM -0500, Sasha Levin wrote:
-> >> > When releasing a virtio device, We can't free a struct virtio_device until the
-> >> > underlying struct device has been released, which might not happen immediately
-> >> > on device_unregister() even if that was the device's last reference.
-> >> > 
-> >> > Instead, free the memory only once we know the device is gone in the release
-> >> > callback.
-> >> > 
-> >> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> > 
-> > Isn't this an old bug: do we need to copy stable on a fix?
-> > 
-> > What is the behaviour without this patch?
-> > Is there a way to make this cause a crash?
-> 
-> It will oops if CONFIG_DEBUG_KOBJECT_RELEASE is enabled. I guess
-> it needs to go to stable as well.
-> 
-> 
-> Thanks,
-> Sasha
+Remove the function wl1251_cmd_read_memory() that is not used anywhere.
 
-I see.
+This was partially found by using a static code analysis program called cppcheck.
 
-It's probably a good idea to document the crash in the commit log,
-and also add a code comment.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/net/wireless/ti/wl1251/cmd.c |   40 ----------------------------------
+ drivers/net/wireless/ti/wl1251/cmd.h |    2 --
+ 2 files changed, 42 deletions(-)
 
-I'll post the series with these minor tweaks, please confirm
-that this fixes the issues for you.
-
+diff --git a/drivers/net/wireless/ti/wl1251/cmd.c b/drivers/net/wireless/ti/wl1251/cmd.c
+index ede31f0..26f4d74 100644
+--- a/drivers/net/wireless/ti/wl1251/cmd.c
++++ b/drivers/net/wireless/ti/wl1251/cmd.c
+@@ -346,46 +346,6 @@ out:
+ 	return ret;
+ }
+ 
+-int wl1251_cmd_read_memory(struct wl1251 *wl, u32 addr, void *answer,
+-			   size_t len)
+-{
+-	struct cmd_read_write_memory *cmd;
+-	int ret = 0;
+-
+-	wl1251_debug(DEBUG_CMD, "cmd read memory");
+-
+-	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
+-	if (!cmd) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
+-
+-	WARN_ON(len > MAX_READ_SIZE);
+-	len = min_t(size_t, len, MAX_READ_SIZE);
+-
+-	cmd->addr = addr;
+-	cmd->size = len;
+-
+-	ret = wl1251_cmd_send(wl, CMD_READ_MEMORY, cmd, sizeof(*cmd));
+-	if (ret < 0) {
+-		wl1251_error("read memory command failed: %d", ret);
+-		goto out;
+-	}
+-
+-	/* the read command got in, we can now read the answer */
+-	wl1251_mem_read(wl, wl->cmd_box_addr, cmd, sizeof(*cmd));
+-
+-	if (cmd->header.status != CMD_STATUS_SUCCESS)
+-		wl1251_error("error in read command result: %d",
+-			     cmd->header.status);
+-
+-	memcpy(answer, cmd->value, len);
+-
+-out:
+-	kfree(cmd);
+-	return ret;
+-}
+-
+ int wl1251_cmd_template_set(struct wl1251 *wl, u16 cmd_id,
+ 			    void *buf, size_t buf_len)
+ {
+diff --git a/drivers/net/wireless/ti/wl1251/cmd.h b/drivers/net/wireless/ti/wl1251/cmd.h
+index d824ff9..5f35430 100644
+--- a/drivers/net/wireless/ti/wl1251/cmd.h
++++ b/drivers/net/wireless/ti/wl1251/cmd.h
+@@ -40,8 +40,6 @@ int wl1251_cmd_data_path_tx(struct wl1251 *wl, u8 channel, bool enable);
+ int wl1251_cmd_join(struct wl1251 *wl, u8 bss_type, u8 channel,
+ 		    u16 beacon_interval, u8 dtim_interval);
+ int wl1251_cmd_ps_mode(struct wl1251 *wl, u8 ps_mode);
+-int wl1251_cmd_read_memory(struct wl1251 *wl, u32 addr, void *answer,
+-			   size_t len);
+ int wl1251_cmd_template_set(struct wl1251 *wl, u16 cmd_id,
+ 			    void *buf, size_t buf_len);
+ int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_t ssid_len,
 -- 
-MST
+1.7.10.4
+
