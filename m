@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbbADPDr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:03:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24855 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586AbbADPDq (ORCPT
+	id S1752747AbbADPTG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:19:06 -0500
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:22235 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752599AbbADPTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:03:46 -0500
-Message-ID: <54A9563F.3070902@oracle.com>
-Date: Sun, 04 Jan 2015 10:03:27 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 4 Jan 2015 10:19:01 -0500
+From: Jisheng Zhang <jszhang@marvell.com>
+To: <chris@printf.net>, <ulf.hansson@linaro.org>
+CC: <peter.griffin@linaro.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Jisheng Zhang <jszhang@marvell.com>
+Subject: [PATCH next 0/2] mmc: sdhci-pxav3: fix unbalanced pm and clock issues
+Date: Sun, 4 Jan 2015 23:15:46 +0800
+Message-ID: <1420384548-7816-1-git-send-email-jszhang@marvell.com>
+X-Mailer: git-send-email 2.1.4
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "open list:VIRTIO CORE, NET..." 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [PATCH 2/2] virtio: don't free memory until the underlying struct
- device has been released
-References: <1420228060-18721-1-git-send-email-sasha.levin@oracle.com> <1420228060-18721-2-git-send-email-sasha.levin@oracle.com> <20150104112641.GB4336@redhat.com>
-In-Reply-To: <20150104112641.GB4336@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-04_03:2015-01-02,2015-01-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1501040160
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2015 06:26 AM, Michael S. Tsirkin wrote:
-> On Fri, Jan 02, 2015 at 02:47:40PM -0500, Sasha Levin wrote:
->> > When releasing a virtio device, We can't free a struct virtio_device until the
->> > underlying struct device has been released, which might not happen immediately
->> > on device_unregister() even if that was the device's last reference.
->> > 
->> > Instead, free the memory only once we know the device is gone in the release
->> > callback.
->> > 
->> > Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> 
-> Isn't this an old bug: do we need to copy stable on a fix?
-> 
-> What is the behaviour without this patch?
-> Is there a way to make this cause a crash?
+These two patches fix unbalanced pm and clock issues. The clock unbalance
+issue would cause power consumption regression because the clock will never
+be gated at runtime PM suspend.
 
-It will oops if CONFIG_DEBUG_KOBJECT_RELEASE is enabled. I guess
-it needs to go to stable as well.
+Jisheng Zhang (2):
+  mmc: sdhci-pxav3: fix unbalanced clock issues during probe
+  mmc: sdhci-pxav3: fix pm unbalanced issue in -> remove()
 
+ drivers/mmc/host/sdhci-pxav3.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-Thanks,
-Sasha
+-- 
+2.1.4
 
