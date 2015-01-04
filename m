@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124AbbADXpS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 18:45:18 -0500
-Received: from sonata.ens-lyon.org ([140.77.166.138]:40199 "EHLO
-	sonata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbbADXpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 18:45:16 -0500
-Date: Mon, 5 Jan 2015 00:45:01 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
-        akpm@linux-foundation.org, jslaby@suse.cz,
-        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCHv5 2/2] INPUT: Introduce generic trigger/LED pairs to
- input LEDs
-Message-ID: <20150104234501.GJ25336@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
-	akpm@linux-foundation.org, jslaby@suse.cz,
-	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-	Arnaud Patard <arnaud.patard@rtp-net.org>,
-	Peter Korsgaard <jacmet@sunsite.dk>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Rob Clark <robdclark@gmail.com>,
-	Niels de Vos <devos@fedoraproject.org>,
-	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-References: <20141226232116.GA5069@type>
- <20141226232310.GD5069@type>
- <20150104232838.GA14912@dtor-glaptop>
+	id S1753076AbbADXtG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 18:49:06 -0500
+Received: from ozlabs.org ([103.22.144.67]:58258 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752867AbbADXtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 18:49:04 -0500
+Date: Mon, 5 Jan 2015 10:48:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: linux-next: bad commit in the luto-misc tree
+Message-ID: <20150105104857.1abcec86@canb.auug.org.au>
+In-Reply-To: <CALCETrU47KbYVJ0XA4HnA+A4=Zck49ubuutT+SZNDUw+PBxQVw@mail.gmail.com>
+References: <20150105103547.40ef87fd@canb.auug.org.au>
+	<CALCETrU47KbYVJ0XA4HnA+A4=Zck49ubuutT+SZNDUw+PBxQVw@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150104232838.GA14912@dtor-glaptop>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/x3C0i=.haa4S7_F2LndULqA"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov, le Sun 04 Jan 2015 15:28:38 -0800, a écrit :
-> I'd rather we did not have a separate config option for this. Do we really need to
-> support case where LEDs are disabled?
+--Sig_/x3C0i=.haa4S7_F2LndULqA
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I don't really mind.
+Hi Andy,
 
-> I'd rather stub it out instead of providing 2 separate code paths.
+On Sun, 4 Jan 2015 15:42:31 -0800 Andy Lutomirski <luto@amacapital.net> wro=
+te:
+>
+> Sorry.  I totally failed here.  I swear I rebased onto the latest RCU
+> tree, double-checked it, and pushed that exact revision to luto/next.
+> Somehow I pushed a much older development commit.  I have no idea how
+> I did that.  I didn't even know I still had that commit around at all.
 
-Ok.
+OK, I have refetched your tree for today and it looks fine.
 
-> > +/* LED state change for some keyboard, notify that keyboard.  */
-> > +static void perdevice_input_led_set(struct led_classdev *cdev,
-> > +			  enum led_brightness brightness)
-> > +{
-> > +	struct input_dev *dev;
-> > +	struct led_classdev *leds;
-> > +	int led;
-> > +
-> > +	dev = cdev->dev->platform_data;
-> 
-> Umm, platform data is not the best place for storing this. Why not drvdata?
+> Fixed now, I think.  Next time I will push to luto/next and
+> double-check that I pushed the commit I thought I pushed.
 
-Just because it didn't exist when I wrote the code :)
-Ok.
+Thanks.
 
-> > +/* A new input device with potential LEDs to connect.  */
-> > +int input_led_connect(struct input_dev *dev)
-> > +{
-> > +	int i, error = -ENOMEM;
-> > +	struct led_classdev *leds;
-> > +	struct led_trigger *triggers;
-> > +
-> > +	leds = kcalloc(LED_CNT, sizeof(*leds), GFP_KERNEL);
-> > +	if (!leds)
-> > +		goto err;
-> 
-> Why do we allocate all possible led's for every device?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Ah, right, that was making things simpler, but it could be
-squeezed.  I'm just afraid of one thing: may dev->ledbit change after
-input_register_device?  It seems that at least uinput somehow permits
-this.  It then means having to store the number of actually created LEDs
-and triggers alongside.
+--Sig_/x3C0i=.haa4S7_F2LndULqA
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-> > +	dev->leds = leds;
-> > +
-> > +	triggers = kcalloc(LED_CNT, sizeof(*triggers), GFP_KERNEL);
-> > +	if (!triggers)
-> > +		goto err;
-> > +	dev->triggers = triggers;
-> 
-> Hmm, maybe having per-device triggers is a bit of overkill and we could have
-> just "input-numl", "input-capsl", etc.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-No, that won't work, notably for evdev access: we have to respect the
-per-device semantic.
+iQIcBAEBCAAGBQJUqdFuAAoJEMDTa8Ir7ZwVB5sP/R0oVrkvYictE+g3Tz8YB4MV
+yk2NyQlcT6aKefVB7PQhmEPfZkB77LOb4IKYDH1HFvoRu0+deeLFcyA9QKbT9evh
+lBqRQsb7J3K5l6nIofhvPicB3fB+bEvHaiLe3Zje2u1mRwedTABgH4+gLoolcr+k
+Mp1E6ceODbbPHC/x3jSVNbbDFobfA/y3wVrOiIdeKeygeVW8uNFVPaTtvgfKR4oL
+iync4s6EXmbUvTNePyM9Pc/m82wPLvvMWT4qlMVcXVhaBKCDnr4baK+JB+cYyTF2
+EZVziZf7mUVOcKAP5EO6QXdj75F6AJxA5jQHPqzAzNcp6ncd5fWsYDV44opNCBUL
+p1sSklNYRKOTSwh023dOLy444cVhkm7ZFVTBSXynUJaw9iyXwaXI1lPaWCMG+of0
+OuLGsqpp/5D0NJnO+AWUQu5PZu2vBt06J1o7wAgwLqxT43DMR9CkUfCLkyadCtn2
+x4uwkmO9dmLtsZ9CoCAn79GitmcWgnFxFUgnkftdVe1v78Vuxx80PyO7Cmr5EEna
+/+nOWZxQRYOL+UB8qz5RXPROm295RoBF1Nbgs+QcaKdy42MisOS55FkbVHhjpB2I
+fh4hfl0y1z1kLEmUhO7jhiI8M6N0qa13Ww2fhG+/eL8MibiVBOw6CjWJeCi7ZjIk
++REMFvETWWCS+vJbLmGc
+=NjDF
+-----END PGP SIGNATURE-----
 
-> > +	/* No issue so far, we can register for real.  */
-> > +	for (i = 0; i < LED_CNT; i++)
-> > +		if (leds[i].name) {
-> > +			led_classdev_register(&dev->dev, &leds[i]);
-> > +			leds[i].dev->platform_data = dev;
-> > +			led_trigger_register(&triggers[i]);
-> 
-> We need error handling here.
-
-Right.
-
-Samuel
+--Sig_/x3C0i=.haa4S7_F2LndULqA--
