@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbbADOTB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 09:19:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36844 "EHLO mx2.suse.de"
+	id S1752717AbbADOWq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 09:22:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36874 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752633AbbADOS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 09:18:59 -0500
-Date: Sun, 04 Jan 2015 15:18:57 +0100
-Message-ID: <s5h4ms6eii6.wl-tiwai@suse.de>
+	id S1752586AbbADOWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 09:22:44 -0500
+Date: Sun, 04 Jan 2015 15:22:42 +0100
+Message-ID: <s5h387qeibx.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 12/13] ALSA: msnd: One function call less in snd_msnd_attach() after error detection
-In-Reply-To: <54A9425E.1030107@users.sourceforge.net>
+Cc: Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 0/13] ALSA: Deletion of some unnecessary checks
+In-Reply-To: <54A9355F.4050102@users.sourceforge.net>
 References: <5307CAA2.8060406@users.sourceforge.net>
 	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
 	<530A086E.8010901@users.sourceforge.net>
@@ -33,7 +33,6 @@ References: <5307CAA2.8060406@users.sourceforge.net>
 	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
 	<5317A59D.4@users.sourceforge.net>
 	<54A9355F.4050102@users.sourceforge.net>
-	<54A9425E.1030107@users.sourceforge.net>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.4
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -43,92 +42,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 04 Jan 2015 14:38:38 +0100,
+At Sun, 04 Jan 2015 13:43:11 +0100,
 SF Markus Elfring wrote:
 > 
 > From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sun, 4 Jan 2015 11:00:11 +0100
+> Date: Sun, 4 Jan 2015 11:50:12 +0100
 > 
-> The iounmap() function was called in one case by the snd_msnd_attach() function
-> even if a previous call of the ioremap_nocache() function failed.
+> Further update suggestions were taken into account after several patches
+> were applied from static source code analysis.
 > 
-> This implementation detail could be improved by the introduction of another
-> jump label.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> Markus Elfring (3):
+>   seq: Deletion of unnecessary checks before the function call "snd_midi_event_free"
+>   oss: Deletion of unnecessary checks before the function call "vfree"
+>   emu10k1: Delete an unnecessary check before the function call "kfree"
+>   oxygen: Delete an unnecessary check before the function call "snd_pcm_suspend"
+>   emux: Delete an unnecessary check before the function call "snd_sf_free"
+>   ASoC: Intel: Delete an unnecessary check before the function call "sst_dma_free"
+>   ASoC: fsi: Deletion of unnecessary checks before the function call "clk_enable"
+>   ASoC: Intel: Delete an unnecessary check before the function call "release_firmware"
+>   i2sbus: Delete an unnecessary check before the function call "snd_pcm_suspend_all"
+>   sb: Delete an unnecessary check before the function call "snd_emux_free"
+>   Deletion of checks before the function call "iounmap"
+>   msnd: One function call less in snd_msnd_attach() after error detection
+>   msnd: Fix centralized exiting from snd_msnd_attach()
 
-I didn't apply this and the next one.  Using goto label isn't bad for
-the error paths in general, but using too much nested labels worsens
-the readability significantly.  (Though, it's almost a matter of
-taste, so I don't want to spend my time for discussing this.)
+I applied most of them now but leave patches 6-8 left to Mark applying
+through his tree.  As posted in another mail patches 12 and 13 are
+dropped.
+
+BTW, when you sending a new patch series, you should drop the old
+references tags.
 
 
 thanks,
 
 Takashi
 
-
-> ---
->  sound/isa/msnd/msnd_pinnacle.c | 15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
 > 
-> diff --git a/sound/isa/msnd/msnd_pinnacle.c b/sound/isa/msnd/msnd_pinnacle.c
-> index 4c07266..e2e940d 100644
-> --- a/sound/isa/msnd/msnd_pinnacle.c
-> +++ b/sound/isa/msnd/msnd_pinnacle.c
-> @@ -575,23 +575,23 @@ static int snd_msnd_attach(struct snd_card *card)
->  
->  	err = snd_msnd_dsp_full_reset(card);
->  	if (err < 0)
-> -		goto err_release_region;
-> +		goto io_unmap;
->  
->  	/* Register device */
->  	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
->  	if (err < 0)
-> -		goto err_release_region;
-> +		goto io_unmap;
->  
->  	err = snd_msnd_pcm(card, 0);
->  	if (err < 0) {
->  		printk(KERN_ERR LOGNAME ": error creating new PCM device\n");
-> -		goto err_release_region;
-> +		goto io_unmap;
->  	}
->  
->  	err = snd_msndmix_new(card);
->  	if (err < 0) {
->  		printk(KERN_ERR LOGNAME ": error creating new Mixer device\n");
-> -		goto err_release_region;
-> +		goto io_unmap;
->  	}
->  
->  
-> @@ -607,7 +607,7 @@ static int snd_msnd_attach(struct snd_card *card)
->  		if (err < 0) {
->  			printk(KERN_ERR LOGNAME
->  				": error creating new Midi device\n");
-> -			goto err_release_region;
-> +			goto io_unmap;
->  		}
->  		mpu = chip->rmidi->private_data;
->  
-> @@ -622,12 +622,13 @@ static int snd_msnd_attach(struct snd_card *card)
->  
->  	err = snd_card_register(card);
->  	if (err < 0)
-> -		goto err_release_region;
-> +		goto io_unmap;
->  
->  	return 0;
->  
-> -err_release_region:
-> +io_unmap:
->  	iounmap(chip->mappedbase);
-> +err_release_region:
->  	release_mem_region(chip->base, BUFFSIZE);
->  	release_region(chip->io, DSP_NUMIO);
->  	free_irq(chip->irq, chip);
+>  sound/aoa/soundbus/i2sbus/core.c | 13 ++++++-------
+>  sound/arm/aaci.c                 |  4 ++--
+>  sound/drivers/ml403-ac97cr.c     |  3 +--
+>  sound/isa/msnd/msnd_pinnacle.c   | 31 ++++++++++++++++---------------
+>  sound/parisc/harmony.c           |  4 +---
+>  sound/pci/ad1889.c               |  5 +----
+>  sound/pci/asihpi/hpioctl.c       |  6 ++----
+>  sound/pci/atiixp.c               |  3 +--
+>  sound/pci/atiixp_modem.c         |  3 +--
+>  sound/pci/aw2/aw2-alsa.c         |  4 +---
+>  sound/pci/bt87x.c                |  3 +--
+>  sound/pci/cs4281.c               |  6 ++----
+>  sound/pci/cs46xx/cs46xx_lib.c    |  4 ++--
+>  sound/pci/ctxfi/cthw20k1.c       |  5 +----
+>  sound/pci/ctxfi/cthw20k2.c       |  5 +----
+>  sound/pci/echoaudio/echoaudio.c  |  6 +-----
+>  sound/pci/hda/hda_intel.c        |  3 +--
+>  sound/pci/lola/lola.c            |  6 ++----
+>  sound/pci/mixart/mixart.c        |  7 +++----
+>  sound/pci/nm256/nm256.c          |  6 ++----
+>  sound/pci/rme9652/hdsp.c         |  4 +---
+>  sound/pci/rme9652/hdspm.c        |  4 +---
+>  sound/pci/rme9652/rme9652.c      |  3 +--
+>  sound/pci/sis7019.c              |  5 +----
+>  sound/pci/ymfpci/ymfpci_main.c   |  3 +--
+>  sound/ppc/pmac.c                 | 15 +++++----------
+>  26 files changed, 58 insertions(+), 103 deletions(-)
+> 
 > -- 
 > 2.2.1
 > 
