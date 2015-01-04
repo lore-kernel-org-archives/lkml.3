@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983AbbADW2O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 17:28:14 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:63808 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935AbbADW2L (ORCPT
+	id S1753027AbbADWbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 17:31:35 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:36946 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789AbbADWbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 17:28:11 -0500
-Date: Sun, 4 Jan 2015 14:27:43 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linux Input <linux-input@vger.kernel.org>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] Input: gpio_keys - allow separating gpio and irq in
- device tree
-Message-ID: <20150104222743.GA31987@dtor-ws>
-References: <20141208071930.GA20802@dtor-ws>
- <CACRpkdZ3PHGRG400Y9zo9RKGyyFm9qF7rZZa8PGpT6AStjUhYA@mail.gmail.com>
+	Sun, 4 Jan 2015 17:31:34 -0500
+Date: Sun, 4 Jan 2015 23:31:29 +0100
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: Piotr Kubus <p.t.kubus@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, abbotti@mev.co.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: dmm32at: Fixed a code indent issue
+Message-ID: <20150104223129.GF25819@t400>
+References: <1420384955-27336-1-git-send-email-p.t.kubus@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZ3PHGRG400Y9zo9RKGyyFm9qF7rZZa8PGpT6AStjUhYA@mail.gmail.com>
+In-Reply-To: <1420384955-27336-1-git-send-email-p.t.kubus@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 09:22:27AM +0100, Linus Walleij wrote:
-> On Mon, Dec 8, 2014 at 8:19 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> 
-> > This change allows specify interrupt for buttons separately form gpio,
-> > potentially allowing to form several "clusters" of buttons on
-> > different interrupts.
-> >
-> > Button defined without both gpio and irq in device tree is a hared error
-> 
-> hared?
+On 01/04, Piotr Kubus wrote:
+> This is a patch to the dmm32at.c file that fixes up a code indent error found by the checkpatch.pl tool.
 
-Should have been "hard", sorry...
+Nice however improve your commit message. The rule is that the lines
+should wrap at 72nd column except for quoted material such as compiler
+output, etc...
 
-> 
-> > instead of a warning now.
-> >
-> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> ...but it would be nice if it could also be converted to use GPIO
-> descriptors internally at some point.
+The 72-character columns are important for allowing quoting and they
+play nicely with standard indentation from git log.
 
-Thanks.
+Thanks,
+Konrad
 
--- 
-Dmitry
+> Signed-off-by: Piotr Kubus <p.t.kubus@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/dmm32at.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
+> index 6df298a..31919b8 100644
+> --- a/drivers/staging/comedi/drivers/dmm32at.c
+> +++ b/drivers/staging/comedi/drivers/dmm32at.c
+> @@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
+>  	/* enable the ai conversion interrupt and the clock to start scans */
+>  	outb(DMM32AT_INTCLK_ADINT |
+>  	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
+> -             dev->iobase + DMM32AT_INTCLK_REG);
+> +	     dev->iobase + DMM32AT_INTCLK_REG);
+>  }
+>  
+>  static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+> -- 
+> 1.9.1
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
