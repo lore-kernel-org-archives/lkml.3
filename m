@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbbADJgD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 04:36:03 -0500
-Received: from ozlabs.org ([103.22.144.67]:59777 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750905AbbADJgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 04:36:00 -0500
-Message-ID: <1420364152.26772.0.camel@ellerman.id.au>
-Subject: Re: [PATCH v2] srcu: Isolate srcu sections using CONFIG_SRCU
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "supporter:S390" <linux390@de.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Anton Blanchard <anton@samba.org>, Daniel Walter <dwalter@google.com>,
-        Tiejun Chen <tiejun.chen@windriver.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:S390" <linux-s390@vger.kernel.org>
-Date: Sun, 04 Jan 2015 20:35:52 +1100
-In-Reply-To: <CAJhHMCDsxOsBKphPrH8N5ymPgdN_OVSujQWQt5CB52TK2PO9cA@mail.gmail.com>
-References: <1419918382-4758-1-git-send-email-bobby.prani@gmail.com>
-	 <1419918382-4758-2-git-send-email-bobby.prani@gmail.com>
-	 <20141230185008.GA23965@worktop.programming.kicks-ass.net>
-	 <CAJhHMCDsxOsBKphPrH8N5ymPgdN_OVSujQWQt5CB52TK2PO9cA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752641AbbADJjv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 04:39:51 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:49690 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbbADJjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 04:39:46 -0500
+Message-ID: <54A90A4C.60908@linaro.org>
+Date: Sun, 04 Jan 2015 17:39:24 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org> <20141224171815.GD13399@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20141224171815.GD13399@e104818-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-30 at 13:54 -0500, Pranith Kumar wrote:
-> On Tue, Dec 30, 2014 at 1:50 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, Dec 30, 2014 at 12:46:22AM -0500, Pranith Kumar wrote:
-> >> Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
-> >> is a compile time failure if srcu is used when not enabled. This was decided to
-> >> be better than waiting until link time for a failure to occur.
-> >
-> > Why?
-> 
-> This is part of the kernel tinification efforts. The first patch was
-> posted here: https://lkml.org/lkml/2014/12/4/848. This patch enables a
-> compile time failure instead of a link time failure.
+On 2014年12月25日 01:18, Catalin Marinas wrote:
+[...]
+>
+> In addition to the above and _DSD requirements/banning, I would also add
+> some clear statements around:
+>
+> _OSC: only global/published capabilities are allowed. For
+> device-specific _OSC we need a process or maybe we can ban them entirely
+> and rely on _DSD once we clarify the process.
+>
+> _OSI: firmware must not check for certain _OSI strings. Here I'm not
+> sure what we would have to do for ARM Linux. Reporting "Windows" does
+> not make any sense but not reporting anything can, as Matthew Garrett
+> pointed out, can be interpreted by firmware as "Linux". In addition to
+> any statements in this document, I suggest you patch
+> drivers/acpi/acpica/utosi.c accordingly, maybe report "Linux" for ARM
+> and print a kernel warning so that we notice earlier.
+>
+> ACPI_OS_NAME: this is globally defined as "Microsoft Windows NT". It
+> doesn't make much sense in the ARM context. Could we change it to
+> "Linux" when CONFIG_ARM64?
 
-The punch line was:
+We will work on this both on ASWG and linux ACPI driver side, as Dong
+and Charles pointed out, _OSI things can be solved in ACPI spec, when
+that is done, we can modify the kernel driver to fix the problems above.
 
-  "so the savings are about ~2000 bytes."
+>
+> Compatibility with older kernels: ACPI firmware must work, even though
+> not fully optimal, with the earliest kernel version implementing the
+> targeted ACPI spec. There may be a need for new drivers but otherwise
+> adding things like CPU power management should not break older kernel
+> versions. In addition, the ACPI firmware must also work with the latest
+> kernel version.
 
-Which is utterly not worth the effort IMO. There have got to be more attractive
-targets for tinification than this.
+It should be, and I think that's why we need ACPI (or DT) here :)
 
-cheers
-
-
-
+Thanks
+Hanjun
