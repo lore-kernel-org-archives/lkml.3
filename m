@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbbADTpD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 14:45:03 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:48540 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789AbbADTo7 (ORCPT
+	id S1752855AbbADTqc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 14:46:32 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:60835 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764AbbADTqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 14:44:59 -0500
-Message-ID: <54A9982E.7020309@hurleysoftware.com>
-Date: Sun, 04 Jan 2015 14:44:46 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 4 Jan 2015 14:46:31 -0500
 MIME-Version: 1.0
-To: Christian Riesch <christian.riesch@omicron.at>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] n_tty: Fix unordered accesses to lockless read buffer
-References: <1419941156-5303-1-git-send-email-peter@hurleysoftware.com> <CABkLObqhqE7Y3eD2gUxmqb0etfvYcDYRnE=-i=-4j=4Ea6=F-w@mail.gmail.com>
-In-Reply-To: <CABkLObqhqE7Y3eD2gUxmqb0etfvYcDYRnE=-i=-4j=4Ea6=F-w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALAqxLX7ad_B82A9=O30v0PVqq2LKiSF7wOkGOytC=SuBh7wcg@mail.gmail.com>
+References: <CA+55aFy8DCMmkPRz0kqNC80pn4VkeQr2Wz2fTRm=32oH2dhfRQ@mail.gmail.com>
+	<CA+55aFwA7uOFgb-Y4dHS099HuoV+oQvxXf+cfZYh9T7H_c0PHA@mail.gmail.com>
+	<20141221223204.GA9618@codemonkey.org.uk>
+	<CA+55aFygv+PRcYScwCjGVQ7-0PA1mHOGYaKGKS4LBhxPm0YBJA@mail.gmail.com>
+	<CA+55aFwaghUQxp9LJRWH6ANCX5y45c3Fu9T0OnpBaqRdn1=tvw@mail.gmail.com>
+	<CA+55aFz0n=sJgn5LeBLcTzj9=eCVkrWiQZNCKupuD7CMTwm=jQ@mail.gmail.com>
+	<20141222225725.GA8140@codemonkey.org.uk>
+	<CA+55aFzjA_KSqUJiKm5qeZEeFBdrg17doANao+8iphBvVM8boQ@mail.gmail.com>
+	<20141224030125.GA8725@codemonkey.org.uk>
+	<20141226163410.GA25161@codemonkey.org.uk>
+	<20141226181204.GA26527@codemonkey.org.uk>
+	<CA+55aFyySYFJjV5689Ej+Rer_igR0R1S5=h0GwWpWpA6Tk1Okw@mail.gmail.com>
+	<CALAqxLX7ad_B82A9=O30v0PVqq2LKiSF7wOkGOytC=SuBh7wcg@mail.gmail.com>
+Date: Sun, 4 Jan 2015 11:46:30 -0800
+X-Google-Sender-Auth: x1iEL1EgNpf8uTDT7Iy9XTNBzck
+Message-ID: <CA+55aFxZ7yj7Jdt1H9JQJNQUgZSLft_b=rAZv0tw95tjQ0Eq2A@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Dave Jones <davej@codemonkey.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/2015 06:00 AM, Christian Riesch wrote:
-> Peter,
-> 
-> Thank you for this patch! Unfortunately I had not much time for this
-> since my last patch submission, so I am happy that someone continued
-> this work.
-> 
-> I have a few comments/questions, please see below.
-> 
-> On Tue, Dec 30, 2014 at 1:05 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> Add commit_head buffer index, which the producer-side publishes
->> after input processing. This ensures the consumer-side observes
->> correctly-ordered writes in raw mode
-> 
-> I understand that the commit_head reduces the number of memory
-> barriers and makes some things easier. But what is so special about
-> raw mode that requires the introduction of commit_head?
+On Fri, Jan 2, 2015 at 4:27 PM, John Stultz <john.stultz@linaro.org> wrote:
+>
+> So I sent out a first step validation check to warn us if we end up
+> with idle periods that are larger then we expect.
 
-commit_head is simply the read_head after each received buffer is
-processed by the input worker. In this context, I meant 'raw mode' as
-any non-canonical mode, ie., any mode in which copy_from_read_buf()
-is used by the reader. I'll replace 'raw' with 'non-canonical' instead.
+.. not having tested it, this is just from reading the patch, but it
+would *seem* that it doesn't actually validate the clock reading much
+at all.
 
->> (ie., the buffer data is
->> written before the buffer index is advanced).
->>
->> Further, remove read_cnt() and expand inline, using ACCESS_ONCE()
-> 
-> "ACCESS_ONCE() and memory barriers"?
+Why? Because most of the time, for crap clocks like HPET, the real
+limitation will be not the multiplication overflow, but the "mask",
+which is just 32-bit (or worse - I think the ACPI PM timer might be
+just 24 bits).
 
-This portion of the changelog refers only to read_cnt(), for which
-memory barriers are not required.
+So then you effectively "validate" that the timer difference value
+fits in mask, but that isn't any validation at all - it's just a
+truism. Since we by definition mask the difference to just the valid
+bitmask.
 
-But, while writing the explanatory fragment [1], I realized that
-input_available_p() must load the most recent relevant head index
-(either canon_head or commit_head based on the mode) because
-it may conclude there is no more input _and_ then observe an end-of-file
-condition. So I need to fix this up to do the smp_load_acquire() in
-input_available_p() and ACCESS_ONCE() in the *_copy_from_read_buf().
+So I really think that the maximum valid clock needs to be narrowed
+down from the "technically, this clock can count to X".
 
-Regards,
-Peter Hurley
+But maybe I'm wrong, and the multiplication overflow is actually often
+the real limit. What are the actual values for real timer sources?
 
-[1]
-Strictly speaking, the ACCESS_ONCE()'s are optimizations. Neither the
-producer nor consumer require the most recent 'opposed' index; if the
-compiler elided the opposed index load, instead reusing an existing load
-
-
-
-
+                        Linus
