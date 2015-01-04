@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbbADKzg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 05:55:36 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:33361 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbbADKzd (ORCPT
+	id S1752798AbbADKzq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 05:55:46 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:49286 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbbADKzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 05:55:33 -0500
+	Sun, 4 Jan 2015 05:55:42 -0500
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -25,112 +25,278 @@ Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
         phoenix.liyi@huawei.com, Timur Tabi <timur@codeaurora.org>,
         suravee.suthikulpanit@amd.com, linux-acpi@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v6 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-Date: Sun,  4 Jan 2015 18:55:01 +0800
-Message-Id: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
+        linaro-acpi@lists.linaro.org, Hanjun Guo <hanjun.guo@linaro.com>,
+        Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH v6 01/17] ACPI / processor: Convert apic_id to phys_id to make it arch agnostic
+Date: Sun,  4 Jan 2015 18:55:02 +0800
+Message-Id: <1420368918-5086-2-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
+References: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Hanjun Guo <hanjun.guo@linaro.com>
 
-This is the sixth version of ACPI core patches for ARM64 based on ACPI
-5.1.
+apic_id in MADT table is the CPU hardware id which identify
+it self in the system for x86 and ia64, OSPM will use it for
+SMP init to map APIC ID to logical cpu number in the early
+boot, when the DSDT/SSDT (ACPI namespace) is scanned later, the
+ACPI processor driver is probed and the driver will use acpi_id
+in DSDT to get the apic_id, then map to the logical cpu number
+which is needed by the processor driver.
 
-updates from v5:
-  - fix the NULL pointer reference in cpu_get_ops() if PSCI is absent
-    and NULL will passed, which found by Suravee when he was testing
-    those patches on Seattle platform. I added his Tested-by for all
-    those ACPI patches.
+Before ACPI 5.0, only x86 and ia64 were supported in ACPI spec,
+so apic_id is used both in arch code and ACPI core which is
+pretty fine. Since ACPI 5.0, ARM is supported by ACPI and
+APIC is not available on ARM, this will confuse people when
+apic_id is both used by x86 and ARM in one function.
 
-  - Rebased on 3.19-rc2 which ACPI table related patches already merged
-    into 3.19 by Rafael, and remove the first patch in v5 which is not needed
-    any more.
+So convert apic_id to phys_id (which is the original meaning)
+in ACPI processor dirver to make it arch agnostic, but leave the
+arch dependent code unchanged, no functional change.
 
-  - Add two cleanup patches to convert ACPI ID to physical ID to make the
-    ACPI core looks more ARCH agnostic, those two patches were expected going
-    into 3.19 but conflicted with IOAPIC hotplug patches so Rafael left them
-    for 3.20.
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ drivers/acpi/acpi_processor.c | 21 +++++++++-------
+ drivers/acpi/processor_core.c | 56 +++++++++++++++++++++----------------------
+ include/acpi/processor.h      |  8 +++----
+ 3 files changed, 44 insertions(+), 41 deletions(-)
 
-  - updates to the doc about ACPI on ARM to address comments from Catalin,
-    Timur, Ashwin. continue discussion will bw needed about this doc.
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index 1fdf5e0..f02b29e 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -170,7 +170,7 @@ static int acpi_processor_hotadd_init(struct acpi_processor *pr)
+ 	acpi_status status;
+ 	int ret;
+ 
+-	if (pr->apic_id == -1)
++	if (pr->phys_id == -1)
+ 		return -ENODEV;
+ 
+ 	status = acpi_evaluate_integer(pr->handle, "_STA", NULL, &sta);
+@@ -180,7 +180,7 @@ static int acpi_processor_hotadd_init(struct acpi_processor *pr)
+ 	cpu_maps_update_begin();
+ 	cpu_hotplug_begin();
+ 
+-	ret = acpi_map_lsapic(pr->handle, pr->apic_id, &pr->id);
++	ret = acpi_map_lsapic(pr->handle, pr->phys_id, &pr->id);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -215,7 +215,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 	union acpi_object object = { 0 };
+ 	struct acpi_buffer buffer = { sizeof(union acpi_object), &object };
+ 	struct acpi_processor *pr = acpi_driver_data(device);
+-	int apic_id, cpu_index, device_declaration = 0;
++	int phys_id, cpu_index, device_declaration = 0;
+ 	acpi_status status = AE_OK;
+ 	static int cpu0_initialized;
+ 	unsigned long long value;
+@@ -262,15 +262,18 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 		pr->acpi_id = value;
+ 	}
+ 
+-	apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
+-	if (apic_id < 0)
+-		acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
+-	pr->apic_id = apic_id;
++	phys_id = acpi_get_phys_id(pr->handle, device_declaration, pr->acpi_id);
++	if (phys_id < 0)
++		acpi_handle_debug(pr->handle, "failed to get CPU physical ID.\n");
++	pr->phys_id = phys_id;
+ 
+-	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
++	cpu_index = acpi_map_cpuid(pr->phys_id, pr->acpi_id);
+ 	if (!cpu0_initialized && !acpi_has_cpu_in_madt()) {
+ 		cpu0_initialized = 1;
+-		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
++		/*
++		 * Handle UP system running SMP kernel, with no CPU
++		 * entry in MADT
++		 */
+ 		if ((cpu_index == -1) && (num_online_cpus() == 1))
+ 			cpu_index = 0;
+ 	}
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index 342942f..02e4839 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -69,7 +69,7 @@ static int map_madt_entry(int type, u32 acpi_id)
+ 	unsigned long madt_end, entry;
+ 	static struct acpi_table_madt *madt;
+ 	static int read_madt;
+-	int apic_id = -1;
++	int phys_id = -1;	/* CPU hardware ID */
+ 
+ 	if (!read_madt) {
+ 		if (ACPI_FAILURE(acpi_get_table(ACPI_SIG_MADT, 0,
+@@ -79,7 +79,7 @@ static int map_madt_entry(int type, u32 acpi_id)
+ 	}
+ 
+ 	if (!madt)
+-		return apic_id;
++		return phys_id;
+ 
+ 	entry = (unsigned long)madt;
+ 	madt_end = entry + madt->header.length;
+@@ -91,18 +91,18 @@ static int map_madt_entry(int type, u32 acpi_id)
+ 		struct acpi_subtable_header *header =
+ 			(struct acpi_subtable_header *)entry;
+ 		if (header->type == ACPI_MADT_TYPE_LOCAL_APIC) {
+-			if (!map_lapic_id(header, acpi_id, &apic_id))
++			if (!map_lapic_id(header, acpi_id, &phys_id))
+ 				break;
+ 		} else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC) {
+-			if (!map_x2apic_id(header, type, acpi_id, &apic_id))
++			if (!map_x2apic_id(header, type, acpi_id, &phys_id))
+ 				break;
+ 		} else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC) {
+-			if (!map_lsapic_id(header, type, acpi_id, &apic_id))
++			if (!map_lsapic_id(header, type, acpi_id, &phys_id))
+ 				break;
+ 		}
+ 		entry += header->length;
+ 	}
+-	return apic_id;
++	return phys_id;
+ }
+ 
+ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
+@@ -110,7 +110,7 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
+ 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+ 	union acpi_object *obj;
+ 	struct acpi_subtable_header *header;
+-	int apic_id = -1;
++	int phys_id = -1;
+ 
+ 	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_MAT", NULL, &buffer)))
+ 		goto exit;
+@@ -126,38 +126,38 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
+ 
+ 	header = (struct acpi_subtable_header *)obj->buffer.pointer;
+ 	if (header->type == ACPI_MADT_TYPE_LOCAL_APIC)
+-		map_lapic_id(header, acpi_id, &apic_id);
++		map_lapic_id(header, acpi_id, &phys_id);
+ 	else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC)
+-		map_lsapic_id(header, type, acpi_id, &apic_id);
++		map_lsapic_id(header, type, acpi_id, &phys_id);
+ 	else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC)
+-		map_x2apic_id(header, type, acpi_id, &apic_id);
++		map_x2apic_id(header, type, acpi_id, &phys_id);
+ 
+ exit:
+ 	kfree(buffer.pointer);
+-	return apic_id;
++	return phys_id;
+ }
+ 
+-int acpi_get_apicid(acpi_handle handle, int type, u32 acpi_id)
++int acpi_get_phys_id(acpi_handle handle, int type, u32 acpi_id)
+ {
+-	int apic_id;
++	int phys_id;
+ 
+-	apic_id = map_mat_entry(handle, type, acpi_id);
+-	if (apic_id == -1)
+-		apic_id = map_madt_entry(type, acpi_id);
++	phys_id = map_mat_entry(handle, type, acpi_id);
++	if (phys_id == -1)
++		phys_id = map_madt_entry(type, acpi_id);
+ 
+-	return apic_id;
++	return phys_id;
+ }
+ 
+-int acpi_map_cpuid(int apic_id, u32 acpi_id)
++int acpi_map_cpuid(int phys_id, u32 acpi_id)
+ {
+ #ifdef CONFIG_SMP
+ 	int i;
+ #endif
+ 
+-	if (apic_id == -1) {
++	if (phys_id == -1) {
+ 		/*
+ 		 * On UP processor, there is no _MAT or MADT table.
+-		 * So above apic_id is always set to -1.
++		 * So above phys_id is always set to -1.
+ 		 *
+ 		 * BIOS may define multiple CPU handles even for UP processor.
+ 		 * For example,
+@@ -170,7 +170,7 @@ int acpi_map_cpuid(int apic_id, u32 acpi_id)
+ 		 *     Processor (CPU3, 0x03, 0x00000410, 0x06) {}
+ 		 * }
+ 		 *
+-		 * Ignores apic_id and always returns 0 for the processor
++		 * Ignores phys_id and always returns 0 for the processor
+ 		 * handle with acpi id 0 if nr_cpu_ids is 1.
+ 		 * This should be the case if SMP tables are not found.
+ 		 * Return -1 for other CPU's handle.
+@@ -178,28 +178,28 @@ int acpi_map_cpuid(int apic_id, u32 acpi_id)
+ 		if (nr_cpu_ids <= 1 && acpi_id == 0)
+ 			return acpi_id;
+ 		else
+-			return apic_id;
++			return phys_id;
+ 	}
+ 
+ #ifdef CONFIG_SMP
+ 	for_each_possible_cpu(i) {
+-		if (cpu_physical_id(i) == apic_id)
++		if (cpu_physical_id(i) == phys_id)
+ 			return i;
+ 	}
+ #else
+ 	/* In UP kernel, only processor 0 is valid */
+-	if (apic_id == 0)
+-		return apic_id;
++	if (phys_id == 0)
++		return phys_id;
+ #endif
+ 	return -1;
+ }
+ 
+ int acpi_get_cpuid(acpi_handle handle, int type, u32 acpi_id)
+ {
+-	int apic_id;
++	int phys_id;
+ 
+-	apic_id = acpi_get_apicid(handle, type, acpi_id);
++	phys_id = acpi_get_phys_id(handle, type, acpi_id);
+ 
+-	return acpi_map_cpuid(apic_id, acpi_id);
++	return acpi_map_cpuid(phys_id, acpi_id);
+ }
+ EXPORT_SYMBOL_GPL(acpi_get_cpuid);
+diff --git a/include/acpi/processor.h b/include/acpi/processor.h
+index 3ca9b75..b95dc32 100644
+--- a/include/acpi/processor.h
++++ b/include/acpi/processor.h
+@@ -196,8 +196,8 @@ struct acpi_processor_flags {
+ struct acpi_processor {
+ 	acpi_handle handle;
+ 	u32 acpi_id;
+-	u32 apic_id;
+-	u32 id;
++	u32 phys_id;	/* CPU hardware ID such as APIC ID for x86 */
++	u32 id;		/* CPU logical ID allocated by OS */
+ 	u32 pblk;
+ 	int performance_platform_limit;
+ 	int throttling_platform_limit;
+@@ -310,8 +310,8 @@ static inline int acpi_processor_get_bios_limit(int cpu, unsigned int *limit)
+ #endif				/* CONFIG_CPU_FREQ */
+ 
+ /* in processor_core.c */
+-int acpi_get_apicid(acpi_handle, int type, u32 acpi_id);
+-int acpi_map_cpuid(int apic_id, u32 acpi_id);
++int acpi_get_phys_id(acpi_handle, int type, u32 acpi_id);
++int acpi_map_cpuid(int phys_id, u32 acpi_id);
+ int acpi_get_cpuid(acpi_handle, int type, u32 acpi_id);
+ 
+ /* in processor_pdc.c */
+-- 
+1.9.1
 
-  - we did lots of work as Al pointed out in the "[RFC] ACPI on arm64 TODO List"
-    thread [1], and we already make FWTS running on ARM64, thanks FuWei for doing
-    that. Here is the test results for linaro leg kernel release test results:
-
-Test report for leg-20141215.0 (Revision: d37eefeb160cc9cc1db997031793723e317be7b7)
-
-This test Image comes from  https://ci.linaro.org/job/linux-leg-fuwei
-The CI job Link: https://ci.linaro.org/job/linux-leg-fuwei/37/
-
-Notes : All the tests ran on FVP base model in LAVA server : http://validation.linaro.org/
-
-The startup.nsh boot test Link :https://validation.linaro.org/scheduler/job/222779
-
-The ACPI test Link : https://validation.linaro.org/scheduler/job/222781
-    The results.log file Link : https://validation.linaro.org/dashboard/attachment/1267957/view
-
-The grub-install test Link : https://validation.linaro.org/scheduler/job/222780
-
-and here is the *summary*:
-
-summary        -SUM:77 passed, 6 failed, 2 warnings, 5 aborted, 186 skipped, 8 info only.
-summary        -NLN:
-summary        -SUM:Test Failure Summary
-summary        -SEP:===========================================================================================
-summary        -NLN:
-summary        -SUM:Critical failures: NONE
-summary        -NLN:
-summary        -SUM:High failures: 2
-summary        -SUM: uefirttime: Failed to get wakeup time with UEFI runtime service.
-summary        -SUM: uefirttime: Failed to set wakeup time with UEFI runtime service.
-summary        -NLN:
-summary        -SUM:Medium failures: 5
-summary        -SUM: wakealarm: Could not find an RTC with an alarm ioctl() interface.
-summary        -SUM: method: \_SB_.COM0._CID returned a string 'PL011' but it was not a valid PNP ID or a valid ACPI ID.
-summary        -SUM: method: Object _PRS did not exist.
-summary        -SUM: method: Object _PTS did not exist.
-summary        -SUM: method: Object _WAK did not exist.
-summary        -NLN:
-summary        -SUM:Low failures: NONE
-summary        -NLN:
-summary        -SUM:Other failures: NONE
-summary        -NLN:
-summary        -SUM:Test           |Pass |Fail |Abort|Warn |Skip |Info |
-summary        -SUM:---------------+-----+-----+-----+-----+-----+-----+
-summary        -SUM:acpidump       |     |     |     |     |     |    1|
-summary        -SUM:acpiinfo       |     |     |     |     |     |    3|
-summary        -SUM:acpitables     |   11|     |     |    1|     |     |
-summary        -SUM:aspm           |     |     |     |     |    1|     |
-summary        -SUM:checksum       |    8|     |     |     |     |     |
-summary        -SUM:cpufreq        |     |     |     |    1|     |     |
-summary        -SUM:crsdump        |     |     |     |     |     |     |
-summary        -SUM:gpedump        |     |     |     |     |     |     |
-summary        -SUM:hda_audio      |     |     |     |     |    1|     |
-summary        -SUM:klog           |    1|     |     |     |     |     |
-summary        -SUM:maxreadreq     |     |     |     |     |     |     |
-summary        -SUM:method         |   29|    4|     |     |  173|     |
-summary        -SUM:oops           |    2|     |     |     |     |     |
-summary        -SUM:plddump        |     |     |     |     |     |     |
-summary        -SUM:prsdump        |     |     |     |     |     |     |
-summary        -SUM:securebootcert |     |     |    1|     |     |     |
-summary        -SUM:syntaxcheck    |    1|     |     |     |     |     |
-summary        -SUM:uefibootpath   |    1|     |     |     |     |     |
-summary        -SUM:uefidump       |     |     |     |     |     |     |
-summary        -SUM:uefirtmisc     |    2|     |     |     |   10|     |
-summary        -SUM:uefirttime     |    2|    2|     |     |     |     |
-summary        -SUM:uefirtvariable |   20|     |     |     |     |     |
-summary        -SUM:uefivarinfo    |     |     |     |     |     |     |
-summary        -SUM:version        |     |     |     |     |    1|    4|
-summary        -SUM:wakealarm      |     |     |    4|     |     |     |
-summary        -SUM:---------------+-----+-----+-----+-----+-----+-----+
-summary        -SUM:Total:         |   77|    6|    5|    2|  186|    8|
-summary        -SUM:---------------+-----+-----+-----+-----+-----+-----+
-
-
-[1]: http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/310921.html
-
-Thanks
