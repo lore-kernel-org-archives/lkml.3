@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbbADPvE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:51:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630AbbADPvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:51:01 -0500
-Date: Sun, 4 Jan 2015 16:49:43 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Mark Salter <msalter@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [RFC/PATCHSET 00/30] perf tools: New build framework
-Message-ID: <20150104154943.GA22707@krava.brq.redhat.com>
-References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
- <20150102173612.GA5941@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150102173612.GA5941@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752689AbbADPwR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:52:17 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:62220 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725AbbADPwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 10:52:15 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] bluetooth: Remove unused function
+Date: Sun,  4 Jan 2015 16:55:14 +0100
+Message-Id: <1420386914-12885-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 06:36:12PM +0100, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@kernel.org> wrote:
-> 
-> > [...] The basic idea is the same as in kbuild system, with some 
-> > minor changes to allow for multiple binaries build definitions.
-> 
-> >  tools/perf/Build                                |  48 ++
-> >  tools/perf/Build.include                        |  75 ++++
-> >  tools/perf/Documentation/Build                  | 123 +++++
-> >  tools/perf/Makefile.build                       | 122 +++++
-> >  tools/perf/Makefile.perf                        | 566 +++---------------------
-> 
-> >  47 files changed, 827 insertions(+), 541 deletions(-)
-> 
-> Even the diffstat looks pretty good: only a modest line count 
-> increase.
-> 
-> It would be useful to put this (and other build features - such 
-> as features/parallelisation support) into tools/kbuild/ though, 
-> so that other tooling can make easy use of it as well. For 
-> example tools/kvm/ (an external project) started off with an 
-> earlier version of the perf build system.
+Remove the function hci_conn_change_link_key() that is not used anywhere.
 
-right, I'll put it in tools/build.. looks like the tools/lib/*
-could use it, probably others as well
+This was partially found by using a static code analysis program called cppcheck.
 
-thanks,
-jirka
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ include/net/bluetooth/hci_core.h |    1 -
+ net/bluetooth/hci_conn.c         |   15 ---------------
+ 2 files changed, 16 deletions(-)
 
-> 
-> Sharing that would make quite a bit of sense, as tooling (and 
-> most user-space project) build systems are usually have pretty 
-> poor quality.
-> 
-> Thanks,
-> 
-> 	Ingo
+diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
+index 37ff1ae..a922163 100644
+--- a/include/net/bluetooth/hci_core.h
++++ b/include/net/bluetooth/hci_core.h
+@@ -728,7 +728,6 @@ int hci_conn_check_link_mode(struct hci_conn *conn);
+ int hci_conn_check_secure(struct hci_conn *conn, __u8 sec_level);
+ int hci_conn_security(struct hci_conn *conn, __u8 sec_level, __u8 auth_type,
+ 		      bool initiator);
+-int hci_conn_change_link_key(struct hci_conn *conn);
+ int hci_conn_switch_role(struct hci_conn *conn, __u8 role);
+ 
+ void hci_conn_enter_active_mode(struct hci_conn *conn, __u8 force_active);
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index b9517bd..1fc18b6 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -1075,21 +1075,6 @@ int hci_conn_check_secure(struct hci_conn *conn, __u8 sec_level)
+ }
+ EXPORT_SYMBOL(hci_conn_check_secure);
+ 
+-/* Change link key */
+-int hci_conn_change_link_key(struct hci_conn *conn)
+-{
+-	BT_DBG("hcon %p", conn);
+-
+-	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
+-		struct hci_cp_change_conn_link_key cp;
+-		cp.handle = cpu_to_le16(conn->handle);
+-		hci_send_cmd(conn->hdev, HCI_OP_CHANGE_CONN_LINK_KEY,
+-			     sizeof(cp), &cp);
+-	}
+-
+-	return 0;
+-}
+-
+ /* Switch role */
+ int hci_conn_switch_role(struct hci_conn *conn, __u8 role)
+ {
+-- 
+1.7.10.4
+
