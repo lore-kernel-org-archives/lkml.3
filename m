@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbbADQCl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 11:02:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46625 "EHLO mx1.redhat.com"
+	id S1752759AbbADQEF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 11:04:05 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630AbbADQCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 11:02:36 -0500
-Date: Sun, 4 Jan 2015 18:02:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: sasha.levin@oracle.com, virtualization@lists.linux-foundation.org,
-        stable@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3/3] virtio_pci: document why we defer kfree
-Message-ID: <1420386340-7719-4-git-send-email-mst@redhat.com>
-References: <1420386340-7719-1-git-send-email-mst@redhat.com>
+	id S1752682AbbADQED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 11:04:03 -0500
+Message-ID: <54A96470.1000208@nod.at>
+Date: Sun, 04 Jan 2015 17:04:00 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420386340-7719-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: [GIT PULL] UML fixes for v3.19-rc3
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The reason we defer kfree until release function is because it's a
-general rule for kobjects: kfree of the reference counter itself is only
-legal in the release function.
+Linus,
 
-Previous patch didn't make this clear, document this in code.
+The following changes since commit d753856c9f9ae33a980192aa7b81d8b97d79dec2:
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio_pci_legacy.c | 3 +++
- 1 file changed, 3 insertions(+)
+  Merge tag 'scsi-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi (2015-01-02 13:24:41 -0800)
 
-diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
-index 4beaee3..a5486e6 100644
---- a/drivers/virtio/virtio_pci_legacy.c
-+++ b/drivers/virtio/virtio_pci_legacy.c
-@@ -216,6 +216,9 @@ static void virtio_pci_release_dev(struct device *_d)
- 	struct virtio_device *vdev = dev_to_virtio(_d);
- 	struct virtio_pci_device *vp_dev = to_vp_device(vdev);
- 
-+	/* As struct device is a kobject, it's not safe to
-+	 * free the memory (including the reference counter itself)
-+	 * until it's release callback. */
- 	kfree(vp_dev);
- }
- 
--- 
-MST
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus
+
+for you to fetch changes up to b485342bd79af363c77ef1a421c4a0aef2de9812:
+
+  x86, um: actually mark system call tables readonly (2015-01-04 14:21:25 +0100)
+
+----------------------------------------------------------------
+Two fixes for UML regressions. Nothing exciting.
+----------------------------------------------------------------
+Daniel Borkmann (1):
+      x86, um: actually mark system call tables readonly
+
+Richard Weinberger (1):
+      um: Skip futex_atomic_cmpxchg_inatomic() test
+
+ arch/um/Kconfig.common          | 1 +
+ arch/x86/um/sys_call_table_32.c | 2 +-
+ arch/x86/um/sys_call_table_64.c | 2 +-
+ 3 files changed, 3 insertions(+), 2 deletions(-)
+
+Thanks,
+//richard
