@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbbADTKc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 14:10:32 -0500
-Received: from khitomer.mortis.eu ([185.27.175.75]:11414 "EHLO
+	id S1752830AbbADTK3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 14:10:29 -0500
+Received: from khitomer.mortis.eu ([185.27.175.75]:11413 "EHLO
 	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749AbbADTK1 (ORCPT
+	with ESMTP id S1752741AbbADTK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 Jan 2015 14:10:27 -0500
+X-Greylist: delayed 4018 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jan 2015 14:10:26 EST
 From: Giel van Schijndel <me@mortis.eu>
 To: linux-kernel@vger.kernel.org
-Cc: Giel van Schijndel <me@mortis.eu>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org (maintainer:X86 ARCHITECTURE...),
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steve French <sfrench@samba.org>,
-        Rahul Bedarkar <rahulbedarkar89@gmail.com>,
-        Thomas Pugliese <thomas.pugliese@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        linux-crypto@vger.kernel.org (open list:CRYPTO API),
-        linux-usb@vger.kernel.org (open list:CERTIFIED WIRELES...),
-        linux-cifs@vger.kernel.org (open list:COMMON INTERNET F...),
-        samba-technical@lists.samba.org (moderated list:COMMON INTERNET F...)
-Subject: [PATCH] Use memzero_explicit to clear local buffers
-Date: Sun,  4 Jan 2015 19:05:40 +0100
-Message-Id: <1420394744-20268-1-git-send-email-me@mortis.eu>
+Cc: Giel van Schijndel <me@mortis.eu>, Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM)
+Subject: [PATCH] Cleanup: snprintf() always NUL-terminates: depend on it
+Date: Sun,  4 Jan 2015 19:05:58 +0100
+Message-Id: <1420394759-20345-1-git-send-email-me@mortis.eu>
 X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When leaving a function use memzero_explicit instead of memset(0) to
-clear locally allocated/owned buffers. memset(0) may be optimized away.
-
-All of the affected buffers contain sensitive data, key material or
-derivatives of one of those two.
+Especially since one very strange piece of code seems to be written in
+such a way that a NUL needs to be placed where a NUL is present already.
+The author probably meant to fill the last byte of the buffer with a NUL
+instead. But regardless of that: that isn't necessary since snprintf()
+already guarantees NUL termination for buffers sizes > 0 and <= INT_MAX.
 ---
- arch/x86/crypto/sha256_ssse3_glue.c | 2 +-
- drivers/usb/wusbcore/security.c     | 2 +-
- fs/cifs/smbencrypt.c                | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/ipr.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/crypto/sha256_ssse3_glue.c b/arch/x86/crypto/sha256_ssse3_glue.c
-index 8fad72f..b616e63 100644
---- a/arch/x86/crypto/sha256_ssse3_glue.c
-+++ b/arch/x86/crypto/sha256_ssse3_glue.c
-@@ -164,7 +164,7 @@ static int sha256_ssse3_final(struct shash_desc *desc, u8 *out)
- 		dst[i] = cpu_to_be32(sctx->state[i]);
+diff --git a/drivers/scsi/ipr.c b/drivers/scsi/ipr.c
+index df4e27c..b49fe45 100644
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -3990,7 +3990,6 @@ static ssize_t ipr_store_update_fw(struct device *dev,
+ 		return -EACCES;
  
- 	/* Wipe context */
--	memset(sctx, 0, sizeof(*sctx));
-+	memzero_explicit(sctx, sizeof(*sctx));
+ 	len = snprintf(fname, 99, "%s", buf);
+-	fname[len-1] = '\0';
  
- 	return 0;
- }
-diff --git a/drivers/usb/wusbcore/security.c b/drivers/usb/wusbcore/security.c
-index b66faaf..a25f4fe 100644
---- a/drivers/usb/wusbcore/security.c
-+++ b/drivers/usb/wusbcore/security.c
-@@ -521,7 +521,7 @@ error_wusbhc_set_ptk:
- error_hs3:
- error_hs2:
- error_hs1:
--	memset(hs, 0, 3*sizeof(hs[0]));
-+	memzero_explicit(hs, 3*sizeof(hs[0]));
- 	memzero_explicit(&keydvt_out, sizeof(keydvt_out));
- 	memzero_explicit(&keydvt_in, sizeof(keydvt_in));
- 	memzero_explicit(&ccm_n, sizeof(ccm_n));
-diff --git a/fs/cifs/smbencrypt.c b/fs/cifs/smbencrypt.c
-index 6c15663..a4232ec 100644
---- a/fs/cifs/smbencrypt.c
-+++ b/fs/cifs/smbencrypt.c
-@@ -221,7 +221,7 @@ E_md4hash(const unsigned char *passwd, unsigned char *p16,
+ 	if (request_firmware(&fw_entry, fname, &ioa_cfg->pdev->dev)) {
+ 		dev_err(&ioa_cfg->pdev->dev, "Firmware file %s not found\n", fname);
+@@ -9358,13 +9357,12 @@ static int ipr_enable_msi(struct ipr_ioa_cfg *ioa_cfg)
+ 
+ static void name_msi_vectors(struct ipr_ioa_cfg *ioa_cfg)
+ {
+-	int vec_idx, n = sizeof(ioa_cfg->vectors_info[0].desc) - 1;
++	int vec_idx;
+ 
+ 	for (vec_idx = 0; vec_idx < ioa_cfg->nvectors; vec_idx++) {
+-		snprintf(ioa_cfg->vectors_info[vec_idx].desc, n,
++		snprintf(ioa_cfg->vectors_info[vec_idx].desc,
++			 sizeof(ioa_cfg->vectors_info[vec_idx].desc),
+ 			 "host%d-%d", ioa_cfg->host->host_no, vec_idx);
+-		ioa_cfg->vectors_info[vec_idx].
+-			desc[strlen(ioa_cfg->vectors_info[vec_idx].desc)] = 0;
  	}
- 
- 	rc = mdfour(p16, (unsigned char *) wpwd, len * sizeof(__le16));
--	memset(wpwd, 0, 129 * sizeof(__le16));
-+	memzero_explicit(wpwd, sizeof(wpwd));
- 
- 	return rc;
  }
+ 
 -- 
 2.1.4
 
