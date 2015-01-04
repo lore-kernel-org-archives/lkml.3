@@ -1,55 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751213AbbADGVp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 01:21:45 -0500
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:40524 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbbADGVn (ORCPT
+	id S1752556AbbADGYa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 01:24:30 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:49362 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbbADGYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 01:21:43 -0500
-Message-ID: <54A8DBF4.4050202@lwfinger.net>
-Date: Sun, 04 Jan 2015 00:21:40 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>
-CC: Hante Meuleman <meuleman@broadcom.com>, Kalle Valo <kvalo@adurom.com>,
-        Fabian Frederick <fabf@skynet.be>, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
-References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 4 Jan 2015 01:24:25 -0500
+From: Tristan Lelong <tristan@lelong.xyz>
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tristan Lelong <tristan@lelong.xyz>
+Subject: [PATCH] input: Add soft kill switch for input devices
+Date: Sat,  3 Jan 2015 22:24:05 -0800
+Message-Id: <1420352645-3706-1-git-send-email-tristan@lelong.xyz>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2015 06:47 PM, Rickard Strandqvist wrote:
-> Removes some functions that are not used anywhere:
-> dma_txflush() dma_txsuspended()
->
-> This was partially found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/net/wireless/brcm80211/brcmsmac/dma.c |   19 -------------------
->   drivers/net/wireless/brcm80211/brcmsmac/dma.h |    2 --
->   2 files changed, 21 deletions(-)
+This adds a sysfs attribute named 'mute' to all input devices.
+It allows to disable them by software in a generic way.
 
-Just because file dma.c is involved, it does not need to be, nor should it be in 
-the subject line. You could specify the driver names in the file tree after 
-wireless. In this instance, one possible subject would be "brcm80211: brcmsmac: 
-Remove some unused functions". On the other hand, if you look at "git log" to 
-see past patches, the driver maintainers even leave off the brcm80211 part, thus 
-to match them, the subject should be "brcmsmac: Remove some unused functions".
+It can be set to 0 or 1:
+echo 1 > /sys/class/input/inputX/mute: will set all the input_events() call to return immediately.
+echo 0 > /sys/class/input/inputX/mute: will reset to default behavior.
 
-As was suggested earlier, you need to look at the precedents. Keeping a uniform 
-method of patch naming helps when looking for patches in the git log.
+mute is set to 0 by default when calling alloc_input_device().
 
-Larry
+Signed-off-by: Tristan Lelong <tristan@lelong.xyz>
+---
+Hi,
 
+I created this patch to answer a need on my machine: I want to be able to disable momentarily the touchscreen
+in order to wipe out a dust or clean the display without creating a mess on my desktop and opened docs.
+It seemed consistent to have that kill switch at a central point, and moreover,
+it doesn't depend on any tool linked to a specifc X server, graphical toolkit, desktop environment...
+
+This patch uses the 0/1 values to enable or disable the mute, but I could update it to use
+enable/disable instead if it is preferred.
+Also, the permissions are write for group or ownoer only.
+I thought about setting it world writable in order to allow easy shortcut creation, but it might also be a security flaw.
+
+Let me know what you think about all this, at least it is really useful in my case, linked to a keyboard shortcut.
+
+Best regards
+---
+ drivers/input/input.c | 30 +++++++++++++++++++++++++++++-
+ include/linux/input.h |  1 +
+ 2 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index a1e609a..2f80fee 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -425,7 +425,7 @@ void input_event(struct input_dev *dev,
+ {
+ 	unsigned long flags;
+ 
+-	if (is_event_supported(type, dev->evbit, EV_MAX)) {
++	if (!dev->mute && is_event_supported(type, dev->evbit, EV_MAX)) {
+ 
+ 		spin_lock_irqsave(&dev->event_lock, flags);
+ 		input_handle_event(dev, type, code, value);
+@@ -1384,10 +1384,38 @@ static ssize_t input_dev_show_properties(struct device *dev,
+ }
+ static DEVICE_ATTR(properties, S_IRUGO, input_dev_show_properties, NULL);
+ 
++static ssize_t input_dev_show_mute(struct device *dev,
++					 struct device_attribute *attr,
++					 char *buf)
++{
++	struct input_dev *input_dev = to_input_dev(dev);
++
++	return scnprintf(buf, PAGE_SIZE, "%d\n", input_dev->mute);
++}
++
++static ssize_t input_dev_store_mute(struct device *dev,
++					  struct device_attribute *attr,
++					  const char *buf, size_t count)
++{
++	int err;
++	long mute;
++	struct input_dev *input_dev = to_input_dev(dev);
++
++	err = kstrtol(buf, 0, &mute);
++	if (err < 0)
++		return err;
++	input_dev->mute = mute;
++
++	return count;
++}
++static DEVICE_ATTR(mute, S_IRUGO | S_IWUSR | S_IWGRP, input_dev_show_mute,
++		   input_dev_store_mute);
++
+ static struct attribute *input_dev_attrs[] = {
+ 	&dev_attr_name.attr,
+ 	&dev_attr_phys.attr,
+ 	&dev_attr_uniq.attr,
++	&dev_attr_mute.attr,
+ 	&dev_attr_modalias.attr,
+ 	&dev_attr_properties.attr,
+ 	NULL
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 3b4c32f..e45672f 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -151,6 +151,7 @@ struct input_dev {
+ 
+ 	struct ff_device *ff;
+ 
++	unsigned int mute;
+ 	unsigned int repeat_key;
+ 	struct timer_list timer;
+ 
+-- 
+2.1.3
 
