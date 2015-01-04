@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbbADMoE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 07:44:04 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:54136 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701AbbADMoB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 07:44:01 -0500
+	id S1752672AbbADMuU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 07:50:20 -0500
+Received: from mout.web.de ([212.227.15.4]:63695 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752586AbbADMuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 07:50:19 -0500
+Message-ID: <54A93702.4040705@users.sourceforge.net>
+Date: Sun, 04 Jan 2015 13:50:10 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-X-Originating-IP: [85.24.246.111]
-In-Reply-To: <54A8DBF4.4050202@lwfinger.net>
-References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<54A8DBF4.4050202@lwfinger.net>
-Date: Sun, 4 Jan 2015 13:43:59 +0100
-Message-ID: <CAKXHbyN6LH_pFw1uoLXRzgJv-NcjbTLJvMZXfwYXDwuk9QDszA@mail.gmail.com>
-Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Brett Rudley <brudley@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>, Kalle Valo <kvalo@adurom.com>,
-        Fabian Frederick <fabf@skynet.be>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        brcm80211-dev-list@broadcom.com,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 1/13] ALSA: seq: Deletion of unnecessary checks before the
+ function call "snd_midi_event_free"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54A9355F.4050102@users.sourceforge.net>
+In-Reply-To: <54A9355F.4050102@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:9hNl2d2IySe6VGUlDVJE5awi4gvcYWU03jW3xcC5zGRugTtdAEM
+ HFcURlSD6Rw7UHdSKUCVrdi5erUe0C9p0FXb4XpTF+W4MUSzry2UQJ8vZ7pEyXqDPD43HMh
+ GDAvrGt8Np5fll1O9JcDGSlBKmNKERsiX7GFJjRF3lBGnu4ZUDVTAXN3PpcURmziOSLb/ZP
+ i7jkBf186djt8RK9vRmGw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-04 7:21 GMT+01:00 Larry Finger <Larry.Finger@lwfinger.net>:
-> On 01/03/2015 06:47 PM, Rickard Strandqvist wrote:
->>
->> Removes some functions that are not used anywhere:
->> dma_txflush() dma_txsuspended()
->>
->> This was partially found by using a static code analysis program called
->> cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist
->> <rickard_strandqvist@spectrumdigital.se>
->> ---
->>   drivers/net/wireless/brcm80211/brcmsmac/dma.c |   19 -------------------
->>   drivers/net/wireless/brcm80211/brcmsmac/dma.h |    2 --
->>   2 files changed, 21 deletions(-)
->
->
-> Just because file dma.c is involved, it does not need to be, nor should it
-> be in the subject line. You could specify the driver names in the file tree
-> after wireless. In this instance, one possible subject would be "brcm80211:
-> brcmsmac: Remove some unused functions". On the other hand, if you look at
-> "git log" to see past patches, the driver maintainers even leave off the
-> brcm80211 part, thus to match them, the subject should be "brcmsmac: Remove
-> some unused functions".
->
-> As was suggested earlier, you need to look at the precedents. Keeping a
-> uniform method of patch naming helps when looking for patches in the git
-> log.
->
-> Larry
->
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sat, 3 Jan 2015 14:54:56 +0100
 
+The snd_midi_event_free() function tests whether its argument is NULL and then
+returns immediately. Thus the test around the call is not needed.
 
-Hi Larry
+This issue was detected by using the Coccinelle software.
 
-As I hope you can see I have made some changes regarding the
-subject-line. Thought it was an advantage to be able to see which file
-I actually removed something from.
-There seems to be a big focus on getting right on subject-line right
-in recent weeks.
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ sound/core/seq/oss/seq_oss_midi.c | 6 ++----
+ sound/core/seq/seq_midi.c         | 3 +--
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-I wonder why there is a script that takes a file name, and respond
-with an appropriate subject line?
+diff --git a/sound/core/seq/oss/seq_oss_midi.c b/sound/core/seq/oss/seq_oss_midi.c
+index 3a45696..e79cc44 100644
+--- a/sound/core/seq/oss/seq_oss_midi.c
++++ b/sound/core/seq/oss/seq_oss_midi.c
+@@ -237,8 +237,7 @@ snd_seq_oss_midi_check_exit_port(int client, int port)
+ 		spin_unlock_irqrestore(&register_lock, flags);
+ 		snd_use_lock_free(&mdev->use_lock);
+ 		snd_use_lock_sync(&mdev->use_lock);
+-		if (mdev->coder)
+-			snd_midi_event_free(mdev->coder);
++		snd_midi_event_free(mdev->coder);
+ 		kfree(mdev);
+ 	}
+ 	spin_lock_irqsave(&register_lock, flags);
+@@ -265,8 +264,7 @@ snd_seq_oss_midi_clear_all(void)
+ 	spin_lock_irqsave(&register_lock, flags);
+ 	for (i = 0; i < max_midi_devs; i++) {
+ 		if ((mdev = midi_devs[i]) != NULL) {
+-			if (mdev->coder)
+-				snd_midi_event_free(mdev->coder);
++			snd_midi_event_free(mdev->coder);
+ 			kfree(mdev);
+ 			midi_devs[i] = NULL;
+ 		}
+diff --git a/sound/core/seq/seq_midi.c b/sound/core/seq/seq_midi.c
+index a1fd77a..68fec77 100644
+--- a/sound/core/seq/seq_midi.c
++++ b/sound/core/seq/seq_midi.c
+@@ -268,8 +268,7 @@ static void snd_seq_midisynth_delete(struct seq_midisynth *msynth)
+ 		snd_seq_event_port_detach(msynth->seq_client, msynth->seq_port);
+ 	}
+ 
+-	if (msynth->parser)
+-		snd_midi_event_free(msynth->parser);
++	snd_midi_event_free(msynth->parser);
+ }
+ 
+ /* register new midi synth port */
+-- 
+2.2.1
 
-But ok, I change my script accordingly. Should I submit the patch again?
-
-
-Kind regards
-Rickard Strandqvist
