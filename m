@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbbADXf5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 18:35:57 -0500
-Received: from ozlabs.org ([103.22.144.67]:37493 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813AbbADXfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 18:35:55 -0500
-Date: Mon, 5 Jan 2015 10:35:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: linux-next: bad commit in the luto-misc tree
-Message-ID: <20150105103547.40ef87fd@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753098AbbADXhm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 18:37:42 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:40668 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813AbbADXhl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 18:37:41 -0500
+Date: Mon, 5 Jan 2015 10:36:37 +1100
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steve French <sfrench@samba.org>,
+        Rahul Bedarkar <rahulbedarkar89@gmail.com>,
+        Thomas Pugliese <thomas.pugliese@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        "open list:CRYPTO API" <linux-crypto@vger.kernel.org>,
+        "open list:CERTIFIED WIRELES..." <linux-usb@vger.kernel.org>,
+        "open list:COMMON INTERNET F..." <linux-cifs@vger.kernel.org>,
+        "moderated list:COMMON INTERNET F..." 
+	<samba-technical@lists.samba.org>,
+        Daniel Borkmann <dborkman@redhat.com>
+Subject: Re: [PATCH] Use memzero_explicit to clear local buffers
+Message-ID: <20150104233637.GA20757@gondor.apana.org.au>
+References: <1420394744-20268-1-git-send-email-me@mortis.eu>
+ <20150104213538.GA19906@gondor.apana.org.au>
+ <20150104224909.GB4806@salidar.dom.custoft.eu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/QjoA+God3wI5x42Qe2XSAaJ"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150104224909.GB4806@salidar.dom.custoft.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/QjoA+God3wI5x42Qe2XSAaJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jan 04, 2015 at 11:49:09PM +0100, Giel van Schijndel wrote:
+>
+> > sctx does not point to stack memory so this is bogus.
+> > 
+> > Only stack memory cleared just before it goes out of scope needs
+> > memzero_explicit.
+> 
+> Is that because the compiler can't safely optimize memset(0) away for a
+> variable with greater-than-local scope?
 
-Hi Andy,
+Exactly.  memzero_explicit is not a marker for sensitive data.
+Its only purpose is to prevent the compiler from optimising away
+zeroing that occurs at the end of a scope.
 
-I noticed commit 7d032e5b1042 ("[TEST ONLY] Force RCU NMI nesting") has
-no Signed-off-by ... I understand that this is for testing, but that
-is *not* what linux-next is really for.  Especially given that that
-commit is x86 only, it should be used for unit testing. not a wider
-audience like this.
+Daniel, we should add a comment so that people stop sending bogus
+patches with memzero_explicit.
 
-I am also not sure about 9f29ed3365cd ("[DO NOT APPLY] rcu: Make
-rcu_nmi_enter() handle nesting") ...  (it is, in particular, not
-Signed-off-by the committer, you).
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/QjoA+God3wI5x42Qe2XSAaJ
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUqc5YAAoJEMDTa8Ir7ZwV5PEP/1yIvM6RS5yimfZ3WNr7XpNQ
-o3ep9ci6f6FNeObTGPP57Hjk9OvSyj4pmSXxJO8sanjUUfadISbfY8zZggjXK80q
-Uy8EHL+EFkU+0TnmXhiOcmoVPXnJ2DYWb2wQAzd1CNz5RKcCXabI43q2GCbrjT2T
-XtWlYEwpdiO/MdjeyyijESoVhsH71Dttn8H5pepZB24H2n8IX7jrqVkbAkO6li/Q
-rpNECF7IOB5+MKgLLb+D70Dv2smfm5BIpED3mugpDletR0RxBvOxfLnZ/0HzeRX/
-lCe8rBE+dit5wyV3SF4NovfgAlvhtMbqejyY7qFfj/STQyWaFX55KDZPan0FWabE
-9gUeZJIZtmCjihGhTUgK+t4ZJV5+89aC6XdYMlUmWYGTCTQdooH6riNw7dmcmdVU
-aWkqlzKl4Osr65Ev/ScT/R1CqlJmbDJa7CllLnzJu0zxVR+EFAWWsp1JOWN3v2lu
-xuhnOEpEjvqTM2ZyDIkkKgkXTJu8uBeK0Afra4lDOkA+AsQy00EPwoHHHxnqm3hB
-o4z5yOYFE51xLMU6a3WYrQEPyu2PCRGZ+MBjodx6e3jLgM/g8dFrjMOBx74Ml1XV
-6w5CDDhke/A9U+awb7pYp0i2Y5m9qLubzXpHE4yEym76DoKJvEPoB+MGJuXRRafx
-kh4ISf9yjHYyIGt1hMvS
-=AAKt
------END PGP SIGNATURE-----
-
---Sig_/QjoA+God3wI5x42Qe2XSAaJ--
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
