@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbbADPwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:52:17 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:62220 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725AbbADPwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:52:15 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] bluetooth: Remove unused function
-Date: Sun,  4 Jan 2015 16:55:14 +0100
-Message-Id: <1420386914-12885-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752770AbbADP4J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:56:09 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752658AbbADP4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 10:56:08 -0500
+Message-ID: <54A96294.1090008@nod.at>
+Date: Sun, 04 Jan 2015 16:56:04 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>, daniel.lezcano@linaro.org,
+        tglx@linutronix.de
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        d.walter@0x90.at
+Subject: Re: [PATCH] drivers/clocksource/Kconfig: Let SH_TIMER_CMT depend
+ on HAS_IOMEM
+References: <542D546C.8030205@gmail.com>
+In-Reply-To: <542D546C.8030205@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function hci_conn_change_link_key() that is not used anywhere.
+Chen,
 
-This was partially found by using a static code analysis program called cppcheck.
+Am 02.10.2014 um 15:34 schrieb Chen Gang:
+> SH_TIMER_CMT will use IO memory features which needs HAS_IOMEM, so need
+> depend on it. The related error (with allmodconfig under um):
+> 
+>     CC      drivers/clocksource/sh_cmt.o
+>   drivers/clocksource/sh_cmt.c: In function 'sh_cmt_map_memory':
+>   drivers/clocksource/sh_cmt.c:920:2: error: implicit declaration of function 'ioremap_nocache' [-Werror=implicit-function-declaration]
+>     cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
+>     ^
+>   drivers/clocksource/sh_cmt.c:920:15: warning: assignment makes pointer from integer without a cast [enabled by default]
+>     cmt->mapbase = ioremap_nocache(mem->start, resource_size(mem));
+>                  ^
+>   drivers/clocksource/sh_cmt.c: In function 'sh_cmt_setup':
+>   drivers/clocksource/sh_cmt.c:1034:2: error: implicit declaration of function 'iounmap' [-Werror=implicit-function-declaration]
+>     iounmap(cmt->mapbase);
+>     ^
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- include/net/bluetooth/hci_core.h |    1 -
- net/bluetooth/hci_conn.c         |   15 ---------------
- 2 files changed, 16 deletions(-)
+what is the status of this patch?
+I'd like to have this build issue resolved.
 
-diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
-index 37ff1ae..a922163 100644
---- a/include/net/bluetooth/hci_core.h
-+++ b/include/net/bluetooth/hci_core.h
-@@ -728,7 +728,6 @@ int hci_conn_check_link_mode(struct hci_conn *conn);
- int hci_conn_check_secure(struct hci_conn *conn, __u8 sec_level);
- int hci_conn_security(struct hci_conn *conn, __u8 sec_level, __u8 auth_type,
- 		      bool initiator);
--int hci_conn_change_link_key(struct hci_conn *conn);
- int hci_conn_switch_role(struct hci_conn *conn, __u8 role);
- 
- void hci_conn_enter_active_mode(struct hci_conn *conn, __u8 force_active);
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index b9517bd..1fc18b6 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -1075,21 +1075,6 @@ int hci_conn_check_secure(struct hci_conn *conn, __u8 sec_level)
- }
- EXPORT_SYMBOL(hci_conn_check_secure);
- 
--/* Change link key */
--int hci_conn_change_link_key(struct hci_conn *conn)
--{
--	BT_DBG("hcon %p", conn);
--
--	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->flags)) {
--		struct hci_cp_change_conn_link_key cp;
--		cp.handle = cpu_to_le16(conn->handle);
--		hci_send_cmd(conn->hdev, HCI_OP_CHANGE_CONN_LINK_KEY,
--			     sizeof(cp), &cp);
--	}
--
--	return 0;
--}
--
- /* Switch role */
- int hci_conn_switch_role(struct hci_conn *conn, __u8 role)
- {
--- 
-1.7.10.4
-
+Thanks,
+//richard
