@@ -1,140 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbbADHro (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 02:47:44 -0500
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:43441 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbbADHrn (ORCPT
+	id S1751655AbbADHxP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 02:53:15 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:39370 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbbADHxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 02:47:43 -0500
+	Sun, 4 Jan 2015 02:53:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <54A81CC6.2010007@ti.com>
-References: <1420220628-23742-1-git-send-email-nm@ti.com>
-	<1420220628-23742-3-git-send-email-nm@ti.com>
-	<CA+Ln22Epd8VpA9DQPFYBdjewUY3ejODhaRHgBSNZAQCYjx5saw@mail.gmail.com>
-	<20150103153446.GA23591@kahuna>
-	<CA+Ln22Ejvwd9J=jnWAUeb=nn-cvWiptqOydax+z4BeMrww_xqg@mail.gmail.com>
-	<54A81CC6.2010007@ti.com>
-Date: Sun, 4 Jan 2015 16:47:42 +0900
-Message-ID: <CA+Ln22Eqe-tPrd66R_BVH734yvgbHsBS+TwzkWAjuafjaAgBuA@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] ARM: l2c: AM437x: Introduce support for cache
- filter programming
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Santosh <ssantosh@kernel.org>, linux-omap <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CACVXFVPvi1mjJKKX8UuFA02Ci376C-pMdyY9=1xWG9G10QdGfA@mail.gmail.com>
+References: <CA+icZUWDMUBLq5=ydDtWnPadz0CBTQRHCeZnDVOvTjL4kYjfWA@mail.gmail.com>
+	<CA+icZUVMEqD9uDouL=FM8147NoWsgufkn2odTKEDgtiqcN3_3Q@mail.gmail.com>
+	<CACVXFVPvi1mjJKKX8UuFA02Ci376C-pMdyY9=1xWG9G10QdGfA@mail.gmail.com>
+Date: Sun, 4 Jan 2015 08:53:12 +0100
+Message-ID: <CA+icZUWO=062JpKOKwwJR3LjKf9X-VjAkJL7nmqYy_iWo0X7qg@mail.gmail.com>
+Subject: Re: [next-20141231] sched: WARNING: CPU: 1 PID: 2539 at
+ kernel/sched/core.c:7303 __might_sleep+0xbd/0xd0()
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, Jens Axboe <axboe@fb.com>,
+        "open list:AIO" <linux-aio@kvack.org>,
+        Benjamin LaHaise <bcrl@kvack.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-04 1:45 GMT+09:00 Nishanth Menon <nm@ti.com>:
-> On 01/03/2015 10:16 AM, Tomasz Figa wrote:
->>
->> 2015-01-04 0:34 GMT+09:00 Nishanth Menon <nm@ti.com>:
->>>
->>> On 15:40-20150103, Tomasz Figa wrote:
->>>>
->>>> Hi Nishanth,
->>>>
->>>> 2015-01-03 2:43 GMT+09:00 Nishanth Menon <nm@ti.com>:
->>>>>
->>>>> AM437x generation of processors support programming the PL310 L2Cache
->>>>> controller's address filter start and end registers using a secure
->>>>> montior service.
->>>>
->>>>
->>>> typo: s/montior/monitor/
->>>>
->>>> [snip]
->>>
->>>
->>> Uggh.. yes indeed. I will post a v3 updating the comments. If the
->>> following is ok.
->>>>
->>>>
->>>>> +               base = omap4_get_l2cache_base();
->>>>> +               filter_start = (reg == L310_ADDR_FILTER_START) ? val :
->>>>> +                              readl_relaxed(base +
->>>>> L310_ADDR_FILTER_START);
->>>>> +               filter_end = (reg == L310_ADDR_FILTER_END) ? val :
->>>>> +                              readl_relaxed(base +
->>>>> L310_ADDR_FILTER_END);
->>>>> +               omap_smc1_2(AM43X_MON_L2X0_SETFILTER_INDEX,
->>>>> filter_start,
->>>>> +                           filter_end);
->>>>> +               return;
->>>>
->>>>
->>>> I don't have any significant comments about this patch in particular,
->>>> but just noticed that you need to do read-backs here (and the typo
->>>> thanks to the spell checker of my mailing app). Maybe you should
->>>> consider switching to the .configure() API I introduced in my series?
->>>> This would let you get rid of the hardcoded static mapping.
->>>
->>>
->>> Yeah, I have two choices there.. Either I provide the fundamental
->>> write function for the generic l2c code to use OR I provide a
->>> duplicate of resultant l2c_configure(aux write) + l2c310_configure.
->>>
->>> To allow for reuse of improvements or anything like errata
->>> implementations in the future, OMAP L2C implementation has chosen to
->>> provide the
->>> low level code and allow the higherlevel configure/write/whatever of the
->>> future to stay in arch/arm/mm/cache-l2x0.c. The write_sec operation is
->>> not too complicated enough to warrant a replication of l2c310_configure.
->>>
->>> So, I prefer the current implementation than providing a .configure
->>> handler for outer_cache.configure from SoC level.
->>>
->>> Let me know if anyone has a strong objection to this.
->>
->>
->> Well, what l2c310_configure() does after my series is just writing the
->> registers. If they cannot be written normally (without some tricks
->> such as reading back other registers) then IMHO a separate function
->> should be provided.
->>
->> This is becomes possible after patch 3/8 (ARM: l2c: Add interface to
->> ask hypervisor to configure L2C) and what is used on Exynos which also
->> updates multiple registers in single SMC calls. You can find an
->> example of use in patch 6/8 (ARM: EXYNOS: Add .write_sec outer cache
->> callback for L2C-310). What's even more interesting is that approaches
->> similar to the one currently used on OMAP had been NAKed, when
->> proposed for Exynos and this is why we have the solution proposed by
->> my patches.
->>
->> Note that .write_sec() callback is still used for L2X0_CTRL and
->> L2X0_DEBUG_CTRL registers, because there might be a need to write them
->> separately (e.g. to disable the controller and to perform debug
->> operations/workarounds when the controller is already enabled).
+On Sun, Jan 4, 2015 at 1:59 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> Hi Sedat,
 >
+> On Sun, Jan 4, 2015 at 7:42 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Thu, Jan 1, 2015 at 11:28 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> with next-20141231 I am seeing this call-trace:
+>>>
+>>> [   88.028632] ------------[ cut here ]------------
+>>> [   88.028643] WARNING: CPU: 1 PID: 2539 at kernel/sched/core.c:7303
+>>> __might_sleep+0xbd/0xd0()
+>>> [   88.028646] do not call blocking ops when !TASK_RUNNING; state=1
+>>> set at [<ffffffff810b82dd>] prepare_to_wait_event+0x5d/0x110
+>>> [   88.028648] Modules linked in: ppp_deflate bsd_comp ppp_async
+>>> crc_ccitt arc4 iwldvm uvcvideo mac80211 snd_hda_codec_hdmi
+>>> snd_hda_codec_realtek parport_pc videobuf2_vmalloc
+>>> snd_hda_codec_generic ppdev videobuf2_memops snd_hda_intel
+>>> videobuf2_core rfcomm bnep snd_hda_controller option snd_hda_codec
+>>> v4l2_common i915 joydev videodev usb_wwan snd_hwdep usbserial
+>>> cdc_ether snd_pcm usbnet btusb snd_seq_midi snd_seq_midi_event
+>>> bluetooth psmouse snd_rawmidi iwlwifi snd_seq i2c_algo_bit
+>>> drm_kms_helper snd_timer serio_raw snd_seq_device samsung_laptop drm
+>>> snd cfg80211 soundcore video lpc_ich intel_rst wmi mac_hid binfmt_misc
+>>> lp parport hid_generic usbhid hid r8169 mii usb_storage
+>>> [   88.028694] CPU: 1 PID: 2539 Comm: fio Not tainted
+>>> 3.19.0-rc2-next20141231-1-iniza-small #1
+>>> [   88.028695] Hardware name: SAMSUNG ELECTRONICS CO., LTD.
+>>> 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH, BIOS 13XK 03/28/2013
+>>> [   88.028697]  ffffffff81a66d5f ffff880070f43c38 ffffffff8175c50c
+>>> 0000000000000000
+>>> [   88.028700]  ffff880070f43c88 ffff880070f43c78 ffffffff810753ba
+>>> ffff880070f43d28
+>>> [   88.028703]  ffffffff81a67ef5 000000000000026d 0000000000000000
+>>> 0000000000dce810
+>>> [   88.028706] Call Trace:
+>>> [   88.028712]  [<ffffffff8175c50c>] dump_stack+0x4c/0x65
+>>> [   88.028716]  [<ffffffff810753ba>] warn_slowpath_common+0x8a/0xc0
+>>> [   88.028719]  [<ffffffff81075436>] warn_slowpath_fmt+0x46/0x50
+>>> [   88.028722]  [<ffffffff810c2c3d>] ? mark_held_locks+0x6d/0xa0
+>>> [   88.028725]  [<ffffffff81761732>] ? mutex_lock_nested+0x2b2/0x4e0
+>>> [   88.028727]  [<ffffffff810b82dd>] ? prepare_to_wait_event+0x5d/0x110
+>>> [   88.028729]  [<ffffffff810b82dd>] ? prepare_to_wait_event+0x5d/0x110
+>>> [   88.028731]  [<ffffffff8109c3ad>] __might_sleep+0xbd/0xd0
+>>> [   88.028734]  [<ffffffff817614af>] mutex_lock_nested+0x2f/0x4e0
+>>> [   88.028736]  [<ffffffff810b82d3>] ? prepare_to_wait_event+0x53/0x110
+>>> [   88.028739]  [<ffffffff8124433f>] aio_read_events+0x4f/0x2d0
+>>> [   88.028742]  [<ffffffff810c2e7d>] ? trace_hardirqs_on+0xd/0x10
+>>> [   88.028745]  [<ffffffff812447c0>] read_events+0x200/0x320
+>>> [   88.028747]  [<ffffffff810b81c0>] ? wait_woken+0xc0/0xc0
+>>> [   88.028750]  [<ffffffff810e9690>] ? hrtimer_get_res+0x50/0x50
+>>> [   88.028753]  [<ffffffff81244ca0>] ? lookup_ioctx+0xd0/0x140
+>>> [   88.028755]  [<ffffffff812466b2>] SyS_io_getevents+0x62/0x100
+>>> [   88.028759]  [<ffffffff813b59be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>>> [   88.028762]  [<ffffffff817663ed>] system_call_fastpath+0x16/0x1b
+>>> [   88.028764] ---[ end trace dba4f4a06fcdd178 ]---
 >
+> It is an known linux-aio issue, see the following link:
 >
-> we dont have a machine descriptor for configure instead we overide the
-> logic(in you case after firmware load, in OMAP case, I need to figure out).
-> my point being unlike the exynos configure code, OMAP code will look exactly
-> like current pl310_configure-2 lines of code which really does not benefit
-> anything.
+> http://marc.info/?t=141925049600004&r=1&w=2
 >
->
-> Thinking again, in fact, i'd rather drop this series than have to do a
-> duplicated configure code(and force a resultant maintenance for the future)
-> in OMAP code since none of OMAP4 or AM437x series need these patches.
-> Interest for this series was non-mandatory, but just to be complete from SoC
-> definition point of view.
->
-> Let me know which way you guys want me to go.
 
-Right, dropping this series would definitely solve the the read-back issue. :)
+This discussion resulted in a RFC patch of Chris Mason which is still
+discussed in [1].
 
-After all, if you don't need to override the latencies in the kernel
-(i.e. have sane firmware, unlike certain Exynos boards ;)), then I
-don't see a point of having this feature.
+- Sedat -
 
-Best regards,
-Tomasz
+[1] http://marc.info/?t=141929396100001&r=1&w=2
