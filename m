@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908AbbADW1t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 17:27:49 -0500
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:48519 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789AbbADW1s (ORCPT
+	id S1752983AbbADW2O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 17:28:14 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:63808 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935AbbADW2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 17:27:48 -0500
-Date: Mon, 5 Jan 2015 00:27:38 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-Message-ID: <20150104222738.GQ582@fuloong-minipc.musicnaut.iki.fi>
-References: <20150104190123.GA20153@amd>
- <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
- <20150104201026.GA23427@amd>
- <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
- <20150104203724.GA16372@amd>
- <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
- <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
- <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
- <20150104212659.GC12302@n2100.arm.linux.org.uk>
- <20150104214049.GA4985@amd>
+	Sun, 4 Jan 2015 17:28:11 -0500
+Date: Sun, 4 Jan 2015 14:27:43 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linux Input <linux-input@vger.kernel.org>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Input: gpio_keys - allow separating gpio and irq in
+ device tree
+Message-ID: <20150104222743.GA31987@dtor-ws>
+References: <20141208071930.GA20802@dtor-ws>
+ <CACRpkdZ3PHGRG400Y9zo9RKGyyFm9qF7rZZa8PGpT6AStjUhYA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150104214049.GA4985@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CACRpkdZ3PHGRG400Y9zo9RKGyyFm9qF7rZZa8PGpT6AStjUhYA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sun, Jan 04, 2015 at 10:40:49PM +0100, Pavel Machek wrote:
-> On Sun 2015-01-04 21:26:59, Russell King - ARM Linux wrote:
-> > On Sun, Jan 04, 2015 at 04:20:57PM -0500, Nicolas Pitre wrote:
-> > > On Sun, 4 Jan 2015, Linus Torvalds wrote:
-> > > 
-> > > > On Sun, Jan 4, 2015 at 12:56 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> > > > >
-> > > > > It wasted a lot of people's time before by simply being there and wrong
-> > > > > before it was removed.  It's only a matter of whose time you want to
-> > > > > waste.  Really.
-> > > > 
-> > > > Really. Shut up.
-> > > > 
-> > > > The whole "no regressions" thing is very much about the fact that we
-> > > > don't waste users time.
-> > > 
-> > > I was talking about users time all along.
-> > > 
-> > > Never mind.  I'm sorry for the NAK and sorry for attempting to start a 
-> > > discussion to find a better replacement.
-> > 
-> > Nico,
-> > 
-> > I encourage you *not* to back down like this.  Linus is right in so far
-> > as the regressions issue, but he is *totally* wrong to do the revert,
-> > which IMHO has been done out of nothing more than spite.
-> > 
-> > Either *with or without* the revert, the issue still remains, and needs
-> > to be addressed properly.
-> > 
-> > With the revert in place, we now have insanely small bogomips values
-> > reported via /proc/cpuinfo when hardware timers are used.  That needs
-> > fixing.
+On Wed, Dec 31, 2014 at 09:22:27AM +0100, Linus Walleij wrote:
+> On Mon, Dec 8, 2014 at 8:19 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
 > 
-> Too bad 9fc2105aeaaf56b0cf75296a84702d0f9e64437b's changelog did not
-> mention that :-(.
+> > This change allows specify interrupt for buttons separately form gpio,
+> > potentially allowing to form several "clusters" of buttons on
+> > different interrupts.
+> >
+> > Button defined without both gpio and irq in device tree is a hared error
 > 
-> I see reasonable values on Nokia N900. Do I need to change my config
-> to see the problem, or should I try reproducing on socfpga board?
+> hared?
 
-I believe Nokia boards fall into the "antique hardware" category, so for
-us using such HW the issue is not visible...
+Should have been "hard", sorry...
 
-A.
+> 
+> > instead of a warning now.
+> >
+> > Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> 
+> ...but it would be nice if it could also be converted to use GPIO
+> descriptors internally at some point.
+
+Thanks.
+
+-- 
+Dmitry
