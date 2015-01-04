@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791AbbADS1H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 13:27:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39123 "EHLO mx1.redhat.com"
+	id S1752795AbbADSf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 13:35:58 -0500
+Received: from relay.nhs.uk ([62.208.144.128]:43805 "EHLO relay.nhs.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752658AbbADS1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 13:27:05 -0500
-Date: Sun, 4 Jan 2015 19:26:56 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 5/5] perf diff: Fix -o/--order option behavior
-Message-ID: <20150104182656.GC29388@krava.brq.redhat.com>
-References: <1419656793-32756-1-git-send-email-namhyung@kernel.org>
- <1419656793-32756-5-git-send-email-namhyung@kernel.org>
+	id S1752680AbbADSf5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 13:35:57 -0500
+From: "Mizen Susan (DEVON PARTNERSHIP NHS TRUST)" <susanmizen@nhs.net>
+Date: Sun, 4 Jan 2015 18:33:58 +0000
+Subject: FW: 
+Thread-Index: AQHQKEtfQ+v7sH2/80q1PqEsaHV/RpywSWqT
+OLD-MSG-ID: <9E5394838B0ED041911BD93F20B6697A1075E33917@NHS-PCLI-MBC012.AD1.NHS.NET>
+References: <9E5394838B0ED041911BD93F20B6697A1075E338D4@NHS-PCLI-MBC012.AD1.NHS.NET>
+In-Reply-To: <9E5394838B0ED041911BD93F20B6697A1075E338D4@NHS-PCLI-MBC012.AD1.NHS.NET>
+Accept-Language: en-GB
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-GB
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419656793-32756-5-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Undisclosed recipients:;
+Message-Id: <20150104183555.292294480CB@nhs-pd1e-esg103.ad1.nhs.net>
+X-TM-AS-Product-Ver: IMSVA-8.0.0.1495-7.5.0.1018-21224.001
+X-TM-AS-Result: No--10.736-60-31-10
+X-imss-scan-details: No--10.736-60-31-10;No--10.736-3-31-10;No--10.736-4-31-10
+X-TMASE-MatchedRID: LODGzHu9Sbv7QQaFqunKL/SXzMjw9EDtSsLMFjhlUaM5CCUkHUNu7rNo
+	8vBZ/z47hlKQuEkXj8Hn0e7jV3OZdKNv4WnD3C0uOJTWdcuXC/46En2bnefhoOKgPcChFS1gLLW
+	htsLdTGpsjXoN4wE77LqP0cP7WjHvgR8fXKWkEM4TDJnK4xDjXdZKsq3DGpalkC5RlDa9dg6ej9
+	7eJ7HTJBzu8yBJIHOprIptOCER/1Q+NWwLIJ2P8ootbfLc03Eq6WEXVvp/LmubKItl61J/ydQdC
+	xJhIFbiO0QdRAbPvzQLbigRnpKlKSPzRlrdFGDwl1aCSaxfP5Mjm1Xz1SKFI/blfc6moK8WrdNw
+	gVrM5yrhXQLvv/KRlQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 27, 2014 at 02:06:33PM +0900, Namhyung Kim wrote:
 
-SNIP
 
-> +		return 0;
-> +
-> +	fmt = zalloc(sizeof(*fmt));
-> +	if (fmt == NULL) {
-> +		pr_err("Memory allocation failed\n");
-> +		return -1;
-> +	}
-> +
-> +	fmt->cmp      = hist_entry__cmp_nop;
-> +	fmt->collapse = hist_entry__cmp_nop;
-> +
-> +	switch (compute) {
-> +	case COMPUTE_DELTA:
-> +		fmt->sort = hist_entry__cmp_delta_idx;
-> +		break;
-> +	case COMPUTE_RATIO:
-> +		fmt->sort = hist_entry__cmp_ratio_idx;
-> +		break;
-> +	case COMPUTE_WEIGHTED_DIFF:
-> +		fmt->sort = hist_entry__cmp_wdiff_idx;
-> +		break;
-> +	default:
-> +		BUG_ON(1);
-> +	}
-> +
-> +	list_add(&fmt->sort_list, &perf_hpp__sort_list);
-> +	return 0;
+________________________________________
+From: Mizen Susan (DEVON PARTNERSHIP NHS TRUST)
+Sent: 04 January 2015 18:22
+To: Mizen Susan (DEVON PARTNERSHIP NHS TRUST)
+Subject:
 
-so the first 'fmt' which gets to sorting is the one for
-data__files[sort_idx] file, that sounds good..
+1.5 CAD to you :Email ( leonhirtle1943@outlook.com  ) for Info
 
-but as the sorting goes through all the perf_hpp__sort_list list,
-it will hit the 'sort_idx' data again.. should you disable sort
-function for its 'fmt' then?
+********************************************************************************************************************
 
-jirka
+This message may contain confidential information. If you are not the intended recipient please inform the
+sender that you have received the message in error before deleting it.
+Please do not disclose, copy or distribute information in this e-mail or take any action in reliance on its contents:
+to do so is strictly prohibited and may be unlawful.
+
+Thank you for your co-operation.
+
+NHSmail is the secure email and directory service available for all NHS staff in England and Scotland
+NHSmail is approved for exchanging patient data and other sensitive information with NHSmail and GSi recipients
+NHSmail provides an email address for your career in the NHS and can be accessed anywhere
+
+********************************************************************************************************************
