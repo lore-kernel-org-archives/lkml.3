@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbbADPTE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:19:04 -0500
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:5328 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752647AbbADPTB (ORCPT
+	id S1752762AbbADPbX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:31:23 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59145 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658AbbADPbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:19:01 -0500
-From: Jisheng Zhang <jszhang@marvell.com>
-To: <chris@printf.net>, <ulf.hansson@linaro.org>
-CC: <peter.griffin@linaro.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Jisheng Zhang <jszhang@marvell.com>
-Subject: [PATCH next 2/2] mmc: sdhci-pxav3: fix pm unbalanced issue in -> remove()
-Date: Sun, 4 Jan 2015 23:15:48 +0800
-Message-ID: <1420384548-7816-3-git-send-email-jszhang@marvell.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1420384548-7816-1-git-send-email-jszhang@marvell.com>
-References: <1420384548-7816-1-git-send-email-jszhang@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-04_03:2015-01-02,2015-01-04,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1501040160
+	Sun, 4 Jan 2015 10:31:22 -0500
+From: Piotr Kubus <p.t.kubus@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Piotr Kubus <p.t.kubus@gmail.com>
+Subject: [PATCH] Staging: comedi: dmm32at: Fixed a code indent issue
+Date: Sun,  4 Jan 2015 16:22:35 +0100
+Message-Id: <1420384955-27336-1-git-send-email-p.t.kubus@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch calls pm_runtime_put_noidle() to restore the device's usage
-counter in the ->remove() implementation.
+This is a patch to the dmm32at.c file that fixes up a code indent error found by the checkpatch.pl tool.
 
-Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+Signed-off-by: Piotr Kubus <p.t.kubus@gmail.com>
 ---
- drivers/mmc/host/sdhci-pxav3.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/dmm32at.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-index 1255dd2..4de39fb 100644
---- a/drivers/mmc/host/sdhci-pxav3.c
-+++ b/drivers/mmc/host/sdhci-pxav3.c
-@@ -412,8 +412,10 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
- 	struct sdhci_pxa *pxa = pltfm_host->priv;
+diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
+index 6df298a..31919b8 100644
+--- a/drivers/staging/comedi/drivers/dmm32at.c
++++ b/drivers/staging/comedi/drivers/dmm32at.c
+@@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
+ 	/* enable the ai conversion interrupt and the clock to start scans */
+ 	outb(DMM32AT_INTCLK_ADINT |
+ 	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
+-             dev->iobase + DMM32AT_INTCLK_REG);
++	     dev->iobase + DMM32AT_INTCLK_REG);
+ }
  
- 	pm_runtime_get_sync(&pdev->dev);
--	sdhci_remove_host(host, 1);
- 	pm_runtime_disable(&pdev->dev);
-+	pm_runtime_put_noidle(&pdev->dev);
-+
-+	sdhci_remove_host(host, 1);
- 
- 	clk_disable_unprepare(pxa->clk_io);
- 	if (!IS_ERR(pxa->clk_core))
+ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 -- 
-2.1.4
+1.9.1
 
