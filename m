@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898AbbADVhW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 16:37:22 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:42022 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789AbbADVhU (ORCPT
+	id S1752941AbbADVkw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 16:40:52 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:37431 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788AbbADVkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 16:37:20 -0500
-Date: Mon, 5 Jan 2015 08:35:38 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steve French <sfrench@samba.org>,
-        Rahul Bedarkar <rahulbedarkar89@gmail.com>,
-        Thomas Pugliese <thomas.pugliese@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        "open list:CRYPTO API" <linux-crypto@vger.kernel.org>,
-        "open list:CERTIFIED WIRELES..." <linux-usb@vger.kernel.org>,
-        "open list:COMMON INTERNET F..." <linux-cifs@vger.kernel.org>,
-        "moderated list:COMMON INTERNET F..." 
-	<samba-technical@lists.samba.org>
-Subject: Re: [PATCH] Use memzero_explicit to clear local buffers
-Message-ID: <20150104213538.GA19906@gondor.apana.org.au>
-References: <1420394744-20268-1-git-send-email-me@mortis.eu>
+	Sun, 4 Jan 2015 16:40:51 -0500
+Date: Sun, 4 Jan 2015 22:40:49 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150104214049.GA4985@amd>
+References: <20150104190123.GA20153@amd>
+ <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
+ <20150104201026.GA23427@amd>
+ <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
+ <20150104203724.GA16372@amd>
+ <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+ <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
+ <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
+ <20150104212659.GC12302@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420394744-20268-1-git-send-email-me@mortis.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150104212659.GC12302@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 07:05:40PM +0100, Giel van Schijndel wrote:
-> When leaving a function use memzero_explicit instead of memset(0) to
-> clear locally allocated/owned buffers. memset(0) may be optimized away.
+On Sun 2015-01-04 21:26:59, Russell King - ARM Linux wrote:
+> On Sun, Jan 04, 2015 at 04:20:57PM -0500, Nicolas Pitre wrote:
+> > On Sun, 4 Jan 2015, Linus Torvalds wrote:
+> > 
+> > > On Sun, Jan 4, 2015 at 12:56 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> > > >
+> > > > It wasted a lot of people's time before by simply being there and wrong
+> > > > before it was removed.  It's only a matter of whose time you want to
+> > > > waste.  Really.
+> > > 
+> > > Really. Shut up.
+> > > 
+> > > The whole "no regressions" thing is very much about the fact that we
+> > > don't waste users time.
+> > 
+> > I was talking about users time all along.
+> > 
+> > Never mind.  I'm sorry for the NAK and sorry for attempting to start a 
+> > discussion to find a better replacement.
 > 
-> All of the affected buffers contain sensitive data, key material or
-> derivatives of one of those two.
+> Nico,
+> 
+> I encourage you *not* to back down like this.  Linus is right in so far
+> as the regressions issue, but he is *totally* wrong to do the revert,
+> which IMHO has been done out of nothing more than spite.
+> 
+> Either *with or without* the revert, the issue still remains, and needs
+> to be addressed properly.
+> 
+> With the revert in place, we now have insanely small bogomips values
+> reported via /proc/cpuinfo when hardware timers are used.  That needs
+> fixing.
 
-Nack.
- 
-> diff --git a/arch/x86/crypto/sha256_ssse3_glue.c b/arch/x86/crypto/sha256_ssse3_glue.c
-> index 8fad72f..b616e63 100644
-> --- a/arch/x86/crypto/sha256_ssse3_glue.c
-> +++ b/arch/x86/crypto/sha256_ssse3_glue.c
-> @@ -164,7 +164,7 @@ static int sha256_ssse3_final(struct shash_desc *desc, u8 *out)
->  		dst[i] = cpu_to_be32(sctx->state[i]);
->  
->  	/* Wipe context */
-> -	memset(sctx, 0, sizeof(*sctx));
-> +	memzero_explicit(sctx, sizeof(*sctx));
+Too bad 9fc2105aeaaf56b0cf75296a84702d0f9e64437b's changelog did not
+mention that :-(.
 
-sctx does not point to stack memory so this is bogus.
+I see reasonable values on Nokia N900. Do I need to change my config
+to see the problem, or should I try reproducing on socfpga board?
 
-Only stack memory cleared just before it goes out of scope needs
-memzero_explicit.
-
-Cheers,
+									Pavel
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
