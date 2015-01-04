@@ -1,389 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105AbbADK5a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 05:57:30 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53010 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753072AbbADK5Z (ORCPT
+	id S1752781AbbADKzj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 05:55:39 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48146 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbbADKzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 05:57:25 -0500
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        phoenix.liyi@huawei.com, Timur Tabi <timur@codeaurora.org>,
-        suravee.suthikulpanit@amd.com, linux-acpi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org, Al Stone <al.stone@linaro.org>,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v6 17/17] Documentation: ACPI for ARM64
-Date: Sun,  4 Jan 2015 18:55:18 +0800
-Message-Id: <1420368918-5086-18-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
-References: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
+	Sun, 4 Jan 2015 05:55:37 -0500
+Message-ID: <54A91C27.5030905@kernel.org>
+Date: Sun, 04 Jan 2015 10:55:35 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>
+CC: lars@metafoo.de, pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com
+Subject: Re: [PATCH 09/10] iio: imu: kmx61: Drop odr_bits from kmx61_samp_freq_table
+References: <1419340953-23161-1-git-send-email-daniel.baluta@intel.com> <1419340953-23161-10-git-send-email-daniel.baluta@intel.com> <54A5516D.5050209@gmx.de>
+In-Reply-To: <54A5516D.5050209@gmx.de>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graeme Gregory <graeme.gregory@linaro.org>
+On 01/01/15 13:53, Hartmut Knaack wrote:
+> Daniel Baluta schrieb am 23.12.2014 um 14:22:
+>> odr_bits values are between 0 and 11, so we can use the index
+>> in kmx61_samp_freq_table instead of odr_bits structure member.
+> Basically looking good, but I would feel more comfortable to check
+> against the boundaries of the table. Please see inline.
+> 
+>>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+>> ---
+>>  drivers/iio/imu/kmx61.c | 64 ++++++++++++++++++++-----------------------------
+>>  1 file changed, 26 insertions(+), 38 deletions(-)
+>>
+>> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
+>> index eb3900e..98369eb 100644
+>> --- a/drivers/iio/imu/kmx61.c
+>> +++ b/drivers/iio/imu/kmx61.c
+>> @@ -169,19 +169,18 @@ u16 kmx61_uscale_table[] = {9582, 19163, 38326};
+>>  static const struct {
+>>  	int val;
+>>  	int val2;
+>> -	u8 odr_bits;
+>> -} kmx61_samp_freq_table[] = { {12, 500000, 0x00},
+>> -			{25, 0, 0x01},
+>> -			{50, 0, 0x02},
+>> -			{100, 0, 0x03},
+>> -			{200, 0, 0x04},
+>> -			{400, 0, 0x05},
+>> -			{800, 0, 0x06},
+>> -			{1600, 0, 0x07},
+>> -			{0, 781000, 0x08},
+>> -			{1, 563000, 0x09},
+>> -			{3, 125000, 0x0A},
+>> -			{6, 250000, 0x0B} };
+>> +} kmx61_samp_freq_table[] = { {12, 500000},
+>> +			{25, 0},
+>> +			{50, 0},
+>> +			{100, 0},
+>> +			{200, 0},
+>> +			{400, 0},
+>> +			{800, 0},
+>> +			{1600, 0},
+>> +			{0, 781000},
+>> +			{1, 563000},
+>> +			{3, 125000},
+>> +			{6, 250000} };
+>>  
+>>  static const struct {
+>>  	int val;
+>> @@ -302,24 +301,10 @@ static int kmx61_convert_freq_to_bit(int val, int val2)
+>>  	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
+>>  		if (val == kmx61_samp_freq_table[i].val &&
+>>  		    val2 == kmx61_samp_freq_table[i].val2)
+>> -			return kmx61_samp_freq_table[i].odr_bits;
+>> -	return -EINVAL;
+>> -}
+>> -
+>> -static int kmx61_convert_bit_to_freq(u8 odr_bits, int *val, int *val2)
+>> -{
+>> -	int i;
+>> -
+>> -	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
+>> -		if (odr_bits == kmx61_samp_freq_table[i].odr_bits) {
+>> -			*val = kmx61_samp_freq_table[i].val;
+>> -			*val2 = kmx61_samp_freq_table[i].val2;
+>> -			return 0;
+>> -		}
+>> +			return i;
+>>  	return -EINVAL;
+>>  }
+>>  
+>> -
+>>  static int kmx61_convert_wake_up_odr_to_bit(int val, int val2)
+>>  {
+>>  	int i;
+>> @@ -478,7 +463,7 @@ static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
+>>  
+>>  static int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2,
+>>  			 u8 device)
+>> -{	int i;
+>> +{
+>>  	u8 lodr_bits;
+>>  
+>>  	if (device & KMX61_ACC)
+>> @@ -490,13 +475,13 @@ static int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2,
+>>  	else
+>>  		return -EINVAL;
+>>  
+>> -	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
+>> -		if (lodr_bits == kmx61_samp_freq_table[i].odr_bits) {
+>> -			*val = kmx61_samp_freq_table[i].val;
+>> -			*val2 = kmx61_samp_freq_table[i].val2;
+>> -			return 0;
+>> -		}
+>> -	return -EINVAL;
+>> +	if (lodr_bits > 0xB)
+> Since we use it as an index, I regard it safer to check against
+> ARRAY_SIZE(kmx61_samp_freq_table) rather than a fix value.
+Makes sense to me as well - though obviously ARRAY_SIZE(kmx61_samp_freq_table) is
+0xC (12) rather than 0xB (11) so you'll need a minus 1
 
-Add documentation for the guidelines of how to use ACPI
-on ARM64.
-
-Reviewed-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-Signed-off-by: Al Stone <al.stone@linaro.org>
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- Documentation/arm64/arm-acpi.txt | 327 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 327 insertions(+)
- create mode 100644 Documentation/arm64/arm-acpi.txt
-
-diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
-new file mode 100644
-index 0000000..21e7020
---- /dev/null
-+++ b/Documentation/arm64/arm-acpi.txt
-@@ -0,0 +1,327 @@
-+ACPI on ARMv8 Servers
-+---------------------
-+ACPI can be used for ARMv8 general purpose servers designed to follow
-+the ARM SBSA (Server Base System Architecture) and SBBR (Server Base
-+Boot Requirements) specifications, currently available to those with
-+an ARM login at http://silver.arm.com.
-+
-+The ARMv8 kernel implements the reduced hardware model of ACPI version
-+5.1 and later.  Links to the specification and all external documents
-+it refers to are managed by the UEFI Forum.  The specification is
-+available at http://www.uefi.org/specifications and external documents
-+can be found via http://www.uefi.org/acpi.
-+
-+If an ARMv8 system does not meet the requirements of the SBSA, or cannot
-+be described using the mechanisms defined in the required ACPI specifications,
-+then it is likely that Device Tree (DT) is more suitable than ACPI for the
-+hardware.
-+
-+
-+Relationship with Device Tree
-+-----------------------------
-+ACPI support in drivers and subsystems for ARMv8 should never be mutually
-+exclusive with DT support at compile time.
-+
-+At boot time the kernel will only use one description method depending on
-+parameters passed from the bootloader (including kernel bootargs).
-+
-+Regardless of whether DT or ACPI is used, the kernel must always be capable
-+of booting with either scheme (in kernels with both schemes enabled at compile
-+time).
-+
-+
-+Booting using ACPI tables
-+-------------------------
-+The only defined method for passing ACPI tables to the kernel on ARMv8
-+is via the UEFI system configuration table.
-+
-+Processing of ACPI tables may be disabled by passing acpi=off on the kernel
-+command line; this is the default behavior if both ACPI and DT tables are
-+present.  If acpi=force is used, the kernel will ONLY use device configuration
-+information contained in the ACPI tables if those tables are available.
-+
-+In order for the kernel to load and use ACPI tables, the UEFI implementation
-+MUST set the ACPI_20_TABLE_GUID to point to the RSDP table (the table with
-+the ACPI signature "RSD PTR ").  If this pointer is incorrect and acpi=force
-+is used, the kernel will disable ACPI and try to use DT to boot instead.
-+
-+If the pointer to the RSDP table is correct, the table will be mapped into
-+the kernel by the ACPI core, using the address provided by UEFI.
-+
-+The ACPI core will then locate and map in all other ACPI tables provided by
-+using the addresses in the RSDP table to find the XSDT (eXtended System
-+Description Table).  The XSDT in turn provides the addresses to all other
-+ACPI tables provided by the system firmware; the ACPI core will then traverse
-+this table and map in the tables listed.
-+
-+The ACPI core will ignore any provided RSDT (Root System Description Table).
-+RSDTs have been deprecated and are ignored on arm64 since they only allow
-+for 32-bit addresses.
-+
-+Further, the ACPI core will only use the 64-bit address fields in the FADT
-+(Fixed ACPI Description Table).  Any 32-bit address fields in the FADT will
-+be ignored on arm64.
-+
-+Hardware reduced mode (see Section 4.1 of the ACPI 5.1 specification) will
-+be enforced by the ACPI core on arm64.  Doing so allows the ACPI core to
-+run less complex code since it no longer has to provide support for legacy
-+hardware from other architectures.
-+
-+For the ACPI core to operate properly, and in turn provide the information
-+the kernel needs to configure devices, it expects to find the following
-+tables (all section numbers refer to the ACPI 5.1 specfication):
-+
-+    -- RSDP (Root System Description Pointer), section 5.2.5
-+
-+    -- XSDT (eXtended System Description Table), section 5.2.8
-+
-+    -- FADT (Fixed ACPI Description Table), section 5.2.9
-+
-+    -- DSDT (Differentiated System Description Table), section
-+       5.2.11.1
-+
-+    -- MADT (Multiple APIC Description Table), section 5.2.12
-+
-+    -- GTDT (Generic Timer Description Table), section 5.2.24
-+
-+    -- If PCI is supported, the MCFG (Memory mapped ConFiGuration
-+       Table), section 5.2.6, specifically Table 5-31.
-+
-+If the above tables are not all present, the kernel may or may not be
-+able to boot properly since it may not be able to configure all of the
-+devices available.
-+
-+
-+ACPI Detection
-+--------------
-+Drivers should determine their probe() type by checking for a null
-+value for ACPI_HANDLE, or checking .of_node, or other information in
-+the device structure.  This is detailed further in the "Driver 
-+Recommendations" section.
-+
-+In non-driver code, if the presence of ACPI needs to be detected at
-+runtime, then check the value of acpi_disabled. If CONFIG_ACPI is not
-+set, acpi_disabled will always be 1.
-+
-+
-+Device Enumeration
-+------------------
-+Device descriptions in ACPI should use standard recognized ACPI interfaces.
-+These may contain less information than is typically provided via a Device
-+Tree description for the same device.  This is also one of the reasons that
-+ACPI can be useful -- the driver takes into account that it may have less
-+detailed information about the device and uses sensible defaults instead.
-+If done properly in the driver, the hardware can change and improve over
-+time without the driver having to change at all.
-+
-+Clocks provide an excellent example.  In DT, clocks need to be specified
-+and the drivers need to take them into account.  In ACPI, the assumption
-+is that UEFI will leave the device in a reasonable default state, including
-+any clock settings.  If for some reason the driver needs to change a clock
-+value, this can be done in an ACPI method; all the driver needs to do is
-+invoke the method and not concern itself with what the method needs to do
-+to change the clock.  Changing the hardware can then take place over time
-+by changing what the ACPI method does, and not the driver.
-+
-+ACPI drivers should only look at one specific ASL object -- the _DSD object
-+-- for device driver parameters (known in DT as "bindings", or "Device
-+Properties" in ACPI).  DT bindings also will be reviewed before used.  The UEFI
-+Forum provides a mechanism for registering such bindings [URL TBD by ASWG]
-+so that they may be used on any operating system supporting ACPI.  Device
-+properties that have not been registered with the UEFI Forum should not be
-+used.
-+
-+Drivers should look for device properties in the _DSD object ONLY; the _DSD
-+object is described in the ACPI specification section 6.2.5, but more
-+specifically, use the _DSD Device Properties UUID:
-+
-+   -- UUID: daffd814-6eba-4d8c-8a91-bc9bbf4aa301
-+   
-+   -- http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-+
-+The kernel has an interface for looking up device properties in a manner
-+independent of whether DT or ACPI is being used and that interface should
-+be used; it can eliminate some duplication of code paths in driver probing
-+functions and discourage divergence between DT bindings and ACPI device
-+properties.
-+
-+ACPI tables are described with a formal language called ASL, the ACPI
-+Source Language (section 19 of the specification).  This means that there
-+are always multiple ways to describe the same thing -- including device
-+properties.  For example, device properties could use an ASL construct
-+that looks like this: Name(KEY0, "value0").  An ACPI device driver would
-+then retrieve the value of the property by evaluating the KEY0 object.
-+However, using Name() this way has multiple problems: (1) ACPI limits
-+names ("KEY0") to four characters unlike DT; (2) there is no industry
-+wide registry that maintains a list of names, minimzing re-use; (3)
-+there is also no registry for the definition of property values ("value0"),
-+again making re-use difficult; and (4) how does one maintain backward
-+compatibility as new hardware comes out?  The _DSD method was created
-+to solve precisely these sorts of problems; Linux drivers should ALWAYS
-+use the _DSD method for device properties and nothing else.
-+
-+The _DSM object (ACPI Section 9.14.1) could also be used for conveying
-+device properties to a driver.  Linux drivers should only expect it to
-+be used if _DSD cannot represent the data required, and there is no way
-+to create a new UUID for the _DSD object.  Note that there is even less
-+regulation of the use of _DSM than there is of _DSD.  Drivers that depend
-+on the contents of _DSM objects will be more difficult to maintain over
-+time because of this.
-+
-+The _DSD object is a very flexible mechanism in ACPI, as are the registered
-+Device Properties.  This flexibility allows _DSD to cover more than just the
-+generic server case and care should be taken in device drivers not to expect
-+it to replicate highly specific embedded behaviour from DT.
-+
-+Both DT bindings and ACPI device properties for device drivers have review
-+processes.  Use them.  And, before creating new device properties, check to
-+be sure that they have not been defined before and either registered in the
-+Linux kernel documentation or the UEFI Forum.  If the device drivers supports
-+ACPI and DT, please make sure the device properties are consistent in both
-+places.
-+
-+
-+Programmable Power Control Resources
-+------------------------------------
-+Programmable power control resources include such resources as voltage/current
-+providers (regulators) and clock sources.
-+
-+The kernel assumes that power control of these resources is represented with
-+Power Resource Objects (ACPI section 7.1).  The ACPI core will then handle
-+correctly enabling and disabling resources as they are needed.  In order to
-+get that to work, ACPI assumes each device has defined D-states and that these
-+can be controlled through the optional ACPI methods _PS0, _PS1, _PS2, and _PS3;
-+in ACPI, _PS0 is the method to invoke to turn a device full on, and _PS3 is for
-+turning a device full off.
-+
-+There are two options for using those Power Resources.
-+   -- be managed in _PSx routine which gets called on entry to Dx.
-+
-+   -- be declared separately as power resources with their own _ON and _OFF
-+      methods.  They are then tied back to D-states for a particular device
-+      via _PRx which specifies which power resources a device needs to be on
-+      while in Dx.  Kernel then tracks number of devices using a power resource
-+      and calls _ON/_OFF as needed.
-+
-+The kernel ACPI code will also assume that the _PSx methods follow the normal
-+ACPI rules for such methods:
-+
-+   -- If either _PS0 or _PS3 is implemented, then the other method must also
-+      be implemented.
-+
-+   -- If a device requires usage or setup of a power resource when on, the ASL
-+      should organize that it is allocated/enabled using the _PS0 method.
-+
-+   -- Resources allocated or enabled in the _PS0 method should be disabled
-+      or de-allocated in the _PS3 method.
-+
-+   -- Firmware will leave the resources in a reasonable state before handing
-+      over control to the kernel.
-+
-+Such code in _PSx methods will of course be very platform specific.  But,
-+this allows the driver to abstract out the interface for operating the device
-+and avoid having to read special non-standard values from ACPI tables. Further,
-+abstracting the use of these resources allows the hardware to change over time
-+without requiring updates to the driver.
-+
-+
-+Clocks
-+------
-+ACPI makes the assumption that clocks are initialized by the firmware -- 
-+UEFI, in this case -- to some working value before control is handed over
-+to the kernel.  This has implications for devices such as UARTs, or SoC-driven
-+LCD displays, for example.
-+
-+When the kernel boots, the clock is assumed to be set to a reasonable
-+working value.  If for some reason the frequency needs to change -- e.g.,
-+throttling for power management -- the device driver should expect that 
-+process to be abstracted out into some ACPI method that can be invoked 
-+(please see the ACPI specification for further recommendations on standard
-+methods to be expected) except CPU clocks where CPPC provides a much richer
-+interface instead of some method.  If it is not, there is no direct way for
-+ACPI to control the clocks.
-+
-+
-+Driver Recommendations
-+----------------------
-+DO NOT remove any DT handling when adding ACPI support for a driver.  The
-+same device may be used on many different systems.
-+
-+DO try to structure the driver so that it is data-driven.  That is, set up
-+a struct containing internal per-device state based on defaults and whatever
-+else must be discovered by the driver probe function.  Then, have the rest
-+of the driver operate off of the contents of that struct.  Doing so should
-+allow most divergence between ACPI and DT functionality to be kept local to
-+the probe function instead of being scattered throughout the driver.  For
-+example:
-+
-+static int device_probe_dt(struct platform_device *pdev)
-+{
-+	/* DT specific functionality */
-+	...
-+}
-+
-+static int device_probe_acpi(struct platform_device *pdev)
-+{
-+	/* ACPI specific functionality */
-+	...
-+}
-+
-+static int device_probe(stuct platform_device *pdev)
-+{
-+	...
-+	struct device_node node = pdev->dev.of_node;
-+	...
-+
-+	if (node)
-+		ret = device_probe_dt(pdev);
-+	else if (ACPI_HANDLE(&pdev->dev))
-+		ret = device_probe_acpi(pdev);
-+	else
-+		/* other initialization */
-+		...
-+	/* Continue with any generic probe operations */
-+	...
-+}
-+
-+DO keep the MODULE_DEVICE_TABLE entries together in the driver to make it
-+clear the different names the driver is probed for, both from DT and from
-+ACPI:
-+
-+static struct of_device_id virtio_mmio_match[] = {
-+        { .compatible = "virtio,mmio", },
-+        { }
-+};
-+MODULE_DEVICE_TABLE(of, virtio_mmio_match);
-+
-+static const struct acpi_device_id virtio_mmio_acpi_match[] = {
-+        { "LNRO0005", },
-+        { }
-+};
-+MODULE_DEVICE_TABLE(acpi, virtio_mmio_acpi_match);
-+
-+
-+ASWG
-+----
-+The following areas are not yet fully defined for ARM in the 5.1 version
-+of the ACPI specification and are expected to be worked through in the 
-+UEFI ACPI Specification Working Group (ASWG):
-+
-+   -- ACPI based CPU topology
-+   -- ACPI based CPU idle control
-+   -- ACPI based SMMU and its IO topology
-+   -- ITS support for GIC in MADT
-+
-+Participation in this group is open to all UEFI members.  Please see
-+http://www.uefi.org/workinggroup for details on group membership.
-+
-+It is the intent of the ARMv8 ACPI kernel code to follow the ACPI specification
-+as closely as possible, and to only implement functionality that complies with
-+the released standards from UEFI ASWG.  As a practical matter, there will be
-+vendors that provide bad ACPI tables or violate the standards in some way.
-+If this is because of errors, quirks and fixups may be necessary, but will
-+be avoided if possible.  If there are features missing from ACPI that preclude
-+it from being used on a platform, ECRs (Engineering Change Requests) should be
-+submitted to ASWG and go through the normal approval process; for those that
-+are not UEFI members, many other members of the Linux community are and would
-+likely be willing to assist in submitting ECRs.
--- 
-1.9.1
+I'll leave this one for a new spin.
+> 
+>> +		return -EINVAL;
+>> +
+>> +	*val = kmx61_samp_freq_table[lodr_bits].val;
+>> +	*val2 = kmx61_samp_freq_table[lodr_bits].val2;
+>> +
+>> +	return 0;
+>>  }
+>>  
+>>  static int kmx61_set_range(struct kmx61_data *data, u8 range)
+>> @@ -580,8 +565,11 @@ static int kmx61_chip_init(struct kmx61_data *data)
+>>  	}
+>>  	data->odr_bits = ret;
+>>  
+>> -	/* set output data rate for wake up (motion detection) function */
+>> -	ret = kmx61_convert_bit_to_freq(data->odr_bits, &val, &val2);
+>> +	/*
+>> +	 * set output data rate for wake up (motion detection) function
+>> +	 * to match data rate for accelerometer sampling
+>> +	 */
+>> +	ret = kmx61_get_odr(data, &val, &val2, KMX61_ACC);
+>>  	if (ret < 0)
+>>  		return ret;
+>>  
+>>
+> 
 
