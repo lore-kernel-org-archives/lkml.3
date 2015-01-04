@@ -1,155 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781AbbADKzj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 05:55:39 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48146 "EHLO
+	id S1752734AbbADLB6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 06:01:58 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48198 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbbADKzh (ORCPT
+	with ESMTP id S1751263AbbADLB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 05:55:37 -0500
-Message-ID: <54A91C27.5030905@kernel.org>
-Date: Sun, 04 Jan 2015 10:55:35 +0000
+	Sun, 4 Jan 2015 06:01:56 -0500
+Message-ID: <54A91DA1.6080107@kernel.org>
+Date: Sun, 04 Jan 2015 11:01:53 +0000
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>
-CC: lars@metafoo.de, pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com
-Subject: Re: [PATCH 09/10] iio: imu: kmx61: Drop odr_bits from kmx61_samp_freq_table
-References: <1419340953-23161-1-git-send-email-daniel.baluta@intel.com> <1419340953-23161-10-git-send-email-daniel.baluta@intel.com> <54A5516D.5050209@gmx.de>
-In-Reply-To: <54A5516D.5050209@gmx.de>
-Content-Type: text/plain; charset=iso-8859-15
+To: Richard Weinberger <richard@nod.at>, harald@ccbib.org
+CC: knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        sanjeev_sharma@mentor.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: iio: dht11 Updates
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <54A53FBF.5000003@kernel.org> <7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net> <54A680F8.30209@nod.at>
+In-Reply-To: <54A680F8.30209@nod.at>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/15 13:53, Hartmut Knaack wrote:
-> Daniel Baluta schrieb am 23.12.2014 um 14:22:
->> odr_bits values are between 0 and 11, so we can use the index
->> in kmx61_samp_freq_table instead of odr_bits structure member.
-> Basically looking good, but I would feel more comfortable to check
-> against the boundaries of the table. Please see inline.
+On 02/01/15 11:28, Richard Weinberger wrote:
+> Am 01.01.2015 um 22:18 schrieb harald@ccbib.org:
+>> Hi!
+>>
+>> On Thu, 01 Jan 2015 12:38:23 +0000, Jonathan Cameron <jic23@kernel.org>
+>> wrote:
+>>> On 02/12/14 23:32, Richard Weinberger wrote:
+>>>> Please see my current patches for your driver.
+>>>> As discussed in an earlier mail I'm testing with the DHT22 sensor only.
+>>>> With the IRQ changes I see 84 edges.
+>>>>
+>>>>
+>>>> [PATCH 1/4] iio: dht11: Add locking
+>>>> [PATCH 2/4] iio: dht11: IRQ fixes
+>>>> [PATCH 3/4] iio: dht11: Logging updates
+>>>> [PATCH 4/4] iio: dht11: Fix out-of-bounds read
+>>>>
+>>  
+>>> I've lost track of where we are with this patch series.
+>>> Does this cause trouble on any of the parts supported?
+>>
+>> Yes, 2/4 needs an update. 
 > 
->>
->> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->> ---
->>  drivers/iio/imu/kmx61.c | 64 ++++++++++++++++++++-----------------------------
->>  1 file changed, 26 insertions(+), 38 deletions(-)
->>
->> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
->> index eb3900e..98369eb 100644
->> --- a/drivers/iio/imu/kmx61.c
->> +++ b/drivers/iio/imu/kmx61.c
->> @@ -169,19 +169,18 @@ u16 kmx61_uscale_table[] = {9582, 19163, 38326};
->>  static const struct {
->>  	int val;
->>  	int val2;
->> -	u8 odr_bits;
->> -} kmx61_samp_freq_table[] = { {12, 500000, 0x00},
->> -			{25, 0, 0x01},
->> -			{50, 0, 0x02},
->> -			{100, 0, 0x03},
->> -			{200, 0, 0x04},
->> -			{400, 0, 0x05},
->> -			{800, 0, 0x06},
->> -			{1600, 0, 0x07},
->> -			{0, 781000, 0x08},
->> -			{1, 563000, 0x09},
->> -			{3, 125000, 0x0A},
->> -			{6, 250000, 0x0B} };
->> +} kmx61_samp_freq_table[] = { {12, 500000},
->> +			{25, 0},
->> +			{50, 0},
->> +			{100, 0},
->> +			{200, 0},
->> +			{400, 0},
->> +			{800, 0},
->> +			{1600, 0},
->> +			{0, 781000},
->> +			{1, 563000},
->> +			{3, 125000},
->> +			{6, 250000} };
->>  
->>  static const struct {
->>  	int val;
->> @@ -302,24 +301,10 @@ static int kmx61_convert_freq_to_bit(int val, int val2)
->>  	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
->>  		if (val == kmx61_samp_freq_table[i].val &&
->>  		    val2 == kmx61_samp_freq_table[i].val2)
->> -			return kmx61_samp_freq_table[i].odr_bits;
->> -	return -EINVAL;
->> -}
->> -
->> -static int kmx61_convert_bit_to_freq(u8 odr_bits, int *val, int *val2)
->> -{
->> -	int i;
->> -
->> -	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
->> -		if (odr_bits == kmx61_samp_freq_table[i].odr_bits) {
->> -			*val = kmx61_samp_freq_table[i].val;
->> -			*val2 = kmx61_samp_freq_table[i].val2;
->> -			return 0;
->> -		}
->> +			return i;
->>  	return -EINVAL;
->>  }
->>  
->> -
->>  static int kmx61_convert_wake_up_odr_to_bit(int val, int val2)
->>  {
->>  	int i;
->> @@ -478,7 +463,7 @@ static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
->>  
->>  static int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2,
->>  			 u8 device)
->> -{	int i;
->> +{
->>  	u8 lodr_bits;
->>  
->>  	if (device & KMX61_ACC)
->> @@ -490,13 +475,13 @@ static int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2,
->>  	else
->>  		return -EINVAL;
->>  
->> -	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
->> -		if (lodr_bits == kmx61_samp_freq_table[i].odr_bits) {
->> -			*val = kmx61_samp_freq_table[i].val;
->> -			*val2 = kmx61_samp_freq_table[i].val2;
->> -			return 0;
->> -		}
->> -	return -EINVAL;
->> +	if (lodr_bits > 0xB)
-> Since we use it as an index, I regard it safer to check against
-> ARRAY_SIZE(kmx61_samp_freq_table) rather than a fix value.
-Makes sense to me as well - though obviously ARRAY_SIZE(kmx61_samp_freq_table) is
-0xC (12) rather than 0xB (11) so you'll need a minus 1
-
-I'll leave this one for a new spin.
+> Correct.
 > 
->> +		return -EINVAL;
->> +
->> +	*val = kmx61_samp_freq_table[lodr_bits].val;
->> +	*val2 = kmx61_samp_freq_table[lodr_bits].val2;
->> +
->> +	return 0;
->>  }
->>  
->>  static int kmx61_set_range(struct kmx61_data *data, u8 range)
->> @@ -580,8 +565,11 @@ static int kmx61_chip_init(struct kmx61_data *data)
->>  	}
->>  	data->odr_bits = ret;
->>  
->> -	/* set output data rate for wake up (motion detection) function */
->> -	ret = kmx61_convert_bit_to_freq(data->odr_bits, &val, &val2);
->> +	/*
->> +	 * set output data rate for wake up (motion detection) function
->> +	 * to match data rate for accelerometer sampling
->> +	 */
->> +	ret = kmx61_get_odr(data, &val, &val2, KMX61_ACC);
->>  	if (ret < 0)
->>  		return ret;
->>  
+>> 1/4 is fine by me, however it was noted that there is already
+>> locking in the iio core for the in-kernel interface but not
+>> for the sysfs interface. I think we need locking in the case of
+>> the sysfs interace as well, but the final decision is yours...
+> 
+> We definitely need it.
+> I have more than one sensor attached and collectd queries them.
+> Without locking collectd manages to hit this race window.
+> So the issue is real.
+Locking is needed.  Convention has normally been to do this in the
+driver rather than a subsystem core.
+That gives more fine grained control and avoids locking
+when not necessary (some devices will need a lock on data read,
+others will not).
+Clearly in this case, the need should have been picked up in review
+(oops).  Sorry about that.
+> 
+>> 4/4 is obviously right.
 >>
+>> 3/4 is cleanup. I'd rather defer this to later and do it right,
+>> because right now this patch is cosmetic and doesn't get rid of
+>> the deeper issues. I'll start to work on a cleanup series once
+>> the fixes are merged.
+> 
+> Agreed.
+> 
+>> Richard, what's your timeframe to send an updated series?
+>> I can send an update if you don't have time.
+> 
+> It would be great if you can send an updated version of 2/4.
+> I don't have a DHT11 sensor (only DHT22) and I'm still recovering
+> from a cold.
+> 
+> Thanks
+> //richard
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
