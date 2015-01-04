@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbbADTXV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 14:23:21 -0500
-Received: from mail.kernel.org ([198.145.29.136]:45741 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737AbbADTXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 14:23:20 -0500
-Date: Sun, 4 Jan 2015 20:23:07 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hsi: nokia-modem: fix uninitialized device pointer
-Message-ID: <20150104192306.GA31309@earth.universe>
-References: <1420392853-5242-1-git-send-email-aaro.koskinen@iki.fi>
+	id S1752811AbbADTeq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 14:34:46 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:43465 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752749AbbADTeo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 14:34:44 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
-Content-Disposition: inline
-In-Reply-To: <1420392853-5242-1-git-send-email-aaro.koskinen@iki.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420394759-20345-1-git-send-email-me@mortis.eu>
+References: <1420394759-20345-1-git-send-email-me@mortis.eu>
+Date: Sun, 4 Jan 2015 11:34:43 -0800
+X-Google-Sender-Auth: Vew02XAeg-vI8rrWRB-8iaV2ebE
+Message-ID: <CA+55aFw8aMBF5uXekxATymQPTqwZHGJTL-jQx8zDqOwbaft+4g@mail.gmail.com>
+Subject: Re: [PATCH] Cleanup: snprintf() always NUL-terminates: depend on it
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Brian King <brking@us.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "open list:SCSI SUBSYSTEM" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 4, 2015 at 10:05 AM, Giel van Schijndel <me@mortis.eu> wrote:
+> Especially since one very strange piece of code seems to be written in
+> such a way that a NUL needs to be placed where a NUL is present already.
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Actually, it's worse than that. This:
 
-Hi Aaro,
+>         len = snprintf(fname, 99, "%s", buf);
+> -       fname[len-1] = '\0';
 
-On Sun, Jan 04, 2015 at 07:34:13PM +0200, Aaro Koskinen wrote:
-> modem->device was never initialized. This resulted in logs such as:
-> [  241.386322] (NULL device *): CMT rst line change detected
+is complete garbage, since the return value of snprintf() is not the
+length of the result, but length of what the result *would* have been.
 
-Thanks, applied to for-next:
+So if the string doesn't fit in 99 bytes, it will actively corrupt
+some random memory after the string. It's not writing zero to what was
+already zero, it's corrupting memory.
 
-https://git.kernel.org/cgit/linux/kernel/git/sre/linux-hsi.git/commit/?h=for-next&id=67e9a2ce6e070b1e5db2dfe9c61890fc30ae954d
+Anyway, from a quick glance your patches look fine, but you need to
+sign off on them. See Documentation/SubmittingPatches.
 
--- Sebastian
-
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUqZMXAAoJENju1/PIO/qaWloP+wV8O74KZKCHpKychtKHSxyA
-9MWbhSOxjKKi2rvlIp5A1bAo1stH9YqQJVkv6rp7V5mUrdNagZ/Ffe5S12impd57
-Ty70dB9uFWXykfd0cgMhoVb7ro8jCotNGQmttQ3F/yEVoQC2Lky5A59nkrj913EW
-9pMIiHJe0qgHSVPUx2MDW9X8py8k11+T6JiiOedYLWUDASPOEpGfdM8wrV7L1APk
-xa6SQBbe337GfbTQxkeU67+FPUEijKrsqipIswswzTsmFhq9/wdbucODKKhKfl+c
-y+yPc2T8eT+xzBoRqZTa64bFyQVsjIe3AR5FuOtpUQW4i6x/RX/bjEQGZhO6NhnU
-HmoICWg5yO3Bp+za8NQa4MvixLgajdd3MkTu3xH5EwBLhfnww/FexY44uJu6Zg0e
-0Au9fvVrHYdHC5VqQ9AOwJElK0E35FvGLa9hTEt1N1MqMcHOloXx2VoUjfK5GOdW
-ccoKygNV5c+DPCn5F7IyePNgTM1qO0w2isLLcbYU+MH0X+7mUcygHfJtkvqgKGQ6
-125au64sGg6q8UXFW0lzUvKn2zvElwhkUEHmTTZhJjak5UWuJcWvb3NSDd5KHG03
-p4iMX0F50oRZraBXQdbePCNKFluy4l/TA3Q++d3tQcs58wMaVjo2UERFzP0cyjaM
-DJwvNYrdO/0gUdXdAUh/
-=9i5r
------END PGP SIGNATURE-----
-
---W/nzBZO5zC0uMSeA--
+                       Linus
