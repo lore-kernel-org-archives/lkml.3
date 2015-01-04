@@ -1,103 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbbADPky (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 10:40:54 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:60606 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586AbbADPkw (ORCPT
+	id S1752736AbbADPtJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 10:49:09 -0500
+Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
+	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630AbbADPtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 10:40:52 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Kalle Valo <kvalo@adurom.com>, Pavel Machek <pavel@ucw.cz>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        David Gnedt <david.gnedt@davizone.at>,
-        George Spelvin <linux@horizon.com>,
-        Surendra Patil <surendra.tux@gmail.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] wl1251: Remove unused function
-Date: Sun,  4 Jan 2015 16:43:52 +0100
-Message-Id: <1420386232-12344-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 4 Jan 2015 10:49:07 -0500
+From: Richard Weinberger <richard@nod.at>
+To: ssantosh@kernel.org
+Cc: linux-kernel@vger.kernel.org, d.walter@0x90.at,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] ddr: Use less generic identifiers
+Date: Sun,  4 Jan 2015 16:48:55 +0100
+Message-Id: <1420386535-22530-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function wl1251_cmd_read_memory() that is not used anywhere.
+At least on UML this identifiers clash with register names.
+Use something less generic than Rx, Cx and Cx.
 
-This was partially found by using a static code analysis program called cppcheck.
+  CC      lib//jedec_ddr_data.o
+In file included from ./arch/um/include/asm/ptrace-generic.h:11:0,
+                 from ./arch/x86/um/asm/ptrace.h:8,
+                 from ./arch/x86/include/asm/alternative.h:8,
+                 from ./arch/x86/include/asm/bitops.h:16,
+                 from include/linux/bitops.h:36,
+                 from include/linux/kernel.h:10,
+                 from include/linux/list.h:8,
+                 from include/linux/module.h:9,
+                 from lib//jedec_ddr_data.c:14:
+./arch/x86/include/uapi/asm/ptrace-abi.h:28:0: warning: "R15" redefined [enabled by default]
+ #define R15 0
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/net/wireless/ti/wl1251/cmd.c |   40 ----------------------------------
- drivers/net/wireless/ti/wl1251/cmd.h |    2 --
- 2 files changed, 42 deletions(-)
+Please note that this patch is untested.
 
-diff --git a/drivers/net/wireless/ti/wl1251/cmd.c b/drivers/net/wireless/ti/wl1251/cmd.c
-index ede31f0..26f4d74 100644
---- a/drivers/net/wireless/ti/wl1251/cmd.c
-+++ b/drivers/net/wireless/ti/wl1251/cmd.c
-@@ -346,46 +346,6 @@ out:
- 	return ret;
- }
+Thanks,
+//richard
+---
+ drivers/memory/emif.c      |  4 ++--
+ include/memory/jedec_ddr.h | 36 ++++++++++++++++++------------------
+ lib/jedec_ddr_data.c       | 20 ++++++++++----------
+ 3 files changed, 30 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
+index 04644e7..e0aa09f 100644
+--- a/drivers/memory/emif.c
++++ b/drivers/memory/emif.c
+@@ -439,7 +439,7 @@ static u32 get_sdram_tim_1_shdw(const struct lpddr2_timings *timings,
+ 	val = max(min_tck->tWTR, DIV_ROUND_UP(timings->tWTR, t_ck)) - 1;
+ 	tim1 |= val << T_WTR_SHIFT;
  
--int wl1251_cmd_read_memory(struct wl1251 *wl, u32 addr, void *answer,
--			   size_t len)
--{
--	struct cmd_read_write_memory *cmd;
--	int ret = 0;
--
--	wl1251_debug(DEBUG_CMD, "cmd read memory");
--
--	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
--	if (!cmd) {
--		ret = -ENOMEM;
--		goto out;
--	}
--
--	WARN_ON(len > MAX_READ_SIZE);
--	len = min_t(size_t, len, MAX_READ_SIZE);
--
--	cmd->addr = addr;
--	cmd->size = len;
--
--	ret = wl1251_cmd_send(wl, CMD_READ_MEMORY, cmd, sizeof(*cmd));
--	if (ret < 0) {
--		wl1251_error("read memory command failed: %d", ret);
--		goto out;
--	}
--
--	/* the read command got in, we can now read the answer */
--	wl1251_mem_read(wl, wl->cmd_box_addr, cmd, sizeof(*cmd));
--
--	if (cmd->header.status != CMD_STATUS_SUCCESS)
--		wl1251_error("error in read command result: %d",
--			     cmd->header.status);
--
--	memcpy(answer, cmd->value, len);
--
--out:
--	kfree(cmd);
--	return ret;
--}
--
- int wl1251_cmd_template_set(struct wl1251 *wl, u16 cmd_id,
- 			    void *buf, size_t buf_len)
- {
-diff --git a/drivers/net/wireless/ti/wl1251/cmd.h b/drivers/net/wireless/ti/wl1251/cmd.h
-index d824ff9..5f35430 100644
---- a/drivers/net/wireless/ti/wl1251/cmd.h
-+++ b/drivers/net/wireless/ti/wl1251/cmd.h
-@@ -40,8 +40,6 @@ int wl1251_cmd_data_path_tx(struct wl1251 *wl, u8 channel, bool enable);
- int wl1251_cmd_join(struct wl1251 *wl, u8 bss_type, u8 channel,
- 		    u16 beacon_interval, u8 dtim_interval);
- int wl1251_cmd_ps_mode(struct wl1251 *wl, u8 ps_mode);
--int wl1251_cmd_read_memory(struct wl1251 *wl, u32 addr, void *answer,
--			   size_t len);
- int wl1251_cmd_template_set(struct wl1251 *wl, u16 cmd_id,
- 			    void *buf, size_t buf_len);
- int wl1251_cmd_scan(struct wl1251 *wl, u8 *ssid, size_t ssid_len,
+-	if (addressing->num_banks == B8)
++	if (addressing->num_banks == DDR_BANK_8)
+ 		val = DIV_ROUND_UP(timings->tFAW, t_ck*4);
+ 	else
+ 		val = max(min_tck->tRRD, DIV_ROUND_UP(timings->tRRD, t_ck));
+@@ -476,7 +476,7 @@ static u32 get_sdram_tim_1_shdw_derated(const struct lpddr2_timings *timings,
+ 	 * tFAW is approximately 4 times tRRD. So add 1875*4 = 7500ps
+ 	 * to tFAW for de-rating
+ 	 */
+-	if (addressing->num_banks == B8) {
++	if (addressing->num_banks == DDR_BANK_8) {
+ 		val = DIV_ROUND_UP(timings->tFAW + 7500, 4 * t_ck) - 1;
+ 	} else {
+ 		val = DIV_ROUND_UP(timings->tRRD + 1875, t_ck);
+diff --git a/include/memory/jedec_ddr.h b/include/memory/jedec_ddr.h
+index ddad0f8..39144d0 100644
+--- a/include/memory/jedec_ddr.h
++++ b/include/memory/jedec_ddr.h
+@@ -40,28 +40,28 @@
+ #define DDR_IO_WIDTH_32		4
+ 
+ /* Number of Row bits */
+-#define R9			9
+-#define R10			10
+-#define R11			11
+-#define R12			12
+-#define R13			13
+-#define R14			14
+-#define R15			15
+-#define R16			16
++#define DDR_ROW_9		9
++#define DDR_ROW_10		10
++#define DDR_ROW_11		11
++#define DDR_ROW_12		12
++#define DDR_ROW_13		13
++#define DDR_ROW_14		14
++#define DDR_ROW_15		15
++#define DDR_ROW_16		16
+ 
+ /* Number of Column bits */
+-#define C7			7
+-#define C8			8
+-#define C9			9
+-#define C10			10
+-#define C11			11
+-#define C12			12
++#define DDR_COL_7		7
++#define DDR_COL_8		8
++#define DDR_COL_9		9
++#define DDR_COL_10		10
++#define DDR_COL_11		11
++#define DDR_COL_12		12
+ 
+ /* Number of Banks */
+-#define B1			0
+-#define B2			1
+-#define B4			2
+-#define B8			3
++#define DDR_BANK_1		0
++#define DDR_BANK_2		1
++#define DDR_BANK_4		2
++#define DDR_BANK_8		3
+ 
+ /* Refresh rate in nano-seconds */
+ #define T_REFI_15_6		15600
+diff --git a/lib/jedec_ddr_data.c b/lib/jedec_ddr_data.c
+index 6d2cbf1..2181be4 100644
+--- a/lib/jedec_ddr_data.c
++++ b/lib/jedec_ddr_data.c
+@@ -16,16 +16,16 @@
+ /* LPDDR2 addressing details from JESD209-2 section 2.4 */
+ const struct lpddr2_addressing
+ 	lpddr2_jedec_addressing_table[NUM_DDR_ADDR_TABLE_ENTRIES] = {
+-	{B4, T_REFI_15_6, T_RFC_90}, /* 64M */
+-	{B4, T_REFI_15_6, T_RFC_90}, /* 128M */
+-	{B4, T_REFI_7_8,  T_RFC_90}, /* 256M */
+-	{B4, T_REFI_7_8,  T_RFC_90}, /* 512M */
+-	{B8, T_REFI_7_8, T_RFC_130}, /* 1GS4 */
+-	{B8, T_REFI_3_9, T_RFC_130}, /* 2GS4 */
+-	{B8, T_REFI_3_9, T_RFC_130}, /* 4G */
+-	{B8, T_REFI_3_9, T_RFC_210}, /* 8G */
+-	{B4, T_REFI_7_8, T_RFC_130}, /* 1GS2 */
+-	{B4, T_REFI_3_9, T_RFC_130}, /* 2GS2 */
++	{DDR_BANK_4, T_REFI_15_6, T_RFC_90}, /* 64M */
++	{DDR_BANK_4, T_REFI_15_6, T_RFC_90}, /* 128M */
++	{DDR_BANK_4, T_REFI_7_8,  T_RFC_90}, /* 256M */
++	{DDR_BANK_4, T_REFI_7_8,  T_RFC_90}, /* 512M */
++	{DDR_BANK_8, T_REFI_7_8, T_RFC_130}, /* 1GS4 */
++	{DDR_BANK_8, T_REFI_3_9, T_RFC_130}, /* 2GS4 */
++	{DDR_BANK_8, T_REFI_3_9, T_RFC_130}, /* 4G */
++	{DDR_BANK_8, T_REFI_3_9, T_RFC_210}, /* 8G */
++	{DDR_BANK_4, T_REFI_7_8, T_RFC_130}, /* 1GS2 */
++	{DDR_BANK_4, T_REFI_3_9, T_RFC_130}, /* 2GS2 */
+ };
+ EXPORT_SYMBOL_GPL(lpddr2_jedec_addressing_table);
+ 
 -- 
-1.7.10.4
+1.8.4.5
 
