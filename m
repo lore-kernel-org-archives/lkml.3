@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbbADQLo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 11:11:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630AbbADQLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 11:11:43 -0500
-Date: Sun, 4 Jan 2015 17:10:49 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= 
-	<chenggang.qcg@alibaba-inc.com>,
-        root <chenggang.qin@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@taobao.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+	id S1753068AbbAEEjU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 23:39:20 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:56808 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946AbbAEEjS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 23:39:18 -0500
+Date: Sun, 4 Jan 2015 08:14:16 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Pranith Kumar <bobby.prani@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: =?utf-8?B?562U5aSN77yaW1BBVENIXSBwZXJm?= =?utf-8?Q?_core=3A_Us?=
- =?utf-8?Q?e?= KSTK_ESP() instead of pt_regs->sp while output user regs
-Message-ID: <20150104161049.GB22707@krava.brq.redhat.com>
-References: <1419315745-20767-1-git-send-email-user@chenggang-laptop>
- <c027bde0-5f4f-441f-8d45-3e7f6f702231@alibaba-inc.com>
- <CALCETrVVvbnO-7bnyPCYhPbDoEg-hqmvVbfXL9ONbQPBTJNUZg@mail.gmail.com>
- <20141230190327.GB23965@worktop.programming.kicks-ass.net>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "supporter:S390" <linux390@de.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Anton Blanchard <anton@samba.org>, Daniel Walter <dwalter@google.com>,
+        Tiejun Chen <tiejun.chen@windriver.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Jens Freimann <jfrei@linux.vnet.ibm.com>,
+        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:S390" <linux-s390@vger.kernel.org>
+Subject: Re: [PATCH v2] srcu: Isolate srcu sections using CONFIG_SRCU
+Message-ID: <20150104161416.GA5280@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1419918382-4758-1-git-send-email-bobby.prani@gmail.com>
+ <1419918382-4758-2-git-send-email-bobby.prani@gmail.com>
+ <20141230185008.GA23965@worktop.programming.kicks-ass.net>
+ <CAJhHMCDsxOsBKphPrH8N5ymPgdN_OVSujQWQt5CB52TK2PO9cA@mail.gmail.com>
+ <1420364152.26772.0.camel@ellerman.id.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141230190327.GB23965@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420364152.26772.0.camel@ellerman.id.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010504-0005-0000-0000-000007B91E5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 30, 2014 at 08:03:27PM +0100, Peter Zijlstra wrote:
-> On Thu, Dec 25, 2014 at 07:48:28AM -0800, Andy Lutomirski wrote:
-> > On a quick look, there are plenty of other bugs in there besides just
-> > the stack pointer issue.  The ABI check that uses TIF_IA32 in the perf
-> > core is completely wrong.  TIF_IA32 may be equal to the actual
-> > userspace bitness by luck, but, if so, that's more or less just luck.
-> > And there's a user_mode test that should be user_mode_vm.
+On Sun, Jan 04, 2015 at 08:35:52PM +1100, Michael Ellerman wrote:
+> On Tue, 2014-12-30 at 13:54 -0500, Pranith Kumar wrote:
+> > On Tue, Dec 30, 2014 at 1:50 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Tue, Dec 30, 2014 at 12:46:22AM -0500, Pranith Kumar wrote:
+> > >> Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
+> > >> is a compile time failure if srcu is used when not enabled. This was decided to
+> > >> be better than waiting until link time for a failure to occur.
+> > >
+> > > Why?
 > > 
-> > Also, it's not just sp that's wrong.  There are various places that
-> > you can interrupt in which many of the registers have confusing
-> > locations.  You could try using the cfi unwind data, but that's
-> > unlikely to work for regs like cs and ss, and, during context switch,
-> > this has very little chance of working.
-> > 
-> > What's the point of this feature?  Honestly, my suggestion would be to
-> > delete it instead of trying to fix it.  It's also not clear to me that
-> > there aren't serious security problems here -- it's entirely possible
-> > for sensitive *kernel* values to and up in task_pt_regs at certain
-> > times, and if you run during context switch and there's no code to
-> > suppress this dump during context switch, then you could be showing
-> > regs that belong to the wrong task.
+> > This is part of the kernel tinification efforts. The first patch was
+> > posted here: https://lkml.org/lkml/2014/12/4/848. This patch enables a
+> > compile time failure instead of a link time failure.
 > 
-> Of course the people who actually wrote the code are not on CC :/
+> The punch line was:
 > 
-> There's two users of this iirc;
+>   "so the savings are about ~2000 bytes."
 > 
->  1) the dwarf stack unwinder thingy, which basically dumps the userspace
->  regs and the top of userspace stack on 'event'.
+> Which is utterly not worth the effort IMO. There have got to be more attractive
+> targets for tinification than this.
 
-looks like this solves the issue I was trying to fix
-long time ago:
-  http://marc.info/?l=linux-kernel&m=134934717011451&w=2
+There probably are.  But if the tinification effort is to come anywhere
+near reaching its goals, it is going to need 2000-byte savings, especially
+on the small systems that are this effort's main target.
 
-this seems a lot simpler ;-) I'll test..
+That said, Peter's suggestion of falling back to the link-time diagnostic
+does simplify things a bit, and might be a good approach.
 
-jirka
+							Thanx, Paul
+
