@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068AbbAEEjU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 23:39:20 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:56808 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946AbbAEEjS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 23:39:18 -0500
-Date: Sun, 4 Jan 2015 08:14:16 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: Pranith Kumar <bobby.prani@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "supporter:S390" <linux390@de.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Anton Blanchard <anton@samba.org>, Daniel Walter <dwalter@google.com>,
-        Tiejun Chen <tiejun.chen@windriver.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:S390" <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH v2] srcu: Isolate srcu sections using CONFIG_SRCU
-Message-ID: <20150104161416.GA5280@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1419918382-4758-1-git-send-email-bobby.prani@gmail.com>
- <1419918382-4758-2-git-send-email-bobby.prani@gmail.com>
- <20141230185008.GA23965@worktop.programming.kicks-ass.net>
- <CAJhHMCDsxOsBKphPrH8N5ymPgdN_OVSujQWQt5CB52TK2PO9cA@mail.gmail.com>
- <1420364152.26772.0.camel@ellerman.id.au>
+	id S1752731AbbADQVJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 11:21:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45373 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751101AbbADQVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 11:21:06 -0500
+Date: Sun, 4 Jan 2015 18:21:00 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: sasha.levin@oracle.com, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 0/3] virtio_pci: fix DEBUG_KOBJECT_RELEASE
+Message-ID: <20150104162100.GA8153@redhat.com>
+References: <1420386340-7719-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420364152.26772.0.camel@ellerman.id.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010504-0005-0000-0000-000007B91E5B
+In-Reply-To: <1420386340-7719-1-git-send-email-mst@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 08:35:52PM +1100, Michael Ellerman wrote:
-> On Tue, 2014-12-30 at 13:54 -0500, Pranith Kumar wrote:
-> > On Tue, Dec 30, 2014 at 1:50 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Tue, Dec 30, 2014 at 12:46:22AM -0500, Pranith Kumar wrote:
-> > >> Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
-> > >> is a compile time failure if srcu is used when not enabled. This was decided to
-> > >> be better than waiting until link time for a failure to occur.
-> > >
-> > > Why?
-> > 
-> > This is part of the kernel tinification efforts. The first patch was
-> > posted here: https://lkml.org/lkml/2014/12/4/848. This patch enables a
-> > compile time failure instead of a link time failure.
+On Sun, Jan 04, 2015 at 06:02:13PM +0200, Michael S. Tsirkin wrote:
+> This is based on Sasha's patch, with some tweaks.
 > 
-> The punch line was:
+
+
+Sasha, I would appreciate it if you can send
+a Tested-by tag to confirm this + the del_vqs
+idempotent patches are sufficient to address
+all issues you have with 3.19.
+
+
+
+> Michael S. Tsirkin (2):
+>   virtio_pci: device-specific release callback
+>   virtio_pci: document why we defer kfree
 > 
->   "so the savings are about ~2000 bytes."
+> Sasha Levin (1):
+>   virtio_pci: defer kfree until release callback
 > 
-> Which is utterly not worth the effort IMO. There have got to be more attractive
-> targets for tinification than this.
-
-There probably are.  But if the tinification effort is to come anywhere
-near reaching its goals, it is going to need 2000-byte savings, especially
-on the small systems that are this effort's main target.
-
-That said, Peter's suggestion of falling back to the link-time diagnostic
-does simplify things a bit, and might be a good approach.
-
-							Thanx, Paul
-
+>  drivers/virtio/virtio_pci_common.h |  1 -
+>  drivers/virtio/virtio_pci_common.c |  9 ---------
+>  drivers/virtio/virtio_pci_legacy.c | 12 +++++++++++-
+>  3 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> -- 
+> MST
+> 
+> _______________________________________________
+> Virtualization mailing list
+> Virtualization@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
