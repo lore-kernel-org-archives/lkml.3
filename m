@@ -1,62 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbbAEL1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:27:12 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:44152 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145AbbAEL1L (ORCPT
+	id S1753503AbbAELd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:33:26 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:17497 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196AbbAELdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:27:11 -0500
-From: Cheng-Yi Chiang <cychiang@chromium.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Dylan Reid <dgreid@chromium.org>,
-        Cheng-Yi Chiang <cychiang@chromium.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: ts3a227e: Check and report jack status at probe
-Date: Mon,  5 Jan 2015 19:26:59 +0800
-Message-Id: <1420457219-23098-1-git-send-email-cychiang@chromium.org>
-X-Mailer: git-send-email 2.1.2
+	Mon, 5 Jan 2015 06:33:25 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v19 00/11] ARM: kprobes: OPTPROBES and other improvements.
+Date: Mon, 5 Jan 2015 19:28:04 +0800
+Message-ID: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.54AA7686.016C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: c227bb1282f8e350d1ecde3bd21dc582
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ts3a227e does not trigger interrupt to report jack status when system
-boots from warm reset because ts3a227e's power remains on during warm reset.
-Read jack status at probe to get current jack status.
-Note that if system boots from EC reset, then this issue will not
-happen.
+According to Masami Hiramatsu's suggestion, there are some small code
+adjustments in this series of patch.
 
-Signed-off-by: Cheng-Yi Chiang <cychiang@chromium.org>
----
- sound/soc/codecs/ts3a227e.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Jon Medhurst (Tixy) (2):
+  ARM: kprobes: Add test cases for stack consuming instructions
+  ARM: kprobes: Fix unreliable MRS instruction tests
 
-diff --git a/sound/soc/codecs/ts3a227e.c b/sound/soc/codecs/ts3a227e.c
-index 1d12057..9f2dced 100644
---- a/sound/soc/codecs/ts3a227e.c
-+++ b/sound/soc/codecs/ts3a227e.c
-@@ -254,6 +254,7 @@ static int ts3a227e_i2c_probe(struct i2c_client *i2c,
- 	struct ts3a227e *ts3a227e;
- 	struct device *dev = &i2c->dev;
- 	int ret;
-+	unsigned int acc_reg;
- 
- 	ts3a227e = devm_kzalloc(&i2c->dev, sizeof(*ts3a227e), GFP_KERNEL);
- 	if (ts3a227e == NULL)
-@@ -283,6 +284,11 @@ static int ts3a227e_i2c_probe(struct i2c_client *i2c,
- 			   INTB_DISABLE | ADC_COMPLETE_INT_DISABLE,
- 			   ADC_COMPLETE_INT_DISABLE);
- 
-+	/* Read jack status because chip might not trigger interrupt at boot. */
-+	regmap_read(ts3a227e->regmap, TS3A227E_REG_ACCESSORY_STATUS, &acc_reg);
-+	ts3a227e_new_jack_state(ts3a227e, acc_reg);
-+	ts3a227e_jack_report(ts3a227e);
-+
- 	return 0;
- }
- 
+Masami Hiramatsu (1):
+  kprobes: Pass the original kprobe for preparing optimized kprobe
+
+Wang Nan (8):
+  ARM: probes: move all probe code to dedicate directory
+  ARM: kprobes: remove unused ARM decoder actions.
+  ARM: kprobes: introduces checker
+  ARM: kprobes: collects stack consumption for store instructions
+  ARM: kprobes: disallow probing stack consuming instructions
+  ARM: kprobes: enable OPTPROBES for ARM 32
+  ARM: kprobes: check register usage for probed instruction.
+  ARM: optprobes: execute instruction during restoring if possible.
+
+ arch/arm/Kconfig                                   |   1 +
+ arch/arm/Makefile                                  |   1 +
+ arch/arm/{kernel => include/asm}/insn.h            |   0
+ arch/arm/include/asm/kprobes.h                     |  30 +-
+ arch/arm/{kernel => include/asm}/patch.h           |   0
+ arch/arm/include/asm/probes.h                      |  23 ++
+ arch/arm/kernel/Makefile                           |  16 +-
+ arch/arm/kernel/entry-armv.S                       |   3 +-
+ arch/arm/kernel/ftrace.c                           |   3 +-
+ arch/arm/kernel/jump_label.c                       |   5 +-
+ arch/arm/kernel/patch.c                            |   3 +-
+ arch/arm/probes/Makefile                           |   7 +
+ .../{kernel/probes-arm.c => probes/decode-arm.c}   |  12 +-
+ .../{kernel/probes-arm.h => probes/decode-arm.h}   |  10 +-
+ .../probes-thumb.c => probes/decode-thumb.c}       |  16 +-
+ .../probes-thumb.h => probes/decode-thumb.h}       |  10 +-
+ arch/arm/{kernel/probes.c => probes/decode.c}      |  81 +++++-
+ arch/arm/{kernel/probes.h => probes/decode.h}      |  13 +-
+ arch/arm/probes/kprobes/Makefile                   |  12 +
+ .../kprobes-arm.c => probes/kprobes/actions-arm.c} |  12 +-
+ .../kprobes/actions-common.c}                      |   4 +-
+ .../kprobes/actions-thumb.c}                       |  10 +-
+ arch/arm/probes/kprobes/checkers-arm.c             | 223 +++++++++++++++
+ arch/arm/probes/kprobes/checkers-common.c          | 101 +++++++
+ arch/arm/probes/kprobes/checkers-thumb.c           | 110 +++++++
+ arch/arm/probes/kprobes/checkers.h                 |  55 ++++
+ .../{kernel/kprobes.c => probes/kprobes/core.c}    |  49 +++-
+ .../{kernel/kprobes.h => probes/kprobes/core.h}    |  12 +-
+ arch/arm/probes/kprobes/opt-arm.c                  | 317 +++++++++++++++++++++
+ .../kprobes/test-arm.c}                            |  37 ++-
+ .../kprobes-test.c => probes/kprobes/test-core.c}  |  36 ++-
+ .../kprobes-test.h => probes/kprobes/test-core.h}  |  35 ++-
+ .../kprobes/test-thumb.c}                          |  20 +-
+ arch/arm/probes/uprobes/Makefile                   |   1 +
+ .../uprobes-arm.c => probes/uprobes/actions-arm.c} |   9 +-
+ .../{kernel/uprobes.c => probes/uprobes/core.c}    |   8 +-
+ .../{kernel/uprobes.h => probes/uprobes/core.h}    |   0
+ arch/x86/kernel/kprobes/opt.c                      |   3 +-
+ include/linux/kprobes.h                            |   3 +-
+ kernel/kprobes.c                                   |   4 +-
+ 40 files changed, 1169 insertions(+), 126 deletions(-)
+ rename arch/arm/{kernel => include/asm}/insn.h (100%)
+ rename arch/arm/{kernel => include/asm}/patch.h (100%)
+ create mode 100644 arch/arm/probes/Makefile
+ rename arch/arm/{kernel/probes-arm.c => probes/decode-arm.c} (99%)
+ rename arch/arm/{kernel/probes-arm.h => probes/decode-arm.h} (92%)
+ rename arch/arm/{kernel/probes-thumb.c => probes/decode-thumb.c} (98%)
+ rename arch/arm/{kernel/probes-thumb.h => probes/decode-thumb.h} (90%)
+ rename arch/arm/{kernel/probes.c => probes/decode.c} (84%)
+ rename arch/arm/{kernel/probes.h => probes/decode.h} (97%)
+ create mode 100644 arch/arm/probes/kprobes/Makefile
+ rename arch/arm/{kernel/kprobes-arm.c => probes/kprobes/actions-arm.c} (97%)
+ rename arch/arm/{kernel/kprobes-common.c => probes/kprobes/actions-common.c} (98%)
+ rename arch/arm/{kernel/kprobes-thumb.c => probes/kprobes/actions-thumb.c} (98%)
+ create mode 100644 arch/arm/probes/kprobes/checkers-arm.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-common.c
+ create mode 100644 arch/arm/probes/kprobes/checkers-thumb.c
+ create mode 100644 arch/arm/probes/kprobes/checkers.h
+ rename arch/arm/{kernel/kprobes.c => probes/kprobes/core.c} (94%)
+ rename arch/arm/{kernel/kprobes.h => probes/kprobes/core.h} (79%)
+ create mode 100644 arch/arm/probes/kprobes/opt-arm.c
+ rename arch/arm/{kernel/kprobes-test-arm.c => probes/kprobes/test-arm.c} (97%)
+ rename arch/arm/{kernel/kprobes-test.c => probes/kprobes/test-core.c} (98%)
+ rename arch/arm/{kernel/kprobes-test.h => probes/kprobes/test-core.h} (92%)
+ rename arch/arm/{kernel/kprobes-test-thumb.c => probes/kprobes/test-thumb.c} (97%)
+ create mode 100644 arch/arm/probes/uprobes/Makefile
+ rename arch/arm/{kernel/uprobes-arm.c => probes/uprobes/actions-arm.c} (96%)
+ rename arch/arm/{kernel/uprobes.c => probes/uprobes/core.c} (97%)
+ rename arch/arm/{kernel/uprobes.h => probes/uprobes/core.h} (100%)
+
 -- 
-2.1.2
+1.8.4
 
