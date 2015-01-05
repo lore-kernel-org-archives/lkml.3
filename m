@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbbAEUif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 15:38:35 -0500
-Received: from borg.tf-network.de ([62.75.218.204]:52854 "EHLO
-	borg.tf-network.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752632AbbAEUie (ORCPT
+	id S1754168AbbAEUkf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 15:40:35 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:59626 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186AbbAEUkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 15:38:34 -0500
-From: Thomas D <whissi@whissi.de>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas D <whissi@whissi.de>,
-        Mark Asselstine <mark.asselstine@windriver.com>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH] tools/power: turbostat: Use $(CURDIR) instead of $(PWD) in Makefile
-Date: Mon,  5 Jan 2015 21:37:23 +0100
-Message-Id: <1420490243-15375-1-git-send-email-whissi@whissi.de>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <2779550.jOF2haXjUH@yow-masselst-d1>
-References: <2779550.jOF2haXjUH@yow-masselst-d1>
+	Mon, 5 Jan 2015 15:40:32 -0500
+Message-ID: <54AAF6B9.6050703@cogentembedded.com>
+Date: Mon, 05 Jan 2015 23:40:25 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
+CC: linux-sh@vger.kernel.org, vksavl@gmail.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3] clk-rcar-gen2: RCAN clock support
+References: <1678262.gW7XrkflEf@wasted.cogentembedded.com>
+In-Reply-To: <1678262.gW7XrkflEf@wasted.cogentembedded.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH] tools/power: turbostat: Use $(CURDIR) instead of $(PWD) and
- add support for O= option in Makefil
+Hello.
 
-Since commit ee0778a30153 ("tools/power: turbostat: make Makefile a bit
-more capable") turbostat’s Makefile is using
+On 01/05/2015 11:10 PM, Sergei Shtylyov wrote:
 
-  [...]
-  BUILD_OUTPUT    := $(PWD)
-  [...]
+> Add the RCAN clock support to the R-Car generation 2 CPG driver.  This clock
+> gets derived from  the USB_EXTAL clock, dividing  it by 6.  The layout of the
+> RCANCKCR register is similar to those of the clocks supported by the 'clk-div6'
+> driver but has no divider field, and so can't be supported by that driver...
 
-which obviously causes trouble when building "turbostat" with
+> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-  make -C /usr/src/linux/tools/power/x86/turbostat ARCH=x86 turbostat
+[...]
 
-because GNU make doesn’t update nor guarantee that $PWD is set.
+> Index: renesas/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
+> ===================================================================
+> --- renesas.orig/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
+> +++ renesas/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
 
-This patch changes the Makefile to use $CURDIR instead, which GNU make
-guarantees to set and update (i.e. when using "make –C ...") and also
-adds support for the O= option (see "make help" in your root of your
-kernel source tree for more details).
+    It should have been against Mike's tree. And forgot to add Geert's ACK. 
+Ignore this one, I'll repost.
 
-Link: https://bugs.gentoo.org/show_bug.cgi?id=533918
-Fixes: ee0778a30153 ("tools/power: turbostat: make Makefile a bit more capable")
-Signed-off-by: Thomas D. <whissi@whissi.de>
-Cc: Mark Asselstine <mark.asselstine@windriver.com>
-Cc: Len Brown <len.brown@intel.com>
----
- I followed Mark's suggestion and also added support for the O= option.
- I took the logic from tools/power/cpupower/Makefile.
-
- ...i also hope this reply will work and doesn't break the tread ;)
-
- tools/power/x86/turbostat/Makefile | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
-index d1b3a36..4039854 100644
---- a/tools/power/x86/turbostat/Makefile
-+++ b/tools/power/x86/turbostat/Makefile
-@@ -1,8 +1,12 @@
- CC		= $(CROSS_COMPILE)gcc
--BUILD_OUTPUT	:= $(PWD)
-+BUILD_OUTPUT	:= $(CURDIR)
- PREFIX		:= /usr
- DESTDIR		:=
- 
-+ifeq ("$(origin O)", "command line")
-+	BUILD_OUTPUT := $(O)
-+endif
-+
- turbostat : turbostat.c
- CFLAGS +=	-Wall
- CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
--- 
-2.2.1
+WBR, Sergei
 
