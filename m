@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbbAELOd (ORCPT <rfc822;w@1wt.eu>);
+	id S1753397AbbAELOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:14:36 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:14857 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268AbbAELOd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Jan 2015 06:14:33 -0500
-Received: from mail.eperm.de ([89.247.134.16]:59381 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175AbbAELOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:14:31 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v7 1/2] crypto: AF_ALG: add AEAD support
-Date: Mon, 05 Jan 2015 12:14:24 +0100
-Message-ID: <4229997.MZP3tP9eGb@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150105105105.GA25517@gondor.apana.org.au>
-References: <6964260.mNa1jtPz7Z@tachyon.chronox.de> <6798882.ly1QjqTYep@tachyon.chronox.de> <20150105105105.GA25517@gondor.apana.org.au>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.19 #1 (bis)
+Date: Mon, 5 Jan 2015 12:14:37 +0100
+Message-ID: <1420456477-18204-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+Organization: atmel
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 5. Januar 2015, 21:51:06 schrieb Herbert Xu:
+Arnd, Olof, Kevin,
 
-Hi Herbert,
+This is the rebase of my previous pull-request on top of 3.19-rc1. As said at
+the time of my early messages, I was waiting for the arm-soc *and* pinctrl
+material to reach Linus T.'s tree before sending this pull-request. In fact
+this sequence was needed for the gpio header removal. The little patch about
+#include deletion just follows an earlier merge conflict in arm-soc tree: I was
+also waiting for this moment before sending the definitive fix, just to be
+sure.
 
-> On Mon, Jan 05, 2015 at 11:46:50AM +0100, Stephan Mueller wrote:
-> > The need for that check lies in aead_recvmsg:
-> >         /*
-> >         
-> >          * first chunk of input is AD -- one scatterlist entry is one
-> >          page,
-> >          * and we process only one scatterlist, the maximum size of AD is
-> >          * one page
-> >          */
-> >         
-> >         sg_init_table(&assoc, 1);
-> >         sg_set_page(&assoc, sg_page(sg), ctx->aead_assoclen, sg->offset);
-> >         aead_request_set_assoc(&ctx->aead_req, &assoc,
-> >         ctx->aead_assoclen);
-> > 
-> > There you see that I only create an sg table with one entry for the AD. If
-> > we would allow an arbitrary AD size, I would see the need of a for loop
-> > in addition to the one directly beneath this AD scatterlist setting: one
-> > for identifying how many sg entries I need to allocate and one for the
-> > actual assignment.
-> > 
-> > As I felt that one page should be sufficient for the AD, I wanted to avoid
-> > the extra overhead for another for loop.
-> 
-> Please remove the limit as otherwise we would never be able to
-> add support for this in a future kernel as appliations won't be
-> able to rely on it.
-> 
-> There is no such limit in the kernel interface and we shouldn't
-> be adding one here.
+In comparison with the previous pull-request, I also added a tiny correction of
+the sama5d4.dtsi timer entry. All the rest is pretty straightforward.
 
-One question: are you aware of an existing mechanism to split one scatterlist 
-into two at a given offset?
+Thanks, best regards,
 
-> 
-> Cheers,
+The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
 
+  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 0e049c66ebf56a415cadd6c593b7ee0a2cb9d19d:
+
+  ARM: at91/dt: sama5d4: fix the timer reg length (2015-01-05 11:07:14 +0100)
+
+----------------------------------------------------------------
+First fixes batch for AT91 on 3.19 folowing The big cleanup:
+- removal of unused Kconfig RTC options
+- GPIO header file is now in same directory as the pinctrl driver
+- little fix on #includes
+- removal of DEBUG_LL from the sama5 common defconfig
+- little fix of reg size in sama5d4.dtsi
+
+----------------------------------------------------------------
+Bo Shen (1):
+      ARM: at91/dt: sama5d4: fix the timer reg length
+
+Boris Brezillon (1):
+      ARM: at91: remove useless header file includes
+
+Maxime Ripard (1):
+      ARM: at91/config: sama5: Remove DEBUG_LL
+
+Nicolas Ferre (2):
+      rtc: at91/Kconfig: remove useless options
+      ARM: at91: remove unneeded header file
+
+ arch/arm/boot/dts/sama5d4.dtsi             |  2 +-
+ arch/arm/configs/sama5_defconfig           |  2 -
+ arch/arm/mach-at91/at91sam9g45.c           |  1 -
+ arch/arm/mach-at91/at91sam9rl.c            |  1 -
+ arch/arm/mach-at91/include/mach/at91_pio.h | 80 ------------------------------
+ drivers/rtc/Kconfig                        | 28 -----------
+ 6 files changed, 1 insertion(+), 113 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91_pio.h
 
 -- 
-Ciao
-Stephan
+Nicolas Ferre
