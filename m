@@ -1,57 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871AbbAEJJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:09:57 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35122 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369AbbAEJJz (ORCPT
+	id S1753573AbbAEJMp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:12:45 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:37665 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942AbbAEJMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:09:55 -0500
-Message-ID: <54AA54DC.6000407@collabora.co.uk>
-Date: Mon, 05 Jan 2015 10:09:48 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 5 Jan 2015 04:12:42 -0500
+Date: Mon, 5 Jan 2015 10:12:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Vladimir Davydov <vdavydov@parallels.com>, stable@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH V3 1/2] mm, vmscan: prevent kswapd livelock due to
+ pfmemalloc-throttled process being killed
+Message-ID: <20150105091238.GA7687@dhcp22.suse.cz>
+References: <1420448203-30212-1-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        linux-samsung-soc@vger.kernel.org,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] ARM: exynos_defconfig: Enable options for display
- panel support
-References: <1420215089-2093-1-git-send-email-javier.martinez@collabora.co.uk> <1420447691.3918.2.camel@AMDC1943>
-In-Reply-To: <1420447691.3918.2.camel@AMDC1943>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420448203-30212-1-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
-
->> Hello Kukjin,
->> 
->> You dropped this patch since exynos drm was causing boot hangs on some
->> platforms but the fix for that issue is already in linux-next (commit:
->> f1e9203 clk: samsung: Fix Exynos 5420 pinctrl setup and clock disable
->> failure due to domain being gated) so I think it makes sense to enable
->> the display options again.
+On Mon 05-01-15 09:56:42, Vlastimil Babka wrote:
+> Charles Shirron and Paul Cassella from Cray Inc have reported kswapd stuck
+> in a busy loop with nothing left to balance, but kswapd_try_to_sleep() failing
+> to sleep. Their analysis found the cause to be a combination of several
+> factors:
 > 
-> I think these issues were unrelated to each other. DRM was disabled
-> because of infinite deferred probing of DRM components. I saw Inki was
-> sending some patches for it but I am not sure if they were merged.
->
+> 1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
+> 
+> 2. The process has been killed (by OOM in this case), but has not yet been
+>    scheduled to remove itself from the waitqueue and die.
+> 
+> 3. kswapd checks for throttled processes in prepare_kswapd_sleep():
+> 
+>         if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+>                 wake_up(&pgdat->pfmemalloc_wait);
+> 		return false; // kswapd will not go to sleep
+> 	}
+> 
+>    However, for a process that was already killed, wake_up() does not remove
+>    the process from the waitqueue, since try_to_wake_up() checks its state
+>    first and returns false when the process is no longer waiting.
+> 
+> 4. kswapd is running on the same CPU as the only CPU that the process is
+>    allowed to run on (through cpus_allowed, or possibly single-cpu system).
+> 
+> 5. CONFIG_PREEMPT_NONE=y kernel is used. If there's nothing to balance, kswapd
+>    encounters no voluntary preemption points and repeatedly fails
+>    prepare_kswapd_sleep(), blocking the process from running and removing
+>    itself from the waitqueue, which would let kswapd sleep.
+> 
+> So, the source of the problem is that we prevent kswapd from going to sleep
+> until there are processes waiting on the pfmemalloc_wait queue, and a process
+> waiting on a queue is guaranteed to be removed from the queue only when it
+> gets scheduled. This was done to make sure that no process is left sleeping
+> on pfmemalloc_wait when kswapd itself goes to sleep.
+> 
+> However, it isn't necessary to postpone kswapd sleep until the pfmemalloc_wait
+> queue actually empties. To prevent processes from being left sleeping, it's
+> actually enough to guarantee that all processes waiting on pfmemalloc_wait
+> queue have been woken up by the time we put kswapd to sleep.
+> 
+> This patch therefore fixes this issue by substituting 'wake_up' with
+> 'wake_up_all' and removing 'return false' in the code snippet from
+> prepare_kswapd_sleep() above. Note that if any process puts itself in the
+> queue after this waitqueue_active() check, or after the wake up itself, it
+> means that the process will also wake up kswapd - and since we are under
+> prepare_to_wait(), the wake up won't be missed. Also we update the comment
+> prepare_kswapd_sleep() to hopefully more clearly describe the races it is
+> preventing.
+> 
+> Fixes: 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves
+>                       are low and swap is backed by network storage")
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: <stable@vger.kernel.org>   # v3.6+
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Rik van Riel <riel@redhat.com>
 
-Ups, you are completely right and it was my bad for pasting the wrong
-commit fixing the boot hang when DRM was enabled, I actually meant commit:
-("820687be drm/exynos: move Exynos platform drivers registration to init")
-which also landed in v3.19-rc1.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Sorry for the confusion.
- 
-> Best regards,
-> Krzysztof
+Thanks!
 
-Best regards,
-Javier
+> ---
+> Changes in v3 (v2 was sent by Vladimir Davydov, thanks for his new solution):
+> 
+> - split to two patches again, as I (and Michal Hocko) think it's more correct
+> - some rewording in changelog
+> - change the code comment again as in v1 with small updates (v2 dropped this
+>   part), since it has been clearly a source of confusion so far
+> 
+>  mm/vmscan.c | 24 +++++++++++++-----------
+>  1 file changed, 13 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index bd9a72b..ab2505c 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2921,18 +2921,20 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+>  		return false;
+>  
+>  	/*
+> -	 * There is a potential race between when kswapd checks its watermarks
+> -	 * and a process gets throttled. There is also a potential race if
+> -	 * processes get throttled, kswapd wakes, a large process exits therby
+> -	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
+> -	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
+> -	 * so wake them now if necessary. If necessary, processes will wake
+> -	 * kswapd and get throttled again
+> +	 * The throttled processes are normally woken up in balance_pgdat() as
+> +	 * soon as pfmemalloc_watermark_ok() is true. But there is a potential
+> +	 * race between when kswapd checks the watermarks and a process gets
+> +	 * throttled. There is also a potential race if processes get
+> +	 * throttled, kswapd wakes, a large process exits thereby balancing the
+> +	 * zones, which causes kswapd to exit balance_pgdat() before reaching
+> +	 * the wake up checks. If kswapd is going to sleep, no process should
+> +	 * be sleeping on pfmemalloc_wait, so wake them now if necessary. If
+> +	 * the wake up is premature, processes will wake kswapd and get
+> +	 * throttled again. The difference from wake ups in balance_pgdat() is
+> +	 * that here we are under prepare_to_wait().
+>  	 */
+> -	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+> -		wake_up(&pgdat->pfmemalloc_wait);
+> -		return false;
+> -	}
+> +	if (waitqueue_active(&pgdat->pfmemalloc_wait))
+> +		wake_up_all(&pgdat->pfmemalloc_wait);
+>  
+>  	return pgdat_balanced(pgdat, order, classzone_idx);
+>  }
+> -- 
+> 2.1.2
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
