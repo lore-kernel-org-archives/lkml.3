@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbbAEK3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:29:05 -0500
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:8281 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979AbbAEK3B (ORCPT
+	id S1753363AbbAEKcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:32:09 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:34807 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbbAEKcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:29:01 -0500
-X-IronPort-AV: E=McAfee;i="5600,1067,7671"; a="80995180"
-X-IronPort-AV: E=Sophos;i="5.07,698,1413270000"; 
-   d="scan'208";a="16802967"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-CC: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: wireless: rtlwifi: btcoexist: halbtc8821a2ant: Remove some unused functions
-References: <1420230361-1862-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<54A786A4.2050202@lwfinger.net>
-	<CAKXHbyOYO29uKA127qyYrCfpgQ2zoqBS9rAJME513oZ8JVdOug@mail.gmail.com>
-Date: Mon, 5 Jan 2015 12:28:48 +0200
-In-Reply-To: <CAKXHbyOYO29uKA127qyYrCfpgQ2zoqBS9rAJME513oZ8JVdOug@mail.gmail.com>
-	(Rickard Strandqvist's message of "Sat, 3 Jan 2015 13:03:02 +0100")
-Message-ID: <87d26t34in.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 5 Jan 2015 05:32:07 -0500
+Date: Mon, 5 Jan 2015 21:31:59 +1100
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v7 1/2] crypto: AF_ALG: add AEAD support
+Message-ID: <20150105103159.GA24878@gondor.apana.org.au>
+References: <6964260.mNa1jtPz7Z@tachyon.chronox.de>
+ <1609020.xcc11L81HZ@tachyon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [10.80.80.8]
-X-ClientProxiedBy: nasanexm01a.na.qualcomm.com (10.85.0.81) To
- NALASEXR01G.na.qualcomm.com (10.49.56.53)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1609020.xcc11L81HZ@tachyon.chronox.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> writes:
-
->     I know that you have been told that including "net: wireless:" in the
->     subject line is discouraged. Please do not do this again. The staging
->     directory is different as GregKH uses "staging:" in the subject to route
->     patches, but wireless does not.
+On Fri, Jan 02, 2015 at 03:41:33PM +0100, Stephan Mueller wrote:
 >
->     As to the patch, NACK for the simple reason that I am currently working on
->     a number of changes to btcoexist. Some of these routines may end up being
->     removed, but others will not. Having your patch remove them, and one of
->     mine adding them back just constitutes a lot of churning of the source. In
->     addition, it greatly increases the probability of the source trees becoming
->     unsynchronized and getting merge conflicts.
->
-> I do not recognize that there has been no diskution on the subject of "net: 
-> wireless:"
+> +		if (!con.aead_assoclen)
+> +			return -EINVAL;
 
-I mentioned about this in one your earlier patches, but I guess you
-didn't get the mail because I got a bounce:
+AD being zero should be fine.
 
-https://lkml.org/lkml/2014/12/24/222
+> +		/* aead_recvmsg limits the maximum AD size to one page */
+> +		if (con.aead_assoclen > PAGE_SIZE)
+> +			return -E2BIG;
 
+I don't see any need to limit the size of the AD.
+
+Cheers,
 -- 
-Kalle Valo
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
