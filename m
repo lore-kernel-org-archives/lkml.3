@@ -1,145 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbbAENz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:55:29 -0500
-Received: from h1.radempa.de ([176.9.142.194]:44425 "EHLO mail.cosmopool.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753196AbbAENz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:55:27 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Jonathan Cameron <jic23@kernel.org>
-cc: Richard Weinberger <richard@nod.at>, knaack.h@gmx.de, lars@metafoo.de,
-        pmeerw@pmeerw.net, sanjeev_sharma@mentor.com,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/3] iio: dht11: IRQ fixes
+	id S1753656AbbAEN6I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:58:08 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:53598 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbbAEN6G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 08:58:06 -0500
+Date: Mon, 5 Jan 2015 14:57:48 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, "acme@kernel.org" <acme@kernel.org>,
+        "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "namhyung@kernel.org" <namhyung@kernel.org>
+Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
+Message-ID: <20150105135748.GT30905@twins.programming.kicks-ass.net>
+References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+ <20141204142330.GB10406@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4845.1420466106.1@stardust.g4.wien.funkfeuer.at>
-Date: Mon, 05 Jan 2015 14:55:06 +0100
-Message-Id: <E1Y887e-0001GB-G5@stardust.g4.wien.funkfeuer.at>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since setting irq-enabled GPIOs into output state is not supported
-by all GPIO controllers, we need to disable the irq while requesting
-sensor data. As side effect we lose a tiny bit of functionality:
-Some wiring problems can't be concluded from log messages anymore.
+On Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan wrote:
+> > I'll test it once I get hands on Haswel server again, I guess we wait for the
+> > kernel change to go in first anyway, right?
+> >
+> 
+> I'm not sure, let's ask Peter.
+> 
+> Peter?
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Harald Geyer <harald@ccbib.org>
----
-changes since v1:
-Reduce the expected number of edges per data transmission, since we
-won't see the edges we generate ourselves.
+Ok so only 3/3 was missing right? I handed the kernel bits to Ingo when
+I 'left' with a note that userspace was pending. It seems that is now
+resolved.
 
- drivers/iio/humidity/dht11.c |   62 +++++++++++++++++++++++------------------
- 1 files changed, 35 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
-index 7717f5c..7d79a1a 100644
---- a/drivers/iio/humidity/dht11.c
-+++ b/drivers/iio/humidity/dht11.c
-@@ -40,8 +40,12 @@
- 
- #define DHT11_DATA_VALID_TIME	2000000000  /* 2s in ns */
- 
--#define DHT11_EDGES_PREAMBLE 4
-+#define DHT11_EDGES_PREAMBLE 2
- #define DHT11_BITS_PER_READ 40
-+/*
-+ * Note that when reading the sensor actually 84 edges are detected, but
-+ * since the last edge is not significant, we only store 83:
-+ */
- #define DHT11_EDGES_PER_READ (2*DHT11_BITS_PER_READ + DHT11_EDGES_PREAMBLE + 1)
- 
- /* Data transmission timing (nano seconds) */
-@@ -140,6 +144,27 @@ static int dht11_decode(struct dht11 *dht11, int offset)
- 	return 0;
- }
- 
-+/*
-+ * IRQ handler called on GPIO edges
-+ */
-+static irqreturn_t dht11_handle_irq(int irq, void *data)
-+{
-+	struct iio_dev *iio = data;
-+	struct dht11 *dht11 = iio_priv(iio);
-+
-+	/* TODO: Consider making the handler safe for IRQ sharing */
-+	if (dht11->num_edges < DHT11_EDGES_PER_READ && dht11->num_edges >= 0) {
-+		dht11->edges[dht11->num_edges].ts = iio_get_time_ns();
-+		dht11->edges[dht11->num_edges++].value =
-+						gpio_get_value(dht11->gpio);
-+
-+		if (dht11->num_edges >= DHT11_EDGES_PER_READ)
-+			complete(&dht11->completion);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
- static int dht11_read_raw(struct iio_dev *iio_dev,
- 			const struct iio_chan_spec *chan,
- 			int *val, int *val2, long m)
-@@ -160,8 +185,17 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
- 		if (ret)
- 			goto err;
- 
-+		ret = request_irq(dht11->irq, dht11_handle_irq,
-+				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-+				  iio_dev->name, iio_dev);
-+		if (ret)
-+			goto err;
-+
- 		ret = wait_for_completion_killable_timeout(&dht11->completion,
- 								 HZ);
-+
-+		free_irq(dht11->irq, iio_dev);
-+
- 		if (ret == 0 && dht11->num_edges < DHT11_EDGES_PER_READ - 1) {
- 			dev_err(&iio_dev->dev,
- 					"Only %d signal edges detected\n",
-@@ -197,27 +231,6 @@ static const struct iio_info dht11_iio_info = {
- 	.read_raw		= dht11_read_raw,
- };
- 
--/*
-- * IRQ handler called on GPIO edges
--*/
--static irqreturn_t dht11_handle_irq(int irq, void *data)
--{
--	struct iio_dev *iio = data;
--	struct dht11 *dht11 = iio_priv(iio);
--
--	/* TODO: Consider making the handler safe for IRQ sharing */
--	if (dht11->num_edges < DHT11_EDGES_PER_READ && dht11->num_edges >= 0) {
--		dht11->edges[dht11->num_edges].ts = iio_get_time_ns();
--		dht11->edges[dht11->num_edges++].value =
--						gpio_get_value(dht11->gpio);
--
--		if (dht11->num_edges >= DHT11_EDGES_PER_READ)
--			complete(&dht11->completion);
--	}
--
--	return IRQ_HANDLED;
--}
--
- static const struct iio_chan_spec dht11_chan_spec[] = {
- 	{ .type = IIO_TEMP,
- 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED), },
-@@ -260,11 +273,6 @@ static int dht11_probe(struct platform_device *pdev)
- 		dev_err(dev, "GPIO %d has no interrupt\n", dht11->gpio);
- 		return -EINVAL;
- 	}
--	ret = devm_request_irq(dev, dht11->irq, dht11_handle_irq,
--				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
--				pdev->name, iio);
--	if (ret)
--		return ret;
- 
- 	dht11->timestamp = iio_get_time_ns() - DHT11_DATA_VALID_TIME - 1;
- 	dht11->num_edges = -1;
--- 
-1.7.2.5
-
+I stuck 3/3 at the end (it seems to still apply -- yay!) and will send
+it together with the kernel bits.
