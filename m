@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129AbbAETDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:03:44 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:42755 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108AbbAETDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:03:42 -0500
-Message-ID: <54AAE00B.1020809@osg.samsung.com>
-Date: Mon, 05 Jan 2015 12:03:39 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932149AbbAETDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:03:55 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36676 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932108AbbAETDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 14:03:53 -0500
+Date: Mon, 5 Jan 2015 19:03:42 +0000
+From: Mark Brown <broonie@kernel.org>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Message-ID: <20150105190342.GF2634@sirena.org.uk>
+References: <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54A9355F.4050102@users.sourceforge.net>
+ <54A93CBD.7090905@users.sourceforge.net>
 MIME-Version: 1.0
-To: David Drysdale <drysdale@google.com>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andreas Schwab <schwab@linux-m68k.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-m68k@vger.kernel.org,
-        linux-api@vger.kernel.org, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH] selftests/exec: allow shell return code of 126
-References: <1420456786-5989-1-git-send-email-drysdale@google.com>
-In-Reply-To: <1420456786-5989-1-git-send-email-drysdale@google.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Bqc0IY4JZZt50bUr"
+Content-Disposition: inline
+In-Reply-To: <54A93CBD.7090905@users.sourceforge.net>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 8/13] ASoC: Intel: Delete an unnecessary check before the
+ function call "release_firmware"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 04:19 AM, David Drysdale wrote:
-> When the shell fails to invoke a script because its path name
-> is too long (ENAMETOOLONG), most shells return 127 to indicate
-> command not found.  However, some systems report 126 (which POSIX
-> suggests should indicate a non-executable file) for this case,
-> so allow that too.
-> 
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: David Drysdale <drysdale@google.com>
-> ---
->  tools/testing/selftests/exec/execveat.c | 28 ++++++++++++++++++++++------
->  1 file changed, 22 insertions(+), 6 deletions(-)
-> 
-> diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
-> index d273624c93a6..0d940c6e26bd 100644
-> --- a/tools/testing/selftests/exec/execveat.c
-> +++ b/tools/testing/selftests/exec/execveat.c
-> @@ -62,7 +62,7 @@ static int _check_execveat_fail(int fd, const char *path, int flags,
->  }
->  
->  static int check_execveat_invoked_rc(int fd, const char *path, int flags,
-> -				     int expected_rc)
-> +				     int expected_rc, int expected_rc2)
 
-This logic doesn't scale well if there other expected return
-values to account for. Please think about a re-write to handle
-multiple expected return codes.
+--Bqc0IY4JZZt50bUr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, Jan 04, 2015 at 02:14:37PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 3 Jan 2015 19:49:37 +0100
+>=20
+> The release_firmware() function tests whether its argument is NULL and th=
+en
+> returns immediately. Thus the test around the call is not needed.
 
->  {
->  	int status;
->  	int rc;
-> @@ -99,9 +99,19 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
->  		return 1;
->  	}
->  	if (WEXITSTATUS(status) != expected_rc) {
-> -		printf("[FAIL] (child %d exited with %d not %d)\n",
-> -			child, WEXITSTATUS(status), expected_rc);
-> -		return 1;
-> +		if (expected_rc != expected_rc2) {
+Applied, thanks.
 
-Please collapse expected_rc and expected_rc2 checks. You can rephrase
-the error message to work for both cases.
+--Bqc0IY4JZZt50bUr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-thanks,
--- Shuah
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+iQEcBAEBAgAGBQJUquANAAoJECTWi3JdVIfQoIsH/il6Riqg4/bu/Px1DnuAmXlK
+10ykewzO52f0ueOR9J3ICUCw2wCXY2pPoR2/v2M8j0WSeWYVMZA4KaXI8ND/3I5m
+jZVIXvly07VZYpRMffGQgn3SVrfPIpi4YQwiCGNstt1RO4qALzuAfJ9wMTTjuukG
+lknqljkPfrEbgTBAVsV0IWa6PMCfbSjNbZg5YWrHH5OSKKNFhHvsppgg31ok3R3v
+YahRJbG7Y30Ct43/fOju0/pIwrHYVP6asUUp+wt6ZrQ6CNgDsyeT4H9D5H8FhbiV
+gSNf9vlLlgw+FIZD+KyuKr0bCdV5/k2/HY2EFc/39878JQtns7n1/WErXnl8QUo=
+=UoSb
+-----END PGP SIGNATURE-----
+
+--Bqc0IY4JZZt50bUr--
