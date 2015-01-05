@@ -1,157 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094AbbAEO2z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:28:55 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:59435 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305AbbAEO2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:28:53 -0500
-Message-ID: <54AA9FB1.1090603@atmel.com>
-Date: Mon, 5 Jan 2015 15:29:05 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751711AbbAEHHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 02:07:23 -0500
+Received: from mail-by2on0137.outbound.protection.outlook.com ([207.46.100.137]:54592
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751068AbbAEHHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 02:07:21 -0500
+X-Greylist: delayed 1140 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 02:07:21 EST
+From: Anson Huang <b20788@freescale.com>
+To: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <rui.zhang@intel.com>, <edubezval@gmail.com>
+Subject: [PATCH] Thermal: imx: add clk disable/enable for suspend/resume
+Date: Mon, 5 Jan 2015 22:29:13 +0800
+Message-ID: <1420468153-19142-1-git-send-email-b20788@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Anson.Huang@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(21056001)(89996001)(229853001)(87936001)(85426001)(106466001)(81156004)(48376002)(99396003)(107046002)(62966003)(120916001)(77156002)(50466002)(46102003)(97736003)(36756003)(84676001)(64706001)(50986999)(47776003)(20776003)(6806004)(105606002)(50226001)(19580405001)(68736005)(104016003)(33646002)(77096005)(69596002)(4396001)(19580395003)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0626;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, "Wim Van Sebroeck" <wim@iguana.be>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH 3/8] watchdog: at91rm9200: use the regmap from mfd
-References: <1420459605-24561-1-git-send-email-alexandre.belloni@free-electrons.com> <1420459605-24561-4-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1420459605-24561-4-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR0301MB0626;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR0301MB0626;
+X-Forefront-PRVS: 0447DB1C71
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0626;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 06:33:51.0853
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0626
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 05/01/2015 13:06, Alexandre Belloni a écrit :
-> The system timer MFD driver is providing a regmap. Use it to access the
-> registers.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  drivers/watchdog/Kconfig          |  2 +-
->  drivers/watchdog/at91rm9200_wdt.c | 22 +++++++++-------------
->  2 files changed, 10 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 08f41add1461..18c73bc159fc 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -154,7 +154,7 @@ config ARM_SP805_WATCHDOG
->  
->  config AT91RM9200_WATCHDOG
->  	tristate "AT91RM9200 watchdog"
-> -	depends on SOC_AT91RM9200
-> +	depends on SOC_AT91RM9200 && MFD_ATMEL_ST
->  	help
->  	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
->  	  system when the timeout is reached.
-> diff --git a/drivers/watchdog/at91rm9200_wdt.c b/drivers/watchdog/at91rm9200_wdt.c
-> index d244112d5b6f..6d6f36652112 100644
-> --- a/drivers/watchdog/at91rm9200_wdt.c
-> +++ b/drivers/watchdog/at91rm9200_wdt.c
-> @@ -17,22 +17,24 @@
->  #include <linux/init.h>
->  #include <linux/io.h>
->  #include <linux/kernel.h>
-> +#include <linux/mfd/atmel-st.h>
->  #include <linux/miscdevice.h>
->  #include <linux/module.h>
->  #include <linux/moduleparam.h>
->  #include <linux/platform_device.h>
-> +#include <linux/regmap.h>
->  #include <linux/types.h>
->  #include <linux/watchdog.h>
->  #include <linux/uaccess.h>
->  #include <linux/of.h>
->  #include <linux/of_device.h>
-> -#include <mach/at91_st.h>
->  
->  #define WDT_DEFAULT_TIME	5	/* seconds */
->  #define WDT_MAX_TIME		256	/* seconds */
->  
->  static int wdt_time = WDT_DEFAULT_TIME;
->  static bool nowayout = WATCHDOG_NOWAYOUT;
-> +static struct regmap *regmap_st;
->  
->  module_param(wdt_time, int, 0);
->  MODULE_PARM_DESC(wdt_time, "Watchdog time in seconds. (default="
-> @@ -55,7 +57,7 @@ static unsigned long at91wdt_busy;
->   */
->  static inline void at91_wdt_stop(void)
->  {
-> -	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN);
-> +	regmap_write(regmap_st, AT91_ST_WDMR, AT91_ST_EXTEN);
->  }
->  
->  /*
-> @@ -63,9 +65,9 @@ static inline void at91_wdt_stop(void)
->   */
->  static inline void at91_wdt_start(void)
->  {
-> -	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
-> +	regmap_write(regmap_st, AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
->  				(((65536 * wdt_time) >> 8) & AT91_ST_WDV));
-> -	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
-> +	regmap_write(regmap_st, AT91_ST_CR, AT91_ST_WDRST);
->  }
->  
->  /*
-> @@ -73,7 +75,7 @@ static inline void at91_wdt_start(void)
->   */
->  static inline void at91_wdt_reload(void)
->  {
-> -	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
-> +	regmap_write(regmap_st, AT91_ST_CR, AT91_ST_WDRST);
->  }
->  
->  /* ......................................................................... */
-> @@ -204,6 +206,7 @@ static struct miscdevice at91wdt_miscdev = {
->  static int at91wdt_probe(struct platform_device *pdev)
->  {
->  	int res;
-> +	regmap_st = dev_get_drvdata(pdev->dev.parent);
->  
->  	if (at91wdt_miscdev.parent)
->  		return -EBUSY;
-> @@ -254,12 +257,6 @@ static int at91wdt_resume(struct platform_device *pdev)
->  #define at91wdt_resume	NULL
->  #endif
->  
-> -static const struct of_device_id at91_wdt_dt_ids[] = {
-> -	{ .compatible = "atmel,at91rm9200-wdt" },
-> -	{ /* sentinel */ }
-> -};
-> -MODULE_DEVICE_TABLE(of, at91_wdt_dt_ids);
-> -
->  static struct platform_driver at91wdt_driver = {
->  	.probe		= at91wdt_probe,
->  	.remove		= at91wdt_remove,
-> @@ -267,8 +264,7 @@ static struct platform_driver at91wdt_driver = {
->  	.suspend	= at91wdt_suspend,
->  	.resume		= at91wdt_resume,
->  	.driver		= {
-> -		.name	= "at91_wdt",
-> -		.of_match_table = at91_wdt_dt_ids,
+Thermal sensor's clk is from pll3_usb_otg, per hardware
+design requirement, need to make sure pll3_usb_otg is disabled
+before STOP mode is entered, otherwise, all PFDs under it may
+enter incorrect state, this patch disables pll3_usb_otg before
+suspend and enables it after resume.
 
-As we remove all the DT specific bits in this driver, don't we have the
-opportunity to remove some #include directives?
+Signed-off-by: Anson Huang <b20788@freescale.com>
+---
+ drivers/thermal/imx_thermal.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-> +		.name	= "atmel_st_watchdog",
->  	},
->  };
->  
-> 
-
-
+diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+index 461bf3d..03894da 100644
+--- a/drivers/thermal/imx_thermal.c
++++ b/drivers/thermal/imx_thermal.c
+@@ -600,6 +600,8 @@ static int imx_thermal_suspend(struct device *dev)
+ 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
+ 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
+ 	data->mode = THERMAL_DEVICE_DISABLED;
++	if (!IS_ERR(data->thermal_clk))
++		clk_disable_unprepare(data->thermal_clk);
+ 
+ 	return 0;
+ }
+@@ -609,6 +611,8 @@ static int imx_thermal_resume(struct device *dev)
+ 	struct imx_thermal_data *data = dev_get_drvdata(dev);
+ 	struct regmap *map = data->tempmon;
+ 
++	if (!IS_ERR(data->thermal_clk))
++		clk_prepare_enable(data->thermal_clk);
+ 	/* Enabled thermal sensor after resume */
+ 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
+ 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
 -- 
-Nicolas Ferre
+1.9.1
+
