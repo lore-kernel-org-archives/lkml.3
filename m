@@ -1,237 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbbAELe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:34:58 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:49566 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbbAELez (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:34:55 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
-        <linux@arm.linux.org.uk>
-CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v19 10/11] ARM: kprobes: check register usage for probed instruction.
-Date: Mon, 5 Jan 2015 19:29:44 +0800
-Message-ID: <1420457384-77449-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
-References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
+	id S1753398AbbAELal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:30:41 -0500
+Received: from mail-by2on0092.outbound.protection.outlook.com ([207.46.100.92]:8000
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753196AbbAELaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 06:30:39 -0500
+Date: Mon, 5 Jan 2015 12:30:20 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Erico Nunes <nunes.erico@gmail.com>, <michal.simek@xilinx.com>
+CC: <monstr@monstr.eu>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] microblaze: Add missing PVR version codes
+References: <1420166433-12712-1-git-send-email-nunes.erico@gmail.com>
+In-Reply-To: <1420166433-12712-1-git-send-email-nunes.erico@gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21224.006
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <3f1aeed9398e4d47baeec954d0987a97@BY2FFO11FD036.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(189002)(377454003)(51704005)(164054003)(479174004)(199003)(47776003)(64706001)(54356999)(50986999)(31966008)(87936001)(77156002)(65956001)(23746002)(92726002)(46102003)(50466002)(62966003)(108616004)(21056001)(99396003)(77096005)(65806001)(20776003)(19580405001)(6806004)(4396001)(76176999)(83506001)(92566001)(106466001)(86362001)(120916001)(74316001)(19580395003)(2950100001)(107046002)(104016003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB030;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB030;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2FFO11HUB030;
+X-Forefront-PRVS: 0447DB1C71
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB030;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 11:30:36.8869
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2FFO11HUB030
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch utilizes previous introduced checker to check register usage
-for probed ARM instruction and saves it in a mask. Futher patch will
-use such information to avoid simuation or emulation.
+On 01/02/2015 03:40 AM, Erico Nunes wrote:
+> PVR version code was missing in the cpu_ver_lookup table for the following
+> versions: 8.50.b 8.50.c 9.2 9.3
+> 
+> This caused /proc/cpuinfo to display "CPU-Ver: Unknown" for these versions.
+> 
+> This was detected and the patch tested with MicroBlaze version 8.50.c.
+> The other codes were taken from the Xilinx MicroBlaze Processor Reference
+> Guides UG081 (v14.7) and UG984 (v2014.1).
+> 
+> Signed-off-by: Erico Nunes <nunes.erico@gmail.com>
+> ---
+>  arch/microblaze/kernel/cpu/cpuinfo.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/arch/microblaze/kernel/cpu/cpuinfo.c b/arch/microblaze/kernel/cpu/cpuinfo.c
+> index 234acad..b60442d 100644
+> --- a/arch/microblaze/kernel/cpu/cpuinfo.c
+> +++ b/arch/microblaze/kernel/cpu/cpuinfo.c
+> @@ -41,8 +41,12 @@ const struct cpu_ver_key cpu_ver_lookup[] = {
+>  	{"8.40.a", 0x18},
+>  	{"8.40.b", 0x19},
+>  	{"8.50.a", 0x1a},
+> +	{"8.50.b", 0x1c},
+> +	{"8.50.c", 0x1e},
+>  	{"9.0", 0x1b},
+>  	{"9.1", 0x1d},
+> +	{"9.2", 0x1f},
+> +	{"9.3", 0x20},
+>  	{NULL, 0},
+>  };
+>  
+> 
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- arch/arm/include/asm/probes.h          |  10 +++
- arch/arm/probes/decode.c               |   7 ++
- arch/arm/probes/kprobes/actions-arm.c  |   2 +-
- arch/arm/probes/kprobes/checkers-arm.c | 124 +++++++++++++++++++++++++++++++++
- arch/arm/probes/kprobes/checkers.h     |   1 +
- 5 files changed, 143 insertions(+), 1 deletion(-)
+Applied.
 
-diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-index f0a1ee8..27b65b7 100644
---- a/arch/arm/include/asm/probes.h
-+++ b/arch/arm/include/asm/probes.h
-@@ -41,6 +41,16 @@ struct arch_probes_insn {
- 	probes_insn_singlestep_t	*insn_singlestep;
- 	probes_insn_fn_t		*insn_fn;
- 	int stack_space;
-+
-+	/* Use 1 bit for a register. */
-+#define REG_NO_USE	(0)
-+#define REG_USE		(1)
-+#define __register_usage_flag(n, f)	((f) << (n))
-+#define __clean_register_flag(m, n)	((m) & (~(1 << (n))))
-+#define __set_register_flag(m, n, f)	(__clean_register_flag(m, n) | __register_usage_flag(n, f))
-+#define set_register_nouse(m, n)	do {(m) = __set_register_flag(m, n, REG_NO_USE);} while(0)
-+#define set_register_use(m, n)		do {(m) = __set_register_flag(m, n, REG_USE);} while(0)
-+	unsigned long register_usage_flag;
- };
- 
- #endif /* __ASSEMBLY__ */
-diff --git a/arch/arm/probes/decode.c b/arch/arm/probes/decode.c
-index f9d7c42..40f9402 100644
---- a/arch/arm/probes/decode.c
-+++ b/arch/arm/probes/decode.c
-@@ -435,6 +435,13 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
- 	 */
- 	asi->stack_space = 0;
- 
-+	/*
-+	 * Similay to stack_space, register_usage_flag is filled by
-+	 * checkers. Its default value is set to ~0, which is 'all
-+	 * registers are used', to prevent any potential optimization.
-+	 */
-+	asi->register_usage_flag = ~(0UL);
-+
- 	if (emulate)
- 		insn = prepare_emulated_insn(insn, asi, thumb);
- 
-diff --git a/arch/arm/probes/kprobes/actions-arm.c b/arch/arm/probes/kprobes/actions-arm.c
-index 4fedd4c..26e435b 100644
---- a/arch/arm/probes/kprobes/actions-arm.c
-+++ b/arch/arm/probes/kprobes/actions-arm.c
-@@ -340,4 +340,4 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
- 	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
- };
- 
--const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, NULL};
-+const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, arm_regs_checker, NULL};
-diff --git a/arch/arm/probes/kprobes/checkers-arm.c b/arch/arm/probes/kprobes/checkers-arm.c
-index f817663..1929225 100644
---- a/arch/arm/probes/kprobes/checkers-arm.c
-+++ b/arch/arm/probes/kprobes/checkers-arm.c
-@@ -97,3 +97,127 @@ const struct decode_checker arm_stack_checker[NUM_PROBES_ARM_ACTIONS] = {
- 	[PROBES_STORE] = {.checker = arm_check_stack},
- 	[PROBES_LDMSTM] = {.checker = arm_check_stack},
- };
-+
-+static enum probes_insn __kprobes arm_check_regs_nouse(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	asi->register_usage_flag = 0;
-+	return INSN_GOOD;
-+}
-+
-+static void __arm_check_regs(probes_opcode_t insn,
-+		const struct decode_header *h,
-+		int *quintuple)
-+{
-+	int i;
-+	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
-+	probes_opcode_t mask, shifted;
-+
-+	memset(quintuple, 0xff, sizeof(int) * 5);
-+	for (i = 0, shifted = insn, mask = 0xf; regs != 0;
-+			regs >>= 4, mask <<= 4, shifted >>= 4, i++)
-+		if (regs & 0xf)
-+			quintuple[i] = shifted & 0xf;
-+}
-+
-+static enum probes_insn arm_check_regs_normal(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	int quintuple[5], i;
-+	asi->register_usage_flag = 0;
-+	__arm_check_regs(insn, h, quintuple);
-+	for (i = 0; i < 5; i++) {
-+		int r = quintuple[i];
-+		if (r < 0)
-+			continue;
-+		set_register_use(asi->register_usage_flag, r);
-+	}
-+
-+	return INSN_GOOD;
-+}
-+
-+static enum probes_insn arm_check_regs_ldmstm(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	unsigned int reglist = insn & 0xffff;
-+	unsigned int rn = (insn >> 16) & 0xf;
-+	int i;
-+
-+	set_register_use(asi->register_usage_flag, rn);
-+	for (i = 0; reglist > 0; i++, reglist >>= 1)
-+		if (reglist & 1)
-+			set_register_use(asi->register_usage_flag, i);
-+	return INSN_GOOD;
-+}
-+
-+static enum probes_insn arm_check_regs_mov_ip_sp(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	/* should be 'mov ip, sp' */
-+	set_register_use(asi->register_usage_flag, 12);
-+	set_register_use(asi->register_usage_flag, 13);
-+	return INSN_GOOD;
-+}
-+
-+/*
-+ *                                    | Rn |Rt/d|         | Rm |
-+ * LDRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx
-+ * STRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx
-+ *                                    | Rn |Rt/d|         |imm4L|
-+ * LDRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx
-+ * STRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx
-+ *
-+ * Such instructions access Rt/d and its next register, so different
-+ * from others, a specific checker is required for Rt/d and Rt2/d2.
-+ */
-+static enum probes_insn arm_check_regs_ldrdstrd(probes_opcode_t insn,
-+		struct arch_probes_insn *asi,
-+		const struct decode_header *h)
-+{
-+	int quintuple[5], rn, rdt, rm;
-+	asi->register_usage_flag = 0;
-+	__arm_check_regs(insn, h, quintuple);
-+
-+	rn = quintuple[4];
-+	rdt = quintuple[3];
-+	rm = quintuple[0];
-+        set_register_use(asi->register_usage_flag, rn);
-+        set_register_use(asi->register_usage_flag, rdt);
-+        set_register_use(asi->register_usage_flag, rdt + 1);
-+	if (rm >= 0)
-+		set_register_use(asi->register_usage_flag, rm);
-+
-+	return INSN_GOOD;
-+}
-+
-+
-+const struct decode_checker arm_regs_checker[NUM_PROBES_ARM_ACTIONS] = {
-+	[PROBES_EMULATE_NONE] = {.checker = arm_check_regs_nouse},
-+	[PROBES_SIMULATE_NOP] = {.checker = arm_check_regs_nouse},
-+	[PROBES_MRS] = {.checker = arm_check_regs_normal},
-+	[PROBES_SATURATING_ARITHMETIC] = {.checker = arm_check_regs_normal},
-+	[PROBES_MUL1] = {.checker = arm_check_regs_normal},
-+	[PROBES_MUL2] = {.checker = arm_check_regs_normal},
-+	[PROBES_MUL_ADD_LONG] = {.checker = arm_check_regs_normal},
-+	[PROBES_MUL_ADD] = {.checker = arm_check_regs_normal},
-+	[PROBES_LOAD] = {.checker = arm_check_regs_normal},
-+	[PROBES_LOAD_EXTRA] = {.checker = arm_check_regs_normal},
-+	[PROBES_STORE] = {.checker = arm_check_regs_normal},
-+	[PROBES_STORE_EXTRA] = {.checker = arm_check_regs_normal},
-+	[PROBES_DATA_PROCESSING_REG] = {.checker = arm_check_regs_normal},
-+	[PROBES_DATA_PROCESSING_IMM] = {.checker = arm_check_regs_normal},
-+	[PROBES_SATURATE] = {.checker = arm_check_regs_normal},
-+	[PROBES_REV] = {.checker = arm_check_regs_normal},
-+	[PROBES_MMI] = {.checker = arm_check_regs_normal},
-+	[PROBES_PACK] = {.checker = arm_check_regs_normal},
-+	[PROBES_EXTEND] = {.checker = arm_check_regs_normal},
-+	[PROBES_EXTEND_ADD] = {.checker = arm_check_regs_normal},
-+	[PROBES_BITFIELD] = {.checker = arm_check_regs_normal},
-+	[PROBES_LDMSTM] = {.checker = arm_check_regs_ldmstm},
-+	[PROBES_MOV_IP_SP] = {.checker = arm_check_regs_mov_ip_sp},
-+	[PROBES_LDRSTRD] = {.checker = arm_check_regs_ldrdstrd},
-+};
-diff --git a/arch/arm/probes/kprobes/checkers.h b/arch/arm/probes/kprobes/checkers.h
-index bddfa0e..cf6c9e7 100644
---- a/arch/arm/probes/kprobes/checkers.h
-+++ b/arch/arm/probes/kprobes/checkers.h
-@@ -47,6 +47,7 @@ extern const union decode_action stack_check_actions[];
- 
- #ifndef CONFIG_THUMB2_KERNEL
- extern const struct decode_checker arm_stack_checker[];
-+extern const struct decode_checker arm_regs_checker[];
- #else
- #endif
- extern const struct decode_checker t32_stack_checker[];
--- 
-1.8.4
-
+Thanks,
+Michal
