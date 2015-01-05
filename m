@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbbAELOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:14:36 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:14857 "EHLO
+	id S1753415AbbAELQV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:16:21 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:15506 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbbAELOd (ORCPT
+	with ESMTP id S1751511AbbAELQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:14:33 -0500
+	Mon, 5 Jan 2015 06:16:20 -0500
+Message-ID: <54AA7290.7000502@atmel.com>
+Date: Mon, 5 Jan 2015 12:16:32 +0100
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes for 3.19 #1 (bis)
-Date: Mon, 5 Jan 2015 12:14:37 +0100
-Message-ID: <1420456477-18204-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
 Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
+References: <cover.1416392687.git.nicolas.ferre@atmel.com> <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com> <1417434775.30245.29.camel@x220> <547C92A1.8000902@atmel.com> <1419240528.30945.12.camel@x220> <20141222094512.GA4194@piout.net>
+In-Reply-To: <20141222094512.GA4194@piout.net>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+Le 22/12/2014 10:45, Alexandre Belloni a écrit :
+> Hi Paul,
+> 
+> On 22/12/2014 at 10:28:48 +0100, Paul Bolle wrote :
+>>> So, I suggest to get rid of them during 3.19-rc phase.
+>>
+>> There's still an entry for RTC_DRV_AT91SAM9_RTT in next-20141221 (and
+>> v3.19-rc1). So this I send this message as a reminder that this cleanup
+>> is still needed.
+>>
+> 
+> Thanks for the reminder, the pull request was actually waiting for
+> 3.19-rc1 to get released before being sent. This should be solved in the
+> next rc.
 
-This is the rebase of my previous pull-request on top of 3.19-rc1. As said at
-the time of my early messages, I was waiting for the arm-soc *and* pinctrl
-material to reach Linus T.'s tree before sending this pull-request. In fact
-this sequence was needed for the gpio header removal. The little patch about
-#include deletion just follows an earlier merge conflict in arm-soc tree: I was
-also waiting for this moment before sending the definitive fix, just to be
-sure.
+Yes, a new version of this pull-request has just been sent: ([GIT PULL]
+at91: fixes for 3.19 #1 (bis)).
 
-In comparison with the previous pull-request, I also added a tiny correction of
-the sama5d4.dtsi timer entry. All the rest is pretty straightforward.
-
-Thanks, best regards,
-
-The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
-
-  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 0e049c66ebf56a415cadd6c593b7ee0a2cb9d19d:
-
-  ARM: at91/dt: sama5d4: fix the timer reg length (2015-01-05 11:07:14 +0100)
-
-----------------------------------------------------------------
-First fixes batch for AT91 on 3.19 folowing The big cleanup:
-- removal of unused Kconfig RTC options
-- GPIO header file is now in same directory as the pinctrl driver
-- little fix on #includes
-- removal of DEBUG_LL from the sama5 common defconfig
-- little fix of reg size in sama5d4.dtsi
-
-----------------------------------------------------------------
-Bo Shen (1):
-      ARM: at91/dt: sama5d4: fix the timer reg length
-
-Boris Brezillon (1):
-      ARM: at91: remove useless header file includes
-
-Maxime Ripard (1):
-      ARM: at91/config: sama5: Remove DEBUG_LL
-
-Nicolas Ferre (2):
-      rtc: at91/Kconfig: remove useless options
-      ARM: at91: remove unneeded header file
-
- arch/arm/boot/dts/sama5d4.dtsi             |  2 +-
- arch/arm/configs/sama5_defconfig           |  2 -
- arch/arm/mach-at91/at91sam9g45.c           |  1 -
- arch/arm/mach-at91/at91sam9rl.c            |  1 -
- arch/arm/mach-at91/include/mach/at91_pio.h | 80 ------------------------------
- drivers/rtc/Kconfig                        | 28 -----------
- 6 files changed, 1 insertion(+), 113 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_pio.h
-
+Thanks a lot for the reminder Paul. Bye,
 -- 
 Nicolas Ferre
