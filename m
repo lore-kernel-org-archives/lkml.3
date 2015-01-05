@@ -1,108 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669AbbAEW4y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:56:54 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49435 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031AbbAEW4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:56:52 -0500
+	id S1754582AbbAEXBE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 18:01:04 -0500
+Received: from mout.gmx.net ([212.227.15.19]:54374 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097AbbAEXBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 18:01:01 -0500
+Message-ID: <54AB179F.8020206@gmx.de>
+Date: Tue, 06 Jan 2015 00:00:47 +0100
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0 SeaMonkey/2.31
 MIME-Version: 1.0
-In-Reply-To: <54A8791B.6020001@nod.at>
-References: <20150102194616.GA27538@amd>
-	<54A7103E.6020500@nod.at>
-	<20150102222936.GA29018@amd>
-	<alpine.LRH.2.00.1501022331060.30884@twin.jikos.cz>
-	<20150102224646.GB29018@amd>
-	<alpine.LNX.2.00.1501022348070.16297@pobox.suse.cz>
-	<20150102225420.GC29018@amd>
-	<54A72306.2050908@nod.at>
-	<20150102230837.GA4482@amd>
-	<54A7BA45.1050005@nod.at>
-	<20150103223644.GB27979@amd>
-	<CALCETrWBHJ52YjowqJ7S90bXvkw_B1VxbkSDKpyjwC1WYvGE3w@mail.gmail.com>
-	<54A8791B.6020001@nod.at>
-Date: Mon, 5 Jan 2015 14:56:51 -0800
-X-Google-Sender-Auth: riSjoE2daYWEgehGK0IageiKkd4
-Message-ID: <CAGXu5j+SFV-nird_YpqiSNV2MUZnmkTJy44u=_vqmEiQjjK3fg@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] Deter exploit bruteforcing
-From: Kees Cook <keescook@chromium.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Andy Lutomirski <luto@amacapital.net>, Pavel Machek <pavel@ucw.cz>,
-        Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>,
-        DaeSeok Youn <daeseok.youn@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, vdavydov@parallels.com,
-        Rik van Riel <riel@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>
-Content-Type: text/plain; charset=UTF-8
+To: Daniel Baluta <daniel.baluta@intel.com>, jic23@kernel.org
+CC: lars@metafoo.de, pmeerw@pmeerw.net, srinivas.pandruvada@linux.intel.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iio: imu: kmx61: Drop odr_bits from
+ kmx61_samp_freq_table
+References: <1420449702-2085-1-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1420449702-2085-1-git-send-email-daniel.baluta@intel.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:H1y6WxAEsShAXyCVzIwNBJuPH22HsV7pOCj5jOOdbLdY5kS8UVz
+ yzgakxwImhSTr0GfSpUt+ZPFHJX0Wjheb7fxI0Ef9bvAWFJCsG+nFYgUDe2OnE8yk84ydHE
+ 47CgoLuRqk5lqS8KMiMUmMlbj9RWRWIlS5B2sT+BU5REtkyS0mX8vfRbWxpNtRS6Mehrhui
+ uHpbEHnjnJ2VpisyVkK5Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 3, 2015 at 3:19 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am 04.01.2015 um 00:06 schrieb Andy Lutomirski:
->> As an attempt to help end this particular line of debate: putting the
->> sleep in glibc won't work.  The point isn't to make the crashed
->> process crash more slowly; it's to limit the rate at which *new*
->> siblings can be forked and crashed as a canary or ASLR brute-force
->> probe.  IOW, adding a sleep call to glibc slows down the wrong thing.
->> Also, trying to get libc to take action on a plain old segfault is a
->> giant mess, because it involves mucking with signal handling, which
->> glibc really has no business doing by default.
->
-> Thanks for pointing this out!
+Daniel Baluta schrieb am 05.01.2015 um 10:21:
+> odr_bits values are between 0 and 11, so we can use the index
+> in kmx61_samp_freq_table instead of odr_bits structure member.
+> 
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+Reviewed-by: Hartmut Knaack <knaack.h@gmx.de>
+> ---
+> Changes since v1:
+> 	* use ARRAY_SIZE instead of an hardcoded value
+> 	* review is at: https://lkml.org/lkml/2015/1/1/46
+> 
+>  drivers/iio/imu/kmx61.c | 64 ++++++++++++++++++++-----------------------------
+>  1 file changed, 26 insertions(+), 38 deletions(-)
+> 
+> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
+> index b60b22d..a32ddbb 100644
+> --- a/drivers/iio/imu/kmx61.c
+> +++ b/drivers/iio/imu/kmx61.c
+> @@ -169,19 +169,18 @@ static const u16 kmx61_uscale_table[] = {9582, 19163, 38326};
+>  static const struct {
+>  	int val;
+>  	int val2;
+> -	u8 odr_bits;
+> -} kmx61_samp_freq_table[] = { {12, 500000, 0x00},
+> -			{25, 0, 0x01},
+> -			{50, 0, 0x02},
+> -			{100, 0, 0x03},
+> -			{200, 0, 0x04},
+> -			{400, 0, 0x05},
+> -			{800, 0, 0x06},
+> -			{1600, 0, 0x07},
+> -			{0, 781000, 0x08},
+> -			{1, 563000, 0x09},
+> -			{3, 125000, 0x0A},
+> -			{6, 250000, 0x0B} };
+> +} kmx61_samp_freq_table[] = { {12, 500000},
+> +			{25, 0},
+> +			{50, 0},
+> +			{100, 0},
+> +			{200, 0},
+> +			{400, 0},
+> +			{800, 0},
+> +			{1600, 0},
+> +			{0, 781000},
+> +			{1, 563000},
+> +			{3, 125000},
+> +			{6, 250000} };
+>  
+>  static const struct {
+>  	int val;
+> @@ -302,24 +301,10 @@ static int kmx61_convert_freq_to_bit(int val, int val2)
+>  	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
+>  		if (val == kmx61_samp_freq_table[i].val &&
+>  		    val2 == kmx61_samp_freq_table[i].val2)
+> -			return kmx61_samp_freq_table[i].odr_bits;
+> -	return -EINVAL;
+> -}
+> -
+> -static int kmx61_convert_bit_to_freq(u8 odr_bits, int *val, int *val2)
+> -{
+> -	int i;
+> -
+> -	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
+> -		if (odr_bits == kmx61_samp_freq_table[i].odr_bits) {
+> -			*val = kmx61_samp_freq_table[i].val;
+> -			*val2 = kmx61_samp_freq_table[i].val2;
+> -			return 0;
+> -		}
+> +			return i;
+>  	return -EINVAL;
+>  }
+>  
+> -
+>  static int kmx61_convert_wake_up_odr_to_bit(int val, int val2)
+>  {
+>  	int i;
+> @@ -478,7 +463,7 @@ static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
+>  
+>  static int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2,
+>  			 u8 device)
+> -{	int i;
+> +{
+>  	u8 lodr_bits;
+>  
+>  	if (device & KMX61_ACC)
+> @@ -490,13 +475,13 @@ static int kmx61_get_odr(struct kmx61_data *data, int *val, int *val2,
+>  	else
+>  		return -EINVAL;
+>  
+> -	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
+> -		if (lodr_bits == kmx61_samp_freq_table[i].odr_bits) {
+> -			*val = kmx61_samp_freq_table[i].val;
+> -			*val2 = kmx61_samp_freq_table[i].val2;
+> -			return 0;
+> -		}
+> -	return -EINVAL;
+> +	if (lodr_bits >= ARRAY_SIZE(kmx61_samp_freq_table))
+> +		return -EINVAL;
+> +
+> +	*val = kmx61_samp_freq_table[lodr_bits].val;
+> +	*val2 = kmx61_samp_freq_table[lodr_bits].val2;
+> +
+> +	return 0;
+>  }
+>  
+>  static int kmx61_set_range(struct kmx61_data *data, u8 range)
+> @@ -580,8 +565,11 @@ static int kmx61_chip_init(struct kmx61_data *data)
+>  	}
+>  	data->odr_bits = ret;
+>  
+> -	/* set output data rate for wake up (motion detection) function */
+> -	ret = kmx61_convert_bit_to_freq(data->odr_bits, &val, &val2);
+> +	/*
+> +	 * set output data rate for wake up (motion detection) function
+> +	 * to match data rate for accelerometer sampling
+> +	 */
+> +	ret = kmx61_get_odr(data, &val, &val2, KMX61_ACC);
+>  	if (ret < 0)
+>  		return ret;
+>  
+> 
 
-Yeah, this doesn't belong in glibc. The support for fork-speed-control
-must be in the kernel. Improving glibc is an entirely separate idea.
-
-For glibc, it would be nice to create a "halp, I'm being attacked"
-syscall that like abort(), but used in cases of memory corruption,
-etc. This would provide a much cleaner way for programs to communicate
-to the kernel that something malicious is happening. Neither SIGABRT
-nor SIGSYS are quite right for this, but SIGSYS (as used by seccomp)
-is likely closer.
-
->> Also, this patch is missing a bit, I think.  We really want to control
->> the total rate of crashes.  This patch imposes a delay per crash, but
->> AFAICS it would still be possible for an attacker to coerce a forking
->> server to fork, say, 10k children, then probe all of them, then wait
->> 30 seconds and repeat.
-
-I general, while I would expect this to be limited by the default
-RLIMIT_NOFILE of 1024, it's still a valid observation, though the
-scope is smaller. Regardless, it would still be a defensive benefit to
-slow down forks.
-
-Brad, PaXTeam: have you considered limiting open connections from the
-same IP address or anything like that for defending against this kind
-"wide prefork" attack?
-
-> Sounds reasonable. This is exactly why I've extracted that feature from
-> grsecurity and posted it here on LKML.
-> Now we have the chance to make the feature better and can identify weak points.
-
-The grsecurity version also handles set[ug]id binaries more aggressively.
-https://en.wikibooks.org/wiki/Grsecurity/Appendix/Grsecurity_and_PaX_Configuration_Options#Deter_exploit_bruteforcing
-
-Speaking to "default or not", it needs to be off by default in the
-kernel configs. It's easy to imagine things that will trip on false
-positives, so we must first get the system in place in the kernel and
-improve it until we get to the point where we can set it on by default
-(this may take years, after all the distros are using it, etc etc).
-Security feature addition requires a fair bit of patience. :)
-
-If you can spin up a version with sysctls and Kconfig stuff, I think
-that'd be the best next step.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
