@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbbAEKei (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:34:38 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:60712 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887AbbAEKeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:34:36 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        Fabian Frederick <fabf@skynet.be>, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
-References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<54A8DBF4.4050202@lwfinger.net>
-Date: Mon, 05 Jan 2015 12:34:27 +0200
-In-Reply-To: <54A8DBF4.4050202@lwfinger.net> (Larry Finger's message of "Sun,
-	04 Jan 2015 00:21:40 -0600")
-Message-ID: <878uhh3498.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753494AbbAEKfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:35:08 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:52469 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133AbbAEKfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:35:07 -0500
+X-IronPort-AV: E=Sophos;i="5.07,698,1413244800"; 
+   d="scan'208";a="210740275"
+Message-ID: <54AA68D8.7050400@citrix.com>
+Date: Mon, 5 Jan 2015 10:35:04 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jan Beulich <JBeulich@suse.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: xen/x86: properly retrieve NMI reason
+References: <54945D760200007800051157@mail.emea.novell.com>
+In-Reply-To: <54945D760200007800051157@mail.emea.novell.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Larry Finger <Larry.Finger@lwfinger.net> writes:
+On 19/12/14 16:16, Jan Beulich wrote:
+> Using the native code here can't work properly, as the hypervisor would
+> normally have cleared the two reason bits by the time Dom0 gets to see
+> the NMI (if passed to it at all). There's a shared info field for this,
+> and there's an existing hook to use - just fit the two together. Note
+> that the hook can (and should) be used irrespective of whether being in
+> Dom0, as accessing port 0x61 in a DomU would be even worse, while the
+> shared info field would just hold zero all the time.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-> On 01/03/2015 06:47 PM, Rickard Strandqvist wrote:
->> Removes some functions that are not used anywhere:
->> dma_txflush() dma_txsuspended()
->>
->> This was partially found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>   drivers/net/wireless/brcm80211/brcmsmac/dma.c |   19 -------------------
->>   drivers/net/wireless/brcm80211/brcmsmac/dma.h |    2 --
->>   2 files changed, 21 deletions(-)
->
-> Just because file dma.c is involved, it does not need to be, nor
-> should it be in the subject line. You could specify the driver names
-> in the file tree after wireless. In this instance, one possible
-> subject would be "brcm80211: brcmsmac: Remove some unused functions".
-> On the other hand, if you look at "git log" to see past patches, the
-> driver maintainers even leave off the brcm80211 part, thus to match
-> them, the subject should be "brcmsmac: Remove some unused functions".
+This doesn't build.
 
-This is a handy way to check what kind of format you should use:
+In file included from
+/local/davidvr/work/k.org/tip/arch/x86/xen/enlighten.c:43:0:
+/local/davidvr/work/k.org/tip/include/xen/interface/nmi.h:44:1: warning:
+data definition has no type or storage class [enabled by default]
+/local/davidvr/work/k.org/tip/include/xen/interface/nmi.h:44:1: error:
+type defaults to ‘int’ in declaration of ‘DEFINE_XEN_GUEST_HANDLE’
+[-Werror=implicit-int]
+cc1: some warnings being treated as errors
 
-$ git log --oneline --no-merges drivers/net/wireless/brcm80211/brcmsmac/dma.c | head
-a38a9ef1c064 brcm80211: use container_of to resolve dma_info from dma_pub
-67d0cf50bd32 brcmsmac: Fix WARNING caused by lack of calls to dma_mapping_error()
-55cec505559d brcmsmac: Fix possible NULL pointer dereference in _dma_ctrlflags()
-9242c7261b8c brcmsmac: Remove some noisy and uninformative debug messages
-0c9a0a1dd145 brcmsmac: Add tracepoint for AMPDU session information
-90123e045cac brcmsmac: Add brcms_dbg_dma() debug macro
-b05618deb4ac brcmsmac: Use correct descriptor count when calculating next rx descriptor
-e041f65d5f00 brcmsmac: Remove internal tx queue
-05f8a6160491 brcmsmac: Add helper function for updating txavail count
-ec5ab1dd73a4 brcmsmac: fix DMA on SoCs
-
-> As was suggested earlier, you need to look at the precedents. Keeping
-> a uniform method of patch naming helps when looking for patches in the
-> git log.
-
-Yeah, and also having clean[1] patch titles makes working with patchwork
-so much easier and hence me happier :)
-
-[1] clean patch title == short, clear and unique
-
--- 
-Kalle Valo
+David
