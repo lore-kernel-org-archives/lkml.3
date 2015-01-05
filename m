@@ -1,97 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbbAEPNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:13:42 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:65356 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375AbbAEPNk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:13:40 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH] arm: Remove early stack deallocation from restore_user_regs
-Date: Mon,  5 Jan 2015 15:12:38 +0000
-Message-Id: <1420470758-5874-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1418382718-16323-1-git-send-email-daniel.thompson@linaro.org>
-References: <1418382718-16323-1-git-send-email-daniel.thompson@linaro.org>
+	id S1754059AbbAEPO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:14:56 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:11571 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753392AbbAEPOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 10:14:55 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: [PATCH] powerpc/8xx: reduce pressure on TLB due to context switches
+Message-Id: <20150105151453.E32BD1A4CF3@localhost.localdomain>
+Date: Mon,  5 Jan 2015 16:14:53 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently restore_user_regs deallocates the SVC stack early in
-its execution and relies on no exception being taken between
-the deallocation and the registers being restored. The introduction
-of a default FIQ handler that also uses the SVC stack breaks this
-assumption and can result in corrupted register state.
+For nohash powerpc, when we run out of contexts, contexts are freed by stealing
+used contexts in-turn. When a victim has been selected, the associated TLB
+entries are freed using _tlbil_pid(). Unfortunatly, on the PPC 8xx, _tlbil_pid()
+does a tlbia, hence flushes ALL TLB entries and not only the one linked to the
+stolen context. Therefore, as implented today, at each task switch requiring a
+new context, all entries are flushed.
 
-This patch works around the problem by removing the early
-stack deallocation and using r2 as a temporary instead. I have
-not found a way to do this without introducing an extra mov
-instruction to the macro.
+This patch modifies the implementation so that when running out of contexts, all
+contexts get freed at once, hence dividing the number of calls to tlbia by 16.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+
 ---
+ arch/powerpc/mm/mmu_context_nohash.c | 44 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 43 insertions(+), 1 deletion(-)
 
-Notes:
-    [This patch has not been modified since its original posting as an RFC].
-    
-    I have recently started to hook up the PMU via FIQ (although
-    it's slightly hacky at present) and was seeing random userspace
-    SEGVs when perf was running (after ~100,000 or so FIQs).
-    
-    Instrumenting the code eventually revealed that in almost all
-    cases the last FIQ handler to run prior the SEGV had interrupted
-    ret_to_user_from_irq or ret_fast_syscall. Very occasionally it was
-    in the fault handling code (because that code runs as part of SEGV
-    handling and the PMU is instrumenting that too).
-    
-    No SEGV problems have been observed since fixing the issue. This
-    version of the patch has seen >7M FIQs and an older version (based
-    on cpsid f) ran overnight.
-    
-
- arch/arm/kernel/entry-header.S | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 4176df721bf0..1a0045abead7 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -253,21 +253,22 @@
- 	.endm
-
- 	.macro	restore_user_regs, fast = 0, offset = 0
--	ldr	r1, [sp, #\offset + S_PSR]	@ get calling cpsr
--	ldr	lr, [sp, #\offset + S_PC]!	@ get pc
-+	mov	r2, sp
-+	ldr	r1, [r2, #\offset + S_PSR]	@ get calling cpsr
-+	ldr	lr, [r2, #\offset + S_PC]!	@ get pc
- 	msr	spsr_cxsf, r1			@ save in spsr_svc
- #if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_32v6K)
- 	@ We must avoid clrex due to Cortex-A15 erratum #830321
--	strex	r1, r2, [sp]			@ clear the exclusive monitor
-+	strex	r1, r2, [r2]			@ clear the exclusive monitor
- #endif
- 	.if	\fast
--	ldmdb	sp, {r1 - lr}^			@ get calling r1 - lr
-+	ldmdb	r2, {r1 - lr}^			@ get calling r1 - lr
- 	.else
--	ldmdb	sp, {r0 - lr}^			@ get calling r0 - lr
-+	ldmdb	r2, {r0 - lr}^			@ get calling r0 - lr
- 	.endif
- 	mov	r0, r0				@ ARMv5T and earlier require a nop
- 						@ after ldm {}^
--	add	sp, sp, #S_FRAME_SIZE - S_PC
-+	add	sp, sp, #\offset + S_FRAME_SIZE
- 	movs	pc, lr				@ return & move spsr_svc into cpsr
- 	.endm
-
---
-1.9.3
+diff --git a/arch/powerpc/mm/mmu_context_nohash.c b/arch/powerpc/mm/mmu_context_nohash.c
+index 928ebe7..c648677 100644
+--- a/arch/powerpc/mm/mmu_context_nohash.c
++++ b/arch/powerpc/mm/mmu_context_nohash.c
+@@ -52,12 +52,15 @@
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
+ 
++#include "mmu_decl.h"
++
+ static unsigned int first_context, last_context;
+ static unsigned int next_context, nr_free_contexts;
+ static unsigned long *context_map;
+ static unsigned long *stale_map[NR_CPUS];
+ static struct mm_struct **context_mm;
+ static DEFINE_RAW_SPINLOCK(context_lock);
++static bool no_selective_tlbil;
+ 
+ #define CTX_MAP_SIZE	\
+ 	(sizeof(unsigned long) * (last_context / BITS_PER_LONG + 1))
+@@ -133,6 +136,39 @@ static unsigned int steal_context_smp(unsigned int id)
+ }
+ #endif  /* CONFIG_SMP */
+ 
++static unsigned int steal_all_contexts(void)
++{
++	struct mm_struct *mm;
++	int cpu = smp_processor_id();
++	unsigned int id;
++
++	for (id = first_context; id <= last_context; id++) {
++		/* Pick up the victim mm */
++		mm = context_mm[id];
++
++		pr_hardcont(" | steal %d from 0x%p", id, mm);
++
++		/* Mark this mm as having no context anymore */
++		mm->context.id = MMU_NO_CONTEXT;
++		if (id != first_context) {
++			context_mm[id] = NULL;
++			__clear_bit(id, context_map);
++#ifdef DEBUG_MAP_CONSISTENCY
++			mm->context.active = 0;
++#endif
++		}
++		__clear_bit(id, stale_map[cpu]);
++
++	}
++
++	/* Flush the TLB for all contexts */
++	_tlbil_all();
++
++	nr_free_contexts = last_context - first_context;
++
++	return first_context;
++}
++
+ /* Note that this will also be called on SMP if all other CPUs are
+  * offlined, which means that it may be called for cpu != 0. For
+  * this to work, we somewhat assume that CPUs that are onlined
+@@ -241,7 +277,10 @@ void switch_mmu_context(struct mm_struct *prev, struct mm_struct *next)
+ 			goto stolen;
+ 		}
+ #endif /* CONFIG_SMP */
+-		id = steal_context_up(id);
++		if (no_selective_tlbil)
++			id = steal_all_contexts();
++		else
++			id = steal_context_up(id);
+ 		goto stolen;
+ 	}
+ 	nr_free_contexts--;
+@@ -407,12 +446,15 @@ void __init mmu_context_init(void)
+ 	if (mmu_has_feature(MMU_FTR_TYPE_8xx)) {
+ 		first_context = 0;
+ 		last_context = 15;
++		no_selective_tlbil = true;
+ 	} else if (mmu_has_feature(MMU_FTR_TYPE_47x)) {
+ 		first_context = 1;
+ 		last_context = 65535;
++		no_selective_tlbil = false;
+ 	} else {
+ 		first_context = 1;
+ 		last_context = 255;
++		no_selective_tlbil = false;
+ 	}
+ 
+ #ifdef DEBUG_CLAMP_LAST_CONTEXT
+-- 
+2.1.0
 
