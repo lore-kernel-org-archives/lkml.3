@@ -1,148 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573AbbAEJMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:12:45 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:37665 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942AbbAEJMm (ORCPT
+	id S1753401AbbAEJOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:14:17 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:51907 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbbAEJOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:12:42 -0500
-Date: Mon, 5 Jan 2015 10:12:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH V3 1/2] mm, vmscan: prevent kswapd livelock due to
- pfmemalloc-throttled process being killed
-Message-ID: <20150105091238.GA7687@dhcp22.suse.cz>
-References: <1420448203-30212-1-git-send-email-vbabka@suse.cz>
+	Mon, 5 Jan 2015 04:14:15 -0500
+Date: Mon, 5 Jan 2015 01:14:03 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: linux-next: Tree for Jan 5
+Message-ID: <20150105091403.GA15991@roeck-us.net>
+References: <20150105144418.26dbb514@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420448203-30212-1-git-send-email-vbabka@suse.cz>
+In-Reply-To: <20150105144418.26dbb514@canb.auug.org.au>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54AA55ED.01F4,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-01-15 09:56:42, Vlastimil Babka wrote:
-> Charles Shirron and Paul Cassella from Cray Inc have reported kswapd stuck
-> in a busy loop with nothing left to balance, but kswapd_try_to_sleep() failing
-> to sleep. Their analysis found the cause to be a combination of several
-> factors:
+On Mon, Jan 05, 2015 at 02:44:18PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> 1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
+> Changes since 20150103:
 > 
-> 2. The process has been killed (by OOM in this case), but has not yet been
->    scheduled to remove itself from the waitqueue and die.
+> The net-next tree lost its build failures.
 > 
-> 3. kswapd checks for throttled processes in prepare_kswapd_sleep():
+> Non-merge commits (relative to Linus' tree): 1000
+>  1120 files changed, 31463 insertions(+), 18473 deletions(-)
 > 
->         if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
->                 wake_up(&pgdat->pfmemalloc_wait);
-> 		return false; // kswapd will not go to sleep
-> 	}
-> 
->    However, for a process that was already killed, wake_up() does not remove
->    the process from the waitqueue, since try_to_wake_up() checks its state
->    first and returns false when the process is no longer waiting.
-> 
-> 4. kswapd is running on the same CPU as the only CPU that the process is
->    allowed to run on (through cpus_allowed, or possibly single-cpu system).
-> 
-> 5. CONFIG_PREEMPT_NONE=y kernel is used. If there's nothing to balance, kswapd
->    encounters no voluntary preemption points and repeatedly fails
->    prepare_kswapd_sleep(), blocking the process from running and removing
->    itself from the waitqueue, which would let kswapd sleep.
-> 
-> So, the source of the problem is that we prevent kswapd from going to sleep
-> until there are processes waiting on the pfmemalloc_wait queue, and a process
-> waiting on a queue is guaranteed to be removed from the queue only when it
-> gets scheduled. This was done to make sure that no process is left sleeping
-> on pfmemalloc_wait when kswapd itself goes to sleep.
-> 
-> However, it isn't necessary to postpone kswapd sleep until the pfmemalloc_wait
-> queue actually empties. To prevent processes from being left sleeping, it's
-> actually enough to guarantee that all processes waiting on pfmemalloc_wait
-> queue have been woken up by the time we put kswapd to sleep.
-> 
-> This patch therefore fixes this issue by substituting 'wake_up' with
-> 'wake_up_all' and removing 'return false' in the code snippet from
-> prepare_kswapd_sleep() above. Note that if any process puts itself in the
-> queue after this waitqueue_active() check, or after the wake up itself, it
-> means that the process will also wake up kswapd - and since we are under
-> prepare_to_wait(), the wake up won't be missed. Also we update the comment
-> prepare_kswapd_sleep() to hopefully more clearly describe the races it is
-> preventing.
-> 
-> Fixes: 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves
->                       are low and swap is backed by network storage")
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: <stable@vger.kernel.org>   # v3.6+
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Rik van Riel <riel@redhat.com>
+mips allmodconfig build fails.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+# bad: [35393dcb2ed331e8698a548fbba8042457f5fd32] Add linux-next specific files for 20150105
+# good: [b7392d2247cfe6771f95d256374f1a8e6a6f48d6] Linux 3.19-rc2
+git bisect start 'HEAD' 'v3.19-rc2'
+# bad: [0e549e6e3875b24240385b7d9ea6af202fe752ad] Merge remote-tracking branch 'slave-dma/next'
+git bisect bad 0e549e6e3875b24240385b7d9ea6af202fe752ad
+# good: [633df24083c385997b98321f27721f3e38eb347f] Merge remote-tracking branch 'samsung/for-next'
+git bisect good 633df24083c385997b98321f27721f3e38eb347f
+# bad: [4091196d9eccdd246387f8567f6ae76700ce7d8a] Merge remote-tracking branch 'hid/for-next'
+git bisect bad 4091196d9eccdd246387f8567f6ae76700ce7d8a
+# bad: [6c45bc837e118c956f180c4e5de604099372868b] Merge remote-tracking branch 'f2fs/dev'
+git bisect bad 6c45bc837e118c956f180c4e5de604099372868b
+# bad: [5e73502be2b877d54ba5ec2e29ffa6374ef7a1f2] Merge remote-tracking branch 'mips/mips-for-linux-next'
+git bisect bad 5e73502be2b877d54ba5ec2e29ffa6374ef7a1f2
+# good: [5cc18cbf7b4693319f0686b31b0ce31005b7ce9f] Merge remote-tracking branch 'cris/for-next'
+git bisect good 5cc18cbf7b4693319f0686b31b0ce31005b7ce9f
+# good: [fd437fa849b349df6b0ac0fd6fa3a4a1efba7b07] MIPS: ARC: Add declarations for a few missing ARC firmware functions.
+git bisect good fd437fa849b349df6b0ac0fd6fa3a4a1efba7b07
+# bad: [d8b1d15c5d8f97da00f9469b9aa6f14b050d42a1] MIPS: Kconfig: Fix recursive dependency.
+git bisect bad d8b1d15c5d8f97da00f9469b9aa6f14b050d42a1
+# good: [af53a7778a69283e9b10e6f41874f13463df4e10] MIPS: Update malta_defconfig to something that works out of the box.
+git bisect good af53a7778a69283e9b10e6f41874f13463df4e10
+# good: [4436bb1bb866ee8e9d3bc3200a3cddd833357689] MIPS: JZ4740: Fixup #include's (sparse)
+git bisect good 4436bb1bb866ee8e9d3bc3200a3cddd833357689
+# good: [d74473bdf7a4c1ef7ae2b75f585fe5649ac2dcea] MIPS: Compat: Fix build error if CONFIG_MIPS32_COMPAT but no compat ABI.
+git bisect good d74473bdf7a4c1ef7ae2b75f585fe5649ac2dcea
+# first bad commit: [d8b1d15c5d8f97da00f9469b9aa6f14b050d42a1] MIPS: Kconfig: Fix recursive dependency.
 
-Thanks!
+"make archprepare" fails after "make allmodconfig", so this is easy to
+reproduce.
 
-> ---
-> Changes in v3 (v2 was sent by Vladimir Davydov, thanks for his new solution):
-> 
-> - split to two patches again, as I (and Michal Hocko) think it's more correct
-> - some rewording in changelog
-> - change the code comment again as in v1 with small updates (v2 dropped this
->   part), since it has been clearly a source of confusion so far
-> 
->  mm/vmscan.c | 24 +++++++++++++-----------
->  1 file changed, 13 insertions(+), 11 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index bd9a72b..ab2505c 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2921,18 +2921,20 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->  		return false;
->  
->  	/*
-> -	 * There is a potential race between when kswapd checks its watermarks
-> -	 * and a process gets throttled. There is also a potential race if
-> -	 * processes get throttled, kswapd wakes, a large process exits therby
-> -	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
-> -	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
-> -	 * so wake them now if necessary. If necessary, processes will wake
-> -	 * kswapd and get throttled again
-> +	 * The throttled processes are normally woken up in balance_pgdat() as
-> +	 * soon as pfmemalloc_watermark_ok() is true. But there is a potential
-> +	 * race between when kswapd checks the watermarks and a process gets
-> +	 * throttled. There is also a potential race if processes get
-> +	 * throttled, kswapd wakes, a large process exits thereby balancing the
-> +	 * zones, which causes kswapd to exit balance_pgdat() before reaching
-> +	 * the wake up checks. If kswapd is going to sleep, no process should
-> +	 * be sleeping on pfmemalloc_wait, so wake them now if necessary. If
-> +	 * the wake up is premature, processes will wake kswapd and get
-> +	 * throttled again. The difference from wake ups in balance_pgdat() is
-> +	 * that here we are under prepare_to_wait().
->  	 */
-> -	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
-> -		wake_up(&pgdat->pfmemalloc_wait);
-> -		return false;
-> -	}
-> +	if (waitqueue_active(&pgdat->pfmemalloc_wait))
-> +		wake_up_all(&pgdat->pfmemalloc_wait);
->  
->  	return pgdat_balanced(pgdat, order, classzone_idx);
->  }
-> -- 
-> 2.1.2
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+Guenter
