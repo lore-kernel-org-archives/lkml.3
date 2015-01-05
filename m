@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754166AbbAETcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:32:19 -0500
-Received: from verein.lst.de ([213.95.11.211]:55465 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753307AbbAETcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:32:18 -0500
-Date: Mon, 5 Jan 2015 20:32:13 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Sasha Levin <sasha.levin@oracle.com>, bvanassche@acm.org, hare@suse.de,
-        JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
-Message-ID: <20150105193213.GA31955@lst.de>
-References: <54A43CFB.2080705@oracle.com> <20150105091516.GA22226@lst.de> <54AADF6A.6090100@kernel.dk>
+	id S932187AbbAETkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:40:10 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62593 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263AbbAETkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 14:40:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AADF6A.6090100@kernel.dk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1419095222-9942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1419095222-9942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 5 Jan 2015 11:33:28 -0800
+Message-ID: <CA+8MBbKKp7+mAk49G=Qsnm7tZC_6YUqPN9yeo8BE_X9YRSSbRQ@mail.gmail.com>
+Subject: Re: [PATCH] arch: ia64: kernel: irq_ia64.c: Remove unused function
+From: Tony Luck <tony.luck@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 12:00:58PM -0700, Jens Axboe wrote:
-> That's not quite true, the only guarantee is that it WILL execute on the
-> CPU (or CPUs) that are set in the mask. So unless it ends up offloading
-> the run to a specific workqueue, we'll disable preempt in the current
-> path before ->queue_rq() is called.
+On Sat, Dec 20, 2014 at 9:07 AM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Remove the function ia64_handle_irq() that is not used anywhere.
+>
+> This was partially found by using a static code analysis program called cppcheck.
 
-Oops.  Indeed, with those recent changes ->queue_rq can't safely block
-for memory allocatios anymore.
+$ git grep ia64_handle_irq
+arch/ia64/kernel/irq_ia64.c:ia64_handle_irq (ia64_vector vector,
+struct pt_regs *regs)
+arch/ia64/kernel/irq_ia64.c:
+printk("ia64_handle_irq: DANGER: less than "
+arch/ia64/kernel/irq_ia64.c:                     * Now try calling
+normal ia64_handle_irq as it would have got called
+arch/ia64/kernel/ivt.S: br.call.sptk.many b6=ia64_handle_irq
 
-The patch below should fix it:
+Note that last line. ia64_handle_irq() is called from assembly code
 
----
-From: Christoph Hellwig <hch@lst.de>
-Subject: scsi: ->queue_rq can't sleep
-
-Since Linux 3.19 blk-mq may disable preemption before calling into
-->queue_rq, so we can't actually sleep anymore.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/scsi/scsi_lib.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 9ea95dd..6d5c0b8 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -591,7 +591,6 @@ static void scsi_free_sgtable(struct scsi_data_buffer *sdb, bool mq)
- static int scsi_alloc_sgtable(struct scsi_data_buffer *sdb, int nents, bool mq)
- {
- 	struct scatterlist *first_chunk = NULL;
--	gfp_t gfp_mask = mq ? GFP_NOIO : GFP_ATOMIC;
- 	int ret;
- 
- 	BUG_ON(!nents);
-@@ -606,7 +605,7 @@ static int scsi_alloc_sgtable(struct scsi_data_buffer *sdb, int nents, bool mq)
- 	}
- 
- 	ret = __sg_alloc_table(&sdb->table, nents, SCSI_MAX_SG_SEGMENTS,
--			       first_chunk, gfp_mask, scsi_sg_alloc);
-+			       first_chunk, GFP_ATOMIC, scsi_sg_alloc);
- 	if (unlikely(ret))
- 		scsi_free_sgtable(sdb, mq);
- 	return ret;
--- 
-1.9.1
-
+-Tony
