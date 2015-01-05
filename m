@@ -1,45 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbbAEQfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:35:13 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:58042 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510AbbAEQfL (ORCPT
+	id S1753241AbbAEQg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:36:56 -0500
+Received: from msxgate3.admin.esu.edu ([206.225.126.232]:32893 "EHLO
+	msxgate3.admin.esu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbbAEQgz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:35:11 -0500
-Date: Mon, 5 Jan 2015 11:35:07 -0500
-From: Tejun Heo <tj@kernel.org>
-To: nick <xerofoify@gmail.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:ata: Fix spelling typos in libata-scsi.c and the
- header file,ata.h
-Message-ID: <20150105163507.GQ15833@htj.dyndns.org>
-References: <1419219397-14627-1-git-send-email-xerofoify@gmail.com>
- <20141225202856.GE22951@htj.dyndns.org>
- <549CC66F.2070606@gmail.com>
+	Mon, 5 Jan 2015 11:36:55 -0500
+From: Jacqueline Gardner <jgardner@po-box.esu.edu>
+Subject: =?windows-1256?Q?IT_Service_de_s=E9curit=E9_Bureau=FE?=
+Thread-Topic: =?windows-1256?Q?IT_Service_de_s=E9curit=E9_Bureau=FE?=
+Thread-Index: AdApBbe14empxHM6T2SiOta43L9ERQ==
+Date: Mon, 5 Jan 2015 16:36:12 +0000
+Message-ID: <0B1EB60BB1696648B43E876E92D651AB100AEB@msxmb2.admin.esu.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [206.225.126.10]
+Content-Type: text/plain; charset="windows-1256"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549CC66F.2070606@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, sorry about the delay.
+Votre compte de messagerie a dépassé sa limite de stockage. Vous
+neserezpas en mesure de recevoir ou d'envoyer un message. Afin de
+rétablirvotrecompte s'il vous plaît Cliquezici:
 
-On Thu, Dec 25, 2014 at 09:22:39PM -0500, nick wrote:
-> 
-> Tejun,
-> So I can learn where my commit messages are wrong can you send me the updated commit message.
+http://kuffubu.weebly.com/
 
-The commit is at
-
- https://git.kernel.org/cgit/linux/kernel/git/tj/libata.git/commit/?h=for-3.20&id=0628ee7c81a8ced9b10f9ee300707f7f79fdecf1
-
-The main thing is that the subject is made more specific.
-
-Thanks.
-
--- 
-tejun
+et soumettre votre webmail information requise.
+Merci.IT Service de
+sécurité Bureau 2015
