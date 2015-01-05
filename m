@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbbAESuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:50:05 -0500
+	id S1754442AbbAEStY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:49:24 -0500
 Received: from mga14.intel.com ([192.55.52.115]:5230 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754298AbbAEStW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:49:22 -0500
+	id S1754386AbbAEStX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 13:49:23 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,701,1413270000"; 
-   d="scan'208";a="646577667"
+   d="scan'208";a="646577673"
 From: kan.liang@intel.com
 To: a.p.zijlstra@chello.nl
 Cc: linux-kernel@vger.kernel.org, acme@kernel.org, jolsa@redhat.com,
         eranian@google.com, mingo@redhat.com, paulus@samba.org,
         ak@linux.intel.com, namhyung@kernel.org,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V6 1/2] perf tools: enable LBR call stack support
-Date: Mon,  5 Jan 2015 13:23:04 -0500
-Message-Id: <1420482185-29830-2-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V6 2/2] perf tools: Construct LBR call chain
+Date: Mon,  5 Jan 2015 13:23:05 -0500
+Message-Id: <1420482185-29830-3-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1420482185-29830-1-git-send-email-kan.liang@intel.com>
 References: <1420482185-29830-1-git-send-email-kan.liang@intel.com>
@@ -27,168 +27,388 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-Currently, there are two call chain recording options, fp and dwarf.
-Haswell has a new feature that utilizes the existing LBR facility to
-record call chains. So it provides the third options to record call
-chain. This patch enables the lbr call stack support.
+LBR call stack only has user callchain. It is output as
+PERF_SAMPLE_BRANCH_STACK data format. For the kernel callchain, it's
+still from PERF_SAMPLE_CALLCHAIN.
+The perf tool has to handle both data sources to construct a
+complete callstack.
+For perf report -D option, both lbr and fp information will be
+displayed.
 
-LBR call stack has some limitations. It reuses current LBR facility, so
-LBR call stack and branch record can not be enabled at the same time. It
-is only available for user callchain.
-However, LBR call stack can work on the user app which doesn't have
-frame-pointer or dwarf debug info compiled. It is a good alternative
-when nothing else works.
+A new call chain recording option "lbr" is introduced into perf tool for
+LBR call stack. The user can use --call-graph lbr to get the call stack
+information from hardware.
+
+Here are some examples.
+When profiling bc(1) on Fedora 19:
+echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph lbr bc -l <
+cmd
+If enabling LBR, perf report output looks like:
+    50.36%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+    33.66%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+                     bc_divide
+                     execute
+                     run_code
+                     yyparse
+                     main
+                     __libc_start_main
+                     _start
+     7.62%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                    |
+                    |--99.89%-- 0x2000186a8
+                     --0.11%-- [...]
+     6.83%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+                    |
+                    |--99.94%-- bc_add
+                    |          execute
+                    |          run_code
+                    |          yyparse
+                    |          main
+                    |          __libc_start_main
+                    |          _start
+                     --0.06%-- [...]
+     0.46%       bc  libc-2.17.so       [.] __memset_sse2
+                 |
+                 --- __memset_sse2
+                    |
+                    |--54.13%-- bc_new_num
+                    |          |
+                    |          |--51.00%-- bc_divide
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |          |--30.46%-- _bc_do_sub
+                    |          |          bc_add
+                    |          |          execute
+                    |          |          run_code
+                    |          |          yyparse
+                    |          |          main
+                    |          |          __libc_start_main
+                    |          |          _start
+                    |          |
+                    |           --18.55%-- _bc_do_add
+                    |                     bc_add
+                    |                     execute
+                    |                     run_code
+                    |                     yyparse
+                    |                     main
+                    |                     __libc_start_main
+                    |                     _start
+                    |
+                     --45.87%-- bc_divide
+                               execute
+                               run_code
+                               yyparse
+                               main
+                               __libc_start_main
+                               _start
+If using FP, perf report output looks like:
+echo 'scale=2000; 4*a(1)' > cmd; perf record --call-graph fp bc -l < cmd
+    50.49%       bc  bc                 [.] bc_divide
+                 |
+                 --- bc_divide
+    33.57%       bc  bc                 [.] _one_mult
+                 |
+                 --- _one_mult
+     7.61%       bc  bc                 [.] _bc_do_add
+                 |
+                 --- _bc_do_add
+                     0x2000186a8
+     6.88%       bc  bc                 [.] _bc_do_sub
+                 |
+                 --- _bc_do_sub
+     0.42%       bc  libc-2.17.so       [.] __memcpy_ssse3_back
+                 |
+                 --- __memcpy_ssse3_back
+
+If using LBR, perf report -D output looks like:
+3458145275743 0x2fd750 [0xd8]: PERF_RECORD_SAMPLE(IP, 0x2): 9748/9748:
+0x408ea8 period: 609644 addr: 0
+... LBR call chain: nr:8
+.....  0: fffffffffffffe00
+.....  1: 0000000000408e50
+.....  2: 000000000040a458
+.....  3: 000000000040562e
+.....  4: 0000000000408590
+.....  5: 00000000004022c0
+.....  6: 00000000004015dd
+.....  7: 0000003d1cc21b43
+... FP chain: nr:2
+.....  0: fffffffffffffe00
+.....  1: 0000000000408ea8
+ ... thread: bc:9748
+ ...... dso: /usr/bin/bc
+
+The LBR call stack has following known limitations
+ - Zero length calls are not filtered out by hardware
+ - Exception handing such as setjmp/longjmp will have calls/returns not
+   match
+ - Pushing different return address onto the stack will have
+   calls/returns
+   not match
+ - If callstack is deeper than the LBR, only the last entries are
+   captured
 
 Signed-off-by: Kan Liang <kan.liang@intel.com>
 Tested-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Documentation/perf-record.txt |  8 +++++++-
- tools/perf/builtin-record.c              |  6 +++---
- tools/perf/builtin-report.c              |  2 ++
- tools/perf/util/callchain.c              |  8 ++++++++
- tools/perf/util/callchain.h              |  1 +
- tools/perf/util/evsel.c                  | 21 +++++++++++++++++++--
- 6 files changed, 40 insertions(+), 6 deletions(-)
+ tools/perf/util/evsel.h   |   4 ++
+ tools/perf/util/machine.c | 102 +++++++++++++++++++++++++++++++++++++++++-----
+ tools/perf/util/session.c |  64 ++++++++++++++++++++++++++---
+ 3 files changed, 153 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 81a20f2..a015841 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -103,13 +103,19 @@ OPTIONS
- 	implies -g.
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3862274..dcf202a 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -355,4 +355,8 @@ for ((_evsel) = list_entry((_leader)->node.next, struct perf_evsel, node); 	\
+      (_evsel) && (_evsel)->leader == (_leader);					\
+      (_evsel) = list_entry((_evsel)->node.next, struct perf_evsel, node))
  
- 	Allows specifying "fp" (frame pointer) or "dwarf"
--	(DWARF's CFI - Call Frame Information) as the method to collect
-+	(DWARF's CFI - Call Frame Information) or "lbr"
-+	(Hardware Last Branch Record facility) as the method to collect
- 	the information used to show the call graphs.
- 
- 	In some systems, where binaries are build with gcc
- 	--fomit-frame-pointer, using the "fp" method will produce bogus
- 	call graphs, using "dwarf", if available (perf tools linked to
- 	the libunwind library) should be used instead.
-+	Using the "lbr" method doesn't require any compiler options. It
-+	will produce call graphs from the hardware LBR registers. The
-+	main limition is that it is only available on new Intel
-+	platforms, such as Haswell. It can only get user call chain. It
-+	doesn't work with branch stack sampling at the same time.
- 
- -q::
- --quiet::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 8648c6d..6a68c85 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -639,7 +639,7 @@ error:
- 
- static void callchain_debug(void)
- {
--	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF" };
-+	static const char *str[CALLCHAIN_MAX] = { "NONE", "FP", "DWARF", "LBR" };
- 
- 	pr_debug("callchain: type %s\n", str[callchain_param.record_mode]);
- 
-@@ -725,9 +725,9 @@ static struct record record = {
- #define CALLCHAIN_HELP "setup and enables call-graph (stack chain/backtrace) recording: "
- 
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
--const char record_callchain_help[] = CALLCHAIN_HELP "fp dwarf";
-+const char record_callchain_help[] = CALLCHAIN_HELP "fp dwarf lbr";
- #else
--const char record_callchain_help[] = CALLCHAIN_HELP "fp";
-+const char record_callchain_help[] = CALLCHAIN_HELP "fp lbr";
- #endif
- 
- /*
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 072ae8a..f5fe3bc 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -262,6 +262,8 @@ static int report__setup_sample_type(struct report *rep)
- 		if ((sample_type & PERF_SAMPLE_REGS_USER) &&
- 		    (sample_type & PERF_SAMPLE_STACK_USER))
- 			callchain_param.record_mode = CALLCHAIN_DWARF;
-+		else if (sample_type & PERF_SAMPLE_BRANCH_STACK)
-+			callchain_param.record_mode = CALLCHAIN_LBR;
- 		else
- 			callchain_param.record_mode = CALLCHAIN_FP;
- 	}
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 64b377e..64c8913 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -97,6 +97,14 @@ int parse_callchain_record_opt(const char *arg)
- 				callchain_param.dump_size = size;
- 			}
- #endif /* HAVE_DWARF_UNWIND_SUPPORT */
-+		} else if (!strncmp(name, "lbr", sizeof("lbr"))) {
-+			if (!strtok_r(NULL, ",", &saveptr)) {
-+				callchain_param.record_mode = CALLCHAIN_LBR;
-+				ret = 0;
-+			} else
-+				pr_err("callchain: No more arguments "
-+					"needed for --call-graph lbr\n");
-+			break;
- 		} else {
- 			pr_err("callchain: Unknown --call-graph option "
- 			       "value: %s\n", arg);
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index dbc08cf..b4b61d1 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -11,6 +11,7 @@ enum perf_call_graph_mode {
- 	CALLCHAIN_NONE,
- 	CALLCHAIN_FP,
- 	CALLCHAIN_DWARF,
-+	CALLCHAIN_LBR,
- 	CALLCHAIN_MAX
- };
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 1e90c85..550f125 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -537,13 +537,30 @@ int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size)
++static inline bool has_branch_callstack(struct perf_evsel *evsel)
++{
++	return evsel->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK;
++}
+ #endif /* __PERF_EVSEL_H */
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 94de3e4..36759fa 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1500,18 +1500,100 @@ static int remove_loops(struct branch_entry *l, int nr)
+ 	return nr;
  }
  
- static void
--perf_evsel__config_callgraph(struct perf_evsel *evsel)
-+perf_evsel__config_callgraph(struct perf_evsel *evsel,
-+			     struct record_opts *opts)
+-static int thread__resolve_callchain_sample(struct thread *thread,
+-					     struct ip_callchain *chain,
+-					     struct branch_stack *branch,
+-					     struct symbol **parent,
+-					     struct addr_location *root_al,
+-					     int max_stack)
++/*
++ * Recolve LBR callstack chain sample
++ * Return:
++ * 1 on success get LBR callchain information
++ * 0 no available LBR callchain information, should try fp
++ * negative error code on other errors.
++ */
++static int resolve_lbr_callchain_sample(struct thread *thread,
++					struct perf_sample *sample,
++					struct symbol **parent,
++					struct addr_location *root_al,
++					int max_stack)
  {
- 	bool function = perf_evsel__is_function_event(evsel);
- 	struct perf_event_attr *attr = &evsel->attr;
- 
- 	perf_evsel__set_sample_bit(evsel, CALLCHAIN);
- 
-+	if (callchain_param.record_mode == CALLCHAIN_LBR) {
-+		if (!opts->branch_stack) {
-+			if (attr->exclude_user) {
-+				pr_warning("LBR callstack option is only available "
-+					   "to get user callchain information. "
-+					   "Falling back to framepointers.\n");
-+			} else {
-+				perf_evsel__set_sample_bit(evsel, BRANCH_STACK);
-+				attr->branch_sample_type = PERF_SAMPLE_BRANCH_USER |
-+							PERF_SAMPLE_BRANCH_CALL_STACK;
-+			}
-+		} else
-+			 pr_warning("Cannot use LBR callstack with branch stack. "
-+				    "Falling back to framepointers.\n");
++	struct ip_callchain *chain = sample->callchain;
++	int chain_nr = min(max_stack, (int)chain->nr);
++	int i, j, err;
++	u64 ip;
++
++	for (i = 0; i < chain_nr; i++) {
++		if (chain->ips[i] == PERF_CONTEXT_USER)
++			break;
 +	}
 +
- 	if (callchain_param.record_mode == CALLCHAIN_DWARF) {
- 		if (!function) {
- 			perf_evsel__set_sample_bit(evsel, REGS_USER);
-@@ -667,7 +684,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 		evsel->attr.exclude_callchain_user = 1;
++	/* LBR only affects the user callchain */
++	if (i != chain_nr) {
++		struct branch_stack *lbr_stack = sample->branch_stack;
++		int lbr_nr = lbr_stack->nr;
++		/*
++		 * LBR callstack can only get user call chain.
++		 * The mix_chain_nr is kernel call chain
++		 * number plus LBR user call chain number.
++		 * i is kernel call chain number,
++		 * 1 is PERF_CONTEXT_USER,
++		 * lbr_nr + 1 is the user call chain number.
++		 * For details, please refer to the comments
++		 * in callchain__printf
++		 */
++		int mix_chain_nr = i + 1 + lbr_nr + 1;
++
++		if (mix_chain_nr > PERF_MAX_STACK_DEPTH + PERF_MAX_BRANCH_DEPTH) {
++			pr_warning("corrupted callchain. skipping...\n");
++			return 0;
++		}
++
++		for (j = 0; j < mix_chain_nr; j++) {
++			if (callchain_param.order == ORDER_CALLEE) {
++				if (j < i + 1)
++					ip = chain->ips[j];
++				else if (j > i + 1)
++					ip = lbr_stack->entries[j - i - 2].from;
++				else
++					ip = lbr_stack->entries[0].to;
++			} else {
++				if (j < lbr_nr)
++					ip = lbr_stack->entries[lbr_nr - j - 1].from;
++				else if (j > lbr_nr)
++					ip = chain->ips[i + 1 - (j - lbr_nr)];
++				else
++					ip = lbr_stack->entries[0].to;
++			}
++
++			err = add_callchain_ip(thread, parent, root_al, false, ip);
++			if (err)
++				return (err < 0) ? err : 0;
++		}
++		return 1;
++	}
++
++	return 0;
++}
++
++static int thread__resolve_callchain_sample(struct thread *thread,
++					    struct perf_evsel *evsel,
++					    struct perf_sample *sample,
++					    struct symbol **parent,
++					    struct addr_location *root_al,
++					    int max_stack)
++{
++	struct branch_stack *branch = sample->branch_stack;
++	struct ip_callchain *chain = sample->callchain;
+ 	int chain_nr = min(max_stack, (int)chain->nr);
+ 	int i, j, err;
+ 	int skip_idx = -1;
+ 	int first_call = 0;
  
- 	if (callchain_param.enabled && !evsel->no_aux_samples)
--		perf_evsel__config_callgraph(evsel);
-+		perf_evsel__config_callgraph(evsel, opts);
++	callchain_cursor_reset(&callchain_cursor);
++
++	if (has_branch_callstack(evsel)) {
++		err = resolve_lbr_callchain_sample(thread, sample, parent,
++						   root_al, max_stack);
++		if (err)
++			return (err < 0) ? err : 0;
++	}
++
+ 	/*
+ 	 * Based on DWARF debug information, some architectures skip
+ 	 * a callchain entry saved by the kernel.
+@@ -1519,8 +1601,6 @@ static int thread__resolve_callchain_sample(struct thread *thread,
+ 	if (chain->nr < PERF_MAX_STACK_DEPTH)
+ 		skip_idx = arch_skip_callchain_idx(thread, chain);
  
- 	if (opts->sample_intr_regs) {
- 		attr->sample_regs_intr = PERF_REGS_MASK;
+-	callchain_cursor_reset(&callchain_cursor);
+-
+ 	/*
+ 	 * Add branches to call stack for easier browsing. This gives
+ 	 * more context for a sample than just the callers.
+@@ -1621,9 +1701,9 @@ int thread__resolve_callchain(struct thread *thread,
+ 			      struct addr_location *root_al,
+ 			      int max_stack)
+ {
+-	int ret = thread__resolve_callchain_sample(thread, sample->callchain,
+-						   sample->branch_stack,
+-						   parent, root_al, max_stack);
++	int ret = thread__resolve_callchain_sample(thread, evsel,
++						   sample, parent,
++						   root_al, max_stack);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 5f0e05a..65859bb 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -553,15 +553,67 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
+ 	return 0;
+ }
+ 
+-static void callchain__printf(struct perf_sample *sample)
++static void callchain__lbr_callstack_printf(struct perf_sample *sample)
+ {
++	struct ip_callchain *callchain = sample->callchain;
++	struct branch_stack *lbr_stack = sample->branch_stack;
++	u64 kernel_callchain_nr = callchain->nr;
+ 	unsigned int i;
+ 
+-	printf("... chain: nr:%" PRIu64 "\n", sample->callchain->nr);
++	for (i = 0; i < kernel_callchain_nr; i++) {
++		if (callchain->ips[i] == PERF_CONTEXT_USER)
++			break;
++	}
++
++	if ((i != kernel_callchain_nr) && lbr_stack->nr) {
++		u64 total_nr;
++		/*
++		 * LBR callstack can only get user call chain,
++		 * i is kernel call chain number,
++		 * 1 is PERF_CONTEXT_USER.
++		 *
++		 * The user call chain is stored in LBR registers.
++		 * LBR are pair registers. The caller is stored
++		 * in "from" register, while the callee is stored
++		 * in "to" register.
++		 * For example, there is a call stack
++		 * "A"->"B"->"C"->"D".
++		 * The LBR registers will recorde like
++		 * "C"->"D", "B"->"C", "A"->"B".
++		 * So only the first "to" register and all "from"
++		 * registers are needed to construct the whole stack.
++		 */
++		total_nr = i + 1 + lbr_stack->nr + 1;
++		kernel_callchain_nr = i + 1;
++
++		printf("... LBR call chain: nr:%" PRIu64 "\n", total_nr);
++
++		for (i = 0; i < kernel_callchain_nr; i++)
++			printf("..... %2d: %016" PRIx64 "\n",
++			       i, callchain->ips[i]);
++
++		printf("..... %2d: %016" PRIx64 "\n",
++		       (int)(kernel_callchain_nr), lbr_stack->entries[0].to);
++		for (i = 0; i < lbr_stack->nr; i++)
++			printf("..... %2d: %016" PRIx64 "\n",
++			       (int)(i + kernel_callchain_nr + 1), lbr_stack->entries[i].from);
++	}
++}
++
++static void callchain__printf(struct perf_evsel *evsel,
++			      struct perf_sample *sample)
++{
++	unsigned int i;
++	struct ip_callchain *callchain = sample->callchain;
++
++	if (has_branch_callstack(evsel))
++		callchain__lbr_callstack_printf(sample);
++
++	printf("... FP chain: nr:%" PRIu64 "\n", callchain->nr);
+ 
+-	for (i = 0; i < sample->callchain->nr; i++)
++	for (i = 0; i < callchain->nr; i++)
+ 		printf("..... %2d: %016" PRIx64 "\n",
+-		       i, sample->callchain->ips[i]);
++		       i, callchain->ips[i]);
+ }
+ 
+ static void branch_stack__printf(struct perf_sample *sample)
+@@ -718,9 +770,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 	sample_type = evsel->attr.sample_type;
+ 
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN)
+-		callchain__printf(sample);
++		callchain__printf(evsel, sample);
+ 
+-	if (sample_type & PERF_SAMPLE_BRANCH_STACK)
++	if ((sample_type & PERF_SAMPLE_BRANCH_STACK) && !has_branch_callstack(evsel))
+ 		branch_stack__printf(sample);
+ 
+ 	if (sample_type & PERF_SAMPLE_REGS_USER)
 -- 
 1.8.3.2
 
