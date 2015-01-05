@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444AbbAETiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:38:06 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:64490 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbbAETiE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:38:04 -0500
-Message-ID: <54AAE81C.2080402@kernel.dk>
-Date: Mon, 05 Jan 2015 12:38:04 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754491AbbAETj5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:39:57 -0500
+Received: from relay2.sgi.com ([192.48.180.65]:60786 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753924AbbAETj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 14:39:56 -0500
+Date: Mon, 5 Jan 2015 13:39:49 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] misc: sgi-gru: gruhandles.c:  Remove unused function
+Message-ID: <20150105193949.GA18878@sgi.com>
+References: <1420130807-29468-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Sasha Levin <sasha.levin@oracle.com>, bvanassche@acm.org, hare@suse.de,
-        JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
-References: <54A43CFB.2080705@oracle.com> <20150105091516.GA22226@lst.de> <54AADF6A.6090100@kernel.dk> <20150105193213.GA31955@lst.de>
-In-Reply-To: <20150105193213.GA31955@lst.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420130807-29468-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 12:32 PM, Christoph Hellwig wrote:
-> On Mon, Jan 05, 2015 at 12:00:58PM -0700, Jens Axboe wrote:
->> That's not quite true, the only guarantee is that it WILL execute on the
->> CPU (or CPUs) that are set in the mask. So unless it ends up offloading
->> the run to a specific workqueue, we'll disable preempt in the current
->> path before ->queue_rq() is called.
+Acked-by: Dimitri Sivanich <sivanich@sgi.com>
+
+On Thu, Jan 01, 2015 at 05:46:47PM +0100, Rickard Strandqvist wrote:
+> Remove the function tfh_restart() that is not used anywhere.
 > 
-> Oops.  Indeed, with those recent changes ->queue_rq can't safely block
-> for memory allocatios anymore.
+> This was partially found by using a static code analysis program called cppcheck.
 > 
-> The patch below should fix it:
-> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
-> From: Christoph Hellwig <hch@lst.de>
-> Subject: scsi: ->queue_rq can't sleep
+>  drivers/misc/sgi-gru/gruhandles.c |    6 ------
+>  drivers/misc/sgi-gru/gruhandles.h |    1 -
+>  2 files changed, 7 deletions(-)
 > 
-> Since Linux 3.19 blk-mq may disable preemption before calling into
-> ->queue_rq, so we can't actually sleep anymore.
-
-That was true in earlier kernels as well, going back a few versions at
-least, preempt was disabled on calling __blk_mq_run_hw_queue(). Just
-checked, and 3.16 and later have that as the behaviour. The only change
-in 3.19 some shuffling around to avoid double preempt_disable in some
-cases, it's now using get_cpu() and friends.
-
-So we probably want do mark that as stable so we reach back to when
-scsi-mq was added, unless the originally referenced patch getting rid of
-the gfp_t mask didn't have the issue.
-
-
--- 
-Jens Axboe
-
+> diff --git a/drivers/misc/sgi-gru/gruhandles.c b/drivers/misc/sgi-gru/gruhandles.c
+> index 2f30bad..1ee8e82 100644
+> --- a/drivers/misc/sgi-gru/gruhandles.c
+> +++ b/drivers/misc/sgi-gru/gruhandles.c
+> @@ -196,12 +196,6 @@ void tfh_write_restart(struct gru_tlb_fault_handle *tfh,
+>  	start_instruction(tfh);
+>  }
+>  
+> -void tfh_restart(struct gru_tlb_fault_handle *tfh)
+> -{
+> -	tfh->opc = TFHOP_RESTART;
+> -	start_instruction(tfh);
+> -}
+> -
+>  void tfh_user_polling_mode(struct gru_tlb_fault_handle *tfh)
+>  {
+>  	tfh->opc = TFHOP_USER_POLLING_MODE;
+> diff --git a/drivers/misc/sgi-gru/gruhandles.h b/drivers/misc/sgi-gru/gruhandles.h
+> index 3f998b9..3d7bd36 100644
+> --- a/drivers/misc/sgi-gru/gruhandles.h
+> +++ b/drivers/misc/sgi-gru/gruhandles.h
+> @@ -524,7 +524,6 @@ int tfh_write_only(struct gru_tlb_fault_handle *tfh, unsigned long paddr,
+>  	int gaa, unsigned long vaddr, int asid, int dirty, int pagesize);
+>  void tfh_write_restart(struct gru_tlb_fault_handle *tfh, unsigned long paddr,
+>  	int gaa, unsigned long vaddr, int asid, int dirty, int pagesize);
+> -void tfh_restart(struct gru_tlb_fault_handle *tfh);
+>  void tfh_user_polling_mode(struct gru_tlb_fault_handle *tfh);
+>  void tfh_exception(struct gru_tlb_fault_handle *tfh);
+>  
+> -- 
+> 1.7.10.4
