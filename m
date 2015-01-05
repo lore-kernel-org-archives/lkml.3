@@ -1,194 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbbAENBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:01:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753956AbbAENBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:01:03 -0500
-Date: Mon, 5 Jan 2015 15:00:43 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, linux-metag@vger.kernel.org
-Subject: Re: [PATCH repost 09/16] metag/uaccess: fix sparse errors
-Message-ID: <20150105130042.GA21602@redhat.com>
-References: <1419499661-8566-1-git-send-email-mst@redhat.com>
- <1419499661-8566-10-git-send-email-mst@redhat.com>
- <54A6BC0E.50008@imgtec.com>
- <20150104105218.GA3208@redhat.com>
- <54AA5CEE.9050205@imgtec.com>
+	id S1753953AbbAENBB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:01:01 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:35604 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292AbbAENA7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 08:00:59 -0500
+Message-ID: <54AA8AFC.9020706@hurleysoftware.com>
+Date: Mon, 05 Jan 2015 08:00:44 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AA5CEE.9050205@imgtec.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>, gregkh@linuxfoundation.org
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robh@kernel.org, jslaby@suse.cz, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic BASE_BAUD
+References: <1420457437-17636-1-git-send-email-vgupta@synopsys.com> <1420457437-17636-3-git-send-email-vgupta@synopsys.com>
+In-Reply-To: <1420457437-17636-3-git-send-email-vgupta@synopsys.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 09:44:14AM +0000, James Hogan wrote:
-> On 04/01/15 10:52, Michael S. Tsirkin wrote:
-> > On Fri, Jan 02, 2015 at 03:41:02PM +0000, James Hogan wrote:
-> >> Hi,
-> >>
-> >> On 25/12/14 09:29, Michael S. Tsirkin wrote:
-> >>> virtio wants to read bitwise types from userspace using get_user.  At the
-> >>> moment this triggers sparse errors, since the value is passed through an
-> >>> integer.
-> >>>
-> >>> Fix that up using __force.
-> >>
-> >> I still see these sparse warnings with metag even with your patch:
-> >>
-> >>   CHECK   drivers/vhost/vhost.c
-> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
-> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
-> >>
-> >> Which something like the following hunk fixes in a similar way to yours:
-> >>
-> >> diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
-> >> index 0748b0a97986..594497053748 100644
-> >> --- a/arch/metag/include/asm/uaccess.h
-> >> +++ b/arch/metag/include/asm/uaccess.h
-> >> @@ -112,13 +112,17 @@ do {                                                            \
-> >>  	retval = 0;                                             \
-> >>  	switch (size) {                                         \
-> >>  	case 1:								\
-> >> -		retval = __put_user_asm_b((unsigned int)x, ptr); break;	\
-> >> +		retval = __put_user_asm_b((__force unsigned int)x, ptr); \
-> >> +		break;							\
-> >>  	case 2:								\
-> >> -		retval = __put_user_asm_w((unsigned int)x, ptr); break;	\
-> >> +		retval = __put_user_asm_w((__force unsigned int)x, ptr); \
-> >> +		break;							\
-> >>  	case 4:								\
-> >> -		retval = __put_user_asm_d((unsigned int)x, ptr); break;	\
-> >> +		retval = __put_user_asm_d((__force unsigned int)x, ptr); \
-> >> +		break;							\
-> >>  	case 8:								\
-> >> -		retval = __put_user_asm_l((unsigned long long)x, ptr); break; \
-> >> +		retval = __put_user_asm_l((__force unsigned long long)x, ptr); \
-> >> +		break;							\
-> >>  	default:							\
-> >>  		__put_user_bad();					\
-> >>  	}	
-> >>
-> >> As far as I understand it, using __force on the value (as opposed to the
-> >> pointer) is safe here, in the sense of not masking any genuine defects.
-> >> Do you agree? Do you want to apply that hunk with your patch too?
-> > 
-> > what about this code:
-> >              u16 v = 0;
-> >              int rc = get_user(v, (__force __le16 __user *)p);
-> > 
-> > it should trigger a warning, does it?
+Hi Vineet,
+
+On 01/05/2015 06:30 AM, Vineet Gupta wrote:
+> BASE_BAUD is pain in neck for multi-platform support as it hard codes at
+> build time the clk value for early uart.
 > 
-> No, but it didn't previously either, and doesn't seem to with x86_64 either.
+> Mitigate this by allowing arches/platforms to provide their own version
+> which can do dynamic setup based on DT values etc (see next patch for
+> usage)
 > 
-> I tried __be16 too, since I presume you're referring to a discrepancy
-> between the native byte order of v (u16) and the foreign byte order of
-> *p (__be16)?
+> This was needed for ARC SDP platforms based on 2 different FPGA flows, each
+> with a different UART clk value.
 > 
-> Cheers
-> James
-
-Yes.
-It certainly does for me.
-Did you define __CHECK_ENDIAN__?
-
-Documentation/sparse.txt says:
-
-To perform endianness
-checks, you may define __CHECK_ENDIAN__:
-
-        make C=2 CF="-D__CHECK_ENDIAN__"
-
-These checks are disabled by default as they generate a host of warnings.
-
-
-Or just try with __virtio16 instead of __le16 - I think these are
-enabled unconditionally.
-
-
-> > 
-> > 
-> > 
-> >> Note, this change also suppresses warnings for writing a pointer to
-> >> userland due to the casts to unsigned int / unsigned long long, such as
-> >> the following (each 4 times due to 4 cases above):
-> >>
-> >> kernel/signal.c:2740:25: warning: cast removes address space of expression
-> >> kernel/signal.c:2747:24: warning: cast removes address space of expression
-> >> kernel/signal.c:2760:24: warning: cast removes address space of expression
-> >> kernel/signal.c:2761:24: warning: cast removes address space of expression
-> >> kernel/signal.c:2775:24: warning: cast removes address space of expression
-> >> kernel/signal.c:2779:24: warning: cast removes address space of expression
-> >> kernel/signal.c:3202:25: warning: cast removes address space of expression
-> >> kernel/signal.c:3225:17: warning: cast removes address space of expression
-> >> kernel/futex.c:2769:16: warning: cast removes address space of expression
-> >>
-> >>>
-> >>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >>> ---
-> >>>  arch/metag/include/asm/uaccess.h | 4 ++--
-> >>>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>>
-> >>> diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
-> >>> index 0748b0a..c314b45 100644
-> >>> --- a/arch/metag/include/asm/uaccess.h
-> >>> +++ b/arch/metag/include/asm/uaccess.h
-> >>> @@ -135,7 +135,7 @@ extern long __get_user_bad(void);
-> >>>  ({                                                              \
-> >>>  	long __gu_err, __gu_val;                                \
-> >>>  	__get_user_size(__gu_val, (ptr), (size), __gu_err);	\
-> >>> -	(x) = (__typeof__(*(ptr)))__gu_val;                     \
-> >>> +	(x) = (__force __typeof__(*(ptr)))__gu_val;                     \
-> >>
-> >> Can you adjust the position of the \ to line up please
-> >>
-> >>>  	__gu_err;                                               \
-> >>>  })
-> >>>  
-> >>> @@ -145,7 +145,7 @@ extern long __get_user_bad(void);
-> >>>  	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
-> >>>  	if (access_ok(VERIFY_READ, __gu_addr, size))			\
-> >>>  		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
-> >>> -	(x) = (__typeof__(*(ptr)))__gu_val;                             \
-> >>> +	(x) = (__force __typeof__(*(ptr)))__gu_val;                             \
-> >>
-> >> same here (this one causes a checkpatch error due to 80 column limit)
-> >>
-> >>>  	__gu_err;                                                       \
-> >>>  })
-> >>>  
-> >>>
-> >>
-> >> With those changes,
-> >> Acked-by: James Hogan <james.hogan@imgtec.com>
-> >>
-> >> Cheers
-> >> James
-> >>
-> > 
-> > 
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: linux-serial@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Rob Herring <robh@kernel.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/tty/serial/earlycon.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
 > 
+> diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
+> index 64fe25a4285c..bfd3537739e0 100644
+> --- a/drivers/tty/serial/earlycon.c
+> +++ b/drivers/tty/serial/earlycon.c
+> @@ -54,6 +54,15 @@ static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
+>  	return base;
+>  }
+>  
+> +unsigned int __weak __init earlycon_base_baud(char *options)
+> +{
+> +#ifdef BASE_BAUD
+> +	return BASE_BAUD;
+> +#else
+> +	return 1843200/16;	/* x86 early console */
+> +#endif
+> +}
+> +
+>  static int __init parse_options(struct earlycon_device *device,
+>  				char *options)
+>  {
+> @@ -87,7 +96,7 @@ static int __init parse_options(struct earlycon_device *device,
+>  		return -EINVAL;
+>  	}
+>  
+> -	port->uartclk = BASE_BAUD * 16;
+> +	port->uartclk = earlycon_base_baud(options) * 16;
 
+I don't understand why BASE_BAUD can't be defined by arc as arc_earlycon_base_baud().
+Why is the weak binding necessary?
+
+I'm pushing back on this because port initialization (and especially 8250)
+is already a ridiculous spiderweb.
+
+Regards,
+Peter Hurley
+
+>  	options = strchr(options, ',');
+>  	if (options) {
+> @@ -156,7 +165,7 @@ int __init of_setup_earlycon(unsigned long addr,
+>  
+>  	port->iotype = UPIO_MEM;
+>  	port->mapbase = addr;
+> -	port->uartclk = BASE_BAUD * 16;
+> +	port->uartclk = earlycon_base_baud(NULL) * 16;
+>  	port->membase = earlycon_map(addr, SZ_4K);
+>  
+>  	early_console_dev.con->data = &early_console_dev;
+> 
 
