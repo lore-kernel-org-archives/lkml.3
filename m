@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbbAEI6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:58:40 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32065 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbbAEI6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:58:03 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-2b-54aa5219c553
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] hwmon: nct7802: Constify struct regmap_config
-Date: Mon, 05 Jan 2015 09:57:55 +0100
-Message-id: <1420448275-8154-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMJMWRmVeSWpSXmKPExsVy+t/xy7qSQatCDC5dFLZYevcTm8XrF4YW
-	l3fNYbN4svAMk8WdaXvZHFg9Hkzczeax83sDu0ffllWMHptPV3t83iQXwBrFZZOSmpNZllqk
-	b5fAlXHs7Tf2gplsFS+/HWJsYJzC2sXIySEhYCJxrvM4I4QtJnHh3nq2LkYuDiGBpYwSmz6/
-	YIVw+pgkLh08zgZSxSZgLLF5+RKwKhGBJkaJvZ0LwBLMAoYSP9/9YQexhQXsJCa0LQdbwSKg
-	KnH21BWwOK+Am8SvrstsEOvkJE4em8w6gZF7ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95Pzc
-	TYyQgPiyg3HxMatDjAIcjEo8vB4nVoYIsSaWFVfmHmKU4GBWEuFddwsoxJuSWFmVWpQfX1Sa
-	k1p8iJGJg1OqgdFC9GR5wofaP4VLdnhZrpof/jpM9uWanMYdP47Pu5IXue2IgP/8Ry+lrfSk
-	r7zfVB7tE3ZxydEYzzs5q55V1HJKBeSe/idj26u76N3KhYViGt6ljH4fOCdKPFbsmSIjeV9O
-	cKXrnv9mDcJVIda5rkFuWYUzfbeGpbH8u3fK9tiSU1kOr3K+iyqxFGckGmoxFxUnAgDkz2Hr
-	5gEAAA==
+	id S1753478AbbAEI6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:58:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44805 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753222AbbAEI6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 03:58:11 -0500
+Message-ID: <54AA5220.5080205@suse.cz>
+Date: Mon, 05 Jan 2015 09:58:08 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm/compaction: enhance trace output to know more
+ about compaction internals
+References: <1417593127-6819-1-git-send-email-iamjoonsoo.kim@lge.com> <20150105023352.GB3534@js1304-P5Q-DELUXE>
+In-Reply-To: <20150105023352.GB3534@js1304-P5Q-DELUXE>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regmap_config struct may be const because it is not modified by the
-driver and regmap_init() accepts pointer to const.
+On 01/05/2015 03:33 AM, Joonsoo Kim wrote:
+> On Wed, Dec 03, 2014 at 04:52:05PM +0900, Joonsoo Kim wrote:
+>> It'd be useful to know where the both scanner is start. And, it also be
+>> useful to know current range where compaction work. It will help to find
+>> odd behaviour or problem on compaction.
+>> 
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> Hello, Andrew and Vlastimil.
+> 
+> Could you review or merge this patchset?
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/hwmon/nct7802.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I hope to review it soon, just "recovering" from a vacation ;-)
 
-diff --git a/drivers/hwmon/nct7802.c b/drivers/hwmon/nct7802.c
-index ec5678289e4a..55765790907b 100644
---- a/drivers/hwmon/nct7802.c
-+++ b/drivers/hwmon/nct7802.c
-@@ -779,7 +779,7 @@ static bool nct7802_regmap_is_volatile(struct device *dev, unsigned int reg)
- 	return reg != REG_BANK && reg <= 0x20;
- }
- 
--static struct regmap_config nct7802_regmap_config = {
-+static const struct regmap_config nct7802_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 	.cache_type = REGCACHE_RBTREE,
--- 
-1.9.1
+> It would help to trace compaction behaviour.
+
+Yep,
+Thanks
+
+> Thanks.
+> 
 
