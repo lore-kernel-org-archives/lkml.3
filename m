@@ -1,187 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbbAES4b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:56:31 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:40520 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbbAES43 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:56:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150105152511.GA9172@amt.cnet>
-References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
- <20150105152511.GA9172@amt.cnet>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 5 Jan 2015 10:56:07 -0800
-Message-ID: <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
-Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
- pvclock reader
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754121AbbAES5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:57:20 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:55645 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753943AbbAES5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 13:57:18 -0500
+Message-ID: <1420484224.9459.16.camel@sipsolutions.net>
+Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 05 Jan 2015 19:57:04 +0100
+In-Reply-To: <1420479510.14308.23.camel@x220> (sfid-20150105_183907_807502_81C08416)
+References: <1420297188.2397.3.camel@tiscali.nl>
+	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>
+	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
+	 <1420324124.9624.60.camel@x220> <54AA641C.7050307@broadcom.com>
+	 <1420479510.14308.23.camel@x220> (sfid-20150105_183907_807502_81C08416)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 7:25 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> On Mon, Dec 22, 2014 at 04:39:57PM -0800, Andy Lutomirski wrote:
->> The pvclock vdso code was too abstracted to understand easily and
->> excessively paranoid.  Simplify it for a huge speedup.
->>
->> This opens the door for additional simplifications, as the vdso no
->> longer accesses the pvti for any vcpu other than vcpu 0.
->>
->> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
->> With this change, it takes 19ns, which is almost as fast as the pure TSC
->> implementation.
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> ---
->>  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
->>  1 file changed, 47 insertions(+), 35 deletions(-)
->>
->> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
->> index 9793322751e0..f2e0396d5629 100644
->> --- a/arch/x86/vdso/vclock_gettime.c
->> +++ b/arch/x86/vdso/vclock_gettime.c
->> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
->>
->>  static notrace cycle_t vread_pvclock(int *mode)
->>  {
->> -     const struct pvclock_vsyscall_time_info *pvti;
->> +     const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
->>       cycle_t ret;
->> -     u64 last;
->> -     u32 version;
->> -     u8 flags;
->> -     unsigned cpu, cpu1;
->> -
->> +     u64 tsc, pvti_tsc;
->> +     u64 last, delta, pvti_system_time;
->> +     u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
->>
->>       /*
->> -      * Note: hypervisor must guarantee that:
->> -      * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
->> -      * 2. that per-CPU pvclock time info is updated if the
->> -      *    underlying CPU changes.
->> -      * 3. that version is increased whenever underlying CPU
->> -      *    changes.
->> +      * Note: The kernel and hypervisor must guarantee that cpu ID
->> +      * number maps 1:1 to per-CPU pvclock time info.
->> +      *
->> +      * Because the hypervisor is entirely unaware of guest userspace
->> +      * preemption, it cannot guarantee that per-CPU pvclock time
->> +      * info is updated if the underlying CPU changes or that that
->> +      * version is increased whenever underlying CPU changes.
->> +      *
->> +      * On KVM, we are guaranteed that pvti updates for any vCPU are
->> +      * atomic as seen by *all* vCPUs.  This is an even stronger
->> +      * guarantee than we get with a normal seqlock.
->>        *
->> +      * On Xen, we don't appear to have that guarantee, but Xen still
->> +      * supplies a valid seqlock using the version field.
->> +
->> +      * We only do pvclock vdso timing at all if
->> +      * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
->> +      * mean that all vCPUs have matching pvti and that the TSC is
->> +      * synced, so we can just look at vCPU 0's pvti.
->>        */
->
-> Can Xen guarantee that ?
+On Mon, 2015-01-05 at 18:38 +0100, Paul Bolle wrote:
 
-I think so, vacuously.  Xen doesn't seem to set PVCLOCK_TSC_STABLE_BIT
-at all.  I have no idea going forward, though.
+> > ipw2200 is a WEXT driver using some wext functionality (and struct 
+> > wiphy) provided by cfg80211 hence it needs CFG80211_WEXT. I guess that 
+> > is what makes it confusing.
+> 
+> It doesn't help that I hardly know anything about mac80211, cfg80211 and
+> nl80211 (and lib80211 for that matter). To me these are mostly just
+> names that end in 80211.
 
-Xen people?
+:-)
+There isn't really all that much that ipw2x00 is using from cfg80211
+though - of note is that it has completely empty ops:
 
->
->> -     do {
->> -             cpu = __getcpu() & VGETCPU_CPU_MASK;
->> -             /* TODO: We can put vcpu id into higher bits of pvti.version.
->> -              * This will save a couple of cycles by getting rid of
->> -              * __getcpu() calls (Gleb).
->> -              */
->> -
->> -             pvti = get_pvti(cpu);
->> -
->> -             version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
->> -
->> -             /*
->> -              * Test we're still on the cpu as well as the version.
->> -              * We could have been migrated just after the first
->> -              * vgetcpu but before fetching the version, so we
->> -              * wouldn't notice a version change.
->> -              */
->> -             cpu1 = __getcpu() & VGETCPU_CPU_MASK;
->> -     } while (unlikely(cpu != cpu1 ||
->> -                       (pvti->pvti.version & 1) ||
->> -                       pvti->pvti.version != version));
->> -
->> -     if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
->> +
->> +     if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
->>               *mode = VCLOCK_NONE;
->> +             return 0;
->> +     }
->
-> This check must be performed after reading a stable pvti.
->
+static struct cfg80211_ops libipw_config_ops = { };
 
-We can even read it in the middle, guarded by the version checks.
-I'll do that for v2.
+IOW - all it does is register with the framework - courtesy of
+a3caa99e6c68f. It's practically useless.
 
->> +
->> +     do {
->> +             version = pvti->version;
->> +
->> +             /* This is also a read barrier, so we'll read version first. */
->> +             rdtsc_barrier();
->> +             tsc = __native_read_tsc();
->> +
->> +             pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
->> +             pvti_tsc_shift = pvti->tsc_shift;
->> +             pvti_system_time = pvti->system_time;
->> +             pvti_tsc = pvti->tsc_timestamp;
->> +
->> +             /* Make sure that the version double-check is last. */
->> +             smp_rmb();
->> +     } while (unlikely((version & 1) || version != pvti->version));
->> +
->> +     delta = tsc - pvti_tsc;
->> +     ret = pvti_system_time +
->> +             pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
->> +                                 pvti_tsc_shift);
->
-> The following is possible:
->
-> 1) State: all pvtis marked as PVCLOCK_TSC_STABLE_BIT.
-> 1) Update request for all vcpus, for a TSC_STABLE_BIT -> ~TSC_STABLE_BIT
-> transition.
-> 2) vCPU-1 updates its pvti with new values.
-> 3) vCPU-0 still has not updated its pvti with new values.
-> 4) vCPU-1 VM-enters, uses vCPU-0 values, even though it has been
-> notified of a TSC_STABLE_BIT -> ~TSC_STABLE_BIT transition.
->
-> The update is not actually atomic across all vCPUs, its atomic in
-> the sense of not allowing visibility of distinct
-> system_timestamp/tsc_timestamp values.
->
+> Anyhow, concerning, CFG80211_WEXT: it seems the only functionality
+> provided by that symbol that ipw2200 uses directly is
+> cfg80211_wext_giwname(). Perhaps ipw2200 could have a private version of
+> that function, something like ipw2100's ipw2100_wx_get_name(). Should be
+> trivial to implement (ie, it could take _me_ a day or two).
 
-Hmm.  In step 4, is there a guarantee that vCPU-0 won't VM-enter until
-it gets marked unstable?  Otherwise the vdso could could just as
-easily be called from vCPU-1, migrated to vCPU-0, read the data
-complete with stale stable bit, and get migrated back to vCPU-1.
+We could just revert that part of the commit above - or even completely.
 
-But I thought that KVM currently froze all vCPUs when updating pvti
-for any of them.  How can this happen?  I admit I don't really
-understand the update request code.
+However, in theory at least doing *that* would now be a userspace
+regression - today you can at least discover the presence of ipw2200
+devices with nl80211, even if you can't do anything with them that way.
 
---Andy
+> But perhaps ipw2200 uses CFG80211_WEXT _indirectly_ too. Ie, in
+> net/wireless/core.c I stumbled on
+>     #ifdef CONFIG_CFG80211_WEXT
+>             rdev->wiphy.wext = &cfg80211_wext_handler;
+>     #endif
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I don't think it does - see the note about the ops above. If it did,
+it'd have to implement the ops.
+
+> But I net/wireless/wext-core.c I then found
+>     #ifdef CONFIG_CFG80211_WEXT
+>             if (dev->ieee80211_ptr && dev->ieee80211_ptr->wiphy)
+>                     handlers = dev->ieee80211_ptr->wiphy->wext;
+>     #endif
+>     #ifdef CONFIG_WIRELESS_EXT
+>             if (dev->wireless_handlers)
+>                     handlers = dev->wireless_handlers;
+>     #endif
+> 
+> (There's much more to discover about WEXT, of course.) Anyhow, IPW2200
+> uses both CFG80211_WEXT and WIRELESS_EXT and cfg80211_wext_handler and
+> ipw2200's wireless_handlers appear to cover the same set of IOCTLS (one
+> exception: SIOCSIWPMKSA). So by now I'm really puzzled how this all fits
+> together.
+
+Well, this was meant as a transition mechanism for drivers. Ultimately,
+the way we thought how you'd convert a driver (and how we converted
+mac80211) would be to have the wext handlers like for example the scan
+ones:
+
+static iw_handler ipw_wx_handlers[] = {
+...
+        IW_HANDLER(SIOCSIWSCAN, ipw_wx_set_scan),
+        IW_HANDLER(SIOCGIWSCAN, ipw_wx_get_scan),
+...
+};
+
+Then you could make a patch that uses the cfg80211 APIs for scanning in
+the driver -- i.e. implement the cfg80211_ops.scan method, report frames
+to the cfg80211 scanning and remove all the ieee->network_list stuff
+etc. using the related cfg80211 API (e.g. cfg80211_get_bss() and friends
+for getting a network, etc.) And then you'd change the handlers to be
+
+static iw_handler ipw_wx_handlers[] = {
+...
+        IW_HANDLER(SIOCSIWSCAN, cfg80211_wext_siwscan),
+        IW_HANDLER(SIOCGIWSCAN, cfg80211_wext_giwscan),
+...
+};
+
+This part would have to be done in a single patch.
+
+Multiple other groups of ioctls could be converted in similar patches,
+until at the end you can completely remove ipw_wx_handlers and rely
+entirely on cfg80211's wext compatibility.
+
+So far the theory - in practice nobody cared enough to start working on
+any of these drivers, let alone actually has the hardware today.
+
+johannes
+
