@@ -1,85 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307AbbAEPem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:34:42 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33518 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924AbbAEPel (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:34:41 -0500
-Date: Mon, 5 Jan 2015 16:34:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-Message-ID: <20150105153437.GB3433@amd>
-References: <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
- <20150104201026.GA23427@amd>
- <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
- <20150104203724.GA16372@amd>
- <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
- <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
- <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
- <20150104212659.GC12302@n2100.arm.linux.org.uk>
- <alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr>
- <20150105121126.GA10116@arm.com>
+	id S1753883AbbAEPgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:36:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752924AbbAEPgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 10:36:32 -0500
+Message-ID: <54AAAF67.9050507@redhat.com>
+Date: Mon, 05 Jan 2015 16:36:07 +0100
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150105121126.GA10116@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vitaly Kuznetsov <vkuznets@redhat.com>, x86@kernel.org
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH v2] x86/xen: avoid freeing static 'name' when kasprintf()
+ fails
+References: <1420463205-19249-1-git-send-email-vkuznets@redhat.com> <1420471671-32051-1-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1420471671-32051-1-git-send-email-vkuznets@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2015-01-05 12:11:36, Will Deacon wrote:
-> Hi all,
+On 01/05/15 16:27, Vitaly Kuznetsov wrote:
+> In case kasprintf() fails in xen_setup_timer() we assign name to the static
+> string "<timer kasprintf failed>". We, however, don't check that fact before
+> issuing kfree() in xen_teardown_timer(), kernel is supposed to crash with
+> 'kernel BUG at mm/slub.c:3341!'
 > 
-> Sorry for the late reply, it seems that neither myself or the
-> arm-linux-kernel list were on CC for this thread.
+> Solve the issue by making name a fixed length string inside struct
+> xen_clock_event_device. 16 bytes should be enough.
+> 
+> Suggested-by: Laszlo Ersek <lersek@redhat.com>
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> ---
+> Changes from v1 (David Vrabel):
+> - add 'struct xen_clock_event_device *xevt' for covenience
+> - sizeof(xevt->name) in snprintf() call
+> - Suggested-by: Laszlo Ersek
+> ---
+>  arch/x86/xen/time.c | 16 +++++-----------
+>  1 file changed, 5 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> index f473d26..9f743f4 100644
+> --- a/arch/x86/xen/time.c
+> +++ b/arch/x86/xen/time.c
+> @@ -391,7 +391,7 @@ static const struct clock_event_device *xen_clockevent =
+>  
+>  struct xen_clock_event_device {
+>  	struct clock_event_device evt;
+> -	char *name;
+> +	char name[16];
+>  };
+>  static DEFINE_PER_CPU(struct xen_clock_event_device, xen_clock_events) = { .evt.irq = -1 };
+>  
+> @@ -420,39 +420,33 @@ void xen_teardown_timer(int cpu)
+>  	if (evt->irq >= 0) {
+>  		unbind_from_irqhandler(evt->irq, NULL);
+>  		evt->irq = -1;
+> -		kfree(per_cpu(xen_clock_events, cpu).name);
+> -		per_cpu(xen_clock_events, cpu).name = NULL;
+>  	}
+>  }
+>  
+>  void xen_setup_timer(int cpu)
+>  {
+> -	char *name;
+> -	struct clock_event_device *evt;
+> +	struct xen_clock_event_device *xevt = &per_cpu(xen_clock_events, cpu);
+> +	struct clock_event_device *evt = &xevt->evt;
+>  	int irq;
+>  
+> -	evt = &per_cpu(xen_clock_events, cpu).evt;
+>  	WARN(evt->irq >= 0, "IRQ%d for CPU%d is already allocated\n", evt->irq, cpu);
+>  	if (evt->irq >= 0)
+>  		xen_teardown_timer(cpu);
+>  
+>  	printk(KERN_INFO "installing Xen timer for CPU %d\n", cpu);
+>  
+> -	name = kasprintf(GFP_KERNEL, "timer%d", cpu);
+> -	if (!name)
+> -		name = "<timer kasprintf failed>";
+> +	snprintf(xevt->name, sizeof(xevt->name), "timer%d", cpu);
+>  
+>  	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
+>  				      IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER|
+>  				      IRQF_FORCE_RESUME|IRQF_EARLY_RESUME,
+> -				      name, NULL);
+> +				      xevt->name, NULL);
+>  	(void)xen_set_irq_priority(irq, XEN_IRQ_PRIORITY_MAX);
+>  
+>  	memcpy(evt, xen_clockevent, sizeof(*evt));
+>  
+>  	evt->cpumask = cpumask_of(cpu);
+>  	evt->irq = irq;
+> -	per_cpu(xen_clock_events, cpu).name = name;
+>  }
+>  
+>  
+> 
 
-Sorry about that. I was pretty sure I cc-ed you, but apparently did
-not.
+Looks good to me (but I defer to Xen people of course :))
 
-> Pavel: do you have something we can run to observe the problem?
+Reviewed-by: Laszlo Ersek <lersek@redhat.com>
 
-Debian 7.7: mpg123, anything pyaudio based, at least. (install
-python-pyaudio, try to run examples).
-
-I hit it with:
-
-#!/usr/bin/env python
-# Written by Yu-Jie Lin
-# Public Domain
-#
-# Deps: PyAudio, NumPy, and Matplotlib
-# Blog:
-# http://blog.yjl.im/2012/11/frequency-spectrum-of-sound-using.html
-
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import pyaudio
-import struct
-import wave
-...
-
-When I decided to investigate.
-
-> Finally, the revert doesn't have a Cc stable tag which is probably needed
-> if it's going to land in 3.19 final, irrespective of whether we agree that
-> it's the right way forward.
-
-Yes, pushing is to stable is good idea. Will you take care?
-
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks!
+Laszlo
