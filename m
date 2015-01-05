@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535AbbAEODh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:03:37 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:53156 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbbAEODf (ORCPT
+	id S1753848AbbAEOF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:05:59 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:61356 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795AbbAEOF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:03:35 -0500
-Date: Mon, 5 Jan 2015 14:03:32 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Dave Young <dyoung@redhat.com>, linux-efi <linux-efi@vger.kernel.org>,
-        Laszlo Ersek <lersek@redhat.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Shorten efi regions output
-Message-ID: <20150105140332.GB3163@console-pimps.org>
-References: <20141209095843.GA3990@pd.tnic>
- <20141210021741.GA3280@darkstar.nay.redhat.com>
- <20141210104627.GA17053@pd.tnic>
+	Mon, 5 Jan 2015 09:05:56 -0500
+Message-ID: <54AA9A35.2000806@hurleysoftware.com>
+Date: Mon, 05 Jan 2015 09:05:41 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141210104627.GA17053@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh@kernel.org" <robh@kernel.org>, "jslaby@suse.cz" <jslaby@suse.cz>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic BASE_BAUD
+References: <1420457437-17636-1-git-send-email-vgupta@synopsys.com> <1420457437-17636-3-git-send-email-vgupta@synopsys.com> <54AA8AFC.9020706@hurleysoftware.com> <C2D7FE5348E1B147BCA15975FBA2307565BC9CCD@IN01WEMBXA.internal.synopsys.com> <54AA92C7.8070209@hurleysoftware.com> <C2D7FE5348E1B147BCA15975FBA2307565BC9D66@IN01WEMBXA.internal.synopsys.com>
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307565BC9D66@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec, at 11:46:28AM, Borislav Petkov wrote:
-> On Wed, Dec 10, 2014 at 10:17:41AM +0800, Dave Young wrote:
-> > I have same feeling with you, it is too long for most of people.
-> >
-> > Since the printk code are for EFI_DEBUG, they are around the #ifdef
-> > so I would like to see a kernel param like efi_debug=on, so only
-> > efi_debug is specified then these verbose messages are printed.
-> > Without the param kernel can print some basic infomation about the
-> > memory ranges.
-> >
-> > In arm64 code there's already a uefi_debug param it can be moved to
-> > general code so that there will be a goable switch.
+On 01/05/2015 08:52 AM, Vineet Gupta wrote:
+> On Monday 05 January 2015 07:04 PM, Peter Hurley wrote:
+>>> Also what do u think of the early IER optimization ?
+>> Seems ok except the commit changelog is wrong: IER is disabled twice per _line_.
+>> How did you profile it? It's ok if the answer is "seemed faster"; I'm just
+>> curious.
 > 
-> Hmm, makes sense to me. Maybe we should really hide those behind a
-> debug switch, the question is whether asking the user to boot with
-> "efi_debug=on" in order to see the regions is ok. And I think it is ok
-> because we do that when debugging other stuff so I don't see anything
-> different here.
-> 
-> And then when they're disabled by default, we don't really need to
-> shorten them as they're pure debug output then.
-> 
-> Matt?
+> Looking at the code yes this would be per line - but I vaguely remember seeing it
+> for every char - this was when debugging a systemC model for 8250. Its been a while...
+> I'd added prints in the model whenever IER would wiggle and it was just being
+> written with 0's again and again when in the early polling based printing mode.
 
-I'm fine with disabling the EFI memory output regions by default.
+Maybe that was while running kgdb through serial8250_put_poll_char(), which is
+per-char.
 
-Printing the regions is still useful for debugging, but like you
-mention, we frequently ask users to enable other debug options when
-tracking down issues.
+Regards,
+Peter Hurley
 
-Laszlo, would you be OK with that?
-
--- 
-Matt Fleming, Intel Open Source Technology Center
