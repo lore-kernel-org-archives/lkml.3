@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464AbbAEJM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:12:27 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:39513 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228AbbAEJBo (ORCPT
+	id S1753810AbbAEJJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:09:05 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:31848 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345AbbAEJBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:01:44 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-4f-54aa52f590e9
+	Mon, 5 Jan 2015 04:01:45 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-4a-54aa52f60434
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 04/14] mfd: davinci_voicecodec: Constify struct regmap_config
-Date: Mon, 05 Jan 2015 10:01:23 +0100
-Message-id: <1420448493-9355-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 05/14] mfd: lm3533: Constify struct regmap_config
+Date: Mon, 05 Jan 2015 10:01:24 +0100
+Message-id: <1420448493-9355-5-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xa7pfg1aFGMxdwGTx+oWhxf2vRxkt
-	Lu+aw2ZxupvVgcXjzrU9bB7zTgZ69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8byFSdYC66y
-	Vqw89ZS1gfERSxcjJ4eEgInE9wO/GSFsMYkL99azdTFycQgJLGWU+LTwGFhCSKCPSeLQU1MQ
-	m03AWGLz8iVsILaIQJbEj2mrwQYxCxhK/Hz3hx3EFhbwlehfuw4sziKgKrHt539mEJtXwE3i
-	4crtbBDL5CROHpvM2sXIwcEp4C5x+3EkiCkEVPLvbcIERt4FjAyrGEVTS5MLipPScw31ihNz
-	i0vz0vWS83M3MUJC5MsOxsXHrA4xCnAwKvHwepxYGSLEmlhWXJl7iFGCg1lJhHfdLaAQb0pi
-	ZVVqUX58UWlOavEhRiYOTqkGxvSZ5h/0zs3sKumX1UsyPsBr2eH0ddUz6byiq0wbXQP2OPzT
-	Pfrq8JyzZrmbalt5LVNM5ixediT5p7yCwmI3t8S433kM+9+bfD755pnSDW67S2fnKSR1b2wX
-	n1al+t25yrokdtLBwjXn6x0jFPe/bl4+Q5M97WNg9R8rw6/ro59/5mq+oMnersRSnJFoqMVc
-	VJwIADWarYvvAQAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xa7rfglaFGNx5qmnx+oWhxf2vRxkt
+	Lu+aw2ZxupvVgcXjzrU9bB7zTgZ69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8aNtctZC96y
+	Vuw7f4S1gfE9SxcjB4eEgInEw1spXYycQKaYxIV769m6GLk4hASWMkpsbHvHCuH0MUnsazjJ
+	AlLFJmAssXn5EjYQW0QgS+LHtNVgcWYBQ4mf7/6wg9jCAo4Sa4/3gtWwCKhKvLy6ggnE5hVw
+	k9ixdzkbxDY5iZPHJrOCHMEp4C5x+3EkiCkEVPLvbcIERt4FjAyrGEVTS5MLipPSc430ihNz
+	i0vz0vWS83M3MUJC5OsOxqXHrA4xCnAwKvHwepxYGSLEmlhWXJl7iFGCg1lJhHfdLaAQb0pi
+	ZVVqUX58UWlOavEhRiYOTqkGRuuQTVs6+6+k9mVEXLAVcLbVv1vkMk1Yu1K9MVnBSTKqoNkj
+	s2HZ+do3QYH8Zjw+dzhdOhnEeO6YrbJ3DTdv9Lts2G3CbBrGzZjOwuRtv69eeHsqq6dO+LtL
+	ButzdGqFP1w5+2ibxWPvzybWXKZ8/JoC6Qyi99T4lksIvQqfJCQxQVvMQYmlOCPRUIu5qDgR
+	AO9gSLPvAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,22 +37,22 @@ driver and regmap_init() accepts pointer to const.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/mfd/davinci_voicecodec.c | 2 +-
+ drivers/mfd/lm3533-core.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
-index c835e85539b2..9bbc642a7b9d 100644
---- a/drivers/mfd/davinci_voicecodec.c
-+++ b/drivers/mfd/davinci_voicecodec.c
-@@ -33,7 +33,7 @@
+diff --git a/drivers/mfd/lm3533-core.c b/drivers/mfd/lm3533-core.c
+index 8c29f7b27324..d42fbb667d8c 100644
+--- a/drivers/mfd/lm3533-core.c
++++ b/drivers/mfd/lm3533-core.c
+@@ -583,7 +583,7 @@ static bool lm3533_precious_register(struct device *dev, unsigned int reg)
+ 	}
+ }
  
- #include <linux/mfd/davinci_voicecodec.h>
- 
--static struct regmap_config davinci_vc_regmap = {
-+static const struct regmap_config davinci_vc_regmap = {
- 	.reg_bits = 32,
- 	.val_bits = 32,
- };
+-static struct regmap_config regmap_config = {
++static const struct regmap_config regmap_config = {
+ 	.reg_bits	= 8,
+ 	.val_bits	= 8,
+ 	.max_register	= LM3533_REG_MAX,
 -- 
 1.9.1
 
