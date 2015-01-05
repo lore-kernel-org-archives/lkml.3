@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbbAEIzb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:55:31 -0500
-Received: from mga14.intel.com ([192.55.52.115]:23946 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541AbbAEIz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:55:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="436522422"
-Message-ID: <54AA51F0.20706@intel.com>
-Date: Mon, 05 Jan 2015 10:57:20 +0200
-From: Daniel Baluta <daniel.baluta@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>
-CC: lars@metafoo.de, pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srinivas.pandruvada@linux.intel.com
-Subject: Re: [PATCH 03/10] iio: imu: kmx61: Enhance error handling
-References: <1419340953-23161-1-git-send-email-daniel.baluta@intel.com> <1419340953-23161-4-git-send-email-daniel.baluta@intel.com> <54A54FE2.1020407@gmx.de> <54A919D5.2000408@kernel.org>
-In-Reply-To: <54A919D5.2000408@kernel.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753446AbbAEI5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:57:41 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:39255 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377AbbAEI5j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 03:57:39 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-94-54aa51ff2303
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] extcon: max77693: Constify struct regmap_config
+Date: Mon, 05 Jan 2015 09:57:27 +0100
+Message-id: <1420448247-8097-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPJMWRmVeSWpSXmKPExsVy+t/xy7r/A1eFGFy+bG1x/ctzVovXLwwt
+	Lu+aw2Zxu3EFmwOLR9+WVYwenzfJBTBFcdmkpOZklqUW6dslcGXM6TrDXjCTrWLtssmMDYzz
+	WbsYOTkkBEwkbl/eBmWLSVy4t56ti5GLQ0hgKaPEgvNLWCGcPiaJ5y9BMpwcbALGEpuXLwGz
+	RQQKJZ5suApmMwsYSvx894cdxBYWcJBYOu0hM4jNIqAqcfDlbBYQm1fATWJl6zF2iG1yEieP
+	TWadwMi9gJFhFaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkaIp7/uYFx6zOoQowAHoxIPr8eJ
+	lSFCrIllxZW5hxglOJiVRHjX3QIK8aYkVlalFuXHF5XmpBYfYmTi4JRqYLRJnd50qCfWudjJ
+	ouqq1zGPM7YhCQVT79Rrfo0penbWSeGrxm3FstrQzfu53tl0zj8V4qr7b+u8g8Fu3f9l9k6v
+	SW+99Pcue3KdRL/sjjyez1d115h9vGxwd9aJzOA3P+9WXL3KwGGudMTY0tb1+DV19+xC3wsT
+	eQ4+fDFvc9HevINWrfv7lZVYijMSDbWYi4oTAY47cSHSAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The regmap_config struct may be const because it is not modified by the
+driver and regmap_init() accepts pointer to const.
 
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/extcon/extcon-max77693.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On 01/04/2015 12:45 PM, Jonathan Cameron wrote:
-> On 01/01/15 13:47, Hartmut Knaack wrote:
->> Daniel Baluta schrieb am 23.12.2014 um 14:22:
->>> This fixes parts of kmx61 error handling to make code easier to read and to be
->>> more consistent with IIO coding conventions:
->>> 	* prefer as single point for error handling instead of duplicating code
->>> 	for each function
->>> 	* directly return a value from a case branch instead of breaking
->>> 	* fix error message for writing REG_CTRL1
->>>
->>> Also, add separate error paths for kmx61_trigger_setup/iio_triggered_buffer_setup
->>> calls.
->> Some issues remain in this one, please see inline. Otherwise looking good.
->>
-> Fixed up and applied.
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 740a14d35072..af165fd0c6f5 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1033,7 +1033,7 @@ static irqreturn_t max77693_muic_irq_handler(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static struct regmap_config max77693_muic_regmap_config = {
++static const struct regmap_config max77693_muic_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
+ };
+-- 
+1.9.1
 
-Thanks for doing this Jonathan.
-
-Daniel.
