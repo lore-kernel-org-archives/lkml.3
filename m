@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbbAEJbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:31:12 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:40927 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbbAEJbK (ORCPT
+	id S1753525AbbAEJb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:31:56 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:57606 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbbAEJby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:31:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <1420304531-15176-1-git-send-email-fabf@skynet.be>
-References: <1420304531-15176-1-git-send-email-fabf@skynet.be>
-Date: Mon, 5 Jan 2015 12:31:09 +0300
-Message-ID: <CALFYKtDRfxBF-3KaAPMK4S35xeARNZQkLq2ckUfSob+YHQ5x3Q@mail.gmail.com>
-Subject: Re: [PATCH 1/1 linux-next] ceph: use %zu for size_t display
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>,
-        Ceph Development <ceph-devel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 Jan 2015 04:31:54 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-97-54aa5a07fc2c
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com, paulz@synopsys.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 0/2] usb: dwc2: fix the uncompleted requests problem
+Date: Mon, 05 Jan 2015 10:31:33 +0100
+Message-id: <1420450295-25818-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t9jAV2OqFUhBptvslkcvF9v0bx4PZvF
+	5V1z2CwWLWtlttg+ZTqTxYPDO9kd2Dz2z13D7tG3ZRWjx5b9nxk9jt/YzuTxeZNcAGsUl01K
+	ak5mWWqRvl0CV8a+U6fZC7awVDy+d5+tgfEUcxcjJ4eEgInEifULGSFsMYkL99azdTFycQgJ
+	LGKUeLxsMiuE084k8ebdBTaQKjYBHYkt3yeAdYgIqEhcfD6dBaSIWaCRUeLH7xmsIAlhAReJ
+	xxeega1gEVCV2HTlOBOIzSvgKnF/wV6o1XISJ49NZp3AyL2AkWEVo2hqQXJBcVJ6rpFecWJu
+	cWleul5yfu4mRnBwPJPewbiqweIQowAHoxIPr8eJlSFCrIllxZW5hxglOJiVRHjX3QIK8aYk
+	VlalFuXHF5XmpBYfYpTmYFES51WybwsREkhPLEnNTk0tSC2CyTJxcEo1MPbm/i8olX7q90bd
+	XzFIdcfViXsSgoV2M52Ja+RgbNmhOkche5G7/EtTbz6xfQ2n+K5dTVyg5JFxpFTo5MwCkevL
+	vvo9vCFY9/liannuyTvVfN/r9l3kmua8/POpTe9d/Nes//mTXYZjXVDAYWO5y7yhR+Ve2K6d
+	Li7HW3bgSU9S5NQD3YpeR5RYijMSDbWYi4oTAXvIrU0KAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 3, 2015 at 8:02 PM, Fabian Frederick <fabf@skynet.be> wrote:
-> Fixes the following 32-bit compilation warning:
-> fs/ceph/addr.c:1419:2: warning: format '%lu' expects argument of type
-> 'long unsigned int', but argument 5 has type 'size_t' [-Wformat=]
->
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/ceph/addr.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-> index f5013d9..c81c0e0 100644
-> --- a/fs/ceph/addr.c
-> +++ b/fs/ceph/addr.c
-> @@ -1416,7 +1416,7 @@ void ceph_fill_inline_data(struct inode *inode, struct page *locked_page,
->                 }
->         }
->
-> -       dout("fill_inline_data %p %llx.%llx len %lu locked_page %p\n",
-> +       dout("fill_inline_data %p %llx.%llx len %zu locked_page %p\n",
->              inode, ceph_vinop(inode), len, locked_page);
->
->         if (len > 0) {
+Hi Felipe,
 
-This was fixed a while ago but hasn't been pushed to linux-next.  I'll
-try to make a point of pushing such fixes immediately in the future.
+I prepared this patchset in response to our discussion:
+https://lkml.org/lkml/2014/12/29/193
 
-Thanks,
+It reverts of unproper patch and adds working solution of the problem
+described in commit messages.
 
-                Ilya
+Best regards,
+Robert Baldyga
+
+Robert Baldyga (2):
+  Revert "usb: dwc2: gadget: kill requests with 'force' in
+    s3c_hsotg_udc_stop()"
+  drivers: usb: dwc2: remove 'force' parameter from kill_all_requests()
+
+ drivers/usb/dwc2/gadget.c | 31 ++++++++++---------------------
+ 1 file changed, 10 insertions(+), 21 deletions(-)
+
+-- 
+1.9.1
+
