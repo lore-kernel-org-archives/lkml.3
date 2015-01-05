@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710AbbAEJGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:06:07 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:31652 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675AbbAEJF7 (ORCPT
+	id S1753693AbbAEJGE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:06:04 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:32608 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408AbbAEJGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:05:59 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-ee-54aa53f5de5c
+	Mon, 5 Jan 2015 04:06:00 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-ef-54aa53f6b0d1
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/3] regulator: max8649: Constify struct regmap_config and
+Subject: [PATCH 3/3] regulator: tps65023: Constify struct regmap_config and
  regulator_ops
-Date: Mon, 05 Jan 2015 10:05:47 +0100
-Message-id: <1420448748-9810-1-git-send-email-k.kozlowski@samsung.com>
+Date: Mon, 05 Jan 2015 10:05:48 +0100
+Message-id: <1420448748-9810-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1420448659-9636-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1420448748-9810-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420448659-9636-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAJMWRmVeSWpSXmKPExsVy+t/xK7pfg1eFGGyYYmYx9eETNovXLwwt
-	vl3pYLK4vGsOmwOLx85Zd9k9Nq3qZPPo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujM0XvjMX
-	zOOsmNu2jL2B8Sl7FyMHh4SAicTfq55djJxAppjEhXvr2boYuTiEBJYyStxa18YK4fQxSexd
-	sJoVpIpNwFhi8/IlbCC2iECGxOZ5U8HizAKGEj/f/WEHsYUFoiQ2z9zABGKzCKhK3D+3ixnE
-	5hVwk7h4fQYTxDY5iZPHJoP1cgq4S/zcewwsLgRUc+fKBeYJjLwLGBlWMYqmliYXFCel5xrq
-	FSfmFpfmpesl5+duYoSEypcdjIuPWR1iFOBgVOLh9TixMkSINbGsuDL3EKMEB7OSCO+6W0Ah
-	3pTEyqrUovz4otKc1OJDjEwcnFINjHYnxPOu9C0P/ucrLWLSwr92guPDj+mz1fvTHxgfeqmi
-	9Llwncfp7eue9syY8Gp74GZ5Tq6/enu3BnXY1cq3m9qyLzx7fJX3gUWNCtnNhc5/Vb9teZhm
-	JLDrAPfquRsvFyQfPSYQPveF85MCHtF1ioKCM/fwfEmyOZyyhH25rWfh88UH2Z9VpiuxFGck
-	GmoxFxUnAgDcPqWN8wEAAA==
+ <1420448748-9810-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t/xK7rfgleFGBycy2Ux9eETNovXLwwt
+	vl3pYLK4vGsOmwOLx85Zd9k9Nq3qZPPo27KK0ePzJrkAligum5TUnMyy1CJ9uwSujMm7JzMW
+	bOSp+DDjG1MD4x6uLkZODgkBE4me9U1MELaYxIV769m6GLk4hASWMkqsWbWQDSQhJNDHJLHq
+	vyeIzSZgLLF5+RKwuIhAhsTmeVNZQWxmAUOJn+/+sIPYwgLREpMnrQcbyiKgKrGt5RqYzSvg
+	JrHi+ikWiGVyEiePTQbr5RRwl1jV8YcZYnEzo8TNhQ+YJzDyLmBkWMUomlqaXFCclJ5rqFec
+	mFtcmpeul5yfu4kREixfdjAuPmZ1iFGAg1GJh9fjxMoQIdbEsuLK3EOMEhzMSiK8624BhXhT
+	EiurUovy44tKc1KLDzEycXBKNTCyaP2+URwXfqHjjWLKrgv9mskPbs70284c8GxNkvScT10a
+	CwsDF8l84besmSh5KI195Wm/1NMrRBbbvO7QVrub+u7gwTTub2eND23t0PrQ+a2A3fT0qcnG
+	Qfo2a1KO7rg669mZaVOudvAX8MqnHg/f6qL3jt9F/sy6F/+cN0rxbbWqvHBP2uK2EktxRqKh
+	FnNRcSIAtfkxd/QBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regmap_config struct may be const because it is not modified by the
-driver and regmap_init() accepts pointer to const. Make struct
+The regmap_config struct may be const because it is not modified by
+the driver and regmap_init() accepts pointer to const. Make struct
 regulator_ops const as well.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/regulator/max8649.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/regulator/tps65023-regulator.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
-index c8bddcc8f911..81229579ece9 100644
---- a/drivers/regulator/max8649.c
-+++ b/drivers/regulator/max8649.c
-@@ -115,7 +115,7 @@ static unsigned int max8649_get_mode(struct regulator_dev *rdev)
- 	return REGULATOR_MODE_NORMAL;
+diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
+index 7380af8bd50d..b941e564b3f3 100644
+--- a/drivers/regulator/tps65023-regulator.c
++++ b/drivers/regulator/tps65023-regulator.c
+@@ -173,7 +173,7 @@ static int tps65023_dcdc_set_voltage_sel(struct regulator_dev *dev,
  }
  
--static struct regulator_ops max8649_dcdc_ops = {
-+static const struct regulator_ops max8649_dcdc_ops = {
- 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.list_voltage	= regulator_list_voltage_linear,
-@@ -143,7 +143,7 @@ static struct regulator_desc dcdc_desc = {
- 	.enable_is_inverted = true,
+ /* Operations permitted on VDCDCx */
+-static struct regulator_ops tps65023_dcdc_ops = {
++static const struct regulator_ops tps65023_dcdc_ops = {
+ 	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -184,7 +184,7 @@ static struct regulator_ops tps65023_dcdc_ops = {
  };
  
--static struct regmap_config max8649_regmap_config = {
-+static const struct regmap_config max8649_regmap_config = {
+ /* Operations permitted on LDOx */
+-static struct regulator_ops tps65023_ldo_ops = {
++static const struct regulator_ops tps65023_ldo_ops = {
+ 	.is_enabled = regulator_is_enabled_regmap,
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+@@ -194,7 +194,7 @@ static struct regulator_ops tps65023_ldo_ops = {
+ 	.map_voltage = regulator_map_voltage_ascend,
+ };
+ 
+-static struct regmap_config tps65023_regmap_config = {
++static const struct regmap_config tps65023_regmap_config = {
  	.reg_bits = 8,
  	.val_bits = 8,
  };
