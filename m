@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706AbbAERdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:33:08 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:40120 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089AbbAERdH (ORCPT
+	id S1753519AbbAERif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:38:35 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:54437 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751222AbbAERid (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:33:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150105171141.GA19011@tucsk>
-References: <CAB9dFdty+3JXgJqhMNNHuDXivx9_paK2=zd7Vb_D4-suU6OGBg@mail.gmail.com>
-	<20150105171141.GA19011@tucsk>
-Date: Mon, 5 Jan 2015 13:33:05 -0400
-Message-ID: <CAB9dFdsohFORUpBTXuE-QkvmrdebwWm9+9Z8mwVAjDYUmWkqZw@mail.gmail.com>
-Subject: Re: [GIT PULL] fuse update for 3.19
-From: Marc Dionne <marc.c.dionne@gmail.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 Jan 2015 12:38:33 -0500
+Message-ID: <1420479510.14308.23.camel@x220>
+Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 05 Jan 2015 18:38:30 +0100
+In-Reply-To: <54AA641C.7050307@broadcom.com>
+References: <1420297188.2397.3.camel@tiscali.nl>
+	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>
+	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
+	 <1420324124.9624.60.camel@x220> <54AA641C.7050307@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Jan 2015 17:38:30.0449 (UTC) FILETIME=[6B8DF210:01D0290E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 1:11 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Wed, Dec 24, 2014 at 12:53:13PM -0400, Marc Dionne wrote:
->
->> Commit 7078187a795f ("fuse: introduce fuse_simple_request() helper")
->> from the above pull request triggers some EIO errors for me in some
->> tests that rely on fuse.
->>
->> Looking at the code changes and a bit of debugging info I think
->> there's a general problem here that fuse_get_req checks and possibly
->> waits for fc->initialized, and this was always called first.  But this
->> commit changes the ordering and in many places fc->minor is now
->> possibly used before fuse_get_req, and we can't be sure that fc has
->> been initialized.  In my case fuse_lookup_init sets
->> req->out.args[0].size to the wrong size because fc->minor at that
->> point is still 0, leading to the EIO error.
->>
->> Assuming the analysis makes sense, it wasn't obvious what the best fix
->> should be.
->
-> Here's a patch to fix this.  Could you please give it a try?
->
-> Thanks,
-> Miklos
+On Mon, 2015-01-05 at 11:14 +0100, Arend van Spriel wrote:
+> On 01/03/15 23:28, Paul Bolle wrote:
+> > Side note: am I correct in thinking that there's some successor to
+> > CFG80211_WEXT and that the ipw2200 driver could, at least in theory, be
+> > ported to that successor? (ipw2200 hardware appears to be a bit old, so
+> > probably no one would care enough to actually do that.)
+> > net/wireless/kconfig doesn't mention anything like that, so probably I'm
+> > just confused.
+> 
+> ipw2200 is a WEXT driver using some wext functionality (and struct 
+> wiphy) provided by cfg80211 hence it needs CFG80211_WEXT. I guess that 
+> is what makes it confusing.
 
-Works fine with my test case that fails on current master.
+It doesn't help that I hardly know anything about mac80211, cfg80211 and
+nl80211 (and lib80211 for that matter). To me these are mostly just
+names that end in 80211.
+
+Anyhow, concerning, CFG80211_WEXT: it seems the only functionality
+provided by that symbol that ipw2200 uses directly is
+cfg80211_wext_giwname(). Perhaps ipw2200 could have a private version of
+that function, something like ipw2100's ipw2100_wx_get_name(). Should be
+trivial to implement (ie, it could take _me_ a day or two).
+
+But perhaps ipw2200 uses CFG80211_WEXT _indirectly_ too. Ie, in
+net/wireless/core.c I stumbled on
+    #ifdef CONFIG_CFG80211_WEXT
+            rdev->wiphy.wext = &cfg80211_wext_handler;
+    #endif
+
+
+But I net/wireless/wext-core.c I then found
+    #ifdef CONFIG_CFG80211_WEXT
+            if (dev->ieee80211_ptr && dev->ieee80211_ptr->wiphy)
+                    handlers = dev->ieee80211_ptr->wiphy->wext;
+    #endif
+    #ifdef CONFIG_WIRELESS_EXT
+            if (dev->wireless_handlers)
+                    handlers = dev->wireless_handlers;
+    #endif
+
+(There's much more to discover about WEXT, of course.) Anyhow, IPW2200
+uses both CFG80211_WEXT and WIRELESS_EXT and cfg80211_wext_handler and
+ipw2200's wireless_handlers appear to cover the same set of IOCTLS (one
+exception: SIOCSIWPMKSA). So by now I'm really puzzled how this all fits
+together.
 
 Thanks,
-Marc
+
+
+Paul Bolle
+
