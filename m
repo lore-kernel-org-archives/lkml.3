@@ -1,48 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014AbbAEQAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:00:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129AbbAEQAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:00:09 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1419863941-16403-1-git-send-email-sasha.levin@oracle.com>
-References: <1419863941-16403-1-git-send-email-sasha.levin@oracle.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        keyrings@linux-nfs.org (open list:KEYS/KEYRINGS:),
-        linux-security-module@vger.kernel.org (open list:SECURITY SUBSYSTEM)
-Subject: Re: [PATCH] KEYS: close race between key lookup and freeing
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <30931.1420473588.1@warthog.procyon.org.uk>
-Date: Mon, 05 Jan 2015 15:59:48 +0000
-Message-ID: <30932.1420473588@warthog.procyon.org.uk>
+	id S1754150AbbAEQBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:01:44 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:57892 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152AbbAEQBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 11:01:42 -0500
+From: Naohiro Aota <naota@elisp.net>
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Naohiro Aota <naota@elisp.net>
+Subject: [PATCH] btrfs: clear bio reference after submit_one_bio()
+Date: Tue,  6 Jan 2015 01:01:03 +0900
+Message-Id: <1420473663-9315-1-git-send-email-naota@elisp.net>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> wrote:
+After submit_one_bio(), `bio' can go away. However submit_extent_page()
+leave `bio' referable if submit_one_bio() failed (e.g. -ENOMEM on OOM).
+It will cause invalid paging request when submit_extent_page() is called
+next time.
 
-> When a key is being garbage collected, it's key->user would get put before
-> the ->destroy() callback is called, where the key is removed from it's
-> respective tracking structures.
-> 
-> This leaves a key hanging in a semi-invalid state which leaves a window open
-> for a different task to try an access key->user. An example is
-> find_keyring_by_name() which would dereference key->user for a key that is
-> in the process of being garbage collected (where key->user was freed but
-> ->destroy() wasn't called yet - so it's still present in the linked list).
-> 
-> This would cause either a panic, or corrupt memory.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+I reproduced ENOMEM case with the following script (need
+CONFIG_FAIL_PAGE_ALLOC, and CONFIG_FAULT_INJECTION_DEBUG_FS).
 
-Applied.
+  #!/bin/bash
+
+  dmesgout=dmesg.txt
+  start=100000
+  end=300000
+  step=1000
+
+  # btrfs options
+  device=/dev/vdb1
+  directory=/mnt/btrfs
+
+  # fault-injection options
+  percent=100
+  times=3
+
+  mkdir -p $directory || exit 1
+  mount -o compress $device $directory || exit 1
+
+  rm -f $directory/file || exit 1
+  dd if=/dev/zero of=$directory/file bs=1M count=512 || exit 1
+
+  for interval in `seq $start $step $end`; do
+          dmesg -C
+          echo 1 > /proc/sys/vm/drop_caches
+          sync
+          export FAILCMD_TYPE=fail_page_alloc
+          ./failcmd.sh -p $percent -t $times -i $interval \
+                  --ignore-gfp-highmem=N --ignore-gfp-wait=N --min-order=0 \
+                  -- \
+                  cat $directory/file > /dev/null
+          dmesg > ${dmesgout}
+          if grep -q BUG: ${dmesgout}; then
+                  cat ${dmesgout}
+                  exit 1
+          fi
+  done
+
+  umount $directory
+  exit 0
+
+Signed-off-by: Naohiro Aota <naota@elisp.net>
+---
+ fs/btrfs/extent_io.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index 4ebabd2..4421161 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2816,8 +2816,10 @@ static int submit_extent_page(int rw, struct extent_io_tree *tree,
+ 		    bio_add_page(bio, page, page_size, offset) < page_size) {
+ 			ret = submit_one_bio(rw, bio, mirror_num,
+ 					     prev_bio_flags);
+-			if (ret < 0)
++			if (ret < 0) {
++				*bio_ret = NULL;
+ 				return ret;
++			}
+ 			bio = NULL;
+ 		} else {
+ 			return 0;
+-- 
+2.2.1
+
