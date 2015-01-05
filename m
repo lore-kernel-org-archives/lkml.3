@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbbAELF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:05:57 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55184 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbbAELF4 (ORCPT
+	id S1753409AbbAELGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:06:47 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:29119 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbbAELGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:05:56 -0500
-Date: Mon, 5 Jan 2015 11:05:33 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
-Message-ID: <20150105110533.GA14967@e104818-lin.cambridge.arm.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org>
- <20141224171815.GD13399@e104818-lin.cambridge.arm.com>
- <54A90A4C.60908@linaro.org>
+	Mon, 5 Jan 2015 06:06:45 -0500
+X-IronPort-AV: E=Sophos;i="5.07,698,1413270000"; 
+   d="scan'208";a="54003987"
+Message-ID: <54AA7042.50207@broadcom.com>
+Date: Mon, 5 Jan 2015 12:06:42 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54A90A4C.60908@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Kalle Valo <kvalo@codeaurora.org>
+CC: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Brett Rudley <brudley@broadcom.com>,
+        "Hante Meuleman" <meuleman@broadcom.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
+References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>	<54A8DBF4.4050202@lwfinger.net>	<CAKXHbyN6LH_pFw1uoLXRzgJv-NcjbTLJvMZXfwYXDwuk9QDszA@mail.gmail.com> <871tn933jc.fsf@kamboji.qca.qualcomm.com>
+In-Reply-To: <871tn933jc.fsf@kamboji.qca.qualcomm.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 09:39:24AM +0000, Hanjun Guo wrote:
-> On 2014年12月25日 01:18, Catalin Marinas wrote:
-> [...]
-> >
-> > In addition to the above and _DSD requirements/banning, I would also add
-> > some clear statements around:
-> >
-> > _OSC: only global/published capabilities are allowed. For
-> > device-specific _OSC we need a process or maybe we can ban them entirely
-> > and rely on _DSD once we clarify the process.
-> >
-> > _OSI: firmware must not check for certain _OSI strings. Here I'm not
-> > sure what we would have to do for ARM Linux. Reporting "Windows" does
-> > not make any sense but not reporting anything can, as Matthew Garrett
-> > pointed out, can be interpreted by firmware as "Linux". In addition to
-> > any statements in this document, I suggest you patch
-> > drivers/acpi/acpica/utosi.c accordingly, maybe report "Linux" for ARM
-> > and print a kernel warning so that we notice earlier.
-> >
-> > ACPI_OS_NAME: this is globally defined as "Microsoft Windows NT". It
-> > doesn't make much sense in the ARM context. Could we change it to
-> > "Linux" when CONFIG_ARM64?
-> 
-> We will work on this both on ASWG and linux ACPI driver side, as Dong
-> and Charles pointed out, _OSI things can be solved in ACPI spec, when
-> that is done, we can modify the kernel driver to fix the problems above.
+On 01/05/15 11:49, Kalle Valo wrote:
+> Rickard Strandqvist<rickard_strandqvist@spectrumdigital.se>  writes:
+>
+>> As I hope you can see I have made some changes regarding the
+>> subject-line. Thought it was an advantage to be able to see which file
+>> I actually removed something from. There seems to be a big focus on
+>> getting right on subject-line right in recent weeks.
+>>
+>> I wonder why there is a script that takes a file name, and respond
+>> with an appropriate subject line?
 
-Which driver?
+Is there a script for this? Anyway, I would say driver name is enough. 
+Enough about the subject line ;-) I would like to give some general 
+remarks as you seem to touch a lot of kernel code. First off, I think it 
+is good to remove unused stuff. However, I would like some more 
+explanation on your methodology apart from "partially found by using a 
+static code analysis program". So a cover-letter explaining that would 
+have been nice (maybe still is). Things like Kconfig option can affect 
+whether function are used or not so how did you cover that.
 
-What about ACPI_OS_NAME? Would you suggest it is fine to report
-"Microsoft Windows NT" on an ARM system? That _OS_ not _OSI.
+Regards,
+Arend
 
--- 
-Catalin
+> I don't think you can really automate this as some drivers do this a bit
+> differently. You always need to manually check the commit log.
+>
+>> But ok, I change my script accordingly. Should I submit the patch again?
+>
+> Yes, please resubmit.
+>
+
