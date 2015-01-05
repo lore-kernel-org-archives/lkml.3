@@ -1,101 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709AbbAEWzq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:55:46 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45066 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753031AbbAEWzo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:55:44 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18kjyJ8E3TEHCvqofjMZBPF
-Date: Mon, 5 Jan 2015 14:51:35 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Dave Gerlach <d-gerlach@ti.com>
-Cc: balbi@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, Benoit Cousson <bcousson@baylibre.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Suman Anna <s-anna@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH 2/3] soc: ti: Add wkup_m3_ipc driver
-Message-ID: <20150105225134.GN4081@atomide.com>
-References: <1420228817-41310-1-git-send-email-d-gerlach@ti.com>
- <1420228817-41310-3-git-send-email-d-gerlach@ti.com>
- <20150102201643.GE4920@saruman>
- <54AB14E4.2010607@ti.com>
+	id S932154AbbAEWwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:52:54 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753079AbbAEWww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 17:52:52 -0500
+Message-ID: <54AB15BD.8020007@nod.at>
+Date: Mon, 05 Jan 2015 23:52:45 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AB14E4.2010607@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Aditya Kali <adityakali@google.com>
+CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+References: <1417744550-6461-1-git-send-email-adityakali@google.com> <1417744550-6461-9-git-send-email-adityakali@google.com> <548E17CE.8010704@nod.at> <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>
+In-Reply-To: <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dave Gerlach <d-gerlach@ti.com> [150105 14:51]:
-> Felipe,
-> On 01/02/2015 02:16 PM, Felipe Balbi wrote:
-> > On Fri, Jan 02, 2015 at 02:00:16PM -0600, Dave Gerlach wrote:
-> >> Introduce a wkup_m3_ipc driver to handle communication between the MPU
-> >> and Cortex M3 wkup_m3 present on am335x.
-> >>
-> >> This driver is responsible for actually booting the wkup_m3_rproc and
-> >> also handling all IPC which is done using the IPC registers in the control
-> >> module, a mailbox, and a separate interrupt back from the wkup_m3. A small
-> >> API is exposed for executing specific power commands, which include
-> >> configuring for low power mode, request a transition to a low power mode,
-> >> and status info on a previous transition.
-> >>
-> >> Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
-> >> ---
-> >>  drivers/soc/ti/Kconfig       |  11 ++
-> >>  drivers/soc/ti/Makefile      |   1 +
-> >>  drivers/soc/ti/wkup_m3_ipc.c | 451 +++++++++++++++++++++++++++++++++++++++++++
-> >>  include/linux/wkup_m3_ipc.h  |  33 ++++
-> >>  4 files changed, 496 insertions(+)
-> >>  create mode 100644 drivers/soc/ti/wkup_m3_ipc.c
-> >>  create mode 100644 include/linux/wkup_m3_ipc.h
-> >>
-> >> diff --git a/drivers/soc/ti/Kconfig b/drivers/soc/ti/Kconfig
-> >> index 7266b21..61cda85 100644
-> >> --- a/drivers/soc/ti/Kconfig
-> >> +++ b/drivers/soc/ti/Kconfig
-> >> @@ -28,4 +28,15 @@ config KEYSTONE_NAVIGATOR_DMA
-> >>  
-> >>  	  If unsure, say N.
-> >>  
-> >> +config WKUP_M3_IPC
-> >> +	bool "TI AM33XX Wkup-M3 IPC Driver"
-> > 
-> > tristate ?
+Am 05.01.2015 um 23:48 schrieb Aditya Kali:
+> On Sun, Dec 14, 2014 at 3:05 PM, Richard Weinberger <richard@nod.at> wrote:
+>> Aditya,
+>>
+>> I gave your patch set a try but it does not work for me.
+>> Maybe you can bring some light into the issues I'm facing.
+>> Sadly I still had no time to dig into your code.
+>>
+>> Am 05.12.2014 um 02:55 schrieb Aditya Kali:
+>>> Signed-off-by: Aditya Kali <adityakali@google.com>
+>>> ---
+>>>  Documentation/cgroups/namespace.txt | 147 ++++++++++++++++++++++++++++++++++++
+>>>  1 file changed, 147 insertions(+)
+>>>  create mode 100644 Documentation/cgroups/namespace.txt
+>>>
+>>> diff --git a/Documentation/cgroups/namespace.txt b/Documentation/cgroups/namespace.txt
+>>> new file mode 100644
+>>> index 0000000..6480379
+>>> --- /dev/null
+>>> +++ b/Documentation/cgroups/namespace.txt
+>>> @@ -0,0 +1,147 @@
+>>> +                     CGroup Namespaces
+>>> +
+>>> +CGroup Namespace provides a mechanism to virtualize the view of the
+>>> +/proc/<pid>/cgroup file. The CLONE_NEWCGROUP clone-flag can be used with
+>>> +clone() and unshare() syscalls to create a new cgroup namespace.
+>>> +The process running inside the cgroup namespace will have its /proc/<pid>/cgroup
+>>> +output restricted to cgroupns-root. cgroupns-root is the cgroup of the process
+>>> +at the time of creation of the cgroup namespace.
+>>> +
+>>> +Prior to CGroup Namespace, the /proc/<pid>/cgroup file used to show complete
+>>> +path of the cgroup of a process. In a container setup (where a set of cgroups
+>>> +and namespaces are intended to isolate processes), the /proc/<pid>/cgroup file
+>>> +may leak potential system level information to the isolated processes.
+>>> +
+>>> +For Example:
+>>> +  $ cat /proc/self/cgroup
+>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
+>>> +
+>>> +The path '/batchjobs/container_id1' can generally be considered as system-data
+>>> +and its desirable to not expose it to the isolated process.
+>>> +
+>>> +CGroup Namespaces can be used to restrict visibility of this path.
+>>> +For Example:
+>>> +  # Before creating cgroup namespace
+>>> +  $ ls -l /proc/self/ns/cgroup
+>>> +  lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
+>>> +  $ cat /proc/self/cgroup
+>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
+>>> +
+>>> +  # unshare(CLONE_NEWCGROUP) and exec /bin/bash
+>>> +  $ ~/unshare -c
+>>> +  [ns]$ ls -l /proc/self/ns/cgroup
+>>> +  lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup -> cgroup:[4026532183]
+>>> +  # From within new cgroupns, process sees that its in the root cgroup
+>>> +  [ns]$ cat /proc/self/cgroup
+>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
+>>> +
+>>> +  # From global cgroupns:
+>>> +  $ cat /proc/<pid>/cgroup
+>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
+>>> +
+>>> +  # Unshare cgroupns along with userns and mountns
+>>> +  # Following calls unshare(CLONE_NEWCGROUP|CLONE_NEWUSER|CLONE_NEWNS), then
+>>> +  # sets up uid/gid map and execs /bin/bash
+>>> +  $ ~/unshare -c -u -m
+>>
+>> This command does not issue CLONE_NEWUSER, -U does.
+>>
+> I was using a custom unshare binary. But I will update the command
+> line to be similar to the one in util-linux.
 > 
-> If we want to allow this and the rproc driver to be built as modules than we can
-> change this.
-
-Yes please, the PM is never needed early, and should be optional.
-And doing that will make it a lot easier for you to do further work
-on your driver ;)
-
-And it will also make it easier to add support for other SoCs as
-it seems the same M3 is used at least on am437x.
- 
-> > 
-> >> +	depends on WKUP_M3_RPROC
-> >> +	select MAILBOX
-> >> +	select OMAP2PLUS_MBOX
-> > 
-> > selects are usually frowned upon.
+>>> +  # Originally, we were in /batchjobs/container_id1 cgroup. Mount our own cgroup
+>>> +  # hierarchy.
+>>> +  [ns]$ mount -t cgroup cgroup /tmp/cgroup
+>>> +  [ns]$ ls -l /tmp/cgroup
+>>> +  total 0
+>>> +  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.controllers
+>>> +  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.populated
+>>> +  -rw-r--r-- 1 root root 0 2014-10-13 09:25 cgroup.procs
+>>> +  -rw-r--r-- 1 root root 0 2014-10-13 09:32 cgroup.subtree_control
+>>
+>> I've patched libvirt-lxc to issue CLONE_NEWCGROUP and not bind mount cgroupfs into a container.
+>> But I'm unable to mount cgroupfs within the container, mount(2) is failing with EINVAL.
+>> And /proc/self/cgroup still shows the cgroup from outside.
+>>
+>> ---cut---
+>> container:/ # ls /sys/fs/cgroup/
+>> container:/ # mount -t cgroup none /sys/fs/cgroup/
 > 
-> Followed example set by OMAP_REMOTEPROC which selects the mailbox, thought that
-> would be alright.
+> You need to provide "-o __DEVEL_sane_behavior" flag. Inside the
+> container, only unified hierarchy can be mounted. So, for now, that
+> flag is needed. I will fix the documentation too.
+> 
+>> mount: wrong fs type, bad option, bad superblock on none,
+>>        missing codepage or helper program, or other error
+>>
+>>        In some cases useful info is found in syslog - try
+>>        dmesg | tail or so.
+>> container:/ # cat /proc/self/cgroup
+>> 8:memory:/machine/test00.libvirt-lxc
+>> 7:devices:/machine/test00.libvirt-lxc
+>> 6:hugetlb:/
+>> 5:cpuset:/machine/test00.libvirt-lxc
+>> 4:blkio:/machine/test00.libvirt-lxc
+>> 3:cpu,cpuacct:/machine/test00.libvirt-lxc
+>> 2:freezer:/machine/test00.libvirt-lxc
+>> 1:name=systemd:/user.slice/user-0.slice/session-c2.scope
+>> container:/ # ls -la /proc/self/ns
+>> total 0
+>> dr-x--x--x 2 root root 0 Dec 14 23:02 .
+>> dr-xr-xr-x 8 root root 0 Dec 14 23:02 ..
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 cgroup -> cgroup:[4026532240]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 ipc -> ipc:[4026532238]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 mnt -> mnt:[4026532235]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 net -> net:[4026532242]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 pid -> pid:[4026532239]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 user -> user:[4026532234]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 uts -> uts:[4026532236]
+>> container:/ #
+>>
+>> #host side
+>> lxc-os132:~ # ls -la /proc/self/ns
+>> total 0
+>> dr-x--x--x 2 root root 0 Dec 14 23:56 .
+>> dr-xr-xr-x 8 root root 0 Dec 14 23:56 ..
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 cgroup -> cgroup:[4026531835]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 ipc -> ipc:[4026531839]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 mnt -> mnt:[4026531840]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 net -> net:[4026531957]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 pid -> pid:[4026531836]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 user -> user:[4026531837]
+>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 uts -> uts:[4026531838]
+>> ---cut---
+>>
+>> Any ideas?
+>>
+> 
+> Please try with "-o __DEVEL_sane_behavior" flag to the mount command.
 
-The select should be only done if the option selected is a silen
-Kconfig option where it's never selectable by the user. Otherwise
-you will errors sooner or later with make randconfig builds as the
-dependencies change. Using depends on is better for those cases.
+Ohh, this renders the whole patch useless for me as systemd needs the "old/default" behavior of cgroups. :-(
+I really hoped that cgroup namespaces will help me running systemd in a sane way within Linux containers.
 
-Regards,
-
-Tony 
+Thanks,
+//richard
