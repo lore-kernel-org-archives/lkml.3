@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864AbbAENwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:52:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42181 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753656AbbAENwO (ORCPT
+	id S1753921AbbAENwk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:52:40 -0500
+Received: from smtprelay4.synopsys.com ([198.182.47.9]:52251 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874AbbAENwi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:52:14 -0500
-Message-ID: <54AA9706.5020202@canonical.com>
-Date: Mon, 05 Jan 2015 14:52:06 +0100
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 5 Jan 2015 08:52:38 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh@kernel.org" <robh@kernel.org>, "jslaby@suse.cz" <jslaby@suse.cz>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic BASE_BAUD
+Thread-Topic: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic
+ BASE_BAUD
+Thread-Index: AQHQKNsX6WbkZQB8V0WNqr8z00JbjA==
+Date: Mon, 5 Jan 2015 13:52:33 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BC9D66@IN01WEMBXA.internal.synopsys.com>
+References: <1420457437-17636-1-git-send-email-vgupta@synopsys.com>
+ <1420457437-17636-3-git-send-email-vgupta@synopsys.com>
+ <54AA8AFC.9020706@hurleysoftware.com>
+ <C2D7FE5348E1B147BCA15975FBA2307565BC9CCD@IN01WEMBXA.internal.synopsys.com>
+ <54AA92C7.8070209@hurleysoftware.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.223]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-CC: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] unlock rtnl mutex in ic_open_devs while waiting
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a deadlock with alx_link_check, which takes the rtnl_mutex in
-a work item to check the link.
+On Monday 05 January 2015 07:04 PM, Peter Hurley wrote:
+>> Also what do u think of the early IER optimization ?
+> Seems ok except the commit changelog is wrong: IER is disabled twice per _line_.
+> How did you profile it? It's ok if the answer is "seemed faster"; I'm just
+> curious.
 
-I have no idea whether alx should be fixed or ipconfig.c,
-but this saves 120 seconds off my boot time. ;-)
+Looking at the code yes this would be per line - but I vaguely remember seeing it
+for every char - this was when debugging a systemC model for 8250. Its been a while...
+I'd added prints in the model whenever IER would wiggle and it was just being
+written with 0's again and again when in the early polling based printing mode.
 
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
----
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index 7fa18bc7e47f..c8aa15a0cdf4 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -270,7 +270,9 @@ static int __init ic_open_devs(void)
- 			if (ic_is_init_dev(dev) && netif_carrier_ok(dev))
- 				goto have_carrier;
- 
-+		rtnl_unlock();
- 		msleep(1);
-+		rtnl_lock();
- 
- 		if (time_before(jiffies, next_msg))
- 			continue;
+I'll send a revised version with fixed changelog.
 
+Thx,
+-Vineet
