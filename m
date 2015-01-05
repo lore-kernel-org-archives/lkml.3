@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565AbbAEKLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:11:22 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:42370 "EHLO
+	id S1753531AbbAEKLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:11:20 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:60926 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753522AbbAEKLV (ORCPT
+	by vger.kernel.org with ESMTP id S1752827AbbAEKLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:11:21 -0500
+	Mon, 5 Jan 2015 05:11:18 -0500
 From: Patrice CHOTARD <patrice.chotard@st.com>
 To: <linux-kernel@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>
 Cc: linux-arm-kernel@lists.infradead.org
-Subject: [RESEND PATCH 0/2] pinctrl-st: various fixes 
-Date: Mon,  5 Jan 2015 11:04:12 +0100
-Message-Id: <1420452254-30625-1-git-send-email-patrice.chotard@st.com>
+Subject: [RESEND PATCH 1/2] pinctrl: st: avoid multiple mutex lock
+Date: Mon,  5 Jan 2015 11:04:13 +0100
+Message-Id: <1420452254-30625-2-git-send-email-patrice.chotard@st.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420452254-30625-1-git-send-email-patrice.chotard@st.com>
+References: <1420452254-30625-1-git-send-email-patrice.chotard@st.com>
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
  definitions=2015-01-05_01:2015-01-05,2015-01-04,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resend this series, it seems that the one i send in 
-December has been lost despite it was visible on lkml
+From: Francesco VIRLINZI <francesco.virlinzi@st.com>
 
-Two fixes for pinctrl-st pinctrl driver
+Using the sysfs inteface to inspect the pins configuration
+the system can walk around a path which acquires the same
+mutex twice.
 
-Francesco VIRLINZI (1):
-  pinctrl: st: avoid multiple mutex lock
+On STiH407 platform, for example :
+cat /sys/kernel/debug/pinctrl/920f080.pin-controller-front0/pinconf-pins
+hangs the kernel and never returns.
 
-Patrice Chotard (1):
-  pinctrl: st: Add irq_disable hook to st_gpio_irqchip
+With this patch the mutex is temporary freed.
 
- drivers/pinctrl/pinctrl-st.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Signed-off-by: Francesco Virlinzi <francesco.virlinzi@st.com>
+Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+---
+ drivers/pinctrl/pinctrl-st.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/pinctrl/pinctrl-st.c b/drivers/pinctrl/pinctrl-st.c
+index 7c9d513..87570e6 100644
+--- a/drivers/pinctrl/pinctrl-st.c
++++ b/drivers/pinctrl/pinctrl-st.c
+@@ -1012,8 +1012,10 @@ static void st_pinconf_dbg_show(struct pinctrl_dev *pctldev,
+ 				   struct seq_file *s, unsigned pin_id)
+ {
+ 	unsigned long config;
+-	st_pinconf_get(pctldev, pin_id, &config);
+ 
++	mutex_unlock(&pctldev->mutex);
++	st_pinconf_get(pctldev, pin_id, &config);
++	mutex_lock(&pctldev->mutex);
+ 	seq_printf(s, "[OE:%ld,PU:%ld,OD:%ld]\n"
+ 		"\t\t[retime:%ld,invclk:%ld,clknotdat:%ld,"
+ 		"de:%ld,rt-clk:%ld,rt-delay:%ld]",
 -- 
 1.9.1
 
