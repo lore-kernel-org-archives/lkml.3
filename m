@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbbAEShu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:37:50 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:40359 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754347AbbAEShq (ORCPT
+	id S1754084AbbAESlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:41:53 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:36798 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbbAESlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:37:46 -0500
+	Mon, 5 Jan 2015 13:41:52 -0500
+Date: Mon, 5 Jan 2015 10:41:43 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on
+ memory storage
+Message-ID: <20150105184143.GA665@infradead.org>
+References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+ <20141210140347.GA23252@infradead.org>
+ <20141210141211.GD2220@wil.cx>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <54A3FFCA.9030501@suse.cz>
-References: <CA+icZUXPt=GM08PD8LOpCdxCYhNMrr-2MHxPyNRWPXqUjQXFrw@mail.gmail.com>
-	<CA+icZUVfiQ1+k2zD9HXMM40N8rwg6rEmYLdKfHGsGt3xvJu+4w@mail.gmail.com>
-	<1419619556.4705.136.camel@decadent.org.uk>
-	<54A3FFCA.9030501@suse.cz>
-Date: Mon, 5 Jan 2015 19:37:45 +0100
-Message-ID: <CA+icZUWnr7_A4FbYOYyS6CVeK-Cu2AaviHF48Xfq02J72aFP9g@mail.gmail.com>
-Subject: Re: deb-pkg: Cleaning of debian/*tmp files when running 'make (dist)clean'
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Ben Hutchings <ben@decadent.org.uk>, maximilian attems <max@stro.at>,
-        LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141210141211.GD2220@wil.cx>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 2:53 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 2014-12-26 19:46, Ben Hutchings wrote:
->> On Fri, 2014-12-26 at 13:43 +0100, Sedat Dilek wrote:
->>> On Fri, Dec 26, 2014 at 1:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> [...]
->>>>
->>>> Any other make (PHONY) target I don't know?
->>>>
->>>
->>> I fell over "clean-dirs"...
->>>
->>> scripts/package/Makefile:93:clean-dirs += $(objtree)/debian/
->>>
->>> ...but did not really understood how it works.
->>> The main Makefile defines some clean-dirs PHONY#s.
->>> I can only speculate, someone with more skillz in Makefile handling
->>> should look at this.
->>
->> It looks like this has not worked for a long time.  The scripts
->> directory is not included in the main recursive processes; it seems to
->> be special-cased for build and not for clean.
->
-> It actually is special-cased for mrproper, which is a subset if
-> distclean. The real problem is that
->
-> clean-dirs += $(objtree)/debian/
->
-> expands to
->
-> clean-dirs += ./debian/
->
-> and scripts/Makefile.clean things that this is relative to the
-> scripts/package directory.
->
-> Michal
+On Wed, Dec 10, 2014 at 09:12:11AM -0500, Matthew Wilcox wrote:
+> On Wed, Dec 10, 2014 at 06:03:47AM -0800, Christoph Hellwig wrote:
+> > What is the status of this patch set?
+> 
+> I have no outstanding bug reports against it.  Linus told me that he
+> wants to see it come through Andrew's tree.  I have an email two weeks
+> ago from Andrew saying that it's on his list.  I would love to see it
+> merged since it's almost a year old at this point.
 
-For the sake of completeness... Issue fixed by...
+And since then another month and aother merge window has passed.  Is
+there any way to speed up merging big patch sets like this one?
 
-commit a16c5f99a28c9945165c46da27fff8e6f26f8736
-"kbuild: Fix removal of the debian/ directory"
-
-- Sedat -
-
-[1] http://git.kernel.org/cgit/linux/kernel/git/mmarek/kbuild.git/commit/?h=rc-fixes&id=a16c5f99a28c9945165c46da27fff8e6f26f8736
+Another one is non-blocking read one that has real life use on one
+of the biggest server side webapp frameworks but doesn't seem to make
+progress, which is a bit frustrating.
