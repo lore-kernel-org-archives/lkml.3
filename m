@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628AbbAEXQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 18:16:20 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50832 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753885AbbAEXQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 18:16:19 -0500
-Message-ID: <1420499776.14308.50.camel@x220>
-Subject: Re: [PATCH] checkpatch: add check for keyword 'boolean' in Kconfig
- definitions
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Christoph Jaeger <cj@linux.com>
-Cc: apw@canonical.com, joe@perches.com, linux-kernel@vger.kernel.org,
-        dborkman@redhat.com
-Date: Tue, 06 Jan 2015 00:16:16 +0100
-In-Reply-To: <1419108036-11536-1-git-send-email-cj@linux.com>
-References: <1419108036-11536-1-git-send-email-cj@linux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Jan 2015 23:16:17.0057 (UTC) FILETIME=[9B64E910:01D0293D]
-X-RcptDomain: vger.kernel.org
+	id S1754422AbbAEXkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 18:40:06 -0500
+Received: from mga14.intel.com ([192.55.52.115]:1525 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492AbbAEXkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 18:40:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="507864307"
+Date: Tue, 6 Jan 2015 07:20:11 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Juri Lelli <juri.lelli@arm.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: Re: [PATCH v7 0/7] sched: support dl task migration during cpu
+ hotplug and other fixes
+Message-ID: <20150105232011.GA13200@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1420338714-15624-1-git-send-email-wanpeng.li@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420338714-15624-1-git-send-email-wanpeng.li@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-12-20 at 15:40 -0500, Christoph Jaeger wrote:
-> Discourage the use of keyword 'boolean' for type definition attributes of
-> config options as support for it will be dropped later on.
-> 
-> Reference: http://lkml.kernel.org/r/cover.1418003065.git.cj@linux.com
-> Suggested-by: Daniel Borkmann <dborkman@redhat.com>
-> Signed-off-by: Christoph Jaeger <cj@linux.com>
-
-Works as advertised:
-    $ scripts/checkpatch.pl -f kernel/livepatch/Kconfig 
-    WARNING: Use of boolean is deprecated, please use bool instead.
-    #2: FILE: kernel/livepatch/Kconfig:2:
-    +        boolean
-
-    WARNING: Use of boolean is deprecated, please use bool instead.
-    #7: FILE: kernel/livepatch/Kconfig:7:
-    +        boolean "Kernel Live Patching"
-
-    total: 0 errors, 2 warnings, 18 lines checked
-
-    kernel/livepatch/Kconfig has style problems, please review.
-
-    If any of these errors are false positives, please report
-    them to the maintainer, see CHECKPATCH in MAINTAINERS.
-
-Acked-by: Paul Bolle <pebolle@tiscali.nl>
-
-> ---
->  scripts/checkpatch.pl | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index f0bb6d6..cae974e 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2355,6 +2355,13 @@ sub process {
->  			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see https://lkml.org/lkml/2012/10/23/580\n");
->  		}
->  
-> +# discourage the use of boolean for type definition attributes of Kconfig options
-> +		if ($realfile =~ /Kconfig/ &&
-> +		    $line =~ /^\+\s*\bboolean\b/) {
-> +			WARN("CONFIG_TYPE_BOOLEAN",
-
-This should become an error once "boolean" is removed (on some future
-date).
-
-> +			     "Use of boolean is deprecated, please use bool instead.\n" . $herecurr);
-> +		}
-> +
->  		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/) &&
->  		    ($line =~ /\+(EXTRA_[A-Z]+FLAGS).*/)) {
->  			my $flag = $1;
-
-
-Paul Bolle
-
+Ping Juri, Peter, 1/7~6/7 can be reviewed/applied separately since patch 7/7 
+is still need more work.
+On Sun, Jan 04, 2015 at 10:31:47AM +0800, Wanpeng Li wrote:
+>v6 -> v7:
+> * rebase 
+>
+>I collect recent send out patches to one patchset in order to get review easily.
+>
+>For 7/7 I will remove rd->span related modification if Pang's effort merged.
+>https://lkml.org/lkml/2014/11/17/443
+>
+>Wanpeng Li (7):
+>  sched/deadline: fix start high-res preemption tick for a non-leftmost task
+>  sched/deadline: fix rt runtime corrupt when dl refuse a smaller bandwidth
+>  sched/deadline: fix dl entity is still mark yield after replenishing
+>  sched/deadline: reduce overhead if there are no scheduling parameters changed
+>  sched/fair: fix idle balance when remaining tasks are all non-CFS tasks
+>  sched: fix start hrtick for short schedule slices on UP
+>  sched/deadline: support dl task migration during cpu hotplug
+>
+> kernel/sched/core.c     | 27 +++++++++++++++++----
+> kernel/sched/deadline.c | 62 +++++++++++++++++++++++++++++++++++++++++++++----
+> kernel/sched/fair.c     |  2 +-
+> kernel/sched/sched.h    |  3 ++-
+> 4 files changed, 84 insertions(+), 10 deletions(-)
+>
+>-- 
+>1.9.1
