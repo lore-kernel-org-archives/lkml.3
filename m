@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647AbbAEWyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:54:22 -0500
-Received: from imap.thunk.org ([74.207.234.97]:52944 "EHLO imap.thunk.org"
+	id S1754686AbbAEWzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:55:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34892 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753097AbbAEWyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:54:20 -0500
-Date: Mon, 5 Jan 2015 17:54:18 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 bug fixes for 3.19-rc3
-Message-ID: <20150105225418.GA1086@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753031AbbAEWzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 17:55:15 -0500
+Date: Mon, 5 Jan 2015 17:55:05 -0500
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, jweiner@redhat.com,
+        dave.hansen@linux.intel.com, rientjes@google.com, linux-mm@kvack.org
+Subject: Re: [PATCH v2] fs: proc: task_mmu: show page size in
+ /proc/<pid>/numa_maps
+Message-ID: <20150105225504.GC1795@t510.redhat.com>
+References: <734bca19b3a8f4e191ccc9055ad4740744b5b2b6.1420464466.git.aquini@redhat.com>
+ <20150105133500.e0ce4b090e6b378c3edc9c56@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20150105133500.e0ce4b090e6b378c3edc9c56@linux-foundation.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 50db71abc529c48b21f4c3034d3cff27cfb25795:
+On Mon, Jan 05, 2015 at 01:35:00PM -0800, Andrew Morton wrote:
+> On Mon,  5 Jan 2015 12:44:31 -0500 Rafael Aquini <aquini@redhat.com> wrote:
+> 
+> > This patch introduces 'kernelpagesize_kB' line element to /proc/<pid>/numa_maps
+> > report file in order to help identifying the size of pages that are backing
+> > memory areas mapped by a given task. This is specially useful to
+> > help differentiating between HUGE and GIGANTIC page backed VMAs.
+> > 
+> > This patch is based on Dave Hansen's proposal and reviewer's follow-ups
+> > taken from the following dicussion threads:
+> >  * https://lkml.org/lkml/2011/9/21/454
+> 
+> Dave's changelog contains useful information which this one lacked.  I
+> stole some of it.
+> 
+> : The output of /proc/$pid/numa_maps is in terms of number of pages like
+> : anon=22 or dirty=54.  Here's some output:
+> : 
+> : 7f4680000000 default file=/hugetlb/bigfile anon=50 dirty=50 N0=50
+> : 7f7659600000 default file=/anon_hugepage\040(deleted) anon=50 dirty=50 N0=50
+> : 7fff8d425000 default stack anon=50 dirty=50 N0=50
+> : Looks like we have a stack and a couple of anonymous hugetlbfs
+> : areas page which both use the same amount of memory.  They don't.
+> : 
+> : The 'bigfile' uses 1GB pages and takes up ~50GB of space.  The
+> : anon_hugepage uses 2MB pages and takes up ~100MB of space while the stack
+> : uses normal 4k pages.  You can go over to smaps to figure out what the
+> : page size _really_ is with KernelPageSize or MMUPageSize.  But, I think
+> : this is a pretty nasty and counterintuitive interface as it stands.
+> : 
+> : This patch introduces 'kernelpagesize_kB' line element to
+> : /proc/<pid>/numa_maps report file in order to help identifying the size of
+> : pages that are backing memory areas mapped by a given task.  This is
+> : specially useful to help differentiating between HUGE and GIGANTIC page
+> : backed VMAs.
+> : 
+> : This patch is based on Dave Hansen's proposal and reviewer's follow-ups
+> : taken from the following dicussion threads:
+> :  * https://lkml.org/lkml/2011/9/21/454
+> :  * https://lkml.org/lkml/2014/12/20/66
+> 
+> 
+> > +	seq_printf(m, " kernelpagesize_kB=%lu", vma_kernel_pagesize(vma) >> 10);
+> 
+> This changes the format of the numa_maps file and can potentially break
+> existing parsers.  Please discuss.
+> 
+> I'd complain about the patch's failure to update the documentation,
+> except numa_maps appears to be undocumented.  Sigh.  What the heck is "N0"?
+>
+That's a nice opportunity to attempt to sharp my doc writing skills.
+Sorry for the total failure to identify it earlier.
+I just took it as a TODO note to send a patch to document this interface soon.
 
-  ext4: ext4_da_convert_inline_data_to_extent drop locked page after error (2014-12-05 21:37:15 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
-
-for you to fetch changes up to 363307e6e561cde78572fd22e7fd00cd3e5adb02:
-
-  ext4: remove spurious KERN_INFO from ext4_warning call (2015-01-02 15:31:14 -0500)
-
-----------------------------------------------------------------
-Revert a potential seek_data/hole regression which shows up when using
-ext4 to handle ext3 file systems, plus two minor bug fixes.
-
-----------------------------------------------------------------
-Jakub Wilk (1):
-      ext4: remove spurious KERN_INFO from ext4_warning call
-
-Theodore Ts'o (2):
-      ext4: prevent online resize with backup superblock
-      Revert "ext4: fix suboptimal seek_{data,hole} extents traversial"
-
- fs/ext4/extents.c |   4 +-
- fs/ext4/file.c    | 220 +++++++++++++++++++++++++++++---------------------------
- fs/ext4/resize.c  |  24 +++----
- fs/ext4/super.c   |   2 +-
- 4 files changed, 129 insertions(+), 121 deletions(-)
+Happy new year.
+-- Rafael
