@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbbAEXIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 18:08:42 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:60818 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752714AbbAEXIk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 18:08:40 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] acpi: acpica: utmisc.c:  Remove unused function
-Date: Tue, 06 Jan 2015 00:30:56 +0100
-Message-ID: <1648651.DmmjNgUaYH@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026AAC8D@SHSMSX101.ccr.corp.intel.com>
-References: <1420132554-32049-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <1AE640813FDE7649BE1B193DEA596E88026AAC8D@SHSMSX101.ccr.corp.intel.com>
+	id S1753963AbbAEXgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 18:36:14 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52931 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751485AbbAEXgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 18:36:12 -0500
+Message-ID: <54AB1FC5.8040003@ti.com>
+Date: Mon, 5 Jan 2015 18:35:33 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma
+ configuration
+References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com> <2019516.ehiuEv0rdL@wuerfel> <54AAEEE1.7020607@ti.com> <1671700.LL29F8Iz6R@wuerfel>
+In-Reply-To: <1671700.LL29F8Iz6R@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 05, 2015 08:32:59 AM Zheng, Lv wrote:
-> Hi, Rickard
-> 
-> > From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se]
-> > Sent: Friday, January 02, 2015 1:16 AM
-> > 
-> > Remove the function acpi_ut_is_aml_table() that is not used anywhere.
-> 
-> This function is used by the ACPICA debugger and disassembler.
-> The ACPICA release process has just automatically released this function from the ACPICA code base to the Linux kernel.
-> 
-> We shouldn't just remove it from the Linux kernel code base.
-> If we do so, it's just turned into divergences that can hurt the release automation.
-> You may use ACPI_FUTURE_USAGE around these functions instead.
+On 01/05/2015 05:26 PM, Arnd Bergmann wrote:
+> On Monday 05 January 2015 15:06:57 Murali Karicheri wrote:
+>> On 01/03/2015 04:37 PM, Arnd Bergmann wrote:
+>>> Yes, but we also need to pass a PCI device specific identifier along
+>>> with the root bus node, because some iommu drivers take the PCI
+>>> bus/device/function number into account for creating per-function
+>>> i/o page tables.
+>
+>> ...
+>
+>> I will post v3 of the patch with what is agreed before in my response
+>> and I understand there is no additional change required based on this
+>> particular discussion about iommu. Right?
+>
+> Actually regarding the bit I wrote above, it might be helpful to pass
+> the PCI_DEVID() into both of_iommu_configure and of_dma_configure.
+>
+> While this may or may not be sufficient, I think there is no question
+> about it being needed for the ARM SMMU with PCI, so we may as well add
+> it at the point when you touch the same lines already. In the platform
+> bus case, just pass zero here.
+Arnd,
 
-Can we do that in upstream ACPICA?
+PCI_DEVID() is defined as
+
+#define PCI_DEVID(bus, devfn)  ((((u16)(bus)) << 8) | (devfn))
+
+So PCI_DEVID of 0 is a valid PCI DEVID.
+
+How about checking if the device is PCI in of_iommu_configure() using 
+dev_is_pci(dev) macro and return immediately for PCI? Need to include 
+pci.h in this file though.
+
+Some of the iommu drivers already include this.
+
+a0868495@ares-ubuntu:~/projects/linux-keystone$ grep -r pci.h drivers/iommu/
+drivers/iommu/amd_iommu_v2.c:#include <linux/pci.h>
+drivers/iommu/dmar.c:#include <linux/pci.h>
+drivers/iommu/amd_iommu_types.h:#include <linux/pci.h>
+drivers/iommu/amd_iommu.c:#include <linux/pci.h>
+drivers/iommu/fsl_pamu_domain.c:#include <sysdev/fsl_pci.h>
+drivers/iommu/iommu.c:#include <linux/pci.h>
+drivers/iommu/intel-iommu.c:#include <linux/pci.h>
+drivers/iommu/intel_irq_remapping.c:#include <linux/pci.h>
+drivers/iommu/arm-smmu.c:#include <linux/pci.h>
+drivers/iommu/amd_iommu_init.c:#include <linux/pci.h>
+drivers/iommu/irq_remapping.c:#include <linux/pci.h>
+
+This will allow us to re-visit this later for IOMMU support for PCI 
+without polluting the API.
+
+
+Murali
+>
+> 	Arnd
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Murali Karicheri
+Linux Kernel, Texas Instruments
