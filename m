@@ -1,193 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483AbbAEPuj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:50:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42954 "EHLO mx1.redhat.com"
+	id S1752638AbbAEPwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:52:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33586 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754341AbbAEPug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:50:36 -0500
-Date: Mon, 5 Jan 2015 10:50:31 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Mathias Gottschlag <mgottschlag@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: psmouse - use IS_ENABLED instead of homegrown code
-Message-ID: <20150105155031.GG19391@mail.corp.redhat.com>
-References: <20141229201139.GA1690@dtor-ws>
+	id S1750995AbbAEPwF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 10:52:05 -0500
+Date: Mon, 5 Jan 2015 09:50:49 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <balbi@ti.com>, Sneeker Yeh <sneeker.yeh@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Paul Bolle <pebolle@tiscali.nl>, Hans de Goede <hdegoede@redhat.com>,
+        Thomas Pugliese <thomas.pugliese@gmail.com>,
+        David Mosberger <davidm@egauge.net>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Andy Green <andy.green@linaro.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+Subject: Re: [PATCH 2/3] usb: dwc3: add Fujitsu Specific Glue layer
+Message-ID: <20150105155049.GF19336@saruman>
+Reply-To: <balbi@ti.com>
+References: <1418695828-605-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+ <1456155.YPH2fYoGgF@wuerfel>
+ <20150103012128.GA11373@saruman>
+ <3428284.QtTr113xXr@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Il7n/DHsA0sMLmDu"
 Content-Disposition: inline
-In-Reply-To: <20141229201139.GA1690@dtor-ws>
+In-Reply-To: <3428284.QtTr113xXr@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 29 2014 or thereabouts, Dmitry Torokhov wrote:
-> Instead of having various protocols provide <protocol>_supported()
-> functions, let's use IS_ENABLED() macro that works well in "if" statements.
-> 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
+--Il7n/DHsA0sMLmDu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Hi,
 
-Cheers,
-Benjamin
+On Mon, Jan 05, 2015 at 04:28:34PM +0100, Arnd Bergmann wrote:
+> On Friday 02 January 2015 19:21:28 Felipe Balbi wrote:
+> >=20
+> > On Tue, Dec 30, 2014 at 11:12:51AM +0100, Arnd Bergmann wrote:
+> > > On Monday 29 December 2014 01:52:04 Sneeker Yeh wrote:
+> > > > > > +static int dwc3_mb86s70_remove_child(struct device *dev, void =
+*unused)
+> > > > > > +{
+> > > > > > +     struct platform_device *pdev =3D to_platform_device(dev);
+> > > > > > +
+> > > > > > +     of_device_unregister(pdev);
+> > > > > > +
+> > > > > > +     return 0;
+> > > > > > +}
+> > > > > > +
+> > > > > > +static u64 dwc3_mb86s70_dma_mask =3D DMA_BIT_MASK(32);
+> > > > >
+> > > > > why ? Use dma_coerce_mask_and_coherent().
+> > > > >
+> > > >=20
+> > > > okay.
+> > >=20
+> > > Actually that is still wrong: we use dma_coerce_mask_and_coherent() to
+> > > annotate drivers that have traditionally been forcing their own dma m=
+ask
+> > > by some other means and that need to be changed to something proper (=
+after
+> > > finding out why they did it in the first place).
+> > >=20
+> > > Since this is about a child device, the correct interface is to use
+> > > platform_device_register_full().
+> >=20
+> > no, that's wrong. He's essentially fixing the default set by OF core,
+> > which is always 32-bits anyway, so this can actually be removed. Your
+> > suggestion would just make it worse.
+>=20
+> Ah, so this was for a device that gets probed from DT? Yes, then no
+> change is needed here at all.
 
->  drivers/input/mouse/cypress_ps2.c  |  5 -----
->  drivers/input/mouse/cypress_ps2.h  |  5 -----
->  drivers/input/mouse/focaltech.c    | 10 ----------
->  drivers/input/mouse/focaltech.h    |  1 -
->  drivers/input/mouse/psmouse-base.c |  6 +++---
->  drivers/input/mouse/synaptics.c    | 10 ----------
->  drivers/input/mouse/synaptics.h    |  1 -
->  7 files changed, 3 insertions(+), 35 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-> index 8af34ff..6e5f70b 100644
-> --- a/drivers/input/mouse/cypress_ps2.c
-> +++ b/drivers/input/mouse/cypress_ps2.c
-> @@ -710,8 +710,3 @@ err_exit:
->  
->  	return -1;
->  }
-> -
-> -bool cypress_supported(void)
-> -{
-> -	return true;
-> -}
-> diff --git a/drivers/input/mouse/cypress_ps2.h b/drivers/input/mouse/cypress_ps2.h
-> index 4720f21..81f68aa 100644
-> --- a/drivers/input/mouse/cypress_ps2.h
-> +++ b/drivers/input/mouse/cypress_ps2.h
-> @@ -172,7 +172,6 @@ struct cytp_data {
->  #ifdef CONFIG_MOUSE_PS2_CYPRESS
->  int cypress_detect(struct psmouse *psmouse, bool set_properties);
->  int cypress_init(struct psmouse *psmouse);
-> -bool cypress_supported(void);
->  #else
->  inline int cypress_detect(struct psmouse *psmouse, bool set_properties)
->  {
-> @@ -182,10 +181,6 @@ inline int cypress_init(struct psmouse *psmouse)
->  {
->  	return -ENOSYS;
->  }
-> -inline bool cypress_supported(void)
-> -{
-> -	return 0;
-> -}
->  #endif /* CONFIG_MOUSE_PS2_CYPRESS */
->  
->  #endif  /* _CYPRESS_PS2_H */
-> diff --git a/drivers/input/mouse/focaltech.c b/drivers/input/mouse/focaltech.c
-> index fca38ba..757f78a 100644
-> --- a/drivers/input/mouse/focaltech.c
-> +++ b/drivers/input/mouse/focaltech.c
-> @@ -424,11 +424,6 @@ fail:
->  	return error;
->  }
->  
-> -bool focaltech_supported(void)
-> -{
-> -	return true;
-> -}
-> -
->  #else /* CONFIG_MOUSE_PS2_FOCALTECH */
->  
->  int focaltech_init(struct psmouse *psmouse)
-> @@ -438,9 +433,4 @@ int focaltech_init(struct psmouse *psmouse)
->  	return 0;
->  }
->  
-> -bool focaltech_supported(void)
-> -{
-> -	return false;
-> -}
-> -
->  #endif /* CONFIG_MOUSE_PS2_FOCALTECH */
-> diff --git a/drivers/input/mouse/focaltech.h b/drivers/input/mouse/focaltech.h
-> index 71870a9..ca61ebf 100644
-> --- a/drivers/input/mouse/focaltech.h
-> +++ b/drivers/input/mouse/focaltech.h
-> @@ -19,6 +19,5 @@
->  
->  int focaltech_detect(struct psmouse *psmouse, bool set_properties);
->  int focaltech_init(struct psmouse *psmouse);
-> -bool focaltech_supported(void);
->  
->  #endif
-> diff --git a/drivers/input/mouse/psmouse-base.c b/drivers/input/mouse/psmouse-base.c
-> index 68469fe..4ccd01d 100644
-> --- a/drivers/input/mouse/psmouse-base.c
-> +++ b/drivers/input/mouse/psmouse-base.c
-> @@ -727,7 +727,7 @@ static int psmouse_extensions(struct psmouse *psmouse,
->  	if (psmouse_do_detect(focaltech_detect, psmouse, set_properties) == 0) {
->  		if (max_proto > PSMOUSE_IMEX) {
->  			if (!set_properties || focaltech_init(psmouse) == 0) {
-> -				if (focaltech_supported())
-> +				if (IS_ENABLED(CONFIG_MOUSE_PS2_FOCALTECH))
->  					return PSMOUSE_FOCALTECH;
->  				/*
->  				 * Note that we need to also restrict
-> @@ -776,7 +776,7 @@ static int psmouse_extensions(struct psmouse *psmouse,
->   * Try activating protocol, but check if support is enabled first, since
->   * we try detecting Synaptics even when protocol is disabled.
->   */
-> -			if (synaptics_supported() &&
-> +			if (IS_ENABLED(CONFIG_MOUSE_PS2_SYNAPTICS) &&
->  			    (!set_properties || synaptics_init(psmouse) == 0)) {
->  				return PSMOUSE_SYNAPTICS;
->  			}
-> @@ -801,7 +801,7 @@ static int psmouse_extensions(struct psmouse *psmouse,
->   */
->  	if (max_proto > PSMOUSE_IMEX &&
->  			cypress_detect(psmouse, set_properties) == 0) {
-> -		if (cypress_supported()) {
-> +		if (IS_ENABLED(CONFIG_MOUSE_PS2_CYPRESS)) {
->  			if (cypress_init(psmouse) == 0)
->  				return PSMOUSE_CYPRESS;
->  
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index f947292..094bf64 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -1817,11 +1817,6 @@ int synaptics_init_relative(struct psmouse *psmouse)
->  	return __synaptics_init(psmouse, false);
->  }
->  
-> -bool synaptics_supported(void)
-> -{
-> -	return true;
-> -}
-> -
->  #else /* CONFIG_MOUSE_PS2_SYNAPTICS */
->  
->  void __init synaptics_module_init(void)
-> @@ -1833,9 +1828,4 @@ int synaptics_init(struct psmouse *psmouse)
->  	return -ENOSYS;
->  }
->  
-> -bool synaptics_supported(void)
-> -{
-> -	return false;
-> -}
-> -
->  #endif /* CONFIG_MOUSE_PS2_SYNAPTICS */
-> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-> index 1bd01f2..feb28a5 100644
-> --- a/drivers/input/mouse/synaptics.h
-> +++ b/drivers/input/mouse/synaptics.h
-> @@ -191,6 +191,5 @@ int synaptics_detect(struct psmouse *psmouse, bool set_properties);
->  int synaptics_init(struct psmouse *psmouse);
->  int synaptics_init_relative(struct psmouse *psmouse);
->  void synaptics_reset(struct psmouse *psmouse);
-> -bool synaptics_supported(void);
->  
->  #endif /* _SYNAPTICS_H */
-> -- 
-> 2.2.0.rc0.207.ga3a616c
-> 
-> 
-> -- 
-> Dmitry
+right.
+
+> Note that I'm working on a patch set to change the DT initialization to
+> be a little smarter about the mask. Specifically any device whose parent
+> has a smaller dma-ranges window than 4GB needs to start out with the
+> smaller mask, and the dma_set_mask function that is called to allow 64-bit
+> DMA on a device will check if the bus can actually support it.
+
+please make sure have that patch soaking in linux-next for weeks before
+attempting to merge it upstream. I would target v3.21 with such a patch.
+At least keystone might be a little weird about what you describe
+considering the thing boots from HIGHMEM. Also needs to consider LPAE,
+etc.
+
+--=20
+balbi
+
+--Il7n/DHsA0sMLmDu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUqrLZAAoJEIaOsuA1yqREOPMP/1ykV6BAiPtaj1Y1NndABWps
+tXtISvRUhzRD0JLG0++Q/xnFUAi4jvUWScU/wDTSNzBNuaP5j580XMz38JKrvbOb
+7wlV2Yk9uhSorpdIBtCH+HSyEoLU8naZECgR1weXhaYdwhzqXiUModdkmifXqW31
+F5HvaRoV4tumBcrm0mJZhu6Fmwb0ttmQ6AkW4JA6Chv2VPnwQZmj5l+mOfAfpBx0
+qbpsibNq75Gh3JbsYd90wl2yxPYjyK15QiETQqRu+LeOgUOBPexrMs5jEgVynivO
+dfpah7w9IWi5GD4IsVaKRZP6DUEhogVJPuqBWkfs3UGrbrdT79sv0KVTfKvI2JGi
+BfthGP1BSfDl0ymi4Ms99Ndh9Yw+O19jd7ZBvJgESW1ObvWvEYNtNE4t+S6iUab/
+lS6Q01AGgAS+VceANr8H4DDZ4IWkCXh2tgXwm69VoezpCrxSIX0WQ7Qnu/4EpnG1
+R1z2PAU9cahxl+lUhcaJmvWSNsKjH5/YeRoIzsP8TD3L30t8qvd5DbCI7fv9NJKY
+MLUHSogInw5Cdbb17SFId9bPpUnsZq14DWD83C7/9MR3EpWzgn5t5uFi0/mfhVJF
+5Ryp4RgCcOPowgTWdalupiKb0jW5UkBdW3FB3wDasGumoNidnzDurjEImnwQe2wQ
+mpENGBvIUzLFMdl8VuL6
+=+FtZ
+-----END PGP SIGNATURE-----
+
+--Il7n/DHsA0sMLmDu--
