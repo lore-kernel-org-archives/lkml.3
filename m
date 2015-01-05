@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbbAEP2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:28:19 -0500
-Received: from resqmta-ch2-05v.sys.comcast.net ([69.252.207.37]:46741 "EHLO
-	resqmta-ch2-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753130AbbAEP2Q (ORCPT
+	id S1754169AbbAEP3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:29:09 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:64008 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436AbbAEP3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:28:16 -0500
-Date: Mon, 5 Jan 2015 09:28:14 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [PATCH 6/6] mm/slab: allocation fastpath without disabling irq
-In-Reply-To: <1420421851-3281-7-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.11.1501050859520.24213@gentwo.org>
-References: <1420421851-3281-1-git-send-email-iamjoonsoo.kim@lge.com> <1420421851-3281-7-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 5 Jan 2015 10:29:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: balbi@ti.com
+Cc: Sneeker Yeh <sneeker.yeh@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Paul Bolle <pebolle@tiscali.nl>, Hans de Goede <hdegoede@redhat.com>,
+        Thomas Pugliese <thomas.pugliese@gmail.com>,
+        David Mosberger <davidm@egauge.net>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        Andy Green <andy.green@linaro.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+Subject: Re: [PATCH 2/3] usb: dwc3: add Fujitsu Specific Glue layer
+Date: Mon, 05 Jan 2015 16:28:34 +0100
+Message-ID: <3428284.QtTr113xXr@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150103012128.GA11373@saruman>
+References: <1418695828-605-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com> <1456155.YPH2fYoGgF@wuerfel> <20150103012128.GA11373@saruman>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:UBq4jKNHXYKMPDHY7sLPoS45I4aqZ2CDLl3bkPaC/CfD71FDaEW
+ TVWk0WC6e38ilU2azwtG/M7FpmH9S+BvpcOYrOqzZ8G/sD53wCJU1EK8r1mDauX97L06xVA
+ Q2v6wl/4X4QWRvyARx1sZU8wXm3evYKTtOD+ns3fun2QTW7Xv0nV5kkZoEJQfBI73iUNcYt
+ EhXhNG8+Ev4ChPAXD7ABA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Jan 2015, Joonsoo Kim wrote:
+On Friday 02 January 2015 19:21:28 Felipe Balbi wrote:
+> 
+> On Tue, Dec 30, 2014 at 11:12:51AM +0100, Arnd Bergmann wrote:
+> > On Monday 29 December 2014 01:52:04 Sneeker Yeh wrote:
+> > > > > +static int dwc3_mb86s70_remove_child(struct device *dev, void *unused)
+> > > > > +{
+> > > > > +     struct platform_device *pdev = to_platform_device(dev);
+> > > > > +
+> > > > > +     of_device_unregister(pdev);
+> > > > > +
+> > > > > +     return 0;
+> > > > > +}
+> > > > > +
+> > > > > +static u64 dwc3_mb86s70_dma_mask = DMA_BIT_MASK(32);
+> > > >
+> > > > why ? Use dma_coerce_mask_and_coherent().
+> > > >
+> > > 
+> > > okay.
+> > 
+> > Actually that is still wrong: we use dma_coerce_mask_and_coherent() to
+> > annotate drivers that have traditionally been forcing their own dma mask
+> > by some other means and that need to be changed to something proper (after
+> > finding out why they did it in the first place).
+> > 
+> > Since this is about a child device, the correct interface is to use
+> > platform_device_register_full().
+> 
+> no, that's wrong. He's essentially fixing the default set by OF core,
+> which is always 32-bits anyway, so this can actually be removed. Your
+> suggestion would just make it worse.
 
-> index 449fc6b..54656f0 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -168,6 +168,41 @@ typedef unsigned short freelist_idx_t;
->
->  #define SLAB_OBJ_MAX_NUM ((1 << sizeof(freelist_idx_t) * BITS_PER_BYTE) - 1)
->
-> +#ifdef CONFIG_PREEMPT
-> +/*
-> + * Calculate the next globally unique transaction for disambiguiation
-> + * during cmpxchg. The transactions start with the cpu number and are then
-> + * incremented by CONFIG_NR_CPUS.
-> + */
-> +#define TID_STEP  roundup_pow_of_two(CONFIG_NR_CPUS)
-> +#else
-> +/*
-> + * No preemption supported therefore also no need to check for
-> + * different cpus.
-> + */
-> +#define TID_STEP 1
-> +#endif
-> +
-> +static inline unsigned long next_tid(unsigned long tid)
-> +{
-> +	return tid + TID_STEP;
-> +}
-> +
-> +static inline unsigned int tid_to_cpu(unsigned long tid)
-> +{
-> +	return tid % TID_STEP;
-> +}
-> +
-> +static inline unsigned long tid_to_event(unsigned long tid)
-> +{
-> +	return tid / TID_STEP;
-> +}
-> +
-> +static inline unsigned int init_tid(int cpu)
-> +{
-> +	return cpu;
-> +}
-> +
+Ah, so this was for a device that gets probed from DT? Yes, then no
+change is needed here at all.
 
-Ok the above stuff needs to go into the common code. Maybe in mm/slab.h?
-And its a significant feature contributed by me so I'd like to have an
-attribution here.
+Note that I'm working on a patch set to change the DT initialization to
+be a little smarter about the mask. Specifically any device whose parent
+has a smaller dma-ranges window than 4GB needs to start out with the
+smaller mask, and the dma_set_mask function that is called to allow 64-bit
+DMA on a device will check if the bus can actually support it.
 
->  /*
->   * true if a page was allocated from pfmemalloc reserves for network-based
->   * swap
-> @@ -187,7 +222,8 @@ static bool pfmemalloc_active __read_mostly;
->   *
->   */
->  struct array_cache {
-> -	unsigned int avail;
-> +	unsigned long avail;
-> +	unsigned long tid;
->  	unsigned int limit;
->  	unsigned int batchcount;
->  	unsigned int touched;
-> @@ -657,7 +693,8 @@ static void start_cpu_timer(int cpu)
->  	}
->  }
-
-This increases the per cpu struct size and should lead to a small
-performance penalty.
-
-> -	 */
-> -	if (likely(objp)) {
-> -		STATS_INC_ALLOCHIT(cachep);
-> -		goto out;
-> +	objp = ac->entry[avail - 1];
-> +	if (unlikely(!this_cpu_cmpxchg_double(
-> +		cachep->cpu_cache->avail, cachep->cpu_cache->tid,
-> +		avail, tid,
-> +		avail - 1, next_tid(tid))))
-> +		goto redo;
-
-
-Hmm... Ok that looks good.
+	Arnd
