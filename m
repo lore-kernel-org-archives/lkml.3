@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbbAEOw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:52:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47294 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321AbbAEOw0 (ORCPT
+	id S1754129AbbAEOwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:52:36 -0500
+Received: from resqmta-ch2-09v.sys.comcast.net ([69.252.207.41]:48934 "EHLO
+	resqmta-ch2-09v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753441AbbAEOwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:52:26 -0500
-Date: Mon, 5 Jan 2015 15:52:10 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Kirill Tkhai <ktkhai@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] sched/deadline: support dl task migration during cpu
- hotplug
-Message-ID: <20150105145210.GO10476@twins.programming.kicks-ass.net>
-References: <1415754413-13988-1-git-send-email-wanpeng.li@linux.intel.com>
- <546377FC.4090408@arm.com>
- <20141112153906.GL29390@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141112153906.GL29390@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 5 Jan 2015 09:52:34 -0500
+Date: Mon, 5 Jan 2015 08:52:30 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing
+ preemption on/off
+In-Reply-To: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.DEB.2.11.1501050852060.24090@gentwo.org>
+References: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 12, 2014 at 04:39:06PM +0100, Peter Zijlstra wrote:
-> On Wed, Nov 12, 2014 at 03:08:44PM +0000, Juri Lelli wrote:
-> > > @@ -1185,8 +1223,9 @@ static int find_later_rq(struct task_struct *task)
-> > >  	 * We have to consider system topology and task affinity
-> > >  	 * first, then we can look for a suitable cpu.
-> > >  	 */
-> > > -	cpumask_copy(later_mask, task_rq(task)->rd->span);
-> > > -	cpumask_and(later_mask, later_mask, cpu_active_mask);
-> > > +	cpumask_copy(later_mask, cpu_active_mask);
-> > > +	if (likely(task_rq(task)->online))
-> > > +		cpumask_and(later_mask, later_mask, task_rq(task)->rd->span);
-> > 
-> > So, here you consider the span only when the task_rq is online,
-> > but there might be others cpus still online belonging to the same
-> > rd->span. And you have to consider them when migrating. Actually,
-> > migration must still be restricted to the online cpus of task's
-> > original rd->span, or I fear you can break clustered scheduling.
-> 
-> Ah, good point that, we must somehow find the right root domain to
-> 'restore' the task to. Now I'm not entirely sure we still have this.
-> Lemme ponder that.
+On Mon, 5 Jan 2015, Joonsoo Kim wrote:
 
-Ah, we should be able to find this by looking at the cpuset cgroup
-information. The cpuset cgroup knows the available cpumask of this task,
-which we can translate to the correct root domain in two separate ways
-(either run up the cpuset cgroup hierarchy and find the highest domain
-with balancing enabled, or look at whatever the rq->rd is for any one of
-the allowed CPUs of the immediate cgroup this task belongs to).
+> Now, I reach the solution to remove preempt enable/disable in the fastpath.
+> If tid is matched with kmem_cache_cpu's tid after tid and kmem_cache_cpu
+> are retrieved by separate this_cpu operation, it means that they are
+> retrieved on the same cpu. If not matched, we just have to retry it.
+
+Acked-by: Christoph Lameter <cl@linux.com>
