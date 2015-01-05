@@ -1,206 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbbAEXVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 18:21:39 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:27185 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456AbbAEXVd (ORCPT
+	id S1754770AbbAEXXC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 18:23:02 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:62621 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602AbbAEXXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 18:21:33 -0500
-X-IronPort-AV: E=Sophos;i="5.07,702,1413270000"; 
-   d="scan'208";a="54178466"
-From: Ray Jui <rjui@broadcom.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Matt Porter <mporter@linaro.org>,
-        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, Ray Jui <rjui@broadcom.com>
-Subject: [PATCH v2 5/5] ARM: dts: enable clock support for Broadcom Cygnus
-Date: Mon, 5 Jan 2015 15:21:16 -0800
-Message-ID: <1420500076-18302-6-git-send-email-rjui@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1420500076-18302-1-git-send-email-rjui@broadcom.com>
-References: <Ray Jui <rjui@broadcom.com>
- <1420500076-18302-1-git-send-email-rjui@broadcom.com>
+	Mon, 5 Jan 2015 18:23:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <54AB19EC.4020401@linux.intel.com>
+References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>
+ <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
+ <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+ <54AB19EC.4020401@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 5 Jan 2015 15:22:39 -0800
+Message-ID: <CALCETrWA5p3rzu1SM8Avt7oXm-B=mxfRhEJuOUw-ND+7upn+SQ@mail.gmail.com>
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API to arch_prctl
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace current device tree dummy clocks with real clock support for
-Broadcom Cygnus SoC
+On Mon, Jan 5, 2015 at 3:10 PM, Dave Hansen <dave.hansen@linux.intel.com> wrote:
+> On 01/05/2015 03:04 PM, Andy Lutomirski wrote:
+>>> > Yeah, I'd _really_ prefer not to change it.  The code is in a gcc
+>>> > branch, but is getting pulled in to the 5.0 release.  We've got
+>>> > *absolutely* no shortage of prctl numbers.
+>> We do, however, have a severe shortage of sanity in the prctl implementation.
+>>
+>> Anyway, if it's actually a problem to change it, I have no real
+>> problem keeping it, but I think we *really* need to validate the rest
+>> of the arguments at the very least.
+>
+> Do you mean just adding a pair of
+>
+>         if (arg2 || arg3 || arg4 || arg5)
+>                 return -EINVAL;
+>
+> checks?
 
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbraden@broadcom.com>
----
- arch/arm/boot/dts/bcm-cygnus-clock.dtsi |  110 ++++++++++++++++++++++++-------
- arch/arm/boot/dts/bcm-cygnus.dtsi       |    2 +-
- 2 files changed, 86 insertions(+), 26 deletions(-)
+Exactly.
 
-diff --git a/arch/arm/boot/dts/bcm-cygnus-clock.dtsi b/arch/arm/boot/dts/bcm-cygnus-clock.dtsi
-index 60d8389..f2da5e2 100644
---- a/arch/arm/boot/dts/bcm-cygnus-clock.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus-clock.dtsi
-@@ -36,56 +36,116 @@ clocks {
- 	ranges;
- 
- 	osc: oscillator {
-+		#clock-cells = <0>;
- 		compatible = "fixed-clock";
--		#clock-cells = <1>;
- 		clock-frequency = <25000000>;
- 	};
- 
--	apb_clk: apb_clk {
--		compatible = "fixed-clock";
-+	/* Cygnus ARM PLL */
-+	armpll: armpll {
- 		#clock-cells = <0>;
--		clock-frequency = <1000000000>;
-+		compatible = "brcm,cygnus-armpll";
-+		clocks = <&osc>;
-+		reg = <0x19000000 0x1000>;
- 	};
- 
--	periph_clk: periph_clk {
--		compatible = "fixed-clock";
-+	/* peripheral clock for system timer */
-+	arm_periph_clk: arm_periph_clk {
- 		#clock-cells = <0>;
--		clock-frequency = <500000000>;
-+		compatible = "fixed-factor-clock";
-+		clocks = <&armpll>;
-+		clock-div = <2>;
-+		clock-mult = <1>;
- 	};
- 
--	sdio_clk: lcpll_ch2 {
--		compatible = "fixed-clock";
-+	/* APB bus clock */
-+	apb_clk: apb_clk {
- 		#clock-cells = <0>;
--		clock-frequency = <200000000>;
-+		compatible = "fixed-factor-clock";
-+		clocks = <&armpll>;
-+		clock-div = <4>;
-+		clock-mult = <1>;
- 	};
- 
--	axi81_clk: axi81_clk {
--		compatible = "fixed-clock";
-+	genpll: genpll {
- 		#clock-cells = <0>;
--		clock-frequency = <100000000>;
-+		compatible = "brcm,cygnus-genpll";
-+		reg = <0x0301d000 0x2c>,
-+			<0x0301c020 0x4>;
-+		clocks = <&osc>;
- 	};
- 
--	keypad_clk: keypad_clk {
--		compatible = "fixed-clock";
-+	/* various clocks running off the GENPLL */
-+	genpll_clks: genpll_clks {
-+		#clock-cells = <1>;
-+		compatible = "brcm,cygnus-genpll-clk";
-+		reg = <0x0301d000 0x2c>;
-+		clocks = <&genpll>;
-+		clock-output-names = "axi21", "250mhz", "ihost_sys",
-+			"enet_sw", "audio_125", "can";
-+	};
-+
-+	/* always 1/2 of the axi21 clock */
-+	axi41_clk: axi41_clk {
- 		#clock-cells = <0>;
--		clock-frequency = <31806>;
-+		compatible = "fixed-factor-clock";
-+		clocks = <&genpll_clks 0>;
-+		clock-div = <2>;
-+		clock-mult = <1>;
- 	};
- 
--	adc_clk: adc_clk {
--		compatible = "fixed-clock";
-+	/* always 1/4 of the axi21 clock */
-+	axi81_clk: axi81_clk {
- 		#clock-cells = <0>;
--		clock-frequency = <1562500>;
-+		compatible = "fixed-factor-clock";
-+		clocks = <&genpll_clks 0>;
-+		clock-div = <4>;
-+		clock-mult = <1>;
- 	};
- 
--	pwm_clk: pwm_clk {
--		compatible = "fixed-clock";
-+	lcpll0: lcpll0 {
- 		#clock-cells = <0>;
--		clock-frequency = <1000000>;
-+		compatible = "brcm,cygnus-lcpll0";
-+		reg = <0x0301d02c 0x1c>,
-+			<0x0301c020 0x4>;
-+		clocks = <&osc>;
- 	};
- 
--	lcd_clk: mipipll_ch1 {
--		compatible = "fixed-clock";
-+	/* various clocks running off the LCPLL0 */
-+	lcpll0_clks: lcpll0_clks {
-+		#clock-cells = <1>;
-+		compatible = "brcm,cygnus-lcpll0-clk";
-+		reg = <0x0301d02c 0x1c>;
-+		clocks = <&lcpll0>;
-+		clock-output-names = "pcie_phy", "ddr_phy", "sdio",
-+			"usb_phy", "smart_card", "ch5";
-+	};
-+
-+	mipipll: mipipll {
- 		#clock-cells = <0>;
--		clock-frequency = <100000000>;
-+		compatible = "brcm,cygnus-mipipll";
-+		reg = <0x180a9800 0x2c>,
-+			<0x0301c020 0x4>,
-+			<0x180aa024 0x4>;
-+		clock-frequency = <1350000000>;
-+		clocks = <&osc>;
-+	};
-+
-+	mipipll_clks: mipipll_clks {
-+		#clock-cells = <1>;
-+		compatible = "brcm,cygnus-mipipll-clk";
-+		reg = <0x180a9800 0x2c>;
-+		clocks = <&mipipll>;
-+		clock-output-names = "ch0_unused", "ch1_lcd", "ch2_unused",
-+			"ch3_unused", "ch4_unused", "ch5_unused";
-+	};
-+
-+	asiu_clks: asiu_clks {
-+		#clock-cells = <1>;
-+		compatible = "brcm,cygnus-asiu-clk";
-+		reg = <0x0301d048 0xc>,
-+			<0x180aa024 0x4>;
-+		clocks = <&osc>;
-+		clock-output-names = "keypad", "adc/touch", "pwm";
- 	};
- };
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-index 5126f9e..2b99e9c 100644
---- a/arch/arm/boot/dts/bcm-cygnus.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -134,7 +134,7 @@
- 		compatible = "arm,cortex-a9-global-timer";
- 		reg = <0x19020200 0x100>;
- 		interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&periph_clk>;
-+		clocks = <&arm_periph_clk>;
- 	};
- 
- };
+Thanks,
+Andy
+
+>
+> That's perfectly fine with me.  I'm happy to queue up a patch to do just
+> that if that's what you're going for.
+
+
+
 -- 
-1.7.9.5
-
+Andy Lutomirski
+AMA Capital Management, LLC
