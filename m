@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233AbbAETBB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:01:01 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:53316 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342AbbAETA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:00:59 -0500
-Message-ID: <54AADF6A.6090100@kernel.dk>
-Date: Mon, 05 Jan 2015 12:00:58 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932074AbbAETB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:01:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754062AbbAETB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 14:01:26 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: sedat.dilek@gmail.com
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guillem Jover <guillem@debian.org>, linux-aio <linux-aio@kvack.org>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: libaio tarballs on <kernel.org>
+References: <CA+icZUUkp4OrPWfw7PEpt2DDEyrf+z1SAQcXpREOXoA7JQ0stg@mail.gmail.com>
+	<CA+icZUV8Zu=fE5Jj-Fo5a3TTz-C2r2L5zWJzEcrfSbdq5Zf4sA@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 05 Jan 2015 14:01:19 -0500
+In-Reply-To: <CA+icZUV8Zu=fE5Jj-Fo5a3TTz-C2r2L5zWJzEcrfSbdq5Zf4sA@mail.gmail.com>
+	(Sedat Dilek's message of "Sun, 4 Jan 2015 09:21:46 +0100")
+Message-ID: <x49egr93vcw.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>, Sasha Levin <sasha.levin@oracle.com>
-CC: bvanassche@acm.org, hare@suse.de, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
-References: <54A43CFB.2080705@oracle.com> <20150105091516.GA22226@lst.de>
-In-Reply-To: <20150105091516.GA22226@lst.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 02:15 AM, Christoph Hellwig wrote:
-> On Wed, Dec 31, 2014 at 01:14:19PM -0500, Sasha Levin wrote:
->> Hi Christoph,
->>
->> I'm seeing an issue which was bisected down to 3c356bde1 ("scsi: stop passing
->> a gfp_mask argument down the command setup path"):
-> 
-> ->queue_rq in blk-mq context is designed to be able to sleep and be called
-> from process context without any spinlocks held or irqs disabled, so we
-> really should fix the
-> caller instead.
+Sedat Dilek <sedat.dilek@gmail.com> writes:
 
-That's not quite true, the only guarantee is that it WILL execute on the
-CPU (or CPUs) that are set in the mask. So unless it ends up offloading
-the run to a specific workqueue, we'll disable preempt in the current
-path before ->queue_rq() is called.
+>> My question: Where does someone get official libaio tarballs?
 
--- 
-Jens Axboe
+https://fedorahosted.org/releases/l/i/libaio/
 
+Cheers,
+Jeff
