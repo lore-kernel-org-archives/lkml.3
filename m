@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbbAEPlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:41:51 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39490 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130AbbAEPlt (ORCPT
+	id S1754189AbbAEPmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:42:08 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:60560 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114AbbAEPmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:41:49 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] firmware class: remove from pending list on load failure
-Date: Mon,  5 Jan 2015 10:41:21 -0500
-Message-Id: <1420472494-25836-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 5 Jan 2015 10:42:07 -0500
+Date: Mon, 5 Jan 2015 15:41:41 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: NeilBrown <neilb@suse.de>
+Cc: Pavel Machek <pavel@ucw.cz>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
+Message-ID: <20150105154141.6f191cd5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20150103103357.2406fc23@notabene.brown>
+References: <20141211214801.4127.93914.stgit@notabene.brown>
+	<20141211215943.4127.24792.stgit@notabene.brown>
+	<20141228142010.GA3922@amd>
+	<20150103103357.2406fc23@notabene.brown>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we failed loading the firmware we have to make sure it leaves the pending
-list if abort wasn't executed for it.
+> It would be really nice if the uart would register the line disciple as a
+> child device, then the line discipline would register whatever it wants.
 
-Otherwise we'd free an object still on the pending list and corrupt it.
+For almost every case this doesn't work. You need a tty interface as well
+because thats how you manage it.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- drivers/base/firmware_class.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+> But that isn't how it works.  The line discipline doesn't talk to the uart.
+> Rather the tty layer talks to the uart (through tty_operations) and to the
+> line discipline (through tty_ldisc_ops) and also registers the char_dev.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 58470c3..8ccf6cf4 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -929,9 +929,18 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
- 	cancel_delayed_work_sync(&fw_priv->timeout_work);
- 	if (is_fw_load_aborted(buf))
- 		retval = -EAGAIN;
--	else if (!buf->data)
-+	else if (!buf->data) {
- 		retval = -ENOMEM;
- 
-+		/*
-+		 * We failed loading, but abort was never done so we
-+		 * need to remove it from the pending list ourselves.
-+		 */
-+		mutex_lock(&fw_lock);
-+		list_del_init(&buf->pending_list);
-+		mutex_unlock(&fw_lock);
-+	}
-+
- 	device_remove_file(f_dev, &dev_attr_loading);
- err_del_bin_attr:
- 	device_remove_bin_file(f_dev, &firmware_attr_data);
--- 
-2.1.0
+This is intentional. An ldisc has no business knowing what it's connected
+to. Try running bluetooth over a tty/pty pair remotely to a dongle - and
+you can do it or faking a GSM mux over a tty/pty pair for testing.
 
+There are lots of cases where we know the correct ldisc from information
+in the ACPI, DT or even USB identifiers in order to plug in the right
+ldisc and daemon but I think that pretty much has to be in user space.
+The kernel might be able to set an ldisc but it can't go around starting
+bluetooth daemons, doing modem chats to go into mux mode or firing up
+JMRI and java when it sees a Sprog. That's a job for systemd/udev.
+
+Alan
