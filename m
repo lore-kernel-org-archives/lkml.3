@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbbAEJLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:11:54 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:32293 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237AbbAEJBo (ORCPT
+	id S1753839AbbAEJJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:09:11 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:39513 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270AbbAEJBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Jan 2015 04:01:44 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-50-54aa52f52057
+X-AuditID: cbfec7f5-b7fc86d0000066b7-4f-54aa52f7819b
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 06/14] mfd: max77686: Constify struct regmap_config
-Date: Mon, 05 Jan 2015 10:01:25 +0100
-Message-id: <1420448493-9355-6-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 07/14] mfd: mc13xxx: i2c/spi: Constify struct regmap_config
+Date: Mon, 05 Jan 2015 10:01:26 +0100
+Message-id: <1420448493-9355-7-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xa7pfg1aFGMxcrGrx+oWhxf2vRxkt
-	Lu+aw2ZxupvVgcXjzrU9bB7zTgZ69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8bCCVfZCv5y
-	VPTsvsDWwLibvYuRk0NCwETiwKkWJghbTOLCvfVsXYxcHEICSxklHnZsZoJw+pgk9jWcZAGp
-	YhMwlti8fAkbiC0ikCXxY9pqsDizgKHEz3d/wKYKCzhLvL9+hxHEZhFQlTi25zrYBl4BN4m+
-	LfOhNstJnDw2mbWLkYODU8Bd4vbjSBBTCKjk39uECYy8CxgZVjGKppYmFxQnpeca6hUn5haX
-	5qXrJefnbmKEBMmXHYyLj1kdYhTgYFTi4fU4sTJEiDWxrLgy9xCjBAezkgjvultAId6UxMqq
-	1KL8+KLSnNTiQ4xMHJxSDYycbfbCd5nmfFb/8mjrHT1N1bWskz8cmH5vs+4qVQ7uyKpnhRfW
-	WRX0Sl71z7j+XOh1stxkS2/xY+c3zzt/zvFuWcbUr8GnuJ6YK+yTYzn4aX/JV7267ueXF3q/
-	7n1T6BQ27fNxS3Ezv9O7uoKn3n9nU/T3UYx7m0a211Lbwx4XmkO4Lk8JZfygxFKckWioxVxU
-	nAgAzzUPC/ABAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xa7rfg1aFGFxdwG/x+oWhxf2vRxkt
+	Lu+aw2ZxupvVgcXjzrU9bB7zTgZ69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8aWozNZC/5w
+	Vtydeoe5gXEbRxcjJ4eEgIlEw4NfTBC2mMSFe+vZQGwhgaWMEvsv63cxcgHZfUwS+xpOsoAk
+	2ASMJTYvXwJWJCKQJfFj2mqwOLOAocTPd3/YQWxhAW+Jhp03mEFsFgFVicWr14LZvAJuEsv/
+	zGeBWCYncfLYZNYuRg4OTgF3iduPI0FMIaCSf28TJjDyLmBkWMUomlqaXFCclJ5rpFecmFtc
+	mpeul5yfu4kREiJfdzAuPWZ1iFGAg1GJh9fjxMoQIdbEsuLK3EOMEhzMSiK8624BhXhTEiur
+	Uovy44tKc1KLDzEycXBKNTBm/2VZ2vOw4/ykBv+wLcubHTc5STZOm/Q19M+npGfrLthNUzfP
+	7TIUSnbhn5fgoHr345toH4XDccLPp7j7sst+Yz1/dHrbQrU5U2OEcjf8ucnxyOliqu+lgJz1
+	Il3KndfCCy93xRycptf4v2B95EFeA50DjA3JTj6i22ed6Vup8t7H93nnLXUlluKMREMt5qLi
+	RAAeRkhp7wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,34 +37,36 @@ driver and regmap_init() accepts pointer to const.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/mfd/max77686.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/mfd/mc13xxx-i2c.c | 2 +-
+ drivers/mfd/mc13xxx-spi.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 929795eae9fc..2b2f2ccda523 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -111,17 +111,17 @@ static bool max77802_is_volatile_reg(struct device *dev, unsigned int reg)
- 		max77802_rtc_is_volatile_reg(dev, reg));
- }
- 
--static struct regmap_config max77686_regmap_config = {
-+static const struct regmap_config max77686_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
+diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
+index ae3addb153a2..68b844811566 100644
+--- a/drivers/mfd/mc13xxx-i2c.c
++++ b/drivers/mfd/mc13xxx-i2c.c
+@@ -46,7 +46,7 @@ static const struct of_device_id mc13xxx_dt_ids[] = {
  };
+ MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
  
--static struct regmap_config max77686_rtc_regmap_config = {
-+static const struct regmap_config max77686_rtc_regmap_config = {
+-static struct regmap_config mc13xxx_regmap_i2c_config = {
++static const struct regmap_config mc13xxx_regmap_i2c_config = {
  	.reg_bits = 8,
- 	.val_bits = 8,
+ 	.val_bits = 24,
+ 
+diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
+index 702925e242c9..58a170e45d88 100644
+--- a/drivers/mfd/mc13xxx-spi.c
++++ b/drivers/mfd/mc13xxx-spi.c
+@@ -48,7 +48,7 @@ static const struct of_device_id mc13xxx_dt_ids[] = {
  };
+ MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
  
--static struct regmap_config max77802_regmap_config = {
-+static const struct regmap_config max77802_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 	.writeable_reg = max77802_is_accessible_reg,
+-static struct regmap_config mc13xxx_regmap_spi_config = {
++static const struct regmap_config mc13xxx_regmap_spi_config = {
+ 	.reg_bits = 7,
+ 	.pad_bits = 1,
+ 	.val_bits = 24,
 -- 
 1.9.1
 
