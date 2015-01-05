@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbbAEESb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 23:18:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36897 "EHLO mx1.redhat.com"
+	id S1753195AbbAEE3R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 23:29:17 -0500
+Received: from ozlabs.org ([103.22.144.67]:54733 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838AbbAEESa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 23:18:30 -0500
-Message-ID: <54AA1062.3080506@redhat.com>
-Date: Mon, 05 Jan 2015 09:47:38 +0530
-From: Pratyush Anand <panand@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753169AbbAEE3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 23:29:16 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Oded Gabbay <oded.gabbay@amd.com>, Andi Kleen <ak@linux.intel.com>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dana Elifaz <Dana.Elifaz@amd.com>, LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
+In-Reply-To: <549A85DE.1040006@amd.com>
+References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com> <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com> <20141222184940.GB17192@tassilo.jf.intel.com> <20141222190041.GC17192@tassilo.jf.intel.com> <54986EA2.106@amd.com> <874msmt1hi.fsf@rustcorp.com.au> <549A85DE.1040006@amd.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 05 Jan 2015 14:58:54 +1030
+Message-ID: <87r3v96ebd.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
-        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com
-Subject: Re: [RFC 8/8] ARM64: Add uprobe support
-References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150102172333.GA6264@redhat.com> <54A944ED.5010408@redhat.com> <20150104184012.GA12614@redhat.com>
-In-Reply-To: <20150104184012.GA12614@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Monday 05 January 2015 12:10 AM, Oleg Nesterov wrote:
-> On 01/04, Pratyush Anand wrote:
->>
->> On Friday 02 January 2015 10:53 PM, Oleg Nesterov wrote:
->>> But the main question is: why do we need add/find_ss_context ?? Please
->>> explain.
+Oded Gabbay <oded.gabbay@amd.com> writes:
+> On 12/24/2014 01:01 AM, Rusty Russell wrote:
+>> Oded Gabbay <oded.gabbay@amd.com> writes:
+>>> I didn't say it doesn't always work.
+>>> The actual thing that doesn't work is the define symbol_get and only in a
+>>> specific case of 32bit kernel AND CONFIG_MODULES is unset AND
+>>> CONFIG_RANDOMIZE_BASE is set.
+>>> The define in that case is:
+>>> #define symbol_get(x) ({ extern typeof(x) x __attribute__((weak)); &(x); })
 >>>
+>>> Why it doesn't work (doesn't return NULL when symbol doesn't exists) ?
 >>
->> See arch/arm64/kernel/debug-monitors.c: call_step_hook
+>> Hmm, I'd guess CONFIG_RANDOMIZE_BASE is relocating NULL symbols...
 >>
->> Unlike breakpoint exception, there is no ESR info check for step
->> exception. So, it is the responsibility of step handler
->> (uprobe_single_step_handler) to make sure that exception was generated
->> for it.
+>> No, I can't reproduce this.  Please send your .config privately.
+>>
+>> Here's my test case:
+>>
+>> diff --git a/init/main.c b/init/main.c
+>> index 61b993767db5..a3ee1ec97ec3 100644
+>> --- a/init/main.c
+>> +++ b/init/main.c
+>> @@ -683,6 +683,12 @@ asmlinkage __visible void __init start_kernel(void)
+>>
+>>   	ftrace_init();
+>>
+>> +	{
+>> +		extern void nonexistent_fn(void);
+>> +		printk("symbol_get(nonexistent_fn) = %p\n",
+>> +		       symbol_get(nonexistent_fn));
+>> +	}
+>> +
+>>   	/* Do the rest non-__init'ed, we're now alive */
+>>   	rest_init();
+>>   }
+>>
+>> Thanks,
+>> Rusty.
+>>
+> Hi Rusty,
 >
-> Yes, yes, this is clear. My point was, we can (I think) rely on
-> uprobe_post_sstep_notifier() which checks ->active_uprobe != NULL.
->
-> And I guess you understood what I meant, but since I wasn't clear let
-> me repeat to ensure we really understand each other.
->
-> Can't
->
-> 	uprobe_single_step_handler(regs, esr)
-> 	{
-> 		if (user_mode(regs) && uprobe_post_sstep_notifier(regs))
-> 			return HANDLED;
-> 		return ERROR;
-> 	}
->
-> work without this step_ctx logic?
->
+> Attached is the bad config file. (config-bad)
+> I have narrowed the changes you need to do to the config file in order to 
+> reproduce this bug.
+> The base assumption is a 32-bit kernel and without modules support. Rest of the 
+> config file is pretty standard, IMO.
+> Then, its not enough to enable CONFIG_RANDOMIZE_BASE like I wrote in my original 
+> post. You need also to unset CONFIG_HIBERNATION.
 
-Yes,yes, no need of step_ctx logic.
+Indeed, thanks; your config breaks as reported.  With CONFIG_HIBERNATION
+the kernel offset is 0, so we don't see this.
 
-> If everything is correct, the probed task can execute a single (xol) insn
-> in user-mode before the trap. If ->active_uprobe is set we know that we
-> expect the ss trap in user-mode, and nothing else except this xol insn can
-> generate it?
+Kees, as far as I can tell you need another 0-terminated vmlinux.relocs
+section for weak symbols.  These should not be relocated if already 0.
 
-Yes, I do see any value addition in saving xol_vaddr in ss_ctx->match_addr.
+Put this somewhere to test.  It fails for x86_64, too:
 
->
-> Perhaps arm64 needs additional checks, I dunno... If you think that the
-> ->active_uprobe check is not enough you can probably also verify that
-> "utask->state = UTASK_SSTEP" and/or "regs->pc - 4 == utask->xol_vaddr",
-> but so far it seems to me that these additional checks can only make sense
-> under WARN_ON().
+diff --git a/init/main.c b/init/main.c
+index 61b993767db5..c9e0195c792a 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -683,6 +683,12 @@ asmlinkage __visible void __init start_kernel(void)
+ 
+ 	ftrace_init();
+ 
++	{
++		extern void __attribute__((weak)) nonexistent_fn(void);
++		printk("nonexistent_fn = %p\n", nonexistent_fn);
++		BUG_ON(nonexistent_fn != NULL);
++	}
++
+ 	/* Do the rest non-__init'ed, we're now alive */
+ 	rest_init();
+ }
 
-Yes.
-
-~Pratyush
+Cheers,
+Rusty.
