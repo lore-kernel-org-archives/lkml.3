@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194AbbAEVfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:35:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58153 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbbAEVfC (ORCPT
+	id S1754594AbbAEVgL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:36:11 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:56333 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbbAEVgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:35:02 -0500
-Date: Mon, 5 Jan 2015 13:35:00 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jweiner@redhat.com,
-        dave.hansen@linux.intel.com, rientjes@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH v2] fs: proc: task_mmu: show page size in
- /proc/<pid>/numa_maps
-Message-Id: <20150105133500.e0ce4b090e6b378c3edc9c56@linux-foundation.org>
-In-Reply-To: <734bca19b3a8f4e191ccc9055ad4740744b5b2b6.1420464466.git.aquini@redhat.com>
-References: <734bca19b3a8f4e191ccc9055ad4740744b5b2b6.1420464466.git.aquini@redhat.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Jan 2015 16:36:09 -0500
+Date: Mon, 5 Jan 2015 17:35:59 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com, rui.zhang@intel.com,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH] ti-soc-thermal: implement eocz bit to make driver useful
+ on omap3
+Message-ID: <20150105213557.GD31536@developer>
+References: <20150103114632.GA21883@amd>
+ <20150103122634.GB22356@developer>
+ <20150103162241.GA26680@amd>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9dgjiU4MmWPVapMU"
+Content-Disposition: inline
+In-Reply-To: <20150103162241.GA26680@amd>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Jan 2015 12:44:31 -0500 Rafael Aquini <aquini@redhat.com> wrote:
 
-> This patch introduces 'kernelpagesize_kB' line element to /proc/<pid>/numa_maps
-> report file in order to help identifying the size of pages that are backing
-> memory areas mapped by a given task. This is specially useful to
-> help differentiating between HUGE and GIGANTIC page backed VMAs.
-> 
-> This patch is based on Dave Hansen's proposal and reviewer's follow-ups
-> taken from the following dicussion threads:
->  * https://lkml.org/lkml/2011/9/21/454
+--9dgjiU4MmWPVapMU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dave's changelog contains useful information which this one lacked.  I
-stole some of it.
+On Sat, Jan 03, 2015 at 05:22:42PM +0100, Pavel Machek wrote:
+> Hi!
+>=20
+> > > When periodic mode is not enabled, it is neccessary to force reads.
+> > >=20
+> > > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> > >=20
+>=20
+> > > --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> > > +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> > > @@ -43,6 +43,8 @@
+> > > =20
+> > >  #include "ti-bandgap.h"
+> > > =20
+> > > +static int ti_bandgap_force_single_read(struct ti_bandgap *bgp, int =
+id);
+> > > +
+> > >  /***   Helper functions to access registers and their bitfields   **=
+*/
+> > > =20
+> > >  /**
+> > > @@ -852,14 +831,20 @@ int ti_bandgap_read_temperature(struct ti_bandg=
+ap *bgp, int id,
+> > >  	if (ret)
+> > >  		return ret;
+> > > =20
+> > > +	if (!TI_BANDGAP_HAS(bgp, MODE_CONFIG)) {
+> > > +		ret =3D ti_bandgap_force_single_read(bgp, id);
+> >=20
+> > not sure MODE_CONFIG is sufficient condition for single read on all OMAP
+> > versions.
+>=20
+> Ok, what do you suggest? AFAICT, without MODE_CONFIG, continuous ADC
+> mode is not available, so we have to force it periodically, so this
+> should be correct.
 
-: The output of /proc/$pid/numa_maps is in terms of number of pages like
-: anon=22 or dirty=54.  Here's some output:
-: 
-: 7f4680000000 default file=/hugetlb/bigfile anon=50 dirty=50 N0=50
-: 7f7659600000 default file=/anon_hugepage\040(deleted) anon=50 dirty=50 N0=50
-: 7fff8d425000 default stack anon=50 dirty=50 N0=50
-: Looks like we have a stack and a couple of anonymous hugetlbfs
-: areas page which both use the same amount of memory.  They don't.
-: 
-: The 'bigfile' uses 1GB pages and takes up ~50GB of space.  The
-: anon_hugepage uses 2MB pages and takes up ~100MB of space while the stack
-: uses normal 4k pages.  You can go over to smaps to figure out what the
-: page size _really_ is with KernelPageSize or MMUPageSize.  But, I think
-: this is a pretty nasty and counterintuitive interface as it stands.
-: 
-: This patch introduces 'kernelpagesize_kB' line element to
-: /proc/<pid>/numa_maps report file in order to help identifying the size of
-: pages that are backing memory areas mapped by a given task.  This is
-: specially useful to help differentiating between HUGE and GIGANTIC page
-: backed VMAs.
-: 
-: This patch is based on Dave Hansen's proposal and reviewer's follow-ups
-: taken from the following dicussion threads:
-:  * https://lkml.org/lkml/2011/9/21/454
-:  * https://lkml.org/lkml/2014/12/20/66
+I will have a better look and let you know. for now, adding a single
+read should not hurt ( but I will double check)
 
+>=20
+> > > +		if (ret)
+> > > +			return ret;
+> > > +	}
+> > > +
+> > >  	spin_lock(&bgp->lock);
+> > >  	temp =3D ti_bandgap_read_temp(bgp, id);
+> > >  	spin_unlock(&bgp->lock);
+> > > =20
+> > > -	ret |=3D ti_bandgap_adc_to_mcelsius(bgp, temp, &temp);
+> > > +	ret =3D ti_bandgap_adc_to_mcelsius(bgp, temp, &temp);
+> >=20
+> > this one should be part of your clean up patch
+>=20
+> Ok, can you apply the cleanup patch and I'll prepare one on the top of
+> it?
 
-> +	seq_printf(m, " kernelpagesize_kB=%lu", vma_kernel_pagesize(vma) >> 10);
+I mean, you should resend the cleanup patch including the above '|=3D' remo=
+val, as you are already doing in the cleanup patch.
 
-This changes the format of the numa_maps file and can potentially break
-existing parsers.  Please discuss.
+>=20
+> 									Pavel
+> --=20
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/b=
+log.html
 
-I'd complain about the patch's failure to update the documentation,
-except numa_maps appears to be undocumented.  Sigh.  What the heck is "N0"?
+--9dgjiU4MmWPVapMU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUqwO0AAoJEMLUO4d9pOJWaJgH/ArebtCW23ANA7+na+NEBnGo
+H0OmnHM6ZmICCLCeDi/yIbk/B+Hl5tgnlWyvsY3htXAw2bbNDanS8OzfxsfkbHJO
+qkN/APJM6vC+PNCiNgQQPJZYycAXMBtsiNqZgMGXzqZiqIZPhbcJG5iA698Dfiui
+BbVVI7i0xmCk0myDlCGy8xSvid+gfVTyliViQMzICwPgPfY/82I+lzcpfy5WaSkc
+tgVmBHAPCkskQwDmJ8FPlRyOIqLS8wGtsvndySzynaVJL5Ob0AhZkVIRbACN9VYH
+NIGwBFsDT6ijTpChow1xZLve0wMKQA5i/hJ+DA8G8SapR9pn0pgR5DbdgHV0u3Q=
+=Y667
+-----END PGP SIGNATURE-----
+
+--9dgjiU4MmWPVapMU--
