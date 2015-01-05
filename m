@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277AbbAEVzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:55:04 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:61308 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905AbbAEVzC (ORCPT
+	id S1754631AbbAEWCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:02:55 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56192 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753885AbbAEWCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:55:02 -0500
+	Mon, 5 Jan 2015 17:02:53 -0500
+X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 17:02:53 EST
+X-Sasl-enc: U4ZK7tU0cS+eCjFNTjsZleYWkiqWrgbxZc12FGa+ciqL 1420494892
+Date: Mon, 5 Jan 2015 19:54:46 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guillem Jover <guillem@debian.org>, linux-aio <linux-aio@kvack.org>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: libaio tarballs on <kernel.org>
+Message-ID: <20150105215446.GD19679@khazad-dum.debian.net>
+References: <CA+icZUUkp4OrPWfw7PEpt2DDEyrf+z1SAQcXpREOXoA7JQ0stg@mail.gmail.com>
+ <CA+icZUV8Zu=fE5Jj-Fo5a3TTz-C2r2L5zWJzEcrfSbdq5Zf4sA@mail.gmail.com>
+ <x49egr93vcw.fsf@segfault.boston.devel.redhat.com>
+ <CA+icZUUsn4YWATGb2KCer-kqhKje1o1xX35ZwazDTiu6LxZQMQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBbKbuyYWKK_wK1pwX_T39dKmukBom+i7H5dndfjhDJahbQ@mail.gmail.com>
-References: <20141124205441.GW5050@linux.vnet.ibm.com> <CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
- <20141124213501.GX5050@linux.vnet.ibm.com> <20141124223407.GB8512@linux.vnet.ibm.com>
- <CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
- <20141124225754.GY5050@linux.vnet.ibm.com> <20141124233101.GA2819@linux.vnet.ibm.com>
- <CALCETrV37kqC658AzBHZ5z_vH2b_1T821q5EfbMcS9Ecpj8EEw@mail.gmail.com>
- <20141124235058.GZ5050@linux.vnet.ibm.com> <CALCETrUFwyBYFWZi4JC1-HftmUumLr+bB1kh8EW6LViN+G+j+g@mail.gmail.com>
- <20141125185803.GC3938@pd.tnic> <CA+8MBb+iw3KJz5EgX-DLBHGWANUSVFP2bQe2_U4kqCfM-wzH8Q@mail.gmail.com>
- <CALCETrWFBEvL4CSD+cZ0inMcvv09rLJi4Wpf4gLz5fvsGcV-wQ@mail.gmail.com> <CA+8MBbKbuyYWKK_wK1pwX_T39dKmukBom+i7H5dndfjhDJahbQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 5 Jan 2015 13:54:40 -0800
-Message-ID: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUsn4YWATGb2KCer-kqhKje1o1xX35ZwazDTiu6LxZQMQ@mail.gmail.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 1:46 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Wed, Dec 10, 2014 at 4:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> I think you need ist_begin_non_atomic() before local_irq_enable() and
->> ist_end_non_atomic() after local_irq_disable().  Otherwise it should
->> be good.
->
-> In your x86/paranoid branch you added:
->
->      prev_state = ist_enter(regs);
->           .... body of do_machine_check() here ...
->      ist_exit(regs, prev_state);
->
-> Does that override the previous advice? Or do I still need something before
-> I call local_irq_enable() and after local_irq_disable()?
+On Mon, 05 Jan 2015, Sedat Dilek wrote:
+> > https://fedorahosted.org/releases/l/i/libaio/
+> 
+> Thanks for the URL.
+> More Thanks when you add some hashsums like md5sum and/or preferred sha256sum.
+> 
+> Hope the Debian/Ubuntu maintainers will change the "Homepage:" line accordingly.
 
-I think I was just being vague.  It would be:
-
-     prev_state = ist_enter(regs);
-          .... beginning of do_machine_check() here ...
-
-     if (whatever condition) {
-        ist_begin_non_atomic();
-        local_irq_enable();
-
-        ...
-
-        local_irq_disable();
-        ist_end_non_atomic();
-     ist_exit(regs, prev_state);
-
---Andy
-
->
-> -Tony
-
-
+Please file a bug on the Debian BTS about it...
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
