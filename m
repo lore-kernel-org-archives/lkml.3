@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbbAEMVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 07:21:17 -0500
+	id S1753926AbbAEMUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:20:31 -0500
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:44743 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510AbbAEMTW (ORCPT
+	with ESMTP id S1753614AbbAEMTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 07:19:22 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-09-54aa8148ad77
+	Mon, 5 Jan 2015 07:19:24 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-0b-54aa8148b6f6
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
@@ -20,58 +20,138 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         linus.walleij@linaro.org, tony@atomide.com, drake@endlessm.com,
         loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>, nm@ti.com,
         khilman@linaro.org
-Subject: [PATCH v11 5/9] ARM: l2c: Get outer cache .write_sec callback from
- mach_desc only if not NULL
-Date: Mon, 05 Jan 2015 13:19:04 +0100
-Message-id: <1420460348-20302-6-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH v11 6/9] ARM: l2c: Add support for overriding prefetch settings
+Date: Mon, 05 Jan 2015 13:19:05 +0100
+Message-id: <1420460348-20302-7-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1420460348-20302-1-git-send-email-m.szyprowski@samsung.com>
 References: <1420460348-20302-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xK7oejatCDC6cZ7f4O+kYu8Wj+Y+Z
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xK7oejatCDH5dMrP4O+kYu8Wj+Y+Z
 	LXoXXGWz+Hp4BaPF2aY37BbbO2ewW0z5s5zJYtPja6wWl3fNYbOYvaSfxWLG+X1MFrcv81qc
 	276FxWLtkbvsFkuvX2SyePPjLJPFqeuf2SxW7frDaLH/ipeDsMeaeWsYPVqae9g8fv+axOjx
 	7eskFo/Lfb1MHou+Z3nsnHWX3ePOtT1sHpuX1HtcOdHE6tG3ZRWjx/Eb25k8Pm+SC+CN4rJJ
-	Sc3JLEst0rdL4Mr4dWY6e8FvzopVs78zNjBu5ehi5OSQEDCR2LuniwXCFpO4cG89WxcjF4eQ
-	wFJGiY4/e1ghnD4miZdHD7ODVLEJGEp0ve1iA7FFBNwk/q07BNbBLDCNRWLTkfPMIAlhgQyJ
-	VWsXMHYxcnCwCKhKrHnpBhLmFfCQePX+CdQ2OYn/L1cwgdicAp4SS/fuA5svBFRz5tZa9gmM
-	vAsYGVYxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihMTFlx2Mi49ZHWIU4GBU4uH1OLEyRIg1
-	say4MvcQowQHs5II76v0VSFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGHPe6bQuX/XhcWFObmwg
-	h+GqniS/iS6PbNRkJcUfaZ2bwTw7Msdjn0eRUefUDzVtLOl7M/NPyBrHJbjPVZIzLbxjf3av
-	nM/p7FDF8pbOr87LZj6/ckeoQDleuuKC1aWuS1dsQs6LbjAOrg8/a7+MsesFV2vwWbZ7xmJN
-	rIFu7ll9VzfN9hRRYinOSDTUYi4qTgQA7LmTjWkCAAA=
+	Sc3JLEst0rdL4MpY0T2VtWCLQsWJiT1sDYxXpLoYOTkkBEwkrt//zwphi0lcuLeerYuRi0NI
+	YCmjxMyWFiinj0ni5dHD7CBVbAKGEl1vu9hAbBEBN4l/6w6BFTELTGOR2HTkPDNIQljAX2LT
+	3M9AYzk4WARUJV4+SwcxeQU8JK7sC4FYJifx/+UKJhCbU8BTYunefWDjhYBKztxayz6BkXcB
+	I8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJCo+LKDcfExq0OMAhyMSjy8HidWhgixJpYV
+	V+YeYpTgYFYS4X2VvipEiDclsbIqtSg/vqg0J7X4ECMTB6dUA2NJ52vbjjKxthBJad1wmUOT
+	xTWXhz032rPh0kPxpyJcFau+TLb6ueznkXoZzZdX/E9kGpy583nCVp/U9F0mkpdZGI0m56Yb
+	yp4xF2b4JhXwTbW6OVVIa18Tm5mW/GuzTkOehQ+P/+yq+7Eu3miRqwnnqc9PJwnM+FfUriZq
+	8mCZ+eNrQkp1q5RYijMSDbWYi4oTAXRDg0toAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tomasz Figa <t.figa@samsung.com>
 
-Certain platforms (i.e. Exynos) might need to set .write_sec callback
-from firmware initialization which is happenning in .init_early callback
-of machine descriptor. However current code will overwrite the pointer
-with whatever is present in machine descriptor, even though it can be
-already set earlier. This patch fixes this by making the assignment
-conditional, depending on whether current .write_sec callback is NULL.
+Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
+settings configured in registers leading to crashes if L2C is enabled
+without overriding them. This patch introduces bindings to enable
+prefetch settings to be specified from DT and necessary support in the
+driver.
 
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+[mszyprow: rebased onto v3.18-rc1, added error message when prefetch related
+ dt property has been provided without any value]
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- arch/arm/kernel/irq.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/arm/l2cc.txt | 10 +++++
+ arch/arm/mm/cache-l2x0.c                       | 54 ++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+)
 
-diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index ad857bada96c..350f188c92d2 100644
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -109,7 +109,8 @@ void __init init_IRQ(void)
+diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+index 292ef7ca3058..0dbabe9a6b0a 100644
+--- a/Documentation/devicetree/bindings/arm/l2cc.txt
++++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+@@ -57,6 +57,16 @@ Optional properties:
+ - cache-id-part: cache id part number to be used if it is not present
+   on hardware
+ - wt-override: If present then L2 is forced to Write through mode
++- arm,double-linefill : Override double linefill enable setting. Enable if
++  non-zero, disable if zero.
++- arm,double-linefill-incr : Override double linefill on INCR read. Enable
++  if non-zero, disable if zero.
++- arm,double-linefill-wrap : Override double linefill on WRAP read. Enable
++  if non-zero, disable if zero.
++- arm,prefetch-drop : Override prefetch drop enable setting. Enable if non-zero,
++  disable if zero.
++- arm,prefetch-offset : Override prefetch offset value. Valid values are
++  0-7, 15, 23, and 31.
  
- 	if (IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_CACHE_L2X0) &&
- 	    (machine_desc->l2c_aux_mask || machine_desc->l2c_aux_val)) {
--		outer_cache.write_sec = machine_desc->l2c_write_sec;
-+		if (!outer_cache.write_sec)
-+			outer_cache.write_sec = machine_desc->l2c_write_sec;
- 		ret = l2x0_of_init(machine_desc->l2c_aux_val,
- 				   machine_desc->l2c_aux_mask);
- 		if (ret)
+ Example:
+ 
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index dcde6086a228..e7f1bd90dde6 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -1169,6 +1169,8 @@ static void __init l2c310_of_parse(const struct device_node *np,
+ 	u32 tag[3] = { 0, 0, 0 };
+ 	u32 filter[2] = { 0, 0 };
+ 	u32 assoc;
++	u32 prefetch;
++	u32 val;
+ 	int ret;
+ 
+ 	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
+@@ -1214,6 +1216,58 @@ static void __init l2c310_of_parse(const struct device_node *np,
+ 		       assoc);
+ 		break;
+ 	}
++
++	prefetch = l2x0_saved_regs.prefetch_ctrl;
++
++	ret = of_property_read_u32(np, "arm,double-linefill", &val);
++	if (ret == 0) {
++		if (val)
++			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL;
++	} else if (ret != -EINVAL) {
++		pr_err("L2C-310 OF arm,double-linefill property value is missing\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,double-linefill-incr", &val);
++	if (ret == 0) {
++		if (val)
++			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
++	} else if (ret != -EINVAL) {
++		pr_err("L2C-310 OF arm,double-linefill-incr property value is missing\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,double-linefill-wrap", &val);
++	if (ret == 0) {
++		if (!val)
++			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
++	} else if (ret != -EINVAL) {
++		pr_err("L2C-310 OF arm,double-linefill-wrap property value is missing\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,prefetch-drop", &val);
++	if (ret == 0) {
++		if (val)
++			prefetch |= L310_PREFETCH_CTRL_PREFETCH_DROP;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_PREFETCH_DROP;
++	} else if (ret != -EINVAL) {
++		pr_err("L2C-310 OF arm,prefetch-drop property value is missing\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,prefetch-offset", &val);
++	if (ret == 0) {
++		prefetch &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
++		prefetch |= val & L310_PREFETCH_CTRL_OFFSET_MASK;
++	} else if (ret != -EINVAL) {
++		pr_err("L2C-310 OF arm,prefetch-offset property value is missing\n");
++	}
++
++	l2x0_saved_regs.prefetch_ctrl = prefetch;
+ }
+ 
+ static const struct l2c_init_data of_l2c310_data __initconst = {
 -- 
 1.9.2
 
