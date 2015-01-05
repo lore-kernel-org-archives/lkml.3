@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778AbbAEQ3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:29:48 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14374 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbbAEQ3q (ORCPT
+	id S1753492AbbAEQ2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:28:40 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:40695 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbbAEQ2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:29:46 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/4CvBAbkBj99Q2fHFaItfD
-Date: Mon, 5 Jan 2015 08:25:54 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
-        linus.walleij@linaro.org, drake@endlessm.com, loeliger@gmail.com,
-        Mark Rutland <mark.rutland@arm.com>, nm@ti.com, khilman@linaro.org
-Subject: Re: [PATCH v11 6/9] ARM: l2c: Add support for overriding prefetch
- settings
-Message-ID: <20150105162553.GF4081@atomide.com>
-References: <1420460348-20302-1-git-send-email-m.szyprowski@samsung.com>
- <1420460348-20302-7-git-send-email-m.szyprowski@samsung.com>
+	Mon, 5 Jan 2015 11:28:38 -0500
+Date: Mon, 5 Jan 2015 17:28:34 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
+Message-ID: <20150105162833.GA20821@amd>
+References: <20141211214801.4127.93914.stgit@notabene.brown>
+ <20141211215943.4127.24792.stgit@notabene.brown>
+ <20141228142010.GA3922@amd>
+ <20150103103357.2406fc23@notabene.brown>
+ <20150105154141.6f191cd5@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420460348-20302-7-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <20150105154141.6f191cd5@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marek Szyprowski <m.szyprowski@samsung.com> [150105 04:22]:
-> From: Tomasz Figa <t.figa@samsung.com>
+On Mon 2015-01-05 15:41:41, One Thousand Gnomes wrote:
+> > It would be really nice if the uart would register the line disciple as a
+> > child device, then the line discipline would register whatever it wants.
 > 
-> Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
-> settings configured in registers leading to crashes if L2C is enabled
-> without overriding them. This patch introduces bindings to enable
-> prefetch settings to be specified from DT and necessary support in the
-> driver.
+> For almost every case this doesn't work. You need a tty interface as well
+> because thats how you manage it.
 > 
-> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-> [mszyprow: rebased onto v3.18-rc1, added error message when prefetch related
->  dt property has been provided without any value]
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> > But that isn't how it works.  The line discipline doesn't talk to the uart.
+> > Rather the tty layer talks to the uart (through tty_operations) and to the
+> > line discipline (through tty_ldisc_ops) and also registers the char_dev.
+> 
+> This is intentional. An ldisc has no business knowing what it's connected
+> to. Try running bluetooth over a tty/pty pair remotely to a dongle - and
+> you can do it or faking a GSM mux over a tty/pty pair for testing.
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Not all cases are like that. IIRC Neil's hardware uses CTS/RTS in an
+interesting way. bc2048 is connected to serial+clocks+gpios...
+
+> There are lots of cases where we know the correct ldisc from information
+> in the ACPI, DT or even USB identifiers in order to plug in the right
+> ldisc and daemon but I think that pretty much has to be in user space.
+> The kernel might be able to set an ldisc but it can't go around starting
+> bluetooth daemons, doing modem chats to go into mux mode or firing up
+> JMRI and java when it sees a Sprog. That's a job for systemd/udev.
+
+No need to start bluetooth daemons: userspace can start them
+itself. Just like in btusb case.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
