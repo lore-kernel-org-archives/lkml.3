@@ -1,105 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbbAEE3R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 23:29:17 -0500
-Received: from ozlabs.org ([103.22.144.67]:54733 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169AbbAEE3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 23:29:16 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Oded Gabbay <oded.gabbay@amd.com>, Andi Kleen <ak@linux.intel.com>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dana Elifaz <Dana.Elifaz@amd.com>, LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Alexander Deucher <Alexander.Deucher@amd.com>, LKP ML <lkp@01.org>
-Subject: Re: [LKP] [PATCH] drm/radeon: Try to init amdkfd only if 64 bit kernel
-In-Reply-To: <549A85DE.1040006@amd.com>
-References: <1419246673-7222-1-git-send-email-oded.gabbay@amd.com> <CADnq5_MY3+4BdWzUYffTnRWF3J4Z7nb6zyrGZK4RNwVU3axvuw@mail.gmail.com> <20141222184940.GB17192@tassilo.jf.intel.com> <20141222190041.GC17192@tassilo.jf.intel.com> <54986EA2.106@amd.com> <874msmt1hi.fsf@rustcorp.com.au> <549A85DE.1040006@amd.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 05 Jan 2015 14:58:54 +1030
-Message-ID: <87r3v96ebd.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753069AbbAEEsm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 23:48:42 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:46839 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972AbbAEEsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 23:48:41 -0500
+Date: Sun, 04 Jan 2015 23:48:38 -0500 (EST)
+Message-Id: <20150104.234838.596521437683943688.davem@davemloft.net>
+To: me@mortis.eu
+Cc: linux-kernel@vger.kernel.org, jitendra.kalsaria@qlogic.com,
+        ron.mercer@qlogic.com, linux-driver@qlogic.com, netdev@vger.kernel.org
+Subject: Re: [PATCH] Fix an infinite retry-loop
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1420394696-20099-1-git-send-email-me@mortis.eu>
+References: <1420394696-20099-1-git-send-email-me@mortis.eu>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 04 Jan 2015 20:48:40 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oded Gabbay <oded.gabbay@amd.com> writes:
-> On 12/24/2014 01:01 AM, Rusty Russell wrote:
->> Oded Gabbay <oded.gabbay@amd.com> writes:
->>> I didn't say it doesn't always work.
->>> The actual thing that doesn't work is the define symbol_get and only in a
->>> specific case of 32bit kernel AND CONFIG_MODULES is unset AND
->>> CONFIG_RANDOMIZE_BASE is set.
->>> The define in that case is:
->>> #define symbol_get(x) ({ extern typeof(x) x __attribute__((weak)); &(x); })
->>>
->>> Why it doesn't work (doesn't return NULL when symbol doesn't exists) ?
->>
->> Hmm, I'd guess CONFIG_RANDOMIZE_BASE is relocating NULL symbols...
->>
->> No, I can't reproduce this.  Please send your .config privately.
->>
->> Here's my test case:
->>
->> diff --git a/init/main.c b/init/main.c
->> index 61b993767db5..a3ee1ec97ec3 100644
->> --- a/init/main.c
->> +++ b/init/main.c
->> @@ -683,6 +683,12 @@ asmlinkage __visible void __init start_kernel(void)
->>
->>   	ftrace_init();
->>
->> +	{
->> +		extern void nonexistent_fn(void);
->> +		printk("symbol_get(nonexistent_fn) = %p\n",
->> +		       symbol_get(nonexistent_fn));
->> +	}
->> +
->>   	/* Do the rest non-__init'ed, we're now alive */
->>   	rest_init();
->>   }
->>
->> Thanks,
->> Rusty.
->>
-> Hi Rusty,
->
-> Attached is the bad config file. (config-bad)
-> I have narrowed the changes you need to do to the config file in order to 
-> reproduce this bug.
-> The base assumption is a 32-bit kernel and without modules support. Rest of the 
-> config file is pretty standard, IMO.
-> Then, its not enough to enable CONFIG_RANDOMIZE_BASE like I wrote in my original 
-> post. You need also to unset CONFIG_HIBERNATION.
+From: Giel van Schijndel <me@mortis.eu>
+Date: Sun,  4 Jan 2015 19:04:55 +0100
 
-Indeed, thanks; your config breaks as reported.  With CONFIG_HIBERNATION
-the kernel offset is 0, so we don't see this.
+> This was clearly intended as a retry-10-times loop, but due to the
+> absence of code incrementing the loop-counter it was practically a
+> retry-forever loop.
+> 
+> Rewritten it as a for-loop as well to make the loop-counter increment
+> (as well as its potential absence) easier to spot.
 
-Kees, as far as I can tell you need another 0-terminated vmlinux.relocs
-section for weak symbols.  These should not be relocated if already 0.
+Besides missing the Signoff, you also did not write your
+Subject line properly.
 
-Put this somewhere to test.  It fails for x86_64, too:
+You should format it as:
 
-diff --git a/init/main.c b/init/main.c
-index 61b993767db5..c9e0195c792a 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -683,6 +683,12 @@ asmlinkage __visible void __init start_kernel(void)
- 
- 	ftrace_init();
- 
-+	{
-+		extern void __attribute__((weak)) nonexistent_fn(void);
-+		printk("nonexistent_fn = %p\n", nonexistent_fn);
-+		BUG_ON(nonexistent_fn != NULL);
-+	}
-+
- 	/* Do the rest non-__init'ed, we're now alive */
- 	rest_init();
- }
+Subject: [PATCH] ${SUBSYSTEM_PREFIX}: Description.
 
-Cheers,
-Rusty.
+Where ${SUBSYSTEM_PREFIX} should be "qlogic: " in this
+case.
+
+Do not fix this by replying to this email, instead make a new
+fresh patch posting to the lists.
+
+This also applied to all of your other submissions, they all
+need to be fixed up in this manner at the very least.
