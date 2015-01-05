@@ -1,146 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbbAEIpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:45:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44604 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003AbbAEIpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:45:40 -0500
-Date: Mon, 5 Jan 2015 09:45:34 +0100
-From: Jan Kara <jack@suse.cz>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: flex_proportions.c:  Remove some unused functions
-Message-ID: <20150105084534.GA7056@quack.suse.cz>
-References: <1419086431-3474-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753250AbbAEIrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:47:24 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:48508 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135AbbAEIrX convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:13:1>);
+	Mon, 5 Jan 2015 03:47:23 -0500
+Message-Id: <54AA4F9502000078000C4C46@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Mon, 05 Jan 2015 08:47:17 +0000
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <luto@amacapital.net>
+Cc: <chenggang.qcg@alibaba-inc.com>, <chenggang.qin@gmail.com>,
+        <dsahern@gmail.com>, <namhyung@gmail.com>, <efault@gmx.de>,
+        <eranian@google.com>, <peterz@infradead.org>, <fengguang.wu@intel.com>,
+        <yanmin.zhang@intel.com>, <akpm@linux-foundation.org>,
+        <arjan@linux.intel.com>, <jolsa@redhat.com>, <mingo@redhat.com>,
+        <paulus@samba.org>, <chenggang.qcg@taobao.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: =?UTF-8?Q?Re:=20=E7=AD=94=E5=A4=8D=EF=BC=9A[PATCH]=20perf=20core?=
+ =?UTF-8?Q?:=20Use=20KSTK=5FESP()=20instead=20of=20pt=5Fregs->sp=20while?=
+ =?UTF-8?Q?=20output=20user=20regs?=
+References: <1419315745-20767-1-git-send-email-user@chenggang-laptop>
+ <c027bde0-5f4f-441f-8d45-3e7f6f702231@alibaba-inc.com>
+ <CALCETrVVvbnO-7bnyPCYhPbDoEg-hqmvVbfXL9ONbQPBTJNUZg@mail.gmail.com>
+ <20141230190327.GB23965@worktop.programming.kicks-ass.net>
+ <CALCETrWxPBdjY0+gCmPSwjYLB0u4Z4JgGtuR-XU=qwVzoDEBpA@mail.gmail.com>
+ <CALCETrUEDuWoXyN+JrB5nWfL6B5odQJU37_y=-tzXN0vxr4tOQ@mail.gmail.com>
+ <54A6C34C02000078000C4AE4@mail.emea.novell.com>
+ <CALCETrUbEpTuQKiUPKeT54nFSwDQh9uA2QHLXsZeTbLrMsqxoA@mail.gmail.com>
+In-Reply-To: <CALCETrUbEpTuQKiUPKeT54nFSwDQh9uA2QHLXsZeTbLrMsqxoA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1419086431-3474-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 20-12-14 15:40:31, Rickard Strandqvist wrote:
-> Removes some functions that are not used anywhere:
-> prop_fraction_single() prop_local_destroy_single() prop_local_init_single() fprop_global_destroy()
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-  This is the same situation as with lib/proportions.c. The functions are
-there for API completeness. As far as I'm looking the whole 'single'
-section is unused so ifdeffing it out might make sense (and also ifdeffing
-out fprop_inc_single() from include/linux/flex_proportions.h). Removing
-fprop_global_destroy() is IMO pointless churn.
+>>> Andy Lutomirski <luto@amacapital.net> 01/02/15 7:03 PM >>>
+>On Jan 2, 2015 8:11 AM, "Jan Beulich" <jbeulich@suse.com> wrote:
+>> Trying to guess what you mean by "this": A stack switch gets expressed by
+>> CFI annotations just like any other frame pointer adjustments. See for example
+>> the CFI_DEF_CFA_REGISTER use in the SAVE_ARGS_IRQ macro.
+>>
+>> If that wasn't your question, please be more precise.
+>
+>Sorry, my question was vague.
+>
+>Is there any way to consume these annotations at runtime in the
+>kernel?  The goal would be for perf's NMI handler to consume the CFI
+>data to figure out the userspace registers.  I'm guessing that the
+>answer might be no, because we seem to be compiling with
+>-fno-asynchronous-unwind-tables and we don't seem to be putting any
+>.eh_frame stuff into the final kernel image.
+>
+>I had thought that someone implemented runtime DWARF unwinding, though.
 
-								Honza
+Yes, we do have such code in our kernels, but Linus continues to veto it going
+into his tree.
 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  include/linux/flex_proportions.h |    6 -----
->  lib/flex_proportions.c           |   46 --------------------------------------
->  2 files changed, 52 deletions(-)
-> 
-> diff --git a/include/linux/flex_proportions.h b/include/linux/flex_proportions.h
-> index 0d348e0..27ea6a1 100644
-> --- a/include/linux/flex_proportions.h
-> +++ b/include/linux/flex_proportions.h
-> @@ -34,7 +34,6 @@ struct fprop_global {
->  };
->  
->  int fprop_global_init(struct fprop_global *p, gfp_t gfp);
-> -void fprop_global_destroy(struct fprop_global *p);
->  bool fprop_new_period(struct fprop_global *p, int periods);
->  
->  /*
-> @@ -52,12 +51,7 @@ struct fprop_local_single {
->  {	.lock = __RAW_SPIN_LOCK_UNLOCKED(name.lock),	\
->  }
->  
-> -int fprop_local_init_single(struct fprop_local_single *pl);
-> -void fprop_local_destroy_single(struct fprop_local_single *pl);
->  void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl);
-> -void fprop_fraction_single(struct fprop_global *p,
-> -	struct fprop_local_single *pl, unsigned long *numerator,
-> -	unsigned long *denominator);
->  
->  static inline
->  void fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
-> diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
-> index 8f25652..575f9e1 100644
-> --- a/lib/flex_proportions.c
-> +++ b/lib/flex_proportions.c
-> @@ -47,11 +47,6 @@ int fprop_global_init(struct fprop_global *p, gfp_t gfp)
->  	return 0;
->  }
->  
-> -void fprop_global_destroy(struct fprop_global *p)
-> -{
-> -	percpu_counter_destroy(&p->events);
-> -}
-> -
->  /*
->   * Declare @periods new periods. It is upto the caller to make sure period
->   * transitions cannot happen in parallel.
-> @@ -90,18 +85,6 @@ bool fprop_new_period(struct fprop_global *p, int periods)
->   * ---- SINGLE ----
->   */
->  
-> -int fprop_local_init_single(struct fprop_local_single *pl)
-> -{
-> -	pl->events = 0;
-> -	pl->period = 0;
-> -	raw_spin_lock_init(&pl->lock);
-> -	return 0;
-> -}
-> -
-> -void fprop_local_destroy_single(struct fprop_local_single *pl)
-> -{
-> -}
-> -
->  static void fprop_reflect_period_single(struct fprop_global *p,
->  					struct fprop_local_single *pl)
->  {
-> @@ -134,35 +117,6 @@ void __fprop_inc_single(struct fprop_global *p, struct fprop_local_single *pl)
->  	percpu_counter_add(&p->events, 1);
->  }
->  
-> -/* Return fraction of events of type pl */
-> -void fprop_fraction_single(struct fprop_global *p,
-> -			   struct fprop_local_single *pl,
-> -			   unsigned long *numerator, unsigned long *denominator)
-> -{
-> -	unsigned int seq;
-> -	s64 num, den;
-> -
-> -	do {
-> -		seq = read_seqcount_begin(&p->sequence);
-> -		fprop_reflect_period_single(p, pl);
-> -		num = pl->events;
-> -		den = percpu_counter_read_positive(&p->events);
-> -	} while (read_seqcount_retry(&p->sequence, seq));
-> -
-> -	/*
-> -	 * Make fraction <= 1 and denominator > 0 even in presence of percpu
-> -	 * counter errors
-> -	 */
-> -	if (den <= num) {
-> -		if (num)
-> -			den = num;
-> -		else
-> -			den = 1;
-> -	}
-> -	*denominator = den;
-> -	*numerator = num;
-> -}
-> -
->  /*
->   * ---- PERCPU ----
->   */
-> -- 
-> 1.7.10.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jan
+
