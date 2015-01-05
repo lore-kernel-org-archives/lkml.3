@@ -1,61 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbbAEIz2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:55:28 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:43778 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbbAEIz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:55:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdYM_Bg_jH_sDuSsdJ1LWKYyj2LURAKRZ8FYODG5Soqa6Q@mail.gmail.com>
-References: <1418302951-9309-1-git-send-email-octavian.purdila@intel.com>
-	<1418302951-9309-2-git-send-email-octavian.purdila@intel.com>
-	<CACRpkdYM_Bg_jH_sDuSsdJ1LWKYyj2LURAKRZ8FYODG5Soqa6Q@mail.gmail.com>
-Date: Mon, 5 Jan 2015 09:55:25 +0100
-Message-ID: <CACRpkdagZrxVAjUtPf6+Eef_pGeReQijBtiR5cT2Yom3BS8qVw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] gpio: dln2: fix issue when an IRQ is unmasked then enabled
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Johan Hovold <johan@kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753402AbbAEI5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:57:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44789 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420AbbAEI46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 03:56:58 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>, <stable@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH V3 1/2] mm, vmscan: prevent kswapd livelock due to pfmemalloc-throttled process being killed
+Date: Mon,  5 Jan 2015 09:56:42 +0100
+Message-Id: <1420448203-30212-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 9:55 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Dec 11, 2014 at 2:02 PM, Octavian Purdila
-> <octavian.purdila@intel.com> wrote:
->
->> As noticed during suspend/resume operations, the IRQ can be unmasked
->> then disabled in suspend and eventually enabled in resume, but without
->> being unmasked.
->>
->> The current implementation does not take into account interactions
->> between mask/unmask and enable/disable interrupts, and thus in the
->> above scenarios the IRQs remain unactive.
->>
->> To fix this we removed the enable/disable operations as they fallback
->> to mask/unmask anyway.
->>
->> We also remove the pending bitmaks as it is already done in irq_data
->> (i.e. IRQS_PENDING).
->>
->> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
->
-> Patch applied for fixes.
+Charles Shirron and Paul Cassella from Cray Inc have reported kswapd stuck
+in a busy loop with nothing left to balance, but kswapd_try_to_sleep() failing
+to sleep. Their analysis found the cause to be a combination of several
+factors:
 
-Bah now that I see there are several versions of the patch set
-floating around and also MFD patches I don't quite understand
-how acute this is or how it's to be applied.
+1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
 
-- Are these regression fixes or nice to have for next kernel
- release?
+2. The process has been killed (by OOM in this case), but has not yet been
+   scheduled to remove itself from the waitqueue and die.
 
-- Are the GPIO patches independent of the MFD patch?
+3. kswapd checks for throttled processes in prepare_kswapd_sleep():
 
-Yours,
-Linus Walleij
+        if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+                wake_up(&pgdat->pfmemalloc_wait);
+		return false; // kswapd will not go to sleep
+	}
+
+   However, for a process that was already killed, wake_up() does not remove
+   the process from the waitqueue, since try_to_wake_up() checks its state
+   first and returns false when the process is no longer waiting.
+
+4. kswapd is running on the same CPU as the only CPU that the process is
+   allowed to run on (through cpus_allowed, or possibly single-cpu system).
+
+5. CONFIG_PREEMPT_NONE=y kernel is used. If there's nothing to balance, kswapd
+   encounters no voluntary preemption points and repeatedly fails
+   prepare_kswapd_sleep(), blocking the process from running and removing
+   itself from the waitqueue, which would let kswapd sleep.
+
+So, the source of the problem is that we prevent kswapd from going to sleep
+until there are processes waiting on the pfmemalloc_wait queue, and a process
+waiting on a queue is guaranteed to be removed from the queue only when it
+gets scheduled. This was done to make sure that no process is left sleeping
+on pfmemalloc_wait when kswapd itself goes to sleep.
+
+However, it isn't necessary to postpone kswapd sleep until the pfmemalloc_wait
+queue actually empties. To prevent processes from being left sleeping, it's
+actually enough to guarantee that all processes waiting on pfmemalloc_wait
+queue have been woken up by the time we put kswapd to sleep.
+
+This patch therefore fixes this issue by substituting 'wake_up' with
+'wake_up_all' and removing 'return false' in the code snippet from
+prepare_kswapd_sleep() above. Note that if any process puts itself in the
+queue after this waitqueue_active() check, or after the wake up itself, it
+means that the process will also wake up kswapd - and since we are under
+prepare_to_wait(), the wake up won't be missed. Also we update the comment
+prepare_kswapd_sleep() to hopefully more clearly describe the races it is
+preventing.
+
+Fixes: 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves
+                      are low and swap is backed by network storage")
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <stable@vger.kernel.org>   # v3.6+
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Rik van Riel <riel@redhat.com>
+---
+Changes in v3 (v2 was sent by Vladimir Davydov, thanks for his new solution):
+
+- split to two patches again, as I (and Michal Hocko) think it's more correct
+- some rewording in changelog
+- change the code comment again as in v1 with small updates (v2 dropped this
+  part), since it has been clearly a source of confusion so far
+
+ mm/vmscan.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index bd9a72b..ab2505c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2921,18 +2921,20 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ 		return false;
+ 
+ 	/*
+-	 * There is a potential race between when kswapd checks its watermarks
+-	 * and a process gets throttled. There is also a potential race if
+-	 * processes get throttled, kswapd wakes, a large process exits therby
+-	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
+-	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
+-	 * so wake them now if necessary. If necessary, processes will wake
+-	 * kswapd and get throttled again
++	 * The throttled processes are normally woken up in balance_pgdat() as
++	 * soon as pfmemalloc_watermark_ok() is true. But there is a potential
++	 * race between when kswapd checks the watermarks and a process gets
++	 * throttled. There is also a potential race if processes get
++	 * throttled, kswapd wakes, a large process exits thereby balancing the
++	 * zones, which causes kswapd to exit balance_pgdat() before reaching
++	 * the wake up checks. If kswapd is going to sleep, no process should
++	 * be sleeping on pfmemalloc_wait, so wake them now if necessary. If
++	 * the wake up is premature, processes will wake kswapd and get
++	 * throttled again. The difference from wake ups in balance_pgdat() is
++	 * that here we are under prepare_to_wait().
+ 	 */
+-	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+-		wake_up(&pgdat->pfmemalloc_wait);
+-		return false;
+-	}
++	if (waitqueue_active(&pgdat->pfmemalloc_wait))
++		wake_up_all(&pgdat->pfmemalloc_wait);
+ 
+ 	return pgdat_balanced(pgdat, order, classzone_idx);
+ }
+-- 
+2.1.2
+
