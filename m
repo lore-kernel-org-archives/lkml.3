@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909AbbAELfd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:35:33 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:58471 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbbAELfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:35:06 -0500
+	id S1753911AbbAELgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:36:25 -0500
+Received: from mail.us.es ([193.147.175.20]:58119 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753290AbbAELgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 06:36:22 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.5/19880. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
+ Processed in 1.812515 secs); 05 Jan 2015 11:36:20 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Mon, 5 Jan 2015 12:39:07 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+Cc: "David S. Miller" <davem@davemloft.net>, netfilter-devel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2] nftables: nft_flush_table: handle chain dependencies
+Message-ID: <20150105113907.GA15161@salvia>
+References: <1419634318-18303-1-git-send-email-asbjorn@asbjorn.biz>
+ <1419640765-7707-1-git-send-email-asbjorn@asbjorn.biz>
 MIME-Version: 1.0
-In-Reply-To: <1420456786-5989-1-git-send-email-drysdale@google.com>
-References: <1420456786-5989-1-git-send-email-drysdale@google.com>
-Date: Mon, 5 Jan 2015 12:35:04 +0100
-X-Google-Sender-Auth: PGIm1cGsPJkPjw7NcOTMZazaL0Y
-Message-ID: <CAMuHMdWFoSKB9F969_jUhwHQdPiid8QcjeYOSoE8cS9wHewH7A@mail.gmail.com>
-Subject: Re: [PATCH] selftests/exec: allow shell return code of 126
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Drysdale <drysdale@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419640765-7707-1-git-send-email-asbjorn@asbjorn.biz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 12:19 PM, David Drysdale <drysdale@google.com> wrote:
-> When the shell fails to invoke a script because its path name
-> is too long (ENAMETOOLONG), most shells return 127 to indicate
-> command not found.  However, some systems report 126 (which POSIX
-> suggests should indicate a non-executable file) for this case,
-> so allow that too.
+On Sat, Dec 27, 2014 at 12:39:25AM +0000, Asbjoern Sloth Toennesen wrote:
+> Update: I errously assumed that git add, while writing the commit
+> message, would be added to the commit.
+> Based on net-next f96fe225. Compiles and checkpatch clean.
+> 
+> Jumping between chains doesn't mix well with flush ruleset,
+> since nft_flush_table doesn't handle chains referencing chains.
+> 
+> This way it will take one to two loops, to settle.
+> Alternatively it can be solved by always having two loops,
 
-Thanks, after this patch, the execveat selftest succeeds on m68k with
-Debian 4.0.
+I just sent you a different patch to address this, we may still have
+references from the elements to chains when using dictionaries, so I
+prefer to schedule the object release in this order:
 
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: David Drysdale <drysdale@google.com>
+rules -> sets -> chains -> tables
 
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Thanks for diagnosing and sending an initial fix.
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+P.S: I hope you enjoyed 31c3.
