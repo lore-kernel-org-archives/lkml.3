@@ -1,97 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbbAEXFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 18:05:03 -0500
-Received: from mail-bl2on0122.outbound.protection.outlook.com ([65.55.169.122]:33184
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753350AbbAEXFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 18:05:00 -0500
-X-Greylist: delayed 871 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 18:05:00 EST
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-Subject: Re: [PATCH] RTC: Restore alarm after resume
-Thread-Topic: [PATCH] RTC: Restore alarm after resume
-Thread-Index: AQHQHhxHEMdkAaDerUSHINT8n1zQxpyyNVYAgAACboA=
-Date: Mon, 5 Jan 2015 22:50:26 +0000
-Message-ID: <1420498225.18006.6.camel@nebula.com>
-References: <1419275979-24307-1-git-send-email-matthew.garrett@nebula.com>
-	 <20150105144144.46a4792e90e5800b1d865cdd@linux-foundation.org>
-In-Reply-To: <20150105144144.46a4792e90e5800b1d865cdd@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2602:243:200f:a924:6267:20ff:fec3:2318]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=matthew.garrett@nebula.com; 
-x-dmarcaction: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR05MB421;
-x-forefront-prvs: 0447DB1C71
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(24454002)(199003)(377424004)(68736005)(2950100001)(2900100001)(64706001)(110136001)(102836002)(20776003)(99396003)(86362001)(36756003)(120916001)(92566001)(106116001)(4396001)(33646002)(107046002)(2351001)(19580395003)(106356001)(19580405001)(99286002)(54356999)(50986999)(105586002)(87936001)(76176999)(2656002)(46102003)(101416001)(77156002)(62966003)(31966008)(97736003)(40100003)(122556002)(21056001)(103116003)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR05MB421;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <8CD8C8F520AFF74FADA90C7675A40B1A@namprd05.prod.outlook.com>
+	id S1754709AbbAEWzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:55:46 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45066 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753031AbbAEWzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 17:55:44 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18kjyJ8E3TEHCvqofjMZBPF
+Date: Mon, 5 Jan 2015 14:51:35 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Dave Gerlach <d-gerlach@ti.com>
+Cc: balbi@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, Benoit Cousson <bcousson@baylibre.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Suman Anna <s-anna@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 2/3] soc: ti: Add wkup_m3_ipc driver
+Message-ID: <20150105225134.GN4081@atomide.com>
+References: <1420228817-41310-1-git-send-email-d-gerlach@ti.com>
+ <1420228817-41310-3-git-send-email-d-gerlach@ti.com>
+ <20150102201643.GE4920@saruman>
+ <54AB14E4.2010607@ti.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 05 Jan 2015 22:50:26.4543
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: d9cc6df8-58db-46f5-bf3e-083732d8ac63
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR05MB421
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AB14E4.2010607@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t05N5BvO009478
 
-On Mon, 2015-01-05 at 14:41 -0800, Andrew Morton wrote:
-> On Mon, 22 Dec 2014 19:19:39 +0000 Matthew Garrett <matthew.garrett@nebula.com> wrote:
+* Dave Gerlach <d-gerlach@ti.com> [150105 14:51]:
+> Felipe,
+> On 01/02/2015 02:16 PM, Felipe Balbi wrote:
+> > On Fri, Jan 02, 2015 at 02:00:16PM -0600, Dave Gerlach wrote:
+> >> Introduce a wkup_m3_ipc driver to handle communication between the MPU
+> >> and Cortex M3 wkup_m3 present on am335x.
+> >>
+> >> This driver is responsible for actually booting the wkup_m3_rproc and
+> >> also handling all IPC which is done using the IPC registers in the control
+> >> module, a mailbox, and a separate interrupt back from the wkup_m3. A small
+> >> API is exposed for executing specific power commands, which include
+> >> configuring for low power mode, request a transition to a low power mode,
+> >> and status info on a previous transition.
+> >>
+> >> Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
+> >> ---
+> >>  drivers/soc/ti/Kconfig       |  11 ++
+> >>  drivers/soc/ti/Makefile      |   1 +
+> >>  drivers/soc/ti/wkup_m3_ipc.c | 451 +++++++++++++++++++++++++++++++++++++++++++
+> >>  include/linux/wkup_m3_ipc.h  |  33 ++++
+> >>  4 files changed, 496 insertions(+)
+> >>  create mode 100644 drivers/soc/ti/wkup_m3_ipc.c
+> >>  create mode 100644 include/linux/wkup_m3_ipc.h
+> >>
+> >> diff --git a/drivers/soc/ti/Kconfig b/drivers/soc/ti/Kconfig
+> >> index 7266b21..61cda85 100644
+> >> --- a/drivers/soc/ti/Kconfig
+> >> +++ b/drivers/soc/ti/Kconfig
+> >> @@ -28,4 +28,15 @@ config KEYSTONE_NAVIGATOR_DMA
+> >>  
+> >>  	  If unsure, say N.
+> >>  
+> >> +config WKUP_M3_IPC
+> >> +	bool "TI AM33XX Wkup-M3 IPC Driver"
+> > 
+> > tristate ?
 > 
-> > Some platform firmware may interfere with the RTC alarm over suspend,
-> > resulting in the kernel and hardware having different ideas about system state
-> > but also potentially causing problems with firmware that assumes the OS will
-> > clean this case up. This patch saves the RTC alarm state on suspend and will
-> > restore it on resume if the alarm has not yet fired - if it has, it will clear
-> > the RTC alarm.
+> If we want to allow this and the rproc driver to be built as modules than we can
+> change this.
+
+Yes please, the PM is never needed early, and should be optional.
+And doing that will make it a lot easier for you to do further work
+on your driver ;)
+
+And it will also make it easier to add support for other SoCs as
+it seems the same M3 is used at least on am437x.
+ 
+> > 
+> >> +	depends on WKUP_M3_RPROC
+> >> +	select MAILBOX
+> >> +	select OMAP2PLUS_MBOX
+> > 
+> > selects are usually frowned upon.
 > 
-> There's not really enough info here for me to decide which kernel
-> version(s) need the patch.  Can we please expand on "some"?  Any
-> suggestions regarding the importance/timing of the fix?
+> Followed example set by OMAP_REMOTEPROC which selects the mailbox, thought that
+> would be alright.
 
-The case we've seen is Intel Rapid Start, which is a firmware-mediated
-feature that automatically transitions systems from suspend-to-RAM to
-suspend-to-disk without OS involvement. It does this by setting the RTC
-alarm and a flag that indicates that on wake it should perform the
-transition rather than re-starting the OS. However, if the OS has set a
-wakeup alarm that would wake the machine earlier, it refuses to
-overwrite it and allows the system to wake instead.
+The select should be only done if the option selected is a silen
+Kconfig option where it's never selectable by the user. Otherwise
+you will errors sooner or later with make randconfig builds as the
+dependencies change. Using depends on is better for those cases.
 
-This fails in the following situation:
+Regards,
 
-1) User configures Intel Rapid Start to transition after (say) 15
-minutes
-2) User suspends to RAM. Firmware sets the wakeup alarm for 15 minutes
-in the future
-3) User resumes after 5 minutes. Firmware does not reset the alarm, and
-as such it is still set for 10 minutes in the future
-4) User suspends after 5 minutes. Firmware notices that the alarm is set
-for 5 minutes in the future, which is less than the 15 minute transition
-threshold. It therefore assumes that the user wants the machine to wake
-in 5 minutes
-5) System resumes after 5 minutes
-
-The worst case scenario here is that the user may have put the system in
-a bag between (4) and (5), resulting in it running in a confined space
-and potentially overheating. This seems reasonably important. The Rapid
-Start support code got added in 3.11, but it can be configured in the
-firmware regardless of kernel support.
-
-I'd like to hear some feedback from the RTC maintainers regarding
-whether this is the preferred fix. Doing it in the Rapid Start driver
-doesn't seem correct, since as mentioned the feature doesn't require any
-kernel support - the kernel code just provides a means for runtime
-configuration.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Tony 
