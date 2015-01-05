@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbbAEMJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 07:09:29 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:44535 "EHLO
+	id S1753958AbbAEMJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:09:08 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:44543 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753282AbbAEMGu (ORCPT
+	with ESMTP id S1753347AbbAEMGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Jan 2015 07:06:50 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -17,9 +17,9 @@ Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
         Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 3/8] watchdog: at91rm9200: use the regmap from mfd
-Date: Mon,  5 Jan 2015 13:06:40 +0100
-Message-Id: <1420459605-24561-4-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 4/8] ARM: at91: time: move the system timer driver to drivers/clocksource
+Date: Mon,  5 Jan 2015 13:06:41 +0100
+Message-Id: <1420459605-24561-5-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420459605-24561-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1420459605-24561-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -27,119 +27,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The system timer MFD driver is providing a regmap. Use it to access the
-registers.
+Import at91rm9200_time.c from mach-at91 as timer-atmel-st.c. Further cleanup is
+required to get rid of the mach-at91 headers.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- drivers/watchdog/Kconfig          |  2 +-
- drivers/watchdog/at91rm9200_wdt.c | 22 +++++++++-------------
- 2 files changed, 10 insertions(+), 14 deletions(-)
+ arch/arm/mach-at91/Makefile                                           | 2 +-
+ drivers/clocksource/Kconfig                                           | 4 ++++
+ drivers/clocksource/Makefile                                          | 1 +
+ .../at91rm9200_time.c => drivers/clocksource/timer-atmel-st.c         | 0
+ 4 files changed, 6 insertions(+), 1 deletion(-)
+ rename arch/arm/mach-at91/at91rm9200_time.c => drivers/clocksource/timer-atmel-st.c (100%)
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 08f41add1461..18c73bc159fc 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -154,7 +154,7 @@ config ARM_SP805_WATCHDOG
+diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+index 7b6424d40764..5d1ee3a6f115 100644
+--- a/arch/arm/mach-at91/Makefile
++++ b/arch/arm/mach-at91/Makefile
+@@ -7,7 +7,7 @@ obj-y		:= setup.o sysirq_mask.o
+ obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
  
- config AT91RM9200_WATCHDOG
- 	tristate "AT91RM9200 watchdog"
--	depends on SOC_AT91RM9200
-+	depends on SOC_AT91RM9200 && MFD_ATMEL_ST
+ # CPU-specific support
+-obj-$(CONFIG_SOC_AT91RM9200)	+= at91rm9200.o at91rm9200_time.o
++obj-$(CONFIG_SOC_AT91RM9200)	+= at91rm9200.o
+ obj-$(CONFIG_SOC_AT91SAM9260)	+= at91sam9260.o
+ obj-$(CONFIG_SOC_AT91SAM9261)	+= at91sam9261.o
+ obj-$(CONFIG_SOC_AT91SAM9263)	+= at91sam9263.o
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index fc01ec27d3c8..ebc6dd77136e 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -128,6 +128,10 @@ config ATMEL_PIT
+ 	select CLKSRC_OF if OF
+ 	def_bool SOC_AT91SAM9 || SOC_SAMA5
+ 
++config ATMEL_ST
++	select CLKSRC_OF if OF
++	def_bool SOC_AT91RM9200
++
+ config CLKSRC_METAG_GENERIC
+ 	def_bool y if METAG
  	help
- 	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
- 	  system when the timeout is reached.
-diff --git a/drivers/watchdog/at91rm9200_wdt.c b/drivers/watchdog/at91rm9200_wdt.c
-index d244112d5b6f..6d6f36652112 100644
---- a/drivers/watchdog/at91rm9200_wdt.c
-+++ b/drivers/watchdog/at91rm9200_wdt.c
-@@ -17,22 +17,24 @@
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/kernel.h>
-+#include <linux/mfd/atmel-st.h>
- #include <linux/miscdevice.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/platform_device.h>
-+#include <linux/regmap.h>
- #include <linux/types.h>
- #include <linux/watchdog.h>
- #include <linux/uaccess.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
--#include <mach/at91_st.h>
- 
- #define WDT_DEFAULT_TIME	5	/* seconds */
- #define WDT_MAX_TIME		256	/* seconds */
- 
- static int wdt_time = WDT_DEFAULT_TIME;
- static bool nowayout = WATCHDOG_NOWAYOUT;
-+static struct regmap *regmap_st;
- 
- module_param(wdt_time, int, 0);
- MODULE_PARM_DESC(wdt_time, "Watchdog time in seconds. (default="
-@@ -55,7 +57,7 @@ static unsigned long at91wdt_busy;
-  */
- static inline void at91_wdt_stop(void)
- {
--	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN);
-+	regmap_write(regmap_st, AT91_ST_WDMR, AT91_ST_EXTEN);
- }
- 
- /*
-@@ -63,9 +65,9 @@ static inline void at91_wdt_stop(void)
-  */
- static inline void at91_wdt_start(void)
- {
--	at91_st_write(AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
-+	regmap_write(regmap_st, AT91_ST_WDMR, AT91_ST_EXTEN | AT91_ST_RSTEN |
- 				(((65536 * wdt_time) >> 8) & AT91_ST_WDV));
--	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
-+	regmap_write(regmap_st, AT91_ST_CR, AT91_ST_WDRST);
- }
- 
- /*
-@@ -73,7 +75,7 @@ static inline void at91_wdt_start(void)
-  */
- static inline void at91_wdt_reload(void)
- {
--	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
-+	regmap_write(regmap_st, AT91_ST_CR, AT91_ST_WDRST);
- }
- 
- /* ......................................................................... */
-@@ -204,6 +206,7 @@ static struct miscdevice at91wdt_miscdev = {
- static int at91wdt_probe(struct platform_device *pdev)
- {
- 	int res;
-+	regmap_st = dev_get_drvdata(pdev->dev.parent);
- 
- 	if (at91wdt_miscdev.parent)
- 		return -EBUSY;
-@@ -254,12 +257,6 @@ static int at91wdt_resume(struct platform_device *pdev)
- #define at91wdt_resume	NULL
- #endif
- 
--static const struct of_device_id at91_wdt_dt_ids[] = {
--	{ .compatible = "atmel,at91rm9200-wdt" },
--	{ /* sentinel */ }
--};
--MODULE_DEVICE_TABLE(of, at91_wdt_dt_ids);
--
- static struct platform_driver at91wdt_driver = {
- 	.probe		= at91wdt_probe,
- 	.remove		= at91wdt_remove,
-@@ -267,8 +264,7 @@ static struct platform_driver at91wdt_driver = {
- 	.suspend	= at91wdt_suspend,
- 	.resume		= at91wdt_resume,
- 	.driver		= {
--		.name	= "at91_wdt",
--		.of_match_table = at91_wdt_dt_ids,
-+		.name	= "atmel_st_watchdog",
- 	},
- };
- 
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 94d90b24b56b..b7380ded4e4c 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -1,5 +1,6 @@
+ obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
+ obj-$(CONFIG_ATMEL_PIT)		+= timer-atmel-pit.o
++obj-$(CONFIG_ATMEL_ST)		+= timer-atmel-st.o
+ obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
+ obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
+ obj-$(CONFIG_SCx200HR_TIMER)	+= scx200_hrt.o
+diff --git a/arch/arm/mach-at91/at91rm9200_time.c b/drivers/clocksource/timer-atmel-st.c
+similarity index 100%
+rename from arch/arm/mach-at91/at91rm9200_time.c
+rename to drivers/clocksource/timer-atmel-st.c
 -- 
 2.1.0
 
