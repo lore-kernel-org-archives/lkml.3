@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbbAEWE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:04:58 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:36420 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752716AbbAEWE4 (ORCPT
+	id S932086AbbAEWFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:05:24 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:65107 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753130AbbAEWFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:04:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <1777845.g1sZJx65aj@xps13>
-References: <1419679889-6582-1-git-send-email-gabriele.mzt@gmail.com>
-	<1419679889-6582-2-git-send-email-gabriele.mzt@gmail.com>
-	<CAN+gG=Fhaj2aQM7gxXZBaXx3MZQbdMdCZ7KO=nmhzufp4YqnmA@mail.gmail.com>
-	<1777845.g1sZJx65aj@xps13>
-Date: Mon, 5 Jan 2015 17:04:55 -0500
-Message-ID: <CAN+gG=FQY4V8K6k-mVrYRNSLoJDZW5bX1T=rD04MkEedQRdfUg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] input: synaptics - make image sensors report ABS_MT_TOUCH_MAJOR
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: Peter Hutterer <peter.hutterer@who-t.net>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxwell Anselm <silverhammermba@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 Jan 2015 17:05:22 -0500
+Message-ID: <1420495519.14308.29.camel@x220>
+Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 05 Jan 2015 23:05:19 +0100
+In-Reply-To: <1420484224.9459.16.camel@sipsolutions.net>
+References: <1420297188.2397.3.camel@tiscali.nl>
+	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>
+	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
+	 <1420324124.9624.60.camel@x220> <54AA641C.7050307@broadcom.com>
+	 <1420479510.14308.23.camel@x220>
+	 (sfid-20150105_183907_807502_81C08416) <1420484224.9459.16.camel@sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Jan 2015 22:05:19.0419 (UTC) FILETIME=[B1A4E8B0:01D02933]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 5:00 PM, Gabriele Mazzotta
-<gabriele.mzt@gmail.com> wrote:
-> On Monday 05 January 2015 14:24:30 Benjamin Tissoires wrote:
->> Hi Gabriele,
->>
->> [Adding Peter and Hans as this change will impact both
->> xf86-input-synaptics and libinput]
->>
->> On Sat, Dec 27, 2014 at 6:31 AM, Gabriele Mazzotta
->> <gabriele.mzt@gmail.com> wrote:
->> > Despite claiming to be able to report ABS_TOOL_WIDTH, image sensors
->> > were not doing it. Make them report widths and use ABS_MT_TOUCH_MAJOR
->> > instead ABS_TOOL_WIDTH.
->>
->> It looks like the current xorg-synaptics code already handles
->> ABS_MT_TOUCH_MAJOR as finger_width. So I think we should be good in
->> replacing the ABS_TOOL_WIDTH event. However, I'd prefer having Peter
->> confirm this because xorg-synaptics still relies a lot on the single
->> touch emulation.
->>
->> >
->> > Since the 'w' slot is used to report the finger count when two or more
->> > fingers are on the touchpad, make sure that only meaningful values are
->> > emitted, i.e. values greater than or equal to 4, and assign the correct
->> > range to ABS_MT_TOUCH_MAJOR.
->> >
->> > Link: https://bugzilla.kernel.org/show_bug.cgi?id=77161
->> > Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
->> > ---
->> >  drivers/input/mouse/synaptics.c | 11 +++++++++--
->> >  1 file changed, 9 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
->> > index f947292..ea0563e 100644
->> > --- a/drivers/input/mouse/synaptics.c
->> > +++ b/drivers/input/mouse/synaptics.c
->> > @@ -814,6 +814,8 @@ static void synaptics_report_slot(struct input_dev *dev, int slot,
->>
->> Just FYI, this does not apply anymore on top of Dmitry's tree.
->> synaptics_report_slot() has been removed, and you should now report
->> the slot state in synaptics_report_mt_data().
->>
->> >         input_report_abs(dev, ABS_MT_POSITION_X, hw->x);
->> >         input_report_abs(dev, ABS_MT_POSITION_Y, synaptics_invert_y(hw->y));
->> >         input_report_abs(dev, ABS_MT_PRESSURE, hw->z);
->> > +       if (hw->w >= 4)
->>
->> That I don't like. IMO, at this point, .w should only contain the
->> finger width, unconditionally.
->> Also, with 2/2, .w is computed accurately for the second finger, but
->> not for the first.
->>
->> I tried to figure out a way to properly extract the actual width
->> information from the sgm packet when the w is 0 or 1, and the only way
->> I found was to do the fix in synaptics_image_sensor_process(). I would
->> have preferred dealing with that in synaptics_parse_hw_state()
->> directly, but I think the final code would be more and more ugly.
->> Dealing with the true finger width in synaptics_image_sensor_process()
->> is not a problem for cr48 sensors, because they will not have the
->> ABS_MT_TOUCH_MAJOR event exported.
->
-> Regarding the last part on cr48 sensors.
-> Currently these sensors are not reporting widths through ABS_TOOL_WIDTH
-> and I don't see what could go wrong if they start reporting
-> ABS_MT_TOUCH_MAJOR. If I understood correctly, they can report widths
-> only when one finger is on the touchpad. This means that they will
-> report widths through slot 0, but they won't through slot 1. Nothing
-> bad should happen.
+On Mon, 2015-01-05 at 19:57 +0100, Johannes Berg wrote:
+> Multiple other groups of ioctls could be converted in similar patches,
+> until at the end you can completely remove ipw_wx_handlers and rely
+> entirely on cfg80211's wext compatibility.
+> 
+> So far the theory - in practice nobody cared enough to start working on
+> any of these drivers, let alone actually has the hardware today.
 
-I am not entirely sure. The entire purpose of having widht for palm
-detection is to filter palm from true finger events. So if we only
-have the width info on the first slot, it would be useless IMO.
-Still I agree with "nothing bad should happen" :)
+So my suggestion to make ipw2200 no longer use cfg80211_wext_giwname()
+would actually be backwards. What's actually needed, in theory, is to
+use more of what's provided under CFG80211_WEXT (and, I guess, less of
+what's provided under WIRELESS_EXT). Did I get that right?
 
->
-> I've just rebased my patches and included the support for cr48 sensors.
-> The only change I made was to change the default width value from
-> 5 to 4 since this is the minimum values these sensors can report
-> (according to the existing code).
->
-> Anyway, should I simply include the changes you suggested to handle
-> widths of sgm packets in what will be the new 2/2?
+Thanks,
 
-Go ahead and include my changes in your 2/2. It's better to have a
-consistent commit.
 
-Cheers,
-Benjamin
+Paul Bolle
+
