@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbbAEOVJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:21:09 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:56751 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326AbbAEOVH (ORCPT
+	id S1754071AbbAEOVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:21:16 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:35059 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326AbbAEOVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:21:07 -0500
+	Mon, 5 Jan 2015 09:21:11 -0500
 From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,45 +14,237 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Patrick Titiano <ptitiano@baylibre.com>,
         LM Sensors <lm-sensors@lm-sensors.org>,
         Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH v8 0/5] hwmon: ina2xx: implement chip reinitialization and add new attributes
-Date: Mon,  5 Jan 2015 15:20:51 +0100
-Message-Id: <1420467656-6112-1-git-send-email-bgolaszewski@baylibre.com>
+Subject: [PATCH v8 1/5] hwmon: ina2xx: reinitialize the chip in case it's been reset
+Date: Mon,  5 Jan 2015 15:20:52 +0100
+Message-Id: <1420467656-6112-2-git-send-email-bgolaszewski@baylibre.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1420467656-6112-1-git-send-email-bgolaszewski@baylibre.com>
+References: <1420467656-6112-1-git-send-email-bgolaszewski@baylibre.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series implements a mechanism to detect if the chip is in its POR state
-and reinitialize it if needed. It also extends the sysfs interface to make the
-driver configurable at run-time.
+Chips from the ina family don't like to be uninitialized. In case the power
+is cut-off and restored again the calibration register will be reset
+to 0 and both the power and current registers will remain at 0.
 
-The shunt_resistor attribute allows to change the shunt resistance value
-at run-time in cases where ina2xx used to do the measurement isn't integrated
-with the shunt.
+Check the calibration register in ina2xx_update_device() and reinitialize
+the chip if needed.
 
-The avg_rate attribute allows to increase/decrease noise reduction.
+Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+---
+ drivers/hwmon/ina2xx.c | 128 +++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 91 insertions(+), 37 deletions(-)
 
-v8:
-- accept averaging rate values more flexibly and round them to the nearest
-  correct value
-- don't call ina2xx_update_device() in ina226_set_avg()
-- make sure the registers are going to be re-read after setting the averaging
-  rate
-
-v7:
-https://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg787851.html
-
-Bartosz Golaszewski (5):
-  hwmon: ina2xx: reinitialize the chip in case it's been reset
-  hwmon: ina2xx: remove a stray new line
-  hwmon: ina2xx: don't accept shunt values greater than the calibration factor
-  hwmon: ina2xx: make shunt resistance configurable at run-time
-  hwmon: ina2xx: allow to change the averaging rate at run-time
-
- Documentation/hwmon/ina2xx |   8 +-
- drivers/hwmon/ina2xx.c     | 301 +++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 266 insertions(+), 43 deletions(-)
-
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index e01feba..ffbd60f 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -35,6 +35,7 @@
+ #include <linux/hwmon-sysfs.h>
+ #include <linux/jiffies.h>
+ #include <linux/of.h>
++#include <linux/delay.h>
+ 
+ #include <linux/platform_data/ina2xx.h>
+ 
+@@ -64,6 +65,9 @@
+ 
+ /* worst case is 68.10 ms (~14.6Hz, ina219) */
+ #define INA2XX_CONVERSION_RATE		15
++#define INA2XX_MAX_DELAY		69 /* worst case delay in ms */
++
++#define INA2XX_RSHUNT_DEFAULT		10000
+ 
+ enum ina2xx_ids { ina219, ina226 };
+ 
+@@ -81,6 +85,8 @@ struct ina2xx_data {
+ 	struct i2c_client *client;
+ 	const struct ina2xx_config *config;
+ 
++	long rshunt;
++
+ 	struct mutex update_lock;
+ 	bool valid;
+ 	unsigned long last_updated;
+@@ -110,34 +116,96 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 	},
+ };
+ 
+-static struct ina2xx_data *ina2xx_update_device(struct device *dev)
++/*
++ * Initialize the configuration and calibration registers.
++ */
++static int ina2xx_init(struct ina2xx_data *data)
+ {
+-	struct ina2xx_data *data = dev_get_drvdata(dev);
+ 	struct i2c_client *client = data->client;
+-	struct ina2xx_data *ret = data;
++	int ret;
+ 
+-	mutex_lock(&data->update_lock);
++	/* device configuration */
++	ret = i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
++					   data->config->config_default);
++	if (ret < 0)
++		return ret;
+ 
+-	if (time_after(jiffies, data->last_updated +
+-		       HZ / INA2XX_CONVERSION_RATE) || !data->valid) {
++	/*
++	 * Set current LSB to 1mA, shunt is in uOhms
++	 * (equation 13 in datasheet).
++	 */
++	return i2c_smbus_write_word_swapped(client, INA2XX_CALIBRATION,
++			data->config->calibration_factor / data->rshunt);
++}
+ 
+-		int i;
++static int ina2xx_do_update(struct device *dev)
++{
++	struct ina2xx_data *data = dev_get_drvdata(dev);
++	struct i2c_client *client = data->client;
++	int i, rv, retry;
+ 
+-		dev_dbg(&client->dev, "Starting ina2xx update\n");
++	dev_dbg(&client->dev, "Starting ina2xx update\n");
+ 
++	for (retry = 5; retry; retry--) {
+ 		/* Read all registers */
+ 		for (i = 0; i < data->config->registers; i++) {
+-			int rv = i2c_smbus_read_word_swapped(client, i);
+-			if (rv < 0) {
+-				ret = ERR_PTR(rv);
+-				goto abort;
+-			}
++			rv = i2c_smbus_read_word_swapped(client, i);
++			if (rv < 0)
++				return rv;
+ 			data->regs[i] = rv;
+ 		}
++
++		/*
++		 * If the current value in the calibration register is 0, the
++		 * power and current registers will also remain at 0. In case
++		 * the chip has been reset let's check the calibration
++		 * register and reinitialize if needed.
++		 */
++		if (data->regs[INA2XX_CALIBRATION] == 0) {
++			dev_warn(dev, "chip not calibrated, reinitializing\n");
++
++			rv = ina2xx_init(data);
++			if (rv < 0)
++				return rv;
++
++			/*
++			 * Let's make sure the power and current registers
++			 * have been updated before trying again.
++			 */
++			msleep(INA2XX_MAX_DELAY);
++			continue;
++		}
++
+ 		data->last_updated = jiffies;
+ 		data->valid = 1;
++
++		return 0;
+ 	}
+-abort:
++
++	/*
++	 * If we're here then although all write operations succeeded, the
++	 * chip still returns 0 in the calibration register. Nothing more we
++	 * can do here.
++	 */
++	dev_err(dev, "unable to reinitialize the chip\n");
++	return -ENODEV;
++}
++
++static struct ina2xx_data *ina2xx_update_device(struct device *dev)
++{
++	struct ina2xx_data *data = dev_get_drvdata(dev);
++	struct ina2xx_data *ret = data;
++	int rv;
++
++	mutex_lock(&data->update_lock);
++
++	if (time_after(jiffies, data->last_updated +
++		       HZ / INA2XX_CONVERSION_RATE) || !data->valid) {
++		rv = ina2xx_do_update(dev);
++		if (rv < 0)
++			ret = ERR_PTR(rv);
++	}
++
+ 	mutex_unlock(&data->update_lock);
+ 	return ret;
+ }
+@@ -221,7 +289,6 @@ static int ina2xx_probe(struct i2c_client *client,
+ 	struct device *dev = &client->dev;
+ 	struct ina2xx_data *data;
+ 	struct device *hwmon_dev;
+-	long shunt = 10000; /* default shunt value 10mOhms */
+ 	u32 val;
+ 	int ret;
+ 
+@@ -234,41 +301,28 @@ static int ina2xx_probe(struct i2c_client *client,
+ 
+ 	if (dev_get_platdata(dev)) {
+ 		pdata = dev_get_platdata(dev);
+-		shunt = pdata->shunt_uohms;
++		data->rshunt = pdata->shunt_uohms;
+ 	} else if (!of_property_read_u32(dev->of_node,
+ 					 "shunt-resistor", &val)) {
+-		shunt = val;
++		data->rshunt = val;
++	} else {
++		data->rshunt = INA2XX_RSHUNT_DEFAULT;
+ 	}
+ 
+-	if (shunt <= 0)
+-		return -ENODEV;
+-
+ 	/* set the device type */
+ 	data->kind = id->driver_data;
+ 	data->config = &ina2xx_config[data->kind];
++	data->client = client;
+ 
+-	/* device configuration */
+-	ret = i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
+-					   data->config->config_default);
+-	if (ret < 0) {
+-		dev_err(dev,
+-			"error writing to the config register: %d", ret);
++	if (data->rshunt <= 0)
+ 		return -ENODEV;
+-	}
+ 
+-	/*
+-	 * Set current LSB to 1mA, shunt is in uOhms
+-	 * (equation 13 in datasheet).
+-	 */
+-	ret = i2c_smbus_write_word_swapped(client, INA2XX_CALIBRATION,
+-				data->config->calibration_factor / shunt);
++	ret = ina2xx_init(data);
+ 	if (ret < 0) {
+-		dev_err(dev,
+-			"error writing to the calibration register: %d", ret);
++		dev_err(dev, "error configuring the device: %d\n", ret);
+ 		return -ENODEV;
+ 	}
+ 
+-	data->client = client;
+ 	mutex_init(&data->update_lock);
+ 
+ 	hwmon_dev = devm_hwmon_device_register_with_groups(dev, client->name,
+@@ -277,7 +331,7 @@ static int ina2xx_probe(struct i2c_client *client,
+ 		return PTR_ERR(hwmon_dev);
+ 
+ 	dev_info(dev, "power monitor %s (Rshunt = %li uOhm)\n",
+-		 id->name, shunt);
++		 id->name, data->rshunt);
+ 
+ 	return 0;
+ }
 -- 
 2.1.3
 
