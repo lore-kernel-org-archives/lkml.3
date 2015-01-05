@@ -1,78 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbbAETZA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:25:00 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:39581 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307AbbAETY6 (ORCPT
+	id S1754510AbbAETZz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:25:55 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:37306 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754119AbbAETZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:24:58 -0500
-Message-ID: <54AAE4FD.1070609@parallels.com>
-Date: Mon, 5 Jan 2015 11:24:45 -0800
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 5 Jan 2015 14:25:54 -0500
+Date: Mon, 5 Jan 2015 11:25:53 -0800
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, ohering@suse.com,
+        jbottomley@parallels.com, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 0/4] Drivers: scsi: storvsc: Fix miscellaneous issues
+Message-ID: <20150105192553.GB27817@infradead.org>
+References: <1418764880-11183-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>, <sedat.dilek@gmail.com>
-CC: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Zach Brown <zab@zabbo.net>
-Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>	<CA+icZUV17qR-kBRnYa+r0DfchQ0QtaBy-6c3f3QuXn0EGwuJzQ@mail.gmail.com>	<54A4703B.2000006@oracle.com>	<CA+icZUXarbLJt5yL_JJHntDFRkBZyvNMHxUGcOLNjULUQ8FhHw@mail.gmail.com> <CACVXFVP+30g1k8nf3FR1ZFg=CBay_yg=guZfoM+DFdco64AhyQ@mail.gmail.com>
-In-Reply-To: <CACVXFVP+30g1k8nf3FR1ZFg=CBay_yg=guZfoM+DFdco64AhyQ@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.39.126]
-X-ClientProxiedBy: US-EXCH.sw.swsoft.com (10.255.249.47) To
- US-EXCH2.sw.swsoft.com (10.255.249.46)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418764880-11183-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2014 04:52 PM, Ming Lei wrote:
-> On Thu, Jan 1, 2015 at 6:35 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Wed, Dec 31, 2014 at 10:52 PM, Dave Kleikamp
->> <dave.kleikamp@oracle.com> wrote:
->>> On 12/31/2014 02:38 PM, Sedat Dilek wrote:
->>>> What has happened to that aio_loop patchset?
->>>> Is it in Linux-next?
->>>> ( /me started to play with "block: loop: convert to blk-mq (v3)", so I
->>>> recalled this other improvement. )
->>> It met with some harsh resistance, so I backed off on it. Then Al Viro
->>> got busy re-writing the iov_iter infrastructure and I put my patchset on
->>> the shelf to look at later. Then Ming Lei submitted more up-to-date
->>> patchset: https://lkml.org/lkml/2014/8/6/175
->>>
->>> It looks like Ming is currently only pushing the first half of that
->>> patchset. I don't know what his plans are for the last three patches:
->>>
->>> aio: add aio_kernel_() interface
->>> fd/direct-io: introduce should_dirty for kernel aio
->>> block: loop: support to submit I/O via kernel aio based
->>>
->> I tested with block-mq-v3 (for next-20141231) [1] and this looks promising [2].
->>
->> Maybe Ming can say what the plan is with the missing parts.
-> I have compared kernel aio based loop-mq(the other 3 aio patches
-> against loop-mq v2, [1]) with loop-mq v3, looks the data isn't
-> better than loop-mq v3.
->
-> kernel aio based approach requires direct I/O, at least direct write
-> shouldn't be good as page cache write, IMO.
->
-> So I think we need to investigate kernel aio based approach further
-> wrt. loop improvement.
-
-A great advantage of kernel aio for loop device is the avoidance of 
-double caching: the data from page cache of inner filesystem (mounted on 
-the loop device) won't be cached again in the page cache of the outer 
-filesystem (one that keeps image file of the loop device).
-
-So I don't think it's correct to compare the performance of aio based 
-loop-mq with loop-mq v3. Aio based approach is OK as long as it doesn't 
-introduce significant overhead as compared with submitting bio-s 
-straightforwardly from loop device (or any other in-kernel user of 
-kernel aio) to host block device.
-
-Thanks,
-Maxim
+Thanks, applied to scsi-for-3.20.
