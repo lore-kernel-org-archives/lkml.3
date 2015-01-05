@@ -1,36 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbbAELDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:03:52 -0500
-Received: from 8bytes.org ([81.169.241.247]:58016 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202AbbAELDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:03:50 -0500
-Date: Mon, 5 Jan 2015 12:03:47 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH] iommu: Fix build of allmod/allyes config on ARMv8
- architecture
-Message-ID: <20150105110347.GB19590@8bytes.org>
-References: <1417787257-10056-1-git-send-email-k.kozlowski@samsung.com>
+	id S1753356AbbAELF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:05:57 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55184 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbbAELF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 06:05:56 -0500
+Date: Mon, 5 Jan 2015 11:05:33 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+Message-ID: <20150105110533.GA14967@e104818-lin.cambridge.arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org>
+ <20141224171815.GD13399@e104818-lin.cambridge.arm.com>
+ <54A90A4C.60908@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1417787257-10056-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54A90A4C.60908@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 02:47:37PM +0100, Krzysztof Kozlowski wrote:
->  drivers/iommu/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Sun, Jan 04, 2015 at 09:39:24AM +0000, Hanjun Guo wrote:
+> On 2014年12月25日 01:18, Catalin Marinas wrote:
+> [...]
+> >
+> > In addition to the above and _DSD requirements/banning, I would also add
+> > some clear statements around:
+> >
+> > _OSC: only global/published capabilities are allowed. For
+> > device-specific _OSC we need a process or maybe we can ban them entirely
+> > and rely on _DSD once we clarify the process.
+> >
+> > _OSI: firmware must not check for certain _OSI strings. Here I'm not
+> > sure what we would have to do for ARM Linux. Reporting "Windows" does
+> > not make any sense but not reporting anything can, as Matthew Garrett
+> > pointed out, can be interpreted by firmware as "Linux". In addition to
+> > any statements in this document, I suggest you patch
+> > drivers/acpi/acpica/utosi.c accordingly, maybe report "Linux" for ARM
+> > and print a kernel warning so that we notice earlier.
+> >
+> > ACPI_OS_NAME: this is globally defined as "Microsoft Windows NT". It
+> > doesn't make much sense in the ARM context. Could we change it to
+> > "Linux" when CONFIG_ARM64?
+> 
+> We will work on this both on ASWG and linux ACPI driver side, as Dong
+> and Charles pointed out, _OSI things can be solved in ACPI spec, when
+> that is done, we can modify the kernel driver to fix the problems above.
 
-Applied to iommu/fixes, thanks.
+Which driver?
 
+What about ACPI_OS_NAME? Would you suggest it is fine to report
+"Microsoft Windows NT" on an ARM system? That _OS_ not _OSI.
+
+-- 
+Catalin
