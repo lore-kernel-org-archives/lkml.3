@@ -1,162 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbbAEIww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:52:52 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:39519 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705AbbAEIwv (ORCPT
+	id S1753308AbbAEIyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:54:31 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:56719 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbbAEIy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:52:51 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org,
-        linux-sh@vger.kernel.org, vksavl@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] clk-rcar-gen2: RCAN clock support
-Date: Mon, 05 Jan 2015 10:53:02 +0200
-Message-ID: <1550804.XpyQtHjy2T@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <3007073.i0ghnTEhxV@wasted.cogentembedded.com>
-References: <3007073.i0ghnTEhxV@wasted.cogentembedded.com>
+	Mon, 5 Jan 2015 03:54:29 -0500
+Date: Mon, 5 Jan 2015 09:54:24 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: dri-devel@lists.freedesktop.org, stefan.wahren@i2se.com,
+        devicetree@vger.kernel.org, linux@arm.linux.org.uk,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        a.hajda@samsung.com, mturquette@linaro.org,
+        linux-arm-kernel@lists.infradead.org, andyshrk@gmail.com
+Subject: Re: [PATCH RFC v7 16/21] drm: panel: Add support for Himax HX8369A
+ MIPI DSI panel
+Message-ID: <20150105085424.GP2711@phenom.ffwll.local>
+Mail-Followup-To: Liu Ying <Ying.Liu@freescale.com>,
+	dri-devel@lists.freedesktop.org, stefan.wahren@i2se.com,
+	devicetree@vger.kernel.org, linux@arm.linux.org.uk,
+	kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+	a.hajda@samsung.com, mturquette@linaro.org,
+	linux-arm-kernel@lists.infradead.org, andyshrk@gmail.com
+References: <1419910451-15268-1-git-send-email-Ying.Liu@freescale.com>
+ <1419910451-15268-17-git-send-email-Ying.Liu@freescale.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419910451-15268-17-git-send-email-Ying.Liu@freescale.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
-
-Thank you for the patch.
-
-On Thursday 25 December 2014 01:17:29 Sergei Shtylyov wrote:
-> Add the RCAN clock support to the R-Car generation 2 CPG driver.  This clock
-> gets derived from  the USB_EXTAL clock, dividing  it by 6.  The layout of
-> the RCANCKCR register is similar to those of the clocks supported by the
-> 'clk-div6' driver but has no divider field, and so can't be supported by
-> that driver...
+On Tue, Dec 30, 2014 at 11:34:06AM +0800, Liu Ying wrote:
+> This patch adds support for Himax HX8369A MIPI DSI panel.
 > 
-> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-> 
+> Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>
+> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 > ---
-> The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git'
-> repo.
-> 
-> Changes in version 2:
-> - switched to using the composite clock driver with the fixed factor and
-> gated clock component drivers;
-> - removed *static* from 'parent_name' definition, switching from assignment
-> to initializer;
-> - modified the binding document;
-> - modified the changelog.
-> 
->  Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt | 
->   5 -
->  drivers/clk/shmobile/clk-rcar-gen2.c                      |   40 ++++++++++
+> v6->v7:
+>  * Address Andrzej Hajda's following comments.
+>  * Simplify the return logic in hx8369a_dcs_write().
+>  * Replace the macro hx8369a_dsi_init_helper() with a function array to improve
+>    the code quality.
+>  * Handle error cases during getting gpios in probe().
+>  * Add 'Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>'.
 
-Could you please also add a #define for the RCAN clock in include/dt-
-bindings/clock/r8a779*-clock.h ? Same comment for the ADSP clock in "[PATCH] 
-clk-rcar-gen2: ADSP clock support".
+If you only update one patch in a big series it's imo better to just
+resend that one to avoid spamming the mailing list with noise. Imo it also
+helps to keep the discussion all nicely grouped together.
 
->  2 files changed, 43 insertions(+), 2 deletions(-)
-> 
-> Index:
-> linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.
-> txt =================================================================== ---
-> linux.orig/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-cl
-> ocks.txt +++
-> linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.
-> txt @@ -16,7 +16,7 @@ Required Properties:
->    - clocks: Reference to the parent clock
->    - #clock-cells: Must be 1
->    - clock-output-names: The names of the clocks. Supported clocks are
-> "main",
-> -    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1" and
-> "z"
-> +    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1", "z",
-> and "rcan"
-> 
-> 
->  Example
-> @@ -29,5 +29,6 @@ Example
->  		clocks = <&extal_clk>;
->  		#clock-cells = <1>;
->  		clock-output-names = "main", "pll0, "pll1", "pll3",
-> -				     "lb", "qspi", "sdh", "sd0", "sd1", "z";
-> +				     "lb", "qspi", "sdh", "sd0", "sd1", "z",
-> +				     "rcan";
->  	};
-> Index: linux/drivers/clk/shmobile/clk-rcar-gen2.c
-> ===================================================================
-> --- linux.orig/drivers/clk/shmobile/clk-rcar-gen2.c
-> +++ linux/drivers/clk/shmobile/clk-rcar-gen2.c
-> @@ -33,6 +33,7 @@ struct rcar_gen2_cpg {
->  #define CPG_FRQCRC			0x000000e0
->  #define CPG_FRQCRC_ZFC_MASK		(0x1f << 8)
->  #define CPG_FRQCRC_ZFC_SHIFT		8
-> +#define CPG_RCANCKCR			0x00000270
-> 
->  /*
-> ---------------------------------------------------------------------------
-> -- * Z Clock
-> @@ -161,6 +162,43 @@ static struct clk * __init cpg_z_clk_reg
->  	return clk;
->  }
-> 
-> +static struct clk * __init cpg_rcan_clk_register(struct rcar_gen2_cpg *cpg,
-> +						 struct device_node *np)
-> +{
-> +	const char *parent_name = of_clk_get_parent_name(np, 1);
-> +	struct clk_fixed_factor *fixed;
-> +	struct clk_gate *gate;
-> +	struct clk *clk;
-> +
-> +	fixed = kzalloc(sizeof(*fixed), GFP_KERNEL);
-> +	if (!fixed)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	fixed->mult = 1;
-> +	fixed->div = 6;
-> +
-> +	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
-> +	if (!gate) {
-> +		kfree(fixed);
-> +		return ERR_PTR(-ENOMEM);
-> +	}
-> +
-> +	gate->reg = cpg->reg + CPG_RCANCKCR;
-> +	gate->bit_idx = 8;
-> +	gate->flags = CLK_GATE_SET_TO_DISABLE;
-> +	gate->lock = &cpg->lock;
-> +
-> +	clk = clk_register_composite(NULL, "rcan", &parent_name, 1, NULL, NULL,
-> +				     &fixed->hw, &clk_fixed_factor_ops,
-> +				     &gate->hw, &clk_gate_ops, 0);
-> +	if (IS_ERR(clk)) {
-> +		kfree(gate);
-> +		kfree(fixed);
-> +	}
-> +
-> +	return clk;
-> +}
-> +
->  /*
-> ---------------------------------------------------------------------------
-> -- * CPG Clock Data
->   */
-> @@ -263,6 +301,8 @@ rcar_gen2_cpg_register_clock(struct devi
->  		shift = 0;
->  	} else if (!strcmp(name, "z")) {
->  		return cpg_z_clk_register(cpg);
-> +	} else if (!strcmp(name, "rcan")) {
-> +		return cpg_rcan_clk_register(cpg, np);
->  	} else {
->  		return ERR_PTR(-EINVAL);
->  	}
-
+In any case please give a short overview of what changed in the cover
+letter when resending the entire series so that people don't have to go
+through all the invidual patches.
+-Daniel
 -- 
-Regards,
-
-Laurent Pinchart
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
