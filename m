@@ -1,111 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbbAEEN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 23:13:27 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:48953 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967AbbAEENZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 23:13:25 -0500
-X-Greylist: delayed 460 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jan 2015 23:13:24 EST
+	id S1752957AbbAEESb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 23:18:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752838AbbAEESa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 23:18:30 -0500
+Message-ID: <54AA1062.3080506@redhat.com>
+Date: Mon, 05 Jan 2015 09:47:38 +0530
+From: Pratyush Anand <panand@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <54A9ECC7.6040900@lwfinger.net>
-References: <1420230361-1862-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <54A786A4.2050202@lwfinger.net> <CAKXHbyOYO29uKA127qyYrCfpgQ2zoqBS9rAJME513oZ8JVdOug@mail.gmail.com>
- <54A9ECC7.6040900@lwfinger.net>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Mon, 5 Jan 2015 15:05:23 +1100
-Message-ID: <CAGRGNgWbTv7Sv0sZR_VB7goy-U0cjUAFNgBm_okiajSPBK+SNg@mail.gmail.com>
-Subject: Re: [PATCH] net: wireless: rtlwifi: btcoexist: halbtc8821a2ant:
- Remove some unused functions
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        Kalle Valo <kvalo@adurom.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        tixy@linaro.org, ananth@in.ibm.com, sandeepa.prabhu@linaro.org,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, anil.s.keshavamurthy@intel.com,
+        masami.hiramatsu.pt@hitachi.com, wcohen@redhat.com
+Subject: Re: [RFC 8/8] ARM64: Add uprobe support
+References: <cover.1420038188.git.panand@redhat.com> <0694af6935f9c6873ef8d25ad51630a40a74a116.1420038188.git.panand@redhat.com> <20150102172333.GA6264@redhat.com> <54A944ED.5010408@redhat.com> <20150104184012.GA12614@redhat.com>
+In-Reply-To: <20150104184012.GA12614@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Larry,
 
-On Mon, Jan 5, 2015 at 12:45 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 01/03/2015 06:03 AM, Rickard Strandqvist wrote:
+
+On Monday 05 January 2015 12:10 AM, Oleg Nesterov wrote:
+> On 01/04, Pratyush Anand wrote:
 >>
->> 2015-01-03 7:05 GMT+01:00 Larry Finger <Larry.Finger@lwfinger.net>:
->>
->>> On 01/02/2015 02:26 PM, Rickard Strandqvist wrote:
->>>
->>>> Removes some functions that are not used anywhere:
->>>> ex_halbtc8821a2ant_periodical() ex_halbtc8821a2ant_halt_notify()
->>>> ex_halbtc8821a2ant_bt_info_notify()
->>>> ex_halbtc8821a2ant_special_packet_notify()
->>>> ex_halbtc8821a2ant_connect_notify() ex_halbtc8821a2ant_scan_notify()
->>>> ex_halbtc8821a2ant_lps_notify() ex_halbtc8821a2ant_ips_notify()
->>>> ex_halbtc8821a2ant_display_coex_info() ex_halbtc8821a2ant_init_coex_dm()
->>>> ex_halbtc8821a2ant_init_hwconfig()
->>>>
->>>> This was partially found by using a static code analysis program called
->>>> cppcheck.
->>>>
->>>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@
->>>> spectrumdigital.se>
->>>>
->>>
->>> I know that you have been told that including "net: wireless:" in the
->>> subject line is discouraged. Please do not do this again. The staging
->>> directory is different as GregKH uses "staging:" in the subject to route
->>> patches, but wireless does not.
->>>
->>> As to the patch, NACK for the simple reason that I am currently working
->>> on
->>> a number of changes to btcoexist. Some of these routines may end up being
->>> removed, but others will not. Having your patch remove them, and one of
->>> mine adding them back just constitutes a lot of churning of the source.
->>> In
->>> addition, it greatly increases the probability of the source trees
->>> becoming
->>> unsynchronized and getting merge conflicts.
->>>
->>> Larry
->>>
+>> On Friday 02 January 2015 10:53 PM, Oleg Nesterov wrote:
+>>> But the main question is: why do we need add/find_ss_context ?? Please
+>>> explain.
 >>>
 >>
->> Hi Larry
+>> See arch/arm64/kernel/debug-monitors.c: call_step_hook
 >>
->> I do not recognize that there has been no diskution on the subject of
->> "net:
->> wireless:"
->> I use some sed call for this, so it's easy to fix. You want the "net:
->> wireless:" part completely erased then?
->> I check in Documentation/ but find any clear info for this.
->>
->> Sorry for the patch, is there any way for me to see that this is something
->> that is being worked on?
+>> Unlike breakpoint exception, there is no ESR info check for step
+>> exception. So, it is the responsibility of step handler
+>> (uprobe_single_step_handler) to make sure that exception was generated
+>> for it.
 >
+> Yes, yes, this is clear. My point was, we can (I think) rely on
+> uprobe_post_sstep_notifier() which checks ->active_uprobe != NULL.
 >
-> These patches are the result of private communications between the Realtek
-> engineers and me. The only publication is in the "rock" branch of the git
-> repo at http://github.com/lwfinger/rtlwifi_new.git.
+> And I guess you understood what I meant, but since I wasn't clear let
+> me repeat to ensure we really understand each other.
 >
-> I do not understand the "use of some 'sed' call". If you edit the source and
-> add it to the git repo with the add and commit operations, then format-patch
-> gives you exactly what you need, and send-email does that operation.
+> Can't
+>
+> 	uprobe_single_step_handler(regs, esr)
+> 	{
+> 		if (user_mode(regs) && uprobe_post_sstep_notifier(regs))
+> 			return HANDLED;
+> 		return ERROR;
+> 	}
+>
+> work without this step_ctx logic?
+>
 
-I suspect he means how he makes the subject lines. I'm guessing something like:
+Yes,yes, no need of step_ctx logic.
 
-echo $PATH | sed 's/^.*\/drivers\///;s/\//: /;s/\.c$/: Remove some
-unused functions/;'
+> If everything is correct, the probed task can execute a single (xol) insn
+> in user-mode before the trap. If ->active_uprobe is set we know that we
+> expect the ss trap in user-mode, and nothing else except this xol insn can
+> generate it?
 
-Thanks,
+Yes, I do see any value addition in saving xol_vaddr in ss_ctx->match_addr.
 
--- 
-Julian Calaby
+>
+> Perhaps arm64 needs additional checks, I dunno... If you think that the
+> ->active_uprobe check is not enough you can probably also verify that
+> "utask->state = UTASK_SSTEP" and/or "regs->pc - 4 == utask->xol_vaddr",
+> but so far it seems to me that these additional checks can only make sense
+> under WARN_ON().
 
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
+Yes.
+
+~Pratyush
