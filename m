@@ -1,124 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125AbbAEPWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:22:23 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:59605 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212AbbAEPWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:22:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <1420451415-11828-1-git-send-email-k.kozlowski@samsung.com>
-References: <1420451415-11828-1-git-send-email-k.kozlowski@samsung.com>
-Date: Mon, 5 Jan 2015 16:22:20 +0100
-Message-ID: <CAPDyKFpXmheQzqsVLHU4v6Ox5CzTeATHKbbnnYBh1-HGpBPhTg@mail.gmail.com>
-Subject: Re: [RESEND PATCH] mmc: sdhci: Fix sleep in atomic after inserting SD card
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+	id S1753704AbbAEPZf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:25:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753192AbbAEPZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 10:25:33 -0500
+Date: Mon, 5 Jan 2015 13:25:11 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
+ pvclock reader
+Message-ID: <20150105152511.GA9172@amt.cnet>
+References: <cover.1419295081.git.luto@amacapital.net>
+ <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 January 2015 at 10:50, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
-> Sleep in atomic context happened on Trats2 board after inserting or
-> removing SD card because mmc_gpio_get_cd() was called under spin lock.
->
-> Fix this by moving card detection earlier, before acquiring spin lock.
-> The mmc_gpio_get_cd() call does not have to be protected by spin lock
-> because it does not access any sdhci internal data.
-> The sdhci_do_get_cd() call access host flags (SDHCI_DEVICE_DEAD). After
-> moving it out side of spin lock it could theoretically race with driver
-> removal but still there is no actual protection against manual card
-> eject.
->
-> Dmesg after inserting SD card:
-> [   41.663414] BUG: sleeping function called from invalid context at drivers/gpio/gpiolib.c:1511
-> [   41.670469] in_atomic(): 1, irqs_disabled(): 128, pid: 30, name: kworker/u8:1
-> [   41.677580] INFO: lockdep is turned off.
-> [   41.681486] irq event stamp: 61972
-> [   41.684872] hardirqs last  enabled at (61971): [<c0490ee0>] _raw_spin_unlock_irq+0x24/0x5c
-> [   41.693118] hardirqs last disabled at (61972): [<c04907ac>] _raw_spin_lock_irq+0x18/0x54
-> [   41.701190] softirqs last  enabled at (61648): [<c0026fd4>] __do_softirq+0x234/0x2c8
-> [   41.708914] softirqs last disabled at (61631): [<c00273a0>] irq_exit+0xd0/0x114
-> [   41.716206] Preemption disabled at:[<  (null)>]   (null)
-> [   41.721500]
-> [   41.722985] CPU: 3 PID: 30 Comm: kworker/u8:1 Tainted: G        W      3.18.0-rc5-next-20141121 #883
-> [   41.732111] Workqueue: kmmcd mmc_rescan
-> [   41.735945] [<c0014d2c>] (unwind_backtrace) from [<c0011c80>] (show_stack+0x10/0x14)
-> [   41.743661] [<c0011c80>] (show_stack) from [<c0489d14>] (dump_stack+0x70/0xbc)
-> [   41.750867] [<c0489d14>] (dump_stack) from [<c0228b74>] (gpiod_get_raw_value_cansleep+0x18/0x30)
-> [   41.759628] [<c0228b74>] (gpiod_get_raw_value_cansleep) from [<c03646e8>] (mmc_gpio_get_cd+0x38/0x58)
-> [   41.768821] [<c03646e8>] (mmc_gpio_get_cd) from [<c036d378>] (sdhci_request+0x50/0x1a4)
-> [   41.776808] [<c036d378>] (sdhci_request) from [<c0357934>] (mmc_start_request+0x138/0x268)
-> [   41.785051] [<c0357934>] (mmc_start_request) from [<c0357cc8>] (mmc_wait_for_req+0x58/0x1a0)
-> [   41.793469] [<c0357cc8>] (mmc_wait_for_req) from [<c0357e68>] (mmc_wait_for_cmd+0x58/0x78)
-> [   41.801714] [<c0357e68>] (mmc_wait_for_cmd) from [<c0361c00>] (mmc_io_rw_direct_host+0x98/0x124)
-> [   41.810480] [<c0361c00>] (mmc_io_rw_direct_host) from [<c03620f8>] (sdio_reset+0x2c/0x64)
-> [   41.818641] [<c03620f8>] (sdio_reset) from [<c035a3d8>] (mmc_rescan+0x254/0x2e4)
-> [   41.826028] [<c035a3d8>] (mmc_rescan) from [<c003a0e0>] (process_one_work+0x180/0x3f4)
-> [   41.833920] [<c003a0e0>] (process_one_work) from [<c003a3bc>] (worker_thread+0x34/0x4b0)
-> [   41.841991] [<c003a3bc>] (worker_thread) from [<c003fed8>] (kthread+0xe4/0x104)
-> [   41.849285] [<c003fed8>] (kthread) from [<c000f268>] (ret_from_fork+0x14/0x2c)
-> [   42.038276] mmc0: new high speed SDHC card at address 1234
->
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Fixes: 94144a465dd0 ("mmc: sdhci: add get_cd() implementation")
-> Cc: <stable@vger.kernel.org>
-
-Thanks! Applied for fixes.
-
-Kind regards
-Uffe
-
+On Mon, Dec 22, 2014 at 04:39:57PM -0800, Andy Lutomirski wrote:
+> The pvclock vdso code was too abstracted to understand easily and
+> excessively paranoid.  Simplify it for a huge speedup.
+> 
+> This opens the door for additional simplifications, as the vdso no
+> longer accesses the pvti for any vcpu other than vcpu 0.
+> 
+> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
+> With this change, it takes 19ns, which is almost as fast as the pure TSC
+> implementation.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 > ---
->  drivers/mmc/host/sdhci.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index cbb245b58538..8a94c126c576 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -1353,6 +1353,8 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
->
->         sdhci_runtime_pm_get(host);
->
-> +       present = mmc_gpio_get_cd(host->mmc);
-> +
->         spin_lock_irqsave(&host->lock, flags);
->
->         WARN_ON(host->mrq != NULL);
-> @@ -1381,7 +1383,6 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
->          *     zero: cd-gpio is used, and card is removed
->          *     one: cd-gpio is used, and card is present
->          */
-> -       present = mmc_gpio_get_cd(host->mmc);
->         if (present < 0) {
->                 /* If polling, assume that the card is always present. */
->                 if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-> @@ -2110,15 +2111,18 @@ static void sdhci_card_event(struct mmc_host *mmc)
+>  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
+>  1 file changed, 47 insertions(+), 35 deletions(-)
+> 
+> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> index 9793322751e0..f2e0396d5629 100644
+> --- a/arch/x86/vdso/vclock_gettime.c
+> +++ b/arch/x86/vdso/vclock_gettime.c
+> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
+>  
+>  static notrace cycle_t vread_pvclock(int *mode)
 >  {
->         struct sdhci_host *host = mmc_priv(mmc);
->         unsigned long flags;
-> +       int present;
->
->         /* First check if client has provided their own card event */
->         if (host->ops->card_event)
->                 host->ops->card_event(host);
->
-> +       present = sdhci_do_get_cd(host);
+> -	const struct pvclock_vsyscall_time_info *pvti;
+> +	const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
+>  	cycle_t ret;
+> -	u64 last;
+> -	u32 version;
+> -	u8 flags;
+> -	unsigned cpu, cpu1;
+> -
+> +	u64 tsc, pvti_tsc;
+> +	u64 last, delta, pvti_system_time;
+> +	u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
+>  
+>  	/*
+> -	 * Note: hypervisor must guarantee that:
+> -	 * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
+> -	 * 2. that per-CPU pvclock time info is updated if the
+> -	 *    underlying CPU changes.
+> -	 * 3. that version is increased whenever underlying CPU
+> -	 *    changes.
+> +	 * Note: The kernel and hypervisor must guarantee that cpu ID
+> +	 * number maps 1:1 to per-CPU pvclock time info.
+> +	 *
+> +	 * Because the hypervisor is entirely unaware of guest userspace
+> +	 * preemption, it cannot guarantee that per-CPU pvclock time
+> +	 * info is updated if the underlying CPU changes or that that
+> +	 * version is increased whenever underlying CPU changes.
+> +	 *
+> +	 * On KVM, we are guaranteed that pvti updates for any vCPU are
+> +	 * atomic as seen by *all* vCPUs.  This is an even stronger
+> +	 * guarantee than we get with a normal seqlock.
+>  	 *
+> +	 * On Xen, we don't appear to have that guarantee, but Xen still
+> +	 * supplies a valid seqlock using the version field.
 > +
->         spin_lock_irqsave(&host->lock, flags);
->
->         /* Check host->mrq first in case we are runtime suspended */
-> -       if (host->mrq && !sdhci_do_get_cd(host)) {
-> +       if (host->mrq && !present) {
->                 pr_err("%s: Card removed during transfer!\n",
->                         mmc_hostname(host->mmc));
->                 pr_err("%s: Resetting controller.\n",
-> --
-> 1.9.1
->
+> +	 * We only do pvclock vdso timing at all if
+> +	 * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
+> +	 * mean that all vCPUs have matching pvti and that the TSC is
+> +	 * synced, so we can just look at vCPU 0's pvti.
+>  	 */
+
+Can Xen guarantee that ?
+
+> -	do {
+> -		cpu = __getcpu() & VGETCPU_CPU_MASK;
+> -		/* TODO: We can put vcpu id into higher bits of pvti.version.
+> -		 * This will save a couple of cycles by getting rid of
+> -		 * __getcpu() calls (Gleb).
+> -		 */
+> -
+> -		pvti = get_pvti(cpu);
+> -
+> -		version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
+> -
+> -		/*
+> -		 * Test we're still on the cpu as well as the version.
+> -		 * We could have been migrated just after the first
+> -		 * vgetcpu but before fetching the version, so we
+> -		 * wouldn't notice a version change.
+> -		 */
+> -		cpu1 = __getcpu() & VGETCPU_CPU_MASK;
+> -	} while (unlikely(cpu != cpu1 ||
+> -			  (pvti->pvti.version & 1) ||
+> -			  pvti->pvti.version != version));
+> -
+> -	if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
+> +
+> +	if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
+>  		*mode = VCLOCK_NONE;
+> +		return 0;
+> +	}
+
+This check must be performed after reading a stable pvti.
+
+> +
+> +	do {
+> +		version = pvti->version;
+> +
+> +		/* This is also a read barrier, so we'll read version first. */
+> +		rdtsc_barrier();
+> +		tsc = __native_read_tsc();
+> +
+> +		pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
+> +		pvti_tsc_shift = pvti->tsc_shift;
+> +		pvti_system_time = pvti->system_time;
+> +		pvti_tsc = pvti->tsc_timestamp;
+> +
+> +		/* Make sure that the version double-check is last. */
+> +		smp_rmb();
+> +	} while (unlikely((version & 1) || version != pvti->version));
+> +
+> +	delta = tsc - pvti_tsc;
+> +	ret = pvti_system_time +
+> +		pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
+> +				    pvti_tsc_shift);
+
+The following is possible:
+
+1) State: all pvtis marked as PVCLOCK_TSC_STABLE_BIT.
+1) Update request for all vcpus, for a TSC_STABLE_BIT -> ~TSC_STABLE_BIT
+transition.
+2) vCPU-1 updates its pvti with new values.
+3) vCPU-0 still has not updated its pvti with new values.
+4) vCPU-1 VM-enters, uses vCPU-0 values, even though it has been
+notified of a TSC_STABLE_BIT -> ~TSC_STABLE_BIT transition.
+
+The update is not actually atomic across all vCPUs, its atomic in
+the sense of not allowing visibility of distinct
+system_timestamp/tsc_timestamp values.
+
