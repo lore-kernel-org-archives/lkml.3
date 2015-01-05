@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbbAEGFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 01:05:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43792 "EHLO mx1.redhat.com"
+	id S1751857AbbAEGKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 01:10:09 -0500
+Received: from ozlabs.org ([103.22.144.67]:55325 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133AbbAEGFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 01:05:12 -0500
-From: Fam Zheng <famz@redhat.com>
-To: linux-scsi@vger.kernel.org
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH] virtio-scsi: Fix the race condition in virtscsi_handle_event
-Date: Mon,  5 Jan 2015 14:04:58 +0800
-Message-Id: <1420437898-32419-1-git-send-email-famz@redhat.com>
+	id S1751121AbbAEGKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 01:10:07 -0500
+Message-ID: <1420438204.3860.3.camel@ellerman.id.au>
+Subject: [git pull] Please pull mpe/linux.git powerpc-3.19-3 tag
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: bobby.prani@gmail.com, hbathini@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Anton Blanchard <anton@samba.org>
+Date: Mon, 05 Jan 2015 17:10:04 +1100
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-ZHudLhn7xfTOOdMwvg8X"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition in virtscsi_handle_event, when many device
-hotplug/unplug events flush in quickly.
 
-The scsi_remove_device in virtscsi_handle_transport_reset may trigger
-the BUG_ON in scsi_target_reap, because the state is altered behind it,
-probably by scsi_scan_host of another event. I'm able to reproduce it by
-repeatedly plugging and unplugging a scsi disk with the same lun number.
+--=-ZHudLhn7xfTOOdMwvg8X
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-To make is safe, the mutex added in struct virtio_scsi is held in
-virtscsi_handle_event, so that all the events are processed in a
-synchronized way. With this lock, the panic goes away.
+Hi Linus,
 
-Signed-off-by: Fam Zheng <famz@redhat.com>
----
- drivers/scsi/virtio_scsi.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Please pull some powerpc fixes for 3.19:
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index c52bb5d..7f194d4 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -110,6 +110,9 @@ struct virtio_scsi {
- 	/* CPU hotplug notifier */
- 	struct notifier_block nb;
- 
-+	/* Protect the hotplug/unplug event handling */
-+	struct mutex scan_lock;
-+
- 	/* Protected by event_vq lock */
- 	bool stop_events;
- 
-@@ -377,6 +380,7 @@ static void virtscsi_handle_event(struct work_struct *work)
- 	struct virtio_scsi *vscsi = event_node->vscsi;
- 	struct virtio_scsi_event *event = &event_node->event;
- 
-+	mutex_lock(&vscsi->scan_lock);
- 	if (event->event &
- 	    cpu_to_virtio32(vscsi->vdev, VIRTIO_SCSI_T_EVENTS_MISSED)) {
- 		event->event &= ~cpu_to_virtio32(vscsi->vdev,
-@@ -397,6 +401,7 @@ static void virtscsi_handle_event(struct work_struct *work)
- 		pr_err("Unsupport virtio scsi event %x\n", event->event);
- 	}
- 	virtscsi_kick_event(vscsi, event_node);
-+	mutex_unlock(&vscsi->scan_lock);
- }
- 
- static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
-@@ -894,6 +899,7 @@ static int virtscsi_init(struct virtio_device *vdev,
- 	const char **names;
- 	struct virtqueue **vqs;
- 
-+	mutex_init(&vscsi->scan_lock);
- 	num_vqs = vscsi->num_queues + VIRTIO_SCSI_VQ_BASE;
- 	vqs = kmalloc(num_vqs * sizeof(struct virtqueue *), GFP_KERNEL);
- 	callbacks = kmalloc(num_vqs * sizeof(vq_callback_t *), GFP_KERNEL);
--- 
-1.9.3
+The following changes since commit b7392d2247cfe6771f95d256374f1a8e6a6f48d6=
+:
+
+  Linux 3.19-rc2 (2014-12-28 16:49:37 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mpe/linux.git tags/powerpc-=
+3.19-3
+
+for you to fetch changes up to 1be6f10f6f9caade3a053938cb80a2eed237e262:
+
+  Revert "powerpc: Secondary CPUs must set cpu_callin_map after setting act=
+ive and online" (2014-12-29 15:51:51 +1100)
+
+----------------------------------------------------------------
+powerpc fixes for 3.19
+
+Wire up sys_execveat(). Tested on 32 & 64 bit.
+
+Fix for kdump on LE systems with cpus hot unplugged.
+
+Revert Anton's fix for "kernel BUG at kernel/smpboot.c:134!", this broke ot=
+her
+platforms, we'll do a proper fix for 3.20.
+
+----------------------------------------------------------------
+Hari Bathini (1):
+      powerpc/kdump: Ignore failure in enabling big endian exception during=
+ crash
+
+Michael Ellerman (1):
+      Revert "powerpc: Secondary CPUs must set cpu_callin_map after setting=
+ active and online"
+
+Pranith Kumar (1):
+      powerpc: Wire up sys_execveat() syscall
+
+ arch/powerpc/include/asm/kexec.h       | 10 ++++++++++
+ arch/powerpc/include/asm/systbl.h      |  1 +
+ arch/powerpc/include/asm/unistd.h      |  2 +-
+ arch/powerpc/include/uapi/asm/unistd.h |  1 +
+ arch/powerpc/kernel/machine_kexec_64.c |  2 +-
+ arch/powerpc/kernel/smp.c              |  9 +--------
+ arch/powerpc/platforms/pseries/lpar.c  |  8 +++++++-
+ 7 files changed, 22 insertions(+), 11 deletions(-)
+
+
+
+--=-ZHudLhn7xfTOOdMwvg8X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABAgAGBQJUqiq8AAoJEFHr6jzI4aWA8BUP/Ao644xK1jpCFILqVTKBeqLO
+iswiA3qVLqG6pz/2qHxQjtOe2iKOMECRCfUaMR497t3OLmhdFTSntx27AE5+OTC2
+sbO/jxsGAbxc5yvNEUjPMXBwG6M4cUAQnT63z2MmQjNQjKNvrnSv81Zca0vyN8Tz
+Jr0HZbjeQfN0atIHJQZOnLKcvW//ir0UdXyfZkOvvU2FZ6nLuTUbG5jH7hjoW8bX
+dRRj53TG81XtdpNqJE8MXVxSoB3K4UZCxEYxRtXrcv808vjorcBRPIojePHBfMl9
+B/Lny9ZD4gq5WiDcHtPTwQ+SLm9a0HH//Wp4LQIrLWU2CafEKSXniFwfJwhaiztG
+WS3SUtveUBhGdboRobjdQRkb1ZVLIs70huWWBJbCjym1mD5fFCnf55GEPSwX3LQM
+7/zT2bN9QtCHIlk6kn4EsyTMI9Q39v0VIdhDo0LW7zWskJq1YkmdLjw85ukTHt/R
+Wz6HdMM3vv07tDR/m2eDqnOSVktJ0afOMDYE6F/lrik3NOPHVxvYABEPt9HlcaJL
+8dyOojjIWA7NHtAYujmlqrrjGtW6kdh6AzqgiurGdD6JL1Kbo58UkvRUT8GkwMGf
+ygp7NIFzCjxSIoshFi3HD0sVkRCtsNeKqBhpa3lOsQQQkKxbABLHNp8B5nPw5jsn
+KkJ5mUdC4KROlToZUOOD
+=TEgk
+-----END PGP SIGNATURE-----
+
+--=-ZHudLhn7xfTOOdMwvg8X--
 
