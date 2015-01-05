@@ -1,126 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043AbbAEHoH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 02:44:07 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:51256 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbbAEHoE (ORCPT
+	id S1753117AbbAEHzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 02:55:38 -0500
+Received: from mail-bn1on0114.outbound.protection.outlook.com ([157.56.110.114]:44608
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751087AbbAEHzg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 02:44:04 -0500
-X-AuditID: cbfee68d-f79296d000004278-2a-54aa40c1b3d8
-Message-id: <54AA40C7.3000506@samsung.com>
-Date: Mon, 05 Jan 2015 13:14:07 +0530
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony nadackal <tony.kn@samsung.com>
-Subject: Re: media: platform: s5p-jpeg: jpeg-hw-exynos4: Remove some unused
- functions
-References: <1420231027-2714-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-reply-to: <1420231027-2714-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsWyRsSkRvegw6oQg7cfBS16rz5ntPjx+gKb
-	Re+Cq2wWmx5fY7W4vGsOm0XPhq2sFjPO72OyuLhO3uL0zpusFofftLNavLr4ismB22PzknqP
-	vi2rGD3aG34yenzeJBfAEsVlk5Kak1mWWqRvl8CV8WWjbcE8gYp/V38yNjAe4u1i5OSQEDCR
-	mHDtHguELSZx4d56ti5GLg4hgaWMErtn/WKCKWpc8I8ZIrGIUWL1xBdQVa1MEve/nWIGqeIV
-	0JK43/kVbBSLgKrE1Lvv2EBsNgFdiSfv54LViApESFxZM4cRol5Q4sdkkNVcHCIC0xglriw8
-	CjaVWWATk0RPy2+wDmGBcImurtNgdwgB2TsnfQbr5gSadG7HIlYQm1nATOLLy8NQtrzE5jVv
-	wW6VELjFLnHlVic7xEkCEt8mHwJaxwGUkJXYdIAZ4jdJiYMrbrBMYBSbheSoWUjGzkIydgEj
-	8ypG0dSC5ILipPQiQ73ixNzi0rx0veT83E2MwKg8/e9Z7w7G2wesDzEKcDAq8fB6nFgZIsSa
-	WFZcmXuI0RToionMUqLJ+cDYzyuJNzQ2M7IwNTE1NjK3NFMS51WU+hksJJCeWJKanZpakFoU
-	X1Sak1p8iJGJg1OqgXHDr25ju6iGY9bFYe8apjDfSJl2Mt/8c/6M7J8XH89gDW2+bbR6rlZ4
-	w5Rrj/tXyFWH2s19pmuXz8WT5mO4+lFZ9rdfW7l6/N6WvZOyWxcmdGiFithMyQ7b53enaPxk
-	lS73j1lrcWnW6h137zkoruF9lsHkajPPWqW/76mowHqF9b2NnqcYbJVYijMSDbWYi4oTAWCg
-	x+7FAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jAd2DDqtCDD49Z7fovfqc0eLH6wts
-	Fr0LrrJZbHp8jdXi8q45bBY9G7ayWsw4v4/J4uI6eYvTO2+yWhx+085q8eriKyYHbo/NS+o9
-	+rasYvRob/jJ6PF5k1wAS1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJe
-	Ym6qrZKLT4CuW2YO0FFKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxowv
-	G20L5glU/Lv6k7GB8RBvFyMnh4SAiUTjgn/MELaYxIV769m6GLk4hAQWMUqsnvgCymllkrj/
-	7RRYFa+AlsT9zq8sIDaLgKrE1Lvv2EBsNgFdiSfv54LViApESFxZM4cRol5Q4sfkeywgg0QE
-	pjFKXFl4FGwqs8AmJomelt9gHcIC4RJdXaeZQGwhIHvnpM9g3ZxAk87tWMQKYjMLmEl8eXkY
-	ypaX2LzmLfMERoFZSJbMQlI2C0nZAkbmVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBMf9M
-	egfjqgaLQ4wCHIxKPLweJ1aGCLEmlhVX5h5ilOBgVhLhXXcLKMSbklhZlVqUH19UmpNafIjR
-	FBgGE5mlRJPzgekoryTe0NjE3NTY1NLEwsTMUkmcV8m+LURIID2xJDU7NbUgtQimj4mDU6qB
-	0e2Yary0b00S8x63j6/eL5gva53+88jTjRqzT0z79e7SkW881pUuFjNYEg46zvMR27vcr6mq
-	5PK89l7VuXOcjx4UUnhbuqTi+dapJU98+2N3v12kndsZzpdcGy52KWdfQ/qSfdemmExcfLdo
-	pqV6zd+a4sUHenuZAhRivGUP8Z24sypvRsm2KiWW4oxEQy3mouJEAL2ho2QPAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 5 Jan 2015 02:55:36 -0500
+X-WSS-ID: 0NHP20H-08-L4B-02
+X-M-MSG: 
+From: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Olof Johansson" <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Charles.Garcia-Tobin@arm.com" <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v6 14/17] ARM64 / ACPI: Parse GTDT to initialize arch
+ timer
+Thread-Topic: [PATCH v6 14/17] ARM64 / ACPI: Parse GTDT to initialize arch
+ timer
+Thread-Index: AQHQKA0xYxhebyGctk2vnXL1SlXTO5yxGRGA
+Date: Mon, 5 Jan 2015 07:55:30 +0000
+Message-ID: <D0CF9C94.CD69%suravee.suthikulpanit@amd.com>
+In-Reply-To: <1420368918-5086-15-git-send-email-hanjun.guo@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.0.121105
+x-originating-ip: [10.177.96.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <49B6EEC1D45AFD488824FE419745F1DC@amd.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(164054003)(479174004)(24454002)(189002)(199003)(69234005)(51704005)(2950100001)(36756003)(77156002)(62966003)(2900100001)(46102003)(99396003)(54356999)(50986999)(19580405001)(19580395003)(84676001)(64706001)(23726002)(102836002)(46406003)(47776003)(20776003)(120916001)(53416004)(50466002)(15975445007)(107046002)(83506001)(68736005)(101416001)(4396001)(97756001)(105586002)(31966008)(106466001)(2656002)(106116001)(92566001)(97736003)(575784001)(86362001)(87936001)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB197;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR02MB197;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR02MB197;
+X-Forefront-PRVS: 0447DB1C71
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB197;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 07:55:32.5165
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR02MB197
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+Tony Nadackal
+On 1/4/15, 04:55, "Hanjun Guo" <hanjun.guo@linaro.org> wrote:
 
-Hi Rickard,
+>Using the information presented by GTDT to initialize the arch
+>timer (not memory-mapped).
+>
+>Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>---
+> arch/arm64/kernel/time.c             |   7 ++
+> drivers/clocksource/arm_arch_timer.c | 132
+>++++++++++++++++++++++++++++-------
+> include/linux/clocksource.h          |   6 ++
+> 3 files changed, 118 insertions(+), 27 deletions(-)
+>
+>diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+>index 1a7125c..42f9195 100644
+>--- a/arch/arm64/kernel/time.c
+>+++ b/arch/arm64/kernel/time.c
+>@@ -35,6 +35,7 @@
+> #include <linux/delay.h>
+> #include <linux/clocksource.h>
+> #include <linux/clk-provider.h>
+>+#include <linux/acpi.h>
+> 
+> #include <clocksource/arm_arch_timer.h>
+> 
+>@@ -72,6 +73,12 @@ void __init time_init(void)
+> 
+> 	tick_setup_hrtimer_broadcast();
+> 
+>+	/*
+>+	 * Since ACPI or FDT will only one be available in the system,
+>+	 * we can use acpi_generic_timer_init() here safely
+>+	 */
+>+	acpi_generic_timer_init();
+>+
+> 	arch_timer_rate = arch_timer_get_rate();
+> 	if (!arch_timer_rate)
+> 		panic("Unable to initialise architected timer.\n");
+>diff --git a/drivers/clocksource/arm_arch_timer.c
+>b/drivers/clocksource/arm_arch_timer.c
+>index 6a79fc4..612f2a0 100644
+>--- a/drivers/clocksource/arm_arch_timer.c
+>+++ b/drivers/clocksource/arm_arch_timer.c
+>@@ -21,6 +21,7 @@
+> #include <linux/io.h>
+> #include <linux/slab.h>
+> #include <linux/sched_clock.h>
+>+#include <linux/acpi.h>
+> 
+> #include <asm/arch_timer.h>
+> #include <asm/virt.h>
+>@@ -370,8 +371,12 @@ arch_timer_detect_rate(void __iomem *cntbase, struct
+>device_node *np)
+> 	if (arch_timer_rate)
+> 		return;
+> 
+>-	/* Try to determine the frequency from the device tree or CNTFRQ */
+>-	if (of_property_read_u32(np, "clock-frequency", &arch_timer_rate)) {
+>+	/*
+>+	 * Try to determine the frequency from the device tree or CNTFRQ,
+>+	 * if ACPI is enabled, get the frequency from CNTFRQ ONLY.
+>+	 */
+>+	if (!acpi_disabled ||
+>+	    of_property_read_u32(np, "clock-frequency", &arch_timer_rate)) {
+> 		if (cntbase)
+> 			arch_timer_rate = readl_relaxed(cntbase + CNTFRQ);
+> 		else
+>@@ -690,28 +695,8 @@ static void __init arch_timer_common_init(void)
+> 	arch_timer_arch_init();
+> }
+> 
+>-static void __init arch_timer_init(struct device_node *np)
+>+static void __init arch_timer_init(void)
+> {
+>-	int i;
+>-
+>-	if (arch_timers_present & ARCH_CP15_TIMER) {
+>-		pr_warn("arch_timer: multiple nodes in dt, skipping\n");
+>-		return;
+>-	}
+>-
+>-	arch_timers_present |= ARCH_CP15_TIMER;
+>-	for (i = PHYS_SECURE_PPI; i < MAX_TIMER_PPI; i++)
+>-		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+>-	arch_timer_detect_rate(NULL, np);
+>-
+>-	/*
+>-	 * If we cannot rely on firmware initializing the timer registers then
+>-	 * we should use the physical timers instead.
+>-	 */
+>-	if (IS_ENABLED(CONFIG_ARM) &&
+>-	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
+>-			arch_timer_use_virtual = false;
+>-
+> 	/*
+> 	 * If HYP mode is available, we know that the physical timer
+> 	 * has been configured to be accessible from PL1. Use it, so
+>@@ -730,13 +715,39 @@ static void __init arch_timer_init(struct
+>device_node *np)
+> 		}
+> 	}
+> 
+>-	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+>-
+> 	arch_timer_register();
+> 	arch_timer_common_init();
+> }
+>-CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer",
+>arch_timer_init);
+>-CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer",
+>arch_timer_init);
+>+
+>+static void __init arch_timer_of_init(struct device_node *np)
+>+{
+>+	int i;
+>+
+>+	if (arch_timers_present & ARCH_CP15_TIMER) {
+>+		pr_warn("arch_timer: multiple nodes in dt, skipping\n");
+>+		return;
+>+	}
+>+
+>+	arch_timers_present |= ARCH_CP15_TIMER;
+>+	for (i = PHYS_SECURE_PPI; i < MAX_TIMER_PPI; i++)
+>+		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+>+
+>+	arch_timer_detect_rate(NULL, np);
+>+
+>+	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+>+
+>+	/*
+>+	 * If we cannot rely on firmware initializing the timer registers then
+>+	 * we should use the physical timers instead.
+>+	 */
+>+	if (IS_ENABLED(CONFIG_ARM) &&
+>+	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
+>+			arch_timer_use_virtual = false;
+>+
+>+	arch_timer_init();
+>+}
+>+CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer",
+>arch_timer_of_init);
+>+CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer",
+>arch_timer_of_init);
 
-On Saturday 03 January 2015 02:07 AM, Rickard Strandqvist wrote:
-> Removes some functions that are not used anywhere:
-> exynos4_jpeg_set_timer_count() exynos4_jpeg_get_frame_size() exynos4_jpeg_set_sys_int_enable() exynos4_jpeg_get_fifo_status()
->
-> This was partially found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->
-> ---
-> drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c |   35 ---------------------
->   drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.h |    5 ---
->   2 files changed, 40 deletions(-)
->
-> diff --git a/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c b/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
-> index ab6d6f4..5685577 100644
-> --- a/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
-> +++ b/drivers/media/platform/s5p-jpeg/jpeg-hw-exynos4.c
-> @@ -163,15 +163,6 @@ unsigned int exynos4_jpeg_get_int_status(void __iomem *base)
->   	return int_status;
->   }
->
-> -unsigned int exynos4_jpeg_get_fifo_status(void __iomem *base)
-> -{
-> -	unsigned int fifo_status;
-> -
-> -	fifo_status = readl(base + EXYNOS4_FIFO_STATUS_REG);
-> -
-> -	return fifo_status;
-> -}
-> -
->   void exynos4_jpeg_set_huf_table_enable(void __iomem *base, int value)
->   {
->   	unsigned int	reg;
-> @@ -186,18 +177,6 @@ void exynos4_jpeg_set_huf_table_enable(void __iomem *base, int value)
->   					base + EXYNOS4_JPEG_CNTL_REG);
->   }
->
-> -void exynos4_jpeg_set_sys_int_enable(void __iomem *base, int value)
-> -{
-> -	unsigned int	reg;
-> -
-> -	reg = readl(base + EXYNOS4_JPEG_CNTL_REG) & ~(EXYNOS4_SYS_INT_EN);
-> -
-> -	if (value == 1)
-> -		writel(reg | EXYNOS4_SYS_INT_EN, base + EXYNOS4_JPEG_CNTL_REG);
-> -	else
-> -		writel(reg & ~EXYNOS4_SYS_INT_EN, base + EXYNOS4_JPEG_CNTL_REG);
-> -}
-> -
+Hanjun,
 
-Above function will be needed for enabling JPEG support on Exynos7 SoC. 
-There is already inflight patch [1] which will be using it.
+FYI, it seems that the tree that you have rebased the patch series has an
+issue determining clocksource in ARM64 introduced by this commit.
 
-1: https://patchwork.kernel.org/patch/5505391/
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0
+b46b8a718c6e90910a1b1b0fe797be3c167e186
 
+Here is the fix from Catalin that already went upstream:
+
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drive
+rs/clocksource/arm_arch_timer.c?id=d6ad36913083d683aad4e02e53580c995f1a6ede
 
 Thanks,
-Pankaj Dubey
+
+Suravee
+
+
