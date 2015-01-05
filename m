@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751107AbbAEFEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 00:04:01 -0500
-Received: from ozlabs.org ([103.22.144.67]:39608 "EHLO ozlabs.org"
+	id S1751201AbbAEFKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 00:10:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46078 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732AbbAEFEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 00:04:00 -0500
-Message-ID: <1420434223.3860.1.camel@ellerman.id.au>
-Subject: Re: [PATCH 29/38] powerpc: drop _PAGE_FILE and pte_file()-related
- helpers
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Date: Mon, 05 Jan 2015 16:03:43 +1100
-In-Reply-To: <1419423766-114457-30-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1419423766-114457-1-git-send-email-kirill.shutemov@linux.intel.com>
-	 <1419423766-114457-30-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1750732AbbAEFKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 00:10:16 -0500
+Message-ID: <54AA1CB6.9020109@redhat.com>
+Date: Mon, 05 Jan 2015 13:10:14 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>, mst@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/3] Sharing MSIX irq for tx/rx queue pairs
+References: <1419562425-20614-1-git-send-email-jasowang@redhat.com> <87ppauovjb.fsf@rustcorp.com.au>
+In-Reply-To: <87ppauovjb.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-24 at 14:22 +0200, Kirill A. Shutemov wrote:
-> We've replaced remap_file_pages(2) implementation with emulation.
-> Nobody creates non-linear mapping anymore.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Michael Ellerman <mpe@ellerman.id.au>
-> ---
->  arch/powerpc/include/asm/pgtable-ppc32.h | 9 ++-------
->  arch/powerpc/include/asm/pgtable-ppc64.h | 5 +----
->  arch/powerpc/include/asm/pgtable.h       | 1 -
->  arch/powerpc/include/asm/pte-40x.h       | 1 -
->  arch/powerpc/include/asm/pte-44x.h       | 5 -----
->  arch/powerpc/include/asm/pte-8xx.h       | 1 -
->  arch/powerpc/include/asm/pte-book3e.h    | 1 -
->  arch/powerpc/include/asm/pte-fsl-booke.h | 3 ---
->  arch/powerpc/include/asm/pte-hash32.h    | 1 -
->  arch/powerpc/include/asm/pte-hash64.h    | 1 -
->  arch/powerpc/mm/pgtable_64.c             | 2 +-
->  11 files changed, 4 insertions(+), 26 deletions(-)
 
-These bits look fine to me.
+On 01/05/2015 09:39 AM, Rusty Russell wrote:
+> Jason Wang <jasowang@redhat.com> writes:
+>> Hi all:
+>>
+>> This series try to share MSIX irq for each tx/rx queue pair. This is
+>> done through:
+>>
+>> - introducing virtio pci channel which are group of virtqueues that
+>>   sharing a single MSIX irq (Patch 1)
+>> - expose channel setting to virtio core api (Patch 2)
+>> - try to use channel setting in virtio-net (Patch 3)
+> Hi Jason,
+>
+>         Is "channel" a term you created yourself, or something I was
+> just unaware of?  
 
-Acked-by: Michael Ellerman <mpe@ellerman.id.au>
+By myself and probably not accurate.
+> irq_group would seem more obvious, if the former.
+>
 
-cheers
-
+Yes, will use this in next version. Thanks.
+>> For the transport that does not support channel, channel paramters
+>> were simply ignored. For devices that does not use channel, it can
+>> simply pass NULL or zero to virito core.
+>>
+>> With the patch, 1 MSIX irq were saved for each TX/RX queue pair.
+> It seems fairly straightforward.
+>
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+>
+> Thanks,
+> Rusty.
+> --
 
