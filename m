@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308AbbAEPsg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:48:36 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:55683 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963AbbAEPs3 (ORCPT
+	id S1754339AbbAEPsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:48:47 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36384 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319AbbAEPso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:48:29 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-d2-54aab24a1739
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Pavel Machek <pavel@ucw.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFC PATCHv2 19/19] arm: mach-pxa: Decrement the power supply's device
- reference counter
-Date: Mon, 05 Jan 2015 16:48:02 +0100
-Message-id: <1420472882-10463-20-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
-References: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7pem1aFGJx6a2Ax6cl7ZouJKycz
-	W7x+YWix8+FbNovl+/oZLTY9vsZqcXnXHDaLz71HGC3unjrKZnHm9CVWi9O7Sxy4PXbOusvu
-	sXmFlsemVZ1sHpuX1HtsudrO4tG3ZRWjx4rV39k9Pm+SC+CI4rJJSc3JLEst0rdL4Mp4d2IV
-	e8FX1oonZ7exNzA2sXYxcnJICJhIPHzRzgZhi0lcuLceyObiEBJYyihx+v5idginj0ni4pEn
-	jCBVbALGEpuXLwGrEhF4wiQxvfUkC0iCWcBQ4ue7P0AdHBzCAskS0xZpgYRZBFQlvk/rYQKx
-	eQU8JNperIfaJidx8thksCs4geJNfy+AjREScJf48OwX6wRG3gWMDKsYRVNLkwuKk9JzDfWK
-	E3OLS/PS9ZLzczcxQoLyyw7GxcesDjEKcDAq8fB6nFgZIsSaWFZcmXuIUYKDWUmE91X6qhAh
-	3pTEyqrUovz4otKc1OJDjEwcnFINjNMsDyndrj3J2CWULjbPkHO+2/RFSrJbmrOsVl5TmXcn
-	NHvDjR19F3hPFDvWtG7oWFVg9P2ZeY/qsdYZWtMqLuZOVNi8bGfGjcnr5XdFHJhvFaa49TWb
-	WFW680/d2K3zOtqan3NOUvSftUp3zhyDoI7HX3tn1Fie+rb9JoNAQeQNW6f1u+/K5iqxFGck
-	GmoxFxUnAgB24/7FKAIAAA==
+	Mon, 5 Jan 2015 10:48:44 -0500
+Date: Mon, 5 Jan 2015 15:48:34 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Esben Haabendal <esbenhaabendal@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        Stefan Roese <sr@denx.de>
+Message-ID: <20150105154834.GV11764@sirena.org.uk>
+References: <1420472564.803.9.camel@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cUzoOeFTT7puyy6E"
+Content-Disposition: inline
+In-Reply-To: <1420472564.803.9.camel@gmail.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Backport of spi-fsl-spi bugfix to 3.14.y
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use power_supply_put() to decrement the power supply's device reference
-counter.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/mach-pxa/raumfeld.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+--cUzoOeFTT7puyy6E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/arch/arm/mach-pxa/raumfeld.c b/arch/arm/mach-pxa/raumfeld.c
-index a762b23ac830..6dc4f025e674 100644
---- a/arch/arm/mach-pxa/raumfeld.c
-+++ b/arch/arm/mach-pxa/raumfeld.c
-@@ -758,8 +758,10 @@ static void raumfeld_power_signal_charged(void)
- 	struct power_supply *psy =
- 		power_supply_get_by_name(raumfeld_power_supplicants[0]);
- 
--	if (psy)
-+	if (psy) {
- 		power_supply_set_battery_charged(psy);
-+		power_supply_put(psy);
-+	}
- }
- 
- static int raumfeld_power_resume(void)
--- 
-1.9.1
+On Mon, Jan 05, 2015 at 04:42:44PM +0100, Esben Haabendal wrote:
 
+> Please consider commit 4302a59629f7a0bd70fd1605d2b558597517372a
+> (spi: fsl: Fix problem with multi message transfers) for inclusion in
+> stable kernel 3.14.
+
+> It fixes a regression when using mmc_spi driver on top of spi-fsl-spi
+> driver (tested with powerpc mpc8313 based board).
+
+Has this ever worked?
+
+--cUzoOeFTT7puyy6E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUqrJRAAoJECTWi3JdVIfQWi8H/1kxAGrrDcnP2l4IFYBHJZ8e
+oL2J/Isl2HVPmzfbo5e8TSyV3KPIFnBTPM5GSu0cDmsuI0g8yxKtLrdqgxzvQbGm
+S4WdQ2SkCtGZmGbOfQNlMG6AtSIwIiQKbjnVgy82Z9IC++KX2ZBIJSM5O/YmcO/G
+v5nAmuhuab/AiSZjHKzgsVHhoBnhsbRBkaxplX7morQhG3K/zAI08lYnRqr3haML
+T+QmhGGAc368YiLNXu3+USDsuhWeKOoV17G+jAcvqnf6Dsq4MqpHhj4QLGgT7rd9
+z5KegOTWt508Ckv8ADEBoQ7omC1OylmkaQTVQBcmsKnArYfBBAvyvN7gS/F1ifI=
+=3OrN
+-----END PGP SIGNATURE-----
+
+--cUzoOeFTT7puyy6E--
