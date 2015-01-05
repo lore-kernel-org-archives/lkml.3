@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbbAEJBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:01:44 -0500
+	id S1753464AbbAEJM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:12:27 -0500
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:39513 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153AbbAEJBn (ORCPT
+	with ESMTP id S1753228AbbAEJBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:01:43 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-4e-54aa52f49482
+	Mon, 5 Jan 2015 04:01:44 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-4f-54aa52f590e9
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 03/14] mfd: intel_soc_pmic: Constify struct regmap_config
-Date: Mon, 05 Jan 2015 10:01:22 +0100
-Message-id: <1420448493-9355-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 04/14] mfd: davinci_voicecodec: Constify struct regmap_config
+Date: Mon, 05 Jan 2015 10:01:23 +0100
+Message-id: <1420448493-9355-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xa7pfglaFGEx8oWvx+oWhxf2vRxkt
-	Lu+aw2ZxupvVgcXjzrU9bB7zTgZ69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8aB28uYCj5w
-	VszrLWtg3MjRxcjJISFgItG44QUbhC0mceHeeiCbi0NIYCmjxNH1S9lBEkICfUwSh56agths
-	AsYSm5cvAWsQEciS+DFtNQuIzSxgKPHz3R+wemEBT4mjb6awgtgsAqoSTctugNXzCrhJfNv2
-	jRlimZzEyWOTgWo4ODgF3CVuP44EMYWASv69TZjAyLuAkWEVo2hqaXJBcVJ6rqFecWJucWle
-	ul5yfu4mRkiAfNnBuPiY1SFGAQ5GJR5ejxMrQ4RYE8uKK3MPMUpwMCuJ8K67BRTiTUmsrEot
-	yo8vKs1JLT7EyMTBKdXAuJCvcWnBb825G+aYMLEtfXf3udyctOwNIT5zLggvWVmbWH+kpGZz
-	hwhjnk5Ezk5f+bVBCk2bnXoaJC19E7oW5plrTZm+wPvy0mUpf6/VZU7d/if/1IPHXuKzOy84
-	Whx0eHRUZ7+YefgXH9XtxhsUDTZwytVIv5Fnmf49+wSfl+HzPI55N1stlFiKMxINtZiLihMB
-	6mNui+4BAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xa7pfg1aFGMxdwGTx+oWhxf2vRxkt
+	Lu+aw2ZxupvVgcXjzrU9bB7zTgZ69G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8byFSdYC66y
+	Vqw89ZS1gfERSxcjJ4eEgInE9wO/GSFsMYkL99azdTFycQgJLGWU+LTwGFhCSKCPSeLQU1MQ
+	m03AWGLz8iVsILaIQJbEj2mrwQYxCxhK/Hz3hx3EFhbwlehfuw4sziKgKrHt539mEJtXwE3i
+	4crtbBDL5CROHpvM2sXIwcEp4C5x+3EkiCkEVPLvbcIERt4FjAyrGEVTS5MLipPScw31ihNz
+	i0vz0vWS83M3MUJC5MsOxsXHrA4xCnAwKvHwepxYGSLEmlhWXJl7iFGCg1lJhHfdLaAQb0pi
+	ZVVqUX58UWlOavEhRiYOTqkGxvSZ5h/0zs3sKumX1UsyPsBr2eH0ddUz6byiq0wbXQP2OPzT
+	Pfrq8JyzZrmbalt5LVNM5ixediT5p7yCwmI3t8S433kM+9+bfD755pnSDW67S2fnKSR1b2wX
+	n1al+t25yrokdtLBwjXn6x0jFPe/bl4+Q5M97WNg9R8rw6/ro59/5mq+oMnersRSnJFoqMVc
+	VJwIADWarYvvAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,36 +37,22 @@ driver and regmap_init() accepts pointer to const.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/mfd/intel_soc_pmic_core.h | 2 +-
- drivers/mfd/intel_soc_pmic_crc.c  | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/davinci_voicecodec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/intel_soc_pmic_core.h b/drivers/mfd/intel_soc_pmic_core.h
-index 33aacd9baddc..9498d6719847 100644
---- a/drivers/mfd/intel_soc_pmic_core.h
-+++ b/drivers/mfd/intel_soc_pmic_core.h
-@@ -23,7 +23,7 @@ struct intel_soc_pmic_config {
- 	unsigned long irq_flags;
- 	struct mfd_cell *cell_dev;
- 	int n_cell_devs;
--	struct regmap_config *regmap_config;
-+	const struct regmap_config *regmap_config;
- 	struct regmap_irq_chip *irq_chip;
+diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
+index c835e85539b2..9bbc642a7b9d 100644
+--- a/drivers/mfd/davinci_voicecodec.c
++++ b/drivers/mfd/davinci_voicecodec.c
+@@ -33,7 +33,7 @@
+ 
+ #include <linux/mfd/davinci_voicecodec.h>
+ 
+-static struct regmap_config davinci_vc_regmap = {
++static const struct regmap_config davinci_vc_regmap = {
+ 	.reg_bits = 32,
+ 	.val_bits = 32,
  };
- 
-diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
-index c85e2ecb868a..4cc1b324e971 100644
---- a/drivers/mfd/intel_soc_pmic_crc.c
-+++ b/drivers/mfd/intel_soc_pmic_crc.c
-@@ -111,7 +111,7 @@ static struct mfd_cell crystal_cove_dev[] = {
- 	},
- };
- 
--static struct regmap_config crystal_cove_regmap_config = {
-+static const struct regmap_config crystal_cove_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 
 -- 
 1.9.1
 
