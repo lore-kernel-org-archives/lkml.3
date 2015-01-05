@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbbAEMiR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 07:38:17 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:44022 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753135AbbAEMiQ (ORCPT
+	id S1753796AbbAEMdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:33:06 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55292 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298AbbAEMdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 07:38:16 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
-        <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lizefan@huawei.com>
-Subject: [PATCH] kprobes: bugfix: force unoptimize when disable kprobes.
-Date: Mon, 5 Jan 2015 20:32:20 +0800
-Message-ID: <1420461140-27153-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
+	Mon, 5 Jan 2015 07:33:03 -0500
+Date: Mon, 5 Jan 2015 12:32:52 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150105123252.GB10116@arm.com>
+References: <20150104190123.GA20153@amd>
+ <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
+ <20150104201026.GA23427@amd>
+ <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
+ <20150104203724.GA16372@amd>
+ <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+ <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
+ <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
+ <20150104212659.GC12302@n2100.arm.linux.org.uk>
+ <20150105013436.GA23350@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.50F2CDBD.0090,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: c5b0f7242290f3cd7460b973d5ddb2d9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105013436.GA23350@thunk.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original code failed to disarm the probed instruction after
+Hi Ted,
 
-echo 0 > /sys/kernel/debug/kprobes/enabled
+On Mon, Jan 05, 2015 at 01:34:36AM +0000, Theodore Ts'o wrote:
+> On Sun, Jan 04, 2015 at 09:26:59PM +0000, Russell King - ARM Linux wrote:
+> > 
+> > With the revert in place, we now have insanely small bogomips values
+> > reported via /proc/cpuinfo when hardware timers are used.  That needs
+> > fixing.
+> 
+> Why does it need to be fixed?
+> 
+> It's clear that there are applications that are working OK with the
+> existing value,
 
-if OPTPROBE is enabled.
+I'm not sure it is that clear -- the reported regression was on a processor
+that doesn't use the timer-backed delay loop, so the bogomips value will
+essentially be restored by reverting the patch.
 
-This is caused by a piece of logically inconsistent code:
+The issue comes on newer CPUs, where there will now be a very small bogomips
+value reported and (to my knowledge) nobody has yet tried running some
+affected applications there to see if they can cope.
 
-	unoptimize_kprobe(p, false);
-	if (!kprobe_queued(p)) {
-		...
-	}
+> and if you change it to fix it for some new applications, but it breaks
+> for others, then have you considered defining a new interface (perhaps
+> exported via sysfs) that exports a "sane" value and document that new
+> applications shoud use the new interface.
+> 
+> Or if the answer is that no one should be using the bogomips field at
+> all, then just document *that*, and then leave it be, so that existing
+> applications don't break.
 
-unoptimize_kprobe() with 'force' == false queues p onto
-unoptimizing_list, so following kprobe_queued() check always fail unless
-another core schedules optimizer and does the unoptimization very soon.
-This logic causes arch_disarm_kprobe() failed to get execute, lefts a
-breakpoint at the probed address, instead of restoring it.
+It never hurts to document our assumptions or anticipated/preferred use-cases
+but in this case I think bogomips is difficult enough to use on any
+half-recent SoCs that most developers have either (a) found another way to
+do what they want (perf counters, clock_gettime) or (b) stopped bothering to
+guess the CPU frequency when it's not actually needed, so I don't *think*
+that new applications are such an issue.
 
-This patch uses force unoptimize instead.
+Cheers,
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- kernel/kprobes.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index b185464..9fbe0c3 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -869,7 +869,7 @@ static void __disarm_kprobe(struct kprobe *p, bool reopt)
- {
- 	struct kprobe *_p;
- 
--	unoptimize_kprobe(p, false);	/* Try to unoptimize */
-+	unoptimize_kprobe(p, true);	/* Try to unoptimize */
- 
- 	if (!kprobe_queued(p)) {
- 		arch_disarm_kprobe(p);
--- 
-1.8.4
-
+Will
