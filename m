@@ -1,62 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268AbbAERQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:16:49 -0500
-Received: from smtprelay0116.hostedemail.com ([216.40.44.116]:34610 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752865AbbAERQs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:16:48 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3167:3352:3622:3865:3866:3867:3868:3872:3873:4321:5007:6119:6120:6261:7576:7903:10004:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: roof51_1dc46aa079710
-X-Filterd-Recvd-Size: 1910
-Message-ID: <1420478203.2652.17.camel@perches.com>
-Subject: Re: [RFC PATCH 2/4] x86, alternatives: Cleanup DPRINTK macro
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Jan 2015 09:16:43 -0800
-In-Reply-To: <1420470013-26413-3-git-send-email-bp@alien8.de>
-References: <1420470013-26413-1-git-send-email-bp@alien8.de>
-	 <1420470013-26413-3-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753886AbbAERSL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:18:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54307 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753024AbbAERSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 12:18:04 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: [PATCH V4 0/4] Reducing parameters of alloc_pages* family of functions
+Date: Mon,  5 Jan 2015 18:17:39 +0100
+Message-Id: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 16:00 +0100, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> Make it pass __func__ implicitly. Also, dump info about each replacing
-> we're doing. Fixup comments and style while at it.
+Changes since v3:
+o Moved struct alloc_context definition to mm/internal.h
+o Rebased on latest -next and re-measured. Sadly, the code/stack size
+  improvements are smaller with the new baseline.
 
-It may be better to use dynamic debug functionality
-directly with pr_debug instead of this __setup with
-"debug-alternative".
+The possibility of replacing the numerous parameters of alloc_pages* functions
+with a single structure has been discussed when Minchan proposed to expand the
+x86 kernel stack [1]. This series implements the change, along with few more
+cleanups/microoptimizations.
 
-It's becoming quite a bit more common to use the
-#define macro(fmt, ...) style where you converted
-back to the older #define macro(fmt, args...) style.
+The series is based on next-20150105 and I used gcc 4.8.3 20140627 on openSUSE
+13.2 for compiling. Config includess NUMA and COMPACTION.
 
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-[]
-> @@ -52,10 +52,10 @@ static int __init setup_noreplace_paravirt(char *str)
->  __setup("noreplace-paravirt", setup_noreplace_paravirt);
->  #endif
->  
-> -#define DPRINTK(fmt, ...)				\
-> -do {							\
-> -	if (debug_alternative)				\
-> -		printk(KERN_DEBUG fmt, ##__VA_ARGS__);	\
-> +#define DPRINTK(fmt, args...)						\
-> +do {									\
-> +	if (debug_alternative)						\
-> +		printk(KERN_DEBUG "%s: " fmt "\n", __func__, ##args);	\
->  } while (0)
+The core change is the introduction of a new struct alloc_context, which looks
+like this:
 
+struct alloc_context {
+        struct zonelist *zonelist;
+        nodemask_t *nodemask;
+        struct zone *preferred_zone;
+        int classzone_idx;
+        int migratetype;
+        enum zone_type high_zoneidx;
+};
 
+All the contents is mostly constant, except that __alloc_pages_slowpath()
+changes preferred_zone, classzone_idx and potentially zonelist. But that's not
+a problem in case control returns to retry_cpuset: in __alloc_pages_nodemask(),
+those will be reset to initial values again (although it's a bit subtle).
+On the other hand, gfp_flags and alloc_info mutate so much that it doesn't
+make sense to put them into alloc_context. Still, the result is one parameter
+instead of up to 7. This is all in Patch 2.
+
+Patch 3 is a step to expand alloc_context usage out of page_alloc.c itself.
+The function try_to_compact_pages() can also much benefit from the parameter
+reduction, but it means the struct definition has to be moved to a shared
+header.
+
+Patch 1 should IMHO be included even if the rest is deemed not useful enough.
+It improves maintainability and also has some code/stack reduction. Patch 4
+is OTOH a tiny optimization.
+
+Overall bloat-o-meter results:
+
+add/remove: 0/1 grow/shrink: 1/3 up/down: 1587/-1941 (-354)
+function                                     old     new   delta
+__alloc_pages_nodemask                       589    2176   +1587
+nr_free_zone_pages                           129     115     -14
+__alloc_pages_direct_compact                 329     256     -73
+get_page_from_freelist                      2670    2576     -94
+__alloc_pages_slowpath                      1760       -   -1760
+try_to_compact_pages                         582     579      -3
+
+Overal bloat-o-meter with forced inline in baseline, for fair comparison:
+
+add/remove: 0/0 grow/shrink: 0/4 up/down: 0/-512 (-512)
+function                                     old     new   delta
+nr_free_zone_pages                           129     115     -14
+__alloc_pages_direct_compact                 329     256     -73
+get_page_from_freelist                      2670    2576     -94
+__alloc_pages_nodemask                      2507    2176    -331
+try_to_compact_pages                         582     579      -3
+
+Overall stack sizes per ./scripts/checkstack.pl:
+
+                          old   new delta
+__alloc_pages_slowpath    152     -  -152
+get_page_from_freelist:   184   184     0
+__alloc_pages_nodemask    120   184   +64
+__alloc_pages_direct_c     40    40   -40  
+try_to_compact_pages       72    72     0
+                                     -128
+
+Again with forced inline on baseline:
+
+                          old   new delta
+get_page_from_freelist:   184   184     0
+__alloc_pages_nodemask    216   184   -32
+__alloc_pages_direct_c     40     -   -40  
+try_to_compact_pages       72    72     0
+                                      -72
+
+[1] http://marc.info/?l=linux-mm&m=140142462528257&w=2
+
+Vlastimil Babka (4):
+  mm: set page->pfmemalloc in prep_new_page()
+  mm, page_alloc: reduce number of alloc_pages* functions' parameters
+  mm: reduce try_to_compact_pages parameters
+  mm: microoptimize zonelist operations
+
+ include/linux/compaction.h |  17 ++--
+ include/linux/mmzone.h     |  13 +--
+ mm/compaction.c            |  23 ++---
+ mm/internal.h              |  14 +++
+ mm/mmzone.c                |   4 +-
+ mm/page_alloc.c            | 245 +++++++++++++++++++--------------------------
+ 6 files changed, 144 insertions(+), 172 deletions(-)
+
+-- 
+2.1.2
 
