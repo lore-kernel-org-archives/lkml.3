@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbbAEPt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:49:26 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56286 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224AbbAEPsb (ORCPT
+	id S1754282AbbAEPsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:48:33 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:55683 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190AbbAEPs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:48:31 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-d1-54aab24a215d
+	Mon, 5 Jan 2015 10:48:28 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-cf-54aab249ac49
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
         Sebastian Reichel <sre@kernel.org>,
@@ -16,78 +16,63 @@ To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFC PATCHv2 16/19] power: 88pm860x_charger: Decrement the power
+Subject: [RFC PATCHv2 17/19] power: bq2415x_charger: Decrement the power
  supply's device reference counter
-Date: Mon, 05 Jan 2015 16:47:59 +0100
-Message-id: <1420472882-10463-17-git-send-email-k.kozlowski@samsung.com>
+Date: Mon, 05 Jan 2015 16:48:00 +0100
+Message-id: <1420472882-10463-18-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7pem1aFGNzvVLeY9OQ9s8XElZOZ
-	LV6/MLTY+fAtm8Xyff2MFpseX2O1uLxrDpvF594jjBZ3Tx1lszhz+hKrxendJQ7cHjtn3WX3
-	2LxCy2PTqk42j81L6j22XG1n8ejbsorRY8Xq7+wenzfJBXBEcdmkpOZklqUW6dslcGV8W7iN
-	qWA3d0XD5wtMDYyHObsYOTkkBEwktk9/wwJhi0lcuLeerYuRi0NIYCmjxOZ73YwQTh+TxMT9
-	78Cq2ASMJTYvXwJWJSLwhElieutJsASzgKHEz3d/2EFsYYFciRPT+oC6OThYBFQl1s9VBQnz
-	CnhI9HQeY4PYJidx8thkVhCbEyje9PcC2BghAXeJD89+sU5g5F3AyLCKUTS1NLmgOCk910iv
-	ODG3uDQvXS85P3cTIyQov+5gXHrM6hCjAAejEg+vx4mVIUKsiWXFlbmHGCU4mJVEeF+lrwoR
-	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwLhocsEr6Ydtm0336F0oeiHxyePRa7Hf0iwuVx8J7A3m
-	1/cXv3Pxtc2vFSlyQa9XFbXHfVvn28UpmT5j3YXS2X45Zw5fXXCq763KXWHDVV1uqcvW/TuS
-	Lcd9VeRdZcIMDfvTN39cPXtw8uVZLzYdkvwv9tjyv/TqLVYbf687FBcsnGG5OLnrX/xKJZbi
-	jERDLeai4kQAmTpP3CgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7qem1aFGHybb2Ax6cl7ZouJKycz
+	W7x+YWix8+FbNovl+/oZLTY9vsZqcXnXHDaLz71HGC3unjrKZnHm9CVWi9O7Sxy4PXbOusvu
+	sXmFlsemVZ1sHpuX1HtsudrO4tG3ZRWjx4rV39k9Pm+SC+CI4rJJSc3JLEst0rdL4Mr437ub
+	teA9R8WTZw9ZGxjPsncxcnJICJhIXFrznQnCFpO4cG89WxcjF4eQwFJGiV+9x5kgnD4miYn7
+	37GAVLEJGEtsXr4ErEpE4AmTxPTWk2AJZgFDiZ/v/oCNFRbIkXg+fSVQnIODRUBVYst+G5Aw
+	r4CHxNyGTkaIbXISJ49NZgWxOYHiTX8vgI0REnCX+PDsF+sERt4FjAyrGEVTS5MLipPScw31
+	ihNzi0vz0vWS83M3MUKC8ssOxsXHrA4xCnAwKvHwepxYGSLEmlhWXJl7iFGCg1lJhPdV+qoQ
+	Id6UxMqq1KL8+KLSnNTiQ4xMHJxSDYw1Vg2hXvf/a+RGRE2fvzOgtbE03W8CV31MezCTbM35
+	+OSr7UvquuwCtP7/Xrxw3+6G65rMGwLK3zDN3/DN5evEZ6sL1z04eKJqn4lEwuzSH7nFdWud
+	Pj3921vlmyAu97/muuJzn4+fZE5pbGLpcSh9Ifv4e72S5rIbiq7FvOJTueZP+LRa46ISS3FG
+	oqEWc1FxIgCDdnbQKAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use power_supply_put() to decrement the power supply's device reference
-counter.
+counter (increased by power_supply_get_by_name() or
+power_supply_get_by_phandle()).
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Acked-by: Pavel Machek <pavel@ucw.cz>
 ---
- drivers/power/88pm860x_charger.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/power/bq2415x_charger.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/power/88pm860x_charger.c b/drivers/power/88pm860x_charger.c
-index 59d62665b526..f88caee01ee9 100644
---- a/drivers/power/88pm860x_charger.c
-+++ b/drivers/power/88pm860x_charger.c
-@@ -298,13 +298,18 @@ static int set_charging_fsm(struct pm860x_charger_info *info)
- 		return -EINVAL;
- 	ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_VOLTAGE_NOW,
- 			&data);
--	if (ret)
-+	if (ret) {
-+		power_supply_put(psy);
- 		return ret;
+diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
+index 2f80de0410d9..00809dcdd34e 100644
+--- a/drivers/power/bq2415x_charger.c
++++ b/drivers/power/bq2415x_charger.c
+@@ -1686,6 +1686,8 @@ error_4:
+ error_3:
+ 	bq2415x_power_supply_exit(bq);
+ error_2:
++	if (!IS_ERR(bq->notify_psy))
++		power_supply_put(bq->notify_psy);
+ 	kfree(name);
+ error_1:
+ 	mutex_lock(&bq2415x_id_mutex);
+@@ -1701,8 +1703,10 @@ static int bq2415x_remove(struct i2c_client *client)
+ {
+ 	struct bq2415x_device *bq = i2c_get_clientdata(client);
+ 
+-	if (bq->notify_psy)
++	if (bq->notify_psy) {
+ 		power_supply_unreg_notifier(&bq->nb);
++		power_supply_put(bq->notify_psy);
 +	}
- 	vbatt = data.intval / 1000;
  
- 	ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_PRESENT, &data);
--	if (ret)
-+	if (ret) {
-+		power_supply_put(psy);
- 		return ret;
-+	}
-+	power_supply_put(psy);
- 
- 	mutex_lock(&info->lock);
- 	info->present = data.intval;
-@@ -447,6 +452,7 @@ static irqreturn_t pm860x_temp_handler(int irq, void *data)
- 
- 	set_charging_fsm(info);
- out:
-+	power_supply_put(psy);
- 	return IRQ_HANDLED;
- }
- 
-@@ -507,6 +513,7 @@ static irqreturn_t pm860x_done_handler(int irq, void *data)
- 
- out:
- 	mutex_unlock(&info->lock);
-+	power_supply_put(psy);
- 	dev_dbg(info->dev, "%s, Allowed: %d\n", __func__, info->allowed);
- 	set_charging_fsm(info);
- 
+ 	bq2415x_sysfs_exit(bq);
+ 	bq2415x_power_supply_exit(bq);
 -- 
 1.9.1
 
