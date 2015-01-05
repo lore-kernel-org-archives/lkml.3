@@ -1,113 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbbAESWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:22:36 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39978 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932097AbbAESWe (ORCPT
+	id S932168AbbAESTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:19:17 -0500
+Received: from gw1.transmode.se ([195.58.98.146]:60551 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753543AbbAESTP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:22:34 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ntVDaHfLCSzlI5M2ZS8vV
-Date: Mon, 5 Jan 2015 10:18:24 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "nicoleotsuka@gmail.com" <nicoleotsuka@gmail.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+	Mon, 5 Jan 2015 13:19:15 -0500
+X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 13:19:15 EST
+From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+To: "christophe.leroy@c-s.fr" <christophe.leroy@c-s.fr>
+CC: "scottwood@freescale.com" <scottwood@freescale.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "mpe@ellerman.id.au" <mpe@ellerman.id.au>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "padma.v@samsung.com" <padma.v@samsung.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "bcousson@baylibre.com" <bcousson@baylibre.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "kgene@kernel.org" <kgene@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>
-Subject: Re: [PATCH 2/2] misc: sram: switch to ioremap_wc from ioremap
-Message-ID: <20150105181823.GG4081@atomide.com>
-References: <1418266726-12004-1-git-send-email-a.kesavan@samsung.com>
- <1418266726-12004-2-git-send-email-a.kesavan@samsung.com>
- <1418292513.3188.4.camel@pengutronix.de>
- <20141211103919.GA6067@arm.com>
- <1418298046.3188.10.camel@pengutronix.de>
- <20141211145849.GH31456@e104818-lin.cambridge.arm.com>
- <CAM4voakdfiTecW8YH0znnyB-dTnX_fsrRcH2McABwdk3T9drkQ@mail.gmail.com>
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 04/11] powerpc/8xx: Take benefit of aligned PGDIR
+Thread-Topic: [PATCH 04/11] powerpc/8xx: Take benefit of aligned PGDIR
+Thread-Index: AQHQGUGAyrNzLqXuPUqDkis6GV95WZyx5PCA
+Date: Mon, 5 Jan 2015 18:19:13 +0000
+Message-ID: <1420481953.25047.19.camel@transmode.se>
+References: <20141216150338.978F71A5E04@localhost.localdomain>
+In-Reply-To: <20141216150338.978F71A5E04@localhost.localdomain>
+Accept-Language: en-US, sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.200.4]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <DC3A87DB9E497D4D87BA431D98C13C38@transmode.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM4voakdfiTecW8YH0znnyB-dTnX_fsrRcH2McABwdk3T9drkQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Abhilash Kesavan <kesavan.abhilash@gmail.com> [141217 04:37]:
-> Hi,
-> 
-> On Thu, Dec 11, 2014 at 8:28 PM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Thu, Dec 11, 2014 at 11:40:46AM +0000, Philipp Zabel wrote:
-> >> Hi Will,
-> >>
-> >> Am Donnerstag, den 11.12.2014, 10:39 +0000 schrieb Will Deacon:
-> >> > On Thu, Dec 11, 2014 at 10:08:33AM +0000, Philipp Zabel wrote:
-> >> > > Hi Abhilash,
-> >> > >
-> >> > > Am Donnerstag, den 11.12.2014, 08:28 +0530 schrieb Abhilash Kesavan:
-> >> > > > Currently, the SRAM allocator returns device memory via ioremap.
-> >> > > > This causes issues on ARM64 when the internal SoC SRAM allocated by
-> >> > > > the generic sram driver is used for audio playback. The destination
-> >> > > > buffer address (which is ioremapped SRAM) is not 64-bit aligned for
-> >> > > > certain streams (e.g. 44.1k sampling rate). In such cases we get
-> >> > > > unhandled alignment faults. Use ioremap_wc in place of ioremap which
-> >> > > > gives us normal non-cacheable memory instead of device memory.
-> >> > >
-> >> > > Could this break the omap_bus_sync() implementation in
-> >> > > arch/arm/mach-omap2/omap4-common.c?
-> >> > >
-> >> > >     void omap_bus_sync(void)
-> >> > >     {
-> >> > >             if (dram_sync && sram_sync) {
-> >> > >                     writel_relaxed(readl_relaxed(dram_sync), dram_sync);
-> >> > >                     writel_relaxed(readl_relaxed(sram_sync), sram_sync);
-> >> > >                     isb();
-> >> > >             }
-> >> > >     }
-> >> > >
-> >> > > It is used in wmb() and omap_do_wfi() to drain interconnect write
-> >> > > buffers on omap4/5. If sram_sync is mapped with write-combining, could
-> >> > > the last write to sram_sync stay stuck in the write-combining buffer
-> >> > > until after the function returns?
-> >> >
-> >> > I think you have that issue anyway, since you can get an early write
-> >> > response even if you use ioremap. Does the write to sram_sync have
-> >> > side-effects that we need to wait for?
-> >>
-> >> [Added Tony Lindgren and Santosh Shilimkar to Cc:]
-> >> I don't know.
-> >
-> > In addition to Will's question, do you care about the access size?
-> > ioremap() returns Device memory which is bufferable (early
-> > acknowledgement) but it guarantees the access size. With write
-> > combining, you may get a different access size than requested.
-> 
-> From the existing dts files, omap, imx, rockchip and exynos seem to be
-> the only users of the sram allocator code. I have tested this on
-> Exynos5420, Exynos5800 and Exynos7; there is no change in behavior
-> seen on these boards. Tested-by for other SoCs would be appreciated.
 
-Sorry for the delay, these seems to boot OK on omap4, so from that
-point of view:
+On Tue, 2014-12-16 at 16:03 +0100, Christophe Leroy wrote:
+> L1 base address is now aligned so we can insert L1 index into r11 directly and
+> then preserve r10
+> 
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-Tested-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+
+> 
+> ---
+>  arch/powerpc/kernel/head_8xx.S | 34 +++++++++++++++-------------------
+>  1 file changed, 15 insertions(+), 19 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+> index 2c329f1..ae05f28 100644
+> --- a/arch/powerpc/kernel/head_8xx.S
+> +++ b/arch/powerpc/kernel/head_8xx.S
+> @@ -326,16 +326,15 @@ InstructionTLBMiss:
+>         ori     r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+>  3:
+>  #endif
+> -       /* Extract level 1 index */
+> -       rlwinm  r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+> -       lwzx    r11, r10, r11/* Get the level 1 entry */
+> -       rlwinm  r10, r11,0,0,19/* Extract page descriptor page address */
+> +       /* Insert level 1 index */
+> +       rlwimi  r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+> +       lwz     r11, 0(r11)/* Get the level 1 entry */
+>  
+>         /* Load the MI_TWC with the attributes for this "segment." */
+>         MTSPR_CPU6(SPRN_MI_TWC, r11, r3)/* Set segment attributes */
+> -       mfspr   r11, SPRN_SRR0/* Get effective address of fault */
+> +       rlwinm  r11, r11,0,0,19/* Extract page descriptor page address */
+>         /* Extract level 2 index */
+> -       rlwinm  r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+> +       rlwinm  r10, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+>         lwzx    r10, r10, r11/* Get the pte */
+>  
+>  #ifdef CONFIG_SWAP
+> @@ -380,13 +379,12 @@ DataStoreTLBMiss:
+>         lis     r11, (swapper_pg_dir-PAGE_OFFSET)@h
+>         ori     r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+>  3:
+> -       /* Extract level 1 index */
+> -       rlwinm  r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+> -       lwzx    r11, r10, r11/* Get the level 1 entry */
+> +       /* Insert level 1 index */
+> +       rlwimi  r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+> +       lwz     r11, 0(r11)/* Get the level 1 entry */
+>  
+>         /* We have a pte table, so load fetch the pte from the table.
+>                 */
+> -       mfspr   r10, SPRN_MD_EPN/* Get address of fault */
+>         /* Extract level 2 index */
+>         rlwinm  r10, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+>         rlwimi  r10, r11, 0, 0, 32 - PAGE_SHIFT - 1/* Add level 2 base */
+> @@ -515,16 +513,14 @@ FixupDAR:/* Entry point for dcbx workaround. */
+>         beq-    3f      /* Branch if user space */
+>         lis     r11, (swapper_pg_dir-PAGE_OFFSET)@h
+>         ori     r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
+> -       /* Extract level 1 index */
+> -3:     rlwinm  r10, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+> -       lwzx    r11, r10, r11/* Get the level 1 entry */
+> -       rlwinm  r10, r11,0,0,19/* Extract page descriptor page address */
+> -       mfspr   r11, SPRN_SRR0/* Get effective address of fault */
+> -       /* Extract level 2 index */
+> -       rlwinm  r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+> -       lwzx    r11, r10, r11/* Get the pte */
+> +       /* Insert level 1 index */
+> +3:     rlwimi  r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+> +       lwz     r11, 0(r11)/* Get the level 1 entry */
+> +       rlwinm  r11, r11,0,0,19/* Extract page descriptor page address */
+> +       /* Insert level 2 index */
+> +       rlwimi  r11, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+> +       lwz     r11, 0(r11)/* Get the pte */
+>         /* concat physical page address(r11) and page offset(r10) */
+> -       mfspr   r10, SPRN_SRR0
+>         rlwimi  r11, r10, 0, 32 - PAGE_SHIFT, 31
+>         lwz     r11,0(r11)
+>  /* Check if it really is a dcbx instruction. */
