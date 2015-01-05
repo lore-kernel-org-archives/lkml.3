@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550AbbAENkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:40:22 -0500
-Received: from mga02.intel.com ([134.134.136.20]:50437 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923AbbAENkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:40:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="436599469"
-Date: Mon, 5 Jan 2015 15:40:10 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / PM: Fix PM initialization for devices that are
- not present
-Message-ID: <20150105134010.GF1386@lahna.fi.intel.com>
-References: <4453924.d7c5RYZUJi@vostro.rjw.lan>
+	id S1753617AbbAENn2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:43:28 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46810 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbbAENn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 08:43:26 -0500
+Date: Mon, 5 Jan 2015 14:43:23 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: NeilBrown <neilb@suse.de>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
+Message-ID: <20150105134323.GA27863@amd>
+References: <20141211214801.4127.93914.stgit@notabene.brown>
+ <20141211215943.4127.24792.stgit@notabene.brown>
+ <20141228142010.GA3922@amd>
+ <20150103103357.2406fc23@notabene.brown>
+ <20150104101847.GA6122@amd>
+ <20150105200936.2ba8f596@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4453924.d7c5RYZUJi@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <20150105200936.2ba8f596@notabene.brown>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 01, 2015 at 11:38:28PM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> If an ACPI device object whose _STA returns 0 (not present and not
-> functional) has _PR0 or _PS0, its power_manageable flag will be set
-> and acpi_bus_init_power() will return 0 for it.  Consequently, if
-> such a device object is passed to the ACPI device PM functions, they
-> will attempt to carry out the requested operation on the device,
-> although they should not do that for devices that are not present.
-> 
-> To fix that problem make acpi_bus_init_power() return an error code
-> for devices that are not present which will cause power_manageable to
-> be cleared for them as appropriate in acpi_bus_get_power_flags().
-> However, the lists of power resources should not be freed for the
-> device in that case, so modify acpi_bus_get_power_flags() to keep
-> those lists even if acpi_bus_init_power() returns an error.
-> Accordingly, when deciding whether or not the lists of power
-> resources need to be freed, acpi_free_power_resources_lists()
-> should check the power.flags.power_resources flag instead of
-> flags.power_manageable, so make that change too.
-> 
-> Furthermore, if acpi_bus_attach() sees that flags.initialized is
-> unset for the given device, it should reset the power management
-> settings of the device and re-initialize them from scratch instead
-> of relying on the previous settings (the device may have appeared
-> after being not present previously, for example), so make it use
-> the 'valid' flag of the D0 power state as the initial value of
-> flags.power_manageable for it and call acpi_bus_init_power() to
-> discover its current power state.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi!
 
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > N_HCI activates (registers the hci dev) on HCIUARTSETPROTO ioctl.  A child
+> > >   device would need a way to specify the protocol I resume.
+> > > N_MOUSE activates on a 'read' on the tty - and deactivates when the read
+> > >   completes.
+> > > N_GSM0710 activates immediately that the ldisc is activated, as does N_IRDA
+> > > N_PPP seems to want a PPPIOCNEWUNIT ioctl to fully register.
+> > > 
+> > > Doing any of these in a driver for a uart slave device would certainly be
+> > > possible.  I wonder if it is something we really want to do in the kernel
+> > > though.  What is the gain over providing sufficient information in the
+> > > KOBJ_ADD uevent so that udev can do the required work in user-space?
+> > 
+> > Consistency. If you have bluetooth on USB, it automatically works,
+> > without userspace help. If we have mouse on USB, it automatically
+> > works, etc...
+> 
+> My point is: why is the kernel/userspace distinction important?  As long as
+> it "automatically works", does it really matter where the code is?
+
+For some cases, it does, as "devices needed during boot". Someone is
+going to attach keyboard or something powermanagement related, sooner
+or later.
+
+> We can put a little bit of code in the kernel (to report the details of the
+> attached device) and a little bit of code in udev (to run hciattach) and it
+> will still be automatic.
+
+Of course, that's also possible. There will be parameters such as
+speed / parity / flow control that will need to be passed, and
+userland will still see /dev/ttySX device that it perhaps does not
+need to see.
+
+And there will be problems with devices such as bcm2048 on Nokia,
+which is connected by a serial line and (interrupt capable) GPIO lines
+and clocks. Rather than extending hciattach to pass the neccessary
+GPIO/clock information and extending udev to pass GPIO/clock
+information to hciattach (and extending kernel to pass it to udev and
+accept from hciattach), it makes sense to just do it internally.
+									Pavel
+									
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
