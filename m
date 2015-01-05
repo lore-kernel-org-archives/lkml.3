@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbbAEI6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:58:05 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:39527 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbbAEI6A (ORCPT
+	id S1753341AbbAEI7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:59:55 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62405 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216AbbAEI7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:58:00 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org,
-        linux-sh@vger.kernel.org, vksavl@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] clk-rcar-gen2: RCAN clock support
-Date: Mon, 05 Jan 2015 10:58:12 +0200
-Message-ID: <2588771.7HSTAuAcWR@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1550804.XpyQtHjy2T@avalon>
-References: <3007073.i0ghnTEhxV@wasted.cogentembedded.com> <1550804.XpyQtHjy2T@avalon>
+	Mon, 5 Jan 2015 03:59:53 -0500
+Message-ID: <54AA5280.3050802@linaro.org>
+Date: Mon, 05 Jan 2015 16:59:44 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Charles.Garcia-Tobin@arm.com" <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v6 14/17] ARM64 / ACPI: Parse GTDT to initialize arch
+ timer
+References: <D0CF9C94.CD69%suravee.suthikulpanit@amd.com>
+In-Reply-To: <D0CF9C94.CD69%suravee.suthikulpanit@amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+On 2015年01月05日 15:55, Suthikulpanit, Suravee wrote:
+> On 1/4/15, 04:55, "Hanjun Guo" <hanjun.guo@linaro.org> wrote:
+>
+>> Using the information presented by GTDT to initialize the arch
+>> timer (not memory-mapped).
+>>
+>> Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>> arch/arm64/kernel/time.c             |   7 ++
+>> drivers/clocksource/arm_arch_timer.c | 132
+>> ++++++++++++++++++++++++++++-------
+>> include/linux/clocksource.h          |   6 ++
+>> 3 files changed, 118 insertions(+), 27 deletions(-)
+[...]
+>> +static void __init arch_timer_of_init(struct device_node *np)
+>> +{
+>> +	int i;
+>> +
+>> +	if (arch_timers_present & ARCH_CP15_TIMER) {
+>> +		pr_warn("arch_timer: multiple nodes in dt, skipping\n");
+>> +		return;
+>> +	}
+>> +
+>> +	arch_timers_present |= ARCH_CP15_TIMER;
+>> +	for (i = PHYS_SECURE_PPI; i < MAX_TIMER_PPI; i++)
+>> +		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+>> +
+>> +	arch_timer_detect_rate(NULL, np);
+>> +
+>> +	arch_timer_c3stop = !of_property_read_bool(np, "always-on");
+>> +
+>> +	/*
+>> +	 * If we cannot rely on firmware initializing the timer registers then
+>> +	 * we should use the physical timers instead.
+>> +	 */
+>> +	if (IS_ENABLED(CONFIG_ARM) &&
+>> +	    of_property_read_bool(np, "arm,cpu-registers-not-fw-configured"))
+>> +			arch_timer_use_virtual = false;
+>> +
+>> +	arch_timer_init();
+>> +}
+>> +CLOCKSOURCE_OF_DECLARE(armv7_arch_timer, "arm,armv7-timer",
+>> arch_timer_of_init);
+>> +CLOCKSOURCE_OF_DECLARE(armv8_arch_timer, "arm,armv8-timer",
+>> arch_timer_of_init);
+>
+> Hanjun,
+>
+> FYI, it seems that the tree that you have rebased the patch series has an
+> issue determining clocksource in ARM64 introduced by this commit.
+>
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=0
+> b46b8a718c6e90910a1b1b0fe797be3c167e186
+>
+> Here is the fix from Catalin that already went upstream:
+>
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drive
+> rs/clocksource/arm_arch_timer.c?id=d6ad36913083d683aad4e02e53580c995f1a6ede
 
-On Monday 05 January 2015 10:53:02 Laurent Pinchart wrote:
-> On Thursday 25 December 2014 01:17:29 Sergei Shtylyov wrote:
-> > Add the RCAN clock support to the R-Car generation 2 CPG driver.  This
-> > clock gets derived from  the USB_EXTAL clock, dividing  it by 6.  The
-> > layout of the RCANCKCR register is similar to those of the clocks
-> > supported by the 'clk-div6' driver but has no divider field, and so can't
-> > be supported by that driver...
-> > 
-> > Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-> > 
-> > ---
-> > The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git'
-> > repo.
-> > 
-> > Changes in version 2:
-> > - switched to using the composite clock driver with the fixed factor and
-> > gated clock component drivers;
-> > - removed *static* from 'parent_name' definition, switching from
-> > assignment to initializer;
-> > - modified the binding document;
-> > - modified the changelog.
-> > 
-> >  Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
-> >  | 5 -
-> >  drivers/clk/shmobile/clk-rcar-gen2.c                    |   40 ++++++++++
-> 
-> Could you please also add a #define for the RCAN clock in include/dt-
-> bindings/clock/r8a779*-clock.h ? Same comment for the ADSP clock in "[PATCH]
-> clk-rcar-gen2: ADSP clock support".
+This bug fix patch was merged in Dec 30 by Linus, which is the date
+after 3.19-rc2 released :)
 
-Scratch that, I see you add the #define's in the patches that add the 
-corresponding MSTP clocks.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+Thanks
+Hanjun
