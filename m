@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbbAEJUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:20:19 -0500
-Received: from out4133-34.mail.aliyun.com ([42.120.133.34]:36494 "EHLO
-	out4133-34.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753585AbbAEJUR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:20:17 -0500
-X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 04:20:17 EST
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R131e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g03008;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=6;RT=6;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'xiaomin1'" <xiaoming.wang@intel.com>
-Cc: "'Zhang Dongxing'" <dongxing.zhang@intel.com>, <arnd@arndb.de>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        "Chuansheng Liu" <chuansheng.liu@intel.com>
-Subject: Re: [PATCH] move file->f_op->open out of mutex (misc_mtx) in misc_open
-Date: Mon, 05 Jan 2015 17:14:05 +0800
-Message-ID: <023c01d028c7$f4838f90$dd8aaeb0$@alibaba-inc.com>
+	id S1753381AbbAEJPX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:15:23 -0500
+Received: from verein.lst.de ([213.95.11.211]:54138 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751124AbbAEJPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 04:15:21 -0500
+Date: Mon, 5 Jan 2015 10:15:16 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: hch@lst.de, bvanassche@acm.org, hare@suse.de, JBottomley@parallels.com,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
+Message-ID: <20150105091516.GA22226@lst.de>
+References: <54A43CFB.2080705@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AdAox9xkNeS60RlmQVScv5N6FHcwtA==
-Content-Language: zh-cn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54A43CFB.2080705@oracle.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 31, 2014 at 01:14:19PM -0500, Sasha Levin wrote:
+> Hi Christoph,
 > 
-> misc_mtx was used to mutex misc_list.
-> But file->f_op->open may be blocked by downloading
-> firmware in some devices' open.
-> So move file->f_op->open out of mutex (misc_mtx)
-> in misc_open to avoid this block.
-> It also make code more efficiency.
-> 
-> Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-> Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
-> ---
->  drivers/char/misc.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/char/misc.c b/drivers/char/misc.c
-> index ffa97d2..289c59e 100644
-> --- a/drivers/char/misc.c
-> +++ b/drivers/char/misc.c
-> @@ -144,7 +144,8 @@ static int misc_open(struct inode * inode, struct file * file)
->  	replace_fops(file, new_fops);
->  	if (file->f_op->open) {
->  		file->private_data = c;
-> -		err = file->f_op->open(inode,file);
-> +		mutex_unlock(&misc_mtx);
-> +		return file->f_op->open(inode,file);
->  	}
-What if unregister breaks in while opening?
+> I'm seeing an issue which was bisected down to 3c356bde1 ("scsi: stop passing
+> a gfp_mask argument down the command setup path"):
 
->  fail:
->  	mutex_unlock(&misc_mtx);
-> --
-> 1.7.9.5
+->queue_rq in blk-mq context is designed to be able to sleep and be called
+from process context without any spinlocks held or irqs disabled, so we
+really should fix the
+caller instead.
+
+That being said your trace seems odd to me:
+
+> [ 3395.328221] BUG: sleeping function called from invalid context at mm/mempool.c:206
+> [ 3395.329540] in_atomic(): 1, irqs_disabled(): 0, pid: 6399, name: trinity-c531
+> [ 3395.331104] no locks held by trinity-c531/6399.
+> [ 3395.331849] Preemption disabled blk_execute_rq_nowait (block/blk-exec.c:95)
+
+blk_execute_rq_nowait only takes a lock for the non-blk-mq case.  In my
+current kernel that's in line 79, but can you verify that for you
+line 95 is the spin_lock_irq in the !q->mq_ops case?
+
+> [ 3395.348571] __might_sleep (kernel/sched/core.c:7308)
+> [ 3395.351944] mempool_alloc (mm/mempool.c:206 (discriminator 1))
+> [ 3395.355196] scsi_sg_alloc (drivers/scsi/scsi_lib.c:582)
+> [ 3395.356893] __sg_alloc_table (lib/scatterlist.c:282)
+> [ 3395.358844] ? sdev_disable_disk_events (drivers/scsi/scsi_lib.c:577)
+> [ 3395.360873] scsi_alloc_sgtable (drivers/scsi/scsi_lib.c:608)
+> [ 3395.362769] scsi_init_sgtable (drivers/scsi/scsi_lib.c:1087)
+> [ 3395.364583] ? lockdep_init_map (kernel/locking/lockdep.c:2986)
+> [ 3395.366354] scsi_init_io (drivers/scsi/scsi_lib.c:1122)
+> [ 3395.368092] ? do_init_timer (kernel/time/timer.c:669)
+> [ 3395.369837] scsi_setup_cmnd (drivers/scsi/scsi_lib.c:1220 drivers/scsi/scsi_lib.c:1268)
+> [ 3395.371743] scsi_queue_rq (drivers/scsi/scsi_lib.c:1875 drivers/scsi/scsi_lib.c:1980)
+> [ 3395.373471] __blk_mq_run_hw_queue (block/blk-mq.c:751)
+> [ 3395.375481] blk_mq_run_hw_queue (block/blk-mq.c:831)
+> [ 3395.377324] blk_mq_insert_request (block/blk-mq.h:92 block/blk-mq.c:974)
+> [ 3395.379377] ? blk_rq_map_user (block/blk-map.c:78 block/blk-map.c:142)
+> [ 3395.381307] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
+> [ 3395.383485] blk_execute_rq_nowait (block/blk-exec.c:95)
+
+But this clearly is the blk-mq case.  How does your version of
+blk_execute_rq_nowait look like?
 
