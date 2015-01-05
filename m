@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164AbbAEOzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:55:24 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47082 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbbAEOzU (ORCPT
+	id S1753877AbbAEO5z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:57:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47338 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379AbbAEO5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:55:20 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+	Mon, 5 Jan 2015 09:57:54 -0500
+Date: Mon, 5 Jan 2015 15:57:39 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.19-rc2 v13 5/5] ARM: Fix on-demand backtrace triggered by IRQ
-Date: Mon,  5 Jan 2015 14:54:59 +0000
-Message-Id: <1420469699-25350-6-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1420469699-25350-1-git-send-email-daniel.thompson@linaro.org>
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>
- <1420469699-25350-1-git-send-email-daniel.thompson@linaro.org>
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [PATCH v2 1/2] arm: perf: Prevent wraparound during overflow
+Message-ID: <20150105145739.GU30905@twins.programming.kicks-ass.net>
+References: <1416412346-8759-1-git-send-email-daniel.thompson@linaro.org>
+ <1416587067-3220-1-git-send-email-daniel.thompson@linaro.org>
+ <1416587067-3220-2-git-send-email-daniel.thompson@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416587067-3220-2-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if arch_trigger_all_cpu_backtrace() is called with interrupts
-disabled and on a platform the delivers IPI_CPU_BACKTRACE using regular
-IRQ requests the system will wedge for ten seconds waiting for the
-current CPU to react to a masked interrupt.
+On Fri, Nov 21, 2014 at 04:24:26PM +0000, Daniel Thompson wrote:
+> If the overflow threshold for a counter is set above or near the
+> 0xffffffff boundary then the kernel may lose track of the overflow
+> causing only events that occur *after* the overflow to be recorded.
+> Specifically the problem occurs when the value of the performance counter
+> overtakes its original programmed value due to wrap around.
+> 
+> Typical solutions to this problem are either to avoid programming in
+> values likely to be overtaken or to treat the overflow bit as the 33rd
+> bit of the counter.
+> 
+> Its somewhat fiddly to refactor the code to correctly handle the 33rd bit
+> during irqsave sections (context switches for example) so instead we take
+> the simpler approach of avoiding values likely to be overtaken.
+> 
+> We set the limit to half of max_period because this matches the limit
+> imposed in __hw_perf_event_init(). This causes a doubling of the interrupt
+> rate for large threshold values, however even with a very fast counter
+> ticking at 4GHz the interrupt rate would only be ~1Hz.
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> ---
+>  arch/arm/kernel/perf_event.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index 266cba46db3e..ab68833c1e31 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -115,8 +115,14 @@ int armpmu_event_set_period(struct perf_event *event)
+>  		ret = 1;
+>  	}
+>  
+> -	if (left > (s64)armpmu->max_period)
+> -		left = armpmu->max_period;
+> +	/*
+> +	 * Limit the maximum period to prevent the counter value
+> +	 * from overtaking the one we are about to program. In
+> +	 * effect we are reducing max_period to account for
+> +	 * interrupt latency (and we are being very conservative).
+> +	 */
+> +	if (left > (armpmu->max_period >> 1))
+> +		left = armpmu->max_period >> 1;
 
-This patch resolves this issue by calling directly into the backtrace
-dump code instead of generating an IPI.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- arch/arm/kernel/smp.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 12667eb68198..644f654f7a7e 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -767,7 +767,10 @@ void ipi_cpu_backtrace(struct pt_regs *regs)
- 		/* Replace printk to write into the NMI seq */
- 		this_cpu_write(printk_func, nmi_vprintk);
- 		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
--		show_regs(regs);
-+		if (regs != NULL)
-+			show_regs(regs);
-+		else
-+			dump_stack();
- 		this_cpu_write(printk_func, printk_func_save);
- 
- 		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-@@ -812,6 +815,16 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 		seq_buf_init(&s->seq, s->buffer, NMI_BUF_SIZE);
- 	}
- 
-+	/*
-+	 * If irqs are disabled on the current processor then, if
-+	 * IPI_CPU_BACKTRACE is delivered using IRQ, we will won't be able to
-+	 * react to IPI_CPU_BACKTRACE until we leave this function. We avoid
-+	 * the potential timeout (not to mention the failure to print useful
-+	 * information) by calling the backtrace directly.
-+	 */
-+	if (include_self && irqs_disabled())
-+		ipi_cpu_backtrace(in_interrupt() ? get_irq_regs() : NULL);
-+
- 	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
- 		pr_info("Sending NMI to %s CPUs:\n",
- 			(include_self ? "all" : "other"));
--- 
-1.9.3
-
+On x86 we simply half max_period, why did you choose to do differently?
