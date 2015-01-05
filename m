@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541AbbAET00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:26:26 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:61145 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504AbbAET0Z (ORCPT
+	id S1754085AbbAETb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:31:27 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:51456 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307AbbAETbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:26:25 -0500
+	Mon, 5 Jan 2015 14:31:25 -0500
+Date: Mon, 5 Jan 2015 19:31:20 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [PATCH v2 1/2] arm: perf: Prevent wraparound during overflow
+Message-ID: <20150105193120.GA9167@sundance.lan>
+References: <1416412346-8759-1-git-send-email-daniel.thompson@linaro.org>
+ <1416587067-3220-1-git-send-email-daniel.thompson@linaro.org>
+ <1416587067-3220-2-git-send-email-daniel.thompson@linaro.org>
+ <20150105145739.GU30905@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <3368304.jm6jgTz8dd@xps13>
-References: <1419679889-6582-1-git-send-email-gabriele.mzt@gmail.com>
-	<CAN+gG=FLOD5C3N0q-i=4Sm6fH+oYTV27nEOKn8nxaw7GvFJbkQ@mail.gmail.com>
-	<3ACB879C-A553-49A0-B170-CFF14A494BEE@gmail.com>
-	<3368304.jm6jgTz8dd@xps13>
-Date: Mon, 5 Jan 2015 14:26:24 -0500
-Message-ID: <CAN+gG=GMRn0VFM810uNEvRwaQLFn5KQ7Pi-vHn6qcu_TzArW9A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] input: synaptics - fix width calculation on image sensors
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maxwell Anselm <silverhammermba@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105145739.GU30905@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 2:15 PM, Gabriele Mazzotta
-<gabriele.mzt@gmail.com> wrote:
-> On Monday 05 January 2015 11:04:07 Dmitry Torokhov wrote:
->> On January 5, 2015 10:42:13 AM PST, Benjamin Tissoires <benjamin.tissoires@gmail.com> wrote:
->> >On Mon, Jan 5, 2015 at 1:37 PM, Gabriele Mazzotta
->> ><gabriele.mzt@gmail.com> wrote:
->> >> On Monday 05 January 2015 13:25:38 Benjamin Tissoires wrote:
->> >>> Hi Gabriele,
->> >>>
->> >>> On Sat, Dec 27, 2014 at 6:31 AM, Gabriele Mazzotta
->> >>> <gabriele.mzt@gmail.com> wrote:
->> >>> > When two or more fingers are on the touchpad, the 'w' slot holds
->> >the
->> >>> > finger count rather than the width. Retrieve the correct value
->> >encoded
->> >>> > in the lower bits of 'x', 'y' and 'z'.
->> >>> >
->> >>> > The minimum width reported is 8 rather than 4 in this case, while
->> >the
->> >>> > maximum remains 15.
->> >>> >
->> >>> > Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
->> >>> > ---
->> >>> >  drivers/input/mouse/synaptics.c | 4 +++-
->> >>> >  1 file changed, 3 insertions(+), 1 deletion(-)
->> >>> >
->> >>> > diff --git a/drivers/input/mouse/synaptics.c
->> >b/drivers/input/mouse/synaptics.c
->> >>> > index ea0563e..5ff4c5b 100644
->> >>> > --- a/drivers/input/mouse/synaptics.c
->> >>> > +++ b/drivers/input/mouse/synaptics.c
->> >>> > @@ -593,7 +593,9 @@ static void synaptics_parse_agm(const unsigned
->> >char buf[],
->> >>> >         switch (agm_packet_type) {
->> >>> >         case 1:
->> >>> >                 /* Gesture packet: (x, y, z) half resolution */
->> >>> > -               agm->w = hw->w;
->> >>> > +               agm->w = ((buf[1] & 0x01) |
->> >>> > +                         ((buf[2] & 0x01) << 1) |
->> >>> > +                         ((buf[5] & 0x01) << 2)) + 8;
->> >>> >                 agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
->> >>>
->> >>> For completeness, I think, we should also removes the w bits from x,
->> >y
->> >>> and z (by masking buf[1], buf[2] and buf[5] with 0xfe).
->> >>
->> >> You are right, I forgot about it.
->> >>
->> >> I was going to re-submit these patches anyway since there have been
->> >> quite a few changes and these can no longer be applied on next.
->> >
->> >OK, I am trying to put together my thoughts for 1/2 right now. If you
->> >could just wait a little before resubmitting, I would be grateful.
->> >
->>
->> BTW, do we really get different widths four different contacts?
->>
->> Thanks.
->
-> I think that only the width of the last finger that was laid on the
-> touchpad is reported.
+On Mon, Jan 05, 2015 at 03:57:39PM +0100, Peter Zijlstra wrote:
+> On Fri, Nov 21, 2014 at 04:24:26PM +0000, Daniel Thompson wrote:
+> > diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> > index 266cba46db3e..ab68833c1e31 100644
+> > --- a/arch/arm/kernel/perf_event.c
+> > +++ b/arch/arm/kernel/perf_event.c
+> > @@ -115,8 +115,14 @@ int armpmu_event_set_period(struct perf_event *event)
+> >  		ret = 1;
+> >  	}
+> >  
+> > -	if (left > (s64)armpmu->max_period)
+> > -		left = armpmu->max_period;
+> > +	/*
+> > +	 * Limit the maximum period to prevent the counter value
+> > +	 * from overtaking the one we are about to program. In
+> > +	 * effect we are reducing max_period to account for
+> > +	 * interrupt latency (and we are being very conservative).
+> > +	 */
+> > +	if (left > (armpmu->max_period >> 1))
+> > +		left = armpmu->max_period >> 1;
+> 
+> On x86 we simply half max_period, why did you choose to do differently?
 
-According to the Synaptics PS2 Interfacing guide, the width of the
-primary finger is also reported. See
-http://www.synaptics.com/sites/default/files/511-000275-01_RevB.pdf
-section 3.2.10. page 32)
+In truth because I didn't look at the x86 code... there is an existing
+halving of max_period in the arm code and that was enough to satisfy me
+that halving max_period was reasonable.
 
-Cheers,
-Benjamin
+Predividing max_period looks to me like it would work for ARM too although I
+don't think we could blame hardware insanity for doing so ;-).
+
+Will: Do you want me to update this?
+
+-- 
+Daniel Thompson (STMicroelectronics) <daniel.thompson@st.com>
+1000 Aztec West, Almondsbury, Bristol, BS32 4SQ. 01454 462659
+
+If a car is a horseless carriage then is a motorcycle a horseless horse?
