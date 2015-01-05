@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbbAEKyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:54:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46875 "EHLO mx2.suse.de"
+	id S932090AbbAEK6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:58:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46908 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753135AbbAEKyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:54:16 -0500
+	id S1753467AbbAEKyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:54:17 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
@@ -18,9 +18,9 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/10] mm: numa: Do not dereference pmd outside of the lock during NUMA hinting fault
-Date: Mon,  5 Jan 2015 10:54:02 +0000
-Message-Id: <1420455251-13644-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/10] mm: Add p[te|md] protnone helpers for use by NUMA balancing
+Date: Mon,  5 Jan 2015 10:54:03 +0000
+Message-Id: <1420455251-13644-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1420455251-13644-1-git-send-email-mgorman@suse.de>
 References: <1420455251-13644-1-git-send-email-mgorman@suse.de>
@@ -28,73 +28,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A transhuge NUMA hinting fault may find the page is migrating and should
-wait until migration completes. The check is race-prone because the pmd
-is deferenced outside of the page lock and while the race is tiny, it'll
-be larger if the PMD is cleared while marking PMDs for hinting fault.
-This patch closes the race.
+This is a preparatory patch that introduces protnone helpers for automatic
+NUMA balancing.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- include/linux/migrate.h | 4 ----
- mm/huge_memory.c        | 3 ++-
- mm/migrate.c            | 6 ------
- 3 files changed, 2 insertions(+), 11 deletions(-)
+ arch/powerpc/include/asm/pgtable.h | 16 ++++++++++++++++
+ arch/x86/include/asm/pgtable.h     | 16 ++++++++++++++++
+ include/asm-generic/pgtable.h      | 20 ++++++++++++++++++++
+ 3 files changed, 52 insertions(+)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index fab9b32..78baed5 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -67,7 +67,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
+diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
+index a8805fe..7b889a3 100644
+--- a/arch/powerpc/include/asm/pgtable.h
++++ b/arch/powerpc/include/asm/pgtable.h
+@@ -39,6 +39,22 @@ static inline int pte_none(pte_t pte)		{ return (pte_val(pte) & ~_PTE_NONE_MASK)
+ static inline pgprot_t pte_pgprot(pte_t pte)	{ return __pgprot(pte_val(pte) & PAGE_PROT_BITS); }
  
  #ifdef CONFIG_NUMA_BALANCING
- extern bool pmd_trans_migrating(pmd_t pmd);
--extern void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd);
- extern int migrate_misplaced_page(struct page *page,
- 				  struct vm_area_struct *vma, int node);
- extern bool migrate_ratelimited(int node);
-@@ -76,9 +75,6 @@ static inline bool pmd_trans_migrating(pmd_t pmd)
++/*
++ * These work without NUMA balancing but the kernel does not care. See the
++ * comment in include/asm-generic/pgtable.h . On powerpc, this will only
++ * work for user pages and always return true for kernel pages.
++ */
++static inline int pte_protnone(pte_t pte)
++{
++	return (pte_val(pte) &
++		(_PAGE_PRESENT | _PAGE_USER)) == _PAGE_PRESENT;
++}
++
++static inline int pmd_protnone(pmd_t pmd)
++{
++	return pte_protnone(pmd_pte(pmd));
++}
++
+ static inline int pte_present(pte_t pte)
  {
- 	return false;
- }
--static inline void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
--{
--}
- static inline int migrate_misplaced_page(struct page *page,
- 					 struct vm_area_struct *vma, int node)
- {
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 817a875..a2cd021 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1283,8 +1283,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * check_same as the page may no longer be mapped.
- 	 */
- 	if (unlikely(pmd_trans_migrating(*pmdp))) {
-+		page = pmd_page(*pmdp);
- 		spin_unlock(ptl);
--		wait_migrate_huge_page(vma->anon_vma, pmdp);
-+		wait_on_page_locked(page);
- 		goto out;
- 	}
- 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 344cdf6..e6a5ff1 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1685,12 +1685,6 @@ bool pmd_trans_migrating(pmd_t pmd)
- 	return PageLocked(page);
+ 	return pte_val(pte) & _PAGE_NUMA_MASK;
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index e8a5454..8b92203 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -503,6 +503,22 @@ static inline int pmd_present(pmd_t pmd)
+ 				 _PAGE_NUMA);
  }
  
--void wait_migrate_huge_page(struct anon_vma *anon_vma, pmd_t *pmd)
--{
--	struct page *page = pmd_page(*pmd);
--	wait_on_page_locked(page);
--}
--
++#ifdef CONFIG_NUMA_BALANCING
++/*
++ * These work without NUMA balancing but the kernel does not care. See the
++ * comment in include/asm-generic/pgtable.h
++ */
++static inline int pte_protnone(pte_t pte)
++{
++	return pte_flags(pte) & _PAGE_PROTNONE;
++}
++
++static inline int pmd_protnone(pmd_t pmd)
++{
++	return pmd_flags(pmd) & _PAGE_PROTNONE;
++}
++#endif /* CONFIG_NUMA_BALANCING */
++
+ static inline int pmd_none(pmd_t pmd)
+ {
+ 	/* Only check low word on 32-bit platforms, since it might be
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 177d597..d497d08 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -688,6 +688,26 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+ #endif
+ }
+ 
++#ifndef CONFIG_NUMA_BALANCING
++/*
++ * Technically a PTE can be PROTNONE even when not doing NUMA balancing but
++ * the only case the kernel cares is for NUMA balancing and is only ever set
++ * when the VMA is accessible. For PROT_NONE VMAs, the PTEs are not marked
++ * _PAGE_PROTNONE so implement the helper as "always no" by default. It is
++ * the responsibility of the caller to distinguish between PROT_NONE
++ * protections and NUMA hinting fault protections.
++ */
++static inline int pte_protnone(pte_t pte)
++{
++	return 0;
++}
++
++static inline int pmd_protnone(pmd_t pmd)
++{
++	return 0;
++}
++#endif /* CONFIG_NUMA_BALANCING */
++
+ #ifdef CONFIG_NUMA_BALANCING
  /*
-  * Attempt to migrate a misplaced page to the specified destination
-  * node. Caller is expected to have an elevated reference count on
+  * _PAGE_NUMA distinguishes between an unmapped page table entry, an entry that
 -- 
 2.1.2
 
