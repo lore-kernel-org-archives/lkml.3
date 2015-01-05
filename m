@@ -1,74 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbbAETw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:52:29 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:36662 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659AbbAETw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:52:27 -0500
+	id S1754525AbbAETyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:54:16 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40316 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753659AbbAETyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 14:54:15 -0500
+Message-ID: <54AAEBCC.2030900@ti.com>
+Date: Mon, 5 Jan 2015 13:53:48 -0600
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAD7vxxJy2sE1os+ipJZV7_GvEyhu8cE-0QLBS5SVHUqfjkYBwQ@mail.gmail.com>
-References: <54584260.8030602@nvidia.com>
-	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
-	<545895B2.2000101@nvidia.com>
-	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
-	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
-	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
-	<CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
-	<CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
-	<CAD7vxxLe5COSrsnVZ2G_uhtUXfjFnDA45HSG2dNT1LrxcyFcQw@mail.gmail.com>
-	<CAJAp7OhAP-rDM2zyo0Yr0-7erUp4ewKJ+tC=vyU-YMP_MzXJbA@mail.gmail.com>
-	<CAD7vxxJy2sE1os+ipJZV7_GvEyhu8cE-0QLBS5SVHUqfjkYBwQ@mail.gmail.com>
-Date: Mon, 5 Jan 2015 11:52:25 -0800
-Message-ID: <CAJAp7Oi0AyLxy1KFpZ-Cz1-ts9Lh2UaxP3+e6n3EyQjVaEfoXg@mail.gmail.com>
-Subject: Re: Possible regression with commit 52221610d
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Tim Kryger <tim.kryger@gmail.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lokesh Vutla <lokeshvutla@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <t-kristo@ti.com>, <nm@ti.com>, <nsekhar@ti.com>,
+        <bcousson@baylibre.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
+ without sysc
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com>
+In-Reply-To: <54AA4CD4.40105@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 7:01 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
-> On Wed, Dec 17, 2014 at 11:57 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
-[..]
->> Non-the-less, feel free to propose a patch and I will give it a test.
->
-> Lets start with the simplest change first.  Please give this a try and
-> let me know what you think.
->
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index ada1a3e..59a328a 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -1239,6 +1239,12 @@ static void sdhci_set_power(struct sdhci_host
-> *host, unsigned char mode,
->                 spin_unlock_irq(&host->lock);
->                 mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
->                 spin_lock_irq(&host->lock);
-> +
-> +               if (mode != MMC_POWER_OFF)
-> +                       sdhci_writeb(host, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
-> +               else
-> +                       sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
-> +
->                 return;
->         }
->
->
-> Thanks again for your help in getting to the bottom of this.
+On 01/05/2015 02:35 AM, Lokesh Vutla wrote:
+> Hi Paul,
+> On Saturday 03 January 2015 02:40 AM, Paul Walmsley wrote:
+>> + Suman, lakml
+>>
+>> Hi Roger
+>>
+>> On Thu, 18 Dec 2014, Roger Quadros wrote:
+>>
+>>> Fixing up Paul's email id.
+>>>
+>>> cheers,
+>>> -roger
+>>>
+>>> On 18/12/14 17:49, Roger Quadros wrote:
+>>>> There are quite a few hwmods that don't have sysconfig register and so
+>>>> _find_mpu_rt_port(oh) will return NULL thus preventing ready state check
+>>>> on those modules after the module is enabled.
+>>
+>> Hmm.  Any IP block that exposes registers that are accessible by the MPU 
+>> should have an MPU register target port, even if there's no SYSCONFIG 
+>> register.  And if an IP block doesn't have registers that are accessible 
+>> from the MPU, then there shouldn't be much point to waiting for the module 
+>> to become ready.
+>>
+>> Looks like the real problem is the test for oh->class->sysc before the 
+>> call to _init_mpu_rt_base().  That was introduced by commit 6423d6df1440 
+>> ("ARM: OMAP2+: hwmod: check for module address space during init"). It's 
+>> not clear to me why that test was added, since _init_mpu_rt_base() doesn't 
+>> do anything with oh->class->sysc or SYSCONFIG registers.
+> This was introduced by commit 
+> 97597b962529 (ARM: OMAP2+: hwmod: Don't call _init_mpu_rt_base if no sysc)
 
-Sorry for the delay, but
+That's right, the test was present even before 6423d6df1440, I merely
+made this a block.
 
-Tested-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> Patch description states that "there are few hwmod which doesn't have sysconfig registers and hence
+> no need to ioremap() them in early init code".
+> Isn't this correct? 
+> May be a dumb question: If IP doesn't have sysconfig, is there any case that hwmod does
+> access the register address space of that IP? Why do we need to enable MPU register target port?
+> 
+> Thanks and regards,
+> Lokesh
+> 
+>>
+>> Could you please test the following patch?
+>> I don't have an AM437x-gp-evm.  
+>>
+>>
+>> - Paul
+>>
+>> ---
+>>  arch/arm/mach-omap2/omap_hwmod.c | 12 ++++--------
+>>  1 file changed, 4 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+>> index cbb908dc5cf0..ce6d11f3eda7 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+>> @@ -2451,14 +2451,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
+>>  				oh->name, np->name);
+>>  	}
+>>  
+>> -	if (oh->class->sysc) {
+>> -		r = _init_mpu_rt_base(oh, NULL, index, np);
+>> -		if (r < 0) {
+>> -			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
+>> -			     oh->name);
+>> -			return 0;
+>> -		}
+>> -	}
+>> +	r = _init_mpu_rt_base(oh, NULL, index, np);
+>> +	if (r < 0)
+>> +		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
+>> +			 oh->name);
+>>  
+>>  	r = _init_clocks(oh, NULL);
+>>  	if (r < 0) {
+>>
+> 
 
-Regards,
-Bjorn
