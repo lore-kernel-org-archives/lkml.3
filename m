@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511AbbAEWSx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:18:53 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:55847 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752825AbbAEWSw (ORCPT
+	id S1754432AbbAEWTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:19:22 -0500
+Received: from utopia.booyaka.com ([74.50.51.50]:54209 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753785AbbAEWTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:18:52 -0500
-Message-ID: <1420496330.14308.37.camel@x220>
-Subject: Re: [PATCH 0/5] *** SUBJECT HERE ***
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Konrad Zapalowicz <bergo.torino@gmail.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        pankaj.saraf@nektech.in, linux-kernel@vger.kernel.org,
-        abbotti@mev.co.uk, jitendra kumar khasdev <jkhasdev@gmail.com>
-Date: Mon, 05 Jan 2015 23:18:50 +0100
-In-Reply-To: <20150104014119.GE25819@t400>
-References: <1420274187-6779-1-git-send-email-jkhasdev@gmail.com>
-	 <20150103164516.GB30268@kroah.com> <1420325674.9624.65.camel@x220>
-	 <20150104014119.GE25819@t400>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Jan 2015 22:18:50.0828 (UTC) FILETIME=[954818C0:01D02935]
-X-RcptDomain: vger.kernel.org
+	Mon, 5 Jan 2015 17:19:21 -0500
+Date: Mon, 5 Jan 2015 22:19:20 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: Lokesh Vutla <lokeshvutla@ti.com>
+cc: Roger Quadros <rogerq@ti.com>, tony@atomide.com, t-kristo@ti.com,
+        nm@ti.com, nsekhar@ti.com, bcousson@baylibre.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, s-anna@ti.com, ssantosh@kernel.org
+Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
+ without sysc
+In-Reply-To: <54AA4CD4.40105@ti.com>
+Message-ID: <alpine.DEB.2.02.1501052206580.28771@utopia.booyaka.com>
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-04 at 02:41 +0100, Konrad Zapalowicz wrote:
-> git send-email does one thing and one thing only - sends stuff via
-> email. I do not see why it should parse the emails and decide whether to
-> complete the operation or break based on what is in the emails.
++ Santosh
 
-It already has to parse the file(s) it's provided with. Perhaps it
-already has checks to validate Subject: lines. Would an extra test be a
-burden?
+Hi Lokesh
 
-> It could
-> warn though however since the cover letter is a product of different
-> command introducing this logic would tightly couple those which is not
-> good.
+On Mon, 5 Jan 2015, Lokesh Vutla wrote:
+> On Saturday 03 January 2015 02:40 AM, Paul Walmsley wrote:
+> > On Thu, 18 Dec 2014, Roger Quadros wrote:
+> > 
+> >> On 18/12/14 17:49, Roger Quadros wrote:
+> >>> There are quite a few hwmods that don't have sysconfig register and so
+> >>> _find_mpu_rt_port(oh) will return NULL thus preventing ready state check
+> >>> on those modules after the module is enabled.
+> > 
+> > Hmm.  Any IP block that exposes registers that are accessible by the MPU 
+> > should have an MPU register target port, even if there's no SYSCONFIG 
+> > register.  And if an IP block doesn't have registers that are accessible 
+> > from the MPU, then there shouldn't be much point to waiting for the module 
+> > to become ready.
+> > 
+> > Looks like the real problem is the test for oh->class->sysc before the 
+> > call to _init_mpu_rt_base().  That was introduced by commit 6423d6df1440 
+> > ("ARM: OMAP2+: hwmod: check for module address space during init"). It's 
+> > not clear to me why that test was added, since _init_mpu_rt_base() doesn't 
+> > do anything with oh->class->sysc or SYSCONFIG registers.
+> This was introduced by commit 
+> 97597b962529 (ARM: OMAP2+: hwmod: Don't call _init_mpu_rt_base if no sysc)
 
-A warning would be too late: the message with the silly subject would be
-already sent out.
+Yes, you're right.  I misread commit 6423d6df1440.
 
-> I guess that it is better that people who send stuff acctually care what
-> they are sending. I mean that pretty quickly you learn to send the
-> series of patches first to yourself and review before it goes out to the
-> public.
+> Patch description states that "there are few hwmod which doesn't have sysconfig registers and hence
+> no need to ioremap() them in early init code".
 
-It's good if people are careful. It's also good if programs help to
-avoid silly mistakes.
+The MPU register target port code doesn't only determine whether the 
+hwmod code should map the IP block's address space.  It also determines 
+whether or not the hwmod code needs to wait for the IP block to become 
+ready after being enabled, so register accesses by non-hwmod code can 
+succeed.
+
+> Isn't this correct? 
+
+That commit 97597b962529 is bogus.  If the goal was to skip the ioremap(), 
+then the right fix would have been to just skip the ioremap().  The 
+existing commit also skips the call to _save_mpu_port_index(), which 
+caused the problem that Roger's patch is trying to fix.
+
+> May be a dumb question: If IP doesn't have sysconfig, is there any case 
+> that hwmod does access the register address space of that IP? Why do we 
+> need to enable MPU register target port?
+
+hwmod shouldn't touch the IP block registers if there are no SYSCONFIG, 
+SYSSTATUS, etc. registers, and there's no IP block-specific reset code.  
+But other code on the system (like the IP block's device driver) will, and 
+the system needs to indicate that the IP block is ready before those 
+accesses occur.
 
 
-Paul Bolle
-
+- Paul
