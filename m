@@ -1,37 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbbAEQg4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:36:56 -0500
-Received: from msxgate3.admin.esu.edu ([206.225.126.232]:32893 "EHLO
-	msxgate3.admin.esu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbbAEQgz convert rfc822-to-8bit (ORCPT
+	id S1753157AbbAEQm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:42:56 -0500
+Received: from smtprelay0126.hostedemail.com ([216.40.44.126]:42823 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751684AbbAEQmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:36:55 -0500
-From: Jacqueline Gardner <jgardner@po-box.esu.edu>
-Subject: =?windows-1256?Q?IT_Service_de_s=E9curit=E9_Bureau=FE?=
-Thread-Topic: =?windows-1256?Q?IT_Service_de_s=E9curit=E9_Bureau=FE?=
-Thread-Index: AdApBbe14empxHM6T2SiOta43L9ERQ==
-Date: Mon, 5 Jan 2015 16:36:12 +0000
-Message-ID: <0B1EB60BB1696648B43E876E92D651AB100AEB@msxmb2.admin.esu.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [206.225.126.10]
-Content-Type: text/plain; charset="windows-1256"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 5 Jan 2015 11:42:53 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:196:355:379:541:599:800:960:966:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1406:1437:1515:1516:1518:1534:1541:1593:1594:1622:1711:1730:1747:1777:1792:1894:2189:2196:2199:2393:2525:2553:2561:2564:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4385:5007:6261:6671:6742:6743:8599:8660:9025:9072:9388:10004:10049:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12740:13007:13025:13069:13148:13230:13311:13357:13972:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fly62_187ca1532521d
+X-Filterd-Recvd-Size: 3228
+Message-ID: <1420476166.2652.14.camel@perches.com>
+Subject: Re: [PATCH V1 1/1] iio: Added Capella cm3232 ambient light sensor
+ driver.
+From: Joe Perches <joe@perches.com>
+To: Daniel Baluta <daniel.baluta@intel.com>
+Cc: Kevin Tsai <ktsai@capellamicro.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Archana Patni <archana.patni@linux.intel.com>,
+        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 05 Jan 2015 08:42:46 -0800
+In-Reply-To: <CAEnQRZBmwurFCJU4E4ArO8waU+YcGWrRYr3DRVxq9haduX2t=w@mail.gmail.com>
+References: <1420071030-888-1-git-send-email-ktsai@capellamicro.com>
+	 <CAEnQRZBD2NMYRp1cW0J2ssT4CT=0jSM=X6ByHQiUrA0ueV8fRA@mail.gmail.com>
+	 <1420463396.2652.8.camel@perches.com>
+	 <CAEnQRZBmwurFCJU4E4ArO8waU+YcGWrRYr3DRVxq9haduX2t=w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Votre compte de messagerie a dépassé sa limite de stockage. Vous
-neserezpas en mesure de recevoir ou d'envoyer un message. Afin de
-rétablirvotrecompte s'il vous plaît Cliquezici:
+On Mon, 2015-01-05 at 16:20 +0200, Daniel Baluta wrote:
+> On Mon, Jan 5, 2015 at 3:09 PM, Joe Perches <joe@perches.com> wrote:
+> > On Mon, 2015-01-05 at 12:51 +0200, Daniel Baluta wrote:
+> >> On Thu, Jan 1, 2015 at 2:10 AM, Kevin Tsai <ktsai@capellamicro.com> wrote:
+> >> > CM3232 is an advanced ambient light sensor with I2C protocol interface.
+> >> > The I2C slave address is internally hardwired as 0x10 (7-bit).  Writing
+> >> > to configure register is byte mode, but reading ALS register requests to
+> >> > use word mode for 16-bit resolution.
+[]
+> >> You could directly return i2c_smbus_write_byte_data(..).
+> >
+> > Sometimes it's better to return a specific value
+> > for the error instead of depending on correctness
+> > of all the indirect functions in the call chain.
+> >
+> > In this case, all the smbus_xfer functions must
+> > return 0 on success.  Do they?
+> 
+> Yes.
+> 
+> http://lxr.free-electrons.com/source/drivers/i2c/i2c-core.c#L2845
 
-http://kuffubu.weebly.com/
+This doesn't show that adapter->algo->smbus_xfer()
+returns 0, you have to look at the code for that
+indirectly called function. 
 
-et soumettre votre webmail information requise.
-Merci.IT Service de
-sécurité Bureau 2015
+> Also, I guess kbuild test robot will complain about it, like here:
+> 
+> http://marc.info/?l=linux-kernel&m=141963536230419&w=2
+
+Is the kbuild test robot now submitting patches for all
+possible coccinelle simplifications?  I don't think so.
+
+
