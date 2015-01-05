@@ -1,87 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbbAES3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:29:03 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:62341 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379AbbAES3C (ORCPT
+	id S1754211AbbAES37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:29:59 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:47790 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754086AbbAES35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:29:02 -0500
+	Mon, 5 Jan 2015 13:29:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150105164447.GG29390@twins.programming.kicks-ass.net>
-References: <cover.1420396372.git.luto@amacapital.net> <e431cd4c18c2e1c44c774f10758527fb2d1025c4.1420396372.git.luto@amacapital.net>
- <20150105140754.GF29390@twins.programming.kicks-ass.net> <CALCETrW6cv_s60uzi_scy5JBdr4+wrz1O5we-3okc-SZKRVofA@mail.gmail.com>
- <20150105164447.GG29390@twins.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 5 Jan 2015 10:28:39 -0800
-Message-ID: <CALCETrXR08PnHz_yFO=i95UYyHvPVV1FT1EoW5rdGX8Ac_F-eg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf: Move task_pt_regs sampling into arch code
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, root <chenggang.qin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@taobao.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= 
-	<chenggang.qcg@alibaba-inc.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>
+In-Reply-To: <s5hfvbpf5ym.wl-tiwai@suse.de>
+References: <1420279798-961-1-git-send-email-tiwai@suse.de>
+	<CADnq5_NU-nde7eBk_Ptpk6twk_aBrXZgLXxio3RiJUJ1D4ZzdQ@mail.gmail.com>
+	<s5hioglf8ew.wl-tiwai@suse.de>
+	<CADnq5_OrxtFs=LMdXbX27WMbaWRdR7ALBDkL=ohP464qz3hhTw@mail.gmail.com>
+	<s5hfvbpf5ym.wl-tiwai@suse.de>
+Date: Mon, 5 Jan 2015 13:29:56 -0500
+Message-ID: <CADnq5_Mtk85fKnzBWtVfD78=j1XZvBdMksFN_T-oj0oR_bcSpQ@mail.gmail.com>
+Subject: Re: [PATCH v2] drm/radeon: Fix kernel panic with HDMI w/o SAD
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Christian Koenig <christian.koenig@amd.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 8:44 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jan 05, 2015 at 08:13:49AM -0800, Andy Lutomirski wrote:
->> > Just wondering how bad it would be to fill out the actual pt_regs that
->> > was previously partially initialized?
+On Mon, Jan 5, 2015 at 1:16 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 5 Jan 2015 12:48:05 -0500,
+> Alex Deucher wrote:
 >>
->> Bad, for at least two reasons.
+>> On Mon, Jan 5, 2015 at 12:23 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Mon, 5 Jan 2015 12:07:52 -0500,
+>> > Alex Deucher wrote:
+>> >>
+>> >> On Sat, Jan 3, 2015 at 5:09 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>> >> > A BUG_ON() call in dce3_2_afmt_write_sad_regs() is triggered when a
+>> >> > HDMI monitor without audio is plugged:
+>> >>
+>> >> I have a slightly different fix already queued up:
+>> >> http://lists.freedesktop.org/archives/dri-devel/2014-December/073672.html
+>> >
+>> > Oh, that's identical with my v1 patch :)  But, with that fix, an error
+>> > message will be shown at each time you plug such a monitor, right?
+>> > This doesn't look right, so I revised the patch.
 >>
->> One is that we don't actually know which regs are initialized.  bx,
->> bp, r12 etc are particularly bad in this regard, due to the FORK_LIKE
->> mechanism and similar optimizations.
+>> Yes, but if the monitor claims to support audio, it should supply
+>> SADs.  If it doesn't, the driver has no way of knowing what type of
+>> audio the monitor supports.
 >
-> Right, but you need to deal with that anyhow.
+> IMO, we may assume that the monitor has no audio at all if sad_count =
+> 0.  Or are there any monitors that do support audio even without
+> SAD...?
 
-I cheated by assuming they're uninitialized.  If we actually wrote -1
-over them and they were initialized, then we'd be screwed.
+I don't remember off hand.  We'd need to check the CEA edid extension spec.
+
+The radeon hdmi code should be restructured a bit to enable hdmi
+features in a more fine grained way.  If the monitor supports hdmi, we
+try and enable audio in addition to the other hdmi packets.  We should
+be using drm_detect_monitor_audio() to decide whether to enable audio
+features.  We have some patches internally which cleans a lot of this
+up that should be available soon.
 
 >
->> The other is that the uninitialized part of task_pt_regs can be used
->> for something else entirely.  If we have a syscall instruction
->> immediately followed by a regular interrupt, then the interrupt's
->> hardware frame will overlap task_pt_regs.  (I'm not going to claim
->> that this design is sensible, but it is what it is.  IIRC Denys
->> Vlasenko had some patches to partially clean this up.)
+>> I'm fine with removing the error message
+>> or making it debug only however.
 >
-> Ah, urgh. Yes painful that.
+> If sad_count = 0 is an invalid state that shouldn't happen, then
+> printing an error is correct behavior.  So, the question comes to the
+> point whether sad_count = 0 is a sane value or not.
 >
->> It would be possible to rework the code to avoid an extra pt_regs
->> copy, but I don't see an obvious way to do it cleanly.
+>> > Also, can we skip the register write completely?  I thought of a case
+>> > like we replug a monitor from the one with audio to another without
+>> > audio...
+>>
+>> Changing the monitor will generally trigger a full probe and modeset
+>> again anyway.  The register writes are just there to pass the audio
+>> information supported by the monitor along to the audio driver.
 >
-> Yeah, we'll see how this works, I was just curious on the exact need for
-> the copy, but if as you say, the original structure might not even exist
-> properly (even though we have a pointer to it) that's bad (TM).
+> OK, thanks for clarification.
+>
+>
+> In anyway, I still think we should kill BUG_ON() there.  But this can
+> be a separate patch, of course.
 
-How much freedom do we have to redesign the whole mechanism?  Instead
-of recording the user state from the PMI, we could set a flag so that
-we'd sample the user state before return to user mode.  This would
-reliably get all of the registers, except in the case where the PMI
-was part way through the return-to-user code.  In that case, we'd want
-to set another flag to catch the next entry to avoid writing a bogus
-sample.
+Yeah, agreed.
 
-I don't think we could do this without changing the ABI, though.
+Alex
 
-This would waste ~300 cycles if we set the flag from a fast-path
-syscall, at least until my magic sysret optimization goes in.
-
---Andy
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+>
+>
+> Takashi
+>
+>>
+>> Alex
+>>
+>> >
+>> >
+>> > thanks,
+>> >
+>> > Takashi
+>> >
+>> >>
+>> >> Alex
+>> >>
+>> >> >
+>> >> >  kernel BUG at ../drivers/gpu/drm/radeon/dce3_1_afmt.c:110!
+>> >> >  invalid opcode: 0000 [#1] PREEMPT SMP
+>> >> >  CPU: 2 PID: 967 Comm: Xorg Tainted: PO  3.16.7-7-desktop #1
+>> >> >  Hardware name: System manufacturer System Product Name/M4A77T, BIOS 2401    05/18/2011
+>> >> >  task: ffff8800cea86350 ti: ffff8800c1880000 task.ti: ffff8800c1880000
+>> >> >  RIP: 0010:[<ffffffffa0126c50>] dce3_1_hdmi_setmode+0x570/0x5a0 [radeon]
+>> >> >  Call Trace:
+>> >> >   [<ffffffffa00a6936>] drm_crtc_helper_set_mode+0x346/0x520 [drm_kms_helper]
+>> >> >   [<ffffffffa00a7678>] drm_crtc_helper_set_config+0x8a8/0xad0 [drm_kms_helper]
+>> >> >   [<ffffffffa00ede3f>] radeon_crtc_set_config+0x3f/0x110 [radeon]
+>> >> >   [<ffffffffa001edc1>] drm_mode_set_config_internal+0x61/0xe0 [drm]
+>> >> >   [<ffffffffa00a9a6b>] restore_fbdev_mode+0xab/0xd0 [drm_kms_helper]
+>> >> >   [<ffffffffa00a9aae>] drm_fb_helper_restore_fbdev_mode_unlocked+0x1e/0x30 [drm_kms_helper]
+>> >> >   [<ffffffffa00ab642>] drm_fb_helper_set_par+0x22/0x60 [drm_kms_helper]
+>> >> >   [<ffffffffa00ab5cb>] drm_fb_helper_hotplug_event+0x8b/0xe0 [drm_kms_helper]
+>> >> >   [<ffffffffa00ab65a>] drm_fb_helper_set_par+0x3a/0x60 [drm_kms_helper]
+>> >> >   [<ffffffff813818ce>] fb_set_var+0x15e/0x3b0
+>> >> >   [<ffffffff81378d0b>] fbcon_blank+0x1cb/0x2b0
+>> >> >   [<ffffffff813f2a31>] do_unblank_screen+0xa1/0x1b0
+>> >> >   [<ffffffff813e8fd3>] complete_change_console+0x53/0xe0
+>> >> >   [<ffffffff813e9fa9>] vt_ioctl+0xf49/0x10d0
+>> >> >   [<ffffffff813ddfdc>] tty_ioctl+0x26c/0xb70
+>> >> >   [<ffffffff811cad17>] do_vfs_ioctl+0x2e7/0x4c0
+>> >> >   [<ffffffff811caf71>] SyS_ioctl+0x81/0xa0
+>> >> >   [<ffffffff81622a2d>] system_call_fastpath+0x1a/0x1f
+>> >> >   [<00007f2fae8c6397>] 0x7f2fae8c6396
+>> >> >
+>> >> > Actually the BUG_ON() check is wrong, since sads may be NULL when
+>> >> > sad_count is zero.  This patch removes the BUG_ON() and adds the
+>> >> > proper NULL initialization of sads.
+>> >> >
+>> >> > Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=911356
+>> >> > Cc: <stable@vger.kernel.org>
+>> >> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> >> > ---
+>> >> >  drivers/gpu/drm/radeon/dce3_1_afmt.c | 3 +--
+>> >> >  1 file changed, 1 insertion(+), 2 deletions(-)
+>> >> >
+>> >> > diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+>> >> > index 2fe8cfc966d9..7ca23f45829e 100644
+>> >> > --- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
+>> >> > +++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+>> >> > @@ -72,7 +72,7 @@ static void dce3_2_afmt_write_sad_regs(struct drm_encoder *encoder)
+>> >> >         struct radeon_device *rdev = encoder->dev->dev_private;
+>> >> >         struct drm_connector *connector;
+>> >> >         struct radeon_connector *radeon_connector = NULL;
+>> >> > -       struct cea_sad *sads;
+>> >> > +       struct cea_sad *sads = NULL;
+>> >> >         int i, sad_count;
+>> >> >
+>> >> >         static const u16 eld_reg_to_type[][2] = {
+>> >> > @@ -107,7 +107,6 @@ static void dce3_2_afmt_write_sad_regs(struct drm_encoder *encoder)
+>> >> >                 DRM_ERROR("Couldn't read SADs: %d\n", sad_count);
+>> >> >                 return;
+>> >> >         }
+>> >> > -       BUG_ON(!sads);
+>> >> >
+>> >> >         for (i = 0; i < ARRAY_SIZE(eld_reg_to_type); i++) {
+>> >> >                 u32 value = 0;
+>> >> > --
+>> >> > 2.2.0
+>> >> >
+>> >> > _______________________________________________
+>> >> > dri-devel mailing list
+>> >> > dri-devel@lists.freedesktop.org
+>> >> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>> >>
+>>
