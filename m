@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbbAEKvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:51:16 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:52432 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbbAEKvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:51:14 -0500
-Date: Mon, 5 Jan 2015 21:51:06 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v7 1/2] crypto: AF_ALG: add AEAD support
-Message-ID: <20150105105105.GA25517@gondor.apana.org.au>
-References: <6964260.mNa1jtPz7Z@tachyon.chronox.de>
- <1609020.xcc11L81HZ@tachyon.chronox.de>
- <20150105103159.GA24878@gondor.apana.org.au>
- <6798882.ly1QjqTYep@tachyon.chronox.de>
+	id S1753434AbbAEKxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:53:51 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59368 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753135AbbAEKxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:53:49 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto: AEAD: add check for presence of auth tag
+Date: Mon, 05 Jan 2015 11:53:38 +0100
+Message-ID: <1656062.b6mnFyMzhb@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150105103957.GA25307@gondor.apana.org.au>
+References: <15957213.Wu7Np8vQse@tachyon.chronox.de> <7639295.Yx6QIQScqO@tachyon.chronox.de> <20150105103957.GA25307@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6798882.ly1QjqTYep@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 11:46:50AM +0100, Stephan Mueller wrote:
-> 
-> The need for that check lies in aead_recvmsg:
-> 
->         /*
->          * first chunk of input is AD -- one scatterlist entry is one page,
->          * and we process only one scatterlist, the maximum size of AD is
->          * one page
->          */
->         sg_init_table(&assoc, 1);
->         sg_set_page(&assoc, sg_page(sg), ctx->aead_assoclen, sg->offset);
->         aead_request_set_assoc(&ctx->aead_req, &assoc, ctx->aead_assoclen);
-> 
-> There you see that I only create an sg table with one entry for the AD. If we 
-> would allow an arbitrary AD size, I would see the need of a for loop in 
-> addition to the one directly beneath this AD scatterlist setting: one for 
-> identifying how many sg entries I need to allocate and one for the actual 
-> assignment.
-> 
-> As I felt that one page should be sufficient for the AD, I wanted to avoid the 
-> extra overhead for another for loop.
+Am Montag, 5. Januar 2015, 21:39:57 schrieb Herbert Xu:
 
-Please remove the limit as otherwise we would never be able to
-add support for this in a future kernel as appliations won't be
-able to rely on it.
+Hi Herbert,
 
-There is no such limit in the kernel interface and we shouldn't
-be adding one here.
+> On Mon, Jan 05, 2015 at 11:26:48AM +0100, Stephan Mueller wrote:
+> > Could you please help me understand where that check should be and what
+> > should be done at the crypto API level?
+> 
+> All I was asking for is a length check like the one at the top
+> of crypto_authenc_decypt.
 
-Cheers,
+Could you please check: I am unable to find the function.
+
+Note, there is no size parameter provided in crypto_aead_decrypt. To obtain 
+the size, I would need to walk the scatterlists, no?
+> 
+> Cheers,
+
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Ciao
+Stephan
