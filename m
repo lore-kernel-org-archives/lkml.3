@@ -1,267 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbbAEVEU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:04:20 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:41387 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592AbbAEVES (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:04:18 -0500
-Date: Mon, 5 Jan 2015 17:04:09 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Javi Merino <javi.merino@arm.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punit Agrawal <Punit.Agrawal@arm.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH v6 5/9] thermal: extend the cooling device API to
- include power information
-Message-ID: <20150105210403.GC31247@developer>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
- <1417806260-9264-6-git-send-email-javi.merino@arm.com>
- <20141223151359.GB7350@developer>
- <20150105153710.GA3042@e104805>
+	id S1754329AbbAEVLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:11:39 -0500
+Received: from mail-bn1on0146.outbound.protection.outlook.com ([157.56.110.146]:22688
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753922AbbAEVLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 16:11:36 -0500
+X-WSS-ID: 0NHQ2V5-08-U80-02
+X-M-MSG: 
+From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+To: <rjw@rjwysocki.net>, <lenb@kernel.org>, <hdegoede@redhat.com>,
+        <tj@kernel.org>, <arnd@arndb.de>, <mjg59@srcf.ucam.org>,
+        <grant.likely@linaro.org>
+CC: <hanjun.guo@linaro.org>, <al.stone@linaro.org>,
+        <graeme.gregory@linaro.org>, <leo.duran@amd.com>,
+        <linux-ide@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-acpi@lists.linaro.org>,
+        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>
+Subject: [V2 PATCH 0/2] Introduce ACPI support for ahci_platform driver
+Date: Mon, 5 Jan 2015 15:11:13 -0600
+Message-ID: <1420492275-6878-1-git-send-email-Suravee.Suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FsscpQKzF/jJk6ya"
-Content-Disposition: inline
-In-Reply-To: <20150105153710.GA3042@e104805>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(209900001)(189002)(199003)(31966008)(97736003)(87936001)(20776003)(46102003)(47776003)(48376002)(64706001)(53416004)(84676001)(89996001)(105586002)(36756003)(86362001)(106466001)(2201001)(77156002)(92566001)(62966003)(229853001)(4396001)(15395725005)(50226001)(107046002)(19300405004)(99396003)(19580395003)(50466002)(77096005)(101416001)(120916001)(15975445007)(21056001)(50986999)(19273905006)(68736005)(562404015)(563064011)(6606295002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB198;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR02MB198;
+X-Forefront-PRVS: 0447DB1C71
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 21:11:33.3693
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR02MB198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series introduce ACPI support for non-PCI AHCI platform driver.
+Existing ACPI support for AHCI assumes the device controller is a PCI device.
 
---FsscpQKzF/jJk6ya
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Also, since there is no ACPI _HID/_CID for generic AHCI controller, the driver
+could not use them for matching devices. Therefore, this patch introduces
+a mechanism for drivers to match devices using ACPI _CLS method.
 
-Javi,
+This patch series is rebased from and tested with:
 
-On Mon, Jan 05, 2015 at 03:37:10PM +0000, Javi Merino wrote:
-> On Tue, Dec 23, 2014 at 03:14:11PM +0000, Eduardo Valentin wrote:
-> > Hi Javi
-> >=20
-> > On Fri, Dec 05, 2014 at 07:04:16PM +0000, Javi Merino wrote:
-> > > Add three optional callbacks to the cooling device interface to allow
-> > > them to express power.  In addition to the callbacks, add helpers to
-> > > identify cooling devices that implement the power cooling device API.
-> > >=20
-> > > Cc: Zhang Rui <rui.zhang@intel.com>
-> > > Cc: Eduardo Valentin <edubezval@gmail.com>
-> > > Signed-off-by: Javi Merino <javi.merino@arm.com>
-> > > ---
-> > >  Documentation/thermal/power_allocator.txt | 27 ++++++++++++++++++++++
-> > >  drivers/thermal/thermal_core.c            | 38 +++++++++++++++++++++=
-++++++++++
-> > >  include/linux/thermal.h                   | 12 ++++++++++
-> > >  3 files changed, 77 insertions(+)
-> > >  create mode 100644 Documentation/thermal/power_allocator.txt
-> > >=20
-> > > diff --git a/Documentation/thermal/power_allocator.txt b/Documentatio=
-n/thermal/power_allocator.txt
-> > > new file mode 100644
-> > > index 000000000000..d3bb79050c27
-> > > --- /dev/null
-> > > +++ b/Documentation/thermal/power_allocator.txt
-> > > @@ -0,0 +1,27 @@
-> > > +Cooling device power API
-> > > +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D
-> >=20
-> > Readers of this file need extra context here, IMO.
->=20
-> Patch 7 adds text before and after this section that provides that
-> context.
->=20
-> > > +
-> > > +Cooling devices controlled by this governor must supply the addition=
-al
-> >=20
-> > What governor? the files says power allocator, and the title says,
-> > cooling device power API...
->=20
-> Correct, because that's added in the patch that introduces the power
-> allocator governor.  Therefore, it's not a problem for the readers of
-> this file but for the readers of the patches.  I can move this hunk to
-> patch 7 and introduce all the documentation at once if you think
-> that's clearer.
->=20
+    http://git.linaro.org/leg/acpi/acpi.git acpi-5.1-v7
 
-Thinking of the atomicity of each patch/commit, I would prefer you to
-move all documentation to a single patch then.
+This topic was discussed earlier here (as part of introducing support for
+AMD Seattle SATA controller):
 
-> > > +"power" API in their `cooling_device_ops`.  It consists on three ops:
-> > > +
-> >=20
-> >=20
-> >=20
-> > > +1. u32 get_actual_power(struct thermal_cooling_device *cdev);
-> > > +@cdev: The `struct thermal_cooling_device` pointer
-> > > +
-> > > +`get_actual_power()` returns the power currently consumed by the
-> > > +device in milliwatts.
-> > > +
-> > > +2. u32 state2power(struct thermal_cooling_device *cdev, unsigned long
-> > > +        state);
-> > > +@cdev: The `struct thermal_cooling_device` pointer
-> > > +@state: A cooling device state
-> > > +
-> > > +Convert cooling device state @state into power consumption in
-> > > +milliwatts.
-> > > +
-> > > +3. unsigned long power2state(struct thermal_cooling_device *cdev,
-> > > +        u32 power);
-> > > +@cdev: The `struct thermal_cooling_device` pointer
-> > > +@power: power in milliwatts
-> > > +
-> > > +Calculate a cooling device state that would make the device consume =
-at
-> > > +most @power mW.
-> >=20
-> > I believe it would be more helpful if you could provide extra context in
-> > which the above functions are called, and for what.
->=20
-> Ok, will do.
->=20
+    http://marc.info/?l=linux-arm-kernel&m=141083492521584&w=2
 
-tks.
+NOTE:
+	* PATCH 2/2 has already been Acked-by Tejun Heo in V1. I only made
+	  a minor renaming of the acpi_cls to acpi_match_cls for clarity
+	  in V2. It probably should be routed together with the PATCH 1/2
+	  (once acked) since it defines the new member in the struct.
 
-> > > diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal=
-_core.c
-> > > index 9021cb72a13a..c490f262ea7f 100644
-> > > --- a/drivers/thermal/thermal_core.c
-> > > +++ b/drivers/thermal/thermal_core.c
-> > > @@ -866,6 +866,44 @@ emul_temp_store(struct device *dev, struct devic=
-e_attribute *attr,
-> > >  static DEVICE_ATTR(emul_temp, S_IWUSR, NULL, emul_temp_store);
-> > >  #endif/*CONFIG_THERMAL_EMULATION*/
-> > > =20
-> > > +/**
-> > > + * power_actor_get_max_power() - get the maximum power that a cdev c=
-an consume
-> > > + * @cdev:	pointer to &thermal_cooling_device
-> > > + *
-> > > + * Calculate the maximum power consumption in milliwats that the
-> > > + * cooling device can currently consume.  If @cdev doesn't support t=
-he
-> > > + * power_actor API, this function returns 0.
-> > > + */
-> > > +u32 power_actor_get_max_power(struct thermal_cooling_device *cdev)
-> > > +{
-> > > +	if (!cdev_is_power_actor(cdev))
-> > > +		return 0;
-> > > +
-> > > +	return cdev->ops->state2power(cdev, 0);
-> > > +}
-> > > +
-> > > +/**
-> > > + * power_actor_set_power() - limit the maximum power that a cooling =
-device can consume
-> > > + * @cdev:	pointer to &thermal_cooling_device
-> > > + * @power:	the power in milliwatts
-> > > + *
-> > > + * Set the cooling device to consume at most @power milliwatts.
-> > > + *
-> > > + * Returns: 0 on success, -EINVAL if the cooling device does not
-> > > + * implement the power actor API or -E* for other failures.
-> > > + */
-> > > +int power_actor_set_power(struct thermal_cooling_device *cdev, u32 p=
-ower)
-> > > +{
-> > > +	unsigned long state;
-> > > +
-> > > +	if (!cdev_is_power_actor(cdev))
-> > > +		return -EINVAL;
-> > > +
-> > > +	state =3D cdev->ops->power2state(cdev, power);
-> > > +
-> > > +	return cdev->ops->set_cur_state(cdev, state);
-> > > +}
-> > > +
-> > >  static DEVICE_ATTR(type, 0444, type_show, NULL);
-> > >  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
-> > >  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
-> > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > > index 2c14ab1f5c0d..1155457caf52 100644
-> > > --- a/include/linux/thermal.h
-> > > +++ b/include/linux/thermal.h
-> > > @@ -142,6 +142,9 @@ struct thermal_cooling_device_ops {
-> > >  	int (*get_max_state) (struct thermal_cooling_device *, unsigned lon=
-g *);
-> > >  	int (*get_cur_state) (struct thermal_cooling_device *, unsigned lon=
-g *);
-> > >  	int (*set_cur_state) (struct thermal_cooling_device *, unsigned lon=
-g);
-> > > +	u32 (*get_actual_power) (struct thermal_cooling_device *);
-> > > +	u32 (*state2power) (struct thermal_cooling_device *, unsigned long);
-> > > +	unsigned long (*power2state) (struct thermal_cooling_device *, u32);
-> > >  };
-> > > =20
-> > >  struct thermal_cooling_device {
-> > > @@ -322,6 +325,15 @@ void thermal_zone_of_sensor_unregister(struct de=
-vice *dev,
-> > >  }
-> > > =20
-> > >  #endif
-> > > +
-> > > +static inline bool cdev_is_power_actor(struct thermal_cooling_device=
- *cdev)
-> > > +{
-> >=20
-> > What would happen if one pass cdev =3D=3D NULL?
->=20
-> Is it really worth checking it here instead of just making the caller
-> pass a valid cdev?  There are a number of functions in the thermal
-> framework that don't check for valid cdevs or thermal zone pointers
-> and I don't see why this one is different.
->=20
+Changes V1 (https://lkml.org/lkml/2014/12/19/345)
+	* Rebased to 3.19.0-rc2
+	* Change from acpi_cls in device_driver to acpi_match_cls (Hanjun comment)
+	* Change the matching logic in acpi_driver_match_device() due to the new
+	  special PRP0001 _HID.
+	* Simplify the return type of acpi_match_device_cls() to boolean.
 
+Changes from RFC (https://lkml.org/lkml/2014/12/17/446)
+	* Remove #ifdef and make non-ACPI version of the acpi_match_device_cls
+	  as inline. (per Arnd)
+	* Simplify logic to retrieve and evaluate _CLS handle. (per Hanjun)
 
-I don't know, maybe we should fix those misbehaving functions then? Can
-you please point them out?
+Suravee Suthikulpanit (2):
+  ACPI / scan: Add support for ACPI _CLS device matching
+  ata: ahci_platform: Add ACPI _CLS matching
 
-> > > +	return cdev->ops->get_actual_power && cdev->ops->state2power &&
-> > > +		cdev->ops->power2state;
-> > > +}
-> > > +
-> > > +u32 power_actor_get_max_power(struct thermal_cooling_device *);
-> > > +int power_actor_set_power(struct thermal_cooling_device *, u32);
-> > >  struct thermal_zone_device *thermal_zone_device_register(const char =
-*, int, int,
-> > >  		void *, struct thermal_zone_device_ops *,
-> > >  		const struct thermal_zone_params *, int, int);
-> >=20
-> > I am assuming the above two new functions are expected to be used also
-> > outside thermal core, right? If yes, I'd suggest exporting them.=20
->=20
-> I don't expect it for the time being.  Wouldn't it be preferable to
-> export them when its needed instead?
+ drivers/acpi/scan.c             | 79 +++++++++++++++++++++++++++++++++++++++--
+ drivers/ata/Kconfig             |  2 +-
+ drivers/ata/ahci_platform.c     |  3 ++
+ include/acpi/acnames.h          |  1 +
+ include/linux/acpi.h            | 10 ++++++
+ include/linux/device.h          |  1 +
+ include/linux/mod_devicetable.h |  6 ++++
+ 7 files changed, 98 insertions(+), 4 deletions(-)
 
-I believe functions in this header are exported. For functions used
-inside thermal core and code that goes builtin always, they go into
-drivers/thermal/thermal_core.h, and are not exported.
+-- 
+1.9.3
 
->=20
-> Cheers,
-> Javi
-
---FsscpQKzF/jJk6ya
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUqvw4AAoJEMLUO4d9pOJWdQoH/ih2uvOj1hlTi2ilM9lWgSD9
-PEyRvTVcOCxHfK6wnazZ8lxroQOJI12LaLdhpti59V0gJ+/q0yoOTuHP5Yi2aNmH
-nDuMxYGtxeJEHYRm8CIo5S8vJFoBh9CBDZX8wQzlL7wS/HhZJnlSyub9YRtlhrgx
-s4YydvBTH0Rcybn80oC2oSasm5UH/5tqQZZKmJJ6VR6M+7I8ufdyvN3/f3xD+aT7
-7uiISmCMM5TllDWGNVzHWwWMtAKgCkQNQihWvhbjsnPmlkyVfNZCEN8MogNaROew
-psvPuNTWBQNWVpfauwH5HiqEIoezA7WDvYBGSGgrHdHoqdjYuuDGYdMcpY93GTc=
-=tu2P
------END PGP SIGNATURE-----
-
---FsscpQKzF/jJk6ya--
