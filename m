@@ -1,188 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbbAECUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 21:20:00 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:38543 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986AbbAECT7 (ORCPT
+	id S1753150AbbAECaY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 21:30:24 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59994 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751773AbbAECaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 21:19:59 -0500
-From: Rob Herring <robh@kernel.org>
-To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh@kernel.org>
-Subject: [PATCH] pci: introduce common pci config space accessors
-Date: Sun,  4 Jan 2015 20:19:34 -0600
-Message-Id: <1420424374-32412-1-git-send-email-robh@kernel.org>
-X-Mailer: git-send-email 2.1.0
+	Sun, 4 Jan 2015 21:30:22 -0500
+Message-ID: <1420425003.5686.155.camel@decadent.org.uk>
+Subject: Re: [PATCH net-next v1 0/7] net: extend ethtool link mode bitmaps
+ to 48 bits
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Maciej =?UTF-8?Q?=C5=BBenczykowski?= <zenczykowski@gmail.com>
+Cc: David Decotigny <ddecotig@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Linux NetDev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, David Decotigny <decot@googlers.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>, Neil Horman <nhorman@tuxdriver.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
+        Tom Gundersen <teg@jklm.no>, Jiri Pirko <jiri@resnulli.us>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Saeed Mahameed <saeedm@mellanox.com>,
+        Venkata Duvvuru <VenkatKumar.Duvvuru@emulex.com>,
+        Govindarajulu Varadarajan <_govind@gmx.com>
+Date: Mon, 05 Jan 2015 02:30:03 +0000
+In-Reply-To: <CAHo-Ooxi8V_58b456vePY9_7ChuBe0jxEVHvGkGvRBpAR744yA@mail.gmail.com>
+References: <1420405017-23278-1-git-send-email-ddecotig@gmail.com>
+	 <1420408540.5686.140.camel@decadent.org.uk>
+	 <CAHo-Ooxi8V_58b456vePY9_7ChuBe0jxEVHvGkGvRBpAR744yA@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-vrBFagOxJftVlrwlN+z8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many PCI controllers' configuration space accesses are memory mapped
-varying only in address calculation and access checks. There are 2 main
-access methods: a decoded address space such as ECAM or a single address
-and data register similar to x86. This implementation can support both
-cases as well as be used in cases that need additional pre or post access
-handling.
 
-A new pci_ops member map_bus is introduced which can do access checks and
-any necessary setup. It returns the address to use for the configuration
-space access. The access types supported are 32-bit only accesses or
-correct byte, word, or dword sized accesses.
+--=-vrBFagOxJftVlrwlN+z8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Rob Herring <robh@kernel.org>
----
+On Mon, 2015-01-05 at 01:34 +0100, Maciej =C5=BBenczykowski wrote:
+> >> I can send updates to other drivers, even though it's rather pointless
+> >> to update 1G drivers at this point for example. Please let me know,
+> >> but I'd prefer to do this in follow-up patches outside this first
+> >> patch series.
+> > [...]
+> >
+> > They should be changed to ensure they reject setting any of the high
+> > advertising flags, but it's not urgent.
+>=20
+> if old drivers advertised a get/set_bits function while new drivers
+> advertised a get/set_new_bits function,
+> you could not updated any old drivers, and simply take care of
+> rejecting invalid bits in core, by calling set_new_bits if provided,
+> if not, rejecting bad bits and calling set_bits if no bad bits were
+> set.
 
-I've converted a few drivers already. I'll send patches for them after
-some feedback on this. Most already have some function similar to what is
-needed for map_bus, so the conversion is pretty simple. This certainly
-isn't a complete list of possible users. The diffstat so far looks like
-this:
+We've never checked that the reserved fields are zero before, and I
+think there are still drivers that don't fully validate the existing 32
+bits.  So while I think drivers should fully validate the advertising
+flags, userland generally can't assume they do.  And therefore I don't
+think it's worth adding complexity to the ethtool core that only partly
+fixes this.
 
- arch/arm/mach-cns3xxx/pcie.c          |  46 +++-------------------
- arch/arm/mach-integrator/pci_v3.c     |  61 +++---------------------------
- arch/arm/mach-ks8695/pci.c            |  75 +++---------------------------------
- arch/arm/mach-sa1100/pci-nanoengine.c |  94 ++++-----------------------------------------
- arch/powerpc/platforms/powermac/pci.c | 206 +++++++++++++++++++--------------------------------------------------------------------------------
- arch/powerpc/sysdev/fsl_pci.c         |  46 ++--------------------
- drivers/pci/host/pci-host-generic.c   |  51 ++-----------------------
- drivers/pci/host/pci-rcar-gen2.c      |  51 ++-----------------------
- drivers/pci/host/pci-tegra.c          |  55 ++-------------------------
- drivers/pci/host/pci-xgene.c          | 150 +++++-------------------------------------------------------------------
- drivers/pci/host/pcie-xilinx.c        |  88 +++++-------------------------------------
- 11 files changed, 93 insertions(+), 830 deletions(-)
+Ben.
 
-Rob
+--=20
+Ben Hutchings
+This sentence contradicts itself - no actually it doesn't.
 
- drivers/pci/access.c | 83 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h  | 11 +++++++
- 2 files changed, 94 insertions(+)
+--=-vrBFagOxJftVlrwlN+z8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 49dd766..9a29f7a 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -67,6 +67,89 @@ EXPORT_SYMBOL(pci_bus_write_config_byte);
- EXPORT_SYMBOL(pci_bus_write_config_word);
- EXPORT_SYMBOL(pci_bus_write_config_dword);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-+int pci_generic_config_read(struct pci_bus *bus, unsigned int devfn,
-+			    int where, int size, u32 *val)
-+{
-+	void __iomem *addr;
-+
-+	addr = bus->ops->map_bus(bus, devfn, where);
-+	if (!addr) {
-+		*val = ~0;
-+		return PCIBIOS_DEVICE_NOT_FOUND;
-+	}
-+
-+	if (size == 1)
-+		*val = readb(addr);
-+	else if (size == 2)
-+		*val = readw(addr);
-+	else
-+		*val = readl(addr);
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+int pci_generic_config_write(struct pci_bus *bus, unsigned int devfn,
-+			     int where, int size, u32 val)
-+{
-+	void __iomem *addr;
-+
-+	addr = bus->ops->map_bus(bus, devfn, where);
-+	if (!addr)
-+		return PCIBIOS_DEVICE_NOT_FOUND;
-+
-+	if (size == 1)
-+		writeb(val, addr);
-+	else if (size == 2)
-+		writew(val, addr);
-+	else
-+		writel(val, addr);
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+int pci_generic_config_read32(struct pci_bus *bus, unsigned int devfn,
-+			      int where, int size, u32 *val)
-+{
-+	void __iomem *addr;
-+
-+	addr = bus->ops->map_bus(bus, devfn, where & ~0x3);
-+	if (!addr) {
-+		*val = ~0;
-+		return PCIBIOS_DEVICE_NOT_FOUND;
-+	}
-+
-+	*val = readl(addr);
-+
-+	if (size <= 2)
-+		*val = (*val >> (8 * (where & 3))) & ((1 << (size * 8)) - 1);
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
-+int pci_generic_config_write32(struct pci_bus *bus, unsigned int devfn,
-+			       int where, int size, u32 val)
-+{
-+	void __iomem *addr;
-+	u32 mask, tmp;
-+
-+	addr = bus->ops->map_bus(bus, devfn, where & ~0x3);
-+	if (!addr)
-+		return PCIBIOS_DEVICE_NOT_FOUND;
-+
-+	if (size == 4) {
-+		writel(val, addr);
-+		return PCIBIOS_SUCCESSFUL;
-+	} else {
-+		mask = ~(((1 << (size * 8)) - 1) << ((where & 0x3) * 8));
-+	}
-+
-+	tmp = readl(addr) & mask;
-+	tmp |= val << ((where & 0x3) * 8);
-+	writel(tmp, addr);
-+
-+	return PCIBIOS_SUCCESSFUL;
-+}
-+
- /**
-  * pci_bus_set_ops - Set raw operations of pci bus
-  * @bus:	pci bus struct
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 360a966..e7fd519 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -560,6 +560,7 @@ static inline int pcibios_err_to_errno(int err)
- /* Low-level architecture-dependent routines */
+iQIVAwUAVKn3MOe/yOyVhhEJAQrclA/9Ep1AeVxogiycO9th4LvZ4dh5U/oEos3S
+QbLOG202zE/zLLD7RGfSvt6y04uuaSgc7sQ95WBZlajqtT+OrSrTu4JAVIBTLeqi
+FVZgxO/TvMQJa0VPxqqqnZVOEYjBoqHilGnlEZ3Je1WKYH0neFZa5AfSRSuas+iw
+WlP7zTt5xBskf9Zt64uG1Pp32iiaYZgt0iFnNHPyP30zp8xUSu1KetjyAI8zzE6J
+DucKccDiD+VLIce5R2ztPQGcB+OrOal/stfON0+Qupq3c2M2oJLauCEaQ9mSu/sD
+X16VeRUZBYiM76y3JpU3iXFQE6ntJd7YQ8BmOdZvh+W88vQfj50et9DtX9RN7vl1
+b6r5guzNP7rJvS+tSqdFkRjLFUhLSP8lfLzWb4WC3ZdhESlhTtW6Jf7Wwu1h3cby
+A4U/lP5Omltxk46tvOJ0J3bam8p9VVSJfDlFZv0jnxZ04pZSx7Lwt8FFZGCxeTMp
+CA9a9F52nzZ0waVPh1Mg1q9MEmDW+4Z96LMW8wTRFTFNJuX7JA6llhtvux4k+C1Y
+ny5D8w2KsujUwwB1tilmy5dI3F5nIUOxVk/VdBMyInB4eR7yOQwqFTv0dTEpoPBN
+uYnGCgvnTRGq/66Nd8c9SX3NVKG7zE99A7cPre82zOD05LzNaiLLsetpWgg3Jfx6
+MpCuCV9T+NA=
+=nSFZ
+-----END PGP SIGNATURE-----
 
- struct pci_ops {
-+	void __iomem *(*map_bus)(struct pci_bus *bus, unsigned int devfn, int where);
- 	int (*read)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 *val);
- 	int (*write)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 val);
- };
-@@ -857,6 +858,16 @@ int pci_bus_write_config_word(struct pci_bus *bus, unsigned int devfn,
- 			      int where, u16 val);
- int pci_bus_write_config_dword(struct pci_bus *bus, unsigned int devfn,
- 			       int where, u32 val);
-+
-+int pci_generic_config_read(struct pci_bus *bus, unsigned int devfn,
-+			    int where, int size, u32 *val);
-+int pci_generic_config_write(struct pci_bus *bus, unsigned int devfn,
-+			    int where, int size, u32 val);
-+int pci_generic_config_read32(struct pci_bus *bus, unsigned int devfn,
-+			      int where, int size, u32 *val);
-+int pci_generic_config_write32(struct pci_bus *bus, unsigned int devfn,
-+			       int where, int size, u32 val);
-+
- struct pci_ops *pci_bus_set_ops(struct pci_bus *bus, struct pci_ops *ops);
-
- static inline int pci_read_config_byte(const struct pci_dev *dev, int where, u8 *val)
---
-2.1.0
-
+--=-vrBFagOxJftVlrwlN+z8--
