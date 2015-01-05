@@ -1,167 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbbAEGBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 01:01:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13729 "EHLO mga02.intel.com"
+	id S1752984AbbAEGFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 01:05:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43792 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273AbbAEGBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 01:01:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,698,1413270000"; 
-   d="scan'208";a="646298839"
-Message-ID: <1420437677.3090.1.camel@rzhang1-toshiba>
-Subject: Re: [PATCH 1/3] video / backlight: add two APIs for drivers to use
-From: Zhang Rui <rui.zhang@intel.com>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Jingoo Han <jg1.han@samsung.com>, "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Rafael J. Wysocki'" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Date: Mon, 05 Jan 2015 14:01:17 +0800
-In-Reply-To: <54AA253F.2030207@intel.com>
-References: <1419997818-19528-1-git-send-email-aaron.lu@intel.com>
-	 <1419997818-19528-2-git-send-email-aaron.lu@intel.com>
-	 <000b01d026f1$408e3620$c1aaa260$%han@samsung.com>
-	 <54AA253F.2030207@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751133AbbAEGFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 01:05:12 -0500
+From: Fam Zheng <famz@redhat.com>
+To: linux-scsi@vger.kernel.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH] virtio-scsi: Fix the race condition in virtscsi_handle_event
+Date: Mon,  5 Jan 2015 14:04:58 +0800
+Message-Id: <1420437898-32419-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 13:46 +0800, Aaron Lu wrote:
-> On 01/03/2015 09:04 AM, Jingoo Han wrote:
-> > On Wednesday, December 31, 2014 12:50 PM, Aaron Lu wrote:
-> >>
-> >> It is useful to get the backlight device's pointer and use it to set
-> >> backlight in some cases(the following patch will make use of it) so add
-> >> the two APIs and export them.
-> >>
-> >> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> > 
-> > Acked-by: Jingoo Han <jg1.han@samsung.com>
-> 
-So Jingoo and Lee, will you take the first two patches, or you'd like me
-the take the whole patch set?
+There is a race condition in virtscsi_handle_event, when many device
+hotplug/unplug events flush in quickly.
 
-thanks,
-rui
-> Thanks for the review!
-> 
-> Regards,
-> Aaron
-> 
-> > 
-> > Best regards,
-> > Jingoo Han
-> > 
-> >> ---
-> >>  drivers/video/backlight/backlight.c | 44 ++++++++++++++++++++++++-------------
-> >>  include/linux/backlight.h           |  2 ++
-> >>  2 files changed, 31 insertions(+), 15 deletions(-)
-> >>
-> >> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-> >> index bddc8b17a4d8..bea749329236 100644
-> >> --- a/drivers/video/backlight/backlight.c
-> >> +++ b/drivers/video/backlight/backlight.c
-> >> @@ -164,28 +164,19 @@ static ssize_t brightness_show(struct device *dev,
-> >>  	return sprintf(buf, "%d\n", bd->props.brightness);
-> >>  }
-> >>
-> >> -static ssize_t brightness_store(struct device *dev,
-> >> -		struct device_attribute *attr, const char *buf, size_t count)
-> >> +int backlight_device_set_brightness(struct backlight_device *bd, int brightness)
-> >>  {
-> >> -	int rc;
-> >> -	struct backlight_device *bd = to_backlight_device(dev);
-> >> -	unsigned long brightness;
-> >> -
-> >> -	rc = kstrtoul(buf, 0, &brightness);
-> >> -	if (rc)
-> >> -		return rc;
-> >> -
-> >> -	rc = -ENXIO;
-> >> +	int rc = -ENXIO;
-> >>
-> >>  	mutex_lock(&bd->ops_lock);
-> >>  	if (bd->ops) {
-> >>  		if (brightness > bd->props.max_brightness)
-> >>  			rc = -EINVAL;
-> >>  		else {
-> >> -			pr_debug("set brightness to %lu\n", brightness);
-> >> +			pr_debug("set brightness to %u\n", brightness);
-> >>  			bd->props.brightness = brightness;
-> >>  			backlight_update_status(bd);
-> >> -			rc = count;
-> >> +			rc = 0;
-> >>  		}
-> >>  	}
-> >>  	mutex_unlock(&bd->ops_lock);
-> >> @@ -194,6 +185,23 @@ static ssize_t brightness_store(struct device *dev,
-> >>
-> >>  	return rc;
-> >>  }
-> >> +EXPORT_SYMBOL(backlight_device_set_brightness);
-> >> +
-> >> +static ssize_t brightness_store(struct device *dev,
-> >> +		struct device_attribute *attr, const char *buf, size_t count)
-> >> +{
-> >> +	int rc;
-> >> +	struct backlight_device *bd = to_backlight_device(dev);
-> >> +	unsigned long brightness;
-> >> +
-> >> +	rc = kstrtoul(buf, 0, &brightness);
-> >> +	if (rc)
-> >> +		return rc;
-> >> +
-> >> +	rc = backlight_device_set_brightness(bd, brightness);
-> >> +
-> >> +	return rc ? rc : count;
-> >> +}
-> >>  static DEVICE_ATTR_RW(brightness);
-> >>
-> >>  static ssize_t type_show(struct device *dev, struct device_attribute *attr,
-> >> @@ -380,7 +388,7 @@ struct backlight_device *backlight_device_register(const char *name,
-> >>  }
-> >>  EXPORT_SYMBOL(backlight_device_register);
-> >>
-> >> -bool backlight_device_registered(enum backlight_type type)
-> >> +struct backlight_device *backlight_device_get_by_type(enum backlight_type type)
-> >>  {
-> >>  	bool found = false;
-> >>  	struct backlight_device *bd;
-> >> @@ -394,7 +402,13 @@ bool backlight_device_registered(enum backlight_type type)
-> >>  	}
-> >>  	mutex_unlock(&backlight_dev_list_mutex);
-> >>
-> >> -	return found;
-> >> +	return found ? bd : NULL;
-> >> +}
-> >> +EXPORT_SYMBOL(backlight_device_get_by_type);
-> >> +
-> >> +bool backlight_device_registered(enum backlight_type type)
-> >> +{
-> >> +	return backlight_device_get_by_type(type) ? true : false;
-> >>  }
-> >>  EXPORT_SYMBOL(backlight_device_registered);
-> >>
-> >> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
-> >> index adb14a8616df..c59a020df3f8 100644
-> >> --- a/include/linux/backlight.h
-> >> +++ b/include/linux/backlight.h
-> >> @@ -140,6 +140,8 @@ extern void backlight_force_update(struct backlight_device *bd,
-> >>  extern bool backlight_device_registered(enum backlight_type type);
-> >>  extern int backlight_register_notifier(struct notifier_block *nb);
-> >>  extern int backlight_unregister_notifier(struct notifier_block *nb);
-> >> +extern struct backlight_device *backlight_device_get_by_type(enum backlight_type type);
-> >> +extern int backlight_device_set_brightness(struct backlight_device *bd, int brightness);
-> >>
-> >>  #define to_backlight_device(obj) container_of(obj, struct backlight_device, dev)
-> >>
-> >> --
-> >> 2.1.0
-> > 
-> 
+The scsi_remove_device in virtscsi_handle_transport_reset may trigger
+the BUG_ON in scsi_target_reap, because the state is altered behind it,
+probably by scsi_scan_host of another event. I'm able to reproduce it by
+repeatedly plugging and unplugging a scsi disk with the same lun number.
 
+To make is safe, the mutex added in struct virtio_scsi is held in
+virtscsi_handle_event, so that all the events are processed in a
+synchronized way. With this lock, the panic goes away.
+
+Signed-off-by: Fam Zheng <famz@redhat.com>
+---
+ drivers/scsi/virtio_scsi.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index c52bb5d..7f194d4 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -110,6 +110,9 @@ struct virtio_scsi {
+ 	/* CPU hotplug notifier */
+ 	struct notifier_block nb;
+ 
++	/* Protect the hotplug/unplug event handling */
++	struct mutex scan_lock;
++
+ 	/* Protected by event_vq lock */
+ 	bool stop_events;
+ 
+@@ -377,6 +380,7 @@ static void virtscsi_handle_event(struct work_struct *work)
+ 	struct virtio_scsi *vscsi = event_node->vscsi;
+ 	struct virtio_scsi_event *event = &event_node->event;
+ 
++	mutex_lock(&vscsi->scan_lock);
+ 	if (event->event &
+ 	    cpu_to_virtio32(vscsi->vdev, VIRTIO_SCSI_T_EVENTS_MISSED)) {
+ 		event->event &= ~cpu_to_virtio32(vscsi->vdev,
+@@ -397,6 +401,7 @@ static void virtscsi_handle_event(struct work_struct *work)
+ 		pr_err("Unsupport virtio scsi event %x\n", event->event);
+ 	}
+ 	virtscsi_kick_event(vscsi, event_node);
++	mutex_unlock(&vscsi->scan_lock);
+ }
+ 
+ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
+@@ -894,6 +899,7 @@ static int virtscsi_init(struct virtio_device *vdev,
+ 	const char **names;
+ 	struct virtqueue **vqs;
+ 
++	mutex_init(&vscsi->scan_lock);
+ 	num_vqs = vscsi->num_queues + VIRTIO_SCSI_VQ_BASE;
+ 	vqs = kmalloc(num_vqs * sizeof(struct virtqueue *), GFP_KERNEL);
+ 	callbacks = kmalloc(num_vqs * sizeof(vq_callback_t *), GFP_KERNEL);
+-- 
+1.9.3
 
