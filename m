@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbbAEKHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:07:32 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:8676 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbbAEKH3 (ORCPT
+	id S1753440AbbAEKD3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:03:29 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:41903 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231AbbAEKD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:07:29 -0500
-From: Kaixu Xia <xiakaixu@huawei.com>
-To: <p.zabel@pengutronix.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <kaixu.xia@linaro.org>, <xiakaixu@huawei.com>
-Subject: [PATCH] Documentation: of: fix typo in graph bindings
-Date: Mon, 5 Jan 2015 18:02:16 +0800
-Message-ID: <1420452136-76466-1-git-send-email-xiakaixu@huawei.com>
-X-Mailer: git-send-email 1.8.5.5
+	Mon, 5 Jan 2015 05:03:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1420449884.1898.3.camel@sipsolutions.net>
+References: <CAAXZBWLOKL8Uu9No_tQga34nFurmeK2HP9qixO1jCXw1Y0t5HA@mail.gmail.com>
+	<1420449884.1898.3.camel@sipsolutions.net>
+Date: Mon, 5 Jan 2015 10:03:27 +0000
+Message-ID: <CAAXZBWJD02F81gJkhvLFZcpCzJahr-qsUUgbqheUfrc_BP0CjA@mail.gmail.com>
+Subject: Re: [PATCH] rfkill: parameters documentation
+From: Andrew Clausen <andrew.p.clausen@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just fix a minor typo about the example path.
+Hi Johannes,
 
-Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
----
- Documentation/devicetree/bindings/graph.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 5 January 2015 at 09:24, Johannes Berg <johannes@sipsolutions.net> wrote:
+> Looks fine to me (though the commit message shouldn't contain the email
+> "boilerplate" of "hi all" etc - should just be
 
-diff --git a/Documentation/devicetree/bindings/graph.txt b/Documentation/devicetree/bindings/graph.txt
-index 1a69c07..fcb1c6a 100644
---- a/Documentation/devicetree/bindings/graph.txt
-+++ b/Documentation/devicetree/bindings/graph.txt
-@@ -19,7 +19,7 @@ type of the connections, they just map their existence. Specific properties
- may be described by specialized bindings depending on the type of connection.
- 
- To see how this binding applies to video pipelines, for example, see
--Documentation/device-tree/bindings/media/video-interfaces.txt.
-+Documentation/devicetree/bindings/media/video-interfaces.txt.
- Here the ports describe data interfaces, and the links between them are
- the connecting data buses. A single port with multiple connections can
- correspond to multiple devices being connected to the same physical bus.
--- 
-1.8.5.5
+Ah, sorry for the extra noise.
 
+> However I'm not sure I should apply this through my tree?
+
+I think you're right -- it makes sense to put it in your tree, and
+merge it down the track.  (I don't think I've submitted a kernel patch
+since pre-git days, so sorry for the confusion.)
+
+Cheers,
+Andrew
