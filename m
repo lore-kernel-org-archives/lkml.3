@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbbAEE2N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 23:28:13 -0500
-Received: from ozlabs.org ([103.22.144.67]:59868 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752876AbbAEE2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 23:28:11 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jason Wang <jasowang@redhat.com>, mst@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: Re: [RFC PATCH 0/3] Sharing MSIX irq for tx/rx queue pairs
-In-Reply-To: <1419562425-20614-1-git-send-email-jasowang@redhat.com>
-References: <1419562425-20614-1-git-send-email-jasowang@redhat.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 05 Jan 2015 12:09:36 +1030
-Message-ID: <87ppauovjb.fsf@rustcorp.com.au>
+	id S1753335AbbAEBko (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 20:40:44 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:48884 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753114AbbAEBkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 20:40:43 -0500
+Message-ID: <54A9EB99.30806@lwfinger.net>
+Date: Sun, 04 Jan 2015 19:40:41 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alexander Kuleshov <kuleshovmail@gmail.com>
+CC: Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8192e: Fix duplicated conditional branch
+References: <1420354755-5261-1-git-send-email-kuleshovmail@gmail.com> <1420355446.2619.18.camel@perches.com>
+In-Reply-To: <1420355446.2619.18.camel@perches.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason Wang <jasowang@redhat.com> writes:
-> Hi all:
+On 01/04/2015 01:10 AM, Joe Perches wrote:
+> On Sun, 2015-01-04 at 12:59 +0600, Alexander Kuleshov wrote:
+>> Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+> []
+>> diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c b/drivers/staging/rtl8192e/rtl8192e/rtl_dm.c
+> []
+>> @@ -1661,7 +1661,7 @@ void dm_change_dynamic_initgain_thresh(struct net_device *dev,
+>>   		dm_digtable.rssi_low_thresh = dm_value;
+>>   	} else if (dm_type == DIG_TYPE_THRESH_HIGHPWR_HIGH) {
+>>   		dm_digtable.rssi_high_power_highthresh = dm_value;
+>> -	} else if (dm_type == DIG_TYPE_THRESH_HIGHPWR_HIGH) {
+>> +	} else if (dm_type == DIG_TYPE_THRESH_HIGHPWR_LOW) {
+>>   		dm_digtable.rssi_high_power_highthresh = dm_value;
+>>   	} else if (dm_type == DIG_TYPE_ENABLE) {
+>>   		dm_digtable.dig_state		= DM_STA_DIG_MAX;
 >
-> This series try to share MSIX irq for each tx/rx queue pair. This is
-> done through:
+> Presumably, this is a copy/paste error and should have
+> both lines changed to HIGHPWR_LOW/high_power_lowthresh
 >
-> - introducing virtio pci channel which are group of virtqueues that
->   sharing a single MSIX irq (Patch 1)
-> - expose channel setting to virtio core api (Patch 2)
-> - try to use channel setting in virtio-net (Patch 3)
-
-Hi Jason,
-
-        Is "channel" a term you created yourself, or something I was
-just unaware of?  irq_group would seem more obvious, if the former.
-
-> For the transport that does not support channel, channel paramters
-> were simply ignored. For devices that does not use channel, it can
-> simply pass NULL or zero to virito core.
+> 	else if (dm_type == DIG_TYPE_THRESH_HIGHPWR_LOW)
+> 		dm_digtable.rssi_high_power_lowthresh = dm_value;
 >
-> With the patch, 1 MSIX irq were saved for each TX/RX queue pair.
 
-It seems fairly straightforward.
+I have no idea what this should be, but this patch does not appear to be any 
+improvement. Joe is probably correct.
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Larry
 
-Thanks,
-Rusty.
+
