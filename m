@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbbAEXKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 18:10:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31760 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753226AbbAEXKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 18:10:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,702,1413270000"; 
-   d="scan'208";a="632893388"
-Message-ID: <54AB19EC.4020401@linux.intel.com>
-Date: Mon, 05 Jan 2015 15:10:36 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
- to arch_prctl
-References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net> <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com> <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
-In-Reply-To: <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+	id S1754628AbbAEXQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 18:16:20 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:50832 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753885AbbAEXQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 18:16:19 -0500
+Message-ID: <1420499776.14308.50.camel@x220>
+Subject: Re: [PATCH] checkpatch: add check for keyword 'boolean' in Kconfig
+ definitions
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Christoph Jaeger <cj@linux.com>
+Cc: apw@canonical.com, joe@perches.com, linux-kernel@vger.kernel.org,
+        dborkman@redhat.com
+Date: Tue, 06 Jan 2015 00:16:16 +0100
+In-Reply-To: <1419108036-11536-1-git-send-email-cj@linux.com>
+References: <1419108036-11536-1-git-send-email-cj@linux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Jan 2015 23:16:17.0057 (UTC) FILETIME=[9B64E910:01D0293D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 03:04 PM, Andy Lutomirski wrote:
->> > Yeah, I'd _really_ prefer not to change it.  The code is in a gcc
->> > branch, but is getting pulled in to the 5.0 release.  We've got
->> > *absolutely* no shortage of prctl numbers.
-> We do, however, have a severe shortage of sanity in the prctl implementation.
+On Sat, 2014-12-20 at 15:40 -0500, Christoph Jaeger wrote:
+> Discourage the use of keyword 'boolean' for type definition attributes of
+> config options as support for it will be dropped later on.
 > 
-> Anyway, if it's actually a problem to change it, I have no real
-> problem keeping it, but I think we *really* need to validate the rest
-> of the arguments at the very least.
+> Reference: http://lkml.kernel.org/r/cover.1418003065.git.cj@linux.com
+> Suggested-by: Daniel Borkmann <dborkman@redhat.com>
+> Signed-off-by: Christoph Jaeger <cj@linux.com>
 
-Do you mean just adding a pair of
+Works as advertised:
+    $ scripts/checkpatch.pl -f kernel/livepatch/Kconfig 
+    WARNING: Use of boolean is deprecated, please use bool instead.
+    #2: FILE: kernel/livepatch/Kconfig:2:
+    +        boolean
 
-	if (arg2 || arg3 || arg4 || arg5)
-		return -EINVAL;
+    WARNING: Use of boolean is deprecated, please use bool instead.
+    #7: FILE: kernel/livepatch/Kconfig:7:
+    +        boolean "Kernel Live Patching"
 
-checks?
+    total: 0 errors, 2 warnings, 18 lines checked
 
-That's perfectly fine with me.  I'm happy to queue up a patch to do just
-that if that's what you're going for.
+    kernel/livepatch/Kconfig has style problems, please review.
+
+    If any of these errors are false positives, please report
+    them to the maintainer, see CHECKPATCH in MAINTAINERS.
+
+Acked-by: Paul Bolle <pebolle@tiscali.nl>
+
+> ---
+>  scripts/checkpatch.pl | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index f0bb6d6..cae974e 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2355,6 +2355,13 @@ sub process {
+>  			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see https://lkml.org/lkml/2012/10/23/580\n");
+>  		}
+>  
+> +# discourage the use of boolean for type definition attributes of Kconfig options
+> +		if ($realfile =~ /Kconfig/ &&
+> +		    $line =~ /^\+\s*\bboolean\b/) {
+> +			WARN("CONFIG_TYPE_BOOLEAN",
+
+This should become an error once "boolean" is removed (on some future
+date).
+
+> +			     "Use of boolean is deprecated, please use bool instead.\n" . $herecurr);
+> +		}
+> +
+>  		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/) &&
+>  		    ($line =~ /\+(EXTRA_[A-Z]+FLAGS).*/)) {
+>  			my $flag = $1;
+
+
+Paul Bolle
+
