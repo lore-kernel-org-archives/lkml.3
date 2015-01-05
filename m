@@ -1,178 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211AbbAES37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:29:59 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:47790 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086AbbAES35 (ORCPT
+	id S1754245AbbAESaa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:30:30 -0500
+Received: from gw1.transmode.se ([195.58.98.146]:64183 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753418AbbAESa1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:29:57 -0500
+	Mon, 5 Jan 2015 13:30:27 -0500
+From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+To: "christophe.leroy@c-s.fr" <christophe.leroy@c-s.fr>
+CC: "scottwood@freescale.com" <scottwood@freescale.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "mpe@ellerman.id.au" <mpe@ellerman.id.au>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 09/11] powerpc/8xx: dont save CR in SCRATCH registers
+Thread-Topic: [PATCH 09/11] powerpc/8xx: dont save CR in SCRATCH registers
+Thread-Index: AQHQGUF/zhr1mwd1w02HKJxBS+A9DZyx6BAA
+Date: Mon, 5 Jan 2015 18:30:24 +0000
+Message-ID: <1420482624.25047.25.camel@transmode.se>
+References: <20141216150340.108641A5E05@localhost.localdomain>
+In-Reply-To: <20141216150340.108641A5E05@localhost.localdomain>
+Accept-Language: en-US, sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.200.4]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <BAE15923775699428D3695076855B973@transmode.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <s5hfvbpf5ym.wl-tiwai@suse.de>
-References: <1420279798-961-1-git-send-email-tiwai@suse.de>
-	<CADnq5_NU-nde7eBk_Ptpk6twk_aBrXZgLXxio3RiJUJ1D4ZzdQ@mail.gmail.com>
-	<s5hioglf8ew.wl-tiwai@suse.de>
-	<CADnq5_OrxtFs=LMdXbX27WMbaWRdR7ALBDkL=ohP464qz3hhTw@mail.gmail.com>
-	<s5hfvbpf5ym.wl-tiwai@suse.de>
-Date: Mon, 5 Jan 2015 13:29:56 -0500
-Message-ID: <CADnq5_Mtk85fKnzBWtVfD78=j1XZvBdMksFN_T-oj0oR_bcSpQ@mail.gmail.com>
-Subject: Re: [PATCH v2] drm/radeon: Fix kernel panic with HDMI w/o SAD
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
-        Christian Koenig <christian.koenig@amd.com>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 1:16 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Mon, 5 Jan 2015 12:48:05 -0500,
-> Alex Deucher wrote:
->>
->> On Mon, Jan 5, 2015 at 12:23 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Mon, 5 Jan 2015 12:07:52 -0500,
->> > Alex Deucher wrote:
->> >>
->> >> On Sat, Jan 3, 2015 at 5:09 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> >> > A BUG_ON() call in dce3_2_afmt_write_sad_regs() is triggered when a
->> >> > HDMI monitor without audio is plugged:
->> >>
->> >> I have a slightly different fix already queued up:
->> >> http://lists.freedesktop.org/archives/dri-devel/2014-December/073672.html
->> >
->> > Oh, that's identical with my v1 patch :)  But, with that fix, an error
->> > message will be shown at each time you plug such a monitor, right?
->> > This doesn't look right, so I revised the patch.
->>
->> Yes, but if the monitor claims to support audio, it should supply
->> SADs.  If it doesn't, the driver has no way of knowing what type of
->> audio the monitor supports.
->
-> IMO, we may assume that the monitor has no audio at all if sad_count =
-> 0.  Or are there any monitors that do support audio even without
-> SAD...?
 
-I don't remember off hand.  We'd need to check the CEA edid extension spec.
+On Tue, 2014-12-16 at 16:03 +0100, Christophe Leroy wrote:
+> CR only needs to be preserved when checking if we are handling a kernel address.
+> So we can preserve CR in a register:
+> - In ITLBMiss, check is done only when CONFIG_MODULES is defined. Otherwise we
+> don't need to do anything at all with CR.
+> - If CONFIG_8xx_CPU6 is defined, we have r3 available for saving CR
+> - Otherwise, we use r10, then we reload SRR0/MD_EPN into r10 when CR is restored
 
-The radeon hdmi code should be restructured a bit to enable hdmi
-features in a more fine grained way.  If the monitor supports hdmi, we
-try and enable audio in addition to the other hdmi packets.  We should
-be using drm_detect_monitor_audio() to decide whether to enable audio
-features.  We have some patches internally which cleans a lot of this
-up that should be available soon.
+I think the #ifdef CPU6 code makes for too much maintenance. Can you
+loose the #ifdef CPU6 and adjust code so it works for both cases?
 
->
->> I'm fine with removing the error message
->> or making it debug only however.
->
-> If sad_count = 0 is an invalid state that shouldn't happen, then
-> printing an error is correct behavior.  So, the question comes to the
-> point whether sad_count = 0 is a sane value or not.
->
->> > Also, can we skip the register write completely?  I thought of a case
->> > like we replug a monitor from the one with audio to another without
->> > audio...
->>
->> Changing the monitor will generally trigger a full probe and modeset
->> again anyway.  The register writes are just there to pass the audio
->> information supported by the monitor along to the audio driver.
->
-> OK, thanks for clarification.
->
->
-> In anyway, I still think we should kill BUG_ON() there.  But this can
-> be a separate patch, of course.
-
-Yeah, agreed.
-
-Alex
-
->
->
-> Takashi
->
->>
->> Alex
->>
->> >
->> >
->> > thanks,
->> >
->> > Takashi
->> >
->> >>
->> >> Alex
->> >>
->> >> >
->> >> >  kernel BUG at ../drivers/gpu/drm/radeon/dce3_1_afmt.c:110!
->> >> >  invalid opcode: 0000 [#1] PREEMPT SMP
->> >> >  CPU: 2 PID: 967 Comm: Xorg Tainted: PO  3.16.7-7-desktop #1
->> >> >  Hardware name: System manufacturer System Product Name/M4A77T, BIOS 2401    05/18/2011
->> >> >  task: ffff8800cea86350 ti: ffff8800c1880000 task.ti: ffff8800c1880000
->> >> >  RIP: 0010:[<ffffffffa0126c50>] dce3_1_hdmi_setmode+0x570/0x5a0 [radeon]
->> >> >  Call Trace:
->> >> >   [<ffffffffa00a6936>] drm_crtc_helper_set_mode+0x346/0x520 [drm_kms_helper]
->> >> >   [<ffffffffa00a7678>] drm_crtc_helper_set_config+0x8a8/0xad0 [drm_kms_helper]
->> >> >   [<ffffffffa00ede3f>] radeon_crtc_set_config+0x3f/0x110 [radeon]
->> >> >   [<ffffffffa001edc1>] drm_mode_set_config_internal+0x61/0xe0 [drm]
->> >> >   [<ffffffffa00a9a6b>] restore_fbdev_mode+0xab/0xd0 [drm_kms_helper]
->> >> >   [<ffffffffa00a9aae>] drm_fb_helper_restore_fbdev_mode_unlocked+0x1e/0x30 [drm_kms_helper]
->> >> >   [<ffffffffa00ab642>] drm_fb_helper_set_par+0x22/0x60 [drm_kms_helper]
->> >> >   [<ffffffffa00ab5cb>] drm_fb_helper_hotplug_event+0x8b/0xe0 [drm_kms_helper]
->> >> >   [<ffffffffa00ab65a>] drm_fb_helper_set_par+0x3a/0x60 [drm_kms_helper]
->> >> >   [<ffffffff813818ce>] fb_set_var+0x15e/0x3b0
->> >> >   [<ffffffff81378d0b>] fbcon_blank+0x1cb/0x2b0
->> >> >   [<ffffffff813f2a31>] do_unblank_screen+0xa1/0x1b0
->> >> >   [<ffffffff813e8fd3>] complete_change_console+0x53/0xe0
->> >> >   [<ffffffff813e9fa9>] vt_ioctl+0xf49/0x10d0
->> >> >   [<ffffffff813ddfdc>] tty_ioctl+0x26c/0xb70
->> >> >   [<ffffffff811cad17>] do_vfs_ioctl+0x2e7/0x4c0
->> >> >   [<ffffffff811caf71>] SyS_ioctl+0x81/0xa0
->> >> >   [<ffffffff81622a2d>] system_call_fastpath+0x1a/0x1f
->> >> >   [<00007f2fae8c6397>] 0x7f2fae8c6396
->> >> >
->> >> > Actually the BUG_ON() check is wrong, since sads may be NULL when
->> >> > sad_count is zero.  This patch removes the BUG_ON() and adds the
->> >> > proper NULL initialization of sads.
->> >> >
->> >> > Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=911356
->> >> > Cc: <stable@vger.kernel.org>
->> >> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
->> >> > ---
->> >> >  drivers/gpu/drm/radeon/dce3_1_afmt.c | 3 +--
->> >> >  1 file changed, 1 insertion(+), 2 deletions(-)
->> >> >
->> >> > diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c b/drivers/gpu/drm/radeon/dce3_1_afmt.c
->> >> > index 2fe8cfc966d9..7ca23f45829e 100644
->> >> > --- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
->> >> > +++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
->> >> > @@ -72,7 +72,7 @@ static void dce3_2_afmt_write_sad_regs(struct drm_encoder *encoder)
->> >> >         struct radeon_device *rdev = encoder->dev->dev_private;
->> >> >         struct drm_connector *connector;
->> >> >         struct radeon_connector *radeon_connector = NULL;
->> >> > -       struct cea_sad *sads;
->> >> > +       struct cea_sad *sads = NULL;
->> >> >         int i, sad_count;
->> >> >
->> >> >         static const u16 eld_reg_to_type[][2] = {
->> >> > @@ -107,7 +107,6 @@ static void dce3_2_afmt_write_sad_regs(struct drm_encoder *encoder)
->> >> >                 DRM_ERROR("Couldn't read SADs: %d\n", sad_count);
->> >> >                 return;
->> >> >         }
->> >> > -       BUG_ON(!sads);
->> >> >
->> >> >         for (i = 0; i < ARRAY_SIZE(eld_reg_to_type); i++) {
->> >> >                 u32 value = 0;
->> >> > --
->> >> > 2.2.0
->> >> >
->> >> > _______________________________________________
->> >> > dri-devel mailing list
->> >> > dri-devel@lists.freedesktop.org
->> >> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
->> >>
->>
+> 
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+> ---
+>  arch/powerpc/kernel/head_8xx.S | 53 +++++++++++++++++++++++++++++-------------
+>  1 file changed, 37 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+> index c89aed9..a073918 100644
+> --- a/arch/powerpc/kernel/head_8xx.S
+> +++ b/arch/powerpc/kernel/head_8xx.S
+> @@ -308,14 +308,10 @@ SystemCall:
+>  #endif
+>  
+>  InstructionTLBMiss:
+> +       EXCEPTION_PROLOG_0
+>  #ifdef CONFIG_8xx_CPU6
+>         mtspr   SPRN_DAR, r3
+>  #endif
+> -       EXCEPTION_PROLOG_0
+> -       mfcr    r10
+> -       mtspr   SPRN_SPRG_SCRATCH2, r10
+> -       mfspr   r10, SPRN_SRR0/* Get effective address of fault */
+> -       DO_8xx_CPU15(r11, r10)
+>  
+>         /* If we are faulting a kernel address, we have to use the
+>                 * kernel page tables.
+> @@ -323,14 +319,33 @@ InstructionTLBMiss:
+>  #ifdef CONFIG_MODULES
+>         /* Only modules will cause ITLB Misses as we always
+>                 * pin the first 8MB of kernel memory */
+> +#ifdef CONFIG_8xx_CPU6
+> +       mfspr   r10, SPRN_SRR0/* Get effective address of fault */
+> +       DO_8xx_CPU15(r11, r10)
+> +       mfcr    r3
+>         andis.  r11, r10, 0x8000/* Address >= 0x80000000 */
+> +#else
+> +       mfspr   r11, SPRN_SRR0/* Get effective address of fault */
+> +       DO_8xx_CPU15(r10, r11)
+> +       mfcr    r10
+> +       andis.  r11, r11, 0x8000/* Address >= 0x80000000 */
+>  #endif
+>         mfspr   r11, SPRN_M_TW/* Get level 1 table base address */
+> -#ifdef CONFIG_MODULES
+>         beq     3f
+>         lis     r11, (swapper_pg_dir-PAGE_OFFSET)@ha
+>  3:
+> +#ifdef CONFIG_8xx_CPU6
+> +       mtcr    r3
+> +#else
+> +       mtcr    r10
+> +       mfspr   r10, SPRN_SRR0/* Get effective address of fault */
+>  #endif
+> +#else /* CONFIG_MODULES */
+> +       mfspr   r10, SPRN_SRR0/* Get effective address of fault */
+> +       DO_8xx_CPU15(r11, r10)
+> +       mfspr   r11, SPRN_M_TW/* Get level 1 table base address */
+> +#endif /* CONFIG_MODULES */
+> +
+>         /* Insert level 1 index */
+>         rlwimi  r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+>         lwz     r11, (swapper_pg_dir-PAGE_OFFSET)@l(r11)/* Get the level 1 entry */
+> @@ -362,29 +377,37 @@ InstructionTLBMiss:
+>         mfspr   r3, SPRN_DAR
+>         mtspr   SPRN_DAR, r11/* Tag DAR */
+>  #endif
+> -       mfspr   r10, SPRN_SPRG_SCRATCH2
+> -       mtcr    r10
+>         EXCEPTION_EPILOG_0
+>         rfi
+>  
+>         . = 0x1200
+>  DataStoreTLBMiss:
+> -#ifdef CONFIG_8xx_CPU6
+> -       mtspr   SPRN_DAR, r3
+> -#endif
+>         EXCEPTION_PROLOG_0
+> -       mfcr    r10
+> -       mtspr   SPRN_SPRG_SCRATCH2, r10
+> -       mfspr   r10, SPRN_MD_EPN
+>  
+>         /* If we are faulting a kernel address, we have to use the
+>                 * kernel page tables.
+>                 */
+> +#ifdef CONFIG_8xx_CPU6
+> +       mtspr   SPRN_DAR, r3
+> +       mfcr    r3
+> +       mfspr   r10, SPRN_MD_EPN
+>         andis.  r11, r10, 0x8000
+> +#else
+> +       mfcr    r10
+> +       mfspr   r11, SPRN_MD_EPN
+> +       andis.  r11, r11, 0x8000
+> +#endif
+>         mfspr   r11, SPRN_M_TW/* Get level 1 table base address */
+>         beq     3f
+>         lis     r11, (swapper_pg_dir-PAGE_OFFSET)@ha
+>  3:
+> +#ifdef CONFIG_8xx_CPU6
+> +       mtcr    r3
+> +#else
+> +       mtcr    r10
+> +       mfspr   r10, SPRN_MD_EPN
+> +#endif
+> +
+>         /* Insert level 1 index */
+>         rlwimi  r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
+>         lwz     r11, (swapper_pg_dir-PAGE_OFFSET)@l(r11)/* Get the level 1 entry */
+> @@ -441,8 +464,6 @@ DataStoreTLBMiss:
+>         mfspr   r3, SPRN_DAR
+>  #endif
+>         mtspr   SPRN_DAR, r11/* Tag DAR */
+> -       mfspr   r10, SPRN_SPRG_SCRATCH2
+> -       mtcr    r10
+>         EXCEPTION_EPILOG_0
+>         rfi
+>  
