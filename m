@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804AbbAEVLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:11:22 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:44758 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955AbbAEVLU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:11:20 -0500
+	id S1754032AbbAEVS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:18:29 -0500
+Received: from mga03.intel.com ([134.134.136.65]:45227 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753267AbbAEVS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 16:18:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,702,1413270000"; 
+   d="scan'208";a="632845216"
+Message-ID: <54AAFFA3.6000901@linux.intel.com>
+Date: Mon, 05 Jan 2015 13:18:27 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwTxbVSGg6F75X2Tt8pYEbV+jVVLOS8AoSqRrcYGELEGQ@mail.gmail.com>
-References: <CANd1uZkn_Dk+s9vjxaA4B2oqWVoohzCQOHUuAdt3QK1ng37x6Q@mail.gmail.com>
-	<CA+55aFwTxbVSGg6F75X2Tt8pYEbV+jVVLOS8AoSqRrcYGELEGQ@mail.gmail.com>
-Date: Mon, 5 Jan 2015 13:11:20 -0800
-X-Google-Sender-Auth: KJtNK4WLVIvlnHwDepTtMUKZaDc
-Message-ID: <CA+55aFyDM2vV-_zax3-8mhDzsThXs6RAKp_ipHbNHaL0CcsiSw@mail.gmail.com>
-Subject: Re: [2/3] mm: fix up some user-visible effects of the stack guard page
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jay Foad <jay.foad@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
+ to arch_prctl
+References: <cover.1419900414.git.luto@amacapital.net>	<d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>	<54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87mw5x0xjz.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 1:03 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Yup, your analysis sounds correct.  My completely untested gut feel is
-> that the problem is that we don't actually return the error from the
-> expand_stack() call, so then do_anonymous_page() will allow the extra
-> guard-page access.
->
-> IOW, *maybe* a patch like this. TOTALLY UNTESTED! I may have missed
-> something, and this may be complete crap.
+On 01/05/2015 12:42 PM, Andi Kleen wrote:
+> Dave Hansen <dave.hansen@linux.intel.com> writes:
+>> On 12/29/2014 04:52 PM, Andy Lutomirski wrote:
+>>> This has the benefit the it avoids cluttering prctl with more
+>>> arch-specific functionality.  The down side is that arch_prctl will
+>>> need to be wired up as a 32-bit syscall to add 32-bit support for
+>>> MPX.
+>>
+>> There is existing userspace out there which depends on the existing
+>> prctl() setup.  There isn't a _lot_ and it might still be able to be
+>> changed easily, but this isn't a given.
+>>
+>> I'll check in with the folks doing the gcc (runtime) part of this next
+>> week and see what they think.
+> 
+> It'll be quite messy for 32bit because they would need to use syscall(),
+> as glibc won't have a arch_prctl stub.
 
-.. and ti's still untested, but I'm pretty sure it's right - except we
-should probably also allow an extra page for the stack rlimit (so that
-the guard page doesn't count towards the limit).
-
-                          Linus
+Yeah, I'd _really_ prefer not to change it.  The code is in a gcc
+branch, but is getting pulled in to the 5.0 release.  We've got
+*absolutely* no shortage of prctl numbers.
