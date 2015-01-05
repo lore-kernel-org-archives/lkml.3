@@ -1,129 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbbAEOAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:00:03 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:51565 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093AbbAEN77 (ORCPT
+	id S1753535AbbAEODh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:03:37 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:53156 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283AbbAEODf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:59:59 -0500
-Message-ID: <54AA98E1.704@cogentembedded.com>
-Date: Mon, 05 Jan 2015 17:00:01 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 5 Jan 2015 09:03:35 -0500
+Date: Mon, 5 Jan 2015 14:03:32 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Dave Young <dyoung@redhat.com>, linux-efi <linux-efi@vger.kernel.org>,
+        Laszlo Ersek <lersek@redhat.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Shorten efi regions output
+Message-ID: <20150105140332.GB3163@console-pimps.org>
+References: <20141209095843.GA3990@pd.tnic>
+ <20141210021741.GA3280@darkstar.nay.redhat.com>
+ <20141210104627.GA17053@pd.tnic>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2] clk-rcar-gen2: ADSP clock support
-References: <30876083.4tlAgq9Aak@wasted.cogentembedded.com> <CAMuHMdXW=_bYbdUGB2TBPFNfz9gBB+AyD1mWyoKD9eFxebma5w@mail.gmail.com>
-In-Reply-To: <CAMuHMdXW=_bYbdUGB2TBPFNfz9gBB+AyD1mWyoKD9eFxebma5w@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141210104627.GA17053@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 10 Dec, at 11:46:28AM, Borislav Petkov wrote:
+> On Wed, Dec 10, 2014 at 10:17:41AM +0800, Dave Young wrote:
+> > I have same feeling with you, it is too long for most of people.
+> >
+> > Since the printk code are for EFI_DEBUG, they are around the #ifdef
+> > so I would like to see a kernel param like efi_debug=on, so only
+> > efi_debug is specified then these verbose messages are printed.
+> > Without the param kernel can print some basic infomation about the
+> > memory ranges.
+> >
+> > In arm64 code there's already a uefi_debug param it can be moved to
+> > general code so that there will be a goable switch.
+> 
+> Hmm, makes sense to me. Maybe we should really hide those behind a
+> debug switch, the question is whether asking the user to boot with
+> "efi_debug=on" in order to see the regions is ok. And I think it is ok
+> because we do that when debugging other stuff so I don't see anything
+> different here.
+> 
+> And then when they're disabled by default, we don't really need to
+> shorten them as they're pure debug output then.
+> 
+> Matt?
 
-On 1/5/2015 4:13 PM, Geert Uytterhoeven wrote:
+I'm fine with disabling the EFI memory output regions by default.
 
->> Add the ADSP clock support to the R-Car generation 2 CPG driver.  This clock
->> gets derived from  PLL1.  The layout of the ADSPCKCR register is  similar to
->> those of the clocks supported by the 'clk-div6' driver but the divider encoding
->> is non-linear, so can't be supported by that driver...
+Printing the regions is still useful for debugging, but like you
+mention, we frequently ask users to enable other debug options when
+tracking down issues.
 
->> Based on the original patch by Konstantin Kozhevnikov
->> <konstantin.kozhevnikov@cogentembedded.com>.
+Laszlo, would you be OK with that?
 
->> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-
->> ---
->> The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git' repo
->> plus the RCAN clock support patch posted last week.
-
->> Changes in version 2:
->> - swapped "adsp" and "rcan" in the binding document.
-
->> +++ linux/drivers/clk/shmobile/clk-rcar-gen2.c
->> @@ -33,6 +33,7 @@ struct rcar_gen2_cpg {
-[...]
->> @@ -162,6 +163,51 @@ static struct clk * __init cpg_z_clk_reg
->>          return clk;
->>   }
->>
->> +/* ADSP divisors */
->> +static const struct clk_div_table cpg_adsp_div_table[] = {
->> +       {  1,  3 }, {  2,  4 }, {  3,  6 }, {  4,  8 },
->> +       {  5, 12 }, {  6, 16 }, {  7, 18 }, {  8, 24 },
->> +       { 10, 36 }, { 11, 48 }, {  0,  0 },
->> +};
->> +
->> +static struct clk * __init cpg_adsp_clk_register(struct rcar_gen2_cpg *cpg)
->> +{
->> +       const char *parent_name = "pll1";
->> +       struct clk_divider *div;
->> +       struct clk_gate *gate;
->> +       struct clk *clk;
->> +
->> +       div = kzalloc(sizeof(*div), GFP_KERNEL);
->> +       if (!div)
->> +               return ERR_PTR(-ENOMEM);
->> +
->> +       div->reg = cpg->reg + CPG_ADSPCKCR;
->> +       div->width = 4;
->> +       div->table = cpg_adsp_div_table;
->> +       div->lock = &cpg->lock;
->> +
->> +       gate = kzalloc(sizeof(*gate), GFP_KERNEL);
->> +       if (!gate) {
->> +               kfree(div);
->> +               return ERR_PTR(-ENOMEM);
->> +       }
->> +
->> +       gate->reg = cpg->reg + CPG_RCANCKCR;
-
-> Shouldn't this be CPG_ADSPCKCR?
-
-    Oops! At least I did it right for the divider component. :-)
-
->> +       gate->bit_idx = 8;
->> +       gate->flags = CLK_GATE_SET_TO_DISABLE;
->> +       gate->lock = &cpg->lock;
->> +
->> +       clk = clk_register_composite(NULL, "adsp", &parent_name, 1, NULL, NULL,
->> +                                    &div->hw, &clk_divider_ops,
->> +                                    &gate->hw, &clk_gate_ops, 0);
->> +       if (IS_ERR(clk)) {
->> +               kfree(gate);
->> +               kfree(div);
->> +       }
->> +
->> +       return clk;
->> +}
-
-> Please insert the adsp code after the rcan code, to match the clock order
-> in bindings and #defines.
-
-    OK. I placed it basing on the register offset...
-
-[...]
->> @@ -301,6 +347,8 @@ rcar_gen2_cpg_register_clock(struct devi
->>                  shift = 0;
->>          } else if (!strcmp(name, "z")) {
->>                  return cpg_z_clk_register(cpg);
->> +       } else if (!strcmp(name, "adsp")) {
->> +               return cpg_adsp_clk_register(cpg);
-
-> Please insert the adsp code after the rcan code.
-
-    OK.
-
-WBR, Sergei
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
