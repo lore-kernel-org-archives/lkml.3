@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbbAEPJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:09:17 -0500
-Received: from mx0b-001ae601.pphosted.com ([67.231.152.168]:43890 "EHLO
-	m0077474.ppops.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751773AbbAEPJQ (ORCPT
+	id S1753475AbbAEPH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:07:58 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35000 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817AbbAEPH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:09:16 -0500
-X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 10:09:16 EST
-Date: Mon, 5 Jan 2015 09:05:27 -0600
-From: Brian Austin <brian.austin@cirrus.com>
-X-X-Sender: heelrod@heelrod
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Paul Handrigan <Paul.Handrigan@cirrus.com>
-Subject: Re: [PATCH 2/8] ASoC: cs35l32: Constify struct regmap_config and
- snd_soc_codec_driver
-In-Reply-To: <1420449508-10701-2-git-send-email-k.kozlowski@samsung.com>
-Message-ID: <alpine.DEB.2.10.1501050904500.13892@heelrod>
-References: <1420449508-10701-1-git-send-email-k.kozlowski@samsung.com> <1420449508-10701-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-05_03:2015-01-05,2015-01-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1501050157
+	Mon, 5 Jan 2015 10:07:57 -0500
+From: Valentin Rothberg <valentinrothberg@gmail.com>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Valentin Rothberg <valentinrothberg@gmail.com>
+Subject: [PATCH] workqueue_internal.h: adjust tab alignment
+Date: Mon,  5 Jan 2015 16:07:49 +0100
+Message-Id: <1420470469-18092-1-git-send-email-valentinrothberg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The regmap_config struct may be const because it is not modified by the
-> driver and regmap_init() accepts pointer to const. Make struct
-> snd_soc_codec_driver const as well (snd_soc_register_codec() accepts
-> pointer to const).
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Brian Austin <brian.austin@cirrus.com>
-> Cc: Paul Handrigan <Paul.Handrigan@cirrus.com>
-For the Cirrus Codecs
+The comment for the current_pwq member in the worker struct has
+not been tab aligned, which is inconsistent with the rest of the
+code.
 
-Acked-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
+---
+I am currently studying interrupt code. While reading, my eyes stopped at this
+line to figure out what's wrong.  I hesitated to send this patch, but I think
+it's less confusing (at least for my eyes) now.
+---
+ kernel/workqueue_internal.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks 
+diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
+index 4521587..3dcd4be 100644
+--- a/kernel/workqueue_internal.h
++++ b/kernel/workqueue_internal.h
+@@ -28,7 +28,7 @@ struct worker {
+ 
+ 	struct work_struct	*current_work;	/* L: work being processed */
+ 	work_func_t		current_func;	/* L: current_work's fn */
+-	struct pool_workqueue	*current_pwq; /* L: current_work's pwq */
++	struct pool_workqueue	*current_pwq;	/* L: current_work's pwq */
+ 	bool			desc_valid;	/* ->desc is valid */
+ 	struct list_head	scheduled;	/* L: scheduled works */
+ 
+-- 
+1.9.1
+
