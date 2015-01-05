@@ -1,148 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbbAEOqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:46:33 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:62359 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbbAEOqb (ORCPT
+	id S932067AbbAEOrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:47:23 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:60631 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754011AbbAEOrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:46:31 -0500
+	Mon, 5 Jan 2015 09:47:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <2224125.SvyFyDvrch@wuerfel>
-References: <1420424374-32412-1-git-send-email-robh@kernel.org> <2224125.SvyFyDvrch@wuerfel>
-From: Rob Herring <robh@kernel.org>
-Date: Mon, 5 Jan 2015 08:46:09 -0600
-X-Google-Sender-Auth: QlXDk8fCAnxJ8m3cGnNe0OIksBk
-Message-ID: <CAL_JsqLGh-e2epUdtK07xM_2nwrRO_qcebD-zdCQjRGh9xnsAw@mail.gmail.com>
-Subject: Re: [PATCH] pci: introduce common pci config space accessors
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <will.deacon@arm.com>
+X-Originating-IP: [217.156.156.35]
+In-Reply-To: <20150105130042.GA21602@redhat.com>
+References: <1419499661-8566-1-git-send-email-mst@redhat.com>
+	<1419499661-8566-10-git-send-email-mst@redhat.com>
+	<54A6BC0E.50008@imgtec.com>
+	<20150104105218.GA3208@redhat.com>
+	<54AA5CEE.9050205@imgtec.com>
+	<20150105130042.GA21602@redhat.com>
+Date: Mon, 5 Jan 2015 14:47:19 +0000
+X-Google-Sender-Auth: Q5tGTLFTgdutf_Z8FiCaMKp_Qe8
+Message-ID: <CAAG0J99RAe4L6n1zqmNwTCNUuFmU45OuGhy7EaZ6AkLQeTkogg@mail.gmail.com>
+Subject: Re: [PATCH repost 09/16] metag/uaccess: fix sparse errors
+From: James Hogan <james.hogan@imgtec.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, metag <linux-metag@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 3:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 04 January 2015 20:19:34 Rob Herring wrote:
->> Many PCI controllers' configuration space accesses are memory mapped
->> varying only in address calculation and access checks. There are 2 main
->> access methods: a decoded address space such as ECAM or a single address
->> and data register similar to x86. This implementation can support both
->> cases as well as be used in cases that need additional pre or post access
->> handling.
+On 5 January 2015 at 13:00, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Mon, Jan 05, 2015 at 09:44:14AM +0000, James Hogan wrote:
+>> On 04/01/15 10:52, Michael S. Tsirkin wrote:
+>> > On Fri, Jan 02, 2015 at 03:41:02PM +0000, James Hogan wrote:
+>> >> Hi,
+>> >>
+>> >> On 25/12/14 09:29, Michael S. Tsirkin wrote:
+>> >>> virtio wants to read bitwise types from userspace using get_user.  At the
+>> >>> moment this triggers sparse errors, since the value is passed through an
+>> >>> integer.
+>> >>>
+>> >>> Fix that up using __force.
+>> >>
+>> >> I still see these sparse warnings with metag even with your patch:
+>> >>
+>> >>   CHECK   drivers/vhost/vhost.c
+>> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1004:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1022:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1373:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1377:21: warning: cast from restricted __virtio32
+>> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
+>> >> drivers/vhost/vhost.c:1425:13: warning: cast from restricted __virtio16
+>> >>
+>> >> Which something like the following hunk fixes in a similar way to yours:
+>> >>
+>> >> diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
+>> >> index 0748b0a97986..594497053748 100644
+>> >> --- a/arch/metag/include/asm/uaccess.h
+>> >> +++ b/arch/metag/include/asm/uaccess.h
+>> >> @@ -112,13 +112,17 @@ do {                                                            \
+>> >>    retval = 0;                                             \
+>> >>    switch (size) {                                         \
+>> >>    case 1:                                                         \
+>> >> -          retval = __put_user_asm_b((unsigned int)x, ptr); break; \
+>> >> +          retval = __put_user_asm_b((__force unsigned int)x, ptr); \
+>> >> +          break;                                                  \
+>> >>    case 2:                                                         \
+>> >> -          retval = __put_user_asm_w((unsigned int)x, ptr); break; \
+>> >> +          retval = __put_user_asm_w((__force unsigned int)x, ptr); \
+>> >> +          break;                                                  \
+>> >>    case 4:                                                         \
+>> >> -          retval = __put_user_asm_d((unsigned int)x, ptr); break; \
+>> >> +          retval = __put_user_asm_d((__force unsigned int)x, ptr); \
+>> >> +          break;                                                  \
+>> >>    case 8:                                                         \
+>> >> -          retval = __put_user_asm_l((unsigned long long)x, ptr); break; \
+>> >> +          retval = __put_user_asm_l((__force unsigned long long)x, ptr); \
+>> >> +          break;                                                  \
+>> >>    default:                                                        \
+>> >>            __put_user_bad();                                       \
+>> >>    }
+>> >>
+>> >> As far as I understand it, using __force on the value (as opposed to the
+>> >> pointer) is safe here, in the sense of not masking any genuine defects.
+>> >> Do you agree? Do you want to apply that hunk with your patch too?
+>> >
+>> > what about this code:
+>> >              u16 v = 0;
+>> >              int rc = get_user(v, (__force __le16 __user *)p);
+>> >
+>> > it should trigger a warning, does it?
 >>
->> A new pci_ops member map_bus is introduced which can do access checks and
->> any necessary setup. It returns the address to use for the configuration
->> space access. The access types supported are 32-bit only accesses or
->> correct byte, word, or dword sized accesses.
+>> No, but it didn't previously either, and doesn't seem to with x86_64 either.
 >>
->> Signed-off-by: Rob Herring <robh@kernel.org>
->
-> I think this looks very nice, and I don't mind using it as-is, but I'd
-> like to put up some variations for discussions so we get the best
-> implementation -- we should try not to change it again soon if someone
-> comes up with a slightly better way later ;-)
->
->> I've converted a few drivers already. I'll send patches for them after
->> some feedback on this. Most already have some function similar to what is
->> needed for map_bus, so the conversion is pretty simple. This certainly
->> isn't a complete list of possible users. The diffstat so far looks like
->> this:
+>> I tried __be16 too, since I presume you're referring to a discrepancy
+>> between the native byte order of v (u16) and the foreign byte order of
+>> *p (__be16)?
 >>
->>  arch/arm/mach-cns3xxx/pcie.c          |  46 +++-------------------
->>  arch/arm/mach-integrator/pci_v3.c     |  61 +++---------------------------
->>  arch/arm/mach-ks8695/pci.c            |  75 +++---------------------------------
->>  arch/arm/mach-sa1100/pci-nanoengine.c |  94 ++++-----------------------------------------
->>  arch/powerpc/platforms/powermac/pci.c | 206 +++++++++++++++++++--------------------------------------------------------------------------------
->>  arch/powerpc/sysdev/fsl_pci.c         |  46 ++--------------------
->>  drivers/pci/host/pci-host-generic.c   |  51 ++-----------------------
->>  drivers/pci/host/pci-rcar-gen2.c      |  51 ++-----------------------
->>  drivers/pci/host/pci-tegra.c          |  55 ++-------------------------
->>  drivers/pci/host/pci-xgene.c          | 150 +++++-------------------------------------------------------------------
->>  drivers/pci/host/pcie-xilinx.c        |  88 +++++-------------------------------------
->>  11 files changed, 93 insertions(+), 830 deletions(-)
+>> Cheers
+>> James
 >
-> Awesome!
+> Yes.
+> It certainly does for me.
+> Did you define __CHECK_ENDIAN__?
 >
->> +int pci_generic_config_read(struct pci_bus *bus, unsigned int devfn,
->> +                         int where, int size, u32 *val)
->> +{
->> +     void __iomem *addr;
->> +
->> +     addr = bus->ops->map_bus(bus, devfn, where);
->> +     if (!addr) {
->> +             *val = ~0;
->> +             return PCIBIOS_DEVICE_NOT_FOUND;
->> +     }
->> +
->> +     if (size == 1)
->> +             *val = readb(addr);
->> +     else if (size == 2)
->> +             *val = readw(addr);
->> +     else
->> +             *val = readl(addr);
->> +
->> +     return PCIBIOS_SUCCESSFUL;
->> +}
+> Documentation/sparse.txt says:
 >
-> PCI host controller drivers can be loadable modules these days, so
-> the functions clearly need to be exported.
+> To perform endianness
+> checks, you may define __CHECK_ENDIAN__:
+>
+>         make C=2 CF="-D__CHECK_ENDIAN__"
+>
+> These checks are disabled by default as they generate a host of warnings.
+>
+>
+> Or just try with __virtio16 instead of __le16 - I think these are
+> enabled unconditionally.
 
-Ah, yes.
+right, thanks,
 
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index 360a966..e7fd519 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -560,6 +560,7 @@ static inline int pcibios_err_to_errno(int err)
->>  /* Low-level architecture-dependent routines */
+So before your patch:
+arch/metag/kernel/setup.c:153:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:153:18: warning: incorrect type in
+assignment (different base types)
+arch/metag/kernel/setup.c:153:18:    expected unsigned short
+[unsigned] [usertype] v
+arch/metag/kernel/setup.c:153:18:    got restricted __le16 <noident>
+
+after your patch:
+arch/metag/kernel/setup.c:153:18: warning: incorrect type in
+assignment (different base types)
+arch/metag/kernel/setup.c:153:18:    expected unsigned short
+[unsigned] [usertype] v
+arch/metag/kernel/setup.c:153:18:    got restricted __le16 <noident>
+
+Changing to put_user, before my hunk above:
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast from restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast from restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast from restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast from restricted __le16
+
+after my hunk above:
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+arch/metag/kernel/setup.c:154:18: warning: cast to restricted __le16
+
+It seems to still serve its purpose of warning (in one way or
+another), due to the implementation of put_user which does an explicit
+cast to the type of *ptr:
+
+/*
+ * These are the main single-value transfer routines.  They automatically
+ * use the right size if we just have the right pointer type.
+ */
+#define put_user(x, ptr) \
+    __put_user_check((__typeof__(*(ptr)))(x), (ptr), sizeof(*(ptr)))
+
+Cheers
+James
+
+>
+>
+>> >
+>> >
+>> >
+>> >> Note, this change also suppresses warnings for writing a pointer to
+>> >> userland due to the casts to unsigned int / unsigned long long, such as
+>> >> the following (each 4 times due to 4 cases above):
+>> >>
+>> >> kernel/signal.c:2740:25: warning: cast removes address space of expression
+>> >> kernel/signal.c:2747:24: warning: cast removes address space of expression
+>> >> kernel/signal.c:2760:24: warning: cast removes address space of expression
+>> >> kernel/signal.c:2761:24: warning: cast removes address space of expression
+>> >> kernel/signal.c:2775:24: warning: cast removes address space of expression
+>> >> kernel/signal.c:2779:24: warning: cast removes address space of expression
+>> >> kernel/signal.c:3202:25: warning: cast removes address space of expression
+>> >> kernel/signal.c:3225:17: warning: cast removes address space of expression
+>> >> kernel/futex.c:2769:16: warning: cast removes address space of expression
+>> >>
+>> >>>
+>> >>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>> >>> ---
+>> >>>  arch/metag/include/asm/uaccess.h | 4 ++--
+>> >>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>> >>>
+>> >>> diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
+>> >>> index 0748b0a..c314b45 100644
+>> >>> --- a/arch/metag/include/asm/uaccess.h
+>> >>> +++ b/arch/metag/include/asm/uaccess.h
+>> >>> @@ -135,7 +135,7 @@ extern long __get_user_bad(void);
+>> >>>  ({                                                              \
+>> >>>   long __gu_err, __gu_val;                                \
+>> >>>   __get_user_size(__gu_val, (ptr), (size), __gu_err);     \
+>> >>> - (x) = (__typeof__(*(ptr)))__gu_val;                     \
+>> >>> + (x) = (__force __typeof__(*(ptr)))__gu_val;                     \
+>> >>
+>> >> Can you adjust the position of the \ to line up please
+>> >>
+>> >>>   __gu_err;                                               \
+>> >>>  })
+>> >>>
+>> >>> @@ -145,7 +145,7 @@ extern long __get_user_bad(void);
+>> >>>   const __typeof__(*(ptr)) __user *__gu_addr = (ptr);             \
+>> >>>   if (access_ok(VERIFY_READ, __gu_addr, size))                    \
+>> >>>           __get_user_size(__gu_val, __gu_addr, (size), __gu_err); \
+>> >>> - (x) = (__typeof__(*(ptr)))__gu_val;                             \
+>> >>> + (x) = (__force __typeof__(*(ptr)))__gu_val;                             \
+>> >>
+>> >> same here (this one causes a checkpatch error due to 80 column limit)
+>> >>
+>> >>>   __gu_err;                                                       \
+>> >>>  })
+>> >>>
+>> >>>
+>> >>
+>> >> With those changes,
+>> >> Acked-by: James Hogan <james.hogan@imgtec.com>
+>> >>
+>> >> Cheers
+>> >> James
+>> >>
+>> >
+>> >
 >>
->>  struct pci_ops {
->> +     void __iomem *(*map_bus)(struct pci_bus *bus, unsigned int devfn, int where);
->>       int (*read)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 *val);
->>       int (*write)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 val);
->>  };
 >
-> In various other contexts, we have recently discussed adding new callbacks
-> to struct pci_host_bridge, or an operations structure below it. I don't see
-> a strong reason for one place or the other, but maybe someone else does.
-> If we put it into pci_host_bridge_ops, the first argument would need to
-> be the pci_host_bridge pointer of course.
-
-I think it makes sense to keep map_bus together with read/write. Given
-they are all host specific functions being part of pci_host_bridge
-would make some sense. However, that would be a pretty painful change
-across the tree (Have you seen how many PCI host implementations MIPS
-has?).
-
-> For the common map_bus implementations, it would also be nice to put them
-> into the same file as your new access functions, but then we need a common
-> location to store at least one __iomem pointer. I guess that place could
-> either be struct pci_host_bridge or struct pci_bus. In theory, struct pci_ops
-> would work too, but then we could no longer mark it 'const' in host bridge
-> drivers.
 >
-> If we have a common set of map_bus functions, we can even export the
-> pci_ops structures from drivers/pci/access.c:
->
-> const struct pci_ops pci_generic_ecam_ops = {
->         .map_bus        = ecam_map_bus,
->         .read           = pci_generic_config_read,
->         .write          = pci_generic_config_write,
-> };
-> EXPORT_SYMBOL_GPL(pci_generic_ecam_ops);
->
-> That could of course be done in a follow-up patch, it doesn't have to be
-> part of your patch, but it would be good to be prepared.
-
-Right, this is what I had in mind for CAM/ECAM. I didn't go this far
-because a lot of the map_bus functions do various checks to prevent
-certain accesses. Of what I've found, I think only generic host and
-Xilinx drivers could be converted to a generic ECAM map_bus. Others
-check bus number and/or device number or link-up status or have a
-fixup for certain registers, for example. I'm not sure how much of it
-is unnecessary or could be common.
-
-Rob
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-metag" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
