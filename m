@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbbAENW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:22:27 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35506 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbbAENW0 (ORCPT
+	id S1754042AbbAENXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:23:07 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:44200 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336AbbAENXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:22:26 -0500
-Message-ID: <54AA900B.4000403@collabora.co.uk>
-Date: Mon, 05 Jan 2015 14:22:19 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 5 Jan 2015 08:23:05 -0500
+Date: Mon, 5 Jan 2015 08:23:01 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lib: flex_proportions.c:  Remove some unused functions
+Message-ID: <20150105132301.GA15833@htj.dyndns.org>
+References: <1419086431-3474-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20150105084534.GA7056@quack.suse.cz>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene@kernel.org>
-CC: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Kevin Hilman'" <khilman@linaro.org>,
-        "'Olof Johansson'" <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] ARM: exynos_defconfig: Enable options for display
- panel support
-References: <1420215089-2093-1-git-send-email-javier.martinez@collabora.co.uk> <047c01d028e7$311858e0$93490aa0$@kernel.org>
-In-Reply-To: <047c01d028e7$311858e0$93490aa0$@kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105084534.GA7056@quack.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+On Mon, Jan 05, 2015 at 09:45:34AM +0100, Jan Kara wrote:
+> On Sat 20-12-14 15:40:31, Rickard Strandqvist wrote:
+> > Removes some functions that are not used anywhere:
+> > prop_fraction_single() prop_local_destroy_single() prop_local_init_single() fprop_global_destroy()
+> > 
+> > This was partially found by using a static code analysis program called cppcheck.
+>   This is the same situation as with lib/proportions.c. The functions are
+> there for API completeness. As far as I'm looking the whole 'single'
+> section is unused so ifdeffing it out might make sense (and also ifdeffing
+> out fprop_inc_single() from include/linux/flex_proportions.h). Removing
+> fprop_global_destroy() is IMO pointless churn.
 
->> 
->> Hello Kukjin,
->> 
-> Hi Javier,
-> 
-> Happy new year :)
->
+I'll prolly use some of the now unused portion of the API to implement
+per-memcg dirty ratio for cgroup writeback, so let's please leave it
+alone for now.
 
-Thanks, happy new year for you as well!
+Thanks.
 
->> You dropped this patch since exynos drm was causing boot hangs on some
->> platforms but the fix for that issue is already in linux-next (commit:
->> f1e9203 clk: samsung: Fix Exynos 5420 pinctrl setup and clock disable
->> failure due to domain being gated) so I think it makes sense to enable
->> the display options again.
->> 
->> NOTE: Display panel is still not working since patch "arm: dts: Exynos5:
->> Use pmu_system_controller phandle for dp phy" is needed [0] but I think
->> we should enable display options to catch the regressions easier.
->> 
-> Agreed with your suggestion and I'll pick this up into Samsung tree soon.
-> 
-
-Perfect, I hope you can pick my peach pit/pi and snow DTS updates series
-as well since those patches have been in the list for some time.
-
-> Thanks,
-> Kukjin
-> 
-
-Best regards,
-Javier
+-- 
+tejun
