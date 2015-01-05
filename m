@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbbAEK55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:57:57 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:35616 "EHLO mail.skyhub.de"
+	id S1753897AbbAEK7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:59:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47121 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753594AbbAEK5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:57:53 -0500
-Date: Mon, 5 Jan 2015 11:57:51 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/30] perf tools: Add new build framework support
-Message-ID: <20150105105751.GB19655@pd.tnic>
-References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
- <1420212972-21595-2-git-send-email-jolsa@kernel.org>
+	id S1753290AbbAEK7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:59:42 -0500
+Date: Mon, 5 Jan 2015 11:59:37 +0100
+From: Joerg Roedel <jroedel@suse.de>
+To: Jerry Hoemann <jerry.hoemann@hp.com>
+Cc: Joerg Roedel <joro@8bytes.org>, iommu@lists.linux-foundation.org,
+        Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Myron Stowe <mstowe@redhat.com>
+Subject: Re: [PATCH 1/2] iommu/vt-d: Fix dmar_domain leak in
+ iommu_attach_device
+Message-ID: <20150105105937.GA6638@suse.de>
+References: <1418813017-24888-1-git-send-email-joro@8bytes.org>
+ <20141217213747.GA11569@anatevka.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420212972-21595-2-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141217213747.GA11569@anatevka.fc.hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 04:35:43PM +0100, Jiri Olsa wrote:
-> +a) Build makefiles
-> +------------------
-> +User supplies 'Build' makefiles that contains objects summary,
-> +like for example following 'krava/Build' file:
-> +
-> +  perf-y += a.o
-> +  perf-y += b.o
-> +
-> +The build framework is triggered by:
-> +  $ make -f Makefile.build dir=krava obj=perf
-> +
-> +which produces 'krava/perf-in.o' object file that has both
-> +a.o and b.o objects compiled in linked together.
-> +
-> +The 'Build' makefile can contains multiple objects definitions
-> +to allow building separated binaries, like:
-> +
-> +  perf-y += a.o
-> +  perf-y += b.o
-> +
-> +  libperf-y += c.o
-> +  libperf-y += d.o
-> +
-> +If the build framework is triggered by:
-> +  $ make -f Makefile.build dir=krava obj=libperf
-> +
-> +it produces 'krava/libperf-in.o' object file that has both
-> +a.o and b.o objects compiled in linked together.
+Hi Jerry,
 
-Ok, question: you say those "Build" files are supplied by the user. Does
-that mean that everyone has to go and write their own or are we still
-using Kconfig and doing it in a more user-friendly manner?
+On Wed, Dec 17, 2014 at 02:37:47PM -0700, Jerry Hoemann wrote:
+> Before applying this change on a 3.18-rc7 kernel layered on a
+> RHEL 7.0 root disk, I was able to reproduce the memory
+> leak that Alex reported when powering on/off a VM w/ a PCI
+> device assigned to it.
+> 
+> After applying this change, I don't see the memory leak anymore.
+> Instrumentation shows the new code is being invoked during power on
+> of the VM.
+> 
+> Looks good.
+> 
+> Thanks!
+> 
+> Tested-by: Jerry Hoemann <jerry.hoemann@hp.com>
 
-I've probably missed this in the whole perf fastlane development... :)
+Thanks for testing, I applied the patches to my iommu/fixes branch for
+3.19.
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+	Joerg
+
