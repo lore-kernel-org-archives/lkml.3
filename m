@@ -1,283 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875AbbAEJ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:58:25 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:36256 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059AbbAEJ6X (ORCPT
+	id S1753407AbbAEJww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:52:52 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:35691 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244AbbAEJwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:58:23 -0500
-Date: Mon, 5 Jan 2015 10:51:13 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: track move_lock state internally
-Message-ID: <20150105095113.GB7687@dhcp22.suse.cz>
-References: <1420232327-13316-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420232327-13316-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 5 Jan 2015 04:52:49 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-4b-54aa5ef046a4
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH 1/2] clk: Add clk_unregister_{divider,gate,mux} to close memory
+ leak
+Date: Mon, 05 Jan 2015 10:52:40 +0100
+Message-id: <1420451561-12360-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAJMWRmVeSWpSXmKPExsVy+t/xK7of4laFGHw8rWzx+oWhRf/j18wW
+	mx5fY7W4vGsOm8WM8/uYLJ5OuMhmcfhNO6vFjzPdLBardv1hdOD0uNzXy+Sxc9Zddo9NqzrZ
+	PO5c28PmsXlJvUffllWMHp83yQWwR3HZpKTmZJalFunbJXBlLLj4n6ngoXTFvb7HTA2M08S7
+	GDk5JARMJDbOfc0CYYtJXLi3nq2LkYtDSGApo8SfhUtZIJw+JokNDx6zglSxCRhLbF6+BKxK
+	RGAjk0TPvgXsIAlmAUOJn+/+ANkcHMICYRJzX+WBhFkEVCW2fO0F28Ar4C7xdflXNohtchIn
+	j01mncDIvYCRYRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSCh93cG49JjVIUYBDkYlHl6P
+	EytDhFgTy4orcw8xSnAwK4nwrrsFFOJNSaysSi3Kjy8qzUktPsTIxMEp1cB4myvUhPnzhtA7
+	LySn33578f6hOJO300MvHP23ceUjmUlW02T6DuxMi4j0Z3eeJnLmU0P9zOlnv1Q+vqekx/fv
+	eOMDfme/9hzdi6s1b4h9j3tw5nPhqoCIs75TF/Yv3vLW9Ufe/NZ7c/6kzo/hi5OSW3LfdNti
+	9nd6DOtF2ZwXTAmb333wRWZhkxJLcUaioRZzUXEiAFiXHrsDAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-01-15 15:58:47, Johannes Weiner wrote:
-> The complexity of memcg page stat synchronization is currently leaking
-> into the callsites, forcing them to keep track of the move_lock state
-> and the IRQ flags.  Simplify the API by tracking it in the memcg.
+The common clk_register_{divider,gate,mux} functions allocated memory
+for internal data which wasn't freed anywhere. Drivers using these
+helpers could only unregister clocks but the memory would still leak.
 
-OK, 16B per memcg is OK considering the trickiness stays in memcg.
+Add corresponding unregister functions which will release all resources.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/clk/clk-divider.c    | 16 ++++++++++++++++
+ drivers/clk/clk-gate.c       | 16 ++++++++++++++++
+ drivers/clk/clk-mux.c        | 16 ++++++++++++++++
+ include/linux/clk-provider.h |  4 ++++
+ 4 files changed, 52 insertions(+)
+
+diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+index c0a842b335c5..c2bb9f679ec6 100644
+--- a/drivers/clk/clk-divider.c
++++ b/drivers/clk/clk-divider.c
+@@ -463,3 +463,19 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+ 			width, clk_divider_flags, table, lock);
+ }
+ EXPORT_SYMBOL_GPL(clk_register_divider_table);
++
++void clk_unregister_divider(struct clk *clk)
++{
++	struct clk_divider *div;
++	struct clk_hw *hw;
++
++	hw = __clk_get_hw(clk);
++	if (!hw)
++		return;
++
++	div = to_clk_divider(hw);
++
++	clk_unregister(clk);
++	kfree(div);
++}
++EXPORT_SYMBOL_GPL(clk_unregister_divider);
+diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+index 51fd87fb7ba6..186b96efeebf 100644
+--- a/drivers/clk/clk-gate.c
++++ b/drivers/clk/clk-gate.c
+@@ -162,3 +162,19 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+ 	return clk;
+ }
+ EXPORT_SYMBOL_GPL(clk_register_gate);
++
++void clk_unregister_gate(struct clk *clk)
++{
++	struct clk_gate *gate;
++	struct clk_hw *hw;
++
++	hw = __clk_get_hw(clk);
++	if (!hw)
++		return;
++
++	gate = to_clk_gate(hw);
++
++	clk_unregister(clk);
++	kfree(gate);
++}
++EXPORT_SYMBOL_GPL(clk_unregister_gate);
+diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+index 6e1ecf94bf58..69a094c3783d 100644
+--- a/drivers/clk/clk-mux.c
++++ b/drivers/clk/clk-mux.c
+@@ -177,3 +177,19 @@ struct clk *clk_register_mux(struct device *dev, const char *name,
+ 				      NULL, lock);
+ }
+ EXPORT_SYMBOL_GPL(clk_register_mux);
++
++void clk_unregister_mux(struct clk *clk)
++{
++	struct clk_mux *mux;
++	struct clk_hw *hw;
++
++	hw = __clk_get_hw(clk);
++	if (!hw)
++		return;
++
++	mux = to_clk_mux(hw);
++
++	clk_unregister(clk);
++	kfree(mux);
++}
++EXPORT_SYMBOL_GPL(clk_unregister_mux);
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index d936409520f8..ebb7055a6d84 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -294,6 +294,7 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+ 		const char *parent_name, unsigned long flags,
+ 		void __iomem *reg, u8 bit_idx,
+ 		u8 clk_gate_flags, spinlock_t *lock);
++void clk_unregister_gate(struct clk *clk);
  
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Thanks!
-
-> ---
->  include/linux/memcontrol.h |  6 ++--
->  mm/memcontrol.c            | 68 ++++++++++++++++++++++++++--------------------
->  mm/page-writeback.c        | 12 +++-----
->  mm/rmap.c                  | 12 +++-----
->  4 files changed, 49 insertions(+), 49 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index fb212e1d700d..04d3c2028782 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -138,12 +138,10 @@ static inline bool mem_cgroup_disabled(void)
->  	return false;
->  }
->  
-> -struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page, bool *locked,
-> -					      unsigned long *flags);
-> -void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool *locked,
-> -			      unsigned long *flags);
-> +struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page);
->  void mem_cgroup_update_page_stat(struct mem_cgroup *memcg,
->  				 enum mem_cgroup_stat_index idx, int val);
-> +void mem_cgroup_end_page_stat(struct mem_cgroup *memcg);
->  
->  static inline void mem_cgroup_inc_page_stat(struct mem_cgroup *memcg,
->  					    enum mem_cgroup_stat_index idx)
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index a855848627a5..eccc0ed3b6f3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -325,9 +325,11 @@ struct mem_cgroup {
->  	/*
->  	 * set > 0 if pages under this cgroup are moving to other cgroup.
->  	 */
-> -	atomic_t	moving_account;
-> +	atomic_t		moving_account;
->  	/* taken only while moving_account > 0 */
-> -	spinlock_t	move_lock;
-> +	spinlock_t		move_lock;
-> +	struct task_struct	*move_lock_task;
-> +	unsigned long		move_lock_flags;
->  	/*
->  	 * percpu counter.
->  	 */
-> @@ -1977,34 +1979,33 @@ cleanup:
->  /**
->   * mem_cgroup_begin_page_stat - begin a page state statistics transaction
->   * @page: page that is going to change accounted state
-> - * @locked: &memcg->move_lock slowpath was taken
-> - * @flags: IRQ-state flags for &memcg->move_lock
->   *
->   * This function must mark the beginning of an accounted page state
->   * change to prevent double accounting when the page is concurrently
->   * being moved to another memcg:
->   *
-> - *   memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-> + *   memcg = mem_cgroup_begin_page_stat(page);
->   *   if (TestClearPageState(page))
->   *     mem_cgroup_update_page_stat(memcg, state, -1);
-> - *   mem_cgroup_end_page_stat(memcg, locked, flags);
-> - *
-> - * The RCU lock is held throughout the transaction.  The fast path can
-> - * get away without acquiring the memcg->move_lock (@locked is false)
-> - * because page moving starts with an RCU grace period.
-> - *
-> - * The RCU lock also protects the memcg from being freed when the page
-> - * state that is going to change is the only thing preventing the page
-> - * from being uncharged.  E.g. end-writeback clearing PageWriteback(),
-> - * which allows migration to go ahead and uncharge the page before the
-> - * account transaction might be complete.
-> + *   mem_cgroup_end_page_stat(memcg);
->   */
-> -struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page,
-> -					      bool *locked,
-> -					      unsigned long *flags)
-> +struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page)
->  {
->  	struct mem_cgroup *memcg;
-> +	unsigned long flags;
->  
-> +	/*
-> +	 * The RCU lock is held throughout the transaction.  The fast
-> +	 * path can get away without acquiring the memcg->move_lock
-> +	 * because page moving starts with an RCU grace period.
-> +	 *
-> +	 * The RCU lock also protects the memcg from being freed when
-> +	 * the page state that is going to change is the only thing
-> +	 * preventing the page from being uncharged.
-> +	 * E.g. end-writeback clearing PageWriteback(), which allows
-> +	 * migration to go ahead and uncharge the page before the
-> +	 * account transaction might be complete.
-> +	 */
->  	rcu_read_lock();
->  
->  	if (mem_cgroup_disabled())
-> @@ -2014,16 +2015,22 @@ again:
->  	if (unlikely(!memcg))
->  		return NULL;
->  
-> -	*locked = false;
->  	if (atomic_read(&memcg->moving_account) <= 0)
->  		return memcg;
->  
-> -	spin_lock_irqsave(&memcg->move_lock, *flags);
-> +	spin_lock_irqsave(&memcg->move_lock, flags);
->  	if (memcg != page->mem_cgroup) {
-> -		spin_unlock_irqrestore(&memcg->move_lock, *flags);
-> +		spin_unlock_irqrestore(&memcg->move_lock, flags);
->  		goto again;
->  	}
-> -	*locked = true;
-> +
-> +	/*
-> +	 * When charge migration first begins, we can have locked and
-> +	 * unlocked page stat updates happening concurrently.  Track
-> +	 * the task who has the lock for mem_cgroup_end_page_stat().
-> +	 */
-> +	memcg->move_lock_task = current;
-> +	memcg->move_lock_flags = flags;
->  
->  	return memcg;
->  }
-> @@ -2031,14 +2038,17 @@ again:
->  /**
->   * mem_cgroup_end_page_stat - finish a page state statistics transaction
->   * @memcg: the memcg that was accounted against
-> - * @locked: value received from mem_cgroup_begin_page_stat()
-> - * @flags: value received from mem_cgroup_begin_page_stat()
->   */
-> -void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool *locked,
-> -			      unsigned long *flags)
-> +void mem_cgroup_end_page_stat(struct mem_cgroup *memcg)
->  {
-> -	if (memcg && *locked)
-> -		spin_unlock_irqrestore(&memcg->move_lock, *flags);
-> +	if (memcg && memcg->move_lock_task == current) {
-> +		unsigned long flags = memcg->move_lock_flags;
-> +
-> +		memcg->move_lock_task = NULL;
-> +		memcg->move_lock_flags = 0;
-> +
-> +		spin_unlock_irqrestore(&memcg->move_lock, flags);
-> +	}
->  
->  	rcu_read_unlock();
->  }
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 6f4335238e33..fb71e9deca85 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -2308,12 +2308,10 @@ EXPORT_SYMBOL(clear_page_dirty_for_io);
->  int test_clear_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
-> -	unsigned long memcg_flags;
->  	struct mem_cgroup *memcg;
-> -	bool locked;
->  	int ret;
->  
-> -	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
-> +	memcg = mem_cgroup_begin_page_stat(page);
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2338,19 +2336,17 @@ int test_clear_page_writeback(struct page *page)
->  		dec_zone_page_state(page, NR_WRITEBACK);
->  		inc_zone_page_state(page, NR_WRITTEN);
->  	}
-> -	mem_cgroup_end_page_stat(memcg, &locked, &memcg_flags);
-> +	mem_cgroup_end_page_stat(memcg);
->  	return ret;
->  }
->  
->  int __test_set_page_writeback(struct page *page, bool keep_write)
->  {
->  	struct address_space *mapping = page_mapping(page);
-> -	unsigned long memcg_flags;
->  	struct mem_cgroup *memcg;
-> -	bool locked;
->  	int ret;
->  
-> -	memcg = mem_cgroup_begin_page_stat(page, &locked, &memcg_flags);
-> +	memcg = mem_cgroup_begin_page_stat(page);
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2380,7 +2376,7 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
->  		mem_cgroup_inc_page_stat(memcg, MEM_CGROUP_STAT_WRITEBACK);
->  		inc_zone_page_state(page, NR_WRITEBACK);
->  	}
-> -	mem_cgroup_end_page_stat(memcg, &locked, &memcg_flags);
-> +	mem_cgroup_end_page_stat(memcg);
->  	return ret;
->  
->  }
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index c325f8bd2cc4..5e995a9da902 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1112,24 +1112,20 @@ void page_add_new_anon_rmap(struct page *page,
->  void page_add_file_rmap(struct page *page)
->  {
->  	struct mem_cgroup *memcg;
-> -	unsigned long flags;
-> -	bool locked;
->  
-> -	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-> +	memcg = mem_cgroup_begin_page_stat(page);
->  	if (atomic_inc_and_test(&page->_mapcount)) {
->  		__inc_zone_page_state(page, NR_FILE_MAPPED);
->  		mem_cgroup_inc_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
->  	}
-> -	mem_cgroup_end_page_stat(memcg, &locked, &flags);
-> +	mem_cgroup_end_page_stat(memcg);
->  }
->  
->  static void page_remove_file_rmap(struct page *page)
->  {
->  	struct mem_cgroup *memcg;
-> -	unsigned long flags;
-> -	bool locked;
->  
-> -	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-> +	memcg = mem_cgroup_begin_page_stat(page);
->  
->  	/* page still mapped by someone else? */
->  	if (!atomic_add_negative(-1, &page->_mapcount))
-> @@ -1150,7 +1146,7 @@ static void page_remove_file_rmap(struct page *page)
->  	if (unlikely(PageMlocked(page)))
->  		clear_page_mlock(page);
->  out:
-> -	mem_cgroup_end_page_stat(memcg, &locked, &flags);
-> +	mem_cgroup_end_page_stat(memcg);
->  }
->  
->  /**
-> -- 
-> 2.2.0
-> 
-
+ struct clk_div_table {
+ 	unsigned int	val;
+@@ -361,6 +362,7 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
+ 		void __iomem *reg, u8 shift, u8 width,
+ 		u8 clk_divider_flags, const struct clk_div_table *table,
+ 		spinlock_t *lock);
++void clk_unregister_divider(struct clk *clk);
+ 
+ /**
+  * struct clk_mux - multiplexer clock
+@@ -411,6 +413,8 @@ struct clk *clk_register_mux_table(struct device *dev, const char *name,
+ 		void __iomem *reg, u8 shift, u32 mask,
+ 		u8 clk_mux_flags, u32 *table, spinlock_t *lock);
+ 
++void clk_unregister_mux(struct clk *clk);
++
+ void of_fixed_factor_clk_setup(struct device_node *node);
+ 
+ /**
 -- 
-Michal Hocko
-SUSE Labs
+1.9.1
+
