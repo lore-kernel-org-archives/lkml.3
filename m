@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467AbbAESHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:07:48 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:47914 "EHLO
+	id S932119AbbAERzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:55:54 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:36554 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754012AbbAERzu (ORCPT
+	by vger.kernel.org with ESMTP id S932068AbbAERzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:55:50 -0500
+	Mon, 5 Jan 2015 12:55:53 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 08/45] staging: comedi: cb_pcidda: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:54:36 +0000
-Message-Id: <1420480513-14765-9-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 09/45] staging: comedi: comedi_parport: rewrite "Devices:" line
+Date: Mon,  5 Jan 2015 17:54:37 +0000
+Message-Id: <1420480513-14765-10-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -38,30 +38,22 @@ lines by using one or more spaces at the start of each continuation line
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/cb_pcidda.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/staging/comedi/drivers/comedi_parport.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-index 01875d7..2b2cfcd 100644
---- a/drivers/staging/comedi/drivers/cb_pcidda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-@@ -22,12 +22,10 @@
- /*
-  * Driver: cb_pcidda
-  * Description: MeasurementComputing PCI-DDA series
-- * Devices: (Measurement Computing) PCI-DDA08/12 [pci-dda08/12]
-- *	    (Measurement Computing) PCI-DDA04/12 [pci-dda04/12]
-- *	    (Measurement Computing) PCI-DDA02/12 [pci-dda02/12]
-- *	    (Measurement Computing) PCI-DDA08/16 [pci-dda08/16]
-- *	    (Measurement Computing) PCI-DDA04/16 [pci-dda04/16]
-- *	    (Measurement Computing) PCI-DDA02/16 [pci-dda02/16]
-+ * Devices: [Measurement Computing] PCI-DDA08/12 (pci-dda08/12),
-+ *   PCI-DDA04/12 (pci-dda04/12), PCI-DDA02/12 (pci-dda02/12),
-+ *   PCI-DDA08/16 (pci-dda08/16), PCI-DDA04/16 (pci-dda04/16),
-+ *   PCI-DDA02/16 (pci-dda02/16)
-  * Author: Ivan Martinez <ivanmr@altavista.com>
-  *	   Frank Mori Hess <fmhess@users.sourceforge.net>
-  * Status: works
+diff --git a/drivers/staging/comedi/drivers/comedi_parport.c b/drivers/staging/comedi/drivers/comedi_parport.c
+index 3bac903..ceef693 100644
+--- a/drivers/staging/comedi/drivers/comedi_parport.c
++++ b/drivers/staging/comedi/drivers/comedi_parport.c
+@@ -24,7 +24,7 @@
+  * Description: Standard PC parallel port
+  * Author: ds
+  * Status: works in immediate mode
+- * Devices: (standard) parallel port [comedi_parport]
++ * Devices: [standard] parallel port (comedi_parport)
+  * Updated: Tue, 30 Apr 2002 21:11:45 -0700
+  *
+  * A cheap and easy way to get a few more digital I/O lines. Steal
 -- 
 2.1.4
 
