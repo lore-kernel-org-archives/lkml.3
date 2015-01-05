@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbbAEKFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:05:14 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:53472 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227AbbAEKFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:05:12 -0500
-Message-ID: <1420452301.9459.3.camel@sipsolutions.net>
-Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Jan 2015 11:05:01 +0100
-In-Reply-To: <1420324124.9624.60.camel@x220> (sfid-20150103_232852_400842_25360CE9)
-References: <1420297188.2397.3.camel@tiscali.nl>
-	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>
-	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
-	 <1420324124.9624.60.camel@x220> (sfid-20150103_232852_400842_25360CE9)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
+	id S1753404AbbAEKAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:00:45 -0500
+Received: from mail-by2on0144.outbound.protection.outlook.com ([207.46.100.144]:64431
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751121AbbAEKAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:00:43 -0500
+Message-ID: <54AA61D2.1040002@freescale.com>
+Date: Mon, 5 Jan 2015 18:05:06 +0800
+From: Liu Ying <Ying.Liu@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: <dri-devel@lists.freedesktop.org>, <stefan.wahren@i2se.com>,
+        <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <kernel@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        <a.hajda@samsung.com>, <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <andyshrk@gmail.com>
+Subject: Re: [PATCH RFC v7 16/21] drm: panel: Add support for Himax HX8369A
+ MIPI DSI panel
+References: <1419910451-15268-1-git-send-email-Ying.Liu@freescale.com>
+ <1419910451-15268-17-git-send-email-Ying.Liu@freescale.com>
+ <20150105085424.GP2711@phenom.ffwll.local>
+In-Reply-To: <20150105085424.GP2711@phenom.ffwll.local>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(479174004)(189002)(51704005)(24454002)(377454003)(199003)(2201001)(50466002)(97736003)(65956001)(65806001)(4396001)(36756003)(23746002)(2950100001)(77156002)(62966003)(68736005)(77096005)(92566001)(99396003)(120916001)(84676001)(83506001)(19580405001)(80316001)(19580395003)(87266999)(54356999)(86362001)(6806004)(104016003)(87936001)(106466001)(105606002)(47776003)(64706001)(20776003)(107886001)(76176999)(50986999)(107046002)(65816999)(85426001)(46102003)(21056001)(31966008)(33656002)(921003)(1121003)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0635;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:CY1PR0301MB0635;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0635;
+X-Forefront-PRVS: 0447DB1C71
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0635;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 10:00:40.0108
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0635
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2015-01-03 at 23:28 +0100, Paul Bolle wrote:
-> On Sat, 2015-01-03 at 10:07 -0800, Linus Torvalds wrote:
-> > On Sat, Jan 3, 2015 at 10:02 AM, Marcel Holtmann <marcel@holtmann.org> wrote:
-> > >
-> > > why would you revert this? It is obviously the correct change to actually select CFG80211_WEXT.
-> > 
-> > I don't know about obvious, but yeah, I think the select in this case
-> > is actually the better idea anyway.
-> 
-> Obviously it wasn't obvious to me!
-> 
-> My reasoning was that the "ipw2200: select CFG80211_WEXT" commit was
-> _solely_ a workaround for the breakage introduced by that other patch.
-> And since that one is now reverted the workaround wasn't needed anymore.
+Hi Daniel,
 
-Well, you thought of it only as a workaround - but it makes sense. You
-shouldn't have to 
+On 01/05/2015 04:54 PM, Daniel Vetter wrote:
+> On Tue, Dec 30, 2014 at 11:34:06AM +0800, Liu Ying wrote:
+>> This patch adds support for Himax HX8369A MIPI DSI panel.
+>>
+>> Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>
+>> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+>> ---
+>> v6->v7:
+>>   * Address Andrzej Hajda's following comments.
+>>   * Simplify the return logic in hx8369a_dcs_write().
+>>   * Replace the macro hx8369a_dsi_init_helper() with a function array to improve
+>>     the code quality.
+>>   * Handle error cases during getting gpios in probe().
+>>   * Add 'Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>'.
+>
+> If you only update one patch in a big series it's imo better to just
+> resend that one to avoid spamming the mailing list with noise. Imo it also
+> helps to keep the discussion all nicely grouped together.
 
-> Besied, I thought we try to avoid select-ing symbols that can also be
-> set manually. As that makes it more likely to trigger circular
-> dependency problems in the kconfig tools, doesn't it?
+Thanks for your suggestion.  I would try to make people happy about
+the way the series is submitted for review.
 
-I don't think that has much to do with whether or not they can be set
-manually - it's more a question of what the dependencies of the selected
-symbol are. In this case it's a bool leaf symbol with the only
-dependency being something ipw already needs, so it's pretty much
-guaranteed to be safe.
+>
+> In any case please give a short overview of what changed in the cover
+> letter when resending the entire series so that people don't have to go
+> through all the invidual patches.
 
-> Side note: am I correct in thinking that there's some successor to
-> CFG80211_WEXT and that the ipw2200 driver could, at least in theory, be
-> ported to that successor? (ipw2200 hardware appears to be a bit old, so
-> probably no one would care enough to actually do that.)
-> net/wireless/kconfig doesn't mention anything like that, so probably I'm
-> just confused.
+Yes, absolutely.  I gave short overviews of what changed in the very
+beginning of the cover letters from v2 to v8 and I will do this in
+every necessary follow-up version.
 
-Well, see the big thread over there with the revert that I'm tempted to
-not even read ...
+Regards,
+Liu Ying
 
-The real successor, for various reasons (like simply always being able
-to connect to a single AP, no matter how many others can be found by
-scanning!), is nl80211.
-
-Many drivers have been converted to the new framework by using mac80211,
-but some drivers cannot use mac80211 because they do more in the
-device/firmware. Among those are many of the old 11b/11g ones that still
-exist in the tree, but also a few new ones (like mwifiex) that were
-already written to cfg80211 APIs.
-
-It should definitely be possible to convert all the drivers (*) to pure
-cfg80211 instead of having direct userspace wext to driver calls - but
-nobody has gone and done it.
-
-johannes
-
-(*) caveat - at least the playstation3 driver will require some new
-nl80211 API
-
+> -Daniel
+>
