@@ -1,65 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbbAEBex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 20:34:53 -0500
-Received: from imap.thunk.org ([74.207.234.97]:51174 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773AbbAEBew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 20:34:52 -0500
-Date: Sun, 4 Jan 2015 20:34:36 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-Message-ID: <20150105013436.GA23350@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	Nicolas Pitre <nicolas.pitre@linaro.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
-	kernel list <linux-kernel@vger.kernel.org>
-References: <20150104190123.GA20153@amd>
- <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
- <20150104201026.GA23427@amd>
- <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
- <20150104203724.GA16372@amd>
- <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
- <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
- <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
- <20150104212659.GC12302@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150104212659.GC12302@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1753154AbbAEBgL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 20:36:11 -0500
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:45836 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117AbbAEBgK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 20:36:10 -0500
+X-Original-SENDERIP: 10.177.220.158
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing preemption on/off
+Date: Mon,  5 Jan 2015 10:36:04 +0900
+Message-Id: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 09:26:59PM +0000, Russell King - ARM Linux wrote:
-> 
-> With the revert in place, we now have insanely small bogomips values
-> reported via /proc/cpuinfo when hardware timers are used.  That needs
-> fixing.
+We had to insert a preempt enable/disable in the fastpath a while ago
+in order to guarantee that tid and kmem_cache_cpu are retrieved on the
+same cpu. It is the problem only for CONFIG_PREEMPT in which scheduler
+can move the process to other cpu during retrieving data.
 
-Why does it need to be fixed?
+Now, I reach the solution to remove preempt enable/disable in the fastpath.
+If tid is matched with kmem_cache_cpu's tid after tid and kmem_cache_cpu
+are retrieved by separate this_cpu operation, it means that they are
+retrieved on the same cpu. If not matched, we just have to retry it.
 
-It's clear that there are applications that are working OK with the
-existing value, and if you change it to fix it for some new
-applications, but it breaks for others, then have you considered
-defining a new interface (perhaps exported via sysfs) that exports a
-"sane" value and document that new applications shoud use the new
-interface.
+With this guarantee, preemption enable/disable isn't need at all even if
+CONFIG_PREEMPT, so this patch removes it.
 
-Or if the answer is that no one should be using the bogomips field at
-all, then just document *that*, and then leave it be, so that existing
-applications don't break.
+I saw roughly 5% win in a fast-path loop over kmem_cache_alloc/free
+in CONFIG_PREEMPT. (14.821 ns -> 14.049 ns)
 
-						- Ted
+Below is the result of Christoph's slab_test reported by
+Jesper Dangaard Brouer.
+
+* Before
+
+ Single thread testing
+ =====================
+ 1. Kmalloc: Repeatedly allocate then free test
+ 10000 times kmalloc(8) -> 49 cycles kfree -> 62 cycles
+ 10000 times kmalloc(16) -> 48 cycles kfree -> 64 cycles
+ 10000 times kmalloc(32) -> 53 cycles kfree -> 70 cycles
+ 10000 times kmalloc(64) -> 64 cycles kfree -> 77 cycles
+ 10000 times kmalloc(128) -> 74 cycles kfree -> 84 cycles
+ 10000 times kmalloc(256) -> 84 cycles kfree -> 114 cycles
+ 10000 times kmalloc(512) -> 83 cycles kfree -> 116 cycles
+ 10000 times kmalloc(1024) -> 81 cycles kfree -> 120 cycles
+ 10000 times kmalloc(2048) -> 104 cycles kfree -> 136 cycles
+ 10000 times kmalloc(4096) -> 142 cycles kfree -> 165 cycles
+ 10000 times kmalloc(8192) -> 238 cycles kfree -> 226 cycles
+ 10000 times kmalloc(16384) -> 403 cycles kfree -> 264 cycles
+ 2. Kmalloc: alloc/free test
+ 10000 times kmalloc(8)/kfree -> 68 cycles
+ 10000 times kmalloc(16)/kfree -> 68 cycles
+ 10000 times kmalloc(32)/kfree -> 69 cycles
+ 10000 times kmalloc(64)/kfree -> 68 cycles
+ 10000 times kmalloc(128)/kfree -> 68 cycles
+ 10000 times kmalloc(256)/kfree -> 68 cycles
+ 10000 times kmalloc(512)/kfree -> 74 cycles
+ 10000 times kmalloc(1024)/kfree -> 75 cycles
+ 10000 times kmalloc(2048)/kfree -> 74 cycles
+ 10000 times kmalloc(4096)/kfree -> 74 cycles
+ 10000 times kmalloc(8192)/kfree -> 75 cycles
+ 10000 times kmalloc(16384)/kfree -> 510 cycles
+
+* After
+
+ Single thread testing
+ =====================
+ 1. Kmalloc: Repeatedly allocate then free test
+ 10000 times kmalloc(8) -> 46 cycles kfree -> 61 cycles
+ 10000 times kmalloc(16) -> 46 cycles kfree -> 63 cycles
+ 10000 times kmalloc(32) -> 49 cycles kfree -> 69 cycles
+ 10000 times kmalloc(64) -> 57 cycles kfree -> 76 cycles
+ 10000 times kmalloc(128) -> 66 cycles kfree -> 83 cycles
+ 10000 times kmalloc(256) -> 84 cycles kfree -> 110 cycles
+ 10000 times kmalloc(512) -> 77 cycles kfree -> 114 cycles
+ 10000 times kmalloc(1024) -> 80 cycles kfree -> 116 cycles
+ 10000 times kmalloc(2048) -> 102 cycles kfree -> 131 cycles
+ 10000 times kmalloc(4096) -> 135 cycles kfree -> 163 cycles
+ 10000 times kmalloc(8192) -> 238 cycles kfree -> 218 cycles
+ 10000 times kmalloc(16384) -> 399 cycles kfree -> 262 cycles
+ 2. Kmalloc: alloc/free test
+ 10000 times kmalloc(8)/kfree -> 65 cycles
+ 10000 times kmalloc(16)/kfree -> 66 cycles
+ 10000 times kmalloc(32)/kfree -> 65 cycles
+ 10000 times kmalloc(64)/kfree -> 66 cycles
+ 10000 times kmalloc(128)/kfree -> 66 cycles
+ 10000 times kmalloc(256)/kfree -> 71 cycles
+ 10000 times kmalloc(512)/kfree -> 72 cycles
+ 10000 times kmalloc(1024)/kfree -> 71 cycles
+ 10000 times kmalloc(2048)/kfree -> 71 cycles
+ 10000 times kmalloc(4096)/kfree -> 71 cycles
+ 10000 times kmalloc(8192)/kfree -> 65 cycles
+ 10000 times kmalloc(16384)/kfree -> 511 cycles
+
+Most of the results are better than before.
+
+Note that this change slightly worses performance in !CONFIG_PREEMPT,
+roughly 0.3%. Implementing each case separately would help performance,
+but, since it's so marginal, I didn't do that. This would help
+maintanance since we have same code for all cases.
+
+Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/slub.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index fe376fe..0624608 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2398,13 +2398,15 @@ redo:
+ 	 * reading from one cpu area. That does not matter as long
+ 	 * as we end up on the original cpu again when doing the cmpxchg.
+ 	 *
+-	 * Preemption is disabled for the retrieval of the tid because that
+-	 * must occur from the current processor. We cannot allow rescheduling
+-	 * on a different processor between the determination of the pointer
+-	 * and the retrieval of the tid.
++	 * We should guarantee that tid and kmem_cache are retrieved on
++	 * the same cpu. It could be different if CONFIG_PREEMPT so we need
++	 * to check if it is matched or not.
+ 	 */
+-	preempt_disable();
+-	c = this_cpu_ptr(s->cpu_slab);
++	do {
++		tid = this_cpu_read(s->cpu_slab->tid);
++		c = this_cpu_ptr(s->cpu_slab);
++	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
++	barrier();
+ 
+ 	/*
+ 	 * The transaction ids are globally unique per cpu and per operation on
+@@ -2412,8 +2414,6 @@ redo:
+ 	 * occurs on the right processor and that there was no operation on the
+ 	 * linked list in between.
+ 	 */
+-	tid = c->tid;
+-	preempt_enable();
+ 
+ 	object = c->freelist;
+ 	page = c->page;
+@@ -2659,11 +2659,11 @@ redo:
+ 	 * data is retrieved via this pointer. If we are on the same cpu
+ 	 * during the cmpxchg then the free will succedd.
+ 	 */
+-	preempt_disable();
+-	c = this_cpu_ptr(s->cpu_slab);
+-
+-	tid = c->tid;
+-	preempt_enable();
++	do {
++		tid = this_cpu_read(s->cpu_slab->tid);
++		c = this_cpu_ptr(s->cpu_slab);
++	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
++	barrier();
+ 
+ 	if (likely(page == c->page)) {
+ 		set_freepointer(s, object, c->freelist);
+-- 
+1.7.9.5
+
