@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbbAEHHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 02:07:23 -0500
-Received: from mail-by2on0137.outbound.protection.outlook.com ([207.46.100.137]:54592
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751068AbbAEHHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 02:07:21 -0500
-X-Greylist: delayed 1140 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 02:07:21 EST
-From: Anson Huang <b20788@freescale.com>
-To: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <rui.zhang@intel.com>, <edubezval@gmail.com>
-Subject: [PATCH] Thermal: imx: add clk disable/enable for suspend/resume
-Date: Mon, 5 Jan 2015 22:29:13 +0800
-Message-ID: <1420468153-19142-1-git-send-email-b20788@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Anson.Huang@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(21056001)(89996001)(229853001)(87936001)(85426001)(106466001)(81156004)(48376002)(99396003)(107046002)(62966003)(120916001)(77156002)(50466002)(46102003)(97736003)(36756003)(84676001)(64706001)(50986999)(47776003)(20776003)(6806004)(105606002)(50226001)(19580405001)(68736005)(104016003)(33646002)(77096005)(69596002)(4396001)(19580395003)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0626;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1754109AbbAEOa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:30:28 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:59795 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268AbbAEOa1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 09:30:27 -0500
+Message-ID: <54AAA00E.6020709@atmel.com>
+Date: Mon, 5 Jan 2015 15:30:38 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR0301MB0626;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR0301MB0626;
-X-Forefront-PRVS: 0447DB1C71
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0626;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 06:33:51.0853
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0626
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, "Wim Van Sebroeck" <wim@iguana.be>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 4/8] ARM: at91: time: move the system timer driver to
+ drivers/clocksource
+References: <1420459605-24561-1-git-send-email-alexandre.belloni@free-electrons.com> <1420459605-24561-5-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1420459605-24561-5-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thermal sensor's clk is from pll3_usb_otg, per hardware
-design requirement, need to make sure pll3_usb_otg is disabled
-before STOP mode is entered, otherwise, all PFDs under it may
-enter incorrect state, this patch disables pll3_usb_otg before
-suspend and enables it after resume.
+Le 05/01/2015 13:06, Alexandre Belloni a écrit :
+> Import at91rm9200_time.c from mach-at91 as timer-atmel-st.c. Further cleanup is
+> required to get rid of the mach-at91 headers.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/mach-at91/Makefile                                           | 2 +-
+>  drivers/clocksource/Kconfig                                           | 4 ++++
+>  drivers/clocksource/Makefile                                          | 1 +
+>  .../at91rm9200_time.c => drivers/clocksource/timer-atmel-st.c         | 0
+>  4 files changed, 6 insertions(+), 1 deletion(-)
+>  rename arch/arm/mach-at91/at91rm9200_time.c => drivers/clocksource/timer-atmel-st.c (100%)
+> 
+> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+> index 7b6424d40764..5d1ee3a6f115 100644
+> --- a/arch/arm/mach-at91/Makefile
+> +++ b/arch/arm/mach-at91/Makefile
+> @@ -7,7 +7,7 @@ obj-y		:= setup.o sysirq_mask.o
+>  obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
+>  
+>  # CPU-specific support
+> -obj-$(CONFIG_SOC_AT91RM9200)	+= at91rm9200.o at91rm9200_time.o
+> +obj-$(CONFIG_SOC_AT91RM9200)	+= at91rm9200.o
+>  obj-$(CONFIG_SOC_AT91SAM9260)	+= at91sam9260.o
+>  obj-$(CONFIG_SOC_AT91SAM9261)	+= at91sam9261.o
+>  obj-$(CONFIG_SOC_AT91SAM9263)	+= at91sam9263.o
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index fc01ec27d3c8..ebc6dd77136e 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -128,6 +128,10 @@ config ATMEL_PIT
+>  	select CLKSRC_OF if OF
+>  	def_bool SOC_AT91SAM9 || SOC_SAMA5
+>  
+> +config ATMEL_ST
+> +	select CLKSRC_OF if OF
 
-Signed-off-by: Anson Huang <b20788@freescale.com>
----
- drivers/thermal/imx_thermal.c | 4 ++++
- 1 file changed, 4 insertions(+)
+You can remove the "if OF" statement.
 
-diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
-index 461bf3d..03894da 100644
---- a/drivers/thermal/imx_thermal.c
-+++ b/drivers/thermal/imx_thermal.c
-@@ -600,6 +600,8 @@ static int imx_thermal_suspend(struct device *dev)
- 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
- 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
- 	data->mode = THERMAL_DEVICE_DISABLED;
-+	if (!IS_ERR(data->thermal_clk))
-+		clk_disable_unprepare(data->thermal_clk);
- 
- 	return 0;
- }
-@@ -609,6 +611,8 @@ static int imx_thermal_resume(struct device *dev)
- 	struct imx_thermal_data *data = dev_get_drvdata(dev);
- 	struct regmap *map = data->tempmon;
- 
-+	if (!IS_ERR(data->thermal_clk))
-+		clk_prepare_enable(data->thermal_clk);
- 	/* Enabled thermal sensor after resume */
- 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
- 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
+> +	def_bool SOC_AT91RM9200
+> +
+>  config CLKSRC_METAG_GENERIC
+>  	def_bool y if METAG
+>  	help
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 94d90b24b56b..b7380ded4e4c 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -1,5 +1,6 @@
+>  obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
+>  obj-$(CONFIG_ATMEL_PIT)		+= timer-atmel-pit.o
+> +obj-$(CONFIG_ATMEL_ST)		+= timer-atmel-st.o
+>  obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
+>  obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
+>  obj-$(CONFIG_SCx200HR_TIMER)	+= scx200_hrt.o
+> diff --git a/arch/arm/mach-at91/at91rm9200_time.c b/drivers/clocksource/timer-atmel-st.c
+> similarity index 100%
+> rename from arch/arm/mach-at91/at91rm9200_time.c
+> rename to drivers/clocksource/timer-atmel-st.c
+> 
+
+
 -- 
-1.9.1
-
+Nicolas Ferre
