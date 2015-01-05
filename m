@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbbAEQBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:01:44 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57892 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152AbbAEQBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:01:42 -0500
-From: Naohiro Aota <naota@elisp.net>
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Naohiro Aota <naota@elisp.net>
-Subject: [PATCH] btrfs: clear bio reference after submit_one_bio()
-Date: Tue,  6 Jan 2015 01:01:03 +0900
-Message-Id: <1420473663-9315-1-git-send-email-naota@elisp.net>
-X-Mailer: git-send-email 2.2.1
+	id S1754096AbbAEQBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:01:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46655 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753364AbbAEQBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 11:01:17 -0500
+Message-ID: <54AAB548.3050807@suse.cz>
+Date: Mon, 05 Jan 2015 17:01:12 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH V3 0/4] Reducing parameters of alloc_pages* family of
+ functions
+References: <1418400805-4661-1-git-send-email-vbabka@suse.cz> <20141218132619.4e6b349d0aa1744c41f985c7@linux-foundation.org> <54AA9E09.7040308@suse.cz>
+In-Reply-To: <54AA9E09.7040308@suse.cz>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After submit_one_bio(), `bio' can go away. However submit_extent_page()
-leave `bio' referable if submit_one_bio() failed (e.g. -ENOMEM on OOM).
-It will cause invalid paging request when submit_extent_page() is called
-next time.
+On 01/05/2015 03:22 PM, Vlastimil Babka wrote:
+> On 12/18/2014 10:26 PM, Andrew Morton wrote:
+>> On Fri, 12 Dec 2014 17:13:21 +0100 Vlastimil Babka <vbabka@suse.cz> wrote:
+>> 
+>>> Vlastimil Babka (4):
+>>>   mm: set page->pfmemalloc in prep_new_page()
+>>>   mm, page_alloc: reduce number of alloc_pages* functions' parameters
+>>>   mm: reduce try_to_compact_pages parameters
+>>>   mm: microoptimize zonelist operations
+>> 
+>> That all looks pretty straightforward.  It would be nice to have a
+>> summary of the code-size and stack-usage changes for the whole
+>> patchset.
+> 
+> OK
+> 
+>> Can we move `struct alloc_context' into mm/internal.h?
+> 
+> Only if we moved also try_to_compact_pages() declaration from
+> include/linux/compaction.h to mm/internal.h. I guess it's not a bad idea, as
+> it's a MM-only function and mm/internal.h already contains compaction stuff.
 
-I reproduced ENOMEM case with the following script (need
-CONFIG_FAIL_PAGE_ALLOC, and CONFIG_FAULT_INJECTION_DEBUG_FS).
+Hm, nope. The !CONFIG_COMPACTION variant of try_to_compact_pages() is static
+inline that returns COMPACT_CONTINUE, which is defined in compaction.h.
+Another solution is to add a "forward" declaration (not actually followed later
+by a full definition) of struct alloc_context into compaction.h. Seems to work
+here, but I'm not sure if such thing is allowed?
 
-  #!/bin/bash
-
-  dmesgout=dmesg.txt
-  start=100000
-  end=300000
-  step=1000
-
-  # btrfs options
-  device=/dev/vdb1
-  directory=/mnt/btrfs
-
-  # fault-injection options
-  percent=100
-  times=3
-
-  mkdir -p $directory || exit 1
-  mount -o compress $device $directory || exit 1
-
-  rm -f $directory/file || exit 1
-  dd if=/dev/zero of=$directory/file bs=1M count=512 || exit 1
-
-  for interval in `seq $start $step $end`; do
-          dmesg -C
-          echo 1 > /proc/sys/vm/drop_caches
-          sync
-          export FAILCMD_TYPE=fail_page_alloc
-          ./failcmd.sh -p $percent -t $times -i $interval \
-                  --ignore-gfp-highmem=N --ignore-gfp-wait=N --min-order=0 \
-                  -- \
-                  cat $directory/file > /dev/null
-          dmesg > ${dmesgout}
-          if grep -q BUG: ${dmesgout}; then
-                  cat ${dmesgout}
-                  exit 1
-          fi
-  done
-
-  umount $directory
-  exit 0
-
-Signed-off-by: Naohiro Aota <naota@elisp.net>
----
- fs/btrfs/extent_io.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 4ebabd2..4421161 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2816,8 +2816,10 @@ static int submit_extent_page(int rw, struct extent_io_tree *tree,
- 		    bio_add_page(bio, page, page_size, offset) < page_size) {
- 			ret = submit_one_bio(rw, bio, mirror_num,
- 					     prev_bio_flags);
--			if (ret < 0)
-+			if (ret < 0) {
-+				*bio_ret = NULL;
- 				return ret;
-+			}
- 			bio = NULL;
- 		} else {
- 			return 0;
--- 
-2.2.1
+>> I pity the poor schmuck who has to maintain this patchset for 2 months.
+>> [2/4] already throws a large pile of rejects against page_alloc.c so
+>> can you please refresh/retest/resend?
+> 
+> Right :)
+> 
+> Vlastimil
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
