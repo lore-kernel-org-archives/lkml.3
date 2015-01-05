@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487AbbAESEE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:04:04 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:34880 "EHLO
+	id S932196AbbAER4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:56:14 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:53203 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752817AbbAER4C (ORCPT
+	by vger.kernel.org with ESMTP id S1754178AbbAER4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:56:02 -0500
+	Mon, 5 Jan 2015 12:56:04 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 20/45] staging: comedi: ke_counter: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:54:48 +0000
-Message-Id: <1420480513-14765-21-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 21/45] staging: comedi: me_daq: rewrite "Devices:" line
+Date: Mon,  5 Jan 2015 17:54:49 +0000
+Message-Id: <1420480513-14765-22-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -38,22 +38,23 @@ lines by using one or more spaces at the start of each continuation line
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/ke_counter.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/me_daq.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ke_counter.c b/drivers/staging/comedi/drivers/ke_counter.c
-index 77e94a3..3c19e0f 100644
---- a/drivers/staging/comedi/drivers/ke_counter.c
-+++ b/drivers/staging/comedi/drivers/ke_counter.c
-@@ -19,7 +19,7 @@
+diff --git a/drivers/staging/comedi/drivers/me_daq.c b/drivers/staging/comedi/drivers/me_daq.c
+index b5278c1..bffc161 100644
+--- a/drivers/staging/comedi/drivers/me_daq.c
++++ b/drivers/staging/comedi/drivers/me_daq.c
+@@ -19,8 +19,7 @@
  /*
-  * Driver: ke_counter
-  * Description: Driver for Kolter Electronic Counter Card
-- * Devices: (Kolter Electronic) PCI Counter Card [ke_counter]
-+ * Devices: [Kolter Electronic] PCI Counter Card (ke_counter)
-  * Author: Michael Hillmann
-  * Updated: Mon, 14 Apr 2008 15:42:42 +0100
-  * Status: tested
+  * Driver: me_daq
+  * Description: Meilhaus PCI data acquisition cards
+- * Devices: (Meilhaus) ME-2600i [me-2600i]
+- *          (Meilhaus) ME-2000i [me-2000i]
++ * Devices: [Meilhaus] ME-2600i (me-2600i), ME-2000i (me-2000i)
+  * Author: Michael Hillmann <hillmann@syscongroup.de>
+  * Status: experimental
+  *
 -- 
 2.1.4
 
