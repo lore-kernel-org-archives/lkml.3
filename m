@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbbAEVos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:44:48 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:48776 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbbAEVoq (ORCPT
+	id S1754566AbbAEVq1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:46:27 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:44333 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbbAEVq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:44:46 -0500
-Date: Mon, 5 Jan 2015 17:44:38 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] MAINTAINERS: Add linux-omap to list of reviewers for TI
- Thermal
-Message-ID: <20150105214436.GF31536@developer>
-References: <1420312410-4469-1-git-send-email-nm@ti.com>
+	Mon, 5 Jan 2015 16:46:26 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vA66WO2vHvL/CRSR"
-Content-Disposition: inline
-In-Reply-To: <1420312410-4469-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CALCETrWFBEvL4CSD+cZ0inMcvv09rLJi4Wpf4gLz5fvsGcV-wQ@mail.gmail.com>
+References: <20141124205441.GW5050@linux.vnet.ibm.com>
+	<CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
+	<20141124213501.GX5050@linux.vnet.ibm.com>
+	<20141124223407.GB8512@linux.vnet.ibm.com>
+	<CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
+	<20141124225754.GY5050@linux.vnet.ibm.com>
+	<20141124233101.GA2819@linux.vnet.ibm.com>
+	<CALCETrV37kqC658AzBHZ5z_vH2b_1T821q5EfbMcS9Ecpj8EEw@mail.gmail.com>
+	<20141124235058.GZ5050@linux.vnet.ibm.com>
+	<CALCETrUFwyBYFWZi4JC1-HftmUumLr+bB1kh8EW6LViN+G+j+g@mail.gmail.com>
+	<20141125185803.GC3938@pd.tnic>
+	<CA+8MBb+iw3KJz5EgX-DLBHGWANUSVFP2bQe2_U4kqCfM-wzH8Q@mail.gmail.com>
+	<CALCETrWFBEvL4CSD+cZ0inMcvv09rLJi4Wpf4gLz5fvsGcV-wQ@mail.gmail.com>
+Date: Mon, 5 Jan 2015 13:46:24 -0800
+Message-ID: <CA+8MBbKbuyYWKK_wK1pwX_T39dKmukBom+i7H5dndfjhDJahbQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
+From: Tony Luck <tony.luck@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Borislav Petkov <bp@alien8.de>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 10, 2014 at 4:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> I think you need ist_begin_non_atomic() before local_irq_enable() and
+> ist_end_non_atomic() after local_irq_disable().  Otherwise it should
+> be good.
 
---vA66WO2vHvL/CRSR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In your x86/paranoid branch you added:
 
-On Sat, Jan 03, 2015 at 01:13:30PM -0600, Nishanth Menon wrote:
-> Add linux-omap mailing list to the TI THERMAL list for wider review.
->=20
-> Reported-by: Pavel Machek <pavel@ucw.cz>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
->  MAINTAINERS |    1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index ddb9ac8..dc9efd5 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -9533,6 +9533,7 @@ F:	drivers/platform/x86/thinkpad_acpi.c
->  TI BANDGAP AND THERMAL DRIVER
->  M:	Eduardo Valentin <edubezval@gmail.com>
->  L:	linux-pm@vger.kernel.org
-> +L:	linux-omap@vger.kernel.org
+     prev_state = ist_enter(regs);
+          .... body of do_machine_check() here ...
+     ist_exit(regs, prev_state);
 
-OK. I will queue this one.
+Does that override the previous advice? Or do I still need something before
+I call local_irq_enable() and after local_irq_disable()?
 
->  S:	Supported
-
-I will also change this to random fixes too..
-
->  F:	drivers/thermal/ti-soc-thermal/
-> =20
-> --=20
-> 1.7.9.5
->=20
-
---vA66WO2vHvL/CRSR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUqwW8AAoJEMLUO4d9pOJWHP8H+wXIW37g71icS28bcsQrguaC
-jeJhyJd1knZ2eiJh7GrMBKtswiI4qnr1j8/y8OjUdliBnr+B38gs6T8oqazuJvql
-DCCGUJ6IKNDqoAqrOS+/Eeh74QS1faOk3LUUPi957UCMuU6ictYUpBuYh8WDK99c
-ev3lHt528RmwGQ0n2pSfEkD5OQbP1fSztXo4x0/XI1PkRaIUg4hk0VG8mEEPqGo5
-cDVdxe82/4yADRBiowMmb6VawdNOqGAg2kwUecU8PJIw5D3TbNgtOOPHi8uGzK9p
-5qVrrfIS51QzVCzd3x0aM8LeQJk1iQnSK35nua+EZyGiAwZcjmCsj7aG/9HLQAc=
-=s2wk
------END PGP SIGNATURE-----
-
---vA66WO2vHvL/CRSR--
+-Tony
