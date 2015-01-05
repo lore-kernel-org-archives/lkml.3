@@ -1,151 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbbAEVZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:25:15 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:46397 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003AbbAEVZN (ORCPT
+	id S1753868AbbAEV2X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:28:23 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:32780 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbbAEV2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:25:13 -0500
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-To: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Cc: linux-sh@vger.kernel.org, vksavl@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org
-Subject: [PATCH v4] clk-rcar-gen2: RCAN clock support
-Date: Tue, 06 Jan 2015 00:25:08 +0300
-Message-ID: <4052119.aMj07DL4s1@wasted.cogentembedded.com>
-Organization: Cogent Embedded Inc.
-User-Agent: KMail/4.14.3 (Linux/3.17.7-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
+	Mon, 5 Jan 2015 16:28:22 -0500
+Date: Mon, 5 Jan 2015 21:26:50 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Felipe Balbi <balbi@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Tony Lindgren <tony@atomide.com>, linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>,
+        uwe@kleine-koenig.org
+Subject: Re: [PATCH] tty: serial: 8250: omap: add ttySx console if the user
+ didn't
+Message-ID: <20150105212650.701af128@lxorguk.ukuu.org.uk>
+In-Reply-To: <20141218174712.GA26632@linutronix.de>
+References: <1417039306-2384-1-git-send-email-bigeasy@linutronix.de>
+	<20141129094823.GA10840@linutronix.de>
+	<20141129173418.GY2817@atomide.com>
+	<20141201140914.728aaa46@lxorguk.ukuu.org.uk>
+	<20141201231338.GA14524@fuloong-minipc.musicnaut.iki.fi>
+	<20141202015118.GA1891@saruman>
+	<20141205135133.37fb96f6@lxorguk.ukuu.org.uk>
+	<20141218174712.GA26632@linutronix.de>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the RCAN clock support to the R-Car generation 2 CPG driver.  This clock
-gets derived from  the USB_EXTAL clock, dividing  it by 6.  The layout of the
-RCANCKCR register is similar to those of the clocks supported by the 'clk-div6'
-driver but has no divider field, and so can't be supported by that driver...
+On Thu, 18 Dec 2014 18:47:12 +0100
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> This patch invokes add_preferred_console() with ttyS based on ttyO
+> arguments if the user didn't specify it on its own. This ensures that
+> the user will see the kernel booting on his serial console in case he
+> forgot to update the command line.
+> 
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
----
-The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git' repo.
-
-Changes in version 4:
-- added Geert's ACK.
-
-Changes in version 3:
-- added the USB_EXTAL clock reference to the binding document.
-
-Changes in version 2:
-- switched to using the composite clock driver with the fixed factor and gated
-  clock component drivers;
-- removed *static* from 'parent_name' definition, switching from assignment to
-  initializer;
-- modified the binding document;
-- modified the changelog.
-
- Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt |   10 +-
- drivers/clk/shmobile/clk-rcar-gen2.c                                     |   40 ++++++++++
- 2 files changed, 46 insertions(+), 4 deletions(-)
-
-Index: linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
-===================================================================
---- linux.orig/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
-+++ linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt
-@@ -13,10 +13,11 @@ Required Properties:
- 
-   - reg: Base address and length of the memory resource used by the CPG
- 
--  - clocks: Reference to the parent clock
-+  - clocks: References to the parent clocks: first to the EXTAL clock, second
-+    to the USB_EXTAL clock
-   - #clock-cells: Must be 1
-   - clock-output-names: The names of the clocks. Supported clocks are "main",
--    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1" and "z"
-+    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1", "z", and "rcan"
- 
- 
- Example
-@@ -26,8 +27,9 @@ Example
- 		compatible = "renesas,r8a7790-cpg-clocks",
- 			     "renesas,rcar-gen2-cpg-clocks";
- 		reg = <0 0xe6150000 0 0x1000>;
--		clocks = <&extal_clk>;
-+		clocks = <&extal_clk &usb_extal_clk>;
- 		#clock-cells = <1>;
- 		clock-output-names = "main", "pll0, "pll1", "pll3",
--				     "lb", "qspi", "sdh", "sd0", "sd1", "z";
-+				     "lb", "qspi", "sdh", "sd0", "sd1", "z",
-+				     "rcan";
- 	};
-Index: linux/drivers/clk/shmobile/clk-rcar-gen2.c
-===================================================================
---- linux.orig/drivers/clk/shmobile/clk-rcar-gen2.c
-+++ linux/drivers/clk/shmobile/clk-rcar-gen2.c
-@@ -33,6 +33,7 @@ struct rcar_gen2_cpg {
- #define CPG_FRQCRC			0x000000e0
- #define CPG_FRQCRC_ZFC_MASK		(0x1f << 8)
- #define CPG_FRQCRC_ZFC_SHIFT		8
-+#define CPG_RCANCKCR			0x00000270
- 
- /* -----------------------------------------------------------------------------
-  * Z Clock
-@@ -161,6 +162,43 @@ static struct clk * __init cpg_z_clk_reg
- 	return clk;
- }
- 
-+static struct clk * __init cpg_rcan_clk_register(struct rcar_gen2_cpg *cpg,
-+						 struct device_node *np)
-+{
-+	const char *parent_name = of_clk_get_parent_name(np, 1);
-+	struct clk_fixed_factor *fixed;
-+	struct clk_gate *gate;
-+	struct clk *clk;
-+
-+	fixed = kzalloc(sizeof(*fixed), GFP_KERNEL);
-+	if (!fixed)
-+		return ERR_PTR(-ENOMEM);
-+
-+	fixed->mult = 1;
-+	fixed->div = 6;
-+
-+	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
-+	if (!gate) {
-+		kfree(fixed);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	gate->reg = cpg->reg + CPG_RCANCKCR;
-+	gate->bit_idx = 8;
-+	gate->flags = CLK_GATE_SET_TO_DISABLE;
-+	gate->lock = &cpg->lock;
-+
-+	clk = clk_register_composite(NULL, "rcan", &parent_name, 1, NULL, NULL,
-+				     &fixed->hw, &clk_fixed_factor_ops,
-+				     &gate->hw, &clk_gate_ops, 0);
-+	if (IS_ERR(clk)) {
-+		kfree(gate);
-+		kfree(fixed);
-+	}
-+
-+	return clk;
-+}
-+
- /* -----------------------------------------------------------------------------
-  * CPG Clock Data
-  */
-@@ -263,6 +301,8 @@ rcar_gen2_cpg_register_clock(struct devi
- 		shift = 0;
- 	} else if (!strcmp(name, "z")) {
- 		return cpg_z_clk_register(cpg);
-+	} else if (!strcmp(name, "rcan")) {
-+		return cpg_rcan_clk_register(cpg, np);
- 	} else {
- 		return ERR_PTR(-EINVAL);
- 	}
+Acked-by: Alan Cox <alan@linux.intel.com>
 
