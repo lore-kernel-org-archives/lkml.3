@@ -1,160 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473AbbAESt3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:49:29 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:50731 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413AbbAEStZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:49:25 -0500
-Date: Mon, 5 Jan 2015 13:49:15 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Haggai Eran <haggaie@mellanox.com>
-Cc: Mark Hairgrove <mhairgrove@nvidia.com>, Dave Airlie <airlied@redhat.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        "joro@8bytes.org" <joro@8bytes.org>, Greg Stoner <Greg.Stoner@amd.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Rik van Riel <riel@redhat.com>, Paul Blinzer <Paul.Blinzer@amd.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Michael Mantor <Michael.Mantor@amd.com>,
-        Laurent Morichetti <Laurent.Morichetti@amd.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        John Hubbard <jhubbard@nvidia.com>, Brendan Conoboy <blc@redhat.com>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Subhash Gutti <sgutti@nvidia.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Duncan Poole <dpoole@nvidia.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>, Sherry Cheung <SCheung@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>,
-        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>,
-        Ben Sander <ben.sander@amd.com>, Joe Donohue <jdonohue@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/7] mmu_notifier: keep track of active invalidation
- ranges v2
-Message-ID: <20150105184914.GA8012@gmail.com>
-References: <AMSPR05MB48272339639F199CA876C4FC1500@AMSPR05MB482.eurprd05.prod.outlook.com>
+	id S1754186AbbAETAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:00:18 -0500
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:52241
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753212AbbAETAQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 14:00:16 -0500
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 14:00:16 EST
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 00/45] staging: comedi: fix up some driver comments
+Thread-Topic: [PATCH 00/45] staging: comedi: fix up some driver comments
+Thread-Index: AQHQKRDT9D4pGneoKUmf5ZXDV4qLYJyx2gHw
+Date: Mon, 5 Jan 2015 18:55:14 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D88260B7633@P3PWEX4MB008.ex4.secureserver.net>
+References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AMSPR05MB48272339639F199CA876C4FC1500@AMSPR05MB482.eurprd05.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 28, 2014 at 08:46:42AM +0000, Haggai Eran wrote:
-> 
-> On Dec 26, 2014 9:20 AM, Jerome Glisse <j.glisse@gmail.com> wrote:
-> >
-> > On Thu, Dec 25, 2014 at 10:29:44AM +0200, Haggai Eran wrote:
-> > > On 22/12/2014 18:48, j.glisse@gmail.com wrote:
-> > > >  static inline void mmu_notifier_invalidate_range_start(struct mm_struct *mm,
-> > > > -                                                  unsigned long start,
-> > > > -                                                  unsigned long end,
-> > > > -                                                  enum mmu_event event)
-> > > > +                                                  struct mmu_notifier_range *range)
-> > > >  {
-> > > > +   /*
-> > > > +    * Initialize list no matter what in case a mmu_notifier register after
-> > > > +    * a range_start but before matching range_end.
-> > > > +    */
-> > > > +   INIT_LIST_HEAD(&range->list);
-> > >
-> > > I don't see how can an mmu_notifier register after a range_start but
-> > > before a matching range_end. The mmu_notifier registration locks all mm
-> > > locks, and that should prevent any invalidation from running, right?
-> >
-> > File invalidation (like truncation) can lead to this case.
-> 
-> I thought that the fact that mm_take_all_locks locked the i_mmap_mutex of
-> every file would prevent this from happening, because the notifier is added
-> when the mutex is locked, and the truncate operation also locks it. Am I
-> missing something?
+On Monday, January 05, 2015 10:54 AM, Ian Abbott wrote:
+> Most comedi drivers have a special comedi driver comment block,
+> information from which can be extracted by some scripts for use in the
+> "Comedilib" manual and the list of supported devices on the comedi web
+> site.  (Currently, the information for those places comes from the
+> "out-of-tree" comedi drivers.)
+>
+> The "Devices:" line (and continuation lines) are supposed to be a
+> comma-(and space)-separated list with the first item in this format:
+>
+>   [Manufacturer] BOARD-NAME (comedi-board-name)
+>
+> The "[Manufacturer]" and "(comedi-board-name)" parts can be omitted from
+> subsequent list items to decrease verbosity, in which case they are
+> assumed to be the same as the preceding item.
+>
+> Several comedi drivers have the "Devices:" line formatted incorrectly,
+> often with the use of square brackets and parentheses reversed.  A few
+> comedi modules have driver comments, but are just support modules for
+> other drivers, so don't really need a driver comment.
 
-No you right again, i was convince in my mind that mmu_notifier register was
-only taking the mmap semaphore in write mode for some reasons while it is
-in fact also calling mm_take_all_locks(). So yes this protect registration
-from all concurrent invalidation.
+Ian,
 
-> 
-> >
-> > >
-> > > >      if (mm_has_notifiers(mm))
-> > > > -           __mmu_notifier_invalidate_range_start(mm, start, end, event);
-> > > > +           __mmu_notifier_invalidate_range_start(mm, range);
-> > > >  }
-> > >
-> > > ...
-> > >
-> > > >  void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
-> > > > -                                      unsigned long start,
-> > > > -                                      unsigned long end,
-> > > > -                                      enum mmu_event event)
-> > > > +                                      struct mmu_notifier_range *range)
-> > > >
-> > > >  {
-> > > >      struct mmu_notifier *mn;
-> > > > @@ -185,21 +183,36 @@ void __mmu_notifier_invalidate_range_start(struct mm_struct *mm,
-> > > >      id = srcu_read_lock(&srcu);
-> > > >      hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
-> > > >              if (mn->ops->invalidate_range_start)
-> > > > -                   mn->ops->invalidate_range_start(mn, mm, start,
-> > > > -                                                   end, event);
-> > > > +                   mn->ops->invalidate_range_start(mn, mm, range);
-> > > >      }
-> > > >      srcu_read_unlock(&srcu, id);
-> > > > +
-> > > > +   /*
-> > > > +    * This must happen after the callback so that subsystem can block on
-> > > > +    * new invalidation range to synchronize itself.
-> > > > +    */
-> > > > +   spin_lock(&mm->mmu_notifier_mm->lock);
-> > > > +   list_add_tail(&range->list, &mm->mmu_notifier_mm->ranges);
-> > > > +   mm->mmu_notifier_mm->nranges++;
-> > > > +   spin_unlock(&mm->mmu_notifier_mm->lock);
-> > > >  }
-> > > >  EXPORT_SYMBOL_GPL(__mmu_notifier_invalidate_range_start);
-> > >
-> > > Don't you have a race here because you add the range struct after the
-> > > callback?
-> > >
-> > > -------------------------------------------------------------------------
-> > > Thread A                    | Thread B
-> > > -------------------------------------------------------------------------
-> > > call mmu notifier callback  |
-> > >   clear SPTE                |
-> > >                             | device page fault
-> > >                             |   mmu_notifier_range_is_valid returns true
-> > >                             |   install new SPTE
-> > > add event struct to list    |
-> > > mm clears/modifies the PTE  |
-> > > -------------------------------------------------------------------------
-> > >
-> > > So we are left with different entries in the host page table and the
-> > > secondary page table.
-> > >
-> > > I would think you'd want the event struct to be added to the list before
-> > > the callback is run.
-> > >
-> >
-> > Yes you right, but the comment i left trigger memory that i did that on
-> > purpose a one point probably with a different synch mecanism inside hmm.
-> > I will try to medidate a bit see if i can bring back memory why i did it
-> > that way in respect to previous design.
-> >
-> > In all case i will respin with that order modified. Can i add you review
-> > by after doing so ?
-> 
-> Sure, go ahead.
-> 
-> Regards,
-> Haggai
+There are a number of drivers that still need the comedi comment block
+converted to the normal CodingStyle format for multi-line comments.
+
+And, as you mentioned to me before, all of the ADDI-DATA drivers
+are missing the comedi comment block:
+
+But, this is a great start to getting them cleaned up.
+
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+
+
