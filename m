@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbbAELQV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:16:21 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:15506 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbbAELQU (ORCPT
+	id S1753923AbbAENAW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:00:22 -0500
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:36304 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330AbbAENAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:16:20 -0500
-Message-ID: <54AA7290.7000502@atmel.com>
-Date: Mon, 5 Jan 2015 12:16:32 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Paul Bolle <pebolle@tiscali.nl>
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [PATCH 1/4] ARM: at91: remove at91sam9263 legacy board support
-References: <cover.1416392687.git.nicolas.ferre@atmel.com> <cf26d39a4a251662dbc363092b319b788d223a7b.1416392687.git.nicolas.ferre@atmel.com> <1417434775.30245.29.camel@x220> <547C92A1.8000902@atmel.com> <1419240528.30945.12.camel@x220> <20141222094512.GA4194@piout.net>
-In-Reply-To: <20141222094512.GA4194@piout.net>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+	Mon, 5 Jan 2015 08:00:20 -0500
+X-Greylist: delayed 4302 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 08:00:20 EST
+From: David Drysdale <drysdale@google.com>
+To: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andreas Schwab <schwab@linux-m68k.org>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-m68k@vger.kernel.org,
+        linux-api@vger.kernel.org, David Drysdale <drysdale@google.com>
+Subject: [PATCH] selftests/exec: allow shell return code of 126
+Date: Mon,  5 Jan 2015 11:19:46 +0000
+Message-Id: <1420456786-5989-1-git-send-email-drysdale@google.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 22/12/2014 10:45, Alexandre Belloni a écrit :
-> Hi Paul,
-> 
-> On 22/12/2014 at 10:28:48 +0100, Paul Bolle wrote :
->>> So, I suggest to get rid of them during 3.19-rc phase.
->>
->> There's still an entry for RTC_DRV_AT91SAM9_RTT in next-20141221 (and
->> v3.19-rc1). So this I send this message as a reminder that this cleanup
->> is still needed.
->>
-> 
-> Thanks for the reminder, the pull request was actually waiting for
-> 3.19-rc1 to get released before being sent. This should be solved in the
-> next rc.
+When the shell fails to invoke a script because its path name
+is too long (ENAMETOOLONG), most shells return 127 to indicate
+command not found.  However, some systems report 126 (which POSIX
+suggests should indicate a non-executable file) for this case,
+so allow that too.
 
-Yes, a new version of this pull-request has just been sent: ([GIT PULL]
-at91: fixes for 3.19 #1 (bis)).
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: David Drysdale <drysdale@google.com>
+---
+ tools/testing/selftests/exec/execveat.c | 28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
 
-Thanks a lot for the reminder Paul. Bye,
+diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
+index d273624c93a6..0d940c6e26bd 100644
+--- a/tools/testing/selftests/exec/execveat.c
++++ b/tools/testing/selftests/exec/execveat.c
+@@ -62,7 +62,7 @@ static int _check_execveat_fail(int fd, const char *path, int flags,
+ }
+ 
+ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+-				     int expected_rc)
++				     int expected_rc, int expected_rc2)
+ {
+ 	int status;
+ 	int rc;
+@@ -99,9 +99,19 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+ 		return 1;
+ 	}
+ 	if (WEXITSTATUS(status) != expected_rc) {
+-		printf("[FAIL] (child %d exited with %d not %d)\n",
+-			child, WEXITSTATUS(status), expected_rc);
+-		return 1;
++		if (expected_rc != expected_rc2) {
++			if (WEXITSTATUS(status) != expected_rc2) {
++				printf("[FAIL] (child %d exited with %d;"
++					" not %d nor %d)\n",
++					child, WEXITSTATUS(status),
++					expected_rc, expected_rc2);
++				return 1;
++			}
++		} else {
++			printf("[FAIL] (child %d exited with %d not %d)\n",
++				child, WEXITSTATUS(status), expected_rc);
++			return 1;
++		}
+ 	}
+ 	printf("[OK]\n");
+ 	return 0;
+@@ -109,7 +119,7 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+ 
+ static int check_execveat(int fd, const char *path, int flags)
+ {
+-	return check_execveat_invoked_rc(fd, path, flags, 99);
++	return check_execveat_invoked_rc(fd, path, flags, 99, 99);
+ }
+ 
+ static char *concat(const char *left, const char *right)
+@@ -192,9 +202,15 @@ static int check_execveat_pathmax(int dot_dfd, const char *src, int is_script)
+ 	 * Execute as a long pathname relative to ".".  If this is a script,
+ 	 * the interpreter will launch but fail to open the script because its
+ 	 * name ("/dev/fd/5/xxx....") is bigger than PATH_MAX.
++	 *
++	 * The failure code is usually 127 (POSIX: "If a command is not found,
++	 * the exit status shall be 127."), but some systems give 126 (POSIX:
++	 * "If the command name is found, but it is not an executable utility,
++	 * the exit status shall be 126."), so allow either.
+ 	 */
+ 	if (is_script)
+-		fail += check_execveat_invoked_rc(dot_dfd, longpath, 0, 127);
++		fail += check_execveat_invoked_rc(dot_dfd, longpath, 0,
++						  127, 126);
+ 	else
+ 		fail += check_execveat(dot_dfd, longpath, 0);
+ 
 -- 
-Nicolas Ferre
+2.2.0.rc0.207.ga3a616c
+
