@@ -1,94 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963AbbAEXgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 18:36:14 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52931 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485AbbAEXgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 18:36:12 -0500
-Message-ID: <54AB1FC5.8040003@ti.com>
-Date: Mon, 5 Jan 2015 18:35:33 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754317AbbAEXrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 18:47:10 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:54751 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbbAEXrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 18:47:06 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma
- configuration
-References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com> <2019516.ehiuEv0rdL@wuerfel> <54AAEEE1.7020607@ti.com> <1671700.LL29F8Iz6R@wuerfel>
-In-Reply-To: <1671700.LL29F8Iz6R@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <549ABF87.8060905@elis.ugent.be>
+References: <549ABF87.8060905@elis.ugent.be>
+Date: Mon, 5 Jan 2015 15:47:05 -0800
+X-Google-Sender-Auth: SRkLa-k7Pnl3SAlJT0B3IXL9poE
+Message-ID: <CAGXu5jJWFKK1oJg0iyZtTKSSzXGyDD5B=iA3y7vvyayqhbOP5Q@mail.gmail.com>
+Subject: Re: [PATCH RFC] Allow introspection to already attached ptracer in __ptrace_may_access
+From: Kees Cook <keescook@chromium.org>
+To: Stijn Volckaert <Stijn.Volckaert@elis.ugent.be>
+Cc: Roland McGrath <roland@hack.frob.com>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        John Johansen <john.johansen@canonical.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 05:26 PM, Arnd Bergmann wrote:
-> On Monday 05 January 2015 15:06:57 Murali Karicheri wrote:
->> On 01/03/2015 04:37 PM, Arnd Bergmann wrote:
->>> Yes, but we also need to pass a PCI device specific identifier along
->>> with the root bus node, because some iommu drivers take the PCI
->>> bus/device/function number into account for creating per-function
->>> i/o page tables.
+On Wed, Dec 24, 2014 at 5:28 AM, Stijn Volckaert
+<Stijn.Volckaert@elis.ugent.be> wrote:
+> Hello,
 >
->> ...
+> I ran across the following problem recently but I'm not entirely sure
+> whether this should be fixed in ptrace or in Yama. I'm working on a
+> ptrace-based monitor that forks off its own tracee during startup. The
+> monitor attaches to the tracee and then lets the tracee perform an execve
+> call. This is much like running a program in gdb.
 >
->> I will post v3 of the patch with what is agreed before in my response
->> and I understand there is no additional change required based on this
->> particular discussion about iommu. Right?
+> My monitor is multi-threaded and uses one monitor thread for every tracee
+> thread so whenever the tracee forks/vforks/clones, I fire up a new monitor
+> thread, detach the old monitor thread from the tracee thread and attach the
+> new monitor thread to the tracee thread.
 >
-> Actually regarding the bit I wrote above, it might be helpful to pass
-> the PCI_DEVID() into both of_iommu_configure and of_dma_configure.
+> I have recently stumbled upon several applications in which the main process
+> A forks off process B and then immediately exits. Under normal circumstances
+> the following would happen:
 >
-> While this may or may not be sufficient, I think there is no question
-> about it being needed for the ARM SMMU with PCI, so we may as well add
-> it at the point when you touch the same lines already. In the platform
-> bus case, just pass zero here.
-Arnd,
-
-PCI_DEVID() is defined as
-
-#define PCI_DEVID(bus, devfn)  ((((u16)(bus)) << 8) | (devfn))
-
-So PCI_DEVID of 0 is a valid PCI DEVID.
-
-How about checking if the device is PCI in of_iommu_configure() using 
-dev_is_pci(dev) macro and return immediately for PCI? Need to include 
-pci.h in this file though.
-
-Some of the iommu drivers already include this.
-
-a0868495@ares-ubuntu:~/projects/linux-keystone$ grep -r pci.h drivers/iommu/
-drivers/iommu/amd_iommu_v2.c:#include <linux/pci.h>
-drivers/iommu/dmar.c:#include <linux/pci.h>
-drivers/iommu/amd_iommu_types.h:#include <linux/pci.h>
-drivers/iommu/amd_iommu.c:#include <linux/pci.h>
-drivers/iommu/fsl_pamu_domain.c:#include <sysdev/fsl_pci.h>
-drivers/iommu/iommu.c:#include <linux/pci.h>
-drivers/iommu/intel-iommu.c:#include <linux/pci.h>
-drivers/iommu/intel_irq_remapping.c:#include <linux/pci.h>
-drivers/iommu/arm-smmu.c:#include <linux/pci.h>
-drivers/iommu/amd_iommu_init.c:#include <linux/pci.h>
-drivers/iommu/irq_remapping.c:#include <linux/pci.h>
-
-This will allow us to re-visit this later for IOMMU support for PCI 
-without polluting the API.
-
-
-Murali
+> Monitor[0]  ---   FORKS OFF   ---> Monitor[0]'
+> Monitor[0]  --- PTRACE_ATTACH ---> Monitor[0]'
+> Monitor[0]' ---    EXECVE     ---> Process A
 >
-> 	Arnd
+> Process A   ---   FORKS OFF   ---> Process B
+> Monitor[0]  --- PTRACE_DETACH ---> Process B
+> Monitor[1]  --- PTRACE_ATTACH ---> Process B
+>
+> With Yama enabled (and the scope set to YAMA_SCOPE_RELATIONAL) however, a
+> few interesting things can (and usually do) happen:
+>
+> 1) If Process A dies before Monitor[1] is attached to Process B, the attach
+> will fail since from Yama's point of view, Process B is no longer a
+> descendant of Monitor[1]. This problem is probably hard to fix
+> but I've circumvented it by delaying the death of Process A until Process B
+> is attached to Monitor[1].
 
+Just to make sure I understand this better, "Monitor" is the initial
+process, and [0] and [1] are separate threads within that process? I
+would expect B to have Monitor as its parent after A died, but I must
+be misunderstanding something.
+
+Regardless, your "interesting thing 1" is certainly a side-effect of
+YAMA_SCOPE_RELATIONAL trying to do its job.
+
+> 2) More interestingly though, even if Process B does get attached to
+> Monitor[1], as soon as Process A dies, all process_vm_readv and
+> process_vm_writev calls on Process B start failing. Any other ptrace
+> operations peformed on Process B do succeed.
+>
+> process_vm_readv|writev use __ptrace_may_access to check whether the
+> operation is permitted, whereas other ptrace operations (with the exception
+> of PTRACE_ATTACH) use ptrace_check_attach.
+
+Right, process_vm_{read,write}v use PTRACE_MODE_ATTACH (which is what
+Yama interposes via the LSM entry point in __ptrace_may_access).
+
+> To fix this problem, __ptrace_may_access should be forced to return 0 if the
+> calling process is already attached to the target process.
+>
+> The question now is whether or not it's the security module's responsibility
+> to check whether a tracee relationship is already in place or if ptrace
+> itself should do it. For the latter case, which seems more logical to me,
+> you could use the patch below.
+>
+> What do you guys think?
+>
+> Regards,
+> Stijn Volckaert
+>
+> --
+>
+> Signed-off-by: Stijn Volckaert <Stijn.Volckaert@elis.ugent.be>
+>
+> --- a/kernel/ptrace.c   2014-12-24 13:53:23.055346526 +0100
+> +++ b/kernel/ptrace.c   2014-12-24 14:17:20.617824840 +0100
+> @@ -232,6 +232,9 @@ static int __ptrace_may_access(struct ta
+>         /* Don't let security modules deny introspection */
+>         if (same_thread_group(task, current))
+>                 return 0;
+> +       /* Don't deny introspection to already attached ptracer */
+> +       if (!ptrace_check_attach(task, true))
+> +               return 0;
+>         rcu_read_lock();
+>         tcred = __task_cred(task);
+>         if (uid_eq(cred->uid, tcred->euid) &&
+>
+
+I'm nervous to add this (or Oleg's suggestion) generally to
+__ptrace_may_access, as it would mean other LSMs would stop seeing
+access checks even when attached. It does seem silly to deny ptrace
+checks when already attached, but it does change the behavior here.
+
+If the other LSM folks don't see a problem here, then it should live
+in the general case. Otherwise, I'm happy to add this check only in
+Yama. The existing Yama scopes should ignore attach requests when
+already attached.
+
+-Kees
 
 -- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+Kees Cook
+Chrome OS Security
