@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbbAEMLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 07:11:05 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64613 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbbAEMLD (ORCPT
+	id S1753470AbbAEMGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:06:51 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:44516 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752979AbbAEMGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 07:11:03 -0500
-From: Kaixu Xia <xiakaixu@huawei.com>
-To: <mathieu.poirier@linaro.org>
-CC: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <pratikp@codeaurora.org>, <xiakaixu@huawei.com>,
-        <kaixu.xia@linaro.org>
-Subject: [PATCH] coresight: fix comment in of_coresight.c
-Date: Mon, 5 Jan 2015 20:05:38 +0800
-Message-ID: <1420459538-20936-1-git-send-email-xiakaixu@huawei.com>
-X-Mailer: git-send-email 1.8.5.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+	Mon, 5 Jan 2015 07:06:49 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/8] Atmel System Timer cleanups
+Date: Mon,  5 Jan 2015 13:06:37 +0100
+Message-Id: <1420459605-24561-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Outports is a member of the struct pdata and should be
-a better choice.
+This patch sets cleans up the system timer driver.
 
-Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
----
- drivers/coresight/of_coresight.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The main goal is to get rid of the mach/ headers dependency. At the same time,
+it introduces proper probing and locking (using a regmap) for the watchdog
+driver.
 
-diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
-index 8bd524e..89ebbe2 100644
---- a/drivers/coresight/of_coresight.c
-+++ b/drivers/coresight/of_coresight.c
-@@ -93,7 +93,7 @@ static int of_coresight_alloc_memory(struct device *dev,
- 	if (!pdata->outports)
- 		return -ENOMEM;
- 
--	/* Children connected to this component via @outport */
-+	/* Children connected to this component via @outports */
- 	 pdata->child_names = devm_kzalloc(dev, pdata->nr_outport *
- 					  sizeof(*pdata->child_names),
- 					  GFP_KERNEL);
+Alexandre Belloni (8):
+  ARM: at91/dt: declare atmel,at91rm9200-st as a syscon
+  mfd: Add atmel-st driver
+  watchdog: at91rm9200: use the regmap from mfd
+  ARM: at91: time: move the system timer driver to drivers/clocksource
+  ARM: at91: move the restart function to the system timer driver
+  clocksource: atmel-st: properly initialize driver
+  clocksource: atmel-st: use syscon/regmap
+  ARM: at91: remove useless include
+
+ .../devicetree/bindings/arm/atmel-at91.txt         |   2 +-
+ arch/arm/boot/dts/at91rm9200.dtsi                  |   2 +-
+ arch/arm/mach-at91/Makefile                        |   2 +-
+ arch/arm/mach-at91/at91rm9200.c                    |  11 ---
+ arch/arm/mach-at91/board-dt-rm9200.c               |   7 --
+ arch/arm/mach-at91/generic.h                       |   3 -
+ drivers/clocksource/Kconfig                        |   4 +
+ drivers/clocksource/Makefile                       |   1 +
+ .../clocksource/timer-atmel-st.c                   | 109 +++++++++------------
+ drivers/mfd/Kconfig                                |   7 ++
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/atmel-st.c                             |  77 +++++++++++++++
+ drivers/watchdog/Kconfig                           |   2 +-
+ drivers/watchdog/at91rm9200_wdt.c                  |  22 ++---
+ .../mach/at91_st.h => include/linux/mfd/atmel-st.h |  20 +---
+ 15 files changed, 155 insertions(+), 115 deletions(-)
+ rename arch/arm/mach-at91/at91rm9200_time.c => drivers/clocksource/timer-atmel-st.c (74%)
+ create mode 100644 drivers/mfd/atmel-st.c
+ rename arch/arm/mach-at91/include/mach/at91_st.h => include/linux/mfd/atmel-st.h (84%)
+
 -- 
-1.8.5.5
+2.1.0
 
