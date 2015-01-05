@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbbAEMmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 07:42:17 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:44326 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267AbbAEMmO (ORCPT
+	id S1754025AbbAEMmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:42:25 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:37390 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818AbbAEMmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 07:42:14 -0500
+	Mon, 5 Jan 2015 07:42:16 -0500
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -16,9 +16,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         John Stultz <john.stultz@linaro.org>,
         Sumit Semwal <sumit.semwal@linaro.org>, patches@linaro.org,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH 3.19-rc2 v15 6/8] arm: netx: Migrate DEBUG_LL macros to shared directory
-Date: Mon,  5 Jan 2015 12:40:22 +0000
-Message-Id: <1420461624-4410-7-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH 3.19-rc2 v15 7/8] arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+Date: Mon,  5 Jan 2015 12:40:23 +0000
+Message-Id: <1420461624-4410-8-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1420461624-4410-1-git-send-email-daniel.thompson@linaro.org>
 References: <1420461624-4410-1-git-send-email-daniel.thompson@linaro.org>
@@ -26,133 +26,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the migration we introduce DEBUG_UART_PHYS/DEBUG_UART_VIRT
-which default to UART1 but allow a user to configure UART2 or UART3.
-We also introduce symbolic names for the registers and flags.
+On EP93XX uncompress.h uses CONFIG_DEBUG_UART_PHYS instead of a hard
+coded serial port. This means the build breaks when DEBUG_LL
+(and DEBUG_LL_UART_PL01X) is not enabled.
+
+This is fixed by adding a new dependency.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/Kconfig.debug                             | 16 ++++++++++++++--
- .../mach/debug-macro.S => include/debug/netx.S}    | 22 +++++++++++-----------
- 2 files changed, 25 insertions(+), 13 deletions(-)
- rename arch/arm/{mach-netx/include/mach/debug-macro.S => include/debug/netx.S} (62%)
+ arch/arm/Kconfig.debug | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index ec25d746b4dd..ff43ea38fe1f 100644
+index ff43ea38fe1f..e250505b9ae1 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -503,6 +503,13 @@ choice
- 		  Say Y here if you want kernel low-level debugging support
- 		  on Vybrid based platforms.
- 
-+	config DEBUG_NETX_UART
-+		bool "Kernel low-level debugging messages via NetX UART"
-+		depends on ARCH_NETX
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on Hilscher NetX based platforms.
-+
- 	config DEBUG_NOMADIK_UART
- 		bool "Kernel low-level debugging messages via NOMADIK UART"
- 		depends on ARCH_NOMADIK
-@@ -1231,6 +1238,7 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX6SX_UART
- 	default "debug/ks8695.S" if DEBUG_KS8695_UART
- 	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
-+	default "debug/netx.S" if DEBUG_NETX_UART
- 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
- 	default "debug/renesas-scif.S" if DEBUG_R7S72100_SCIF2
- 	default "debug/renesas-scif.S" if DEBUG_RCAR_GEN1_SCIF0
-@@ -1276,6 +1284,7 @@ config DEBUG_UART_BCM63XX
- 
- config DEBUG_UART_PHYS
- 	hex "Physical base address of debug UART"
-+	default 0x00100a00 if DEBUG_NETX_UART
- 	default 0x01c20000 if DEBUG_DAVINCI_DMx_UART0
- 	default 0x01c28000 if DEBUG_SUNXI_UART0
- 	default 0x01c28400 if DEBUG_SUNXI_UART1
-@@ -1364,7 +1373,8 @@ config DEBUG_UART_PHYS
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
+@@ -1370,7 +1370,8 @@ config DEBUG_UART_PHYS
+ 	default 0xfffb9800 if DEBUG_OMAP1UART3 || DEBUG_OMAP7XXUART3
+ 	default 0xfffe8600 if DEBUG_UART_BCM63XX
+ 	default 0xfffff700 if ARCH_IOP33X
+-	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
++	depends on ARCH_EP93XX || \
++	        DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
  		DEBUG_LL_UART_EFM32 || \
  		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_MESON_UARTAO || \
--		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_R7S72100_SCIF2 || \
-+		DEBUG_MSM_UART || DEBUG_NETX_UART || \
-+		DEBUG_QCOM_UARTDM || DEBUG_R7S72100_SCIF2 || \
- 		DEBUG_RCAR_GEN1_SCIF0 || DEBUG_RCAR_GEN1_SCIF2 || \
- 		DEBUG_RCAR_GEN2_SCIF0 || DEBUG_RCAR_GEN2_SCIF2 || \
- 		DEBUG_RMOBILE_SCIFA0 || DEBUG_RMOBILE_SCIFA1 || \
-@@ -1373,6 +1383,7 @@ config DEBUG_UART_PHYS
- 
- config DEBUG_UART_VIRT
- 	hex "Virtual base address of debug UART"
-+	default 0xe0000a00 if DEBUG_NETX_UART
- 	default 0xe0010fe0 if ARCH_RPC
- 	default 0xe1000000 if DEBUG_MSM_UART
- 	default 0xf0000be0 if ARCH_EBSA110
-@@ -1449,7 +1460,8 @@ config DEBUG_UART_VIRT
- 	default DEBUG_UART_PHYS if !MMU
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
- 		DEBUG_UART_8250 || DEBUG_UART_PL01X || DEBUG_MESON_UARTAO || \
--		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART || \
-+		DEBUG_MSM_UART || DEBUG_NETX_UART || \
-+		DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART || \
- 		DEBUG_UART_BCM63XX || DEBUG_ASM9260_UART
- 
- config DEBUG_UART_8250_SHIFT
-diff --git a/arch/arm/mach-netx/include/mach/debug-macro.S b/arch/arm/include/debug/netx.S
-similarity index 62%
-rename from arch/arm/mach-netx/include/mach/debug-macro.S
-rename to arch/arm/include/debug/netx.S
-index 247781e096e2..81e1b2af70f7 100644
---- a/arch/arm/mach-netx/include/mach/debug-macro.S
-+++ b/arch/arm/include/debug/netx.S
-@@ -1,5 +1,4 @@
--/* arch/arm/mach-netx/include/mach/debug-macro.S
-- *
-+/*
-  * Debugging macro include header
-  *
-  *  Copyright (C) 1994-1999 Russell King
-@@ -11,26 +10,27 @@
-  *
- */
- 
--#include "hardware.h"
-+#define UART_DATA 0
-+#define UART_FLAG 0x18
-+#define UART_FLAG_BUSY (1 << 3)
- 
- 		.macro	addruart, rp, rv, tmp
--		mov	\rp, #0x00000a00
--		orr	\rv, \rp, #io_p2v(0x00100000)	@ virtual
--		orr	\rp, \rp, #0x00100000		@ physical
-+		ldr	\rp, =CONFIG_DEBUG_UART_PHYS
-+		ldr	\rv, =CONFIG_DEBUG_UART_VIRT
- 		.endm
- 
- 		.macro	senduart,rd,rx
--		str	\rd, [\rx, #0]
-+		str	\rd, [\rx, #UART_DATA]
- 		.endm
- 
- 		.macro	busyuart,rd,rx
--1002:		ldr	\rd, [\rx, #0x18]
--		tst	\rd, #(1 << 3)
-+1002:		ldr	\rd, [\rx, #UART_FLAG]
-+		tst	\rd, #UART_FLAG_BUSY
- 		bne	1002b
- 		.endm
- 
- 		.macro	waituart,rd,rx
--1001:		ldr	\rd, [\rx, #0x18]
--		tst	\rd, #(1 << 3)
-+1001:		ldr	\rd, [\rx, #UART_FLAG]
-+		tst	\rd, #UART_FLAG_BUSY
- 		bne	1001b
- 		.endm
+ 		DEBUG_MSM_UART || DEBUG_NETX_UART || \
 -- 
 1.9.3
 
