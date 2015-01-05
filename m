@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945AbbAEMuR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 07:50:17 -0500
-Received: from mail.kernel.org ([198.145.29.136]:45932 "EHLO mail.kernel.org"
+	id S1753698AbbAEM6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:58:05 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51942 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059AbbAEMuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 07:50:16 -0500
-Date: Mon, 5 Jan 2015 09:49:24 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 6/7] perf tools: Append callchains only when requested
-Message-ID: <20150105124924.GA2587@kernel.org>
-References: <1419223455-4362-1-git-send-email-namhyung@kernel.org>
- <1419223455-4362-7-git-send-email-namhyung@kernel.org>
- <20150103022504.GB24430@kernel.org>
- <CAM9d7ciu4dVKv+mT3fHPE=BdBfLXdU+6zD9STVEkzxET2REUuQ@mail.gmail.com>
+	id S1753272AbbAEM6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 07:58:03 -0500
+Message-ID: <54AA8A3F.8080800@ti.com>
+Date: Mon, 5 Jan 2015 14:57:35 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM9d7ciu4dVKv+mT3fHPE=BdBfLXdU+6zD9STVEkzxET2REUuQ@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+CC: <linux-geode@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fbdev: geocode: remove unneeded NULL check
+References: <1420008938-18423-1-git-send-email-sudipm.mukherjee@gmail.com>
+In-Reply-To: <1420008938-18423-1-git-send-email-sudipm.mukherjee@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="VOhWt3xoJsbr6CnsPivSglwTL2MBPXq8r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Jan 04, 2015 at 12:01:26AM +0900, Namhyung Kim escreveu:
-> On Sat, Jan 3, 2015 at 11:25 AM, Arnaldo Carvalho de Melo
-> <acme@kernel.org> wrote:
-> > Em Mon, Dec 22, 2014 at 01:44:14PM +0900, Namhyung Kim escreveu:
-> >> The perf report --children can be called with callchain disabled so no
-> >> need to append callchains.  Actually the root of callchain tree is not
-> >> initialized properly in this case.
+--VOhWt3xoJsbr6CnsPivSglwTL2MBPXq8r
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-> >         I should have caught this using 'perf test', but it slipped
-> > thru, please try running 'perf test cumulation', I noticed that it fails
-> > and that if I revert this changeset it works again, can you please
-> > check?
- 
-> This change should not affect the test result, but I guess the test
-> somehow relied on the undefined behavior.  Actually I posted a patch
-> to fix this problem.  So please take a look at the link below:
- 
-> https://lkml.org/lkml/2014/12/22/561
+On 31/12/14 08:55, Sudip Mukherjee wrote:
+> the check for info is not required as we are checking it immediately
+> after gx1fb_init_fbinfo() and returnig -ENOMEM if it is NULL.
+>=20
+> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> ---
+>  drivers/video/fbdev/geode/gx1fb_core.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/video/fbdev/geode/gx1fb_core.c b/drivers/video/fbd=
+ev/geode/gx1fb_core.c
+> index 2794ba1..9bee874 100644
+> --- a/drivers/video/fbdev/geode/gx1fb_core.c
+> +++ b/drivers/video/fbdev/geode/gx1fb_core.c
+> @@ -374,10 +374,8 @@ static int gx1fb_probe(struct pci_dev *pdev, const=
+ struct pci_device_id *id)
+>  		release_mem_region(gx1_gx_base() + 0x8300, 0x100);
+>  	}
+> =20
+> -	if (info) {
+> -		fb_dealloc_cmap(&info->cmap);
+> -		framebuffer_release(info);
+> -	}
+> +	fb_dealloc_cmap(&info->cmap);
+> +	framebuffer_release(info);
+> =20
+>  	return ret;
+>  }
+>=20
 
-Ok, missed this one, will get it on perf/urgent and look if there are
-patches pending merging in that pull req.
+Thanks, queued for 3.20.
 
-Thanks,
+ Tomi
 
-- Arnaldo
+
+
+--VOhWt3xoJsbr6CnsPivSglwTL2MBPXq8r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUqoo/AAoJEPo9qoy8lh71lp0P/RF9XL9XkDLO0yUeVdS3/baT
+6+HUgDspBPleNF2ua1KU0EybPAX3r2Orlht3aeVm7CmmKx6FElUEN9IS7VPK7Tzm
+211+PkYTCRhY1+fYcasRSduoZg2QXgiqsTQr6ZUDWZ4paNvHoQtzNTGOZXWYbXdo
++nqLoKJ94cS6wHlCF0pLbpGZy2Dc/UjcDLluLGSJdk/b7/Q/WZkitakYIo1CnkQL
+6pvbt5lDucQIYMGDrmhq6U1+SdzIGGCazGblHrCleMcT9cCddYHCI8ID4S1bD4Q6
++/ewCEDYdIKw0B6ubCeNKJV/rmJmZetvc8lXyBE/wTT69oRQZhg0NX5UBS40wyA7
+msKy0x4Cnc/hPsQ3W8nh5otiKEKvbD4AR2apJFE4Fchpd/vwgfJP2GjfuOabkhgZ
+mV0amyNSegI8s++lyGYqn3Wlwk+D1PfXF/lUIEss5ktgrbKo9GK/WK7ea/WNZL7H
+RnE1lUJpPA83c6oyLtNybXyHNGmZTdMi7y7BFZ4B3aqtVQk3frXQe5J3m0ICVtBG
+eF1C/orJXsP0oX5M2V3BmjQLSOX7yEupThLEZpHY9k4u92eIi5tVxqDWUFr5AcdQ
+ythYxiDelissbgBhsVxRbmfoqO0hgjRveg/RPME8mPPhQtIAHt3JIYqZJyctKbnq
+/18rY1wiYkCoVA7cCqgp
+=7nU4
+-----END PGP SIGNATURE-----
+
+--VOhWt3xoJsbr6CnsPivSglwTL2MBPXq8r--
