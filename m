@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbbAEQvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:51:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41235 "EHLO mx1.redhat.com"
+	id S1753539AbbAEQwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:52:06 -0500
+Received: from mga01.intel.com ([192.55.52.88]:55866 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752809AbbAEQvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:51:22 -0500
-Date: Mon, 5 Jan 2015 11:50:57 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Cyril Bur <cyrilbur@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, drjones@redhat.com,
-        akpm@linux-foundation.org, mingo@kernel.org, uobergfe@redhat.com,
-        chaiw.fnst@cn.fujitsu.com, cl@linu.com, fabf@skynet.be,
-        atomlin@redhat.com, benzh@chromium.org, mtosatti@redhat.com
-Subject: Re: [PATCH 0/2] Quieten softlockup detector on virtualised kernels
-Message-ID: <20150105165057.GU116159@redhat.com>
-References: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
+	id S1752809AbbAEQwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 11:52:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,700,1413270000"; 
+   d="scan'208";a="657030039"
+From: "Jiang, Dave" <dave.jiang@intel.com>
+To: "der.herr@hofr.at" <der.herr@hofr.at>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rashika.kheria@gmail.com" <rashika.kheria@gmail.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>
+Subject: Re: [PATCH] ioat: fail self-test if wait_for_completion times out
+Thread-Topic: [PATCH] ioat: fail self-test if wait_for_completion times out
+Thread-Index: AQHQIorOSaVKzf9bt063KEMfjRC+jpyyUNSA
+Date: Mon, 5 Jan 2015 16:51:51 +0000
+Message-ID: <1420476711.7745.2.camel@djiang5-desk2.amr.corp.intel.com>
+References: <1419763047-15414-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1419763047-15414-1-git-send-email-der.herr@hofr.at>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.2.105.66]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <0ACB727D99CCF048BA25CF65084AF73A@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t05GqBeb007176
 
-cc'ing Marcelo
 
-On Mon, Dec 22, 2014 at 04:06:02PM +1100, Cyril Bur wrote:
-> When the hypervisor pauses a virtualised kernel the kernel will observe a jump
-> in timebase, this can cause spurious messages from the softlockup detector.
+
+
+On Sun, 2014-12-28 at 10:37 +0000, Nicholas Mc Guire wrote:
+> wait_for_completion_timeout reaching timeout was being ignored,
+> fail the self-test if timeout condition occurs.
 > 
-> Whilst these messages are harmless, they are accompanied with a stack trace
-> which causes undue concern and more problematically the stack trace in the
-> guest has nothing to do with the observed problem and can only be misleading.
+> Not sure about the indentations used (CodingStyle:Chapter 2)
 > 
-> Futhermore, on POWER8 this is completely avoidable with the introduction of
-> the Virtual Time Base (VTB) register.
+> this was only compile tested with
+> x86_64_defconfig + CONFIG_DMA_ENGINE=y + CONFIG_INTEL_IOATDMA=y
+> 
+> patch is against linux-next 3.19.0-rc1 -next-20141226
+> 
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
+>  drivers/dma/ioat/dma_v3.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+> index be307182..0659215 100644
+> --- a/drivers/dma/ioat/dma_v3.c
+> +++ b/drivers/dma/ioat/dma_v3.c
+> @@ -1311,7 +1311,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+> 
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+> 
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
+> +			!= DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test xor timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> @@ -1377,7 +1378,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+> 
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+> 
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
+> +			!= DMA_COMPLETE) {
 
-Hi Cyril,
+Can you please do: 
++	if (tmo == 0 ||
++	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
 
-Your solution seems simple and doesn't disturb the softlockup code as much
-as the x86 solution does.  The only small issue I had was the use of
-sched_clock instead of local_clock.  I keep forgetting the difference
-(unstable clock is the biggest reason I think).
+Otherwise it looks good. Although I've never hit that error condition either. 
 
-Other than that, I am not the biggest fan of putting multiple virtual
-guest solutions for the same problem into the watchdog code.  I would
-prefer a common solution/framework to leverage.
-
-I have the x86 folks focusing on the steal_time stuff.  It started with
-KVM and I believe VMWare is working on utilizing it too (and maybe Xen).
-
-Not sure if that is useful or could be incoporated into the power8 code.
-Though to be honest I am curious if the steal_time code could be ported to
-your solution as it seems the watchdog code could remove all the
-steal_time warts.
-
-I have cc'd Marcelo into this discussion as he was the last person I
-remember talking with about this problem.
-
-Cheers,
-Don
+>  		dev_err(dev, "Self-test validate timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> @@ -1429,7 +1431,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+> 
+>  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
+> 
+> -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
+> +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
+> +			!= DMA_COMPLETE) {
+>  		dev_err(dev, "Self-test 2nd validate timed out\n");
+>  		err = -ENODEV;
+>  		goto dma_unmap;
+> --
+> 1.7.10.4
+> 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
