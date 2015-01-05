@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbbAEAik (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 19:38:40 -0500
-Received: from icp-osb-irony-out2.external.iinet.net.au ([203.59.1.218]:14539
-	"EHLO icp-osb-irony-out2.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752963AbbAEAij (ORCPT
+	id S1753019AbbAEAea (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 19:34:30 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:41959 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbbAEAe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 19:38:39 -0500
-X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Sun, 04 Jan 2015 19:38:38 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtEBAHHZqVSVhxBY/2dsb2JhbAANT4Qws1cBAQEBAQEGmCsCgRoBAQEBAYUKAQEEJ1EBEAsNCwkWDwkDAgECAUUGAQwBBQIBAa9ClC0BAQEBAQEBAQEBAQEBAQEBAQEBGYYDiXQHhCkBBIUnl3uLNoQiXYJDAQEB
-X-IronPort-AV: E=Sophos;i="5.07,696,1413216000"; 
-   d="scan'208";a="289916221"
-Message-ID: <54A9DAEF.1020008@uclinux.org>
-Date: Mon, 05 Jan 2015 10:29:35 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 4 Jan 2015 19:34:28 -0500
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: m68k: 68360: config:  Remove unused function
-References: <1420232714-3989-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1420232714-3989-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1420408540.5686.140.camel@decadent.org.uk>
+References: <1420405017-23278-1-git-send-email-ddecotig@gmail.com>
+	<1420408540.5686.140.camel@decadent.org.uk>
+Date: Mon, 5 Jan 2015 01:34:26 +0100
+Message-ID: <CAHo-Ooxi8V_58b456vePY9_7ChuBe0jxEVHvGkGvRBpAR744yA@mail.gmail.com>
+Subject: Re: [PATCH net-next v1 0/7] net: extend ethtool link mode bitmaps to
+ 48 bits
+From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <zenczykowski@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: David Decotigny <ddecotig@gmail.com>, Amir Vadai <amirv@mellanox.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Linux NetDev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org, David Decotigny <decot@googlers.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>, Masatake YAMATO <yamato@redhat.com>,
+        Xi Wang <xii@google.com>, Neil Horman <nhorman@tuxdriver.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
+        Tom Gundersen <teg@jklm.no>, Jiri Pirko <jiri@resnulli.us>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Saeed Mahameed <saeedm@mellanox.com>,
+        Venkata Duvvuru <VenkatKumar.Duvvuru@emulex.com>,
+        Govindarajulu Varadarajan <_govind@gmx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rickard,
+>> I can send updates to other drivers, even though it's rather pointless
+>> to update 1G drivers at this point for example. Please let me know,
+>> but I'd prefer to do this in follow-up patches outside this first
+>> patch series.
+> [...]
+>
+> They should be changed to ensure they reject setting any of the high
+> advertising flags, but it's not urgent.
 
-On 03/01/15 07:05, Rickard Strandqvist wrote:
-> Remove the function BSP_set_clock_mmss() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-
-Thanks, I'll add it to the m68knommu git tree.
-
-Regards
-Greg
-
-
-> ---
->  arch/m68k/68360/config.c |   13 -------------
->  1 file changed, 13 deletions(-)
-> 
-> diff --git a/arch/m68k/68360/config.c b/arch/m68k/68360/config.c
-> index 17ec416..fd1f948 100644
-> --- a/arch/m68k/68360/config.c
-> +++ b/arch/m68k/68360/config.c
-> @@ -106,19 +106,6 @@ void hw_timer_init(irq_handler_t handler)
->    pquicc->timer_tgcr  = tgcr_save;
->  }
->  
-> -int BSP_set_clock_mmss(unsigned long nowtime)
-> -{
-> -#if 0
-> -  short real_seconds = nowtime % 60, real_minutes = (nowtime / 60) % 60;
-> -
-> -  tod->second1 = real_seconds / 10;
-> -  tod->second2 = real_seconds % 10;
-> -  tod->minute1 = real_minutes / 10;
-> -  tod->minute2 = real_minutes % 10;
-> -#endif
-> -  return 0;
-> -}
-> -
->  void BSP_reset (void)
->  {
->    local_irq_disable();
-> 
-
+if old drivers advertised a get/set_bits function while new drivers
+advertised a get/set_new_bits function,
+you could not updated any old drivers, and simply take care of
+rejecting invalid bits in core, by calling set_new_bits if provided,
+if not, rejecting bad bits and calling set_bits if no bad bits were
+set.
