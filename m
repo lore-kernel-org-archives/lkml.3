@@ -1,168 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbbAEV27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:28:59 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:42787 "EHLO lists.s-osg.org"
+	id S1754149AbbAEVc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:32:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753592AbbAEV25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:28:57 -0500
-Message-ID: <54AB0215.5020409@osg.samsung.com>
-Date: Mon, 05 Jan 2015 14:28:53 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Tim Bird <tim.bird@sonymobile.com>, "mmarek@suse.cz" <mmarek@suse.cz>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "tranmanphong@gmail.com" <tranmanphong@gmail.com>,
-        "mpe@ellerman.id.au" <mpe@ellerman.id.au>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "dh.herrmann@gmail.com" <dh.herrmann@gmail.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "bobby.prani@gmail.com" <bobby.prani@gmail.com>,
-        "serge.hallyn@ubuntu.com" <serge.hallyn@ubuntu.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "koct9i@gmail.com" <koct9i@gmail.com>
-CC: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: WIP alternative - was Re: [PATCH v3 14/20] selftests/size: add
- install target to enable test install
-References: <cover.1419387513.git.shuahkh@osg.samsung.com> <c961f80614b02a2f3c6455518d1f6fabdaf6c7f3.1419387513.git.shuahkh@osg.samsung.com> <54A4B174.2010501@sonymobile.com>
-In-Reply-To: <54A4B174.2010501@sonymobile.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1752003AbbAEVcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 16:32:25 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>, Jason Gerecke <killertofu@gmail.com>
+Cc: josep.sanchez.ferreres@est.fib.upc.edu, Ping Cheng <pinglinux@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] HID: wacom: use WACOM_*_FIELD macros in wacom_usage_mapping()
+Date: Mon,  5 Jan 2015 16:32:12 -0500
+Message-Id: <1420493533-11639-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/31/2014 07:31 PM, Tim Bird wrote:
-> On 12/24/2014 08:27 AM, Shuah Khan wrote:
->> Add a new make target to enable installing test. This target
->> installs test in the kselftest install location and add to the
->> kselftest script to run the test. Install target can be run
->> only from top level kernel source directory.
->>
->> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->> ---
->>  tools/testing/selftests/size/Makefile | 12 +++++++++++-
->>  1 file changed, 11 insertions(+), 1 deletion(-)
->>
->> diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
->> index 04dc25e..bb7113b 100644
->> --- a/tools/testing/selftests/size/Makefile
->> +++ b/tools/testing/selftests/size/Makefile
->> @@ -1,12 +1,22 @@
->>  CC = $(CROSS_COMPILE)gcc
->>  
->> +TEST_STR = ./get_size || echo get_size selftests: [FAIL]
->> +
->>  all: get_size
->>  
->>  get_size: get_size.c
->>  	$(CC) -static -ffreestanding -nostartfiles -s $< -o $@
->>  
->> +install:
->> +ifdef INSTALL_KSFT_PATH
->> +	install ./get_size $(INSTALL_KSFT_PATH)
->> +	@echo "$(TEST_STR)" >> $(KSELFTEST)
->> +else
->> +	@echo Run make kselftest_install in top level source directory
->> +endif
->> +
->>  run_tests: all
->> -	./get_size
->> +	@$(TEST_STR)
->>  
->>  clean:
->>  	$(RM) get_size
->>
-> 
-> The install phase is desperately needed for usage of kselftest in
-> cross-target situations (applicable to almost all embedded).  So this
-> is great stuff.
+We introduced nice macros in wacom_wac.c to check whether a field is
+a pen or a touch one.
 
-Thanks.
+wacom_usage_mapping() still uses it's own tests, which are not in sync with
+the wacom_wac tests (.application is not checked).
 
-> 
-> I worked a bit on isolating the install stuff to a makefile include file.
-> This allows simplifying some of the sub-level Makefiles a bit, and allowing
-> control of some of the install and run logic in less places.
-> 
-> This is still a work in progress, but before I got too far along, I wanted
-> to post it for people to provide feedback.  A couple of problems cropped
-> up that are worth discussing, IMHO.
-> 
-> 1) I think it should be a requirement that each test has a single
-> "main" program to execute to run the tests.  If multiple tests are supported
-> or more flexibility is desired for additional arguments, or that sort of
-> thing, then that's fine, but the automated script builder should be able
-> to run just a single program or script to have things work.  This also
-> makes things more consistent.  In the case of the firmware test, I created
-> a single fw_both.sh script to do this, instead of having two separate
-> blocks in the kselftest.sh script.
+That means that some legitimate fields might be filtered out from the
+usage mapping, and thus will not be used properly while receiving the
+events.
 
-It is a good goal for individual tests to use a main program to run
-tests, even though, I would not make it a requirement. I would like to
-leave that decision up to the individual test writer.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/wacom_sys.c | 6 ++----
+ drivers/hid/wacom_wac.c | 8 --------
+ drivers/hid/wacom_wac.h | 8 ++++++++
+ 3 files changed, 10 insertions(+), 12 deletions(-)
 
-> 
-> 2) I've added a CROSS_INSTALL variable, which can call an arbitrary program
-> to place files on the target system (rather than just calling 'install').
-> In my case, I'd use my own 'ttc cp' command, which I can extend as necessary
-> to put things on a remote machine.  This works for a single directory,
-> but things get dicier with sub-directory trees full of files (like
-> the ftrace test uses.)
-> 
-> If additional items need to be installed to the target, then maybe a setup
-> program should be used, rather than just copying files.
-> 
-> 3) Some of the scripts were using /bin/bash to execute them, rather
-> than rely on the interpreter line in the script itself (and having
-> the script have executable privileges).  Is there a reason for this?
-> I modified a few scripts to be executable, and got rid of the
-> explicit execution with /bin/bash.
+diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+index 6542029..f01ab3a 100644
+--- a/drivers/hid/wacom_sys.c
++++ b/drivers/hid/wacom_sys.c
+@@ -173,10 +173,8 @@ static void wacom_usage_mapping(struct hid_device *hdev,
+ {
+ 	struct wacom *wacom = hid_get_drvdata(hdev);
+ 	struct wacom_features *features = &wacom->wacom_wac.features;
+-	bool finger = (field->logical == HID_DG_FINGER) ||
+-		      (field->physical == HID_DG_FINGER);
+-	bool pen = (field->logical == HID_DG_STYLUS) ||
+-		   (field->physical == HID_DG_STYLUS);
++	bool finger = WACOM_FINGER_FIELD(field);
++	bool pen = WACOM_PEN_FIELD(field);
+ 
+ 	/*
+ 	* Requiring Stylus Usage will ignore boot mouse
+diff --git a/drivers/hid/wacom_wac.c b/drivers/hid/wacom_wac.c
+index ac7447c..596a6fb5 100644
+--- a/drivers/hid/wacom_wac.c
++++ b/drivers/hid/wacom_wac.c
+@@ -15,7 +15,6 @@
+ #include "wacom_wac.h"
+ #include "wacom.h"
+ #include <linux/input/mt.h>
+-#include <linux/hid.h>
+ 
+ /* resolution for penabled devices */
+ #define WACOM_PL_RES		20
+@@ -1514,13 +1513,6 @@ static void wacom_wac_finger_report(struct hid_device *hdev,
+ 	wacom_wac->shared->touch_down = wacom_wac_finger_count_touches(hdev);
+ }
+ 
+-#define WACOM_PEN_FIELD(f)	(((f)->logical == HID_DG_STYLUS) || \
+-				 ((f)->physical == HID_DG_STYLUS) || \
+-				 ((f)->application == HID_DG_PEN))
+-#define WACOM_FINGER_FIELD(f)	(((f)->logical == HID_DG_FINGER) || \
+-				 ((f)->physical == HID_DG_FINGER) || \
+-				 ((f)->application == HID_DG_TOUCHSCREEN))
+-
+ void wacom_wac_usage_mapping(struct hid_device *hdev,
+ 		struct hid_field *field, struct hid_usage *usage)
+ {
+diff --git a/drivers/hid/wacom_wac.h b/drivers/hid/wacom_wac.h
+index bfad815..7436f2b 100644
+--- a/drivers/hid/wacom_wac.h
++++ b/drivers/hid/wacom_wac.h
+@@ -10,6 +10,7 @@
+ #define WACOM_WAC_H
+ 
+ #include <linux/types.h>
++#include <linux/hid.h>
+ 
+ /* maximum packet length for USB devices */
+ #define WACOM_PKGLEN_MAX	68
+@@ -71,6 +72,13 @@
+ #define WACOM_QUIRK_MONITOR		0x0008
+ #define WACOM_QUIRK_BATTERY		0x0010
+ 
++#define WACOM_PEN_FIELD(f)	(((f)->logical == HID_DG_STYLUS) || \
++				 ((f)->physical == HID_DG_STYLUS) || \
++				 ((f)->application == HID_DG_PEN))
++#define WACOM_FINGER_FIELD(f)	(((f)->logical == HID_DG_FINGER) || \
++				 ((f)->physical == HID_DG_FINGER) || \
++				 ((f)->application == HID_DG_TOUCHSCREEN))
++
+ enum {
+ 	PENPARTNER = 0,
+ 	GRAPHIRE,
+-- 
+2.1.0
 
-Probably no reason other than the choice made by the test writer.
-It could be cleaned up and made consistent, however, I would see
-this as a separate enhancement type work that could be done on its
-own and not include it in the install work.
-
-> 
-> The following is just a start...  Let me know if this direction looks
-> OK, and I'll finish this up.  The main item to look at is
-> kselftest.include file.  Note that these patches are based on Shuah's
-> series - but if you want to use these ideas I can rebase them onto
-> mainline, and break them out per test sub-level like Shuah did.
-
-One of the reasons I picked install target approach is to enable the
-feature by extending the existing run_tests support. This way we will
-have the feature available quickly. Once that is supported, we can work
-on evolving to a generic approach to use the include file approach, as
-the changes you are proposing are based on the the series I sent out,
-and makes improvements to it.
-
-kselftest.include file approach could work for several tests and tests
-that can't use the generic could add their own install support.
-
-I propose evolving to a generic kselftest.include as the second step in
-evolving the install feature. Can I count on you do the work and update
-the tests to use kselftest.include, CROSS_INSTALL variable support?
-
-thanks,
--- Shuah
-
-
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
