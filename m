@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100AbbAERzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:55:51 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:41982 "EHLO
+	id S1754485AbbAESHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:07:49 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:37040 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932068AbbAERzs (ORCPT
+	by vger.kernel.org with ESMTP id S1753697AbbAERzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:55:48 -0500
+	Mon, 5 Jan 2015 12:55:49 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/45] staging: comedi: adv_pci1724: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:54:34 +0000
-Message-Id: <1420480513-14765-7-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 07/45] staging: comedi: c6xdigio: rewrite "Devices:" line
+Date: Mon,  5 Jan 2015 17:54:35 +0000
+Message-Id: <1420480513-14765-8-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -38,22 +38,22 @@ lines by using one or more spaces at the start of each continuation line
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/adv_pci1724.c | 2 +-
+ drivers/staging/comedi/drivers/c6xdigio.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci1724.c b/drivers/staging/comedi/drivers/adv_pci1724.c
-index a8d2840..a3573ea 100644
---- a/drivers/staging/comedi/drivers/adv_pci1724.c
-+++ b/drivers/staging/comedi/drivers/adv_pci1724.c
+diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
+index e7cb703..1a109e3 100644
+--- a/drivers/staging/comedi/drivers/c6xdigio.c
++++ b/drivers/staging/comedi/drivers/c6xdigio.c
 @@ -22,7 +22,7 @@
- /*
-  * Driver: adv_pci1724
-  * Description: Advantech PCI-1724U
-- * Devices: (Advantech) PCI-1724U [adv_pci1724]
-+ * Devices: [Advantech] PCI-1724U (adv_pci1724)
-  * Author: Frank Mori Hess <fmh6jj@gmail.com>
-  * Updated: 2013-02-09
-  * Status: works
+  * Description: Mechatronic Systems Inc. C6x_DIGIO DSP daughter card
+  * Author: Dan Block
+  * Status: unknown
+- * Devices: (Mechatronic Systems Inc.) C6x_DIGIO DSP daughter card [c6xdigio]
++ * Devices: [Mechatronic Systems Inc.] C6x_DIGIO DSP daughter card (c6xdigio)
+  * Updated: Sun Nov 20 20:18:34 EST 2005
+  *
+  * Configuration Options:
 -- 
 2.1.4
 
