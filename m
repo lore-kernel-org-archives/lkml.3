@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbbAEWCz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:02:55 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56192 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753885AbbAEWCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:02:53 -0500
-X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 17:02:53 EST
-X-Sasl-enc: U4ZK7tU0cS+eCjFNTjsZleYWkiqWrgbxZc12FGa+ciqL 1420494892
-Date: Mon, 5 Jan 2015 19:54:46 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Guillem Jover <guillem@debian.org>, linux-aio <linux-aio@kvack.org>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: libaio tarballs on <kernel.org>
-Message-ID: <20150105215446.GD19679@khazad-dum.debian.net>
-References: <CA+icZUUkp4OrPWfw7PEpt2DDEyrf+z1SAQcXpREOXoA7JQ0stg@mail.gmail.com>
- <CA+icZUV8Zu=fE5Jj-Fo5a3TTz-C2r2L5zWJzEcrfSbdq5Zf4sA@mail.gmail.com>
- <x49egr93vcw.fsf@segfault.boston.devel.redhat.com>
- <CA+icZUUsn4YWATGb2KCer-kqhKje1o1xX35ZwazDTiu6LxZQMQ@mail.gmail.com>
+	id S1754535AbbAEVzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:55:33 -0500
+Received: from mout.web.de ([212.227.17.12]:51278 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754465AbbAEVzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 16:55:32 -0500
+Message-ID: <54AB0844.5090405@users.sourceforge.net>
+Date: Mon, 05 Jan 2015 22:55:16 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUUsn4YWATGb2KCer-kqhKje1o1xX35ZwazDTiu6LxZQMQ@mail.gmail.com>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Latchesar Ionkov <lucho@ionkov.net>, Ron Minnich <rminnich@sandia.gov>,
+        v9fs-developer@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/8] fs/9p: Deletion of unnecessary checks before the
+ function call "p9_client_clunk"
+References: <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54A01326.3050306@users.sourceforge.net> <54A06AB9.4020505@users.sourceforge.net> <20150105112206.GC15033@mwanda> <54AB02F3.5020308@users.sourceforge.net> <alpine.DEB.2.02.1501052239290.2025@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1501052239290.2025@localhost6.localdomain6>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:gGRwlDOQFS42f9Pe4zYoLjWQqyiqLQt08qqaAzwNgGVhap2XMP7
+ YY2TYQqnZVBjo8xXX3ohlNO+TTOx7RUfgC6U1ytcGS62hA7Zgzg05UsCC29c7c2L3yeXQeD
+ xclMob4jry9uHrcn0tU/6AROeH/2Td8CxYNbefl0av8g/hfqP05p14S3HrwlwpIHM4he3Co
+ nxvFwAq+7cOvrX1X2pLLQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Jan 2015, Sedat Dilek wrote:
-> > https://fedorahosted.org/releases/l/i/libaio/
+>> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/net/9p/client.c?id=d8282ea05ad119247122de23db7d48ad6098cfa2#n1448
+>> http://lxr.free-electrons.com/source/net/9p/client.c#L1448
 > 
-> Thanks for the URL.
-> More Thanks when you add some hashsums like md5sum and/or preferred sha256sum.
-> 
-> Hope the Debian/Ubuntu maintainers will change the "Homepage:" line accordingly.
+> What do you mean by "work in principle"?
 
-Please file a bug on the Debian BTS about it...
+If I do not stumble on an unexpected name space issue from my static source
+analysis again, then I would see the linked function as relevant here.
+Its implementation provides a clear input parameter validation.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+
+> But you don't want to do a dump_stack for no reason.  That would at best
+> be very misleading, and I would imagine be quite expensive.
+
+The error response is clear. Are any software developments efforts expected
+to clean-up the call stack for unwanted null pointers even more?
+
+Regards,
+Markus
