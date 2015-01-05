@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbbAEOGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:06:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43326 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753870AbbAEOGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:06:13 -0500
-Date: Mon, 5 Jan 2015 09:06:06 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Subject: Re: [LKP] [sb_edac] 50d1bb93672: EDAC sbridge: ECC is disabled.
- Aborting
-Message-ID: <20150105140606.GA25309@redhat.com>
-References: <1418890406.26403.2.camel@intel.com>
- <20141218090536.0d671dca@recife.lan>
- <1418966819.26403.33.camel@intel.com>
+	id S1753874AbbAEOIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:08:22 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:38915 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153AbbAEOIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 09:08:21 -0500
+Date: Mon, 5 Jan 2015 15:07:54 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= 
+	<chenggang.qcg@alibaba-inc.com>,
+        Stephane Eranian <eranian@google.com>, root <chenggang.qin@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@taobao.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Namhyung Kim <namhyung@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Yanmin Zhang <yanmin.zhang@intel.com>
+Subject: Re: [PATCH 1/2] perf: Move task_pt_regs sampling into arch code
+Message-ID: <20150105140754.GF29390@twins.programming.kicks-ass.net>
+References: <cover.1420396372.git.luto@amacapital.net>
+ <e431cd4c18c2e1c44c774f10758527fb2d1025c4.1420396372.git.luto@amacapital.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418966819.26403.33.camel@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <e431cd4c18c2e1c44c774f10758527fb2d1025c4.1420396372.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Fri, Dec 19, 2014 at 01:26:59PM +0800, Huang Ying wrote:
-> In fact, I am not complaining :-), just FYI. As I said, this may be a
-> expected behavior because this is a Haswell machine and the Haswell
-> support was added in this patch.
+On Sun, Jan 04, 2015 at 10:36:19AM -0800, Andy Lutomirski wrote:
+> On x86_64, at least, task_pt_regs may be only partially initialized
+> in many contexts, so x86_64 should not use it without extra care
+> from interrupt context, let alone NMI context.
 > 
-> > From the above, what looks weird, from EDAC driver PoV, is:
-> > 	[   12.506298] EDAC sbridge: ECC is disabled. Aborting
-> 
-> This is what I want help from you to confirm whether it is abnormal.
-> 
-> > Does it used to work before? If so, was there any BIOS setting change?
-> > Does the memories used on this machine have ECC?
-> 
-> This is a high-end desktop, there is something as below in dmidecode
-> output.  Is there some other way to tell whether the memories have ECC?
-> 
-> Handle 0x0018, DMI type 16, 23 bytes
-> Physical Memory Array
->         Location: System Board Or Motherboard
->         Use: System Memory
->         Error Correction Type: Multi-bit ECC
->         Maximum Capacity: 128 GB
->         Error Information Handle: Not Provided
->         Number Of Devices: 4
-> 
-> Handle 0x001A, DMI type 17, 34 bytes
-> Memory Device
->         Array Handle: 0x0018
->         Error Information Handle: Not Provided
->         Total Width: 72 bits
->         Data Width: 72 bits
->         Size: 8192 MB
->         Form Factor: DIMM
->         Set: None
->         Locator: DIMM_A1
->         Bank Locator: CPU 0
->         Type: <OUT OF SPEC>
->         Type Detail: Synchronous
->         Speed: 1067 MHz
->         Manufacturer: 0x11
->         Serial Number: Unknown
->         Asset Tag: Unknown
->         Part Number: Unknown
->         Rank: 1
->         Configured Clock Speed: Unknown
+> This will allow x86_64 to override the logic and will supply some
+> scratch space to use to make a cleaner copy of user regs.
 
-unfortunately with this I can't say :(
-Do you mind checking on EFI or maybe looking at the memory modules' part
-number?
-
-(sorry for the delay, was on vacations since 12/18)
-
--- 
-Aristeu
-
+Just wondering how bad it would be to fill out the actual pt_regs that
+was previously partially initialized?
