@@ -1,70 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbbAEJPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:15:23 -0500
-Received: from verein.lst.de ([213.95.11.211]:54138 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbbAEJPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:15:21 -0500
-Date: Mon, 5 Jan 2015 10:15:16 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: hch@lst.de, bvanassche@acm.org, hare@suse.de, JBottomley@parallels.com,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: scsi: non atomic allocation in mempool_alloc in atomic context
-Message-ID: <20150105091516.GA22226@lst.de>
-References: <54A43CFB.2080705@oracle.com>
+	id S1753461AbbAEJQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:16:12 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:56750 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbbAEJQK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 04:16:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robh@kernel.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] pci: introduce common pci config space accessors
+Date: Mon, 05 Jan 2015 10:16:06 +0100
+Message-ID: <2224125.SvyFyDvrch@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420424374-32412-1-git-send-email-robh@kernel.org>
+References: <1420424374-32412-1-git-send-email-robh@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A43CFB.2080705@oracle.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:cOotyeaQJUZ1cFhqfDqHaDzRZZShbZYFcJoqwZH0YMmMc8EQbCe
+ 0j1tAvlRkzajWNF+M2mSZSFzBh1MqM+Lb5zXZhk4Yxjx6NJYV8R9l5elqBSW12zvPIxSOTA
+ rKXeNu1A+D7GlbuZfBXEpXqpWDPMWj9EvW3xsELE+DIoSWJlRZC6kusJuSpys8yYfMv5JCF
+ kpwkuMiANgNK/p7Ue1LiA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 01:14:19PM -0500, Sasha Levin wrote:
-> Hi Christoph,
+On Sunday 04 January 2015 20:19:34 Rob Herring wrote:
+> Many PCI controllers' configuration space accesses are memory mapped
+> varying only in address calculation and access checks. There are 2 main
+> access methods: a decoded address space such as ECAM or a single address
+> and data register similar to x86. This implementation can support both
+> cases as well as be used in cases that need additional pre or post access
+> handling.
 > 
-> I'm seeing an issue which was bisected down to 3c356bde1 ("scsi: stop passing
-> a gfp_mask argument down the command setup path"):
+> A new pci_ops member map_bus is introduced which can do access checks and
+> any necessary setup. It returns the address to use for the configuration
+> space access. The access types supported are 32-bit only accesses or
+> correct byte, word, or dword sized accesses.
+> 
+> Signed-off-by: Rob Herring <robh@kernel.org>
 
-->queue_rq in blk-mq context is designed to be able to sleep and be called
-from process context without any spinlocks held or irqs disabled, so we
-really should fix the
-caller instead.
+I think this looks very nice, and I don't mind using it as-is, but I'd
+like to put up some variations for discussions so we get the best
+implementation -- we should try not to change it again soon if someone
+comes up with a slightly better way later ;-)
 
-That being said your trace seems odd to me:
+> I've converted a few drivers already. I'll send patches for them after
+> some feedback on this. Most already have some function similar to what is
+> needed for map_bus, so the conversion is pretty simple. This certainly
+> isn't a complete list of possible users. The diffstat so far looks like
+> this:
+> 
+>  arch/arm/mach-cns3xxx/pcie.c          |  46 +++-------------------
+>  arch/arm/mach-integrator/pci_v3.c     |  61 +++---------------------------
+>  arch/arm/mach-ks8695/pci.c            |  75 +++---------------------------------
+>  arch/arm/mach-sa1100/pci-nanoengine.c |  94 ++++-----------------------------------------
+>  arch/powerpc/platforms/powermac/pci.c | 206 +++++++++++++++++++--------------------------------------------------------------------------------
+>  arch/powerpc/sysdev/fsl_pci.c         |  46 ++--------------------
+>  drivers/pci/host/pci-host-generic.c   |  51 ++-----------------------
+>  drivers/pci/host/pci-rcar-gen2.c      |  51 ++-----------------------
+>  drivers/pci/host/pci-tegra.c          |  55 ++-------------------------
+>  drivers/pci/host/pci-xgene.c          | 150 +++++-------------------------------------------------------------------
+>  drivers/pci/host/pcie-xilinx.c        |  88 +++++-------------------------------------
+>  11 files changed, 93 insertions(+), 830 deletions(-)
 
-> [ 3395.328221] BUG: sleeping function called from invalid context at mm/mempool.c:206
-> [ 3395.329540] in_atomic(): 1, irqs_disabled(): 0, pid: 6399, name: trinity-c531
-> [ 3395.331104] no locks held by trinity-c531/6399.
-> [ 3395.331849] Preemption disabled blk_execute_rq_nowait (block/blk-exec.c:95)
+Awesome!
 
-blk_execute_rq_nowait only takes a lock for the non-blk-mq case.  In my
-current kernel that's in line 79, but can you verify that for you
-line 95 is the spin_lock_irq in the !q->mq_ops case?
+> +int pci_generic_config_read(struct pci_bus *bus, unsigned int devfn,
+> +			    int where, int size, u32 *val)
+> +{
+> +	void __iomem *addr;
+> +
+> +	addr = bus->ops->map_bus(bus, devfn, where);
+> +	if (!addr) {
+> +		*val = ~0;
+> +		return PCIBIOS_DEVICE_NOT_FOUND;
+> +	}
+> +
+> +	if (size == 1)
+> +		*val = readb(addr);
+> +	else if (size == 2)
+> +		*val = readw(addr);
+> +	else
+> +		*val = readl(addr);
+> +
+> +	return PCIBIOS_SUCCESSFUL;
+> +}
 
-> [ 3395.348571] __might_sleep (kernel/sched/core.c:7308)
-> [ 3395.351944] mempool_alloc (mm/mempool.c:206 (discriminator 1))
-> [ 3395.355196] scsi_sg_alloc (drivers/scsi/scsi_lib.c:582)
-> [ 3395.356893] __sg_alloc_table (lib/scatterlist.c:282)
-> [ 3395.358844] ? sdev_disable_disk_events (drivers/scsi/scsi_lib.c:577)
-> [ 3395.360873] scsi_alloc_sgtable (drivers/scsi/scsi_lib.c:608)
-> [ 3395.362769] scsi_init_sgtable (drivers/scsi/scsi_lib.c:1087)
-> [ 3395.364583] ? lockdep_init_map (kernel/locking/lockdep.c:2986)
-> [ 3395.366354] scsi_init_io (drivers/scsi/scsi_lib.c:1122)
-> [ 3395.368092] ? do_init_timer (kernel/time/timer.c:669)
-> [ 3395.369837] scsi_setup_cmnd (drivers/scsi/scsi_lib.c:1220 drivers/scsi/scsi_lib.c:1268)
-> [ 3395.371743] scsi_queue_rq (drivers/scsi/scsi_lib.c:1875 drivers/scsi/scsi_lib.c:1980)
-> [ 3395.373471] __blk_mq_run_hw_queue (block/blk-mq.c:751)
-> [ 3395.375481] blk_mq_run_hw_queue (block/blk-mq.c:831)
-> [ 3395.377324] blk_mq_insert_request (block/blk-mq.h:92 block/blk-mq.c:974)
-> [ 3395.379377] ? blk_rq_map_user (block/blk-map.c:78 block/blk-map.c:142)
-> [ 3395.381307] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2559 kernel/locking/lockdep.c:2601)
-> [ 3395.383485] blk_execute_rq_nowait (block/blk-exec.c:95)
+PCI host controller drivers can be loadable modules these days, so
+the functions clearly need to be exported.
 
-But this clearly is the blk-mq case.  How does your version of
-blk_execute_rq_nowait look like?
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 360a966..e7fd519 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -560,6 +560,7 @@ static inline int pcibios_err_to_errno(int err)
+>  /* Low-level architecture-dependent routines */
+> 
+>  struct pci_ops {
+> +	void __iomem *(*map_bus)(struct pci_bus *bus, unsigned int devfn, int where);
+>  	int (*read)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 *val);
+>  	int (*write)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 val);
+>  };
 
+In various other contexts, we have recently discussed adding new callbacks
+to struct pci_host_bridge, or an operations structure below it. I don't see
+a strong reason for one place or the other, but maybe someone else does.
+If we put it into pci_host_bridge_ops, the first argument would need to
+be the pci_host_bridge pointer of course.
+
+For the common map_bus implementations, it would also be nice to put them
+into the same file as your new access functions, but then we need a common
+location to store at least one __iomem pointer. I guess that place could
+either be struct pci_host_bridge or struct pci_bus. In theory, struct pci_ops
+would work too, but then we could no longer mark it 'const' in host bridge
+drivers.
+
+If we have a common set of map_bus functions, we can even export the
+pci_ops structures from drivers/pci/access.c:
+
+const struct pci_ops pci_generic_ecam_ops = {
+	.map_bus	= ecam_map_bus,
+	.read		= pci_generic_config_read,
+	.write		= pci_generic_config_write,
+};
+EXPORT_SYMBOL_GPL(pci_generic_ecam_ops);
+
+That could of course be done in a follow-up patch, it doesn't have to be
+part of your patch, but it would be good to be prepared.
+
+	Arnd
