@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbbAEJ6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:58:32 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:52638 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887AbbAEJ63 (ORCPT
+	id S1753497AbbAEKHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:07:32 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:8676 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbbAEKH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:58:29 -0500
+	Mon, 5 Jan 2015 05:07:29 -0500
+From: Kaixu Xia <xiakaixu@huawei.com>
+To: <p.zabel@pengutronix.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <kaixu.xia@linaro.org>, <xiakaixu@huawei.com>
+Subject: [PATCH] Documentation: of: fix typo in graph bindings
+Date: Mon, 5 Jan 2015 18:02:16 +0800
+Message-ID: <1420452136-76466-1-git-send-email-xiakaixu@huawei.com>
+X-Mailer: git-send-email 1.8.5.5
 MIME-Version: 1.0
-In-Reply-To: <53767FB9.5040508@infradead.org>
-References: <53700D71.1090201@landley.net>
-	<53767FB9.5040508@infradead.org>
-Date: Mon, 5 Jan 2015 10:58:27 +0100
-X-Google-Sender-Auth: Nxfq1zSqlK94Nra8EqXVZEwdbyI
-Message-ID: <CAMuHMdVnUqc+gyqok_OAUWT++K-O=9kRQkyUkHduPGxQUQ20oA@mail.gmail.com>
-Subject: Re: Building sh4 without CONFIG_EXPERT.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rob Landley <rob@landley.net>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 16, 2014 at 11:14 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 05/11/2014 04:53 PM, Rob Landley wrote:
->> I got sh4 to work under QEMU years ago as part of my aboriginal linux
->> project, which builds the smallest Linux system capable of rebuilding
->> itself natively from source code. (You can download and run the system
->> images from http://landley.net/aboriginal/bin if you're curious.)
->>
->> One of the goals of Aboriginal is to make different architectures behave
->> the same way, and one of the ways I do that is by having a basic kernel
->> miniconfig file defining the config symbols common across platforms:
->>
->>   http://landley.net/hg/aboriginal/file/1651/sources/baseconfig-linux
->>
->> And then append target-specific chunks, ala the LINUX_CONFIG sections
->> from each of:
->>
->>   http://landley.net/hg/aboriginal/file/1651/sources/targets
->>
->> The problem is, the sh4 target's target-specific chunk is an INSANE 45
->> config symbols (armv5l needs 15 symbols, powerpc needs 16, i686 needs 7,
->> mips needs 6...) and the reason for the verbosity is that sh4 forces on
->> CONFIG_EXPERT.
->>
->> As far as I can tell, the only reason sh4 is forcing on CONFIG_EXPERT is
->> to get CONFIG_PATA_PLATFORM. The patch to make sh4 _not_ force on
->> CONFIG_EXPERT is just:
->>
->> diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
->> index 834b67c..7d0d44d 100644
->> --- a/arch/sh/Kconfig
->> +++ b/arch/sh/Kconfig
->> @@ -1,7 +1,7 @@
->>  config SUPERH
->>       def_bool y
->>       select ARCH_MIGHT_HAVE_PC_PARPORT
->> -     select EXPERT
->> +     select HAVE_PATA_PLATFORM
->>       select CLKDEV_LOOKUP
->>       select HAVE_IDE if HAS_IOPORT_MAP
->>       select HAVE_MEMBLOCK
->
-> Since PATA_PLATFORM is:
->
-> config PATA_PLATFORM
->         tristate "Generic platform device PATA support"
->         depends on EXPERT || PPC || HAVE_PATA_PLATFORM
->
-> then any of EXPERT, PPC, or HAVE_PATA_PLATFORM should be sufficient.
-> and using HAVE_PATA_PLATFORM is more direct and obvious.
->
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
-Acked-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Just fix a minor typo about the example path.
 
-Note that you have to resent to akpm to get sh-patches applied.
+Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
+---
+ Documentation/devicetree/bindings/graph.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Gr{oetje,eeting}s,
+diff --git a/Documentation/devicetree/bindings/graph.txt b/Documentation/devicetree/bindings/graph.txt
+index 1a69c07..fcb1c6a 100644
+--- a/Documentation/devicetree/bindings/graph.txt
++++ b/Documentation/devicetree/bindings/graph.txt
+@@ -19,7 +19,7 @@ type of the connections, they just map their existence. Specific properties
+ may be described by specialized bindings depending on the type of connection.
+ 
+ To see how this binding applies to video pipelines, for example, see
+-Documentation/device-tree/bindings/media/video-interfaces.txt.
++Documentation/devicetree/bindings/media/video-interfaces.txt.
+ Here the ports describe data interfaces, and the links between them are
+ the connecting data buses. A single port with multiple connections can
+ correspond to multiple devices being connected to the same physical bus.
+-- 
+1.8.5.5
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
