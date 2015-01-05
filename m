@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548AbbAELbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:31:12 -0500
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:34521 "EHLO
+	id S1753576AbbAELbS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:31:18 -0500
+Received: from smtprelay4.synopsys.com ([198.182.47.9]:51008 "EHLO
 	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153AbbAELbJ (ORCPT
+	with ESMTP id S1753550AbbAELbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:31:09 -0500
+	Mon, 5 Jan 2015 06:31:15 -0500
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: <gregkh@linuxfoundation.org>
 CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <robh@kernel.org>, <jslaby@suse.cz>,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic BASE_BAUD
-Date: Mon, 5 Jan 2015 17:00:36 +0530
-Message-ID: <1420457437-17636-3-git-send-email-vgupta@synopsys.com>
+Subject: [PATCH v2 3/3] ARC: runtime determine BASE_BAUD per machine
+Date: Mon, 5 Jan 2015 17:00:37 +0530
+Message-ID: <1420457437-17636-4-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420457437-17636-1-git-send-email-vgupta@synopsys.com>
 References: <1420457437-17636-1-git-send-email-vgupta@synopsys.com>
@@ -26,16 +26,6 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BASE_BAUD is pain in neck for multi-platform support as it hard codes at
-build time the clk value for early uart.
-
-Mitigate this by allowing arches/platforms to provide their own version
-which can do dynamic setup based on DT values etc (see next patch for
-usage)
-
-This was needed for ARC SDP platforms based on 2 different FPGA flows, each
-with a different UART clk value.
-
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>
@@ -44,47 +34,86 @@ Cc: linux-kernel@vger.kernel.org
 Cc: Rob Herring <robh@kernel.org>
 Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/tty/serial/earlycon.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ arch/arc/include/asm/serial.h | 24 ++++--------------------
+ arch/arc/kernel/devtree.c     | 24 ++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
-index 64fe25a4285c..bfd3537739e0 100644
---- a/drivers/tty/serial/earlycon.c
-+++ b/drivers/tty/serial/earlycon.c
-@@ -54,6 +54,15 @@ static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
- 	return base;
- }
+diff --git a/arch/arc/include/asm/serial.h b/arch/arc/include/asm/serial.h
+index 602b0970a764..a8c0b8743709 100644
+--- a/arch/arc/include/asm/serial.h
++++ b/arch/arc/include/asm/serial.h
+@@ -10,26 +10,10 @@
+ #define _ASM_ARC_SERIAL_H
  
-+unsigned int __weak __init earlycon_base_baud(char *options)
+ /*
+- * early-8250 requires BASE_BAUD to be defined and includes this header.
+- * We put in a typical value:
+- * 	(core clk / 16) - i.e. UART samples 16 times per sec.
+- * Athough in multi-platform-image this might not work, specially if the
+- * clk driving the UART is different.
+- * We can't use DeviceTree as this is typically for early serial.
++ * 8250_early (now earlycon) include this hdr and expect BASE_BAUD definition
++ * for setting up uartclk.
++ * Now that is done via arch provided earlycon_base_baud() which can use FDT
++ * provided info as well to provide uartclk based on DT in use.
+  */
+ 
+-#include <asm/clk.h>
+-
+-#define BASE_BAUD	(arc_get_core_freq() / 16)
+-
+-/*
+- * This is definitely going to break early 8250 consoles on multi-platform
+- * images but hey, it won't add any code complexity for a debug feature of
+- * one broken driver.
+- */
+-#ifdef CONFIG_ARC_PLAT_TB10X
+-#undef BASE_BAUD
+-#define BASE_BAUD	(arc_get_core_freq() / 16 / 3)
+-#endif
+-
+ #endif /* _ASM_ARC_SERIAL_H */
+diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
+index fffdb5e41b20..4530f5a7eeb1 100644
+--- a/arch/arc/kernel/devtree.c
++++ b/arch/arc/kernel/devtree.c
+@@ -17,6 +17,28 @@
+ #include <asm/clk.h>
+ #include <asm/mach_desc.h>
+ 
++#ifdef CONFIG_SERIAL_8250_CONSOLE
++
++static unsigned int arc_base_baud = 33333333;
++
++unsigned int __init earlycon_base_baud(char *options)
 +{
-+#ifdef BASE_BAUD
-+	return BASE_BAUD;
-+#else
-+	return 1843200/16;	/* x86 early console */
-+#endif
++	return arc_base_baud/16;
 +}
 +
- static int __init parse_options(struct earlycon_device *device,
- 				char *options)
++static void __init arc_set_early_base_baud(unsigned long dt_root)
++{
++	unsigned int core_clk = arc_get_core_freq();
++
++	if (of_flat_dt_is_compatible(dt_root, "abilis,arc-tb10x"))
++		arc_base_baud = core_clk/3;
++	else
++		arc_base_baud = core_clk;
++}
++#else
++#define arc_set_early_base_baud(dt_root)
++#endif
++
+ static const void * __init arch_get_next_mach(const char *const **match)
  {
-@@ -87,7 +96,7 @@ static int __init parse_options(struct earlycon_device *device,
- 		return -EINVAL;
- 	}
+ 	static const struct machine_desc *mdesc = __arch_info_begin;
+@@ -56,5 +78,7 @@ const struct machine_desc * __init setup_machine_fdt(void *dt)
+ 	if (clk)
+ 		arc_set_core_freq(of_read_ulong(clk, len/4));
  
--	port->uartclk = BASE_BAUD * 16;
-+	port->uartclk = earlycon_base_baud(options) * 16;
- 
- 	options = strchr(options, ',');
- 	if (options) {
-@@ -156,7 +165,7 @@ int __init of_setup_earlycon(unsigned long addr,
- 
- 	port->iotype = UPIO_MEM;
- 	port->mapbase = addr;
--	port->uartclk = BASE_BAUD * 16;
-+	port->uartclk = earlycon_base_baud(NULL) * 16;
- 	port->membase = earlycon_map(addr, SZ_4K);
- 
- 	early_console_dev.con->data = &early_console_dev;
++	arc_set_early_base_baud(dt_root);
++
+ 	return mdesc;
+ }
 -- 
 1.9.1
 
