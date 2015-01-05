@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbbAERzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:55:48 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:50650 "EHLO
+	id S1754527AbbAESIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:08:42 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:33210 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753697AbbAERzq (ORCPT
+	by vger.kernel.org with ESMTP id S1754154AbbAERzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:55:46 -0500
+	Mon, 5 Jan 2015 12:55:47 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/45] staging: comedi: adl_pci8164: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:54:32 +0000
-Message-Id: <1420480513-14765-5-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 05/45] staging: comedi: adv_pci1723: rewrite "Devices:" line
+Date: Mon,  5 Jan 2015 17:54:33 +0000
+Message-Id: <1420480513-14765-6-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -38,22 +38,22 @@ lines by using one or more spaces at the start of each continuation line
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/adl_pci8164.c | 2 +-
+ drivers/staging/comedi/drivers/adv_pci1723.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/adl_pci8164.c b/drivers/staging/comedi/drivers/adl_pci8164.c
-index 72bccb4..cc6c53b 100644
---- a/drivers/staging/comedi/drivers/adl_pci8164.c
-+++ b/drivers/staging/comedi/drivers/adl_pci8164.c
-@@ -18,7 +18,7 @@
- /*
-  * Driver: adl_pci8164
-  * Description: Driver for the Adlink PCI-8164 4 Axes Motion Control board
-- * Devices: (ADLink) PCI-8164 [adl_pci8164]
-+ * Devices: [ADLink] PCI-8164 (adl_pci8164)
-  * Author: Michel Lachaine <mike@mikelachaine.ca>
-  * Status: experimental
-  * Updated: Mon, 14 Apr 2008 15:10:32 +0100
+diff --git a/drivers/staging/comedi/drivers/adv_pci1723.c b/drivers/staging/comedi/drivers/adv_pci1723.c
+index 65f854e..f1945be 100644
+--- a/drivers/staging/comedi/drivers/adv_pci1723.c
++++ b/drivers/staging/comedi/drivers/adv_pci1723.c
+@@ -20,7 +20,7 @@
+  * Driver: adv_pci1723
+  * Description: Advantech PCI-1723
+  * Author: yonggang <rsmgnu@gmail.com>, Ian Abbott <abbotti@mev.co.uk>
+- * Devices: (Advantech) PCI-1723 [adv_pci1723]
++ * Devices: [Advantech] PCI-1723 (adv_pci1723)
+  * Updated: Mon, 14 Apr 2008 15:12:56 +0100
+  * Status: works
+  *
 -- 
 2.1.4
 
