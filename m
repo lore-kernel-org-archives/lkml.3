@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbbAEKrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:47:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43617 "EHLO mx1.redhat.com"
+	id S1753508AbbAEKrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:47:06 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59361 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082AbbAEKrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:47:03 -0500
-Date: Mon, 5 Jan 2015 11:46:16 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= 
-	<chenggang.qcg@alibaba-inc.com>,
-        Stephane Eranian <eranian@google.com>, root <chenggang.qin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@taobao.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Namhyung Kim <namhyung@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Yanmin Zhang <yanmin.zhang@intel.com>
-Subject: Re: [PATCH 0/2] perf: Improve user regs sampling
-Message-ID: <20150105104616.GA21260@krava.brq.redhat.com>
-References: <20150104174105.GA29388@krava.brq.redhat.com>
- <cover.1420396372.git.luto@amacapital.net>
+	id S1752923AbbAEKrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:47:01 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v7 1/2] crypto: AF_ALG: add AEAD support
+Date: Mon, 05 Jan 2015 11:46:50 +0100
+Message-ID: <6798882.ly1QjqTYep@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150105103159.GA24878@gondor.apana.org.au>
+References: <6964260.mNa1jtPz7Z@tachyon.chronox.de> <1609020.xcc11L81HZ@tachyon.chronox.de> <20150105103159.GA24878@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1420396372.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 10:36:18AM -0800, Andy Lutomirski wrote:
-> This seems to improve the situation on x86_64 from almost entirely
-> broken to mostly working.  Tested with:
-> 
-> perf record -e cycles --call-graph=dwarf ls
+Am Montag, 5. Januar 2015, 21:31:59 schrieb Herbert Xu:
 
-looks good to me.. also:
+Hi Herbert,
 
-Tested-by: Jiri Olsa <jolsa@kernel.org>
+> On Fri, Jan 02, 2015 at 03:41:33PM +0100, Stephan Mueller wrote:
+> > +		if (!con.aead_assoclen)
+> > +			return -EINVAL;
+> 
+> AD being zero should be fine.
 
-thanks,
-jirka
+Ok, removed.
+> 
+> > +		/* aead_recvmsg limits the maximum AD size to one page */
+> > +		if (con.aead_assoclen > PAGE_SIZE)
+> > +			return -E2BIG;
+> 
+> I don't see any need to limit the size of the AD.
 
+The need for that check lies in aead_recvmsg:
+
+        /*
+         * first chunk of input is AD -- one scatterlist entry is one page,
+         * and we process only one scatterlist, the maximum size of AD is
+         * one page
+         */
+        sg_init_table(&assoc, 1);
+        sg_set_page(&assoc, sg_page(sg), ctx->aead_assoclen, sg->offset);
+        aead_request_set_assoc(&ctx->aead_req, &assoc, ctx->aead_assoclen);
+
+There you see that I only create an sg table with one entry for the AD. If we 
+would allow an arbitrary AD size, I would see the need of a for loop in 
+addition to the one directly beneath this AD scatterlist setting: one for 
+identifying how many sg entries I need to allocate and one for the actual 
+assignment.
+
+As I felt that one page should be sufficient for the AD, I wanted to avoid the 
+extra overhead for another for loop.
 > 
-> Andy Lutomirski (2):
->   perf: Move task_pt_regs sampling into arch code
->   x86_64, perf: Improve user regs sampling
-> 
->  arch/arm/kernel/perf_regs.c   |  8 ++++
->  arch/arm64/kernel/perf_regs.c |  8 ++++
->  arch/x86/kernel/perf_regs.c   | 90 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/perf_event.h    | 12 +++---
->  include/linux/perf_regs.h     | 16 ++++++++
->  kernel/events/core.c          | 19 ++++-----
->  6 files changed, 137 insertions(+), 16 deletions(-)
-> 
-> -- 
-> 2.1.0
-> 
+> Cheers,
+
+
+-- 
+Ciao
+Stephan
