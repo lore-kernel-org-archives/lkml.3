@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446AbbAER7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:59:40 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:36660 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400AbbAER7X (ORCPT
+	id S1753670AbbAERwi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:52:38 -0500
+Received: from resqmta-ch2-10v.sys.comcast.net ([69.252.207.42]:48242 "EHLO
+	resqmta-ch2-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753292AbbAERwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:59:23 -0500
-Date: Mon, 5 Jan 2015 12:52:06 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/4] can: kvaser_usb: Reset all URB tx contexts upon
- channel close
-Message-ID: <20150105175206.GB6304@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20150105174910.GA6304@linux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150105174910.GA6304@linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 Jan 2015 12:52:37 -0500
+Date: Mon, 5 Jan 2015 11:52:35 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andreas Mohr <andi@lisas.de>
+cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Subject: Re: [PATCH 6/6] mm/slab: allocation fastpath without disabling irq
+In-Reply-To: <20150105172139.GA11201@rhlx01.hs-esslingen.de>
+Message-ID: <alpine.DEB.2.11.1501051151200.25076@gentwo.org>
+References: <20150105172139.GA11201@rhlx01.hs-esslingen.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+On Mon, 5 Jan 2015, Andreas Mohr wrote:
 
-Flooding the Kvaser CAN to USB dongle with multiple reads and
-writes in very high frequency (*), closing the CAN channel while
-all the transmissions are on (#), opening the device again (@),
-then sending a small number of packets would make the driver
-enter an almost infinite loop of:
+> These thoughts also mean that I'm unsure (difficult to determine)
+> of whether this change is good (i.e. a clean step in the right direction),
+> or whether instead the implementation could easily directly be made
+> fully independent from IRQ constraints.
 
-[....]
-[15959.853988] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853990] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853991] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853993] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853994] kvaser_usb 4-3:1.0 can0: cannot find free context
-[15959.853995] kvaser_usb 4-3:1.0 can0: cannot find free context
-[....]
+We have thought a couple of times about making it independent of
+interrupts. We can do that if there is guarantee that no slab operations
+are going to be performed from an interrupt context. That in turn will
+simplify allocator design significantly.
 
-_dragging the whole system down_ in the process due to the
-excessive logging output.
-
-Initially, this has caused random panics in the kernel due to a
-buggy error recovery path.  That got fixed in an earlier commit.(%)
-This patch aims at solving the root cause. -->
-
-16 tx URBs and contexts are allocated per CAN channel per USB
-device. Such URBs are protected by:
-
-a) A simple atomic counter, up to a value of MAX_TX_URBS (16)
-b) A flag in each URB context, stating if it's free
-c) The fact that ndo_start_xmit calls are themselves protected
-   by the networking layers higher above
-
-After grabbing one of the tx URBs, if the driver noticed that all
-of them are now taken, it stops the netif transmission queue.
-Such queue is worken up again only if an acknowedgment was received
-from the firmware on one of our earlier-sent frames.
-
-Meanwhile, upon channel close (#), the driver sends a CMD_STOP_CHIP
-to the firmware, effectively closing all further communication.  In
-the high traffic case, the atomic counter remains at MAX_TX_URBS,
-and all the URB contexts remain marked as active.  While opening
-the channel again (@), it cannot send any further frames since no
-more free tx URB contexts are available.
-
-Reset all tx URB contexts upon CAN channel close.
-
-(*) 50 parallel instances of `cangen0 -g 0 -ix`
-(#) `ifconfig can0 down`
-(@) `ifconfig can0 up`
-(%) "can: kvaser_usb: Don't free packets when tight on URBs"
-
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
----
- drivers/net/can/usb/kvaser_usb.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
-index 2e7d513..9accc82 100644
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1246,6 +1246,9 @@ static int kvaser_usb_close(struct net_device *netdev)
- 	if (err)
- 		netdev_warn(netdev, "Cannot stop device, error %d\n", err);
- 
-+	/* reset tx contexts */
-+	kvaser_usb_unlink_tx_urbs(priv);
-+
- 	priv->can.state = CAN_STATE_STOPPED;
- 	close_candev(priv->netdev);
- 
+Regarding this patchset: I think this has the character of an RFC at this
+point. There are some good ideas here but this needs to mature a bit and
+get lots of feedback.
 
