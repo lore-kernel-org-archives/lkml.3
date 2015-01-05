@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705AbbAEKhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:37:40 -0500
-Received: from mail.eperm.de ([89.247.134.16]:59358 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623AbbAEKhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:37:35 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] crypto: AEAD: add check for presence of auth tag
-Date: Mon, 05 Jan 2015 11:26:48 +0100
-Message-ID: <7639295.Yx6QIQScqO@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150105101901.GA24736@gondor.apana.org.au>
-References: <15957213.Wu7Np8vQse@tachyon.chronox.de> <20150105101901.GA24736@gondor.apana.org.au>
+	id S1753262AbbAEK05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:26:57 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:52446 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbbAEK0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:26:55 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: "Zheng\, Lv" <lv.zheng@intel.com>
+Cc: "linux-acpi\@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel\@acpica.org" <devel@acpica.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+Organization: D03
+References: <1418381488-25123-1-git-send-email-linux@rasmusvillemoes.dk>
+	<1418381488-25123-3-git-send-email-linux@rasmusvillemoes.dk>
+	<1AE640813FDE7649BE1B193DEA596E88026AACD9@SHSMSX101.ccr.corp.intel.com>
+X-Hashcash: 1:20:150105:linux-kernel@vger.kernel.org::zOqhYgyyJc+off9D:0000000000000000000000000000000000N2X
+X-Hashcash: 1:20:150105:lv.zheng@intel.com::HixxxO40o7VukCvg:000000000000000000000000000000000000000000017Jd
+X-Hashcash: 1:20:150105:devel@acpica.org::fj3JPl3RykNvbZRh:01obk
+X-Hashcash: 1:20:150105:linux-acpi@vger.kernel.org::MUtlccU/9MFkbE77:000000000000000000000000000000000005luD
+Date: Mon, 05 Jan 2015 11:26:52 +0100
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026AACD9@SHSMSX101.ccr.corp.intel.com>
+	(Lv Zheng's message of "Mon, 5 Jan 2015 08:47:43 +0000")
+Message-ID: <87oaqdy13n.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 5. Januar 2015, 21:19:01 schrieb Herbert Xu:
+On Mon, Jan 05 2015, "Zheng, Lv" <lv.zheng@intel.com> wrote:
 
-Hi Herbert,
+> Hi,
+>
+>> From: Rasmus Villemoes [mailto:linux@rasmusvillemoes.dk]
+>> Sent: Friday, December 12, 2014 6:51 PM
+>> To: Zheng, Lv
+>> Cc: Rasmus Villemoes; linux-acpi@vger.kernel.org; devel@acpica.org; linux-kernel@vger.kernel.org
+>> Subject: [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+>> 
+>> The macro __DATE__ and friends is not allowed in the kernel. Also,
+>> including the build time in output doesn't seem to provide any value.
+>> 
+>
+> Could you confirm that it is not useful even for the user tools?
+> Please perform the following commands in the kernel source tree
+> 1. stay in tools folder
+> 2. type "make acpi"
+> 3. type "./power/acpi/acpidump -v"
+>
 
-> On Tue, Dec 30, 2014 at 10:16:03PM +0100, Stephan Mueller wrote:
-> > The AEAD decryption operation requires the authentication tag to be
-> > present as part of the cipher text buffer. The added check verifies that
-> > the caller provides a cipher text buffer with at least the
-> > authentication tag.
-> > 
-> > As the cipher text is provided as a scatterlist, loop through the
-> > scatterlist until we know we have sufficient cipher text bytes to invoke
-> > the AEAD decryption operation.
-> 
-> There is no need to vet the scatterlist.  For kernel users it's
-> up to them to ensure that the length is valid with respect to the
-> sg list.
-> 
-> For the user-space interface obviously you should ensure that a
-> valid length is supplied.
+Yeah, it's part of the output, but for what reason? What can userspace
+possibly use that information for? I can see some utility in printing a
+version number, since that may tell something about the features
+present or absent. The compilation date, on the other hand, seems
+completely useless. Different distros may ship different versions which
+happened to be compiled on the same day, or older versions compiled later.
 
-Then it seems I misunderstood you in your last comments. I thought the check 
-that the authentication tag is present should be moved to the crypto API so 
-that all users benefit from it.
+Note that -Werror=date-time was added to the kernel's default build
+flags in fe7c36c7bde12. It doesn't currently show because tools/ uses
+its own flags, and the ACPI_COMMON_SIGNON macro is not used within the
+kernel. 
 
-As the authentication tag is "inline" in the ciphertext data stream, the only 
-way I see to check for its presence is to verify that sufficient ciphertext is 
-provided.
-
-If the AEAD user space interface should perform the check, then the code drop 
-provided with patch v6 would already cover that.
-
-Could you please help me understand where that check should be and what should 
-be done at the crypto API level?
-
-Thanks
-
--- 
-Ciao
-Stephan
+Rasmus
