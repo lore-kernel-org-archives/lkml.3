@@ -1,118 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbbAEOUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:20:08 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51573 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923AbbAEOUE (ORCPT
+	id S1754023AbbAEOVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:21:09 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56751 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326AbbAEOVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:20:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <1420463396.2652.8.camel@perches.com>
-References: <1420071030-888-1-git-send-email-ktsai@capellamicro.com>
-	<CAEnQRZBD2NMYRp1cW0J2ssT4CT=0jSM=X6ByHQiUrA0ueV8fRA@mail.gmail.com>
-	<1420463396.2652.8.camel@perches.com>
-Date: Mon, 5 Jan 2015 16:20:02 +0200
-X-Google-Sender-Auth: nJUvFZVp_J2wpKqVsSF5yYgUB88
-Message-ID: <CAEnQRZBmwurFCJU4E4ArO8waU+YcGWrRYr3DRVxq9haduX2t=w@mail.gmail.com>
-Subject: Re: [PATCH V1 1/1] iio: Added Capella cm3232 ambient light sensor driver.
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Daniel Baluta <daniel.baluta@intel.com>,
-        Kevin Tsai <ktsai@capellamicro.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Archana Patni <archana.patni@linux.intel.com>,
-        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 Jan 2015 09:21:07 -0500
+From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Subject: [PATCH v8 0/5] hwmon: ina2xx: implement chip reinitialization and add new attributes
+Date: Mon,  5 Jan 2015 15:20:51 +0100
+Message-Id: <1420467656-6112-1-git-send-email-bgolaszewski@baylibre.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 3:09 PM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2015-01-05 at 12:51 +0200, Daniel Baluta wrote:
->> On Thu, Jan 1, 2015 at 2:10 AM, Kevin Tsai <ktsai@capellamicro.com> wrote:
->> > CM3232 is an advanced ambient light sensor with I2C protocol interface.
->> > The I2C slave address is internally hardwired as 0x10 (7-bit).  Writing
->> > to configure register is byte mode, but reading ALS register requests to
->> > use word mode for 16-bit resolution.
->>
->> This looks good to me.  Few comments inline.
-> []
->> > diff --git a/drivers/iio/light/cm3232.c b/drivers/iio/light/cm3232.c
-> []
->> > +/**
->> > + * cm3232_reg_init() - Initialize CM3232 registers
->> > + * @chip:      pointer of struct cm3232.
->> > + *
->> > + * Initialize CM3232 ambient light sensor register to default values.
->> > + *
->> > +  Return: 0 for success; otherwise for error code.
->> > + */
->> > +static int cm3232_reg_init(struct cm3232_chip *chip)
->> > +{
->> > +       struct i2c_client *client = chip->client;
->> > +       struct cm3232_als_info *als_info;
->> > +       s32 ret;
->> > +
->> > +       /* Identify device */
->> > +       ret = i2c_smbus_read_word_data(client, CM3232_REG_ADDR_ID);
->> > +       if (ret < 0)
->> > +               return ret;
->> > +       if ((ret & 0xFF) != 0x32)
->> > +               return -ENODEV;
->> > +
->> > +       /* Disable and reset device */
->> > +       chip->regs_cmd = CM3232_CMD_ALS_DISABLE | CM3232_CMD_ALS_RESET;
->> > +       ret = i2c_smbus_write_byte_data(client, CM3232_REG_ADDR_CMD,
->> > +                               chip->regs_cmd);
->> > +       if (ret < 0)
->> > +               return ret;
->> > +
->> > +       /* Initialization */
->> > +       als_info = chip->als_info = &cm3232_als_info_default;
->> > +       chip->regs_cmd = CM3232_CMD_DEFAULT;
->> > +
->> > +       /* Configure register */
->> > +       ret = i2c_smbus_write_byte_data(client, CM3232_REG_ADDR_CMD,
->> > +                               chip->regs_cmd);
->>
->> You could directly return i2c_smbus_write_byte_data(..).
->
-> Sometimes it's better to return a specific value
-> for the error instead of depending on correctness
-> of all the indirect functions in the call chain.
->
-> In this case, all the smbus_xfer functions must
-> return 0 on success.  Do they?
+This series implements a mechanism to detect if the chip is in its POR state
+and reinitialize it if needed. It also extends the sysfs interface to make the
+driver configurable at run-time.
 
-Yes.
+The shunt_resistor attribute allows to change the shunt resistance value
+at run-time in cases where ina2xx used to do the measurement isn't integrated
+with the shunt.
 
-http://lxr.free-electrons.com/source/drivers/i2c/i2c-core.c#L2845
+The avg_rate attribute allows to increase/decrease noise reduction.
 
->
-> Inspecting the codebase for correctness or not
-> depending on that correctness is sometimes better
-> to avoid doing.
+v8:
+- accept averaging rate values more flexibly and round them to the nearest
+  correct value
+- don't call ina2xx_update_device() in ina226_set_avg()
+- make sure the registers are going to be re-read after setting the averaging
+  rate
 
-You have a valid point. Anyhow, AFAIK the code from IIO
-prefers a direct return.
+v7:
+https://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg787851.html
 
-Also, I guess kbuild test robot will complain about it, like here:
+Bartosz Golaszewski (5):
+  hwmon: ina2xx: reinitialize the chip in case it's been reset
+  hwmon: ina2xx: remove a stray new line
+  hwmon: ina2xx: don't accept shunt values greater than the calibration factor
+  hwmon: ina2xx: make shunt resistance configurable at run-time
+  hwmon: ina2xx: allow to change the averaging rate at run-time
 
-http://marc.info/?l=linux-kernel&m=141963536230419&w=2
+ Documentation/hwmon/ina2xx |   8 +-
+ drivers/hwmon/ina2xx.c     | 301 +++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 266 insertions(+), 43 deletions(-)
 
-thanks,
-Daniel.
+-- 
+2.1.3
+
