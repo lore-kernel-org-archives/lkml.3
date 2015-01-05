@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792AbbAEOeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:34:37 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:60761 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511AbbAEOeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:34:36 -0500
-Date: Mon, 5 Jan 2015 15:32:47 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arch: arm: mm: cache-feroceon-l2: Remove some unused
- functions
-Message-ID: <20150105143247.GD9142@lunn.ch>
-References: <1420134969-1892-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	id S1753830AbbAEOgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:36:22 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36259 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228AbbAEOgU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 09:36:20 -0500
+Date: Mon, 5 Jan 2015 14:35:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lgirdwood@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Message-ID: <20150105143551.GQ11764@sirena.org.uk>
+References: <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54A9355F.4050102@users.sourceforge.net>
+ <54A93B5A.9050504@users.sourceforge.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Gdkky/UkxKPTIP6j"
 Content-Disposition: inline
-In-Reply-To: <1420134969-1892-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54A93B5A.9050504@users.sourceforge.net>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 6/13] ASoC: Intel: Delete an unnecessary check before the
+ function call "sst_dma_free"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 01, 2015 at 06:56:09PM +0100, Rickard Strandqvist wrote:
-> Removes some functions that are not used anywhere:
-> l2_inv_pa() l2_clean_pa()
-> 
-> This was partially found by using a static code analysis program called cppcheck.
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
+--Gdkky/UkxKPTIP6j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Andrew Lunn <andrew@lunn.ch>
+On Sun, Jan 04, 2015 at 02:08:42PM +0100, SF Markus Elfring wrote:
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Sat, 3 Jan 2015 19:03:55 +0100
+>=20
+> The sst_dma_free() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 
-Please could you submit this to Russell Kings patch tracker.
+I'm missing aptches 1-5, are there any dependencies?
 
-Thanks
-	Andrew
+--Gdkky/UkxKPTIP6j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> ---
->  arch/arm/mm/cache-feroceon-l2.c |   10 ----------
->  1 file changed, 10 deletions(-)
-> 
-> diff --git a/arch/arm/mm/cache-feroceon-l2.c b/arch/arm/mm/cache-feroceon-l2.c
-> index e028a7f..c2eac97 100644
-> --- a/arch/arm/mm/cache-feroceon-l2.c
-> +++ b/arch/arm/mm/cache-feroceon-l2.c
-> @@ -65,11 +65,6 @@ static inline void l2_put_va(unsigned long vaddr)
->  #endif
->  }
->  
-> -static inline void l2_clean_pa(unsigned long addr)
-> -{
-> -	__asm__("mcr p15, 1, %0, c15, c9, 3" : : "r" (addr));
-> -}
-> -
->  static inline void l2_clean_pa_range(unsigned long start, unsigned long end)
->  {
->  	unsigned long va_start, va_end, flags;
-> @@ -96,11 +91,6 @@ static inline void l2_clean_inv_pa(unsigned long addr)
->  	__asm__("mcr p15, 1, %0, c15, c10, 3" : : "r" (addr));
->  }
->  
-> -static inline void l2_inv_pa(unsigned long addr)
-> -{
-> -	__asm__("mcr p15, 1, %0, c15, c11, 3" : : "r" (addr));
-> -}
-> -
->  static inline void l2_inv_pa_range(unsigned long start, unsigned long end)
->  {
->  	unsigned long va_start, va_end, flags;
-> -- 
-> 1.7.10.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUqqFGAAoJECTWi3JdVIfQAjoH/1d5YdMG7Fjv49Utt7uD3WNz
+xJLmrZMxYB5bv8FrwiP5DDNeu7/MvFEMhvme7S8rp9AzlJ1zDX3SX5RJs/zGFdDQ
+kpK4snywZoZ191vOLwDHXb8YjIPnZ2zwN4Eke4aOo23HyvSBRHZ2J9jfFfE4Rgsx
++ZDZ8Xr6lcQ2Y9+XbNYZAg2rvCytogkljCY9/XD9TT9iMHvRQks98edUWnOY6yk/
+oBqUcHo9y8PavyDzRCpXpvObZzjxwq3JnpNa6NmvblgiCruN59UyBCoJtqvXRiwq
+u2891fKOzw4tao6fzaSR8R2oZxKkOeGL99cgVfkeHCh46eQRwBGc7BEzUMl9Xlg=
+=Ya+P
+-----END PGP SIGNATURE-----
+
+--Gdkky/UkxKPTIP6j--
