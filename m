@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbbAEJW6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:22:58 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:33449 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbbAEJSk (ORCPT
+	id S1753879AbbAEJV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:21:58 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:32946 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633AbbAEJSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Jan 2015 04:18:40 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-e7-54aa56efb4cb
+X-AuditID: cbfec7f4-b7f126d000001e9a-e8-54aa56ee9347
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
@@ -15,24 +15,24 @@ To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Brian Austin <brian.austin@cirrus.com>,
         Paul Handrigan <Paul.Handrigan@cirrus.com>
-Subject: [PATCH 4/8] ASoC: cs42l56: Constify struct regmap_config and
+Subject: [PATCH 5/8] ASoC: cs42l73: Constify struct regmap_config and
  snd_soc_codec_driver
-Date: Mon, 05 Jan 2015 10:18:24 +0100
-Message-id: <1420449508-10701-4-git-send-email-k.kozlowski@samsung.com>
+Date: Mon, 05 Jan 2015 10:18:25 +0100
+Message-id: <1420449508-10701-5-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1420449508-10701-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420449508-10701-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4Zd33YatCDJrmiVhcuXiIyaLv+Hxm
-	i6kPn7BZvH5haPHtSgeTxeVdc9gs+hb+ZrLo3NXPavFy8xsmB06PDZ+b2Dx6J95i8dg56y67
-	x6ZVnWwe+94uY/Po27KK0WPz6WqPz5vkAjiiuGxSUnMyy1KL9O0SuDLWb//GUtDFVbFz8nzG
-	BsZDHF2MnBwSAiYSbY96mSFsMYkL99azgdhCAksZJQ6d9u9i5AKy+5gkzs78xAqSYBMwlti8
-	fAlYkYjAcUaJD888QIqYBToZJU7vuApWJCwQI7Hzy36gIg4OFgFViS/Tg0HCvALuEvNeToZa
-	Jidx8thksHJOAQ+JNzOnQi12l+ia1M0ygZF3ASPDKkbR1NLkguKk9FwjveLE3OLSvHS95Pzc
-	TYyQEPy6g3HpMatDjAIcjEo8vB4nVoYIsSaWFVfmHmKU4GBWEuFddwsoxJuSWFmVWpQfX1Sa
-	k1p8iJGJg1OqgZGj0zJOjnP5jjWfzdf+PbQzxqB/budCjrW1PVPSF+XtPHra8kXyRfe7Kd/T
-	tp0LOr6g6/jiM5+m5Np9bmAw69kfxrZvzsXDm/JSxXL+uX2T+LQuc/aBd3KZcaabk+eHiWzd
-	O8n+dXipYuwtOzVH35COfYVlW3+X2DQZXn2Y5eGUo2zOwBS8dJUSS3FGoqEWc1FxIgBLYvuL
-	HwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4Zd13YatCDGa8krS4cvEQk0Xf8fnM
+	FlMfPmGzeP3C0OLblQ4mi8u75rBZ9C38zWTRuauf1eLl5jdMDpweGz43sXn0TrzF4rFz1l12
+	j02rOtk89r1dxubRt2UVo8fm09UenzfJBXBEcdmkpOZklqUW6dslcGVM2d7OVtDJVfH453P2
+	BsaDHF2MnBwSAiYSP5f3s0LYYhIX7q1n62Lk4hASWMooceDhURYIp49JYv+qY2BVbALGEpuX
+	L2EDsUUEjjNKfHjmAVLELNDJKHF6x1WgIg4OYYEYid69oSA1LAKqEpd+z2AHsXkF3CX+/L7B
+	DLFNTuLksclgMzkFPCTezJwKNlMIqKZrUjfLBEbeBYwMqxhFU0uTC4qT0nMN9YoTc4tL89L1
+	kvNzNzFCgvDLDsbFx6wOMQpwMCrx8HqcWBkixJpYVlyZe4hRgoNZSYR33S2gEG9KYmVValF+
+	fFFpTmrxIUYmDk6pBsY0Dgb5LcJvyk49fc95rSN3elzXlaUs5ksqjBV5D2zoF5UXfDl746so
+	3u/+r78+0H1sLHGp9e3aoyLtj89vcnS5dFftC6vByvnsKY0/lb2tFsza/WzCNN6QLPGKt969
+	P51Csg5vyNZwUD/73bisfMr6ky5mbzrvbihbGbdU/QnjTOZJstnSEy2VWIozEg21mIuKEwGo
+	qY2wIAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -46,28 +46,28 @@ Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Brian Austin <brian.austin@cirrus.com>
 Cc: Paul Handrigan <Paul.Handrigan@cirrus.com>
 ---
- sound/soc/codecs/cs42l56.c | 4 ++--
+ sound/soc/codecs/cs42l73.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/codecs/cs42l56.c b/sound/soc/codecs/cs42l56.c
-index 2ddc7ac10ad7..cbc654fe48c7 100644
---- a/sound/soc/codecs/cs42l56.c
-+++ b/sound/soc/codecs/cs42l56.c
-@@ -1164,7 +1164,7 @@ static int cs42l56_remove(struct snd_soc_codec *codec)
+diff --git a/sound/soc/codecs/cs42l73.c b/sound/soc/codecs/cs42l73.c
+index 7c55537c69cf..8ecedba79606 100644
+--- a/sound/soc/codecs/cs42l73.c
++++ b/sound/soc/codecs/cs42l73.c
+@@ -1347,7 +1347,7 @@ static int cs42l73_probe(struct snd_soc_codec *codec)
  	return 0;
  }
  
--static struct snd_soc_codec_driver soc_codec_dev_cs42l56 = {
-+static const struct snd_soc_codec_driver soc_codec_dev_cs42l56 = {
- 	.probe = cs42l56_probe,
- 	.remove = cs42l56_remove,
- 	.set_bias_level = cs42l56_set_bias_level,
-@@ -1179,7 +1179,7 @@ static struct snd_soc_codec_driver soc_codec_dev_cs42l56 = {
- 	.num_controls = ARRAY_SIZE(cs42l56_snd_controls),
+-static struct snd_soc_codec_driver soc_codec_dev_cs42l73 = {
++static const struct snd_soc_codec_driver soc_codec_dev_cs42l73 = {
+ 	.probe = cs42l73_probe,
+ 	.set_bias_level = cs42l73_set_bias_level,
+ 	.suspend_bias_off = true,
+@@ -1361,7 +1361,7 @@ static struct snd_soc_codec_driver soc_codec_dev_cs42l73 = {
+ 	.num_controls = ARRAY_SIZE(cs42l73_snd_controls),
  };
  
--static struct regmap_config cs42l56_regmap = {
-+static const struct regmap_config cs42l56_regmap = {
+-static struct regmap_config cs42l73_regmap = {
++static const struct regmap_config cs42l73_regmap = {
  	.reg_bits = 8,
  	.val_bits = 8,
  
