@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423AbbAELJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:09:08 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:39616 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbbAELJH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:09:07 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-63-54aa70d168a4
-Message-id: <1420456143.31776.3.camel@AMDC1943>
-Subject: Re: [PATCH] iommu: Fix build of allmod/allyes config on ARMv8
- architecture
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Mon, 05 Jan 2015 12:09:03 +0100
-In-reply-to: <20150105110347.GB19590@8bytes.org>
-References: <1417787257-10056-1-git-send-email-k.kozlowski@samsung.com>
- <20150105110347.GB19590@8bytes.org>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xy7oXC1aFGLzpNbLYOGM9q8WC/dYW
-	nbM3sFucbXrDbrHp8TVWi8u75rBZzDi/j8li7ZG77A4cHk8OzmPy2Lyk3mPyjeWMHn1bVjF6
-	fN4kF8AaxWWTkpqTWZZapG+XwJXR+3YqS8EO1orfnw8xNzCeYOli5OSQEDCR+LPyFiuELSZx
-	4d56ti5GLg4hgaWMEl3NkxghnM+MEuuaTrKBVPEK6Ev8W3GbHcQWFgiVuP90HtgkNgFjic3L
-	l4DViAgoSVz/3MoK0swssJBJ4t26ZrAiFgFViY0PL4LZnAIGEkv2XmAEsYUEciWmtTYzgdjM
-	AuoSk+YtYu5i5AA6SVmisd8NYq+gxI/J91ggSuQlNq95yzyBUWAWko5ZSMpmISlbwMi8ilE0
-	tTS5oDgpPddIrzgxt7g0L10vOT93EyMk2L/uYFx6zOoQowAHoxIPr8eJlSFCrIllxZW5hxgl
-	OJiVRHhfpa8KEeJNSaysSi3Kjy8qzUktPsTIxMEp1cBoY90UaTFj7aSY0AdcE+P+FkyevHbi
-	vGruur1+jyfoKi2sPNZt90Jk/mxBjymfvmVL16myKtobNnatMrgnm+XIvYujhqVMWiRnheaG
-	K2n/mR66eojWKdu1anHnzk2yEWD0XZ7V9pXvknj7xKf5Zw32W7xfm2TyJIR/l12F32/Ruv/L
-	Xh1tr1ViKc5INNRiLipOBACmKFHIVAIAAA==
+	id S1753254AbbAELOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:14:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50901 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752145AbbAELOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 06:14:22 -0500
+Date: Mon, 5 Jan 2015 12:13:35 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/30] perf tools: Add new build framework support
+Message-ID: <20150105111335.GB21260@krava.brq.redhat.com>
+References: <1420212972-21595-1-git-send-email-jolsa@kernel.org>
+ <1420212972-21595-2-git-send-email-jolsa@kernel.org>
+ <20150105105751.GB19655@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105105751.GB19655@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2015-01-05 at 12:03 +0100, Joerg Roedel wrote:
-> On Fri, Dec 05, 2014 at 02:47:37PM +0100, Krzysztof Kozlowski wrote:
-> >  drivers/iommu/Kconfig | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+On Mon, Jan 05, 2015 at 11:57:51AM +0100, Borislav Petkov wrote:
+> On Fri, Jan 02, 2015 at 04:35:43PM +0100, Jiri Olsa wrote:
+> > +a) Build makefiles
+> > +------------------
+> > +User supplies 'Build' makefiles that contains objects summary,
+> > +like for example following 'krava/Build' file:
+> > +
+> > +  perf-y += a.o
+> > +  perf-y += b.o
+> > +
+> > +The build framework is triggered by:
+> > +  $ make -f Makefile.build dir=krava obj=perf
+> > +
+> > +which produces 'krava/perf-in.o' object file that has both
+> > +a.o and b.o objects compiled in linked together.
+> > +
+> > +The 'Build' makefile can contains multiple objects definitions
+> > +to allow building separated binaries, like:
+> > +
+> > +  perf-y += a.o
+> > +  perf-y += b.o
+> > +
+> > +  libperf-y += c.o
+> > +  libperf-y += d.o
+> > +
+> > +If the build framework is triggered by:
+> > +  $ make -f Makefile.build dir=krava obj=libperf
+> > +
+> > +it produces 'krava/libperf-in.o' object file that has both
+> > +a.o and b.o objects compiled in linked together.
 > 
-> Applied to iommu/fixes, thanks.
+> Ok, question: you say those "Build" files are supplied by the user. Does
+> that mean that everyone has to go and write their own or are we still
+> using Kconfig and doing it in a more user-friendly manner?
 
-Thanks, but... Few days after my patch Mark Brown posted something
-similar:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/310743.html
+there's no Kconfig involved in perf build at this moment..
 
-It was merged by Arnd Bergman and sent to Linus around 3.19-rc1. It is
-merged in mainline now:
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=20911ce6078fd1503dbf73f761316c66738bf83b
+the 'Build' Makefiles are equivalents of Kbuild/Makefile makefiles
+within the kernel build system.. I just move the 'K' out
 
-... so my patch can be dropped.
+> 
+> I've probably missed this in the whole perf fastlane development... :)
 
-Best regards,
-Krzysztof
+the reason for this switch is to have a first step towards
+easy config support 'kernel Kconfig style like' in build
 
+also with this change it's easier to see how the perf binary
+is build and what flags were used for particular object..
+at least for kernel developer used to kbuild ;-)
+
+I also believe that the support to allow just part of the perf
+code in perf binary will force the less spaghetti code ;-)
+
+jirka
