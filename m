@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbbAEKrG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:47:06 -0500
-Received: from mail.eperm.de ([89.247.134.16]:59361 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923AbbAEKrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:47:01 -0500
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v7 1/2] crypto: AF_ALG: add AEAD support
-Date: Mon, 05 Jan 2015 11:46:50 +0100
-Message-ID: <6798882.ly1QjqTYep@tachyon.chronox.de>
-User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150105103159.GA24878@gondor.apana.org.au>
-References: <6964260.mNa1jtPz7Z@tachyon.chronox.de> <1609020.xcc11L81HZ@tachyon.chronox.de> <20150105103159.GA24878@gondor.apana.org.au>
+	id S1753654AbbAEKsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:48:17 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:40254 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbbAEKsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:48:15 -0500
+X-IronPort-AV: E=Sophos;i="5.07,698,1413270000"; 
+   d="scan'208";a="54129300"
+Message-ID: <54AA6BEB.9060207@broadcom.com>
+Date: Mon, 5 Jan 2015 11:48:11 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+CC: <brudley@broadcom.com>, Franky Lin <frankyl@broadcom.com>,
+        <meuleman@broadcom.com>, <kvalo@codeaurora.org>,
+        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
+        <hdegoede@redhat.com>, <wens@csie.org>,
+        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+References: <54A3B1B4.7090705@linux.intel.com> <54A3C837.6040400@broadcom.com> <54A9F82D.9030003@linux.intel.com>
+In-Reply-To: <54A9F82D.9030003@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 5. Januar 2015, 21:31:59 schrieb Herbert Xu:
+On 01/05/15 03:34, Fu, Zhonghui wrote:
+> Hi Arend,
+>
+> Where to find your patch for this?
 
-Hi Herbert,
+Well, we did not submit it. Hence my "Acked-by:" to your patch below.
 
-> On Fri, Jan 02, 2015 at 03:41:33PM +0100, Stephan Mueller wrote:
-> > +		if (!con.aead_assoclen)
-> > +			return -EINVAL;
-> 
-> AD being zero should be fine.
+Regards,
+Arend
 
-Ok, removed.
-> 
-> > +		/* aead_recvmsg limits the maximum AD size to one page */
-> > +		if (con.aead_assoclen > PAGE_SIZE)
-> > +			return -E2BIG;
-> 
-> I don't see any need to limit the size of the AD.
+>
+> Thanks,
+> Zhonghui
+>
+> On 2014/12/31 17:56, Arend van Spriel wrote:
+>> On 12/31/14 09:20, Fu, Zhonghui wrote:
+>>>    From e34419970a07bfcd365f9c66bdfa552188a0cd26 Mon Sep 17 00:00:00 2001
+>>> From: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>>> Date: Mon, 29 Dec 2014 21:25:31 +0800
+>>> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+>>>
+>>> WiFi chip has 2 SDIO functions, and PM core will trigger
+>>> twice suspend/resume operations for one WiFi chip to do
+>>> the same things. This patch avoid this case.
+>>
+>> We have a patch queued up for this as well, but this one looks good enough although I personally prefer container_of() instead of dev_to_sdio_func().
+>>
+>> Acked-by: Arend van Spriel<arend@broadcom.com>
+>>> Signed-off-by: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>>> ---
+>>>    drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |   19 +++++++++++++++++--
+>>>    1 files changed, 17 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+>>> index 3c06e93..eee7818 100644
+>>> --- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+>>> +++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
+>>> @@ -1139,11 +1139,18 @@ void brcmf_sdio_wowl_config(struct device *dev, bool enabled)
+>>>    static int brcmf_ops_sdio_suspend(struct device *dev)
+>>>    {
+>>>        struct brcmf_bus *bus_if = dev_get_drvdata(dev);
+>>> -    struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
+>>> +    struct brcmf_sdio_dev *sdiodev;
+>>>        mmc_pm_flag_t sdio_flags;
+>>> +    struct sdio_func *func = dev_to_sdio_func(dev);
+>>>
+>>>        brcmf_dbg(SDIO, "Enter\n");
+>>>
+>>> +    if (func->num == 2) {
+>>> +        return 0;
+>>> +    }
+>>> +
+>>> +    sdiodev = bus_if->bus_priv.sdio;
+>>> +
+>>>        atomic_set(&sdiodev->suspend, true);
+>>>
+>>>        if (sdiodev->wowl_enabled) {
+>>> @@ -1164,9 +1171,17 @@ static int brcmf_ops_sdio_suspend(struct device *dev)
+>>>    static int brcmf_ops_sdio_resume(struct device *dev)
+>>>    {
+>>>        struct brcmf_bus *bus_if = dev_get_drvdata(dev);
+>>> -    struct brcmf_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
+>>> +    struct brcmf_sdio_dev *sdiodev;
+>>> +    struct sdio_func *func = dev_to_sdio_func(dev);
+>>>
+>>>        brcmf_dbg(SDIO, "Enter\n");
+>>> +
+>>> +    if (func->num == 2) {
+>>> +        return 0;
+>>> +    }
+>>> +
+>>> +    sdiodev = bus_if->bus_priv.sdio;
+>>> +
+>>>        if (sdiodev->pdata->oob_irq_supported)
+>>>            disable_irq_wake(sdiodev->pdata->oob_irq_nr);
+>>>        brcmf_sdio_wd_timer(sdiodev->bus, BRCMF_WD_POLL_MS);
+>>> -- 1.7.1
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-The need for that check lies in aead_recvmsg:
-
-        /*
-         * first chunk of input is AD -- one scatterlist entry is one page,
-         * and we process only one scatterlist, the maximum size of AD is
-         * one page
-         */
-        sg_init_table(&assoc, 1);
-        sg_set_page(&assoc, sg_page(sg), ctx->aead_assoclen, sg->offset);
-        aead_request_set_assoc(&ctx->aead_req, &assoc, ctx->aead_assoclen);
-
-There you see that I only create an sg table with one entry for the AD. If we 
-would allow an arbitrary AD size, I would see the need of a for loop in 
-addition to the one directly beneath this AD scatterlist setting: one for 
-identifying how many sg entries I need to allocate and one for the actual 
-assignment.
-
-As I felt that one page should be sufficient for the AD, I wanted to avoid the 
-extra overhead for another for loop.
-> 
-> Cheers,
-
-
--- 
-Ciao
-Stephan
