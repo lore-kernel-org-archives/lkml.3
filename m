@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752AbbAENKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:10:04 -0500
-Received: from smtprelay0157.hostedemail.com ([216.40.44.157]:46296 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751511AbbAENKC (ORCPT
+	id S1753647AbbAENM7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:12:59 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46827 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175AbbAENM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:10:02 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1406:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:1894:2189:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4605:5007:6261:6742:6743:7875:8660:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13148:13230:13972:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: dock62_39d367bc9b000
-X-Filterd-Recvd-Size: 4181
-Message-ID: <1420463396.2652.8.camel@perches.com>
-Subject: Re: [PATCH V1 1/1] iio: Added Capella cm3232 ambient light sensor
- driver.
-From: Joe Perches <joe@perches.com>
-To: Daniel Baluta <daniel.baluta@intel.com>
-Cc: Kevin Tsai <ktsai@capellamicro.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Archana Patni <archana.patni@linux.intel.com>,
-        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Jan 2015 05:09:56 -0800
-In-Reply-To: <CAEnQRZBD2NMYRp1cW0J2ssT4CT=0jSM=X6ByHQiUrA0ueV8fRA@mail.gmail.com>
-References: <1420071030-888-1-git-send-email-ktsai@capellamicro.com>
-	 <CAEnQRZBD2NMYRp1cW0J2ssT4CT=0jSM=X6ByHQiUrA0ueV8fRA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Jan 2015 08:12:57 -0500
+Date: Mon, 5 Jan 2015 14:12:37 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] perf: Userspace event
+Message-ID: <20150105131237.GR30905@twins.programming.kicks-ass.net>
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
+ <1415292718-19785-3-git-send-email-pawel.moll@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415292718-19785-3-git-send-email-pawel.moll@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 12:51 +0200, Daniel Baluta wrote:
-> On Thu, Jan 1, 2015 at 2:10 AM, Kevin Tsai <ktsai@capellamicro.com> wrote:
-> > CM3232 is an advanced ambient light sensor with I2C protocol interface.
-> > The I2C slave address is internally hardwired as 0x10 (7-bit).  Writing
-> > to configure register is byte mode, but reading ALS register requests to
-> > use word mode for 16-bit resolution.
+On Thu, Nov 06, 2014 at 04:51:57PM +0000, Pawel Moll wrote:
+> This patch adds a PR_TASK_PERF_UEVENT prctl call which can be used by
+> any process to inject custom data into perf data stream as a new
+> PERF_RECORD_UEVENT record, if such process is being observed or if it
+> is running on a CPU being observed by the perf framework.
 > 
-> This looks good to me.  Few comments inline.
-[]
-> > diff --git a/drivers/iio/light/cm3232.c b/drivers/iio/light/cm3232.c
-[]
-> > +/**
-> > + * cm3232_reg_init() - Initialize CM3232 registers
-> > + * @chip:      pointer of struct cm3232.
-> > + *
-> > + * Initialize CM3232 ambient light sensor register to default values.
-> > + *
-> > +  Return: 0 for success; otherwise for error code.
-> > + */
-> > +static int cm3232_reg_init(struct cm3232_chip *chip)
-> > +{
-> > +       struct i2c_client *client = chip->client;
-> > +       struct cm3232_als_info *als_info;
-> > +       s32 ret;
-> > +
-> > +       /* Identify device */
-> > +       ret = i2c_smbus_read_word_data(client, CM3232_REG_ADDR_ID);
-> > +       if (ret < 0)
-> > +               return ret;
-> > +       if ((ret & 0xFF) != 0x32)
-> > +               return -ENODEV;
-> > +
-> > +       /* Disable and reset device */
-> > +       chip->regs_cmd = CM3232_CMD_ALS_DISABLE | CM3232_CMD_ALS_RESET;
-> > +       ret = i2c_smbus_write_byte_data(client, CM3232_REG_ADDR_CMD,
-> > +                               chip->regs_cmd);
-> > +       if (ret < 0)
-> > +               return ret;
-> > +
-> > +       /* Initialization */
-> > +       als_info = chip->als_info = &cm3232_als_info_default;
-> > +       chip->regs_cmd = CM3232_CMD_DEFAULT;
-> > +
-> > +       /* Configure register */
-> > +       ret = i2c_smbus_write_byte_data(client, CM3232_REG_ADDR_CMD,
-> > +                               chip->regs_cmd);
+> The prctl call takes the following arguments:
 > 
-> You could directly return i2c_smbus_write_byte_data(..).
+>         prctl(PR_TASK_PERF_UEVENT, type, size, data, flags);
+> 
+> - type: a number meaning to describe content of the following data.
+>   Kernel does not pay attention to it and merely passes it further in
+>   the perf data, therefore its use must be agreed between the events
+>   producer (the process being observed) and the consumer (performance
+>   analysis tool). The perf userspace tool will contain a repository of
+>   "well known" types and reference implementation of their decoders.
+> - size: Length in bytes of the data.
+> - data: Pointer to the data.
+> - flags: Reserved for future use. Always pass zero.
+> 
+> Perf context that are supposed to receive events generated with the
+> prctl above must be opened with perf_event_attr.uevent set to 1. The
+> PERF_RECORD_UEVENT records consist of a standard perf event header,
+> 32-bit type value, 32-bit data size and the data itself, followed by
+> padding to align the overall record size to 8 bytes and optional,
+> standard sample_id field.
+> 
+> Example use cases:
+> 
+> - "perf_printf" like mechanism to add logging messages to perf data;
+>   in the simplest case it can be just
+> 
+>         prctl(PR_TASK_PERF_UEVENT, 0, 8, "Message", 0);
+> 
+> - synchronisation of performance data generated in user space with the
+>   perf stream coming from the kernel. For example, the marker can be
+>   inserted by a JIT engine after it generated portion of the code, but
+>   before the code is executed for the first time, allowing the
+>   post-processor to pick the correct debugging information.
+> 
 
-Sometimes it's better to return a specific value
-for the error instead of depending on correctness
-of all the indirect functions in the call chain.
+The think I remember being raised was a unified means of these msgs
+across perf/ftrace/lttng. I am not seeing that mentioned.
 
-In this case, all the smbus_xfer functions must
-return 0 on success.  Do they?
-
-Inspecting the codebase for correctness or not
-depending on that correctness is sometimes better
-to avoid doing.
-
-> > +       if (ret < 0)
-> > +               return ret;
-> > +
-> > +       return 0;
-> > +}
-
-
+Also, I would like a stronger rationale for the @type argument, if it
+has no actual meaning why is it separate from the binary msg data?
