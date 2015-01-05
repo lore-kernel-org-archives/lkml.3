@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbbAEWXt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:23:49 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:52247 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbbAEWXr (ORCPT
+	id S1754506AbbAEW04 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:26:56 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:59324 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619AbbAEW0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:23:47 -0500
-Message-ID: <54AB0EED.9040807@redhat.com>
-Date: Mon, 05 Jan 2015 23:23:41 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-Newsgroups: gmane.comp.emulators.kvm.devel,gmane.linux.kernel
-To: Andy Lutomirski <luto@amacapital.net>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@kernel.org>, kvm list <kvm@vger.kernel.org>,
+	Mon, 5 Jan 2015 17:26:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
- pvclock reader
-References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net> <20150105152511.GA9172@amt.cnet> <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
-In-Reply-To: <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma configuration
+Date: Mon, 05 Jan 2015 23:26:15 +0100
+Message-ID: <1671700.LL29F8Iz6R@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54AAEEE1.7020607@ti.com>
+References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com> <2019516.ehiuEv0rdL@wuerfel> <54AAEEE1.7020607@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:7KbApzqx9bXFMs+q0KsUeK9E6qwx5nUGPTmWzTzSFTK9OUTCZV6
+ aRdZMR0BZtVUt0yXbf3yci+yTZeidZJOCnd6cuijanh13uC4jAGb5jQSFaAwSt2MLXoEF4T
+ titOrnxcF9owihHe3XR18uxQqKAMHJBo+ZlgXN9Gzc3LqyG1KBg2x8FRtk/NpEeyTc7DaTg
+ YjuXhv5aOhnsHdlJA7GaA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 05 January 2015 15:06:57 Murali Karicheri wrote:
+> On 01/03/2015 04:37 PM, Arnd Bergmann wrote:
+> > Yes, but we also need to pass a PCI device specific identifier along
+> > with the root bus node, because some iommu drivers take the PCI
+> > bus/device/function number into account for creating per-function
+> > i/o page tables.
 
+> ...
 
-On 05/01/2015 19:56, Andy Lutomirski wrote:
->> > 1) State: all pvtis marked as PVCLOCK_TSC_STABLE_BIT.
->> > 1) Update request for all vcpus, for a TSC_STABLE_BIT -> ~TSC_STABLE_BIT
->> > transition.
->> > 2) vCPU-1 updates its pvti with new values.
->> > 3) vCPU-0 still has not updated its pvti with new values.
->> > 4) vCPU-1 VM-enters, uses vCPU-0 values, even though it has been
->> > notified of a TSC_STABLE_BIT -> ~TSC_STABLE_BIT transition.
->> >
->> > The update is not actually atomic across all vCPUs, its atomic in
->> > the sense of not allowing visibility of distinct
->> > system_timestamp/tsc_timestamp values.
->> >
-> Hmm.  In step 4, is there a guarantee that vCPU-0 won't VM-enter until
-> it gets marked unstable?  Otherwise the vdso could could just as
-> easily be called from vCPU-1, migrated to vCPU-0, read the data
-> complete with stale stable bit, and get migrated back to vCPU-1.
-> 
-> But I thought that KVM currently froze all vCPUs when updating pvti
-> for any of them.  How can this happen?  I admit I don't really
-> understand the update request code.
+> I will post v3 of the patch with what is agreed before in my response 
+> and I understand there is no additional change required based on this 
+> particular discussion about iommu. Right?
 
-That was also my understanding.  I thought this was the point of
-kvm_make_mclock_inprogress_request/KVM_REQ_MCLOCK_INPROGRESS.
+Actually regarding the bit I wrote above, it might be helpful to pass
+the PCI_DEVID() into both of_iommu_configure and of_dma_configure.
 
-Disabling TSC_STABLE_BIT is triggered by pvclock_gtod_update_fn but it
-happens in kvm_gen_update_masterclock, and no guest entries will happen
-in the meanwhile.
+While this may or may not be sufficient, I think there is no question
+about it being needed for the ARM SMMU with PCI, so we may as well add
+it at the point when you touch the same lines already. In the platform
+bus case, just pass zero here.
 
-Paolo
+	Arnd
