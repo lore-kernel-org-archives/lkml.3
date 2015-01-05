@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517AbbAESG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:06:27 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:42727 "EHLO lists.s-osg.org"
+	id S1754505AbbAESHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:07:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42602 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932068AbbAESGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:06:24 -0500
-Message-ID: <54AAD295.6040208@osg.samsung.com>
-Date: Mon, 05 Jan 2015 11:06:13 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754477AbbAESHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 13:07:49 -0500
+Date: Mon, 5 Jan 2015 13:07:43 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com
+Subject: Re: [PATCH] TaskTracker : Simplified thread information tracker.
+Message-ID: <20150105180743.GI29998@madcap2.tricolour.ca>
+References: <20140927091440.6fe54f43@ivy-bridge>
+ <201409280012.FGE05239.VtFOSMOJFOFQLH@I-love.SAKURA.ne.jp>
+ <20141007213054.GJ26201@madcap2.tricolour.ca>
+ <201410102140.HHB30768.tFVJSFQOMLOOFH@I-love.SAKURA.ne.jp>
+ <20141010124923.GD2966@madcap2.tricolour.ca>
+ <201501042050.EEH30201.FJVtFHMQOLSFOO@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        mingo@redhat.com, davem@davemloft.net, keescook@chromium.org,
-        tranmanphong@gmail.com, mpe@ellerman.id.au, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH v3 05/20] selftests/ftrace: add install target to enable
- test install
-References: <cover.1419387513.git.shuahkh@osg.samsung.com> <e84eeeecde70ecb3ab82c5f825fec359f9e967ff.1419387513.git.shuahkh@osg.samsung.com> <20150102104526.29df5641@gandalf.local.home>
-In-Reply-To: <20150102104526.29df5641@gandalf.local.home>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201501042050.EEH30201.FJVtFHMQOLSFOO@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2015 08:45 AM, Steven Rostedt wrote:
-> On Wed, 24 Dec 2014 09:27:41 -0700
-> Shuah Khan <shuahkh@osg.samsung.com> wrote:
+On 15/01/04, Tetsuo Handa wrote:
+> Hello.
 > 
->> Add a new make target to enable installing test. This target
->> installs test in the kselftest install location and add to the
->> kselftest script to run the test. Install target can be run
->> only from top level kernel source directory.
->>
->> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->> ---
->>  tools/testing/selftests/ftrace/Makefile | 11 ++++++++++-
->>  1 file changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/tools/testing/selftests/ftrace/Makefile b/tools/testing/selftests/ftrace/Makefile
->> index 76cc9f1..7c7cf42 100644
->> --- a/tools/testing/selftests/ftrace/Makefile
->> +++ b/tools/testing/selftests/ftrace/Makefile
->> @@ -1,7 +1,16 @@
->> +TEST_STR = /bin/sh ./ftracetest || echo ftrace selftests: [FAIL]
+> Richard Guy Briggs wrote:
+> > > Richard Guy Briggs wrote:
+> > > > On 14/09/28, Tetsuo Handa wrote:
+> > > > > (Q2) Does auxiliary record work with only type=SYSCALL case?
+> > > > 
+> > > > Auxiliary records don't work with AUDIT_LOGIN because that record has a
+> > > > NULL context.  Similarly for core dumps (AUDIT_ANOM_ABEND), AUDIT_SECCOMP,
+> > > > configuration changes (AUDIT_CONFIG_CHANGE, AUDIT_FEATURE_CHANGE), most
+> > > > (all?) AUDIT_USER_* messages.
+> > > > 
+> > > I see, thank you.
+> > > 
+> > > Although I feel that, from the point of view of troubleshooting, emitting
+> > > history of thread's comm name into NULL-context records would help sysadmin
+> > > to map login session and operations a user did from that login session,
+> > > I'm OK with starting history of thread's comm name as auxiliary records
+> > > (i.e. not emitted into NULL-context records).
+> > > 
+> > > Adding LKML for reviewers. What else can I do for merging this patch?
+> > 
+> > I'm willing to take it with some reflection and no significant
+> > objections, in particular from userspace audit.  I'll have a closer look
+> > at it.
 > 
-> Is it ok that this removes the quotes around the echo string? I don't
-> see anything wrong about it, but I don't know if there's a shell out
-> there that will fail due to it.
+> Any comments on this patch?
 
-Right. both sh and bash are fine without the quotes. In this case there
-are no variables to interpret, so quotes don't do anything. I might as
-well play it safe. I will have to fix a few other tests to address this
-comment. Will generate v4s for a few tests in this series.
+Steve already mentioned any user-influenced fields need to be escaped,
+so I'd recommend audit_log_untrustedstring() as being much simpler from
+your perspective and much better tested and understood from audit
+maintainer's perspective.  At least use the existing 'o' printf format
+specifier instead of inventing your own.  I do acknowledge that the
+resulting output from your function is easier to read in its raw format
+passed from the kernel, however, it makes your code harder to maintain.
 
-Thanks,
--- Shuah
+As for the date-stamping bits, they seem to be the majority of the code
+in audit_update_history().  I'd just emit a number and punt that to
+userspace for decoding.  Alternatively, I'd use an existing service in
+the kernel to do that date formatting, or at least call a new function
+to format that date string should a suitable one not already exist, so
+you can remove that complexity from audit_update_history().
 
-> 
-> Other than than,
-> 
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> -- Steve
-> 
-> 
->> +
->>  all:
->>  
->> +install:
->> +ifdef INSTALL_KSFT_PATH
->> +	install ./ftracetest $(INSTALL_KSFT_PATH)
->> +	@cp -r test.d $(INSTALL_KSFT_PATH)
->> +	echo "$(TEST_STR)" >> $(KSELFTEST)
->> +endif
->> +
->>  run_tests:
->> -	@/bin/sh ./ftracetest || echo "ftrace selftests: [FAIL]"
->> +	@$(TEST_STR)
->>  
->>  clean:
->>  	rm -rf logs/*
-> 
+- RGB
 
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
