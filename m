@@ -1,122 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbbAEIdH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:33:07 -0500
-Received: from mga03.intel.com ([134.134.136.65]:47037 "EHLO mga03.intel.com"
+	id S1753239AbbAEIhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:37:35 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44382 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753182AbbAEIdF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:33:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="436516480"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "Moore, Robert" <robert.moore@intel.com>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] acpi: acpica: utmisc.c:  Remove unused function
-Thread-Topic: [PATCH] acpi: acpica: utmisc.c:  Remove unused function
-Thread-Index: AQHQJeYzqMCv7mVlpkS0lIU+leHmD5yxNrrQ
-Date: Mon, 5 Jan 2015 08:32:59 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88026AAC8D@SHSMSX101.ccr.corp.intel.com>
-References: <1420132554-32049-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1420132554-32049-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751942AbbAEIhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 03:37:33 -0500
+Message-ID: <54AA4CD4.40105@ti.com>
+Date: Mon, 5 Jan 2015 14:05:32 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Paul Walmsley <paul@pwsan.com>, Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <t-kristo@ti.com>, <nm@ti.com>, <nsekhar@ti.com>,
+        <bcousson@baylibre.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <s-anna@ti.com>
+Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
+ without sysc
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Rickard
-
-> From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se]
-> Sent: Friday, January 02, 2015 1:16 AM
+Hi Paul,
+On Saturday 03 January 2015 02:40 AM, Paul Walmsley wrote:
+> + Suman, lakml
 > 
-> Remove the function acpi_ut_is_aml_table() that is not used anywhere.
+> Hi Roger
+> 
+> On Thu, 18 Dec 2014, Roger Quadros wrote:
+> 
+>> Fixing up Paul's email id.
+>>
+>> cheers,
+>> -roger
+>>
+>> On 18/12/14 17:49, Roger Quadros wrote:
+>>> There are quite a few hwmods that don't have sysconfig register and so
+>>> _find_mpu_rt_port(oh) will return NULL thus preventing ready state check
+>>> on those modules after the module is enabled.
+> 
+> Hmm.  Any IP block that exposes registers that are accessible by the MPU 
+> should have an MPU register target port, even if there's no SYSCONFIG 
+> register.  And if an IP block doesn't have registers that are accessible 
+> from the MPU, then there shouldn't be much point to waiting for the module 
+> to become ready.
+> 
+> Looks like the real problem is the test for oh->class->sysc before the 
+> call to _init_mpu_rt_base().  That was introduced by commit 6423d6df1440 
+> ("ARM: OMAP2+: hwmod: check for module address space during init"). It's 
+> not clear to me why that test was added, since _init_mpu_rt_base() doesn't 
+> do anything with oh->class->sysc or SYSCONFIG registers.
+This was introduced by commit 
+97597b962529 (ARM: OMAP2+: hwmod: Don't call _init_mpu_rt_base if no sysc)
+Patch description states that "there are few hwmod which doesn't have sysconfig registers and hence
+no need to ioremap() them in early init code".
+Isn't this correct? 
+May be a dumb question: If IP doesn't have sysconfig, is there any case that hwmod does
+access the register address space of that IP? Why do we need to enable MPU register target port?
 
-This function is used by the ACPICA debugger and disassembler.
-The ACPICA release process has just automatically released this function from the ACPICA code base to the Linux kernel.
-
-We shouldn't just remove it from the Linux kernel code base.
-If we do so, it's just turned into divergences that can hurt the release automation.
-You may use ACPI_FUTURE_USAGE around these functions instead.
-
-Same rule should apply to all of the other patches from you.
-
-Thanks and best regards
--Lv
+Thanks and regards,
+Lokesh
 
 > 
-> This was partially found by using a static code analysis program called cppcheck.
+> Could you please test the following patch?
+> I don't have an AM437x-gp-evm.  
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> 
+> - Paul
+> 
 > ---
->  drivers/acpi/acpica/acutils.h |    2 --
->  drivers/acpi/acpica/utmisc.c  |   28 ----------------------------
->  2 files changed, 30 deletions(-)
+>  arch/arm/mach-omap2/omap_hwmod.c | 12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
 > 
-> diff --git a/drivers/acpi/acpica/acutils.h b/drivers/acpi/acpica/acutils.h
-> index 486d342..ec5da45 100644
-> --- a/drivers/acpi/acpica/acutils.h
-> +++ b/drivers/acpi/acpica/acutils.h
-> @@ -570,8 +570,6 @@ const struct acpi_exception_info *acpi_ut_validate_exception(acpi_status
-> 
->  u8 acpi_ut_is_pci_root_bridge(char *id);
-> 
-> -u8 acpi_ut_is_aml_table(struct acpi_table_header *table);
-> -
->  acpi_status
->  acpi_ut_walk_package_tree(union acpi_operand_object *source_object,
->  			  void *target_object,
-> diff --git a/drivers/acpi/acpica/utmisc.c b/drivers/acpi/acpica/utmisc.c
-> index 2e2bb14..a9440af 100644
-> --- a/drivers/acpi/acpica/utmisc.c
-> +++ b/drivers/acpi/acpica/utmisc.c
-> @@ -77,34 +77,6 @@ u8 acpi_ut_is_pci_root_bridge(char *id)
-> 
->  /*******************************************************************************
->   *
-> - * FUNCTION:    acpi_ut_is_aml_table
-> - *
-> - * PARAMETERS:  table               - An ACPI table
-> - *
-> - * RETURN:      TRUE if table contains executable AML; FALSE otherwise
-> - *
-> - * DESCRIPTION: Check ACPI Signature for a table that contains AML code.
-> - *              Currently, these are DSDT,SSDT,PSDT. All other table types are
-> - *              data tables that do not contain AML code.
-> - *
-> - ******************************************************************************/
-> -
-> -u8 acpi_ut_is_aml_table(struct acpi_table_header *table)
-> -{
-> -
-> -	/* These are the only tables that contain executable AML */
-> -
-> -	if (ACPI_COMPARE_NAME(table->signature, ACPI_SIG_DSDT) ||
-> -	    ACPI_COMPARE_NAME(table->signature, ACPI_SIG_PSDT) ||
-> -	    ACPI_COMPARE_NAME(table->signature, ACPI_SIG_SSDT)) {
-> -		return (TRUE);
+> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+> index cbb908dc5cf0..ce6d11f3eda7 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+> @@ -2451,14 +2451,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
+>  				oh->name, np->name);
+>  	}
+>  
+> -	if (oh->class->sysc) {
+> -		r = _init_mpu_rt_base(oh, NULL, index, np);
+> -		if (r < 0) {
+> -			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
+> -			     oh->name);
+> -			return 0;
+> -		}
 > -	}
-> -
-> -	return (FALSE);
-> -}
-> -
-> -/*******************************************************************************
-> - *
->   * FUNCTION:    acpi_ut_dword_byte_swap
->   *
->   * PARAMETERS:  value           - Value to be converted
-> --
-> 1.7.10.4
+> +	r = _init_mpu_rt_base(oh, NULL, index, np);
+> +	if (r < 0)
+> +		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
+> +			 oh->name);
+>  
+>  	r = _init_clocks(oh, NULL);
+>  	if (r < 0) {
+> 
 
