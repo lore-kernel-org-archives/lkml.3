@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109AbbAEUgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 15:36:51 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:35845 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbbAEUgt (ORCPT
+	id S1753971AbbAEUif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 15:38:35 -0500
+Received: from borg.tf-network.de ([62.75.218.204]:52854 "EHLO
+	borg.tf-network.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbbAEUie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 15:36:49 -0500
-From: Mikael Pettersson <mikpelinux@gmail.com>
-X-Google-Original-From: "Mikael Pettersson" <mikpe@cascade>
+	Mon, 5 Jan 2015 15:38:34 -0500
+From: Thomas D <whissi@whissi.de>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas D <whissi@whissi.de>,
+        Mark Asselstine <mark.asselstine@windriver.com>,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] tools/power: turbostat: Use $(CURDIR) instead of $(PWD) in Makefile
+Date: Mon,  5 Jan 2015 21:37:23 +0100
+Message-Id: <1420490243-15375-1-git-send-email-whissi@whissi.de>
+X-Mailer: git-send-email 2.2.1
+In-Reply-To: <2779550.jOF2haXjUH@yow-masselst-d1>
+References: <2779550.jOF2haXjUH@yow-masselst-d1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <21674.62940.651019.548138@gargle.gargle.HOWL>
-Date: Mon, 5 Jan 2015 21:36:44 +0100
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, mikpelinux@gmail.com,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        "linux-ia64\@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: status of ia64 / hpsim
-In-Reply-To: <CA+8MBbJgXAW5pgVk2zshR-09gDNXPDa__c+g5yxTt4wUrJGJ2Q@mail.gmail.com>
-References: <20141230155057.GA23826@infradead.org>
-	<CA+8MBbJgXAW5pgVk2zshR-09gDNXPDa__c+g5yxTt4wUrJGJ2Q@mail.gmail.com>
-X-Mailer: VM 8.1.2 under 24.3.1 (x86_64-redhat-linux-gnu)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony Luck writes:
- > On Tue, Dec 30, 2014 at 7:50 AM, Christoph Hellwig <hch@infradead.org> wrote:
- > > IS the ia64 hpsim architecture still in use?  I noticed it because it
- > > has a fairly rudimentary SCSI driver under arch/ia64, which doesn't
- > > look very maintained.
- > 
- > Mikael was doing something with hpsim on the ski simulator back in Jan'14. Was
- > that something real, or just playing because it was there?
+[PATCH] tools/power: turbostat: Use $(CURDIR) instead of $(PWD) and
+ add support for O= option in Makefil
 
-I was trying to set up an emulated platform for continuous GCC bootstrap and
-regression testsuite runs, but something broke the ia64 kernel causing EXT4
-file system errors in the emulated platform, so I had to scrap that idea.
+Since commit ee0778a30153 ("tools/power: turbostat: make Makefile a bit
+more capable") turbostat’s Makefile is using
 
-I tried various ia64 kernel versions, compiling the ia64 kernel with older
-GCCs, and compiling SKI with older host (x86_64) GCCs, but nothing worked.
-With no known-good starting point there was no reasonable way for me to
-debug the problem.
+  [...]
+  BUILD_OUTPUT    := $(PWD)
+  [...]
 
-/Mikael
+which obviously causes trouble when building "turbostat" with
+
+  make -C /usr/src/linux/tools/power/x86/turbostat ARCH=x86 turbostat
+
+because GNU make doesn’t update nor guarantee that $PWD is set.
+
+This patch changes the Makefile to use $CURDIR instead, which GNU make
+guarantees to set and update (i.e. when using "make –C ...") and also
+adds support for the O= option (see "make help" in your root of your
+kernel source tree for more details).
+
+Link: https://bugs.gentoo.org/show_bug.cgi?id=533918
+Fixes: ee0778a30153 ("tools/power: turbostat: make Makefile a bit more capable")
+Signed-off-by: Thomas D. <whissi@whissi.de>
+Cc: Mark Asselstine <mark.asselstine@windriver.com>
+Cc: Len Brown <len.brown@intel.com>
+---
+ I followed Mark's suggestion and also added support for the O= option.
+ I took the logic from tools/power/cpupower/Makefile.
+
+ ...i also hope this reply will work and doesn't break the tread ;)
+
+ tools/power/x86/turbostat/Makefile | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/tools/power/x86/turbostat/Makefile b/tools/power/x86/turbostat/Makefile
+index d1b3a36..4039854 100644
+--- a/tools/power/x86/turbostat/Makefile
++++ b/tools/power/x86/turbostat/Makefile
+@@ -1,8 +1,12 @@
+ CC		= $(CROSS_COMPILE)gcc
+-BUILD_OUTPUT	:= $(PWD)
++BUILD_OUTPUT	:= $(CURDIR)
+ PREFIX		:= /usr
+ DESTDIR		:=
+ 
++ifeq ("$(origin O)", "command line")
++	BUILD_OUTPUT := $(O)
++endif
++
+ turbostat : turbostat.c
+ CFLAGS +=	-Wall
+ CFLAGS +=	-DMSRHEADER='"../../../../arch/x86/include/uapi/asm/msr-index.h"'
+-- 
+2.2.1
+
