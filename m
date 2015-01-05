@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbbAEWNP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:13:15 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:41667 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619AbbAEWNN (ORCPT
+	id S1753511AbbAEWSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:18:53 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:55847 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752825AbbAEWSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:13:13 -0500
-X-IronPort-AV: E=Sophos;i="5.07,702,1413270000"; 
-   d="scan'208";a="54047393"
-Message-ID: <54AB0C75.1090204@broadcom.com>
-Date: Mon, 5 Jan 2015 23:13:09 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Johannes Berg <johannes@sipsolutions.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-References: <1420297188.2397.3.camel@tiscali.nl>	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>	 <1420324124.9624.60.camel@x220> <54AA641C.7050307@broadcom.com>	 <1420479510.14308.23.camel@x220>	 (sfid-20150105_183907_807502_81C08416) <1420484224.9459.16.camel@sipsolutions.net> <1420495519.14308.29.camel@x220>
-In-Reply-To: <1420495519.14308.29.camel@x220>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Mon, 5 Jan 2015 17:18:52 -0500
+Message-ID: <1420496330.14308.37.camel@x220>
+Subject: Re: [PATCH 0/5] *** SUBJECT HERE ***
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Konrad Zapalowicz <bergo.torino@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        pankaj.saraf@nektech.in, linux-kernel@vger.kernel.org,
+        abbotti@mev.co.uk, jitendra kumar khasdev <jkhasdev@gmail.com>
+Date: Mon, 05 Jan 2015 23:18:50 +0100
+In-Reply-To: <20150104014119.GE25819@t400>
+References: <1420274187-6779-1-git-send-email-jkhasdev@gmail.com>
+	 <20150103164516.GB30268@kroah.com> <1420325674.9624.65.camel@x220>
+	 <20150104014119.GE25819@t400>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Jan 2015 22:18:50.0828 (UTC) FILETIME=[954818C0:01D02935]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/15 23:05, Paul Bolle wrote:
-> On Mon, 2015-01-05 at 19:57 +0100, Johannes Berg wrote:
->> Multiple other groups of ioctls could be converted in similar patches,
->> until at the end you can completely remove ipw_wx_handlers and rely
->> entirely on cfg80211's wext compatibility.
->>
->> So far the theory - in practice nobody cared enough to start working on
->> any of these drivers, let alone actually has the hardware today.
->
-> So my suggestion to make ipw2200 no longer use cfg80211_wext_giwname()
-> would actually be backwards. What's actually needed, in theory, is to
-> use more of what's provided under CFG80211_WEXT (and, I guess, less of
-> what's provided under WIRELESS_EXT). Did I get that right?
+On Sun, 2015-01-04 at 02:41 +0100, Konrad Zapalowicz wrote:
+> git send-email does one thing and one thing only - sends stuff via
+> email. I do not see why it should parse the emails and decide whether to
+> complete the operation or break based on what is in the emails.
 
-Yes, but as Johannes indicated it needs consideration what to group in 
-the patches.
+It already has to parse the file(s) it's provided with. Perhaps it
+already has checks to validate Subject: lines. Would an extra test be a
+burden?
 
-Regards,
-Arend
+> It could
+> warn though however since the cover letter is a product of different
+> command introducing this logic would tightly couple those which is not
+> good.
 
-> Thanks,
->
->
-> Paul Bolle
->
+A warning would be too late: the message with the silly subject would be
+already sent out.
+
+> I guess that it is better that people who send stuff acctually care what
+> they are sending. I mean that pretty quickly you learn to send the
+> series of patches first to yourself and review before it goes out to the
+> public.
+
+It's good if people are careful. It's also good if programs help to
+avoid silly mistakes.
+
+
+Paul Bolle
 
