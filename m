@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbbAESLd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:11:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29662 "EHLO mga11.intel.com"
+	id S932222AbbAESVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:21:05 -0500
+Received: from gw1.transmode.se ([195.58.98.146]:61178 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754387AbbAESLb convert rfc822-to-8bit (ORCPT
+	id S1753868AbbAESVD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:11:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,701,1413270000"; 
-   d="scan'208";a="632760606"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Chen Yucong <slaoub@gmail.com>
-CC: "bp@alien8.de" <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86, mce: use mce_usable_address() for UCNA memory
- error recovery
-Thread-Topic: [PATCH] x86, mce: use mce_usable_address() for UCNA memory
- error recovery
-Thread-Index: AQHQIyoB8zfGvsiUaEOgdUiVlczvJJyx3VXQ
-Date: Mon, 5 Jan 2015 18:11:28 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3298FE25@ORSMSX114.amr.corp.intel.com>
-References: <1419831623-14078-1-git-send-email-slaoub@gmail.com>
-In-Reply-To: <1419831623-14078-1-git-send-email-slaoub@gmail.com>
-Accept-Language: en-US
+	Mon, 5 Jan 2015 13:21:03 -0500
+From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+To: "christophe.leroy@c-s.fr" <christophe.leroy@c-s.fr>
+CC: "scottwood@freescale.com" <scottwood@freescale.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "mpe@ellerman.id.au" <mpe@ellerman.id.au>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v3 2/2] powerpc/8xx: use _PAGE_RO instead of _PAGE_RW
+Thread-Topic: [PATCH v3 2/2] powerpc/8xx: use _PAGE_RO instead of _PAGE_RW
+Thread-Index: AQHQHdAiSuXq6pRq+0uuRJgVzjygvZyx2c4A
+Date: Mon, 5 Jan 2015 18:12:00 +0000
+Message-ID: <1420481520.25047.15.camel@transmode.se>
+References: <20141222101450.D7DD11A5E15@localhost.localdomain>
+In-Reply-To: <20141222101450.D7DD11A5E15@localhost.localdomain>
+Accept-Language: en-US, sv-SE
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [192.168.200.4]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <3AB9AB1CAFE0674D92E7BDEDDC39CFCC@transmode.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The IA32_MCi_ADDR MSR contains the address of the code or data memory
-> location that produced the machine-check error. The IA32_MCi_ADDR
-> register is either not implemented or contains no address if the ADDRV
-> flag in the IA32_MCi_STATUS register is clear. The address returned is
-> an offset into a segment, linear address, physical address, or memory
-> address. This depends on the error encountered.
->                                          -- Intel SDM Volume 3B
 
-But SDM also says:
+On Mon, 2014-12-22 at 11:14 +0100, Christophe Leroy wrote:
+> On powerpc 8xx, in TLB entries, 0x400 bit is set to 1 for read-only pages
+> and is set to 0 for RW pages. So we should use _PAGE_RO instead of _PAGE_RW
+> 
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-If both MISCV and IA32_MCG_CAP[24] are set, the IA32_MCi_MISC_MSR
-is defined according to Figure 15-8 to support software recovery of
-uncorrected errors (see Section 15.6):
+Hi Christophe, been meaning to look over all you recent 8xx MMU/TLB patches
+but got so little time :(
 
-So you should only look at the LSB/MODE bits in MCi_MISC on Intel processors
-which have MCG_CAP[24] == 1 (handily saved in "mca_cfg.ser" in mce.c).
+This is very cool (not sure if there will be a performance gain)  but ..
+> 
+> 
+> 
+> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
+> index caf094a..b4e0c3b 100644
+> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
+> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+> @@ -178,9 +178,10 @@ static inline unsigned long pte_update(pte_t *p,
+>         andc    %1,%0,%5\n\
+>         or      %1,%1,%6\n\
+>         /* 0x200 == Extended encoding, bit 22 */ \
+> -       /* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
+> +       /* Bit 22 has to be 1 when _PAGE_USER is unset and _PAGE_RO is set */ \
+>         rlwimi  %1,%1,32-2,0x200\n /* get _PAGE_USER */ \
+> -       rlwinm  %3,%1,32-1,0x200\n /* get _PAGE_RW */ \
+> +       rlwinm  %3,%1,32-1,0x200\n /* get _PAGE_RO */ \
+> +       xori    %3,%3,0x200\n \
+>         or      %1,%3,%1\n\
+>         xori    %1,%1,0x200\n"
+>  "      stwcx.  %1,0,%4\n\
 
-This was buried in the old code because the only caller of mce_usable_address() was:
+... here I expected to loose the existing xori insn instead of adding one?
 
-	if (severity == MCE_AO_SEVERITY && mce_usable_address(&m))
-
-and we can only have AO_SEVERITY set on systems with MCG_CAP[24]==1.
-
--Tony
+ Jocke
