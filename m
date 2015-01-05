@@ -1,40 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbbAETXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:23:42 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:60883 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbbAETXl (ORCPT
+	id S1754294AbbAETYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:24:17 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:33940 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753307AbbAETYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:23:41 -0500
-Date: Mon, 5 Jan 2015 19:23:29 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Mark Seaborn <mseaborn@chromium.org>,
-        kernel list <linux-kernel@vger.kernel.org>, luto@amacapital.net
-Subject: Re: DRAM unreliable under specific access patern
-Message-ID: <20150105192329.5f32c155@lxorguk.ukuu.org.uk>
-In-Reply-To: <20141224220818.GA17655@amd>
-References: <CAL82V5NN8U4PyiSjLxgpTrgsgkbM7rRCbVF5P-HHyEqphLOy+g@mail.gmail.com>
-	<20141224220818.GA17655@amd>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Mon, 5 Jan 2015 14:24:16 -0500
+Date: Mon, 5 Jan 2015 20:24:06 +0100
+From: Piotr Kubus <p.t.kubus@gmail.com>
+To: Konrad Zapalowicz <bergo.torino@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, abbotti@mev.co.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: dmm32at: Fixed a code indent issue
+Message-ID: <20150105192406.GA2686@PiotrekLap>
+References: <1420384955-27336-1-git-send-email-p.t.kubus@gmail.com>
+ <20150104223129.GF25819@t400>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150104223129.GF25819@t400>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In the meantime, I created test that actually uses physical memory,
-> 8MB apart, as described in some footnote. It is attached. It should
-> work, but it needs boot with specific config options and specific
-> kernel parameters.
+On Sun, Jan 04, 2015 at 11:31:29PM +0100, Konrad Zapalowicz wrote:
+> On 01/04, Piotr Kubus wrote:
+> > This is a patch to the dmm32at.c file that fixes up a code indent error found by the checkpatch.pl tool.
+> 
+> Nice however improve your commit message. The rule is that the lines
+> should wrap at 72nd column except for quoted material such as compiler
+> output, etc...
+> 
+> The 72-character columns are important for allowing quoting and they
+> play nicely with standard indentation from git log.
 
-Why not just use hugepages. You know the alignment guarantees for 1GB
-pages and that means you don't even need to be root
+Hey,
 
-In fact - should we be disabling 1GB huge page support by default at this
-point, at least on non ECC boxes ?
+I couldn't find that rule in Kernel documentation. Besides there were no
+complaints from checkpatch.pl tool.
 
-Alan
+Do you mean I should resend it or wait for reply from maintainer first?
+
+Regards,
+Piotr
+
+> 
+> Thanks,
+> Konrad
+> 
+> > Signed-off-by: Piotr Kubus <p.t.kubus@gmail.com>
+> > ---
+> >  drivers/staging/comedi/drivers/dmm32at.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
+> > index 6df298a..31919b8 100644
+> > --- a/drivers/staging/comedi/drivers/dmm32at.c
+> > +++ b/drivers/staging/comedi/drivers/dmm32at.c
+> > @@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
+> >  	/* enable the ai conversion interrupt and the clock to start scans */
+> >  	outb(DMM32AT_INTCLK_ADINT |
+> >  	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
+> > -             dev->iobase + DMM32AT_INTCLK_REG);
+> > +	     dev->iobase + DMM32AT_INTCLK_REG);
+> >  }
+> >  
+> >  static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+> > -- 
+> > 1.9.1
+> > 
+> > _______________________________________________
+> > devel mailing list
+> > devel@linuxdriverproject.org
+> > http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
