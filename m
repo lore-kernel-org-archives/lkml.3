@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345AbbAER5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:57:21 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:47664 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932271AbbAER5S (ORCPT
+	id S932457AbbAESAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:00:12 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:38315
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932229AbbAESAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:57:18 -0500
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 12:57:18 EST
-Date: Mon, 5 Jan 2015 12:57:13 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 3/4] can: kvaser_usb: Don't send a RESET_CHIP for
- non-existing channels
-Message-ID: <20150105175713.GC6304@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20150105174910.GA6304@linux>
- <20150105175206.GB6304@linux>
+	Mon, 5 Jan 2015 13:00:09 -0500
+X-IronPort-AV: E=Sophos;i="5.07,701,1413237600"; 
+   d="scan'208";a="95398694"
+Date: Mon, 5 Jan 2015 19:00:05 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+        akpm@linux-foundation.org, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCHv5 2/2] INPUT: Introduce generic trigger/LED pairs to
+ input LEDs
+Message-ID: <20150105180005.GX3804@type.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Pavel Machek <pavel@ucw.cz>, David Herrmann <dh.herrmann@gmail.com>,
+	akpm@linux-foundation.org, jslaby@suse.cz,
+	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+References: <20141226232116.GA5069@type>
+ <20141226232310.GD5069@type>
+ <20150104232838.GA14912@dtor-glaptop>
+ <20150104234501.GJ25336@type.youpi.perso.aquilenet.fr>
+ <20150105174205.GB35592@dtor-ws>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20150105175206.GB6304@linux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150105174205.GB35592@dtor-ws>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+Dmitry Torokhov, le Mon 05 Jan 2015 09:42:05 -0800, a écrit :
+> The input device's capabilities (with the exception of keymap) should
+> not change after device registration. If uinput allows that we should
+> fix it there.
 
-Recent Leaf firmware versions (>= 3.1.557) do not allow to send
-commands for non-existing channels.  If a command is sent for a
-non-existing channel, the firmware crashes.
+Ah, I didn't notice the content of uinput_set_bit() there.  It seems to
+be making sure that the device hasn't been created yet indeed.  All good
+then.
 
-Reported-by: Christopher Storah <Christopher.Storah@invetech.com.au>
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
----
- drivers/net/can/usb/kvaser_usb.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-** V3 Changelog:
-- Update commit log message per Olivier remarks on v2
-
-diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
-index 9accc82..cc7bfc0 100644
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1503,6 +1503,10 @@ static int kvaser_usb_init_one(struct usb_interface *intf,
- 	struct kvaser_usb_net_priv *priv;
- 	int i, err;
- 
-+	err = kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, channel);
-+	if (err)
-+		return err;
-+
- 	netdev = alloc_candev(sizeof(*priv), MAX_TX_URBS);
- 	if (!netdev) {
- 		dev_err(&intf->dev, "Cannot alloc candev\n");
-@@ -1607,9 +1611,6 @@ static int kvaser_usb_probe(struct usb_interface *intf,
- 
- 	usb_set_intfdata(intf, dev);
- 
--	for (i = 0; i < MAX_NET_DEVICES; i++)
--		kvaser_usb_send_simple_msg(dev, CMD_RESET_CHIP, i);
--
- 	err = kvaser_usb_get_software_info(dev);
- 	if (err) {
- 		dev_err(&intf->dev,
-
+Samuel
