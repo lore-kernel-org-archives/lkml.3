@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357AbbAESEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:04:44 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:54330 "EHLO
+	id S932503AbbAESEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:04:05 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:47948 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753551AbbAERz7 (ORCPT
+	by vger.kernel.org with ESMTP id S932159AbbAER4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:55:59 -0500
+	Mon, 5 Jan 2015 12:56:00 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 17/45] staging: comedi: dt282x: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:54:45 +0000
-Message-Id: <1420480513-14765-18-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 18/45] staging: comedi: dyna_pci10xx: rewrite comedi driver comment block
+Date: Mon,  5 Jan 2015 17:54:46 +0000
+Message-Id: <1420480513-14765-19-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -24,8 +24,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rewrite the "Devices:" line in the comedi "driver" comment to conform to
-the usual comedi format for this line.  The line should be a
+Rewrite the comedi "driver" comment block to conform to the usual format
+for comedi driver comment blocks and reformat it to use the usual block
+comment style.  In particular, the "Devices:" line should be a
 comma-separated list where the first item is in the following format:
 
   [Manufacturer] BOARD-NAME (comedi-board-name)
@@ -36,44 +37,62 @@ are used.  The "Devices:" line may be continued continued over several
 lines by using one or more spaces at the start of each continuation line
 (not counting the space after the "*" in the block comment).
 
+Change the original "Devices:" line to a "Description:" line.
+
+Remove the "Version:" line as we don't care about driver version numbers
+in the kernel.
+
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/dt282x.c | 22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
+ drivers/staging/comedi/drivers/dyna_pci10xx.c | 35 +++++++++++++--------------
+ 1 file changed, 17 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/dt282x.c b/drivers/staging/comedi/drivers/dt282x.c
-index 2be98bb..cfa0f97 100644
---- a/drivers/staging/comedi/drivers/dt282x.c
-+++ b/drivers/staging/comedi/drivers/dt282x.c
-@@ -20,22 +20,12 @@
-  * Driver: dt282x
-  * Description: Data Translation DT2821 series (including DT-EZ)
-  * Author: ds
-- * Devices: (Data Translation) DT2821 [dt2821]
-- *	    (Data Translation) DT2821-F-16SE [dt2821-f]
-- *	    (Data Translation) DT2821-F-8DI [dt2821-f]
-- *	    (Data Translation) DT2821-G-16SE [dt2821-g]
-- *	    (Data Translation) DT2821-G-8DI [dt2821-g]
-- *	    (Data Translation) DT2823 [dt2823]
-- *	    (Data Translation) DT2824-PGH [dt2824-pgh]
-- *	    (Data Translation) DT2824-PGL [dt2824-pgl]
-- *	    (Data Translation) DT2825 [dt2825]
-- *	    (Data Translation) DT2827 [dt2827]
-- *	    (Data Translation) DT2828 [dt2828]
-- *	    (Data Translation) DT2928 [dt2829]
-- *	    (Data Translation) DT21-EZ [dt21-ez]
-- *	    (Data Translation) DT23-EZ [dt23-ez]
-- *	    (Data Translation) DT24-EZ [dt24-ez]
-- *	    (Data Translation) DT24-EZ-PGL [dt24-ez-pgl]
-+ * Devices: [Data Translation] DT2821 (dt2821), DT2821-F-16SE (dt2821-f),
-+ *   DT2821-F-8DI (dt2821-f), DT2821-G-16SE (dt2821-g),
-+ *   DT2821-G-8DI (dt2821-g), DT2823 (dt2823), DT2824-PGH (dt2824-pgh),
-+ *   DT2824-PGL (dt2824-pgl), DT2825 (dt2825), DT2827 (dt2827),
-+ *   DT2828 (dt2828), DT2928 (dt2829), DT21-EZ (dt21-ez), DT23-EZ (dt23-ez),
-+ *   DT24-EZ (dt24-ez), DT24-EZ-PGL (dt24-ez-pgl)
-  * Status: complete
-  * Updated: Wed, 22 Aug 2001 17:11:34 -0700
-  *
+diff --git a/drivers/staging/comedi/drivers/dyna_pci10xx.c b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+index 1b6324c..6c1e442 100644
+--- a/drivers/staging/comedi/drivers/dyna_pci10xx.c
++++ b/drivers/staging/comedi/drivers/dyna_pci10xx.c
+@@ -14,24 +14,23 @@
+  */
+ 
+ /*
+- Driver: dyna_pci10xx
+- Devices: Dynalog India PCI DAQ Cards, http://www.dynalogindia.com/
+- Author: Prashant Shah <pshah.mumbai@gmail.com>
+- Developed at Automation Labs, Chemical Dept., IIT Bombay, India.
+- Prof. Kannan Moudgalya <kannan@iitb.ac.in>
+- http://www.iitb.ac.in
+- Status: Stable
+- Version: 1.0
+- Device Supported :
+- - Dynalog PCI 1050
+-
+- Notes :
+- - Dynalog India Pvt. Ltd. does not have a registered PCI Vendor ID and
+- they are using the PLX Technlogies Vendor ID since that is the PCI Chip used
+- in the card.
+- - Dynalog India Pvt. Ltd. has provided the internal register specification for
+- their cards in their manuals.
+-*/
++ * Driver: dyna_pci10xx
++ * Description: Dynalog India PCI DAQ Cards, http://www.dynalogindia.com/
++ * Devices: [Dynalog] PCI-1050 (dyna_pci1050)
++ * Author: Prashant Shah <pshah.mumbai@gmail.com>
++ * Status: Stable
++ *
++ * Developed at Automation Labs, Chemical Dept., IIT Bombay, India.
++ * Prof. Kannan Moudgalya <kannan@iitb.ac.in>
++ * http://www.iitb.ac.in
++ *
++ * Notes :
++ * - Dynalog India Pvt. Ltd. does not have a registered PCI Vendor ID and
++ *   they are using the PLX Technlogies Vendor ID since that is the PCI Chip
++ *   used in the card.
++ * - Dynalog India Pvt. Ltd. has provided the internal register specification
++ *   for their cards in their manuals.
++ */
+ 
+ #include <linux/module.h>
+ #include <linux/delay.h>
 -- 
 2.1.4
 
