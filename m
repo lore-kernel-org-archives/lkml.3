@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbbAEKy2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:54:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47005 "EHLO mx2.suse.de"
+	id S1754002AbbAEKzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:55:38 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59371 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753899AbbAEKy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:54:26 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Kirill Shutemov <kirill.shutemov@linux.intel.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 10/10] mm: numa: Avoid unnecessary TLB flushes when setting NUMA hinting entries
-Date: Mon,  5 Jan 2015 10:54:11 +0000
-Message-Id: <1420455251-13644-11-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1420455251-13644-1-git-send-email-mgorman@suse.de>
-References: <1420455251-13644-1-git-send-email-mgorman@suse.de>
+	id S1753878AbbAEKyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:54:21 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        ABI/API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v7 1/2] crypto: AF_ALG: add AEAD support
+Date: Mon, 05 Jan 2015 11:54:13 +0100
+Message-ID: <1732600.iOtRA28Mku@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150105105105.GA25517@gondor.apana.org.au>
+References: <6964260.mNa1jtPz7Z@tachyon.chronox.de> <6798882.ly1QjqTYep@tachyon.chronox.de> <20150105105105.GA25517@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a PTE or PMD is already marked NUMA when scanning to mark entries
-for NUMA hinting then it is not necessary to update the entry and
-incur a TLB flush penalty. Avoid the avoidhead where possible.
+Am Montag, 5. Januar 2015, 21:51:06 schrieb Herbert Xu:
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/huge_memory.c | 14 ++++++++------
- mm/mprotect.c    |  4 ++++
- 2 files changed, 12 insertions(+), 6 deletions(-)
+Hi Herbert,
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 8546654..f2bf521 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1524,12 +1524,14 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 			return 0;
- 		}
- 
--		ret = 1;
--		entry = pmdp_get_and_clear_notify(mm, addr, pmd);
--		entry = pmd_modify(entry, newprot);
--		ret = HPAGE_PMD_NR;
--		set_pmd_at(mm, addr, pmd, entry);
--		BUG_ON(pmd_write(entry));
-+		if (!prot_numa || !pmd_protnone(*pmd)) {
-+			ret = 1;
-+			entry = pmdp_get_and_clear_notify(mm, addr, pmd);
-+			entry = pmd_modify(entry, newprot);
-+			ret = HPAGE_PMD_NR;
-+			set_pmd_at(mm, addr, pmd, entry);
-+			BUG_ON(pmd_write(entry));
-+		}
- 		spin_unlock(ptl);
- 	}
- 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 33dfafb..109e7aa 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -86,6 +86,10 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 				page = vm_normal_page(vma, addr, oldpte);
- 				if (!page || PageKsm(page))
- 					continue;
-+
-+				/* Avoid TLB flush if possible */
-+				if (pte_protnone(oldpte))
-+					continue;
- 			}
- 
- 			ptent = ptep_modify_prot_start(mm, addr, pte);
+> On Mon, Jan 05, 2015 at 11:46:50AM +0100, Stephan Mueller wrote:
+> > The need for that check lies in aead_recvmsg:
+> >         /*
+> >         
+> >          * first chunk of input is AD -- one scatterlist entry is one
+> >          page,
+> >          * and we process only one scatterlist, the maximum size of AD is
+> >          * one page
+> >          */
+> >         
+> >         sg_init_table(&assoc, 1);
+> >         sg_set_page(&assoc, sg_page(sg), ctx->aead_assoclen, sg->offset);
+> >         aead_request_set_assoc(&ctx->aead_req, &assoc,
+> >         ctx->aead_assoclen);
+> > 
+> > There you see that I only create an sg table with one entry for the AD. If
+> > we would allow an arbitrary AD size, I would see the need of a for loop
+> > in addition to the one directly beneath this AD scatterlist setting: one
+> > for identifying how many sg entries I need to allocate and one for the
+> > actual assignment.
+> > 
+> > As I felt that one page should be sufficient for the AD, I wanted to avoid
+> > the extra overhead for another for loop.
+> 
+> Please remove the limit as otherwise we would never be able to
+> add support for this in a future kernel as appliations won't be
+> able to rely on it.
+> 
+> There is no such limit in the kernel interface and we shouldn't
+> be adding one here.
+
+Ok, will do.
+> 
+> Cheers,
+
+
 -- 
-2.1.2
-
+Ciao
+Stephan
