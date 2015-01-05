@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235AbbAELes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:34:48 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:18141 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783AbbAELeo (ORCPT
+	id S1753898AbbAELfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:35:07 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:49540 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751273AbbAELe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:34:44 -0500
+	Mon, 5 Jan 2015 06:34:57 -0500
 From: Wang Nan <wangnan0@huawei.com>
 To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
         <linux@arm.linux.org.uk>
 CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v19 08/11] ARM: kprobes: enable OPTPROBES for ARM 32
-Date: Mon, 5 Jan 2015 19:29:36 +0800
-Message-ID: <1420457376-77366-1-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH v19 09/11] ARM: kprobes: Fix unreliable MRS instruction tests
+Date: Mon, 5 Jan 2015 19:29:40 +0800
+Message-ID: <1420457380-77406-1-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
 References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
@@ -22,543 +22,163 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.247]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.54AA76DA.0140,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 42eda5cee293510e6dc2bae6ea955146
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce kprobeopt for ARM 32.
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
 
-Limitations:
- - Currently only kernel compiled with ARM ISA is supported.
+For the instruction 'mrs Rn, cpsr' the resulting value of Rn can vary due to
+external factors we can't control. So get the test code to mask out these
+indeterminate bits.
 
- - Offset between probe point and optinsn slot must not larger than
-   32MiB. Masami Hiramatsu suggests replacing 2 words, it will make
-   things complex. Futher patch can make such optimization.
-
-Kprobe opt on ARM is relatively simpler than kprobe opt on x86 because
-ARM instruction is always 4 bytes aligned and 4 bytes long. This patch
-replace probed instruction by a 'b', branch to trampoline code and then
-calls optimized_callback(). optimized_callback() calls opt_pre_handler()
-to execute kprobe handler. It also emulate/simulate replaced instruction.
-
-When unregistering kprobe, the deferred manner of unoptimizer may leave
-branch instruction before optimizer is called. Different from x86_64,
-which only copy the probed insn after optprobe_template_end and
-reexecute them, this patch call singlestep to emulate/simulate the insn
-directly. Futher patch can optimize this behavior.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
 ---
- arch/arm/Kconfig                        |   1 +
- arch/arm/{kernel => include/asm}/insn.h |   0
- arch/arm/include/asm/kprobes.h          |  29 +++
- arch/arm/kernel/Makefile                |   2 +-
- arch/arm/kernel/ftrace.c                |   3 +-
- arch/arm/kernel/jump_label.c            |   3 +-
- arch/arm/probes/kprobes/Makefile        |   1 +
- arch/arm/probes/kprobes/core.c          |  26 ++-
- arch/arm/probes/kprobes/core.h          |   2 +
- arch/arm/probes/kprobes/opt-arm.c       | 317 ++++++++++++++++++++++++++++++++
- 10 files changed, 372 insertions(+), 12 deletions(-)
- rename arch/arm/{kernel => include/asm}/insn.h (100%)
- create mode 100644 arch/arm/probes/kprobes/opt-arm.c
+ arch/arm/probes/kprobes/test-arm.c   |  6 +++---
+ arch/arm/probes/kprobes/test-core.c  | 19 ++++++++++---------
+ arch/arm/probes/kprobes/test-core.h  | 33 ++++++++++++++++++++++++++++-----
+ arch/arm/probes/kprobes/test-thumb.c |  4 ++--
+ 4 files changed, 43 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 97d07ed..3d5dc2d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -60,6 +60,7 @@ config ARM
- 	select HAVE_MEMBLOCK
- 	select HAVE_MOD_ARCH_SPECIFIC if ARM_UNWIND
- 	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
-+	select HAVE_OPTPROBES if !THUMB2_KERNEL
- 	select HAVE_PERF_EVENTS
- 	select HAVE_PERF_REGS
- 	select HAVE_PERF_USER_STACK_DUMP
-diff --git a/arch/arm/kernel/insn.h b/arch/arm/include/asm/insn.h
-similarity index 100%
-rename from arch/arm/kernel/insn.h
-rename to arch/arm/include/asm/insn.h
-diff --git a/arch/arm/include/asm/kprobes.h b/arch/arm/include/asm/kprobes.h
-index 56f9ac6..50ff3bc 100644
---- a/arch/arm/include/asm/kprobes.h
-+++ b/arch/arm/include/asm/kprobes.h
-@@ -50,5 +50,34 @@ int kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr);
- int kprobe_exceptions_notify(struct notifier_block *self,
- 			     unsigned long val, void *data);
+diff --git a/arch/arm/probes/kprobes/test-arm.c b/arch/arm/probes/kprobes/test-arm.c
+index 9b3b1b4..e72b07e 100644
+--- a/arch/arm/probes/kprobes/test-arm.c
++++ b/arch/arm/probes/kprobes/test-arm.c
+@@ -204,9 +204,9 @@ void kprobe_arm_test_cases(void)
+ #endif
+ 	TEST_GROUP("Miscellaneous instructions")
  
-+/* optinsn template addresses */
-+extern __visible kprobe_opcode_t optprobe_template_entry;
-+extern __visible kprobe_opcode_t optprobe_template_val;
-+extern __visible kprobe_opcode_t optprobe_template_call;
-+extern __visible kprobe_opcode_t optprobe_template_end;
-+extern __visible kprobe_opcode_t optprobe_template_sub_sp;
-+extern __visible kprobe_opcode_t optprobe_template_add_sp;
-+
-+#define MAX_OPTIMIZED_LENGTH	4
-+#define MAX_OPTINSN_SIZE				\
-+	((unsigned long)&optprobe_template_end -	\
-+	 (unsigned long)&optprobe_template_entry)
-+#define RELATIVEJUMP_SIZE	4
-+
-+struct arch_optimized_insn {
-+	/*
-+	 * copy of the original instructions.
-+	 * Different from x86, ARM kprobe_opcode_t is u32.
-+	 */
-+#define MAX_COPIED_INSN	DIV_ROUND_UP(RELATIVEJUMP_SIZE, sizeof(kprobe_opcode_t))
-+	kprobe_opcode_t copied_insn[MAX_COPIED_INSN];
-+	/* detour code buffer */
-+	kprobe_opcode_t *insn;
-+	/*
-+	 * We always copy one instruction on ARM,
-+	 * so size will always be 4, and unlike x86, there is no
-+	 * need for a size field.
-+	 */
-+};
+-	TEST("mrs	r0, cpsr")
+-	TEST("mrspl	r7, cpsr")
+-	TEST("mrs	r14, cpsr")
++	TEST_RMASKED("mrs	r",0,~PSR_IGNORE_BITS,", cpsr")
++	TEST_RMASKED("mrspl	r",7,~PSR_IGNORE_BITS,", cpsr")
++	TEST_RMASKED("mrs	r",14,~PSR_IGNORE_BITS,", cpsr")
+ 	TEST_UNSUPPORTED(__inst_arm(0xe10ff000) "	@ mrs r15, cpsr")
+ 	TEST_UNSUPPORTED("mrs	r0, spsr")
+ 	TEST_UNSUPPORTED("mrs	lr, spsr")
+diff --git a/arch/arm/probes/kprobes/test-core.c b/arch/arm/probes/kprobes/test-core.c
+index 7c5ddd5..e495127 100644
+--- a/arch/arm/probes/kprobes/test-core.c
++++ b/arch/arm/probes/kprobes/test-core.c
+@@ -1056,15 +1056,6 @@ static int test_case_run_count;
+ static bool test_case_is_thumb;
+ static int test_instance;
  
- #endif /* _ARM_KPROBES_H */
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 9c51a43..902397d 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -52,7 +52,7 @@ obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o insn.o
- obj-$(CONFIG_JUMP_LABEL)	+= jump_label.o insn.o patch.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
- # Main staffs in KPROBES are in arch/arm/probes/ .
--obj-$(CONFIG_KPROBES)		+= patch.o
-+obj-$(CONFIG_KPROBES)		+= patch.o insn.o
- obj-$(CONFIG_OABI_COMPAT)	+= sys_oabi-compat.o
- obj-$(CONFIG_ARM_THUMBEE)	+= thumbee.o
- obj-$(CONFIG_KGDB)		+= kgdb.o patch.o
-diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-index b8c75e4..709ee1d 100644
---- a/arch/arm/kernel/ftrace.c
-+++ b/arch/arm/kernel/ftrace.c
-@@ -20,8 +20,7 @@
- #include <asm/cacheflush.h>
- #include <asm/opcodes.h>
- #include <asm/ftrace.h>
+-/*
+- * We ignore the state of the imprecise abort disable flag (CPSR.A) because this
+- * can change randomly as the kernel doesn't take care to preserve or initialise
+- * this across context switches. Also, with Security Extentions, the flag may
+- * not be under control of the kernel; for this reason we ignore the state of
+- * the FIQ disable flag CPSR.F as well.
+- */
+-#define PSR_IGNORE_BITS (PSR_A_BIT | PSR_F_BIT)
 -
--#include "insn.h"
-+#include <asm/insn.h>
- 
- #ifdef CONFIG_THUMB2_KERNEL
- #define	NOP		0xf85deb04	/* pop.w {lr} */
-diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-index d8da075..e39cbf4 100644
---- a/arch/arm/kernel/jump_label.c
-+++ b/arch/arm/kernel/jump_label.c
-@@ -1,8 +1,7 @@
- #include <linux/kernel.h>
- #include <linux/jump_label.h>
- #include <asm/patch.h>
--
--#include "insn.h"
-+#include <asm/insn.h>
- 
- #ifdef HAVE_JUMP_LABEL
- 
-diff --git a/arch/arm/probes/kprobes/Makefile b/arch/arm/probes/kprobes/Makefile
-index bc8d504..76a36bf 100644
---- a/arch/arm/probes/kprobes/Makefile
-+++ b/arch/arm/probes/kprobes/Makefile
-@@ -7,5 +7,6 @@ obj-$(CONFIG_KPROBES)		+= actions-thumb.o checkers-thumb.o
- test-kprobes-objs		+= test-thumb.o
- else
- obj-$(CONFIG_KPROBES)		+= actions-arm.o checkers-arm.o
-+obj-$(CONFIG_OPTPROBES)		+= opt-arm.o
- test-kprobes-objs		+= test-arm.o
- endif
-diff --git a/arch/arm/probes/kprobes/core.c b/arch/arm/probes/kprobes/core.c
-index 3a58db4..a4ec240 100644
---- a/arch/arm/probes/kprobes/core.c
-+++ b/arch/arm/probes/kprobes/core.c
-@@ -163,19 +163,31 @@ void __kprobes arch_arm_kprobe(struct kprobe *p)
-  * memory. It is also needed to atomically set the two half-words of a 32-bit
-  * Thumb breakpoint.
-  */
--int __kprobes __arch_disarm_kprobe(void *p)
--{
--	struct kprobe *kp = p;
--	void *addr = (void *)((uintptr_t)kp->addr & ~1);
--
--	__patch_text(addr, kp->opcode);
-+struct patch {
-+	void *addr;
-+	unsigned int insn;
-+};
- 
-+static int __kprobes_remove_breakpoint(void *data)
-+{
-+	struct patch *p = data;
-+	__patch_text(p->addr, p->insn);
- 	return 0;
- }
- 
-+void __kprobes kprobes_remove_breakpoint(void *addr, unsigned int insn)
-+{
-+	struct patch p = {
-+		.addr = addr,
-+		.insn = insn,
-+	};
-+	stop_machine(__kprobes_remove_breakpoint, &p, cpu_online_mask);
-+}
-+
- void __kprobes arch_disarm_kprobe(struct kprobe *p)
+ static unsigned long test_check_cc(int cc, unsigned long cpsr)
  {
--	stop_machine(__arch_disarm_kprobe, p, cpu_online_mask);
-+	kprobes_remove_breakpoint((void *)((uintptr_t)p->addr & ~1),
-+			p->opcode);
- }
+ 	int ret = arm_check_condition(cc << 28, cpsr);
+@@ -1271,11 +1262,21 @@ test_case_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ static int __kprobes
+ test_after_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ {
++	struct test_arg *args;
++
+ 	if (container_of(p, struct test_probe, kprobe)->hit == test_instance)
+ 		return 0; /* Already run for this test instance */
  
- void __kprobes arch_remove_kprobe(struct kprobe *p)
-diff --git a/arch/arm/probes/kprobes/core.h b/arch/arm/probes/kprobes/core.h
-index f88c79f..b3036c5 100644
---- a/arch/arm/probes/kprobes/core.h
-+++ b/arch/arm/probes/kprobes/core.h
-@@ -30,6 +30,8 @@
- #define KPROBE_THUMB16_BREAKPOINT_INSTRUCTION	0xde18
- #define KPROBE_THUMB32_BREAKPOINT_INSTRUCTION	0xf7f0a018
+ 	result_regs = *regs;
++
++	/* Mask out results which are indeterminate */
+ 	result_regs.ARM_cpsr &= ~PSR_IGNORE_BITS;
++	for (args = current_args; args[0].type != ARG_TYPE_END; ++args)
++		if (args[0].type == ARG_TYPE_REG_MASKED) {
++			struct test_arg_regptr *arg =
++				(struct test_arg_regptr *)args;
++			result_regs.uregs[arg->reg] &= arg->val;
++		}
  
-+extern void kprobes_remove_breakpoint(void *addr, unsigned int insn);
+ 	/* Undo any changes done to SP by the test case */
+ 	regs->ARM_sp = (unsigned long)current_stack;
+diff --git a/arch/arm/probes/kprobes/test-core.h b/arch/arm/probes/kprobes/test-core.h
+index 9991754..9428520 100644
+--- a/arch/arm/probes/kprobes/test-core.h
++++ b/arch/arm/probes/kprobes/test-core.h
+@@ -45,10 +45,11 @@ extern int kprobe_test_cc_position;
+  *
+  */
+ 
+-#define	ARG_TYPE_END	0
+-#define	ARG_TYPE_REG	1
+-#define	ARG_TYPE_PTR	2
+-#define	ARG_TYPE_MEM	3
++#define	ARG_TYPE_END		0
++#define	ARG_TYPE_REG		1
++#define	ARG_TYPE_PTR		2
++#define	ARG_TYPE_MEM		3
++#define	ARG_TYPE_REG_MASKED	4
+ 
+ #define ARG_FLAG_UNSUPPORTED	0x01
+ #define ARG_FLAG_SUPPORTED	0x02
+@@ -61,7 +62,7 @@ struct test_arg {
+ };
+ 
+ struct test_arg_regptr {
+-	u8	type;		/* ARG_TYPE_REG or ARG_TYPE_PTR */
++	u8	type;		/* ARG_TYPE_REG or ARG_TYPE_PTR or ARG_TYPE_REG_MASKED */
+ 	u8	reg;
+ 	u8	_padding[2];
+ 	u32	val;
+@@ -138,6 +139,12 @@ struct test_arg_end {
+ 	".short	0					\n\t"	\
+ 	".word	"#val"					\n\t"
+ 
++#define	TEST_ARG_REG_MASKED(reg, val)				\
++	".byte	"__stringify(ARG_TYPE_REG_MASKED)"	\n\t"	\
++	".byte	"#reg"					\n\t"	\
++	".short	0					\n\t"	\
++	".word	"#val"					\n\t"
 +
- enum probes_insn __kprobes
- kprobe_decode_ldmstm(kprobe_opcode_t insn, struct arch_probes_insn *asi,
- 		const struct decode_header *h);
-diff --git a/arch/arm/probes/kprobes/opt-arm.c b/arch/arm/probes/kprobes/opt-arm.c
-new file mode 100644
-index 0000000..6a60df3
---- /dev/null
-+++ b/arch/arm/probes/kprobes/opt-arm.c
-@@ -0,0 +1,317 @@
-+/*
-+ *  Kernel Probes Jump Optimization (Optprobes)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2002, 2004
-+ * Copyright (C) Hitachi Ltd., 2012
-+ * Copyright (C) Huawei Inc., 2014
-+ */
-+
-+#include <linux/kprobes.h>
-+#include <linux/jump_label.h>
-+#include <asm/kprobes.h>
-+#include <asm/cacheflush.h>
-+/* for arm_gen_branch */
-+#include <asm/insn.h>
-+/* for patch_text */
-+#include <asm/patch.h>
-+
-+#include "core.h"
-+
-+/*
-+ * NOTE: the first sub and add instruction will be modified according
-+ * to the stack cost of the instruction.
-+ */
-+asm (
-+			".global optprobe_template_entry\n"
-+			"optprobe_template_entry:\n"
-+			".global optprobe_template_sub_sp\n"
-+			"optprobe_template_sub_sp:"
-+			"	sub	sp, sp, #0xff\n"
-+			"	stmia	sp, {r0 - r14} \n"
-+			".global optprobe_template_add_sp\n"
-+			"optprobe_template_add_sp:"
-+			"	add	r3, sp, #0xff\n"
-+			"	str	r3, [sp, #52]\n"
-+			"	mrs	r4, cpsr\n"
-+			"	str	r4, [sp, #64]\n"
-+			"	mov	r1, sp\n"
-+			"	ldr	r0, 1f\n"
-+			"	ldr	r2, 2f\n"
-+			/*
-+			 * AEABI requires an 8-bytes alignment stack. If
-+			 * SP % 8 != 0 (SP % 4 == 0 should be ensured),
-+			 * alloc more bytes here.
-+			 */
-+			"	and	r4, sp, #4\n"
-+			"	sub	sp, sp, r4\n"
-+			"	blx	r2\n"
-+			"	add	sp, sp, r4\n"
-+			"	ldr	r1, [sp, #64]\n"
-+			"	tst	r1, #"__stringify(PSR_T_BIT)"\n"
-+			"	ldrne	r2, [sp, #60]\n"
-+			"	orrne	r2, #1\n"
-+			"	strne	r2, [sp, #60] @ set bit0 of PC for thumb\n"
-+			"	msr	cpsr_cxsf, r1\n"
-+			"	ldmia	sp, {r0 - r15}\n"
-+			".global optprobe_template_val\n"
-+			"optprobe_template_val:\n"
-+			"1:	.long 0\n"
-+			".global optprobe_template_call\n"
-+			"optprobe_template_call:\n"
-+			"2:	.long 0\n"
-+			".global optprobe_template_end\n"
-+			"optprobe_template_end:\n");
-+
-+#define TMPL_VAL_IDX \
-+	((unsigned long *)&optprobe_template_val - (unsigned long *)&optprobe_template_entry)
-+#define TMPL_CALL_IDX \
-+	((unsigned long *)&optprobe_template_call - (unsigned long *)&optprobe_template_entry)
-+#define TMPL_END_IDX \
-+	((unsigned long *)&optprobe_template_end - (unsigned long *)&optprobe_template_entry)
-+#define TMPL_ADD_SP \
-+	((unsigned long *)&optprobe_template_add_sp - (unsigned long *)&optprobe_template_entry)
-+#define TMPL_SUB_SP \
-+	((unsigned long *)&optprobe_template_sub_sp - (unsigned long *)&optprobe_template_entry)
+ #define	TEST_ARG_END(flags)					\
+ 	".byte	"__stringify(ARG_TYPE_END)"		\n\t"	\
+ 	".byte	"TEST_ISA flags"			\n\t"	\
+@@ -395,6 +402,22 @@ struct test_arg_end {
+ 	"	"codex"			\n\t"					\
+ 	TESTCASE_END
+ 
++#define TEST_RMASKED(code1, reg, mask, code2)		\
++	TESTCASE_START(code1 #reg code2)		\
++	TEST_ARG_REG_MASKED(reg, mask)			\
++	TEST_ARG_END("")				\
++	TEST_INSTRUCTION(code1 #reg code2)		\
++	TESTCASE_END
 +
 +/*
-+ * ARM can always optimize an instruction when using ARM ISA, except
-+ * instructions like 'str r0, [sp, r1]' which store to stack and unable
-+ * to determine stack space consumption statically.
++ * We ignore the state of the imprecise abort disable flag (CPSR.A) because this
++ * can change randomly as the kernel doesn't take care to preserve or initialise
++ * this across context switches. Also, with Security Extensions, the flag may
++ * not be under control of the kernel; for this reason we ignore the state of
++ * the FIQ disable flag CPSR.F as well.
 + */
-+int arch_prepared_optinsn(struct arch_optimized_insn *optinsn)
-+{
-+	return optinsn->insn != NULL;
-+}
++#define PSR_IGNORE_BITS (PSR_A_BIT | PSR_F_BIT)
 +
-+/*
-+ * In ARM ISA, kprobe opt always replace one instruction (4 bytes
-+ * aligned and 4 bytes long). It is impossible to encounter another
-+ * kprobe in the address range. So always return 0.
-+ */
-+int arch_check_optimized_kprobe(struct optimized_kprobe *op)
-+{
-+	return 0;
-+}
-+
-+/* Caller must ensure addr & 3 == 0 */
-+static int can_optimize(struct kprobe *kp)
-+{
-+	if (kp->ainsn.stack_space < 0)
-+		return 0;
-+	/*
-+	 * 255 is the biggest imm can be used in 'sub r0, r0, #<imm>'.
-+	 * Number larger than 255 needs special encoding.
-+	 */
-+	if (kp->ainsn.stack_space > 255 - sizeof(struct pt_regs))
-+		return 0;
-+	return 1;
-+}
-+
-+/* Free optimized instruction slot */
-+static void
-+__arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
-+{
-+	if (op->optinsn.insn) {
-+		free_optinsn_slot(op->optinsn.insn, dirty);
-+		op->optinsn.insn = NULL;
-+	}
-+}
-+
-+extern void kprobe_handler(struct pt_regs *regs);
-+
-+static void
-+optimized_callback(struct optimized_kprobe *op, struct pt_regs *regs)
-+{
-+	unsigned long flags;
-+	struct kprobe *p = &op->kp;
-+	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-+
-+	/* Save skipped registers */
-+	regs->ARM_pc = (unsigned long)op->kp.addr;
-+	regs->ARM_ORIG_r0 = ~0UL;
-+
-+	local_irq_save(flags);
-+
-+	if (kprobe_running()) {
-+		kprobes_inc_nmissed_count(&op->kp);
-+	} else {
-+		__this_cpu_write(current_kprobe, &op->kp);
-+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-+		opt_pre_handler(&op->kp, regs);
-+		__this_cpu_write(current_kprobe, NULL);
-+	}
-+
-+	/* In each case, we must singlestep the replaced instruction. */
-+	op->kp.ainsn.insn_singlestep(p->opcode, &p->ainsn, regs);
-+
-+	local_irq_restore(flags);
-+}
-+
-+int arch_prepare_optimized_kprobe(struct optimized_kprobe *op, struct kprobe *orig)
-+{
-+	kprobe_opcode_t *code;
-+	unsigned long rel_chk;
-+	unsigned long val;
-+	unsigned long stack_protect = sizeof(struct pt_regs);
-+
-+	if (!can_optimize(orig))
-+		return -EILSEQ;
-+
-+	code = get_optinsn_slot();
-+	if (!code)
-+		return -ENOMEM;
-+
-+	/*
-+	 * Verify if the address gap is in 32MiB range, because this uses
-+	 * a relative jump.
-+	 *
-+	 * kprobe opt use a 'b' instruction to branch to optinsn.insn.
-+	 * According to ARM manual, branch instruction is:
-+	 *
-+	 *   31  28 27           24 23             0
-+	 *  +------+---+---+---+---+----------------+
-+	 *  | cond | 1 | 0 | 1 | 0 |      imm24     |
-+	 *  +------+---+---+---+---+----------------+
-+	 *
-+	 * imm24 is a signed 24 bits integer. The real branch offset is computed
-+	 * by: imm32 = SignExtend(imm24:'00', 32);
-+	 *
-+	 * So the maximum forward branch should be:
-+	 *   (0x007fffff << 2) = 0x01fffffc =  0x1fffffc
-+	 * The maximum backword branch should be:
-+	 *   (0xff800000 << 2) = 0xfe000000 = -0x2000000
-+	 *
-+	 * We can simply check (rel & 0xfe000003):
-+	 *  if rel is positive, (rel & 0xfe000000) shoule be 0
-+	 *  if rel is negitive, (rel & 0xfe000000) should be 0xfe000000
-+	 *  the last '3' is used for alignment checking.
-+	 */
-+	rel_chk = (unsigned long)((long)code -
-+			(long)orig->addr + 8) & 0xfe000003;
-+
-+	if ((rel_chk != 0) && (rel_chk != 0xfe000000)) {
-+		/*
-+		 * Different from x86, we free code buf directly instead of
-+		 * calling __arch_remove_optimized_kprobe() because
-+		 * we have not fill any field in op.
-+		 */
-+		free_optinsn_slot(code, 0);
-+		return -ERANGE;
-+	}
-+
-+	/* Copy arch-dep-instance from template. */
-+	memcpy(code, &optprobe_template_entry,
-+			TMPL_END_IDX * sizeof(kprobe_opcode_t));
-+
-+	/* Adjust buffer according to instruction. */
-+	BUG_ON(orig->ainsn.stack_space < 0);
-+
-+	stack_protect += orig->ainsn.stack_space;
-+
-+	/* Should have been filtered by can_optimize(). */
-+	BUG_ON(stack_protect > 255);
-+
-+	/* Create a 'sub sp, sp, #<stack_protect>' */
-+	code[TMPL_SUB_SP] = __opcode_to_mem_arm(0xe24dd000 | stack_protect);
-+	/* Create a 'add r3, sp, #<stack_protect>' */
-+	code[TMPL_ADD_SP] = __opcode_to_mem_arm(0xe28d3000 | stack_protect);
-+
-+	/* Set probe information */
-+	val = (unsigned long)op;
-+	code[TMPL_VAL_IDX] = val;
-+
-+	/* Set probe function call */
-+	val = (unsigned long)optimized_callback;
-+	code[TMPL_CALL_IDX] = val;
-+
-+	flush_icache_range((unsigned long)code,
-+			   (unsigned long)(&code[TMPL_END_IDX]));
-+
-+	/* Set op->optinsn.insn means prepared. */
-+	op->optinsn.insn = code;
-+	return 0;
-+}
-+
-+void __kprobes arch_optimize_kprobes(struct list_head *oplist)
-+{
-+	struct optimized_kprobe *op, *tmp;
-+
-+	list_for_each_entry_safe(op, tmp, oplist, list) {
-+		unsigned long insn;
-+		WARN_ON(kprobe_disabled(&op->kp));
-+
-+		/*
-+		 * Backup instructions which will be replaced
-+		 * by jump address
-+		 */
-+		memcpy(op->optinsn.copied_insn, op->kp.addr,
-+				RELATIVEJUMP_SIZE);
-+
-+		insn = arm_gen_branch((unsigned long)op->kp.addr,
-+				(unsigned long)op->optinsn.insn);
-+		BUG_ON(insn == 0);
-+
-+		/*
-+		 * Make it a conditional branch if replaced insn
-+		 * is consitional
-+		 */
-+		insn = (__mem_to_opcode_arm(
-+			  op->optinsn.copied_insn[0]) & 0xf0000000) |
-+			(insn & 0x0fffffff);
-+
-+		/*
-+		 * Similar to __arch_disarm_kprobe, operations which
-+		 * removing breakpoints must be wrapped by stop_machine
-+		 * to avoid racing.
-+		 */
-+		kprobes_remove_breakpoint(op->kp.addr, insn);
-+
-+		list_del_init(&op->list);
-+	}
-+}
-+
-+void arch_unoptimize_kprobe(struct optimized_kprobe *op)
-+{
-+	arch_arm_kprobe(&op->kp);
-+}
-+
-+/*
-+ * Recover original instructions and breakpoints from relative jumps.
-+ * Caller must call with locking kprobe_mutex.
-+ */
-+void arch_unoptimize_kprobes(struct list_head *oplist,
-+			    struct list_head *done_list)
-+{
-+	struct optimized_kprobe *op, *tmp;
-+
-+	list_for_each_entry_safe(op, tmp, oplist, list) {
-+		arch_unoptimize_kprobe(op);
-+		list_move(&op->list, done_list);
-+	}
-+}
-+
-+int arch_within_optimized_kprobe(struct optimized_kprobe *op,
-+				unsigned long addr)
-+{
-+	return ((unsigned long)op->kp.addr <= addr &&
-+		(unsigned long)op->kp.addr + RELATIVEJUMP_SIZE > addr);
-+}
-+
-+void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
-+{
-+	__arch_remove_optimized_kprobe(op, 1);
-+}
+ 
+ /*
+  * Macros for defining space directives spread over multiple lines.
+diff --git a/arch/arm/probes/kprobes/test-thumb.c b/arch/arm/probes/kprobes/test-thumb.c
+index e8cf193..b683b45 100644
+--- a/arch/arm/probes/kprobes/test-thumb.c
++++ b/arch/arm/probes/kprobes/test-thumb.c
+@@ -778,8 +778,8 @@ CONDITION_INSTRUCTIONS(22,
+ 
+ 	TEST_UNSUPPORTED("subs	pc, lr, #4")
+ 
+-	TEST("mrs	r0, cpsr")
+-	TEST("mrs	r14, cpsr")
++	TEST_RMASKED("mrs	r",0,~PSR_IGNORE_BITS,", cpsr")
++	TEST_RMASKED("mrs	r",14,~PSR_IGNORE_BITS,", cpsr")
+ 	TEST_UNSUPPORTED(__inst_thumb32(0xf3ef8d00) "	@ mrs	sp, spsr")
+ 	TEST_UNSUPPORTED(__inst_thumb32(0xf3ef8f00) "	@ mrs	pc, spsr")
+ 	TEST_UNSUPPORTED("mrs	r0, spsr")
 -- 
 1.8.4
 
