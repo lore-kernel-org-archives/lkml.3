@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbbAEPsX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:48:23 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56286 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092AbbAEPsU (ORCPT
+	id S1754162AbbAEPsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:48:25 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:55683 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269AbbAEPsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Jan 2015 10:48:20 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-85-54aab2402ac6
+X-AuditID: cbfec7f4-b7f126d000001e9a-8b-54aab2417956
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
         Sebastian Reichel <sre@kernel.org>,
@@ -16,171 +16,88 @@ To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFC PATCHv2 00/19] power_supply: Allow safe usage of power supply
-Date: Mon, 05 Jan 2015 16:47:43 +0100
-Message-id: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [RFC PATCHv2 01/19] power_supply: Add driver private data
+Date: Mon, 05 Jan 2015 16:47:44 +0100
+Message-id: <1420472882-10463-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFJMWRmVeSWpSXmKPExsVy+t/xa7qOm1aFGExlspj05D2zxcSVk5kt
-	Xr8wtNj58C2bxfJ9/YwWmx5fY7W4vGsOm8Xn3iOMFndPHWWzOHP6EqvF6d0lDtweO2fdZffY
-	vELLY9OqTjaPzUvqPbZcbWfx6NuyitFjxerv7B6fN8kFcERx2aSk5mSWpRbp2yVwZWz++Iu5
-	YL5uxZp/GQ2M05W7GDk5JARMJOa83cIGYYtJXLi3Hsjm4hASWMoo8WPifVYIp49JYub81Uwg
-	VWwCxhKbly8BqxIReMIkMb31JAtIglnAUOLnuz/sXYwcHMIC3hIfvkWChFkEVCUedt5kBgnz
-	CrhLPFnFD7FMTuLkscmsExi5FzAyrGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQICa8vOxgX
-	H7M6xCjAwajEw+txYmWIEGtiWXFl7iFGCQ5mJRHeV+mrQoR4UxIrq1KL8uOLSnNSiw8xMnFw
-	SjUwsqsfWB347HcfJ3PBsoAbRQ5yu+U4mP4kiWa9yFnz9sqRW2dTzRQexmlt93eP60x1as0t
-	7TtwYNLl5z9+7zeaa+3Fsy3mmLFrq6VnY1O9XM32/+73wiawzxP1miflsSIvqPhU7+Mn54wj
-	6tw33+Ti1u1MfOJtL+g3eXWeu2ubjTK/Cd/q+Y5KLMUZiYZazEXFiQCeq+eUDQIAAA==
+In-reply-to: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
+References: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7qOm1aFGBydJG8x6cl7ZouJKycz
+	W7x+YWix8+FbNovl+/oZLTY9vsZqcXnXHDaLz71HGC3unjrKZnHm9CVWi9O7Sxy4PXbOusvu
+	sXmFlsemVZ1sHpuX1HtsudrO4tG3ZRWjx4rV39k9Pm+SC+CI4rJJSc3JLEst0rdL4Mp4+PcT
+	S0GjYMXL3SvZGhhX83UxcnBICJhIHPvH3sXICWSKSVy4t56ti5GLQ0hgKaPEwqmfGCGcPiaJ
+	HY8fsIFUsQkYS2xevgSsSkTgCZPE9NaTLCAJZgFDiZ/v/oCNEhZwkviybguYzSKgKjFx2VUm
+	EJtXwF3i/eoVUOvkJE4em8wKYnMKeEg0/b0ANkcIqObDs1+sExh5FzAyrGIUTS1NLihOSs81
+	1CtOzC0uzUvXS87P3cQICcovOxgXH7M6xCjAwajEw+txYmWIEGtiWXFl7iFGCQ5mJRHeV+mr
+	QoR4UxIrq1KL8uOLSnNSiw8xMnFwSjUwhmwrPX3n+yOmr0VyWee7j94SLD9oVRbl+N4iV7gq
+	+Ewe82zj1QGvnXcnHk1dv0F+x4vudxJKU/Wv5Wt0vLk4y2z1p07j+9o/RBvm6iiqqd5JmHdG
+	74X8P/Zs29jzM0KSVCQ/H5syu/K0c7hZEsfhwJZF57s63FMndtdeSZ7Wb7X0vXF++wppJZbi
+	jERDLeai4kQAfs7msSgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Allow drivers to store private data inside power_supply structure for
+later usage in power supply operations.
 
+Usage of driver private data is necessary to access driver's state
+container object from power supply calls (like get_property()) if struct
+'power_supply' is a stored there as a pointer, for example:
 
-This is RFC, please don't apply yet but let me know if this approach
-is OK.
+struct some_driver_info {
+	struct i2c_client       *client;
+	struct power_supply     *power_supply;
+	...
+}
 
+In such case one cannot use container_of() and must store pointer to
+state container as private data.
 
-TLDR
-====
-Patchset tries to fix following race scenario:
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/power/power_supply_core.c | 6 ++++++
+ include/linux/power_supply.h      | 4 ++++
+ 2 files changed, 10 insertions(+)
 
-Thread 1: charger manager, CONSUMER
-Thread 2: power supply driver, PROVIDER
-
-THREAD 1 (charger manager)         THREAD 2 (power supply driver)
-==========================         ==============================
-psy = power_supply_get_by_name()
-                                   Driver unbind, .remove
-                                     power_supply_unregister()
-                                     Device fully removed
-psy->get_property()
-
-To properly fix the race the patchset:
-1. Adds power_supply_get_property()-like API for safe access by consumer.
-2. Moves ownership of power_supply structure from driver (provider) to
-   power supply core.
-3. Adds power_supply_put() which will reclaim memory.
-
-
-Description
-=========== 
-This is a little different than my previous approaches [1][2] for fixing
-usage of power supply by some consumer, if driver implementing it is
-unbound.
-
-The patchset is quite big and touches power supply API so a lot of
-changes in drivers are needed. These changes *are not finished yet*.
-I've done them only for:
- - bq24190_charger.c
- - charger-manager.c
- - max14577_charger.c
- - max17040_battery.c
- - max17042_battery.c
- - sbs-battery.c
- - tps65090-charger.c
-So allyesconfig won't build.
-
-If this approach is OK, I'll prepare full patchset changing all the
-drivers.
-
-My previous approach [1][2] limited the race but did not close it.
-Still the consumer of power supply by calling power_supply_get_propert(psy...)
-may reference invalid memory because the producer freed it.
-
-Actually, because struct power_supply is exposed to consumers, the
-core should be the owner of it. This is accomplished in patch 11/19
-("power_supply: Change ownership from driver to core").
-
-
-What the patchset does in steps
-===============================
-1. Some preparation steps are necessary - patch 1 and 2. The driver
-   implementing power supply won't be able to fill structure before
-   calling power_supply_register(). So 'power_supply_config'
-   is introduced in patch 2 ("power_supply: Move run-time configuration
-   to separate structure"). Unfortunately this touches all drivers.
-2. Safe API wrappers (and usage counter) are added (power_supply_*()).
-3. Patch 11: ownership of 'struct power_supply' is moved from driver
-   to the core.
-4. power_supply_put() is added which reclaims resources.
-
-
-The patchset is rebased on next-20141226. It should be pulled at once.
-Bisectability is preserved.
-
-Changes since v1
-================
-1. Add new patches (1, 2, 11, 19).
-2. Preserved ack-s where there weren't any changes.
-3. Patch 3: Add use counter.
-4. Patch 3: Don't add wrapper for set_charged() because already exists
-   one.
-
-
-[1] https://lkml.org/lkml/2014/11/4/527
-[2] https://lkml.org/lkml/2014/10/16/89
-
-Best regards,
-Krzysztof
-
-
-Krzysztof Kozlowski (19):
-  power_supply: Add driver private data
-  power_supply: Move run-time configuration to separate structure
-  power_supply: Add API for safe access of power supply function attrs
-  power_supply: sysfs: Use power_supply_*() API for accessing function
-    attrs
-  power: 88pm860x_charger: Use power_supply_*() API for accessing
-    function attrs
-  power: ab8500: Use power_supply_*() API for accessing function attrs
-  mfd: ab8500: Use power_supply_*() API for accessing function attrs
-  power: apm_power: Use power_supply_*() API for accessing function
-    attrs
-  power: bq2415x_charger: Use power_supply_*() API for accessing
-    function attrs
-  power: charger-manager: Use power_supply_*() API for accessing
-    function attrs
-  power_supply: Change ownership from driver to core
-  power_supply: Add power_supply_put for decrementing device reference
-    counter
-  power: charger-manager: Decrement the power supply's device reference
-    counter
-  x86/olpc/xo1/sci: Use newly added power_supply_put API
-  x86/olpc/xo15/sci: Use newly added power_supply_put API
-  power: 88pm860x_charger: Decrement the power supply's device reference
-    counter
-  power: bq2415x_charger: Decrement the power supply's device reference
-    counter
-  mfd: ab8500: Decrement the power supply's device reference counter
-  arm: mach-pxa: Decrement the power supply's device reference counter
-
- arch/arm/mach-pxa/raumfeld.c           |   4 +-
- arch/x86/platform/olpc/olpc-xo1-sci.c  |   4 +-
- arch/x86/platform/olpc/olpc-xo15-sci.c |   4 +-
- drivers/acpi/battery.c                 |   3 +-
- drivers/mfd/ab8500-sysctrl.c           |   9 +-
- drivers/power/88pm860x_charger.c       |  24 ++--
- drivers/power/ab8500_btemp.c           |   2 +-
- drivers/power/ab8500_charger.c         |   2 +-
- drivers/power/ab8500_fg.c              |   2 +-
- drivers/power/abx500_chargalg.c        |   4 +-
- drivers/power/apm_power.c              |   4 +-
- drivers/power/bq2415x_charger.c        |   9 +-
- drivers/power/bq24190_charger.c        | 103 ++++++++-------
- drivers/power/charger-manager.c        | 158 +++++++++++++----------
- drivers/power/max14577_charger.c       |  34 ++---
- drivers/power/max17040_battery.c       |  31 ++---
- drivers/power/max17042_battery.c       |  45 ++++---
- drivers/power/power_supply_core.c      | 223 ++++++++++++++++++++++++---------
- drivers/power/power_supply_leds.c      |  25 ++--
- drivers/power/power_supply_sysfs.c     |  24 ++--
- drivers/power/sbs-battery.c            |  71 +++++------
- drivers/power/tps65090-charger.c       |  43 ++++---
- include/linux/power/charger-manager.h  |   3 +-
- include/linux/power_supply.h           |  70 ++++++++---
- 24 files changed, 562 insertions(+), 339 deletions(-)
-
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 694e8cddd5c1..84ef3f40e7bf 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -629,6 +629,12 @@ void power_supply_unregister(struct power_supply *psy)
+ }
+ EXPORT_SYMBOL_GPL(power_supply_unregister);
+ 
++void *power_supply_get_drvdata(struct power_supply *psy)
++{
++	return psy->drv_data;
++}
++EXPORT_SYMBOL_GPL(power_supply_get_drvdata);
++
+ static int __init power_supply_class_init(void)
+ {
+ 	power_supply_class = class_create(THIS_MODULE, "power_supply");
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 096dbced02ac..a5743f24e03e 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -209,6 +209,9 @@ struct power_supply {
+ 	/* For APM emulation, think legacy userspace. */
+ 	int use_for_apm;
+ 
++	/* Driver private data */
++	void *drv_data;
++
+ 	/* private */
+ 	struct device *dev;
+ 	struct work_struct changed_work;
+@@ -281,6 +284,7 @@ extern int power_supply_register_no_ws(struct device *parent,
+ extern void power_supply_unregister(struct power_supply *psy);
+ extern int power_supply_powers(struct power_supply *psy, struct device *dev);
+ 
++extern void *power_supply_get_drvdata(struct power_supply *psy);
+ /* For APM emulation, think legacy userspace. */
+ extern struct class *power_supply_class;
+ 
 -- 
 1.9.1
 
