@@ -1,99 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbbAEIwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 03:52:23 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:48041 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705AbbAEIwV (ORCPT
+	id S1753353AbbAEIww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 03:52:52 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:39519 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbbAEIwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 03:52:21 -0500
-Date: Mon, 5 Jan 2015 00:52:12 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Michal Simek <monstr@monstr.eu>, linux-kernel@vger.kernel.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [PATCH] next: microblaze: Fix build failure
-Message-ID: <20150105085212.GA11117@roeck-us.net>
-References: <1420296800-17045-1-git-send-email-linux@roeck-us.net>
- <20150103170118.GA8958@localhost.localdomain>
+	Mon, 5 Jan 2015 03:52:51 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org,
+        linux-sh@vger.kernel.org, vksavl@gmail.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] clk-rcar-gen2: RCAN clock support
+Date: Mon, 05 Jan 2015 10:53:02 +0200
+Message-ID: <1550804.XpyQtHjy2T@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <3007073.i0ghnTEhxV@wasted.cogentembedded.com>
+References: <3007073.i0ghnTEhxV@wasted.cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150103170118.GA8958@localhost.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54AA50CF.0064,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 03, 2015 at 06:01:18PM +0100, Richard Cochran wrote:
-> On Sat, Jan 03, 2015 at 06:53:20AM -0800, Guenter Roeck wrote:
-> > Microblaze build in linux-next fails with
-> > 
-> > arch/microblaze/kernel/timer.c:224:2: error:
-> > 	implicit declaration of function 'timecounter_init'
-> > 
-> > Caused by missing include file in microblaze timer code.
+Hi Sergei,
+
+Thank you for the patch.
+
+On Thursday 25 December 2014 01:17:29 Sergei Shtylyov wrote:
+> Add the RCAN clock support to the R-Car generation 2 CPG driver.  This clock
+> gets derived from  the USB_EXTAL clock, dividing  it by 6.  The layout of
+> the RCANCKCR register is similar to those of the clocks supported by the
+> 'clk-div6' driver but has no divider field, and so can't be supported by
+> that driver...
 > 
-> Already fixed in net-next.
+> Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 > 
-The arm64 build is still broken in next-20150105 due to the same commit.
+> ---
+> The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git'
+> repo.
+> 
+> Changes in version 2:
+> - switched to using the composite clock driver with the fixed factor and
+> gated clock component drivers;
+> - removed *static* from 'parent_name' definition, switching from assignment
+> to initializer;
+> - modified the binding document;
+> - modified the changelog.
+> 
+>  Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.txt | 
+>   5 -
+>  drivers/clk/shmobile/clk-rcar-gen2.c                      |   40 ++++++++++
 
-# bad: [35393dcb2ed331e8698a548fbba8042457f5fd32] Add linux-next specific files for 20150105
-# good: [b7392d2247cfe6771f95d256374f1a8e6a6f48d6] Linux 3.19-rc2
-git bisect start 'HEAD' 'v3.19-rc2'
-# good: [0e549e6e3875b24240385b7d9ea6af202fe752ad] Merge remote-tracking branch 'slave-dma/next'
-git bisect good 0e549e6e3875b24240385b7d9ea6af202fe752ad
-# bad: [bd6327e236e94c0404af23c10e746e495a86836e] Merge remote-tracking branch 'virtio/virtio-next'
-git bisect bad bd6327e236e94c0404af23c10e746e495a86836e
-# bad: [f06c56ffe334bf2ae5ddde68f2321ec2f59bddd9] Merge remote-tracking branch 'bluetooth/master'
-git bisect bad f06c56ffe334bf2ae5ddde68f2321ec2f59bddd9
-# bad: [6c032edc8a338f7a5d7bbd3dd8a08ac80d37dd86] Merge branch 'for-upstream' of git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next
-git bisect bad 6c032edc8a338f7a5d7bbd3dd8a08ac80d37dd86
-# bad: [01aa29978bda1978aaf56452122881a678f5dfd5] Merge branch 'gmac-next'
-git bisect bad 01aa29978bda1978aaf56452122881a678f5dfd5
-# bad: [87897931c83038af4931990af5b9365b41829921] tun: Fixed unsigned/signed comparison
-git bisect bad 87897931c83038af4931990af5b9365b41829921
-# bad: [fea3cb063bf9b9d6b4efd5c973217a708812f5e2] ksz884x: Use setup_timer
-git bisect bad fea3cb063bf9b9d6b4efd5c973217a708812f5e2
-# bad: [5ee698e3677a1af8b731cc891e94be33b6572cfd] net: igb: convert to timecounter adjtime.
-git bisect bad 5ee698e3677a1af8b731cc891e94be33b6572cfd
-# bad: [8b976e97772cfb7e0e4eb8682d5017861dbd8796] net: xgbe: convert to timecounter adjtime.
-git bisect bad 8b976e97772cfb7e0e4eb8682d5017861dbd8796
-# bad: [796c1efd6fa0ed696d550b68f4410ab1a1749d01] timecounter: provide a helper function to shift the time.
-git bisect bad 796c1efd6fa0ed696d550b68f4410ab1a1749d01
-# bad: [74d23cc704d19732e70ef1579a669f7d5f09dd9a] time: move the timecounter/cyclecounter code into its own file.
-git bisect bad 74d23cc704d19732e70ef1579a669f7d5f09dd9a
-# first bad commit: [74d23cc704d19732e70ef1579a669f7d5f09dd9a] time: move the timecounter/cyclecounter code into its own file.
+Could you please also add a #define for the RCAN clock in include/dt-
+bindings/clock/r8a779*-clock.h ? Same comment for the ADSP clock in "[PATCH] 
+clk-rcar-gen2: ADSP clock support".
 
-Did you fix that already as well ?
+>  2 files changed, 43 insertions(+), 2 deletions(-)
+> 
+> Index:
+> linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.
+> txt =================================================================== ---
+> linux.orig/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-cl
+> ocks.txt +++
+> linux/Documentation/devicetree/bindings/clock/renesas,rcar-gen2-cpg-clocks.
+> txt @@ -16,7 +16,7 @@ Required Properties:
+>    - clocks: Reference to the parent clock
+>    - #clock-cells: Must be 1
+>    - clock-output-names: The names of the clocks. Supported clocks are
+> "main",
+> -    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1" and
+> "z"
+> +    "pll0", "pll1", "pll3", "lb", "qspi", "sdh", "sd0", "sd1", "z",
+> and "rcan"
+> 
+> 
+>  Example
+> @@ -29,5 +29,6 @@ Example
+>  		clocks = <&extal_clk>;
+>  		#clock-cells = <1>;
+>  		clock-output-names = "main", "pll0, "pll1", "pll3",
+> -				     "lb", "qspi", "sdh", "sd0", "sd1", "z";
+> +				     "lb", "qspi", "sdh", "sd0", "sd1", "z",
+> +				     "rcan";
+>  	};
+> Index: linux/drivers/clk/shmobile/clk-rcar-gen2.c
+> ===================================================================
+> --- linux.orig/drivers/clk/shmobile/clk-rcar-gen2.c
+> +++ linux/drivers/clk/shmobile/clk-rcar-gen2.c
+> @@ -33,6 +33,7 @@ struct rcar_gen2_cpg {
+>  #define CPG_FRQCRC			0x000000e0
+>  #define CPG_FRQCRC_ZFC_MASK		(0x1f << 8)
+>  #define CPG_FRQCRC_ZFC_SHIFT		8
+> +#define CPG_RCANCKCR			0x00000270
+> 
+>  /*
+> ---------------------------------------------------------------------------
+> -- * Z Clock
+> @@ -161,6 +162,43 @@ static struct clk * __init cpg_z_clk_reg
+>  	return clk;
+>  }
+> 
+> +static struct clk * __init cpg_rcan_clk_register(struct rcar_gen2_cpg *cpg,
+> +						 struct device_node *np)
+> +{
+> +	const char *parent_name = of_clk_get_parent_name(np, 1);
+> +	struct clk_fixed_factor *fixed;
+> +	struct clk_gate *gate;
+> +	struct clk *clk;
+> +
+> +	fixed = kzalloc(sizeof(*fixed), GFP_KERNEL);
+> +	if (!fixed)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	fixed->mult = 1;
+> +	fixed->div = 6;
+> +
+> +	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
+> +	if (!gate) {
+> +		kfree(fixed);
+> +		return ERR_PTR(-ENOMEM);
+> +	}
+> +
+> +	gate->reg = cpg->reg + CPG_RCANCKCR;
+> +	gate->bit_idx = 8;
+> +	gate->flags = CLK_GATE_SET_TO_DISABLE;
+> +	gate->lock = &cpg->lock;
+> +
+> +	clk = clk_register_composite(NULL, "rcan", &parent_name, 1, NULL, NULL,
+> +				     &fixed->hw, &clk_fixed_factor_ops,
+> +				     &gate->hw, &clk_gate_ops, 0);
+> +	if (IS_ERR(clk)) {
+> +		kfree(gate);
+> +		kfree(fixed);
+> +	}
+> +
+> +	return clk;
+> +}
+> +
+>  /*
+> ---------------------------------------------------------------------------
+> -- * CPG Clock Data
+>   */
+> @@ -263,6 +301,8 @@ rcar_gen2_cpg_register_clock(struct devi
+>  		shift = 0;
+>  	} else if (!strcmp(name, "z")) {
+>  		return cpg_z_clk_register(cpg);
+> +	} else if (!strcmp(name, "rcan")) {
+> +		return cpg_rcan_clk_register(cpg, np);
+>  	} else {
+>  		return ERR_PTR(-EINVAL);
+>  	}
 
-Thanks,
-Guenter
+-- 
+Regards,
+
+Laurent Pinchart
+
