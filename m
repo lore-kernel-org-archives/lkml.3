@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbbAENBB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:01:01 -0500
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:35604 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292AbbAENA7 (ORCPT
+	id S1754048AbbAENCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:02:08 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:50278 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246AbbAENCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:00:59 -0500
-Message-ID: <54AA8AFC.9020706@hurleysoftware.com>
-Date: Mon, 05 Jan 2015 08:00:44 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 5 Jan 2015 08:02:05 -0500
+Date: Mon, 5 Jan 2015 14:01:41 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v4 1/3] perf: Use monotonic clock as a source for
+ timestamps
+Message-ID: <20150105130141.GQ30905@twins.programming.kicks-ass.net>
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
+ <1415292718-19785-2-git-send-email-pawel.moll@arm.com>
+ <1417100750.4371.1.camel@arm.com>
+ <1418305153.4037.1.camel@arm.com>
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>, gregkh@linuxfoundation.org
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robh@kernel.org, jslaby@suse.cz, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic BASE_BAUD
-References: <1420457437-17636-1-git-send-email-vgupta@synopsys.com> <1420457437-17636-3-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1420457437-17636-3-git-send-email-vgupta@synopsys.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418305153.4037.1.camel@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet,
-
-On 01/05/2015 06:30 AM, Vineet Gupta wrote:
-> BASE_BAUD is pain in neck for multi-platform support as it hard codes at
-> build time the clk value for early uart.
+On Thu, Dec 11, 2014 at 01:39:13PM +0000, Pawel Moll wrote:
+> On Thu, 2014-11-27 at 15:05 +0000, Pawel Moll wrote:
+> > It's been 3 weeks without any negative feedback (no feedback at all, but
+> > I take the optimistic view :-)...
+> > 
+> > How about queuing at least this patch alone for the incoming merge
+> > window? Or at least getting it into -next, with the view at 3.20?
 > 
-> Mitigate this by allowing arches/platforms to provide their own version
-> which can do dynamic setup based on DT values etc (see next patch for
-> usage)
-> 
-> This was needed for ARC SDP platforms based on 2 different FPGA flows, each
-> with a different UART clk value.
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: linux-serial@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Rob Herring <robh@kernel.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> ---
->  drivers/tty/serial/earlycon.c | 13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
-> index 64fe25a4285c..bfd3537739e0 100644
-> --- a/drivers/tty/serial/earlycon.c
-> +++ b/drivers/tty/serial/earlycon.c
-> @@ -54,6 +54,15 @@ static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
->  	return base;
->  }
->  
-> +unsigned int __weak __init earlycon_base_baud(char *options)
-> +{
-> +#ifdef BASE_BAUD
-> +	return BASE_BAUD;
-> +#else
-> +	return 1843200/16;	/* x86 early console */
-> +#endif
-> +}
-> +
->  static int __init parse_options(struct earlycon_device *device,
->  				char *options)
->  {
-> @@ -87,7 +96,7 @@ static int __init parse_options(struct earlycon_device *device,
->  		return -EINVAL;
->  	}
->  
-> -	port->uartclk = BASE_BAUD * 16;
-> +	port->uartclk = earlycon_base_baud(options) * 16;
+> It's been another two weeks... How about getting it queued for v3.20
+> then?
 
-I don't understand why BASE_BAUD can't be defined by arc as arc_earlycon_base_baud().
-Why is the weak binding necessary?
+Yes sorry about that, I had me a kid and took a wee bit of time away
+from computers, then xmas and new years happened.
 
-I'm pushing back on this because port initialization (and especially 8250)
-is already a ridiculous spiderweb.
-
-Regards,
-Peter Hurley
-
->  	options = strchr(options, ',');
->  	if (options) {
-> @@ -156,7 +165,7 @@ int __init of_setup_earlycon(unsigned long addr,
->  
->  	port->iotype = UPIO_MEM;
->  	port->mapbase = addr;
-> -	port->uartclk = BASE_BAUD * 16;
-> +	port->uartclk = earlycon_base_baud(NULL) * 16;
->  	port->membase = earlycon_map(addr, SZ_4K);
->  
->  	early_console_dev.con->data = &early_console_dev;
-> 
-
+In any case, best wishes for the new year to all.
