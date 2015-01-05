@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbbAEXGV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 18:06:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54140 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753079AbbAEXGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 18:06:20 -0500
-Date: Mon, 5 Jan 2015 18:05:59 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Vlastimil Babka <vbabka@suse.cz>, Leon Romanovsky <leon@leon.nu>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Dirty pages underflow on 3.14.23
-Message-ID: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754707AbbAEXGl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 18:06:41 -0500
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:52559 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754560AbbAEXGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 18:06:39 -0500
+Message-ID: <1420499197.14308.45.camel@x220>
+Subject: Re: [PATCH] kconfig: use bool instead of boolean for type
+ definition attributes
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Christoph Jaeger <cj@linux.com>
+Cc: yann.morin.1998@free.fr, akpm@linux-foundation.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dborkman@redhat.com, Michal Marek <mmarek@suse.cz>
+Date: Tue, 06 Jan 2015 00:06:37 +0100
+In-Reply-To: <20150105194305.GB1513@betelgeuse.hsd1.ma.comcast.net>
+References: <1419108071-11607-1-git-send-email-cj@linux.com>
+	 <20150105194305.GB1513@betelgeuse.hsd1.ma.comcast.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Jan 2015 23:06:37.0211 (UTC) FILETIME=[41C76EB0:01D0293C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Mon, 2015-01-05 at 14:43 -0500, Christoph Jaeger wrote:
+> (adding Michal Marek)
 
-I would like to report a memory management bug where the dirty pages count 
-underflowed.
+Yann added no commits in 2014. And I actually think Yann reacted to
+almost no patches last year. Perhaps none at all. What's going on?
 
-It happened after some time that the Dirty pages count underflowed, as can 
-be seen in /proc/meminfo. The underflow condition was persistent, 
-/proc/meminfo was showing the big value even when the system was 
-completely idle. The counter never returned to zero.
+> On Sat, Dec 20, 2014 at 03:41:11PM -0500, Christoph Jaeger wrote:
+> > Support for keyword 'boolean' will be dropped later on.
+> > 
+> > No functional change.
+> > 
+> > Reference: http://lkml.kernel.org/r/cover.1418003065.git.cj@linux.com
+> > Signed-off-by: Christoph Jaeger <cj@linux.com>
+> > ---
+> >  arch/mips/pmcs-msp71xx/Kconfig      |  6 +++---
+> >  drivers/connector/Kconfig           |  2 +-
+> >  drivers/hwmon/Kconfig               |  2 +-
+> >  drivers/hwmon/pmbus/Kconfig         |  2 +-
+> >  drivers/i2c/Kconfig                 |  4 ++--
+> >  drivers/iio/Kconfig                 |  4 ++--
+> >  drivers/isdn/hardware/mISDN/Kconfig |  2 +-
+> >  drivers/md/Kconfig                  |  4 ++--
+> >  drivers/md/persistent-data/Kconfig  |  2 +-
+> >  drivers/net/ethernet/ti/Kconfig     |  4 ++--
+> >  drivers/net/usb/Kconfig             | 12 ++++++------
+> >  drivers/net/wireless/rt2x00/Kconfig |  6 +++---
+> >  drivers/pci/pcie/aer/Kconfig        |  2 +-
+> >  drivers/rtc/Kconfig                 |  8 ++++----
+> >  drivers/spi/Kconfig                 |  6 +++---
+> >  drivers/staging/board/Kconfig       |  2 +-
+> >  drivers/staging/emxx_udc/Kconfig    |  2 +-
+> >  drivers/staging/iio/Kconfig         |  4 ++--
+> >  drivers/tty/serial/Kconfig          |  2 +-
+> >  drivers/usb/gadget/Kconfig          | 34 +++++++++++++++++-----------------
+> >  drivers/usb/gadget/legacy/Kconfig   |  2 +-
+> >  drivers/usb/gadget/udc/Kconfig      |  4 ++--
+> >  drivers/usb/phy/Kconfig             |  2 +-
+> >  init/Kconfig                        |  4 ++--
+> >  lib/Kconfig                         | 30 +++++++++++++++---------------
+> >  mm/Kconfig                          | 22 +++++++++++-----------
+> >  net/Kconfig                         | 14 +++++++-------
+> >  net/sched/Kconfig                   |  2 +-
+> >  net/switchdev/Kconfig               |  2 +-
+> >  security/integrity/Kconfig          |  4 ++--
+> >  security/integrity/evm/Kconfig      |  2 +-
+> >  31 files changed, 99 insertions(+), 99 deletions(-)
 
-The system didn't crash, but it became very slow - because of the big 
-value in the "Dirty" field, lazy writing was not working anymore, any 
-process that created a dirty page triggered immediate writeback, which 
-slowed down the system very much. The only fix was to reboot the machine.
+A quick grep, after applying this patch onto next-20150105, only showed
+two remaining uses of "boolean". Both were in kernel/livepatch/Kconfig.
+I assume that file was added after this patch was submitted. So that's
+fine.
+ 
 
-The kernel version where this happened is 3.14.23. The kernel is compiled 
-without SMP and with peemption. The system is single-core 32-bit x86.
+Paul Bolle
 
-The bug probably happened during git pull or apt-get update, though one 
-can't be sure that these commands caused it.
-
-I see that 3.14.24 containes some fix for underflow (commit 
-6619741f17f541113a02c30f22a9ca22e32c9546, upstream commit 
-abe5f972912d086c080be4bde67750630b6fb38b), but it doesn't seem that that 
-commit fixes this condition. If you have a commit that could fix this, say 
-it.
-
-Mikulas
-
-
-MemTotal:         253504 kB
-MemFree:            6128 kB
-MemAvailable:      54956 kB
-Buffers:            1376 kB
-Cached:            45284 kB
-SwapCached:        40432 kB
-Active:           105596 kB
-Inactive:         111672 kB
-Active(anon):      82772 kB
-Inactive(anon):    88604 kB
-Active(file):      22824 kB
-Inactive(file):    23068 kB
-Unevictable:           4 kB
-Mlocked:               4 kB
-SwapTotal:       4242896 kB
-SwapFree:        4144248 kB
-Dirty:          4294944344 kB
-Writeback:             8 kB
-AnonPages:        167484 kB
-Mapped:             7808 kB
-Shmem:               768 kB
-Slab:              19072 kB
-SReclaimable:      10448 kB
-SUnreclaim:         8624 kB
-KernelStack:        1136 kB
-PageTables:         2032 kB
-NFS_Unstable:          0 kB
-Bounce:                0 kB
-WritebackTmp:          0 kB
-CommitLimit:     4369648 kB
-Committed_AS:     398032 kB
-VmallocTotal:     778184 kB
-VmallocUsed:       38316 kB
-VmallocChunk:     707540 kB
-AnonHugePages:         0 kB
-HugePages_Total:       0
-HugePages_Free:        0
-HugePages_Rsvd:        0
-HugePages_Surp:        0
-Hugepagesize:       4096 kB
-DirectMap4k:       20416 kB
-DirectMap4M:      241664 kB
