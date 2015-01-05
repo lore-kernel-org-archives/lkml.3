@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095AbbAET0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:26:31 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:41000 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504AbbAET03 (ORCPT
+	id S1754541AbbAET00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:26:26 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:61145 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504AbbAET0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:26:29 -0500
+	Mon, 5 Jan 2015 14:26:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150105184821.GA703@rhlx01.hs-esslingen.de>
-References: <1420424374-32412-1-git-send-email-robh@kernel.org> <20150105184821.GA703@rhlx01.hs-esslingen.de>
-From: Rob Herring <robh@kernel.org>
-Date: Mon, 5 Jan 2015 13:26:07 -0600
-X-Google-Sender-Auth: 5moo3aVL6LznzfEm_S2pzDS3Kh8
-Message-ID: <CAL_JsqKoMHDmTjbZdoTD9gCO5x8Yqw3+8tofJ=MB0RbasnCPtQ@mail.gmail.com>
-Subject: Re: [PATCH] pci: introduce common pci config space accessors
-To: Andreas Mohr <andi@lisas.de>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+In-Reply-To: <3368304.jm6jgTz8dd@xps13>
+References: <1419679889-6582-1-git-send-email-gabriele.mzt@gmail.com>
+	<CAN+gG=FLOD5C3N0q-i=4Sm6fH+oYTV27nEOKn8nxaw7GvFJbkQ@mail.gmail.com>
+	<3ACB879C-A553-49A0-B170-CFF14A494BEE@gmail.com>
+	<3368304.jm6jgTz8dd@xps13>
+Date: Mon, 5 Jan 2015 14:26:24 -0500
+Message-ID: <CAN+gG=GMRn0VFM810uNEvRwaQLFn5KQ7Pi-vHn6qcu_TzArW9A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] input: synaptics - fix width calculation on image sensors
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        linux-input <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <will.deacon@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>
+        Maxwell Anselm <silverhammermba@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 12:48 PM, Andreas Mohr <andi@lisas.de> wrote:
-> Hi,
+On Mon, Jan 5, 2015 at 2:15 PM, Gabriele Mazzotta
+<gabriele.mzt@gmail.com> wrote:
+> On Monday 05 January 2015 11:04:07 Dmitry Torokhov wrote:
+>> On January 5, 2015 10:42:13 AM PST, Benjamin Tissoires <benjamin.tissoires@gmail.com> wrote:
+>> >On Mon, Jan 5, 2015 at 1:37 PM, Gabriele Mazzotta
+>> ><gabriele.mzt@gmail.com> wrote:
+>> >> On Monday 05 January 2015 13:25:38 Benjamin Tissoires wrote:
+>> >>> Hi Gabriele,
+>> >>>
+>> >>> On Sat, Dec 27, 2014 at 6:31 AM, Gabriele Mazzotta
+>> >>> <gabriele.mzt@gmail.com> wrote:
+>> >>> > When two or more fingers are on the touchpad, the 'w' slot holds
+>> >the
+>> >>> > finger count rather than the width. Retrieve the correct value
+>> >encoded
+>> >>> > in the lower bits of 'x', 'y' and 'z'.
+>> >>> >
+>> >>> > The minimum width reported is 8 rather than 4 in this case, while
+>> >the
+>> >>> > maximum remains 15.
+>> >>> >
+>> >>> > Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+>> >>> > ---
+>> >>> >  drivers/input/mouse/synaptics.c | 4 +++-
+>> >>> >  1 file changed, 3 insertions(+), 1 deletion(-)
+>> >>> >
+>> >>> > diff --git a/drivers/input/mouse/synaptics.c
+>> >b/drivers/input/mouse/synaptics.c
+>> >>> > index ea0563e..5ff4c5b 100644
+>> >>> > --- a/drivers/input/mouse/synaptics.c
+>> >>> > +++ b/drivers/input/mouse/synaptics.c
+>> >>> > @@ -593,7 +593,9 @@ static void synaptics_parse_agm(const unsigned
+>> >char buf[],
+>> >>> >         switch (agm_packet_type) {
+>> >>> >         case 1:
+>> >>> >                 /* Gesture packet: (x, y, z) half resolution */
+>> >>> > -               agm->w = hw->w;
+>> >>> > +               agm->w = ((buf[1] & 0x01) |
+>> >>> > +                         ((buf[2] & 0x01) << 1) |
+>> >>> > +                         ((buf[5] & 0x01) << 2)) + 8;
+>> >>> >                 agm->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+>> >>>
+>> >>> For completeness, I think, we should also removes the w bits from x,
+>> >y
+>> >>> and z (by masking buf[1], buf[2] and buf[5] with 0xfe).
+>> >>
+>> >> You are right, I forgot about it.
+>> >>
+>> >> I was going to re-submit these patches anyway since there have been
+>> >> quite a few changes and these can no longer be applied on next.
+>> >
+>> >OK, I am trying to put together my thoughts for 1/2 right now. If you
+>> >could just wait a little before resubmitting, I would be grateful.
+>> >
+>>
+>> BTW, do we really get different widths four different contacts?
+>>
+>> Thanks.
 >
->> +     if (size == 1)
->> +             *val = readb(addr);
->> +     else if (size == 2)
->> +             *val = readw(addr);
->> +     else
->> +             *val = readl(addr);
-> (pci_generic_config_read() and pci_generic_config_write())
->
-> switch()
-> default: WARN_ON(1);
-> ?
+> I think that only the width of the last finger that was laid on the
+> touchpad is reported.
 
-If you look at PCI_OP_READ/PCI_OP_WRITE defines, the caller can only
-have size of 1, 2 or 4. AFAIK, config accesses don't go thru any other
-caller.
+According to the Synaptics PS2 Interfacing guide, the width of the
+primary finger is also reported. See
+http://www.synaptics.com/sites/default/files/511-000275-01_RevB.pdf
+section 3.2.10. page 32)
 
-Rob
+Cheers,
+Benjamin
