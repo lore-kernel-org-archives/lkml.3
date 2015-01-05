@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbbAEM3Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 07:29:24 -0500
-Received: from smtprelay0064.hostedemail.com ([216.40.44.64]:36019 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753557AbbAEM3V (ORCPT
+	id S1753918AbbAEMg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 07:36:27 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:43272 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215AbbAEMgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 07:29:21 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3870:3871:3872:5007:6261:10004:10400:10848:11026:11473:11658:11914:12296:12438:12517:12519:12555:13069:13311:13357:14096:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: act96_8b98ebdb55b5f
-X-Filterd-Recvd-Size: 1542
-Message-ID: <1420460958.2652.4.camel@perches.com>
-Subject: [PATCH] s390: Remove unnecessary KERN_CONT
-From: Joe Perches <joe@perches.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Jan 2015 04:29:18 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Jan 2015 07:36:25 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
+        <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] kprobes: bugfix: set kprobes_all_disarmed earlier to enable re-optimization.
+Date: Mon, 5 Jan 2015 20:31:15 +0800
+Message-ID: <1420461075-27012-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.54AA8544.00B3,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 19ea364152f4af10c72bc9f89b317e5a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This has no effect as KERN_CONT is an empty string,
+In original code, the probed instruction doesn't get optimized after
 
-It's probably just a missing conversion artifact as the
-other pr_cont uses in the same file don't have this prefix.
+echo 0 > /sys/kernel/debug/kprobes/enabled
+echo 1 > /sys/kernel/debug/kprobes/enabled
 
-Signed-off-by: Joe Perches <joe@perches.com>
+This is because original code checks kprobes_all_disarmed in
+optimize_kprobe(), but this flag is turned off after calling that
+function. Therefore, optimize_kprobe() will see
+kprobes_all_disarmed == true and doesn't do the optimization.
+
+This patch simply turns off kprobes_all_disarmed earlier to enable
+optimization.
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 ---
- arch/s390/mm/fault.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/kprobes.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-index 811937b..232c14e 100644
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -171,7 +171,7 @@ static void dump_pagetable(unsigned long asce, unsigned long address)
- 		table = table + ((address >> 20) & 0x7ff);
- 		if (bad_address(table))
- 			goto bad;
--		pr_cont(KERN_CONT "S:%016lx ", *table);
-+		pr_cont("S:%016lx ", *table);
- 		if (*table & (_SEGMENT_ENTRY_INVALID | _SEGMENT_ENTRY_LARGE))
- 			goto out;
- 		table = (unsigned long *)(*table & _SEGMENT_ENTRY_ORIGIN);
-
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index bad4e95..b185464 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -2320,6 +2320,12 @@ static void arm_all_kprobes(void)
+ 	if (!kprobes_all_disarmed)
+ 		goto already_enabled;
+ 
++	/*
++	 * optimize_kprobe() called by arm_kprobe() checks
++	 * kprobes_all_disarmed, so set kprobes_all_disarmed before
++	 * arm_kprobe.
++	 */
++	kprobes_all_disarmed = false;
+ 	/* Arming kprobes doesn't optimize kprobe itself */
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		head = &kprobe_table[i];
+@@ -2328,7 +2334,6 @@ static void arm_all_kprobes(void)
+ 				arm_kprobe(p);
+ 	}
+ 
+-	kprobes_all_disarmed = false;
+ 	printk(KERN_INFO "Kprobes globally enabled\n");
+ 
+ already_enabled:
+-- 
+1.8.4
 
