@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932273AbbAESWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:22:23 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:34874 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010AbbAESWV (ORCPT
+	id S932335AbbAESXB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:23:01 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36623 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932093AbbAESW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:22:21 -0500
+	Mon, 5 Jan 2015 13:22:58 -0500
+Date: Mon, 5 Jan 2015 18:22:28 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Jaroslav Kysela <perex@perex.cz>, Liam Girdwood <lgirdwood@gmail.com>,
+        alsa-devel@alsa-project.org, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Message-ID: <20150105182228.GB2634@sirena.org.uk>
+References: <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54A9355F.4050102@users.sourceforge.net>
+ <54A93B5A.9050504@users.sourceforge.net>
+ <20150105143551.GQ11764@sirena.org.uk>
+ <s5hwq51fe8g.wl-tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20150105142206.76ca2e18@lxorguk.ukuu.org.uk>
-References: <20150104190123.GA20153@amd> <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
- <CA+55aFxMbicJZXzzHc8=vdwCzhz4kdrmZEKjLadZXr7aySZ4zg@mail.gmail.com>
- <alpine.LFD.2.11.1501041526390.18844@knanqh.ubzr> <CA+55aFxRRcSJ5i=EcQ-qqMrz0icn28JKjQuH3xGU65hjpVm9hw@mail.gmail.com>
- <20150104211555.GB12302@n2100.arm.linux.org.uk> <20150105142206.76ca2e18@lxorguk.ukuu.org.uk>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Mon, 5 Jan 2015 18:22:01 +0000
-X-Google-Sender-Auth: WqTCW1nmz35dFROqEMHlz1E9Eb0
-Message-ID: <CAHkRjk5EAUvdR5ED_M=dB+5yu3RtZLgo_aighUrozovHKnOp=w@mail.gmail.com>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Pavel Machek <pavel@ucw.cz>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3lcZGd9BuhuYXNfi"
+Content-Disposition: inline
+In-Reply-To: <s5hwq51fe8g.wl-tiwai@suse.de>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 6/13] ASoC: Intel: Delete an unnecessary check before the
+ function call "sst_dma_free"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 January 2015 at 14:22, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
->> This is not the case on ARM.  Here's an example where we use a hardware
->> timer for the delay loop:
->>
->> Calibrating delay loop (skipped), value calculated using timer frequency.. 6.00 BogoMIPS (lpj=12000)
->>
->> which is nowhere near the precision of the CPU clock rate.  So, when
->> we have a hardware timer based delay implementation, the bogomips
->> value which the kernel has access to (and thus the loops_per_jiffy
->> value) is totally ... bogus.
->
-> So multiply it by a fudge factor so it looks similar and in proportion.
 
-It's not that simple. The CPU frequency and the timer frequency are
-independent. One SoC may have 6MHz timer, another SoC with a similar
-CPU frequency may use a 24MHz timer (or maybe a much smaller one). So
-a fudge factor is not really any better than choosing a constant
-bogomips value at build time (say 2000).
+--3lcZGd9BuhuYXNfi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If the always constant bogomips is not desirable, we are left with
-having to do a dummy calibration to guess some value to be reported to
-user as BogoMIPS. Even if we do this, on modern ARM processors it
-rarely matches the CPU frequency, only on older/simpler CPUs. With
-newer ones, the simple two instructions loop is never 2 cycles (it may
-even differ on the same CPU depending on the kernel build, e.g. code
-alignment affecting the branch prediction; I recall on ARM11MPCore the
-average was half-cycle multiple because the loop took different number
-of cycles on consecutive iterations).
+On Mon, Jan 05, 2015 at 04:18:07PM +0100, Takashi Iwai wrote:
+> Mark Brown wrote:
 
-(I'm not debating whether we should fix this problem or not, just
-trying to find the right solution; reverting the original patch
-doesn't entirely fix newer CPUs)
+> > I'm missing aptches 1-5, are there any dependencies?
 
--- 
-Catalin
+> No, all individual fixes.
+
+OK.  SF, in future please always send at least the cover letter to
+everyone getting patches in the series so they know what's going on.
+
+--3lcZGd9BuhuYXNfi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUqtZjAAoJECTWi3JdVIfQeNcH/3X8H4IzkkQQ5jiXGlyJmMh5
+PNJuWtY07rolZEkeAOIz0VmMwEST1buBcrqUIvhvX0UbsYeQsqOzhtZMqzgMkK4Q
+ZaytOezwik61dmI4fNXAzUTyU0vQ+ydYFwulygLYi/t5D07wp2UeAziPRrCcAHal
+rfRR59FAzaoLmsRz8zrEwsf3aMip993bU9Yemf1YAM6X8+8zjRor4P+AtGPZCR0z
+7f1kOsk/P7HSEW6KC6egCOHNxM1dHOCP3zNO+nnUBBPDiqOxBtMxQQODy/TuwMro
+IVclQPJTDr91gOKMAnr9vmEgKXULKLtp/4eXZ2LWXn9n7ao96vd9KPTHWWaSQqc=
+=xW1v
+-----END PGP SIGNATURE-----
+
+--3lcZGd9BuhuYXNfi--
