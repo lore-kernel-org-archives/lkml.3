@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569AbbAEO1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:27:48 -0500
-Received: from smtp-out4.electric.net ([192.162.216.182]:50493 "EHLO
-	smtp-out4.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215AbbAEO1r convert rfc822-to-8bit (ORCPT
+	id S1753857AbbAENVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:21:19 -0500
+Received: from smtprelay.synopsys.com ([198.182.60.111]:35477 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292AbbAENVR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:27:47 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Richard Cochran'" <richardcochran@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David Miller" <davem@davemloft.net>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: RE: [PATCH net-next 1/7] timecounter: provide a macro to initialize
- the cyclecounter mask field.
-Thread-Topic: [PATCH net-next 1/7] timecounter: provide a macro to
- initialize the cyclecounter mask field.
-Thread-Index: AQHQJbAIrcENDEKocU+B733cx3sBSZyxh57Q
-Date: Mon, 5 Jan 2015 13:20:57 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CAC09D7@AcuExch.aculab.com>
-References: <cover.1420108214.git.richardcochran@gmail.com>
- <1f1bee3e2aa0cc530d006d99a621992a1497a442.1420108214.git.richardcochran@gmail.com>
-In-Reply-To: <1f1bee3e2aa0cc530d006d99a621992a1497a442.1420108214.git.richardcochran@gmail.com>
-Accept-Language: en-GB, en-US
+	Mon, 5 Jan 2015 08:21:17 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Peter Hurley <peter@hurleysoftware.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh@kernel.org" <robh@kernel.org>, "jslaby@suse.cz" <jslaby@suse.cz>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic BASE_BAUD
+Thread-Topic: [PATCH v2 2/3] serial: 8250_early: prepare for dynamic
+ BASE_BAUD
+Thread-Index: AQHQKNsX6WbkZQB8V0WNqr8z00JbjA==
+Date: Mon, 5 Jan 2015 13:21:13 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BC9CCD@IN01WEMBXA.internal.synopsys.com>
+References: <1420457437-17636-1-git-send-email-vgupta@synopsys.com>
+ <1420457437-17636-3-git-send-email-vgupta@synopsys.com>
+ <54AA8AFC.9020706@hurleysoftware.com>
+Accept-Language: en-US, en-IN
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
+x-originating-ip: [10.12.196.223]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Outbound-IP: 213.249.233.130
-X-Env-From: David.Laight@ACULAB.COM
-X-PolicySMART: 3396946, 3397078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There is no need for users of the timecounter/cyclecounter code to include
-> clocksource.h just for a single macro.
-> 
-> Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-> ---
->  include/linux/timecounter.h |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/timecounter.h b/include/linux/timecounter.h
-> index 74f4549..4382035 100644
-> --- a/include/linux/timecounter.h
-> +++ b/include/linux/timecounter.h
-> @@ -19,6 +19,9 @@
-> 
->  #include <linux/types.h>
-> 
-> +/* simplify initialization of mask field */
-> +#define CYCLECOUNTER_MASK(bits) (cycle_t)((bits) < 64 ? ((1ULL<<(bits))-1) : -1)
+Hi Peter,
 
-That has me chasing through the C integer promotion rules.
-Better might be:
-	((bits) < 64 ? (1ULL << (bits)) - 1 : (((1ULL << 63) - 1) << 1) + 1)
-I actually suspect there is a standard definition somewhere?
+On Monday 05 January 2015 06:31 PM, Peter Hurley wrote:
+> Hi Vineet,
+>
+> On 01/05/2015 06:30 AM, Vineet Gupta wrote:
+>> -	port->uartclk = BASE_BAUD * 16;
+>> +	port->uartclk = earlycon_base_baud(options) * 16;
+> I don't understand why BASE_BAUD can't be defined by arc as arc_earlycon_base_baud().
+> Why is the weak binding necessary?
 
-	David 
+Indeed weak semantics are not really needed - even now we have what u r suggesting
+- the missing part was existing conditional definition which will simply go away
+if I implement the fdt parsing in that singly defined function. Thx for the tip :-)
+
+In that case this requires no change to driver and I can fixup the platform -
+perhaps ur Ack on next version will be nice.
+Also what do u think of the early IER optimization ?
+
+>
+> I'm pushing back on this because port initialization (and especially 8250)
+> is already a ridiculous spiderweb.
+
+I totally agree.
+
+Thx,
+-Vineet
+
+>
+> Regards,
+> Peter Hurley
+>
+>>  	options = strchr(options, ',');
+>>  	if (options) {
+>> @@ -156,7 +165,7 @@ int __init of_setup_earlycon(unsigned long addr,
+>>  
+>>  	port->iotype = UPIO_MEM;
+>>  	port->mapbase = addr;
+>> -	port->uartclk = BASE_BAUD * 16;
+>> +	port->uartclk = earlycon_base_baud(NULL) * 16;
+>>  	port->membase = earlycon_map(addr, SZ_4K);
+>>  
+>>  	early_console_dev.con->data = &early_console_dev;
+>>
+>
+
