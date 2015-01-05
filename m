@@ -1,273 +1,564 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbbAEKum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:50:42 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35285 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805AbbAEKuk (ORCPT
+	id S1754081AbbAEK5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:57:47 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:64968 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062AbbAEK5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:50:40 -0500
-Message-ID: <1420455034.15910.53.camel@collabora.co.uk>
-Subject: Re: [PATCH 2/9] hwmon: dts: Doc: Add DTS doc to explain how to use
- PWM FAN as a cooling device
-From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Eduardo Valentin <edubezval@gmail.com>,
-        Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Date: Mon, 05 Jan 2015 11:50:34 +0100
-In-Reply-To: <20141219171301.1527d81e@amdc2363>
-References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
-	 <1418897591-18332-3-git-send-email-l.majewski@samsung.com>
-	 <1418899337.23532.9.camel@collabora.co.uk>
-	 <20141219163224.34796e5d@amdc2363> <20141219160237.GA2199@roeck-us.net>
-	 <20141219171301.1527d81e@amdc2363>
-Organization: Collabora Ltd.
-Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
-	boundary="=-uBFlSBjtYdjmBiG8Eoci"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
+	Mon, 5 Jan 2015 05:57:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420071030-888-1-git-send-email-ktsai@capellamicro.com>
+References: <1420071030-888-1-git-send-email-ktsai@capellamicro.com>
+Date: Mon, 5 Jan 2015 12:51:02 +0200
+X-Google-Sender-Auth: b2aGlzit_LaDnpr_Ln_UL1uxG6s
+Message-ID: <CAEnQRZBD2NMYRp1cW0J2ssT4CT=0jSM=X6ByHQiUrA0ueV8fRA@mail.gmail.com>
+Subject: Re: [PATCH V1 1/1] iio: Added Capella cm3232 ambient light sensor driver.
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: Kevin Tsai <ktsai@capellamicro.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Archana Patni <archana.patni@linux.intel.com>,
+        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 1, 2015 at 2:10 AM, Kevin Tsai <ktsai@capellamicro.com> wrote:
+> CM3232 is an advanced ambient light sensor with I2C protocol interface.
+> The I2C slave address is internally hardwired as 0x10 (7-bit).  Writing
+> to configure register is byte mode, but reading ALS register requests to
+> use word mode for 16-bit resolution.
 
---=-uBFlSBjtYdjmBiG8Eoci
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This looks good to me.  Few comments inline.
 
-Hey Lukasz,
+>
+> Signed-off-by: Kevin Tsai <ktsai@capellamicro.com>
+> ---
+>  .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+>  MAINTAINERS                                        |   6 +
+>  drivers/iio/light/Kconfig                          |  11 +
+>  drivers/iio/light/Makefile                         |   1 +
+>  drivers/iio/light/cm3232.c                         | 403 +++++++++++++++++++++
+>  5 files changed, 422 insertions(+)
+>  create mode 100644 drivers/iio/light/cm3232.c
+>
+> diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> index 9f4e382..572a7c4 100644
+> --- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> +++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> @@ -34,6 +34,7 @@ atmel,24c512          i2c serial eeprom  (24cxx)
+>  atmel,24c1024          i2c serial eeprom  (24cxx)
+>  atmel,at97sc3204t      i2c trusted platform module (TPM)
+>  capella,cm32181                CM32181: Ambient Light Sensor
+> +capella,cm3232         CM3232: Ambient Light Sensor
+>  catalyst,24c32         i2c serial eeprom
+>  cirrus,cs42l51         Cirrus Logic CS42L51 audio codec
+>  dallas,ds1307          64 x 8, Serial, I2C Real-Time Clock
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index ddb9ac8..06a613a 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -2378,6 +2378,12 @@ F:       security/capability.c
+>  F:     security/commoncap.c
+>  F:     kernel/capability.c
+>
+> +CAPELLA MICROSYSTEMS LIGHT SENSOR DRIVER
+> +M:     Kevin Tsai <ktsai@capellamicro.com>
+> +S:     Maintained
+> +F:     drivers/iio/light/cm*
+> +F:     Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> +
+>  CC2520 IEEE-802.15.4 RADIO DRIVER
+>  M:     Varka Bhadram <varkabhadram@gmail.com>
+>  L:     linux-wpan@vger.kernel.org
+> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+> index 5bea821..d2318e2 100644
+> --- a/drivers/iio/light/Kconfig
+> +++ b/drivers/iio/light/Kconfig
+> @@ -48,6 +48,17 @@ config CM32181
+>          To compile this driver as a module, choose M here:
+>          the module will be called cm32181.
+>
+> +config CM3232
+> +       depends on I2C
+> +       tristate "CM3232 driver"
 
-Blame the holiday season for my late reply ;)
+Better name this: "CM3232 ambient light sensor".
 
-On Fri, 2014-12-19 at 17:13 +0100, Lukasz Majewski wrote:
-> Hi Guenter,
->=20
-> > On Fri, Dec 19, 2014 at 04:32:24PM +0100, Lukasz Majewski wrote:
-> > > Hi Sjoerd,
-> > >=20
-> > > Thanks for your feedback and sorry for a late reply.
-> > >=20
-> > > > On Thu, 2014-12-18 at 11:13 +0100, Lukasz Majewski wrote:
-> > > > > Several new properties to allow PWM fan working as a cooling
-> > > > > device have been combined into this single commit.
-> > > > >=20
-> > > > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > > > > ---
-> > > > >  .../devicetree/bindings/hwmon/pwm-fan.txt          | 28
-> > > > > ++++++++++++++++++++++ 1 file changed, 28 insertions(+)
-> > > > >=20
-> > > > > diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > > > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt index
-> > > > > 610757c..3877810 100644 ---
-> > > > > a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt +++
-> > > > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt @@ -3,10
-> > > > > +3,38 @@ Bindings for a fan connected to the PWM lines Required
-> > > > > properties:
-> > > > >  - compatible	: "pwm-fan"
-> > > > >  - pwms		: the PWM that is used to control the
-> > > > > PWM fan +- cooling-pwm-values      : PWM duty cycle values
-> > > > > relative to
-> > > > > +			    cooling-max-pwm-value correspondig
-> > > > > to
-> > > > > +			    proper cooling states
-> > > > > +- default-pulse-width     : Property specifying default pulse
-> > > > > width for FAN
-> > > > > +			    at system boot (zero to disable
-> > > > > FAN on boot).
-> > > > > +			    Allowed range is 0 to 255
-> > > >=20
-> > > > The 0..255 range seems somewhat random. Would be nicer to either
-> > > > use the approach of pwm-backlight (iotw, have the range go from
-> > > > the first to the last entry of cooling-pwm-values)=20
-> > >=20
-> > > I'm OK to change the default-pulse-width to be similar to
-> > > "default-brightness-level" (as it is in
-> > > Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt)
-> > >=20
-> > > > or simply have be the duty
-> > > > lenght in NS as entries instead of the current indirection.
-> > >=20
-> > > I'd prefer to keep the indirection - as it is utilized in the
-> > > current pwm-fan.c driver.
-> > >=20
-> > FWIW, devicetree information is supposed to be implementation
-> > independent. So this is a poor argument.
->=20
-> Many other pwm drivers use the indirection - e.g. mentioned
-> pwm-backlight.
+> +       help
+> +        Say Y here if you use cm3232.
+> +        This option enables ambient light sensor using
+> +        Capella Microsystems cm3232 device driver.
+> +
+> +        To compile this driver as a module, choose M here:
+> +        the module will be called cm3232.
+> +
+>  config CM36651
+>         depends on I2C
+>         tristate "CM36651 driver"
+> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+> index 47877a3..f2c8d55 100644
+> --- a/drivers/iio/light/Makefile
+> +++ b/drivers/iio/light/Makefile
+> @@ -7,6 +7,7 @@ obj-$(CONFIG_ADJD_S311)         += adjd_s311.o
+>  obj-$(CONFIG_AL3320A)          += al3320a.o
+>  obj-$(CONFIG_APDS9300)         += apds9300.o
+>  obj-$(CONFIG_CM32181)          += cm32181.o
+> +obj-$(CONFIG_CM3232)           += cm3232.o
+>  obj-$(CONFIG_CM36651)          += cm36651.o
+>  obj-$(CONFIG_GP2AP020A00F)     += gp2ap020a00f.o
+>  obj-$(CONFIG_HID_SENSOR_ALS)   += hid-sensor-als.o
+> diff --git a/drivers/iio/light/cm3232.c b/drivers/iio/light/cm3232.c
+> new file mode 100644
+> index 0000000..fd98eeb
+> --- /dev/null
+> +++ b/drivers/iio/light/cm3232.c
+> @@ -0,0 +1,403 @@
+> +/*
+> + * Copyright (C) 2014 Capella Microsystems Inc.
+> + * Author: Kevin Tsai <ktsai@capellamicro.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2, as published
+> + * by the Free Software Foundation.
+> + *
 
-I don't specifically mind the indirection, i was just thinking out loud
-whether it added value (but if it's quite common, might indeed be good
-to keep the pattern). What i do dislike is the number of levels is being
-set to an arbitrary levels, as that will very rarely match the actual
-number of distinct pwm levels you=20
+Usually, here is the place to mention the I2C slave address.
 
-One thing though, when following the pattern of the pwm-backlight
-driver; In pwm-backlight the highest index of brightness-levels is
-always 100% duty cycle.. On e.g. XU3 the vendor kernel never drives the
-fan at 100% duty (maximum of 91%). So it would be nice if the dt
-bindigns could model that e.g. by having:
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/err.h>
+> +#include <linux/i2c.h>
+> +#include <linux/mutex.h>
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/iio/iio.h>
+> +#include <linux/iio/sysfs.h>
+> +#include <linux/iio/events.h>
+> +#include <linux/init.h>
+> +
+> +/* Registers Address */
+> +#define CM3232_REG_ADDR_CMD            0x00
+> +#define CM3232_REG_ADDR_ALS            0x50
+> +#define CM3232_REG_ADDR_ID             0x53
+> +
+> +/* CMD register */
+> +#define CM3232_CMD_ALS_DISABLE         BIT(0)
+> +#define        CM3232_CMD_ALS_HS               BIT(1)
+> +
+> +#define CM3232_CMD_ALS_IT_SHIFT         2
+> +#define CM3232_CMD_ALS_IT_MASK          (0x07 << CM3232_CMD_ALS_IT_SHIFT)
+> +#define CM3232_CMD_ALS_IT_DEFAULT       (0x01 << CM3232_CMD_ALS_IT_SHIFT)
+> +
+> +#define        CM3232_CMD_ALS_RESET            BIT(6)
+> +
+> +#define CM3232_CMD_DEFAULT             CM3232_CMD_ALS_IT_DEFAULT
+> +
+> +#define CM3232_CALIBSCALE_DEFAULT      100000
+> +#define CM3232_CALIBSCALE_RESOLUTION   100000
+> +#define CM3232_MLUX_PER_LUX            1000
+> +
+> +#define CM3232_MLUX_PER_BIT_DEFAULT    64
+> +#define CM3232_MLUX_PER_BIT_BASE_IT    100000
+> +static const int CM3232_als_it_bits[] = { 0, 1, 2, 3, 4, 5};
+> +static const int CM3232_als_it_values[] = {
+> +                       100000, 200000, 400000, 800000, 1600000, 3200000};
+> +
+> +struct cm3232_als_info {
+> +       u32 id;
+> +       int calibscale;
+> +       int mlux_per_bit;
+> +       int mlux_per_bit_base_it;
+> +       const int *als_it_bits;
+> +       const int *als_it_values;
+> +       const int num_als_it;
+> +       int als_raw;
+> +};
+> +
+> +static struct cm3232_als_info cm3232_als_info_default = {
+> +       .id = 3232,
+> +       .calibscale = CM3232_CALIBSCALE_DEFAULT,
+> +       .mlux_per_bit = CM3232_MLUX_PER_BIT_DEFAULT,
+> +       .mlux_per_bit_base_it = CM3232_MLUX_PER_BIT_BASE_IT,
+> +       .als_it_bits = CM3232_als_it_bits,
+> +       .als_it_values = CM3232_als_it_values,
+> +       .num_als_it = ARRAY_SIZE(CM3232_als_it_bits),
+> +};
+> +
+> +struct cm3232_chip {
+> +       struct i2c_client *client;
+> +       struct mutex lock;
+> +       struct cm3232_als_info *als_info;
+> +       u8 regs_cmd;
+> +};
+> +
+> +static int cm3232_get_lux(struct cm3232_chip *chip);
+> +static int cm3232_read_als_it(struct cm3232_chip *chip, int *val2);
+> +
+> +/**
+> + * cm3232_reg_init() - Initialize CM3232 registers
+> + * @chip:      pointer of struct cm3232.
+> + *
+> + * Initialize CM3232 ambient light sensor register to default values.
+> + *
+> +  Return: 0 for success; otherwise for error code.
+> + */
+> +static int cm3232_reg_init(struct cm3232_chip *chip)
+> +{
+> +       struct i2c_client *client = chip->client;
+> +       struct cm3232_als_info *als_info;
+> +       s32 ret;
+> +
+> +       /* Identify device */
+> +       ret = i2c_smbus_read_word_data(client, CM3232_REG_ADDR_ID);
+> +       if (ret < 0)
+> +               return ret;
+> +       if ((ret & 0xFF) != 0x32)
+> +               return -ENODEV;
+> +
+> +       /* Disable and reset device */
+> +       chip->regs_cmd = CM3232_CMD_ALS_DISABLE | CM3232_CMD_ALS_RESET;
+> +       ret = i2c_smbus_write_byte_data(client, CM3232_REG_ADDR_CMD,
+> +                               chip->regs_cmd);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       /* Initialization */
+> +       als_info = chip->als_info = &cm3232_als_info_default;
+> +       chip->regs_cmd = CM3232_CMD_DEFAULT;
+> +
+> +       /* Configure register */
+> +       ret = i2c_smbus_write_byte_data(client, CM3232_REG_ADDR_CMD,
+> +                               chip->regs_cmd);
 
-pwm-levels =3D <20>; // 21 distinct pwm levels
-valid-pwm-level =3D <5 15 18>; /* 5 15 and 18 are usable levels - pwm will
-                                default to highest level */
+You could directly return i2c_smbus_write_byte_data(..).
 
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + *  cm3232_read_als_it() - Get sensor integration time (ms)
+> + *  @chip:     pointer of struct cm3232
+> + *  @val2:     pointer of int to load the als_it value.
+> + *
+> + *  Report the current integration time in milliseconds.
+> + *
+> + *  Return: IIO_VAL_INT_PLUS_MICRO for success, otherwise -EINVAL.
+> + */
+> +static int cm3232_read_als_it(struct cm3232_chip *chip, int *val2)
 
-> > > Enabling pan to full RPM was the default behaviour in the current
-> > > pwm-fan.c file.
-> > >=20
-> > > To be honest, there is no need to enable fan to full RPM speed in
-> > > this board for following reasons:
-> > > 1. In Odroid the FAN is optional (stacked on top of a heat sink) -
-> > > very often it is just enough to only have the heat sink.
-> > >=20
-> > > 2. Odroid has thermal enabled by default and IMHO it would be more
-> > > feasible to allow thermal to control fan from the very beginning.
-> > >=20
-> > > However, I can also understand if the policy for hwmon implies a
-> > > rule to enable by default all fans to full RPM speed.
-> > >=20
-> > Why and how does that all suggest that the current default behavior
-> > should be changed ?
->=20
-> I wanted to avoid the unpleasant sound for full speed fan when thermal
-> is not enabled by default.
->=20
-> But as I said, I fully understand the policy and I would be happy to
-> comply with it as thermal should reduce the fan speed anyway at boot
-> time.
+Wouldn't make more sense to also add val here?
 
-Yeah, what happens on my XU3 is that u-boot sets the pwm to 100% duty
-and the thermal infrastructure turns it off as soon as it gets into
-control, which works quite nicely (and keeps my sanity as that fan at
-100% is *loud*)...  So if you want to avoid unpleasant sounds, just
-build with thermal :p
+> +{
+> +       struct cm3232_als_info *als_info = chip->als_info;
+> +       u16 als_it;
+> +       int i;
+> +
+> +       als_it = chip->regs_cmd;
+> +       als_it &= CM3232_CMD_ALS_IT_MASK;
+> +       als_it >>= CM3232_CMD_ALS_IT_SHIFT;
+> +       for (i = 0; i < als_info->num_als_it; i++) {
+> +               if (als_it == als_info->als_it_bits[i]) {
+.. then make, *val = 0.
 
+> +                       *val2 = als_info->als_it_values[i];
+> +                       return IIO_VAL_INT_PLUS_MICRO;
+> +               }
+> +       }
+> +
+> +       return -EINVAL;
+> +}
+> +
+> +/**
+> + * cm3232_write_als_it() - Write sensor integration time
+> + * @chip:      pointer of struct cm3232.
+> + * @val:       integration time in milliseconds.
+> + *
+> + * Convert integration time (ms) to sensor value.
+> + *
+> + * Return: i2c_smbus_write_word_data command return value.
+> + */
+> +static int cm3232_write_als_it(struct cm3232_chip *chip, int val)
+> +{
+> +       struct i2c_client *client = chip->client;
+> +       struct cm3232_als_info *als_info = chip->als_info;
+> +       u16 als_it;
+> +       int ret, i;
+> +
+> +       for (i = 0; i < als_info->num_als_it; i++)
+> +               if (val <= als_info->als_it_values[i])
+> +                       break;
+> +       if (i >= als_info->num_als_it)
+> +               i = als_info->num_als_it - 1;
+> +
+> +       als_it = als_info->als_it_bits[i];
+> +       als_it <<= CM3232_CMD_ALS_IT_SHIFT;
+> +
+> +       mutex_lock(&chip->lock);
+> +       chip->regs_cmd &= ~CM3232_CMD_ALS_IT_MASK;
+> +       chip->regs_cmd |= als_it;
+> +       ret = i2c_smbus_write_byte_data(client, CM3232_REG_ADDR_CMD,
+> +                       chip->regs_cmd);
+> +       mutex_unlock(&chip->lock);
+> +
+> +       return ret;
+> +}
+> +
+> +/**
+> + * cm3232_get_lux() - report current lux value
+> + * @chip:      pointer of struct cm3232.
+> + *
+> + * Convert sensor raw data to lux.  It depends on integration
+> + * time and calibscale variable.
+> + *
+> + * Return: Positive value is lux, otherwise is error code.
+> + */
+> +static int cm3232_get_lux(struct cm3232_chip *chip)
+> +{
+> +       struct i2c_client *client = chip->client;
+> +       struct cm3232_als_info *als_info = chip->als_info;
+> +       int ret;
+> +       int als_it;
+> +       u64 tmp;
+> +
+> +       /* Calculate mlux per bit based on als_it */
+> +       ret = cm3232_read_als_it(chip, &als_it);
+> +       if (ret < 0)
+> +               return -EINVAL;
+> +       tmp = (__force u64)als_info->mlux_per_bit;
+> +       tmp *= als_info->mlux_per_bit_base_it;
+> +       tmp = div_u64 (tmp, als_it);
+> +
+> +       /* Get als_raw */
+> +       als_info->als_raw = i2c_smbus_read_word_data(
+> +                               client,
+> +                               CM3232_REG_ADDR_ALS);
+> +       if (als_info->als_raw < 0)
+> +               return als_info->als_raw;
+> +
+> +       tmp *= als_info->als_raw;
+> +       tmp *= als_info->calibscale;
+> +       tmp = div_u64(tmp, CM3232_CALIBSCALE_RESOLUTION);
+> +       tmp = div_u64(tmp, CM3232_MLUX_PER_LUX);
+> +
+> +       if (tmp > 0xFFFF)
+> +               tmp = 0xFFFF;
+> +
+> +       return (int)tmp;
+> +}
+> +
+> +static int cm3232_read_raw(struct iio_dev *indio_dev,
+> +                       struct iio_chan_spec const *chan,
+> +                       int *val, int *val2, long mask)
+> +{
+> +       struct cm3232_chip *chip = iio_priv(indio_dev);
+> +       struct cm3232_als_info *als_info = chip->als_info;
+> +       int ret;
+> +
+> +       switch (mask) {
+> +       case IIO_CHAN_INFO_PROCESSED:
+> +               ret = cm3232_get_lux(chip);
+> +               if (ret < 0)
+> +                       return ret;
+> +               *val = ret;
+> +               return IIO_VAL_INT;
+> +       case IIO_CHAN_INFO_CALIBSCALE:
+> +               *val = als_info->calibscale;
+> +               return IIO_VAL_INT;
+> +       case IIO_CHAN_INFO_INT_TIME:
+> +               *val = 0;
+> +               ret = cm3232_read_als_it(chip, val2);
+> +               return ret;
+Here you could just return cm3232_read_als_it(...)
+> +       }
+> +
+> +       return -EINVAL;
+> +}
+> +
+> +static int cm3232_write_raw(struct iio_dev *indio_dev,
+> +                       struct iio_chan_spec const *chan,
+> +                       int val, int val2, long mask)
+> +{
+> +       struct cm3232_chip *chip = iio_priv(indio_dev);
+> +       struct cm3232_als_info *als_info = chip->als_info;
+> +       long ms;
+> +
+> +       switch (mask) {
+> +       case IIO_CHAN_INFO_CALIBSCALE:
+> +               als_info->calibscale = val;
+> +               return val;
+> +       case IIO_CHAN_INFO_INT_TIME:
+> +               ms = val * 1000000 + val2;
+> +               return cm3232_write_als_it(chip, (int)ms);
+> +       }
+> +
+> +       return -EINVAL;
+> +}
+> +
+> +/**
+> + * cm3232_get_it_available() - Get available ALS IT value
+> + * @dev:       pointer of struct device.
+> + * @attr:      pointer of struct device_attribute.
+> + * @buf:       pointer of return string buffer.
+> + *
+> + * Display the available integration time in milliseconds.
+> + *
+> + * Return: string length.
+> + */
+> +static ssize_t cm3232_get_it_available(struct device *dev,
+> +                       struct device_attribute *attr, char *buf)
+> +{
+> +       struct cm3232_chip *chip = iio_priv(dev_to_iio_dev(dev));
+> +       struct cm3232_als_info *als_info = chip->als_info;
+> +       int i, len;
+> +
+> +       for (i = 0, len = 0; i < als_info->num_als_it; i++)
+> +               len += scnprintf(buf + len, PAGE_SIZE - len, "%u.%06u ",
+> +                       als_info->als_it_values[i]/1000000,
+> +                       als_info->als_it_values[i]%1000000);
+> +       return len + scnprintf(buf + len, PAGE_SIZE - len, "\n");
+> +}
+> +
+> +static const struct iio_chan_spec cm3232_channels[] = {
+> +       {
+> +               .type = IIO_LIGHT,
+> +               .info_mask_separate =
+> +                       BIT(IIO_CHAN_INFO_PROCESSED) |
+> +                       BIT(IIO_CHAN_INFO_CALIBSCALE) |
+> +                       BIT(IIO_CHAN_INFO_INT_TIME),
+> +       }
+> +};
+> +
+> +static IIO_DEVICE_ATTR(in_illuminance_integration_time_available,
+> +                       S_IRUGO, cm3232_get_it_available, NULL, 0);
+> +
+> +static struct attribute *cm3232_attributes[] = {
+> +       &iio_dev_attr_in_illuminance_integration_time_available.dev_attr.attr,
+> +       NULL,
+> +};
+> +
+> +static const struct attribute_group cm3232_attribute_group = {
+> +       .attrs = cm3232_attributes
+> +};
+> +
+> +static const struct iio_info cm3232_info = {
+> +       .driver_module          = THIS_MODULE,
+> +       .read_raw               = &cm3232_read_raw,
+> +       .write_raw              = &cm3232_write_raw,
+> +       .attrs                  = &cm3232_attribute_group,
+> +};
+> +
+> +static int cm3232_probe(struct i2c_client *client,
+> +                       const struct i2c_device_id *id)
+> +{
+> +       struct cm3232_chip *chip;
+> +       struct iio_dev *indio_dev;
+> +       int ret;
+> +
+> +       indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*chip));
+> +       if (!indio_dev) {
+> +               dev_err(&client->dev, "devm_iio_device_alloc failed\n");
 
---=20
-Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Collabora Ltd.
+There is no need for this error message. devm_iio_device_alloc will print
+an error message in case of failure.
 
---=-uBFlSBjtYdjmBiG8Eoci
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
+> +               return -ENOMEM;
+> +       }
+> +
+> +       chip = iio_priv(indio_dev);
+> +       i2c_set_clientdata(client, indio_dev);
+> +       chip->client = client;
+> +
+> +       mutex_init(&chip->lock);
+> +       indio_dev->dev.parent = &client->dev;
+> +       indio_dev->channels = cm3232_channels;
+> +       indio_dev->num_channels = ARRAY_SIZE(cm3232_channels);
+> +       indio_dev->info = &cm3232_info;
+> +       if (id && id->name)
+> +               indio_dev->name = id->name;
+> +       else
+> +               indio_dev->name = (char *)dev_name(&client->dev);
+> +       indio_dev->modes = INDIO_DIRECT_MODE;
+> +
+> +       ret = cm3232_reg_init(chip);
+> +       if (ret) {
+> +               dev_err(&client->dev,
+> +                       "%s: register init failed\n",
+> +                       __func__);
+> +               return ret;
+> +       }
+> +
+> +       ret = iio_device_register(indio_dev);
+> +       return 0;
+Directly return iio_device_register()
+> +}
+> +
+> +static int cm3232_remove(struct i2c_client *client)
+> +{
+> +       struct iio_dev *indio_dev = i2c_get_clientdata(client);
+> +
+> +       iio_device_unregister(indio_dev);
+> +       return 0;
+> +}
+> +
+> +static const struct i2c_device_id cm3232_id[] = {
+> +       { "cm3232", 0},
+No need for space before ".
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUzDCCBsIw
-ggWqoAMCAQICEAoE3yF0XU0rjOozcgUAUOkwDQYJKoZIhvcNAQEFBQAwZTELMAkGA1UEBhMCVVMx
-FTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3LmRpZ2ljZXJ0LmNvbTEkMCIGA1UE
-AxMbRGlnaUNlcnQgQXNzdXJlZCBJRCBSb290IENBMB4XDTA2MTExMDAwMDAwMFoXDTIxMTExMDAw
-MDAwMFowYjELMAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3
-LmRpZ2ljZXJ0LmNvbTEhMB8GA1UEAxMYRGlnaUNlcnQgQXNzdXJlZCBJRCBDQS0xMIIBIjANBgkq
-hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6IItmfnKwkKVpYBzQHDSnlZUXKnE0kEGj8kz/E1FkVyB
-n+0snPgWWd+etSQVwpi5tHdJ3InECtqvy15r7a2wcTHrzzpADEZNk+yLejYIA6sMNP4YSYL+x8cx
-SIB8HqIPkg5QycaH6zY/2DDD/6b3+6LNb3Mj/qxWBZDwMiEWicZwiPkFl32jx0PdAug7Pe2xQaPt
-P77blUjE7h6z8rwMK5nQxl0SQoHhg26Ccz8mSxSQrllmCsSNvtLOBq6thG9IhJtPQLnxTPKvmPv2
-zkBdXPao8S+v7Iki8msYZbHBc63X8djPHgp0XEK4aH631XcKJ1Z8D2KkPzIUYJX9BwSiCQIDAQAB
-o4IDbzCCA2swDgYDVR0PAQH/BAQDAgGGMDsGA1UdJQQ0MDIGCCsGAQUFBwMBBggrBgEFBQcDAgYI
-KwYBBQUHAwMGCCsGAQUFBwMEBggrBgEFBQcDCDCCAcYGA1UdIASCAb0wggG5MIIBtQYLYIZIAYb9
-bAEDAAQwggGkMDoGCCsGAQUFBwIBFi5odHRwOi8vd3d3LmRpZ2ljZXJ0LmNvbS9zc2wtY3BzLXJl
-cG9zaXRvcnkuaHRtMIIBZAYIKwYBBQUHAgIwggFWHoIBUgBBAG4AeQAgAHUAcwBlACAAbwBmACAA
-dABoAGkAcwAgAEMAZQByAHQAaQBmAGkAYwBhAHQAZQAgAGMAbwBuAHMAdABpAHQAdQB0AGUAcwAg
-AGEAYwBjAGUAcAB0AGEAbgBjAGUAIABvAGYAIAB0AGgAZQAgAEQAaQBnAGkAQwBlAHIAdAAgAEMA
-UAAvAEMAUABTACAAYQBuAGQAIAB0AGgAZQAgAFIAZQBsAHkAaQBuAGcAIABQAGEAcgB0AHkAIABB
-AGcAcgBlAGUAbQBlAG4AdAAgAHcAaABpAGMAaAAgAGwAaQBtAGkAdAAgAGwAaQBhAGIAaQBsAGkA
-dAB5ACAAYQBuAGQAIABhAHIAZQAgAGkAbgBjAG8AcgBwAG8AcgBhAHQAZQBkACAAaABlAHIAZQBp
-AG4AIABiAHkAIAByAGUAZgBlAHIAZQBuAGMAZQAuMA8GA1UdEwEB/wQFMAMBAf8wfQYIKwYBBQUH
-AQEEcTBvMCQGCCsGAQUFBzABhhhodHRwOi8vb2NzcC5kaWdpY2VydC5jb20wRwYIKwYBBQUHMAKG
-O2h0dHA6Ly93d3cuZGlnaWNlcnQuY29tL0NBQ2VydHMvRGlnaUNlcnRBc3N1cmVkSURSb290Q0Eu
-Y3J0MIGBBgNVHR8EejB4MDqgOKA2hjRodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRB
-c3N1cmVkSURSb290Q0EuY3JsMDqgOKA2hjRodHRwOi8vY3JsNC5kaWdpY2VydC5jb20vRGlnaUNl
-cnRBc3N1cmVkSURSb290Q0EuY3JsMB0GA1UdDgQWBBQVABIrE5iymQftHt+ivlcNK2cCzTAfBgNV
-HSMEGDAWgBRF66Kv9JLLgjEtUYunpyGd823IDzANBgkqhkiG9w0BAQUFAAOCAQEAhGFOQR64dgQq
-tbbvj/JVhbldVv4KmObkvWWKfUAp0/yxXUX9OrgqWzNLJFzNubTkc61hXXatdDOKZtUjr0wfcm5F
-2XVAu6I7z41JL8BBsOIpo1E4Q1CZFKwzBjViiX13qVIH5WwgV7aBum+8s8KU7XYCgNl8zoWoHOzH
-Q0pLsVfPcs7f9SU8yyJP/Z9S0TfLCLs4PuDVPm95Ca1bfDGzdzXD5GP5aAqYB+dGOHeE0j6XvAqg
-qKwlT0RukeHSWq9r7zAcjaNEQrMQiyP61+Y1dDesz+urWB/JiCP/NtQH6jRqR+qdlWyeKU9T7eMr
-lSBOKs+WYHr4LIDwlVLOKZaBYjCCBv8wggXnoAMCAQICEA2fwUKNhvkL8dN88tUFvVwwDQYJKoZI
-hvcNAQEFBQAwYjELMAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQ
-d3d3LmRpZ2ljZXJ0LmNvbTEhMB8GA1UEAxMYRGlnaUNlcnQgQXNzdXJlZCBJRCBDQS0xMB4XDTE0
-MDIxNzAwMDAwMFoXDTE1MDMxMjEyMDAwMFowgaQxCzAJBgNVBAYTAkdCMRcwFQYDVQQIEw5DYW1i
-cmlkZ2VzaGlyZTESMBAGA1UEBxMJQ2FtYnJpZGdlMRYwFAYDVQQKEw1Db2xsYWJvcmEgTHRkMQow
-CAYDVQQLEwExMRYwFAYDVQQDEw1Tam9lcmQgU2ltb25zMSwwKgYJKoZIhvcNAQkBFh1zam9lcmQu
-c2ltb25zQGNvbGxhYm9yYS5jby51azCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAN4Q
-EHeW1NbogMVZpHedG7o509/L4VBhqQd8j8JViWd+yvLlxOBw/gY+7ioHMatrQY2VvY6QOLle2Xqs
-CDvELcXMxwyFpBC0Ia+CVE+5pF+0IMuVkGIL1T8LHeKZYeRP+uFXtmWzas12hsMILNRmK7Q5PACm
-+v/6HFn111hLKkANBtRHIRiDbFQOiluNeR2bq+ck1y2+X//SGumA1XZFdCB/1VcRJXDdFnYdU3j/
-RkoiGggo3MSq3mJ6yV7sqzk04fTLFvfL0KadCMauputeGBybEiFAt6rCm5TkyUqoDOTU07byOEXO
-M32EGeYeV515RzARTpOSE9sdmRq0jNNAqGsCAwEAAaOCA2wwggNoMB8GA1UdIwQYMBaAFBUAEisT
-mLKZB+0e36K+Vw0rZwLNMB0GA1UdDgQWBBRaTG8RXMDSFO5XcrjqYs/YDlmqSDAoBgNVHREEITAf
-gR1zam9lcmQuc2ltb25zQGNvbGxhYm9yYS5jby51azAOBgNVHQ8BAf8EBAMCBaAwHQYDVR0lBBYw
-FAYIKwYBBQUHAwQGCCsGAQUFBwMCMH0GA1UdHwR2MHQwOKA2oDSGMmh0dHA6Ly9jcmwzLmRpZ2lj
-ZXJ0LmNvbS9EaWdpQ2VydEFzc3VyZWRJRENBLTEuY3JsMDigNqA0hjJodHRwOi8vY3JsNC5kaWdp
-Y2VydC5jb20vRGlnaUNlcnRBc3N1cmVkSURDQS0xLmNybDCCAcUGA1UdIASCAbwwggG4MIIBtAYK
-YIZIAYb9bAQBAjCCAaQwOgYIKwYBBQUHAgEWLmh0dHA6Ly93d3cuZGlnaWNlcnQuY29tL3NzbC1j
-cHMtcmVwb3NpdG9yeS5odG0wggFkBggrBgEFBQcCAjCCAVYeggFSAEEAbgB5ACAAdQBzAGUAIABv
-AGYAIAB0AGgAaQBzACAAQwBlAHIAdABpAGYAaQBjAGEAdABlACAAYwBvAG4AcwB0AGkAdAB1AHQA
-ZQBzACAAYQBjAGMAZQBwAHQAYQBuAGMAZQAgAG8AZgAgAHQAaABlACAARABpAGcAaQBDAGUAcgB0
-ACAAQwBQAC8AQwBQAFMAIABhAG4AZAAgAHQAaABlACAAUgBlAGwAeQBpAG4AZwAgAFAAYQByAHQA
-eQAgAEEAZwByAGUAZQBtAGUAbgB0ACAAdwBoAGkAYwBoACAAbABpAG0AaQB0ACAAbABpAGEAYgBp
-AGwAaQB0AHkAIABhAG4AZAAgAGEAcgBlACAAaQBuAGMAbwByAHAAbwByAGEAdABlAGQAIABoAGUA
-cgBlAGkAbgAgAGIAeQAgAHIAZQBmAGUAcgBlAG4AYwBlAC4wdwYIKwYBBQUHAQEEazBpMCQGCCsG
-AQUFBzABhhhodHRwOi8vb2NzcC5kaWdpY2VydC5jb20wQQYIKwYBBQUHMAKGNWh0dHA6Ly9jYWNl
-cnRzLmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEFzc3VyZWRJRENBLTEuY3J0MAwGA1UdEwEB/wQCMAAw
-DQYJKoZIhvcNAQEFBQADggEBAAc8CwXSms3RbIx+bhxFsGQoN+RpHtjnPvMPPAobv7rxdhQPPz+N
-6h3hpVzegeW2XhyZVC8MT0U6uWXrk+1uQUAXrJEG+W2X8yTEoHDS/SCF/POOsj/ekaDuNE9JJB/9
-cspoa4W+W8pX1sRurBDFHL0DBudUQ1PgvTSLPOHtfKQpu4gRb2u8KpJermp/IvPLImX9xSCbYKQM
-2L0wbpStFIYdyKCKuXuQxOX3BdBKLCFvcIDE6hjj3UpOlThCbeul2Tz5jARCfRK4OUxnXyb/Tp5j
-tshIAa2ZMGaTH9ApeY7P6C2ONF+Mh5yV/raWXOnJ9dEg6/sXcbdiieqzLKYBIgQwggb/MIIF56AD
-AgECAhANn8FCjYb5C/HTfPLVBb1cMA0GCSqGSIb3DQEBBQUAMGIxCzAJBgNVBAYTAlVTMRUwEwYD
-VQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5jb20xITAfBgNVBAMTGERp
-Z2lDZXJ0IEFzc3VyZWQgSUQgQ0EtMTAeFw0xNDAyMTcwMDAwMDBaFw0xNTAzMTIxMjAwMDBaMIGk
-MQswCQYDVQQGEwJHQjEXMBUGA1UECBMOQ2FtYnJpZGdlc2hpcmUxEjAQBgNVBAcTCUNhbWJyaWRn
-ZTEWMBQGA1UEChMNQ29sbGFib3JhIEx0ZDEKMAgGA1UECxMBMTEWMBQGA1UEAxMNU2pvZXJkIFNp
-bW9uczEsMCoGCSqGSIb3DQEJARYdc2pvZXJkLnNpbW9uc0Bjb2xsYWJvcmEuY28udWswggEiMA0G
-CSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDeEBB3ltTW6IDFWaR3nRu6OdPfy+FQYakHfI/CVYln
-fsry5cTgcP4GPu4qBzGra0GNlb2OkDi5Xtl6rAg7xC3FzMcMhaQQtCGvglRPuaRftCDLlZBiC9U/
-Cx3imWHkT/rhV7Zls2rNdobDCCzUZiu0OTwApvr/+hxZ9ddYSypADQbURyEYg2xUDopbjXkdm6vn
-JNctvl//0hrpgNV2RXQgf9VXESVw3RZ2HVN4/0ZKIhoIKNzEqt5iesle7Ks5NOH0yxb3y9CmnQjG
-rqbrXhgcmxIhQLeqwpuU5MlKqAzk1NO28jhFzjN9hBnmHledeUcwEU6TkhPbHZkatIzTQKhrAgMB
-AAGjggNsMIIDaDAfBgNVHSMEGDAWgBQVABIrE5iymQftHt+ivlcNK2cCzTAdBgNVHQ4EFgQUWkxv
-EVzA0hTuV3K46mLP2A5ZqkgwKAYDVR0RBCEwH4Edc2pvZXJkLnNpbW9uc0Bjb2xsYWJvcmEuY28u
-dWswDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMEBggrBgEFBQcDAjB9BgNVHR8E
-djB0MDigNqA0hjJodHRwOi8vY3JsMy5kaWdpY2VydC5jb20vRGlnaUNlcnRBc3N1cmVkSURDQS0x
-LmNybDA4oDagNIYyaHR0cDovL2NybDQuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0QXNzdXJlZElEQ0Et
-MS5jcmwwggHFBgNVHSAEggG8MIIBuDCCAbQGCmCGSAGG/WwEAQIwggGkMDoGCCsGAQUFBwIBFi5o
-dHRwOi8vd3d3LmRpZ2ljZXJ0LmNvbS9zc2wtY3BzLXJlcG9zaXRvcnkuaHRtMIIBZAYIKwYBBQUH
-AgIwggFWHoIBUgBBAG4AeQAgAHUAcwBlACAAbwBmACAAdABoAGkAcwAgAEMAZQByAHQAaQBmAGkA
-YwBhAHQAZQAgAGMAbwBuAHMAdABpAHQAdQB0AGUAcwAgAGEAYwBjAGUAcAB0AGEAbgBjAGUAIABv
-AGYAIAB0AGgAZQAgAEQAaQBnAGkAQwBlAHIAdAAgAEMAUAAvAEMAUABTACAAYQBuAGQAIAB0AGgA
-ZQAgAFIAZQBsAHkAaQBuAGcAIABQAGEAcgB0AHkAIABBAGcAcgBlAGUAbQBlAG4AdAAgAHcAaABp
-AGMAaAAgAGwAaQBtAGkAdAAgAGwAaQBhAGIAaQBsAGkAdAB5ACAAYQBuAGQAIABhAHIAZQAgAGkA
-bgBjAG8AcgBwAG8AcgBhAHQAZQBkACAAaABlAHIAZQBpAG4AIABiAHkAIAByAGUAZgBlAHIAZQBu
-AGMAZQAuMHcGCCsGAQUFBwEBBGswaTAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuZGlnaWNlcnQu
-Y29tMEEGCCsGAQUFBzAChjVodHRwOi8vY2FjZXJ0cy5kaWdpY2VydC5jb20vRGlnaUNlcnRBc3N1
-cmVkSURDQS0xLmNydDAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBBQUAA4IBAQAHPAsF0prN0WyM
-fm4cRbBkKDfkaR7Y5z7zDzwKG7+68XYUDz8/jeod4aVc3oHltl4cmVQvDE9FOrll65PtbkFAF6yR
-Bvltl/MkxKBw0v0ghfzzjrI/3pGg7jRPSSQf/XLKaGuFvlvKV9bEbqwQxRy9AwbnVENT4L00izzh
-7XykKbuIEW9rvCqSXq5qfyLzyyJl/cUgm2CkDNi9MG6UrRSGHcigirl7kMTl9wXQSiwhb3CAxOoY
-491KTpU4Qm3rpdk8+YwEQn0SuDlMZ18m/06eY7bISAGtmTBmkx/QKXmOz+gtjjRfjIeclf62llzp
-yfXRIOv7F3G3YonqsyymASIEMYIDEDCCAwwCAQEwdjBiMQswCQYDVQQGEwJVUzEVMBMGA1UEChMM
-RGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3d3cuZGlnaWNlcnQuY29tMSEwHwYDVQQDExhEaWdpQ2Vy
-dCBBc3N1cmVkIElEIENBLTECEA2fwUKNhvkL8dN88tUFvVwwCQYFKw4DAhoFAKCCAW8wGAYJKoZI
-hvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTUwMTA1MTA1MDM0WjAjBgkqhkiG
-9w0BCQQxFgQUNQa6f3f0Vb/8aTsedObUFCc5q54wgYUGCSsGAQQBgjcQBDF4MHYwYjELMAkGA1UE
-BhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3LmRpZ2ljZXJ0LmNvbTEh
-MB8GA1UEAxMYRGlnaUNlcnQgQXNzdXJlZCBJRCBDQS0xAhANn8FCjYb5C/HTfPLVBb1cMIGHBgsq
-hkiG9w0BCRACCzF4oHYwYjELMAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcG
-A1UECxMQd3d3LmRpZ2ljZXJ0LmNvbTEhMB8GA1UEAxMYRGlnaUNlcnQgQXNzdXJlZCBJRCBDQS0x
-AhANn8FCjYb5C/HTfPLVBb1cMA0GCSqGSIb3DQEBAQUABIIBANCGMTOfBa8en8/1qeUTY6wcsLvo
-jDV36+GewFYGwF3ZFwqCIZ0eWqlhptqy5GjWbIMyAaThHTTD9gqQSKNAtPIskjNNRcvhLvVUYPOJ
-/oOOYUWmGkUobUpu0yGMrxDnO1QrGVldg+mEkZMu/ZrswQ4pVRJncABystUNDknAnrGc1AXWxhC9
-29Jm6VtcmKtk18P5RtXCUfj2KEjfAKDVZkERjPKRGEwD95p3NOaQEEdav1EyBwEjNsYbuj94vtnl
-gZ21ICKhtElWSxTyKUnIBrtdQySlf17x2jNija9GzvLr1wAVW1iR34VTs2/EwRWdA4Wf64r0VfR6
-64InZfF6PecAAAAAAAA=
+> +       { }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, cm3232_id);
+> +
+> +static const struct of_device_id cm3232_of_match[] = {
+> +       { .compatible = "capella,cm3232" },
+Same here. No need for space before "."
 
-
---=-uBFlSBjtYdjmBiG8Eoci--
+> +       { }
+> +};
+> +
+> +static struct i2c_driver cm3232_driver = {
+> +       .driver = {
+> +               .name   = "cm3232",
+> +               .owner  = THIS_MODULE,
+> +               .of_match_table = of_match_ptr(cm3232_of_match),
+> +       },
+> +       .id_table       = cm3232_id,
+> +       .probe          = cm3232_probe,
+> +       .remove         = cm3232_remove,
+> +};
+> +
+> +module_i2c_driver(cm3232_driver);
+> +
+> +MODULE_AUTHOR("Kevin Tsai <ktsai@capellamicro.com>");
+> +MODULE_DESCRIPTION("CM3232 ambient light sensor driver");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.8.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
