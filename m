@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbbAEBNt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 20:13:49 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:35365 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbbAEBNc (ORCPT
+	id S1753275AbbAEBkX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 20:40:23 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:45881 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963AbbAEBkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 20:13:32 -0500
+	Sun, 4 Jan 2015 20:40:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAD7vxxKb-JvBMzEoJ3m8xsrHJ4KhDqViWhtH-7sBpA-jJgic1w@mail.gmail.com>
+References: <jonathar@broadcom.com>
+	<1419979410-7589-1-git-send-email-jonathar@broadcom.com>
+	<1419979410-7589-3-git-send-email-jonathar@broadcom.com>
+	<CAD7vxxKb-JvBMzEoJ3m8xsrHJ4KhDqViWhtH-7sBpA-jJgic1w@mail.gmail.com>
+Date: Sun, 4 Jan 2015 17:33:06 -0800
+Message-ID: <CAD7vxxL6ZkuODKgZbGq9osURnA3DC7zjHbWr8owG93SVY1h5Bw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] pwm: kona: Remove setting default smooth type and
+ polarity for all channels
 From: Tim Kryger <tim.kryger@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Arun Ramamurthy <arunrama@broadcom.com>,
-        Jonathan Richardson <jonathar@broadcom.com>
-Cc: Ray Jui <rjui@broadcom.com>, Linux PWM <linux-pwm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Tim Kryger <tim.kryger@gmail.com>
-Subject: [PATCH 2/2] drivers: pwm: bcm-kona: Dont set polarity in probe
-Date: Sun,  4 Jan 2015 17:12:56 -0800
-Message-Id: <1420420376-13087-3-git-send-email-tim.kryger@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420420376-13087-1-git-send-email-tim.kryger@gmail.com>
-References: <1420420376-13087-1-git-send-email-tim.kryger@gmail.com>
+To: Jonathan Richardson <jonathar@broadcom.com>
+Cc: Scott Branden <sbranden@broadcom.com>,
+        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
+        Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
+        bcm-kernel-feedback-list@broadcom.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-pwm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arun Ramamurthy <arunrama@broadcom.com>
+On Sun, Jan 4, 2015 at 5:12 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
+> On Tue, Dec 30, 2014 at 2:43 PM, Jonathan Richardson
+> <jonathar@broadcom.com> wrote:
+>> Setting the default polarity in probe to normal for all channels caused
+>> the speaker pwm channel to click. The polarity does need to be set to
+>> normal because the hw default is inversed whereas the pwm framework
+>> defaults to normal. If a channel is enabled without setting the polarity
+>> then the signal would be inversed while linux reports normal. A check
+>> is now done prior to enabling the channel to ensure that the hw polarity
+>> matches the desired polarity and is changed if there is a discrepency. This
+>> prevents unnecessary settings being applied to unused channels but still
+>> ensures the correct polarity to be set.
+>
+> A more direct solution that avoids the potentially undesirable
+> consequences of delaying when polarity changes are written to hardware
+> would be to update the PWM framework to allow for the registration of
+> chips with inversed default polarity.
+>
+> I will post a patch for your review.
 
-Omit setting the polarity to normal during probe and instead use the
-new pwmchip_add_inversed function to register a PWM chip with default
-polarity of inversed for all channels as this is the actual hardware
-default.
-
-Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Signed-off-by: Scott Branden <sbranden@broadcom.com>
-Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
----
-
-This is based on Arun's patch (originally posted by Scott)
-
-https://lkml.org/lkml/2014/11/25/1019
-
-I modified it to use the pwmchip_add_inversed function so the polarity
-could be safely left at the power on default and updated the commit
-message accordingly.
-
- drivers/pwm/pwm-bcm-kona.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
-index 02bc048..32b3ec6 100644
---- a/drivers/pwm/pwm-bcm-kona.c
-+++ b/drivers/pwm/pwm-bcm-kona.c
-@@ -266,18 +266,15 @@ static int kona_pwmc_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	/* Set smooth mode, push/pull, and normal polarity for all channels */
--	for (chan = 0; chan < kp->chip.npwm; chan++) {
--		value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
-+	/* Set push/pull for all channels */
-+	for (chan = 0; chan < kp->chip.npwm; chan++)
- 		value |= (1 << PWM_CONTROL_TYPE_SHIFT(chan));
--		value |= (1 << PWM_CONTROL_POLARITY_SHIFT(chan));
--	}
- 
- 	writel(value, kp->base + PWM_CONTROL_OFFSET);
- 
- 	clk_disable_unprepare(kp->clk);
- 
--	ret = pwmchip_add(&kp->chip);
-+	ret = pwmchip_add_inversed(&kp->chip);
- 	if (ret < 0)
- 		dev_err(&pdev->dev, "failed to add PWM chip: %d\n", ret);
- 
--- 
-1.9.1
-
+Please see:  https://lkml.org/lkml/2015/1/4/199
