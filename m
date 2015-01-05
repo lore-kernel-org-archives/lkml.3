@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805AbbAELwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:52:17 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:42803 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297AbbAELuv (ORCPT
+	id S1753524AbbAELuz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:50:55 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:50307 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287AbbAELuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Jan 2015 06:50:51 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-73-54aa7a98169f
+X-AuditID: cbfec7f4-b7f126d000001e9a-77-54aa7a98f38f
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         linux-kernel@vger.kernel.org, Kukjin Kim <kgene@kernel.org>,
@@ -16,92 +16,145 @@ To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
 Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 1/5] regulator: Copy config passed during registration
-Date: Mon, 05 Jan 2015 12:48:41 +0100
-Message-id: <1420458525-22576-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v5 2/5] regulator: Allow parsing custom properties when using
+ simplified DT parsing
+Date: Mon, 05 Jan 2015 12:48:42 +0100
+Message-id: <1420458525-22576-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1420458525-22576-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420458525-22576-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplluLIzCtJLcpLzFFi42I5/e/4Zd0ZVatCDFbPZ7bYOGM9q8XUh0/Y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplluLIzCtJLcpLzFFi42I5/e/4Zd0ZVatCDA6uVrLYOGM9q8XUh0/Y
 	LOYfOcdq8fqFoUX/49fMFmeb3rBbfLvSwWSx6fE1VovLu+awWcw4v4/Jgctj56y77B6bVnWy
-	eWxeUu/Rt2UVo8fnTXIBrFFcNimpOZllqUX6dglcGX0TrzIW3BGoeLHsEmsD43HeLkZODgkB
-	E4lTM5+yQNhiEhfurWfrYuTiEBJYyiixY+dZFginj0ni97z3bCBVbALGEpuXLwGrEhH4wCix
-	atIPVhCHWWAao8SFU9+ZQaqEBTwl5l98yw5iswioSvRNuQcW5xVwl/i4bTcbxD45iZPHJrOC
-	2JwCHhJdTz+B1QgB1Uzb2cw8gZF3ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQoPuy
-	g3HxMatDjAIcjEo8vB4nVoYIsSaWFVfmHmKU4GBWEuF9lb4qRIg3JbGyKrUoP76oNCe1+BAj
-	EwenVAOjj9U6t73c8yo9lu6/o61Q0P5nQ7rfk1BnR+Vli5+H9Xjsycpw1li56MMEB+OG1WfD
-	61OntK6W4kub+mSO7vEuH2Fu2+9p+e+yXCY4TvZxNurWk9w/LTpk+XbFG//E190+p563drbg
-	q6SPaR/7PjbIf76zxML8zs/feqX6a95d99j3c1rvA5vLSizFGYmGWsxFxYkAQpfkcRgCAAA=
+	eWxeUu/Rt2UVo8fnTXIBrFFcNimpOZllqUX6dglcGe/uXmMuWKBScWzJZZYGxvcyXYycHBIC
+	JhKLmnazQNhiEhfurWfrYuTiEBJYyiixZvomJginj0niwrxd7CBVbALGEpuXLwGrEhH4wCix
+	atIPVhCHWWAao8SFU9+ZQaqEBVIl5jxrYAKxWQRUJb4evQO2g1fAXWLGr+lQ++QkTh6bzApi
+	cwp4SHQ9/QTWKwRUM21nM/MERt4FjAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUKC7ssO
+	xsXHrA4xCnAwKvHwepxYGSLEmlhWXJl7iFGCg1lJhPdV+qoQId6UxMqq1KL8+KLSnNTiQ4xM
+	HJxSDYzpE7d4Ff3RF12wQ9k7Yt479RztTU8MnrPGnYh19/JQ+vP50VG2ymiW2kr7qem10TuP
+	z3jKnetkkmrkll7Alj5tj9KjlUw/mPZ63BZ3yOy0vJTaM1Hqa/5yu5DD7Jq6MrzvF/5lY5eY
+	uOG99NqKy1J+qlya3kZ+IvcZd26wiJ0W3vBpnqdutRJLcUaioRZzUXEiADqjsxUYAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copy the 'regulator_config' structure passed to regulator_register()
-function so the driver could safely modify it after parsing init data.
+When drivers use simplified DT parsing method (they provide
+'regulator_desc.of_match') they still may want to parse custom
+properties for some of the regulators. For example some of the
+regulators support GPIO enable control.
 
-The driver may want to change the config as a result of specific init
-data parsed by regulator core (e.g. when core handled parsing device
-tree).
+Add a driver-supplied callback for such case. This way the regulator
+core parses common bindings offloading a lot of code from drivers and
+still custom properties may be used.
+
+The callback, called for each parsed regulator, may modify the
+'regulator_config' initially passed to regulator_register().
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/regulator/core.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ drivers/regulator/core.c         |  2 +-
+ drivers/regulator/internal.h     |  2 ++
+ drivers/regulator/of_regulator.c | 11 +++++++++++
+ include/linux/regulator/driver.h | 13 +++++++++++++
+ 4 files changed, 27 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index e225711bb8bc..c13b557a560e 100644
+index c13b557a560e..5fae8cabd254 100644
 --- a/drivers/regulator/core.c
 +++ b/drivers/regulator/core.c
-@@ -3581,20 +3581,21 @@ static void rdev_init_debugfs(struct regulator_dev *rdev)
-  */
- struct regulator_dev *
- regulator_register(const struct regulator_desc *regulator_desc,
--		   const struct regulator_config *config)
-+		   const struct regulator_config *cfg)
- {
- 	const struct regulation_constraints *constraints = NULL;
- 	const struct regulator_init_data *init_data;
-+	struct regulator_config *config = NULL;
- 	static atomic_t regulator_no = ATOMIC_INIT(0);
- 	struct regulator_dev *rdev;
- 	struct device *dev;
- 	int ret, i;
- 	const char *supply = NULL;
- 
--	if (regulator_desc == NULL || config == NULL)
-+	if (regulator_desc == NULL || cfg == NULL)
- 		return ERR_PTR(-EINVAL);
- 
--	dev = config->dev;
-+	dev = cfg->dev;
- 	WARN_ON(!dev);
- 
- 	if (regulator_desc->name == NULL || regulator_desc->ops == NULL)
-@@ -3624,6 +3625,16 @@ regulator_register(const struct regulator_desc *regulator_desc,
- 	if (rdev == NULL)
+@@ -3635,7 +3635,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
  		return ERR_PTR(-ENOMEM);
+ 	}
  
-+	/*
-+	 * Duplicate the config so the driver could override it after
-+	 * parsing init data.
-+	 */
-+	config = kmemdup(cfg, sizeof(*cfg), GFP_KERNEL);
-+	if (config == NULL) {
-+		kfree(rdev);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
- 	init_data = regulator_of_get_init_data(dev, regulator_desc,
+-	init_data = regulator_of_get_init_data(dev, regulator_desc,
++	init_data = regulator_of_get_init_data(dev, regulator_desc, config,
  					       &rdev->dev.of_node);
  	if (!init_data) {
-@@ -3752,6 +3763,7 @@ add_dev:
- 	rdev_init_debugfs(rdev);
- out:
- 	mutex_unlock(&regulator_list_mutex);
-+	kfree(config);
- 	return rdev;
+ 		init_data = config->init_data;
+diff --git a/drivers/regulator/internal.h b/drivers/regulator/internal.h
+index 80ba2a35a04b..c74ac8734023 100644
+--- a/drivers/regulator/internal.h
++++ b/drivers/regulator/internal.h
+@@ -38,11 +38,13 @@ struct regulator {
+ #ifdef CONFIG_OF
+ struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
+ 			         const struct regulator_desc *desc,
++				 struct regulator_config *config,
+ 				 struct device_node **node);
+ #else
+ static inline struct regulator_init_data *
+ regulator_of_get_init_data(struct device *dev,
+ 			   const struct regulator_desc *desc,
++			   struct regulator_config *config,
+ 			   struct device_node **node)
+ {
+ 	return NULL;
+diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+index 91eaaf010524..24e812c48d93 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -270,6 +270,7 @@ EXPORT_SYMBOL_GPL(of_regulator_match);
  
- unset_supplies:
+ struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
+ 					    const struct regulator_desc *desc,
++					    struct regulator_config *config,
+ 					    struct device_node **node)
+ {
+ 	struct device_node *search, *child;
+@@ -307,6 +308,16 @@ struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
+ 			break;
+ 		}
+ 
++		if (desc->of_parse_cb) {
++			if (desc->of_parse_cb(child, desc, config)) {
++				dev_err(dev,
++					"driver callback failed to parse DT for regulator %s\n",
++					child->name);
++				init_data = NULL;
++				break;
++			}
++		}
++
+ 		of_node_get(child);
+ 		*node = child;
+ 		break;
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 5f1e9ca47417..d4ad5b5a02bb 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -21,6 +21,7 @@
+ 
+ struct regmap;
+ struct regulator_dev;
++struct regulator_config;
+ struct regulator_init_data;
+ struct regulator_enable_gpio;
+ 
+@@ -205,6 +206,15 @@ enum regulator_type {
+  * @supply_name: Identifying the regulator supply
+  * @of_match: Name used to identify regulator in DT.
+  * @regulators_node: Name of node containing regulator definitions in DT.
++ * @of_parse_cb: Optional callback called only if of_match is present.
++ *               Will be called for each regulator parsed from DT, during
++ *               init_data parsing.
++ *               The regulator_config passed as argument to the callback will
++ *               be a copy of config passed to regulator_register, valid only
++ *               for this particular call. Callback may freely change the
++ *               config but it cannot store it for later usage.
++ *               Callback should return 0 on success or negative ERRNO
++ *               indicating failure.
+  * @id: Numerical identifier for the regulator.
+  * @ops: Regulator operations table.
+  * @irq: Interrupt number for the regulator.
+@@ -251,6 +261,9 @@ struct regulator_desc {
+ 	const char *supply_name;
+ 	const char *of_match;
+ 	const char *regulators_node;
++	int (*of_parse_cb)(struct device_node *,
++			    const struct regulator_desc *,
++			    struct regulator_config *);
+ 	int id;
+ 	bool continuous_voltage_range;
+ 	unsigned n_voltages;
 -- 
 1.9.1
 
