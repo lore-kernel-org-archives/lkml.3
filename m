@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbbAEN6I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:58:08 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:53598 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923AbbAEN6G (ORCPT
+	id S1754131AbbAEOAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:00:36 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:21268 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153AbbAEOAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:58:06 -0500
-Date: Mon, 5 Jan 2015 14:57:48 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, "acme@kernel.org" <acme@kernel.org>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "namhyung@kernel.org" <namhyung@kernel.org>
-Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
-Message-ID: <20150105135748.GT30905@twins.programming.kicks-ass.net>
-References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
- <20141204142330.GB10406@krava.brq.redhat.com>
- <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
+	Mon, 5 Jan 2015 09:00:33 -0500
+Date: Mon, 5 Jan 2015 16:58:21 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Jaroslav Kysela <perex@perex.cz>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Russell King <linux@arm.linux.org.uk>, Takashi Iwai <tiwai@suse.de>,
+        Thibaut Varene <T-Bone@parisc-linux.org>, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 11/13] ALSA: Deletion of checks before the function call
+ "iounmap"
+Message-ID: <20150105135821.GD15033@mwanda>
+References: <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54A9355F.4050102@users.sourceforge.net>
+ <54A941C1.4020906@users.sourceforge.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770167D124@shsmsx102.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54A941C1.4020906@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 04, 2014 at 02:49:52PM +0000, Liang, Kan wrote:
-> > I'll test it once I get hands on Haswel server again, I guess we wait for the
-> > kernel change to go in first anyway, right?
-> >
-> 
-> I'm not sure, let's ask Peter.
-> 
-> Peter?
+On Sun, Jan 04, 2015 at 02:36:01PM +0100, SF Markus Elfring wrote:
+>  	/* unmap PCI memory space, mapped during device init. */
+> -	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
+> -		if (pci.ap_mem_base[idx])
+> -			iounmap(pci.ap_mem_base[idx]);
+> -	}
+> +	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; ++idx)
+> +		iounmap(pci.ap_mem_base[idx]);
+>  
 
-Ok so only 3/3 was missing right? I handed the kernel bits to Ingo when
-I 'left' with a note that userspace was pending. It seems that is now
-resolved.
+Don't do the gratuitous idx++ to ++idx changes.  You do it a couple
+other places as well.  It belongs in a separate patch if you really feel
+it is worth doing.  (It is not a clean up and it is not worth doing).
 
-I stuck 3/3 at the end (it seems to still apply -- yay!) and will send
-it together with the kernel bits.
+regards,
+dan carpenter
+
