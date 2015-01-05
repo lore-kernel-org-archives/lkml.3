@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbbAEBhU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 20:37:20 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55627 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118AbbAEBhS (ORCPT
+	id S1753223AbbAEBhi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 20:37:38 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57173 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979AbbAEBhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 20:37:18 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+OlRafy7bIf1GV0ibJ1r5fFStNs/xE+Vw=
-X-DKIM: OpenDKIM Filter v2.0.1 titan AD36B63CDA4
-Date: Sun, 4 Jan 2015 20:36:56 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3] irqchip: gic: Allow interrupt level to be set for
- PPIs.
-Message-ID: <20150105013656.GA3486@titan.lakedaemon.net>
-References: <1417437909-20923-1-git-send-email-Liviu.Dudau@arm.com>
- <20141209122919.GR821@e106497-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141209122919.GR821@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 4 Jan 2015 20:37:37 -0500
+X-Original-SENDERIP: 10.177.220.158
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Subject: [PATCH 0/6] mm/slab: optimize allocation fastpath
+Date: Mon,  5 Jan 2015 10:37:25 +0900
+Message-Id: <1420421851-3281-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 12:29:19PM +0000, Liviu Dudau wrote:
-> On Mon, Dec 01, 2014 at 12:45:09PM +0000, Liviu Dudau wrote:
-> > During a recent cleanup of the arm64 DTs it has become clear that
-> > the handling of PPIs in xxxx_set_type() is incorrect. The ARM TRMs
-> > for GICv2 and later allow for "implementation defined" support for
-> > setting the edge or level type of the PPI interrupts and don't restrict
-> > the activation level of the signal. Current ARM implementations
-> > do restrict the PPI level type to IRQ_TYPE_LEVEL_LOW, but licensees
-> > of the IP can decide to shoot themselves in the foot at any time.
-> > 
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > ---
-> > 
-> > Made a stupid mistake in v2 and got my bit test confused with logical test.
-> 
-> Gentle ping!
-> 
-> Any comments here? Russell, are you OK with this approach?
+SLAB always disable irq before executing any object alloc/free operation.
+This is really painful in terms of performance. Benchmark result that does
+alloc/free repeatedly shows that each alloc/free is rougly 2 times slower
+than SLUB's one (27 ns : 14 ns). To improve performance, this patchset
+try to implement allocation fastpath without disabling irq.
 
-Now that the holidays are over, I'd like to get some feedback from Marc
-at a minimum...
+This is a similar way to implement allocation fastpath in SLUB.
+Transaction id is introduced and updated on every operation. In allocation
+fastpath, object in array cache is read speculartively. And then, pointer
+pointing object position in array cache and transaction id are updated
+simultaneously through this_cpu_cmpxchg_double(). If tid is unchanged
+until this updating, it ensures that there is no concurrent clients
+allocating/freeing object to this slab. So allocation could succeed
+without disabling irq.
 
-thx,
+Above mentioned benchmark shows that alloc/free fastpath performance
+is improved roughly 22%. (27 ns -> 21 ns).
 
-Jason.
+Unfortunately, I cannot optimize free fastpath, because speculartively
+writing freeing object pointer into array cache cannot be possible.
+If anyone have a good idea to optimize free fastpath, please let me know.
+
+Thanks.
+
+Joonsoo Kim (6):
+  mm/slab: fix gfp flags of percpu allocation at boot phase
+  mm/slab: remove kmemleak_erase() call
+  mm/slab: clean-up __ac_get_obj() to prepare future changes
+  mm/slab: rearrange irq management
+  mm/slab: cleanup ____cache_alloc()
+  mm/slab: allocation fastpath without disabling irq
+
+ include/linux/kmemleak.h |    8 --
+ mm/slab.c                |  257 +++++++++++++++++++++++++++++++---------------
+ 2 files changed, 176 insertions(+), 89 deletions(-)
+
+-- 
+1.7.9.5
+
