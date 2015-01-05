@@ -1,87 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbbAEKAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:00:45 -0500
-Received: from mail-by2on0144.outbound.protection.outlook.com ([207.46.100.144]:64431
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751121AbbAEKAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:00:43 -0500
-Message-ID: <54AA61D2.1040002@freescale.com>
-Date: Mon, 5 Jan 2015 18:05:06 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
+	id S1753474AbbAEKHG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:07:06 -0500
+Received: from sf1.bxl.stone.is ([87.238.167.36]:54583 "EHLO sf1.bxl.stone.is"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273AbbAEKHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:07:01 -0500
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <54AA6231.5040101@acm.org>
+Date: Mon, 05 Jan 2015 11:06:41 +0100
+From: Bart Van Assche <bvanassche@acm.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: <dri-devel@lists.freedesktop.org>, <stefan.wahren@i2se.com>,
-        <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <kernel@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        <a.hajda@samsung.com>, <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <andyshrk@gmail.com>
-Subject: Re: [PATCH RFC v7 16/21] drm: panel: Add support for Himax HX8369A
- MIPI DSI panel
-References: <1419910451-15268-1-git-send-email-Ying.Liu@freescale.com>
- <1419910451-15268-17-git-send-email-Ying.Liu@freescale.com>
- <20150105085424.GP2711@phenom.ffwll.local>
-In-Reply-To: <20150105085424.GP2711@phenom.ffwll.local>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Sabrina Dubroca <sd@queasysnail.net>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on linux-next
+References: <20141029155620.GA4886@kria> <20141029180734.GQ12706@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410291918060.5308@nanos> <20141029193603.GS12706@worktop.programming.kicks-ass.net> <20141202163530.GA19420@kria>
+In-Reply-To: <20141202163530.GA19420@kria>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(479174004)(189002)(51704005)(24454002)(377454003)(199003)(2201001)(50466002)(97736003)(65956001)(65806001)(4396001)(36756003)(23746002)(2950100001)(77156002)(62966003)(68736005)(77096005)(92566001)(99396003)(120916001)(84676001)(83506001)(19580405001)(80316001)(19580395003)(87266999)(54356999)(86362001)(6806004)(104016003)(87936001)(106466001)(105606002)(47776003)(64706001)(20776003)(107886001)(76176999)(50986999)(107046002)(65816999)(85426001)(46102003)(21056001)(31966008)(33656002)(921003)(1121003)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0635;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:CY1PR0301MB0635;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0635;
-X-Forefront-PRVS: 0447DB1C71
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0635;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 10:00:40.0108
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0635
+X-Filter-ID: s0sct1PQhAABKnZB5plbIYrcAt68paBzxGNV4bZScc8DDDH9IcRzs4ldqK5vEMwbuZt+PpRPW1h0
+ yigPev+a+xPfldKzuJPXOtlQy6CerCucKeF7cnfEDaU4uWev4XxITtMxQ0r0fzIlxS2cy8YTUsFr
+ pZdaq+BCu90GH4R8NZlq5nVSHx6HfgQ+mNfWMu0Xb4BcbCUUDkSDryyTxLFNrKWkIvD5dv0Ys3LQ
+ YBKCmf23wL2Y4F0412ezGCyTUPanjX4dmbjHuB9XXavPbeVA0qbDNqfbnqFv/RRVV8+drYe2Z/+T
+ EGTrNArD+yzRk5+QRS1SBS4NdDPZvgM0xf/+ywhW0lr5GKYox2HMYMWL/Gq6/LC8fIr+o2PTyzwb
+ IRBgoJmRXV1dP/tOC4B0z0hUqa+Ln89F976wnGIs0GswJSnlgTl6fJxyntEfhZCKje4ZowN3TuKb
+ dxely6NczQbrfOHXgQ9YVFCeKdQbUxRelTE37CgHhlCYKFAFYSG0HH07RdUb66pqYAGPsHnfde2g
+ sQIUFW3nE6W+p6XUHoN9n2IRxcJV+m8q0YzC/hf5MMnnXIz52/8cMid9thISoDAJMOfnPadBpPx3
+ 4iZ7zgupsYUufA8kn04GPwlkALZGivcxme4bPsB8V7MXmgIm96hFx4TQGMbESva0q3Q4fBLCHBUD
+ wx4T7HCAozCuhJa/y4Npp3lkYb5oHl6M0x3YCZ4kJXtwiFqyNzRdU+uiDe6Y+N0suVaOsTohfZcZ
+ Am3ZkGbkwuDV395FgBjCTs45+hnH8geYUOp7A73HI6oJg7w/VodVrEuplbOdig7nFAukRgZ9cixD
+ z6TLWXvYHXEhLaJtyQ==
+X-Report-Abuse-To: spam@sf1.bxl.stone.is
+X-Filter-Fingerprint: IFrWXGses7OKB5S5G8/dJR8Z5VD7FZiiT9tK6RAzQuhA3cTUQ1R++keuE7RDJ8Kg3RbMLUalw1oC
+ mj99/u+PoqoVy8a3lsStJtAvpObFX0Wok1JBYnOLzfRIhlEHQynLUpndEJ0YoaLytXXo8BMTaX2p
+ Mk7LBarWD9Fj4R3eIu5cOy/3Wm9qfF/CZNvP/2Kowv61T+KDYyYtREgszdyFwv8IxCB3p/oCKvxr
+ eyISh3JGb7OS5oVgiO+kDxZrVPLz3MmEGC2PrUKqLq5WmHK+Nw==
+X-Originating-IP: 87.238.167.34
+X-SpamExperts-Domain: stone.is
+X-SpamExperts-Username: 87.238.167.34
+Authentication-Results: bxl.stone.is; auth=pass smtp.auth=87.238.167.34
+X-SpamExperts-Outgoing-Class: ham
+X-SpamExperts-Outgoing-Evidence: Combined (0.04)
+X-Recommended-Action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On 12/02/14 17:35, Sabrina Dubroca wrote:
+> @@ -3751,10 +3753,8 @@ void e1000_update_stats(struct e1000_adapter *adapter)
+>   * @irq: interrupt number
+>   * @data: pointer to a network interface device structure
+>   **/
+> -static irqreturn_t e1000_intr(int irq, void *data)
+> +static irqreturn_t __e1000_intr(int irq, struct e1000_adapter *adapter)
+>  {
+> -	struct net_device *netdev = data;
+> -	struct e1000_adapter *adapter = netdev_priv(netdev);
+>  	struct e1000_hw *hw = &adapter->hw;
+>  	u32 icr = er32(ICR);
+>  
+> @@ -3796,6 +3796,19 @@ static irqreturn_t e1000_intr(int irq, void *data)
+>  	return IRQ_HANDLED;
+>  }
+>  
+> +static irqreturn_t e1000_intr(int irq, void *data)
+> +{
+> +	struct net_device *netdev = data;
+> +	struct e1000_adapter *adapter = netdev_priv(netdev);
+> +	irqreturn_t ret;
+> +
+> +	netpoll_irq_lock(&adapter->netpoll_lock);
+> +	ret = __e1000_intr(irq, adapter);
+> +	netpoll_irq_unlock(&adapter->netpoll_lock);
+> +
+> +	return ret;
+> +}
+> +
+>  /**
+>   * e1000_clean - NAPI Rx polling callback
+>   * @adapter: board private structure
+> @@ -5220,9 +5233,7 @@ static void e1000_netpoll(struct net_device *netdev)
+>  {
+>  	struct e1000_adapter *adapter = netdev_priv(netdev);
+>  
+> -	disable_irq(adapter->pdev->irq);
+>  	e1000_intr(adapter->pdev->irq, netdev);
+> -	enable_irq(adapter->pdev->irq);
+>  }
+>  #endif
 
-On 01/05/2015 04:54 PM, Daniel Vetter wrote:
-> On Tue, Dec 30, 2014 at 11:34:06AM +0800, Liu Ying wrote:
->> This patch adds support for Himax HX8369A MIPI DSI panel.
->>
->> Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>
->> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> ---
->> v6->v7:
->>   * Address Andrzej Hajda's following comments.
->>   * Simplify the return logic in hx8369a_dcs_write().
->>   * Replace the macro hx8369a_dsi_init_helper() with a function array to improve
->>     the code quality.
->>   * Handle error cases during getting gpios in probe().
->>   * Add 'Reviewed-by: Andrzej Hajda <a.hajda@samsung.com>'.
->
-> If you only update one patch in a big series it's imo better to just
-> resend that one to avoid spamming the mailing list with noise. Imo it also
-> helps to keep the discussion all nicely grouped together.
+Sorry but this patch looks incorrect to me. Since e1000_netpoll() can be
+called with interrupts disabled e1000_intr() must not enable interrupts
+unconditionally. Shouldn't the save / restore variants be used in
+e1000_intr() instead of spin_lock_irq() and spin_unlock_irq() ? See also
+the invocation of call_console_drivers() in console_unlock().
 
-Thanks for your suggestion.  I would try to make people happy about
-the way the series is submitted for review.
-
->
-> In any case please give a short overview of what changed in the cover
-> letter when resending the entire series so that people don't have to go
-> through all the invidual patches.
-
-Yes, absolutely.  I gave short overviews of what changed in the very
-beginning of the cover letters from v2 to v8 and I will do this in
-every necessary follow-up version.
-
-Regards,
-Liu Ying
-
-> -Daniel
->
+Bart.
