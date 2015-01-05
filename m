@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291AbbAETRm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:17:42 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:33103 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405AbbAETRk (ORCPT
+	id S1754130AbbAETVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:21:44 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50075 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165AbbAETVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:17:40 -0500
+	Mon, 5 Jan 2015 14:21:41 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19vxiAorcM0rjrmETB+ITv+
+Date: Mon, 5 Jan 2015 11:17:45 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Nishanth Menon <nm@ti.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Simon Horman <horms@verge.net.au>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Subject: Re: [PATCH] ARM: omap2plus_defconfig: use CONFIG_CPUFREQ_DT
+Message-ID: <20150105191745.GI4081@atomide.com>
+References: <1418404738-19124-1-git-send-email-nm@ti.com>
+ <CAMuHMdW4CQz_n8b4-JOogDvc6ggBjWrFWcqr4Tezojj+mJD6pw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20150105134514.GS30905@twins.programming.kicks-ass.net>
-References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
-	<1415292718-19785-4-git-send-email-pawel.moll@arm.com>
-	<20150105134514.GS30905@twins.programming.kicks-ass.net>
-Date: Mon, 5 Jan 2015 11:17:39 -0800
-Message-ID: <CALAqxLV+-XXqvOnKsuyBGD3ak7X8KJ05trW_kRT3WQi5sYzKJQ@mail.gmail.com>
-Subject: Re: [PATCH v4 3/3] perf: Sample additional clock value
-From: John Stultz <john.stultz@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Pawel Moll <pawel.moll@arm.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdW4CQz_n8b4-JOogDvc6ggBjWrFWcqr4Tezojj+mJD6pw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 5:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, Nov 06, 2014 at 04:51:58PM +0000, Pawel Moll wrote:
->> Currently three clocks are implemented: CLOCK_REALITME = 0,
->> CLOCK_MONOTONIC = 1 and CLOCK_MONOTONIC_RAW = 2. The clock field is
->> 5 bits wide to allow for future extension to custom, non-POSIX clock
->> sources(MAX_CLOCK for those is 16, see include/uapi/linux/time.h) like
->> ARM CoreSight (hardware trace) timestamp generator.
->
->> @@ -304,7 +305,16 @@ struct perf_event_attr {
->>                               mmap2          :  1, /* include mmap with inode data     */
->>                               comm_exec      :  1, /* flag comm events that are due to an exec */
->>                               uevents        :  1, /* allow uevents into the buffer */
->> -                             __reserved_1   : 38;
->> +
->> +                             /*
->> +                              * clock: one of the POSIX clock IDs:
->> +                              *
->> +                              * 0 - CLOCK_REALTIME
->> +                              * 1 - CLOCK_MONOTONIC
->> +                              * 4 - CLOCK_MONOTONIC_RAW
->> +                              */
->> +                             clock          :  5, /* clock type */
->> +                             __reserved_1   : 33;
->>
->>       union {
->>               __u32           wakeup_events;    /* wakeup every n events */
->
-> This would put a constraint on actually changing MAX_CLOCKS, are the
-> time people OK with that? Thomas, John?
+* Geert Uytterhoeven <geert@linux-m68k.org> [141215 02:44]:
+> On Fri, Dec 12, 2014 at 6:18 PM, Nishanth Menon <nm@ti.com> wrote:
+> > CONFIG_GENERIC_CPUFREQ_CPU0 disappeared with commit bbcf071969b20f
+> > ("cpufreq: cpu0: rename driver and internals to 'cpufreq_dt'")
+> >
+> > Use the renamed CONFIG_CPUFREQ_DT generic driver. It looks like with
+> > v3.18-rc1, commit bbcf071969b20f and fdc509b15eb3eb came in via
+> > different trees causing the resultant v3.18-rc1 to be non-functional for
+> > cpufreq as default supported with omap2plus_defconfig.
+> >
+> > Fixes: fdc509b15eb3eb ("ARM: omap2plus_defconfig: Add cpufreq to defconfig")
+> > Signed-off-by: Nishanth Menon <nm@ti.com>
+> > ---
+> >
+> > NOTE: as of v3.18 tag, The following still need to be fixed - I do not have all
+> > the platforms impacted to make a generic change, so CCying folks who might be interested
+> >
+> > arch/arm/configs/shmobile_defconfig:CONFIG_GENERIC_CPUFREQ_CPU0=y
+> 
+> Thanks!
+> 
+> FTR: this has been fixed in Simon's defconfig-for-v3.20 branch.
+> 
+> > arch/arm/configs/multi_v7_defconfig:CONFIG_GENERIC_CPUFREQ_CPU0=y
 
-Yea, I'd not want to enshrine MAX_CLOCKS if we can avoid it. We're
-getting a bit close to it these days.
+Oops looks like this is still missing from omap2plus_defconfig, so
+applying into omap-for-v3.19/fixes.
 
-thanks
--john
+Regards,
+
+Tony
