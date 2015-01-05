@@ -1,108 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbbAERtR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:49:17 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:56718 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbbAERtP (ORCPT
+	id S1754093AbbAERuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:50:37 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:43767 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbbAERue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:49:15 -0500
-Date: Mon, 5 Jan 2015 12:49:10 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 1/4] can: kvaser_usb: Don't free packets when tight on URBs
-Message-ID: <20150105174910.GA6304@linux>
-References: <20141223154654.GB6460@vivalin-002>
+	Mon, 5 Jan 2015 12:50:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141223154654.GB6460@vivalin-002>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420476166.2652.14.camel@perches.com>
+References: <1420071030-888-1-git-send-email-ktsai@capellamicro.com>
+	<CAEnQRZBD2NMYRp1cW0J2ssT4CT=0jSM=X6ByHQiUrA0ueV8fRA@mail.gmail.com>
+	<1420463396.2652.8.camel@perches.com>
+	<CAEnQRZBmwurFCJU4E4ArO8waU+YcGWrRYr3DRVxq9haduX2t=w@mail.gmail.com>
+	<1420476166.2652.14.camel@perches.com>
+Date: Mon, 5 Jan 2015 19:50:32 +0200
+X-Google-Sender-Auth: KVpdkJw1-ZmzxvVKmR_kmN_3HcQ
+Message-ID: <CAEnQRZA6=FK8CaJvh7kxOEAyDLQQE77xZ02UofLUUT67yZG8bg@mail.gmail.com>
+Subject: Re: [PATCH V1 1/1] iio: Added Capella cm3232 ambient light sensor driver.
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Daniel Baluta <daniel.baluta@intel.com>,
+        Kevin Tsai <ktsai@capellamicro.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Archana Patni <archana.patni@linux.intel.com>,
+        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+On Mon, Jan 5, 2015 at 6:42 PM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2015-01-05 at 16:20 +0200, Daniel Baluta wrote:
+>> On Mon, Jan 5, 2015 at 3:09 PM, Joe Perches <joe@perches.com> wrote:
+>> > On Mon, 2015-01-05 at 12:51 +0200, Daniel Baluta wrote:
+>> >> On Thu, Jan 1, 2015 at 2:10 AM, Kevin Tsai <ktsai@capellamicro.com> wrote:
+>> >> > CM3232 is an advanced ambient light sensor with I2C protocol interface.
+>> >> > The I2C slave address is internally hardwired as 0x10 (7-bit).  Writing
+>> >> > to configure register is byte mode, but reading ALS register requests to
+>> >> > use word mode for 16-bit resolution.
+> []
+>> >> You could directly return i2c_smbus_write_byte_data(..).
+>> >
+>> > Sometimes it's better to return a specific value
+>> > for the error instead of depending on correctness
+>> > of all the indirect functions in the call chain.
+>> >
+>> > In this case, all the smbus_xfer functions must
+>> > return 0 on success.  Do they?
+>>
+>> Yes.
+>>
+>> http://lxr.free-electrons.com/source/drivers/i2c/i2c-core.c#L2845
+>
+> This doesn't show that adapter->algo->smbus_xfer()
+> returns 0, you have to look at the code for that
+> indirectly called function.
 
-Flooding the Kvaser CAN to USB dongle with multiple reads and
-writes in high frequency caused seemingly-random panics in the
-kernel.
+I based my answer on the comment at the top of the function:
 
-On further inspection, it seems the driver erroneously freed the
-to-be-transmitted packet upon getting tight on URBs and returning
-NETDEV_TX_BUSY, leading to invalid memory writes and double frees
-at a later point in time.
+2845  * This executes an SMBus protocol operation, and returns a negative
+2846  * errno code else zero on success.
 
-Note:
-
-Finding no more URBs/transmit-contexts and returning NETDEV_TX_BUSY
-is a driver bug in and out of itself: it means that our start/stop
-queue flow control is broken.
-
-This patch only fixes the (buggy) error handling code; the root
-cause shall be fixed in a later commit.
-
-Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
-Acked-by: Olivier Sobrie <olivier@sobrie.be>
----
- drivers/net/can/usb/kvaser_usb.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
-** V3 Changelog:
-- checkpatch.pl suggestions ('net/' commenting style)
-
-diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
-index 541fb7a..2e7d513 100644
---- a/drivers/net/can/usb/kvaser_usb.c
-+++ b/drivers/net/can/usb/kvaser_usb.c
-@@ -1294,12 +1294,14 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
- 	if (!urb) {
- 		netdev_err(netdev, "No memory left for URBs\n");
- 		stats->tx_dropped++;
--		goto nourbmem;
-+		dev_kfree_skb(skb);
-+		return NETDEV_TX_OK;
- 	}
- 
- 	buf = kmalloc(sizeof(struct kvaser_msg), GFP_ATOMIC);
- 	if (!buf) {
- 		stats->tx_dropped++;
-+		dev_kfree_skb(skb);
- 		goto nobufmem;
- 	}
- 
-@@ -1334,6 +1336,7 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
- 		}
- 	}
- 
-+	/* This should never happen; it implies a flow control bug */
- 	if (!context) {
- 		netdev_warn(netdev, "cannot find free context\n");
- 		ret =  NETDEV_TX_BUSY;
-@@ -1364,9 +1367,6 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
- 	if (unlikely(err)) {
- 		can_free_echo_skb(netdev, context->echo_index);
- 
--		skb = NULL; /* set to NULL to avoid double free in
--			     * dev_kfree_skb(skb) */
--
- 		atomic_dec(&priv->active_tx_urbs);
- 		usb_unanchor_urb(urb);
- 
-@@ -1388,8 +1388,6 @@ releasebuf:
- 	kfree(buf);
- nobufmem:
- 	usb_free_urb(urb);
--nourbmem:
--	dev_kfree_skb(skb);
- 	return ret;
- }
- 
-
+>
+>> Also, I guess kbuild test robot will complain about it, like here:
+>>
+>> http://marc.info/?l=linux-kernel&m=141963536230419&w=2
+>
+> Is the kbuild test robot now submitting patches for all
+> possible coccinelle simplifications?  I don't think so.
