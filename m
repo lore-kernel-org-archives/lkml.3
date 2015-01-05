@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927AbbAEKyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:54:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46946 "EHLO mx2.suse.de"
+	id S1753973AbbAEKzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:55:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46980 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753899AbbAEKyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:54:23 -0500
+	id S1752145AbbAEKyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:54:24 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
@@ -18,9 +18,9 @@ Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
         Linux-MM <linux-mm@kvack.org>,
         LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/10] mm: numa: Do not trap faults on the huge zero page
-Date: Mon,  5 Jan 2015 10:54:08 +0000
-Message-Id: <1420455251-13644-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/10] x86: mm: Restore original pte_special check
+Date: Mon,  5 Jan 2015 10:54:09 +0000
+Message-Id: <1420455251-13644-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1420455251-13644-1-git-send-email-mgorman@suse.de>
 References: <1420455251-13644-1-git-send-email-mgorman@suse.de>
@@ -28,108 +28,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Faults on the huge zero page are pointless and there is a BUG_ON
-to catch them during fault time. This patch reintroduces a check
-that avoids marking the zero page PAGE_NONE.
+Commit b38af4721f59 ("x86,mm: fix pte_special versus pte_numa") adjusted
+the pte_special check to take into account that a special pte had SPECIAL
+and neither PRESENT nor PROTNONE. Now that NUMA hinting PTEs are no
+longer modifying _PAGE_PRESENT it should be safe to restore the original
+pte_special behaviour.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/huge_mm.h |  3 ++-
- mm/huge_memory.c        | 13 ++++++++++++-
- mm/memory.c             |  1 -
- mm/mprotect.c           | 15 ++++++++++++++-
- 4 files changed, 28 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/pgtable.h | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 554bbe3..ad9051b 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -31,7 +31,8 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
- 			 unsigned long new_addr, unsigned long old_end,
- 			 pmd_t *old_pmd, pmd_t *new_pmd);
- extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--			unsigned long addr, pgprot_t newprot);
-+			unsigned long addr, pgprot_t newprot,
-+			int prot_numa);
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index b9a13e9..4673d6e 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -137,13 +137,7 @@ static inline int pte_exec(pte_t pte)
  
- enum transparent_hugepage_flag {
- 	TRANSPARENT_HUGEPAGE_FLAG,
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 5618e22..ad2a3ee 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1502,7 +1502,7 @@ out:
-  *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
-  */
- int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
--		unsigned long addr, pgprot_t newprot)
-+		unsigned long addr, pgprot_t newprot, int prot_numa)
+ static inline int pte_special(pte_t pte)
  {
- 	struct mm_struct *mm = vma->vm_mm;
- 	spinlock_t *ptl;
-@@ -1510,6 +1510,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-	/*
+-	 * See CONFIG_NUMA_BALANCING pte_numa in include/asm-generic/pgtable.h.
+-	 * On x86 we have _PAGE_BIT_NUMA == _PAGE_BIT_GLOBAL+1 ==
+-	 * __PAGE_BIT_SOFTW1 == _PAGE_BIT_SPECIAL.
+-	 */
+-	return (pte_flags(pte) & _PAGE_SPECIAL) &&
+-		(pte_flags(pte) & (_PAGE_PRESENT|_PAGE_PROTNONE));
++	return pte_flags(pte) & _PAGE_SPECIAL;
+ }
  
- 	if (__pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
- 		pmd_t entry;
-+
-+		/*
-+		 * Avoid trapping faults against the zero page. The read-only
-+		 * data is likely to be read-cached on the local CPU and
-+		 * local/remote hits to the zero page are not interesting.
-+		 */
-+		if (prot_numa && is_huge_zero_pmd(*pmd)) {
-+			spin_unlock(ptl);
-+			return 0;
-+		}
-+
- 		ret = 1;
- 		entry = pmdp_get_and_clear_notify(mm, addr, pmd);
- 		entry = pmd_modify(entry, newprot);
-diff --git a/mm/memory.c b/mm/memory.c
-index debe3f4..3c50046 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3135,7 +3135,6 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		pte_unmap_unlock(ptep, ptl);
- 		return 0;
- 	}
--	BUG_ON(is_zero_pfn(page_to_pfn(page)));
- 
- 	/*
- 	 * Avoid grouping on DSO/COW pages in specific and RO pages
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index dc65c0f..33dfafb 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -75,6 +75,19 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		oldpte = *pte;
- 		if (pte_present(oldpte)) {
- 			pte_t ptent;
-+
-+			/*
-+			 * Avoid trapping faults against the zero or KSM
-+			 * pages. See similar comment in change_huge_pmd.
-+			 */
-+			if (prot_numa) {
-+				struct page *page;
-+
-+				page = vm_normal_page(vma, addr, oldpte);
-+				if (!page || PageKsm(page))
-+					continue;
-+			}
-+
- 			ptent = ptep_modify_prot_start(mm, addr, pte);
- 			ptent = pte_modify(ptent, newprot);
- 
-@@ -141,7 +154,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else {
- 				int nr_ptes = change_huge_pmd(vma, pmd, addr,
--						newprot);
-+						newprot, prot_numa);
- 
- 				if (nr_ptes) {
- 					if (nr_ptes == HPAGE_PMD_NR) {
+ static inline unsigned long pte_pfn(pte_t pte)
 -- 
 2.1.2
 
