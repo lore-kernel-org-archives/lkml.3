@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbbAEQVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:21:50 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:46075 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbbAEQVt (ORCPT
+	id S1753270AbbAEQ0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:26:12 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63080 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbbAEQ0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:21:49 -0500
-Date: Mon, 5 Jan 2015 11:21:45 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH v1] libata: export ata_get_cmd_descript()
-Message-ID: <20150105162145.GO15833@htj.dyndns.org>
-References: <1418397391-13668-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <548B2524.9050806@cogentembedded.com>
- <1418405747.17201.64.camel@linux.intel.com>
+	Mon, 5 Jan 2015 11:26:10 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX186JFIQz9odF+pHxUzVNYOi
+Date: Mon, 5 Jan 2015 08:22:14 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linus.walleij@linaro.org, drake@endlessm.com, loeliger@gmail.com,
+        Mark Rutland <mark.rutland@arm.com>, nm@ti.com, khilman@linaro.org
+Subject: Re: [PATCH v11 2/9] ARM: l2c: use l2c_write_sec() for restoring
+ latency and filter regs
+Message-ID: <20150105162214.GB4081@atomide.com>
+References: <1420460348-20302-1-git-send-email-m.szyprowski@samsung.com>
+ <1420460348-20302-3-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418405747.17201.64.camel@linux.intel.com>
+In-Reply-To: <1420460348-20302-3-git-send-email-m.szyprowski@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 07:35:47PM +0200, Andy Shevchenko wrote:
-> On Fri, 2014-12-12 at 20:25 +0300, Sergei Shtylyov wrote:
-> > Hello.
-> > 
-> > On 12/12/2014 06:16 PM, Andy Shevchenko wrote:
-> > 
-> > > The driver sata_dwc_460ex is using this symbol. To build it as a module we have
-> > > to have the symbol exported. This patch adds EXPORT_SYMBOL() macro for that.
-> > 
-> > > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> > > ---
-> > >   drivers/ata/libata-eh.c | 1 +
-> > >   1 file changed, 1 insertion(+)
-> > 
-> > > diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-> > > index 3dbec89..74fef87 100644
-> > > --- a/drivers/ata/libata-eh.c
-> > > +++ b/drivers/ata/libata-eh.c
-> > > @@ -2389,6 +2389,7 @@ const char *ata_get_cmd_descript(u8 command)
-> > >
-> > >   	return NULL;
-> > >   }
-> > > +EXPORT_SYMBOL(ata_get_cmd_descript);
-> > 
-> >     Why not EXPORT_SYMBOL_GPL()?
+* Marek Szyprowski <m.szyprowski@samsung.com> [150105 04:22]:
+> All four register for latency and filter settings cannot be written in
+> non-secure mode and they should go through l2c_write_sec(). More on this
+> can be found in CoreLink Level 2 Cache Controller L2C-310 Technical
+> Reference Manual, 3.2. Register summary, table 3.1. This have been checked
+> the TRM for r3p3, but it should be uniform for all revisions.
 > 
-> Some of the symbols are exported in that way. I think better to wait the
-> maintainer to tell which is preferred there.
+> Reported-by: Nishanth Menon <nm@ti.com>
+> Suggested-by: Tomasz Figa <tomasz.figa@gmail.com>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-I don't really care.  As the sole user is an in-kernel module, I'm
-gonna append _GPL for now.
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-Thanks.
-
--- 
-tejun
+> ---
+>  arch/arm/mm/cache-l2x0.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> index 5e65ca8dea62..0aeeaa95c42d 100644
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -623,14 +623,14 @@ static void l2c310_resume(void)
+>  		unsigned revision;
+>  
+>  		/* restore pl310 setup */
+> -		writel_relaxed(l2x0_saved_regs.tag_latency,
+> -			       base + L310_TAG_LATENCY_CTRL);
+> -		writel_relaxed(l2x0_saved_regs.data_latency,
+> -			       base + L310_DATA_LATENCY_CTRL);
+> -		writel_relaxed(l2x0_saved_regs.filter_end,
+> -			       base + L310_ADDR_FILTER_END);
+> -		writel_relaxed(l2x0_saved_regs.filter_start,
+> -			       base + L310_ADDR_FILTER_START);
+> +		l2c_write_sec(l2x0_saved_regs.tag_latency, base,
+> +			      L310_TAG_LATENCY_CTRL);
+> +		l2c_write_sec(l2x0_saved_regs.data_latency, base,
+> +			      L310_DATA_LATENCY_CTRL);
+> +		l2c_write_sec(l2x0_saved_regs.filter_end, base,
+> +			      L310_ADDR_FILTER_END);
+> +		l2c_write_sec(l2x0_saved_regs.filter_start, base,
+> +			      L310_ADDR_FILTER_START);
+>  
+>  		revision = readl_relaxed(base + L2X0_CACHE_ID) &
+>  				L2X0_CACHE_ID_RTL_MASK;
+> -- 
+> 1.9.2
+> 
