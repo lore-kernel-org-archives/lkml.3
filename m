@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299AbbAESW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:22:57 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:51577 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932093AbbAESWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:22:55 -0500
+	id S1754410AbbAEStX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:49:23 -0500
+Received: from mga14.intel.com ([192.55.52.115]:5230 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754054AbbAEStW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 13:49:22 -0500
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,701,1413270000"; 
-   d="scan'208";a="54156138"
-Message-ID: <54AAD67C.7090900@broadcom.com>
-Date: Mon, 5 Jan 2015 19:22:52 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "Kalle Valo" <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-References: <1420297188.2397.3.camel@tiscali.nl>	 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>	 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>	 <1420324124.9624.60.camel@x220> <54AA641C.7050307@broadcom.com> <1420479510.14308.23.camel@x220>
-In-Reply-To: <1420479510.14308.23.camel@x220>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="646577660"
+From: kan.liang@intel.com
+To: a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, acme@kernel.org, jolsa@redhat.com,
+        eranian@google.com, mingo@redhat.com, paulus@samba.org,
+        ak@linux.intel.com, namhyung@kernel.org,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V6 0/2] perf tool: Haswell LBR call stack support (user)
+Date: Mon,  5 Jan 2015 13:23:03 -0500
+Message-Id: <1420482185-29830-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/15 18:38, Paul Bolle wrote:
-> On Mon, 2015-01-05 at 11:14 +0100, Arend van Spriel wrote:
->> On 01/03/15 23:28, Paul Bolle wrote:
->>> Side note: am I correct in thinking that there's some successor to
->>> CFG80211_WEXT and that the ipw2200 driver could, at least in theory, be
->>> ported to that successor? (ipw2200 hardware appears to be a bit old, so
->>> probably no one would care enough to actually do that.)
->>> net/wireless/kconfig doesn't mention anything like that, so probably I'm
->>> just confused.
->>
->> ipw2200 is a WEXT driver using some wext functionality (and struct
->> wiphy) provided by cfg80211 hence it needs CFG80211_WEXT. I guess that
->> is what makes it confusing.
->
-> It doesn't help that I hardly know anything about mac80211, cfg80211 and
-> nl80211 (and lib80211 for that matter). To me these are mostly just
-> names that end in 80211.
+From: Kan Liang <kan.liang@intel.com>
 
-Grapjas ;-)
+This is the user space patch for Haswell LBR call stack support.
+For many profiling tasks we need the callgraph. For example we often
+need to see the caller of a lock or the caller of a memcpy or other
+library function to actually tune the program. Frame pointer unwinding
+is efficient and works well. But frame pointers are off by default on
+64bit code (and on modern 32bit gccs), so there are many binaries around
+that do not use frame pointers. Profiling unchanged production code is
+very useful in practice. On some CPUs frame pointer also has a high
+cost. Dwarf2 unwinding also does not always work and is extremely slow
+(upto 20% overhead).
 
-cfg80211 provides thin-layer API for fullmac drivers (running 802.11 
-stack on the device) and mac80211-based drivers (running 802.11 stack in 
-kernel).
+Haswell has a new feature that utilizes the existing Last Branch Record
+facility to record call chains. When the feature is enabled, function
+call will be collected as normal, but as return instructions are
+executed the last captured branch record is popped from the on-chip LBR
+registers. The LBR call stack facility provides an alternative to get
+callgraph. It has some limitations too, but should work in most cases
+and is significantly faster than dwarf. Frame pointer unwinding is still
+the best default, but LBR call stack is a good alternative when nothing
+else works.
 
-> Anyhow, concerning, CFG80211_WEXT: it seems the only functionality
-> provided by that symbol that ipw2200 uses directly is
-> cfg80211_wext_giwname(). Perhaps ipw2200 could have a private version of
-> that function, something like ipw2100's ipw2100_wx_get_name(). Should be
-> trivial to implement (ie, it could take _me_ a day or two).
+Please find the kernel part patch at https://lkml.org/lkml/2014/11/6/432
 
-Indeed or even an hour or two.
+Changes since v1
+ - Update help document
+ - Force exclude_user to 0 with warning in LBR call stack
+ - Dump both lbr and fp info when report -D
+ - Reconstruct thread__resolve_callchain_sample and split it into two patches
+ - Use has_branch_callstack function to check LBR call stack available
 
-> But perhaps ipw2200 uses CFG80211_WEXT _indirectly_ too. Ie, in
-> net/wireless/core.c I stumbled on
->      #ifdef CONFIG_CFG80211_WEXT
->              rdev->wiphy.wext =&cfg80211_wext_handler;
->      #endif
+Changes since v2
+ - Rebase to 025ce5d33373
 
-This is the "wext compatibility" being enabled for any cfg80211 or 
-mac80211 based driver.
+Changes since v3
+ - Rebase to cc502c23aadf
+ - Separated function for lbr call stack sample resolve and print
+ - Some minor changes according to comments
 
->
-> But I net/wireless/wext-core.c I then found
->      #ifdef CONFIG_CFG80211_WEXT
->              if (dev->ieee80211_ptr&&  dev->ieee80211_ptr->wiphy)
->                      handlers = dev->ieee80211_ptr->wiphy->wext;
->      #endif
+Changes since V4
+ - Rebase to 09a6a1b
+ - Falling back to framepointers if LBR not availabe, and warning user
 
-wext-core is the WEXT framework and here it extracts WEXT handlers from 
-a cfg80211/mac80211-based driver that are store in wiphy structure.
+Changes since V5
+ - Only remove the 2/3 and part of 1/3 which have already been merged.
 
->      #ifdef CONFIG_WIRELESS_EXT
->              if (dev->wireless_handlers)
->                      handlers = dev->wireless_handlers;
->      #endif
+Kan Liang (2):
+  perf tools: enable LBR call stack support
+  perf tools: Construct LBR call chain
 
-Here wext-core extracts WEXT handlers from a WEXT driver. struct 
-net_device::wireless_handlers is only defined for CONFIG_WIRELESS_EXT.
+ tools/perf/Documentation/perf-record.txt |   8 ++-
+ tools/perf/builtin-record.c              |   6 +-
+ tools/perf/builtin-report.c              |   2 +
+ tools/perf/util/callchain.c              |   8 +++
+ tools/perf/util/callchain.h              |   1 +
+ tools/perf/util/evsel.c                  |  21 ++++++-
+ tools/perf/util/evsel.h                  |   4 ++
+ tools/perf/util/machine.c                | 102 +++++++++++++++++++++++++++----
+ tools/perf/util/session.c                |  64 +++++++++++++++++--
+ 9 files changed, 193 insertions(+), 23 deletions(-)
 
-> (There's much more to discover about WEXT, of course.) Anyhow, IPW2200
-> uses both CFG80211_WEXT and WIRELESS_EXT and cfg80211_wext_handler and
-> ipw2200's wireless_handlers appear to cover the same set of IOCTLS (one
-> exception: SIOCSIWPMKSA). So by now I'm really puzzled how this all fits
-> together.
-
-I think ipw2200 is a bit of both worlds indeed adopting the use of 
-struct wiphy and wiphy_register() call. That seems to suggest it is a 
-cfg80211 driver, but it does not register any cfg80211 driver callbacks 
-(see libipw_config_ops in libipw_module.c). So it overrides the WEXT 
-ioctls because it needs that to interact with the device.
-
-Regards,
-Arend
-
-> Thanks,
->
->
-> Paul Bolle
->
+-- 
+1.8.3.2
 
