@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275AbbAEBkX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Jan 2015 20:40:23 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:45881 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752963AbbAEBkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Jan 2015 20:40:21 -0500
+	id S1753062AbbAEBex (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Jan 2015 20:34:53 -0500
+Received: from imap.thunk.org ([74.207.234.97]:51174 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751773AbbAEBew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Jan 2015 20:34:52 -0500
+Date: Sun, 4 Jan 2015 20:34:36 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150105013436.GA23350@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Nicolas Pitre <nicolas.pitre@linaro.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Pavel Machek <pavel@ucw.cz>, Marc Zyngier <marc.zyngier@arm.com>,
+	kernel list <linux-kernel@vger.kernel.org>
+References: <20150104190123.GA20153@amd>
+ <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
+ <20150104201026.GA23427@amd>
+ <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
+ <20150104203724.GA16372@amd>
+ <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+ <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
+ <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
+ <20150104212659.GC12302@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAD7vxxKb-JvBMzEoJ3m8xsrHJ4KhDqViWhtH-7sBpA-jJgic1w@mail.gmail.com>
-References: <jonathar@broadcom.com>
-	<1419979410-7589-1-git-send-email-jonathar@broadcom.com>
-	<1419979410-7589-3-git-send-email-jonathar@broadcom.com>
-	<CAD7vxxKb-JvBMzEoJ3m8xsrHJ4KhDqViWhtH-7sBpA-jJgic1w@mail.gmail.com>
-Date: Sun, 4 Jan 2015 17:33:06 -0800
-Message-ID: <CAD7vxxL6ZkuODKgZbGq9osURnA3DC7zjHbWr8owG93SVY1h5Bw@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] pwm: kona: Remove setting default smooth type and
- polarity for all channels
-From: Tim Kryger <tim.kryger@gmail.com>
-To: Jonathan Richardson <jonathar@broadcom.com>
-Cc: Scott Branden <sbranden@broadcom.com>,
-        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
-        Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
-        bcm-kernel-feedback-list@broadcom.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-pwm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150104212659.GC12302@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 4, 2015 at 5:12 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
-> On Tue, Dec 30, 2014 at 2:43 PM, Jonathan Richardson
-> <jonathar@broadcom.com> wrote:
->> Setting the default polarity in probe to normal for all channels caused
->> the speaker pwm channel to click. The polarity does need to be set to
->> normal because the hw default is inversed whereas the pwm framework
->> defaults to normal. If a channel is enabled without setting the polarity
->> then the signal would be inversed while linux reports normal. A check
->> is now done prior to enabling the channel to ensure that the hw polarity
->> matches the desired polarity and is changed if there is a discrepency. This
->> prevents unnecessary settings being applied to unused channels but still
->> ensures the correct polarity to be set.
->
-> A more direct solution that avoids the potentially undesirable
-> consequences of delaying when polarity changes are written to hardware
-> would be to update the PWM framework to allow for the registration of
-> chips with inversed default polarity.
->
-> I will post a patch for your review.
+On Sun, Jan 04, 2015 at 09:26:59PM +0000, Russell King - ARM Linux wrote:
+> 
+> With the revert in place, we now have insanely small bogomips values
+> reported via /proc/cpuinfo when hardware timers are used.  That needs
+> fixing.
 
-Please see:  https://lkml.org/lkml/2015/1/4/199
+Why does it need to be fixed?
+
+It's clear that there are applications that are working OK with the
+existing value, and if you change it to fix it for some new
+applications, but it breaks for others, then have you considered
+defining a new interface (perhaps exported via sysfs) that exports a
+"sane" value and document that new applications shoud use the new
+interface.
+
+Or if the answer is that no one should be using the bogomips field at
+all, then just document *that*, and then leave it be, so that existing
+applications don't break.
+
+						- Ted
