@@ -1,149 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017AbbAERrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:47:33 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:39683 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463AbbAERrc (ORCPT
+	id S1754089AbbAERsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:48:08 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:63706 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366AbbAERsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:47:32 -0500
-Date: Mon, 5 Jan 2015 11:47:23 -0600
-From: Michael Welling <mwelling@emacinc.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "acourbot@nvidia.com" <acourbot@nvidia.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Roland Stigge <stigge@antcom.de>,
-        Wolfgang Grandegger <wg@grandegger.com>, tstratman@emacinc.com,
-        Rojhalat Ibrahim <imr@rtschenk.de>
-Subject: Re: Linux GPIO internals
-Message-ID: <20150105174723.GA11391@sysresccd>
-References: <20141224215352.GA26482@sysresccd>
- <CAAVeFuJcWizqtW4mmD8ow5eg2841vgXhZ=7bHDiO3ZJfE2ezog@mail.gmail.com>
+	Mon, 5 Jan 2015 12:48:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAVeFuJcWizqtW4mmD8ow5eg2841vgXhZ=7bHDiO3ZJfE2ezog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hioglf8ew.wl-tiwai@suse.de>
+References: <1420279798-961-1-git-send-email-tiwai@suse.de>
+	<CADnq5_NU-nde7eBk_Ptpk6twk_aBrXZgLXxio3RiJUJ1D4ZzdQ@mail.gmail.com>
+	<s5hioglf8ew.wl-tiwai@suse.de>
+Date: Mon, 5 Jan 2015 12:48:05 -0500
+Message-ID: <CADnq5_OrxtFs=LMdXbX27WMbaWRdR7ALBDkL=ohP464qz3hhTw@mail.gmail.com>
+Subject: Re: [PATCH v2] drm/radeon: Fix kernel panic with HDMI w/o SAD
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Christian Koenig <christian.koenig@amd.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 03, 2015 at 02:12:06PM +0100, Alexandre Courbot wrote:
-> Hi Michael, sorry for the delayed reply on this interesting issue.
-> 
-> On Wed, Dec 24, 2014 at 10:53 PM, Michael Welling <mwelling@emacinc.com> wrote:
-> > All,
-> >
-> > For years now EMAC has provided an out-of-tree series of class drivers
-> > for accessing various devices. The EMAC GPIO class and character
-> > interfaces predate the introduction of the gpiolib interface and have
-> > been ported across several kernel versions.
-> >
-> > http://wiki.emacinc.com/wiki/Using_the_EMAC_GPIO_Class
-> >
-> > Recently we have come to the conclusion that continuing to provide
-> > support for these drivers is getting out of hand. It was agreed that we
-> > move away from our non-standard drivers and use mainstream drivers for our
-> > newest products.
-> >
-> > That being said, we would like to be able to provide the capabilities
-> > of our old drivers but it is not the case with the current gpiolib
-> > implementation.
-> >
-> > Here are the major concerns that we have with the gpiolib implementation:
-> > - There is no mechanism to provide simultaneous access to multiple
-> >   GPIOs from userspace.
-> > - The sysfs interface seems to vastly slower than the character
-> >   interface and it is far more cumbersome to handle access from a
-> >   userspace C program.
-> >
-> > It seems that the first concern was attempted to be addressed by the
-> > following patch:
-> > https://lkml.org/lkml/2012/12/23/66
-> >
-> > It seems this effort dropped off the radar in January of 2013.
-> > What happened to this patch?
-> >
-> > As for the second issue, I am not sure how to resolve this and am open
-> > to ideas. I have seen similar concerns in other subsystem that use the
-> > sysfs interface.
-> >
-> > IIO example:
-> > http://www.spinics.net/lists/linux-iio/msg15344.html
-> >
-> > Suggestions?
-> 
-> It seems like your mail is coming just at the right time. We have
-> recently merged a patch that allows setting several GPIOs at the same
-> time, if the hardware supports it:
-> 
-> http://patchwork.ozlabs.org/patch/406666/
+On Mon, Jan 5, 2015 at 12:23 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 5 Jan 2015 12:07:52 -0500,
+> Alex Deucher wrote:
+>>
+>> On Sat, Jan 3, 2015 at 5:09 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > A BUG_ON() call in dce3_2_afmt_write_sad_regs() is triggered when a
+>> > HDMI monitor without audio is plugged:
+>>
+>> I have a slightly different fix already queued up:
+>> http://lists.freedesktop.org/archives/dri-devel/2014-December/073672.html
 >
+> Oh, that's identical with my v1 patch :)  But, with that fix, an error
+> message will be shown at each time you plug such a monitor, right?
+> This doesn't look right, so I revised the patch.
 
-This looks like a good starting point. Being able to access to multiple
-GPIOs simultaneously on the same controller bank is great.
+Yes, but if the monitor claims to support audio, it should supply
+SADs.  If it doesn't, the driver has no way of knowing what type of
+audio the monitor supports.  I'm fine with removing the error message
+or making it debug only however.
 
-What is nice about the EMAC class is that the GPIOs do not necessarily
-have to be on the same bank (or controller) to be grouped together. The
-system call overhead of accessing a single IO is the same as multiple
-IOs in the same group.
-
-Still wondering what happened to the gpioblock patch.
-
-> It lacks sysfs support, but we are also increasingly feeling the
-> pressure of the old sysfs interface and are planning to develop a new
-> one:
-> 
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/311158.html
-> 
-> Our main gripe with the old sysfs interface is its use of the
-> (potentially varying) integer GPIO namespace, and we would like one
-> that relies on the new gpiod_ functions. But while we are at it, we
-> could just as well support GPIO groups and try to make things faster,
-> although I am not sure why sysfs would be slower than a character
-> device.
-
-The with the migration from the legacy GPIO namespace it only seems
-natural for the sysfs interface to follow. Adding groups in the process
-would provide most of what is needed.
-
-The sysfs interface is great for command line and scripting languages
-but it has more overhead. It requires string conversion at both the
-kernel and userspace. More system calls are typically required for
-similar transactions.
-
-> 
-> On the top of my head, I think we could have an export interface that
-> allows to export a group of GPIOs under a given name, and to
-> manipulate them using gpiod_set/get_array(). Single GPIOs could be
-> exported as a group of 1.
 >
+> Also, can we skip the register write completely?  I thought of a case
+> like we replug a monitor from the one with audio to another without
+> audio...
 
-This sounds good. Currently we group the IOs with devicetree
-registrations.
+Changing the monitor will generally trigger a full probe and modeset
+again anyway.  The register writes are just there to pass the audio
+information supported by the monitor along to the audio driver.
 
-http://git.emacinc.com/source/linux-at91.git/blob/linux-3.10-at91/arch/arm/boot/dts/ipac-9x25.dts#L226
+Alex
 
-It would be nice if it were possible to create the groups from
-userspace.
-
-> I have looked at the EMAC GPIO class (very low level, and clearly tied
-> to a given subset of GPIO hardware), and anything that makes it
-> upstream would need to feature considerably more abstraction, but we
-> can certainly try to work something out.
-
-I am more worried about standardizing EMAC's code base than pushing our
-old code into the mainline.
-
-> 
-> Considering the constraints that we have (no GPIO integers for
-> exporting, sysfs-based, uses gpiod_*array()), do you think we could
-> satisfy your goals as well?
-
-This should be satisfactory for most use cases. I will try to support
-efforts toward modernizing the sysfs interface.
-
-Would a character interface to gpiolib ever be considered? 
+>
+>
+> thanks,
+>
+> Takashi
+>
+>>
+>> Alex
+>>
+>> >
+>> >  kernel BUG at ../drivers/gpu/drm/radeon/dce3_1_afmt.c:110!
+>> >  invalid opcode: 0000 [#1] PREEMPT SMP
+>> >  CPU: 2 PID: 967 Comm: Xorg Tainted: PO  3.16.7-7-desktop #1
+>> >  Hardware name: System manufacturer System Product Name/M4A77T, BIOS 2401    05/18/2011
+>> >  task: ffff8800cea86350 ti: ffff8800c1880000 task.ti: ffff8800c1880000
+>> >  RIP: 0010:[<ffffffffa0126c50>] dce3_1_hdmi_setmode+0x570/0x5a0 [radeon]
+>> >  Call Trace:
+>> >   [<ffffffffa00a6936>] drm_crtc_helper_set_mode+0x346/0x520 [drm_kms_helper]
+>> >   [<ffffffffa00a7678>] drm_crtc_helper_set_config+0x8a8/0xad0 [drm_kms_helper]
+>> >   [<ffffffffa00ede3f>] radeon_crtc_set_config+0x3f/0x110 [radeon]
+>> >   [<ffffffffa001edc1>] drm_mode_set_config_internal+0x61/0xe0 [drm]
+>> >   [<ffffffffa00a9a6b>] restore_fbdev_mode+0xab/0xd0 [drm_kms_helper]
+>> >   [<ffffffffa00a9aae>] drm_fb_helper_restore_fbdev_mode_unlocked+0x1e/0x30 [drm_kms_helper]
+>> >   [<ffffffffa00ab642>] drm_fb_helper_set_par+0x22/0x60 [drm_kms_helper]
+>> >   [<ffffffffa00ab5cb>] drm_fb_helper_hotplug_event+0x8b/0xe0 [drm_kms_helper]
+>> >   [<ffffffffa00ab65a>] drm_fb_helper_set_par+0x3a/0x60 [drm_kms_helper]
+>> >   [<ffffffff813818ce>] fb_set_var+0x15e/0x3b0
+>> >   [<ffffffff81378d0b>] fbcon_blank+0x1cb/0x2b0
+>> >   [<ffffffff813f2a31>] do_unblank_screen+0xa1/0x1b0
+>> >   [<ffffffff813e8fd3>] complete_change_console+0x53/0xe0
+>> >   [<ffffffff813e9fa9>] vt_ioctl+0xf49/0x10d0
+>> >   [<ffffffff813ddfdc>] tty_ioctl+0x26c/0xb70
+>> >   [<ffffffff811cad17>] do_vfs_ioctl+0x2e7/0x4c0
+>> >   [<ffffffff811caf71>] SyS_ioctl+0x81/0xa0
+>> >   [<ffffffff81622a2d>] system_call_fastpath+0x1a/0x1f
+>> >   [<00007f2fae8c6397>] 0x7f2fae8c6396
+>> >
+>> > Actually the BUG_ON() check is wrong, since sads may be NULL when
+>> > sad_count is zero.  This patch removes the BUG_ON() and adds the
+>> > proper NULL initialization of sads.
+>> >
+>> > Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=911356
+>> > Cc: <stable@vger.kernel.org>
+>> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> > ---
+>> >  drivers/gpu/drm/radeon/dce3_1_afmt.c | 3 +--
+>> >  1 file changed, 1 insertion(+), 2 deletions(-)
+>> >
+>> > diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+>> > index 2fe8cfc966d9..7ca23f45829e 100644
+>> > --- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
+>> > +++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+>> > @@ -72,7 +72,7 @@ static void dce3_2_afmt_write_sad_regs(struct drm_encoder *encoder)
+>> >         struct radeon_device *rdev = encoder->dev->dev_private;
+>> >         struct drm_connector *connector;
+>> >         struct radeon_connector *radeon_connector = NULL;
+>> > -       struct cea_sad *sads;
+>> > +       struct cea_sad *sads = NULL;
+>> >         int i, sad_count;
+>> >
+>> >         static const u16 eld_reg_to_type[][2] = {
+>> > @@ -107,7 +107,6 @@ static void dce3_2_afmt_write_sad_regs(struct drm_encoder *encoder)
+>> >                 DRM_ERROR("Couldn't read SADs: %d\n", sad_count);
+>> >                 return;
+>> >         }
+>> > -       BUG_ON(!sads);
+>> >
+>> >         for (i = 0; i < ARRAY_SIZE(eld_reg_to_type); i++) {
+>> >                 u32 value = 0;
+>> > --
+>> > 2.2.0
+>> >
+>> > _______________________________________________
+>> > dri-devel mailing list
+>> > dri-devel@lists.freedesktop.org
+>> > http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>>
