@@ -1,116 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbbAEJwv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:52:51 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:34679 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923AbbAEJwt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:52:49 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-09-54aa5eefdec3
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 2/2] clk: exynos-audss: Fix memory leak on driver unbind or
- probe failure
-Date: Mon, 05 Jan 2015 10:52:41 +0100
-Message-id: <1420451561-12360-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1420451561-12360-1-git-send-email-k.kozlowski@samsung.com>
-References: <1420451561-12360-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgluLIzCtJLcpLzFFi42I5/e/4Fd33catCDI480rZ4/cLQov/xa2aL
-	TY+vsVpc3jWHzWLG+X1MFk8nXGSzOPymndXix5luFotVu/4wOnB6XO7rZfLYOesuu8emVZ1s
-	Hneu7WHz2Lyk3qNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgyDvzawFJwS6CisX8BWwPjJ94u
-	Rk4OCQETidu3N7BB2GISF+6tB7K5OIQEljJKzJ7+nBXC6WOS2PDgMStIFZuAscTm5UvAqkQE
-	NjJJ9OxbwA6SYBYwlPj57g+YLSwQLbGq/z9YA4uAqsTUBT/B4rwC7hJ/9ryBWicncfLYZLAa
-	TgEPid0/XgPVcABtc5f4OFFzAiPvAkaGVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghofdl
-	B+PiY1aHGAU4GJV4eD1OrAwRYk0sK67MPcQowcGsJMK77hZQiDclsbIqtSg/vqg0J7X4ECMT
-	B6dUA6O5mG30AYXc+dNmNzKcYvgqKHFqiqbu4e3br7lknDDMSVt5+2LZrfuvdr2siJTtbk5f
-	w9b2isv1qfOzsjjDBvfyqb+Crf5sndg+OdVx19o9TYcW3bxhzTztjaCM3/qXNbHrmmumrNzE
-	Hn7ffbuN3i+OnSFud9OKTTkj1m6/e8Y9fd0VbjX7GDYlluKMREMt5qLiRABV3kZaGwIAAA==
+	id S1753427AbbAEJyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:54:43 -0500
+Received: from s3.sipsolutions.net ([5.9.151.49]:53427 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420AbbAEJym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 04:54:42 -0500
+Message-ID: <1420451671.9459.1.camel@sipsolutions.net>
+Subject: Re: [PATCH 2/2] Fix copy-paste bug: assign from src struct not dest
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: linux-kernel@vger.kernel.org, Kalle Valo <kvalo@codeaurora.org>,
+        Eliad Peller <eliad@wizery.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arik Nemtsov <arik@wizery.com>,
+        "open list:TI WILINK WIRELES..." <linux-wireless@vger.kernel.org>,
+        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>
+Date: Mon, 05 Jan 2015 10:54:31 +0100
+In-Reply-To: <1420394427-19509-2-git-send-email-me@mortis.eu> (sfid-20150104_201205_499836_1F2052B2)
+References: <1420394427-19509-1-git-send-email-me@mortis.eu>
+	 <1420394427-19509-2-git-send-email-me@mortis.eu>
+	 (sfid-20150104_201205_499836_1F2052B2)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory allocated by basic clock divider/gate/mux (struct clk_gate,
-clk_divider and clk_mux) was leaking. During driver unbind or probe
-failure the driver only unregistered the clocks.
+On Sun, 2015-01-04 at 19:00 +0100, Giel van Schijndel wrote:
+> ---
+>  drivers/net/wireless/ti/wlcore/acx.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/wireless/ti/wlcore/acx.c b/drivers/net/wireless/ti/wlcore/acx.c
+> index beb354c..93a2fa8 100644
+> --- a/drivers/net/wireless/ti/wlcore/acx.c
+> +++ b/drivers/net/wireless/ti/wlcore/acx.c
+> @@ -1725,7 +1725,7 @@ int wl12xx_acx_config_hangover(struct wl1271 *wl)
+>  	acx->decrease_delta             = conf->decrease_delta;
+>  	acx->quiet_time                 = conf->quiet_time;
+>  	acx->increase_time              = conf->increase_time;
+> -	acx->window_size                = acx->window_size;
+> +	acx->window_size                = conf->window_size;
 
-Use clk_unregister_{gate,divider,mux} to release all resources.
+It would be far better to fix the bug *first*, that way the bugfix can
+be cherry-picked/applied to trees that don't have the alignment.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/clk/samsung/clk-exynos-audss.c | 32 ++++++++++++++++++++++----------
- 1 file changed, 22 insertions(+), 10 deletions(-)
+(And anyway I question the value of the alignment - if you really want
+to make this bug disappear you could perhaps use a macro)
 
-diff --git a/drivers/clk/samsung/clk-exynos-audss.c b/drivers/clk/samsung/clk-exynos-audss.c
-index f2c2ccce49bb..454b02ae486a 100644
---- a/drivers/clk/samsung/clk-exynos-audss.c
-+++ b/drivers/clk/samsung/clk-exynos-audss.c
-@@ -82,6 +82,26 @@ static const struct of_device_id exynos_audss_clk_of_match[] = {
- 	{},
- };
- 
-+static void exynos_audss_clk_teardown(void)
-+{
-+	int i;
-+
-+	for (i = EXYNOS_MOUT_AUDSS; i < EXYNOS_DOUT_SRP; i++) {
-+		if (!IS_ERR(clk_table[i]))
-+			clk_unregister_mux(clk_table[i]);
-+	}
-+
-+	for (; i < EXYNOS_SRP_CLK; i++) {
-+		if (!IS_ERR(clk_table[i]))
-+			clk_unregister_divider(clk_table[i]);
-+	}
-+
-+	for (; i < clk_data.clk_num; i++) {
-+		if (!IS_ERR(clk_table[i]))
-+			clk_unregister_gate(clk_table[i]);
-+	}
-+}
-+
- /* register exynos_audss clocks */
- static int exynos_audss_clk_probe(struct platform_device *pdev)
- {
-@@ -219,10 +239,7 @@ static int exynos_audss_clk_probe(struct platform_device *pdev)
- 	return 0;
- 
- unregister:
--	for (i = 0; i < clk_data.clk_num; i++) {
--		if (!IS_ERR(clk_table[i]))
--			clk_unregister(clk_table[i]);
--	}
-+	exynos_audss_clk_teardown();
- 
- 	if (!IS_ERR(epll))
- 		clk_disable_unprepare(epll);
-@@ -232,18 +249,13 @@ unregister:
- 
- static int exynos_audss_clk_remove(struct platform_device *pdev)
- {
--	int i;
--
- #ifdef CONFIG_PM_SLEEP
- 	unregister_syscore_ops(&exynos_audss_clk_syscore_ops);
- #endif
- 
- 	of_clk_del_provider(pdev->dev.of_node);
- 
--	for (i = 0; i < clk_data.clk_num; i++) {
--		if (!IS_ERR(clk_table[i]))
--			clk_unregister(clk_table[i]);
--	}
-+	exynos_audss_clk_teardown();
- 
- 	if (!IS_ERR(epll))
- 		clk_disable_unprepare(epll);
--- 
-1.9.1
+johannes
 
