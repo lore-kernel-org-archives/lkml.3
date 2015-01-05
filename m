@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315AbbAESC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:02:59 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:58706 "EHLO
+	id S932274AbbAESCm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:02:42 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:51100 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754248AbbAER4K (ORCPT
+	by vger.kernel.org with ESMTP id S1754205AbbAER4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:56:10 -0500
+	Mon, 5 Jan 2015 12:56:11 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 27/45] staging: comedi: ni_labpc: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:54:55 +0000
-Message-Id: <1420480513-14765-28-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 28/45] staging: comedi: ni_labpc_pci: rewrite "Devices:" line
+Date: Mon,  5 Jan 2015 17:54:56 +0000
+Message-Id: <1420480513-14765-29-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -38,22 +38,19 @@ lines by using one or more spaces at the start of each continuation line
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/ni_labpc.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/ni_labpc_pci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 1fbfdb4..59da404 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -17,9 +17,8 @@
+diff --git a/drivers/staging/comedi/drivers/ni_labpc_pci.c b/drivers/staging/comedi/drivers/ni_labpc_pci.c
+index 3fc4204..a9f408a 100644
+--- a/drivers/staging/comedi/drivers/ni_labpc_pci.c
++++ b/drivers/staging/comedi/drivers/ni_labpc_pci.c
+@@ -17,7 +17,7 @@
  /*
-  * Driver: ni_labpc
-  * Description: National Instruments Lab-PC (& compatibles)
-- * Devices: (National Instruments) Lab-PC-1200 [lab-pc-1200]
-- *	    (National Instruments) Lab-PC-1200AI [lab-pc-1200ai]
-- *	    (National Instruments) Lab-PC+ [lab-pc+]
-+ * Devices: [National Instruments] Lab-PC-1200 (lab-pc-1200),
-+ *   Lab-PC-1200AI (lab-pc-1200ai), Lab-PC+ (lab-pc+)
+  * Driver: ni_labpc_pci
+  * Description: National Instruments Lab-PC PCI-1200
+- * Devices: (National Instruments) PCI-1200 [ni_pci-1200]
++ * Devices: [National Instruments] PCI-1200 (ni_pci-1200)
   * Author: Frank Mori Hess <fmhess@users.sourceforge.net>
   * Status: works
   *
