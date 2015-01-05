@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbbAEUHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 15:07:41 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40879 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753789AbbAEUHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 15:07:39 -0500
-Message-ID: <54AAEEE1.7020607@ti.com>
-Date: Mon, 5 Jan 2015 15:06:57 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754306AbbAEUKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 15:10:09 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36732 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527AbbAEUKI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 15:10:08 -0500
+Date: Mon, 5 Jan 2015 20:09:50 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20150105200950.GH2634@sirena.org.uk>
+References: <1420448659-9636-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma
- configuration
-References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com> <CAL_Jsq+krOUA3BPvMCdaOBhALoi+pzWbw3YndXqR8x52OJogZg@mail.gmail.com> <54A71CD1.4070107@ti.com> <2019516.ehiuEv0rdL@wuerfel>
-In-Reply-To: <2019516.ehiuEv0rdL@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Dx9iWuMxHO1cCoFc"
+Content-Disposition: inline
+In-Reply-To: <1420448659-9636-1-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regulator: fan53555: Constify struct regmap_config
+ and slew_rates array
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2015 04:37 PM, Arnd Bergmann wrote:
-> On Friday 02 January 2015 17:33:53 Murali Karicheri wrote:
->>
->> I have no experience with IOMMU and may not offer much help here as I
->> originally wrote above. Will Deacon has added this API and probably able
->> to offer some help in this discussion.
->>
->> Will Deacon,
->>
->> Any comment?
->
-> It's complicated :(
->
->> Looking at the iommu documentation and of_iommu.c, I get a feeling that
->> this API is not really used at present as there are no callers of
->> of_iommu_set_ops() and I assume this is a WIP.
->
-> Right, but we have patches for some iommu drivers based on this API,
-> and we should migrate all of them eventually.
->
->> I believe the way it is
->> expected to work is to have the iommu driver of the master IOMMU devices
->> call of_iommu_set_ops(). The device node of this master IOMMU device is
->> specified as a phandle in the OF node of the device (various bus devices
->> such as platform, PCI etc). This allow to retrieve the iommu ops though
->> the of_iommu_configure() API and use it in arch_setup_dma_ops(). So my
->> gut feeling is that for PCI devices, as there are no DT node, the root
->> bus node may specify iommus phandle to IOMMU master OF nodes.
->
-> Yes, but we also need to pass a PCI device specific identifier along
-> with the root bus node, because some iommu drivers take the PCI
-> bus/device/function number into account for creating per-function
-> i/o page tables.
->
->> W.r.t your comment "We may want to address the comment in
->> of_iommu_configure about parent nodes. We should be sure these changes
->> work with how we would do searching parent nodes",
->>
->> I believe, the parent node search itself should work the same way in the
->> case of PCI as with platform bus case. PCI's case, we are providing the
->> OF node of the root bus host bridge. Why should this be any different in
->> terms of search?
->>
->> I see a potential issue with dma-ranges as described in the notes below.
->> As noted below the usage of dma-range for iommu is to be determined. For
->> keystone, the of_iommu_configure() always return false as we don't use
->> the iommu. But don't know if this has any consequences for other
->> platforms. Or I got your questions wrong. Any help here from others on
->> the list?
->>
->> ========================================================================
->> One possible extension to the above is to use an "iommus" property along
->> with a "dma-ranges" property in a bus device node (such as PCI host
->> bridges). This can be useful to describe how children on the bus relate
->> to the IOMMU if they are not explicitly listed in the device tree (e.g.
->> PCI devices). However, the requirements of that use-case haven't been
->> fully determined yet. Implementing this is therefore not recommended
->> without further discussion and extension of this binding.
->> =========================================================================
->
-> This probably won't ever apply to PCI devices, so let's ignore it for now.
-> For the moment (and for PCI), we should assume that we either configure
-> an iommu directly or we use dma-ranges if no iommu is in use.
->
-Thanks Arnd,
 
-I will post v3 of the patch with what is agreed before in my response 
-and I understand there is no additional change required based on this 
-particular discussion about iommu. Right?
+--Dx9iWuMxHO1cCoFc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Murali
-> 	Arnd
+On Mon, Jan 05, 2015 at 10:04:19AM +0100, Krzysztof Kozlowski wrote:
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const. Make const also
+> slew_rates array.
 
+Applied, thanks.
 
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+--Dx9iWuMxHO1cCoFc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUqu+NAAoJECTWi3JdVIfQAT4H/2Rs3c+m0Nxap5CO9wmAuAsN
+dTUZh6wQ+2MLdsKviVZeVWDvMHlZgZ6dl7Faf1KrrIfcxOcfNAv5tJ4s9VB2O0/5
+KMhAihAmaJd9xzBWMuYyM0hnRjqnThdgPYoSPAqGHsvG22wTSLWXudzPxW+ykqk7
+11tkvieIy+LQ86H50X/4V+97wqJNeaT9cvJOzsxZMDWZDaXC5hdj1cMwsZVN1GO6
+3K3uazMWLCB7JOJ7QKtWQo3i87mni5u4QmPoSpZlULHUMrdAuYxQyhbyXJ5kY7/Y
+3l+xm5cJfBzDWuhStP4kz/yOKkDJ1x84XFVndrD0ibA042N1f02ckKzJOzJe0s8=
+=dLHp
+-----END PGP SIGNATURE-----
+
+--Dx9iWuMxHO1cCoFc--
