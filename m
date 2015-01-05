@@ -1,69 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbbAETVo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:21:44 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50075 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165AbbAETVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:21:41 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19vxiAorcM0rjrmETB+ITv+
-Date: Mon, 5 Jan 2015 11:17:45 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Nishanth Menon <nm@ti.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+	id S1754704AbbAEWd3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:33:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58442 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753066AbbAEWd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 17:33:27 -0500
+Date: Mon, 5 Jan 2015 17:17:56 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Simon Horman <horms@verge.net.au>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH] ARM: omap2plus_defconfig: use CONFIG_CPUFREQ_DT
-Message-ID: <20150105191745.GI4081@atomide.com>
-References: <1418404738-19124-1-git-send-email-nm@ti.com>
- <CAMuHMdW4CQz_n8b4-JOogDvc6ggBjWrFWcqr4Tezojj+mJD6pw@mail.gmail.com>
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
+ pvclock reader
+Message-ID: <20150105191756.GA31201@amt.cnet>
+References: <cover.1419295081.git.luto@amacapital.net>
+ <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+ <20150105152511.GA9172@amt.cnet>
+ <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdW4CQz_n8b4-JOogDvc6ggBjWrFWcqr4Tezojj+mJD6pw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Geert Uytterhoeven <geert@linux-m68k.org> [141215 02:44]:
-> On Fri, Dec 12, 2014 at 6:18 PM, Nishanth Menon <nm@ti.com> wrote:
-> > CONFIG_GENERIC_CPUFREQ_CPU0 disappeared with commit bbcf071969b20f
-> > ("cpufreq: cpu0: rename driver and internals to 'cpufreq_dt'")
+On Mon, Jan 05, 2015 at 10:56:07AM -0800, Andy Lutomirski wrote:
+> On Mon, Jan 5, 2015 at 7:25 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > On Mon, Dec 22, 2014 at 04:39:57PM -0800, Andy Lutomirski wrote:
+> >> The pvclock vdso code was too abstracted to understand easily and
+> >> excessively paranoid.  Simplify it for a huge speedup.
+> >>
+> >> This opens the door for additional simplifications, as the vdso no
+> >> longer accesses the pvti for any vcpu other than vcpu 0.
+> >>
+> >> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
+> >> With this change, it takes 19ns, which is almost as fast as the pure TSC
+> >> implementation.
+> >>
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> ---
+> >>  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
+> >>  1 file changed, 47 insertions(+), 35 deletions(-)
+> >>
+> >> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> >> index 9793322751e0..f2e0396d5629 100644
+> >> --- a/arch/x86/vdso/vclock_gettime.c
+> >> +++ b/arch/x86/vdso/vclock_gettime.c
+> >> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
+> >>
+> >>  static notrace cycle_t vread_pvclock(int *mode)
+> >>  {
+> >> -     const struct pvclock_vsyscall_time_info *pvti;
+> >> +     const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
+> >>       cycle_t ret;
+> >> -     u64 last;
+> >> -     u32 version;
+> >> -     u8 flags;
+> >> -     unsigned cpu, cpu1;
+> >> -
+> >> +     u64 tsc, pvti_tsc;
+> >> +     u64 last, delta, pvti_system_time;
+> >> +     u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
+> >>
+> >>       /*
+> >> -      * Note: hypervisor must guarantee that:
+> >> -      * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
+> >> -      * 2. that per-CPU pvclock time info is updated if the
+> >> -      *    underlying CPU changes.
+> >> -      * 3. that version is increased whenever underlying CPU
+> >> -      *    changes.
+> >> +      * Note: The kernel and hypervisor must guarantee that cpu ID
+> >> +      * number maps 1:1 to per-CPU pvclock time info.
+> >> +      *
+> >> +      * Because the hypervisor is entirely unaware of guest userspace
+> >> +      * preemption, it cannot guarantee that per-CPU pvclock time
+> >> +      * info is updated if the underlying CPU changes or that that
+> >> +      * version is increased whenever underlying CPU changes.
+> >> +      *
+> >> +      * On KVM, we are guaranteed that pvti updates for any vCPU are
+> >> +      * atomic as seen by *all* vCPUs.  This is an even stronger
+> >> +      * guarantee than we get with a normal seqlock.
+> >>        *
+> >> +      * On Xen, we don't appear to have that guarantee, but Xen still
+> >> +      * supplies a valid seqlock using the version field.
+> >> +
+> >> +      * We only do pvclock vdso timing at all if
+> >> +      * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
+> >> +      * mean that all vCPUs have matching pvti and that the TSC is
+> >> +      * synced, so we can just look at vCPU 0's pvti.
+> >>        */
 > >
-> > Use the renamed CONFIG_CPUFREQ_DT generic driver. It looks like with
-> > v3.18-rc1, commit bbcf071969b20f and fdc509b15eb3eb came in via
-> > different trees causing the resultant v3.18-rc1 to be non-functional for
-> > cpufreq as default supported with omap2plus_defconfig.
-> >
-> > Fixes: fdc509b15eb3eb ("ARM: omap2plus_defconfig: Add cpufreq to defconfig")
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > ---
-> >
-> > NOTE: as of v3.18 tag, The following still need to be fixed - I do not have all
-> > the platforms impacted to make a generic change, so CCying folks who might be interested
-> >
-> > arch/arm/configs/shmobile_defconfig:CONFIG_GENERIC_CPUFREQ_CPU0=y
+> > Can Xen guarantee that ?
 > 
-> Thanks!
+> I think so, vacuously.  Xen doesn't seem to set PVCLOCK_TSC_STABLE_BIT
+> at all.  I have no idea going forward, though.
 > 
-> FTR: this has been fixed in Simon's defconfig-for-v3.20 branch.
+> Xen people?
 > 
-> > arch/arm/configs/multi_v7_defconfig:CONFIG_GENERIC_CPUFREQ_CPU0=y
+> >
+> >> -     do {
+> >> -             cpu = __getcpu() & VGETCPU_CPU_MASK;
+> >> -             /* TODO: We can put vcpu id into higher bits of pvti.version.
+> >> -              * This will save a couple of cycles by getting rid of
+> >> -              * __getcpu() calls (Gleb).
+> >> -              */
+> >> -
+> >> -             pvti = get_pvti(cpu);
+> >> -
+> >> -             version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
+> >> -
+> >> -             /*
+> >> -              * Test we're still on the cpu as well as the version.
+> >> -              * We could have been migrated just after the first
+> >> -              * vgetcpu but before fetching the version, so we
+> >> -              * wouldn't notice a version change.
+> >> -              */
+> >> -             cpu1 = __getcpu() & VGETCPU_CPU_MASK;
+> >> -     } while (unlikely(cpu != cpu1 ||
+> >> -                       (pvti->pvti.version & 1) ||
+> >> -                       pvti->pvti.version != version));
+> >> -
+> >> -     if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
+> >> +
+> >> +     if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
+> >>               *mode = VCLOCK_NONE;
+> >> +             return 0;
+> >> +     }
+> >
+> > This check must be performed after reading a stable pvti.
+> >
+> 
+> We can even read it in the middle, guarded by the version checks.
+> I'll do that for v2.
+> 
+> >> +
+> >> +     do {
+> >> +             version = pvti->version;
+> >> +
+> >> +             /* This is also a read barrier, so we'll read version first. */
+> >> +             rdtsc_barrier();
+> >> +             tsc = __native_read_tsc();
+> >> +
+> >> +             pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
+> >> +             pvti_tsc_shift = pvti->tsc_shift;
+> >> +             pvti_system_time = pvti->system_time;
+> >> +             pvti_tsc = pvti->tsc_timestamp;
+> >> +
+> >> +             /* Make sure that the version double-check is last. */
+> >> +             smp_rmb();
+> >> +     } while (unlikely((version & 1) || version != pvti->version));
+> >> +
+> >> +     delta = tsc - pvti_tsc;
+> >> +     ret = pvti_system_time +
+> >> +             pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
+> >> +                                 pvti_tsc_shift);
+> >
+> > The following is possible:
+> >
+> > 1) State: all pvtis marked as PVCLOCK_TSC_STABLE_BIT.
+> > 1) Update request for all vcpus, for a TSC_STABLE_BIT -> ~TSC_STABLE_BIT
+> > transition.
+> > 2) vCPU-1 updates its pvti with new values.
+> > 3) vCPU-0 still has not updated its pvti with new values.
+> > 4) vCPU-1 VM-enters, uses vCPU-0 values, even though it has been
+> > notified of a TSC_STABLE_BIT -> ~TSC_STABLE_BIT transition.
+> >
+> > The update is not actually atomic across all vCPUs, its atomic in
+> > the sense of not allowing visibility of distinct
+> > system_timestamp/tsc_timestamp values.
+> >
+> 
+> Hmm.  In step 4, is there a guarantee that vCPU-0 won't VM-enter until
+> it gets marked unstable? 
 
-Oops looks like this is still missing from omap2plus_defconfig, so
-applying into omap-for-v3.19/fixes.
+Yes. It will VM-enter after pvti is updated.
 
-Regards,
+> Otherwise the vdso could could just as
+> easily be called from vCPU-1, migrated to vCPU-0, read the data
+> complete with stale stable bit, and get migrated back to vCPU-1.
 
-Tony
+Right.
+
+> But I thought that KVM currently froze all vCPUs when updating pvti
+> for any of them.  How can this happen?  I admit I don't really
+> understand the update request code.
+
+The update is performed as follows:
+
+	- Stop guest instruction execution on every vCPU, parking them in the host.
+	- Request KVMCLOCK update for every vCPU.
+	- Resume guest instruction execution.
+
+The KVMCLOCK update (==pvti update) is guaranteed to be performed before 
+guest instructions are executed again.
+
+But there is no guarantee that vCPU-N has updated its pvti when
+vCPU-M resumes guest instruction execution.
+
+So the cost this patch removes is mainly from __getcpu (==RDTSCP?) ?
+Perhaps you can use Gleb's idea to stick vcpu id into version field ?
+
