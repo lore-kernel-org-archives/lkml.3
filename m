@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbbAENpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:45:32 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47012 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbbAENpb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:45:31 -0500
-Date: Mon, 5 Jan 2015 14:45:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] perf: Sample additional clock value
-Message-ID: <20150105134514.GS30905@twins.programming.kicks-ass.net>
-References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
- <1415292718-19785-4-git-send-email-pawel.moll@arm.com>
+	id S1753556AbbAENt3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:49:29 -0500
+Received: from h1.radempa.de ([176.9.142.194]:43430 "EHLO mail.cosmopool.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752923AbbAENt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 08:49:28 -0500
+From: Harald Geyer <harald@ccbib.org>
+To: Jonathan Cameron <jic23@kernel.org>
+cc: Richard Weinberger <richard@nod.at>, knaack.h@gmx.de, lars@metafoo.de,
+        pmeerw@pmeerw.net, sanjeev_sharma@mentor.com,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv2 1/3] iio: dht11: Fix out-of-bounds read
+In-reply-to: <54A91DA1.6080107@kernel.org>
+References: <1417563176-31972-1-git-send-email-richard@nod.at> <54A53FBF.5000003@kernel.org> <7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net> <54A680F8.30209@nod.at> <54A91DA1.6080107@kernel.org>
+Comments: In-reply-to Jonathan Cameron <jic23@kernel.org>
+   message dated "Sun, 04 Jan 2015 11:01:53 +0000."
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415292718-19785-4-git-send-email-pawel.moll@arm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <4823.1420465745.1@stardust.g4.wien.funkfeuer.at>
+Date: Mon, 05 Jan 2015 14:49:05 +0100
+Message-Id: <E1Y881p-0001Fp-NX@stardust.g4.wien.funkfeuer.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 06, 2014 at 04:51:58PM +0000, Pawel Moll wrote:
-> Currently three clocks are implemented: CLOCK_REALITME = 0,
-> CLOCK_MONOTONIC = 1 and CLOCK_MONOTONIC_RAW = 2. The clock field is
-> 5 bits wide to allow for future extension to custom, non-POSIX clock
-> sources(MAX_CLOCK for those is 16, see include/uapi/linux/time.h) like
-> ARM CoreSight (hardware trace) timestamp generator.
+As we access i-1 we must not start with i=0.
 
-> @@ -304,7 +305,16 @@ struct perf_event_attr {
->  				mmap2          :  1, /* include mmap with inode data     */
->  				comm_exec      :  1, /* flag comm events that are due to an exec */
->  				uevents        :  1, /* allow uevents into the buffer */
-> -				__reserved_1   : 38;
-> +
-> +				/*
-> +				 * clock: one of the POSIX clock IDs:
-> +				 *
-> +				 * 0 - CLOCK_REALTIME
-> +				 * 1 - CLOCK_MONOTONIC
-> +				 * 4 - CLOCK_MONOTONIC_RAW
-> +				 */
-> +				clock          :  5, /* clock type */
-> +				__reserved_1   : 33;
->  
->  	union {
->  		__u32		wakeup_events;	  /* wakeup every n events */
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Acked-by: Hartmut Knaack <knaack.h@gmx.de>
+Acked-by: Harald Geyer <harald@ccbib.org>
+---
+Resending for Richard Weinberger.
+No changes since v1 except reordering.
 
-This would put a constraint on actually changing MAX_CLOCKS, are the
-time people OK with that? Thomas, John?
+ drivers/iio/humidity/dht11.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I'm also not quite sure of using the >MAX_CLOCKS space for 'special'
-clocks, preferably those would register themselves with the POSIX clock
-interface.
+diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
+index 623c145..f546eca 100644
+--- a/drivers/iio/humidity/dht11.c
++++ b/drivers/iio/humidity/dht11.c
+@@ -88,7 +88,7 @@ static int dht11_decode(struct dht11 *dht11, int offset)
+ 	unsigned char temp_int, temp_dec, hum_int, hum_dec, checksum;
+ 
+ 	/* Calculate timestamp resolution */
+-	for (i = 0; i < dht11->num_edges; ++i) {
++	for (i = 1; i < dht11->num_edges; ++i) {
+ 		t = dht11->edges[i].ts - dht11->edges[i-1].ts;
+ 		if (t > 0 && t < timeres)
+ 			timeres = t;
+-- 
+1.7.2.5
 
-> @@ -4631,6 +4637,24 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
->  		data->cpu_entry.cpu	 = raw_smp_processor_id();
->  		data->cpu_entry.reserved = 0;
->  	}
-> +
-> +	if (sample_type & PERF_SAMPLE_CLOCK) {
-> +		switch (event->attr.clock) {
-> +		case CLOCK_REALTIME:
-> +			data->clock = ktime_get_real_ns();
-> +			break;
-> +		case CLOCK_MONOTONIC:
-> +			data->clock = ktime_get_mono_fast_ns();
-> +			break;
-> +		case CLOCK_MONOTONIC_RAW:
-> +			data->clock = ktime_get_raw_ns();
-> +			break;
-> +		default:
-> +			data->clock = 0;
-> +			break;
-> +		}
-> +	}
-> +
->  }
-
-This is broken. There is nothing stopping this from being called from
-NMI context and only the MONO one is NMI safe.
-
-Also, one would expect something like:
-
-	default: {
-		struct k_clock *kc = clockid_to_kclock(event->attr.clock);
-		struct timespec ts;
-		if (kc) {
-			kc->clock_get(event->attr.clock, &ts);
-			data->clock = ktime_to_ns(timespec_to_ktime(ts));
-		} else {
-			data->clock = 0;
-		}
-	}
-
-Albeit preferably slightly less horrible -- of course, one would first
-need to deal with the NMI issue.
