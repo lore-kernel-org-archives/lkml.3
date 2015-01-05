@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbbAESHv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 13:07:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477AbbAESHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 13:07:49 -0500
-Date: Mon, 5 Jan 2015 13:07:43 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com
-Subject: Re: [PATCH] TaskTracker : Simplified thread information tracker.
-Message-ID: <20150105180743.GI29998@madcap2.tricolour.ca>
-References: <20140927091440.6fe54f43@ivy-bridge>
- <201409280012.FGE05239.VtFOSMOJFOFQLH@I-love.SAKURA.ne.jp>
- <20141007213054.GJ26201@madcap2.tricolour.ca>
- <201410102140.HHB30768.tFVJSFQOMLOOFH@I-love.SAKURA.ne.jp>
- <20141010124923.GD2966@madcap2.tricolour.ca>
- <201501042050.EEH30201.FJVtFHMQOLSFOO@I-love.SAKURA.ne.jp>
+	id S1754350AbbAESLJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 13:11:09 -0500
+Received: from mail-bn1bbn0107.outbound.protection.outlook.com ([157.56.111.107]:46720
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753418AbbAESLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 13:11:08 -0500
+Message-ID: <1420481454.4961.16.camel@freescale.com>
+Subject: Re: [RFC] PPC: MPIC: necessary readback after EOI?
+From: Scott Wood <scottwood@freescale.com>
+To: Andreas Mohr <andi@lisas.de>
+CC: Purcareata Bogdan <b43198@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Mon, 5 Jan 2015 12:10:54 -0600
+In-Reply-To: <20150105174616.GA3159@rhlx01.hs-esslingen.de>
+References: <20150105174616.GA3159@rhlx01.hs-esslingen.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201501042050.EEH30201.FJVtFHMQOLSFOO@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: CO2PR11CA0021.namprd11.prod.outlook.com (10.141.242.159) To
+ BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=scottwood@freescale.com; 
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0728;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0728;
+X-Forefront-PRVS: 0447DB1C71
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(377424004)(51704005)(24454002)(46102003)(99396003)(107046002)(120916001)(122386002)(64706001)(20776003)(47776003)(23676002)(50466002)(89996001)(50226001)(4396001)(68736005)(36756003)(31966008)(87976001)(101416001)(62966003)(103116003)(40100003)(97736003)(33646002)(551934003)(106356001)(50986999)(105586002)(110136001)(76176999)(2950100001)(77156002)(21056001)(42186005)(92566001)(86362001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 05 Jan 2015 18:11:04.1034
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0728
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/04, Tetsuo Handa wrote:
-> Hello.
+On Mon, 2015-01-05 at 18:46 +0100, Andreas Mohr wrote:
+> Hi,
 > 
-> Richard Guy Briggs wrote:
-> > > Richard Guy Briggs wrote:
-> > > > On 14/09/28, Tetsuo Handa wrote:
-> > > > > (Q2) Does auxiliary record work with only type=SYSCALL case?
-> > > > 
-> > > > Auxiliary records don't work with AUDIT_LOGIN because that record has a
-> > > > NULL context.  Similarly for core dumps (AUDIT_ANOM_ABEND), AUDIT_SECCOMP,
-> > > > configuration changes (AUDIT_CONFIG_CHANGE, AUDIT_FEATURE_CHANGE), most
-> > > > (all?) AUDIT_USER_* messages.
-> > > > 
-> > > I see, thank you.
-> > > 
-> > > Although I feel that, from the point of view of troubleshooting, emitting
-> > > history of thread's comm name into NULL-context records would help sysadmin
-> > > to map login session and operations a user did from that login session,
-> > > I'm OK with starting history of thread's comm name as auxiliary records
-> > > (i.e. not emitted into NULL-context records).
-> > > 
-> > > Adding LKML for reviewers. What else can I do for merging this patch?
-> > 
-> > I'm willing to take it with some reflection and no significant
-> > objections, in particular from userspace audit.  I'll have a closer look
-> > at it.
+> > I was curious why the mpic_cpu_read(MPIC_INFO(CPU_WHOAMI)) was there in
+> > the first place and if it's still needed. If it's still required, I
+> > guess a better approach is to eliminate the call only if the kernel is
+> > running on the KVM guest side, where the MPIC is emulated and no longer
+> > requires a readback.
 > 
-> Any comments on this patch?
+> "Why not?"
+> 
+> A mechanism being "emulated"/"virtual" or not
+> may not necessarily be much of a distinction (if at all!).
+> The readback might be required
+> to properly fulfill all requirements
+> of a full state change protocol specification,
+> which might easily be the case for both RS(*) and virtual hardware.
+> And especially for virtual hardware
+> such a "readback" event
+> might be an extremely important "end of transaction" marker
+> which may often be needed for freeing of temporary resources etc.
 
-Steve already mentioned any user-influenced fields need to be escaped,
-so I'd recommend audit_log_untrustedstring() as being much simpler from
-your perspective and much better tested and understood from audit
-maintainer's perspective.  At least use the existing 'o' printf format
-specifier instead of inventing your own.  I do acknowledge that the
-resulting output from your function is easier to read in its raw format
-passed from the kernel, however, it makes your code harder to maintain.
+I'm not convinced that it's required in real silicon (though there are
+many MPIC implementations which have their own quirks...), and I'm 100%
+sure that it's not required in the QEMU/KVM implementation of MPIC.
 
-As for the date-stamping bits, they seem to be the majority of the code
-in audit_update_history().  I'd just emit a number and punt that to
-userspace for decoding.  Alternatively, I'd use an existing service in
-the kernel to do that date formatting, or at least call a new function
-to format that date string should a suitable one not already exist, so
-you can remove that complexity from audit_update_history().
+It would have been nice if a code comment explained why it was doing the
+readback...  I don't see any particular need to wait for EOI completion
+here (unlike when masking).
 
-- RGB
+-Scott
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+
