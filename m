@@ -1,96 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbbAEUB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 15:01:57 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:55402 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684AbbAEUB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 15:01:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robh@kernel.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH] pci: introduce common pci config space accessors
-Date: Mon, 05 Jan 2015 21:01:50 +0100
-Message-ID: <1758416.ZHsvLP471N@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqLGh-e2epUdtK07xM_2nwrRO_qcebD-zdCQjRGh9xnsAw@mail.gmail.com>
-References: <1420424374-32412-1-git-send-email-robh@kernel.org> <2224125.SvyFyDvrch@wuerfel> <CAL_JsqLGh-e2epUdtK07xM_2nwrRO_qcebD-zdCQjRGh9xnsAw@mail.gmail.com>
+	id S1754153AbbAEUHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 15:07:41 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40879 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753789AbbAEUHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 15:07:39 -0500
+Message-ID: <54AAEEE1.7020607@ti.com>
+Date: Mon, 5 Jan 2015 15:06:57 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:BLy3g8DdF/bwRn/fYej7XDRNFDqkIYz/AljsRGxx3H1DEbJLuoT
- M6qFiPPcYsHOrC6YMRLDid/n0fW1ERamVclObLMw4S6Kie2bdN8NJXlbwLjbs7JouA2sZmv
- IavNieFyepTXbE0EYmMn6PiJ7hjkpmaXc5QhRt/f6t0APNI6IdHzzdnbB11pKqKOEkigqJG
- +ZYS08XQNjs5tBLE4AECA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robherring2@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma
+ configuration
+References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com> <CAL_Jsq+krOUA3BPvMCdaOBhALoi+pzWbw3YndXqR8x52OJogZg@mail.gmail.com> <54A71CD1.4070107@ti.com> <2019516.ehiuEv0rdL@wuerfel>
+In-Reply-To: <2019516.ehiuEv0rdL@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 January 2015 08:46:09 Rob Herring wrote:
-> 
-> >> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> >> index 360a966..e7fd519 100644
-> >> --- a/include/linux/pci.h
-> >> +++ b/include/linux/pci.h
-> >> @@ -560,6 +560,7 @@ static inline int pcibios_err_to_errno(int err)
-> >>  /* Low-level architecture-dependent routines */
-> >>
-> >>  struct pci_ops {
-> >> +     void __iomem *(*map_bus)(struct pci_bus *bus, unsigned int devfn, int where);
-> >>       int (*read)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 *val);
-> >>       int (*write)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 val);
-> >>  };
-> >
-> > In various other contexts, we have recently discussed adding new callbacks
-> > to struct pci_host_bridge, or an operations structure below it. I don't see
-> > a strong reason for one place or the other, but maybe someone else does.
-> > If we put it into pci_host_bridge_ops, the first argument would need to
-> > be the pci_host_bridge pointer of course.
-> 
-> I think it makes sense to keep map_bus together with read/write. Given
-> they are all host specific functions being part of pci_host_bridge
-> would make some sense. However, that would be a pretty painful change
-> across the tree (Have you seen how many PCI host implementations MIPS
-> has?).
+On 01/03/2015 04:37 PM, Arnd Bergmann wrote:
+> On Friday 02 January 2015 17:33:53 Murali Karicheri wrote:
+>>
+>> I have no experience with IOMMU and may not offer much help here as I
+>> originally wrote above. Will Deacon has added this API and probably able
+>> to offer some help in this discussion.
+>>
+>> Will Deacon,
+>>
+>> Any comment?
+>
+> It's complicated :(
+>
+>> Looking at the iommu documentation and of_iommu.c, I get a feeling that
+>> this API is not really used at present as there are no callers of
+>> of_iommu_set_ops() and I assume this is a WIP.
+>
+> Right, but we have patches for some iommu drivers based on this API,
+> and we should migrate all of them eventually.
+>
+>> I believe the way it is
+>> expected to work is to have the iommu driver of the master IOMMU devices
+>> call of_iommu_set_ops(). The device node of this master IOMMU device is
+>> specified as a phandle in the OF node of the device (various bus devices
+>> such as platform, PCI etc). This allow to retrieve the iommu ops though
+>> the of_iommu_configure() API and use it in arch_setup_dma_ops(). So my
+>> gut feeling is that for PCI devices, as there are no DT node, the root
+>> bus node may specify iommus phandle to IOMMU master OF nodes.
+>
+> Yes, but we also need to pass a PCI device specific identifier along
+> with the root bus node, because some iommu drivers take the PCI
+> bus/device/function number into account for creating per-function
+> i/o page tables.
+>
+>> W.r.t your comment "We may want to address the comment in
+>> of_iommu_configure about parent nodes. We should be sure these changes
+>> work with how we would do searching parent nodes",
+>>
+>> I believe, the parent node search itself should work the same way in the
+>> case of PCI as with platform bus case. PCI's case, we are providing the
+>> OF node of the root bus host bridge. Why should this be any different in
+>> terms of search?
+>>
+>> I see a potential issue with dma-ranges as described in the notes below.
+>> As noted below the usage of dma-range for iommu is to be determined. For
+>> keystone, the of_iommu_configure() always return false as we don't use
+>> the iommu. But don't know if this has any consequences for other
+>> platforms. Or I got your questions wrong. Any help here from others on
+>> the list?
+>>
+>> ========================================================================
+>> One possible extension to the above is to use an "iommus" property along
+>> with a "dma-ranges" property in a bus device node (such as PCI host
+>> bridges). This can be useful to describe how children on the bus relate
+>> to the IOMMU if they are not explicitly listed in the device tree (e.g.
+>> PCI devices). However, the requirements of that use-case haven't been
+>> fully determined yet. Implementing this is therefore not recommended
+>> without further discussion and extension of this binding.
+>> =========================================================================
+>
+> This probably won't ever apply to PCI devices, so let's ignore it for now.
+> For the moment (and for PCI), we should assume that we either configure
+> an iommu directly or we use dma-ranges if no iommu is in use.
+>
+Thanks Arnd,
 
-We could go wild and do both: if the bus has pci_ops, we use those,
-otherwise we fall back to the map_bus/read/write from pci_host_bridge_ops.
+I will post v3 of the patch with what is agreed before in my response 
+and I understand there is no additional change required based on this 
+particular discussion about iommu. Right?
 
-> > For the common map_bus implementations, it would also be nice to put them
-> > into the same file as your new access functions, but then we need a common
-> > location to store at least one __iomem pointer. I guess that place could
-> > either be struct pci_host_bridge or struct pci_bus. In theory, struct pci_ops
-> > would work too, but then we could no longer mark it 'const' in host bridge
-> > drivers.
-> >
-> > If we have a common set of map_bus functions, we can even export the
-> > pci_ops structures from drivers/pci/access.c:
-> >
-> > const struct pci_ops pci_generic_ecam_ops = {
-> >         .map_bus        = ecam_map_bus,
-> >         .read           = pci_generic_config_read,
-> >         .write          = pci_generic_config_write,
-> > };
-> > EXPORT_SYMBOL_GPL(pci_generic_ecam_ops);
-> >
-> > That could of course be done in a follow-up patch, it doesn't have to be
-> > part of your patch, but it would be good to be prepared.
-> 
-> Right, this is what I had in mind for CAM/ECAM. I didn't go this far
-> because a lot of the map_bus functions do various checks to prevent
-> certain accesses. Of what I've found, I think only generic host and
-> Xilinx drivers could be converted to a generic ECAM map_bus. Others
-> check bus number and/or device number or link-up status or have a
-> fixup for certain registers, for example. I'm not sure how much of it
-> is unnecessary or could be common.
+Murali
+> 	Arnd
 
-How do you want to deal with the overrides? I don't see a way to
-do that in map_bus (with the current definition) if the idea is that
-for certain registers we return hardcoded values instead of accessing
-mmio registers.
 
-	Arnd
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
