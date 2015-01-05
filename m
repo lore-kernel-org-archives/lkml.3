@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbbAEK7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:59:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47121 "EHLO mx2.suse.de"
+	id S1753933AbbAELAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:00:43 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59375 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290AbbAEK7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:59:42 -0500
-Date: Mon, 5 Jan 2015 11:59:37 +0100
-From: Joerg Roedel <jroedel@suse.de>
-To: Jerry Hoemann <jerry.hoemann@hp.com>
-Cc: Joerg Roedel <joro@8bytes.org>, iommu@lists.linux-foundation.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Myron Stowe <mstowe@redhat.com>
-Subject: Re: [PATCH 1/2] iommu/vt-d: Fix dmar_domain leak in
- iommu_attach_device
-Message-ID: <20150105105937.GA6638@suse.de>
-References: <1418813017-24888-1-git-send-email-joro@8bytes.org>
- <20141217213747.GA11569@anatevka.fc.hp.com>
+	id S1753268AbbAELAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 06:00:42 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto: AEAD: add check for presence of auth tag
+Date: Mon, 05 Jan 2015 12:00:36 +0100
+Message-ID: <1533111.7lv9uhtZ5L@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150105105540.GA25665@gondor.apana.org.au>
+References: <15957213.Wu7Np8vQse@tachyon.chronox.de> <1656062.b6mnFyMzhb@tachyon.chronox.de> <20150105105540.GA25665@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141217213747.GA11569@anatevka.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jerry,
+Am Montag, 5. Januar 2015, 21:55:40 schrieb Herbert Xu:
 
-On Wed, Dec 17, 2014 at 02:37:47PM -0700, Jerry Hoemann wrote:
-> Before applying this change on a 3.18-rc7 kernel layered on a
-> RHEL 7.0 root disk, I was able to reproduce the memory
-> leak that Alex reported when powering on/off a VM w/ a PCI
-> device assigned to it.
+Hi Herbert,
+
+> On Mon, Jan 05, 2015 at 11:53:38AM +0100, Stephan Mueller wrote:
+> > Could you please check: I am unable to find the function.
 > 
-> After applying this change, I don't see the memory leak anymore.
-> Instrumentation shows the new code is being invoked during power on
-> of the VM.
+> It's in crypto/authenc.c.
 > 
-> Looks good.
+> > Note, there is no size parameter provided in crypto_aead_decrypt. To
+> > obtain
+> > the size, I would need to walk the scatterlists, no?
 > 
-> Thanks!
-> 
-> Tested-by: Jerry Hoemann <jerry.hoemann@hp.com>
+> The cryptlen is supposed to contain the entire input apart from the
+> AD, including the authentication tag if one is present.
 
-Thanks for testing, I applied the patches to my iommu/fixes branch for
-3.19.
+Thanks a lot for the pointer, I overlooked the cryptlen member variable. I 
+will update the patch to replace the scatterlist walk with such small check.
 
-
-	Joerg
-
+-- 
+Ciao
+Stephan
