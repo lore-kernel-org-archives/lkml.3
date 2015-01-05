@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256AbbAEPdT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:33:19 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:35215 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838AbbAEPdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:33:18 -0500
-Message-ID: <1420471996.2090.9.camel@mm-sol.com>
-Subject: Re: [PATCH RFC] iio: iadc: wait_for_completion_timeout time in
- jiffies
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>, Hartmut Knaack <knaack.h@gmx.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Mon, 05 Jan 2015 17:33:16 +0200
-In-Reply-To: <54A9212B.8050709@kernel.org>
-References: <1420016386-19638-1-git-send-email-der.herr@hofr.at>
-	 <54A9212B.8050709@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.7-fta1.2~trusty 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754307AbbAEPem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:34:42 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33518 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924AbbAEPel (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 10:34:41 -0500
+Date: Mon, 5 Jan 2015 16:34:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
+ pyaudio (and probably more)
+Message-ID: <20150105153437.GB3433@amd>
+References: <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
+ <20150104201026.GA23427@amd>
+ <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
+ <20150104203724.GA16372@amd>
+ <alpine.LFD.2.11.1501041547050.18844@knanqh.ubzr>
+ <CA+55aFy5yB2d-1iXEUtU+puua4TAmV0kZF_7TBhXO1Y4Khqb9Q@mail.gmail.com>
+ <alpine.LFD.2.11.1501041609290.18844@knanqh.ubzr>
+ <20150104212659.GC12302@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.11.1501042343240.18844@knanqh.ubzr>
+ <20150105121126.GA10116@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105121126.GA10116@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sun, 2015-01-04 at 11:16 +0000, Jonathan Cameron wrote:
-> On 31/12/14 08:59, Nicholas Mc Guire wrote:
-> > The timeout value to wait_for_completion_timeout is in jiffies but
-> > the value being passed seems like it was intended to by microseconds
-> > Note that the timeout was extremely long thus it might be too short
-> > now. In any case it probably should be passed through usecs_to_jiffies()
-> > or msecs_to_jiffies()
-> > 
-> > patch is against linux-next 3.19.0-rc1 -next-20141226
-> > 
-> > patch was only compile-tested x86_64_defcofnig + CONFIG_SPMI=m
-> > CONFIG_IIO=m, CONFIG_QCOM_SPMI_IADC=m
-> > 
-> > Signed-off-by: Nicholas Mc Guire herr@hofr.at>
-> Certainly suspicious and I'd draw the same conclusion you did!
-> Anyhow just waiting for Ivan to take a look as it's his driver.
-
-Oops, true. Timeout is calculated in microseconds and have to 
-be converted to jiffies.
-
-Thanks.
-
-Acked-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-
-
+On Mon 2015-01-05 12:11:36, Will Deacon wrote:
+> Hi all,
 > 
-> Thanks,
-> 
-> Jonathan
-> > ---
-> >  drivers/iio/adc/qcom-spmi-iadc.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/iio/adc/qcom-spmi-iadc.c b/drivers/iio/adc/qcom-spmi-iadc.c
-> > index b9666f2..3080562 100644
-> > --- a/drivers/iio/adc/qcom-spmi-iadc.c
-> > +++ b/drivers/iio/adc/qcom-spmi-iadc.c
-> > @@ -296,7 +296,8 @@ static int iadc_do_conversion(struct iadc_chip *iadc, int chan, u16 *data)
-> >         if (iadc->poll_eoc) {
-> >                 ret = iadc_poll_wait_eoc(iadc, wait);
-> >         } else {
-> > -               ret = wait_for_completion_timeout(&iadc->complete, wait);
-> > +               ret = wait_for_completion_timeout(&iadc->complete,
-> > +                       usecs_to_jiffies(wait));
-> >                 if (!ret)
-> >                         ret = -ETIMEDOUT;
-> >                 else
-> > 
-> 
-> 
+> Sorry for the late reply, it seems that neither myself or the
+> arm-linux-kernel list were on CC for this thread.
+
+Sorry about that. I was pretty sure I cc-ed you, but apparently did
+not.
+
+> Pavel: do you have something we can run to observe the problem?
+
+Debian 7.7: mpg123, anything pyaudio based, at least. (install
+python-pyaudio, try to run examples).
+
+I hit it with:
+
+#!/usr/bin/env python
+# Written by Yu-Jie Lin
+# Public Domain
+#
+# Deps: PyAudio, NumPy, and Matplotlib
+# Blog:
+# http://blog.yjl.im/2012/11/frequency-spectrum-of-sound-using.html
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import pyaudio
+import struct
+import wave
+...
+
+When I decided to investigate.
+
+> Finally, the revert doesn't have a Cc stable tag which is probably needed
+> if it's going to land in 3.19 final, irrespective of whether we agree that
+> it's the right way forward.
+
+Yes, pushing is to stable is good idea. Will you take care?
+
+Thanks,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
