@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbbAENVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:21:41 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:58100 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344AbbAENVk (ORCPT
+	id S1753982AbbAENW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:22:27 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35506 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264AbbAENW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:21:40 -0500
-Date: Mon, 5 Jan 2015 14:21:33 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] s390: Remove unnecessary KERN_CONT
-Message-ID: <20150105132133.GB4281@osiris>
-References: <1420460958.2652.4.camel@perches.com>
+	Mon, 5 Jan 2015 08:22:26 -0500
+Message-ID: <54AA900B.4000403@collabora.co.uk>
+Date: Mon, 05 Jan 2015 14:22:19 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420460958.2652.4.camel@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010513-0029-0000-0000-0000028A06F7
+To: Kukjin Kim <kgene@kernel.org>
+CC: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Kevin Hilman'" <khilman@linaro.org>,
+        "'Olof Johansson'" <olof@lixom.net>, linux-samsung-soc@vger.kernel.org,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] ARM: exynos_defconfig: Enable options for display
+ panel support
+References: <1420215089-2093-1-git-send-email-javier.martinez@collabora.co.uk> <047c01d028e7$311858e0$93490aa0$@kernel.org>
+In-Reply-To: <047c01d028e7$311858e0$93490aa0$@kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 04:29:18AM -0800, Joe Perches wrote:
-> This has no effect as KERN_CONT is an empty string,
-> 
-> It's probably just a missing conversion artifact as the
-> other pr_cont uses in the same file don't have this prefix.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  arch/s390/mm/fault.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-> index 811937b..232c14e 100644
-> --- a/arch/s390/mm/fault.c
-> +++ b/arch/s390/mm/fault.c
-> @@ -171,7 +171,7 @@ static void dump_pagetable(unsigned long asce, unsigned long address)
->  		table = table + ((address >> 20) & 0x7ff);
->  		if (bad_address(table))
->  			goto bad;
-> -		pr_cont(KERN_CONT "S:%016lx ", *table);
-> +		pr_cont("S:%016lx ", *table);
+Hello Kukjin,
 
-Applied, thanks.
+>> 
+>> Hello Kukjin,
+>> 
+> Hi Javier,
+> 
+> Happy new year :)
+>
 
+Thanks, happy new year for you as well!
+
+>> You dropped this patch since exynos drm was causing boot hangs on some
+>> platforms but the fix for that issue is already in linux-next (commit:
+>> f1e9203 clk: samsung: Fix Exynos 5420 pinctrl setup and clock disable
+>> failure due to domain being gated) so I think it makes sense to enable
+>> the display options again.
+>> 
+>> NOTE: Display panel is still not working since patch "arm: dts: Exynos5:
+>> Use pmu_system_controller phandle for dp phy" is needed [0] but I think
+>> we should enable display options to catch the regressions easier.
+>> 
+> Agreed with your suggestion and I'll pick this up into Samsung tree soon.
+> 
+
+Perfect, I hope you can pick my peach pit/pi and snow DTS updates series
+as well since those patches have been in the list for some time.
+
+> Thanks,
+> Kukjin
+> 
+
+Best regards,
+Javier
