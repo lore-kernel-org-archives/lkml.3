@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443AbbAEKG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:06:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46180 "EHLO mx2.suse.de"
+	id S1753469AbbAEKNE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:13:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46237 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273AbbAEKG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:06:57 -0500
-Date: Mon, 5 Jan 2015 11:06:52 +0100
-From: Jan Kara <jack@suse.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: CONFIG_UDF_FS description
-Message-ID: <20150105100652.GD7056@quack.suse.cz>
-References: <201412242035.49929@pali>
+	id S1753168AbbAEKNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:13:01 -0500
+Date: Mon, 5 Jan 2015 11:12:57 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Johannes Berg <johannes@sipsolutions.net>
+cc: Paul Bolle <pebolle@tiscali.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Kalle Valo <kvalo@codeaurora.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
+In-Reply-To: <1420452301.9459.3.camel@sipsolutions.net>
+Message-ID: <alpine.LNX.2.00.1501051109350.16297@pobox.suse.cz>
+References: <1420297188.2397.3.camel@tiscali.nl>  <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>  <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>  <1420324124.9624.60.camel@x220> (sfid-20150103_232852_400842_25360CE9)
+ <1420452301.9459.3.camel@sipsolutions.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201412242035.49929@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-12-14 20:35:49, Pali Rohár wrote:
-  Hello,
+On Mon, 5 Jan 2015, Johannes Berg wrote:
 
-> Hello, can you update menuconfig description about UDF filesystem 
-> in file fs/udf/Kconfig? There is information only about CD/DVD 
-> discs and packet mode. But UDF FS can be used also on hard disks 
-> or removable usb disks (as multiplatform alternative to FAT32). 
-> It means that CONFIG_UDF_FS can be useful also on machines 
-> without optical mechanic.
-  Thanks for suggestion. I have updated the text to read as follows:
-          This is a file system used on some CD-ROMs and DVDs. Since the
-          file system is supported by multiple operating systems and is more
-          compatible with standard unix file systems, it is also suitable for
-          removable USB disks. Say Y if you intend to mount DVD discs or CDRW's
-          written in packet mode, or if you want to use UDF for removable USB
-          disks. Please read <file:Documentation/filesystems/udf.txt>.
+> Well, see the big thread over there with the revert that I'm tempted to
+> not even read ...
 
-          To compile this file system support as a module, choose M here: the
-          module will be called udf.
+I'd actually like to hear from you whether you share Emmanuel's point of 
+view that my revert of your patch was inappropriate; I was really 
+surprised that there might be even questions about that, given the obvious 
+userspace wreckage.
 
+Again, the only thing I really care for is the compatibility layer to 
+userspace. I don't question at all the fact nl80211 provides much better 
+functionality and its usage definitely should be encouraged.
 
-								Honza
+Thanks,
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jiri Kosina
+SUSE Labs
