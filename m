@@ -1,201 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbbAEPrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:47:07 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:47335 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924AbbAEPrE (ORCPT
+	id S1754035AbbAEPsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:48:23 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:56286 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092AbbAEPsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:47:04 -0500
-Date: Mon, 5 Jan 2015 16:46:59 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Oded Gabbay <oded.gabbay@amd.com>, David Airlie <airlied@linux.ie>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Dana Elifaz <Dana.Elifaz@amd.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        iommu@lists.linux-foundation.org, Arnd Bergmann <arnd@arndb.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH 0/2] Change order of linkage in kernel makefiles for
- amdkfd
-Message-ID: <20150105154657.GJ12010@ulmo.nvidia.com>
-References: <1419246435-7050-1-git-send-email-oded.gabbay@amd.com>
- <1621810.aTt9O4Ghzs@avalon>
- <549FEB52.4020103@amd.com>
- <1678486.9ZXZnn5och@avalon>
- <54A12028.7020303@amd.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pN9MePJoZbRKbUk1"
-Content-Disposition: inline
-In-Reply-To: <54A12028.7020303@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 5 Jan 2015 10:48:20 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-85-54aab2402ac6
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Pavel Machek <pavel@ucw.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RFC PATCHv2 00/19] power_supply: Allow safe usage of power supply
+Date: Mon, 05 Jan 2015 16:47:43 +0100
+Message-id: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFJMWRmVeSWpSXmKPExsVy+t/xa7qOm1aFGExlspj05D2zxcSVk5kt
+	Xr8wtNj58C2bxfJ9/YwWmx5fY7W4vGsOm8Xn3iOMFndPHWWzOHP6EqvF6d0lDtweO2fdZffY
+	vELLY9OqTjaPzUvqPbZcbWfx6NuyitFjxerv7B6fN8kFcERx2aSk5mSWpRbp2yVwZWz++Iu5
+	YL5uxZp/GQ2M05W7GDk5JARMJOa83cIGYYtJXLi3Hsjm4hASWMoo8WPifVYIp49JYub81Uwg
+	VWwCxhKbly8BqxIReMIkMb31JAtIglnAUOLnuz/sXYwcHMIC3hIfvkWChFkEVCUedt5kBgnz
+	CrhLPFnFD7FMTuLkscmsExi5FzAyrGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQICa8vOxgX
+	H7M6xCjAwajEw+txYmWIEGtiWXFl7iFGCQ5mJRHeV+mrQoR4UxIrq1KL8uOLSnNSiw8xMnFw
+	SjUwsqsfWB347HcfJ3PBsoAbRQ5yu+U4mP4kiWa9yFnz9sqRW2dTzRQexmlt93eP60x1as0t
+	7TtwYNLl5z9+7zeaa+3Fsy3mmLFrq6VnY1O9XM32/+73wiawzxP1miflsSIvqPhU7+Mn54wj
+	6tw33+Ti1u1MfOJtL+g3eXWeu2ubjTK/Cd/q+Y5KLMUZiYZazEXFiQCeq+eUDQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---pN9MePJoZbRKbUk1
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Dec 29, 2014 at 10:34:32AM +0100, Christian K=C3=B6nig wrote:
-> Am 29.12.2014 um 09:16 schrieb Laurent Pinchart:
-> >Hi Oded,
-> >
-> >On Sunday 28 December 2014 13:36:50 Oded Gabbay wrote:
-> >>On 12/26/2014 11:19 AM, Laurent Pinchart wrote:
-> >>>On Thursday 25 December 2014 14:20:59 Thierry Reding wrote:
-> >>>>On Mon, Dec 22, 2014 at 01:07:13PM +0200, Oded Gabbay wrote:
-> >>>>>This small patch-set, was created to solve the bug described at
-> >>>>>https://bugzilla.kernel.org/show_bug.cgi?id=3D89661 (Kernel panic wh=
-en
-> >>>>>trying use amdkfd driver on Kaveri). It replaces the previous patch-=
-set
-> >>>>>called [PATCH 0/3] Use workqueue for device init in amdkfd
-> >>>>>(http://lists.freedesktop.org/archives/dri-devel/2014-December/07440=
-1.ht
-> >>>>>ml)
-> >>>>>
-> >>>>>That bug appears only when radeon, amdkfd and amd_iommu_v2 are compi=
-led
-> >>>>>inside the kernel (not as modules). In that case, the correct loading
-> >>>>>order, as determined by the exported symbol used by each driver, is
-> >>>>>not enforced anymore and the kernel loads them based on who was link=
-ed
-> >>>>>first. That makes radeon load first, amdkfd second and amd_iommu_v2
-> >>>>>third.
-> >>>>>
-> >>>>>Because the initialization of a device in amdkfd is initiated by rad=
-eon,
-> >>>>>and can only be completed if amdkfd and amd_iommu_v2 were loaded and
-> >>>>>initialized, then in the case mentioned above, this initalization fa=
-ils
-> >>>>>and there is a kernel panic as some pointers are not initialized but
-> >>>>>used nontheless.
-> >>>>>
-> >>>>>To solve this bug, this patch-set moves iommu/ before gpu/ in
-> >>>>>drivers/Makefile and also moves amdkfd/ before radeon/ in
-> >>>>>drivers/gpu/drm/Makefile.
-> >>>>>
-> >>>>>The rationale is that in general, AMD GPU devices are dependent on A=
-MD
-> >>>>>IOMMU controller functionality to allow the GPU to access a process's
-> >>>>>virtual memory address space, without the need for pinning the memor=
-y.
-> >>>>>That's why it makes sense to initialize the iommu/ subsystem ahead of
-> >>>>>the gpu/ subsystem.
-> >>>>I strongly object to this patch set. This makes assumptions about how
-> >>>>the build system influences probe order. That's bad because seemingly
-> >>>>unrelated changes could easily break this in the future.
-> >>>>
-> >>>>We already have ways to solve this kind of dependency (driver probe
-> >>>>deferral), and I think you should be using it to solve this particular
-> >>>>problem rather than some linking order hack.
-> >>>While I agree with you that probe deferral is the way to go, I believe
-> >>>linkage ordering can still be used as an optimization to avoid deferri=
-ng
-> >>>probe in the most common cases. I'm thus not opposed to moving iommu/
-> >>>earlier in link order (provided we can properly test for side effects,=
- as
-> >>>the jump is pretty large), but not as a replacement for probe deferral.
-> >>My thoughts exactly. If this was some extreme use case, than it would be
-> >>justified to solve it with probe deferral. But I think that for most co=
-mmon
-> >>cases, GPU are dependent on IOMMU and *not* vice-versa.
->=20
-> Fixing this through deferred probing sounds like the correct long term
-> solution to me as well.
->=20
-> But what Thierry is referring to here is probably the approach of returni=
-ng
-> -EAGAIN from the probe method (at least that was the last status when I
-> looked into this).
+This is RFC, please don't apply yet but let me know if this approach
+is OK.
 
--EPROBE_DEFER would be the one that I was referring to.
 
-> The problem with this approach is the interface design between radeon and
-> amdkfd. amdkfd simply doesn't have a probe method which gets called when =
-the
-> hardware is detected and can return -EAGAIN. Instead amdkfd is called by
-> radeon after hardware initialization when it is way to late for such a
-> thing.
+TLDR
+====
+Patchset tries to fix following race scenario:
 
-That sounds like a pretty brittle design. It sounds like nowhere in the
-code you've encoded this dependency and you rely on symbols only to
-ensure probe ordering.
+Thread 1: charger manager, CONSUMER
+Thread 2: power supply driver, PROVIDER
 
-Couldn't you simply make radeon check for availability of the IOMMU
-early and defer probing if it's not there yet? Or if radeon depends on
-the IOMMU via amdkfd, then perhaps calling into amdkfd to check for the
-availability of the IOMMU would be a more correct representation of the
-dependency.
+THREAD 1 (charger manager)         THREAD 2 (power supply driver)
+==========================         ==============================
+psy = power_supply_get_by_name()
+                                   Driver unbind, .remove
+                                     power_supply_unregister()
+                                     Device fully removed
+psy->get_property()
 
-> >>BTW, my first try at solving this was to use probe deferral (using
-> >>workqueue), but the feedback I got from Christian and Dave was that mov=
-ing
-> >>iommu/ linkage before gpu/ was a much more simpler solution.
-> >To clarify my position, I believe changing the link order can be a worth=
-while
-> >optimization, but I'm uncertain about the long term viability of that ch=
-ange
-> >as a fix. Probe deferral has been introduced because not all probe order=
-ing
-> >issues can be fixed through link ordering, so we should fix the problem
-> >properly.
-> >
-> >This being said, if modifying the link order can help for now without
-> >introducing negative side effects, it would only postpone the real fix, =
-so I'm
-> >not opposed to it.
->=20
-> Yeah, that sounds like the right approach to me as well.
+To properly fix the race the patchset:
+1. Adds power_supply_get_property()-like API for safe access by consumer.
+2. Moves ownership of power_supply structure from driver (provider) to
+   power supply core.
+3. Adds power_supply_put() which will reclaim memory.
 
-I don't think that's a good approach at all. It doesn't encode the
-dependency anywhere. All you have is some Makefile that lists a bunch of
-directories. What happens if anybody was to change that order for some
-other reason? If you're not Cc'ed on the patch and nobody else NAK's it
-because they are accidentally aware of the dependency that patch is
-going to break radeon.
 
-> In general I would prefer that modules compiled into the kernel load
-> by the order of their symbol dependency just like standalone modules
-> do.
+Description
+=========== 
+This is a little different than my previous approaches [1][2] for fixing
+usage of power supply by some consumer, if driver implementing it is
+unbound.
 
-That I generally agree with. But it can't be a replacement for properly
-describing the runtime dependencies between modules. There can be other
-reasons than link order that influence probe ordering. What if the IOMMU
-driver for some reason gains deferred probe support and therefore
-doesn't succeed on the first probe? Or only sometimes.
+The patchset is quite big and touches power supply API so a lot of
+changes in drivers are needed. These changes *are not finished yet*.
+I've done them only for:
+ - bq24190_charger.c
+ - charger-manager.c
+ - max14577_charger.c
+ - max17040_battery.c
+ - max17042_battery.c
+ - sbs-battery.c
+ - tps65090-charger.c
+So allyesconfig won't build.
 
-Properly describing the dependency is the only way to prevent any of
-that.
+If this approach is OK, I'll prepare full patchset changing all the
+drivers.
 
-Thierry
+My previous approach [1][2] limited the race but did not close it.
+Still the consumer of power supply by calling power_supply_get_propert(psy...)
+may reference invalid memory because the producer freed it.
 
---pN9MePJoZbRKbUk1
-Content-Type: application/pgp-signature
+Actually, because struct power_supply is exposed to consumers, the
+core should be the owner of it. This is accomplished in patch 11/19
+("power_supply: Change ownership from driver to core").
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUqrHxAAoJEN0jrNd/PrOhXfAP/1MoFwg5gpuv0FYKn9cmkSgn
-PIwfF/20vxlX61jAshN/Vj++QtshjeslspDXpqjcR0Ylm/MoaITdsb4WqNOUdplM
-g180HQkWsZw5jemg1dvOihS6nsV5wtFiuDUtSg2bFYIo5uX1cKtXr0Dvw5FplHBL
-x7cBo1W6/q89qkjuLKe0XUtlqAveaMfVp4SDzFMXW0d65x9yEGkBNkOJ7xmWXLQJ
-Oy99mjjfXetFW8CTBz4GCG55Wx+dvbylueRYIDE13r3HkH7YlJY2yf4+OD5rBJO+
-NDk1AyKKvxO3BAF50GjtcHZ3KXLpapaXp1mWBuO09vSovLSCyXvHcPMmP1JJpf5i
-Xo4ZUqTWY92k9nzIXS7o6xy/pZuWsHkZbebaQsFLp+ZW31bWlas9kBItdoxmSDBc
-sEAqoEHrQvnhNBJxJb9HITQ4pyS8VMP4Fy1gXcx7f8vLSk8q/bgnGtKjSWeHuKPg
-wQtLf+czbKe/VPmQnhOmwc4MKi11NU5dYu1wskmnR81ntZ1LHWBfuUCtklYxT7+Y
-+VYJoG3WIzT2lZkbFNRnq0AEnnIqr7sw9ua8tNkM/CSkNniCrf3UbGM6DUZ5r9v1
-gMGIfCz81XP6sXzjhbovI6U1Qmm8khLWC6Dhkoim47oDiJ//E5q8b26y5jyt/pNa
-7vyTasieNBGV7aREdIm1
-=Qy3q
------END PGP SIGNATURE-----
+What the patchset does in steps
+===============================
+1. Some preparation steps are necessary - patch 1 and 2. The driver
+   implementing power supply won't be able to fill structure before
+   calling power_supply_register(). So 'power_supply_config'
+   is introduced in patch 2 ("power_supply: Move run-time configuration
+   to separate structure"). Unfortunately this touches all drivers.
+2. Safe API wrappers (and usage counter) are added (power_supply_*()).
+3. Patch 11: ownership of 'struct power_supply' is moved from driver
+   to the core.
+4. power_supply_put() is added which reclaims resources.
 
---pN9MePJoZbRKbUk1--
+
+The patchset is rebased on next-20141226. It should be pulled at once.
+Bisectability is preserved.
+
+Changes since v1
+================
+1. Add new patches (1, 2, 11, 19).
+2. Preserved ack-s where there weren't any changes.
+3. Patch 3: Add use counter.
+4. Patch 3: Don't add wrapper for set_charged() because already exists
+   one.
+
+
+[1] https://lkml.org/lkml/2014/11/4/527
+[2] https://lkml.org/lkml/2014/10/16/89
+
+Best regards,
+Krzysztof
+
+
+Krzysztof Kozlowski (19):
+  power_supply: Add driver private data
+  power_supply: Move run-time configuration to separate structure
+  power_supply: Add API for safe access of power supply function attrs
+  power_supply: sysfs: Use power_supply_*() API for accessing function
+    attrs
+  power: 88pm860x_charger: Use power_supply_*() API for accessing
+    function attrs
+  power: ab8500: Use power_supply_*() API for accessing function attrs
+  mfd: ab8500: Use power_supply_*() API for accessing function attrs
+  power: apm_power: Use power_supply_*() API for accessing function
+    attrs
+  power: bq2415x_charger: Use power_supply_*() API for accessing
+    function attrs
+  power: charger-manager: Use power_supply_*() API for accessing
+    function attrs
+  power_supply: Change ownership from driver to core
+  power_supply: Add power_supply_put for decrementing device reference
+    counter
+  power: charger-manager: Decrement the power supply's device reference
+    counter
+  x86/olpc/xo1/sci: Use newly added power_supply_put API
+  x86/olpc/xo15/sci: Use newly added power_supply_put API
+  power: 88pm860x_charger: Decrement the power supply's device reference
+    counter
+  power: bq2415x_charger: Decrement the power supply's device reference
+    counter
+  mfd: ab8500: Decrement the power supply's device reference counter
+  arm: mach-pxa: Decrement the power supply's device reference counter
+
+ arch/arm/mach-pxa/raumfeld.c           |   4 +-
+ arch/x86/platform/olpc/olpc-xo1-sci.c  |   4 +-
+ arch/x86/platform/olpc/olpc-xo15-sci.c |   4 +-
+ drivers/acpi/battery.c                 |   3 +-
+ drivers/mfd/ab8500-sysctrl.c           |   9 +-
+ drivers/power/88pm860x_charger.c       |  24 ++--
+ drivers/power/ab8500_btemp.c           |   2 +-
+ drivers/power/ab8500_charger.c         |   2 +-
+ drivers/power/ab8500_fg.c              |   2 +-
+ drivers/power/abx500_chargalg.c        |   4 +-
+ drivers/power/apm_power.c              |   4 +-
+ drivers/power/bq2415x_charger.c        |   9 +-
+ drivers/power/bq24190_charger.c        | 103 ++++++++-------
+ drivers/power/charger-manager.c        | 158 +++++++++++++----------
+ drivers/power/max14577_charger.c       |  34 ++---
+ drivers/power/max17040_battery.c       |  31 ++---
+ drivers/power/max17042_battery.c       |  45 ++++---
+ drivers/power/power_supply_core.c      | 223 ++++++++++++++++++++++++---------
+ drivers/power/power_supply_leds.c      |  25 ++--
+ drivers/power/power_supply_sysfs.c     |  24 ++--
+ drivers/power/sbs-battery.c            |  71 +++++------
+ drivers/power/tps65090-charger.c       |  43 ++++---
+ include/linux/power/charger-manager.h  |   3 +-
+ include/linux/power_supply.h           |  70 ++++++++---
+ 24 files changed, 562 insertions(+), 339 deletions(-)
+
+-- 
+1.9.1
+
