@@ -1,83 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbbAEQm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 11:42:56 -0500
-Received: from smtprelay0126.hostedemail.com ([216.40.44.126]:42823 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751684AbbAEQmx (ORCPT
+	id S1753319AbbAEQpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 11:45:17 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:39431 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbbAEQpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 11:42:53 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 30,2,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::::::,RULES_HIT:41:196:355:379:541:599:800:960:966:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1406:1437:1515:1516:1518:1534:1541:1593:1594:1622:1711:1730:1747:1777:1792:1894:2189:2196:2199:2393:2525:2553:2561:2564:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4385:5007:6261:6671:6742:6743:8599:8660:9025:9072:9388:10004:10049:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:12740:13007:13025:13069:13148:13230:13311:13357:13972:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fly62_187ca1532521d
-X-Filterd-Recvd-Size: 3228
-Message-ID: <1420476166.2652.14.camel@perches.com>
-Subject: Re: [PATCH V1 1/1] iio: Added Capella cm3232 ambient light sensor
- driver.
-From: Joe Perches <joe@perches.com>
-To: Daniel Baluta <daniel.baluta@intel.com>
-Cc: Kevin Tsai <ktsai@capellamicro.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jonathan Cameron <jic23@kernel.org>,
-        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Grant Likely <grant.likely@linaro.org>,
+	Mon, 5 Jan 2015 11:45:15 -0500
+Date: Mon, 5 Jan 2015 17:44:47 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, root <chenggang.qin@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Archana Patni <archana.patni@linux.intel.com>,
-        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 05 Jan 2015 08:42:46 -0800
-In-Reply-To: <CAEnQRZBmwurFCJU4E4ArO8waU+YcGWrRYr3DRVxq9haduX2t=w@mail.gmail.com>
-References: <1420071030-888-1-git-send-email-ktsai@capellamicro.com>
-	 <CAEnQRZBD2NMYRp1cW0J2ssT4CT=0jSM=X6ByHQiUrA0ueV8fRA@mail.gmail.com>
-	 <1420463396.2652.8.camel@perches.com>
-	 <CAEnQRZBmwurFCJU4E4ArO8waU+YcGWrRYr3DRVxq9haduX2t=w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@taobao.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        =?utf-8?B?56em5om/5YiaKOaJv+WImik=?= 
+	<chenggang.qcg@alibaba-inc.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>
+Subject: Re: [PATCH 1/2] perf: Move task_pt_regs sampling into arch code
+Message-ID: <20150105164447.GG29390@twins.programming.kicks-ass.net>
+References: <cover.1420396372.git.luto@amacapital.net>
+ <e431cd4c18c2e1c44c774f10758527fb2d1025c4.1420396372.git.luto@amacapital.net>
+ <20150105140754.GF29390@twins.programming.kicks-ass.net>
+ <CALCETrW6cv_s60uzi_scy5JBdr4+wrz1O5we-3okc-SZKRVofA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrW6cv_s60uzi_scy5JBdr4+wrz1O5we-3okc-SZKRVofA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 16:20 +0200, Daniel Baluta wrote:
-> On Mon, Jan 5, 2015 at 3:09 PM, Joe Perches <joe@perches.com> wrote:
-> > On Mon, 2015-01-05 at 12:51 +0200, Daniel Baluta wrote:
-> >> On Thu, Jan 1, 2015 at 2:10 AM, Kevin Tsai <ktsai@capellamicro.com> wrote:
-> >> > CM3232 is an advanced ambient light sensor with I2C protocol interface.
-> >> > The I2C slave address is internally hardwired as 0x10 (7-bit).  Writing
-> >> > to configure register is byte mode, but reading ALS register requests to
-> >> > use word mode for 16-bit resolution.
-[]
-> >> You could directly return i2c_smbus_write_byte_data(..).
-> >
-> > Sometimes it's better to return a specific value
-> > for the error instead of depending on correctness
-> > of all the indirect functions in the call chain.
-> >
-> > In this case, all the smbus_xfer functions must
-> > return 0 on success.  Do they?
+On Mon, Jan 05, 2015 at 08:13:49AM -0800, Andy Lutomirski wrote:
+> > Just wondering how bad it would be to fill out the actual pt_regs that
+> > was previously partially initialized?
 > 
-> Yes.
+> Bad, for at least two reasons.
 > 
-> http://lxr.free-electrons.com/source/drivers/i2c/i2c-core.c#L2845
+> One is that we don't actually know which regs are initialized.  bx,
+> bp, r12 etc are particularly bad in this regard, due to the FORK_LIKE
+> mechanism and similar optimizations.
 
-This doesn't show that adapter->algo->smbus_xfer()
-returns 0, you have to look at the code for that
-indirectly called function. 
+Right, but you need to deal with that anyhow.
 
-> Also, I guess kbuild test robot will complain about it, like here:
-> 
-> http://marc.info/?l=linux-kernel&m=141963536230419&w=2
+> The other is that the uninitialized part of task_pt_regs can be used
+> for something else entirely.  If we have a syscall instruction
+> immediately followed by a regular interrupt, then the interrupt's
+> hardware frame will overlap task_pt_regs.  (I'm not going to claim
+> that this design is sensible, but it is what it is.  IIRC Denys
+> Vlasenko had some patches to partially clean this up.)
 
-Is the kbuild test robot now submitting patches for all
-possible coccinelle simplifications?  I don't think so.
+Ah, urgh. Yes painful that.
 
+> It would be possible to rework the code to avoid an extra pt_regs
+> copy, but I don't see an obvious way to do it cleanly.
 
+Yeah, we'll see how this works, I was just curious on the exact need for
+the copy, but if as you say, the original structure might not even exist
+properly (even though we have a pointer to it) that's bad (TM).
