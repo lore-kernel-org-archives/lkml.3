@@ -1,178 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbbAEWtI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 17:49:08 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:65322 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197AbbAEWtF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 17:49:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <548E17CE.8010704@nod.at>
-References: <1417744550-6461-1-git-send-email-adityakali@google.com>
- <1417744550-6461-9-git-send-email-adityakali@google.com> <548E17CE.8010704@nod.at>
-From: Aditya Kali <adityakali@google.com>
-Date: Mon, 5 Jan 2015 14:48:44 -0800
-Message-ID: <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>
-Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
-To: Richard Weinberger <richard@nod.at>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
+	id S932268AbbAEWtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:49:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753197AbbAEWtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 17:49:18 -0500
+Date: Mon, 5 Jan 2015 20:48:58 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        kvm list <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
+ pvclock reader
+Message-ID: <20150105224858.GA6846@amt.cnet>
+References: <cover.1419295081.git.luto@amacapital.net>
+ <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+ <20150105152511.GA9172@amt.cnet>
+ <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+ <20150105191756.GA31201@amt.cnet>
+ <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 3:05 PM, Richard Weinberger <richard@nod.at> wrote:
-> Aditya,
->
-> I gave your patch set a try but it does not work for me.
-> Maybe you can bring some light into the issues I'm facing.
-> Sadly I still had no time to dig into your code.
->
-> Am 05.12.2014 um 02:55 schrieb Aditya Kali:
->> Signed-off-by: Aditya Kali <adityakali@google.com>
->> ---
->>  Documentation/cgroups/namespace.txt | 147 ++++++++++++++++++++++++++++++++++++
->>  1 file changed, 147 insertions(+)
->>  create mode 100644 Documentation/cgroups/namespace.txt
->>
->> diff --git a/Documentation/cgroups/namespace.txt b/Documentation/cgroups/namespace.txt
->> new file mode 100644
->> index 0000000..6480379
->> --- /dev/null
->> +++ b/Documentation/cgroups/namespace.txt
->> @@ -0,0 +1,147 @@
->> +                     CGroup Namespaces
->> +
->> +CGroup Namespace provides a mechanism to virtualize the view of the
->> +/proc/<pid>/cgroup file. The CLONE_NEWCGROUP clone-flag can be used with
->> +clone() and unshare() syscalls to create a new cgroup namespace.
->> +The process running inside the cgroup namespace will have its /proc/<pid>/cgroup
->> +output restricted to cgroupns-root. cgroupns-root is the cgroup of the process
->> +at the time of creation of the cgroup namespace.
->> +
->> +Prior to CGroup Namespace, the /proc/<pid>/cgroup file used to show complete
->> +path of the cgroup of a process. In a container setup (where a set of cgroups
->> +and namespaces are intended to isolate processes), the /proc/<pid>/cgroup file
->> +may leak potential system level information to the isolated processes.
->> +
->> +For Example:
->> +  $ cat /proc/self/cgroup
->> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
->> +
->> +The path '/batchjobs/container_id1' can generally be considered as system-data
->> +and its desirable to not expose it to the isolated process.
->> +
->> +CGroup Namespaces can be used to restrict visibility of this path.
->> +For Example:
->> +  # Before creating cgroup namespace
->> +  $ ls -l /proc/self/ns/cgroup
->> +  lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
->> +  $ cat /proc/self/cgroup
->> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
->> +
->> +  # unshare(CLONE_NEWCGROUP) and exec /bin/bash
->> +  $ ~/unshare -c
->> +  [ns]$ ls -l /proc/self/ns/cgroup
->> +  lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup -> cgroup:[4026532183]
->> +  # From within new cgroupns, process sees that its in the root cgroup
->> +  [ns]$ cat /proc/self/cgroup
->> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
->> +
->> +  # From global cgroupns:
->> +  $ cat /proc/<pid>/cgroup
->> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
->> +
->> +  # Unshare cgroupns along with userns and mountns
->> +  # Following calls unshare(CLONE_NEWCGROUP|CLONE_NEWUSER|CLONE_NEWNS), then
->> +  # sets up uid/gid map and execs /bin/bash
->> +  $ ~/unshare -c -u -m
->
-> This command does not issue CLONE_NEWUSER, -U does.
->
-I was using a custom unshare binary. But I will update the command
-line to be similar to the one in util-linux.
+On Mon, Jan 05, 2015 at 02:38:46PM -0800, Andy Lutomirski wrote:
+> On Mon, Jan 5, 2015 at 11:17 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> > On Mon, Jan 05, 2015 at 10:56:07AM -0800, Andy Lutomirski wrote:
+> >> On Mon, Jan 5, 2015 at 7:25 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> >> > On Mon, Dec 22, 2014 at 04:39:57PM -0800, Andy Lutomirski wrote:
+> >> >> The pvclock vdso code was too abstracted to understand easily and
+> >> >> excessively paranoid.  Simplify it for a huge speedup.
+> >> >>
+> >> >> This opens the door for additional simplifications, as the vdso no
+> >> >> longer accesses the pvti for any vcpu other than vcpu 0.
+> >> >>
+> >> >> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
+> >> >> With this change, it takes 19ns, which is almost as fast as the pure TSC
+> >> >> implementation.
+> >> >>
+> >> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> >> ---
+> >> >>  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
+> >> >>  1 file changed, 47 insertions(+), 35 deletions(-)
+> >> >>
+> >> >> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> >> >> index 9793322751e0..f2e0396d5629 100644
+> >> >> --- a/arch/x86/vdso/vclock_gettime.c
+> >> >> +++ b/arch/x86/vdso/vclock_gettime.c
+> >> >> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
+> >> >>
+> >> >>  static notrace cycle_t vread_pvclock(int *mode)
+> >> >>  {
+> >> >> -     const struct pvclock_vsyscall_time_info *pvti;
+> >> >> +     const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
+> >> >>       cycle_t ret;
+> >> >> -     u64 last;
+> >> >> -     u32 version;
+> >> >> -     u8 flags;
+> >> >> -     unsigned cpu, cpu1;
+> >> >> -
+> >> >> +     u64 tsc, pvti_tsc;
+> >> >> +     u64 last, delta, pvti_system_time;
+> >> >> +     u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
+> >> >>
+> >> >>       /*
+> >> >> -      * Note: hypervisor must guarantee that:
+> >> >> -      * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
+> >> >> -      * 2. that per-CPU pvclock time info is updated if the
+> >> >> -      *    underlying CPU changes.
+> >> >> -      * 3. that version is increased whenever underlying CPU
+> >> >> -      *    changes.
+> >> >> +      * Note: The kernel and hypervisor must guarantee that cpu ID
+> >> >> +      * number maps 1:1 to per-CPU pvclock time info.
+> >> >> +      *
+> >> >> +      * Because the hypervisor is entirely unaware of guest userspace
+> >> >> +      * preemption, it cannot guarantee that per-CPU pvclock time
+> >> >> +      * info is updated if the underlying CPU changes or that that
+> >> >> +      * version is increased whenever underlying CPU changes.
+> >> >> +      *
+> >> >> +      * On KVM, we are guaranteed that pvti updates for any vCPU are
+> >> >> +      * atomic as seen by *all* vCPUs.  This is an even stronger
+> >> >> +      * guarantee than we get with a normal seqlock.
+> >> >>        *
+> >> >> +      * On Xen, we don't appear to have that guarantee, but Xen still
+> >> >> +      * supplies a valid seqlock using the version field.
+> >> >> +
+> >> >> +      * We only do pvclock vdso timing at all if
+> >> >> +      * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
+> >> >> +      * mean that all vCPUs have matching pvti and that the TSC is
+> >> >> +      * synced, so we can just look at vCPU 0's pvti.
+> >> >>        */
+> >> >
+> >> > Can Xen guarantee that ?
+> >>
+> >> I think so, vacuously.  Xen doesn't seem to set PVCLOCK_TSC_STABLE_BIT
+> >> at all.  I have no idea going forward, though.
+> >>
+> >> Xen people?
+> >>
+> >> >
+> >> >> -     do {
+> >> >> -             cpu = __getcpu() & VGETCPU_CPU_MASK;
+> >> >> -             /* TODO: We can put vcpu id into higher bits of pvti.version.
+> >> >> -              * This will save a couple of cycles by getting rid of
+> >> >> -              * __getcpu() calls (Gleb).
+> >> >> -              */
+> >> >> -
+> >> >> -             pvti = get_pvti(cpu);
+> >> >> -
+> >> >> -             version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
+> >> >> -
+> >> >> -             /*
+> >> >> -              * Test we're still on the cpu as well as the version.
+> >> >> -              * We could have been migrated just after the first
+> >> >> -              * vgetcpu but before fetching the version, so we
+> >> >> -              * wouldn't notice a version change.
+> >> >> -              */
+> >> >> -             cpu1 = __getcpu() & VGETCPU_CPU_MASK;
+> >> >> -     } while (unlikely(cpu != cpu1 ||
+> >> >> -                       (pvti->pvti.version & 1) ||
+> >> >> -                       pvti->pvti.version != version));
+> >> >> -
+> >> >> -     if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
+> >> >> +
+> >> >> +     if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
+> >> >>               *mode = VCLOCK_NONE;
+> >> >> +             return 0;
+> >> >> +     }
+> >> >
+> >> > This check must be performed after reading a stable pvti.
+> >> >
+> >>
+> >> We can even read it in the middle, guarded by the version checks.
+> >> I'll do that for v2.
+> >>
+> >> >> +
+> >> >> +     do {
+> >> >> +             version = pvti->version;
+> >> >> +
+> >> >> +             /* This is also a read barrier, so we'll read version first. */
+> >> >> +             rdtsc_barrier();
+> >> >> +             tsc = __native_read_tsc();
+> >> >> +
+> >> >> +             pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
+> >> >> +             pvti_tsc_shift = pvti->tsc_shift;
+> >> >> +             pvti_system_time = pvti->system_time;
+> >> >> +             pvti_tsc = pvti->tsc_timestamp;
+> >> >> +
+> >> >> +             /* Make sure that the version double-check is last. */
+> >> >> +             smp_rmb();
+> >> >> +     } while (unlikely((version & 1) || version != pvti->version));
+> >> >> +
+> >> >> +     delta = tsc - pvti_tsc;
+> >> >> +     ret = pvti_system_time +
+> >> >> +             pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
+> >> >> +                                 pvti_tsc_shift);
+> >> >
+> >> > The following is possible:
+> >> >
+> >> > 1) State: all pvtis marked as PVCLOCK_TSC_STABLE_BIT.
+> >> > 1) Update request for all vcpus, for a TSC_STABLE_BIT -> ~TSC_STABLE_BIT
+> >> > transition.
+> >> > 2) vCPU-1 updates its pvti with new values.
+> >> > 3) vCPU-0 still has not updated its pvti with new values.
+> >> > 4) vCPU-1 VM-enters, uses vCPU-0 values, even though it has been
+> >> > notified of a TSC_STABLE_BIT -> ~TSC_STABLE_BIT transition.
+> >> >
+> >> > The update is not actually atomic across all vCPUs, its atomic in
+> >> > the sense of not allowing visibility of distinct
+> >> > system_timestamp/tsc_timestamp values.
+> >> >
+> >>
+> >> Hmm.  In step 4, is there a guarantee that vCPU-0 won't VM-enter until
+> >> it gets marked unstable?
+> >
+> > Yes. It will VM-enter after pvti is updated.
+> >
+> >> Otherwise the vdso could could just as
+> >> easily be called from vCPU-1, migrated to vCPU-0, read the data
+> >> complete with stale stable bit, and get migrated back to vCPU-1.
+> >
+> > Right.
+> >
+> >> But I thought that KVM currently froze all vCPUs when updating pvti
+> >> for any of them.  How can this happen?  I admit I don't really
+> >> understand the update request code.
+> >
+> > The update is performed as follows:
+> >
+> >         - Stop guest instruction execution on every vCPU, parking them in the host.
+> >         - Request KVMCLOCK update for every vCPU.
+> >         - Resume guest instruction execution.
+> >
+> > The KVMCLOCK update (==pvti update) is guaranteed to be performed before
+> > guest instructions are executed again.
+> >
+> > But there is no guarantee that vCPU-N has updated its pvti when
+> > vCPU-M resumes guest instruction execution.
+> 
+> Still confused.  So we can freeze all vCPUs in the host, then update
+> pvti 1, then resume vCPU 1, then update pvti 0?  In that case, we have
+> a problem, because vCPU 1 can observe pvti 0 mid-update, and KVM
+> doesn't increment the version pre-update, and we can return completely
+> bogus results.
 
->> +  # Originally, we were in /batchjobs/container_id1 cgroup. Mount our own cgroup
->> +  # hierarchy.
->> +  [ns]$ mount -t cgroup cgroup /tmp/cgroup
->> +  [ns]$ ls -l /tmp/cgroup
->> +  total 0
->> +  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.controllers
->> +  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.populated
->> +  -rw-r--r-- 1 root root 0 2014-10-13 09:25 cgroup.procs
->> +  -rw-r--r-- 1 root root 0 2014-10-13 09:32 cgroup.subtree_control
->
-> I've patched libvirt-lxc to issue CLONE_NEWCGROUP and not bind mount cgroupfs into a container.
-> But I'm unable to mount cgroupfs within the container, mount(2) is failing with EINVAL.
-> And /proc/self/cgroup still shows the cgroup from outside.
->
-> ---cut---
-> container:/ # ls /sys/fs/cgroup/
-> container:/ # mount -t cgroup none /sys/fs/cgroup/
+Yes.
 
-You need to provide "-o __DEVEL_sane_behavior" flag. Inside the
-container, only unified hierarchy can be mounted. So, for now, that
-flag is needed. I will fix the documentation too.
+> > So the cost this patch removes is mainly from __getcpu (==RDTSCP?) ?
+> 
+> It removes a whole bunch of code, an extra barrier, and two __getcpus.
+> 
+> > Perhaps you can use Gleb's idea to stick vcpu id into version field ?
+> 
+> I don't understand how that's useful at all.  If you're reading pvti,
+> you clearly know the vcpu id.
 
-> mount: wrong fs type, bad option, bad superblock on none,
->        missing codepage or helper program, or other error
->
->        In some cases useful info is found in syslog - try
->        dmesg | tail or so.
-> container:/ # cat /proc/self/cgroup
-> 8:memory:/machine/test00.libvirt-lxc
-> 7:devices:/machine/test00.libvirt-lxc
-> 6:hugetlb:/
-> 5:cpuset:/machine/test00.libvirt-lxc
-> 4:blkio:/machine/test00.libvirt-lxc
-> 3:cpu,cpuacct:/machine/test00.libvirt-lxc
-> 2:freezer:/machine/test00.libvirt-lxc
-> 1:name=systemd:/user.slice/user-0.slice/session-c2.scope
-> container:/ # ls -la /proc/self/ns
-> total 0
-> dr-x--x--x 2 root root 0 Dec 14 23:02 .
-> dr-xr-xr-x 8 root root 0 Dec 14 23:02 ..
-> lrwxrwxrwx 1 root root 0 Dec 14 23:02 cgroup -> cgroup:[4026532240]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:02 ipc -> ipc:[4026532238]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:02 mnt -> mnt:[4026532235]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:02 net -> net:[4026532242]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:02 pid -> pid:[4026532239]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:02 user -> user:[4026532234]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:02 uts -> uts:[4026532236]
-> container:/ #
->
-> #host side
-> lxc-os132:~ # ls -la /proc/self/ns
-> total 0
-> dr-x--x--x 2 root root 0 Dec 14 23:56 .
-> dr-xr-xr-x 8 root root 0 Dec 14 23:56 ..
-> lrwxrwxrwx 1 root root 0 Dec 14 23:56 cgroup -> cgroup:[4026531835]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:56 ipc -> ipc:[4026531839]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:56 mnt -> mnt:[4026531840]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:56 net -> net:[4026531957]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:56 pid -> pid:[4026531836]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:56 user -> user:[4026531837]
-> lrwxrwxrwx 1 root root 0 Dec 14 23:56 uts -> uts:[4026531838]
-> ---cut---
->
-> Any ideas?
->
+Replace the return value of __getcpus by value read from pvti.version.
 
-Please try with "-o __DEVEL_sane_behavior" flag to the mount command.
-
-> Thanks,
-> //richard
-
-
-Thanks,
--- 
-Aditya
