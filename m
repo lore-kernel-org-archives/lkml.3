@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390AbbAER6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:58:54 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:38085 "EHLO
+	id S1753608AbbAER4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:56:30 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:50280 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754178AbbAER4W (ORCPT
+	by vger.kernel.org with ESMTP id S932241AbbAER4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 12:56:22 -0500
+	Mon, 5 Jan 2015 12:56:23 -0500
 X-Sender-Id: abbotti@mev.co.uk
 From: Ian Abbott <abbotti@mev.co.uk>
 To: <driverdev-devel@linuxdriverproject.org>
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 38/45] staging: comedi: pcmuio: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:55:06 +0000
-Message-Id: <1420480513-14765-39-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 39/45] staging: comedi: rtd520: rewrite "Devices:" line
+Date: Mon,  5 Jan 2015 17:55:07 +0000
+Message-Id: <1420480513-14765-40-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -38,23 +38,26 @@ lines by using one or more spaces at the start of each continuation line
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/pcmuio.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/rtd520.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcmuio.c b/drivers/staging/comedi/drivers/pcmuio.c
-index 0f5483b..a1641d9 100644
---- a/drivers/staging/comedi/drivers/pcmuio.c
-+++ b/drivers/staging/comedi/drivers/pcmuio.c
-@@ -19,8 +19,7 @@
+diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
+index 581aa58..06ae436 100644
+--- a/drivers/staging/comedi/drivers/rtd520.c
++++ b/drivers/staging/comedi/drivers/rtd520.c
+@@ -19,10 +19,8 @@
  /*
-  * Driver: pcmuio
-  * Description: Winsystems PC-104 based 48/96-channel DIO boards.
-- * Devices: (Winsystems) PCM-UIO48A [pcmuio48]
-- *	    (Winsystems) PCM-UIO96A [pcmuio96]
-+ * Devices: [Winsystems] PCM-UIO48A (pcmuio48), PCM-UIO96A (pcmuio96)
-  * Author: Calin Culianu <calin@ajvar.org>
-  * Updated: Fri, 13 Jan 2006 12:01:01 -0500
-  * Status: works
+  * Driver: rtd520
+  * Description: Real Time Devices PCI4520/DM7520
+- * Devices: (Real Time Devices) DM7520HR-1 [DM7520]
+- *	    (Real Time Devices) DM7520HR-8 [DM7520]
+- *	    (Real Time Devices) PCI4520 [PCI4520]
+- *	    (Real Time Devices) PCI4520-8 [PCI4520]
++ * Devices: [Real Time Devices] DM7520HR-1 (DM7520), DM7520HR-8,
++ *   PCI4520 (PCI4520), PCI4520-8
+  * Author: Dan Christian
+  * Status: Works. Only tested on DM7520-8. Not SMP safe.
+  *
 -- 
 2.1.4
 
