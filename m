@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032AbbAEVS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:18:29 -0500
-Received: from mga03.intel.com ([134.134.136.65]:45227 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753267AbbAEVS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:18:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,702,1413270000"; 
-   d="scan'208";a="632845216"
-Message-ID: <54AAFFA3.6000901@linux.intel.com>
-Date: Mon, 05 Jan 2015 13:18:27 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754370AbbAEVTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:19:52 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36829 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530AbbAEVTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 16:19:50 -0500
+Date: Mon, 5 Jan 2015 21:19:29 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20150105211929.GR2634@sirena.org.uk>
+References: <1420449508-10701-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
- to arch_prctl
-References: <cover.1419900414.git.luto@amacapital.net>	<d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>	<54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
-In-Reply-To: <87mw5x0xjz.fsf@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LbN0412894TjpI52"
+Content-Disposition: inline
+In-Reply-To: <1420449508-10701-1-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/8] ASoC: alc5632: Constify struct regmap_config and
+ snd_soc_codec_driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 12:42 PM, Andi Kleen wrote:
-> Dave Hansen <dave.hansen@linux.intel.com> writes:
->> On 12/29/2014 04:52 PM, Andy Lutomirski wrote:
->>> This has the benefit the it avoids cluttering prctl with more
->>> arch-specific functionality.  The down side is that arch_prctl will
->>> need to be wired up as a 32-bit syscall to add 32-bit support for
->>> MPX.
->>
->> There is existing userspace out there which depends on the existing
->> prctl() setup.  There isn't a _lot_ and it might still be able to be
->> changed easily, but this isn't a given.
->>
->> I'll check in with the folks doing the gcc (runtime) part of this next
->> week and see what they think.
-> 
-> It'll be quite messy for 32bit because they would need to use syscall(),
-> as glibc won't have a arch_prctl stub.
 
-Yeah, I'd _really_ prefer not to change it.  The code is in a gcc
-branch, but is getting pulled in to the 5.0 release.  We've got
-*absolutely* no shortage of prctl numbers.
+--LbN0412894TjpI52
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Jan 05, 2015 at 10:18:21AM +0100, Krzysztof Kozlowski wrote:
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const. Make struct
+> snd_soc_codec_driver const as well (snd_soc_register_codec() accepts
+> pointer to const).
+
+Applied all, thanks.
+
+--LbN0412894TjpI52
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUqv/gAAoJECTWi3JdVIfQ/wQH/ipMaA4LO3UY2ry33LHLfDDz
+C4fMay6ONKj9ONkmB1dXyR070aicAN1+0UvVYXEKbsdO7NJ2yAEOpVzKAA3dJoZk
+/NHEEZcBCXtPHLi4WEIIznHwLdEQZWHYq9SsIerCG4zg7SriVayW/29ji4YKO7fb
+JC008Zci+sbZ7+twqSLsQ2LgMyTpsO5ZLJ1WlbIvQzVHdnO/RoA4jk0l3I658xCk
+WNNKAVIqYcx/4APYpNqTd8bnGEDzXoh1EqzJfr0Kt+VTWOd9/PEFvvZtTo2vcpVI
+oYidP3tVLDnRCI8IcQLUZQYJ64y4PSCUYKzRfzOOJiM7Ez94Tw/qLIhCiQ6kwXk=
+=vL0R
+-----END PGP SIGNATURE-----
+
+--LbN0412894TjpI52--
