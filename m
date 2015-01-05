@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbbAELfH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 06:35:07 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:49540 "EHLO
+	id S1753875AbbAELe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 06:34:58 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:49566 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbbAELe5 (ORCPT
+	with ESMTP id S1751600AbbAELez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 06:34:57 -0500
+	Mon, 5 Jan 2015 06:34:55 -0500
 From: Wang Nan <wangnan0@huawei.com>
 To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>,
         <linux@arm.linux.org.uk>
 CC: <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v19 09/11] ARM: kprobes: Fix unreliable MRS instruction tests
-Date: Mon, 5 Jan 2015 19:29:40 +0800
-Message-ID: <1420457380-77406-1-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH v19 10/11] ARM: kprobes: check register usage for probed instruction.
+Date: Mon, 5 Jan 2015 19:29:44 +0800
+Message-ID: <1420457384-77449-1-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
 References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>
@@ -26,159 +26,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+This patch utilizes previous introduced checker to check register usage
+for probed ARM instruction and saves it in a mask. Futher patch will
+use such information to avoid simuation or emulation.
 
-For the instruction 'mrs Rn, cpsr' the resulting value of Rn can vary due to
-external factors we can't control. So get the test code to mask out these
-indeterminate bits.
-
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 ---
- arch/arm/probes/kprobes/test-arm.c   |  6 +++---
- arch/arm/probes/kprobes/test-core.c  | 19 ++++++++++---------
- arch/arm/probes/kprobes/test-core.h  | 33 ++++++++++++++++++++++++++++-----
- arch/arm/probes/kprobes/test-thumb.c |  4 ++--
- 4 files changed, 43 insertions(+), 19 deletions(-)
+ arch/arm/include/asm/probes.h          |  10 +++
+ arch/arm/probes/decode.c               |   7 ++
+ arch/arm/probes/kprobes/actions-arm.c  |   2 +-
+ arch/arm/probes/kprobes/checkers-arm.c | 124 +++++++++++++++++++++++++++++++++
+ arch/arm/probes/kprobes/checkers.h     |   1 +
+ 5 files changed, 143 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/probes/kprobes/test-arm.c b/arch/arm/probes/kprobes/test-arm.c
-index 9b3b1b4..e72b07e 100644
---- a/arch/arm/probes/kprobes/test-arm.c
-+++ b/arch/arm/probes/kprobes/test-arm.c
-@@ -204,9 +204,9 @@ void kprobe_arm_test_cases(void)
- #endif
- 	TEST_GROUP("Miscellaneous instructions")
- 
--	TEST("mrs	r0, cpsr")
--	TEST("mrspl	r7, cpsr")
--	TEST("mrs	r14, cpsr")
-+	TEST_RMASKED("mrs	r",0,~PSR_IGNORE_BITS,", cpsr")
-+	TEST_RMASKED("mrspl	r",7,~PSR_IGNORE_BITS,", cpsr")
-+	TEST_RMASKED("mrs	r",14,~PSR_IGNORE_BITS,", cpsr")
- 	TEST_UNSUPPORTED(__inst_arm(0xe10ff000) "	@ mrs r15, cpsr")
- 	TEST_UNSUPPORTED("mrs	r0, spsr")
- 	TEST_UNSUPPORTED("mrs	lr, spsr")
-diff --git a/arch/arm/probes/kprobes/test-core.c b/arch/arm/probes/kprobes/test-core.c
-index 7c5ddd5..e495127 100644
---- a/arch/arm/probes/kprobes/test-core.c
-+++ b/arch/arm/probes/kprobes/test-core.c
-@@ -1056,15 +1056,6 @@ static int test_case_run_count;
- static bool test_case_is_thumb;
- static int test_instance;
- 
--/*
-- * We ignore the state of the imprecise abort disable flag (CPSR.A) because this
-- * can change randomly as the kernel doesn't take care to preserve or initialise
-- * this across context switches. Also, with Security Extentions, the flag may
-- * not be under control of the kernel; for this reason we ignore the state of
-- * the FIQ disable flag CPSR.F as well.
-- */
--#define PSR_IGNORE_BITS (PSR_A_BIT | PSR_F_BIT)
--
- static unsigned long test_check_cc(int cc, unsigned long cpsr)
- {
- 	int ret = arm_check_condition(cc << 28, cpsr);
-@@ -1271,11 +1262,21 @@ test_case_pre_handler(struct kprobe *p, struct pt_regs *regs)
- static int __kprobes
- test_after_pre_handler(struct kprobe *p, struct pt_regs *regs)
- {
-+	struct test_arg *args;
+diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
+index f0a1ee8..27b65b7 100644
+--- a/arch/arm/include/asm/probes.h
++++ b/arch/arm/include/asm/probes.h
+@@ -41,6 +41,16 @@ struct arch_probes_insn {
+ 	probes_insn_singlestep_t	*insn_singlestep;
+ 	probes_insn_fn_t		*insn_fn;
+ 	int stack_space;
 +
- 	if (container_of(p, struct test_probe, kprobe)->hit == test_instance)
- 		return 0; /* Already run for this test instance */
- 
- 	result_regs = *regs;
-+
-+	/* Mask out results which are indeterminate */
- 	result_regs.ARM_cpsr &= ~PSR_IGNORE_BITS;
-+	for (args = current_args; args[0].type != ARG_TYPE_END; ++args)
-+		if (args[0].type == ARG_TYPE_REG_MASKED) {
-+			struct test_arg_regptr *arg =
-+				(struct test_arg_regptr *)args;
-+			result_regs.uregs[arg->reg] &= arg->val;
-+		}
- 
- 	/* Undo any changes done to SP by the test case */
- 	regs->ARM_sp = (unsigned long)current_stack;
-diff --git a/arch/arm/probes/kprobes/test-core.h b/arch/arm/probes/kprobes/test-core.h
-index 9991754..9428520 100644
---- a/arch/arm/probes/kprobes/test-core.h
-+++ b/arch/arm/probes/kprobes/test-core.h
-@@ -45,10 +45,11 @@ extern int kprobe_test_cc_position;
-  *
-  */
- 
--#define	ARG_TYPE_END	0
--#define	ARG_TYPE_REG	1
--#define	ARG_TYPE_PTR	2
--#define	ARG_TYPE_MEM	3
-+#define	ARG_TYPE_END		0
-+#define	ARG_TYPE_REG		1
-+#define	ARG_TYPE_PTR		2
-+#define	ARG_TYPE_MEM		3
-+#define	ARG_TYPE_REG_MASKED	4
- 
- #define ARG_FLAG_UNSUPPORTED	0x01
- #define ARG_FLAG_SUPPORTED	0x02
-@@ -61,7 +62,7 @@ struct test_arg {
++	/* Use 1 bit for a register. */
++#define REG_NO_USE	(0)
++#define REG_USE		(1)
++#define __register_usage_flag(n, f)	((f) << (n))
++#define __clean_register_flag(m, n)	((m) & (~(1 << (n))))
++#define __set_register_flag(m, n, f)	(__clean_register_flag(m, n) | __register_usage_flag(n, f))
++#define set_register_nouse(m, n)	do {(m) = __set_register_flag(m, n, REG_NO_USE);} while(0)
++#define set_register_use(m, n)		do {(m) = __set_register_flag(m, n, REG_USE);} while(0)
++	unsigned long register_usage_flag;
  };
  
- struct test_arg_regptr {
--	u8	type;		/* ARG_TYPE_REG or ARG_TYPE_PTR */
-+	u8	type;		/* ARG_TYPE_REG or ARG_TYPE_PTR or ARG_TYPE_REG_MASKED */
- 	u8	reg;
- 	u8	_padding[2];
- 	u32	val;
-@@ -138,6 +139,12 @@ struct test_arg_end {
- 	".short	0					\n\t"	\
- 	".word	"#val"					\n\t"
+ #endif /* __ASSEMBLY__ */
+diff --git a/arch/arm/probes/decode.c b/arch/arm/probes/decode.c
+index f9d7c42..40f9402 100644
+--- a/arch/arm/probes/decode.c
++++ b/arch/arm/probes/decode.c
+@@ -435,6 +435,13 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
+ 	 */
+ 	asi->stack_space = 0;
  
-+#define	TEST_ARG_REG_MASKED(reg, val)				\
-+	".byte	"__stringify(ARG_TYPE_REG_MASKED)"	\n\t"	\
-+	".byte	"#reg"					\n\t"	\
-+	".short	0					\n\t"	\
-+	".word	"#val"					\n\t"
++	/*
++	 * Similay to stack_space, register_usage_flag is filled by
++	 * checkers. Its default value is set to ~0, which is 'all
++	 * registers are used', to prevent any potential optimization.
++	 */
++	asi->register_usage_flag = ~(0UL);
 +
- #define	TEST_ARG_END(flags)					\
- 	".byte	"__stringify(ARG_TYPE_END)"		\n\t"	\
- 	".byte	"TEST_ISA flags"			\n\t"	\
-@@ -395,6 +402,22 @@ struct test_arg_end {
- 	"	"codex"			\n\t"					\
- 	TESTCASE_END
+ 	if (emulate)
+ 		insn = prepare_emulated_insn(insn, asi, thumb);
  
-+#define TEST_RMASKED(code1, reg, mask, code2)		\
-+	TESTCASE_START(code1 #reg code2)		\
-+	TEST_ARG_REG_MASKED(reg, mask)			\
-+	TEST_ARG_END("")				\
-+	TEST_INSTRUCTION(code1 #reg code2)		\
-+	TESTCASE_END
+diff --git a/arch/arm/probes/kprobes/actions-arm.c b/arch/arm/probes/kprobes/actions-arm.c
+index 4fedd4c..26e435b 100644
+--- a/arch/arm/probes/kprobes/actions-arm.c
++++ b/arch/arm/probes/kprobes/actions-arm.c
+@@ -340,4 +340,4 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
+ };
+ 
+-const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, NULL};
++const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, arm_regs_checker, NULL};
+diff --git a/arch/arm/probes/kprobes/checkers-arm.c b/arch/arm/probes/kprobes/checkers-arm.c
+index f817663..1929225 100644
+--- a/arch/arm/probes/kprobes/checkers-arm.c
++++ b/arch/arm/probes/kprobes/checkers-arm.c
+@@ -97,3 +97,127 @@ const struct decode_checker arm_stack_checker[NUM_PROBES_ARM_ACTIONS] = {
+ 	[PROBES_STORE] = {.checker = arm_check_stack},
+ 	[PROBES_LDMSTM] = {.checker = arm_check_stack},
+ };
++
++static enum probes_insn __kprobes arm_check_regs_nouse(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	asi->register_usage_flag = 0;
++	return INSN_GOOD;
++}
++
++static void __arm_check_regs(probes_opcode_t insn,
++		const struct decode_header *h,
++		int *quintuple)
++{
++	int i;
++	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
++	probes_opcode_t mask, shifted;
++
++	memset(quintuple, 0xff, sizeof(int) * 5);
++	for (i = 0, shifted = insn, mask = 0xf; regs != 0;
++			regs >>= 4, mask <<= 4, shifted >>= 4, i++)
++		if (regs & 0xf)
++			quintuple[i] = shifted & 0xf;
++}
++
++static enum probes_insn arm_check_regs_normal(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	int quintuple[5], i;
++	asi->register_usage_flag = 0;
++	__arm_check_regs(insn, h, quintuple);
++	for (i = 0; i < 5; i++) {
++		int r = quintuple[i];
++		if (r < 0)
++			continue;
++		set_register_use(asi->register_usage_flag, r);
++	}
++
++	return INSN_GOOD;
++}
++
++static enum probes_insn arm_check_regs_ldmstm(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	unsigned int reglist = insn & 0xffff;
++	unsigned int rn = (insn >> 16) & 0xf;
++	int i;
++
++	set_register_use(asi->register_usage_flag, rn);
++	for (i = 0; reglist > 0; i++, reglist >>= 1)
++		if (reglist & 1)
++			set_register_use(asi->register_usage_flag, i);
++	return INSN_GOOD;
++}
++
++static enum probes_insn arm_check_regs_mov_ip_sp(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	/* should be 'mov ip, sp' */
++	set_register_use(asi->register_usage_flag, 12);
++	set_register_use(asi->register_usage_flag, 13);
++	return INSN_GOOD;
++}
 +
 +/*
-+ * We ignore the state of the imprecise abort disable flag (CPSR.A) because this
-+ * can change randomly as the kernel doesn't take care to preserve or initialise
-+ * this across context switches. Also, with Security Extensions, the flag may
-+ * not be under control of the kernel; for this reason we ignore the state of
-+ * the FIQ disable flag CPSR.F as well.
++ *                                    | Rn |Rt/d|         | Rm |
++ * LDRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx
++ * STRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx
++ *                                    | Rn |Rt/d|         |imm4L|
++ * LDRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx
++ * STRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx
++ *
++ * Such instructions access Rt/d and its next register, so different
++ * from others, a specific checker is required for Rt/d and Rt2/d2.
 + */
-+#define PSR_IGNORE_BITS (PSR_A_BIT | PSR_F_BIT)
++static enum probes_insn arm_check_regs_ldrdstrd(probes_opcode_t insn,
++		struct arch_probes_insn *asi,
++		const struct decode_header *h)
++{
++	int quintuple[5], rn, rdt, rm;
++	asi->register_usage_flag = 0;
++	__arm_check_regs(insn, h, quintuple);
 +
++	rn = quintuple[4];
++	rdt = quintuple[3];
++	rm = quintuple[0];
++        set_register_use(asi->register_usage_flag, rn);
++        set_register_use(asi->register_usage_flag, rdt);
++        set_register_use(asi->register_usage_flag, rdt + 1);
++	if (rm >= 0)
++		set_register_use(asi->register_usage_flag, rm);
++
++	return INSN_GOOD;
++}
++
++
++const struct decode_checker arm_regs_checker[NUM_PROBES_ARM_ACTIONS] = {
++	[PROBES_EMULATE_NONE] = {.checker = arm_check_regs_nouse},
++	[PROBES_SIMULATE_NOP] = {.checker = arm_check_regs_nouse},
++	[PROBES_MRS] = {.checker = arm_check_regs_normal},
++	[PROBES_SATURATING_ARITHMETIC] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL1] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL2] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL_ADD_LONG] = {.checker = arm_check_regs_normal},
++	[PROBES_MUL_ADD] = {.checker = arm_check_regs_normal},
++	[PROBES_LOAD] = {.checker = arm_check_regs_normal},
++	[PROBES_LOAD_EXTRA] = {.checker = arm_check_regs_normal},
++	[PROBES_STORE] = {.checker = arm_check_regs_normal},
++	[PROBES_STORE_EXTRA] = {.checker = arm_check_regs_normal},
++	[PROBES_DATA_PROCESSING_REG] = {.checker = arm_check_regs_normal},
++	[PROBES_DATA_PROCESSING_IMM] = {.checker = arm_check_regs_normal},
++	[PROBES_SATURATE] = {.checker = arm_check_regs_normal},
++	[PROBES_REV] = {.checker = arm_check_regs_normal},
++	[PROBES_MMI] = {.checker = arm_check_regs_normal},
++	[PROBES_PACK] = {.checker = arm_check_regs_normal},
++	[PROBES_EXTEND] = {.checker = arm_check_regs_normal},
++	[PROBES_EXTEND_ADD] = {.checker = arm_check_regs_normal},
++	[PROBES_BITFIELD] = {.checker = arm_check_regs_normal},
++	[PROBES_LDMSTM] = {.checker = arm_check_regs_ldmstm},
++	[PROBES_MOV_IP_SP] = {.checker = arm_check_regs_mov_ip_sp},
++	[PROBES_LDRSTRD] = {.checker = arm_check_regs_ldrdstrd},
++};
+diff --git a/arch/arm/probes/kprobes/checkers.h b/arch/arm/probes/kprobes/checkers.h
+index bddfa0e..cf6c9e7 100644
+--- a/arch/arm/probes/kprobes/checkers.h
++++ b/arch/arm/probes/kprobes/checkers.h
+@@ -47,6 +47,7 @@ extern const union decode_action stack_check_actions[];
  
- /*
-  * Macros for defining space directives spread over multiple lines.
-diff --git a/arch/arm/probes/kprobes/test-thumb.c b/arch/arm/probes/kprobes/test-thumb.c
-index e8cf193..b683b45 100644
---- a/arch/arm/probes/kprobes/test-thumb.c
-+++ b/arch/arm/probes/kprobes/test-thumb.c
-@@ -778,8 +778,8 @@ CONDITION_INSTRUCTIONS(22,
- 
- 	TEST_UNSUPPORTED("subs	pc, lr, #4")
- 
--	TEST("mrs	r0, cpsr")
--	TEST("mrs	r14, cpsr")
-+	TEST_RMASKED("mrs	r",0,~PSR_IGNORE_BITS,", cpsr")
-+	TEST_RMASKED("mrs	r",14,~PSR_IGNORE_BITS,", cpsr")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf3ef8d00) "	@ mrs	sp, spsr")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf3ef8f00) "	@ mrs	pc, spsr")
- 	TEST_UNSUPPORTED("mrs	r0, spsr")
+ #ifndef CONFIG_THUMB2_KERNEL
+ extern const struct decode_checker arm_stack_checker[];
++extern const struct decode_checker arm_regs_checker[];
+ #else
+ #endif
+ extern const struct decode_checker t32_stack_checker[];
 -- 
 1.8.4
 
