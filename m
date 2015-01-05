@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbbAEOY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 09:24:59 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:60443 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507AbbAEOY6 (ORCPT
+	id S1753641AbbAEOcR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 09:32:17 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35076 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbbAEOcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 09:24:58 -0500
-Date: Mon, 5 Jan 2015 14:24:33 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Feng Tang <feng.tang@intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, John Stultz <john.stultz@linaro.org>,
-        Colin Cross <ccross@android.com>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: andriod: ion: Add ion_phys_get_by_id
- function
-Message-ID: <20150105142433.1d892039@lxorguk.ukuu.org.uk>
-In-Reply-To: <1420355512-31129-1-git-send-email-feng.tang@intel.com>
-References: <1420355512-31129-1-git-send-email-feng.tang@intel.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Jan 2015 09:32:16 -0500
+From: Guillaume Vercoutere <gvercoutere@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gvercoutere@gmail.com
+Subject: [PATCH 2/3] staging: android: Correct NULL comparison style in logger.c
+Date: Mon,  5 Jan 2015 15:25:23 +0100
+Message-Id: <1420467923-6397-1-git-send-email-gvercoutere@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  4 Jan 2015 15:11:51 +0800
-Feng Tang <feng.tang@intel.com> wrote:
+Replace explicit NULL comparison with !
 
-> There is user case that user only knows the ion_handle idand
-> needs to get the physical addr and len. So add this wrapper to
-> meet this requirement.
+Signed-off-by: Guillaume Vercoutere <gvercoutere@gmail.com>
+---
+ drivers/staging/android/logger.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-What is the in-tree upstream user of this new function ? I don't see one
-in your patches ?
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
+index 59ea1a7..72b804e 100644
+--- a/drivers/staging/android/logger.c
++++ b/drivers/staging/android/logger.c
+@@ -707,11 +707,11 @@ static int __init create_log(char *log_name, int size)
+ 	unsigned char *buffer;
+ 
+ 	buffer = vmalloc(size);
+-	if (buffer == NULL)
++	if (!buffer)
+ 		return -ENOMEM;
+ 
+ 	log = kzalloc(sizeof(struct logger_log), GFP_KERNEL);
+-	if (log == NULL) {
++	if (!log) {
+ 		ret = -ENOMEM;
+ 		goto out_free_buffer;
+ 	}
+@@ -719,7 +719,7 @@ static int __init create_log(char *log_name, int size)
+ 
+ 	log->misc.minor = MISC_DYNAMIC_MINOR;
+ 	log->misc.name = kstrdup(log_name, GFP_KERNEL);
+-	if (log->misc.name == NULL) {
++	if (!log->misc.name) {
+ 		ret = -ENOMEM;
+ 		goto out_free_log;
+ 	}
+-- 
+1.7.10.4
 
-Alan
