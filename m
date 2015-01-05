@@ -1,36 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145AbbAEVdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:33:16 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:60755 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663AbbAEVdO (ORCPT
+	id S932194AbbAEVfE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:35:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58153 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883AbbAEVfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:33:14 -0500
-Date: Mon, 05 Jan 2015 16:33:11 -0500 (EST)
-Message-Id: <20150105.163311.1868277821228057884.davem@davemloft.net>
-To: k.kozlowski@samsung.com
-Cc: alex.aring@gmail.com, linux-wpan@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] at86rf230: Constify struct regmap_config
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1420448551-9443-1-git-send-email-k.kozlowski@samsung.com>
-References: <1420448551-9443-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 5 Jan 2015 16:35:02 -0500
+Date: Mon, 5 Jan 2015 13:35:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jweiner@redhat.com,
+        dave.hansen@linux.intel.com, rientjes@google.com, linux-mm@kvack.org
+Subject: Re: [PATCH v2] fs: proc: task_mmu: show page size in
+ /proc/<pid>/numa_maps
+Message-Id: <20150105133500.e0ce4b090e6b378c3edc9c56@linux-foundation.org>
+In-Reply-To: <734bca19b3a8f4e191ccc9055ad4740744b5b2b6.1420464466.git.aquini@redhat.com>
+References: <734bca19b3a8f4e191ccc9055ad4740744b5b2b6.1420464466.git.aquini@redhat.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 Jan 2015 13:33:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Date: Mon, 05 Jan 2015 10:02:31 +0100
+On Mon,  5 Jan 2015 12:44:31 -0500 Rafael Aquini <aquini@redhat.com> wrote:
 
-> The regmap_config struct may be const because it is not modified by the
-> driver and regmap_init() accepts pointer to const.
+> This patch introduces 'kernelpagesize_kB' line element to /proc/<pid>/numa_maps
+> report file in order to help identifying the size of pages that are backing
+> memory areas mapped by a given task. This is specially useful to
+> help differentiating between HUGE and GIGANTIC page backed VMAs.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> This patch is based on Dave Hansen's proposal and reviewer's follow-ups
+> taken from the following dicussion threads:
+>  * https://lkml.org/lkml/2011/9/21/454
 
-Applied.
+Dave's changelog contains useful information which this one lacked.  I
+stole some of it.
+
+: The output of /proc/$pid/numa_maps is in terms of number of pages like
+: anon=22 or dirty=54.  Here's some output:
+: 
+: 7f4680000000 default file=/hugetlb/bigfile anon=50 dirty=50 N0=50
+: 7f7659600000 default file=/anon_hugepage\040(deleted) anon=50 dirty=50 N0=50
+: 7fff8d425000 default stack anon=50 dirty=50 N0=50
+: Looks like we have a stack and a couple of anonymous hugetlbfs
+: areas page which both use the same amount of memory.  They don't.
+: 
+: The 'bigfile' uses 1GB pages and takes up ~50GB of space.  The
+: anon_hugepage uses 2MB pages and takes up ~100MB of space while the stack
+: uses normal 4k pages.  You can go over to smaps to figure out what the
+: page size _really_ is with KernelPageSize or MMUPageSize.  But, I think
+: this is a pretty nasty and counterintuitive interface as it stands.
+: 
+: This patch introduces 'kernelpagesize_kB' line element to
+: /proc/<pid>/numa_maps report file in order to help identifying the size of
+: pages that are backing memory areas mapped by a given task.  This is
+: specially useful to help differentiating between HUGE and GIGANTIC page
+: backed VMAs.
+: 
+: This patch is based on Dave Hansen's proposal and reviewer's follow-ups
+: taken from the following dicussion threads:
+:  * https://lkml.org/lkml/2011/9/21/454
+:  * https://lkml.org/lkml/2014/12/20/66
+
+
+> +	seq_printf(m, " kernelpagesize_kB=%lu", vma_kernel_pagesize(vma) >> 10);
+
+This changes the format of the numa_maps file and can potentially break
+existing parsers.  Please discuss.
+
+I'd complain about the patch's failure to update the documentation,
+except numa_maps appears to be undocumented.  Sigh.  What the heck is "N0"?
+
