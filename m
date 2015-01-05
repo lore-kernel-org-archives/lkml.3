@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbbAEK07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:26:59 -0500
-Received: from mail.windriver.com ([147.11.1.11]:58369 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbbAEK04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:26:56 -0500
-Message-ID: <54AA66E0.6050504@windriver.com>
-Date: Mon, 5 Jan 2015 18:26:40 +0800
-From: yzhu1 <Yanjun.Zhu@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753705AbbAEKhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:37:40 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59358 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753623AbbAEKhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 05:37:35 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto: AEAD: add check for presence of auth tag
+Date: Mon, 05 Jan 2015 11:26:48 +0100
+Message-ID: <7639295.Yx6QIQScqO@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20150105101901.GA24736@gondor.apana.org.au>
+References: <15957213.Wu7Np8vQse@tachyon.chronox.de> <20150105101901.GA24736@gondor.apana.org.au>
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>,
-        =?KOI8-R?Q?=F0=CC=C1=CD=C5=CE_=F0=C5?= =?KOI8-R?Q?=D4=D2=CF=D7?= 
-	<plamen@petrovi.no-ip.info>,
-        <linux-kernel@vger.kernel.org>
-CC: "'Thomas Gleixner'" <tglx@linutronix.de>
-Subject: Re: [BISECTED] 3.19-rc1 regression - kernel does not load in GRUB
- 0.97 (GRUB Legacy)
-References: <000001d01f10$85f506f0$91df14d0$@petrovi.no-ip.info> <549EB88D.20403@suse.com> <000301d0226e$bb275b50$317611f0$@petrovi.no-ip.info> <549FE582.8060108@suse.com>
-In-Reply-To: <549FE582.8060108@suse.com>
-Content-Type: text/plain; charset="koi8-r"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.162.232]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2014 07:12 PM, Juergen Gross wrote:
-> On 12/28/2014 08:20 AM, Пламен Петров wrote:
->>> -----Original Message-----
->>> From: Juergen Gross [mailto:jgross@suse.com]
->>> Sent: Saturday, December 27, 2014 3:48 PM
->>> To: Пламен Петров; linux-kernel@vger.kernel.org
->>> Cc: 'Thomas Gleixner'
->>> Subject: Re: [BISECTED] 3.19-rc1 regression - kernel does not load 
->>> in GRUB
->>> 0.97 (GRUB Legacy)
->>>
->>> On 12/24/2014 01:28 AM, Пламен Петров wrote:
->>>> Hello!
->>>>
->>>> I use GRUB Legacy bootloader (version 0.97) on a couple machines, and
->>>> where 3.18.x loads fine, 3.19-rc1 does not.
->>>>
->>>> While compiling I used the attached .config file accompanied by "make
->>>> olddefconfig"
->>>
->>> Can you tell me something about the hardware (processor model)?
->>> You are not booting the system under VMWare by any chance?
->>
->> As a matter of fact - I am compiling in a VMware Player (6.0.3
->> build-1895310) virtual machine, boot testing there, and then if 
->> everything
->> is OK, I transfer the monolithic kernel produced on 3 virtual 
->> machines that
->> run on EXSi and 2 actual servers. So along those lines - the failing
->> 3.19-rc1 never saw actual hardware - it was all tested (and bisected) 
->> inside
->> a VM.
->
-> Thanks. VMWare having problems with my patch is a known issue. I've
-> already sent a patch working around that issue (VMWare has a bug
-> emulating the PAT MSR). You can either use that patch (attached for
-> your convenience) or use the "nopat" option.
->
->
-> Juergen
->
-This patch works for me. I made tests with this patch.
+Am Montag, 5. Januar 2015, 21:19:01 schrieb Herbert Xu:
 
-Zhu Yanjun
+Hi Herbert,
+
+> On Tue, Dec 30, 2014 at 10:16:03PM +0100, Stephan Mueller wrote:
+> > The AEAD decryption operation requires the authentication tag to be
+> > present as part of the cipher text buffer. The added check verifies that
+> > the caller provides a cipher text buffer with at least the
+> > authentication tag.
+> > 
+> > As the cipher text is provided as a scatterlist, loop through the
+> > scatterlist until we know we have sufficient cipher text bytes to invoke
+> > the AEAD decryption operation.
+> 
+> There is no need to vet the scatterlist.  For kernel users it's
+> up to them to ensure that the length is valid with respect to the
+> sg list.
+> 
+> For the user-space interface obviously you should ensure that a
+> valid length is supplied.
+
+Then it seems I misunderstood you in your last comments. I thought the check 
+that the authentication tag is present should be moved to the crypto API so 
+that all users benefit from it.
+
+As the authentication tag is "inline" in the ciphertext data stream, the only 
+way I see to check for its presence is to verify that sufficient ciphertext is 
+provided.
+
+If the AEAD user space interface should perform the check, then the code drop 
+provided with patch v6 would already cover that.
+
+Could you please help me understand where that check should be and what should 
+be done at the crypto API level?
+
+Thanks
+
+-- 
+Ciao
+Stephan
