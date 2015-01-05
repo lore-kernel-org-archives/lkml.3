@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472AbbAEFxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 00:53:46 -0500
-Received: from msxgate2.admin.esu.edu ([206.225.126.252]:17457 "EHLO
-	msxgate2.admin.esu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbbAEFxo convert rfc822-to-8bit (ORCPT
+	id S1751224AbbAEGAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 01:00:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50312 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbbAEGAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 00:53:44 -0500
-X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 00:53:44 EST
-From: Jacqueline Gardner <jgardner@po-box.esu.edu>
-Subject: =?iso-8859-1?Q?Din_e-lagring_gr=E4ns_har_=F6verskridits?=
-Thread-Topic: =?iso-8859-1?Q?Din_e-lagring_gr=E4ns_har_=F6verskridits?=
-Thread-Index: AdAoqx+L7UaMbvovRRyzW6bN3nmIPQ==
-Date: Mon, 5 Jan 2015 05:47:42 +0000
-Message-ID: <0B1EB60BB1696648B43E876E92D651AB0ACB03@msxmb2.admin.esu.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [206.225.126.10]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Jan 2015 01:00:46 -0500
+Date: Sun, 4 Jan 2015 22:00:45 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: jitendra kumar khasdev <jkhasdev@gmail.com>
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, pankaj.saraf@nektech.in,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] Staging: comedi: fix line over 80 characters warning
+Message-ID: <20150105060045.GA20709@kroah.com>
+References: <1420289195-5012-1-git-send-email-jkhasdev@gmail.com>
+ <20150104234152.GA14138@kroah.com>
+ <alpine.DEB.2.10.1501050934180.3526@jitendra>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.10.1501050934180.3526@jitendra>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Din e-postkonto lagringsgränsen har överskridits. Du kommer inte att kunna ta emot eller skicka ett meddelande. För att återställa ditt konto klickar du här: http://webmailnet.weebly.com/
 
-och skicka in din webmail information som krävs för att du ska börja skicka e-post i årets 2015
+A: No.
+Q: Should I include quotations after my reply?
 
-Tack.
-IT-säkerhet servicekontor 2015
+http://daringfireball.net/2007/07/on_top
+
+On Mon, Jan 05, 2015 at 09:34:57AM +0530, jitendra kumar khasdev wrote:
+> Hello,
+> Will I have to resubmit by combining all 5 into 1 patch? Please give me 
+> suggestion  so that I can do it in correct way.
+
+I don't know, I didn't read the patches, but if you do send a series of
+patches, they each have to be doing something different to make them
+different patches, right?
+
+thanks,
+
+greg k-h
