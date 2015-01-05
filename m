@@ -1,139 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbbAEV5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:57:12 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8695 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751011AbbAEV5J (ORCPT
+	id S1754431AbbAEWAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 17:00:20 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:48177 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905AbbAEWAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:57:09 -0500
-Message-ID: <54AB08AB.7040009@sonymobile.com>
-Date: Mon, 5 Jan 2015 13:56:59 -0800
-From: Tim Bird <tim.bird@sonymobile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Shuah Khan <shuahkh@osg.samsung.com>, "mmarek@suse.cz" <mmarek@suse.cz>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "tranmanphong@gmail.com" <tranmanphong@gmail.com>,
-        "mpe@ellerman.id.au" <mpe@ellerman.id.au>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "dh.herrmann@gmail.com" <dh.herrmann@gmail.com>,
-        "hughd@google.com" <hughd@google.com>,
-        "bobby.prani@gmail.com" <bobby.prani@gmail.com>,
-        "serge.hallyn@ubuntu.com" <serge.hallyn@ubuntu.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>,
-        "koct9i@gmail.com" <koct9i@gmail.com>
-CC: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+	Mon, 5 Jan 2015 17:00:17 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Peter Hutterer <peter.hutterer@who-t.net>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        linux-input <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: WIP alternative - was Re: [PATCH v3 14/20] selftests/size: add
- install target to enable test install
-References: <cover.1419387513.git.shuahkh@osg.samsung.com> <c961f80614b02a2f3c6455518d1f6fabdaf6c7f3.1419387513.git.shuahkh@osg.samsung.com> <54A4B174.2010501@sonymobile.com> <54AB0215.5020409@osg.samsung.com>
-In-Reply-To: <54AB0215.5020409@osg.samsung.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+        Maxwell Anselm <silverhammermba@gmail.com>
+Subject: Re: [PATCH 1/2] input: synaptics - make image sensors report ABS_MT_TOUCH_MAJOR
+Date: Mon, 05 Jan 2015 23:00:13 +0100
+Message-ID: <1777845.g1sZJx65aj@xps13>
+In-Reply-To: <CAN+gG=Fhaj2aQM7gxXZBaXx3MZQbdMdCZ7KO=nmhzufp4YqnmA@mail.gmail.com>
+References: <1419679889-6582-1-git-send-email-gabriele.mzt@gmail.com> <1419679889-6582-2-git-send-email-gabriele.mzt@gmail.com> <CAN+gG=Fhaj2aQM7gxXZBaXx3MZQbdMdCZ7KO=nmhzufp4YqnmA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 01:28 PM, Shuah Khan wrote:
-> On 12/31/2014 07:31 PM, Tim Bird wrote:
-...
->> The install phase is desperately needed for usage of kselftest in
->> cross-target situations (applicable to almost all embedded).  So this
->> is great stuff.
+On Monday 05 January 2015 14:24:30 Benjamin Tissoires wrote:
+> Hi Gabriele,
 > 
-> Thanks.
+> [Adding Peter and Hans as this change will impact both
+> xf86-input-synaptics and libinput]
 > 
->>
->> I worked a bit on isolating the install stuff to a makefile include file.
->> This allows simplifying some of the sub-level Makefiles a bit, and allowing
->> control of some of the install and run logic in less places.
->>
->> This is still a work in progress, but before I got too far along, I wanted
->> to post it for people to provide feedback.  A couple of problems cropped
->> up that are worth discussing, IMHO.
->>
->> 1) I think it should be a requirement that each test has a single
->> "main" program to execute to run the tests.  If multiple tests are supported
->> or more flexibility is desired for additional arguments, or that sort of
->> thing, then that's fine, but the automated script builder should be able
->> to run just a single program or script to have things work.  This also
->> makes things more consistent.  In the case of the firmware test, I created
->> a single fw_both.sh script to do this, instead of having two separate
->> blocks in the kselftest.sh script.
+> On Sat, Dec 27, 2014 at 6:31 AM, Gabriele Mazzotta
+> <gabriele.mzt@gmail.com> wrote:
+> > Despite claiming to be able to report ABS_TOOL_WIDTH, image sensors
+> > were not doing it. Make them report widths and use ABS_MT_TOUCH_MAJOR
+> > instead ABS_TOOL_WIDTH.
 > 
-> It is a good goal for individual tests to use a main program to run
-> tests, even though, I would not make it a requirement. I would like to
-> leave that decision up to the individual test writer.
->
-OK.  It helps to have a single line when trying to isolate
-RUN_TEST creation into the include file, but there may be other
-ways to accomplish this.
+> It looks like the current xorg-synaptics code already handles
+> ABS_MT_TOUCH_MAJOR as finger_width. So I think we should be good in
+> replacing the ABS_TOOL_WIDTH event. However, I'd prefer having Peter
+> confirm this because xorg-synaptics still relies a lot on the single
+> touch emulation.
+> 
+> >
+> > Since the 'w' slot is used to report the finger count when two or more
+> > fingers are on the touchpad, make sure that only meaningful values are
+> > emitted, i.e. values greater than or equal to 4, and assign the correct
+> > range to ABS_MT_TOUCH_MAJOR.
+> >
+> > Link: https://bugzilla.kernel.org/show_bug.cgi?id=77161
+> > Signed-off-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+> > ---
+> >  drivers/input/mouse/synaptics.c | 11 +++++++++--
+> >  1 file changed, 9 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> > index f947292..ea0563e 100644
+> > --- a/drivers/input/mouse/synaptics.c
+> > +++ b/drivers/input/mouse/synaptics.c
+> > @@ -814,6 +814,8 @@ static void synaptics_report_slot(struct input_dev *dev, int slot,
+> 
+> Just FYI, this does not apply anymore on top of Dmitry's tree.
+> synaptics_report_slot() has been removed, and you should now report
+> the slot state in synaptics_report_mt_data().
+> 
+> >         input_report_abs(dev, ABS_MT_POSITION_X, hw->x);
+> >         input_report_abs(dev, ABS_MT_POSITION_Y, synaptics_invert_y(hw->y));
+> >         input_report_abs(dev, ABS_MT_PRESSURE, hw->z);
+> > +       if (hw->w >= 4)
+> 
+> That I don't like. IMO, at this point, .w should only contain the
+> finger width, unconditionally.
+> Also, with 2/2, .w is computed accurately for the second finger, but
+> not for the first.
+> 
+> I tried to figure out a way to properly extract the actual width
+> information from the sgm packet when the w is 0 or 1, and the only way
+> I found was to do the fix in synaptics_image_sensor_process(). I would
+> have preferred dealing with that in synaptics_parse_hw_state()
+> directly, but I think the final code would be more and more ugly.
+> Dealing with the true finger width in synaptics_image_sensor_process()
+> is not a problem for cr48 sensors, because they will not have the
+> ABS_MT_TOUCH_MAJOR event exported.
 
->>
->> 2) I've added a CROSS_INSTALL variable, which can call an arbitrary program
->> to place files on the target system (rather than just calling 'install').
->> In my case, I'd use my own 'ttc cp' command, which I can extend as necessary
->> to put things on a remote machine.  This works for a single directory,
->> but things get dicier with sub-directory trees full of files (like
->> the ftrace test uses.)
->>
->> If additional items need to be installed to the target, then maybe a setup
->> program should be used, rather than just copying files.
->>
->> 3) Some of the scripts were using /bin/bash to execute them, rather
->> than rely on the interpreter line in the script itself (and having
->> the script have executable privileges).  Is there a reason for this?
->> I modified a few scripts to be executable, and got rid of the
->> explicit execution with /bin/bash.
-> 
-> Probably no reason other than the choice made by the test writer.
-> It could be cleaned up and made consistent, however, I would see
-> this as a separate enhancement type work that could be done on its
-> own and not include it in the install work.
+Regarding the last part on cr48 sensors.
+Currently these sensors are not reporting widths through ABS_TOOL_WIDTH
+and I don't see what could go wrong if they start reporting
+ABS_MT_TOUCH_MAJOR. If I understood correctly, they can report widths
+only when one finger is on the touchpad. This means that they will
+report widths through slot 0, but they won't through slot 1. Nothing
+bad should happen.
 
-OK - this was also something that simplified the creation
-of the RUN_TEST variable in the isolated include file.
-Also, having the interpreter explicit in the invocation line
-in the Makefile as well as in the script itself is a bit redundant.
->>
->> The following is just a start...  Let me know if this direction looks
->> OK, and I'll finish this up.  The main item to look at is
->> kselftest.include file.  Note that these patches are based on Shuah's
->> series - but if you want to use these ideas I can rebase them onto
->> mainline, and break them out per test sub-level like Shuah did.
-> 
-> One of the reasons I picked install target approach is to enable the
-> feature by extending the existing run_tests support. This way we will
-> have the feature available quickly. Once that is supported, we can work
-> on evolving to a generic approach to use the include file approach, as
-> the changes you are proposing are based on the the series I sent out,
-> and makes improvements to it.
-> 
-> kselftest.include file approach could work for several tests and tests
-> that can't use the generic could add their own install support.
-> 
-> I propose evolving to a generic kselftest.include as the second step in
-> evolving the install feature. Can I count on you do the work and update
-> the tests to use kselftest.include, CROSS_INSTALL variable support?
+I've just rebased my patches and included the support for cr48 sensors.
+The only change I made was to change the default width value from
+5 to 4 since this is the minimum values these sensors can report
+(according to the existing code).
 
-Yes.  I'd be happy to evolve it through phases to support the include
-file and cross-target install feature.
-
-Is there anything I can help with in the mean time?  Some of the tests
-require a directory tree of files rather than just a few top-level files
-(e.g. ftrace).
-
-I was thinking about doing some work to tar-ify the needed directories of
-data files during build, and untar it in the execution area during the
-install step.  Do you want me to propose something there?
- -- Tim
-
+Anyway, should I simply include the changes you suggested to handle
+widths of sgm packets in what will be the new 2/2?
