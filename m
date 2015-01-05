@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbbAEKcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 05:32:09 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:34807 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbbAEKcH (ORCPT
+	id S1753450AbbAEKei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 05:34:38 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:60712 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887AbbAEKeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 05:32:07 -0500
-Date: Mon, 5 Jan 2015 21:31:59 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        ABI/API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v7 1/2] crypto: AF_ALG: add AEAD support
-Message-ID: <20150105103159.GA24878@gondor.apana.org.au>
-References: <6964260.mNa1jtPz7Z@tachyon.chronox.de>
- <1609020.xcc11L81HZ@tachyon.chronox.de>
+	Mon, 5 Jan 2015 05:34:36 -0500
+From: Kalle Valo <kvalo@codeaurora.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Brett Rudley <brudley@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Hante Meuleman <meuleman@broadcom.com>,
+        Fabian Frederick <fabf@skynet.be>, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] brcm80211: brcmsmac: dma: Remove some unused functions
+References: <1420332469-5907-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<54A8DBF4.4050202@lwfinger.net>
+Date: Mon, 05 Jan 2015 12:34:27 +0200
+In-Reply-To: <54A8DBF4.4050202@lwfinger.net> (Larry Finger's message of "Sun,
+	04 Jan 2015 00:21:40 -0600")
+Message-ID: <878uhh3498.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1609020.xcc11L81HZ@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 03:41:33PM +0100, Stephan Mueller wrote:
+Larry Finger <Larry.Finger@lwfinger.net> writes:
+
+> On 01/03/2015 06:47 PM, Rickard Strandqvist wrote:
+>> Removes some functions that are not used anywhere:
+>> dma_txflush() dma_txsuspended()
+>>
+>> This was partially found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>   drivers/net/wireless/brcm80211/brcmsmac/dma.c |   19 -------------------
+>>   drivers/net/wireless/brcm80211/brcmsmac/dma.h |    2 --
+>>   2 files changed, 21 deletions(-)
 >
-> +		if (!con.aead_assoclen)
-> +			return -EINVAL;
+> Just because file dma.c is involved, it does not need to be, nor
+> should it be in the subject line. You could specify the driver names
+> in the file tree after wireless. In this instance, one possible
+> subject would be "brcm80211: brcmsmac: Remove some unused functions".
+> On the other hand, if you look at "git log" to see past patches, the
+> driver maintainers even leave off the brcm80211 part, thus to match
+> them, the subject should be "brcmsmac: Remove some unused functions".
 
-AD being zero should be fine.
+This is a handy way to check what kind of format you should use:
 
-> +		/* aead_recvmsg limits the maximum AD size to one page */
-> +		if (con.aead_assoclen > PAGE_SIZE)
-> +			return -E2BIG;
+$ git log --oneline --no-merges drivers/net/wireless/brcm80211/brcmsmac/dma.c | head
+a38a9ef1c064 brcm80211: use container_of to resolve dma_info from dma_pub
+67d0cf50bd32 brcmsmac: Fix WARNING caused by lack of calls to dma_mapping_error()
+55cec505559d brcmsmac: Fix possible NULL pointer dereference in _dma_ctrlflags()
+9242c7261b8c brcmsmac: Remove some noisy and uninformative debug messages
+0c9a0a1dd145 brcmsmac: Add tracepoint for AMPDU session information
+90123e045cac brcmsmac: Add brcms_dbg_dma() debug macro
+b05618deb4ac brcmsmac: Use correct descriptor count when calculating next rx descriptor
+e041f65d5f00 brcmsmac: Remove internal tx queue
+05f8a6160491 brcmsmac: Add helper function for updating txavail count
+ec5ab1dd73a4 brcmsmac: fix DMA on SoCs
 
-I don't see any need to limit the size of the AD.
+> As was suggested earlier, you need to look at the precedents. Keeping
+> a uniform method of patch naming helps when looking for patches in the
+> git log.
 
-Cheers,
+Yeah, and also having clean[1] patch titles makes working with patchwork
+so much easier and hence me happier :)
+
+[1] clean patch title == short, clear and unique
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Kalle Valo
