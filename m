@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbbAEJSF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 04:18:05 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:56119 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372AbbAEJSB (ORCPT
+	id S1753650AbbAEJSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 04:18:41 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:40650 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408AbbAEJSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 04:18:01 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: linux-kernel@vger.kernel.org, Eliad Peller <eliad@wizery.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Arik Nemtsov <arik@wizery.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/2] Align member-assigns in a structure-copy block
-References: <1420394427-19509-1-git-send-email-me@mortis.eu>
-	<20150104230209.GD4806@salidar.dom.custoft.eu>
-Date: Mon, 05 Jan 2015 11:17:53 +0200
-In-Reply-To: <20150104230209.GD4806@salidar.dom.custoft.eu> (Giel van
-	Schijndel's message of "Mon, 5 Jan 2015 00:02:09 +0100")
-Message-ID: <877fx14mda.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 5 Jan 2015 04:18:38 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-df-54aa56ec7c69
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH 1/8] ASoC: alc5632: Constify struct regmap_config and
+ snd_soc_codec_driver
+Date: Mon, 05 Jan 2015 10:18:21 +0100
+Message-id: <1420449508-10701-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKJMWRmVeSWpSXmKPExsVy+t/xy7pvwlaFGEzbqW5x5eIhJoupD5+w
+	Wbx+YWjx7UoHk8XlXXPYLDp39bNavNz8hsmB3WPD5yY2j52z7rJ7bFrVyeax7+0yNo++LasY
+	PTafrvb4vEkugD2KyyYlNSezLLVI3y6BK+PrxcksBTs5K24e28XawPibvYuRg0NCwESip5Gt
+	i5ETyBSTuHBvPZDNxSEksJRRYtKVzYwQTh+TxKwLm9lBqtgEjCU2L18C1iEicJxR4sMzDxCb
+	WcBQ4ue7P2A1wgIxErs+bmIFsVkEVCV6upaC2bwC7hIPjp5khtgmJ3Hy2GTWCYzcCxgZVjGK
+	ppYmFxQnpeca6hUn5haX5qXrJefnbmKEBM2XHYyLj1kdYhTgYFTi4fU4sTJEiDWxrLgy9xCj
+	BAezkgjvultAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyROQkmV/bL8d07LFO2mXPZmlnup1hf
+	nLPd4x6uv9m7Qd3IPeLGqh0/6yIMqjU2BWtPMGt2nXfMNl4ulS2m8gL3tuPKic1iTYfb+17w
+	z0kT43MWuz3jY2CJ3r6rzudfV0780D3bLD7y72rnF7mRy9l/3l8/c87mKpvsZ1MaF8p1CYb6
+	eit9a1RiKc5INNRiLipOBAABD13I+AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Giel van Schijndel <me@mortis.eu> writes:
+The regmap_config struct may be const because it is not modified by the
+driver and regmap_init() accepts pointer to const. Make struct
+snd_soc_codec_driver const as well (snd_soc_register_codec() accepts
+pointer to const).
 
-> On Sun, Jan 04, 2015 at 19:00:22 +0100, Giel van Schijndel wrote:
->> This highlights the differences (errors).
->> ---
->
-> Forgot to:
-> Signed-off-by: Giel van Schijndel <me@mortis.eu>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ sound/soc/codecs/alc5632.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I don't normally edit patches (don't have time for that), so please
-resend.
-
+diff --git a/sound/soc/codecs/alc5632.c b/sound/soc/codecs/alc5632.c
+index d1fdbc266631..07630260e1ba 100644
+--- a/sound/soc/codecs/alc5632.c
++++ b/sound/soc/codecs/alc5632.c
+@@ -1066,7 +1066,7 @@ static int alc5632_probe(struct snd_soc_codec *codec)
+ 	return 0;
+ }
+ 
+-static struct snd_soc_codec_driver soc_codec_device_alc5632 = {
++static const struct snd_soc_codec_driver soc_codec_device_alc5632 = {
+ 	.probe = alc5632_probe,
+ 	.resume = alc5632_resume,
+ 	.set_bias_level = alc5632_set_bias_level,
+@@ -1080,7 +1080,7 @@ static struct snd_soc_codec_driver soc_codec_device_alc5632 = {
+ 	.num_dapm_routes = ARRAY_SIZE(alc5632_dapm_routes),
+ };
+ 
+-static struct regmap_config alc5632_regmap = {
++static const struct regmap_config alc5632_regmap = {
+ 	.reg_bits = 8,
+ 	.val_bits = 16,
+ 
 -- 
-Kalle Valo
+1.9.1
+
