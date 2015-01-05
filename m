@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043AbbAEPzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 10:55:44 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:57063 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334AbbAEPsV (ORCPT
+	id S1753564AbbAEPyw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 10:54:52 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:55683 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753442AbbAEPsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 10:48:21 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-95-54aab2432d50
+	Mon, 5 Jan 2015 10:48:22 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-94-54aab242c8bd
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
         Sebastian Reichel <sre@kernel.org>,
@@ -16,268 +16,165 @@ To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [RFC PATCHv2 02/19] power_supply: Move run-time configuration to
- separate structure
-Date: Mon, 05 Jan 2015 16:47:45 +0100
-Message-id: <1420472882-10463-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [RFC PATCHv2 03/19] power_supply: Add API for safe access of power
+ supply function attrs
+Date: Mon, 05 Jan 2015 16:47:46 +0100
+Message-id: <1420472882-10463-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
 References: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7rOm1aFGGxtEbOY9OQ9s8XElZOZ
-	LV6/MLTY+fAtm8Xyff2MFpseX2O1uLxrDpvF594jjBZ3Tx1lszhz+hKrxendJQ7cHjtn3WX3
-	2LxCy2PTqk42j81L6j22XG1n8ejbsorRY8Xq7+wenzfJBXBEcdmkpOZklqUW6dslcGUsu36G
-	teCwZ8XRLWvZGxi323UxcnJICJhIbF72mh3CFpO4cG89G4gtJLCUUWLbqbQuRi4gu49JYsfj
-	B2AJNgFjic3Ll7CBJEQEnjBJTG89yQKSYBYwlPj57g/YJGGBOIlX3+Yzg9gsAqoSbWc2g9m8
-	Au4S89edY4PYJidx8thkVhCbU8BDounvBRaIze4SH579Yp3AyLuAkWEVo2hqaXJBcVJ6rpFe
-	cWJucWleul5yfu4mRkhQft3BuPSY1SFGAQ5GJR5ejxMrQ4RYE8uKK3MPMUpwMCuJ8L5KXxUi
-	xJuSWFmVWpQfX1Sak1p8iJGJg1OqgXHbl5Si9a69dySc/6vOXdWs0nx9C8M8dfY5XqaZkp9P
-	zi0/UlN/u8P9g6PF1NKMko5DzV1BhaY/mi0P8AkeFOvUXnsocuLfyRszOEQrvVTFjd667dnu
-	vrBFJqS+h6Hh3fHPZ5+GexfftV7lpHzrWcKVjLIJUypnfWmxO96TY6Dx+vrNDrWrs5RYijMS
-	DbWYi4oTAY6pH8EoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7pOm1aFGHx5JG8x6cl7ZouJKycz
+	W7x+YWix8+FbNovl+/oZLTY9vsZqcXnXHDaLz71HGC3unjrKZnHm9CVWi9O7Sxy4PXbOusvu
+	sXmFlsemVZ1sHpuX1HtsudrO4tG3ZRWjx4rV39k9Pm+SC+CI4rJJSc3JLEst0rdL4Mp42vad
+	sWCJRsW+uUvZGxgblboYOTkkBEwkHn2cwghhi0lcuLeerYuRi0NIYCmjxOkpZxghnD4miZvb
+	r7OBVLEJGEtsXr4ErEpE4AmTxPTWkywgCWYBQ4mf7/6wg9jCAskSB7Y9BOrm4GARUJXYPTEQ
+	JMwr4C5x88AZFohtchInj01mBbE5BTwkmv5eAIsLAdV8ePaLdQIj7wJGhlWMoqmlyQXFSem5
+	hnrFibnFpXnpesn5uZsYIUH5ZQfj4mNWhxgFOBiVeHg9TqwMEWJNLCuuzD3EKMHBrCTC+yp9
+	VYgQb0piZVVqUX58UWlOavEhRiYOTqkGxuk6Iv9uHVqx7t2dC23HhZrnrr5dxb2XqY3xUXnE
+	BAY95aqp3BYMnGpbt5X7Ka/8M0FH75L5/iOup9LnXLtySfku56XUawsXR3hHMlxzX/Ki/ofi
+	68u3vbcGn5zAoXhkhdklacYzzt1ykT953VbHHvDlZJgsufGYcrj9N43nzDVSwSvz2Tjn+yqx
+	FGckGmoxFxUnAgAnC6HmKAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new structure 'power_supply_config' for holding run-time
-initiazation data like of_node, supplies and private driver data.
+Add simple wrappers for accessing power supply's function attributes:
+ - get_property -> power_supply_get_property
+ - set_property -> power_supply_set_property
+ - property_is_writeable -> power_supply_property_is_writeable
+ - external_power_changed -> power_supply_external_power_changed
 
-When registering the power supply this config should be used instead of
-directly initializing 'struct power_supply'.
-
-This allows changing the ownership of power_supply structure from driver
-to the power supply core in next patches.
+This API along with usage counter adds a safe way of accessing a power
+supply from another driver. If power supply is unregistered after
+obtaining reference to it by some driver, then the API wrappers won't be
+executed in invalid (freed) context.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/acpi/battery.c            |  3 ++-
- drivers/power/bq24190_charger.c   |  4 ++--
- drivers/power/charger-manager.c   |  2 +-
- drivers/power/max14577_charger.c  |  2 +-
- drivers/power/max17040_battery.c  |  2 +-
- drivers/power/max17042_battery.c  |  2 +-
- drivers/power/power_supply_core.c | 20 +++++++++++++++-----
- drivers/power/sbs-battery.c       |  6 ++++--
- drivers/power/tps65090-charger.c  |  2 +-
- include/linux/power_supply.h      | 16 ++++++++++++++--
- 10 files changed, 42 insertions(+), 17 deletions(-)
+ drivers/power/power_supply_core.c | 47 ++++++++++++++++++++++++++++++++++++++-
+ include/linux/power_supply.h      | 16 +++++++++++++
+ 2 files changed, 62 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index d98ba4355819..fd8c06f492a1 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -624,7 +624,8 @@ static int sysfs_add_battery(struct acpi_battery *battery)
- 	battery->bat.type = POWER_SUPPLY_TYPE_BATTERY;
- 	battery->bat.get_property = acpi_battery_get_property;
- 
--	result = power_supply_register_no_ws(&battery->device->dev, &battery->bat);
-+	result = power_supply_register_no_ws(&battery->device->dev,
-+			&battery->bat, NULL);
- 
- 	if (result)
- 		return result;
-diff --git a/drivers/power/bq24190_charger.c b/drivers/power/bq24190_charger.c
-index e4c95e1a6733..f736c4c7c8fe 100644
---- a/drivers/power/bq24190_charger.c
-+++ b/drivers/power/bq24190_charger.c
-@@ -1418,7 +1418,7 @@ static int bq24190_probe(struct i2c_client *client,
- 
- 	bq24190_charger_init(&bdi->charger);
- 
--	ret = power_supply_register(dev, &bdi->charger);
-+	ret = power_supply_register(dev, &bdi->charger, NULL);
- 	if (ret) {
- 		dev_err(dev, "Can't register charger\n");
- 		goto out2;
-@@ -1426,7 +1426,7 @@ static int bq24190_probe(struct i2c_client *client,
- 
- 	bq24190_battery_init(&bdi->battery);
- 
--	ret = power_supply_register(dev, &bdi->battery);
-+	ret = power_supply_register(dev, &bdi->battery, NULL);
- 	if (ret) {
- 		dev_err(dev, "Can't register battery\n");
- 		goto out3;
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index ae1032dba86f..034c77bf0fc0 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -1873,7 +1873,7 @@ static int charger_manager_probe(struct platform_device *pdev)
- 
- 	INIT_DELAYED_WORK(&cm->fullbatt_vchk_work, fullbatt_vchk);
- 
--	ret = power_supply_register(NULL, &cm->charger_psy);
-+	ret = power_supply_register(NULL, &cm->charger_psy, NULL);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Cannot register charger-manager with name \"%s\"\n",
- 			cm->charger_psy.name);
-diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
-index ef4103ee6021..8f113ed73e6c 100644
---- a/drivers/power/max14577_charger.c
-+++ b/drivers/power/max14577_charger.c
-@@ -562,7 +562,7 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	ret = power_supply_register(&pdev->dev, &chg->charger);
-+	ret = power_supply_register(&pdev->dev, &chg->charger, NULL);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed: power supply register\n");
- 		goto err;
-diff --git a/drivers/power/max17040_battery.c b/drivers/power/max17040_battery.c
-index 14d44706327b..bf42c57a4247 100644
---- a/drivers/power/max17040_battery.c
-+++ b/drivers/power/max17040_battery.c
-@@ -223,7 +223,7 @@ static int max17040_probe(struct i2c_client *client,
- 	chip->battery.properties	= max17040_battery_props;
- 	chip->battery.num_properties	= ARRAY_SIZE(max17040_battery_props);
- 
--	ret = power_supply_register(&client->dev, &chip->battery);
-+	ret = power_supply_register(&client->dev, &chip->battery, NULL);
- 	if (ret) {
- 		dev_err(&client->dev, "failed: power supply register\n");
- 		return ret;
-diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-index 1da6c5fbdff5..c62d1428803e 100644
---- a/drivers/power/max17042_battery.c
-+++ b/drivers/power/max17042_battery.c
-@@ -733,7 +733,7 @@ static int max17042_probe(struct i2c_client *client,
- 		regmap_write(chip->regmap, MAX17042_LearnCFG, 0x0007);
- 	}
- 
--	ret = power_supply_register(&client->dev, &chip->battery);
-+	ret = power_supply_register(&client->dev, &chip->battery, NULL);
- 	if (ret) {
- 		dev_err(&client->dev, "failed: power supply register\n");
- 		return ret;
 diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-index 84ef3f40e7bf..b748391c3e17 100644
+index b748391c3e17..fdec3c29fc3c 100644
 --- a/drivers/power/power_supply_core.c
 +++ b/drivers/power/power_supply_core.c
-@@ -536,7 +536,9 @@ static void psy_unregister_cooler(struct power_supply *psy)
- #endif
+@@ -314,7 +314,8 @@ EXPORT_SYMBOL_GPL(power_supply_is_system_supplied);
  
- static int __power_supply_register(struct device *parent,
--				   struct power_supply *psy, bool ws)
-+				   struct power_supply *psy,
-+				   const struct power_supply_config *cfg,
-+				   bool ws)
+ int power_supply_set_battery_charged(struct power_supply *psy)
  {
- 	struct device *dev;
- 	int rc;
-@@ -553,6 +555,12 @@ static int __power_supply_register(struct device *parent,
+-	if (psy->type == POWER_SUPPLY_TYPE_BATTERY && psy->set_charged) {
++	if (psy->use_cnt >= 0 && psy->type == POWER_SUPPLY_TYPE_BATTERY &&
++			psy->set_charged) {
+ 		psy->set_charged(psy);
+ 		return 0;
+ 	}
+@@ -366,6 +367,47 @@ struct power_supply *power_supply_get_by_phandle(struct device_node *np,
+ EXPORT_SYMBOL_GPL(power_supply_get_by_phandle);
+ #endif /* CONFIG_OF */
+ 
++int power_supply_get_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val)
++{
++	if (psy->use_cnt <= 0)
++		return -ENODEV;
++
++	return psy->get_property(psy, psp, val);
++}
++EXPORT_SYMBOL_GPL(power_supply_get_property);
++
++int power_supply_set_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    const union power_supply_propval *val)
++{
++	if (psy->use_cnt <= 0 || !psy->set_property)
++		return -ENODEV;
++
++	return psy->set_property(psy, psp, val);
++}
++EXPORT_SYMBOL_GPL(power_supply_set_property);
++
++int power_supply_property_is_writeable(struct power_supply *psy,
++					enum power_supply_property psp)
++{
++	if (psy->use_cnt <= 0 || !psy->property_is_writeable)
++		return -ENODEV;
++
++	return psy->property_is_writeable(psy, psp);
++}
++EXPORT_SYMBOL_GPL(power_supply_property_is_writeable);
++
++void power_supply_external_power_changed(struct power_supply *psy)
++{
++	if (psy->use_cnt <= 0 || !psy->external_power_changed)
++		return;
++
++	psy->external_power_changed(psy);
++}
++EXPORT_SYMBOL_GPL(power_supply_external_power_changed);
++
+ int power_supply_powers(struct power_supply *psy, struct device *dev)
+ {
+ 	return sysfs_create_link(&psy->dev->kobj, &dev->kobj, "powers");
+@@ -555,6 +597,7 @@ static int __power_supply_register(struct device *parent,
  	dev->release = power_supply_dev_release;
  	dev_set_drvdata(dev, psy);
  	psy->dev = dev;
-+	if (cfg) {
-+		psy->drv_data = cfg->drv_data;
-+		psy->of_node = cfg->of_node;
-+		psy->supplied_to = cfg->supplied_to;
-+		psy->num_supplicants = cfg->num_supplicants;
-+	}
++	psy->use_cnt++;
+ 	if (cfg) {
+ 		psy->drv_data = cfg->drv_data;
+ 		psy->of_node = cfg->of_node;
+@@ -629,6 +672,8 @@ EXPORT_SYMBOL_GPL(power_supply_register_no_ws);
  
- 	rc = dev_set_name(dev, "%s", psy->name);
- 	if (rc)
-@@ -605,15 +613,17 @@ dev_set_name_failed:
- 	return rc;
- }
- 
--int power_supply_register(struct device *parent, struct power_supply *psy)
-+int power_supply_register(struct device *parent, struct power_supply *psy,
-+		const struct power_supply_config *cfg)
+ void power_supply_unregister(struct power_supply *psy)
  {
--	return __power_supply_register(parent, psy, true);
-+	return __power_supply_register(parent, psy, cfg, true);
- }
- EXPORT_SYMBOL_GPL(power_supply_register);
- 
--int power_supply_register_no_ws(struct device *parent, struct power_supply *psy)
-+int power_supply_register_no_ws(struct device *parent, struct power_supply *psy,
-+		const struct power_supply_config *cfg)
- {
--	return __power_supply_register(parent, psy, false);
-+	return __power_supply_register(parent, psy, cfg, false);
- }
- EXPORT_SYMBOL_GPL(power_supply_register_no_ws);
- 
-diff --git a/drivers/power/sbs-battery.c b/drivers/power/sbs-battery.c
-index c7b7b4018df3..879f1448fc4a 100644
---- a/drivers/power/sbs-battery.c
-+++ b/drivers/power/sbs-battery.c
-@@ -801,6 +801,7 @@ static int sbs_probe(struct i2c_client *client,
- {
- 	struct sbs_info *chip;
- 	struct sbs_platform_data *pdata = client->dev.platform_data;
-+	struct power_supply_config psy_cfg = {};
- 	int rc;
- 	int irq;
- 	char *name;
-@@ -825,7 +826,7 @@ static int sbs_probe(struct i2c_client *client,
- 	chip->power_supply.properties = sbs_properties;
- 	chip->power_supply.num_properties = ARRAY_SIZE(sbs_properties);
- 	chip->power_supply.get_property = sbs_get_property;
--	chip->power_supply.of_node = client->dev.of_node;
-+	psy_cfg.of_node = client->dev.of_node;
- 	/* ignore first notification of external change, it is generated
- 	 * from the power_supply_register call back
- 	 */
-@@ -892,7 +893,8 @@ skip_gpio:
- 		goto exit_psupply;
- 	}
- 
--	rc = power_supply_register(&client->dev, &chip->power_supply);
-+	rc = power_supply_register(&client->dev, &chip->power_supply,
-+			&psy_cfg);
- 	if (rc) {
- 		dev_err(&client->dev,
- 			"%s: Failed to register power supply\n", __func__);
-diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-index 0f4e5971dff5..37629affcd34 100644
---- a/drivers/power/tps65090-charger.c
-+++ b/drivers/power/tps65090-charger.c
-@@ -268,7 +268,7 @@ static int tps65090_charger_probe(struct platform_device *pdev)
- 	cdata->ac.num_supplicants	= pdata->num_supplicants;
- 	cdata->ac.of_node		= pdev->dev.of_node;
- 
--	ret = power_supply_register(&pdev->dev, &cdata->ac);
-+	ret = power_supply_register(&pdev->dev, &cdata->ac, NULL);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed: power supply register\n");
- 		return ret;
++	psy->use_cnt--;
++	WARN_ON(psy->use_cnt);
+ 	cancel_work_sync(&psy->changed_work);
+ 	sysfs_remove_link(&psy->dev->kobj, "powers");
+ 	power_supply_remove_triggers(psy);
 diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index a5743f24e03e..b203a26d5c54 100644
+index b203a26d5c54..c2c17ac3a608 100644
 --- a/include/linux/power_supply.h
 +++ b/include/linux/power_supply.h
-@@ -176,6 +176,16 @@ union power_supply_propval {
- struct device;
- struct device_node;
+@@ -199,6 +199,12 @@ struct power_supply {
+ 	size_t num_supplies;
+ 	struct device_node *of_node;
  
-+/* Power supply instance specific configuration */
-+struct power_supply_config {
-+	struct device_node *of_node;
-+	/* Driver private data */
-+	void *drv_data;
-+
-+	char **supplied_to;
-+	size_t num_supplicants;
-+};
-+
- struct power_supply {
- 	const char *name;
- 	enum power_supply_type type;
-@@ -278,9 +288,11 @@ static inline int power_supply_is_system_supplied(void) { return -ENOSYS; }
++	/*
++	 * Functions for drivers implementing power supply class.
++	 * These shouldn't be called directly by other drivers for accessing
++	 * this power supply. Instead use power_supply_*() functions (for
++	 * example power_supply_get_property()).
++	 */
+ 	int (*get_property)(struct power_supply *psy,
+ 			    enum power_supply_property psp,
+ 			    union power_supply_propval *val);
+@@ -227,6 +233,7 @@ struct power_supply {
+ 	struct work_struct changed_work;
+ 	spinlock_t changed_lock;
+ 	bool changed;
++	int use_cnt;
+ #ifdef CONFIG_THERMAL
+ 	struct thermal_zone_device *tzd;
+ 	struct thermal_cooling_device *tcd;
+@@ -287,6 +294,15 @@ extern int power_supply_is_system_supplied(void);
+ static inline int power_supply_is_system_supplied(void) { return -ENOSYS; }
  #endif
  
++extern int power_supply_get_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val);
++extern int power_supply_set_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    const union power_supply_propval *val);
++extern int power_supply_property_is_writeable(struct power_supply *psy,
++					enum power_supply_property psp);
++extern void power_supply_external_power_changed(struct power_supply *psy);
  extern int power_supply_register(struct device *parent,
--				 struct power_supply *psy);
-+				 struct power_supply *psy,
-+				 const struct power_supply_config *cfg);
- extern int power_supply_register_no_ws(struct device *parent,
--				 struct power_supply *psy);
-+				 struct power_supply *psy,
-+				 const struct power_supply_config *cfg);
- extern void power_supply_unregister(struct power_supply *psy);
- extern int power_supply_powers(struct power_supply *psy, struct device *dev);
- 
+ 				 struct power_supply *psy,
+ 				 const struct power_supply_config *cfg);
 -- 
 1.9.1
 
