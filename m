@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbbAETkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 14:40:10 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:62593 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754263AbbAETkG (ORCPT
+	id S932122AbbAETdJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 14:33:09 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35926 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259AbbAETdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 14:40:06 -0500
+	Mon, 5 Jan 2015 14:33:08 -0500
+Message-ID: <54AAE71F.2040809@wwwdotorg.org>
+Date: Mon, 05 Jan 2015 12:33:51 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1419095222-9942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1419095222-9942-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 5 Jan 2015 11:33:28 -0800
-Message-ID: <CA+8MBbKKp7+mAk49G=Qsnm7tZC_6YUqPN9yeo8BE_X9YRSSbRQ@mail.gmail.com>
-Subject: Re: [PATCH] arch: ia64: kernel: irq_ia64.c: Remove unused function
-From: Tony Luck <tony.luck@gmail.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: balbi@ti.com, Thierry Reding <thierry.reding@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: phy: Restore deferred probing path
+References: <1417694767-18848-1-git-send-email-thierry.reding@gmail.com> <20141223183633.GH9147@saruman>
+In-Reply-To: <20141223183633.GH9147@saruman>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 20, 2014 at 9:07 AM, Rickard Strandqvist
-<rickard_strandqvist@spectrumdigital.se> wrote:
-> Remove the function ia64_handle_irq() that is not used anywhere.
+On 12/23/2014 11:36 AM, Felipe Balbi wrote:
+> On Thu, Dec 04, 2014 at 01:06:07PM +0100, Thierry Reding wrote:
+>> From: Thierry Reding <treding@nvidia.com>
+>>
+>> Commit 1290a958d48e ("usb: phy: propagate __of_usb_find_phy()'s error on
+>> failure") broke platforms that rely on deferred probing to order probing
+>> of PHY and host controller drivers. The reason is that the commit simply
+>> propagates errors from __of_usb_find_phy(), which returns -ENODEV if no
+>> PHY has been registered yet for a given device tree node. The only case
+>> in which -EPROBE_DEFER would now be returned is if try_module_get() did
+>> fail, which does not make sense.
+>>
+>> The correct thing to do is to return -EPROBE_DEFER if a PHY hasn't been
+>> registered yet. The only condition under which it makes sense to return
+>> -ENODEV is if the device tree node representing the PHY has been
+>> disabled (via the status property) because in that case the PHY will
+>> never be registered.
+>>
+>> This patch addresses the problem by making __of_usb_find_phy() return an
+>> appropriate error code while keeping in line with the above-mentioned
+>> commit to propagate error codes rather than overwriting them. At the
+>> same time the check for a valid PHY is decoupled from the check for the
+>> try_module_get() call and a separate error code is returned if the
+>> latter fails.
+>>
+>> Signed-off-by: Thierry Reding <treding@nvidia.com>
 >
-> This was partially found by using a static code analysis program called cppcheck.
+> you forgot to add the magic "Fixes: foo bar" here, I'll add it this
+> time, but I've already sent my -rc2 pull request, so this will only show
+> up on -rc3.
 
-$ git grep ia64_handle_irq
-arch/ia64/kernel/irq_ia64.c:ia64_handle_irq (ia64_vector vector,
-struct pt_regs *regs)
-arch/ia64/kernel/irq_ia64.c:
-printk("ia64_handle_irq: DANGER: less than "
-arch/ia64/kernel/irq_ia64.c:                     * Now try calling
-normal ia64_handle_irq as it would have got called
-arch/ia64/kernel/ivt.S: br.call.sptk.many b6=ia64_handle_irq
+Presumably also add the following, since the patch fixes a regression in 
+a previous kernel release:
 
-Note that last line. ia64_handle_irq() is called from assembly code
+Cc: stable # v3.18
 
--Tony
+?
+
