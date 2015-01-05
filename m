@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196AbbAER4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 12:56:14 -0500
-Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:53203 "EHLO
+	id S932179AbbAER4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 12:56:12 -0500
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:41856 "EHLO
 	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754178AbbAER4E (ORCPT
+	by vger.kernel.org with ESMTP id S1754201AbbAER4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Jan 2015 12:56:04 -0500
 X-Sender-Id: abbotti@mev.co.uk
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ian Abbott <abbotti@mev.co.uk>,
         H Hartley Sweeten <hartleys@visionengravers.com>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 21/45] staging: comedi: me_daq: rewrite "Devices:" line
-Date: Mon,  5 Jan 2015 17:54:49 +0000
-Message-Id: <1420480513-14765-22-git-send-email-abbotti@mev.co.uk>
+Subject: [PATCH 22/45] staging: comedi: mf6x4: rewrite "Devices:" line
+Date: Mon,  5 Jan 2015 17:54:50 +0000
+Message-Id: <1420480513-14765-23-git-send-email-abbotti@mev.co.uk>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
 References: <1420480513-14765-1-git-send-email-abbotti@mev.co.uk>
@@ -38,23 +38,22 @@ lines by using one or more spaces at the start of each continuation line
 
 Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 ---
- drivers/staging/comedi/drivers/me_daq.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/staging/comedi/drivers/mf6x4.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/me_daq.c b/drivers/staging/comedi/drivers/me_daq.c
-index b5278c1..bffc161 100644
---- a/drivers/staging/comedi/drivers/me_daq.c
-+++ b/drivers/staging/comedi/drivers/me_daq.c
-@@ -19,8 +19,7 @@
+diff --git a/drivers/staging/comedi/drivers/mf6x4.c b/drivers/staging/comedi/drivers/mf6x4.c
+index af21bc1..db972bc 100644
+--- a/drivers/staging/comedi/drivers/mf6x4.c
++++ b/drivers/staging/comedi/drivers/mf6x4.c
+@@ -18,7 +18,7 @@
  /*
-  * Driver: me_daq
-  * Description: Meilhaus PCI data acquisition cards
-- * Devices: (Meilhaus) ME-2600i [me-2600i]
-- *          (Meilhaus) ME-2000i [me-2000i]
-+ * Devices: [Meilhaus] ME-2600i (me-2600i), ME-2000i (me-2000i)
-  * Author: Michael Hillmann <hillmann@syscongroup.de>
-  * Status: experimental
-  *
+  * Driver: mf6x4
+  * Description: Humusoft MF634 and MF624 Data acquisition card driver
+- * Devices: Humusoft MF634, Humusoft MF624
++ * Devices: [Humusoft] MF634 (mf634), MF624 (mf624)
+  * Author: Rostislav Lisovy <lisovy@gmail.com>
+  * Status: works
+  * Updated:
 -- 
 2.1.4
 
