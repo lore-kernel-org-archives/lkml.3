@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbbAENwL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 08:52:11 -0500
-Received: from h1.radempa.de ([176.9.142.194]:43923 "EHLO mail.cosmopool.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240AbbAENwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 08:52:09 -0500
-From: Harald Geyer <harald@ccbib.org>
-To: Jonathan Cameron <jic23@kernel.org>
-cc: Richard Weinberger <richard@nod.at>, knaack.h@gmx.de, lars@metafoo.de,
-        pmeerw@pmeerw.net, sanjeev_sharma@mentor.com,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 2/3] iio: dht11: Add locking
+	id S1753864AbbAENwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 08:52:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42181 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656AbbAENwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 08:52:14 -0500
+Message-ID: <54AA9706.5020202@canonical.com>
+Date: Mon, 05 Jan 2015 14:52:06 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4834.1420465912.1@stardust.g4.wien.funkfeuer.at>
-Date: Mon, 05 Jan 2015 14:51:52 +0100
-Message-Id: <E1Y884W-0001G0-7b@stardust.g4.wien.funkfeuer.at>
+To: David Miller <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+CC: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] unlock rtnl mutex in ic_open_devs while waiting
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure that the read function is not interrupted...
+This fixes a deadlock with alx_link_check, which takes the rtnl_mutex in
+a work item to check the link.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Acked-by: Harald Geyer <harald@ccbib.org>
+I have no idea whether alx should be fixed or ipconfig.c,
+but this saves 120 seconds off my boot time. ;-)
+
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 ---
-Resending for Richard Weinberger.
-No changes since v1 except reordering.
-
- drivers/iio/humidity/dht11.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
-index f546eca..7717f5c 100644
---- a/drivers/iio/humidity/dht11.c
-+++ b/drivers/iio/humidity/dht11.c
-@@ -29,6 +29,7 @@
- #include <linux/wait.h>
- #include <linux/bitops.h>
- #include <linux/completion.h>
-+#include <linux/mutex.h>
- #include <linux/delay.h>
- #include <linux/gpio.h>
- #include <linux/of_gpio.h>
-@@ -57,6 +58,7 @@ struct dht11 {
- 	int				irq;
+diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
+index 7fa18bc7e47f..c8aa15a0cdf4 100644
+--- a/net/ipv4/ipconfig.c
++++ b/net/ipv4/ipconfig.c
+@@ -270,7 +270,9 @@ static int __init ic_open_devs(void)
+ 			if (ic_is_init_dev(dev) && netif_carrier_ok(dev))
+ 				goto have_carrier;
  
- 	struct completion		completion;
-+	struct mutex			lock;
++		rtnl_unlock();
+ 		msleep(1);
++		rtnl_lock();
  
- 	s64				timestamp;
- 	int				temperature;
-@@ -145,6 +147,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
- 	struct dht11 *dht11 = iio_priv(iio_dev);
- 	int ret;
- 
-+	mutex_lock(&dht11->lock);
- 	if (dht11->timestamp + DHT11_DATA_VALID_TIME < iio_get_time_ns()) {
- 		reinit_completion(&dht11->completion);
- 
-@@ -185,6 +188,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
- 		ret = -EINVAL;
- err:
- 	dht11->num_edges = -1;
-+	mutex_unlock(&dht11->lock);
- 	return ret;
- }
- 
-@@ -268,6 +272,7 @@ static int dht11_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, iio);
- 
- 	init_completion(&dht11->completion);
-+	mutex_init(&dht11->lock);
- 	iio->name = pdev->name;
- 	iio->dev.parent = &pdev->dev;
- 	iio->info = &dht11_iio_info;
--- 
-1.7.2.5
+ 		if (time_before(jiffies, next_msg))
+ 			continue;
 
