@@ -1,62 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbbAEVcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 16:32:46 -0500
-Received: from mout.web.de ([212.227.15.4]:54453 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754517AbbAEVcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 16:32:43 -0500
-Message-ID: <54AB02F3.5020308@users.sourceforge.net>
-Date: Mon, 05 Jan 2015 22:32:35 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932183AbbAEVdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 16:33:42 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:34169 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754595AbbAEVdP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 16:33:15 -0500
+Date: Mon, 5 Jan 2015 17:33:06 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Zhang Rui <rui.zhang@intel.com>, Tero Kristo <t-kristo@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-omap <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] thermal: ti-soc-thermal: ti-bandgap.c:  Remove unused
+ function
+Message-ID: <20150105213304.GC31536@developer>
+References: <1419183823-10787-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <549AD44A.8010603@ti.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Eric Van Hensbergen <ericvh@gmail.com>,
-        Latchesar Ionkov <lucho@ionkov.net>, Ron Minnich <rminnich@sandia.gov>,
-        v9fs-developer@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/8] fs/9p: Deletion of unnecessary checks before the
- function call "p9_client_clunk"
-References: <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54A01326.3050306@users.sourceforge.net> <54A06AB9.4020505@users.sourceforge.net> <20150105112206.GC15033@mwanda>
-In-Reply-To: <20150105112206.GC15033@mwanda>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:bqXi2+iQMa6HO6f2mk2yRZeXuNdxREAPHCh/ClobDjalE9K7NB1
- 3WBu9q99i65/hlDtTl6fTewtQCS+ob8kwCMQ/sAVBC70C1nekfFmo6f9NXgUBk11Ysz/wBW
- d/OXdlFPde1Vv63yonPSNHFeT4jbqzkFYamQySceo+C6wS3eRHqzBP+o+2/6tSkdJodEvW8
- U4TBEJmjx83elXtrqbN6w==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="da4uJneut+ArUgXk"
+Content-Disposition: inline
+In-Reply-To: <549AD44A.8010603@ti.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The p9_client_clunk() function tests whether its argument is NULL
->> and then returns immediately. Thus the test around the call is not needed.
->>
-> 
-> Not true.  You are not allowed to call p9_client_clunk(NULL).
 
-I find that it will work in principle if we refer to the same
-function implementation.
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/net/9p/client.c?id=d8282ea05ad119247122de23db7d48ad6098cfa2#n1448
-http://lxr.free-electrons.com/source/net/9p/client.c#L1448
+--da4uJneut+ArUgXk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Dec 24, 2014 at 08:57:14AM -0600, Nishanth Menon wrote:
+> On 12/21/2014 11:43 AM, Rickard Strandqvist wrote:
+> > Remove the function ti_bandgap_write_thot() that is not used anywhere.
+> >=20
+> > This was partially found by using a static code analysis program called=
+ cppcheck.
+> >=20
+> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital=
+=2Ese>
+> > ---
+> >  drivers/thermal/ti-soc-thermal/ti-bandgap.c |   13 -------------
+> >  drivers/thermal/ti-soc-thermal/ti-bandgap.h |    1 -
+> >  2 files changed, 14 deletions(-)
+> >=20
+> > diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/ther=
+mal/ti-soc-thermal/ti-bandgap.c
+> > index 634b6ce..cbb6a5f 100644
+> > --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> > +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> > @@ -611,19 +611,6 @@ int ti_bandgap_read_thot(struct ti_bandgap *bgp, i=
+nt id, int *thot)
+> >  }
+> > =20
+> >  /**
+> > - * ti_bandgap_write_thot() - sets sensor current thot
+> > - * @bgp: pointer to bandgap instance
+> > - * @id: sensor id
+> > - * @val: desired thot value
+> > - *
+> > - * Return: 0 on success or the proper error code
+> > - */
+> > -int ti_bandgap_write_thot(struct ti_bandgap *bgp, int id, int val)
+> > -{
+> > -	return _ti_bandgap_write_threshold(bgp, id, val, true);
+> > -}
+> > -
+> > -/**
+> >   * ti_bandgap_read_tcold() - reads sensor current tcold
+> >   * @bgp: pointer to bandgap instance
+> >   * @id: sensor id
+> > diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.h b/drivers/ther=
+mal/ti-soc-thermal/ti-bandgap.h
+> > index b3adf72..976afc0 100644
+> > --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.h
+> > +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.h
+> > @@ -371,7 +371,6 @@ struct ti_bandgap_data {
+> >  };
+> > =20
+> >  int ti_bandgap_read_thot(struct ti_bandgap *bgp, int id, int *thot);
+> > -int ti_bandgap_write_thot(struct ti_bandgap *bgp, int id, int val);
+> >  int ti_bandgap_read_tcold(struct ti_bandgap *bgp, int id, int *tcold);
+> >  int ti_bandgap_write_tcold(struct ti_bandgap *bgp, int id, int val);
+> >  int ti_bandgap_read_update_interval(struct ti_bandgap *bgp, int id,
+> >=20
+>=20
+> Not sure if removing support for programming of hot threshold is a
+> good idea. how about ti_bandgap_write_tcold then?
 
 
-> I assume this patch adds a bug.
+Agreed here. I believe the right thing to do is to use those functions
+to update the thresholds when necessary.
 
-It can happen that you will not like a corresponding error message
-if the callers will still pass null pointers eventually.
+>=20
+>=20
+> --=20
+> Regards,
+> Nishanth Menon
 
-... Trying to clunk with NULL ...
+--da4uJneut+ArUgXk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> I assume this patch adds a bug.  You have tried to introduce several of these
-> kinds of bugs.
+iQEcBAEBAgAGBQJUqwMIAAoJEMLUO4d9pOJWQGkH/2tQKSp5Uk0u8BGQJ7T9Xyfn
+XFH/kh9aY+FeGqBOirdDVVkvEXSzYfw6w6Ooo8Yqk+DzIGAFI9cg0EYfr4+TdwDi
+c4ucrapUBRnFBnGrLNgkdE7MXHHwvEqZKNVkJhTyKYmxbbYDd/PcQHAzhHXubaR3
+Xpugs8WSKfO7LBsVP6ctJ0X1oiCvwEc59vyynPA0ygJAX/j0OJ1Bxm4S6/3rEd+o
+E9ltQZL9W3Ou6dUZm6GTCn3VIUWwz0f3n5p3c9/5eeErhsVwbCe0llF+TGTdkuk1
+hERFgD/nHclkHaZy2Q39iZV0R29jKGR9zcxw7APW4zaM9dOZjOlPRMi+xP9MdbI=
+=Hfew
+-----END PGP SIGNATURE-----
 
-Do any other contributors want to reject my update suggestions
-around software components for "fs/9p"?
-
-Regards,
-Markus
+--da4uJneut+ArUgXk--
