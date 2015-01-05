@@ -1,119 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972AbbAEG1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 01:27:07 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39987 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959AbbAEG1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 01:27:05 -0500
-Message-ID: <54AA2EB1.8090501@ti.com>
-Date: Mon, 5 Jan 2015 11:56:57 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752868AbbAEGe4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 01:34:56 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:39512 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbbAEGey convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 01:34:54 -0500
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, <linus.walleij@linaro.org>, <gnurou@gmail.com>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        Benoit Parrot <bparrot@ti.com>
-Subject: Re: [PATCH] gpio: pcf857x: restore the initial line state of all
- pcf lines
-References: <1418371601-22658-1-git-send-email-kishon@ti.com> <548F498F.7050202@ti.com> <549271A9.5040701@ti.com> <5492E09F.1000003@ti.com>
-In-Reply-To: <5492E09F.1000003@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
+References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
+	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
+	<CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
+	<CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
+	<CACna6rxTYUWvxvu0rFydWxkjbYdHfhV=o+9A+ViCpbV-LFx7fw@mail.gmail.com>
+	<CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
+Date: Mon, 5 Jan 2015 07:34:53 +0100
+Message-ID: <CACna6rxF1OKRZSpaL=+XzSV2kCpMH5LuB-B+eWV7zF8MJ-9tog@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thursday 18 December 2014 07:41 PM, Nishanth Menon wrote:
-> On 12/18/2014 12:18 AM, Kishon Vijay Abraham I wrote:
+On 3 January 2015 at 13:28, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> 2015-01-02 22:34 GMT+01:00 Rafał Miłecki <zajec5@gmail.com>:
 >>
->>
->> On Tuesday 16 December 2014 02:20 AM, Nishanth Menon wrote:
->>> On 12/12/2014 02:06 AM, Kishon Vijay Abraham I wrote:
->>>> The reset values for all the PCF lines are high and hence on shutdown
->>>> we should drive all the lines high in order to bring it to the reset state.
->>>>
->>>> This is actually required since pcf doesn't have a reset line and even after
->>>> warm reset (by invoking "reboot" in prompt) the pcf lines maintains it's
->>>> previous programmed state. This becomes a problem if the boards are designed
->>>> to work with the default initial state.
->>>>
->>>> DRA7XX_evm uses PCF8575 and one of the PCF output lines feeds to MMC/SD and
->>>> this line should be driven high in order for the MMC/SD to be detected.
->>>> This line is modelled as regulator and the hsmmc driver takes care of enabling
->>>> and disabling it. In the case of 'reboot', during shutdown path as part of it's
->>>> cleanup process the hsmmc driver disables this regulator. This makes MMC boot
->>>> not functional.
->>>>
->>>> Fixed it by driving high all the pcf lines.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>>  drivers/gpio/gpio-pcf857x.c |    9 +++++++++
->>>>  1 file changed, 9 insertions(+)
->>>>
->>>> diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
->>>> index 236708a..00b15b2 100644
->>>> --- a/drivers/gpio/gpio-pcf857x.c
->>>> +++ b/drivers/gpio/gpio-pcf857x.c
->>>> @@ -448,6 +448,14 @@ static int pcf857x_remove(struct i2c_client *client)
->>>>  	return status;
->>>>  }
->>>>  
->>>> +static void pcf857x_shutdown(struct i2c_client *client)
->>>> +{
->>>> +	struct pcf857x *gpio = i2c_get_clientdata(client);
->>>> +
->>>> +	/* Drive all the I/O lines high */
->>>> +	gpio->write(gpio->client, BIT(gpio->chip.ngpio) - 1);
->>>
->>> you might force a contention here - depending on System configuration.
->>> example:
->>> +-------+
->>> |       |
->>> |  U1   |         +------+      +-----------+
->>> |       +--------->      |      |           |
->>> +-------+         |      |      |           |
->>>                   | Switch<-----+    SoC    |
->>> +-------+         |      |      |           |
->>> |       |         |      |      |           |
->>> | U2    <---------+--^---+      +-----------+
->>> |       |            |
->>> |       |            |
->>> +-------+            |
->>>                   +--+--+
->>>                   |     |
->>>                   | PCF |
->>>                   |     |
->>>                   +-----+
->>>
->>> At low, SoC pin is connected to U2 as drive. when reset to high, you
->>> now have U1 driving to the same pin that SoC has, potentially
->>> resulting in contention.
->>>
->>>
->>> Unfortunately, at this level, you do not know what the state of the
->>> system is, blindly forcing a pin level will potentially cause
->>> contention risk depending on pin configuration.
->>
->> Assume we are doing a reset when the system is powered on, irrespective of the
->> state of the system, we'll be forcing the pin level to the default state.
-> 
-> Yes, I dont deny that system will be fine *after* reset sequence is
-> started or completed. However there is a duration between the pcf
-> shutdown handler is called and the final reset handler is invoked -
-> that is the duration when  the contention might cause device behavior.
-> Essentially ignoring the state various drivers have asked PCF to setup
-> the pins and doing a hands down configuration may have side effects we
-> cant properly expect.
+>> 1) I gave you Ack for the changes
+>> 2) You could drop "net: wireless: " or better use something Sedat proposed
+>
+> Nice, yes I miss the Ack :)
+>
+> I just got one more complaining about my subject-line in "net: wireless: "
+> I use some sed call for this, so it's easy to fix. I will now remove that
+> part hereinafter.
 
-The solution might be to invoke the shutdown handler of the various drivers
-using the PCF before the shutdown handler of the PCF driver itself gets
-invoked? But I'm not sure how can that be achieved in linux kernel :-(
+Will you re-send this patch with a proper subject then, please?
 
-Thanks
-Kishon
+-- 
+Rafał
