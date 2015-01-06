@@ -1,134 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140AbbAFT0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:26:09 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:52800 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbbAFT0H (ORCPT
+	id S1756404AbbAFT0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:26:42 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56208 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754899AbbAFT0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:26:07 -0500
-Date: Tue, 6 Jan 2015 11:25:59 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150106192559.GF5280@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
- <20150106110112.GQ29390@twins.programming.kicks-ass.net>
- <20150106110730.GA25846@kmo-pixel>
- <20150106114215.GS29390@twins.programming.kicks-ass.net>
- <20150106114842.GP10476@twins.programming.kicks-ass.net>
- <20150106120121.GB26845@kmo-pixel>
- <20150106122006.GW29390@twins.programming.kicks-ass.net>
- <54ABDB4B.7070008@hurleysoftware.com>
- <20150106173808.GB5280@linux.vnet.ibm.com>
- <54AC224C.4030903@hurleysoftware.com>
+	Tue, 6 Jan 2015 14:26:40 -0500
+Date: Tue, 6 Jan 2015 19:26:30 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jason.wessel@windriver.com
+Subject: Re: [PATCH] arm64: kgdb: fix single stepping
+Message-ID: <20150106192630.GE32449@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54AC224C.4030903@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15010619-0029-0000-0000-000006FD41DB
+In-Reply-To: <54AB23CA.2020502@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 12:58:36PM -0500, Peter Hurley wrote:
-> On 01/06/2015 12:38 PM, Paul E. McKenney wrote:
-> > On Tue, Jan 06, 2015 at 07:55:39AM -0500, Peter Hurley wrote:
-> >> [ +cc Paul McKenney ]
-> >>
-> >> On 01/06/2015 07:20 AM, Peter Zijlstra wrote:
-> >>> On Tue, Jan 06, 2015 at 04:01:21AM -0800, Kent Overstreet wrote:
-> >>>> On Tue, Jan 06, 2015 at 12:48:42PM +0100, Peter Zijlstra wrote:
-> >>>>>
-> >>>>>
-> >>>>> Looking at that closure stuff, why is there an smp_mb() in
-> >>>>> closure_wake_up() ? Typically wakeup only needs to imply a wmb.
-> >>>>>
-> >>>>> Also note that __closure_wake_up() starts with a fully serializing
-> >>>>> instruction (xchg) and thereby already implies the full barrier.
-> >>>>
-> >>>> Probably no good reason, that code is pretty old :)
-> >>>>
-> >>>> If I was to hazard a guess, I had my own lockless linked lists before llist.h
-> >>>> existed and perhaps I did it with atomic_xchg() - which was at least documented
-> >>>> to not imply a barrier. I suppose it should just be dropped.
-> >>>
-> >>> We (probably me) should probably audit all the atomic_xchg()
-> >>> implementations and documentation and fix that. I was very much under
-> >>> the impression it should imply a full barrier (and it certainly does on
-> >>> x86), the documentation should state the rule that any atomic_ function
-> >>> that returns a result is fully serializing, therefore, because
-> >>> atomic_xchg() has a return value, it should too.
-> >>
-> >> memory-barriers.txt and atomic_ops.txt appear to contradict each other here,
-> >> but I think that's because atomic_ops.txt has drifted toward an
-> >> arch-implementer's POV:
-> >>
-> >> 260:atomic_xchg requires explicit memory barriers around the operation.
-> >>
-> >> All the serializing atomic operations have descriptions like this.
-> > 
-> > I am not seeing the contradiction.
-> > 
-> > You posted the relevant line from atomic_ops.txt.  The relevant passage
-> > from memory-barriers.txt is as follows:
-> > 
-> > 	Any atomic operation that modifies some state in memory and
-> > 	returns information about the state (old or new) implies an
-> > 	SMP-conditional general memory barrier (smp_mb()) on each side
-> > 	of the actual operation (with the exception of explicit lock
-> > 	operations, described later).  These include:
-> > 
-> > 		xchg();
-> > 		...
-> > 		atomic_xchg();			atomic_long_xchg();
-> > 
-> > So it appears to me that both documents require full barriers before and
-> > after any atomic exchange operation in SMP builds.  Therefore, any
-> > SMP-capable architecture that omits these barriers is buggy.
-> 
-> Sure, I understand that, but I think the atomic_ops.txt is easy to
-> misinterpret.
-> 
-> > So, what am I missing here?
-> 
-> Well, it's a matter of the intended audience. There is a significant
-> difference between:
-> 
-> static inline int atomic_xchg(atomic_t *v, int new)
-> {
-> 	/* this arch doesn't have serializing xchg() */
-> 	smp_mb();
-> 	/* arch xchg */
-> 	smp_mb();
-> }
-> 
-> and
-> 
-> 	smp_mb();
-> 	atomic_xchg(&v, 1);
-> 	smp_mb();
-> 
-> but both have "explicit memory barriers around the operation."
+On Mon, Jan 05, 2015 at 11:52:42PM +0000, AKASHI Takahiro wrote:
+> Hi Will,
 
-The atomic_ops.txt file is pretty explicit about its intended audience
-right at the beginning of the document:
+Hi Akashi,
 
-	This document is intended to serve as a guide to Linux port
-	maintainers on how to implement atomic counter, bitops, and spinlock
-	interfaces properly.
+> What's the current status of this patch?
+> I'm pretty sure that the bug is reproducable and can be fixed
+> with my patch since I've got a report from another guy
+> who had the same problem and tried my patch.
 
-It is intended for people implementing the atomic operations more than
-for people making use of them.
+As I asked here:
 
-							Thanx, Paul
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/297237.html
 
+I'd like to see an ack/feedback from a core kgdb person on this patch,
+because we're basically disabling interrupts in the low-level handler to
+deal with potential re-entrancy problems that aren't handled or prevented
+by the higher levels of the stack.
+
+I've added Jason for feedback... (main question is whether kgdb expects
+the architecture to disable interrupts during a single step, otherwise we
+can get a recursive debug exception due to something like a breakpoint
+firing on the interrupt handler)
+
+Will
+
+> On 10/21/2014 02:07 PM, AKASHI Takahiro wrote:
+> > I tried to verify kgdb in vanilla kernel on fast model, but it seems that
+> > the single stepping with kgdb doesn't work correctly since its first
+> > appearance at v3.15.
+> >
+> > On v3.15, 'stepi' command after breaking the kernel at some breakpoint
+> > steps forward to the next instruction, but the succeeding 'stepi' never
+> > goes beyond that.
+> > On v3.16, 'stepi' moves forward and stops at the next instruction just
+> > after enable_dbg in el1_dbg, and never goes beyond that. This variance of
+> > behavior seems to come in with the following patch in v3.16:
+> >
+> >      commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
+> >      paths where possible")
+> >
+> > This patch
+> > (1) moves kgdb_disable_single_step() from 'c' command handling to single
+> >      step handler.
+> >      This makes sure that single stepping gets effective at every 's' command.
+> >      Please note that, under the current implementation, single step bit in
+> >      spsr, which is cleared by the first single stepping, will not be set
+> >      again for the consecutive 's' commands because single step bit in mdscr
+> >      is still kept on (that is, kernel_active_single_step() in
+> >      kgdb_arch_handle_exception() is true).
+> > (2) re-implements kgdb_roundup_cpus() because the current implementation
+> >      enabled interrupts naively. See below.
+> > (3) removes 'enable_dbg' in el1_dbg.
+> >      Single step bit in mdscr is turned on in do_handle_exception()->
+> >      kgdb_handle_expection() before returning to debugged context, and if
+> >      debug exception is enabled in el1_dbg, we will see unexpected single-
+> >      stepping in el1_dbg.
+> >      Since v3.18, the following patch does the same:
+> >        commit 1059c6bf8534 ("arm64: debug: don't re-enable debug exceptions
+> >        on return from el1_dbg)
+> > (4) masks interrupts while single-stepping one instruction.
+> >      If an interrupt is caught during processing a single-stepping, debug
+> >      exception is unintentionally enabled by el1_irq's 'enable_dbg' before
+> >      returning to debugged context.
+> >      Thus, like in (2), we will see unexpected single-stepping in el1_irq.
+> >
+> > Basically (1) and (2) are for v3.15, (3) and (4) for v3.1[67].
+> >
+> > * issue fixed by (2):
+> > Without (2), we would see another problem if a breakpoint is set at
+> > interrupt-sensible places, like gic_handle_irq():
+> >
+> >      KGDB: re-enter error: breakpoint removed ffffffc000081258
+> >      ------------[ cut here ]------------
+> >      WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
+> > 					kgdb_handle_exception+0x1dc/0x1f4()
+> >      Modules linked in:
+> >      CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
+> >      Call trace:
+> >      [<ffffffc000087fac>] dump_backtrace+0x0/0x130
+> >      [<ffffffc0000880ec>] show_stack+0x10/0x1c
+> >      [<ffffffc0004d683c>] dump_stack+0x74/0xb8
+> >      [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
+> >      [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
+> >      [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
+> >      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+> >      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+> >      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+> >      Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
+> >      ...
+> >      [<ffffffc000083cac>] el1_dbg+0x14/0x68
+> >      [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
+> >      [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
+> >      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+> >      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+> >      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+> >      Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
+> >      ...
+> >      [<ffffffc000083cac>] el1_dbg+0x14/0x68
+> >      [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
+> >      [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
+> >      [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
+> >      [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
+> >      [<ffffffc0001939b0>] SyS_write+0x40/0xa0
+> >
+> > Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
+> > Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
+> > Current kgdb_roundup_cpus() unmasks interrupts temporarily to
+> > use smp_call_function().
+> > This eventually allows another interrupt to occur and likely results in
+> > hitting a breakpoint at gic_handle_irq() again since debug exception is
+> > always enabled in el1_irq.
+> >
+> > We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
+> > but this will also leave other cpus be in unknown state in terms of kgdb,
+> > and may result in interfering with kgdb activity.
+> >
+> > Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> > ---
+> >   arch/arm64/kernel/kgdb.c |   60 +++++++++++++++++++++++++++++++++++-----------
+> >   1 file changed, 46 insertions(+), 14 deletions(-)
+> >
+> > diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
+> > index a0d10c5..81b5910 100644
+> > --- a/arch/arm64/kernel/kgdb.c
+> > +++ b/arch/arm64/kernel/kgdb.c
+> > @@ -19,9 +19,13 @@
+> >    * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> >    */
+> >
+> > +#include <linux/cpumask.h>
+> >   #include <linux/irq.h>
+> > +#include <linux/irq_work.h>
+> >   #include <linux/kdebug.h>
+> >   #include <linux/kgdb.h>
+> > +#include <linux/percpu.h>
+> > +#include <asm/ptrace.h>
+> >   #include <asm/traps.h>
+> >
+> >   struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+> > @@ -95,6 +99,9 @@ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+> >   	{ "fpcr", 4, -1 },
+> >   };
+> >
+> > +static DEFINE_PER_CPU(unsigned int, kgdb_pstate);
+> > +static DEFINE_PER_CPU(struct irq_work, kgdb_irq_work);
+> > +
+> >   char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
+> >   {
+> >   	if (regno >= DBG_MAX_REG_NUM || regno < 0)
+> > @@ -176,18 +183,14 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+> >   		 * over and over again.
+> >   		 */
+> >   		kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+> > -		atomic_set(&kgdb_cpu_doing_single_step, -1);
+> > -		kgdb_single_step =  0;
+> > -
+> > -		/*
+> > -		 * Received continue command, disable single step
+> > -		 */
+> > -		if (kernel_active_single_step())
+> > -			kernel_disable_single_step();
+> >
+> >   		err = 0;
+> >   		break;
+> >   	case 's':
+> > +		/* mask interrupts while single stepping */
+> > +		__this_cpu_write(kgdb_pstate, linux_regs->pstate);
+> > +		linux_regs->pstate |= PSR_I_BIT;
+> > +
+> >   		/*
+> >   		 * Update step address value with address passed
+> >   		 * with step packet.
+> > @@ -198,8 +201,6 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+> >   		 */
+> >   		kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+> >   		atomic_set(&kgdb_cpu_doing_single_step, raw_smp_processor_id());
+> > -		kgdb_single_step =  1;
+> > -
+> >   		/*
+> >   		 * Enable single step handling
+> >   		 */
+> > @@ -229,6 +230,18 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int esr)
+> >
+> >   static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
+> >   {
+> > +	unsigned int pstate;
+> > +
+> > +	kernel_disable_single_step();
+> > +	atomic_set(&kgdb_cpu_doing_single_step, -1);
+> > +
+> > +	/* restore interrupt mask status */
+> > +	pstate = __this_cpu_read(kgdb_pstate);
+> > +	if (pstate & PSR_I_BIT)
+> > +		regs->pstate |= PSR_I_BIT;
+> > +	else
+> > +		regs->pstate &= ~PSR_I_BIT;
+> > +
+> >   	kgdb_handle_exception(1, SIGTRAP, 0, regs);
+> >   	return 0;
+> >   }
+> > @@ -249,16 +262,27 @@ static struct step_hook kgdb_step_hook = {
+> >   	.fn		= kgdb_step_brk_fn
+> >   };
+> >
+> > -static void kgdb_call_nmi_hook(void *ignored)
+> > +static void kgdb_roundup_hook(struct irq_work *work)
+> >   {
+> >   	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
+> >   }
+> >
+> >   void kgdb_roundup_cpus(unsigned long flags)
+> >   {
+> > -	local_irq_enable();
+> > -	smp_call_function(kgdb_call_nmi_hook, NULL, 0);
+> > -	local_irq_disable();
+> > +	int cpu;
+> > +	struct cpumask mask;
+> > +	struct irq_work *work;
+> > +
+> > +	mask = *cpu_online_mask;
+> > +	cpumask_clear_cpu(smp_processor_id(), &mask);
+> > +	cpu = cpumask_first(&mask);
+> > +	if (cpu >= nr_cpu_ids)
+> > +		return;
+> > +
+> > +	for_each_cpu(cpu, &mask) {
+> > +		work = per_cpu_ptr(&kgdb_irq_work, cpu);
+> > +		irq_work_queue_on(work, cpu);
+> > +	}
+> >   }
+> >
+> >   static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+> > @@ -299,6 +323,8 @@ static struct notifier_block kgdb_notifier = {
+> >   int kgdb_arch_init(void)
+> >   {
+> >   	int ret = register_die_notifier(&kgdb_notifier);
+> > +	int cpu;
+> > +	struct irq_work *work;
+> >
+> >   	if (ret != 0)
+> >   		return ret;
+> > @@ -306,6 +332,12 @@ int kgdb_arch_init(void)
+> >   	register_break_hook(&kgdb_brkpt_hook);
+> >   	register_break_hook(&kgdb_compiled_brkpt_hook);
+> >   	register_step_hook(&kgdb_step_hook);
+> > +
+> > +	for_each_possible_cpu(cpu) {
+> > +		work = per_cpu_ptr(&kgdb_irq_work, cpu);
+> > +		init_irq_work(work, kgdb_roundup_hook);
+> > +	}
+> > +
+> >   	return 0;
+> >   }
+> >
+> >
+> 
