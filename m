@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbbAFW10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:27:26 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:39121 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568AbbAFW1Z (ORCPT
+	id S1754542AbbAFW3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:29:24 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:56521 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbbAFW3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:27:25 -0500
-Date: Wed, 7 Jan 2015 00:27:17 +0200
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Felipe Balbi <balbi@ti.com>, pali.rohar@gmail.com, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        ivo.g.dimitrov.75@gmail.com
-Subject: Re: 3.19 on Nokia n900: audio quality awful
-Message-ID: <20150106222717.GC6071@fuloong-minipc.musicnaut.iki.fi>
-References: <20150106170433.GA5408@amd>
- <20150106172545.GK6502@saruman>
- <20150106175115.GA19487@amd>
- <20150106202857.GB32308@saruman>
- <20150106205000.GB13902@amd>
- <20150106205730.GA6071@fuloong-minipc.musicnaut.iki.fi>
- <20150106220805.GD13902@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150106220805.GD13902@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 6 Jan 2015 17:29:22 -0500
+Date: Tue, 06 Jan 2015 17:29:18 -0500 (EST)
+Message-Id: <20150106.172918.70204012105519766.davem@davemloft.net>
+To: amirv@mellanox.com
+Cc: ddecotig@gmail.com, f.fainelli@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        saeedm@mellanox.com, decot@googlers.com, jasowang@redhat.com,
+        mst@redhat.com, herbert@gondor.apana.org.au, viro@zeniv.linux.org.uk,
+        ben@decadent.org.uk, yamato@redhat.com, xii@google.com,
+        nhorman@tuxdriver.com, xiyou.wangcong@gmail.com, fbl@redhat.com,
+        teg@jklm.no, jiri@resnulli.us, vyasevic@redhat.com,
+        ebiederm@xmission.com, VenkatKumar.Duvvuru@Emulex.Com, _govind@gmx.com
+Subject: Re: [PATCH net-next v2 0/8] net: extend ethtool link mode bitmaps
+ to 48 bits
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <54ABE991.3040107@mellanox.com>
+References: <1420512850-24699-1-git-send-email-ddecotig@gmail.com>
+	<54ABE991.3040107@mellanox.com>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 Jan 2015 14:29:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 11:08:05PM +0100, Pavel Machek wrote:
-> On Tue 2015-01-06 22:57:30, Aaro Koskinen wrote:
-> > Hi,
-> > 
-> > On Tue, Jan 06, 2015 at 09:50:00PM +0100, Pavel Machek wrote:
-> > > PS: Unfortunately, N900 will not boot using nfsroot in 3.16+ at least,
-> > > and boot from MMC card is broken and has been for quite some time.
-> > 
-> > USB networking works fine with 3.19-rc3 and also MMC card rootfs.
-> 
-> Does nfsroot work for you? USB networking works as a module but not
-> build-in. [Patch is available for this one.]
-> 
-> u-SD card seems to have similar problem. If I try it after boot, I can
-> access it ok, but using u-SD card for rootfs fails. If it works for
-> you, it would be interesting to know.
+From: Amir Vadai <amirv@mellanox.com>
+Date: Tue, 6 Jan 2015 15:56:33 +0200
 
-I haven't tried nfsroot, but I've been using USB networking for ssh
-for a couple of years without issues. I have g_ether as module.
+> Mellanox is about to release next month a driver for a new NIC, with 3
+> new speeds * few link modes for each + new link modes for 10G.
+> It seems that we will need to consume almost all the new bits.
 
-Also I recently switched rootfs to u-SD card, and it (MMC) works fine
-as builtin.
+This tells me that the approach to this problem needs to be rethought.
 
-But I'm mounting it from userspace (using builtin initramfs inside
-zImage), with a poll loop that waits for a device to appear. Maybe if you
-do it from kernel you need to use root wait/delay etc. options?
+Maybe we just need to bite the bullet and make a new ETHTOOL_GSET_2
+and ETHTOOL_SSET_2 or whatever you want to name them.
 
-> I'm loading zImage using 0xffff directly from the PC.
-
-Same here.
-
-A.
+Then we can define a completely new structure, with 64-bit bitmaps
+for link modes or whatever.  The ethtool_op callbacks work using
+this structure, and only the net/core/ethtool.c code knows about
+the older structure and translates to/from for ETHTOOL_{GSET,SSET}.
