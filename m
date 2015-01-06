@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbbAFIms (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:42:48 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:64842 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614AbbAFImo (ORCPT
+	id S1754181AbbAFIrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:47:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35957 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbbAFIrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:42:44 -0500
-Message-ID: <54AB9FFD.6070309@redhat.com>
-Date: Tue, 06 Jan 2015 09:42:37 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-Newsgroups: gmane.comp.emulators.kvm.devel,gmane.linux.kernel
-To: Marcelo Tosatti <mtosatti@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: Gleb Natapov <gleb@kernel.org>, kvm list <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
- pvclock reader
-References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net> <20150105152511.GA9172@amt.cnet> <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com> <20150105191756.GA31201@amt.cnet> <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com> <20150105224858.GA6846@amt.cnet>
-In-Reply-To: <20150105224858.GA6846@amt.cnet>
-Content-Type: text/plain; charset=windows-1252
+	Tue, 6 Jan 2015 03:47:19 -0500
+Date: Tue, 6 Jan 2015 00:47:14 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Milosz Tanski <milosz@adfin.com>
+Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on
+ memory storage
+Message-Id: <20150106004714.6d63023c.akpm@linux-foundation.org>
+In-Reply-To: <20150105184143.GA665@infradead.org>
+References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+	<20141210140347.GA23252@infradead.org>
+	<20141210141211.GD2220@wil.cx>
+	<20150105184143.GA665@infradead.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 5 Jan 2015 10:41:43 -0800 Christoph Hellwig <hch@infradead.org> wrote:
 
+> On Wed, Dec 10, 2014 at 09:12:11AM -0500, Matthew Wilcox wrote:
+> > On Wed, Dec 10, 2014 at 06:03:47AM -0800, Christoph Hellwig wrote:
+> > > What is the status of this patch set?
+> > 
+> > I have no outstanding bug reports against it.  Linus told me that he
+> > wants to see it come through Andrew's tree.  I have an email two weeks
+> > ago from Andrew saying that it's on his list.  I would love to see it
+> > merged since it's almost a year old at this point.
+> 
+> And since then another month and aother merge window has passed.  Is
+> there any way to speed up merging big patch sets like this one?
 
-On 05/01/2015 23:48, Marcelo Tosatti wrote:
->>> > > But there is no guarantee that vCPU-N has updated its pvti when
->>> > > vCPU-M resumes guest instruction execution.
->> > 
->> > Still confused.  So we can freeze all vCPUs in the host, then update
->> > pvti 1, then resume vCPU 1, then update pvti 0?  In that case, we have
->> > a problem, because vCPU 1 can observe pvti 0 mid-update, and KVM
->> > doesn't increment the version pre-update, and we can return completely
->> > bogus results.
-> Yes.
+I took a look at dax last time and found it to be unreviewable due to
+lack of design description, objectives and code comments.  Hopefully
+that's been addressed - I should get back to it fairly soon as I chew
+through merge window and holiday backlog.
 
-But then the getcpu test would fail (1->0).  Even if you have an ABA
-situation (1->0->1), it's okay because the pvti that is fetched is the
-one returned by the first getcpu.
+> Another one is non-blocking read one that has real life use on one
+> of the biggest server side webapp frameworks but doesn't seem to make
+> progress, which is a bit frustrating.
 
-Paolo
+I took a look at pread2() as well and I have two main issues:
+
+- The patchset includes a pwrite2() syscall which has nothing to do
+  with nonblocking reads and which was poorly described and had little
+  justification for inclusion.
+
+- We've talked for years about implementing this via fincore+pread
+  and at least two fincore implementations are floating about.  Now
+  along comes pread2() which does it all in one hit.
+
+  Which approach is best?  I expect fincore+pread is simpler, more
+  flexible and more maintainable.  But pread2() will have lower CPU
+  consumption and lower average-case latency.
+
+  But how *much* better is pread2()?  I expect the difference will be
+  minor because these operations are associated with a great big
+  cache-stomping memcpy.  If the pread2() advantage is "insignificant
+  for real world workloads" then perhaps it isn't the best way to go.
+
+  I just don't know, and diligence requires that we answer the
+  question.  But all I've seen in response to these questions is
+  handwaving.  It would be a shame to make a mistake because nobody
+  found the time to perform the investigation.
+
+Also, integration of pread2() into xfstests is (or was) happening and
+the results of that aren't yet known.
+
