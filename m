@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbbAFPfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:35:07 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:44831 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755625AbbAFPfE (ORCPT
+	id S1755652AbbAFPe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:34:26 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:51971 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040AbbAFPeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:35:04 -0500
-Date: Tue, 6 Jan 2015 16:33:15 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
-        kernel@pengutronix.de, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] dmaengine: mxs-dma: Declare slave capabilities for the
- generic code
-Message-ID: <20150106153315.GP7853@lukather>
-References: <1419873679-14463-1-git-send-email-festevam@gmail.com>
+	Tue, 6 Jan 2015 10:34:24 -0500
+Date: Tue, 6 Jan 2015 16:34:24 +0100
+From: Johan Hovold <johan@kernel.org>
+To: "Peterson, David" <David.Peterson@cel.com>
+Cc: "johan@kernel.org" <johan@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] USB: cp210x: add IDs for CEL USB sticks and MeshWorks
+ devices
+Message-ID: <20150106153424.GB9658@localhost>
+References: <641A0889272F104D8B07278675C0C484010BF621@hq27>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/NwG7NuG0/W8LcLh"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419873679-14463-1-git-send-email-festevam@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <641A0889272F104D8B07278675C0C484010BF621@hq27>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 06, 2015 at 03:00:52PM +0000, Peterson, David wrote:
+> From: David Peterson <david.peterson@cel.com>
+> 
+> Added virtual com port VID/PID entries for CEL USB sticks and MeshWorks devices
+> 
+> Signed-off-by: David Peterson <david.peterson@cel.com>
 
---/NwG7NuG0/W8LcLh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Applied, thanks.
 
-On Mon, Dec 29, 2014 at 03:21:19PM -0200, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
->=20
-> Since ecc19d17868be9c ("dmaengine: Add a warning for drivers not using the
-> generic slave caps retrieval") the following warning is observed:
->=20
-> [    0.113023] ------------[ cut here ]------------
-> [    0.113053] WARNING: CPU: 0 PID: 1 at drivers/dma/dmaengine.c:830 dma_=
-async_device_register+0x2a0/0x4c8()
-> [    0.113063] this driver doesn't support generic slave capabilities rep=
-orting
->=20
-> Declare the slave capabilities to avoid such warning.
->=20
-> Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Johan
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---/NwG7NuG0/W8LcLh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUrAA7AAoJEBx+YmzsjxAgjekP/1owIvaZVaaLQJdTQC8f/0/I
-HKZUj5MjGL81Z6ZTiwMqkfAPYCFWroCM2vkWyC0pp/RyXqPzK3NCrUjRmsG9HDxV
-y36shy9Fcz/UoYfqpWyDxvuoiB/TXlcy+Kf8Sfo/DUkzLrBTn2a567WxmJ80lyuW
-TF/ZbThEbGVk6hMEydNF87WDdjoQocRAK+7gXuWULC17JAHxLlau0SZYYqM72u+Z
-HiL4+AqivJa/DcfszzfsngWCilodgS7/hldKhqxpDVbBnrgfA2OMdjFE2unqTZ85
-SaMeWzZgAdLYb5hJPO0D8xnd6MNym1dZiLUncEEBEg4B/Z3rKXO8WIZyxL2cnRYz
-Xv6ulPr3ocwrOb00smQMZvJiswkIgOw/yqoI8TIMOl/TclBcIrNxfAsHlpqEA+n+
-aFjxpNidxUg4f8QjYzeSshV+wm25RGQ2m8XeZ6Pzlcoj88plSNdoQrkecc67U7/a
-3yatqw7AOwBUQDZJBR8W/e1U9+AjOelwHu3OfktOEHvbCclP9sUfmkhZ356+o04t
-OEoAT4X4fZvMEJfm132xVnKLCILLn6RBOoF6mC8FIq8oosAnms3X8AZGgev5ZZhV
-WFRrejLF511rz/SDnXf13Ev2eqluZS0FHeWetHrr2UHeqmnARU7CUo4ST7axeKQt
-b8oHTR40h6IhowIfNhs8
-=1R5Z
------END PGP SIGNATURE-----
-
---/NwG7NuG0/W8LcLh--
+> ---
+>  drivers/usb/serial/cp210x.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c index 6c4eb3c..a6db2fc 100644
+> --- a/drivers/usb/serial/cp210x.c
+> +++ b/drivers/usb/serial/cp210x.c
+> @@ -120,6 +120,9 @@ static const struct usb_device_id id_table[] = {
+>  	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+>  	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+>  	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+> +	{ USB_DEVICE(0x10C4, 0x8856) }, /* CEL EM357 ZigBee USB Stick - LR */
+> +	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL EM357 ZigBee USB Stick */
+> +	{ USB_DEVICE(0x10C4, 0x8977) }, /* CEL MeshWorks DevKit Device */
+>  	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
+>  	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+>  	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
