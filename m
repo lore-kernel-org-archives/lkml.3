@@ -1,125 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbbAFRsl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:48:41 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:17017 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932337AbbAFRsk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:48:40 -0500
-Date: Tue, 6 Jan 2015 12:48:22 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: benh@kernel.crashing.org, paulus@samba.org, mpe@ellerman.id.au,
-        mmarek@suse.cz, akpm@linux-foundation.org, jbaron@akamai.com,
-        peterz@infradead.org, liuj97@gmail.com, mingo@kernel.org,
-        mgorman@suse.de, linuxppc-dev@lists.ozlabs.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] jump_label: Allow jump labels to be used in assembly
-Message-ID: <20150106174822.GA29629@home.goodmis.org>
-References: <1420539628-17875-1-git-send-email-anton@samba.org>
+	id S1755945AbbAFRsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:48:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:30923 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754492AbbAFRso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 12:48:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="508249580"
+Message-ID: <54AC1FFB.7030504@linux.intel.com>
+Date: Tue, 06 Jan 2015 09:48:43 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420539628-17875-1-git-send-email-anton@samba.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
+ to arch_prctl
+References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net> <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com> <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com> <20150106040428.GR2915@two.firstfloor.org> <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+In-Reply-To: <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 09:20:27PM +1100, Anton Blanchard wrote:
-> To use jump labels in assembly we need the HAVE_JUMP_LABEL define,
-> so we select a fallback version if the toolchain does not support
-> them.
+On 01/05/2015 09:59 PM, Andy Lutomirski wrote:
+> But I decided to check whether libmpx links against glibc, and I can't
+> find sources for it at all.  Do they exist?  Is there any code with
+> source available that invokes this prctl?
 > 
-> Modify linux/jump_label.h so it can be included by assembly files.
-> We also need to add -DCC_HAVE_ASM_GOTO to KBUILD_AFLAGS.
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> ---
->  Makefile                   |  1 +
->  include/linux/jump_label.h | 21 +++++++++++++++++----
->  2 files changed, 18 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index ef748e1..7b83c3f 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -774,6 +774,7 @@ KBUILD_ARFLAGS := $(call ar-option,D)
->  # check for 'asm goto'
->  ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
->  	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
-> +	KBUILD_AFLAGS += -DCC_HAVE_ASM_GOTO
->  endif
->  
->  include $(srctree)/scripts/Makefile.extrawarn
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index 98f923b6..f4de473 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -45,6 +45,12 @@
->   * same as using STATIC_KEY_INIT_FALSE.
->   */
->  
-> +#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
-> +# define HAVE_JUMP_LABEL
-> +#endif
-> +
-> +#ifndef __ASSEMBLY__
-> +
->  #include <linux/types.h>
->  #include <linux/compiler.h>
->  #include <linux/bug.h>
-> @@ -55,7 +61,7 @@ extern bool static_key_initialized;
->  				    "%s used before call to jump_label_init", \
->  				    __func__)
->  
-> -#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
-> +#ifdef HAVE_JUMP_LABEL
->  
->  struct static_key {
->  	atomic_t enabled;
-> @@ -66,13 +72,18 @@ struct static_key {
->  #endif
->  };
->  
-> -# include <asm/jump_label.h>
-> -# define HAVE_JUMP_LABEL
->  #else
->  struct static_key {
->  	atomic_t enabled;
->  };
-> -#endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
-> +#endif	/* HAVE_JUMP_LABEL */
-> +#endif /* __ASSEMBLY__ */
-> +
-> +#ifdef HAVE_JUMP_LABEL
-> +#include <asm/jump_label.h>
-> +#endif
+> If not, I personally have very little sympathy for the argument that a
+> binary buried in the depths of the Intel SDE would need to change if
+> we switched to using arch_prctl.  And I think that it should issue the
+> syscall itself without using glibc, in which case the syscall wrapper
+> issue is moot.
 
-Have you tested this on other archs? Because just looking at x86, it doesn't
-seem that asm/jump_label.h can handle being called in assembly.
+Andy, as I mentioned previously, there is code in a GCC branch that uses
+the existing prctl().  It's also been posted for review to one of the
+GCC mailing lists.  I've been told that it will be in gcc 5.0.
 
--- Steve
-
-> +
-> +#ifndef __ASSEMBLY__
->  
->  enum jump_label_type {
->  	JUMP_LABEL_DISABLE = 0,
-> @@ -203,3 +214,5 @@ static inline bool static_key_enabled(struct static_key *key)
->  }
->  
->  #endif	/* _LINUX_JUMP_LABEL_H */
-> +
-> +#endif /* __ASSEMBLY__ */
-> -- 
-> 2.1.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The Intel SDE does not use the prctl() in any way that I know of.
