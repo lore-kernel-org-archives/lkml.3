@@ -1,74 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519AbbAFT2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:28:10 -0500
-Received: from khitomer.mortis.eu ([185.27.175.75]:64859 "EHLO
-	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbbAFT2I (ORCPT
+	id S1756535AbbAFT3Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:29:25 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:42607 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490AbbAFT3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:28:08 -0500
-Date: Tue, 6 Jan 2015 20:28:04 +0100
-From: Giel van Schijndel <me@mortis.eu>
-To: dsterba@suse.cz, linux-kernel@vger.kernel.org,
-        Armin Schindler <mac@melware.de>, Karsten Keil <isdn@linux-pingi.de>,
-        "open list:ISDN SUBSYSTEM" <netdev@vger.kernel.org>
-Subject: Re: [PATCH] Fix NUL (\0 or \x00) specification in string
-Message-ID: <20150106192804.GL4806@salidar.dom.custoft.eu>
-References: <1420394722-20197-1-git-send-email-me@mortis.eu>
- <20150105150026.GG6114@twin.jikos.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vbzKE9fGfpHIBC6T"
-Content-Disposition: inline
-In-Reply-To: <20150105150026.GG6114@twin.jikos.cz>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 6 Jan 2015 14:29:22 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
+        hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org, vgoyal@redhat.com,
+        lizefan@huawei.com, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz
+Subject: [PATCHSET v2 block/for-next] writeback: prepare for cgroup writeback support
+Date: Tue,  6 Jan 2015 14:29:01 -0500
+Message-Id: <1420572557-11572-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---vbzKE9fGfpHIBC6T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changes from the last take[L] are
 
-On Mon, Jan 05, 2015 at 16:00:26 +0100, David Sterba wrote:
-> I'm replying to all your recent patches here as they are fixing things
-> reported in http://www.viva64.com/en/b/0299/ . I'ts a good practice to
-> give the credit the reporter.
->=20
-> The blogpost also contains analyses of the issues so it could help
-> reviewing the patches.
+* 0001-0006 added.
 
-I guess you suggest I use a 'Reported-(at|by)' line?
+* Minor changes to accomodate review points from the last round and
+  fix compile issues w/ different config options.
 
-Would something like the below suffice? I found similar log entries in the
-commit log, e.g. bf3204cb, except that those add an e-mail address for
-the reporters, which I don't think is necessary in this case.
-> Reported-at: http://www.viva64.com/en/b/0299/
-> Reported-by: Andrey Karpov
-> Reported-by: Svyatoslav Razmyslov
+This patchset contains the following sixteen patches to prepare for
+cgroup writeback support.  None of these patches introduces behavior
+changes.
 
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
+ 0001-blkcg-move-block-blk-cgroup.h-to-include-linux-blk-c.patch
+ 0002-update-CONFIG_BLK_CGROUP-dummies-in-include-linux-bl.patch
+ 0003-blkcg-add-blkcg_root_css.patch
+ 0004-cgroup-block-implement-task_get_css-and-use-it-in-bi.patch
+ 0005-blkcg-implement-task_get_blkcg_css.patch
+ 0006-blkcg-implement-bio_associate_blkcg.patch
+ 0007-writeback-move-backing_dev_info-state-into-bdi_write.patch
+ 0008-writeback-move-backing_dev_info-bdi_stat-into-bdi_wr.patch
+ 0009-writeback-move-bandwidth-related-fields-from-backing.patch
+ 0010-writeback-move-backing_dev_info-wb_lock-and-worklist.patch
+ 0011-writeback-move-lingering-dirty-IO-lists-transfer-fro.patch
+ 0012-writeback-reorganize-mm-backing-dev.c.patch
+ 0013-writeback-separate-out-include-linux-backing-dev-def.patch
+ 0014-writeback-cosmetic-change-in-account_page_dirtied.patch
+ 0015-writeback-add-gfp-to-wb_init.patch
+ 0016-writeback-move-inode_to_bdi-to-include-linux-backing.patch
+
+0001-0006 are prep patches in blkcg.  They're all self-explanatory.
+
+0007-0011 move writeback related fields from bdi (backing_dev_info) to
+wb (bdi_writeback).  Currently, one bdi embeds one wb and the
+separation between the two is blurry.  bdi's lock protects wb's fields
+and fields which are closely related are scattered across the two.
+These five patches move all fields which are used during writeback
+into wb.
+
+0012-0016 are misc prep patches in writeback.  They're all rather
+trivial and each is self-explanatory.
+
+The patchset is on top of -mm + percpu/for-3.20 + cgroup/for-3.20 of
+today (2016-01-06) and is available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-writeback-prep-20150106
+
+diffstat follows.  Thanks.
+
+ block/bio.c                      |   35 +-
+ block/blk-cgroup.c               |    4 
+ block/blk-cgroup.h               |  603 -------------------------------------
+ block/blk-core.c                 |    3 
+ block/blk-integrity.c            |    1 
+ block/blk-sysfs.c                |    3 
+ block/blk-throttle.c             |    2 
+ block/bounce.c                   |    1 
+ block/cfq-iosched.c              |    2 
+ block/elevator.c                 |    2 
+ block/genhd.c                    |    1 
+ drivers/block/drbd/drbd_int.h    |    1 
+ drivers/block/drbd/drbd_main.c   |   10 
+ drivers/block/pktcdvd.c          |    1 
+ drivers/char/raw.c               |    1 
+ drivers/md/bcache/request.c      |    1 
+ drivers/md/dm.c                  |    2 
+ drivers/md/dm.h                  |    1 
+ drivers/md/md.h                  |    1 
+ drivers/md/raid1.c               |    4 
+ drivers/md/raid10.c              |    2 
+ drivers/mtd/devices/block2mtd.c  |    1 
+ fs/aio.c                         |    1 
+ fs/block_dev.c                   |    1 
+ fs/ext4/extents.c                |    1 
+ fs/ext4/mballoc.c                |    1 
+ fs/f2fs/node.c                   |    4 
+ fs/f2fs/segment.h                |    3 
+ fs/fs-writeback.c                |  121 +++----
+ fs/fuse/file.c                   |   12 
+ fs/gfs2/super.c                  |    2 
+ fs/hfs/super.c                   |    1 
+ fs/hfsplus/super.c               |    1 
+ fs/nfs/filelayout/filelayout.c   |    5 
+ fs/nfs/write.c                   |   11 
+ fs/reiserfs/super.c              |    1 
+ fs/ufs/super.c                   |    1 
+ include/linux/backing-dev-defs.h |  105 ++++++
+ include/linux/backing-dev.h      |  174 ++--------
+ include/linux/bio.h              |    3 
+ include/linux/blk-cgroup.h       |  621 +++++++++++++++++++++++++++++++++++++++
+ include/linux/blkdev.h           |    2 
+ include/linux/cgroup.h           |   25 +
+ include/linux/writeback.h        |   19 -
+ include/trace/events/writeback.h |    8 
+ mm/backing-dev.c                 |  306 +++++++++----------
+ mm/filemap.c                     |    2 
+ mm/madvise.c                     |    1 
+ mm/page-writeback.c              |  320 ++++++++++----------
+ mm/truncate.c                    |    4 
+ 50 files changed, 1261 insertions(+), 1177 deletions(-)
+
 --
-The #1 programmer excuse for legitimately slacking off:
- "My code's compiling."
-  -- http://xkcd.com/303/
+tejun
 
---vbzKE9fGfpHIBC6T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iEYEARECAAYFAlSsN0EACgkQZBYm/87l50KjfwCePLU2pOVEgVbDw++ybwEnW5KX
-CEAAoIknZIJr8qiheVWmaI9/PMzK+Kgu
-=FSUB
------END PGP SIGNATURE-----
-
---vbzKE9fGfpHIBC6T--
+[L] http://lkml.kernel.org/g/1416299848-22112-1-git-send-email-tj@kernel.org
