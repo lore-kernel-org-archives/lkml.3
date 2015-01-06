@@ -1,52 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbbAFDef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 22:34:35 -0500
-Received: from smtprelay05.ispgateway.de ([80.67.18.28]:50489 "EHLO
-	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbbAFDee (ORCPT
+	id S1754364AbbAFDlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 22:41:46 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37211 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277AbbAFDlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 22:34:34 -0500
-From: Christoph Jaeger <cj@linux.com>
-To: jpoimboe@redhat.com, sjenning@redhat.com, jkosina@suse.cz, vojtech@suse.cz
-Cc: live-patching@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Jaeger <cj@linux.com>
-Subject: [PATCH linux-next] livepatch: kconfig: use bool instead of boolean
-Date: Mon,  5 Jan 2015 22:34:09 -0500
-Message-Id: <1420515249-4848-1-git-send-email-cj@linux.com>
-X-Mailer: git-send-email 2.1.0
-X-Df-Sender: MTg4NDM4Mw==
+	Mon, 5 Jan 2015 22:41:45 -0500
+Date: Mon, 05 Jan 2015 22:41:37 -0500 (EST)
+Message-Id: <20150105.224137.894770670718334587.davem@davemloft.net>
+To: fkan@apm.com
+Cc: patches@apm.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] net: eth: xgene: change APM X-Gene SoC platform
+ ethernet to support ACPI
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1420508576-10480-1-git-send-email-fkan@apm.com>
+References: <1420508576-10480-1-git-send-email-fkan@apm.com>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 Jan 2015 19:41:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keyword 'boolean' for type definition attributes is considered deprecated and
-should not be used anymore. No functional changes.
+From: Feng Kan <fkan@apm.com>
+Date: Mon,  5 Jan 2015 17:42:56 -0800
 
-Reference: http://lkml.kernel.org/r/cover.1418003065.git.cj@linux.com
-Reference: http://lkml.kernel.org/r/1419108071-11607-1-git-send-email-cj@linux.com
-Signed-off-by: Christoph Jaeger <cj@linux.com>
----
- kernel/livepatch/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> This adds support for APM X-Gene ethernet driver to use ACPI table to derive
+> ethernet driver parameter.
+> 
+> Signed-off-by: Feng Kan <fkan@apm.com>
 
-diff --git a/kernel/livepatch/Kconfig b/kernel/livepatch/Kconfig
-index 96da00f..66797aa 100644
---- a/kernel/livepatch/Kconfig
-+++ b/kernel/livepatch/Kconfig
-@@ -1,10 +1,10 @@
- config ARCH_HAVE_LIVE_PATCHING
--	boolean
-+	bool
- 	help
- 	  Arch supports kernel live patching
- 
- config LIVE_PATCHING
--	boolean "Kernel Live Patching"
-+	bool "Kernel Live Patching"
- 	depends on DYNAMIC_FTRACE_WITH_REGS
- 	depends on MODULES
- 	depends on SYSFS
--- 
-2.1.0
-
+Applied.
