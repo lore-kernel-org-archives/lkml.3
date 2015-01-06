@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933332AbbAFVkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:40:33 -0500
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:2812 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932853AbbAFVkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:40:31 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 06 Jan 2015 13:33:18 -0800
-From: Aaron Plattner <aplattner@nvidia.com>
-To: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        <alsa-devel@alsa-project.org>
-CC: Aaron Plattner <aplattner@nvidia.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ALSA: hda - Add new GPU codec ID 0x10de0072 to snd-hda
-Date: Tue, 6 Jan 2015 13:40:14 -0800
-Message-ID: <1420580414-2662-1-git-send-email-aplattner@nvidia.com>
-X-Mailer: git-send-email 2.2.1
-X-NVConfidentiality: public
+	id S933268AbbAFVoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:44:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932536AbbAFVoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 16:44:22 -0500
+Date: Tue, 6 Jan 2015 23:44:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v2 26/40] arch/sparc: uaccess_64 macro whitespace fixes
+Message-ID: <20150106214407.GA15535@redhat.com>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+ <1420558883-10131-27-git-send-email-mst@redhat.com>
+ <20150106165339.GA11270@ravnborg.org>
+ <20150106171902.GA11577@redhat.com>
+ <20150106182749.GA19490@ravnborg.org>
+ <20150106202342.GB12455@redhat.com>
+ <20150106204607.GA22468@ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150106204607.GA22468@ravnborg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vendor ID 0x10de0072 is used by a yet-to-be-named GPU chip.
+On Tue, Jan 06, 2015 at 09:46:07PM +0100, Sam Ravnborg wrote:
+> > > sparc64: fix coding style in uaccess_64.h
+> > 
+> > OK.
+> > I see David reviewed and sent acks, so I won't bother
+> > reposting, but I'll tweak this in my tree.
+> OK.
+> 
+> > > > I get it you like it that 
+> > > > 	case 1: __get_user_asm(__gu_val,ub,addr,__gu_ret); break;
+> > > > has the whole case on the same line?
+> > > > Is that the issue?
+> > > Exactly - much easier to read this way.
+> > > That the "\" was not aligned in these parts of the code did not help either.
+> > > 
+> > > 	Sam
+> > 
+> > I see David acked this already - I'll do a patch on top to tweak just
+> > these two places to your liking?
+> 
+> Thanks.
 
-Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
----
-Do you think it would make sense to add some kind of wildcard match for
-0x10de* -> patch_nvhdmi?
+OK, sent.
+Mind sending acks for these and the original patches?
+You can add that your ack is conditional on applying the tweak on top.
 
- sound/pci/hda/patch_hdmi.c | 2 ++
- 1 file changed, 2 insertions(+)
+> When you have done so please wait for David's ack before you
+> sent then upstream. That I like it does not make it universally accepted.
+> 
+> 	Sam
 
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 5f13d2d18079..b422e406a9cb 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -3353,6 +3353,7 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
- { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x10de0070, .name = "GPU 70 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de0071, .name = "GPU 71 HDMI/DP",	.patch = patch_nvhdmi },
-+{ .id = 0x10de0072, .name = "GPU 72 HDMI/DP",	.patch = patch_nvhdmi },
- { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
- { .id = 0x11069f81, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
-@@ -3413,6 +3414,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0060");
- MODULE_ALIAS("snd-hda-codec-id:10de0067");
- MODULE_ALIAS("snd-hda-codec-id:10de0070");
- MODULE_ALIAS("snd-hda-codec-id:10de0071");
-+MODULE_ALIAS("snd-hda-codec-id:10de0072");
- MODULE_ALIAS("snd-hda-codec-id:10de8001");
- MODULE_ALIAS("snd-hda-codec-id:11069f80");
- MODULE_ALIAS("snd-hda-codec-id:11069f81");
--- 
-2.2.1
-
+Sure.
+Thanks.
