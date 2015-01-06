@@ -1,143 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217AbbAFCLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 21:11:09 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:32920 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754158AbbAFCLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 21:11:08 -0500
-Date: Mon, 5 Jan 2015 20:10:05 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Dave Gerlach <d-gerlach@ti.com>
-CC: <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Benoit Cousson <bcousson@baylibre.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Suman Anna <s-anna@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 2/3] soc: ti: Add wkup_m3_ipc driver
-Message-ID: <20150106021005.GC24980@saruman>
-Reply-To: <balbi@ti.com>
-References: <1420228817-41310-1-git-send-email-d-gerlach@ti.com>
- <1420228817-41310-3-git-send-email-d-gerlach@ti.com>
- <20150102201643.GE4920@saruman>
- <54AB14E4.2010607@ti.com>
+	id S932232AbbAFCMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 21:12:09 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:16053 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060AbbAFCME (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 21:12:04 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 05 Jan 2015 18:04:58 -0800
+Message-ID: <54AB445D.7010303@nvidia.com>
+Date: Tue, 6 Jan 2015 10:11:41 +0800
+From: Vince Hsu <vinceh@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tqI+Z3u+9OQ7kwn0"
-Content-Disposition: inline
-In-Reply-To: <54AB14E4.2010607@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Lucas Stach <dev@lynxeye.de>, <swarren@wwwdotorg.org>, <gnurou@gmail.com>,
+        <bskeggs@redhat.com>, <martin.peres@free.fr>,
+        <seven@nimrod-online.com>, <samuel.pitoiset@gmail.com>,
+        <nouveau@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
+ clamp
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com> <1419331204-26679-2-git-send-email-vinceh@nvidia.com> <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com> <20150105150932.GG12010@ulmo.nvidia.com>
+In-Reply-To: <20150105150932.GG12010@ulmo.nvidia.com>
+X-Originating-IP: [10.19.108.126]
+X-ClientProxiedBy: HKMAIL103.nvidia.com (10.18.16.12) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tqI+Z3u+9OQ7kwn0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On 01/05/2015 11:09 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
+>> On 12/24/2014 09:16 PM, Lucas Stach wrote:
+>>> Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
+>>>> The Tegra124 and later Tegra SoCs have a sepatate rail gating register
+>>>> to enable/disable the clamp. The original function
+>>>> tegra_powergate_remove_clamping() is not sufficient for the enable
+>>>> function. So add a new function which is dedicated to the GPU rail
+>>>> gating. Also don't refer to the powergate ID since the GPU ID makes no
+>>>> sense here.
+>>>>
+>>>> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+>>> To be honest I don't see the point of this patch.
+>>> You are bloating the PMC interface by introducing another exported
+>>> function that does nothing different than what the current function
+>>> already does.
+>>>
+>>> If you need a way to assert the clamp I would have expected you to
+>>> introduce a common function to do this for all power partitions.
+>> I thought about adding an tegra_powergate_assert_clamping(), but that
+>> doesn't make sense to all the power partitions except GPU. Note the
+>> difference in TRM. Any suggestion for the common function?
+> I don't think extending the powergate API is useful at this point. We've
+> long had an open TODO item to replace this with a generic API. I did
+> some prototyping a while ago to use generic power domains for this, that
+> way all the details and dependencies between the partitions could be
+> properly modeled.
+>
+> Can you take a look at my staging/powergate branch here:
+>
+> 	https://github.com/thierryreding/linux/commits/staging/powergate
+>
+> and see if you can use that instead? The idea is to completely hide the
+> details of power partitions from drivers and use runtime PM instead.
+You generic power domains work is exactly what we want for powergate 
+eventually. :) I recall we used your prototyping in somewhere internal 
+tree. We have to add more to complete it though, e.g. power domain 
+dependency, mc flush, and clamping register difference like this patch 
+does.
 
-On Mon, Jan 05, 2015 at 04:49:08PM -0600, Dave Gerlach wrote:
-> >> +	/*
-> >> +	 * Write a dummy message to the mailbox in order to trigger the RX
-> >> +	 * interrupt to alert the M3 that data is available in the IPC
-> >> +	 * registers. We must enable the IRQ here and disable it after in
-> >> +	 * the RX callback to avoid multiple interrupts being received
-> >> +	 * by the CM3.
-> >> +	 */
-> >> +	omap_mbox_enable_irq(m3_ipc_state.mbox, IRQ_RX);
-> >> +	ret =3D mbox_send_message(m3_ipc_state.mbox, (void *)dummy_msg);
-> >=20
-> > unnecessary cast.
->=20
-> I get a compiler warning without this one, may need it.
+But I have a question here. Since the GK20A is not powered on/off by the 
+PMC except the clamping control, and GK20A has its own power rail, do we 
+really want to hide the power sequence in the generic powergate code? We 
+still have to control the voltage level in the GK20A driver through the 
+regulator framework. It seems weird to me if we put the 
+regulator_{enable|disable} somewhere other than the GK20A driver.
 
-right, try with:
+Thanks,
+Vince
 
-	ret =3D mbox_send_mesage(m3->mbox, &dummy_msg);
+>
+> Also adding Peter whom I had discussed this with earlier. Can we finally
+> get this converted? I'd rather not keep complicating this custom API to
+> avoid making the conversion even more difficult.
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
 
-Another option is to just get rid of mbox_msg_t altogether since that's
-just a u32 anyway. Then fix omap-mailbox.c::omap_mbox_chan_send_data()
-so it knows it's receiving a void *, then it could:
-
-	u32 data =3D *(u32 *)mssg;
-
-but as Tony said, better not to add more dependencies to this series.
-
-> >> +	m3_rproc =3D rproc_get_by_phandle(rproc_phandle);
-> >> +	if (!m3_rproc) {
-> >> +		dev_err(&pdev->dev, "could not get rproc handle\n");
-> >> +		ret =3D -EPROBE_DEFER;
-> >> +		goto err;
-> >> +	}
-> >> +
-> >> +	m3_ipc_state.rproc =3D m3_rproc;
-> >> +	m3_ipc_state.dev =3D dev;
-> >> +	m3_ipc_state.state =3D M3_STATE_RESET;
-> >> +
-> >> +	/*
-> >> +	 * Wait for firmware loading completion in a thread so we
-> >> +	 * can boot the wkup_m3 as soon as it's ready without holding
-> >> +	 * up kernel boot
-> >> +	 */
-> >> +	task =3D kthread_run((void *)wkup_m3_rproc_boot_thread, m3_rproc,
-> >> +			   "wkup_m3_rproc_loader");
-> >=20
-> > I wonder two things:
-> >=20
-> > 1) This thread will only be used during boot up. Do we really need a
-> > thread or would request_firmware_nowait() be enough ?
-> >=20
-> > 2) what's the size of the firmware ? Is it really so large that we must
-> > run this as a separate thread ? Meaning, why isn't request_firmware()
-> > enough ? How much time would we be waiting ?
->=20
-> The issue here comes from the case where you attempt to load a firmware s=
-tored
-> in the rootfs which is the typical use case for this. Remoteproc core req=
-uests
-> the firmware twice, first with _nowait to load the resource table and the=
-n again
-
-sounds like a bug to me. Or am I missing something ?
-
-> without nowait to boot the rproc. rproc_boot requires the resource table =
-to be
-> loaded. The thread is really to wait for the firmware loaded completion, =
-which
-> gets set after the resource table has been loaded, to let boot proceed. S=
-ystem
-> boot will get stuck otherwise as this driver can probe before rootfs is a=
-vailable.
-
-IMO, that should be fixed in remoteproc, but it probably goes towards
-"let's not add more dependencies".
-
---=20
-balbi
-
---tqI+Z3u+9OQ7kwn0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUq0P9AAoJEIaOsuA1yqREfF0P/1bYVgB1qApdE8LwfUibbQxy
-aYwBkluXZrxsHqdNT9KIjH8druqQLQYMpN52g/CXebZMZubr5X2UxyIqoaxYQFe1
-E1ffjVyuz6/C/ywS/sFMZFHuq/dEPdzD0FrDADbUhBOSiX+RCpq4RvVeTds6W3bh
-LP7KIMbmye+afiA3VuMho3dfiiIMBOwMwSCOYrGH5tPc64LmgwDwvJBvW0xG9VVN
-mZVRfvrUKWzSsmZuy7Vg2wUcGCcFv80y58/J7C0hjQZRiDs4+mwAPsQvOqjP38Zf
-XnnnCDr+pp+C5w2gsDybVaIEw3MdHscVsBw8KtY6IywY154bmVfoCbwGTbrX9dcs
-8CRDokcQfB4ZzyTlKN3bZECMx1fc304u5cq+xuU4xzfIQuj0F//OE4IkW/i6fALl
-g0QhZ3hb24KV/tBdkojcRlP4jjtrkHLj1VgrH9+F8Qop+RPi3ZpnBduZW3dCIMf1
-lNuEgS4GkWf2Ho9omalZhVXpnU4HZoOQJEeMZBvaOAvjAx7H9sS02dzvK6DUZAlS
-RYVvE2N5ps6PoBYKzSeRl5zaveYw4sHvEM/tr45sjsINs0QyCJ7wB2bgv3bk+KmJ
-jefDxNpRqYQTuplXcDuk2CRav9s8nh4Y8noMJVA2PWhVvAnqaBzw6Ea6iSrzOZ65
-01C9kTk0Vr/tgFja5MQi
-=ujDN
------END PGP SIGNATURE-----
-
---tqI+Z3u+9OQ7kwn0--
