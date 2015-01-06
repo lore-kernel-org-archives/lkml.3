@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbbAFPXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:23:52 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:33322 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126AbbAFPXu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:23:50 -0500
-Date: Tue, 6 Jan 2015 10:23:47 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <kmo@daterainc.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 percpu/for-3.20] percpu_ref: remove unnecessary
- ACCESS_ONCE() in percpu_ref_tryget_live()
-Message-ID: <20150106152347.GD3077@htj.dyndns.org>
+	id S1755638AbbAFPYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:24:34 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:42021 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754388AbbAFPYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:24:32 -0500
+Message-ID: <54ABFE26.9010208@mm-sol.com>
+Date: Tue, 06 Jan 2015 17:24:22 +0200
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 5/5] ARM: qcom: Add Qualcomm APQ8084 SoC
+References: <1418404441-5518-1-git-send-email-svarbanov@mm-sol.com> <1418404441-5518-6-git-send-email-svarbanov@mm-sol.com> <1671186.DiHNtkP1SP@wuerfel>
+In-Reply-To: <1671186.DiHNtkP1SP@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__ref_is_percpu() needs the implied ACCESS_ONCE() in
-lockless_dereference() on @ref->percpu_count_ptr because the value is
-tested for !__PERCPU_REF_ATOMIC, which may be set asynchronously, and
-then used as a pointer.  If the compiler generates a separate fetch
-when using it as a pointer, __PERCPU_REF_ATOMIC may be set in between
-contaminating the pointer value.
+Hi Arnd,
 
-percpu_ref_tryget_live() also uses ACCESS_ONCE() to test
-__PERCPU_REF_DEAD; however, there's no reason for this.  I just copied
-ACCESS_ONCE() usage blindly from __ref_is_percpu().  All it does is
-confusing people trying to understand what's going on.
+Thanks for the comments!
 
-This patch removes the unnecessary ACCESS_ONCE() usage from
-percpu_ref_tryget_live() and adds a comment explaining why
-__ref_is_percpu() needs it.
+On 12/12/2014 07:33 PM, Arnd Bergmann wrote:
+> On Friday 12 December 2014 19:14:01 Stanimir Varbanov wrote:
+>> +config ARCH_APQ8084
+>> +       bool "Enable support for APQ8084"
+>> +       select HAVE_ARM_ARCH_TIMER
+>> +       select PCI
+>> +       select PCI_DOMAINS
+>> +       select PCI_MSI
+>> +
+> 
+> I would prefer not to see 'select PCI' here. Also the driver is written
+> to work without PCI_MSI, so I'd be much happier with just
+> 
+> config ARCH_APQ8084
+> 	bool "Enable support for APQ8084"
+> 	select HAVE_ARM_ARCH_TIMER
+> 	select PCI_DOMAINS if PCI
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
----
- include/linux/percpu-refcount.h |   20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+What about this
 
---- a/include/linux/percpu-refcount.h
-+++ b/include/linux/percpu-refcount.h
-@@ -128,8 +128,22 @@ static inline void percpu_ref_kill(struc
- static inline bool __ref_is_percpu(struct percpu_ref *ref,
- 					  unsigned long __percpu **percpu_countp)
- {
--	/* paired with smp_store_release() in percpu_ref_reinit() */
--	unsigned long percpu_ptr = lockless_dereference(ref->percpu_count_ptr);
-+	unsigned long percpu_ptr;
-+
-+	/*
-+	 * The value of @ref->percpu_count_ptr is tested for
-+	 * !__PERCPU_REF_ATOMIC, which may be set asynchronously, and then
-+	 * used as a pointer.  If the compiler generates a separate fetch
-+	 * when using it as a pointer, __PERCPU_REF_ATOMIC may be set in
-+	 * between contaminating the pointer value, meaning that
-+	 * ACCESS_ONCE() is required when fetching it.
-+	 *
-+	 * Also, we need a data dependency barrier to be paired with
-+	 * smp_store_release() in __percpu_ref_switch_to_percpu().
-+	 *
-+	 * Use lockless deref which contains both.
-+	 */
-+	percpu_ptr = lockless_dereference(ref->percpu_count_ptr);
- 
- 	/*
- 	 * Theoretically, the following could test just ATOMIC; however,
-@@ -233,7 +247,7 @@ static inline bool percpu_ref_tryget_liv
- 	if (__ref_is_percpu(ref, &percpu_count)) {
- 		this_cpu_inc(*percpu_count);
- 		ret = true;
--	} else if (!(ACCESS_ONCE(ref->percpu_count_ptr) & __PERCPU_REF_DEAD)) {
-+	} else if (!(ref->percpu_count_ptr & __PERCPU_REF_DEAD)) {
- 		ret = atomic_long_inc_not_zero(&ref->count);
- 	}
- 
+config ARCH_APQ8084
+	bool "Enable support for APQ8084"
+	select HAVE_ARM_ARCH_TIMER
+	select MIGHT_HAVE_PCI
+	select PCI_DOMAINS if PCI
+
+-- 
+regards,
+Stan
