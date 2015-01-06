@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377AbbAFO4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:56:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54698 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264AbbAFO4a (ORCPT
+	id S932142AbbAFO5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:57:15 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:62530 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482AbbAFO5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:56:30 -0500
-Date: Tue, 6 Jan 2015 15:56:14 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/fair: Fix RCU stall upon ENOMEM
- atsched_create_group().
-Message-ID: <20150106145614.GZ29390@twins.programming.kicks-ass.net>
-References: <201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp>
- <20150106141012.GY29390@twins.programming.kicks-ass.net>
- <201501062345.IGG21352.SQFHJOOOVtMFFL@I-love.SAKURA.ne.jp>
+	Tue, 6 Jan 2015 09:57:14 -0500
+Date: Tue, 6 Jan 2015 15:57:10 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH V4 3/4] mm: reduce try_to_compact_pages parameters
+Message-ID: <20150106145710.GD20860@dhcp22.suse.cz>
+References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
+ <1420478263-25207-4-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201501062345.IGG21352.SQFHJOOOVtMFFL@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1420478263-25207-4-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 11:45:29PM +0900, Tetsuo Handa wrote:
-> Peter Zijlstra wrote:
-> > On Thu, Dec 25, 2014 at 10:10:45PM +0900, Tetsuo Handa wrote:
-> > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > > index ef2b104..586ee15 100644
-> > > --- a/kernel/sched/fair.c
-> > > +++ b/kernel/sched/fair.c
-> > > @@ -7756,8 +7756,12 @@ static void task_move_group_fair(struct task_struct *p, int queued)
-> > >  void free_fair_sched_group(struct task_group *tg)
-> > >  {
-> > >  	int i;
-> > > +	struct cfs_bandwidth *cfs_b;
-> > >  
-> > > -	destroy_cfs_bandwidth(tg_cfs_bandwidth(tg));
-> > > +	/* Check whether init_cfs_bandwidth() was called. */
-> > > +	cfs_b = tg_cfs_bandwidth(tg);
-> > > +	if (cfs_b->throttled_cfs_rq.next)
-> > > +		destroy_cfs_bandwidth(cfs_b);
-> > >  
-> > >  	for_each_possible_cpu(i) {
-> > >  		if (tg->cfs_rq)
-> > 
-> > This doesn't actually compile for !CONFIG_CFS_BANDWIDTH, how about:
-> > 
-> > ---
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -4005,6 +4005,10 @@ void __start_cfs_bandwidth(struct cfs_ba
-> >  
-> >  static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
-> >  {
-> > +	/* init_cfs_bandwidth() was not called */
-> > +	if (!cfs_b->throttled_cfs_rq.next)
-> > +		return;
-> > +
-> >  	hrtimer_cancel(&cfs_b->period_timer);
-> >  	hrtimer_cancel(&cfs_b->slack_timer);
-> >  }
-> > 
-> I posted "#ifdef CONFIG_CFS_BANDWIDTH" version 7 minutes ago.
-> But I'm fine with your patch. Thank you.
+Hmm, wait a minute
 
-Yeah saw that, its what I did first too, then figured the ifdef was ugly
-;-)
+On Mon 05-01-15 18:17:42, Vlastimil Babka wrote:
+[...]
+> -unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> -			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> -			enum migrate_mode mode, int *contended,
+> -			int alloc_flags, int classzone_idx)
+> +unsigned long try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
+> +			int alloc_flags, const struct alloc_context *ac,
+> +			enum migrate_mode mode, int *contended)
+>  {
+> -	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+>  	int may_enter_fs = gfp_mask & __GFP_FS;
+>  	int may_perform_io = gfp_mask & __GFP_IO;
+>  	struct zoneref *z;
+
+gfp_mask might change since the high_zoneidx was set up in the call
+chain. I guess this shouldn't change to the gfp_zone output but it is
+worth double checking.
+
+> @@ -1365,8 +1363,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  		return COMPACT_SKIPPED;
+>  
+>  	/* Compact each zone in the list */
+> -	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+> -								nodemask) {
+> +	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist, ac->high_zoneidx,
+> +								ac->nodemask) {
+>  		int status;
+>  		int zone_contended;
+>  
+-- 
+Michal Hocko
+SUSE Labs
