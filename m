@@ -1,40 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbbAFJk7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 04:40:59 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:43248 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365AbbAFJk5 (ORCPT
+	id S1754831AbbAFJmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:42:43 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:53958 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435AbbAFJmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 04:40:57 -0500
-Date: Tue, 6 Jan 2015 10:40:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150106094039.GI29390@twins.programming.kicks-ass.net>
-References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
+	Tue, 6 Jan 2015 04:42:38 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t069gY0J010228, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net] r8152: support ndo_features_check
+Date: Tue, 6 Jan 2015 17:41:58 +0800
+Message-ID: <1394712342-15778-113-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.92]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 05:49:11AM +0100, Sedat Dilek wrote:
-> This has been there since just before rc1. Is there a fix for this
-> stalled in someones git tree maybe ?
-> 
-> [    7.952588] WARNING: CPU: 0 PID: 299 at kernel/sched/core.c:7303
-> __might_sleep+0x8d/0xa0()
-> [    7.952592] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff910a0f7a>] prepare_to_wait+0x2a/0x90
-> [    7.952595] CPU: 0 PID: 299 Comm: systemd-readahe Not tainted 3.19.0-rc3+ #100
+Support ndo_features_check to avoid:
+ - the transport offset is more than the hw limitation when using hw checksum.
+ - the skb->len of a GSO packet is more than the limitation.
 
-> [    7.952620]  [<ffffffff911a63e0>] fanotify_read+0xe0/0x5b0
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 2d1c77e..57ec23e 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -1897,6 +1897,22 @@ static void _rtl8152_set_rx_mode(struct net_device *netdev)
+ 	netif_wake_queue(netdev);
+ }
+ 
++static netdev_features_t
++rtl8152_features_check(struct sk_buff *skb, struct net_device *dev,
++		       netdev_features_t features)
++{
++	u32 mss = skb_shinfo(skb)->gso_size;
++	int max_offset = mss ? GTTCPHO_MAX : TCPHO_MAX;
++	int offset = skb_transport_offset(skb);
++
++	if ((mss || skb->ip_summed == CHECKSUM_PARTIAL) && offset > max_offset)
++		features &= ~(NETIF_F_ALL_CSUM | NETIF_F_GSO_MASK);
++	else if ((skb->len + sizeof(struct tx_desc)) > agg_buf_sz)
++		features &= ~NETIF_F_GSO_MASK;
++
++	return features;
++}
++
+ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
+ 				      struct net_device *netdev)
+ {
+@@ -3706,6 +3722,7 @@ static const struct net_device_ops rtl8152_netdev_ops = {
+ 	.ndo_set_mac_address	= rtl8152_set_mac_address,
+ 	.ndo_change_mtu		= rtl8152_change_mtu,
+ 	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_features_check	= rtl8152_features_check,
+ };
+ 
+ static void r8152b_get_version(struct r8152 *tp)
+-- 
+2.1.0
 
-http://marc.info/?l=linux-kernel&m=141874374029791
