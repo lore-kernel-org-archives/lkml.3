@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806AbbAFFkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 00:40:16 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:65419 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbbAFFj5 (ORCPT
+	id S1754478AbbAFFln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 00:41:43 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:63312 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956AbbAFFll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 00:39:57 -0500
+	Tue, 6 Jan 2015 00:41:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <54AA97B9.7040703@nod.at>
-References: <1417563176-31972-1-git-send-email-richard@nod.at>
-	<54A53FBF.5000003@kernel.org>
-	<7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net>
-	<54A680F8.30209@nod.at>
-	<54A91DA1.6080107@kernel.org>
-	<E1Y881p-0001Fp-NX@stardust.g4.wien.funkfeuer.at>
-	<54AA97B9.7040703@nod.at>
-Date: Tue, 6 Jan 2015 11:09:56 +0530
-Message-ID: <CAGUYZuTXy0SGzRKYA1TGtSr=aw_50n7Sy6E05WwTExqy_MGr-w@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] iio: dht11: Fix out-of-bounds read
+In-Reply-To: <E1Y884W-0001G0-7b@stardust.g4.wien.funkfeuer.at>
+References: <E1Y884W-0001G0-7b@stardust.g4.wien.funkfeuer.at>
+Date: Tue, 6 Jan 2015 11:11:40 +0530
+Message-ID: <CAGUYZuQCUj2+yTaB_UHOSJ3-15gegpUsDZMdC0fgG9jd6CcCfg@mail.gmail.com>
+Subject: Re: [PATCHv2 2/3] iio: dht11: Add locking
 From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Harald Geyer <harald@ccbib.org>, Jonathan Cameron <jic23@kernel.org>,
+To: Harald Geyer <harald@ccbib.org>
+Cc: Jonathan Cameron <jic23@kernel.org>, Richard Weinberger <richard@nod.at>,
         Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
         Peter Meerwald <pmeerw@pmeerw.net>,
         sanjeevs1 <sanjeev_sharma@mentor.com>, linux-iio@vger.kernel.org,
@@ -31,25 +25,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 7:25 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am 05.01.2015 um 14:49 schrieb Harald Geyer:
->> As we access i-1 we must not start with i=0.
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> Acked-by: Hartmut Knaack <knaack.h@gmx.de>
->> Acked-by: Harald Geyer <harald@ccbib.org>
-     Reviewed-by: Sanjeev Sharma <sanjeev_sharma@mentor.com>
->> ---
->> Resending for Richard Weinberger.
->> No changes since v1 except reordering.
+On Mon, Jan 5, 2015 at 7:21 PM, Harald Geyer <harald@ccbib.org> wrote:
+> Make sure that the read function is not interrupted...
 >
-> I fear you got the resend wrong.
-> The mail should be "From: Richard Weinberger <richard@nod.at>" to keep me
-> as author and the SoB-Chain should have a "Signed-off-by: Harald Geyer <harald@ccbib.org>"
-> at the end to indicate that this patch went though your hands.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Acked-by: Harald Geyer <harald@ccbib.org>
+   Reviewed-by: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+> ---
+> Resending for Richard Weinberger.
+> No changes since v1 except reordering.
 >
-> Thanks,
-> //richard
+>  drivers/iio/humidity/dht11.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
+> index f546eca..7717f5c 100644
+> --- a/drivers/iio/humidity/dht11.c
+> +++ b/drivers/iio/humidity/dht11.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/wait.h>
+>  #include <linux/bitops.h>
+>  #include <linux/completion.h>
+> +#include <linux/mutex.h>
+>  #include <linux/delay.h>
+>  #include <linux/gpio.h>
+>  #include <linux/of_gpio.h>
+> @@ -57,6 +58,7 @@ struct dht11 {
+>         int                             irq;
+>
+>         struct completion               completion;
+> +       struct mutex                    lock;
+>
+>         s64                             timestamp;
+>         int                             temperature;
+> @@ -145,6 +147,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
+>         struct dht11 *dht11 = iio_priv(iio_dev);
+>         int ret;
+>
+> +       mutex_lock(&dht11->lock);
+>         if (dht11->timestamp + DHT11_DATA_VALID_TIME < iio_get_time_ns()) {
+>                 reinit_completion(&dht11->completion);
+>
+> @@ -185,6 +188,7 @@ static int dht11_read_raw(struct iio_dev *iio_dev,
+>                 ret = -EINVAL;
+>  err:
+>         dht11->num_edges = -1;
+> +       mutex_unlock(&dht11->lock);
+>         return ret;
+>  }
+>
+> @@ -268,6 +272,7 @@ static int dht11_probe(struct platform_device *pdev)
+>         platform_set_drvdata(pdev, iio);
+>
+>         init_completion(&dht11->completion);
+> +       mutex_init(&dht11->lock);
+>         iio->name = pdev->name;
+>         iio->dev.parent = &pdev->dev;
+>         iio->info = &dht11_iio_info;
+> --
+> 1.7.2.5
+>
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
