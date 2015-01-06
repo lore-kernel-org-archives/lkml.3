@@ -1,115 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379AbbAFUX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:23:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60759 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751612AbbAFUX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:23:58 -0500
-Date: Tue, 6 Jan 2015 22:23:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v2 26/40] arch/sparc: uaccess_64 macro whitespace fixes
-Message-ID: <20150106202342.GB12455@redhat.com>
-References: <1420558883-10131-1-git-send-email-mst@redhat.com>
- <1420558883-10131-27-git-send-email-mst@redhat.com>
- <20150106165339.GA11270@ravnborg.org>
- <20150106171902.GA11577@redhat.com>
- <20150106182749.GA19490@ravnborg.org>
+	id S1755976AbbAFU0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:26:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42135 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbbAFU0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 15:26:17 -0500
+Date: Tue, 6 Jan 2015 12:26:16 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mariusz Gorski <marius.gorski@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, David Fries <David@Fries.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] w1: slaves: w1_therm: Add temp attribute
+Message-ID: <20150106202616.GB15277@kroah.com>
+References: <1420554596-10250-1-git-send-email-marius.gorski@gmail.com>
+ <1420554596-10250-3-git-send-email-marius.gorski@gmail.com>
+ <20150106174221.GA24538@kroah.com>
+ <20150106201906.GA4637@firebird>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150106182749.GA19490@ravnborg.org>
+In-Reply-To: <20150106201906.GA4637@firebird>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 07:27:49PM +0100, Sam Ravnborg wrote:
-> On Tue, Jan 06, 2015 at 07:19:02PM +0200, Michael S. Tsirkin wrote:
-> > On Tue, Jan 06, 2015 at 05:53:39PM +0100, Sam Ravnborg wrote:
-> > > On Tue, Jan 06, 2015 at 05:44:56PM +0200, Michael S. Tsirkin wrote:
-> > > > Macros within arch/sparc/include/asm/uaccess_64.h are made harder to
-> > > > read because they violate a bunch of coding style rules.
-> > > > 
-> > > > Fix it up.
-> > > As per Davem's earlier mail please prefix using sparc32/sparc64.
-> > 
-> > I did put in uaccess_64 - insufficient?
-> sparc32: bla bla
-> For sparc32 specific changes.
-> 
-> sparc64: bla bla
-> For sparc64 specific changes
-> 
-> sparc: bla bla
-> For general sparce changes
-> 
-> 
-> In this case you could have used:
-> sparc64: fix coding style in uaccess_64.h
-
-OK.
-I see David reviewed and sent acks, so I won't bother
-reposting, but I'll tweak this in my tree.
-
-> > 
-> > > > -#define __put_user_nocheck(data,addr,size) ({ \
-> > > > -register int __pu_ret; \
-> > > > -switch (size) { \
-> > > > -case 1: __put_user_asm(data,b,addr,__pu_ret); break; \
-> > > > -case 2: __put_user_asm(data,h,addr,__pu_ret); break; \
-> > > > -case 4: __put_user_asm(data,w,addr,__pu_ret); break; \
-> > > > -case 8: __put_user_asm(data,x,addr,__pu_ret); break; \
-> > > > -default: __pu_ret = __put_user_bad(); break; \
-> > > > -} __pu_ret; })
-> > > > -
-> > > > -#define __put_user_asm(x,size,addr,ret)					\
-> > > > +#define __put_user_nocheck(data, addr, size) ({ \
-> > > > +	register int __pu_ret; \
-> > > > +	switch (size) { \
-> > > > +	case 1: \
-> > > > +		__put_user_asm(data, b, addr, __pu_ret); \
-> > > > +		break; \
-> > > > +	case 2: \
-> > > > +		__put_user_asm(data, h, addr, __pu_ret); \
-> > > > +		break; \
-> > > > +	case 4: \
-> > > > +		__put_user_asm(data, w, addr, __pu_ret); \
-> > > > +		break; \
-> > > > +	case 8: \
-> > > > +		__put_user_asm(data, x, addr, __pu_ret); \
-> > > > +		break; \
-> > > > +	default: \
-> > > > +		__pu_ret = __put_user_bad(); \
-> > > > +		break; \
-> > > > +	} \
-> > > > +	__pu_ret; \
-> > > > +})
+On Tue, Jan 06, 2015 at 09:19:07PM +0100, Mariusz Gorski wrote:
+> On Tue, Jan 06, 2015 at 09:42:21AM -0800, Greg Kroah-Hartman wrote:
+> > On Tue, Jan 06, 2015 at 03:29:56PM +0100, Mariusz Gorski wrote:
+> > > Add new attribute to simplify reading of current temperature.
 > > > 
-> > > No matter what coding style says - the above is much less readable than the
-> > > original version.
-> > > 
-> > > 
-> > I guess you approve the rest of the changes then?
-> I did not look to carefully - but what I saw looked good.
-> 
+> > > Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
+> > > ---
+> > >  drivers/w1/slaves/w1_therm.c | 32 ++++++++++++++++++++++++++++++++
+> > >  1 file changed, 32 insertions(+)
 > > 
+> > You add sysfs attributes without adding new Documentation/ABI/ entries,
+> > which means I can't take this patch series, sorry.  Please redo it and
+> > add the needed information.
 > > 
-> > I get it you like it that 
-> > 	case 1: __get_user_asm(__gu_val,ub,addr,__gu_ret); break;
-> > has the whole case on the same line?
-> > Is that the issue?
-> Exactly - much easier to read this way.
-> That the "\" was not aligned in these parts of the code did not help either.
+> > Also, temperature should be a standard sensor attribute, so you might
+> > want to use that subsystem instead of creating your own ABI here.
 > 
-> 	Sam
+> Do you mean stuff described in Documentation/thermal/sysfs-api.txt?
 
-I see David acked this already - I'll do a patch on top to tweak just
-these two places to your liking?
-No sense making everyone re-read the whole pile of changes.
+Yes, that is the one.
 
--- 
-MST
