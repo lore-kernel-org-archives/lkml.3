@@ -1,205 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476AbbAFOfc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:35:32 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:21159 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbbAFOfa (ORCPT
+	id S1755422AbbAFOhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:37:37 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41029 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbbAFOhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:35:30 -0500
-Date: Tue, 6 Jan 2015 09:35:08 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
-Subject: Re: [Xen-devel] [RFC 2/2] x86, vdso, pvclock: Simplify and speed up
- the vdso pvclock reader
-Message-ID: <20150106143508.GC7446@l.oracle.com>
-References: <cover.1419295081.git.luto@amacapital.net>
- <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
- <20150105152511.GA9172@amt.cnet>
- <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+	Tue, 6 Jan 2015 09:37:35 -0500
+Date: Tue, 6 Jan 2015 15:37:30 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Vince Hsu <vinceh@nvidia.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Emil Velikov <emil.l.velikov@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ben Skeggs <bskeggs@redhat.com>, Martin Peres <martin.peres@free.fr>,
+        Roy Spliet <seven@nimrod-online.com>, samuel.pitoiset@gmail.com,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Nouveau] [PATCH nouveau 09/11] drm: export some variable and
+ functions to resue the PM functions
+Message-ID: <20150106143729.GN31830@ulmo.nvidia.com>
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
+ <1419331204-26679-10-git-send-email-vinceh@nvidia.com>
+ <54A20F4D.4040100@gmail.com>
+ <54A2198A.4000707@nvidia.com>
+ <20150105153252.GI12010@ulmo.nvidia.com>
+ <CAAVeFuK-SgUbtHADX4-pXN5_ayzvEd+1KxJOBcRe2tmDfHaLEA@mail.gmail.com>
+ <20150106114953.GD31830@ulmo.nvidia.com>
+ <54ABD49A.6080501@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sy9WyBOsCRoUO165"
 Content-Disposition: inline
-In-Reply-To: <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+In-Reply-To: <54ABD49A.6080501@nvidia.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 10:56:07AM -0800, Andy Lutomirski wrote:
-> On Mon, Jan 5, 2015 at 7:25 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > On Mon, Dec 22, 2014 at 04:39:57PM -0800, Andy Lutomirski wrote:
-> >> The pvclock vdso code was too abstracted to understand easily and
-> >> excessively paranoid.  Simplify it for a huge speedup.
-> >>
-> >> This opens the door for additional simplifications, as the vdso no
-> >> longer accesses the pvti for any vcpu other than vcpu 0.
-> >>
-> >> Before, vclock_gettime using kvm-clock took about 64ns on my machine.
-> >> With this change, it takes 19ns, which is almost as fast as the pure TSC
-> >> implementation.
-> >>
-> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> >> ---
-> >>  arch/x86/vdso/vclock_gettime.c | 82 ++++++++++++++++++++++++------------------
-> >>  1 file changed, 47 insertions(+), 35 deletions(-)
-> >>
-> >> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-> >> index 9793322751e0..f2e0396d5629 100644
-> >> --- a/arch/x86/vdso/vclock_gettime.c
-> >> +++ b/arch/x86/vdso/vclock_gettime.c
-> >> @@ -78,47 +78,59 @@ static notrace const struct pvclock_vsyscall_time_info *get_pvti(int cpu)
-> >>
-> >>  static notrace cycle_t vread_pvclock(int *mode)
-> >>  {
-> >> -     const struct pvclock_vsyscall_time_info *pvti;
-> >> +     const struct pvclock_vcpu_time_info *pvti = &get_pvti(0)->pvti;
-> >>       cycle_t ret;
-> >> -     u64 last;
-> >> -     u32 version;
-> >> -     u8 flags;
-> >> -     unsigned cpu, cpu1;
-> >> -
-> >> +     u64 tsc, pvti_tsc;
-> >> +     u64 last, delta, pvti_system_time;
-> >> +     u32 version, pvti_tsc_to_system_mul, pvti_tsc_shift;
-> >>
-> >>       /*
-> >> -      * Note: hypervisor must guarantee that:
-> >> -      * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
-> >> -      * 2. that per-CPU pvclock time info is updated if the
-> >> -      *    underlying CPU changes.
-> >> -      * 3. that version is increased whenever underlying CPU
-> >> -      *    changes.
-> >> +      * Note: The kernel and hypervisor must guarantee that cpu ID
-> >> +      * number maps 1:1 to per-CPU pvclock time info.
-> >> +      *
-> >> +      * Because the hypervisor is entirely unaware of guest userspace
-> >> +      * preemption, it cannot guarantee that per-CPU pvclock time
-> >> +      * info is updated if the underlying CPU changes or that that
-> >> +      * version is increased whenever underlying CPU changes.
-> >> +      *
-> >> +      * On KVM, we are guaranteed that pvti updates for any vCPU are
-> >> +      * atomic as seen by *all* vCPUs.  This is an even stronger
-> >> +      * guarantee than we get with a normal seqlock.
-> >>        *
-> >> +      * On Xen, we don't appear to have that guarantee, but Xen still
-> >> +      * supplies a valid seqlock using the version field.
-> >> +
-> >> +      * We only do pvclock vdso timing at all if
-> >> +      * PVCLOCK_TSC_STABLE_BIT is set, and we interpret that bit to
-> >> +      * mean that all vCPUs have matching pvti and that the TSC is
-> >> +      * synced, so we can just look at vCPU 0's pvti.
-> >>        */
-> >
-> > Can Xen guarantee that ?
-> 
-> I think so, vacuously.  Xen doesn't seem to set PVCLOCK_TSC_STABLE_BIT
-> at all.  I have no idea going forward, though.
-> 
-> Xen people?
 
-The person who would know of the top of his head is Dan Magenheimer, who
-is now enjoy retirement :-(
+--sy9WyBOsCRoUO165
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I will have to dig in the code to answer this - that will take a bit of time
-sadly (I am sick this week).
-> 
+On Tue, Jan 06, 2015 at 08:27:06PM +0800, Vince Hsu wrote:
+>=20
+> On 01/06/2015 07:49 PM, Thierry Reding wrote:
+> >* PGP Signed by an unknown key
 > >
-> >> -     do {
-> >> -             cpu = __getcpu() & VGETCPU_CPU_MASK;
-> >> -             /* TODO: We can put vcpu id into higher bits of pvti.version.
-> >> -              * This will save a couple of cycles by getting rid of
-> >> -              * __getcpu() calls (Gleb).
-> >> -              */
-> >> -
-> >> -             pvti = get_pvti(cpu);
-> >> -
-> >> -             version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
-> >> -
-> >> -             /*
-> >> -              * Test we're still on the cpu as well as the version.
-> >> -              * We could have been migrated just after the first
-> >> -              * vgetcpu but before fetching the version, so we
-> >> -              * wouldn't notice a version change.
-> >> -              */
-> >> -             cpu1 = __getcpu() & VGETCPU_CPU_MASK;
-> >> -     } while (unlikely(cpu != cpu1 ||
-> >> -                       (pvti->pvti.version & 1) ||
-> >> -                       pvti->pvti.version != version));
-> >> -
-> >> -     if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
-> >> +
-> >> +     if (unlikely(!(pvti->flags & PVCLOCK_TSC_STABLE_BIT))) {
-> >>               *mode = VCLOCK_NONE;
-> >> +             return 0;
-> >> +     }
-> >
-> > This check must be performed after reading a stable pvti.
-> >
-> 
-> We can even read it in the middle, guarded by the version checks.
-> I'll do that for v2.
-> 
-> >> +
-> >> +     do {
-> >> +             version = pvti->version;
-> >> +
-> >> +             /* This is also a read barrier, so we'll read version first. */
-> >> +             rdtsc_barrier();
-> >> +             tsc = __native_read_tsc();
-> >> +
-> >> +             pvti_tsc_to_system_mul = pvti->tsc_to_system_mul;
-> >> +             pvti_tsc_shift = pvti->tsc_shift;
-> >> +             pvti_system_time = pvti->system_time;
-> >> +             pvti_tsc = pvti->tsc_timestamp;
-> >> +
-> >> +             /* Make sure that the version double-check is last. */
-> >> +             smp_rmb();
-> >> +     } while (unlikely((version & 1) || version != pvti->version));
-> >> +
-> >> +     delta = tsc - pvti_tsc;
-> >> +     ret = pvti_system_time +
-> >> +             pvclock_scale_delta(delta, pvti_tsc_to_system_mul,
-> >> +                                 pvti_tsc_shift);
-> >
-> > The following is possible:
-> >
-> > 1) State: all pvtis marked as PVCLOCK_TSC_STABLE_BIT.
-> > 1) Update request for all vcpus, for a TSC_STABLE_BIT -> ~TSC_STABLE_BIT
-> > transition.
-> > 2) vCPU-1 updates its pvti with new values.
-> > 3) vCPU-0 still has not updated its pvti with new values.
-> > 4) vCPU-1 VM-enters, uses vCPU-0 values, even though it has been
-> > notified of a TSC_STABLE_BIT -> ~TSC_STABLE_BIT transition.
-> >
-> > The update is not actually atomic across all vCPUs, its atomic in
-> > the sense of not allowing visibility of distinct
-> > system_timestamp/tsc_timestamp values.
-> >
-> 
-> Hmm.  In step 4, is there a guarantee that vCPU-0 won't VM-enter until
-> it gets marked unstable?  Otherwise the vdso could could just as
-> easily be called from vCPU-1, migrated to vCPU-0, read the data
-> complete with stale stable bit, and get migrated back to vCPU-1.
-> 
-> But I thought that KVM currently froze all vCPUs when updating pvti
-> for any of them.  How can this happen?  I admit I don't really
-> understand the update request code.
-> 
-> --Andy
-> 
-> -- 
-> Andy Lutomirski
-> AMA Capital Management, LLC
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+> >On Mon, Jan 05, 2015 at 08:50:18PM +0100, Alexandre Courbot wrote:
+> >>On Mon, Jan 5, 2015 at 4:32 PM, Thierry Reding <thierry.reding@gmail.co=
+m> wrote:
+> >>>On Tue, Dec 30, 2014 at 11:18:34AM +0800, Vince Hsu wrote:
+> >>>>Hi Emil,
+> >>>>
+> >>>>On 12/30/2014 10:34 AM, Emil Velikov wrote:
+> >>>>>On 23/12/14 10:40, Vince Hsu wrote:
+> >>>>>>This patch adds some checks in the suspend/resume functions to dist=
+inguish
+> >>>>>>the dGPU and mobile GPU and exports some variables/functions so tha=
+t the
+> >>>>>>nouveau platform device can reuse them.
+> >>>>>>
+> >>>>>Hi Vince,
+> >>>>>
+> >>>>>Afaiu one needs to export a symbol as it's used by another module or
+> >>>>>subsystem. With the follow up two patches you are not doing either o=
+ne,
+> >>>>>so I'd assume that you can just omit the EXPORT_* changes.
+> >>>>The nouveau platform device driver is built as another module -
+> >>>>nouveau_platform.ko. :)
+> >>>I'd like to hear the opinion of the nouveau people and Alex, but I'd
+> >>>very much prefer if nouveau_platform.o was simply linked into the
+> >>>nouveau.ko module. I don't see any good reason to keep it separate.
+> >>Yep, I agree. The decision to host platform support in a separate
+> >>module looks misleaded if it results in additional exports that we
+> >>would otherwise avoid. IIUC I did this to be able to use the module
+> >>convenience macros to register the platform driver.
+> >>
+> >>>Something like the attached patch (untested) ought to do it.
+> >>This patch alone won't be enough for the reason I mentioned above.
+> >>However, if Vince doesn't mind handling the platform driver
+> >>registration manually in nouveau_drm_init/nouveau_drm_exit, I agree
+> >>this would be the way to go.
+> >If we do the conversion to generic power domains, the only Tegra-
+> >specific API remaining will be the access to the fuse registers for the
+> >speedo value. At that point we wouldn't need the ARCH_TEGRA dependency
+> >any longer and could always build the platform driver along with the PCI
+> >driver.
+> Do we really want the platform driver always built with the PCI driver ev=
+en
+> there is no dependency between them. Actually I have some patches to
+> build the platform driver with !CONFIG_PCI and would like to post them ma=
+ybe
+> later.
+
+I do see some advantage in making Nouveau build with !CONFIG_PCI because
+it allows building the driver for an SoC without PCI. But I think always
+compiling whatever is available won't hurt. Nouveau itself is rather big
+(~1 MiB of text and ~120 KiB of data) whereas the platform code weighs
+in at around 1.5 KiB of text and 108 B of data. I suspect that the PCI
+glue is equally negligible.
+
+Thierry
+
+--sy9WyBOsCRoUO165
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUq/MpAAoJEN0jrNd/PrOhZOgP/0iAGJQ7KC351FKn5fS3SEFf
+s+cyD2MjtIIXMc6CPT177R8+lxy/cA40yuRB3ehQurTPQw5CDgVL7U02kVvV+EDb
+u21L3bQiTSa3XkPf9BDGWTXKIQqb5EfV84WGWo94BELfIxiXzeoCcc/slWvU6rT5
+rN5TposSU6Q10VzgUVkKQJqGWAWzxKezvGloLW8A/3uTAy8rxJ7yxZuZAqlH3Kj0
+OIjM1gwMVCgolYSVIzuhvy8oI930H7mZrbJFM1F6pG12BGbLXg58JPDRmG113Tpa
+X1if/SftoJnoZZbecFw5tsJKMzm1Ia0W9zm4LbuL+cOskbC/uU+Pp/oUyIuGTmDD
+kGR9I+cw1wTtRy4XA7lC08TZwck5+yYPFdZwEvEmU7aBdfmWRrvUE/6xahVnf5Ai
+vow+pqDcMuH1GOKh6u+fBA504SmWTOzAIAkYOieUryiMSlKk/qABuT6sJTz/1/jL
+P/F1omvqUoHcsN8uxHAoqM/fD+JxWw/JvhyeWGv1n9tgIpSrbEIc8g0VpeP8595w
+/NC8jjyFSutQsMN/EHDa/eByyBta4UXl+plHJuanb1kTriuJ/LruEDdqjFTJ13th
+T2hi0Kt3HofN/lSyWnMlOKoXGt6FroHxSDzwKuekCgXebdCwJoOtKsAbN310m2M4
+ROCTETfte0JKmK8XKcHL
+=uEHR
+-----END PGP SIGNATURE-----
+
+--sy9WyBOsCRoUO165--
