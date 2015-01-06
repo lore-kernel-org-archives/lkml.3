@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696AbbAFUE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:04:27 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39175 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756431AbbAFUEY (ORCPT
+	id S1756675AbbAFUEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:04:16 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:54214 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbbAFUEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:04:24 -0500
-From: Ani Sinha <ani@arista.com>
-To: corbet@lwn.net, davem@davemloft.net, edumazet@google.com,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ani@arista.com, P@draigbrady.com
-Subject: [PATCH 1/1] update ip-sysctl.txt documentation 
-Date: Tue,  6 Jan 2015 12:04:08 -0800
-Message-Id: <1420574648-24213-1-git-send-email-ani@arista.com>
-X-Mailer: git-send-email 1.7.4.4
+	Tue, 6 Jan 2015 15:04:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAHTgTXUGVkJX26bFSOC9EH2gUynSKhLNr7D8mN8cSy7Km_+f9Q@mail.gmail.com>
+References: <CAHTgTXUGVkJX26bFSOC9EH2gUynSKhLNr7D8mN8cSy7Km_+f9Q@mail.gmail.com>
+Date: Tue, 6 Jan 2015 12:04:13 -0800
+Message-ID: <CAHA+R7OPJp9ayT6_zN6MxJd8arZyB4WGJ_3_pggwvTkwL9P2+w@mail.gmail.com>
+Subject: Re: next-timestamp build failure with 3.19-rc2
+From: Cong Wang <cwang@twopensource.com>
+To: Vinson Lee <vlee@twopensource.com>
+Cc: Jonathan Corbet <corbet@lwn.net>, "David S. Miller" <davem@davemloft.net>,
+        Willem de Bruijn <willemb@google.com>, linux-doc@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update documentation to reflect the fact that
-/proc/sys/net/ipv4/route/max_size is no longer used for
-ipv4.
+On Mon, Jan 5, 2015 at 11:55 AM, Vinson Lee <vlee@twopensource.com> wrote:
+> Hi.
+>
+> I'm hitting the following build error with 3.19-rc2 on CentOS 5 with
+> glibc-headers-2.5-123.
+>
+>   HOSTCC  Documentation/networking/timestamping/txtimestamp
+> Documentation/networking/timestamping/txtimestamp.c:64:8: error:
+> redefinition of ‘struct in6_pktinfo’
+>  struct in6_pktinfo {
+>         ^
+> In file included from /usr/include/arpa/inet.h:23:0,
+>                  from Documentation/networking/timestamping/txtimestamp.c:33:
+> /usr/include/netinet/in.h:456:8: note: originally defined here
+>  struct in6_pktinfo
+>         ^
 
-Signed-off-by: Ani Sinha <ani@arista.com>
----
- Documentation/networking/ip-sysctl.txt |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index 9bffdfc..c8a7e37 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -64,8 +64,10 @@ fwmark_reflect - BOOLEAN
- 	Default: 0
- 
- route/max_size - INTEGER
--	Maximum number of routes allowed in the kernel.  Increase
--	this when using large numbers of interfaces and/or routes.
-+        Post linux kernel 3.6, this is depricated for ipv4 as route cache is no
-+        longer used. For ipv6, this is used to limit the maximum number of ipv6
-+        routes allowed in the kernel.  Increase this when using large numbers of
-+        interfaces and/or routes.
- 
- neigh/default/gc_thresh1 - INTEGER
- 	Minimum number of entries to keep.  Garbage collector will not
--- 
-1.7.4.4
-
+We need the same workaround as we did for in6_addr etc..
+I am working on a patch now.
