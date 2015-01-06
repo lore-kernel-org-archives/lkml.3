@@ -1,123 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbbAFL3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:29:51 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:39328 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292AbbAFL3r (ORCPT
+	id S1755311AbbAFL3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 06:29:45 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55793 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292AbbAFL3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:29:47 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <robh@kernel.org>, Peter Hurley <peter@hurleysoftware.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>, Jiri Slaby <jslaby@suse.cz>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3 2/2] ARC: Dynamically determine BASE_BAUD from DeviceTree
-Date: Tue, 6 Jan 2015 16:59:11 +0530
-Message-ID: <1420543751-17468-3-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420543751-17468-1-git-send-email-vgupta@synopsys.com>
-References: <1420543751-17468-1-git-send-email-vgupta@synopsys.com>
+	Tue, 6 Jan 2015 06:29:42 -0500
+Date: Tue, 6 Jan 2015 11:29:29 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+Message-ID: <20150106112929.GB8829@e104818-lin.cambridge.arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org>
+ <20141224171815.GD13399@e104818-lin.cambridge.arm.com>
+ <54A90A4C.60908@linaro.org>
+ <20150105110533.GA14967@e104818-lin.cambridge.arm.com>
+ <54ABC2CB.6@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.196.223]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54ABC2CB.6@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This resolves the BASE_BAUD issue in Multiplatform images
+On Tue, Jan 06, 2015 at 11:11:07AM +0000, Hanjun Guo wrote:
+> On 2015年01月05日 19:05, Catalin Marinas wrote:
+> > On Sun, Jan 04, 2015 at 09:39:24AM +0000, Hanjun Guo wrote:
+> >> On 2014年12月25日 01:18, Catalin Marinas wrote:
+> >> [...]
+> >>>
+> >>> In addition to the above and _DSD requirements/banning, I would also add
+> >>> some clear statements around:
+> >>>
+> >>> _OSC: only global/published capabilities are allowed. For
+> >>> device-specific _OSC we need a process or maybe we can ban them entirely
+> >>> and rely on _DSD once we clarify the process.
+> >>>
+> >>> _OSI: firmware must not check for certain _OSI strings. Here I'm not
+> >>> sure what we would have to do for ARM Linux. Reporting "Windows" does
+> >>> not make any sense but not reporting anything can, as Matthew Garrett
+> >>> pointed out, can be interpreted by firmware as "Linux". In addition to
+> >>> any statements in this document, I suggest you patch
+> >>> drivers/acpi/acpica/utosi.c accordingly, maybe report "Linux" for ARM
+> >>> and print a kernel warning so that we notice earlier.
+> >>>
+> >>> ACPI_OS_NAME: this is globally defined as "Microsoft Windows NT". It
+> >>> doesn't make much sense in the ARM context. Could we change it to
+> >>> "Linux" when CONFIG_ARM64?
+> 
+> I think we can introduce a Kconfig such as CONFIG_ACPI_OS_NAME_LINUX,
+> selected by ARM64 and change ACPI_OS_NAME to "Linux" when
+> CONFIG_ACPI_OS_NAME_LINUX defined. (we can not add CONFIG_ARM64 in
+> ACPICA code directly since it will be used by windows too)
+> 
+> some code like below:
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/serial.h | 23 +++++------------------
- arch/arc/kernel/devtree.c     | 24 ++++++++++++++++++++++++
- 2 files changed, 29 insertions(+), 18 deletions(-)
+This looks fine for me (with some minor comments below) but I'm not an
+ACPI expert to say there wouldn't be any issues.
 
-diff --git a/arch/arc/include/asm/serial.h b/arch/arc/include/asm/serial.h
-index 602b0970a764..744a6ae15754 100644
---- a/arch/arc/include/asm/serial.h
-+++ b/arch/arc/include/asm/serial.h
-@@ -10,26 +10,13 @@
- #define _ASM_ARC_SERIAL_H
- 
- /*
-- * early-8250 requires BASE_BAUD to be defined and includes this header.
-- * We put in a typical value:
-- * 	(core clk / 16) - i.e. UART samples 16 times per sec.
-- * Athough in multi-platform-image this might not work, specially if the
-- * clk driving the UART is different.
-- * We can't use DeviceTree as this is typically for early serial.
-+ * early 8250 (now earlycon) requires BASE_BAUD to be defined in this header.
-+ * However to still determine it dynamically (for multi-platform images)
-+ * we do this in a helper by parsing the FDT early
-  */
- 
--#include <asm/clk.h>
-+extern unsigned int __init arc_early_base_baud(void);
- 
--#define BASE_BAUD	(arc_get_core_freq() / 16)
--
--/*
-- * This is definitely going to break early 8250 consoles on multi-platform
-- * images but hey, it won't add any code complexity for a debug feature of
-- * one broken driver.
-- */
--#ifdef CONFIG_ARC_PLAT_TB10X
--#undef BASE_BAUD
--#define BASE_BAUD	(arc_get_core_freq() / 16 / 3)
--#endif
-+#define BASE_BAUD	arc_early_base_baud()
- 
- #endif /* _ASM_ARC_SERIAL_H */
-diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
-index fffdb5e41b20..69a790cd9b6e 100644
---- a/arch/arc/kernel/devtree.c
-+++ b/arch/arc/kernel/devtree.c
-@@ -17,6 +17,28 @@
- #include <asm/clk.h>
- #include <asm/mach_desc.h>
- 
-+#ifdef CONFIG_SERIAL_8250_CONSOLE
-+
-+static unsigned int arc_base_baud;
-+
-+unsigned int __init arc_early_base_baud(void)
-+{
-+	return arc_base_baud/16;
-+}
-+
-+static void __init arc_set_early_base_baud(unsigned long dt_root)
-+{
-+	unsigned int core_clk = arc_get_core_freq();
-+
-+	if (of_flat_dt_is_compatible(dt_root, "abilis,arc-tb10x"))
-+		arc_base_baud = core_clk/3;
-+	else
-+		arc_base_baud = core_clk;
-+}
-+#else
-+#define arc_set_early_base_baud(dt_root)
-+#endif
-+
- static const void * __init arch_get_next_mach(const char *const **match)
- {
- 	static const struct machine_desc *mdesc = __arch_info_begin;
-@@ -56,5 +78,7 @@ const struct machine_desc * __init setup_machine_fdt(void *dt)
- 	if (clk)
- 		arc_set_core_freq(of_read_ulong(clk, len/4));
- 
-+	arc_set_early_base_baud(dt_root);
-+
- 	return mdesc;
- }
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index b1f9a20..de567a3 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -1,5 +1,6 @@
+>   config ARM64
+>          def_bool y
+> +       select ACPI_OS_NAME_LINUX if ACPI
+>          select ARCH_BINFMT_ELF_RANDOMIZE_PIE
+>          select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+>          select ARCH_HAS_GCOV_PROFILE_ALL
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index 8951cef..11a10ac 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -369,6 +369,10 @@ config ACPI_REDUCED_HARDWARE_ONLY
+> 
+>            If you are unsure what to do, do not enable this option.
+> 
+> +config ACPI_OS_NAME_LINUX
+> +       bool "Using Linux for _OS method" if EXPERT
+> +       def_bool n
+
+No need for a default n, it is off by default. Alternatively you could
+say:
+
+	default y if ARM64
+
+> +
+>   source "drivers/acpi/apei/Kconfig"
+> 
+>   config ACPI_EXTLOG
+> diff --git a/include/acpi/acconfig.h b/include/acpi/acconfig.h
+> index 5a0a3e5..db5e13e 100644
+> --- a/include/acpi/acconfig.h
+> +++ b/include/acpi/acconfig.h
+> @@ -69,7 +69,11 @@
+>    * code that will not execute the _OSI method unless _OS matches the 
+> string
+>    * below.  Therefore, change this string at your own risk.
+>    */
+> +#ifndef ACPI_OS_NAME_USING_LINUX
+>   #define ACPI_OS_NAME                    "Microsoft Windows NT"
+> +#else
+> +#define ACPI_OS_NAME                    "Linux"
+> +#endif
+
+Can you not use CONFIG_ACPI_OS_NAME_LINUX directly here without
+introducing another macro?
+
+> >> We will work on this both on ASWG and linux ACPI driver side, as Dong
+> >> and Charles pointed out, _OSI things can be solved in ACPI spec, when
+> >> that is done, we can modify the kernel driver to fix the problems above.
+> >
+> > Which driver?
+> 
+> the ACPICA core driver as you suggested, sorry for the confusion.
+> 
+> > What about ACPI_OS_NAME? Would you suggest it is fine to report
+> > "Microsoft Windows NT" on an ARM system? That _OS_ not _OSI.
+> 
+> No, not at all. I prefer "Linux"
+> In include/acpi/acconfig.h, when ACPI_OS_NAME defined, it says:
+> "OS name, used for the _OS object.  The _OS object is essentially
+> obsolete,..."
+> for some legacy reasons, we needed  "Microsoft Windows NT", but ACPI
+> for ARM64 on linux is totally new, I think we can change it to
+> "Linux" when CONFIG_ARM64 as you suggested.
+
+We could ignore this change for now if we don't expect the _OS object to
+be used at all. But do we have any other way to check the AML code for
+this? Would FWTS catch such obsolete cases?
+
 -- 
-1.9.1
-
+Catalin
