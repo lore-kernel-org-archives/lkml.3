@@ -1,67 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070AbbAFF7u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 00:59:50 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:34192 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbbAFF7t (ORCPT
+	id S1753913AbbAFGAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 01:00:15 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:45112 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbbAFGAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 00:59:49 -0500
+	Tue, 6 Jan 2015 01:00:11 -0500
+Date: Mon, 5 Jan 2015 22:00:00 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] x86: Add IMR support to Quark/Galileo
+Message-ID: <20150106055959.GA59754@vmdeb7>
+References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
 MIME-Version: 1.0
-In-Reply-To: <20150106040428.GR2915@two.firstfloor.org>
-References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>
- <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
- <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
- <20150106040428.GR2915@two.firstfloor.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 5 Jan 2015 21:59:27 -0800
-Message-ID: <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API to arch_prctl
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 5, 2015 at 8:04 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> We should avoid arch_prctl because glibc won't add a syscall stub that
->> libgcc or whatever would want?  My mind boggles.
->
-> Please turn brain on before posting.
+On Mon, Dec 29, 2014 at 05:23:01PM +0000, Bryan O'Donoghue wrote:
+> This patchset adds an IMR driver to the kernel plus platform code for
+> Intel Galileo Gen1/Gen2 boards.
+> 
+> IMRs:
+> Quark SoC X1000 ships with a set of registers called Isolated Memory Regions
+> IMRs provide fine grained memory access control to various system agents
+> within the SoC such as CPU SMM/non-SMM mode, PCIe virtual channels, CPU snoop
+> cycles, eSRAM flush cycles and the RMU. In simple terms, IMRs provide a
+> mechanism to protect memory regions from unwarranted access by system agents
+> that should not have access to that memory.
+> 
+> IMRs support a lock bit. Once a lock bit is set for an individual IMR it is
+> not possible to tear down that IMR without performing a cold boot of the
+> system. IMRs support reporting of violations. The SoC system can be
+> configured to reboot immediately when an IMR violation has taken place.
+> Immediate reboot of the system on IMR violation is recommended and is
+> currently how Quark BIOS configures the system.
+> 
+> As an example Galileo boards ship with an IMR around the ACPI runtime
+> services memory and if a DMA read/write cycle were to occur to this region
+> of memory this would trigger the IMR violation mechansim. 
+> 
+> Galileo:
+> Intel's Arduino compatible Galileo boards boot to Linux with IMRs protecting
+> the compressed kernel image and boot params data structure. The memory that
 
-Brain was on.
+What is the motivation behind this?
 
->
-> Of course they would add it. But only in the next version. Which means
-> everyone using older glibc would be out of luck. So all the users
-> would be stuck using syscall(). Anything you may gain in the kernel
-> would be totally made up by that.
->
+> the compressed kernel and boot params data structure is in, is marked as
+> usable memory by the EFI memory map. As a result it is possible for memory
 
-ISTM libmpx shouldn't link against glibc at all -- what if libmpx
-users want to use an alternate runtime (musl, Go, etc.)?
+Based on your response to the above, is marking this memory as usable a bad idea
+in general? Or just bad in certain situations?
 
-But I decided to check whether libmpx links against glibc, and I can't
-find sources for it at all.  Do they exist?  Is there any code with
-source available that invokes this prctl?
+> marked as processor read/write only in an IMR to be given to devices in the
+> SoC for the purposes of DMA by way of dma_alloc_coherent.
 
-If not, I personally have very little sympathy for the argument that a
-binary buried in the depths of the Intel SDE would need to change if
-we switched to using arch_prctl.  And I think that it should issue the
-syscall itself without using glibc, in which case the syscall wrapper
-issue is moot.
+New line
 
---Andy
+> A DMA to a region of memory by a system agent which is not allowed access
+> this memory result in a system reset. Without tearing down the IMRs placed
+> around the compressed kernel image and boot params data structure there is a
+> high risk of triggering an inadvertent system reset when performing DMA
+> actions with any of the peripherals that support DMA in Quark such as the
+> MMC, Ethernet or USB host/device.
+> 
+> Therefore Galileo specific platform code is the second component of this
+> patchset. The platform code tears-down every unlocked IMR to ensure no
 
-> BTW I added arch_prctl, but in hindsight it wasn't good idea.
->
-> -Andi
+The firmware sets these IMRs, but does not lock them then, correct?
 
+> conflict exists between the IMR usage during boot and the EFI memory map. In
+> addition an IMR is placed around the kernel's .text section to ensure no
+> invalid access to kernel code can happen by way of spurious DMA, SMM or RMU
+> read/write cycles. This code gets compiled into the kernel because we want
+> to run the code early before any DMA has taken place. The prime examples of
+> DMA transactions resetting the system are mouting a root filesystem on MMC
 
+mounting
+
+> or mouting a root filesystem over NFS.
+
+mounting
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Darren Hart
+Intel Open Source Technology Center
