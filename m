@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbbAFW4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:56:22 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16248 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750753AbbAFW4T (ORCPT
+	id S1751563AbbAFW4S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:56:18 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52426 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbbAFW4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:56:19 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/w3CRK47BVq4ctWknJ8rdd
-Date: Tue, 6 Jan 2015 14:52:20 -0800
-From: Tony Lindgren <tony@atomide.com>
+	Tue, 6 Jan 2015 17:56:17 -0500
+Date: Tue, 6 Jan 2015 23:56:14 +0100
+From: Pavel Machek <pavel@ucw.cz>
 To: Felipe Balbi <balbi@ti.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>,
-        pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
         linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, khilman@kernel.org,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
         ivo.g.dimitrov.75@gmail.com
 Subject: Re: 3.19 on Nokia n900: audio quality awful
-Message-ID: <20150106225219.GB4081@atomide.com>
+Message-ID: <20150106225614.GA31990@amd>
 References: <20150106170433.GA5408@amd>
  <20150106172545.GK6502@saruman>
  <20150106175115.GA19487@amd>
@@ -40,7 +35,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [150106 14:49]:
+On Tue 2015-01-06 16:46:22, Felipe Balbi wrote:
 > Hi,
 > 
 > On Wed, Jan 07, 2015 at 12:27:17AM +0200, Aaro Koskinen wrote:
@@ -50,9 +45,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > 
 > yeah, rootwait should do it.
 
-AFAIK you need to use rootwait and make USB into loadable modules.
-Built in Ethernet won't work without the patch I posted earlier.
-
-Regards,
-
-Tony
+No, rootwait does not solve it. Try it. Tested many times. (And yes,
+you need to actually fool the rear cover sensor or close the phone.)
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
