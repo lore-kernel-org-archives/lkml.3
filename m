@@ -1,93 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507AbbAFSeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:34:00 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:40101 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbbAFSd7 convert rfc822-to-8bit (ORCPT
+	id S932539AbbAFSgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:36:06 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:38725 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755544AbbAFSgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:33:59 -0500
+	Tue, 6 Jan 2015 13:36:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
- <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
- <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
-From: Yuchung Cheng <ycheng@google.com>
-Date: Tue, 6 Jan 2015 10:33:17 -0800
-Message-ID: <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
-Subject: Re: TCP connection issues against Amazon S3
-To: Erik Grinaker <erik@bengler.no>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
+In-Reply-To: <CAL_JsqJwauxNNojhAaYEr7oQTm6fwYwtByv_s6-tHiXYA214AQ@mail.gmail.com>
+References: <1420562732-4353-1-git-send-email-mathieu.poirier@linaro.org>
+	<CAL_JsqJwauxNNojhAaYEr7oQTm6fwYwtByv_s6-tHiXYA214AQ@mail.gmail.com>
+Date: Tue, 6 Jan 2015 11:36:03 -0700
+Message-ID: <CANLsYkz_tx0MAnssO1JmgGzeaj12oU64FJjiKKyEOyXuUKk8jQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: vexpress: bindings: Add generic PD awareness to the
+ spc controller
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 10:17 AM, Erik Grinaker <erik@bengler.no> wrote:
->
->> On 06 Jan 2015, at 17:20, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> On Tue, 2015-01-06 at 16:11 +0000, Erik Grinaker wrote:
->>>> On 06 Jan 2015, at 16:04, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>>> On Tue, 2015-01-06 at 15:14 +0000, Erik Grinaker wrote:
->>>>> (CCing Yuchung, as his name comes up in the relevant commits)
->>>>>
->>>>> After upgrading from Ubuntu 12.04.5 to 14.04.1 we have begun seeing
->>>>> intermittent TCP connection hangs for HTTP image requests against
->>>>> Amazon S3. 3-5% of requests will suddenly stall in the middle of the
->>>>> transfer before timing out. We see this problem across a range of
->>>>> servers, in several data centres and networks, all located in Norway.
->>>>>
->>>>> A packet dump [1] shows repeated ACK retransmits for some of the
-TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
-
-I am trying to understand the problem. Could you confirm that it's the
-HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
-from the receiver (your host)?
-
-btw I suspect some middleboxes are stripping SACKOK options from your
-SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
-
-
-
->>>>> requests. Using Ubuntu mainline kernels, we found the problem to have
->>>>> been introduced between 3.11.10 and 3.12.0, possibly in
->>>>> 0f7cc9a3c2bd89b15720dbf358e9b9e62af27126. The problem is also present
->>>>> in 3.18.1. Disabling tcp_window_scaling seems to solve it, but has
->>>>> obvious drawbacks for transfer speeds. Other sysctls do not seem to
->>>>> affect it.
->>>>>
->>>>> I am not sure if this is fundamentally a kernel bug or a network
->>>>> issue, but we did not see this problem with older kernels.
->>>>>
->>>>> [1] http://abstrakt.bengler.no/tcp-issues-s3.pcap.bz2
->>>>
->>>>
->>>> CC netdev
->>>>
->>>> This looks like the bug we fixed here :
->>>>
->>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=39bb5e62867de82b269b07df900165029b928359
->>>
->>> Has that patch gone into a release? Because the problem persists with 3.18.1.
+On 6 January 2015 at 10:02, Rob Herring <robherring2@gmail.com> wrote:
+> On Tue, Jan 6, 2015 at 10:45 AM,  <mathieu.poirier@linaro.org> wrote:
+>> From: Mathieu Poirier <mathieu.poirier@linaro.org>
 >>
->> Patch is in 3.18.1 yes.
+>> Among other things, the serial power controller (SPC) controls power to
+>> the A7 and A15 clusters.  Theses clusters also happen to contains the
+>> coresight tracers used for HW assisted tracing.
 >>
->> So thats a separate issue.
+>> By modellling these to power domains in a way that is comprehensible to
+>> the generic power domain sub-system and using the runtime PM API in the
+>> coresight drivers, we can prevent power to the domains from being
+>> turned off while tracing related operations are still pending.
 >>
->> Can you confirm pcap was taken at receiver (195.159.221.106), not sender
->> (54.231.136.74) , and on which host is running the 'buggy kernel' ?
->
-> Yes, pcap was taken on receiver (195.159.221.106).
->
->> If the sender is broken, changing the kernel on receiver wont help.
+>> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+>> ---
+>>  .../bindings/arm/vexpress-power-controller.txt     | 54 ++++++++++++++++++++++
+>>  1 file changed, 54 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
 >>
->> BTW not using sack (on 54.231.132.98) is terrible for performance in
->> lossy environments.
+>> diff --git a/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+>> new file mode 100644
+>> index 000000000000..3af5624dc5cb
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+>> @@ -0,0 +1,54 @@
+>> +ARM Versatile Express Power Controller
+>> +--------------------------------------
+>> +
+>> +This binding models the serial power controller (SPC) in a way that is
+>> +intelligible to the generic power domain subsystem and in accordance
+>> +with the guidelines from:
+>> +
+>> +Documentation/devicetree/bindings/power/power_domain.txt
+>> +
+>> +The binding doesn't have a '<reg>' property as the base address for HW
+>> +access is provided by the vexpress-scc sub-system.
+>> +
+>> +Required node properties:
+>> +- compatible value : = "arm,vexpress-power-controller";
+>> +- #power-domain-cells : = Number of cells in a PM domain specifier, as
+>> +  specified in "power_domain.txt" referenced above.
+>> +
+>> +Example:
+>> +       A7_A15_cluster_pd: A7-A15-cluster-pd {
 >
-> It may well be that the sender is broken; however, the sender is Amazon S3, so I do not have any control over it. And in any case, the problem goes away with 3.11.10 on receiver, but persists with 3.12.0 (or later) on receiver, so there must be some change in 3.12.0 which has caused this to trigger.
+> This is more a description of the power domain than the power
+> controller IP block.
+
+This one is a little tricky - the controller itself (SPC) is accessed
+via registers mapped by another driver (SCC) and have two completely
+separate files.  The SPC driver itself is not DT'ed, simply because it
+doesn't have too,  hence writing things the way I did.
+
+I will ask the vexpress maintainers where they want to see this code
+going.  Would you accept this binding as part of the existing
+"arm,vexpress-sysreg" [1] or even "arm,vexpress-scc" [2]?
+
+[1]. Documentation/devicetree/bindings/arm/vexpress-sysreg.txt
+[2]. Documentation/devicetree/bindings/arm/vexpress-scc.txt
+
 >
-> If you are confident that the problem is with Amazon, I can get in touch with their engineering department.
+>> +               compatible = "arm,vexpress-power-controller";
+>> +               #power-domain-cells = <1>;
+>
+> You need to define what goes in the cell. That is specific to the
+> power controller. It could be generic in that N corresponds to power
+> domain N in the controller if the controller is generic in that way
+> (i.e. all the register accesses are just indexed).
+
+That is exactly how things are - one controller and two power domains.
+Based on what the generic power domain code does #power-domain-cells
+is the argument indicating what domain a device should be added to.
+>From what I read this is also how things are (sparsely) explained in
+"power_domain.txt".  As such I'm not exactly sure of what you'd like
+to see modified - enlightenment would be appreciated.
+
+>
+>> +        };
+>> +
+>> +       ....
+>> +
+>> +       ptm@0,2201d000 {
+>
+> Drop the comma.
+>
+>> +               compatible = "arm,coresight-etm3x", "arm,primecell";
+>> +               reg = <0 0x2201d000 0 0x1000>;
+>> +
+>> +               cpu = <&cpu1>;
+>> +               clocks = <&oscclk6a>;
+>> +               clock-names = "apb_pclk";
+>> +               power-domains = <&A7_A15_cluster_pd 0>;
+>> +               port {
+>> +                       ptm1_out_port: endpoint {
+>> +                               remote-endpoint = <&funnel_in_port1>;
+>> +                       };
+>> +               };
+>> +       };
+>> +
+>> +       etm@0,2203c000 {
+>
+> ditto
+>
+>> +               compatible = "arm,coresight-etm3x", "arm,primecell";
+>> +               reg = <0 0x2203c000 0 0x1000>;
+>> +
+>> +               cpu = <&cpu2>;
+>> +               clocks = <&oscclk6a>;
+>> +               clock-names = "apb_pclk";
+>> +               power-domains = <&A7_A15_cluster_pd 1>;
+>> +               port {
+>> +                       etm0_out_port: endpoint {
+>> +                               remote-endpoint = <&funnel_in_port2>;
+>> +                       };
+>> +               };
+>> +       };
+>> --
+>> 1.9.1
+>>
