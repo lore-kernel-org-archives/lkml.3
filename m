@@ -1,151 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459AbbAFGij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 01:38:39 -0500
-Received: from mail-bn1bon0086.outbound.protection.outlook.com ([157.56.111.86]:53882
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751843AbbAFGih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 01:38:37 -0500
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Soren Brinkmann <sorenb@xilinx.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>
-CC: "wg@grandegger.com" <wg@grandegger.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4] can: Convert to runtime_pm
-Thread-Topic: [PATCH v4] can: Convert to runtime_pm
-Thread-Index: AQHQHwHS0g8srEE1sk2hKt6qk1yee5yys/lQ
-Date: Tue, 6 Jan 2015 06:23:51 +0000
-References: <58f37b6fd9104ce185c413c473fe047b@BY2FFO11FD050.protection.gbl>
- <20141223224308.GC4611@xsjandreislx>
-In-Reply-To: <20141223224308.GC4611@xsjandreislx>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.96.253]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21226.005
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <7324bcf422d141f0b09f0cc0e8352479@BN1BFFO11FD005.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(377424004)(377454003)(189002)(13464003)(24454002)(51704005)(2950100001)(53416004)(23676002)(21056001)(50986999)(4396001)(76176999)(64706001)(86362001)(92726002)(107046002)(54356999)(2656002)(87936001)(102836002)(46102003)(47776003)(99396003)(92566001)(106466001)(19580395003)(33646002)(2501002)(31966008)(19580405001)(108616004)(74316001)(62966003)(50466002)(20776003)(106116001)(120916001)(6806004)(104016003)(77156002)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB063;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB063;
-X-Forefront-PRVS: 0448A97BF2
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 06:23:55.6581
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1BFFO11HUB063
+	id S1753084AbbAFG3c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 01:29:32 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:55388 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbbAFG3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 01:29:31 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-11-54ab80c8a7f5
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 1/2] f2fs: get rid of kzalloc in
+ __recover_inline_status
+Date: Tue, 06 Jan 2015 14:28:43 +0800
+Message-id: <009301d0297a$1fc55780$5f500680$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AdApd8pnKTFd1q9SQcOcO0p26hj14Q==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd0TDatDDK5+l7O4tq+RyeLJ+lnM
+	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxuK1E5gL
+	DglV7J4+gaWBsZ2/i5GTQ0LARGJ721VWCFtM4sK99WxdjFwcQgKLGCVeH7/FDuH8YJR48u0O
+	I0gVm4CKxPKO/0wgtoiAl8Sk/SdYQGxmAQ+Jxo7vYJOEBUIkXv18xwZiswioSqx90QBm8wpY
+	SkyacIQZwhaU+DH5HlSvlsT6nceZIGx5ic1r3jJDXKQgsePsa0aIXXoS/55OZIWoEZfYeOQW
+	ywRGgVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc1M+kdjCu
+	bLA4xCjAwajEw+txYmWIEGtiWXFl7iFGCQ5mJRHec7WrQ4R4UxIrq1KL8uOLSnNSiw8xSnOw
+	KInzKtm3hQgJpCeWpGanphakFsFkmTg4pYBh7h0o8vGUg9u3/+YT44ovNCdNtyws++oZIang
+	avOp/+W6wLcbG1nW7c6btp9n9rPba17Mkul/5+nSqh96u9X0FM+ukCVzpnzpZJo7M2hXuxrP
+	njK1+RkfLY/EPw2bsVBlr6e/9J8Nnrtm14u5n7m8WWSrHUflrDjFjRaCtyYc/dEcuFVmqpCH
+	EktxRqKhFnNRcSIAzjzjP2YCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t066clZ1010805
 
-Hi Marc,
+We use kzalloc to allocate memory in __recover_inline_status, and use this
+all-zero memory to check the inline date content of inode page by comparing
+them. This is low effective and not needed, let's check inline date content
+directly.
 
-        Could you please  provide your feedback on this patch ?
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/inode.c | 27 +++++++++++----------------
+ 1 file changed, 11 insertions(+), 16 deletions(-)
 
-@Soren : Will update the driver with your comments during next version of the patch.
-
-Regards,
-Kedar.
-
------Original Message-----
-From: S√∂ren Brinkmann [mailto:soren.brinkmann@xilinx.com]
-Sent: Wednesday, December 24, 2014 4:13 AM
-To: Appana Durga Kedareswara Rao
-Cc: wg@grandegger.com; mkl@pengutronix.de; Michal Simek; grant.likely@linaro.org; linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Appana Durga Kedareswara Rao
-Subject: Re: [PATCH v4] can: Convert to runtime_pm
-
-On Tue, 2014-12-23 at 05:55PM +0530, Kedareswara rao Appana wrote:
-> Instead of enabling/disabling clocks at several locations in the
-> driver, use the runtime_pm framework. This consolidates the actions
-> for runtime PM in the appropriate callbacks and makes the driver more
-> readable and mantainable.
->
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> ---
-> Chnages for v4:
->  - Updated with the review comments.
-> Changes for v3:
->   - Converted the driver to use runtime_pm.
-> Changes for v2:
->   - Removed the struct platform_device* from suspend/resume
->     as suggest by Lothar.
->
->  drivers/net/can/xilinx_can.c |  123
-> +++++++++++++++++++++++++-----------------
->  1 files changed, 74 insertions(+), 49 deletions(-)
->
-> diff --git a/drivers/net/can/xilinx_can.c
-> b/drivers/net/can/xilinx_can.c index 6c67643..c71f683 100644
-> --- a/drivers/net/can/xilinx_can.c
-> +++ b/drivers/net/can/xilinx_can.c
-> @@ -32,6 +32,7 @@
->  #include <linux/can/dev.h>
->  #include <linux/can/error.h>
->  #include <linux/can/led.h>
-> +#include <linux/pm_runtime.h>
->
->  #define DRIVER_NAME  "xilinx_can"
->
-> @@ -138,7 +139,7 @@ struct xcan_priv {
->       u32 (*read_reg)(const struct xcan_priv *priv, enum xcan_reg reg);
->       void (*write_reg)(const struct xcan_priv *priv, enum xcan_reg reg,
->                       u32 val);
-> -     struct net_device *dev;
-> +     struct device *dev;
->       void __iomem *reg_base;
->       unsigned long irq_flags;
->       struct clk *bus_clk;
-> @@ -842,6 +843,13 @@ static int xcan_open(struct net_device *ndev)
->       struct xcan_priv *priv = netdev_priv(ndev);
->       int ret;
->
-> +     ret = pm_runtime_get_sync(priv->dev);
-> +     if (ret < 0) {
-> +             netdev_err(ndev, "%s: pm_runtime_get failed\r(%d)\n\r",
-
-Does this create the intended output? I haven't seen '\r' anywhere else.
-Shouldn't this simply be:
-        netdev_err(ndev, "%s: pm_runtime_get failed (%d)\n",
-
-[...]
-> @@ -934,27 +927,20 @@ static int xcan_get_berr_counter(const struct net_device *ndev,
->       struct xcan_priv *priv = netdev_priv(ndev);
->       int ret;
->
-> -     ret = clk_prepare_enable(priv->can_clk);
-> -     if (ret)
-> -             goto err;
-> -
-> -     ret = clk_prepare_enable(priv->bus_clk);
-> -     if (ret)
-> -             goto err_clk;
-> +     ret = pm_runtime_get_sync(priv->dev);
-> +     if (ret < 0) {
-> +             netdev_err(ndev, "%s: pm_runtime_get failed\r(%d)\n\r",
-
-ditto
-
-        S√∂ren
+diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
+index 3a8958d..8be0fd5 100644
+--- a/fs/f2fs/inode.c
++++ b/fs/f2fs/inode.c
+@@ -67,29 +67,25 @@ static void __set_inode_rdev(struct inode *inode, struct f2fs_inode *ri)
+ 	}
+ }
+ 
+-static int __recover_inline_status(struct inode *inode, struct page *ipage)
++static void __recover_inline_status(struct inode *inode, struct page *ipage)
+ {
+ 	void *inline_data = inline_data_addr(ipage);
++	__le32 *start = inline_data;
++	__le32 *end = start + MAX_INLINE_DATA / sizeof(__le32);
+ 	struct f2fs_inode *ri;
+-	void *zbuf;
+-
+-	zbuf = kzalloc(MAX_INLINE_DATA, GFP_NOFS);
+-	if (!zbuf)
+-		return -ENOMEM;
+-
+-	if (!memcmp(zbuf, inline_data, MAX_INLINE_DATA)) {
+-		kfree(zbuf);
+-		return 0;
+-	}
+-	kfree(zbuf);
+ 
++	while (start < end)
++		if (*start++)
++			goto recover;
++	return;
++recover:
+ 	f2fs_wait_on_page_writeback(ipage, NODE);
+ 	set_inode_flag(F2FS_I(inode), FI_DATA_EXIST);
+ 
+ 	ri = F2FS_INODE(ipage);
+ 	set_raw_inline(F2FS_I(inode), ri);
+ 	set_page_dirty(ipage);
+-	return 0;
++	return;
+ }
+ 
+ static int do_read_inode(struct inode *inode)
+@@ -98,7 +94,6 @@ static int do_read_inode(struct inode *inode)
+ 	struct f2fs_inode_info *fi = F2FS_I(inode);
+ 	struct page *node_page;
+ 	struct f2fs_inode *ri;
+-	int err = 0;
+ 
+ 	/* Check if ino is within scope */
+ 	if (check_nid_range(sbi, inode->i_ino)) {
+@@ -142,7 +137,7 @@ static int do_read_inode(struct inode *inode)
+ 
+ 	/* check data exist */
+ 	if (f2fs_has_inline_data(inode) && !f2fs_exist_data(inode))
+-		err = __recover_inline_status(inode, node_page);
++		__recover_inline_status(inode, node_page);
+ 
+ 	/* get rdev by using inline_info */
+ 	__get_inode_rdev(inode, ri);
+@@ -152,7 +147,7 @@ static int do_read_inode(struct inode *inode)
+ 	stat_inc_inline_inode(inode);
+ 	stat_inc_inline_dir(inode);
+ 
+-	return err;
++	return 0;
+ }
+ 
+ struct inode *f2fs_iget(struct super_block *sb, unsigned long ino)
+-- 
+2.2.1
 
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
