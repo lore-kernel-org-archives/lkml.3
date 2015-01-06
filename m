@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134AbbAFNoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:44:46 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46984 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755228AbbAFNoo (ORCPT
+	id S1755375AbbAFNoV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:44:21 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:65163 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344AbbAFNoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:44:44 -0500
-Date: Tue, 6 Jan 2015 13:44:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andy Yan <andy.yan@rock-chips.com>
-Cc: airlied@linux.ie, Philipp Zabel <p.zabel@pengutronix.de>, heiko@sntech.de,
-        fabio.estevam@freescale.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
-        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
-Subject: Re: [PATCH v18 04/12] drm: imx: imx-hdmi: split phy configuration to
- platform driver
-Message-ID: <20150106134407.GF12302@n2100.arm.linux.org.uk>
-References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
- <1417760750-17047-1-git-send-email-andy.yan@rock-chips.com>
+	Tue, 6 Jan 2015 08:44:20 -0500
+Date: Tue, 6 Jan 2015 15:44:15 +0200
+From: Asaf Vertz <asaf.vertz@tandemg.com>
+To: agk@redhat.com
+Cc: snitzer@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] dm bufio: fix time comparison
+Message-ID: <20150106134415.GA15873@ubuntu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417760750-17047-1-git-send-email-andy.yan@rock-chips.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 02:25:50PM +0800, Andy Yan wrote:
-> hdmi phy configuration is platform specific, which can be adusted
+To be future-proof and for better readability the time comparison
+modified to use time_after_eq() instead of plain, error-prone math.
 
-Minor typo: adjusted
+Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+---
+ drivers/md/dm-bufio.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index c33b497..86dbbc7 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -11,6 +11,7 @@
+ #include <linux/device-mapper.h>
+ #include <linux/dm-io.h>
+ #include <linux/slab.h>
++#include <linux/jiffies.h>
+ #include <linux/vmalloc.h>
+ #include <linux/shrinker.h>
+ #include <linux/module.h>
+@@ -1739,7 +1740,7 @@ static unsigned get_max_age_hz(void)
+ 
+ static bool older_than(struct dm_buffer *b, unsigned long age_hz)
+ {
+-	return (jiffies - b->last_accessed) >= age_hz;
++	return time_after_eq(jiffies, b->last_accessed + age_hz);
+ }
+ 
+ static void __evict_old_buffers(struct dm_bufio_client *c, unsigned long age_hz)
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.7.0.4
+
