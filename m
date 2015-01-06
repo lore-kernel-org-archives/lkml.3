@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278AbbAFXjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 18:39:12 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667AbbAFXjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 18:39:10 -0500
-Message-ID: <54AC7216.30001@nod.at>
-Date: Wed, 07 Jan 2015 00:39:02 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752529AbbAFXlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 18:41:32 -0500
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:57222 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbbAFXlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 18:41:31 -0500
+Message-ID: <54AC72AF.5090609@landley.net>
+Date: Tue, 06 Jan 2015 17:41:35 -0600
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Aditya Kali <adityakali@google.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Rohit Jnagal <jnagal@google.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
-References: <1417744550-6461-1-git-send-email-adityakali@google.com> <1417744550-6461-9-git-send-email-adityakali@google.com> <548E17CE.8010704@nod.at> <CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com> <54AB15BD.8020007@nod.at> <87lhlgpyxk.fsf@x220.int.ebiederm.org> <CAGr1F2HSi_D07r2c5CKOsjSR1+58k9G2MrtACsd+HV6XKvJ7cA@mail.gmail.com> <54AB2992.6060707@nod.at> <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
-In-Reply-To: <CAGr1F2EGOUSEd3-G4PS0mq=9kU1nWG4CwHUOQaNUATepc11_Sw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] out out damn perl
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.01.2015 um 00:20 schrieb Aditya Kali:
-> I understand your point. But it will add some complexity to the code.
-> 
-> Before trying to make it work for non-unified hierarchy cases, I would
-> like to get a clearer idea.
-> What do you expect to be mounted when you run:
->   container:/ # mount -t cgroup none /sys/fs/cgroup/
-> from inside the container?
+From: Rob Landley <rob@landley.net>
 
-I expect cgroupfs to behave exactly as it would in the initial namespace.
-Such that the container can do with it whatever it wants.
-systemd mounts and manages cgroups on its own.
-Like for CONFIG_DEVPTS_MULTIPLE_INSTANCES.
+Commit e6023367d779 added perl back to the kernel build in -rc6.
+Replace 39 lines of perl with 4 lines of shell script.
 
-If a new cgroup namespace cannot provide a clean and autonomous cgroupfs
-instance it is fundamentally flawed.
-You cannot provide a namespace mechanism which depends on the host side
-that much.
-This will also horrible break container migrations between hosts.
-i.e. Migrate a container from a Ubuntu host to a Fedora (systemd!) host.
+Signed-off-by: Rob Landley <rob@landley.net>
+---
 
-> Note that cgroup-namespace wont be able to change the way cgroups are
-> mounted .. i.e., if say cpu and cpuacct subsystems are mounted
-> together at a single mount-point, then we cannot mount them any other
-> way (inside a container or outside). This restriction exists today and
-> cgroup-namespaces won't change that.
+ arch/x86/boot/compressed/Makefile |    6 ++--
+ arch/x86/tools/calc_run_size.pl   |   39 ----------------------------
+ 2 files changed, 4 insertions(+), 41 deletions(-)
 
-Why can't cgroup namespace change this?
-I think of cgroup namespace as a new and clean cgroupfs instance which inherits
-all limits from the outside.
+Commit e6023367d779 added perl back to the kernel build. KILL IT WITH FIRE.
 
-> So, If on the host we have:
-> root@adityakali-vm2:/sys/fs/cgroup# cat /proc/mounts | grep cgroup
-> tmpfs /sys/fs/cgroup tmpfs rw,relatime 0 0
-> cgroup /sys/fs/cgroup/cpu cgroup rw,relatime,cpuset,cpu,cpuacct 0 0
-> cgroup /sys/fs/cgroup/mem cgroup rw,relatime,memory,hugetlb 0 0
-> cgroup /sys/fs/cgroup/rest cgroup
-> rw,relatime,devices,freezer,net_cls,blkio,perf_event,net_prio 0 0
-> 
-> And inside the container we want each subsystem to be on its own
-> mount-point, then it will fail. Do you think even then its useful to
-> support virtualizing paths for non-unified hierarchies?
-
-As I've stated above I expect from cgroup namespaces a clean and sane
-cgroupfs instance no matter how the outer mounts are.
-
-Thanks,
-//richard
+--- linux/arch/x86/boot/compressed/Makefile
++++ linux/arch/x86/boot/compressed/Makefile
+@@ -89,8 +76,10 @@
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+ suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+ 
+-RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
+-	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
++RUN_SIZE = $(shell NUM='\([0-9a-fA-F]*[ \t]*\)'; $(OBJDUMP) -h vmlinux | \
++sed -n 's/^[ \t0-9]*.b[sr][sk][ \t]*'"$$NUM$$NUM$$NUM$$NUM"'.*/\1\4/p' | \
++xargs | while read a b c d; do [ "$$b" != "$$d" ] && exit 1; \
++expr $$(printf "%d + %d + %d" 0x$$a 0x$$b 0x$$c); done)
+ quiet_cmd_mkpiggy = MKPIGGY $@
+       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+ 
+--- linux/arch/x86/tools/calc_run_size.pl
++++ /dev/null
+@@ -1,39 +0,0 @@
+-#!/usr/bin/perl
+-#
+-# Calculate the amount of space needed to run the kernel, including room for
+-# the .bss and .brk sections.
+-#
+-# Usage:
+-# objdump -h a.out | perl calc_run_size.pl
+-use strict;
+-
+-my $mem_size = 0;
+-my $file_offset = 0;
+-
+-my $sections=" *[0-9]+ \.(?:bss|brk) +";
+-while (<>) {
+-	if (/^$sections([0-9a-f]+) +(?:[0-9a-f]+ +){2}([0-9a-f]+)/) {
+-		my $size = hex($1);
+-		my $offset = hex($2);
+-		$mem_size += $size;
+-		if ($file_offset == 0) {
+-			$file_offset = $offset;
+-		} elsif ($file_offset != $offset) {
+-			# BFD linker shows the same file offset in ELF.
+-			# Gold linker shows them as consecutive.
+-			next if ($file_offset + $mem_size == $offset + $size);
+-
+-			printf STDERR "file_offset: 0x%lx\n", $file_offset;
+-			printf STDERR "mem_size: 0x%lx\n", $mem_size;
+-			printf STDERR "offset: 0x%lx\n", $offset;
+-			printf STDERR "size: 0x%lx\n", $size;
+-
+-			die ".bss and .brk are non-contiguous\n";
+-		}
+-	}
+-}
+-
+-if ($file_offset == 0) {
+-	die "Never found .bss or .brk file offset\n";
+-}
+-printf("%d\n", $mem_size + $file_offset);
