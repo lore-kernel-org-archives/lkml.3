@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbbAFRsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:48:45 -0500
-Received: from mga09.intel.com ([134.134.136.24]:30923 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754492AbbAFRso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:48:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="508249580"
-Message-ID: <54AC1FFB.7030504@linux.intel.com>
-Date: Tue, 06 Jan 2015 09:48:43 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
- to arch_prctl
-References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net> <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com> <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com> <20150106040428.GR2915@two.firstfloor.org> <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
-In-Reply-To: <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1756184AbbAFRtJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:49:09 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53874 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142AbbAFRtG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 12:49:06 -0500
+From: Mark Salyzyn <salyzyn@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: joe@perches.com, Mark Salyzyn <salyzyn@android.com>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH v2 1/3] pstore: use scnprintf
+Date: Tue,  6 Jan 2015 09:48:44 -0800
+Message-Id: <1420566526-30471-1-git-send-email-salyzyn@android.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 09:59 PM, Andy Lutomirski wrote:
-> But I decided to check whether libmpx links against glibc, and I can't
-> find sources for it at all.  Do they exist?  Is there any code with
-> source available that invokes this prctl?
-> 
-> If not, I personally have very little sympathy for the argument that a
-> binary buried in the depths of the Intel SDE would need to change if
-> we switched to using arch_prctl.  And I think that it should issue the
-> syscall itself without using glibc, in which case the syscall wrapper
-> issue is moot.
+No guarantees that the names will not exceed the
+name buffer with future adjustments.
 
-Andy, as I mentioned previously, there is code in a GCC branch that uses
-the existing prctl().  It's also been posted for review to one of the
-GCC mailing lists.  I've been told that it will be in gcc 5.0.
+Signed-off-by: Mark Salyzyn <salyzyn@android.com>
+---
+ fs/pstore/inode.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
-The Intel SDE does not use the prctl() in any way that I know of.
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 5041660..1948567 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -338,32 +338,35 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+-		sprintf(name, "dmesg-%s-%lld%s", psname, id,
+-						compressed ? ".enc.z" : "");
++		scnprintf(name, sizeof(name), "dmesg-%s-%lld%s",
++			  psname, id, compressed ? ".enc.z" : "");
+ 		break;
+ 	case PSTORE_TYPE_CONSOLE:
+-		sprintf(name, "console-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "console-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_FTRACE:
+-		sprintf(name, "ftrace-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "ftrace-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+-		sprintf(name, "mce-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "mce-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_RTAS:
+-		sprintf(name, "rtas-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "rtas-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_OF:
+-		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "powerpc-ofw-%s-%lld",
++		          psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_COMMON:
+-		sprintf(name, "powerpc-common-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "powerpc-common-%s-%lld",
++			  psname, id);
+ 		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+-		sprintf(name, "unknown-%s-%lld", psname, id);
++		scnprintf(name, sizeof(name), "unknown-%s-%lld", psname, id);
+ 		break;
+ 	default:
+-		sprintf(name, "type%d-%s-%lld", type, psname, id);
++		scnprintf(name, sizeof(name), "type%d-%s-%lld",
++			  type, psname, id);
+ 		break;
+ 	}
+ 
+-- 
+2.2.0.rc0.207.ga3a616c
+
