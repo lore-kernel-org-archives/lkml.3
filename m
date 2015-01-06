@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054AbbAFV21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:28:27 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:54826 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932935AbbAFV1u (ORCPT
+	id S933026AbbAFV14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:27:56 -0500
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:49239 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933000AbbAFV1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:27:50 -0500
+	Tue, 6 Jan 2015 16:27:52 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
@@ -14,11 +14,10 @@ Cc: linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
         lizefan@huawei.com, cgroups@vger.kernel.org, linux-mm@kvack.org,
         mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com,
         david@fromorbit.com, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 44/45] mpage: make __mpage_writepage() honor cgroup writeback
-Date: Tue,  6 Jan 2015 16:26:21 -0500
-Message-Id: <1420579582-8516-45-git-send-email-tj@kernel.org>
+        linux-ext4@vger.kernel.org
+Subject: [PATCH 45/45] ext2: enable cgroup writeback support
+Date: Tue,  6 Jan 2015 16:26:22 -0500
+Message-Id: <1420579582-8516-46-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420579582-8516-1-git-send-email-tj@kernel.org>
 References: <1420579582-8516-1-git-send-email-tj@kernel.org>
@@ -26,50 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__mpage_writepage() is used to implement mpage_writepages() which in
-turn is used for ->writepages() of various filesystems.  All writeback
-logic is now updated to handle cgroup writeback and the block cgroup
-to issue IOs for is encoded in writeback_control and can be retrieved
-using wbc_blkcg_css(); however, __mpage_writepage() currently ignores
-the blkcg indicated by wbc and issues all bio's without explicit blkcg
-association.
+Writeback now supports cgroup writeback and the generic writeback,
+buffer, libfs, and mpage helpers that ext2 uses are all updated to
+work with cgroup writeback.
 
-This patch updates __mpage_writepage() so that the issued bio's are
-associated with wbc_blkcg_css().
+This patch enables cgroup writeback for ext2 by adding
+FS_CGROUP_WRITEBACK to its ->fs_flags.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-ext4@vger.kernel.org
 ---
- fs/mpage.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ext2/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/mpage.c b/fs/mpage.c
-index 587c7ed..84921b2 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -595,6 +595,8 @@ page_is_mapped:
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index ae55fdd..dc3f27e 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1546,7 +1546,7 @@ static struct file_system_type ext2_fs_type = {
+ 	.name		= "ext2",
+ 	.mount		= ext2_mount,
+ 	.kill_sb	= kill_block_super,
+-	.fs_flags	= FS_REQUIRES_DEV,
++	.fs_flags	= FS_REQUIRES_DEV | FS_CGROUP_WRITEBACK,
+ };
+ MODULE_ALIAS_FS("ext2");
  
- alloc_new:
- 	if (bio == NULL) {
-+		struct cgroup_subsys_state *blkcg_css;
-+
- 		if (first_unmapped == blocks_per_page) {
- 			if (!bdev_write_page(bdev, blocks[0] << (blkbits - 9),
- 								page, wbc)) {
-@@ -606,6 +608,10 @@ alloc_new:
- 				bio_get_nr_vecs(bdev), GFP_NOFS|__GFP_HIGH);
- 		if (bio == NULL)
- 			goto confused;
-+
-+		blkcg_css = wbc_blkcg_css(wbc);
-+		if (blkcg_css)
-+			bio_associate_blkcg(bio, blkcg_css);
- 	}
- 
- 	/*
 -- 
 2.1.0
 
