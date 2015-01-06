@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228AbbAFKyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:54:32 -0500
-Received: from mail.kapsi.fi ([217.30.184.167]:43273 "EHLO mail.kapsi.fi"
+	id S1755202AbbAFKyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:54:13 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:45489 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183AbbAFKyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:54:11 -0500
+	id S1755180AbbAFKyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 05:54:10 -0500
 From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-tegra@vger.kernel.org, wni@nvidia.com,
         Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v5 1/3] of: Add descriptions of thermtrip properties to Tegra PMC bindings
-Date: Tue,  6 Jan 2015 12:52:56 +0200
-Message-Id: <1420541578-27968-2-git-send-email-mikko.perttunen@kapsi.fi>
+Subject: [PATCH v5 2/3] ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
+Date: Tue,  6 Jan 2015 12:52:57 +0200
+Message-Id: <1420541578-27968-3-git-send-email-mikko.perttunen@kapsi.fi>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1420541578-27968-1-git-send-email-mikko.perttunen@kapsi.fi>
 References: <1420541578-27968-1-git-send-email-mikko.perttunen@kapsi.fi>
@@ -26,59 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mikko Perttunen <mperttunen@nvidia.com>
 
-Hardware-triggered thermal reset requires configuring the I2C
-reset procedure. This configuration is read from the device tree,
-so document the relevant properties in the binding documentation.
+This adds the required information to reset the board during an overheating
+situation to the Jetson TK1 device tree. The thermal reset is handled by the
+PMC by sending an I2C message to the PMIC. The entries specify the I2C
+message to be sent.
 
 Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
 ---
- .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      | 26 ++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-index 68ac65f..2fd5051 100644
---- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-+++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
-@@ -47,6 +47,23 @@ Required properties when nvidia,suspend-mode=<0>:
-   sleep mode, the warm boot code will restore some PLLs, clocks and then
-   bring up CPU0 for resuming the system.
- 
-+Hardware-triggered thermal reset:
-+On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode exists,
-+hardware-triggered thermal reset will be enabled.
+diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+index f46a789..be36bb4 100644
+--- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
++++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+@@ -1672,6 +1672,13 @@
+ 		nvidia,core-pwr-off-time = <61036>;
+ 		nvidia,core-power-req-active-high;
+ 		nvidia,sys-clock-req-active-high;
 +
-+Required properties for hardware-triggered thermal reset (inside 'i2c-thermtrip'):
-+- nvidia,i2c-controller-id : ID of I2C controller to send poweroff command to. Valid values are
-+                             described in section 9.2.148 "APBDEV_PMC_SCRATCH53_0" of the
-+                             Tegra K1 Technical Reference Manual.
-+- nvidia,bus-addr : Bus address of the PMU on the I2C bus
-+- nvidia,reg-addr : I2C register address to write poweroff command to
-+- nvidia,reg-data : Poweroff command to write to PMU
-+
-+Optional properties for hardware-triggered thermal reset (inside 'i2c-thermtrip'):
-+- nvidia,pinmux-id : Pinmux used by the hardware when issuing poweroff command.
-+                     Defaults to 0. Valid values are described in section 12.5.2
-+                     "Pinmux Support" of the Tegra4 Technical Reference Manual.
-+
- Example:
- 
- / SoC dts including file
-@@ -69,6 +86,15 @@ pmc@7000f400 {
- / Tegra board dts file
- {
- 	...
-+	pmc@7000f400 {
 +		i2c-thermtrip {
 +			nvidia,i2c-controller-id = <4>;
 +			nvidia,bus-addr = <0x40>;
 +			nvidia,reg-addr = <0x36>;
 +			nvidia,reg-data = <0x2>;
 +		};
-+	};
-+	...
- 	clocks {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
+ 	};
+ 
+ 	/* Serial ATA */
 -- 
 2.1.3
 
