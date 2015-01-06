@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbbAFPCf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:02:35 -0500
-Received: from sainfoin-out.extra.cea.fr ([132.167.192.145]:59332 "EHLO
-	sainfoin-out.extra.cea.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849AbbAFPCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:02:20 -0500
-Date: Tue, 6 Jan 2015 16:02:02 +0100
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-CC: Julia Lawall <julia.lawall@lip6.fr>, Latchesar Ionkov <lucho@ionkov.net>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        <kernel-janitors@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ron Minnich <rminnich@sandia.gov>,
-        <v9fs-developer@lists.sourceforge.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [V9fs-developer] [PATCH 1/8] fs/9p: Deletion of unnecessary
- checks before the function call "p9_client_clunk"
-Message-ID: <20150106150202.GA31294@u-galfione>
-References: <54A01326.3050306@users.sourceforge.net>
- <54A06AB9.4020505@users.sourceforge.net> <20150105112206.GC15033@mwanda>
- <54AB02F3.5020308@users.sourceforge.net>
- <alpine.DEB.2.02.1501052239290.2025@localhost6.localdomain6>
- <54AB0844.5090405@users.sourceforge.net>
- <alpine.DEB.2.02.1501052257270.2025@localhost6.localdomain6>
- <20150106081253.GA22484@u-galfione> <20150106092719.GB22484@u-galfione>
- <54ABF260.9020904@users.sourceforge.net>
+	id S1755601AbbAFPDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:03:08 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:56428 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755380AbbAFPDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:03:06 -0500
+Date: Tue, 6 Jan 2015 10:02:50 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>, Leon Romanovsky <leon@leon.nu>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Dirty pages underflow on 3.14.23
+Message-ID: <20150106150250.GA26895@phnom.home.cmpxchg.org>
+References: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54ABF260.9020904@users.sourceforge.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SF Markus Elfring wrote on Tue, Jan 06, 2015 at 03:34:08PM +0100:
-> > Actually just seen that this precise example is fixed along with more
-> > similar code paths in subsequents (!) patchs of the set.
+On Mon, Jan 05, 2015 at 06:05:59PM -0500, Mikulas Patocka wrote:
+> Hi
 > 
-> Do you refer to my update suggestions with a subject like "One function
-> call less in v9fs_…" here?
-
-Yes. Looking at the patchset as a whole (and under the assumption that
-calling p9_client_clunk with NULL is harmful), your patchset first
-introduces many such calls then proceeds onto fixing them.
-
-Thinking a bit more, I think that instead of just changing the order of
-patches the cleanest way would be to submit this as "reworking jump
-labels, making NULL checks useless in the process".
-Still only looking at v9fs_create, with your patch#2 reflowing,
-p9_client_clunk can't be called with NULL unless a bug happened (either
-p9_client_fcreate or p9_client_walk returning non-error but leaving ofid
-or fid NULL), so it'd actually make sense to remove the quiet check in
-favor of the warn/stack dump check at this point.
-
-Is what I'm saying making sense?
-
-> > It could actually be interesting to see if we could get all such
-> > paths "fixed".
+> I would like to report a memory management bug where the dirty pages count 
+> underflowed.
 > 
-> Would you like to see any more specific source code clean-up?
-> Which kind of fine-tuning have you got in mind?
+> It happened after some time that the Dirty pages count underflowed, as can 
+> be seen in /proc/meminfo. The underflow condition was persistent, 
+> /proc/meminfo was showing the big value even when the system was 
+> completely idle. The counter never returned to zero.
+> 
+> The system didn't crash, but it became very slow - because of the big 
+> value in the "Dirty" field, lazy writing was not working anymore, any 
+> process that created a dirty page triggered immediate writeback, which 
+> slowed down the system very much. The only fix was to reboot the machine.
+> 
+> The kernel version where this happened is 3.14.23. The kernel is compiled 
+> without SMP and with peemption. The system is single-core 32-bit x86.
+> 
+> The bug probably happened during git pull or apt-get update, though one 
+> can't be sure that these commands caused it.
+> 
+> I see that 3.14.24 containes some fix for underflow (commit 
+> 6619741f17f541113a02c30f22a9ca22e32c9546, upstream commit 
+> abe5f972912d086c080be4bde67750630b6fb38b), but it doesn't seem that that 
+> commit fixes this condition. If you have a commit that could fix this, say 
+> it.
 
-I was really just thinking that if the code flow is thought out the if's
-can be removed harmlessly, but that it actually needs to be done the
-other way around.
-I honestly am not involved enough in kernel coding style changes or 9p
-code as a whole to suggest anything else, sorry :)
+That's an unrelated counter, but there is a known dirty underflow
+problem that was addressed in 87a7e00b206a ("mm: protect
+set_page_dirty() from ongoing truncation").  It should make it into
+the stable kernels in the near future.  Can you reproduce this issue?
 
 Thanks,
--- 
-Dominique Martinet,
-CEA
+Johannes
