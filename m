@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328AbbAFIFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:05:03 -0500
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:35646 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165AbbAFIFB (ORCPT
+	id S1754429AbbAFIIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:08:06 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30164 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbbAFIID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:05:01 -0500
+	Tue, 6 Jan 2015 03:08:03 -0500
+Date: Tue, 6 Jan 2015 11:07:36 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>,
+        Latchesar Ionkov <lucho@ionkov.net>, Ron Minnich <rminnich@sandia.gov>,
+        v9fs-developer@lists.sourceforge.net,
+        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH 1/8] fs/9p: Deletion of unnecessary checks before the
+ function call "p9_client_clunk"
+Message-ID: <20150106080736.GB14982@mwanda>
+References: <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net>
+ <54A01326.3050306@users.sourceforge.net>
+ <54A06AB9.4020505@users.sourceforge.net>
+ <20150105112206.GC15033@mwanda>
+ <54AB02F3.5020308@users.sourceforge.net>
 MIME-Version: 1.0
-Date: Tue, 6 Jan 2015 16:05:01 +0800
-Message-ID: <CADkvYHE9qhgwaN3KFXwHp+STCM6XuxE-zti_hXj9QTSgmAJMPQ@mail.gmail.com>
-Subject: ZRAM: scheduling while atomic 3.10.62
-From: Yingchun Li <sword.l.dragon@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AB02F3.5020308@users.sourceforge.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I encountered a BUG when use zram on my board, following is the message:
+On Mon, Jan 05, 2015 at 10:32:35PM +0100, SF Markus Elfring wrote:
+> > I assume this patch adds a bug.  You have tried to introduce several of these
+> > kinds of bugs.
+> 
+> Do any other contributors want to reject my update suggestions
+> around software components for "fs/9p"?
 
-[  120.351196] BUG: scheduling while atomic: Binder_3/230/0x00000003
-[  120.351806] Modules linked in: rdawfmac rda_cam_sensor(O) rda_ls(O)
-rda_gs(O) rda_ts(O) voc(O) vpu(O) galcore(O) rda_headset(O)
-[  120.353210] CPU: 0 PID: 230 Comm: Binder_3 Tainted: G        W  O
-3.10.62-01224-gcfffb36 #1
-[  120.354248] [<c001047d>] (unwind_backtrace+0x1/0x98) from
-[<c000ee93>] (show_stack+0xb/0xc)
-[  120.355285] [<c000ee93>] (show_stack+0xb/0xc) from [<c036c275>]
-(__schedule_bug+0x31/0x48)
-[  120.356323] [<c036c275>] (__schedule_bug+0x31/0x48) from
-[<c036f9c9>] (__schedule+0x275/0x2c8)
-[  120.357360] [<c036f9c9>] (__schedule+0x275/0x2c8) from [<c037044d>]
-(__down_write_nested+0x51/0xa4)
-[  120.358459] [<c037044d>] (__down_write_nested+0x51/0xa4) from
-[<c025ed2f>] (zram_slot_free_notify+0x13/0x2c)
-[  120.359680] [<c025ed2f>] (zram_slot_free_notify+0x13/0x2c) from
-[<c007a06d>] (swap_entry_free+0xd9/0x124)
-[  120.360900] [<c007a06d>] (swap_entry_free+0xd9/0x124) from
-[<c007ac5f>] (free_swap_and_cache+0x1f/0xc8)
-[  120.362060] [<c007ac5f>] (free_swap_and_cache+0x1f/0xc8) from
-[<c006ebe9>] (unmap_single_vma+0x1fd/0x45c)
-[  120.363220] [<c006ebe9>] (unmap_single_vma+0x1fd/0x45c) from
-[<c006f4e3>] (unmap_vmas+0x33/0x40)
-[  120.364318] [<c006f4e3>] (unmap_vmas+0x33/0x40) from [<c00716c7>]
-(unmap_region+0x73/0xfc)
-[  120.365356] [<c00716c7>] (unmap_region+0x73/0xfc) from [<c00728e7>]
-(do_munmap+0x177/0x244)
-[  120.366394] [<c00728e7>] (do_munmap+0x177/0x244) from [<c00729df>]
-(vm_munmap+0x2b/0x38)
-[  120.367370] [<c00729df>] (vm_munmap+0x2b/0x38) from [<c000cc41>]
-(ret_fast_syscall+0x1/0x46)
+Some of the 9p patches actually seem like bug fixes so I like those
+ones.  It would be better if the bug fixes had a correct changelog, of
+course.
 
-And I notice there is a similar post here:
+regards,
+dan carpenter
 
-https://lkml.org/lkml/2013/8/17/27
-
-And it has been fixed by mainline(by Commit a0c516cbfc74),and there is some
-other patches to optimize the patch(Commit f614a9f48ded).
-
-I just want to know is there any plan to back port the patchs to 3.10.y?
