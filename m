@@ -1,71 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbbAFJnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 04:43:47 -0500
-Received: from sainfoin-out.extra.cea.fr ([132.167.192.145]:47607 "EHLO
-	sainfoin-out.extra.cea.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbbAFJnl (ORCPT
+	id S1754263AbbAFJeK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:34:10 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:14128 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbbAFJeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 04:43:41 -0500
-X-Greylist: delayed 964 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 04:43:41 EST
-Date: Tue, 6 Jan 2015 10:27:19 +0100
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        <kernel-janitors@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ron Minnich <rminnich@sandia.gov>,
-        <v9fs-developer@lists.sourceforge.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [V9fs-developer] [PATCH 1/8] fs/9p: Deletion of unnecessary
- checks before the function call "p9_client_clunk"
-Message-ID: <20150106092719.GB22484@u-galfione>
-References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <54A01326.3050306@users.sourceforge.net>
- <54A06AB9.4020505@users.sourceforge.net> <20150105112206.GC15033@mwanda>
- <54AB02F3.5020308@users.sourceforge.net>
- <alpine.DEB.2.02.1501052239290.2025@localhost6.localdomain6>
- <54AB0844.5090405@users.sourceforge.net>
- <alpine.DEB.2.02.1501052257270.2025@localhost6.localdomain6>
- <20150106081253.GA22484@u-galfione>
+	Tue, 6 Jan 2015 04:34:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 06 Jan 2015 01:26:53 -0800
+Message-ID: <54ABAC09.4080306@nvidia.com>
+Date: Tue, 6 Jan 2015 17:34:01 +0800
+From: Vince Hsu <vinceh@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20150106081253.GA22484@u-galfione>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Lucas Stach <dev@lynxeye.de>, <swarren@wwwdotorg.org>, <gnurou@gmail.com>,
+        <bskeggs@redhat.com>, <martin.peres@free.fr>,
+        <seven@nimrod-online.com>, <samuel.pitoiset@gmail.com>,
+        <nouveau@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH nouveau 06/11] platform: complete the power up/down sequence
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com> <1419331204-26679-7-git-send-email-vinceh@nvidia.com> <1419427385.2179.13.camel@lynxeye.de> <549B79B2.6010301@nvidia.com> <20150105152552.GH12010@ulmo.nvidia.com>
+In-Reply-To: <20150105152552.GH12010@ulmo.nvidia.com>
+X-Originating-IP: [10.19.108.126]
+X-ClientProxiedBy: DRBGMAIL103.nvidia.com (10.18.16.22) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dominique Martinet wrote on Tue, Jan 06, 2015 at 09:12:53AM +0100:
-> Simple example, without even looking at the multiple possible
-> interactions with multiple clients hammering the server, can be taken
-> from v9fs_create in fs/9p/vfs_inode.c
-> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/fs/9p/vfs_inode.c?id=d8282ea05ad119247122de23db7d48ad6098cfa2#n652
-> 
-> jumping to label error from a failure in p9_client_fcreate (e.g. EPERM
-> or something perfectly valid) will, with your patch, call clunk with fid
-> == NULL and thus generate a stack trace, while it is a perfectly normal
-> code path that should only return to userspace with EPERM.
 
-Actually just seen that this precise example is fixed along with more
-similar code paths in subsequents (!) patchs of the set.
+On 01/05/2015 11:25 PM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Thu, Dec 25, 2014 at 10:42:58AM +0800, Vince Hsu wrote:
+>> On 12/24/2014 09:23 PM, Lucas Stach wrote:
+>>> Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
+>>>> This patch adds some missing pieces of the rail gaing/ungating sequence that
+>>>> can improve the stability in theory.
+>>>>
+>>>> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+>>>> ---
+>>>>   drm/nouveau_platform.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+>>>>   drm/nouveau_platform.h |  3 +++
+>>>>   2 files changed, 45 insertions(+)
+>>>>
+>>>> diff --git a/drm/nouveau_platform.c b/drm/nouveau_platform.c
+>>>> index 68788b17a45c..527fe2358fc9 100644
+>>>> --- a/drm/nouveau_platform.c
+>>>> +++ b/drm/nouveau_platform.c
+>>>> @@ -25,9 +25,11 @@
+>>>>   #include <linux/module.h>
+>>>>   #include <linux/platform_device.h>
+>>>>   #include <linux/of.h>
+>>>> +#include <linux/of_platform.h>
+>>>>   #include <linux/reset.h>
+>>>>   #include <linux/regulator/consumer.h>
+>>>>   #include <soc/tegra/fuse.h>
+>>>> +#include <soc/tegra/mc.h>
+>>>>   #include <soc/tegra/pmc.h>
+>>>>   #include "nouveau_drm.h"
+>>>> @@ -61,6 +63,9 @@ static int nouveau_platform_power_up(struct nouveau_platform_gpu *gpu)
+>>>>   	reset_control_deassert(gpu->rst);
+>>>>   	udelay(10);
+>>>> +	tegra_mc_flush(gpu->mc, gpu->swgroup, false);
+>>>> +	udelay(10);
+>>>> +
+>>>>   	return 0;
+>>>>   err_clamp:
+>>>> @@ -77,6 +82,14 @@ static int nouveau_platform_power_down(struct nouveau_platform_gpu *gpu)
+>>>>   {
+>>>>   	int err;
+>>>> +	tegra_mc_flush(gpu->mc, gpu->swgroup, true);
+>>>> +	udelay(10);
+>>>> +
+>>>> +	err = tegra_powergate_gpu_set_clamping(true);
+>>>> +	if (err)
+>>>> +		return err;
+>>>> +	udelay(10);
+>>>> +
+>>>>   	reset_control_assert(gpu->rst);
+>>>>   	udelay(10);
+>>>> @@ -91,6 +104,31 @@ static int nouveau_platform_power_down(struct nouveau_platform_gpu *gpu)
+>>>>   	return 0;
+>>>>   }
+>>>> +static int nouveau_platform_get_mc(struct device *dev,
+>>>> +		struct tegra_mc **mc, unsigned int *swgroup)
+>>> Uhm, no. If this is needed this has to be a Tegra MC function and not
+>>> burried into nouveau code. You are using knowledge about the internal
+>>> workings of the MC driver here.
+>>>
+>>> Also this should probably only take the Dt node pointer as argument and
+>>> return a something like a tegra_mc_client struct that contains both the
+>>> MC device pointer and the swgroup so you can pass that to
+>>> tegra_mc_flush().
+>> Good idea. I will have something as below in V2 if there is no other
+>> comments for this.
+>>
+>> tegra_mc_client *tegra_mc_find_client(struct device_node *node)
+>> {
+>>      ...
+>>      ret = of_parse_phandle_with_args(node, "nvidia,memory-client", ...)
+>>      ...
+>> }
+>>
+>> There were some discussion about this few weeks ago. I'm not sure whether we
+>> have some conclusion/implementation though. Thierry?
+>>
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/308703.html
+> I don't think client is a good fit here. Flushing is done per SWGROUP
+> (on all clients of the SWGROUP). So I think we'll want something like:
+>
+> 	gpu@0,57000000 {
+> 		...
+> 		nvidia,swgroup = <&mc TEGRA_SWGROUP_GPU>;
+> 		...
+> 	};
+>
+> In the DT and return a struct tegra_mc_swgroup along the lines of:
+>
+> 	struct tegra_mc_client {
+> 		unsigned int id;
+> 		unsigned int swgroup;
+>
+> 		struct list_head list;
+> 	};
+>
+> 	struct tegra_mc_swgroup {
+> 		struct list_head clients;
+> 		unsigned int id;
+> 	};
+>
+> Where tegra_mc_swgroup.clients is a list of struct tegra_mc_client
+> structures, each representing a memory client pertaining to the
+> SWGROUP.
+Based on your suggestion above, I created a struct tegra_mc_swgroup:
 
-It could actually be interesting to see if we could get all such paths
-"fixed".
-If so, I believe this way will ultimately lead to cleaner code, but I'd
-rather see taken all other patches first and keep this one in v9fs-devel
-branch for a bit longer if this makes sense... Well, I guess there is a
-test window before the merge to linus tree anyway, but given the number
-of active 9P users it could be useful.
+struct tegra_mc_swgroup {
+     unsigned int id;
+     struct tegra_mc *mc;
+     struct list_head head;
+     struct list_head clients;
+};
 
+And added the list head in the struct tegra_mc_soc.
 
-(All other patches in the set look good to me at second glance, now.
-To answer Dan's mail, none of these are bug fix as far as I've seen,
-just avoiding unnecessary checks for null or calls+check/warn depending
-on whether you apply patch #1 first)
+struct tegra_mc_soc {
+     struct tegra_mc_client *clients;
+     unsigned int num_clients;
 
--- 
-Dominique Martinet,
-CEA
+     struct tegra_mc_hr *hr_clients;
+     unsigned int num_hr_clients;
+
+     struct list_head swgroups;
+...
+
+Created one function to build the swgroup list.
+
+static int tegra_mc_build_swgroup(struct tegra_mc *mc)
+{
+     int i;
+
+     for (i = 0; i < mc->soc->num_clients; i++) {
+         struct tegra_mc_swgroup *sg;
+         bool found = false;
+
+         list_for_each_entry(sg, &mc->soc->swgroups, head) {
+             if (sg->id == mc->soc->clients[i].swgroup) {
+                 found = true;
+                 break;
+             }
+         }
+
+         if (!found) {
+             sg = devm_kzalloc(mc->dev, sizeof(*sg), GFP_KERNEL);
+             if (!sg)
+                 return -ENOMEM;
+
+             sg->id = mc->soc->clients[i].swgroup;
+             sg->mc = mc;
+             list_add_tail(&sg->head, &mc->soc->swgroups);
+             INIT_LIST_HEAD(&sg->clients);
+         }
+
+         list_add_tail(&mc->soc->clients[i].head, &sg->clients);
+     }
+
+     return 0;
+}
+
+>
+> We probably don't want to expose these structures publicly, an opaque
+> type should be enough. Then you can use functions like:
+>
+> 	struct tegra_mc_swgroup *tegra_mc_find_swgroup(struct device_node *node);
+And then I can use the tegra_find_swgroup() in GK20A driver to get the 
+swgroup
+and flush the memory clients by tegra_mc_flush(swgroup).
+
+One problem is that the mc_soc and mc_clients are are defined as const. 
+To build
+the swgroup list dynamically, I have to discard the const. I guess you 
+won't like that. :(
+
+Thanks,
+Vince
+
+> At some point we may even need something like:
+>
+> 	struct tegra_mc_client *tegra_mc_find_client(struct device_node *node,
+> 						     const char *name);
+>
+> And DT content like this:
+>
+> 	gpu@0,57000000 {
+> 		...
+> 		nvidia,memory-clients = <&mc 0x58>, <&mc 0x59>;
+> 		nvidia,memory-client-names = "read", "write";
+> 		...
+> 	};
+>
+> This could be useful for latency allowance programming, but we can cross
+> that bridge when we come to it.
+>
+> Thierry
+>
+> * Unknown Key
+> * 0x7F3EB3A1
+
