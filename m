@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199AbbAFArP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 19:47:15 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52165 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753300AbbAFArO (ORCPT
+	id S1754127AbbAFBCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 20:02:12 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:44386 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753325AbbAFBCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 19:47:14 -0500
-X-Sasl-enc: +OqSw25LSXFCCLYZd3RCXzfGPlFSE3+4EI2Mtg5R2Qv1 1420505233
-Date: Mon, 5 Jan 2015 19:47:13 -0500
-From: Christoph Jaeger <cj@linux.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: yann.morin.1998@free.fr, akpm@linux-foundation.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dborkman@redhat.com, Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] kconfig: use bool instead of boolean for type definition
- attributes
-Message-ID: <20150106004713.GD1513@betelgeuse.hsd1.ma.comcast.net>
-References: <1419108071-11607-1-git-send-email-cj@linux.com>
- <20150105194305.GB1513@betelgeuse.hsd1.ma.comcast.net>
- <1420499197.14308.45.camel@x220>
+	Mon, 5 Jan 2015 20:02:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420499197.14308.45.camel@x220>
-X-Homepage: http://christophjaeger.info
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54ab2ffa301102cd6e@agluck-desk.sc.intel.com>
+References: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
+ <54ab2ffa301102cd6e@agluck-desk.sc.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 5 Jan 2015 17:01:46 -0800
+Message-ID: <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
+Subject: Re: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce tricks
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 12:06:37AM +0100, Paul Bolle wrote:
-> On Mon, 2015-01-05 at 14:43 -0500, Christoph Jaeger wrote:
-> > (adding Michal Marek)
-> 
-> Yann added no commits in 2014. And I actually think Yann reacted to
-> almost no patches last year. Perhaps none at all. What's going on?
+On Mon, Jan 5, 2015 at 4:44 PM, Luck, Tony <tony.luck@intel.com> wrote:
+> We now switch to the kernel stack when a machine check interrupts
+> during user mode.  This means that we can perform recovery actions
+> in the tail of do_machine_check()
+>
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+>
+> ---
+> On top of Andy's x86/paranoid branch
+> Andy: Should I really move that:
+>         pr_err("Uncorrected hardware memory error ...
+> inside the ist_begin_non_atomic() section?
+>
 
-Dunno, but at least Michal seems to be up and running.
+I think I like it as is.
 
-> > On Sat, Dec 20, 2014 at 03:41:11PM -0500, Christoph Jaeger wrote:
-> > > Support for keyword 'boolean' will be dropped later on.
-> > > 
-> > > No functional change.
-> > > 
-> > > Reference: http://lkml.kernel.org/r/cover.1418003065.git.cj@linux.com
-> > > Signed-off-by: Christoph Jaeger <cj@linux.com>
-> > > ---
-> > >  arch/mips/pmcs-msp71xx/Kconfig      |  6 +++---
-> > >  drivers/connector/Kconfig           |  2 +-
-> > >  drivers/hwmon/Kconfig               |  2 +-
-> > >  drivers/hwmon/pmbus/Kconfig         |  2 +-
-> > >  drivers/i2c/Kconfig                 |  4 ++--
-> > >  drivers/iio/Kconfig                 |  4 ++--
-> > >  drivers/isdn/hardware/mISDN/Kconfig |  2 +-
-> > >  drivers/md/Kconfig                  |  4 ++--
-> > >  drivers/md/persistent-data/Kconfig  |  2 +-
-> > >  drivers/net/ethernet/ti/Kconfig     |  4 ++--
-> > >  drivers/net/usb/Kconfig             | 12 ++++++------
-> > >  drivers/net/wireless/rt2x00/Kconfig |  6 +++---
-> > >  drivers/pci/pcie/aer/Kconfig        |  2 +-
-> > >  drivers/rtc/Kconfig                 |  8 ++++----
-> > >  drivers/spi/Kconfig                 |  6 +++---
-> > >  drivers/staging/board/Kconfig       |  2 +-
-> > >  drivers/staging/emxx_udc/Kconfig    |  2 +-
-> > >  drivers/staging/iio/Kconfig         |  4 ++--
-> > >  drivers/tty/serial/Kconfig          |  2 +-
-> > >  drivers/usb/gadget/Kconfig          | 34 +++++++++++++++++-----------------
-> > >  drivers/usb/gadget/legacy/Kconfig   |  2 +-
-> > >  drivers/usb/gadget/udc/Kconfig      |  4 ++--
-> > >  drivers/usb/phy/Kconfig             |  2 +-
-> > >  init/Kconfig                        |  4 ++--
-> > >  lib/Kconfig                         | 30 +++++++++++++++---------------
-> > >  mm/Kconfig                          | 22 +++++++++++-----------
-> > >  net/Kconfig                         | 14 +++++++-------
-> > >  net/sched/Kconfig                   |  2 +-
-> > >  net/switchdev/Kconfig               |  2 +-
-> > >  security/integrity/Kconfig          |  4 ++--
-> > >  security/integrity/evm/Kconfig      |  2 +-
-> > >  31 files changed, 99 insertions(+), 99 deletions(-)
-> 
-> A quick grep, after applying this patch onto next-20150105, only showed
-> two remaining uses of "boolean". Both were in kernel/livepatch/Kconfig.
-> I assume that file was added after this patch was submitted. So that's
-> fine.
+[...]
 
-Yes. Since livepatch is supposed to get merged not until 3.20, I'll submit a
-separate patch to the livepatch folks in order to get rid of these.
+> @@ -1220,6 +1177,26 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>         mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
+>  out:
+>         sync_core();
+> +
+> +       if (recover_paddr == ~0ull)
+> +               goto done;
+> +
+> +       pr_err("Uncorrected hardware memory error in user-access at %llx",
+> +                recover_paddr);
 
-~Christoph
+printk is safe from IRQ context, so this should be okay unless we've
+totally screwed up.  And, if we totally screwed up, seeing this before
+the BUGs in ist_begin_non_atomic would be nice.
+
+> +       /*
+> +        * We must call memory_failure() here even if the current process is
+> +        * doomed. We still need to mark the page as poisoned and alert any
+> +        * other users of the page.
+> +        */
+> +       ist_begin_non_atomic(regs);
+> +       local_irq_enable();
+> +       if (memory_failure(recover_paddr >> PAGE_SHIFT, MCE_VECTOR, flags) < 0) {
+> +               pr_err("Memory error not recovered");
+> +               force_sig(SIGBUS, current);
+> +       }
+> +       local_irq_disable();
+> +       ist_end_non_atomic();
+> +done:
+>         ist_exit(regs, prev_state);
+>  }
+
+For the context-related bits:
+
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+
+Should I stick this in my -next branch so it can stew?
+
+--Andy
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
