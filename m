@@ -1,159 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbbAFKe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:34:56 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:43841 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbbAFKel (ORCPT
+	id S1754822AbbAFKft (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:35:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53275 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbbAFKfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:34:41 -0500
-Date: Tue, 6 Jan 2015 11:34:39 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andreas Mohr <andi@lisas.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [PATCH 6/6] mm/slab: allocation fastpath without disabling irq
-Message-ID: <20150106103439.GA8669@rhlx01.hs-esslingen.de>
-References: <1420421851-3281-7-git-send-email-iamjoonsoo.kim@lge.com>
- <20150105172139.GA11201@rhlx01.hs-esslingen.de>
- <20150106013122.GB17222@js1304-P5Q-DELUXE>
+	Tue, 6 Jan 2015 05:35:48 -0500
+Date: Tue, 6 Jan 2015 11:35:33 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/fair: Fix RCU stall upon ENOMEM at
+ sched_create_group().
+Message-ID: <20150106103533.GO29390@twins.programming.kicks-ass.net>
+References: <201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150106013122.GB17222@js1304-P5Q-DELUXE>
-X-Priority: none
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 10:31:22AM +0900, Joonsoo Kim wrote:
-> Hello,
+On Thu, Dec 25, 2014 at 10:10:45PM +0900, Tetsuo Handa wrote:
+> >From 052595ab1a1d1c5668d9de61395c9cc17694597e Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Thu, 25 Dec 2014 15:51:21 +0900
+> Subject: [PATCH] sched/fair: Fix RCU stall upon ENOMEM at sched_create_group().
 > 
-> On Mon, Jan 05, 2015 at 06:21:39PM +0100, Andreas Mohr wrote:
-> > Hi,
-> > 
-> > Joonsoo Kim wrote:
-> > > +	ac->tid = next_tid(ac->tid);
-> > (and all others)
-> > 
-> > object oriented:
-> > array_cache_next_tid(ac);
-> > (or perhaps rather: array_cache_start_transaction(ac);?).
+> When alloc_fair_sched_group() in sched_create_group() failed,
+> free_sched_group() is called, and free_fair_sched_group() is called by
+> free_sched_group(). Since destroy_cfs_bandwidth() is called by
+> free_fair_sched_group() without calling init_cfs_bandwidth(),
+> RCU stall occurs at hrtimer_cancel().
 > 
-> Okay. Christoph request common transaction id management code. If
-> above object oriented design fit that, I will do it.
 
-Yeah, that may easily have been the same thing.
-This function would then obviously and simply do a
-    ac->tid = next_tid(ac->tid);
-dance internally
-(thereby likely introducing some nice instruction cache savings, too).
-
-
-> > General thoughts (maybe just rambling, but that's just my feelings vs.
-> > this mechanism, so maybe it's food for thought):
-> > To me, the existing implementation seems too fond of IRQ fumbling
-> > (i.e., affecting of oh so nicely *unrelated*
-> > outer global environment context stuff).
-> > A proper implementation wouldn't need *any* knowledge of this
-> > (i.e., modifying such "IRQ disable" side effects,
-> > to avoid having a scheduler hit and possibly ending up on another node).
-> > 
-> > Thus to me, the whole handling seems somewhat wrong and split
-> > (since there remains the need to deal with scheduler distortion/disruption).
-> > The bare-metal "inner" algorithm should not need to depend on such shenanigans
-> > but simply be able to carry out its task unaffected,
-> > where IRQs are simply always left enabled
-> > (or at least potentially disabled by other kernel components only)
-> > and the code then elegantly/inherently deals with IRQ complications.
-> 
-> I'm not sure I understand your opinion correctly. If my response is
-> wrong, please let me know your thought more correctly.
-
-I have to admit that I was talking general implementation guidelines
-rather than having a very close look at what can be done *here*.
-Put differently, my goal at this point was just to state weird questions,
-for people to then reason about the bigger picture
-and come to possibly brilliant conclusions ;)
-
-
-> IRQ manipulation is done for synchronization of array cache, not for
-> freezing allocation context. That is just side-effect. As Christoph
-> said, slab operation could be executed in interrupt context so we
-> should protect array cache even if we are in process context.
-
-Ah, that clarifies collision areas, thanks!
-
-In general the goal likely should be
-to attempt to do as many things "in parallel" (guaranteed-collision-free,
-via cleanly instance-separate data) as possible,
-and then once the result has been calculated,
-do quick/short updating (insertion/deletion)
-of the shared/contended resource (here: array cache)
-with the necessary protection (IRQs disabled, in this case).
-Via some layering tricks, one could manage to do all the calculation handling
-without even drawing in any "IRQ management" dependency
-to that inner code part ("code file"?),
-but the array cache management would then remain IRQ-affected
-(in those outer layers which know that they are unfortunately still drawn down
-by an annoying dependency on IRQ shenanigans).
-Or, in other words: achieve a clean separation of layers
-so that it's obvious which ones get hampered by annoying dependencies
-and which ones are able to carry out their job unaffected.
-
-
-And for the "disruption via interrupt context" part:
-we currently seem to have "synchronous" handling,
-where one needs to forcefully block access to a shared/contended resource
-(which would be done
-either via annoying mutex contention,
-or even via wholesale blocking of IRQ execution).
-To remove/reduce friction,
-one should either remove any additional foreign-context access to that resource,
-thereby making this implementation cleanly (if woefully)
-single-context only (as Christoph seems to be intending,
-by removing SLAB access from IRQ handlers?),
-or ideally implement fully parallel instance-separate data management
-(but I guess that's not what one would want
-for a global multi-sized-area and thus fragmentation-avoiding SL*B allocator,
-since that would mean splitting global memory resources
-into per-instance areas?).
-
-Alternatively, one could go for "asynchronous" handling,
-where SL*B updates of any foreign-context (but not main-context)
-are *delayed*,
-by merely queuing them into a simple submission queue
-which then will be delay-applied by main-context
-either once main-context enters a certain "quiet" state (e.g. context switch?),
-or once main-context needs to actively take into account
-these effects of foreign-context registrations.
-But for an allocator (memory manager),
-such "asynchronous" handling might be completely impossible anyway,
-since it might need to have a consistent global view,
-of all resources at all times
-(--> we're back to having a synchronous handling requirement,
-via lock contention).
-
-
-> > These thoughts also mean that I'm unsure (difficult to determine)
-> > of whether this change is good (i.e. a clean step in the right direction),
-> > or whether instead the implementation could easily directly be made
-> > fully independent from IRQ constraints.
-> 
-> Is there any issue that this change prevent further improvment?
-> I think that we can go right direction easily as soon as we find
-> a better solution even if this change is merged.
-
-Ah, I see you're skillfully asking the right forward progress question ;)
-
-To which I'm currently limited to saying
-that from my side there are no objections to be added to the list
-(other than the minor mechanical parts directly stated in my review).
-
-Thanks,
-
-Andreas Mohr
+Thanks
