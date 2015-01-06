@@ -1,128 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443AbbAFN7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:59:32 -0500
-Received: from smtprelay4.synopsys.com ([198.182.47.9]:40494 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754984AbbAFN7a (ORCPT
+	id S1755516AbbAFOA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:00:56 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:53619 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096AbbAFOAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:59:30 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <robh@kernel.org>, Peter Hurley <peter@hurleysoftware.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>, Jiri Slaby <jslaby@suse.cz>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [Patch v4] ARC: Dynamically determine BASE_BAUD from DeviceTree
-Date: Tue, 6 Jan 2015 19:29:07 +0530
-Message-ID: <1420552747-27544-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <54ABD526.9020907@hurleysoftware.com>
-References: <54ABD526.9020907@hurleysoftware.com>
+	Tue, 6 Jan 2015 09:00:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-acpi@lists.linaro.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+Date: Tue, 06 Jan 2015 14:59:27 +0100
+Message-ID: <3538097.dWBy3R9lty@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150106112000.GA8829@e104818-lin.cambridge.arm.com>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1797489.PjmKzBFdQA@wuerfel> <20150106112000.GA8829@e104818-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.196.223]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:g41mXxF2rBWo7E5Aft2gYrZmCRNZSd0cwnz57Fwrd2ztc+VMfIE
+ FeL6it2PkvgR2xAchKxH8c//WcVVYpEhghpdQ+2//kUHRsls8B0EJX+a+RxBAmsP+PgtKpV
+ 5l8jwvC9ux3HXAJzi/mPZZDDPEaa7D/wlTwXovYu8K5nVi6KKP0V/RCVtvN9FVw5kJnKtjv
+ ZApMh8xiQOyb2XUfpXPBg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-8250 earlycon is broken on multi-platform ARC because the UART clk
-value (BASE_BAUD) is fixed at build time.
+On Tuesday 06 January 2015 11:20:01 Catalin Marinas wrote:
+> On Mon, Jan 05, 2015 at 08:16:30PM +0000, Arnd Bergmann wrote:
+> > On Monday 05 January 2015 13:13:02 Catalin Marinas wrote:
+> > > > since passing no DT tables to OS but
+> > > > acpi=force is missing is a corner case, we can do a follow up patch to
+> > > > fix that, does it make sense?
+> > > 
+> > > Not entirely. Why would no dtb and no acpi=force be a corner case? I
+> > > thought this should be the default when only ACPI tables are passed, no
+> > > need for an additional acpi=force argument.
+> > 
+> > We don't really support the case of only ACPI tables for now. The expectation
+> > is that you always have working DT support, at least for the next few years
+> > as ACPI features are ramping up, and without acpi=force it should not try
+> > to use ACPI at all.
+> 
+> So if both DT and ACPI are present, just use DT unless acpi=force is
+> passed. So far I think we agree but what I want to avoid is always
+> mandating acpi=force even when the DT tables are missing (in the long
+> run).
+> 
+> Now, what's preventing a vendor firmware from providing only ACPI
+> tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
+> that both DT and ACPI are supported, or at least that dts files are
+> merged in the kernel first?
 
-Instead, determine the appropriate UART clk at runtime; parse the
-devicetree early for platforms requiring alternate UART clk values
-(currently only the TB10X platform).
+We have no way of enforcing what a board vendor ships, so if they want
+to have ACPI-only machines for MS Windows, they just won't work by
+default on Linux. Once ACPI support is mature enough, we can also
+have a whitelist or a different default for using it automatically
+when no DT is present.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/serial.h | 23 +++++------------------
- arch/arc/kernel/devtree.c     | 24 ++++++++++++++++++++++++
- 2 files changed, 29 insertions(+), 18 deletions(-)
+For drivers merged upstream, I would insist that every driver merged
+for an ARM64 platform has a documented DT binding that is used in the
+driver.
 
-diff --git a/arch/arc/include/asm/serial.h b/arch/arc/include/asm/serial.h
-index 602b0970a764..744a6ae15754 100644
---- a/arch/arc/include/asm/serial.h
-+++ b/arch/arc/include/asm/serial.h
-@@ -10,26 +10,13 @@
- #define _ASM_ARC_SERIAL_H
- 
- /*
-- * early-8250 requires BASE_BAUD to be defined and includes this header.
-- * We put in a typical value:
-- * 	(core clk / 16) - i.e. UART samples 16 times per sec.
-- * Athough in multi-platform-image this might not work, specially if the
-- * clk driving the UART is different.
-- * We can't use DeviceTree as this is typically for early serial.
-+ * early 8250 (now earlycon) requires BASE_BAUD to be defined in this header.
-+ * However to still determine it dynamically (for multi-platform images)
-+ * we do this in a helper by parsing the FDT early
-  */
- 
--#include <asm/clk.h>
-+extern unsigned int __init arc_early_base_baud(void);
- 
--#define BASE_BAUD	(arc_get_core_freq() / 16)
--
--/*
-- * This is definitely going to break early 8250 consoles on multi-platform
-- * images but hey, it won't add any code complexity for a debug feature of
-- * one broken driver.
-- */
--#ifdef CONFIG_ARC_PLAT_TB10X
--#undef BASE_BAUD
--#define BASE_BAUD	(arc_get_core_freq() / 16 / 3)
--#endif
-+#define BASE_BAUD	arc_early_base_baud()
- 
- #endif /* _ASM_ARC_SERIAL_H */
-diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
-index fffdb5e41b20..69a790cd9b6e 100644
---- a/arch/arc/kernel/devtree.c
-+++ b/arch/arc/kernel/devtree.c
-@@ -17,6 +17,28 @@
- #include <asm/clk.h>
- #include <asm/mach_desc.h>
- 
-+#ifdef CONFIG_SERIAL_8250_CONSOLE
-+
-+static unsigned int arc_base_baud;
-+
-+unsigned int __init arc_early_base_baud(void)
-+{
-+	return arc_base_baud/16;
-+}
-+
-+static void __init arc_set_early_base_baud(unsigned long dt_root)
-+{
-+	unsigned int core_clk = arc_get_core_freq();
-+
-+	if (of_flat_dt_is_compatible(dt_root, "abilis,arc-tb10x"))
-+		arc_base_baud = core_clk/3;
-+	else
-+		arc_base_baud = core_clk;
-+}
-+#else
-+#define arc_set_early_base_baud(dt_root)
-+#endif
-+
- static const void * __init arch_get_next_mach(const char *const **match)
- {
- 	static const struct machine_desc *mdesc = __arch_info_begin;
-@@ -56,5 +78,7 @@ const struct machine_desc * __init setup_machine_fdt(void *dt)
- 	if (clk)
- 		arc_set_core_freq(of_read_ulong(clk, len/4));
- 
-+	arc_set_early_base_baud(dt_root);
-+
- 	return mdesc;
- }
--- 
-1.9.1
-
+	Arnd
