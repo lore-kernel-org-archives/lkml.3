@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbbAFFkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 00:40:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751956AbbAFFkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 00:40:01 -0500
-From: Pankaj Gupta <pagupta@redhat.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
-        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
-        xii@google.com, stephen@networkplumber.org, jiri@resnulli.us,
-        sergei.shtylyov@cogentembedded.com, Pankaj Gupta <pagupta@redhat.com>
-Subject: [PATCH v4 net-next 2/2 tuntap: Increase the number of queues in tun.
-Date: Tue,  6 Jan 2015 11:09:16 +0530
-Message-Id: <1420522756-15127-3-git-send-email-pagupta@redhat.com>
-In-Reply-To: <1420522756-15127-1-git-send-email-pagupta@redhat.com>
-References: <1420522756-15127-1-git-send-email-pagupta@redhat.com>
+	id S1753806AbbAFFkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 00:40:16 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:65419 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbbAFFj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 00:39:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <54AA97B9.7040703@nod.at>
+References: <1417563176-31972-1-git-send-email-richard@nod.at>
+	<54A53FBF.5000003@kernel.org>
+	<7e4f6a70e48afe96457ebbcf07572224@imap.cosmopool.net>
+	<54A680F8.30209@nod.at>
+	<54A91DA1.6080107@kernel.org>
+	<E1Y881p-0001Fp-NX@stardust.g4.wien.funkfeuer.at>
+	<54AA97B9.7040703@nod.at>
+Date: Tue, 6 Jan 2015 11:09:56 +0530
+Message-ID: <CAGUYZuTXy0SGzRKYA1TGtSr=aw_50n7Sy6E05WwTExqy_MGr-w@mail.gmail.com>
+Subject: Re: [PATCHv2 1/3] iio: dht11: Fix out-of-bounds read
+From: sanjeev sharma <sanjeevsharmaengg@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Harald Geyer <harald@ccbib.org>, Jonathan Cameron <jic23@kernel.org>,
+        Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        sanjeevs1 <sanjeev_sharma@mentor.com>, linux-iio@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Networking under kvm works best if we allocate a per-vCPU RX and TX
-queue in a virtual NIC. This requires a per-vCPU queue on the host side.
-
-It is now safe to increase the maximum number of queues.
-Preceding patch: 'net: allow large number of rx queues'
-made sure this won't cause failures due to high order memory
-allocations. Increase it to 256: this is the max number of vCPUs
-KVM supports.
-
-Size of tun_struct changes from 8512 to 10496 after this patch. This keeps 
-pages allocated for tun_struct before and after the patch to 3. 
-
-Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-Reviewed-by: David Gibson <dgibson@redhat.com>
----
- drivers/net/tun.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index e3fa65a..a19dc5f8 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -113,10 +113,11 @@ struct tap_filter {
- 	unsigned char	addr[FLT_EXACT_COUNT][ETH_ALEN];
- };
- 
--/* DEFAULT_MAX_NUM_RSS_QUEUES were chosen to let the rx/tx queues allocated for
-- * the netdevice to be fit in one page. So we can make sure the success of
-- * memory allocation. TODO: increase the limit. */
--#define MAX_TAP_QUEUES DEFAULT_MAX_NUM_RSS_QUEUES
-+/* MAX_TAP_QUEUES 256 is chosen to allow rx/tx queues to be equal
-+ * to max number of vCPUS in guest. Also, we are making sure here
-+ * queue memory allocation do not fail.
-+ */
-+#define MAX_TAP_QUEUES 256
- #define MAX_TAP_FLOWS  4096
- 
- #define TUN_FLOW_EXPIRE (3 * HZ)
--- 
-1.8.3.1
-
+On Mon, Jan 5, 2015 at 7:25 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am 05.01.2015 um 14:49 schrieb Harald Geyer:
+>> As we access i-1 we must not start with i=0.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>> Acked-by: Hartmut Knaack <knaack.h@gmx.de>
+>> Acked-by: Harald Geyer <harald@ccbib.org>
+     Reviewed-by: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+>> ---
+>> Resending for Richard Weinberger.
+>> No changes since v1 except reordering.
+>
+> I fear you got the resend wrong.
+> The mail should be "From: Richard Weinberger <richard@nod.at>" to keep me
+> as author and the SoB-Chain should have a "Signed-off-by: Harald Geyer <harald@ccbib.org>"
+> at the end to indicate that this patch went though your hands.
+>
+> Thanks,
+> //richard
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
