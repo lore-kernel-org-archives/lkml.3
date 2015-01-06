@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214AbbAFMwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 07:52:00 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:38684 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbbAFMv6 (ORCPT
+	id S1755238AbbAFMzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 07:55:43 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:57073 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbbAFMzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 07:51:58 -0500
+	Tue, 6 Jan 2015 07:55:42 -0500
+Message-ID: <54ABDB4B.7070008@hurleysoftware.com>
+Date: Tue, 06 Jan 2015 07:55:39 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20150106114056.GB25846@kmo-pixel>
-References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
-	<20150106094039.GI29390@twins.programming.kicks-ass.net>
-	<CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
-	<CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
-	<20150106100621.GL29390@twins.programming.kicks-ass.net>
-	<CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
-	<20150106110112.GQ29390@twins.programming.kicks-ass.net>
-	<20150106110730.GA25846@kmo-pixel>
-	<CA+icZUWf=qGD2akxozWHp3VQQDPpLJuMMB-UuY+a+L-unV0QnQ@mail.gmail.com>
-	<20150106114056.GB25846@kmo-pixel>
-Date: Tue, 6 Jan 2015 13:51:57 +0100
-Message-ID: <CA+icZUXzRkeVDGM5kHYRLmmV_VE5QiEDHJ1P5+x4dTJ-ctpuQQ@mail.gmail.com>
-Subject: Re: Linux 3.19-rc3
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Dave Jones <davej@codemonkey.org.uk>,
+To: Peter Zijlstra <peterz@infradead.org>, Kent Overstreet <kmo@daterainc.com>
+CC: Sedat Dilek <sedat.dilek@gmail.com>, Dave Jones <davej@codemonkey.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
-Content-Type: text/plain; charset=UTF-8
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Linux 3.19-rc3
+References: <20150106094039.GI29390@twins.programming.kicks-ass.net> <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com> <CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com> <20150106100621.GL29390@twins.programming.kicks-ass.net> <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com> <20150106110112.GQ29390@twins.programming.kicks-ass.net> <20150106110730.GA25846@kmo-pixel> <20150106114215.GS29390@twins.programming.kicks-ass.net> <20150106114842.GP10476@twins.programming.kicks-ass.net> <20150106120121.GB26845@kmo-pixel> <20150106122006.GW29390@twins.programming.kicks-ass.net>
+In-Reply-To: <20150106122006.GW29390@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 12:40 PM, Kent Overstreet <kmo@daterainc.com> wrote:
-> On Tue, Jan 06, 2015 at 12:25:39PM +0100, Sedat Dilek wrote:
->> On Tue, Jan 6, 2015 at 12:07 PM, Kent Overstreet <kmo@daterainc.com> wrote:
->> > On Tue, Jan 06, 2015 at 12:01:12PM +0100, Peter Zijlstra wrote:
->> >> On Tue, Jan 06, 2015 at 11:18:04AM +0100, Sedat Dilek wrote:
->> >> > On Tue, Jan 6, 2015 at 11:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> >> > > On Tue, Jan 06, 2015 at 10:57:19AM +0100, Sedat Dilek wrote:
->> >> > >> [   88.028739]  [<ffffffff8124433f>] aio_read_events+0x4f/0x2d0
->> >> > >>
->> >> > >
->> >> > > Ah, that one. Chris Mason and Kent Overstreet were looking at that one.
->> >> > > I'm not touching the AIO code either ;-)
->> >> >
->> >> > I know, I was so excited when I see nearly the same output.
->> >> >
->> >> > Can you tell me why people see "similiar" problems in different areas?
->> >>
->> >> Because the debug check is new :-) It's a pattern that should not be
->> >> used but mostly works most of the times.
->> >>
->> >> > [  181.397024] WARNING: CPU: 0 PID: 2872 at kernel/sched/core.c:7303
->> >> > __might_sleep+0xbd/0xd0()
->> >> > [  181.397028] do not call blocking ops when !TASK_RUNNING; state=1
->> >> > set at [<ffffffff810b83bd>] prepare_to_wait_event+0x5d/0x110
->> >> >
->> >> > With similiar buzzwords... namely...
->> >> >
->> >> > mutex_lock_nested
->> >> > prepare_to_wait(_event)
->> >> > __might_sleep
->> >> >
->> >> > I am asking myself... Where is the real root cause - in sched/core?
->> >> > Fix one single place VS. fix the impact at several other places?
->> >>
->> >> No, the root cause is nesting sleep primitives, this is not fixable in
->> >> the one place, both prepare_to_wait and mutex_lock are using
->> >> task_struct::state, they have to, no way around it.
->> >
->> > No, it's completely possible to construct a prepare_to_wait() that doesn't
->> > require messing with the task state. Had it for years.
->> >
->> > http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
+[ +cc Paul McKenney ]
+
+On 01/06/2015 07:20 AM, Peter Zijlstra wrote:
+> On Tue, Jan 06, 2015 at 04:01:21AM -0800, Kent Overstreet wrote:
+>> On Tue, Jan 06, 2015 at 12:48:42PM +0100, Peter Zijlstra wrote:
+>>>
+>>>
+>>> Looking at that closure stuff, why is there an smp_mb() in
+>>> closure_wake_up() ? Typically wakeup only needs to imply a wmb.
+>>>
+>>> Also note that __closure_wake_up() starts with a fully serializing
+>>> instruction (xchg) and thereby already implies the full barrier.
 >>
->> I am just rebuilding a new kernel with "aio_ring_fix" included - I
->> have tested this alread with loop-mq and it made the call-trace in aio
->> go away.
+>> Probably no good reason, that code is pretty old :)
 >>
->>
->> Jut curious...
->> How would a patch look like a patch to fix the sched-fanotify issue
->> with a conversion to "closure waitlist"?
->
-> wait_queue_head_t       -> struct closure_waitlist
-> DEFINE_WAIT()           -> struct closure cl; closure_init_stack(&cl)
-> prepare_to_wait()       -> closure_wait(&waitlist, &cl)
-> schedule()              -> closure_sync()
-> finish_wait()           -> closure_wake_up(); closure_sync()
->
-> That's the standard conversion, I haven't looked at the fanotify code before
-> just now but from a cursory glance it appears that all should work here. Only
-> annoying thing is the waitqueue here is actually part of the poll interface (if
-> I'm reading this correctly), so I dunno what I'd do about that.
->
-> Also FYI: closure waitlists are currently singly linked, thus there's no direct
-> equivalent to finish_wait(), the conversion I gave works but will lead to
-> spurious wakeups. I kinda figured I was going to have to switch to doubly linked
-> lists eventually though.
+>> If I was to hazard a guess, I had my own lockless linked lists before llist.h
+>> existed and perhaps I did it with atomic_xchg() - which was at least documented
+>> to not imply a barrier. I suppose it should just be dropped.
+> 
+> We (probably me) should probably audit all the atomic_xchg()
+> implementations and documentation and fix that. I was very much under
+> the impression it should imply a full barrier (and it certainly does on
+> x86), the documentation should state the rule that any atomic_ function
+> that returns a result is fully serializing, therefore, because
+> atomic_xchg() has a return value, it should too.
 
-I followed as far as I have understood the subsequent discussion.
-Let's see where this will lead to.
+memory-barriers.txt and atomic_ops.txt appear to contradict each other here,
+but I think that's because atomic_ops.txt has drifted toward an
+arch-implementer's POV:
 
-I am also very curious about how that aio issue will be fixed.
+260:atomic_xchg requires explicit memory barriers around the operation.
 
-Thanks Peter and Ken for the vital and hopefully fruitful discussion.
+All the serializing atomic operations have descriptions like this.
 
-- Sedat -
+Regards,
+Peter Hurley
