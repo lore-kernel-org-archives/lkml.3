@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507AbbAFNtJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:49:09 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:43732 "EHLO
+	id S1755460AbbAFNsR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:48:17 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:43739 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754172AbbAFNrI (ORCPT
+	with ESMTP id S1754938AbbAFNrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:47:08 -0500
+	Tue, 6 Jan 2015 08:47:09 -0500
 From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -17,9 +17,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         David Laight <David.Laight@ACULAB.COM>,
         Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 3/5] ARM: at91/dt: update udc compatible strings
-Date: Tue,  6 Jan 2015 14:47:00 +0100
-Message-Id: <1420552022-8422-4-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 4/5] usb: atmel_usba_udc: Mask status with enabled irqs
+Date: Tue,  6 Jan 2015 14:47:01 +0100
+Message-Id: <1420552022-8422-5-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1420552022-8422-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1420552022-8422-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -27,70 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-at91sam9g45, at91sam9x5 and sama5 SoCs should not use
-"atmel,at91sam9rl-udc" for their USB device compatible property since
-this compatible is attached to a specific hardware bug fix.
+Avoid interpreting useless status flags when we're not waiting for such
+events by masking the status variable with the interrupt enabled register
+value.
 
+Reported-by: Patrice VILCHEZ <patrice.vilchez@atmel.com>
 Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/at91sam9g45.dtsi | 2 +-
- arch/arm/boot/dts/at91sam9x5.dtsi  | 2 +-
- arch/arm/boot/dts/sama5d3.dtsi     | 2 +-
- arch/arm/boot/dts/sama5d4.dtsi     | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/udc/atmel_usba_udc.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
-index 2a8da8a..acd90eb 100644
---- a/arch/arm/boot/dts/at91sam9g45.dtsi
-+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-@@ -1144,7 +1144,7 @@
- 			usb2: gadget@fff78000 {
- 				#address-cells = <1>;
- 				#size-cells = <0>;
--				compatible = "atmel,at91sam9rl-udc";
-+				compatible = "atmel,at91sam9g45-udc";
- 				reg = <0x00600000 0x80000
- 				       0xfff78000 0x400>;
- 				interrupts = <27 IRQ_TYPE_LEVEL_HIGH 0>;
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index bbb3ba6..d213147 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -1057,7 +1057,7 @@
- 			usb2: gadget@f803c000 {
- 				#address-cells = <1>;
- 				#size-cells = <0>;
--				compatible = "atmel,at91sam9rl-udc";
-+				compatible = "atmel,at91sam9g45-udc";
- 				reg = <0x00500000 0x80000
- 				       0xf803c000 0x400>;
- 				interrupts = <23 IRQ_TYPE_LEVEL_HIGH 0>;
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index 5f4144d..2b407a4 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -1264,7 +1264,7 @@
- 		usb0: gadget@00500000 {
- 			#address-cells = <1>;
- 			#size-cells = <0>;
--			compatible = "atmel,at91sam9rl-udc";
-+			compatible = "atmel,sama5d3-udc";
- 			reg = <0x00500000 0x100000
- 			       0xf8030000 0x4000>;
- 			interrupts = <33 IRQ_TYPE_LEVEL_HIGH 2>;
-diff --git a/arch/arm/boot/dts/sama5d4.dtsi b/arch/arm/boot/dts/sama5d4.dtsi
-index 1b0f30c..52dce24 100644
---- a/arch/arm/boot/dts/sama5d4.dtsi
-+++ b/arch/arm/boot/dts/sama5d4.dtsi
-@@ -112,7 +112,7 @@
- 		usb0: gadget@00400000 {
- 			#address-cells = <1>;
- 			#size-cells = <0>;
--			compatible = "atmel,at91sam9rl-udc";
-+			compatible = "atmel,sama5d3-udc";
- 			reg = <0x00400000 0x100000
- 			       0xfc02c000 0x4000>;
- 			interrupts = <47 IRQ_TYPE_LEVEL_HIGH 2>;
+diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
+index 55c8dde..bc3a532 100644
+--- a/drivers/usb/gadget/udc/atmel_usba_udc.c
++++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
+@@ -1612,12 +1612,14 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
+ 
+ 	spin_lock(&udc->lock);
+ 
+-	status = usba_readl(udc, INT_STA);
++	status = usba_readl(udc, INT_STA) & usba_readl(udc, INT_ENB);
+ 	DBG(DBG_INT, "irq, status=%#08x\n", status);
+ 
+ 	if (status & USBA_DET_SUSPEND) {
+ 		toggle_bias(udc, 0);
+ 		usba_writel(udc, INT_CLR, USBA_DET_SUSPEND);
++		usba_writel(udc, INT_ENB,
++			    usba_readl(udc, INT_ENB) | USBA_WAKE_UP);
+ 		udc->bias_pulse_needed = true;
+ 		DBG(DBG_BUS, "Suspend detected\n");
+ 		if (udc->gadget.speed != USB_SPEED_UNKNOWN
+@@ -1631,6 +1633,8 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
+ 	if (status & USBA_WAKE_UP) {
+ 		toggle_bias(udc, 1);
+ 		usba_writel(udc, INT_CLR, USBA_WAKE_UP);
++		usba_writel(udc, INT_ENB,
++			    usba_readl(udc, INT_ENB) & ~USBA_WAKE_UP);
+ 		DBG(DBG_BUS, "Wake Up CPU detected\n");
+ 	}
+ 
 -- 
 1.9.1
 
