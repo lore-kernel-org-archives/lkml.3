@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbbAFGo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 01:44:59 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:56860 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469AbbAFGo5 (ORCPT
+	id S1754254AbbAFGp0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 01:45:26 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:61968 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469AbbAFGpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 01:44:57 -0500
-Date: Tue, 6 Jan 2015 06:44:56 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: Vinod Koul <vinod.koul@intel.com>
-cc: Paul Walmsley <pwalmsley@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        dmaengine@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] dmaengine: tegra: add slave capabilities reporting
-Message-ID: <alpine.DEB.2.02.1501060640220.28771@utopia.booyaka.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 6 Jan 2015 01:45:23 -0500
+Message-ID: <54AB8480.5060603@gmail.com>
+Date: Tue, 06 Jan 2015 07:45:20 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Masanari Iida <standby24x7@gmail.com>
+CC: mtk.manpages@gmail.com, linux-man@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] adjtimex.2: Update modes field of adjtimex
+References: <1419426040-16090-1-git-send-email-standby24x7@gmail.com> <1419426040-16090-2-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1419426040-16090-2-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/24/2014 02:00 PM, Masanari Iida wrote:
+> This patch update modes field of adjtimex man page.
 
-After commit ecc19d17868be9c9f8f00ed928791533c420f3e0 ("dmaengine: Add
-a warning for drivers not using the generic slave caps retrieval"),
-the Tegra APB DMA driver causes this warning during boot:
+Hello Masanari Iida,
 
-WARNING: CPU: 0 PID: 1 at drivers/dma/dmaengine.c:830 dma_async_device_register+0x294/0x538()
-this driver doesn't support generic slave capabilities reporting
+Thanks for this patch. As it happened, some other
+recent changes to the page covered the same changes
+already, so this patch is obsolete. You can find the no
+current version in Git (see
+http://git.kernel.org/cgit/docs/man-pages/man-pages.git/tree/man2/adjtimex.2
+)
 
-Fix by setting the appropriate reporting structure fields that are
-passed to dma_async_device_register().
+Cheers,
 
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Paul Walmsley <pwalmsley@nvidia.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>
----
-Applies on next-20150105.  Boot-tested on Tegra132 Norrin FFD
-(with a few unrelated patches not yet in mainline to get the board to 
-boot)
+Michael
 
- drivers/dma/tegra20-apb-dma.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index 5695fb8..eaf585e 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -1425,6 +1425,21 @@ static int tegra_dma_probe(struct platform_device *pdev)
- 					tegra_dma_free_chan_resources;
- 	tdma->dma_dev.device_prep_slave_sg = tegra_dma_prep_slave_sg;
- 	tdma->dma_dev.device_prep_dma_cyclic = tegra_dma_prep_dma_cyclic;
-+	tdma->dma_dev.src_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
-+		BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
-+		BIT(DMA_SLAVE_BUSWIDTH_4_BYTES) |
-+		BIT(DMA_SLAVE_BUSWIDTH_8_BYTES);
-+	tdma->dma_dev.dst_addr_widths = BIT(DMA_SLAVE_BUSWIDTH_1_BYTE) |
-+		BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) |
-+		BIT(DMA_SLAVE_BUSWIDTH_4_BYTES) |
-+		BIT(DMA_SLAVE_BUSWIDTH_8_BYTES);
-+	tdma->dma_dev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-+	/*
-+	 * XXX The hardware appears to support
-+	 * DMA_RESIDUE_GRANULARITY_BURST-level reporting, but it's
-+	 * only used by this driver during tegra_dma_terminate_all()
-+	 */
-+	tdma->dma_dev.residue_granularity = DMA_RESIDUE_GRANULARITY_SEGMENT;
- 	tdma->dma_dev.device_config = tegra_dma_slave_config;
- 	tdma->dma_dev.device_terminate_all = tegra_dma_terminate_all;
- 	tdma->dma_dev.device_tx_status = tegra_dma_tx_status;
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  man2/adjtimex.2 | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
+> index f2a8b8c..b4450e8 100644
+> --- a/man2/adjtimex.2
+> +++ b/man2/adjtimex.2
+> @@ -92,8 +92,15 @@ combination of zero or more of the following bits:
+>  #define ADJ_ESTERROR          0x0008 /* estimated time error */
+>  #define ADJ_STATUS            0x0010 /* clock status */
+>  #define ADJ_TIMECONST         0x0020 /* pll time constant */
+> +#define ADJ_TAI               0x0080 /* set TAI offset */
+> +#define ADJ_SETOFFSET         0x0100 /* add 'time' to current time */
+> +#define ADJ_MICRO             0x1000 /* select microsecond
+> +                                        resolution */
+> +#define ADJ_NANO              0x2000 /* select nanosecond
+> +                                        resolution */
+>  #define ADJ_TICK              0x4000 /* tick value */
+> -#define ADJ_OFFSET_SINGLESHOT 0x8001 /* old-fashioned adjtime() */
+> +#define ADJ_OFFSET_SINGLESHOT 0x8001 /* old-fashioned adjtime */
+> +#define ADJ_OFFSET_SS_READ    0xa001 /* read-only adjtime */
+>  .fi
+>  .in
+>  .PP
+> 
+
+
 -- 
-2.0.0.GIT
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
