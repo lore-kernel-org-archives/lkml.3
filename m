@@ -1,139 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720AbbAFVQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:16:44 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:28271 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbbAFVQm (ORCPT
+	id S1756745AbbAFVRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:17:44 -0500
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:55787 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbbAFVRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:16:42 -0500
-X-IronPort-AV: E=Sophos;i="5.07,710,1413270000"; 
-   d="scan'208";a="54130348"
-Message-ID: <54AC50B8.7050702@broadcom.com>
-Date: Tue, 6 Jan 2015 13:16:40 -0800
-From: Jonathan Richardson <jonathar@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 6 Jan 2015 16:17:43 -0500
+Date: Tue, 6 Jan 2015 22:17:32 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Tristan Lelong <tristan@lelong.xyz>
+Cc: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: Add soft kill switch for input devices
+Message-ID: <20150106221732.1cbbe3ae@neptune.home>
+In-Reply-To: <1420352645-3706-1-git-send-email-tristan@lelong.xyz>
+References: <1420352645-3706-1-git-send-email-tristan@lelong.xyz>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i686-pc-linux-gnu)
 MIME-Version: 1.0
-To: Tim Kryger <tim.kryger@gmail.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Arun Ramamurthy <arunrama@broadcom.com>, Ray Jui <rjui@broadcom.com>,
-        Linux PWM <linux-pwm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback 
-	<bcm-kernel-feedback-list@broadcom.com>
-Subject: Re: [PATCH 1/2] drivers: pwm: core: Add pwmchip_add_inversed
-References: <1420420376-13087-1-git-send-email-tim.kryger@gmail.com> <1420420376-13087-2-git-send-email-tim.kryger@gmail.com>
-In-Reply-To: <1420420376-13087-2-git-send-email-tim.kryger@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm fine with the changes. I'll remove patch 2 (polarity) from my
-patches and send them out again based on these. Hopefully we can move
-forward with this.
-
-On 15-01-04 05:12 PM, Tim Kryger wrote:
-> Add a new function to register a PWM chip with channels that have their
-> initial polarity as inversed.  This benefits drivers of controllers that
-> by default operate with inversed polarity by removing the need to modify
-> the polarity during initialization.
+On Sat, 03 January 2015 Tristan Lelong <tristan@lelong.xyz> wrote:
+> This adds a sysfs attribute named 'mute' to all input devices.
+> It allows to disable them by software in a generic way.
 > 
-> Signed-off-by: Tim Kryger <tim.kryger@gmail.com>
+> It can be set to 0 or 1:
+> echo 1 > /sys/class/input/inputX/mute: will set all the input_events() call to return immediately.
+> echo 0 > /sys/class/input/inputX/mute: will reset to default behavior.
+> 
+> mute is set to 0 by default when calling alloc_input_device().
+> 
+> Signed-off-by: Tristan Lelong <tristan@lelong.xyz>
 > ---
->  drivers/pwm/core.c  | 36 ++++++++++++++++++++++++++++--------
->  include/linux/pwm.h |  6 ++++++
->  2 files changed, 34 insertions(+), 8 deletions(-)
+> Hi,
 > 
-> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-> index 966497d..f28c4ce 100644
-> --- a/drivers/pwm/core.c
-> +++ b/drivers/pwm/core.c
-> @@ -222,14 +222,8 @@ void *pwm_get_chip_data(struct pwm_device *pwm)
->  }
->  EXPORT_SYMBOL_GPL(pwm_get_chip_data);
->  
-> -/**
-> - * pwmchip_add() - register a new PWM chip
-> - * @chip: the PWM chip to add
-> - *
-> - * Register a new PWM chip. If chip->base < 0 then a dynamically assigned base
-> - * will be used.
-> - */
-> -int pwmchip_add(struct pwm_chip *chip)
-> +static int pwmchip_add_with_polarity(struct pwm_chip *chip,
-> +				     enum pwm_polarity polarity)
->  {
->  	struct pwm_device *pwm;
->  	unsigned int i;
-> @@ -259,6 +253,7 @@ int pwmchip_add(struct pwm_chip *chip)
->  		pwm->chip = chip;
->  		pwm->pwm = chip->base + i;
->  		pwm->hwpwm = i;
-> +		pwm->polarity = polarity;
->  
->  		radix_tree_insert(&pwm_tree, pwm->pwm, pwm);
->  	}
-> @@ -279,9 +274,34 @@ out:
->  	mutex_unlock(&pwm_lock);
->  	return ret;
->  }
-> +
-> +/**
-> + * pwmchip_add() - register a new PWM chip
-> + * @chip: the PWM chip to add
-> + *
-> + * Register a new PWM chip. If chip->base < 0 then a dynamically assigned base
-> + * will be used.  The initial polarity for all channels is normal.
-> + */
-> +int pwmchip_add(struct pwm_chip *chip)
-> +{
-> +	return pwmchip_add_with_polarity(chip, PWM_POLARITY_NORMAL);
-> +}
->  EXPORT_SYMBOL_GPL(pwmchip_add);
->  
->  /**
-> + * pwmchip_add_inversed() - register a new PWM chip
-> + * @chip: the PWM chip to add
-> + *
-> + * Register a new PWM chip. If chip->base < 0 then a dynamically assigned base
-> + * will be used.  The initial polarity for all channels is inversed.
-> + */
-> +int pwmchip_add_inversed(struct pwm_chip *chip)
-> +{
-> +	return pwmchip_add_with_polarity(chip, PWM_POLARITY_INVERSED);
-> +}
-> +EXPORT_SYMBOL_GPL(pwmchip_add_inversed);
-> +
-> +/**
->   * pwmchip_remove() - remove a PWM chip
->   * @chip: the PWM chip to remove
->   *
-> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-> index e90628c..358547f 100644
-> --- a/include/linux/pwm.h
-> +++ b/include/linux/pwm.h
-> @@ -183,6 +183,7 @@ int pwm_set_chip_data(struct pwm_device *pwm, void *data);
->  void *pwm_get_chip_data(struct pwm_device *pwm);
->  
->  int pwmchip_add(struct pwm_chip *chip);
-> +int pwmchip_add_inversed(struct pwm_chip *chip);
->  int pwmchip_remove(struct pwm_chip *chip);
->  struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
->  					 unsigned int index,
-> @@ -217,6 +218,11 @@ static inline int pwmchip_add(struct pwm_chip *chip)
->  	return -EINVAL;
->  }
->  
-> +static inline int pwmchip_add_inversed(struct pwm_chip *chip)
-> +{
-> +	return -EINVAL;
-> +}
-> +
->  static inline int pwmchip_remove(struct pwm_chip *chip)
->  {
->  	return -EINVAL;
+> I created this patch to answer a need on my machine: I want to be able to disable momentarily the touchscreen
+> in order to wipe out a dust or clean the display without creating a mess on my desktop and opened docs.
+> It seemed consistent to have that kill switch at a central point, and moreover,
+> it doesn't depend on any tool linked to a specifc X server, graphical toolkit, desktop environment...
 > 
+> This patch uses the 0/1 values to enable or disable the mute, but I could update it to use
+> enable/disable instead if it is preferred.
+> Also, the permissions are write for group or ownoer only.
+> I thought about setting it world writable in order to allow easy shortcut creation, but it might also be a security flaw.
+> 
+> Let me know what you think about all this, at least it is really useful in my case, linked to a keyboard shortcut.
+> 
+> Best regards
+> ---
+>  drivers/input/input.c | 30 +++++++++++++++++++++++++++++-
+>  include/linux/input.h |  1 +
+>  2 files changed, 30 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index a1e609a..2f80fee 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -425,7 +425,7 @@ void input_event(struct input_dev *dev,
+>  {
+>  	unsigned long flags;
+>  
+> -	if (is_event_supported(type, dev->evbit, EV_MAX)) {
+> +	if (!dev->mute && is_event_supported(type, dev->evbit, EV_MAX)) {
+>  
+>  		spin_lock_irqsave(&dev->event_lock, flags);
+>  		input_handle_event(dev, type, code, value);
+> @@ -1384,10 +1384,38 @@ static ssize_t input_dev_show_properties(struct device *dev,
+> <snip>
 
+One big issue I see here is that you start dropping all events at a random
+point in time.
+You may end up within a gesture or just while a button is down and remain
+so until that same button gets pressed again on unmute.
+
+On your touchscreen, how do things behave if you trigger the muting while
+you are dragging or doing some gesture (and unmute when noone touches
+the touchscreen)?
+
+If applied to a keyboard, what happens when you mute while keys are pressed
+and unmute when they have long been released?
+
+
+If you could send a "reset" event to input listeners when muting you could
+work around most issues as any application making use of events would know
+that after this "reset" event things should not depend on any past state.
+
+
+Possibly a better way to achieve your aim is to just unbind and re-bind
+the device from device driver, causing software hotplug.
+That way you are sure no application will perform incorrect guesses while
+device is "muted".
+
+Bruno
