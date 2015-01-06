@@ -1,238 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372AbbAFCzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 21:55:54 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:52640 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932248AbbAFCzF (ORCPT
+	id S1754771AbbAFDBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 22:01:38 -0500
+Received: from complete.lackof.org ([198.49.126.79]:39091 "EHLO
+	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060AbbAFDBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 21:55:05 -0500
-From: David Decotigny <ddecotig@gmail.com>
-To: Amir Vadai <amirv@mellanox.com>, Florian Fainelli <f.fainelli@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Cc: David Decotigny <decot@googlers.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ben Hutchings <ben@decadent.org.uk>,
-        Masatake YAMATO <yamato@redhat.com>, Xi Wang <xii@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
-        Tom Gundersen <teg@jklm.no>, Jiri Pirko <jiri@resnulli.us>,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Saeed Mahameed <saeedm@mellanox.com>,
-        Venkata Duvvuru <VenkatKumar.Duvvuru@Emulex.Com>,
-        Govindarajulu Varadarajan <_govind@gmx.com>
-Subject: [PATCH net-next v2 8/8] net: mlx4_en: extend link mode support to 48 bits
-Date: Mon,  5 Jan 2015 18:54:10 -0800
-Message-Id: <1420512850-24699-9-git-send-email-ddecotig@gmail.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1420512850-24699-1-git-send-email-ddecotig@gmail.com>
-References: <1420512850-24699-1-git-send-email-ddecotig@gmail.com>
+	Mon, 5 Jan 2015 22:01:34 -0500
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Jan 2015 22:01:34 EST
+From: dann frazier <dann.frazier@canonical.com>
+To: linux-api@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>,
+        Doug Ledford <dledford@redhat.com>
+Subject: [PATCH] tools: testing: selftests: mq_perf_tests: Fix infinite loop on ARM
+Date: Mon,  5 Jan 2015 19:54:40 -0700
+Message-Id: <1420512880-392-1-git-send-email-dann.frazier@canonical.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <decot@googlers.com>
+We can't use a char type to check for a negative return value since char
+isn't guaranteed to be signed. Indeed, the char type tends to be unsigned on
+ARM.
 
-Signed-off-by: David Decotigny <decot@googlers.com>
+Signed-off-by: dann frazier <dann.frazier@canonical.com>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_ethtool.c | 73 ++++++++++++++++---------
- 1 file changed, 46 insertions(+), 27 deletions(-)
+ tools/testing/selftests/mqueue/mq_perf_tests.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c b/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c
-index 90e0f04..8ccbe3f 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_ethtool.c
-@@ -46,6 +46,11 @@
- #define EN_ETHTOOL_SHORT_MASK cpu_to_be16(0xffff)
- #define EN_ETHTOOL_WORD_MASK  cpu_to_be32(0xffffffff)
- 
-+static u32 mlx4_en_get_compat_flags(struct net_device *unused_netdev)
-+{
-+	return ETH_COMPAT_SUPPORT_LINK_MODE_48b;
-+}
-+
- static int mlx4_en_moderation_update(struct mlx4_en_priv *priv)
+diff --git a/tools/testing/selftests/mqueue/mq_perf_tests.c b/tools/testing/selftests/mqueue/mq_perf_tests.c
+index 94dae65..8519e9e 100644
+--- a/tools/testing/selftests/mqueue/mq_perf_tests.c
++++ b/tools/testing/selftests/mqueue/mq_perf_tests.c
+@@ -536,10 +536,9 @@ int main(int argc, char *argv[])
  {
- 	int i;
-@@ -388,7 +393,8 @@ static u32 mlx4_en_autoneg_get(struct net_device *dev)
- 	return autoneg;
- }
+ 	struct mq_attr attr;
+ 	char *option, *next_option;
+-	int i, cpu;
++	int i, cpu, rc;
+ 	struct sigaction sa;
+ 	poptContext popt_context;
+-	char rc;
+ 	void *retval;
  
--static u32 ptys_get_supported_port(struct mlx4_ptys_reg *ptys_reg)
-+static ethtool_link_mode_mask_t
-+ptys_get_supported_port(struct mlx4_ptys_reg *ptys_reg)
- {
- 	u32 eth_proto = be32_to_cpu(ptys_reg->eth_proto_cap);
- 
-@@ -465,7 +471,7 @@ enum ethtool_report {
- };
- 
- /* Translates mlx4 link mode to equivalent ethtool Link modes/speed */
--static u32 ptys2ethtool_map[MLX4_LINK_MODES_SZ][3] = {
-+static u64 ptys2ethtool_map[MLX4_LINK_MODES_SZ][3] = {
- 	[MLX4_100BASE_TX] = {
- 		SUPPORTED_100baseT_Full,
- 		ADVERTISED_100baseT_Full,
-@@ -558,10 +564,11 @@ static u32 ptys2ethtool_map[MLX4_LINK_MODES_SZ][3] = {
- 		},
- };
- 
--static u32 ptys2ethtool_link_modes(u32 eth_proto, enum ethtool_report report)
-+static ethtool_link_mode_mask_t
-+ptys2ethtool_link_modes(u32 eth_proto, enum ethtool_report report)
- {
- 	int i;
--	u32 link_modes = 0;
-+	ethtool_link_mode_mask_t link_modes = 0;
- 
- 	for (i = 0; i < MLX4_LINK_MODES_SZ; i++) {
- 		if (eth_proto & MLX4_PROT_MASK(i))
-@@ -570,7 +577,8 @@ static u32 ptys2ethtool_link_modes(u32 eth_proto, enum ethtool_report report)
- 	return link_modes;
- }
- 
--static u32 ethtool2ptys_link_modes(u32 link_modes, enum ethtool_report report)
-+static u32 ethtool2ptys_link_modes(ethtool_link_mode_mask_t link_modes,
-+				   enum ethtool_report report)
- {
- 	int i;
- 	u32 ptys_modes = 0;
-@@ -601,6 +609,9 @@ static int ethtool_get_ptys_settings(struct net_device *dev,
- 	struct mlx4_en_priv *priv = netdev_priv(dev);
- 	struct mlx4_ptys_reg ptys_reg;
- 	u32 eth_proto;
-+	ethtool_link_mode_mask_t eth_supported;
-+	ethtool_link_mode_mask_t eth_advertising;
-+	ethtool_link_mode_mask_t eth_lp_advertising;
- 	int ret;
- 
- 	memset(&ptys_reg, 0, sizeof(ptys_reg));
-@@ -624,41 +635,44 @@ static int ethtool_get_ptys_settings(struct net_device *dev,
- 	en_dbg(DRV, priv, "ptys_reg.eth_proto_lp_adv %x\n",
- 	       be32_to_cpu(ptys_reg.eth_proto_lp_adv));
- 
--	cmd->supported = 0;
--	cmd->advertising = 0;
-+	eth_supported = 0;
-+	eth_advertising = 0;
- 
--	cmd->supported |= ptys_get_supported_port(&ptys_reg);
-+	eth_supported |= ptys_get_supported_port(&ptys_reg);
- 
- 	eth_proto = be32_to_cpu(ptys_reg.eth_proto_cap);
--	cmd->supported |= ptys2ethtool_link_modes(eth_proto, SUPPORTED);
-+	eth_supported |= ptys2ethtool_link_modes(eth_proto, SUPPORTED);
- 
- 	eth_proto = be32_to_cpu(ptys_reg.eth_proto_admin);
--	cmd->advertising |= ptys2ethtool_link_modes(eth_proto, ADVERTISED);
-+	eth_advertising |= ptys2ethtool_link_modes(eth_proto, ADVERTISED);
- 
--	cmd->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
--	cmd->advertising |= (priv->prof->tx_pause) ? ADVERTISED_Pause : 0;
-+	eth_supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
-+	eth_advertising |= (priv->prof->tx_pause) ? ADVERTISED_Pause : 0;
- 
--	cmd->advertising |= (priv->prof->tx_pause ^ priv->prof->rx_pause) ?
-+	eth_advertising |= (priv->prof->tx_pause ^ priv->prof->rx_pause) ?
- 		ADVERTISED_Asym_Pause : 0;
- 
- 	cmd->port = ptys_get_active_port(&ptys_reg);
--	cmd->transceiver = (SUPPORTED_TP & cmd->supported) ?
-+	cmd->transceiver = (SUPPORTED_TP & eth_supported) ?
- 		XCVR_EXTERNAL : XCVR_INTERNAL;
- 
- 	if (mlx4_en_autoneg_get(dev)) {
--		cmd->supported |= SUPPORTED_Autoneg;
--		cmd->advertising |= ADVERTISED_Autoneg;
-+		eth_supported |= SUPPORTED_Autoneg;
-+		eth_advertising |= ADVERTISED_Autoneg;
- 	}
- 
- 	cmd->autoneg = (priv->port_state.flags & MLX4_EN_PORT_ANC) ?
- 		AUTONEG_ENABLE : AUTONEG_DISABLE;
- 
- 	eth_proto = be32_to_cpu(ptys_reg.eth_proto_lp_adv);
--	cmd->lp_advertising = ptys2ethtool_link_modes(eth_proto, ADVERTISED);
-+	eth_lp_advertising = ptys2ethtool_link_modes(eth_proto, ADVERTISED);
- 
--	cmd->lp_advertising |= (priv->port_state.flags & MLX4_EN_PORT_ANC) ?
-+	eth_lp_advertising |= (priv->port_state.flags & MLX4_EN_PORT_ANC) ?
- 			ADVERTISED_Autoneg : 0;
- 
-+	ethtool_cmd_supported_set(cmd, eth_supported);
-+	ethtool_cmd_advertising_set(cmd, eth_advertising);
-+	ethtool_cmd_lp_advertising_set(cmd, eth_lp_advertising);
- 	cmd->phy_address = 0;
- 	cmd->mdio_support = 0;
- 	cmd->maxtxpkt = 0;
-@@ -673,27 +687,30 @@ static void ethtool_get_default_settings(struct net_device *dev,
- 					 struct ethtool_cmd *cmd)
- {
- 	struct mlx4_en_priv *priv = netdev_priv(dev);
-+	ethtool_link_mode_mask_t eth_supported, eth_advertising;
- 	int trans_type;
- 
- 	cmd->autoneg = AUTONEG_DISABLE;
--	cmd->supported = SUPPORTED_10000baseT_Full;
--	cmd->advertising = ADVERTISED_10000baseT_Full;
-+	eth_supported = SUPPORTED_10000baseT_Full;
-+	eth_advertising = ADVERTISED_10000baseT_Full;
- 	trans_type = priv->port_state.transceiver;
- 
- 	if (trans_type > 0 && trans_type <= 0xC) {
- 		cmd->port = PORT_FIBRE;
- 		cmd->transceiver = XCVR_EXTERNAL;
--		cmd->supported |= SUPPORTED_FIBRE;
--		cmd->advertising |= ADVERTISED_FIBRE;
-+		eth_supported |= SUPPORTED_FIBRE;
-+		eth_advertising |= ADVERTISED_FIBRE;
- 	} else if (trans_type == 0x80 || trans_type == 0) {
- 		cmd->port = PORT_TP;
- 		cmd->transceiver = XCVR_INTERNAL;
--		cmd->supported |= SUPPORTED_TP;
--		cmd->advertising |= ADVERTISED_TP;
-+		eth_supported |= SUPPORTED_TP;
-+		eth_advertising |= ADVERTISED_TP;
- 	} else  {
- 		cmd->port = -1;
- 		cmd->transceiver = -1;
- 	}
-+	ethtool_cmd_supported_set(cmd, eth_supported);
-+	ethtool_cmd_advertising_set(cmd, eth_advertising);
- }
- 
- static int mlx4_en_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
-@@ -747,13 +764,14 @@ static int mlx4_en_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
- 	struct mlx4_en_priv *priv = netdev_priv(dev);
- 	struct mlx4_ptys_reg ptys_reg;
- 	__be32 proto_admin;
-+	const ethtool_link_mode_mask_t eth_adv = ethtool_cmd_advertising(cmd);
- 	int ret;
- 
--	u32 ptys_adv = ethtool2ptys_link_modes(cmd->advertising, ADVERTISED);
-+	u32 ptys_adv = ethtool2ptys_link_modes(eth_adv, ADVERTISED);
- 	int speed = ethtool_cmd_speed(cmd);
- 
--	en_dbg(DRV, priv, "Set Speed=%d adv=0x%x autoneg=%d duplex=%d\n",
--	       speed, cmd->advertising, cmd->autoneg, cmd->duplex);
-+	en_dbg(DRV, priv, "Set Speed=%d adv=0x%llx autoneg=%d duplex=%d\n",
-+	       speed, eth_adv, cmd->autoneg, cmd->duplex);
- 
- 	if (!(priv->mdev->dev->caps.flags2 & MLX4_DEV_CAP_FLAG2_ETH_PROT_CTRL) ||
- 	    (cmd->duplex == DUPLEX_HALF))
-@@ -1821,6 +1839,7 @@ static int mlx4_en_get_module_eeprom(struct net_device *dev,
- }
- 
- const struct ethtool_ops mlx4_en_ethtool_ops = {
-+	.get_compat_flags = mlx4_en_get_compat_flags,
- 	.get_drvinfo = mlx4_en_get_drvinfo,
- 	.get_settings = mlx4_en_get_settings,
- 	.set_settings = mlx4_en_set_settings,
+ 	main_thread = pthread_self();
 -- 
-2.2.0.rc0.207.ga3a616c
+2.1.4
 
