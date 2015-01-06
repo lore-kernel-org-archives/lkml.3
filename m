@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593AbbAFPT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:19:28 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:41591 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755512AbbAFPT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:19:26 -0500
-Message-ID: <54ABFCF3.4000508@mm-sol.com>
-Date: Tue, 06 Jan 2015 17:19:15 +0200
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1755622AbbAFPU5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:20:57 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:45974 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863AbbAFPUz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:20:55 -0500
+Message-ID: <54ABFD54.9000705@gmail.com>
+Date: Tue, 06 Jan 2015 16:20:52 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Andy Gross <agross@codeaurora.org>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: qcom_bam_dma: add one more optional clock
-References: <1410112547-363-1-git-send-email-svarbanov@mm-sol.com>
-In-Reply-To: <1410112547-363-1-git-send-email-svarbanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Laurent Georget <laurent.georget@supelec.fr>,
+        linux-man <linux-man@vger.kernel.org>
+CC: mtk.manpages@gmail.com, linux-kernel@vger.kernel.org,
+        Jeff Epler <jepler@unpythonic.net>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH 2/2] adjtimex.2: Change 'PPM' (parts per million) to 'ppm'
+References: <54A2DEAD.2050708@supelec.fr> <54A72360.3070807@supelec.fr> <54A724BE.8050409@supelec.fr>
+In-Reply-To: <54A724BE.8050409@supelec.fr>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
-
-On 09/07/2014 08:55 PM, Stanimir Varbanov wrote:
-> The BAM is tightly coupled with the peripheral to which it
-> belongs. In that sprit to access the BAM configuration
-> registers the driver needs to enable some peripheral
-> clocks. Currently the DT node enables bamclk which seems
-> is not enough for some peripherals (for example the crypto
-> engine wants core and iface clocks). This change attempts
-> to solve this issue by adding one more optional clock
-> in bam_dma driver.
+On 01/03/2015 12:07 AM, Laurent Georget wrote:
+> Hi again,
 > 
+> this is the second patch of the new series of patchs for adjtimex.2. 
+> 
+> This is a trivia patch correcting "PPM" (parts per million) to 
+> the more usual "ppm".
+> Credits to Jeff Epler <jepler@unpythonic.net>.
 
-What is your opinion on this patch?
+Thanks, Laurent (andf Jeff). Patch applied.
 
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+Laurent, please watch out: your patches are injecting trailing
+white space on lines. My release scripts clean those up, but
+it means that patches apply with "noise".
+
+Cheers,
+
+Michael
+
+> 
 > ---
->  .../devicetree/bindings/dma/qcom_bam_dma.txt       | 12 ++++--
->  drivers/dma/qcom_bam_dma.c                         | 44 +++++++++++++++-------
->  2 files changed, 38 insertions(+), 18 deletions(-)
+>  man2/adjtimex.2 | 15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> index d75a9d7..2376897 100644
-> --- a/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> +++ b/Documentation/devicetree/bindings/dma/qcom_bam_dma.txt
-> @@ -6,8 +6,11 @@ Required properties:
->  - interrupts: Should contain the one interrupt shared by all channels
->  - #dma-cells: must be <1>, the cell in the dmas property of the client device
->    represents the channel number
-> -- clocks: required clock
-> -- clock-names: must contain "bam_clk" entry
-> +- clocks: list of required clock plus one optional clock. The optional clock
-> +          is needed for some peripherals and can be omitted.
-> +- clock-names: must contain "core" clock name representing the required clock
-> +               plus the optional "iface" clock name depending on
-> +               peripheral needs.
->  - qcom,ee : indicates the active Execution Environment identifier (0-7) used in
->    the secure world.
->  
-> @@ -17,8 +20,9 @@ Example:
->  		compatible = "qcom,bam-v1.4.0";
->  		reg = <0xf9984000 0x15000>;
->  		interrupts = <0 94 0>;
-> -		clocks = <&gcc GCC_BAM_DMA_AHB_CLK>;
-> -		clock-names = "bam_clk";
-> +		clocks = <&gcc GCC_BLSP1_UART2_APPS_CLK>,
-> +			 <&gcc GCC_BLSP1_AHB_CLK>;
-> +		clock-names = "core", "iface";
->  		#dma-cells = <1>;
->  		qcom,ee = <0>;
->  	};
-
+> diff --git a/man2/adjtimex.2 b/man2/adjtimex.2
+> index ff4b23e..dbb2333 100644
+> --- a/man2/adjtimex.2
+> +++ b/man2/adjtimex.2
+> @@ -54,7 +54,7 @@ struct timex {
+>      long offset;      /* Time offset; nanoseconds, if STA_NANO
+>                           status flag is set, otherwise
+>                           microseconds */
+> -    long freq;        /* Frequency offset, in units of 2^-16 PPM
+> +    long freq;        /* Frequency offset, in units of 2^-16 ppm
+>                           (parts per million) (see NOTES below) */
+>      long maxerror;    /* Maximum error (microseconds) */
+>      long esterror;    /* Estimated error (microseconds) */
+> @@ -62,8 +62,7 @@ struct timex {
+>      long constant;    /* PLL (phase-locked loop) time constant */
+>      long precision;   /* Clock precision (microseconds,
+>                           read-only) */
+> -    long tolerance;   /* Clock frequency tolerance (PPM,
+> -                         read-only) */
+> +    long tolerance;   /* Clock frequency tolerance (ppm, read-only) */
+>      struct timeval time;
+>                        /* Current time (read-only, except for
+>                           ADJ_SETOFFSET); upon return, time.tv_usec
+> @@ -71,13 +70,13 @@ struct timex {
+>                           flag is set, otherwise microseconds */
+>      long tick;        /* Microseconds between clock ticks */
+>      long ppsfreq;     /* PPS (pulse per second) frequency
+> -                         (2^-16 PPM (see NOTES), read-only) */
+> +                         (2^-16 ppm (see NOTES), read-only) */
+>      long jitter;      /* PPS jitter (read-only); nanoseconds, if
+>                           STA_NANO status flag is set, otherwise
+>                           microseconds */
+>      int  shift;       /* PPS interval duration
+>                           (seconds, read-only) */
+> -    long stabil;      /* PPS stability (2^-16 PPM (see NOTES), read-only) */
+> +    long stabil;      /* PPS stability (2^-16 ppm (see NOTES), read-only) */
+>      long jitcnt;      /* PPS jitter limit exceeded (read-only) */
+>      long calcnt;      /* PPS calibration intervals (read-only) */
+>      long errcnt;      /* PPS calibration errors (read-only) */
+> @@ -349,9 +348,9 @@ In struct
+>  .IR ppsfreq ,
+>  and 
+>  .I stabil
+> -are PPM (parts per million) with a 16-bits fractional part, which means that a
+> -value of 1 in one of those fields actually means 2^-16 PPM, and 2^16=65535 is 
+> -1 PPM. This is the case for both input values (in the case of
+> +are ppm (parts per million) with a 16-bits fractional part, which means that a
+> +value of 1 in one of those fields actually means 2^-16 ppm, and 2^16=65535 is 
+> +1 ppm. This is the case for both input values (in the case of
+>  .IR freq )
+>  and output values.
+>  .SH CONFORMING TO
+> 
 
 
 -- 
-regards,
-Stan
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
