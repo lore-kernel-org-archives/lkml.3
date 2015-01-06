@@ -1,52 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499AbbAFUrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:47:40 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:39223 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753811AbbAFUri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:47:38 -0500
-Date: Tue, 6 Jan 2015 22:46:57 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Jiri Slaby <jslaby@suse.cz>
-cc: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, Simon Horman <horms@verge.net.au>,
-        lvs-devel@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-In-Reply-To: <54ABDB98.9060504@suse.cz>
-Message-ID: <alpine.LFD.2.11.1501062240130.2241@ja.home.ssi.bg>
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg> <5481B944.2000002@smart-weblications.de>
- <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg> <54858948.2060007@smart-weblications.de> <alpine.LFD.2.11.1412082234350.2401@ja.home.ssi.bg> <5486CD9D.4060107@smart-weblications.de> <alpine.LFD.2.11.1412102331230.4043@ja.home.ssi.bg>
- <5489A465.6090305@smart-weblications.de> <alpine.LFD.2.11.1412132211260.3229@ja.home.ssi.bg> <54ABDB98.9060504@suse.cz>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1756596AbbAFUsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:48:01 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:57468 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570AbbAFUsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 15:48:00 -0500
+Date: Tue, 6 Jan 2015 12:47:53 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150106204753.GI5280@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150106110730.GA25846@kmo-pixel>
+ <20150106114215.GS29390@twins.programming.kicks-ass.net>
+ <20150106114842.GP10476@twins.programming.kicks-ass.net>
+ <20150106120121.GB26845@kmo-pixel>
+ <20150106122006.GW29390@twins.programming.kicks-ass.net>
+ <54ABDB4B.7070008@hurleysoftware.com>
+ <20150106173808.GB5280@linux.vnet.ibm.com>
+ <54AC224C.4030903@hurleysoftware.com>
+ <20150106192559.GF5280@linux.vnet.ibm.com>
+ <54AC3E31.2080202@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AC3E31.2080202@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15010620-0009-0000-0000-000007BF0F1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 06, 2015 at 02:57:37PM -0500, Peter Hurley wrote:
+> On 01/06/2015 02:25 PM, Paul E. McKenney wrote:
+> > On Tue, Jan 06, 2015 at 12:58:36PM -0500, Peter Hurley wrote:
+> >> On 01/06/2015 12:38 PM, Paul E. McKenney wrote:
+> >>> On Tue, Jan 06, 2015 at 07:55:39AM -0500, Peter Hurley wrote:
+> >>>> [ +cc Paul McKenney ]
+> >>>>
+> >>>> On 01/06/2015 07:20 AM, Peter Zijlstra wrote:
+> >>>>> On Tue, Jan 06, 2015 at 04:01:21AM -0800, Kent Overstreet wrote:
+> >>>>>> On Tue, Jan 06, 2015 at 12:48:42PM +0100, Peter Zijlstra wrote:
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> Looking at that closure stuff, why is there an smp_mb() in
+> >>>>>>> closure_wake_up() ? Typically wakeup only needs to imply a wmb.
+> >>>>>>>
+> >>>>>>> Also note that __closure_wake_up() starts with a fully serializing
+> >>>>>>> instruction (xchg) and thereby already implies the full barrier.
+> >>>>>>
+> >>>>>> Probably no good reason, that code is pretty old :)
+> >>>>>>
+> >>>>>> If I was to hazard a guess, I had my own lockless linked lists before llist.h
+> >>>>>> existed and perhaps I did it with atomic_xchg() - which was at least documented
+> >>>>>> to not imply a barrier. I suppose it should just be dropped.
+> >>>>>
+> >>>>> We (probably me) should probably audit all the atomic_xchg()
+> >>>>> implementations and documentation and fix that. I was very much under
+> >>>>> the impression it should imply a full barrier (and it certainly does on
+> >>>>> x86), the documentation should state the rule that any atomic_ function
+> >>>>> that returns a result is fully serializing, therefore, because
+> >>>>> atomic_xchg() has a return value, it should too.
+> >>>>
+> >>>> memory-barriers.txt and atomic_ops.txt appear to contradict each other here,
+> >>>> but I think that's because atomic_ops.txt has drifted toward an
+> >>>> arch-implementer's POV:
+> >>>>
+> >>>> 260:atomic_xchg requires explicit memory barriers around the operation.
+> >>>>
+> >>>> All the serializing atomic operations have descriptions like this.
+> >>>
+> >>> I am not seeing the contradiction.
+> >>>
+> >>> You posted the relevant line from atomic_ops.txt.  The relevant passage
+> >>> from memory-barriers.txt is as follows:
+> >>>
+> >>> 	Any atomic operation that modifies some state in memory and
+> >>> 	returns information about the state (old or new) implies an
+> >>> 	SMP-conditional general memory barrier (smp_mb()) on each side
+> >>> 	of the actual operation (with the exception of explicit lock
+> >>> 	operations, described later).  These include:
+> >>>
+> >>> 		xchg();
+> >>> 		...
+> >>> 		atomic_xchg();			atomic_long_xchg();
+> >>>
+> >>> So it appears to me that both documents require full barriers before and
+> >>> after any atomic exchange operation in SMP builds.  Therefore, any
+> >>> SMP-capable architecture that omits these barriers is buggy.
+> >>
+> >> Sure, I understand that, but I think the atomic_ops.txt is easy to
+> >> misinterpret.
+> >>
+> >>> So, what am I missing here?
+> >>
+> >> Well, it's a matter of the intended audience. There is a significant
+> >> difference between:
+> >>
+> >> static inline int atomic_xchg(atomic_t *v, int new)
+> >> {
+> >> 	/* this arch doesn't have serializing xchg() */
+> >> 	smp_mb();
+> >> 	/* arch xchg */
+> >> 	smp_mb();
+> >> }
+> >>
+> >> and
+> >>
+> >> 	smp_mb();
+> >> 	atomic_xchg(&v, 1);
+> >> 	smp_mb();
+> >>
+> >> but both have "explicit memory barriers around the operation."
+> > 
+> > The atomic_ops.txt file is pretty explicit about its intended audience
+> > right at the beginning of the document:
+> > 
+> > 	This document is intended to serve as a guide to Linux port
+> > 	maintainers on how to implement atomic counter, bitops, and spinlock
+> > 	interfaces properly.
+> > 
+> > It is intended for people implementing the atomic operations more than
+> > for people making use of them.
+> 
+> And yet the following admonition is clearly aimed at interface users:
+> 
+> *** WARNING: atomic_read() and atomic_set() DO NOT IMPLY BARRIERS! ***
+> 
+> Some architectures may choose to use the volatile keyword, barriers, or inline
+> assembly to guarantee some degree of immediacy for atomic_read() and
+> atomic_set().  This is not uniformly guaranteed, and may change in the future,
+> so all users of atomic_t should treat atomic_read() and atomic_set() as simple
+> C statements that may be reordered or optimized away entirely by the compiler
+> or processor, and explicitly invoke the appropriate compiler and/or memory
+> barrier for each use case.  Failure to do so will result in code that may
+> suddenly break when used with different architectures or compiler
+> optimizations, or even changes in unrelated code which changes how the
+> compiler optimizes the section accessing atomic_t variables.
+> 
+> *** YOU HAVE BEEN WARNED! ***
+> 
+> 
+> To me, it makes sense to (also) document the arch-independent interfaces
+> for the much, much larger audience actually using them (not that I'm
+> suggesting this is your responsibility).
 
-	Hello,
+David Miller's call, actually.
 
-On Tue, 6 Jan 2015, Jiri Slaby wrote:
+But the rule is that if it is an atomic read-modify-write operation and it
+returns a value, then the operation itself needs to include full memory
+barriers before and after (as in the caller doesn't need to add them).
+Otherwise, the operation does not need to include memory ordering.
+Since xchg(), atomic_xchg(), and atomic_long_xchg() all return a value,
+their implementations must include full memory barriers before and after.
 
-> So what should be done to fix the issue in stable 3.12? Are those
-> patches needed in the upstream kernel too? In that case I suppose it
-> will propagate to me through upstream. Otherwise, could you send "3.12
-> only" patches to stable@ so that I can apply them?
+Pretty straightforward.  ;-)
 
-	I asked Pablo for the old fix for IPVS-FTP:
+							Thanx, Paul
 
-http://www.spinics.net/lists/lvs-devel/msg03879.html
-
-	The new fix for the xfrm crash is not applied yet:
-
-http://www.spinics.net/lists/lvs-devel/msg03877.html
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
