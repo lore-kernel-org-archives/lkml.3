@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707AbbAFToA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:44:00 -0500
-Received: from resqmta-ch2-08v.sys.comcast.net ([69.252.207.40]:60973 "EHLO
-	resqmta-ch2-08v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932669AbbAFTnz (ORCPT
+	id S932601AbbAFTyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:54:14 -0500
+Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:45862 "EHLO
+	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932680AbbAFTn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:43:55 -0500
+	Tue, 6 Jan 2015 14:43:56 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -18,9 +18,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v4 08/20] selftests/memfd: add install target to enable test install
-Date: Tue,  6 Jan 2015 12:43:22 -0700
-Message-Id: <4353762c318dad84798bb9f45bb338be7bb3891f.1420571615.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v4 09/20] selftests/memory-hotplug: add install target to enable test install
+Date: Tue,  6 Jan 2015 12:43:23 -0700
+Message-Id: <8576f564ad9b944e7efe53f5c038ad69c6f392d5.1420571615.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1420571615.git.shuahkh@osg.samsung.com>
 References: <cover.1420571615.git.shuahkh@osg.samsung.com>
@@ -37,47 +37,41 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/memfd/Makefile | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ tools/testing/selftests/memory-hotplug/Makefile            | 14 ++++++++++++--
+ .../memory-hotplug/{on-off-test.sh => mem-on-off-test.sh}  |  0
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+ rename tools/testing/selftests/memory-hotplug/{on-off-test.sh => mem-on-off-test.sh} (100%)
 
-diff --git a/tools/testing/selftests/memfd/Makefile b/tools/testing/selftests/memfd/Makefile
-index b80cd10..23c84bf 100644
---- a/tools/testing/selftests/memfd/Makefile
-+++ b/tools/testing/selftests/memfd/Makefile
-@@ -2,19 +2,30 @@ CFLAGS += -D_FILE_OFFSET_BITS=64
- CFLAGS += -I../../../../include/uapi/
- CFLAGS += -I../../../../include/
- 
-+INSTALL_PROGS = memfd_test fuse_test run_fuse_test.sh
-+MEMFD_TEST_STR = ./memfd_test || echo 'memfd_test: [FAIL]'
-+FUSE_TEST_STR = ./run_fuse_test.sh || echo 'fuse_test: [FAIL]'
+diff --git a/tools/testing/selftests/memory-hotplug/Makefile b/tools/testing/selftests/memory-hotplug/Makefile
+index d46b8d4..3bb0a99 100644
+--- a/tools/testing/selftests/memory-hotplug/Makefile
++++ b/tools/testing/selftests/memory-hotplug/Makefile
+@@ -1,9 +1,19 @@
++TEST_STR=/bin/bash ./mem-on-off-test.sh -r 2 || echo 'memory-hotplug selftests: [FAIL]'
 +
  all:
- 	gcc $(CFLAGS) memfd_test.c -o memfd_test
  
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
-+	@echo "$(MEMFD_TEST_STR)" >> $(KSELFTEST)
++	install ./mem-on-off-test.sh $(INSTALL_KSFT_PATH)/mem-on-off-test.sh
++	@echo "$(TEST_STR)" >> $(KSELFTEST) >> $(KSELFTEST)
 +else
 +	@echo "Run make kselftest_install in top level source directory"
 +endif
 +
- run_tests: all
--	gcc $(CFLAGS) memfd_test.c -o memfd_test
--	@./memfd_test || echo "memfd_test: [FAIL]"
-+	@$(MEMFD_TEST_STR)
+ run_tests:
+-	@/bin/bash ./on-off-test.sh -r 2 || echo "memory-hotplug selftests: [FAIL]"
++	@$(TEST_STR)
  
- build_fuse:
- 	gcc $(CFLAGS) fuse_mnt.c `pkg-config fuse --cflags --libs` -o fuse_mnt
- 	gcc $(CFLAGS) fuse_test.c -o fuse_test
- 
- run_fuse: build_fuse
--	@./run_fuse_test.sh || echo "fuse_test: [FAIL]"
-+	@$(FUSE_TEST_STR)
+ run_full_test:
+-	@/bin/bash ./on-off-test.sh || echo "memory-hotplug selftests: [FAIL]"
++	@/bin/bash ./mem-on-off-test.sh || echo "memory-hotplug selftests: [FAIL]"
  
  clean:
- 	$(RM) memfd_test fuse_test
+diff --git a/tools/testing/selftests/memory-hotplug/on-off-test.sh b/tools/testing/selftests/memory-hotplug/mem-on-off-test.sh
+similarity index 100%
+rename from tools/testing/selftests/memory-hotplug/on-off-test.sh
+rename to tools/testing/selftests/memory-hotplug/mem-on-off-test.sh
 -- 
 2.1.0
 
