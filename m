@@ -1,100 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403AbbAFPeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:34:36 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48220 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755640AbbAFPec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:34:32 -0500
-Date: Tue, 6 Jan 2015 16:34:29 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, kvm list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] x86_64,entry: Fix RCX for traced syscalls
-Message-ID: <20150106153429.GB32560@pd.tnic>
-References: <cover.1415403984.git.luto@amacapital.net>
- <20059f41189ac95da62cc8b23709c0eaba168186.1415403984.git.luto@amacapital.net>
- <20150105125943.GC19655@pd.tnic>
- <CALCETrVEnVV5gibE++gj=eudqEBFTckDasqcY2zZDC9Y+NMUrQ@mail.gmail.com>
+	id S1755829AbbAFPfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:35:37 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:54762 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620AbbAFPfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:35:32 -0500
+Date: Tue, 6 Jan 2015 16:35:28 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: Vince Hsu <vinceh@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Emil Velikov <emil.l.velikov@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Roy Spliet <seven@nimrod-online.com>
+Subject: Re: [Nouveau] [PATCH nouveau 09/11] drm: export some variable and
+ functions to resue the PM functions
+Message-ID: <20150106153526.GS31830@ulmo.nvidia.com>
+References: <54A20F4D.4040100@gmail.com>
+ <54A2198A.4000707@nvidia.com>
+ <20150105153252.GI12010@ulmo.nvidia.com>
+ <CAAVeFuK-SgUbtHADX4-pXN5_ayzvEd+1KxJOBcRe2tmDfHaLEA@mail.gmail.com>
+ <20150106114953.GD31830@ulmo.nvidia.com>
+ <54ABD49A.6080501@nvidia.com>
+ <20150106143729.GN31830@ulmo.nvidia.com>
+ <CAKb7UvgomyQkiwfGTdyuU-muE-_pPxOSmeXh9uQ6-ri0HHxLrQ@mail.gmail.com>
+ <20150106145054.GO31830@ulmo.nvidia.com>
+ <CAKb7Uvh6ttvssYqe+3Qqq+RvckoBmYAKv2XY2w7hBFNwi93rew@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="U7F658e60E1K4csu"
 Content-Disposition: inline
-In-Reply-To: <CALCETrVEnVV5gibE++gj=eudqEBFTckDasqcY2zZDC9Y+NMUrQ@mail.gmail.com>
+In-Reply-To: <CAKb7Uvh6ttvssYqe+3Qqq+RvckoBmYAKv2XY2w7hBFNwi93rew@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 12:31:15PM -0800, Andy Lutomirski wrote:
-> Do you have context tracking on?
 
-Yap, it is enabled for whatever reason:
-CONFIG_CONTEXT_TRACKING=y
-CONFIG_CONTEXT_TRACKING_FORCE=y
-CONFIG_HAVE_CONTEXT_TRACKING=y
+--U7F658e60E1K4csu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I assume that's in the historical tree?
+On Tue, Jan 06, 2015 at 10:03:36AM -0500, Ilia Mirkin wrote:
+> On Tue, Jan 6, 2015 at 9:50 AM, Thierry Reding <thierry.reding@gmail.com>=
+ wrote:
+> > On Tue, Jan 06, 2015 at 09:44:01AM -0500, Ilia Mirkin wrote:
+> >> On Tue, Jan 6, 2015 at 9:37 AM, Thierry Reding <thierry.reding@gmail.c=
+om> wrote:
+> >> > On Tue, Jan 06, 2015 at 08:27:06PM +0800, Vince Hsu wrote:
+> >> >>
+> >> >> On 01/06/2015 07:49 PM, Thierry Reding wrote:
+> >> >> >* PGP Signed by an unknown key
+> >> >> >
+> >> >> >On Mon, Jan 05, 2015 at 08:50:18PM +0100, Alexandre Courbot wrote:
+> >> >> >>On Mon, Jan 5, 2015 at 4:32 PM, Thierry Reding <thierry.reding@gm=
+ail.com> wrote:
+> >> >> >>>On Tue, Dec 30, 2014 at 11:18:34AM +0800, Vince Hsu wrote:
+> >> >> >>>>Hi Emil,
+> >> >> >>>>
+> >> >> >>>>On 12/30/2014 10:34 AM, Emil Velikov wrote:
+> >> >> >>>>>On 23/12/14 10:40, Vince Hsu wrote:
+> >> >> >>>>>>This patch adds some checks in the suspend/resume functions t=
+o distinguish
+> >> >> >>>>>>the dGPU and mobile GPU and exports some variables/functions =
+so that the
+> >> >> >>>>>>nouveau platform device can reuse them.
+> >> >> >>>>>>
+> >> >> >>>>>Hi Vince,
+> >> >> >>>>>
+> >> >> >>>>>Afaiu one needs to export a symbol as it's used by another mod=
+ule or
+> >> >> >>>>>subsystem. With the follow up two patches you are not doing ei=
+ther one,
+> >> >> >>>>>so I'd assume that you can just omit the EXPORT_* changes.
+> >> >> >>>>The nouveau platform device driver is built as another module -
+> >> >> >>>>nouveau_platform.ko. :)
+> >> >> >>>I'd like to hear the opinion of the nouveau people and Alex, but=
+ I'd
+> >> >> >>>very much prefer if nouveau_platform.o was simply linked into the
+> >> >> >>>nouveau.ko module. I don't see any good reason to keep it separa=
+te.
+> >> >> >>Yep, I agree. The decision to host platform support in a separate
+> >> >> >>module looks misleaded if it results in additional exports that we
+> >> >> >>would otherwise avoid. IIUC I did this to be able to use the modu=
+le
+> >> >> >>convenience macros to register the platform driver.
+> >> >> >>
+> >> >> >>>Something like the attached patch (untested) ought to do it.
+> >> >> >>This patch alone won't be enough for the reason I mentioned above.
+> >> >> >>However, if Vince doesn't mind handling the platform driver
+> >> >> >>registration manually in nouveau_drm_init/nouveau_drm_exit, I agr=
+ee
+> >> >> >>this would be the way to go.
+> >> >> >If we do the conversion to generic power domains, the only Tegra-
+> >> >> >specific API remaining will be the access to the fuse registers fo=
+r the
+> >> >> >speedo value. At that point we wouldn't need the ARCH_TEGRA depend=
+ency
+> >> >> >any longer and could always build the platform driver along with t=
+he PCI
+> >> >> >driver.
+> >> >> Do we really want the platform driver always built with the PCI dri=
+ver even
+> >> >> there is no dependency between them. Actually I have some patches to
+> >> >> build the platform driver with !CONFIG_PCI and would like to post t=
+hem maybe
+> >> >> later.
+> >> >
+> >> > I do see some advantage in making Nouveau build with !CONFIG_PCI bec=
+ause
+> >> > it allows building the driver for an SoC without PCI. But I think al=
+ways
+> >> > compiling whatever is available won't hurt. Nouveau itself is rather=
+ big
+> >> > (~1 MiB of text and ~120 KiB of data) whereas the platform code weig=
+hs
+> >> > in at around 1.5 KiB of text and 108 B of data. I suspect that the P=
+CI
+> >> > glue is equally negligible.
+> >>
+> >> The much bigger reductions in size would be from getting rid of all
+> >> the stuff that's not used at all on a GK20A, like all the firmware,
+> >> and a whole bunch of logic. I had a series that split things up into
+> >> nv04/nv50/nvc0 categories. I believe it was considered undesirable due
+> >> to increased build complexity. (It wasn't a nice modularized
+> >> separation but rather just a compile-time setting.) Shouldn't be too
+> >> hard to regenerate though.
+> >
+> > Would you happen to remember the amount of savings for enabling only
+> > nvc0? I'm not overly concerned with the module being 1 MiB on Tegra,
+> > though. Most boards tend to have 2 GiB+ of memory these days and the
+> > kernel footprint is pretty big without Nouveau anyway.
+>=20
+> Well, nvc0 is a big one since that's where all the firmware lives,
+> which is a big chunk of it, and you don't actually end up using any of
+> it. (And even if you did, it'd be just one of the firmware files, not
+> all of them).
+>=20
+> Here was the patch: http://permalink.gmane.org/gmane.comp.video.dri.devel=
+/102457
+>=20
+> Looks like nvc0 only was:
+>=20
+> NVC0: 878726 bytes
+>    text    data     bss     dec     hex filename
+>  360593  140327      80  501000   7a508 drivers/gpu/drm/nouveau/nouveau.ko
+>=20
+> compared to the combo package:
+>=20
+> NV04 + NV50 + NVC0: 1343482 bytes
+>    text    data     bss     dec     hex filename
+>  579171  184264     480  763915   ba80b drivers/gpu/drm/nouveau/nouveau.ko
 
-Yeah.
+That's a pretty significant improvement. And the patch doesn't look too
+bad either. But like I said, I'm not a big fan of reducing binary size
+at the expense of code complexity, so I won't loose any sleep over it.
 
-> > [  180.059170] ata1.00: exception Emask 0x0 SAct 0x7fffffff SErr 0x0 action 0x6 frozen
-> > [  180.066873] ata1.00: failed command: WRITE FPDMA QUEUED
-> > [  180.072158] ata1.00: cmd 61/08:00:a8:ac:d9/00:00:23:00:00/40 tag 0 ncq 4096 out
-> > [  180.072158]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-> 
-> That's really weird.  The only thing I can think of is that somehow we
-> returned to user mode without enabling interrupts.
+Thierry
 
-Right, considering FIXUP_TOP_OF_STACK is used in a bunch of cases in
-entry_64.S, no wonder it corrupts something.
+--U7F658e60E1K4csu
+Content-Type: application/pgp-signature
 
-> This leads me to wonder: why do we save eflags in the R11 pt_regs
-> slot?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-That: "If executed in 64-bit mode, SYSRET loads the lower-32 RFLAGS bits
-from R11[31:0] and clears the upper 32 RFLAGS bits."
+iQIcBAEBAgAGBQJUrAC+AAoJEN0jrNd/PrOh7xkP/jk153h0DJYUg1hDXeh0xhKz
+vwoBt/wZMKt0V10tspr10V4HiRe1u+oRwQ9aUzHTVHHM2nLLjm/ZR6hpLBuVJqvp
+1Fd45meYq5KOwStxF6msgjhwrVSXL7OwBQvVwYXwwNFUm1e+cfnPA/qaynXyLOgh
+zrYaBbjD5T0BOlq/38lkS0i6fnjwyhOgAPuX+Wm+MBlPUs2e+sR+IZYzTnhA1gRI
+EO7DGA6z63YOpZwhTu/aQ13hPAQjRnDiblhVyyBX41nAfTIipBiwo37761qM+lXb
+qFRJoTU710E15LDk8szUdKsVkr4XwnlcBcnrae2kbnBmXt85L7QlX+H+l1osJbOm
+VwbgD7+3lUIVFtfWLFCDzvZicTBEN+RFXCtqrZ+rvZlB1b0grCs4CjFn6fH0M9e8
+7aZchHKB6CORiZzSbmTrGSsuGq5vC9WOQD3FvYxj4DdlTRMYQuTOdKye2G0yeLMK
+AWw8hUi2Jt0iM1IpARnrY8+XvTi+83IQN50p1s+nQOJHcVZtRhG99vVydU5PykP2
+UVVBHaiZgIE0BkMYJR5WlbrkwLsUQExYRd1du6p1ba29J0hJn4l4GJskCHEpsByf
+H63Mae+BH9l3vPbG+m8zjXPccc++ls+mSwb9Nc79jDjT9wgL4S6zxsiznvudSFH0
+jXn5cD90FwFaWYXz8T/9
+=5/Il
+-----END PGP SIGNATURE-----
 
-> This seems entirely backwards, not to mention that it accounts for two
-> instructions in each of FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK
-> for no apparently reason whatsoever.
-
-> Can you send the full output from syscall_exit_regs_64 from here:
-> 
-> https://gitorious.org/linux-test-utils/linux-clock-tests/source/34884122b6ebe81d9b96e3e5128b6d6d95082c6e:
-> 
-> with the patch applied (assuming it even gets that far for you)?  I
-> see results like:
-> 
-> [NOTE]    syscall ffff: orig RCX = 1  ss = 2b  orig_ss = 6b  flags =
-> 217  orig_flags = 217
-> 
-> which seems fine.
-
-./syscall_exit_regs_64
-[OK]    int80 ffff: AX = ffffffffffffffda
-[OK]    int80 40000000: AX = ffffffffffffffda
-[OK]    syscall ffff: RCX = 400962  RIP = 400962
-[OK]    syscall ffff: AX = ffffffffffffffda
-[NOTE]  syscall ffff: orig RCX = 1  ss = 2b  orig_ss = 6b  flags = 217  orig_flags = 217
-[OK]    syscall 40000000: RCX = 400962  RIP = 400962
-[FAIL]  syscall 40000000: AX = fffffffffffffff7
-[NOTE]  syscall 40000000: orig RCX = 1  ss = 2b  orig_ss = 6b  flags = 217  orig_flags = 217
-[OK]    syscall(ffff): ret = -1, errno = 38
-
-> Are you seeing this with the whole series applied or with only this patch?
-
-I applied this patch only and started seeing those. Then I booted in the
-previous kernel and tried to repro but it didn't trigger.
-
-I'll try hammering on the kernel *without* your patch to see whether I
-can trigger it somehow...
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+--U7F658e60E1K4csu--
