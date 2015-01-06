@@ -1,301 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176AbbAFLD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:03:58 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:60172 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754040AbbAFLD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:03:57 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: tglx@linutronix.de, heiko@sntech.de
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clockevents: rockchip: Add rockchip timer for rk3288
-Date: Tue,  6 Jan 2015 12:03:53 +0100
-Message-Id: <1420542233-16897-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1755070AbbAFLEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 06:04:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37884 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752973AbbAFLEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 06:04:31 -0500
+Message-ID: <54ABC13C.4030403@suse.cz>
+Date: Tue, 06 Jan 2015 12:04:28 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mm/compaction: add more trace to understand compaction
+ start/finish condition
+References: <1417593127-6819-1-git-send-email-iamjoonsoo.kim@lge.com> <1417593127-6819-2-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1417593127-6819-2-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rk3288 board uses the architected timers and these ones are shutdown when
-the cpu is powered down. There is a need of a broadcast timer in this case to
-ensure proper wakeup when the cpus are in sleep mode and a timer expires.
+On 12/03/2014 08:52 AM, Joonsoo Kim wrote:
+> It is not well analyzed that when compaction start and when compaction
+> finish. With this tracepoint for compaction start/finish condition, I can
+> find following bug.
+> 
+> http://www.spinics.net/lists/linux-mm/msg81582.html
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  include/linux/compaction.h        |    2 +
+>  include/trace/events/compaction.h |   91 +++++++++++++++++++++++++++++++++++++
+>  mm/compaction.c                   |   40 ++++++++++++++--
+>  3 files changed, 129 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> index a9547b6..bdb4b99 100644
+> --- a/include/linux/compaction.h
+> +++ b/include/linux/compaction.h
+> @@ -12,6 +12,8 @@
+>  #define COMPACT_PARTIAL		3
+>  /* The full zone was compacted */
+>  #define COMPACT_COMPLETE	4
+> +/* For more detailed tracepoint output, will be converted to COMPACT_CONTINUE */
+> +#define COMPACT_NOT_SUITABLE	5
 
-This driver provides the basic timer functionnality as a backup for the local
-timers at sleep time.
+So this makes it sound like the value means "compaction was not suitable to do
+in this zone", but later it means something different.
 
-The timer belongs to the alive subsystem. It includes two programmables 64 bits
-timer channels but the driver only uses 32bits. It works with two operations
-mode: free running and user defined count.
+>  /* When adding new state, please change compaction_status_string, too */
+>  
+>  /* Used to signal whether compaction detected need_sched() or lock contention */
+> diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
+> index 139020b..5e47cb2 100644
+> --- a/include/trace/events/compaction.h
+> +++ b/include/trace/events/compaction.h
+> @@ -164,6 +164,97 @@ TRACE_EVENT(mm_compaction_end,
+>  		compaction_status_string[__entry->status])
+>  );
+>  
+> +TRACE_EVENT(mm_compaction_try_to_compact_pages,
+> +
+> +	TP_PROTO(
+> +		unsigned int order,
+> +		gfp_t gfp_mask,
+> +		enum migrate_mode mode,
+> +		int alloc_flags,
+> +		int classzone_idx),
+> +
+> +	TP_ARGS(order, gfp_mask, mode, alloc_flags, classzone_idx),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned int, order)
+> +		__field(gfp_t, gfp_mask)
+> +		__field(enum migrate_mode, mode)
+> +		__field(int, alloc_flags)
+> +		__field(int, classzone_idx)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->order = order;
+> +		__entry->gfp_mask = gfp_mask;
+> +		__entry->mode = mode;
+> +		__entry->alloc_flags = alloc_flags;
+> +		__entry->classzone_idx = classzone_idx;
+> +	),
+> +
+> +	TP_printk("order=%u gfp_mask=0x%x mode=%d alloc_flags=0x%x classzone_idx=%d",
+> +		__entry->order,
+> +		__entry->gfp_mask,
+> +		(int)__entry->mode,
+> +		__entry->alloc_flags,
+> +		__entry->classzone_idx)
+> +);
+> +
+> +DECLARE_EVENT_CLASS(mm_compaction_suitable_template,
+> +
+> +	TP_PROTO(struct zone *zone,
+> +		unsigned int order,
+> +		int alloc_flags,
+> +		int classzone_idx,
+> +		int ret),
+> +
+> +	TP_ARGS(zone, order, alloc_flags, classzone_idx, ret),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(char *, name)
+> +		__field(unsigned int, order)
+> +		__field(int, alloc_flags)
+> +		__field(int, classzone_idx)
+> +		__field(int, ret)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->name = (char *)zone->name;
 
-Programing sequence:
+This does not identify the NUMA node, just the zone type, isn't it?
 
-1. Timer initialization:
- * Disable the timer by writing '0' to the CONTROLREG register
- * Program the timer mode by writing the mode to the CONTROLREG register
- * Set the interrupt mask
+> +		__entry->order = order;
+> +		__entry->alloc_flags = alloc_flags;
+> +		__entry->classzone_idx = classzone_idx;
+> +		__entry->ret = ret;
+> +	),
+> +
+> +	TP_printk("zone=%-8s order=%u alloc_flags=0x%x classzone_idx=%d ret=%s",
+> +		__entry->name,
+> +		__entry->order,
+> +		__entry->alloc_flags,
+> +		__entry->classzone_idx,
+> +		compaction_status_string[__entry->ret])
+> +);
+> +
+> +DEFINE_EVENT(mm_compaction_suitable_template, mm_compaction_finished,
+> +
+> +	TP_PROTO(struct zone *zone,
+> +		unsigned int order,
+> +		int alloc_flags,
+> +		int classzone_idx,
+> +		int ret),
+> +
+> +	TP_ARGS(zone, order, alloc_flags, classzone_idx, ret)
+> +);
+> +
+> +DEFINE_EVENT(mm_compaction_suitable_template, mm_compaction_suitable,
+> +
+> +	TP_PROTO(struct zone *zone,
+> +		unsigned int order,
+> +		int alloc_flags,
+> +		int classzone_idx,
+> +		int ret),
+> +
+> +	TP_ARGS(zone, order, alloc_flags, classzone_idx, ret)
+> +);
+> +
+>  #endif /* _TRACE_COMPACTION_H */
+>  
+>  /* This part must be outside protection */
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 4c7b837..f5d2405 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -25,6 +25,7 @@ char *compaction_status_string[] = {
+>  	"continue",
+>  	"partial",
+>  	"complete",
+> +	"not_suitable_page",
 
-2. Setting the count value:
- * Load the count value to the registers COUNT0 and COUNT1 (not used).
+So here COMPACT_NOT_SUITABLE is interpreted as "no suitable page was found".
 
-3. Enable the timer
- * Write '1' to the CONTROLREG register with the mode (free running or user)
+>  };
+>  
+>  static inline void count_compact_event(enum vm_event_item item)
+> @@ -1048,7 +1049,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+>  	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+>  }
+>  
+> -static int compact_finished(struct zone *zone, struct compact_control *cc,
+> +static int __compact_finished(struct zone *zone, struct compact_control *cc,
+>  			    const int migratetype)
+>  {
+>  	unsigned int order;
+> @@ -1103,7 +1104,21 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+>  			return COMPACT_PARTIAL;
+>  	}
+>  
+> -	return COMPACT_CONTINUE;
+> +	return COMPACT_NOT_SUITABLE;
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- .../bindings/timer/rockchip,rk3288-timer.txt       |  15 ++
- arch/arm/boot/dts/rk3288.dtsi                      |   7 +
- arch/arm/mach-rockchip/Kconfig                     |   1 +
- drivers/clocksource/Kconfig                        |   4 +
- drivers/clocksource/Makefile                       |   1 +
- drivers/clocksource/rockchip_timer.c               | 158 +++++++++++++++++++++
- 6 files changed, 186 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/timer/rockchip,rk3288-timer.txt
- create mode 100644 drivers/clocksource/rockchip_timer.c
+So for compact_finished tracepoint you print "not_suitable_page" and it's what
+it really means - watermarks were met, but no suitable page was actually found.
+But you use "COMPACT_NOT_SUITABLE" which hints at a different meaning.
 
-diff --git a/Documentation/devicetree/bindings/timer/rockchip,rk3288-timer.txt b/Documentation/devicetree/bindings/timer/rockchip,rk3288-timer.txt
-new file mode 100644
-index 0000000..54ef747
---- /dev/null
-+++ b/Documentation/devicetree/bindings/timer/rockchip,rk3288-timer.txt
-@@ -0,0 +1,15 @@
-+Rockchip rk3288 timer
-+
-+Required properties:
-+- compatible: shall be "rockchip,rk3288-timer"
-+- reg: base address of the timer register starting with TIMERS CONTROL register
-+- interrupts: should contain the interrupts for Timer0
-+- clock-frequency: the frequency the timer is running
-+
-+Example:
-+	timer: timer@ff810000 {
-+		compatible = "rockchip,rk3288-timer";
-+		reg = <0xff810000 0x20>;
-+		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-+		clock-frequency = <24000000>;
-+	};
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 2a878a3..7a7db48 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -149,6 +149,13 @@
- 		clock-frequency = <24000000>;
- 	};
- 
-+	timer: timer@ff810000 {
-+		compatible = "rockchip,rk3288-timer";
-+		reg = <0xff810000 0x20>;
-+		interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-+		clock-frequency = <24000000>;
-+	};
-+
- 	sdmmc: dwmmc@ff0c0000 {
- 		compatible = "rockchip,rk3288-dw-mshc";
- 		clock-freq-min-max = <400000 150000000>;
-diff --git a/arch/arm/mach-rockchip/Kconfig b/arch/arm/mach-rockchip/Kconfig
-index ac5803c..4c3fa7e 100644
---- a/arch/arm/mach-rockchip/Kconfig
-+++ b/arch/arm/mach-rockchip/Kconfig
-@@ -11,6 +11,7 @@ config ARCH_ROCKCHIP
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_ARM_TWD if SMP
- 	select DW_APB_TIMER_OF
-+	select RK3288_TIMER
- 	select ARM_GLOBAL_TIMER
- 	select CLKSRC_ARM_GLOBAL_TIMER_SCHED_CLOCK
- 	help
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index fc01ec2..6ed97a6 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -26,6 +26,10 @@ config DW_APB_TIMER_OF
- 	select DW_APB_TIMER
- 	select CLKSRC_OF
- 
-+config RK3288_TIMER
-+	bool
-+	select CLKSRC_OF
-+
- config ARMADA_370_XP_TIMER
- 	bool
- 	select CLKSRC_OF
-diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 94d90b2..39e4f77 100644
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
- obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
- obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
- obj-$(CONFIG_DW_APB_TIMER_OF)	+= dw_apb_timer_of.o
-+obj-$(CONFIG_RK3288_TIMER)      += rockchip_timer.o
- obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+= nomadik-mtu.o
- obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+= clksrc-dbx500-prcmu.o
- obj-$(CONFIG_ARMADA_370_XP_TIMER)	+= time-armada-370-xp.o
-diff --git a/drivers/clocksource/rockchip_timer.c b/drivers/clocksource/rockchip_timer.c
-new file mode 100644
-index 0000000..00e24bd
---- /dev/null
-+++ b/drivers/clocksource/rockchip_timer.c
-@@ -0,0 +1,158 @@
-+/*
-+ * Rockchip timer support
-+ *
-+ * Copyright (C) Daniel Lezcano <daniel.lezcano@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/clockchips.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+
-+#define TIMER_NAME "rk_timer"
-+
-+#define TIMER_LOAD_COUNT0               0x00
-+#define TIMER_LOAD_COUNT1               0x04
-+#define TIMER_CONTROL_REG               0x10
-+#define TIMER_INT_STATUS                0x18
-+
-+#define TIMER_DISABLE                   0x0
-+#define TIMER_ENABLE                    0x1
-+#define TIMER_MODE_FREE_RUNNING         (0 << 1)
-+#define TIMER_MODE_USER_DEFINED_COUNT   (1 << 1)
-+#define TIMER_INT_UNMASK                (1 << 2)
-+
-+struct bc_timer {
-+	struct clock_event_device ce;
-+	void __iomem *base;
-+	u32 freq;
-+};
-+
-+static struct bc_timer bc_timer;
-+
-+static inline struct bc_timer *rk_timer(struct clock_event_device *ce)
-+{
-+	return container_of(ce, struct bc_timer, ce);
-+}
-+
-+static inline void __iomem *rk_base(struct clock_event_device *ce)
-+{
-+	return rk_timer(ce)->base;
-+}
-+
-+static inline void rk_timer_disable(struct clock_event_device *ce)
-+{
-+	writel_relaxed(TIMER_DISABLE, rk_base(ce) + TIMER_CONTROL_REG);
-+	dsb();
-+}
-+
-+static inline void rk_timer_enable(struct clock_event_device *ce, u32 flags)
-+{
-+	writel_relaxed(TIMER_ENABLE | TIMER_INT_UNMASK | flags,
-+		       rk_base(ce) + TIMER_CONTROL_REG);
-+	dsb();
-+}
-+
-+static void rk_timer_update_counter(unsigned long cycles,
-+				    struct clock_event_device *ce)
-+{
-+	writel_relaxed(cycles, rk_base(ce) + TIMER_LOAD_COUNT0);
-+	writel_relaxed(0, rk_base(ce) + TIMER_LOAD_COUNT1);
-+	dsb();
-+}
-+
-+static void rk_timer_interrupt_clear(struct clock_event_device *ce)
-+{
-+	writel_relaxed(1, rk_base(ce) + TIMER_INT_STATUS);
-+	dsb();
-+}
-+
-+static inline int rk_timer_set_next_event(unsigned long cycles,
-+					  struct clock_event_device *ce)
-+{
-+	rk_timer_disable(ce);
-+	rk_timer_update_counter(cycles, ce);
-+	rk_timer_enable(ce, TIMER_MODE_USER_DEFINED_COUNT);
-+	return 0;
-+}
-+
-+static inline void rk_timer_set_mode(enum clock_event_mode mode,
-+				     struct clock_event_device *ce)
-+{
-+	switch (mode) {
-+	case CLOCK_EVT_MODE_PERIODIC:
-+		rk_timer_disable(ce);
-+		rk_timer_update_counter(rk_timer(ce)->freq / HZ - 1, ce);
-+		rk_timer_enable(ce, TIMER_MODE_FREE_RUNNING);
-+	case CLOCK_EVT_MODE_ONESHOT:
-+	case CLOCK_EVT_MODE_RESUME:
-+		break;
-+	case CLOCK_EVT_MODE_UNUSED:
-+	case CLOCK_EVT_MODE_SHUTDOWN:
-+		rk_timer_disable(ce);
-+		break;
-+	}
-+}
-+
-+static irqreturn_t rk_timer_interrupt(int irq, void *dev_id)
-+{
-+	struct clock_event_device *ce = dev_id;
-+
-+	rk_timer_interrupt_clear(ce);
-+
-+	if (ce->mode == CLOCK_EVT_MODE_ONESHOT) {
-+		rk_timer_disable(ce);
-+	}
-+
-+	ce->event_handler(ce);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void __init rk_timer_init(struct device_node *np)
-+{
-+	struct clock_event_device *ce = &bc_timer.ce;
-+	int ret, irq;
-+
-+	bc_timer.base = of_iomap(np, 0);
-+	if (!bc_timer.base) {
-+		pr_err("Failed to get base address for '%s'\n", TIMER_NAME);
-+		return;
-+	}
-+
-+	irq = irq_of_parse_and_map(np, 0);
-+	if (irq == NO_IRQ) {
-+                pr_err("Failed to map interrupts for '%s'\n", TIMER_NAME);
-+                return;
-+        }
-+
-+        if (of_property_read_u32(np, "clock-frequency", &bc_timer.freq)) {
-+		pr_err("Failed to read the frequency for '%s'\n", TIMER_NAME);
-+		return;
-+	}
-+
-+	ce->name = TIMER_NAME;
-+	ce->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
-+	ce->set_next_event = rk_timer_set_next_event;
-+	ce->set_mode = rk_timer_set_mode;
-+	ce->irq = irq;
-+	ce->cpumask = cpumask_of(0);
-+	ce->rating = 250;
-+
-+	rk_timer_interrupt_clear(ce);
-+	rk_timer_disable(ce);
-+
-+	ret = request_irq(irq, rk_timer_interrupt, IRQF_TIMER, TIMER_NAME, ce);
-+	if (ret) {
-+		pr_err("Failed to initialize '%s': %d\n", TIMER_NAME, ret);
-+		return;
-+	}
-+
-+	clockevents_config_and_register(ce, bc_timer.freq, 1, UINT_MAX);
-+}
-+CLOCKSOURCE_OF_DECLARE(rk_timer, "rockchip,rk3288-timer", rk_timer_init);
--- 
-1.9.1
+> +}
+> +
+> +static int compact_finished(struct zone *zone, struct compact_control *cc,
+> +			    const int migratetype)
+> +{
+> +	int ret;
+> +
+> +	ret = __compact_finished(zone, cc, migratetype);
+> +	trace_mm_compaction_finished(zone, cc->order, cc->alloc_flags,
+> +						cc->classzone_idx, ret);
+> +	if (ret == COMPACT_NOT_SUITABLE)
+> +		ret = COMPACT_CONTINUE;
+> +
+> +	return ret;
+>  }
+>  
+>  /*
+> @@ -1113,7 +1128,7 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+>   *   COMPACT_PARTIAL  - If the allocation would succeed without compaction
+>   *   COMPACT_CONTINUE - If compaction should run now
+>   */
+> -unsigned long compaction_suitable(struct zone *zone, int order,
+> +static unsigned long __compaction_suitable(struct zone *zone, int order,
+>  					int alloc_flags, int classzone_idx)
+>  {
+>  	int fragindex;
+> @@ -1157,11 +1172,25 @@ unsigned long compaction_suitable(struct zone *zone, int order,
+>  	 */
+>  	fragindex = fragmentation_index(zone, order);
+>  	if (fragindex >= 0 && fragindex <= sysctl_extfrag_threshold)
+> -		return COMPACT_SKIPPED;
+> +		return COMPACT_NOT_SUITABLE;
+
+But here in compaction_suitable, return here means that fragmentation seems to
+be low and it's unlikely that compaction will help. COMPACT_NOT_SUITABLE sounds
+like a good name, but then tracepoint prints "not_suitable_page" and that's
+something different.
+
+>  	return COMPACT_CONTINUE;
+>  }
+>  
+> +unsigned long compaction_suitable(struct zone *zone, int order,
+> +					int alloc_flags, int classzone_idx)
+> +{
+> +	unsigned long ret;
+> +
+> +	ret = __compaction_suitable(zone, order, alloc_flags, classzone_idx);
+> +	trace_mm_compaction_suitable(zone, order, alloc_flags,
+> +						classzone_idx, ret);
+> +	if (ret == COMPACT_NOT_SUITABLE)
+> +		ret = COMPACT_SKIPPED;
+
+I don't like this wrapping just for tracepints, but I don't know of a better way :/
+
+> +
+> +	return ret;
+> +}
+> +
+>  static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  {
+>  	int ret;
+> @@ -1375,6 +1404,9 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  	if (!order || !may_enter_fs || !may_perform_io)
+>  		return COMPACT_SKIPPED;
+>  
+> +	trace_mm_compaction_try_to_compact_pages(order, gfp_mask, mode,
+> +					alloc_flags, classzone_idx);
+> +
+>  	/* Compact each zone in the list */
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+>  								nodemask) {
+> 
 
