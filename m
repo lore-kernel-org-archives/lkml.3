@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762AbbAFKRQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:17:16 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:13475 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313AbbAFKRM (ORCPT
+	id S1754702AbbAFKRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:17:08 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:62742 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313AbbAFKRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:17:12 -0500
-Message-ID: <54ABB574.30602@atmel.com>
-Date: Tue, 6 Jan 2015 18:14:12 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] sound: soc: atmel sam9g20_wm8731: remove useless include
-References: <1420536080-29181-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1420536080-29181-1-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+	Tue, 6 Jan 2015 05:17:04 -0500
+From: Piotr Kubus <p.t.kubus@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Piotr Kubus <p.t.kubus@gmail.com>
+Subject: [PATCH v2] Staging: comedi: dmm32at: Fix a code indent issue
+Date: Tue,  6 Jan 2015 11:16:16 +0100
+Message-Id: <1420539376-15323-1-git-send-email-p.t.kubus@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre Belloni,
+Fixed a code indent error found by checkpatch.pl in dmm32at.c.
 
-On 01/06/2015 05:21 PM, Alexandre Belloni wrote:
-> A mach/ header is included but never used. Simply remove it.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Piotr Kubus <p.t.kubus@gmail.com>
+---
+v2: make the commit message clearer and shorter
 
-Thanks for your patch.
+ drivers/staging/comedi/drivers/dmm32at.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Acked-by: Bo Shen <voice.shen@atmel.com>
+diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
+index 6df298a..31919b8 100644
+--- a/drivers/staging/comedi/drivers/dmm32at.c
++++ b/drivers/staging/comedi/drivers/dmm32at.c
+@@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
+ 	/* enable the ai conversion interrupt and the clock to start scans */
+ 	outb(DMM32AT_INTCLK_ADINT |
+ 	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
+-             dev->iobase + DMM32AT_INTCLK_REG);
++	     dev->iobase + DMM32AT_INTCLK_REG);
+ }
+ 
+ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+-- 
+1.9.1
 
-> ---
->   sound/soc/atmel/sam9g20_wm8731.c | 1 -
->   1 file changed, 1 deletion(-)
->
-> diff --git a/sound/soc/atmel/sam9g20_wm8731.c b/sound/soc/atmel/sam9g20_wm8731.c
-> index 66b66d0e7514..531728975bbb 100644
-> --- a/sound/soc/atmel/sam9g20_wm8731.c
-> +++ b/sound/soc/atmel/sam9g20_wm8731.c
-> @@ -47,7 +47,6 @@
->   #include <sound/soc.h>
->
->   #include <asm/mach-types.h>
-
-Btw, do you consider to remove this also?
-
-> -#include <mach/hardware.h>
->
->   #include "../codecs/wm8731.h"
->   #include "atmel-pcm.h"
->
-
-Best Regards,
-Bo Shen
