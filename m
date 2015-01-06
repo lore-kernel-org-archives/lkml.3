@@ -1,59 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933287AbbAFVjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:39:05 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:57759 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932611AbbAFVjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:39:02 -0500
-Date: Tue, 6 Jan 2015 22:39:00 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        ilya.enkovich@intel.com
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
- to arch_prctl
-Message-ID: <20150106213900.GX2915@two.firstfloor.org>
-References: <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
- <54AC1FFB.7030504@linux.intel.com>
- <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
- <54AC29B1.70004@linux.intel.com>
- <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
- <54AC2F62.40708@linux.intel.com>
- <20150106191649.GU2915@two.firstfloor.org>
- <CALCETrUNpi1Gc-Qpmu1bJ0BVcSH2xquaY_X+YYhLjbPaQcf0_w@mail.gmail.com>
- <20150106212255.GV2915@two.firstfloor.org>
- <CALCETrUpR6ZCBSXdbY232inK=LaXLK0LAssqUt+r8DAn9=xjJg@mail.gmail.com>
+	id S933329AbbAFVkM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:40:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51326 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932597AbbAFVkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 16:40:09 -0500
+Date: Tue, 6 Jan 2015 23:39:59 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
+Subject: [PATCH] sparc64: minor coding style tweaks
+Message-ID: <1420580314-15107-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrUpR6ZCBSXdbY232inK=LaXLK0LAssqUt+r8DAn9=xjJg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 01:34:56PM -0800, Andy Lutomirski wrote:
-> On Tue, Jan 6, 2015 at 1:22 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >> Given that it doesn't seen to have been committed yet, I'm not too
-> >> worried about compatibility.  And "prctl (43)" doesn't actually seem a
-> >> whole lot better than "syscall(SYS_arch_prctl, ARCH_ENABLE_MPX, 0)"
-> >
-> > This would actually fail with the EINVAL change you requested.
-> >
-> 
-> So the libmpx code needs to change anyway, then, right?  I really
-> don't think we should accept garbage in the extra prctl slots just
-> because uncommitted code somewhere fails to initialize them.
+Sam Ravnborg suggested packing single-line cases
+in nocheck switch statements makes for easier to
+read code.
 
-Yes it would.
+This is on top of arch/sparc: uaccess_64 macro whitespace fixes
+that I sent earlier.
 
-I think that is why most prctls don't do it. After all if you need a new
-field you can just add another one. I usually added the checks in the
-ones I added, but I can see why not doing it.
+Suggested-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/sparc/include/asm/uaccess_64.h | 100 +++++++++++++-----------------------
+ 1 file changed, 37 insertions(+), 63 deletions(-)
 
--Andi
+diff --git a/arch/sparc/include/asm/uaccess_64.h b/arch/sparc/include/asm/uaccess_64.h
+index 12d9594..a35194b 100644
+--- a/arch/sparc/include/asm/uaccess_64.h
++++ b/arch/sparc/include/asm/uaccess_64.h
+@@ -106,26 +106,16 @@ void __retl_efault(void);
+ struct __large_struct { unsigned long buf[100]; };
+ #define __m(x) ((struct __large_struct *)(x))
+ 
+-#define __put_user_nocheck(data, addr, size) ({ \
+-	register int __pu_ret; \
+-	switch (size) { \
+-	case 1: \
+-		__put_user_asm(data, b, addr, __pu_ret); \
+-		break; \
+-	case 2: \
+-		__put_user_asm(data, h, addr, __pu_ret); \
+-		break; \
+-	case 4: \
+-		__put_user_asm(data, w, addr, __pu_ret); \
+-		break; \
+-	case 8: \
+-		__put_user_asm(data, x, addr, __pu_ret); \
+-		break; \
+-	default: \
+-		__pu_ret = __put_user_bad(); \
+-		break; \
+-	} \
+-	__pu_ret; \
++#define __put_user_nocheck(data, addr, size) ({			\
++	register int __pu_ret;					\
++	switch (size) {						\
++	case 1: __put_user_asm(data, b, addr, __pu_ret); break;	\
++	case 2: __put_user_asm(data, h, addr, __pu_ret); break;	\
++	case 4: __put_user_asm(data, w, addr, __pu_ret); break;	\
++	case 8: __put_user_asm(data, x, addr, __pu_ret); break;	\
++	default: __pu_ret = __put_user_bad(); break;		\
++	}							\
++	__pu_ret;						\
+ })
+ 
+ #define __put_user_asm(x, size, addr, ret)				\
+@@ -150,51 +140,35 @@ __asm__ __volatile__(							\
+ 
+ int __put_user_bad(void);
+ 
+-#define __get_user_nocheck(data, addr, size, type) ({ \
+-	register int __gu_ret; \
+-	register unsigned long __gu_val; \
+-	switch (size) { \
+-		case 1: \
+-			__get_user_asm(__gu_val, ub, addr, __gu_ret); \
+-			break; \
+-		case 2: \
+-			__get_user_asm(__gu_val, uh, addr, __gu_ret); \
+-			break; \
+-		case 4: \
+-			__get_user_asm(__gu_val, uw, addr, __gu_ret); \
+-			break; \
+-		case 8: \
+-			__get_user_asm(__gu_val, x, addr, __gu_ret); \
+-			break; \
+-		default: \
+-			__gu_val = 0; \
+-			__gu_ret = __get_user_bad(); \
+-			break; \
+-	} \
+-	data = (__force type) __gu_val; \
+-	 __gu_ret; \
++#define __get_user_nocheck(data, addr, size, type) ({			     \
++	register int __gu_ret;						     \
++	register unsigned long __gu_val;				     \
++	switch (size) {							     \
++		case 1: __get_user_asm(__gu_val, ub, addr, __gu_ret); break; \
++		case 2: __get_user_asm(__gu_val, uh, addr, __gu_ret); break; \
++		case 4: __get_user_asm(__gu_val, uw, addr, __gu_ret); break; \
++		case 8: __get_user_asm(__gu_val, x, addr, __gu_ret); break;  \
++		default:						     \
++			__gu_val = 0;					     \
++			__gu_ret = __get_user_bad();			     \
++			break;						     \
++	} 								     \
++	data = (__force type) __gu_val;					     \
++	 __gu_ret;							     \
+ })
+ 
+-#define __get_user_nocheck_ret(data, addr, size, type, retval) ({ \
+-	register unsigned long __gu_val __asm__ ("l1"); \
+-	switch (size) { \
+-	case 1: \
+-		__get_user_asm_ret(__gu_val, ub, addr, retval); \
+-		break; \
+-	case 2: \
+-		__get_user_asm_ret(__gu_val, uh, addr, retval); \
+-		break; \
+-	case 4: \
+-		__get_user_asm_ret(__gu_val, uw, addr, retval); \
+-		break; \
+-	case 8: \
+-		__get_user_asm_ret(__gu_val, x, addr, retval); \
+-		break; \
+-	default: \
+-		if (__get_user_bad()) \
+-			return retval; \
+-	} \
+-	data = (__force type) __gu_val; \
++#define __get_user_nocheck_ret(data, addr, size, type, retval) ({	\
++	register unsigned long __gu_val __asm__ ("l1");			\
++	switch (size) {							\
++	case 1: __get_user_asm_ret(__gu_val, ub, addr, retval); break;	\
++	case 2: __get_user_asm_ret(__gu_val, uh, addr, retval); break;	\
++	case 4: __get_user_asm_ret(__gu_val, uw, addr, retval); break;	\
++	case 8: __get_user_asm_ret(__gu_val, x, addr, retval); break;	\
++	default:							\
++		if (__get_user_bad())					\
++			return retval;					\
++	}								\
++	data = (__force type) __gu_val;					\
+ })
+ 
+ #define __get_user_asm(x, size, addr, ret)				\
+-- 
+MST
