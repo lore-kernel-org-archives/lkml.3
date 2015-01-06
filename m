@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424AbbAFTQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:16:31 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:58164 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbbAFTQ3 (ORCPT
+	id S932480AbbAFTQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:16:53 -0500
+Received: from one.firstfloor.org ([193.170.194.197]:57527 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932436AbbAFTQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:16:29 -0500
-Message-ID: <54AC348B.4030900@hp.com>
-Date: Tue, 06 Jan 2015 11:16:27 -0800
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Yuchung Cheng <ycheng@google.com>, Erik Grinaker <erik@bengler.no>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
+	Tue, 6 Jan 2015 14:16:51 -0500
+Date: Tue, 6 Jan 2015 20:16:49 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: TCP connection issues against Amazon S3
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com> <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com> <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
-In-Reply-To: <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        ilya.enkovich@intel.com
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
+ to arch_prctl
+Message-ID: <20150106191649.GU2915@two.firstfloor.org>
+References: <87mw5x0xjz.fsf@tassilo.jf.intel.com>
+ <54AAFFA3.6000901@linux.intel.com>
+ <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+ <20150106040428.GR2915@two.firstfloor.org>
+ <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+ <54AC1FFB.7030504@linux.intel.com>
+ <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
+ <54AC29B1.70004@linux.intel.com>
+ <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
+ <54AC2F62.40708@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54AC2F62.40708@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>>> A packet dump [1] shows repeated ACK retransmits for some of the
-> TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
->
-> I am trying to understand the problem. Could you confirm that it's the
-> HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
-> from the receiver (your host)?
->
-> btw I suspect some middleboxes are stripping SACKOK options from your
-> SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
+On Tue, Jan 06, 2015 at 10:54:26AM -0800, Dave Hansen wrote:
+> On 01/06/2015 10:41 AM, Andy Lutomirski wrote:
+> > The runtime seems to be here:
+> > 
+> > https://software.intel.com/protected-download/267266/144917
+> > 
+> > but I'm not going to accept the EULA.
+> 
+> That is not the code I'm talking about here.
 
-The TCP Timestamp option too it seems.
+The MPX run time patch is here (may not be the latest version)
 
-Speaking of middleboxes...  It is probably a fish that is red, but a 
-while back I stepped in a middle box (a load balancer) which decided 
-that if it saw "too many" retransmissions in a given TCP window that 
-something was seriously wrong and it would toast the connection.  I 
-thought though that was an active reset on the part of the middlebox. 
-(And the client was the active sender not the back-end server)
+https://gcc.gnu.org/ml/gcc-patches/2014-11/msg01026.html
 
-I'm assuming one incident starts at XX:41:24.748265 in the trace?  That 
-does look like it is slowly slogging its way through a bunch of lost 
-traffic, which was I think part of the problem I was seeing with the 
-middlebox I stepped in, but I don't think I see the reset where I would 
-have expected it.  Still, it looks like the sender has an increasing TCP 
-RTO as it is going through the slog (as it likely must since there are 
-no TCP timestamps?), to the point it gets larger than I'm guessing curl 
-was willing to wait, so the FIN at XX:41:53.269534 after a ten second or 
-so gap.
-
-rick jones
+-Andi
