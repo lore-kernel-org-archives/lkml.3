@@ -1,152 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334AbbAFPHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:07:49 -0500
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:8870 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644AbbAFPHs (ORCPT
+	id S1755482AbbAFPJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:09:24 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:36336 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842AbbAFPJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:07:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 06 Jan 2015 07:06:16 -0800
-Date: Tue, 6 Jan 2015 23:07:45 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
-        <martin.peres@free.fr>, <seven@nimrod-online.com>,
-        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/11] memory: tegra: add flush operation for Tegra124
- memory clients
-Message-ID: <20150106150744.GB18598@nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
- <1419331204-26679-4-git-send-email-vinceh@nvidia.com>
- <20150106142958.GM31830@ulmo.nvidia.com>
+	Tue, 6 Jan 2015 10:09:23 -0500
+Date: Tue, 6 Jan 2015 16:09:17 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: swarren@wwwdotorg.org, gnurou@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        wni@nvidia.com, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH v5 1/3] of: Add descriptions of thermtrip properties to
+ Tegra PMC bindings
+Message-ID: <20150106150916.GP31830@ulmo.nvidia.com>
+References: <1420541578-27968-1-git-send-email-mikko.perttunen@kapsi.fi>
+ <1420541578-27968-2-git-send-email-mikko.perttunen@kapsi.fi>
 MIME-Version: 1.0
-In-Reply-To: <20150106142958.GM31830@ulmo.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zxEKvxCKojqA/Afl"
 Content-Disposition: inline
+In-Reply-To: <1420541578-27968-2-git-send-email-mikko.perttunen@kapsi.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03:30:00PM Jan 06, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Dec 23, 2014 at 06:39:56PM +0800, Vince Hsu wrote:
-> > Signed-off-by: Vince Hsu <vinceh@nvidia.com>
-> > ---
-> >  drivers/memory/tegra/tegra124.c | 82 +++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 82 insertions(+)
-> > 
-> > diff --git a/drivers/memory/tegra/tegra124.c b/drivers/memory/tegra/tegra124.c
-> > index 278d40b854c1..036935743a0a 100644
-> > --- a/drivers/memory/tegra/tegra124.c
-> > +++ b/drivers/memory/tegra/tegra124.c
-> > @@ -6,6 +6,7 @@
-> >   * published by the Free Software Foundation.
-> >   */
-> >  
-> > +#include <linux/delay.h>
-> >  #include <linux/of.h>
-> >  #include <linux/mm.h>
-> >  
-> > @@ -959,7 +960,85 @@ static const struct tegra_smmu_swgroup tegra124_swgroups[] = {
-> >  	{ .swgroup = TEGRA_SWGROUP_VI,        .reg = 0x280 },
-> >  };
-> >  
-> > +static const struct tegra_mc_hr tegra124_mc_hr[] = {
-> > +	{TEGRA_SWGROUP_AFI,        0x200, 0x200,  0},
-> > +	{TEGRA_SWGROUP_AVPC,       0x200, 0x200,  1},
-> > +	{TEGRA_SWGROUP_DC,         0x200, 0x200,  2},
-> > +	{TEGRA_SWGROUP_DCB,        0x200, 0x200,  3},
-> > +	{TEGRA_SWGROUP_HC,         0x200, 0x200,  6},
-> > +	{TEGRA_SWGROUP_HDA,        0x200, 0x200,  7},
-> > +	{TEGRA_SWGROUP_ISP2,       0x200, 0x200,  8},
-> > +	{TEGRA_SWGROUP_MPCORE,     0x200, 0x200,  9},
-> > +	{TEGRA_SWGROUP_MPCORELP,   0x200, 0x200, 10},
-> > +	{TEGRA_SWGROUP_MSENC,      0x200, 0x200, 11},
-> > +	{TEGRA_SWGROUP_PPCS,       0x200, 0x200, 14},
-> > +	{TEGRA_SWGROUP_SATA,       0x200, 0x200, 15},
-> > +	{TEGRA_SWGROUP_VDE,        0x200, 0x200, 16},
-> > +	{TEGRA_SWGROUP_VI,         0x200, 0x200, 17},
-> > +	{TEGRA_SWGROUP_VIC,        0x200, 0x200, 18},
-> > +	{TEGRA_SWGROUP_XUSB_HOST,  0x200, 0x200, 19},
-> > +	{TEGRA_SWGROUP_XUSB_DEV,   0x200, 0x200, 20},
-> > +	{TEGRA_SWGROUP_TSEC,       0x200, 0x200, 22},
-> > +	{TEGRA_SWGROUP_SDMMC1A,    0x200, 0x200, 29},
-> > +	{TEGRA_SWGROUP_SDMMC2A,    0x200, 0x200, 30},
-> > +	{TEGRA_SWGROUP_SDMMC3A,    0x200, 0x200, 31},
-> 
-> The documentation that I have says that the status register for these is
-> 0x204.
-Oops. Thanks for catching this. Will fix.
 
-> 
-> > +	{TEGRA_SWGROUP_SDMMC4A,    0x970, 0x974,  0},
-> > +	{TEGRA_SWGROUP_ISP2B,      0x970, 0x974,  1},
-> > +	{TEGRA_SWGROUP_GPU,        0x970, 0x974,  2},
-> > +};
-> > +
-> >  #ifdef CONFIG_ARCH_TEGRA_124_SOC
-> > +
-> > +static bool tegra124_stable_hotreset_check(struct tegra_mc *mc,
-> > +		u32 reg, u32 *stat)
-> > +{
-> > +	int i;
-> > +	u32 cur_stat;
-> > +	u32 prv_stat;
-> > +
-> > +	prv_stat = mc_readl(mc, reg);
-> > +	for (i = 0; i < 5; i++) {
-> > +		cur_stat = mc_readl(mc, reg);
-> > +		if (cur_stat != prv_stat)
-> > +			return false;
-> > +	}
-> 
-> Why this loop? The function is already called in a polling loop below.
-> Also why compare to the previous value of the register? Isn't the only
-> thing we're interested in the value of the specific bit?
-I recall it's due to a HW bug that there might be a gitch if we program
-the ctrl reg and then read the status reg in a short window. This function
-is to make sure we have a stable status.
+--zxEKvxCKojqA/Afl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> > +	*stat = cur_stat;
-> > +	return true;
-> > +}
-> > +
-> > +static int tegra124_mc_flush(struct tegra_mc *mc,
-> > +		const struct tegra_mc_hr *hr_client, bool enable)
-> > +{
-> > +	u32 val;
-> > +
-> > +	if (!mc || !hr_client)
-> > +		return -EINVAL;
-> > +
-> > +	val = mc_readl(mc, hr_client->ctrl);
-> > +	if (enable)
-> > +		val |= BIT(hr_client->bit);
-> > +	else
-> > +		val &= ~BIT(hr_client->bit);
-> > +	mc_writel(mc, val, hr_client->ctrl);
-> > +	mc_readl(mc, hr_client->ctrl);
-> > +
-> > +	/* poll till the flush is done */
-> > +	if (enable) {
-> > +		do {
-> > +			udelay(10);
-> 
-> This should probably be usleep_range(10, 20) or something.
-Maybe no. We might need some spin lock here to ensure only one flushing
-operation requested and no race could happen.
+On Tue, Jan 06, 2015 at 12:52:56PM +0200, Mikko Perttunen wrote:
+> From: Mikko Perttunen <mperttunen@nvidia.com>
+>=20
+> Hardware-triggered thermal reset requires configuring the I2C
+> reset procedure. This configuration is read from the device tree,
+> so document the relevant properties in the binding documentation.
+>=20
+> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> ---
+>  .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      | 26 ++++++++++++++++=
+++++++
+>  1 file changed, 26 insertions(+)
+>=20
+> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-p=
+mc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+> index 68ac65f..2fd5051 100644
+> --- a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+> +++ b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
+> @@ -47,6 +47,23 @@ Required properties when nvidia,suspend-mode=3D<0>:
+>    sleep mode, the warm boot code will restore some PLLs, clocks and then
+>    bring up CPU0 for resuming the system.
+> =20
+> +Hardware-triggered thermal reset:
+> +On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode exists,
+> +hardware-triggered thermal reset will be enabled.
+> +
+> +Required properties for hardware-triggered thermal reset (inside 'i2c-th=
+ermtrip'):
+> +- nvidia,i2c-controller-id : ID of I2C controller to send poweroff comma=
+nd to. Valid values are
+> +                             described in section 9.2.148 "APBDEV_PMC_SC=
+RATCH53_0" of the
+> +                             Tegra K1 Technical Reference Manual.
+> +- nvidia,bus-addr : Bus address of the PMU on the I2C bus
+> +- nvidia,reg-addr : I2C register address to write poweroff command to
+> +- nvidia,reg-data : Poweroff command to write to PMU
+> +
+> +Optional properties for hardware-triggered thermal reset (inside 'i2c-th=
+ermtrip'):
+> +- nvidia,pinmux-id : Pinmux used by the hardware when issuing poweroff c=
+ommand.
+> +                     Defaults to 0. Valid values are described in sectio=
+n 12.5.2
+> +                     "Pinmux Support" of the Tegra4 Technical Reference =
+Manual.
 
-> 
-> Would it be difficult to implement this for Tegra30 and Tegra114?
-No. But I have to check the detail in Tegra30 and Tegra114. And the biggest
-problem is I don't have the boards to test.
+As discussed on IRC, I'd prefer if this referred to the Tegra K1 TRM
+like the comment for the nvidia,i2c-controller-id above so that people
+aren't required to look at two different documents to get these values.
+I've filed an internal bug to get this information added to the Tegra K1
+TRM. In addition it might be nice to copy the table with the values into
+the binding document for easier reference and in case the TRM suddenly
+becomes unavailable.
 
-Thanks,
-Vince
+Thierry
 
+--zxEKvxCKojqA/Afl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUq/qcAAoJEN0jrNd/PrOhbFQP/0oriLBKg7j1a68Jj2P6Gjhv
+v4EciHRDoMWKC14m1vLxkKv8rRENmk4CdCtxnDKOfb3CtAzJ1ZWrXWvYuxiu5drB
+VNyLQYrI03B1B/Z4TolVBFGyB78uWKQqlxKX++Jvl9Zni9Wn8iEieQORjoiow0ym
+n2jfO9zoP/JSaPlCRw5mqr5nGoX2TPOeqowXqFDTM0uXC0SYBbcJr6IPCqlY+I6q
+321ErtlHvMXXAbxNyVTUrXloL9ECdhDWJFyoQMe4LPqt1EoV0rMtoSYTYJnyK0zN
+SOVcmVLGnolfPJh67Ju7Tskw0nq9gdOh0belOpM5aTglEmNtHoVqLLdCrzbprt9E
+JNQLYp1vy7VljuE9q/bBC939KKjwsWuW4eCl4dcEudvMuXWJXirkE7KqxAs6jh9w
+t5B6aSMdlawM+MVnPnd8AlMV/AhsoD8/eoevYfOmXTJJwzJcoUMYwivtV5JWLG4U
+OM0/nu4/a2VSU31Hzt4MlaL7g3JcXYsDl37pwKa1Ey5ukGmGD8LoT3DBo4eKu1/k
+LfknpoCYW2FEQACVD4z50E5iJm8wiIv44q9V5/8zwRCkdxmSMKNLX9eq3BsucT7x
+X+dO5RhceVd6WToxYHzf5Ox8KQEcKt9qZ4L9Ts4vVnb/cqj4rMdoQvGWv/qv4MDK
+eTJoyq3w65/Tt+XOjT5U
+=kOtx
+-----END PGP SIGNATURE-----
+
+--zxEKvxCKojqA/Afl--
