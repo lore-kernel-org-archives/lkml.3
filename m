@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845AbbAFRXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:23:17 -0500
-Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:50170 "EHLO
-	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751436AbbAFRXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:23:15 -0500
-Message-ID: <54AC19FE.3040906@nexus-software.ie>
-Date: Tue, 06 Jan 2015 17:23:10 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755626AbbAFR1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:27:09 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:37364 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751828AbbAFR1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 12:27:07 -0500
+Date: Tue, 6 Jan 2015 11:25:45 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: <pali.rohar@gmail.com>, <sre@debian.org>, <sre@ring0.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@kernel.org>,
+        <aaro.koskinen@iki.fi>, <ivo.g.dimitrov.75@gmail.com>
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+Message-ID: <20150106172545.GK6502@saruman>
+Reply-To: <balbi@ti.com>
+References: <20150106170433.GA5408@amd>
 MIME-Version: 1.0
-To: Darren Hart <dvhart@infradead.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] x86: Add IMR support to Quark/Galileo
-References: <1419873783-5161-1-git-send-email-pure.logic@nexus-software.ie> <20150106055959.GA59754@vmdeb7> <54ABE989.8060701@nexus-software.ie> <20150106164805.GA27956@vmdeb7>
-In-Reply-To: <20150106164805.GA27956@vmdeb7>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Jtds+vpI57xq70EV"
+Content-Disposition: inline
+In-Reply-To: <20150106170433.GA5408@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/15 16:48, Darren Hart wrote:
->> Correct. Firmware locks the IMRs around ACPI runtime data data.
->>
->> In the patch here, we cycle though every unlocked IMR and zap it - which
->> will include tear-down of the IMRs placed around the compressed kernel image
->> and boot params data structure. Firmware puts those IMRs in place to ensure
->> no invalid DMA, SMM access to the compressed kernel image during boot can
->> take place.
->
-> Thanks Bryan, this clears these questions up for me.
->
-> Are we confident that the tear-down of the IMRs around the compressed kernel
-> image happens early enough and deterministically, such that there is no race
-> condition in which a driver could get DMA into this memory?
+--Jtds+vpI57xq70EV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes confident :)
+On Tue, Jan 06, 2015 at 06:04:33PM +0100, Pavel Machek wrote:
+> Hi!
+>=20
+> In 3.18, sound is nice and clear.
+>=20
+> In 3.19, sound is unusable. It produces nasty tone when it should be
+> quiet, and there's at least as much noise as is sound.
+>=20
+> Unfortunately, list of mixers also changed (and there's cca 120
+> settings), but a) it does not work with the old list and b) nothing I
+> could figure out did make the sound usable. Some setting resulted in
+> even more noise.
+>=20
+> Any idea what could have caused it?
 
-Tested by baking IMR-platform code + MMC into the kernel and mounting 
-the rootfs on Galileo from MMC.
+$ git bisect start
+$ git bisect good v3.18
+$ git bisect bad
 
-Also tested the reverse case. Attempting to mount an SD kills every 
-version of the tip-of-tree I've used with an IMR reset.
+that'll help find what caused it.
 
-Just to be really sure, it's also been tested with the initial 0.7.5 and 
-0.8.0 release which didn't have DMI strings to identify the board.
+--=20
+balbi
 
-So - with this change in place tip-of-tree should work for everybody on 
-Galileo Gen1/Gen2.
+--Jtds+vpI57xq70EV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-It should get the Galileo Debian people out of the business of needing 
-to have a separate kernel to boot - though obvious more enabling work 
-needs to happen in SoC space still.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-http://sourceforge.net/projects/galileodebian/
+iQIcBAEBAgAGBQJUrBqZAAoJEIaOsuA1yqREbhEP/i0RGZglistS1EQLPyfxCwmu
+6rLM8oq47XN63M10NfXu5xlHHbbnpgOCoinmcrntNL3IVeMlgrdOyuaR1Pf64NPA
+F2KnAaoIHsa9D9uPGTdaTQTpQSPR8m+lER0GJCT6IhdSC0eZE8D0Gc+feubnqlWX
+I2NmZCP1/NCY2b4swC74eBAHOWHFR+hIy9lf8TCR7B0RRxPzqsgu31/RohAGB3qV
+K2VCiuWfHJOVWWEYPe/SzbjHN/Nk4SCOkTSpA2hZrbFGgBb8oV48zN4tlin1ux5H
+Je3DZjs+9tdDabhXgIwTZetJY9P3i8bSeU24Ox6DOz4FgL8nM3jMyHUcmddcttKk
+EplBOZAaevuVAAIT0J7i20bqULrykNomeLyJoCIndcPedvQbL+7UtChe2yhYPgmG
+nWiW+EjT9Lg/SrkEPlkBgGuZtSq6LAgiVltflV2/XnLUu8cPtBuEpDV5YT3KV36t
+inAJJy60t+whggRPtrcqcDotDwDQKPz9ydtMRAbimSAC6E52Fs46tXdEbfdp9zbH
+pj5bW1PeOecWQ509CKG4IWAxKjNJZScIu1TdiMTzCHcmbwoNOomZXX4jCFhTmFpb
+/5h4OaJ3hvON5BOzYosjWSVvC7WXQy/HGTlE/OzMd3CH2miKM+NArCzokvgWLSQ4
++3yBufIXUL08iA7iwepN
+=3G77
+-----END PGP SIGNATURE-----
 
-Also I'm hoping - though I don't have the exact details of this - that 
-the crash/non-boot situation for CentOs on Galileo may be as a result of 
-IMRs, so hopefully will be of use there too.
-
-
-
-
+--Jtds+vpI57xq70EV--
