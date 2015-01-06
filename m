@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611AbbAFUOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:14:30 -0500
+	id S932367AbbAFUOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:14:48 -0500
 Received: from mail-bn1on0092.outbound.protection.outlook.com ([157.56.110.92]:37750
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755629AbbAFUOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:14:22 -0500
+	id S1755735AbbAFUOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 15:14:25 -0500
 From: <atull@opensource.altera.com>
 To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
         <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
@@ -26,9 +26,9 @@ CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
         <yvanderv@opensource.altera.com>,
         Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v8 3/4] staging: fpga manager: framework core
-Date: Tue, 6 Jan 2015 14:13:38 -0600
-Message-ID: <1420575219-27061-4-git-send-email-atull@opensource.altera.com>
+Subject: [PATCH v8 4/4] staging: fpga manager: add driver for socfpga fpga manager
+Date: Tue, 6 Jan 2015 14:13:39 -0600
+Message-ID: <1420575219-27061-5-git-send-email-atull@opensource.altera.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
 References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com>
@@ -43,9 +43,9 @@ X-DmarcAction: None
 X-Microsoft-Antispam: UriScan:;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0301MB1238;
 X-Forefront-PRVS: 0448A97BF2
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(15975445007)(53416004)(87976001)(2950100001)(42186005)(62966003)(77156002)(81156004)(105586002)(106356001)(107046002)(69596002)(19580395003)(97736003)(122386002)(229853001)(21056001)(19580405001)(31966008)(48376002)(66066001)(4396001)(50466002)(76176999)(50226001)(46102003)(50986999)(86152002)(92566001)(2201001)(120916001)(47776003)(64706001)(20776003)(99396003)(89996001)(33646002)(86362001)(68736005)(40100003)(101416001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1238;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(15975445007)(53416004)(87976001)(2950100001)(42186005)(62966003)(77156002)(81156004)(105586002)(106356001)(107046002)(69596002)(19580395003)(97736003)(122386002)(229853001)(21056001)(19580405001)(31966008)(48376002)(66066001)(4396001)(50466002)(76176999)(50226001)(46102003)(50986999)(86152002)(92566001)(2201001)(120916001)(47776003)(64706001)(20776003)(99396003)(89996001)(33646002)(86362001)(575784001)(68736005)(40100003)(101416001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1238;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
 X-OriginatorOrg: opensource.altera.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 20:14:13.9509 (UTC)
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 20:14:16.8259 (UTC)
 X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
 X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0301MB1238
 Sender: linux-kernel-owner@vger.kernel.org
@@ -54,201 +54,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Tull <atull@opensource.altera.com>
 
-Supports standard ops for low level FPGA drivers.
-Various manufacturors' FPGAs can be supported by adding low
-level drivers.  Each driver needs to register its ops
-using fpga_mgr_register().
-
-Exports methods of doing operations to program  FPGAs. These
-should be sufficient for individual drivers to request FPGA
-programming directly if desired.
-
-Adds a sysfs interface.  The sysfs interface can be compiled out
-where desired in production builds.
-
-Resume is supported by calling low level driver's resume
-function, then reloading the firmware image.
-
-The following are exported as GPL:
-* fpga_mgr_reset
-   Reset the FGPA.
-
-* fpga_mgr_write
-   Write a image (in buffer) to the FPGA.
-
-* fpga_mgr_firmware_write
-   Request firmware by file name and write it to the FPGA.
-
-* fpga_mgr_name
-   Get name of FPGA manager.
-
-* fpga_mgr_state
-   Get a state of framework as a string.
-
-* fpga_mgr_register and fpga_mgr_remove
-   Register/unregister low level fpga manager driver.
-
-The following sysfs files are created:
-* /sys/class/fpga_manager/<fpga>/name
-  Name of low level driver.
-
-* /sys/class/fpga_manager/<fpga>/firmware
-  Name of FPGA image file to load using firmware class.
-  $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
-
-  read: read back name of image file previous loaded
-  $ cat /sys/class/fpga_manager/<fpga>/firmware
-
-* /sys/class/fpga_manager/<fpga>/reset
-  reset the FPGA
-  $ echo 1 > /sys/class/fpga_manager/<fpga>/reset
-
-* /sys/class/fpga_manager/<fpga>/state
-  State of fpga framework state machine
+Add driver to fpga manager framework to allow configuration
+of FPGA in Altera SoCFPGA parts.
 
 Signed-off-by: Alan Tull <atull@opensource.altera.com>
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Acked-by: Michal Simek <michal.simek@xilinx.com>
 ---
-v2: s/mangager/manager/
-    check for invalid request_nr
-    add fpga reset interface
-    rework the state code
-    remove FPGA_MGR_FAIL flag
-    add _ERR states to fpga manager states enum
-    low level state op now returns a state enum value
-    initialize framework state from driver state op
-    remove unused fpga read stuff
-    merge sysfs.c into fpga-mgr.c
-    move suspend/resume from bus.c to fpga-mgr.c
+v2: fpga_manager struct now contains struct device
+    fpga_manager_register parameters now take device
 
-v3: Add struct device to fpga_manager (not as a pointer)
-    Add to_fpga_manager
-    Don't get irq in fpga-mgr.c (let low level driver do it)
-    remove from struct fpga_manager: nr, np, parent
-    get rid of fpga_mgr_get_new_minor()
-    simplify fpga_manager_register:
-      reorder parameters
-      use dev instead of pdev
-    get rid of code that used to make more sense when this
-      was a char driver, don't alloc_chrdev_region
-    use a mutex instead of flags
+v3: skip a version to align versions
 
-v4: Move to drivers/staging
+v4: move to drivers/staging
 
-v5: Make some things be static
-    Kconfig: add 'if FPGA'
-    Makefile: s/fpga-mgr-core.o/fpga-mgr.o/
-    clean up includes
-    use enum fpga_mgr_states instead of int
-    static const char *state_str
-    use DEVICE_ATTR_RO/RW/WO and ATTRIBUTE_GROUPS
-    return -EINVAL instead of BUG_ON
-    move ida_simple_get after kzalloc
-    clean up fpga_mgr_remove
-    fpga-mgr.h: remove '#if IS_ENABLED(CONFIG_FPGA)'
-    add kernel-doc documentation
-    Move header to new include/linux/fpga folder
-    static const struct fpga_mgr_ops
-    dev_info msg simplified
+v5: fix array_size.cocci warnings
+    fix platform_no_drv_owner.cocci warnings
+    Remove .owner = THIS_MODULE
+    include asm/irq.h
+    clean up list of includes
+    use altera_fpga_reset for ops
+    use enum fpga_mgr_states or u32 as needed
+    use devm_request_irq
+    check irq <= 0 instead of == NO_IRQ
+    Use ARRAY_SIZE
+    rename altera -> socfpga
+    static const socfpga_fpga_ops
+    header moved to linux/fpga/ folder
+    remove ifdef'ed code
+    use platform_get_resource and platform_get_irq
+    move .probe and .remove lines adjacent
+    use module_platform_driver
+    use __maybe_unused
+    only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
+    fix "unsigned 'mode' is never < 0"
 
-v6: no statically allocated string for image_name
-    kernel doc fixes
-    changes regarding enabling SYSFS for fpga mgr
-    Makefile cleanup
+v6: return error for (unused) default of case statement
 
-v7: no change in this patch for v7 of the patchset
+v7: PTR_ERR should access the value just tested by IS_ERR
 
-v8: no change in this patch for v8 of the patchset
+v8: change compatible string to be more chip specific
 ---
- drivers/staging/Kconfig         |    2 +
- drivers/staging/Makefile        |    1 +
- drivers/staging/fpga/Kconfig    |   24 ++
- drivers/staging/fpga/Makefile   |    8 +
- drivers/staging/fpga/fpga-mgr.c |  551 +++++++++++++++++++++++++++++++++++++++
- include/linux/fpga/fpga-mgr.h   |  124 +++++++++
- 6 files changed, 710 insertions(+)
- create mode 100644 drivers/staging/fpga/Kconfig
- create mode 100644 drivers/staging/fpga/Makefile
- create mode 100644 drivers/staging/fpga/fpga-mgr.c
- create mode 100644 include/linux/fpga/fpga-mgr.h
+ drivers/staging/fpga/Kconfig   |    5 +
+ drivers/staging/fpga/Makefile  |    1 +
+ drivers/staging/fpga/socfpga.c |  694 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 700 insertions(+)
+ create mode 100644 drivers/staging/fpga/socfpga.c
 
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index 815de37..6380ae2 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -106,4 +106,6 @@ source "drivers/staging/unisys/Kconfig"
- 
- source "drivers/staging/clocking-wizard/Kconfig"
- 
-+source "drivers/staging/fpga/Kconfig"
-+
- endif # STAGING
-diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index 33c640b..7ea49c0 100644
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@ -45,3 +45,4 @@ obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
- obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
- obj-$(CONFIG_UNISYSSPAR)	+= unisys/
- obj-$(CONFIG_COMMON_CLK_XLNX_CLKWZRD)	+= clocking-wizard/
-+obj-$(CONFIG_FPGA)		+= fpga/
 diff --git a/drivers/staging/fpga/Kconfig b/drivers/staging/fpga/Kconfig
-new file mode 100644
-index 0000000..89ebafc
---- /dev/null
+index 89ebafc..ce17342 100644
+--- a/drivers/staging/fpga/Kconfig
 +++ b/drivers/staging/fpga/Kconfig
-@@ -0,0 +1,24 @@
-+#
-+# FPGA framework configuration
-+#
-+
-+menu "FPGA devices"
-+
-+config FPGA
-+	tristate "FPGA Framework"
+@@ -19,6 +19,11 @@ config FPGA_MGR_SYSFS
+ 	help
+ 	  FPGA Manager SysFS interface.
+ 
++config FPGA_MGR_SOCFPGA
++	tristate "Altera SOCFPGA"
 +	help
-+	  Say Y here if you want support for configuring FPGAs from the
-+	  kernel.  The FPGA framework adds a FPGA manager class and FPGA
-+	  manager drivers.
++	  FPGA manager driver support for Altera SOCFPGA.
 +
-+if FPGA
-+
-+config FPGA_MGR_SYSFS
-+	bool "FPGA Manager SysFS Interface"
-+	depends on SYSFS
-+	help
-+	  FPGA Manager SysFS interface.
-+
-+endif # FPGA
-+
-+endmenu
+ endif # FPGA
+ 
+ endmenu
 diff --git a/drivers/staging/fpga/Makefile b/drivers/staging/fpga/Makefile
-new file mode 100644
-index 0000000..3313c52
---- /dev/null
+index 3313c52..ba6c5c5 100644
+--- a/drivers/staging/fpga/Makefile
 +++ b/drivers/staging/fpga/Makefile
-@@ -0,0 +1,8 @@
-+#
-+# Makefile for the fpga framework and fpga manager drivers.
-+#
-+
-+# Core FPGA Manager Framework
-+obj-$(CONFIG_FPGA)			+= fpga-mgr.o
-+
-+# FPGA Manager Drivers
-diff --git a/drivers/staging/fpga/fpga-mgr.c b/drivers/staging/fpga/fpga-mgr.c
+@@ -6,3 +6,4 @@
+ obj-$(CONFIG_FPGA)			+= fpga-mgr.o
+ 
+ # FPGA Manager Drivers
++obj-$(CONFIG_FPGA_MGR_SOCFPGA)		+= socfpga.o
+diff --git a/drivers/staging/fpga/socfpga.c b/drivers/staging/fpga/socfpga.c
 new file mode 100644
-index 0000000..daf28b5
+index 0000000..56f75e0
 --- /dev/null
-+++ b/drivers/staging/fpga/fpga-mgr.c
-@@ -0,0 +1,551 @@
++++ b/drivers/staging/fpga/socfpga.c
+@@ -0,0 +1,694 @@
 +/*
-+ * FPGA Manager Core
++ * FPGA Manager Driver for Altera SOCFPGA
 + *
 + *  Copyright (C) 2013-2014 Altera Corporation
-+ *
-+ * With code from the mailing list:
-+ * Copyright (C) 2013 Xilinx, Inc.
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms and conditions of the GNU General Public License,
@@ -262,667 +148,683 @@ index 0000000..daf28b5
 + * You should have received a copy of the GNU General Public License along with
 + * this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
++#include <linux/completion.h>
 +#include <linux/delay.h>
-+#include <linux/firmware.h>
 +#include <linux/fpga/fpga-mgr.h>
-+#include <linux/idr.h>
++#include <linux/io.h>
 +#include <linux/module.h>
-+#include <linux/mutex.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
 +#include <linux/pm.h>
-+#include <linux/slab.h>
++#include <linux/string.h>
++#include <linux/regulator/consumer.h>
 +
-+static DEFINE_MUTEX(fpga_mgr_mutex);
-+static DEFINE_IDA(fpga_mgr_ida);
-+static struct class *fpga_mgr_class;
++/* Register offsets */
++#define SOCFPGA_FPGMGR_STAT_OFST				0x0
++#define SOCFPGA_FPGMGR_CTL_OFST					0x4
++#define SOCFPGA_FPGMGR_DCLKCNT_OFST				0x8
++#define SOCFPGA_FPGMGR_DCLKSTAT_OFST				0xc
++#define SOCFPGA_FPGMGR_GPIO_INTEN_OFST				0x830
++#define SOCFPGA_FPGMGR_GPIO_INTMSK_OFST				0x834
++#define SOCFPGA_FPGMGR_GPIO_INTTYPE_LEVEL_OFST			0x838
++#define SOCFPGA_FPGMGR_GPIO_INT_POL_OFST			0x83c
++#define SOCFPGA_FPGMGR_GPIO_INTSTAT_OFST			0x840
++#define SOCFPGA_FPGMGR_GPIO_RAW_INTSTAT_OFST			0x844
++#define SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST			0x84c
++#define SOCFPGA_FPGMGR_GPIO_EXT_PORTA_OFST			0x850
 +
-+static LIST_HEAD(fpga_manager_list);
++/* Register bit defines */
++/* SOCFPGA_FPGMGR_STAT register mode field values */
++#define SOCFPGA_FPGMGR_STAT_POWER_UP				0x0 /*ramping*/
++#define SOCFPGA_FPGMGR_STAT_RESET				0x1
++#define SOCFPGA_FPGMGR_STAT_CFG					0x2
++#define SOCFPGA_FPGMGR_STAT_INIT				0x3
++#define SOCFPGA_FPGMGR_STAT_USER_MODE				0x4
++#define SOCFPGA_FPGMGR_STAT_UNKNOWN				0x5
++#define SOCFPGA_FPGMGR_STAT_STATE_MASK				0x7
++/* This is a flag value that doesn't really happen in this register field */
++#define SOCFPGA_FPGMGR_STAT_POWER_OFF				0x0
 +
-+/**
-+ * fpga_mgr_low_level_state - get FPGA state from low level driver
-+ * @mgr: fpga manager
-+ *
-+ * This will be used to initialize framework state
-+ *
-+ * Return: an enum value for state.
-+ */
-+static enum fpga_mgr_states fpga_mgr_low_level_state(struct fpga_manager *mgr)
-+{
-+	if (!mgr || !mgr->mops || !mgr->mops->state)
-+		return FPGA_MGR_STATE_UNKNOWN;
++#define MSEL_PP16_FAST_NOAES_NODC				0x0
++#define MSEL_PP16_FAST_AES_NODC					0x1
++#define MSEL_PP16_FAST_AESOPT_DC				0x2
++#define MSEL_PP16_SLOW_NOAES_NODC				0x4
++#define MSEL_PP16_SLOW_AES_NODC					0x5
++#define MSEL_PP16_SLOW_AESOPT_DC				0x6
++#define MSEL_PP32_FAST_NOAES_NODC				0x8
++#define MSEL_PP32_FAST_AES_NODC					0x9
++#define MSEL_PP32_FAST_AESOPT_DC				0xa
++#define MSEL_PP32_SLOW_NOAES_NODC				0xc
++#define MSEL_PP32_SLOW_AES_NODC					0xd
++#define MSEL_PP32_SLOW_AESOPT_DC				0xe
++#define SOCFPGA_FPGMGR_STAT_MSEL_MASK				0x000000f8
++#define SOCFPGA_FPGMGR_STAT_MSEL_SHIFT				3
 +
-+	return mgr->mops->state(mgr);
-+}
++/* SOCFPGA_FPGMGR_CTL register */
++#define SOCFPGA_FPGMGR_CTL_EN					0x00000001
++#define SOCFPGA_FPGMGR_CTL_NCE					0x00000002
++#define SOCFPGA_FPGMGR_CTL_NCFGPULL				0x00000004
 +
-+/**
-+ * __fpga_mgr_reset - unlocked version of fpga_mgr_reset
-+ * @mgr: fpga manager
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+static int __fpga_mgr_reset(struct fpga_manager *mgr)
-+{
-+	int ret;
++#define CDRATIO_X1						0x00000000
++#define CDRATIO_X2						0x00000040
++#define CDRATIO_X4						0x00000080
++#define CDRATIO_X8						0x000000c0
++#define SOCFPGA_FPGMGR_CTL_CDRATIO_MASK				0x000000c0
 +
-+	if (!mgr->mops->reset)
-+		return -EINVAL;
++#define SOCFPGA_FPGMGR_CTL_AXICFGEN				0x00000100
 +
-+	ret = mgr->mops->reset(mgr);
++#define CFGWDTH_16						0x00000000
++#define CFGWDTH_32						0x00000200
++#define SOCFPGA_FPGMGR_CTL_CFGWDTH_MASK				0x00000200
 +
-+	mgr->state = fpga_mgr_low_level_state(mgr);
-+	kfree(mgr->image_name);
-+	mgr->image_name = NULL;
++/* SOCFPGA_FPGMGR_DCLKSTAT register */
++#define SOCFPGA_FPGMGR_DCLKSTAT_DCNTDONE_E_DONE			0x1
 +
-+	return ret;
-+}
++/* SOCFPGA_FPGMGR_GPIO_* registers share the same bit positions */
++#define SOCFPGA_FPGMGR_MON_NSTATUS				0x0001
++#define SOCFPGA_FPGMGR_MON_CONF_DONE				0x0002
++#define SOCFPGA_FPGMGR_MON_INIT_DONE				0x0004
++#define SOCFPGA_FPGMGR_MON_CRC_ERROR				0x0008
++#define SOCFPGA_FPGMGR_MON_CVP_CONF_DONE			0x0010
++#define SOCFPGA_FPGMGR_MON_PR_READY				0x0020
++#define SOCFPGA_FPGMGR_MON_PR_ERROR				0x0040
++#define SOCFPGA_FPGMGR_MON_PR_DONE				0x0080
++#define SOCFPGA_FPGMGR_MON_NCONFIG_PIN				0x0100
++#define SOCFPGA_FPGMGR_MON_NSTATUS_PIN				0x0200
++#define SOCFPGA_FPGMGR_MON_CONF_DONE_PIN			0x0400
++#define SOCFPGA_FPGMGR_MON_FPGA_POWER_ON			0x0800
++#define SOCFPGA_FPGMGR_MON_STATUS_MASK				0x0fff
 +
-+/**
-+ * fpga_mgr_reset - reset the fpga
-+ * @mgr: fpga manager
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+int fpga_mgr_reset(struct fpga_manager *mgr)
-+{
-+	int ret;
++#define SOCFPGA_FPGMGR_NUM_SUPPLIES 3
++#define SOCFPGA_RESUME_TIMEOUT 3
 +
-+	if (!mutex_trylock(&mgr->lock))
-+		return -EBUSY;
-+
-+	ret = __fpga_mgr_reset(mgr);
-+
-+	mutex_unlock(&mgr->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_reset);
-+
-+/**
-+ * __fpga_mgr_stage_init - prepare fpga for configuration
-+ * @mgr: fpga manager
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+static int __fpga_mgr_stage_write_init(struct fpga_manager *mgr)
-+{
-+	int ret;
-+
-+	if (mgr->mops->write_init) {
-+		mgr->state = FPGA_MGR_STATE_WRITE_INIT;
-+		ret = mgr->mops->write_init(mgr);
-+		if (ret) {
-+			mgr->state = FPGA_MGR_STATE_WRITE_INIT_ERR;
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * __fpga_mgr_stage_write - write buffer to fpga
-+ * @mgr: fpga manager
-+ * @buf: buffer contain fpga image
-+ * @count: byte count of buf
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+static int __fpga_mgr_stage_write(struct fpga_manager *mgr, const char *buf,
-+				  size_t count)
-+{
-+	int ret;
-+
-+	mgr->state = FPGA_MGR_STATE_WRITE;
-+	ret = mgr->mops->write(mgr, buf, count);
-+	if (ret) {
-+		mgr->state = FPGA_MGR_STATE_WRITE_ERR;
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * __fpga_mgr_stage_complete - after writing, place fpga in operating state
-+ * @mgr: fpga manager
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+static int __fpga_mgr_stage_write_complete(struct fpga_manager *mgr)
-+{
-+	int ret;
-+
-+	if (mgr->mops->write_complete) {
-+		mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE;
-+		ret = mgr->mops->write_complete(mgr);
-+		if (ret) {
-+			mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE_ERR;
-+			return ret;
-+		}
-+	}
-+
-+	mgr->state = fpga_mgr_low_level_state(mgr);
-+
-+	return 0;
-+}
-+
-+/**
-+ * __fpga_mgr_write - whole fpga image write cycle
-+ * @mgr: fpga manager
-+ * @buf: buffer contain fpga image
-+ * @count: byte count of buf
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+static int __fpga_mgr_write(struct fpga_manager *mgr, const char *buf,
-+			    size_t count)
-+{
-+	int ret;
-+
-+	ret = __fpga_mgr_stage_write_init(mgr);
-+	if (ret)
-+		return ret;
-+
-+	ret = __fpga_mgr_stage_write(mgr, buf, count);
-+	if (ret)
-+		return ret;
-+
-+	return __fpga_mgr_stage_write_complete(mgr);
-+}
-+
-+/**
-+ * fpga_mgr_write - do complete fpga image write cycle
-+ * @mgr: fpga manager
-+ * @buf: buffer contain fpga image
-+ * @count: byte count of buf
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
-+{
-+	int ret;
-+
-+	if (!mutex_trylock(&mgr->lock))
-+		return -EBUSY;
-+
-+	dev_info(&mgr->dev, "writing buffer to %s\n", mgr->name);
-+
-+	ret = __fpga_mgr_write(mgr, buf, count);
-+	mutex_unlock(&mgr->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_write);
-+
-+/**
-+ * fpga_mgr_firmware_write - request firmware and write to fpga
-+ * @mgr: fpga manager
-+ * @image_name: name of image file on the firmware search path
-+ *
-+ * Grab lock, request firmware, and write out to the FPGA.
-+ * Update the state before each step to provide info on what step
-+ * failed if there is a failure.
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name)
-+{
-+	const struct firmware *fw;
-+	int ret;
-+
-+	if (!mutex_trylock(&mgr->lock))
-+		return -EBUSY;
-+
-+	dev_info(&mgr->dev, "writing %s to %s\n", image_name, mgr->name);
-+
-+	mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ;
-+	ret = request_firmware(&fw, image_name, &mgr->dev);
-+	if (ret) {
-+		mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ_ERR;
-+		goto fw_wr_exit;
-+	}
-+
-+	ret = __fpga_mgr_write(mgr, fw->data, fw->size);
-+	if (ret)
-+		goto fw_wr_exit;
-+
-+	kfree(mgr->image_name);
-+	mgr->image_name = kstrdup(image_name, GFP_KERNEL);
-+
-+fw_wr_exit:
-+	mutex_unlock(&mgr->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_firmware_write);
-+
-+/**
-+ * fpga_mgr_name - returns the fpga manager name
-+ * @mgr: fpga manager
-+ * @buf: buffer to receive the name
-+ *
-+ * Return: number of chars in buf excluding null byte on success;
-+ * error code otherwise.
-+ */
-+int fpga_mgr_name(struct fpga_manager *mgr, char *buf)
-+{
-+	if (!mgr)
-+		return -ENODEV;
-+
-+	return sprintf(buf, "%s\n", mgr->name);
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_name);
-+
-+static const char * const state_str[] = {
-+	[FPGA_MGR_STATE_UNKNOWN] =		"unknown",
-+	[FPGA_MGR_STATE_POWER_OFF] =		"power_off",
-+	[FPGA_MGR_STATE_POWER_UP] =		"power_up",
-+	[FPGA_MGR_STATE_RESET] =		"reset",
-+
-+	/* write sequence */
-+	[FPGA_MGR_STATE_FIRMWARE_REQ] =		"firmware_request",
-+	[FPGA_MGR_STATE_FIRMWARE_REQ_ERR] =	"firmware_request_err",
-+	[FPGA_MGR_STATE_WRITE_INIT] =		"write_init",
-+	[FPGA_MGR_STATE_WRITE_INIT_ERR] =	"write_init_err",
-+	[FPGA_MGR_STATE_WRITE] =		"write",
-+	[FPGA_MGR_STATE_WRITE_ERR] =		"write_err",
-+	[FPGA_MGR_STATE_WRITE_COMPLETE] =	"write_complete",
-+	[FPGA_MGR_STATE_WRITE_COMPLETE_ERR] =	"write_complete_err",
-+
-+	[FPGA_MGR_STATE_OPERATING] =		"operating",
++/* In power-up order. Reverse for power-down. */
++static const char *supply_names[SOCFPGA_FPGMGR_NUM_SUPPLIES] __maybe_unused = {
++	"FPGA-1.5V",
++	"FPGA-1.1V",
++	"FPGA-2.5V",
 +};
++
++struct socfpga_fpga_priv {
++	void __iomem *fpga_base_addr;
++	void __iomem *fpga_data_addr;
++	struct completion status_complete;
++	int irq;
++	struct regulator *fpga_supplies[SOCFPGA_FPGMGR_NUM_SUPPLIES];
++};
++
++struct cfgmgr_mode {
++	/* Values to set in the CTRL register */
++	u32 ctrl;
++
++	/* flag that this table entry is a valid mode */
++	bool valid;
++};
++
++/* For SOCFPGA_FPGMGR_STAT_MSEL field */
++static struct cfgmgr_mode cfgmgr_modes[] = {
++	[MSEL_PP16_FAST_NOAES_NODC] = { CFGWDTH_16 | CDRATIO_X1, 1 },
++	[MSEL_PP16_FAST_AES_NODC] =   { CFGWDTH_16 | CDRATIO_X2, 1 },
++	[MSEL_PP16_FAST_AESOPT_DC] =  { CFGWDTH_16 | CDRATIO_X4, 1 },
++	[MSEL_PP16_SLOW_NOAES_NODC] = { CFGWDTH_16 | CDRATIO_X1, 1 },
++	[MSEL_PP16_SLOW_AES_NODC] =   { CFGWDTH_16 | CDRATIO_X2, 1 },
++	[MSEL_PP16_SLOW_AESOPT_DC] =  { CFGWDTH_16 | CDRATIO_X4, 1 },
++	[MSEL_PP32_FAST_NOAES_NODC] = { CFGWDTH_32 | CDRATIO_X1, 1 },
++	[MSEL_PP32_FAST_AES_NODC] =   { CFGWDTH_32 | CDRATIO_X4, 1 },
++	[MSEL_PP32_FAST_AESOPT_DC] =  { CFGWDTH_32 | CDRATIO_X8, 1 },
++	[MSEL_PP32_SLOW_NOAES_NODC] = { CFGWDTH_32 | CDRATIO_X1, 1 },
++	[MSEL_PP32_SLOW_AES_NODC] =   { CFGWDTH_32 | CDRATIO_X4, 1 },
++	[MSEL_PP32_SLOW_AESOPT_DC] =  { CFGWDTH_32 | CDRATIO_X8, 1 },
++};
++
++static u32 socfpga_fpga_readl(struct socfpga_fpga_priv *priv, u32 reg_offset)
++{
++	return readl(priv->fpga_base_addr + reg_offset);
++}
++
++static void socfpga_fpga_writel(struct socfpga_fpga_priv *priv, u32 reg_offset,
++				u32 value)
++{
++	writel(value, priv->fpga_base_addr + reg_offset);
++}
++
++static u32 socfpga_fpga_raw_readl(struct socfpga_fpga_priv *priv,
++				  u32 reg_offset)
++{
++	return __raw_readl(priv->fpga_base_addr + reg_offset);
++}
++
++static void socfpga_fpga_raw_writel(struct socfpga_fpga_priv *priv,
++				    u32 reg_offset, u32 value)
++{
++	__raw_writel(value, priv->fpga_base_addr + reg_offset);
++}
++
++static void socfpga_fpga_data_writel(struct socfpga_fpga_priv *priv, u32 value)
++{
++	writel(value, priv->fpga_data_addr);
++}
++
++static inline void socfpga_fpga_set_bitsl(struct socfpga_fpga_priv *priv,
++					  u32 offset, u32 bits)
++{
++	u32 val;
++
++	val = socfpga_fpga_readl(priv, offset);
++	val |= bits;
++	socfpga_fpga_writel(priv, offset, val);
++}
++
++static inline void socfpga_fpga_clr_bitsl(struct socfpga_fpga_priv *priv,
++					  u32 offset, u32 bits)
++{
++	u32 val;
++
++	val = socfpga_fpga_readl(priv, offset);
++	val &= ~bits;
++	socfpga_fpga_writel(priv, offset, val);
++}
++
++static u32 socfpga_fpga_mon_status_get(struct socfpga_fpga_priv *priv)
++{
++	return socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_GPIO_EXT_PORTA_OFST) &
++		SOCFPGA_FPGMGR_MON_STATUS_MASK;
++}
++
++static u32 socfpga_fpga_state_get(struct socfpga_fpga_priv *priv)
++{
++	u32 status = socfpga_fpga_mon_status_get(priv);
++
++	if ((status & SOCFPGA_FPGMGR_MON_FPGA_POWER_ON) == 0)
++		return SOCFPGA_FPGMGR_STAT_POWER_OFF;
++
++	return socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_STAT_OFST) &
++		SOCFPGA_FPGMGR_STAT_STATE_MASK;
++}
++
++static void socfpga_fpga_clear_done_status(struct socfpga_fpga_priv *priv)
++{
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_DCLKSTAT_OFST,
++			    SOCFPGA_FPGMGR_DCLKSTAT_DCNTDONE_E_DONE);
++}
 +
 +/*
-+ * class attributes
++ * Set the DCLKCNT, wait for DCLKSTAT to report the count completed, and clear
++ * the complete status.
 + */
-+static ssize_t name_show(struct device *dev,
-+			 struct device_attribute *attr, char *buf)
++static int socfpga_fpga_dclk_set_and_wait_clear(struct socfpga_fpga_priv *priv,
++						u32 count)
 +{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
++	int timeout = 2;
++	u32 done;
 +
-+	return fpga_mgr_name(mgr, buf);
++	/* Clear any existing DONE status. */
++	if (socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_DCLKSTAT_OFST))
++		socfpga_fpga_clear_done_status(priv);
++
++	/* Issue the DCLK count. */
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_DCLKCNT_OFST, count);
++
++	/* Poll DCLKSTAT to see if it completed in the timeout period. */
++	do {
++		done = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_DCLKSTAT_OFST);
++		if (done == SOCFPGA_FPGMGR_DCLKSTAT_DCNTDONE_E_DONE) {
++			socfpga_fpga_clear_done_status(priv);
++			return 0;
++		}
++		udelay(1);
++	} while (timeout--);
++
++	return -ETIMEDOUT;
 +}
 +
-+static ssize_t state_show(struct device *dev,
-+			  struct device_attribute *attr, char *buf)
++static int socfpga_fpga_wait_for_state(struct socfpga_fpga_priv *priv,
++				       u32 state)
 +{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	return sprintf(buf, "%s\n", state_str[mgr->state]);
-+}
-+
-+static ssize_t firmware_show(struct device *dev,
-+			     struct device_attribute *attr, char *buf)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	if (!mgr->image_name)
-+		return 0;
-+
-+	return sprintf(buf, "%s\n", mgr->image_name);
-+}
-+
-+static ssize_t firmware_store(struct device *dev,
-+			      struct device_attribute *attr,
-+			      const char *buf, size_t count)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+	unsigned int len;
-+	char image_name[NAME_MAX];
-+	int ret;
-+
-+	/* lose terminating \n */
-+	strcpy(image_name, buf);
-+	len = strlen(image_name);
-+	if (image_name[len - 1] == '\n')
-+		image_name[len - 1] = 0;
-+
-+	ret = fpga_mgr_firmware_write(mgr, image_name);
-+	if (ret)
-+		return ret;
-+
-+	return count;
-+}
-+
-+static ssize_t reset_store(struct device *dev,
-+			   struct device_attribute *attr,
-+			   const char *buf, size_t count)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+	unsigned long val;
-+	int ret;
-+
-+	ret = kstrtoul(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (val == 1) {
-+		ret = fpga_mgr_reset(mgr);
-+		if (ret)
-+			return ret;
-+	} else {
-+		return -EINVAL;
-+	}
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR_RO(name);
-+static DEVICE_ATTR_RO(state);
-+static DEVICE_ATTR_RW(firmware);
-+static DEVICE_ATTR_WO(reset);
-+
-+static struct attribute *fpga_mgr_attrs[] = {
-+	&dev_attr_name.attr,
-+	&dev_attr_state.attr,
-+	&dev_attr_firmware.attr,
-+	&dev_attr_reset.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(fpga_mgr);
-+
-+static int fpga_mgr_suspend(struct device *dev)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	if (!mgr)
-+		return -ENODEV;
-+
-+	if (mgr->mops->suspend)
-+		return mgr->mops->suspend(mgr);
-+
-+	return 0;
-+}
-+
-+static int fpga_mgr_resume(struct device *dev)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+	int ret = 0;
-+
-+	if (!mgr)
-+		return -ENODEV;
-+
-+	if (mgr->mops->resume) {
-+		ret = mgr->mops->resume(mgr);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	if (strlen(mgr->image_name) != 0)
-+		fpga_mgr_firmware_write(mgr, mgr->image_name);
-+
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops fpga_mgr_dev_pm_ops = {
-+	.suspend	= fpga_mgr_suspend,
-+	.resume		= fpga_mgr_resume,
-+};
-+
-+static void fpga_mgr_dev_release(struct device *dev)
-+{
-+	struct fpga_manager *mgr = to_fpga_manager(dev);
-+
-+	dev_dbg(dev, "releasing '%s'\n", mgr->name);
-+
-+	if (mgr->mops->fpga_remove)
-+		mgr->mops->fpga_remove(mgr);
-+
-+	mgr->mops = NULL;
-+
-+	mutex_lock(&fpga_mgr_mutex);
-+	list_del(&mgr->list);
-+	mutex_unlock(&fpga_mgr_mutex);
-+
-+	ida_simple_remove(&fpga_mgr_ida, mgr->dev.id);
-+	kfree(mgr->image_name);
-+	kfree(mgr);
-+}
-+
-+/**
-+ * fpga_mgr_register - register a low level fpga manager driver
-+ * @dev: fpga manager device
-+ * @name: fpga manager name
-+ * @mops: pointer to structure of fpga manager ops
-+ * @priv: fpga manager private data
-+ *
-+ * Return: 0 on success, error code otherwise.
-+ */
-+int fpga_mgr_register(struct device *dev, const char *name,
-+		      const struct fpga_manager_ops *mops,
-+		      void *priv)
-+{
-+	struct fpga_manager *mgr;
-+	int id, ret;
-+
-+	if (!mops || !name || !strlen(name))
-+		return -EINVAL;
-+
-+	mgr = kzalloc(sizeof(*mgr), GFP_KERNEL);
-+	if (!mgr)
-+		return -ENOMEM;
-+
-+	id = ida_simple_get(&fpga_mgr_ida, 0, 0, GFP_KERNEL);
-+	if (id < 0)
-+		return id;
-+
-+	mutex_init(&mgr->lock);
-+
-+	mgr->name = name;
-+	mgr->mops = mops;
-+	mgr->priv = priv;
++	int timeout = 2;
 +
 +	/*
-+	 * Initialize framework state by requesting low level driver read state
-+	 * from device.  FPGA may be in reset mode or may have been programmed
-+	 * by bootloader or EEPROM.
++	 * HW doesn't support an interrupt for changes in state, so poll to see
++	 * if it matches the requested state within the timeout period.
 +	 */
-+	mgr->state = fpga_mgr_low_level_state(mgr);
++	do {
++		if ((socfpga_fpga_state_get(priv) & state) != 0)
++			return 0;
++		msleep(20);
++	} while (timeout--);
 +
-+	INIT_LIST_HEAD(&mgr->list);
-+	mutex_lock(&fpga_mgr_mutex);
-+	list_add(&mgr->list, &fpga_manager_list);
-+	mutex_unlock(&fpga_mgr_mutex);
++	return -ETIMEDOUT;
++}
 +
-+	device_initialize(&mgr->dev);
-+	mgr->dev.class = fpga_mgr_class;
-+	mgr->dev.parent = dev;
-+	mgr->dev.of_node = dev->of_node;
-+	mgr->dev.release = fpga_mgr_dev_release;
-+	mgr->dev.id = id;
-+	dev_set_name(&mgr->dev, "%d", id);
-+	ret = device_add(&mgr->dev);
-+	if (ret)
-+		goto error_device;
++static void socfpga_fpga_enable_irqs(struct socfpga_fpga_priv *priv, u32 irqs)
++{
++	/* set irqs to level sensitive */
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTTYPE_LEVEL_OFST, 0);
 +
-+	dev_info(&mgr->dev, "%s registered\n", mgr->name);
++	/* set interrupt polarity */
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INT_POL_OFST, irqs);
++
++	/* clear irqs */
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST, irqs);
++
++	/* unmask interrupts */
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTMSK_OFST, 0);
++
++	/* enable interrupts */
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTEN_OFST, irqs);
++}
++
++static void socfpga_fpga_disable_irqs(struct socfpga_fpga_priv *priv)
++{
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTEN_OFST, 0);
++}
++
++static irqreturn_t socfpga_fpga_isr(int irq, void *dev_id)
++{
++	struct socfpga_fpga_priv *priv = dev_id;
++	u32 irqs, st;
++	bool conf_done, nstatus;
++
++	/* clear irqs */
++	irqs = socfpga_fpga_raw_readl(priv, SOCFPGA_FPGMGR_GPIO_INTSTAT_OFST);
++
++	socfpga_fpga_raw_writel(priv, SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST, irqs);
++
++	st = socfpga_fpga_raw_readl(priv, SOCFPGA_FPGMGR_GPIO_EXT_PORTA_OFST);
++	conf_done = (st & SOCFPGA_FPGMGR_MON_CONF_DONE) != 0;
++	nstatus = (st & SOCFPGA_FPGMGR_MON_NSTATUS) != 0;
++
++	/* success */
++	if (conf_done && nstatus) {
++		/* disable irqs */
++		socfpga_fpga_raw_writel(priv,
++					SOCFPGA_FPGMGR_GPIO_INTEN_OFST, 0);
++		complete(&priv->status_complete);
++	}
++
++	return IRQ_HANDLED;
++}
++
++static int socfpga_fpga_wait_for_config_done(struct socfpga_fpga_priv *priv)
++{
++	int timeout, ret = 0;
++
++	socfpga_fpga_disable_irqs(priv);
++	init_completion(&priv->status_complete);
++	socfpga_fpga_enable_irqs(priv, SOCFPGA_FPGMGR_MON_CONF_DONE);
++
++	timeout = wait_for_completion_interruptible_timeout(
++						&priv->status_complete,
++						msecs_to_jiffies(10));
++	if (timeout == 0)
++		ret = -ETIMEDOUT;
++
++	socfpga_fpga_disable_irqs(priv);
++	return ret;
++}
++
++static int socfpga_fpga_cfg_mode_get(struct socfpga_fpga_priv *priv)
++{
++	u32 msel;
++
++	msel = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_STAT_OFST);
++	msel &= SOCFPGA_FPGMGR_STAT_MSEL_MASK;
++	msel >>= SOCFPGA_FPGMGR_STAT_MSEL_SHIFT;
++
++	/* Check that this MSEL setting is supported */
++	if ((msel >= ARRAY_SIZE(cfgmgr_modes)) || !cfgmgr_modes[msel].valid)
++		return -EINVAL;
++
++	return msel;
++}
++
++static int socfpga_fpga_cfg_mode_set(struct socfpga_fpga_priv *priv)
++{
++	u32 ctrl_reg;
++	int mode;
++
++	/* get value from MSEL pins */
++	mode = socfpga_fpga_cfg_mode_get(priv);
++	if (mode < 0)
++		return mode;
++
++	/* Adjust CTRL for the CDRATIO */
++	ctrl_reg = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_CTL_OFST);
++	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_CDRATIO_MASK;
++	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_CFGWDTH_MASK;
++	ctrl_reg |= cfgmgr_modes[mode].ctrl;
++
++	/* Set NCE to 0. */
++	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_NCE;
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_CTL_OFST, ctrl_reg);
 +
 +	return 0;
++}
 +
-+error_device:
-+	ida_simple_remove(&fpga_mgr_ida, id);
-+	kfree(mgr);
++static int socfpga_fpga_reset(struct fpga_manager *mgr)
++{
++	struct socfpga_fpga_priv *priv = mgr->priv;
++	u32 ctrl_reg, status;
++	int ret;
++
++	/*
++	 * Step 1:
++	 *  - Set CTRL.CFGWDTH, CTRL.CDRATIO to match cfg mode
++	 *  - Set CTRL.NCE to 0
++	 */
++	ret = socfpga_fpga_cfg_mode_set(priv);
++	if (ret)
++		return ret;
++
++	/* Step 2: Set CTRL.EN to 1 */
++	socfpga_fpga_set_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
++			       SOCFPGA_FPGMGR_CTL_EN);
++
++	/* Step 3: Set CTRL.NCONFIGPULL to 1 to put FPGA in reset */
++	ctrl_reg = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_CTL_OFST);
++	ctrl_reg |= SOCFPGA_FPGMGR_CTL_NCFGPULL;
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_CTL_OFST, ctrl_reg);
++
++	/* Step 4: Wait for STATUS.MODE to report FPGA is in reset phase */
++	status = socfpga_fpga_wait_for_state(priv, SOCFPGA_FPGMGR_STAT_RESET);
++
++	/* Step 5: Set CONTROL.NCONFIGPULL to 0 to release FPGA from reset */
++	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_NCFGPULL;
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_CTL_OFST, ctrl_reg);
++
++	/* Timeout waiting for reset */
++	if (status)
++		return -ETIMEDOUT;
++
++	return 0;
++}
++
++/*
++ * Prepare the FPGA to receive the configuration data.
++ */
++static int socfpga_fpga_ops_configure_init(struct fpga_manager *mgr)
++{
++	struct socfpga_fpga_priv *priv = mgr->priv;
++	int ret;
++
++	/* Steps 1 - 5: Reset the FPGA */
++	ret = socfpga_fpga_reset(mgr);
++	if (ret)
++		return ret;
++
++	/* Step 6: Wait for FPGA to enter configuration phase */
++	if (socfpga_fpga_wait_for_state(priv, SOCFPGA_FPGMGR_STAT_CFG))
++		return -ETIMEDOUT;
++
++	/* Step 7: Clear nSTATUS interrupt */
++	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST,
++			    SOCFPGA_FPGMGR_MON_NSTATUS);
++
++	/* Step 8: Set CTRL.AXICFGEN to 1 to enable transfer of config data */
++	socfpga_fpga_set_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
++			       SOCFPGA_FPGMGR_CTL_AXICFGEN);
++
++	return 0;
++}
++
++/*
++ * Step 9: write data to the FPGA data register
++ */
++static int socfpga_fpga_ops_configure_write(struct fpga_manager *mgr,
++					    const char *buf, size_t count)
++{
++	struct socfpga_fpga_priv *priv = mgr->priv;
++	u32 *buffer_32 = (u32 *)buf;
++	size_t i = 0;
++
++	if (count <= 0)
++		return -EINVAL;
++
++	/* Write out the complete 32-bit chunks. */
++	while (count >= sizeof(u32)) {
++		socfpga_fpga_data_writel(priv, buffer_32[i++]);
++		count -= sizeof(u32);
++	}
++
++	/* Write out remaining non 32-bit chunks. */
++	switch (count) {
++	case 3:
++		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x00ffffff);
++		break;
++	case 2:
++		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x0000ffff);
++		break;
++	case 1:
++		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x000000ff);
++		break;
++	case 0:
++		break;
++	default:
++		/* This will never happen. */
++		return -EFAULT;
++	}
++
++	return 0;
++}
++
++static int socfpga_fpga_ops_configure_complete(struct fpga_manager *mgr)
++{
++	struct socfpga_fpga_priv *priv = mgr->priv;
++	u32 status;
++
++	/*
++	 * Step 10:
++	 *  - Observe CONF_DONE and nSTATUS (active low)
++	 *  - if CONF_DONE = 1 and nSTATUS = 1, configuration was successful
++	 *  - if CONF_DONE = 0 and nSTATUS = 0, configuration failed
++	 */
++	status = socfpga_fpga_wait_for_config_done(priv);
++	if (status)
++		return status;
++
++	/* Step 11: Clear CTRL.AXICFGEN to disable transfer of config data */
++	socfpga_fpga_clr_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
++			       SOCFPGA_FPGMGR_CTL_AXICFGEN);
++
++	/*
++	 * Step 12:
++	 *  - Write 4 to DCLKCNT
++	 *  - Wait for STATUS.DCNTDONE = 1
++	 *  - Clear W1C bit in STATUS.DCNTDONE
++	 */
++	if (socfpga_fpga_dclk_set_and_wait_clear(priv, 4))
++		return -ETIMEDOUT;
++
++	/* Step 13: Wait for STATUS.MODE to report USER MODE */
++	if (socfpga_fpga_wait_for_state(priv, SOCFPGA_FPGMGR_STAT_USER_MODE))
++		return -ETIMEDOUT;
++
++	/* Step 14: Set CTRL.EN to 0 */
++	socfpga_fpga_clr_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
++			       SOCFPGA_FPGMGR_CTL_EN);
++
++	return 0;
++}
++
++/* Translate state register values to FPGA framework state */
++static const enum fpga_mgr_states socfpga_state_to_framework_state[] = {
++	[SOCFPGA_FPGMGR_STAT_POWER_OFF] = FPGA_MGR_STATE_POWER_OFF,
++	[SOCFPGA_FPGMGR_STAT_RESET] = FPGA_MGR_STATE_RESET,
++	[SOCFPGA_FPGMGR_STAT_CFG] = FPGA_MGR_STATE_WRITE_INIT,
++	[SOCFPGA_FPGMGR_STAT_INIT] = FPGA_MGR_STATE_WRITE_INIT,
++	[SOCFPGA_FPGMGR_STAT_USER_MODE] = FPGA_MGR_STATE_OPERATING,
++	[SOCFPGA_FPGMGR_STAT_UNKNOWN] = FPGA_MGR_STATE_UNKNOWN,
++};
++
++static enum fpga_mgr_states socfpga_fpga_ops_state(struct fpga_manager *mgr)
++{
++	struct socfpga_fpga_priv *priv = mgr->priv;
++	enum fpga_mgr_states ret;
++	u32 state;
++
++	state = socfpga_fpga_state_get(priv);
++
++	if (state < ARRAY_SIZE(socfpga_state_to_framework_state))
++		ret = socfpga_state_to_framework_state[state];
++	else
++		ret = FPGA_MGR_STATE_UNKNOWN;
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(fpga_mgr_register);
 +
-+/**
-+ * fpga_mgr_remove - remove a low level fpga manager driver
-+ * @pdev: fpga manager device
-+ */
-+void fpga_mgr_remove(struct platform_device *pdev)
++static int socfpga_fpga_regulators_on(struct socfpga_fpga_priv *priv)
 +{
-+	struct list_head *tmp;
-+	struct fpga_manager *mgr = NULL;
++	int i, ret;
 +
-+	list_for_each(tmp, &fpga_manager_list) {
-+		mgr = list_entry(tmp, struct fpga_manager, list);
-+		if (mgr->dev.parent == &pdev->dev) {
-+			device_unregister(&mgr->dev);
-+			break;
-+		}
++	for (i = 0; i < SOCFPGA_FPGMGR_NUM_SUPPLIES; i++) {
++		ret = regulator_enable(priv->fpga_supplies[i]);
++		if (ret)
++			return ret;
 +	}
-+}
-+EXPORT_SYMBOL_GPL(fpga_mgr_remove);
-+
-+static int __init fpga_mgr_dev_init(void)
-+{
-+	pr_info("FPGA Manager framework driver\n");
-+
-+	fpga_mgr_class = class_create(THIS_MODULE, "fpga_manager");
-+	if (IS_ERR(fpga_mgr_class))
-+		return PTR_ERR(fpga_mgr_class);
-+
-+	if (IS_ENABLED(CONFIG_FPGA_MGR_SYSFS))
-+		fpga_mgr_class->dev_groups = fpga_mgr_groups;
-+
-+	fpga_mgr_class->pm = &fpga_mgr_dev_pm_ops;
 +
 +	return 0;
 +}
 +
-+static void __exit fpga_mgr_dev_exit(void)
++static void socfpga_fpga_regulators_power_off(struct socfpga_fpga_priv *priv)
 +{
-+	class_destroy(fpga_mgr_class);
-+	ida_destroy(&fpga_mgr_ida);
++	int i;
++
++	for (i = SOCFPGA_FPGMGR_NUM_SUPPLIES - 1; i >= 0; i--)
++		regulator_disable(priv->fpga_supplies[i]);
 +}
 +
++static int socfpga_fpga_regulator_probe(struct platform_device *pdev,
++					struct socfpga_fpga_priv *priv)
++{
++	struct regulator *supply;
++	unsigned int i;
++
++	if (!IS_ENABLED(CONFIG_REGULATOR))
++		return 0;
++
++	for (i = 0; i < SOCFPGA_FPGMGR_NUM_SUPPLIES; i++) {
++		supply = devm_regulator_get_optional(&pdev->dev,
++						     supply_names[i]);
++		if (IS_ERR(supply)) {
++			dev_err(&pdev->dev, "could not get regulators");
++			return -EPROBE_DEFER;
++		}
++		priv->fpga_supplies[i] = supply;
++	}
++
++	return socfpga_fpga_regulators_on(priv);
++}
++
++static int socfpga_fpga_suspend(struct fpga_manager *mgr)
++{
++	struct socfpga_fpga_priv *priv = mgr->priv;
++
++	socfpga_fpga_regulators_power_off(priv);
++
++	return 0;
++}
++
++static int socfpga_fpga_resume(struct fpga_manager *mgr)
++{
++	struct socfpga_fpga_priv *priv = mgr->priv;
++	u32 state;
++	unsigned int timeout;
++	int ret;
++
++	ret = socfpga_fpga_regulators_on(priv);
++	if (ret)
++		return ret;
++
++	for (timeout = 0; timeout < SOCFPGA_RESUME_TIMEOUT; timeout++) {
++		state = socfpga_fpga_state_get(priv);
++		if (state != SOCFPGA_FPGMGR_STAT_POWER_OFF)
++			break;
++		msleep(20);
++	}
++	if (state == SOCFPGA_FPGMGR_STAT_POWER_OFF)
++		return -ETIMEDOUT;
++
++	return ret;
++}
++
++static const struct fpga_manager_ops socfpga_fpga_ops = {
++	.reset = socfpga_fpga_reset,
++	.state = socfpga_fpga_ops_state,
++	.write_init = socfpga_fpga_ops_configure_init,
++	.write = socfpga_fpga_ops_configure_write,
++	.write_complete = socfpga_fpga_ops_configure_complete,
++	.suspend = socfpga_fpga_suspend,
++	.resume = socfpga_fpga_resume,
++};
++
++static int socfpga_fpga_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct socfpga_fpga_priv *priv;
++	struct resource *res;
++	int ret;
++
++	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	ret = socfpga_fpga_regulator_probe(pdev, priv);
++	if (ret)
++		return ret;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	priv->fpga_base_addr = devm_ioremap_resource(dev, res);
++	if (IS_ERR(priv->fpga_base_addr))
++		return PTR_ERR(priv->fpga_base_addr);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	priv->fpga_data_addr = devm_ioremap_resource(dev, res);
++	if (IS_ERR(priv->fpga_data_addr))
++		return PTR_ERR(priv->fpga_data_addr);
++
++	priv->irq = platform_get_irq(pdev, 0);
++	if (priv->irq < 0)
++		return priv->irq;
++
++	ret = devm_request_irq(dev, priv->irq, socfpga_fpga_isr, 0,
++			       dev_name(dev), priv);
++	if (IS_ERR_VALUE(ret))
++		return ret;
++
++	return fpga_mgr_register(dev, "Altera SOCFPGA FPGA Manager",
++				 &socfpga_fpga_ops, priv);
++}
++
++static int socfpga_fpga_remove(struct platform_device *pdev)
++{
++	fpga_mgr_remove(pdev);
++
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static const struct of_device_id socfpga_fpga_of_match[] = {
++	{ .compatible = "altr,socfpga-fpga-mgr", },
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, socfpga_fpga_of_match);
++#endif
++
++static struct platform_driver socfpga_fpga_driver = {
++	.probe = socfpga_fpga_probe,
++	.remove = socfpga_fpga_remove,
++	.driver = {
++		.name	= "socfpga_fpga_manager",
++		.of_match_table = of_match_ptr(socfpga_fpga_of_match),
++	},
++};
++
++module_platform_driver(socfpga_fpga_driver);
++
 +MODULE_AUTHOR("Alan Tull <atull@opensource.altera.com>");
-+MODULE_DESCRIPTION("FPGA Manager framework driver");
++MODULE_DESCRIPTION("Altera SOCFPGA FPGA Manager");
 +MODULE_LICENSE("GPL v2");
-+
-+subsys_initcall(fpga_mgr_dev_init);
-+module_exit(fpga_mgr_dev_exit);
-diff --git a/include/linux/fpga/fpga-mgr.h b/include/linux/fpga/fpga-mgr.h
-new file mode 100644
-index 0000000..dcf2c68
---- /dev/null
-+++ b/include/linux/fpga/fpga-mgr.h
-@@ -0,0 +1,124 @@
-+/*
-+ * FPGA Framework
-+ *
-+ *  Copyright (C) 2013-2014 Altera Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/device.h>
-+#include <linux/interrupt.h>
-+#include <linux/limits.h>
-+#include <linux/mutex.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+
-+#ifndef _LINUX_FPGA_MGR_H
-+#define _LINUX_FPGA_MGR_H
-+
-+struct fpga_manager;
-+
-+/**
-+ * struct fpga_manager_ops - ops for low level fpga manager drivers
-+ * @state: returns an enum value of the FPGA's state
-+ * @reset: put FPGA into reset state
-+ * @write_init: prepare the FPGA to receive confuration data
-+ * @write: write count bytes of configuration data to the FPGA
-+ * @write_complete: set FPGA to operating state after writing is done
-+ * @fpga_remove: optional: Set FPGA into a specific state during driver remove
-+ * @suspend: optional: low level fpga suspend
-+ * @resume: optional: low level fpga resume
-+ *
-+ * fpga_manager_ops are the low level functions implemented by a specific
-+ * fpga manager driver.  The optional ones are tested for NULL before being
-+ * called, so leaving them out is fine.
-+ */
-+struct fpga_manager_ops {
-+	enum fpga_mgr_states (*state)(struct fpga_manager *mgr);
-+	int (*reset)(struct fpga_manager *mgr);
-+	int (*write_init)(struct fpga_manager *mgr);
-+	int (*write)(struct fpga_manager *mgr, const char *buf, size_t count);
-+	int (*write_complete)(struct fpga_manager *mgr);
-+	void (*fpga_remove)(struct fpga_manager *mgr);
-+	int (*suspend)(struct fpga_manager *mgr);
-+	int (*resume)(struct fpga_manager *mgr);
-+};
-+
-+/**
-+ * enum fpga_mgr_states - fpga framework states
-+ * @FPGA_MGR_STATE_UNKNOWN: can't determine state
-+ * @FPGA_MGR_STATE_POWER_OFF: FPGA power is off
-+ * @FPGA_MGR_STATE_POWER_UP: FPGA reports power is up
-+ * @FPGA_MGR_STATE_RESET: FPGA in reset state
-+ * @FPGA_MGR_STATE_FIRMWARE_REQ: firmware request in progress
-+ * @FPGA_MGR_STATE_FIRMWARE_REQ_ERR: firmware request failed
-+ * @FPGA_MGR_STATE_WRITE_INIT: preparing FPGA for programming
-+ * @FPGA_MGR_STATE_WRITE_INIT_ERR: Error during WRITE_INIT stage
-+ * @FPGA_MGR_STATE_WRITE: writing image to FPGA
-+ * @FPGA_MGR_STATE_WRITE_ERR: Error while writing FPGA
-+ * @FPGA_MGR_STATE_WRITE_COMPLETE: Doing post programming steps
-+ * @FPGA_MGR_STATE_WRITE_COMPLETE_ERR: Error during WRITE_COMPLETE
-+ * @FPGA_MGR_STATE_OPERATING: FPGA is programmed and operating
-+ */
-+enum fpga_mgr_states {
-+	FPGA_MGR_STATE_UNKNOWN,
-+	FPGA_MGR_STATE_POWER_OFF,
-+	FPGA_MGR_STATE_POWER_UP,
-+	FPGA_MGR_STATE_RESET,
-+
-+	/* write sequence */
-+	FPGA_MGR_STATE_FIRMWARE_REQ,
-+	FPGA_MGR_STATE_FIRMWARE_REQ_ERR,
-+	FPGA_MGR_STATE_WRITE_INIT,
-+	FPGA_MGR_STATE_WRITE_INIT_ERR,
-+	FPGA_MGR_STATE_WRITE,
-+	FPGA_MGR_STATE_WRITE_ERR,
-+	FPGA_MGR_STATE_WRITE_COMPLETE,
-+	FPGA_MGR_STATE_WRITE_COMPLETE_ERR,
-+
-+	FPGA_MGR_STATE_OPERATING,
-+};
-+
-+/**
-+ * struct fpga_manager - fpga manager structure
-+ * @name: name of low level fpga manager
-+ * @dev: fpga manager device
-+ * @list: entry in list of all fpga managers
-+ * @lock: lock on calls to fpga manager ops
-+ * @state: state of fpga manager
-+ * @image_name: name of fpga image file if any
-+ * @mops: pointer to struct of fpga manager ops
-+ * @priv: low level driver private date
-+ */
-+struct fpga_manager {
-+	const char *name;
-+	struct device dev;
-+	struct list_head list;
-+	struct mutex lock;	/* lock on calls to ops */
-+	enum fpga_mgr_states state;
-+	char *image_name;
-+
-+	const struct fpga_manager_ops *mops;
-+	void *priv;
-+};
-+
-+#define to_fpga_manager(d) container_of(d, struct fpga_manager, dev)
-+
-+int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name);
-+int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count);
-+int fpga_mgr_name(struct fpga_manager *mgr, char *buf);
-+int fpga_mgr_reset(struct fpga_manager *mgr);
-+int fpga_mgr_register(struct device *pdev, const char *name,
-+		      const struct fpga_manager_ops *mops, void *priv);
-+void fpga_mgr_remove(struct platform_device *pdev);
-+
-+#endif /*_LINUX_FPGA_MGR_H */
 -- 
 1.7.9.5
 
