@@ -1,138 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636AbbAFQLb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:11:31 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:56267 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755344AbbAFQL3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:11:29 -0500
-X-Sasl-enc: u1X2d/NWI0DpnFO6wqgFsa+kaAHV0YktZ1/TSer8Q/I4 1420560688
+	id S1755760AbbAFQML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:12:11 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:61847 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753908AbbAFQMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 11:12:10 -0500
+Date: Tue, 6 Jan 2015 17:12:05 +0100
+From: Mariusz Gorski <marius.gorski@gmail.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Evgeniy Polyakov <zbr@ioremap.net>, David Fries <David@fries.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] w1: slaves: w1_therm: Add sysfs entry for current
+ temperature
+Message-ID: <20150106161205.GA2912@firebird>
+References: <1420554596-10250-1-git-send-email-marius.gorski@gmail.com>
+ <CAFLxGvwXN0XKQ_fX7pS=dpZf+SoysN_fH8iAgtyMYG9dX+6oAQ@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: TCP connection issues against Amazon S3
-From: Erik Grinaker <erik@bengler.no>
-In-Reply-To: <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Tue, 6 Jan 2015 16:11:27 +0000
-Cc: linux-kernel@vger.kernel.org, Yuchung Cheng <ycheng@google.com>,
-        netdev <netdev@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+Content-Disposition: inline
+In-Reply-To: <CAFLxGvwXN0XKQ_fX7pS=dpZf+SoysN_fH8iAgtyMYG9dX+6oAQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> On 06 Jan 2015, at 16:04, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Tue, 2015-01-06 at 15:14 +0000, Erik Grinaker wrote:
->> (CCing Yuchung, as his name comes up in the relevant commits)
->> 
->> After upgrading from Ubuntu 12.04.5 to 14.04.1 we have begun seeing
->> intermittent TCP connection hangs for HTTP image requests against
->> Amazon S3. 3-5% of requests will suddenly stall in the middle of the
->> transfer before timing out. We see this problem across a range of
->> servers, in several data centres and networks, all located in Norway.
->> 
->> A packet dump [1] shows repeated ACK retransmits for some of the
->> requests. Using Ubuntu mainline kernels, we found the problem to have
->> been introduced between 3.11.10 and 3.12.0, possibly in
->> 0f7cc9a3c2bd89b15720dbf358e9b9e62af27126. The problem is also present
->> in 3.18.1. Disabling tcp_window_scaling seems to solve it, but has
->> obvious drawbacks for transfer speeds. Other sysctls do not seem to
->> affect it.
->> 
->> I am not sure if this is fundamentally a kernel bug or a network
->> issue, but we did not see this problem with older kernels.
->> 
->> [1] http://abstrakt.bengler.no/tcp-issues-s3.pcap.bz2
+On Tue, Jan 06, 2015 at 04:01:47PM +0100, Richard Weinberger wrote:
+> On Tue, Jan 6, 2015 at 3:29 PM, Mariusz Gorski <marius.gorski@gmail.com> wrote:
+> > DS18B20 and it's brothers are pretty popular in the RaspberryPi world
+> > when it comes to temperature measurement. All tutorials on the Internet
+> > use the same way of parsing the output of the w1_slave sysfs file.
+> > These patches add a dedicated sysfs entry called 'temp' whose only job
+> > is to output the current temperature.
 > 
+> And what is the benefit of this patches?
+
+Well, instead of having to parse the output of w1_slave:
+
+$ cat w1_slave 
+4d 01 55 00 7f ff 0c 10 fd : crc=fd YES
+4d 01 55 00 7f ff 0c 10 fd t=20812
+
+the userspace program gets only the interesting information,
+which usually is the current temparture:
+
+$ cat temp 
+20812
+
 > 
-> CC netdev
-> 
-> This looks like the bug we fixed here :
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=39bb5e62867de82b269b07df900165029b928359
-
-Has that patch gone into a release? Because the problem persists with 3.18.1.
-
-> Could you post output of 'nstat' command ?
-
-Sure:
-
-#kernel
-IpInReceives                    1676194            0.0
-IpInDelivers                    1676115            0.0
-IpOutRequests                   1163105            0.0
-IcmpInErrors                    826                0.0
-IcmpInEchoReps                  826                0.0
-IcmpOutErrors                   824                0.0
-IcmpOutTimeExcds                10                 0.0
-IcmpOutTimestamps               814                0.0
-IcmpMsgInType8                  826                0.0
-IcmpMsgOutType0                 814                0.0
-IcmpMsgOutType3                 10                 0.0
-TcpActiveOpens                  2004               0.0
-TcpPassiveOpens                 1102               0.0
-TcpAttemptFails                 5                  0.0
-TcpEstabResets                  34                 0.0
-TcpInSegs                       1667699            0.0
-TcpOutSegs                      1159990            0.0
-TcpRetransSegs                  26                 0.0
-TcpOutRsts                      504                0.0
-UdpInDatagrams                  2002               0.0
-UdpOutDatagrams                 2087               0.0
-Ip6InReceives                   1                  0.0
-Ip6InNoRoutes                   1                  0.0
-Ip6OutRequests                  10                 0.0
-Ip6OutDiscards                  3                  0.0
-Ip6OutNoRoutes                  1                  0.0
-Ip6OutMcastPkts                 7                  0.0
-Ip6InOctets                     76                 0.0
-Ip6OutOctets                    728                0.0
-Ip6OutMcastOctets               520                0.0
-Ip6InNoECTPkts                  1                  0.0
-Icmp6OutMsgs                    4                  0.0
-Icmp6OutNeighborSolicits        1                  0.0
-Icmp6OutMLDv2Reports            3                  0.0
-Icmp6OutType135                 1                  0.0
-Icmp6OutType143                 3                  0.0
-TcpExtEmbryonicRsts             5                  0.0
-TcpExtPruneCalled               1                  0.0
-TcpExtTW                        1897               0.0
-TcpExtDelayedACKs               3058               0.0
-TcpExtDelayedACKLocked          13                 0.0
-TcpExtDelayedACKLost            2330               0.0
-TcpExtTCPPrequeued              3084               0.0
-TcpExtTCPDirectCopyFromPrequeue 10944              0.0
-TcpExtTCPHPHits                 1246417            0.0
-TcpExtTCPPureAcks               7512               0.0
-TcpExtTCPHPAcks                 3219               0.0
-TcpExtTCPSackRecovery           2                  0.0
-TcpExtTCPLossUndo               4                  0.0
-TcpExtTCPFastRetrans            2                  0.0
-TcpExtTCPTimeouts               18                 0.0
-TcpExtTCPLossProbes             145                0.0
-TcpExtTCPLossProbeRecovery      125                0.0
-TcpExtTCPSackRecoveryFail       1                  0.0
-TcpExtTCPRcvCollapsed           22                 0.0
-TcpExtTCPDSACKOldSent           43                 0.0
-TcpExtTCPDSACKRecv              3                  0.0
-TcpExtTCPAbortOnData            113                0.0
-TcpExtTCPDSACKIgnoredNoUndo     3                  0.0
-TcpExtTCPSpuriousRTOs           2                  0.0
-TcpExtTCPSackShiftFallback      3                  0.0
-TcpExtTCPRcvCoalesce            927994             0.0
-TcpExtTCPOFOQueue               300911             0.0
-TcpExtTCPOFOMerge               76                 0.0
-TcpExtTCPSpuriousRtxHostQueues  24                 0.0
-IpExtInBcastPkts                5588               0.0
-IpExtInOctets                   2454079082         0.0
-IpExtOutOctets                  56232776           0.0
-IpExtInBcastOctets              3218688            0.0
-IpExtInNoECTPkts                1676194            0.0
-
-
-
+> -- 
+> Thanks,
+> //richard
