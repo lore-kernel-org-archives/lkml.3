@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461AbbAFWGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:06:01 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:41917 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbbAFWF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:05:59 -0500
+	id S1756386AbbAFWHi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:07:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45479 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167AbbAFWHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 17:07:36 -0500
+Message-ID: <54AC5C57.7050504@redhat.com>
+Date: Tue, 06 Jan 2015 17:06:15 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1420575219-27061-2-git-send-email-atull@opensource.altera.com>
-References: <1420575219-27061-1-git-send-email-atull@opensource.altera.com> <1420575219-27061-2-git-send-email-atull@opensource.altera.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 6 Jan 2015 16:05:37 -0600
-Message-ID: <CAL_JsqKRe2YquSmi01wa5b=Ctns+1ek-PdSHDLuxyCfKasTw5g@mail.gmail.com>
-Subject: Re: [PATCH v8 1/4] doc: add bindings document for altera fpga manager
-To: Alan Tull <atull@opensource.altera.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
+To: Arnd Bergmann <arnd@arndb.de>, linaro-acpi@lists.linaro.org
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Pavel Machek <pavel@denx.de>, Mark Brown <broonie@kernel.org>,
-        Philip Balister <philip@balister.org>,
-        Alessandro Rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Kyle Teske <kyle.teske@ni.com>,
-        Nicolas Pitre <nico@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Content-Type: text/plain; charset=UTF-8
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <20150106112000.GA8829@e104818-lin.cambridge.arm.com> <54AC0C4B.1000907@redhat.com> <1596791.jNp4rCPpnN@wuerfel>
+In-Reply-To: <1596791.jNp4rCPpnN@wuerfel>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 2:13 PM,  <atull@opensource.altera.com> wrote:
-> From: Alan Tull <atull@opensource.altera.com>
->
-> New bindings document for Altera fpga manager.
->
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+Hi Arnd,
 
-Acked-by: Rob Herring <robh@kernel.org>
+Happy New Year!
 
-Like I said, this binding doesn't look like it will change other than
-perhaps additional optional properties, so it can go into
-Documentation. Perhaps .../bindings/fpga/. I'm happy to merge this
-thru DT tree if you want.
+On 01/06/2015 02:21 PM, Arnd Bergmann wrote:
+> On Tuesday 06 January 2015 11:24:43 Jon Masters wrote:
+>> On 01/06/2015 06:20 AM, Catalin Marinas wrote:
+>>
+>>> Now, what's preventing a vendor firmware from providing only ACPI
+>>> tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
+>>> that both DT and ACPI are supported, or at least that dts files are
+>>> merged in the kernel first?
+>>
+>> I know of some (server) firmware that will only provide ACPI in the
+>> medium term, so this is coming.
+> 
+> Medium term is fine, as long as they are not expecting their hardware
+> to be supported by Linux before ACPI support is stable enough for
+> general consumption.
 
-Rob
+To be clear, I think that's reasonable for upstream. I may love ACPI,
+but vendors can always ship kernels with a config supporting ACPI only
+platforms in the interim period if they have a commercial justification
+and that doesn't have to be supported in terms of the upstream default.
 
-> ---
-> v5 : Move bindings to drivers/staging/fpga/Documentation/bindings
->
-> v6 : No change in this patch for v6 of the patch set
->
-> v7 : No change in this patch for v7 of the patch set
->
-> v8 : Make compatible string and name of bindings doc more chip
->      specific
-> ---
->  .../bindings/altera-socfpga-fpga-mgr.txt           |   17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
->  create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-socfpga-fpga-mgr.txt
->
-> diff --git a/drivers/staging/fpga/Documentation/bindings/altera-socfpga-fpga-mgr.txt b/drivers/staging/fpga/Documentation/bindings/altera-socfpga-fpga-mgr.txt
-> new file mode 100644
-> index 0000000..9b027a6
-> --- /dev/null
-> +++ b/drivers/staging/fpga/Documentation/bindings/altera-socfpga-fpga-mgr.txt
-> @@ -0,0 +1,17 @@
-> +Altera SOCFPGA FPGA Manager
-> +
-> +Required properties:
-> +- compatible : should contain "altr,socfpga-fpga-mgr"
-> +- reg        : base address and size for memory mapped io.
-> +               - The first index is for FPGA manager register access.
-> +               - The second index is for writing FPGA configuration data.
-> +- interrupts : interrupt for the FPGA Manager device.
-> +
-> +Example:
-> +
-> +       hps_0_fpgamgr: fpgamgr@0xff706000 {
-> +               compatible = "altr,socfpga-fpga-mgr";
-> +               reg = <0xFF706000 0x1000
-> +                      0xFFB90000 0x1000>;
-> +               interrupts = <0 175 4>;
-> +       };
-> --
-> 1.7.9.5
->
+But, perhaps there's a way to have it both ways, you could consider also
+a CONFIG_EXPERT option that would allow you to build a kernel with ACPI
+only support in the medium term. That way, if someone is running a
+vendor kernel, but wants to track upstream development more closely,
+they can do so on such hardware by enabling the expert config bit.
+
+> I have no idea how long that will take, but my
+> guess is that we shouldn't plan on supporting ACPI-only platforms in
+> Linux for the next couple of years and just demand that all drivers
+> have DT support to let users add a valid DTB that can describe the
+> hardware.
+
+I'm not opposed. It was particularly useful in the early days of ACPI to
+be able to boot our internal systems (which now all default to ACPI on
+by default) with acpi=off when there were glitches that needed to be
+isolated to whether they were ACPI related. One reason I was very keen
+for a DT UUID in UEFI early on was so that there was a clean way to
+specify both sets of tables on a UEFI platform. Keeping them in sync is
+not something we can rely on in the longer term, but during bringup
+timeframe I suspect you'll continue to see many platforms with both sets
+of tables. This is especially true for early silicon that might be
+supporting both embedded and server environments - hence a platform that
+appears to be a server might have a DT posted upstream anyway if such a
+platform is also being used for unrelated embedded work.
+
+> That should always be possible using something like grub2 as an
+> intermediate that boots using the UEFI interfaces and loads the
+> kernel and DT from disk.
+
+This is another reason (but it's up to you, I understand your position)
+why it may not be a huge problem if there are ACPI only systems, since
+the "devicetree" directive in GRUB2 configs is always possible.
+
+Jon.
+
