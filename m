@@ -1,129 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057AbbAFLOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:14:46 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42801 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753240AbbAFLOp (ORCPT
+	id S1755302AbbAFLQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 06:16:27 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:6515 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069AbbAFLQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:14:45 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>, Bo Shen <voice.shen@atmel.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] ASoC: sam9g20_wm8731: drop machine_is_xxx
-Date: Tue,  6 Jan 2015 12:14:32 +0100
-Message-Id: <1420542872-10015-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
+	Tue, 6 Jan 2015 06:16:25 -0500
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+To: <davem@davemloft.net>
+CC: <Zubair.Kakakhel@imgtec.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <s.hauer@pengutronix.de>
+Subject: [PATCH_V3] dm9000: Add regulator and reset support to dm9000
+Date: Tue, 6 Jan 2015 11:15:16 +0000
+Message-ID: <1420542916-30169-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Atmel based boards can now only be used with device tree. Drop non DT
-initialization.
+In boards, the dm9000 chip's power and reset can be controlled by gpio.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+It makes sense to add them to the dm9000 driver and let dt be used to
+enable power and reset the phy.
+
+Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Signed-off-by: Paul Burton <paul.burton@imgtec.com>
+
 ---
- sound/soc/atmel/sam9g20_wm8731.c | 68 ++++++++++++++++++----------------------
- 1 file changed, 31 insertions(+), 37 deletions(-)
+V2 A few fixes and more error checks. Nothing major
 
-diff --git a/sound/soc/atmel/sam9g20_wm8731.c b/sound/soc/atmel/sam9g20_wm8731.c
-index 531728975bbb..639a85d0999c 100644
---- a/sound/soc/atmel/sam9g20_wm8731.c
-+++ b/sound/soc/atmel/sam9g20_wm8731.c
-@@ -46,8 +46,6 @@
- #include <sound/pcm_params.h>
- #include <sound/soc.h>
+V1 Minor blooper
+---
+ .../devicetree/bindings/net/davicom-dm9000.txt     |  4 +++
+ drivers/net/ethernet/davicom/dm9000.c              | 41 ++++++++++++++++++++++
+ 2 files changed, 45 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/net/davicom-dm9000.txt b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+index 28767ed..5224bf0 100644
+--- a/Documentation/devicetree/bindings/net/davicom-dm9000.txt
++++ b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+@@ -11,6 +11,8 @@ Required properties:
+ Optional properties:
+ - davicom,no-eeprom : Configuration EEPROM is not available
+ - davicom,ext-phy : Use external PHY
++- reset-gpios : phandle of gpio that will be used to reset chip during probe
++- vcc-supply : phandle of regulator that will be used to enable power to chip
  
--#include <asm/mach-types.h>
--
- #include "../codecs/wm8731.h"
- #include "atmel-pcm.h"
- #include "atmel_ssc_dai.h"
-@@ -197,9 +195,7 @@ static int at91sam9g20ek_audio_probe(struct platform_device *pdev)
- 	int ret;
+ Example:
  
- 	if (!np) {
--		if (!(machine_is_at91sam9g20ek() ||
--			machine_is_at91sam9g20ek_2mmc()))
--			return -ENODEV;
-+		return -ENODEV;
- 	}
+@@ -21,4 +23,6 @@ Example:
+ 		interrupts = <7 4>;
+ 		local-mac-address = [00 00 de ad be ef];
+ 		davicom,no-eeprom;
++		reset-gpios = <&gpf 12 GPIO_ACTIVE_LOW>;
++		vcc-supply = <&eth0_power>;
+ 	};
+diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+index ef0bb58..246c89d 100644
+--- a/drivers/net/ethernet/davicom/dm9000.c
++++ b/drivers/net/ethernet/davicom/dm9000.c
+@@ -36,6 +36,9 @@
+ #include <linux/platform_device.h>
+ #include <linux/irq.h>
+ #include <linux/slab.h>
++#include <linux/regulator/consumer.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
  
- 	ret = atmel_ssc_set_audio(0);
-@@ -236,39 +232,37 @@ static int at91sam9g20ek_audio_probe(struct platform_device *pdev)
- 	card->dev = &pdev->dev;
- 
- 	/* Parse device node info */
--	if (np) {
--		ret = snd_soc_of_parse_card_name(card, "atmel,model");
--		if (ret)
--			goto err;
--
--		ret = snd_soc_of_parse_audio_routing(card,
--			"atmel,audio-routing");
--		if (ret)
--			goto err;
--
--		/* Parse codec info */
--		at91sam9g20ek_dai.codec_name = NULL;
--		codec_np = of_parse_phandle(np, "atmel,audio-codec", 0);
--		if (!codec_np) {
--			dev_err(&pdev->dev, "codec info missing\n");
--			return -EINVAL;
--		}
--		at91sam9g20ek_dai.codec_of_node = codec_np;
--
--		/* Parse dai and platform info */
--		at91sam9g20ek_dai.cpu_dai_name = NULL;
--		at91sam9g20ek_dai.platform_name = NULL;
--		cpu_np = of_parse_phandle(np, "atmel,ssc-controller", 0);
--		if (!cpu_np) {
--			dev_err(&pdev->dev, "dai and pcm info missing\n");
--			return -EINVAL;
--		}
--		at91sam9g20ek_dai.cpu_of_node = cpu_np;
--		at91sam9g20ek_dai.platform_of_node = cpu_np;
--
--		of_node_put(codec_np);
--		of_node_put(cpu_np);
-+	ret = snd_soc_of_parse_card_name(card, "atmel,model");
-+	if (ret)
-+		goto err;
+ #include <asm/delay.h>
+ #include <asm/irq.h>
+@@ -1426,11 +1429,49 @@ dm9000_probe(struct platform_device *pdev)
+ 	struct dm9000_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct board_info *db;	/* Point a board information structure */
+ 	struct net_device *ndev;
++	struct device *dev = &pdev->dev;
+ 	const unsigned char *mac_src;
+ 	int ret = 0;
+ 	int iosize;
+ 	int i;
+ 	u32 id_val;
++	int reset_gpios;
++	enum of_gpio_flags flags;
++	struct regulator *power;
 +
-+	ret = snd_soc_of_parse_audio_routing(card,
-+		"atmel,audio-routing");
-+	if (ret)
-+		goto err;
-+
-+	/* Parse codec info */
-+	at91sam9g20ek_dai.codec_name = NULL;
-+	codec_np = of_parse_phandle(np, "atmel,audio-codec", 0);
-+	if (!codec_np) {
-+		dev_err(&pdev->dev, "codec info missing\n");
-+		return -EINVAL;
++	power = devm_regulator_get(dev, "vcc");
++	if (PTR_ERR(power) == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++	if (IS_ERR(power)) {
++		dev_dbg(dev, "no regulator provided\n");
++	} else {
++		ret = regulator_enable(power);
++		if (ret != 0) {
++			dev_err(dev,
++				"Failed to enable power regulator: %d\n", ret);
++			return ret;
++		}
++		dev_dbg(dev, "regulator enabled\n");
 +	}
-+	at91sam9g20ek_dai.codec_of_node = codec_np;
 +
-+	/* Parse dai and platform info */
-+	at91sam9g20ek_dai.cpu_dai_name = NULL;
-+	at91sam9g20ek_dai.platform_name = NULL;
-+	cpu_np = of_parse_phandle(np, "atmel,ssc-controller", 0);
-+	if (!cpu_np) {
-+		dev_err(&pdev->dev, "dai and pcm info missing\n");
-+		return -EINVAL;
- 	}
-+	at91sam9g20ek_dai.cpu_of_node = cpu_np;
-+	at91sam9g20ek_dai.platform_of_node = cpu_np;
++	reset_gpios = of_get_named_gpio_flags(dev->of_node, "reset-gpios", 0,
++					      &flags);
++	if (gpio_is_valid(reset_gpios)) {
++		ret = devm_gpio_request_one(dev, reset_gpios, flags,
++					    "dm9000_reset");
++		if (ret) {
++			dev_err(dev, "failed to request reset gpio %d: %d\n",
++				reset_gpios, ret);
++			return -ENODEV;
++		}
 +
-+	of_node_put(codec_np);
-+	of_node_put(cpu_np);
++		gpio_direction_output(reset_gpios, 0);
++		/* According to manual PWRST# Low Period Min 1ms */
++		msleep(2);
++		gpio_set_value(reset_gpios, 1);
++		/* Needs 3ms to read eeprom when PWRST is deasserted */
++		msleep(4);
++	}
  
- 	ret = snd_soc_register_card(card);
- 	if (ret) {
+ 	if (!pdata) {
+ 		pdata = dm9000_parse_dt(&pdev->dev);
 -- 
-2.1.0
+1.9.1
 
