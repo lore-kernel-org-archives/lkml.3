@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079AbbAFRy3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:54:29 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:54947 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbbAFRy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:54:27 -0500
-From: mathieu.poirier@linaro.org
-To: geert@linux-m68k.org
-Cc: linux-kernel@vger.kernel.org, pratikp@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, mathieu.poirier@linaro.org
-Subject: [PATCH] coresight: Fixing wrong #ifdef/#endif placement
-Date: Tue,  6 Jan 2015 10:54:12 -0700
-Message-Id: <1420566852-20816-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1756219AbbAFRzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:55:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755337AbbAFRzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 12:55:03 -0500
+Date: Tue, 6 Jan 2015 12:54:43 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Johannes Weiner <hannes@cmpxchg.org>
+cc: Vlastimil Babka <vbabka@suse.cz>, Leon Romanovsky <leon@leon.nu>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Dirty pages underflow on 3.14.23
+In-Reply-To: <20150106150250.GA26895@phnom.home.cmpxchg.org>
+Message-ID: <alpine.LRH.2.02.1501061246400.16437@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1501051744020.5119@file01.intranet.prod.int.rdu2.redhat.com> <20150106150250.GA26895@phnom.home.cmpxchg.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Fixing problem reported by:
-        https://lkml.org/lkml/2015/1/6/86
 
-The #ifdef/#endif is wrong and prevents the stub of function
-of_get_coresight_platform_data() from being visible when
-CONFIG_OF is not defined.
+On Tue, 6 Jan 2015, Johannes Weiner wrote:
 
-Moving CONFIG_OF condition out of CONFIG_CORESIGHT, making
-them both independent.
+> > The bug probably happened during git pull or apt-get update, though one 
+> > can't be sure that these commands caused it.
+> > 
+> > I see that 3.14.24 containes some fix for underflow (commit 
+> > 6619741f17f541113a02c30f22a9ca22e32c9546, upstream commit 
+> > abe5f972912d086c080be4bde67750630b6fb38b), but it doesn't seem that that 
+> > commit fixes this condition. If you have a commit that could fix this, say 
+> > it.
+> 
+> That's an unrelated counter, but there is a known dirty underflow
+> problem that was addressed in 87a7e00b206a ("mm: protect
+> set_page_dirty() from ongoing truncation").  It should make it into
+> the stable kernels in the near future.  Can you reproduce this issue?
+> 
+> Thanks,
+> Johannes
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- include/linux/coresight.h | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+I can't reprodce it. It happened just once.
 
-diff --git a/include/linux/coresight.h b/include/linux/coresight.h
-index 5d3c54311f7a..4404033ee879 100644
---- a/include/linux/coresight.h
-+++ b/include/linux/coresight.h
-@@ -239,10 +239,6 @@ extern void coresight_disable(struct coresight_device *csdev);
- extern int coresight_is_bit_set(u32 val, int position, int value);
- extern int coresight_timeout(void __iomem *addr, u32 offset,
- 			     int position, int value);
--#ifdef CONFIG_OF
--extern struct coresight_platform_data *of_get_coresight_platform_data(
--				struct device *dev, struct device_node *node);
--#endif
- #else
- static inline struct coresight_device *
- coresight_register(struct coresight_desc *desc) { return NULL; }
-@@ -254,10 +250,14 @@ static inline int coresight_is_bit_set(u32 val, int position, int value)
- 					 { return 0; }
- static inline int coresight_timeout(void __iomem *addr, u32 offset,
- 				     int position, int value) { return 1; }
-+#endif
-+
- #ifdef CONFIG_OF
-+extern struct coresight_platform_data *of_get_coresight_platform_data(
-+				struct device *dev, struct device_node *node);
-+#else
- static inline struct coresight_platform_data *of_get_coresight_platform_data(
- 	struct device *dev, struct device_node *node) { return NULL; }
- #endif
--#endif
- 
- #endif
--- 
-1.9.1
+That patch is supposed to fix an occasional underflow by a single page - 
+while my meminfo showed underflow by 22952KiB (5738 pages).
 
+Mikulas
