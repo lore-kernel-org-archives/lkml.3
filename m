@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbbAFIJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:09:17 -0500
-Received: from laurent.telenet-ops.be ([195.130.137.89]:59814 "EHLO
-	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbbAFIJP (ORCPT
+	id S1754565AbbAFIJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:09:50 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54714 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475AbbAFIJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:09:15 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH trivial] HID: Spelling s/Keayboard/Keyboard/
-Date: Tue,  6 Jan 2015 09:09:13 +0100
-Message-Id: <1420531753-10668-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Tue, 6 Jan 2015 03:09:47 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 6 Jan 2015 17:09:48 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing
+ preemption on/off
+Message-ID: <20150106080948.GA18346@js1304-P5Q-DELUXE>
+References: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1420513392.24290.2.camel@stgolabs.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420513392.24290.2.camel@stgolabs.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/hid/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Mon, Jan 05, 2015 at 07:03:12PM -0800, Davidlohr Bueso wrote:
+> On Mon, 2015-01-05 at 10:36 +0900, Joonsoo Kim wrote:
+> > -	preempt_disable();
+> > -	c = this_cpu_ptr(s->cpu_slab);
+> > +	do {
+> > +		tid = this_cpu_read(s->cpu_slab->tid);
+> > +		c = this_cpu_ptr(s->cpu_slab);
+> > +	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
+> > +	barrier();
+> 
+> I don't see the compiler reodering the object/page stores below, since c
+> is updated in the loop anyway. Is this really necessary (same goes for
+> slab_free)? The generated code by gcc 4.8 looks correct without it.
+> Additionally, the implied barriers for preemption control aren't really
+> the same semantics used here (if that is actually the reason why you are
+> using them).
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 230b6f887cd86e9b..303b295a5413d39b 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -388,7 +388,7 @@ config HID_LOGITECH_HIDPP
- 	Say Y if you want support for Logitech devices relying on the HID++
- 	specification. Such devices are the various Logitech Touchpads (T650,
- 	T651, TK820), some mice (Zone Touch mouse), or even keyboards (Solar
--	Keayboard).
-+	Keyboard).
- 
- config LOGITECH_FF
- 	bool "Logitech force feedback support"
--- 
-1.9.1
+Hello,
 
+I'd like to use tid as a pivot so it should be fetched before fetching
+anything on c. Is it impossible even if !CONFIG_PREEMPT without
+barrier()?
+
+Thanks.
