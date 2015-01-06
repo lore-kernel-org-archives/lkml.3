@@ -1,104 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596AbbAFOwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:52:34 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:54205 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842AbbAFOwd (ORCPT
+	id S1755630AbbAFOxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:53:12 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:42975 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755413AbbAFOxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:52:33 -0500
+	Tue, 6 Jan 2015 09:53:10 -0500
+Date: Tue, 6 Jan 2015 15:53:07 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH V4 3/4] mm: reduce try_to_compact_pages parameters
+Message-ID: <20150106145307.GC20860@dhcp22.suse.cz>
+References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
+ <1420478263-25207-4-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Date: Tue, 06 Jan 2015 15:51:57 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-Cc: linux-kernel@vger.kernel.org, b45643@freescale.com, LW@karo-electronics.de,
-        Frank.Li@freescale.com, B38611@freescale.com, davem@davemloft.net
-Subject: Re: [PATCH] net: fec: Fix dual ethernet issue in VFxx
-In-Reply-To: <1420552052-4697-1-git-send-email-bhuvanchandra.dv@toradex.com>
-References: <1420552052-4697-1-git-send-email-bhuvanchandra.dv@toradex.com>
-Message-ID: <43ef2a336673e63b89abaf1a71df29e0@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Jan  6 15:51:03 2015
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 54abf65712817706414780
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420478263-25207-4-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fwiw, this patch really touches many devices and disables the quirk for
-some devices, but this is done by intent.
-
-The quirk FEC_QUIRK_ENET_MAC was active for i.MX28, i.MX6Q, Vybrid
-(mvf600-fec) and i.MX6SX. However, the new quirk is only enabled for
-i.MX28. i.MX6Q doesn't need the quirk since there is one FEC instance
-only anyway. Vybrid and i.MX6SX have a MDIO bus for each instance.
-
-Acked-by: Stefan Agner <stefan@agner.ch>
-
-On 2015-01-06 14:47, Bhuvanchandra DV wrote:
-> On i.MX28, the MDIO bus is shared between the
-> two RMII interfaces. However, in newer designs,
-> such as Vybrid, this is not the case. This patch
-> adds a quirk for the single MDIO case. This allows
-> to use both FEC interfaces working independently
-> on Vybird.
+On Mon 05-01-15 18:17:42, Vlastimil Babka wrote:
+> Expand the usage of the struct alloc_context introduced in the previous patch
+> also for calling try_to_compact_pages(), to reduce the number of its
+> parameters. Since the function is in different compilation unit, we need to
+> move alloc_context definition in the shared mm/internal.h header.
 > 
-> Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+> With this change we get simpler code and small savings of code size and stack
+> usage:
+> 
+> add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-27 (-27)
+> function                                     old     new   delta
+> __alloc_pages_direct_compact                 283     256     -27
+> add/remove: 0/0 grow/shrink: 0/1 up/down: 0/-13 (-13)
+> function                                     old     new   delta
+> try_to_compact_pages                         582     569     -13
+> 
+> Stack usage of __alloc_pages_direct_compact goes from 24 to none (per
+> scripts/checkstack.pl).
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+
+Looks good as well.
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
 > ---
->  drivers/net/ethernet/freescale/fec.h      |    3 +++
->  drivers/net/ethernet/freescale/fec_main.c |    7 ++++---
->  2 files changed, 7 insertions(+), 3 deletions(-)
+>  include/linux/compaction.h | 17 +++++++++--------
+>  mm/compaction.c            | 23 +++++++++++------------
+>  mm/internal.h              | 14 ++++++++++++++
+>  mm/page_alloc.c            | 19 ++-----------------
+>  4 files changed, 36 insertions(+), 37 deletions(-)
 > 
-> diff --git a/drivers/net/ethernet/freescale/fec.h
-> b/drivers/net/ethernet/freescale/fec.h
-> index 469691a..c9515bc 100644
-> --- a/drivers/net/ethernet/freescale/fec.h
-> +++ b/drivers/net/ethernet/freescale/fec.h
-> @@ -425,6 +425,9 @@ struct bufdesc_ex {
->   */
->  #define FEC_QUIRK_BUG_CAPTURE		(1 << 10)
+> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> index 3238ffa..f2efda2 100644
+> --- a/include/linux/compaction.h
+> +++ b/include/linux/compaction.h
+> @@ -21,6 +21,8 @@
+>  /* Zone lock or lru_lock was contended in async compaction */
+>  #define COMPACT_CONTENDED_LOCK	2
 >  
-> +/* Controller has only one MDIO bus for interfacing external PHY's */
-> +#define FEC_QUIRK_SINGLE_MDIO		(1 << 11)
+> +struct alloc_context; /* in mm/internal.h */
 > +
->  struct fec_enet_priv_tx_q {
->  	int index;
->  	unsigned char *tx_bounce[TX_RING_SIZE];
-> diff --git a/drivers/net/ethernet/freescale/fec_main.c
-> b/drivers/net/ethernet/freescale/fec_main.c
-> index 5ebdf8d..22b7748 100644
-> --- a/drivers/net/ethernet/freescale/fec_main.c
-> +++ b/drivers/net/ethernet/freescale/fec_main.c
-> @@ -91,7 +91,8 @@ static struct platform_device_id fec_devtype[] = {
->  		.driver_data = 0,
->  	}, {
->  		.name = "imx28-fec",
-> -		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_SWAP_FRAME,
-> +		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_SWAP_FRAME |
-> +				FEC_QUIRK_SINGLE_MDIO,
->  	}, {
->  		.name = "imx6q-fec",
->  		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_HAS_GBIT |
-> @@ -1952,7 +1953,7 @@ static int fec_enet_mii_init(struct platform_device *pdev)
->  	 * mdio interface in board design, and need to be configured by
->  	 * fec0 mii_bus.
->  	 */
-> -	if ((fep->quirks & FEC_QUIRK_ENET_MAC) && fep->dev_id > 0) {
-> +	if ((fep->quirks & FEC_QUIRK_SINGLE_MDIO) && fep->dev_id > 0) {
->  		/* fec1 uses fec0 mii_bus */
->  		if (mii_cnt && fec0_mii_bus) {
->  			fep->mii_bus = fec0_mii_bus;
-> @@ -2015,7 +2016,7 @@ static int fec_enet_mii_init(struct platform_device *pdev)
->  	mii_cnt++;
+>  #ifdef CONFIG_COMPACTION
+>  extern int sysctl_compact_memory;
+>  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
+> @@ -30,10 +32,9 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+>  			void __user *buffer, size_t *length, loff_t *ppos);
 >  
->  	/* save fec0 mii_bus */
-> -	if (fep->quirks & FEC_QUIRK_ENET_MAC)
-> +	if (fep->quirks & FEC_QUIRK_SINGLE_MDIO)
->  		fec0_mii_bus = fep->mii_bus;
+>  extern int fragmentation_index(struct zone *zone, unsigned int order);
+> -extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> -			int order, gfp_t gfp_mask, nodemask_t *mask,
+> -			enum migrate_mode mode, int *contended,
+> -			int alloc_flags, int classzone_idx);
+> +extern unsigned long try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
+> +			int alloc_flags, const struct alloc_context *ac,
+> +			enum migrate_mode mode, int *contended);
+>  extern void compact_pgdat(pg_data_t *pgdat, int order);
+>  extern void reset_isolation_suitable(pg_data_t *pgdat);
+>  extern unsigned long compaction_suitable(struct zone *zone, int order,
+> @@ -101,10 +102,10 @@ static inline bool compaction_restarting(struct zone *zone, int order)
+>  }
 >  
->  	return 0;
+>  #else
+> -static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> -			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> -			enum migrate_mode mode, int *contended,
+> -			int alloc_flags, int classzone_idx)
+> +static inline unsigned long try_to_compact_pages(gfp_t gfp_mask,
+> +			unsigned int order, int alloc_flags,
+> +			const struct alloc_context *ac,
+> +			enum migrate_mode mode, int *contended)
+>  {
+>  	return COMPACT_CONTINUE;
+>  }
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 546e571..9c7e690 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -1335,22 +1335,20 @@ int sysctl_extfrag_threshold = 500;
+>  
+>  /**
+>   * try_to_compact_pages - Direct compact to satisfy a high-order allocation
+> - * @zonelist: The zonelist used for the current allocation
+> - * @order: The order of the current allocation
+>   * @gfp_mask: The GFP mask of the current allocation
+> - * @nodemask: The allowed nodes to allocate from
+> + * @order: The order of the current allocation
+> + * @alloc_flags: The allocation flags of the current allocation
+> + * @ac: The context of current allocation
+>   * @mode: The migration mode for async, sync light, or sync migration
+>   * @contended: Return value that determines if compaction was aborted due to
+>   *	       need_resched() or lock contention
+>   *
+>   * This is the main entry point for direct page compaction.
+>   */
+> -unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> -			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+> -			enum migrate_mode mode, int *contended,
+> -			int alloc_flags, int classzone_idx)
+> +unsigned long try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
+> +			int alloc_flags, const struct alloc_context *ac,
+> +			enum migrate_mode mode, int *contended)
+>  {
+> -	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+>  	int may_enter_fs = gfp_mask & __GFP_FS;
+>  	int may_perform_io = gfp_mask & __GFP_IO;
+>  	struct zoneref *z;
+> @@ -1365,8 +1363,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  		return COMPACT_SKIPPED;
+>  
+>  	/* Compact each zone in the list */
+> -	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+> -								nodemask) {
+> +	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist, ac->high_zoneidx,
+> +								ac->nodemask) {
+>  		int status;
+>  		int zone_contended;
+>  
+> @@ -1374,7 +1372,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			continue;
+>  
+>  		status = compact_zone_order(zone, order, gfp_mask, mode,
+> -				&zone_contended, alloc_flags, classzone_idx);
+> +				&zone_contended, alloc_flags,
+> +				ac->classzone_idx);
+>  		rc = max(status, rc);
+>  		/*
+>  		 * It takes at least one zone that wasn't lock contended
+> @@ -1384,7 +1383,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  
+>  		/* If a normal allocation would succeed, stop compacting */
+>  		if (zone_watermark_ok(zone, order, low_wmark_pages(zone),
+> -					classzone_idx, alloc_flags)) {
+> +					ac->classzone_idx, alloc_flags)) {
+>  			/*
+>  			 * We think the allocation will succeed in this zone,
+>  			 * but it is not certain, hence the false. The caller
+> diff --git a/mm/internal.h b/mm/internal.h
+> index efad241..cd5418b 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -110,6 +110,20 @@ extern pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address);
+>   */
+>  
+>  /*
+> + * Structure for holding the mostly immutable allocation parameters passed
+> + * between functions involved in allocations, including the alloc_pages*
+> + * family of functions.
+> + */
+> +struct alloc_context {
+> +	struct zonelist *zonelist;
+> +	nodemask_t *nodemask;
+> +	struct zone *preferred_zone;
+> +	int classzone_idx;
+> +	int migratetype;
+> +	enum zone_type high_zoneidx;
+> +};
+> +
+> +/*
+>   * Locate the struct page for both the matching buddy in our
+>   * pair (buddy1) and the combined O(n+1) page they form (page).
+>   *
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index bf0359c..f5f5e2a 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -232,19 +232,6 @@ EXPORT_SYMBOL(nr_node_ids);
+>  EXPORT_SYMBOL(nr_online_nodes);
+>  #endif
+>  
+> -/*
+> - * Structure for holding the mostly immutable allocation parameters passed
+> - * between alloc_pages* family of functions.
+> - */
+> -struct alloc_context {
+> -	struct zonelist *zonelist;
+> -	nodemask_t *nodemask;
+> -	struct zone *preferred_zone;
+> -	int classzone_idx;
+> -	int migratetype;
+> -	enum zone_type high_zoneidx;
+> -};
+> -
+>  int page_group_by_mobility_disabled __read_mostly;
+>  
+>  void set_pageblock_migratetype(struct page *page, int migratetype)
+> @@ -2421,10 +2408,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+>  		return NULL;
+>  
+>  	current->flags |= PF_MEMALLOC;
+> -	compact_result = try_to_compact_pages(ac->zonelist, order, gfp_mask,
+> -						ac->nodemask, mode,
+> -						contended_compaction,
+> -						alloc_flags, ac->classzone_idx);
+> +	compact_result = try_to_compact_pages(gfp_mask, order, alloc_flags, ac,
+> +						mode, contended_compaction);
+>  	current->flags &= ~PF_MEMALLOC;
+>  
+>  	switch (compact_result) {
+> -- 
+> 2.1.2
+> 
 
+-- 
+Michal Hocko
+SUSE Labs
