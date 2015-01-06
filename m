@@ -1,49 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543AbbAFAEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 19:04:51 -0500
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:57812 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753060AbbAFAEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 19:04:50 -0500
-Message-ID: <1420502687.14308.54.camel@x220>
-Subject: Re: [PATCH] arm: pxa: fix pxa27x device-tree support kconfig
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>
-Date: Tue, 06 Jan 2015 01:04:47 +0100
-In-Reply-To: <87a933yuzo.fsf@free.fr>
-References: <1417206768-5840-1-git-send-email-robert.jarzmik@free.fr>
-	 <87a933yuzo.fsf@free.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S932118AbbAFAHO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 19:07:14 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65277 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753488AbbAFAHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 19:07:10 -0500
+Message-ID: <54AB2728.60403@nod.at>
+Date: Tue, 06 Jan 2015 01:07:04 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Aditya Kali <adityakali@google.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Rohit Jnagal <jnagal@google.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCHv3 8/8] cgroup: Add documentation for cgroup namespaces
+References: <1417744550-6461-1-git-send-email-adityakali@google.com>	<1417744550-6461-9-git-send-email-adityakali@google.com>	<548E17CE.8010704@nod.at>	<CAGr1F2HA6mzFwgp5ngX8P7=198-5CmCjLmuCJ8j3eQ08J2d9Qw@mail.gmail.com>	<54AB15BD.8020007@nod.at> <87lhlgpyxk.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87lhlgpyxk.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset=iso-8859-15
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jan 2015 00:04:47.0836 (UTC) FILETIME=[625A89C0:01D02944]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
-
-On Thu, 2014-12-04 at 22:18 +0100, Robert Jarzmik wrote:
-> Robert Jarzmik <robert.jarzmik@free.fr> writes:
+Am 06.01.2015 um 00:53 schrieb Eric W. Biederman:
+> Richard Weinberger <richard@nod.at> writes:
 > 
-> > Remove the useless CPU_PXA27x non existing kconfig option.
-> > The true options is PXA27x, which is already selected.
-> >
-> > Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> > Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+>> Am 05.01.2015 um 23:48 schrieb Aditya Kali:
+>>> On Sun, Dec 14, 2014 at 3:05 PM, Richard Weinberger <richard@nod.at> wrote:
+>>>> Aditya,
+>>>>
+>>>> I gave your patch set a try but it does not work for me.
+>>>> Maybe you can bring some light into the issues I'm facing.
+>>>> Sadly I still had no time to dig into your code.
+>>>>
+>>>> Am 05.12.2014 um 02:55 schrieb Aditya Kali:
+>>>>> Signed-off-by: Aditya Kali <adityakali@google.com>
+>>>>> ---
+>>>>>  Documentation/cgroups/namespace.txt | 147 ++++++++++++++++++++++++++++++++++++
+>>>>>  1 file changed, 147 insertions(+)
+>>>>>  create mode 100644 Documentation/cgroups/namespace.txt
+>>>>>
+>>>>> diff --git a/Documentation/cgroups/namespace.txt b/Documentation/cgroups/namespace.txt
+>>>>> new file mode 100644
+>>>>> index 0000000..6480379
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/cgroups/namespace.txt
+>>>>> @@ -0,0 +1,147 @@
+>>>>> +                     CGroup Namespaces
+>>>>> +
+>>>>> +CGroup Namespace provides a mechanism to virtualize the view of the
+>>>>> +/proc/<pid>/cgroup file. The CLONE_NEWCGROUP clone-flag can be used with
+>>>>> +clone() and unshare() syscalls to create a new cgroup namespace.
+>>>>> +The process running inside the cgroup namespace will have its /proc/<pid>/cgroup
+>>>>> +output restricted to cgroupns-root. cgroupns-root is the cgroup of the process
+>>>>> +at the time of creation of the cgroup namespace.
+>>>>> +
+>>>>> +Prior to CGroup Namespace, the /proc/<pid>/cgroup file used to show complete
+>>>>> +path of the cgroup of a process. In a container setup (where a set of cgroups
+>>>>> +and namespaces are intended to isolate processes), the /proc/<pid>/cgroup file
+>>>>> +may leak potential system level information to the isolated processes.
+>>>>> +
+>>>>> +For Example:
+>>>>> +  $ cat /proc/self/cgroup
+>>>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
+>>>>> +
+>>>>> +The path '/batchjobs/container_id1' can generally be considered as system-data
+>>>>> +and its desirable to not expose it to the isolated process.
+>>>>> +
+>>>>> +CGroup Namespaces can be used to restrict visibility of this path.
+>>>>> +For Example:
+>>>>> +  # Before creating cgroup namespace
+>>>>> +  $ ls -l /proc/self/ns/cgroup
+>>>>> +  lrwxrwxrwx 1 root root 0 2014-07-15 10:37 /proc/self/ns/cgroup -> cgroup:[4026531835]
+>>>>> +  $ cat /proc/self/cgroup
+>>>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
+>>>>> +
+>>>>> +  # unshare(CLONE_NEWCGROUP) and exec /bin/bash
+>>>>> +  $ ~/unshare -c
+>>>>> +  [ns]$ ls -l /proc/self/ns/cgroup
+>>>>> +  lrwxrwxrwx 1 root root 0 2014-07-15 10:35 /proc/self/ns/cgroup -> cgroup:[4026532183]
+>>>>> +  # From within new cgroupns, process sees that its in the root cgroup
+>>>>> +  [ns]$ cat /proc/self/cgroup
+>>>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/
+>>>>> +
+>>>>> +  # From global cgroupns:
+>>>>> +  $ cat /proc/<pid>/cgroup
+>>>>> +  0:cpuset,cpu,cpuacct,memory,devices,freezer,hugetlb:/batchjobs/container_id1
+>>>>> +
+>>>>> +  # Unshare cgroupns along with userns and mountns
+>>>>> +  # Following calls unshare(CLONE_NEWCGROUP|CLONE_NEWUSER|CLONE_NEWNS), then
+>>>>> +  # sets up uid/gid map and execs /bin/bash
+>>>>> +  $ ~/unshare -c -u -m
+>>>>
+>>>> This command does not issue CLONE_NEWUSER, -U does.
+>>>>
+>>> I was using a custom unshare binary. But I will update the command
+>>> line to be similar to the one in util-linux.
+>>>
+>>>>> +  # Originally, we were in /batchjobs/container_id1 cgroup. Mount our own cgroup
+>>>>> +  # hierarchy.
+>>>>> +  [ns]$ mount -t cgroup cgroup /tmp/cgroup
+>>>>> +  [ns]$ ls -l /tmp/cgroup
+>>>>> +  total 0
+>>>>> +  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.controllers
+>>>>> +  -r--r--r-- 1 root root 0 2014-10-13 09:32 cgroup.populated
+>>>>> +  -rw-r--r-- 1 root root 0 2014-10-13 09:25 cgroup.procs
+>>>>> +  -rw-r--r-- 1 root root 0 2014-10-13 09:32 cgroup.subtree_control
+>>>>
+>>>> I've patched libvirt-lxc to issue CLONE_NEWCGROUP and not bind mount cgroupfs into a container.
+>>>> But I'm unable to mount cgroupfs within the container, mount(2) is failing with EINVAL.
+>>>> And /proc/self/cgroup still shows the cgroup from outside.
+>>>>
+>>>> ---cut---
+>>>> container:/ # ls /sys/fs/cgroup/
+>>>> container:/ # mount -t cgroup none /sys/fs/cgroup/
+>>>
+>>> You need to provide "-o __DEVEL_sane_behavior" flag. Inside the
+>>> container, only unified hierarchy can be mounted. So, for now, that
+>>> flag is needed. I will fix the documentation too.
+>>>
+>>>> mount: wrong fs type, bad option, bad superblock on none,
+>>>>        missing codepage or helper program, or other error
+>>>>
+>>>>        In some cases useful info is found in syslog - try
+>>>>        dmesg | tail or so.
+>>>> container:/ # cat /proc/self/cgroup
+>>>> 8:memory:/machine/test00.libvirt-lxc
+>>>> 7:devices:/machine/test00.libvirt-lxc
+>>>> 6:hugetlb:/
+>>>> 5:cpuset:/machine/test00.libvirt-lxc
+>>>> 4:blkio:/machine/test00.libvirt-lxc
+>>>> 3:cpu,cpuacct:/machine/test00.libvirt-lxc
+>>>> 2:freezer:/machine/test00.libvirt-lxc
+>>>> 1:name=systemd:/user.slice/user-0.slice/session-c2.scope
+>>>> container:/ # ls -la /proc/self/ns
+>>>> total 0
+>>>> dr-x--x--x 2 root root 0 Dec 14 23:02 .
+>>>> dr-xr-xr-x 8 root root 0 Dec 14 23:02 ..
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 cgroup -> cgroup:[4026532240]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 ipc -> ipc:[4026532238]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 mnt -> mnt:[4026532235]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 net -> net:[4026532242]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 pid -> pid:[4026532239]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 user -> user:[4026532234]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:02 uts -> uts:[4026532236]
+>>>> container:/ #
+>>>>
+>>>> #host side
+>>>> lxc-os132:~ # ls -la /proc/self/ns
+>>>> total 0
+>>>> dr-x--x--x 2 root root 0 Dec 14 23:56 .
+>>>> dr-xr-xr-x 8 root root 0 Dec 14 23:56 ..
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 cgroup -> cgroup:[4026531835]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 ipc -> ipc:[4026531839]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 mnt -> mnt:[4026531840]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 net -> net:[4026531957]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 pid -> pid:[4026531836]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 user -> user:[4026531837]
+>>>> lrwxrwxrwx 1 root root 0 Dec 14 23:56 uts -> uts:[4026531838]
+>>>> ---cut---
+>>>>
+>>>> Any ideas?
+>>>>
+>>>
+>>> Please try with "-o __DEVEL_sane_behavior" flag to the mount command.
+>>
+>> Ohh, this renders the whole patch useless for me as systemd needs the "old/default" behavior of cgroups. :-(
+>> I really hoped that cgroup namespaces will help me running systemd in a sane way within Linux containers.
 > 
-> Queued to pxa/for-next.
+> Ugh.  It sounds like there is a real mess here.  At the very least there
+> is misunderstanding.
+> 
+> I have a memory that systemd should have been able to use a unified
+> hierarchy.  As you could still mount the different controllers
+> independently (they just use the same directory structure on each
+> mount).
 
-This patch is not urgent, of course, but by now I would have expected it
-to hit linux-next. So I decided to send out this reminder.
+Luckily systemd folks want to move to the unified but as of now it does not work.
+Please see this mail from Lennart:
+https://www.redhat.com/archives/libvir-list/2014-November/msg01090.html
 
+Maybe the porting is easy. Dunno.
+I had no time yet to look into that.
 
-Paul Bolle
+> That said from a practical standpoint I am not certain that a cgroup
+> namespace is viable if it can not support the behavior of cgroupsfs
+> that everyone is using.
 
+Yep.
+
+systemd *really* wants to own cgroupfs, so it has to mount it within the container.
+Currently libvirt does nasty hacks using bind mounts which are also problematic.
+My hope was that with cgroup namespaces I can simply cheat systemd and give it
+a cgroupfs to mess with.
+
+Thanks,
+//richard
