@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614AbbAFNyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:54:32 -0500
-Received: from mail-am1on0139.outbound.protection.outlook.com ([157.56.112.139]:36640
-	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754994AbbAFNyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:54:31 -0500
-From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-To: <shawn.guo@linaro.org>
-CC: <stefan@agner.ch>, <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
-Subject: [PATCH] ARM: imx: clk-vf610: Add clock for UART4 and UART5
-Date: Tue, 6 Jan 2015 19:06:56 +0530
-Message-ID: <1420551416-4537-1-git-send-email-bhuvanchandra.dv@toradex.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932069AbbAFNiT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:38:19 -0500
+Received: from sauhun.de ([89.238.76.85]:37302 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753176AbbAFNiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 08:38:17 -0500
+Date: Tue, 6 Jan 2015 14:37:53 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Liguo Zhang <Liguo.Zhang@mediatek.com>,
+        Xudong Chen <xudong.chen@mediatek.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        srv_heupstream@mediatek.com,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        YH Chen <yh.chen@mediatek.com>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>,
+        Jean Delvare <jdelvare@suse.de>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] ARM: mediatek: Add driver for Mediatek I2C
+ controller
+Message-ID: <20150106133753.GA3754@katana>
+References: <1416821928-11453-1-git-send-email-xudong.chen@mediatek.com>
+ <20141124121555.GG3733@katana>
+ <1417096856.12707.59.camel@mtksdaap41>
+ <20141127164536.GC5667@katana>
+ <1418352022.4994.44.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [115.115.225.206]
-X-ClientProxiedBy: HKXPR02CA0042.apcprd02.prod.outlook.com (25.161.48.27) To
- AM3PR05MB257.eurprd05.prod.outlook.com (10.242.249.14)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=bhuvanchandra.dv@toradex.com; 
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:AM3PR05MB257;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:AM3PR05MB257;
-X-Forefront-PRVS: 0448A97BF2
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(48376002)(50466002)(36756003)(47776003)(92566001)(101416001)(20776003)(69596002)(31966008)(40100003)(42186005)(86362001)(53416004)(64706001)(4396001)(97736003)(50226001)(21056001)(66066001)(19580395003)(106356001)(33646002)(50986999)(110136001)(105586002)(107046002)(62966003)(229853001)(87976001)(77156002)(81156004)(77096005)(46102003)(19580405001)(89996001)(122386002)(2351001)(120916001)(68736005)(99396003);DIR:OUT;SFP:1102;SCL:1;SRVR:AM3PR05MB257;H:trdx.toradex.int;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:AM3PR05MB257;
-X-OriginatorOrg: toradex.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 13:37:27.8067 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: AM3PR05MB257
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
+Content-Disposition: inline
+In-Reply-To: <1418352022.4994.44.camel@mtksdaap41>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for clock gating of UART4 and UART5.
-We use these UART's in a (not yet mainlined)
-device tree.
 
-Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
----
- arch/arm/mach-imx/clk-vf610.c |    2 ++
- 1 file changed, 2 insertions(+)
+--a8Wt8u1KmwUX3Y2C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/mach-imx/clk-vf610.c b/arch/arm/mach-imx/clk-vf610.c
-index cb21777..af338d2 100644
---- a/arch/arm/mach-imx/clk-vf610.c
-+++ b/arch/arm/mach-imx/clk-vf610.c
-@@ -267,6 +267,8 @@ static void __init vf610_clocks_init(struct device_node *ccm_node)
- 	clk[VF610_CLK_UART1] = imx_clk_gate2("uart1", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(8));
- 	clk[VF610_CLK_UART2] = imx_clk_gate2("uart2", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(9));
- 	clk[VF610_CLK_UART3] = imx_clk_gate2("uart3", "ipg_bus", CCM_CCGR0, CCM_CCGRx_CGn(10));
-+	clk[VF610_CLK_UART4] = imx_clk_gate2("uart4", "ipg_bus", CCM_CCGR6, CCM_CCGRx_CGn(9));
-+	clk[VF610_CLK_UART5] = imx_clk_gate2("uart5", "ipg_bus", CCM_CCGR6, CCM_CCGRx_CGn(10));
- 
- 	clk[VF610_CLK_I2C0] = imx_clk_gate2("i2c0", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(6));
- 	clk[VF610_CLK_I2C1] = imx_clk_gate2("i2c1", "ipg_bus", CCM_CCGR4, CCM_CCGRx_CGn(7));
--- 
-1.7.9.5
 
+> We've started upstream work for MT8173[1].
+>=20
+> We've fixed these issues for new SoC, and we believe it is fully I2C
+> compatible now. We'll add mt8173 support to this driver, so this driver
+> will support both fully I2C compatible SoC and the current one.
+
+=46rom what you tell, I'd rather add the MT8173 support incrementally.
+Let's get first the limited support properly implemented, then add
+another controller.
+
+I'll send out my draft for describing the quirks later today.
+
+
+--a8Wt8u1KmwUX3Y2C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUq+UwAAoJEBQN5MwUoCm2904QAI0JJRo+RFWevqWId5sZ3byr
+n6GPy7NT2eZQT54hemxWgDK1fM7DX6QE8GIkx9PDfxjly6UXA2inrWao9YZv41he
+84C4vA4IUtZEm+xKNi0B3CzzggRHhJ5b8hePMMZ/E6QmLkwh9vUYhXE780q8QBM5
+rf6dDieuj30efM4eFngEjqrfrpqMbRYoK6mAIxImMcYaue84hpkaGIvIR/DIMZT2
+J+WBM/H6WtAmU11DQhRQAkeAAKmgtIRxs3+tSVjuhd/W1aPdhRy8K3ROb6V2unFP
+f1uIXfDgpGJ7+CcgqNx353b17UYsXqfjlz38gX+XCwP4EhSjkZAVyAERl4fi33+4
+oQDD/uCOzL975A5GbCnTWwmnDVdR/FhxfgvdUJsHwk04n5auRZ4zk58pJ/BRl4Fb
+RnoDLyWxggWULSMlfjsZSrZqDYupR3Ww1lYw2WH3ZjI4EBepR5xBu73g+Chy5LtM
+vQQATtPkpGEjdJJOlpE6QdzuJvUuGjJWuLuNLpmluK6kS/exS7HDc5ZAEBSLq5lm
+Y33doHc7llymtDoI7w1xKRntfrrjBa2cE//lB3x9b6LfIz0nEziuHgmJpNBjKzEK
+oWb4FJ0SxlHk8Qj+nnE8opuP6J7/Q0rThoFZEro8FXA+oiAbRWLHeWXD44fJVG1x
+KkLAAFsukPhC8/FykSbT
+=bNyr
+-----END PGP SIGNATURE-----
+
+--a8Wt8u1KmwUX3Y2C--
