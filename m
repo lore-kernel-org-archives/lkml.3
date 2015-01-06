@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbbAFPpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:45:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36505 "EHLO mx1.redhat.com"
+	id S1755796AbbAFPot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:44:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36288 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755793AbbAFPpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:45:16 -0500
-Date: Tue, 6 Jan 2015 17:44:27 +0200
+	id S1755859AbbAFPor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:44:47 -0500
+Date: Tue, 6 Jan 2015 17:44:31 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        =?us-ascii?B?PT9VVEYtOD9xP1V3ZT0yMEtsZWluZS1LPUMzPUI2bmlnPz0=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 17/40] arm: fix put_user sparse errors
-Message-ID: <1420558883-10131-18-git-send-email-mst@redhat.com>
+        Steven Miao <realmz6@gmail.com>,
+        adi-buildroot-devel@lists.sourceforge.net
+Subject: [PATCH v2 18/40] blackfin: fix put_user sparse errors
+Message-ID: <1420558883-10131-19-git-send-email-mst@redhat.com>
 References: <1420558883-10131-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -50,30 +44,28 @@ checks.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/arm/include/asm/uaccess.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/blackfin/include/asm/uaccess.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-index 4767eb9..74fcde7 100644
---- a/arch/arm/include/asm/uaccess.h
-+++ b/arch/arm/include/asm/uaccess.h
-@@ -413,14 +413,14 @@ do {									\
- #ifndef __ARMEB__
- #define __put_user_asm_half(x,__pu_addr,err)			\
- ({								\
--	unsigned long __temp = (unsigned long)(x);		\
-+	unsigned long __temp = (__force unsigned long)(x);	\
- 	__put_user_asm_byte(__temp, __pu_addr, err);		\
- 	__put_user_asm_byte(__temp >> 8, __pu_addr + 1, err);	\
- })
- #else
- #define __put_user_asm_half(x,__pu_addr,err)			\
- ({								\
--	unsigned long __temp = (unsigned long)(x);		\
-+	unsigned long __temp = (__force unsigned long)(x);	\
- 	__put_user_asm_byte(__temp >> 8, __pu_addr, err);	\
- 	__put_user_asm_byte(__temp, __pu_addr + 1, err);	\
- })
+diff --git a/arch/blackfin/include/asm/uaccess.h b/arch/blackfin/include/asm/uaccess.h
+index 2dcc930..4bf968c 100644
+--- a/arch/blackfin/include/asm/uaccess.h
++++ b/arch/blackfin/include/asm/uaccess.h
+@@ -89,10 +89,10 @@ struct exception_table_entry {
+ 			break;					\
+ 		case 8: {					\
+ 			long _xl, _xh;				\
+-			_xl = ((long *)&_x)[0];			\
+-			_xh = ((long *)&_x)[1];			\
+-			__put_user_asm(_xl, ((long __user *)_p)+0, );	\
+-			__put_user_asm(_xh, ((long __user *)_p)+1, );	\
++			_xl = ((__force long *)&_x)[0];		\
++			_xh = ((__force long *)&_x)[1];		\
++			__put_user_asm(_xl, ((__force long __user *)_p)+0, );\
++			__put_user_asm(_xh, ((__force long __user *)_p)+1, );\
+ 		} break;					\
+ 		default:					\
+ 			_err = __put_user_bad();		\
 -- 
 MST
 
