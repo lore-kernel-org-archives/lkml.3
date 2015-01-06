@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659AbbAFHDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 02:03:34 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:14076 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964AbbAFHDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 02:03:33 -0500
-Message-ID: <54AB88C2.7040901@c-s.fr>
-Date: Tue, 06 Jan 2015 08:03:30 +0100
-From: leroy christophe <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754208AbbAFHFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 02:05:22 -0500
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:61301 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbbAFHFT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 02:05:19 -0500
 MIME-Version: 1.0
-To: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-CC: "scottwood@freescale.com" <scottwood@freescale.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "mpe@ellerman.id.au" <mpe@ellerman.id.au>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v3 2/2] powerpc/8xx: use _PAGE_RO instead of _PAGE_RW
-References: <20141222101450.D7DD11A5E15@localhost.localdomain> <1420481520.25047.15.camel@transmode.se>
-In-Reply-To: <1420481520.25047.15.camel@transmode.se>
-Content-Type: text/plain; charset=iso-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420328694-4609-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1420328694-4609-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Date: Tue, 6 Jan 2015 15:05:17 +0800
+Message-ID: <CAAM7YAnVXtDoAQVnyRGNQPQ9okkmoDk3We3D9LvkuxBuwx_RDQ@mail.gmail.com>
+Subject: Re: [PATCH] ceph: acl: Remove unused function
+From: "Yan, Zheng" <ukernel@gmail.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Sage Weil <sage@inktank.com>, ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 4, 2015 at 7:44 AM, Rickard Strandqvist
+<rickard_strandqvist@spectrumdigital.se> wrote:
+> Remove the function ceph_get_cached_acl() that is not used anywhere.
+>
+> This was partially found by using a static code analysis program called cppcheck.
+>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  fs/ceph/acl.c |   14 --------------
+>  1 file changed, 14 deletions(-)
+>
+> diff --git a/fs/ceph/acl.c b/fs/ceph/acl.c
+> index 5bd853b..64fa248 100644
+> --- a/fs/ceph/acl.c
+> +++ b/fs/ceph/acl.c
+> @@ -40,20 +40,6 @@ static inline void ceph_set_cached_acl(struct inode *inode,
+>         spin_unlock(&ci->i_ceph_lock);
+>  }
+>
+> -static inline struct posix_acl *ceph_get_cached_acl(struct inode *inode,
+> -                                                       int type)
+> -{
+> -       struct ceph_inode_info *ci = ceph_inode(inode);
+> -       struct posix_acl *acl = ACL_NOT_CACHED;
+> -
+> -       spin_lock(&ci->i_ceph_lock);
+> -       if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 0))
+> -               acl = get_cached_acl(inode, type);
+> -       spin_unlock(&ci->i_ceph_lock);
+> -
+> -       return acl;
+> -}
+> -
+>  struct posix_acl *ceph_get_acl(struct inode *inode, int type)
+>  {
+>         int size;
+> --
+> 1.7.10.4
+>
 
-Le 05/01/2015 19:12, Joakim Tjernlund a écrit :
-> On Mon, 2014-12-22 at 11:14 +0100, Christophe Leroy wrote:
->> On powerpc 8xx, in TLB entries, 0x400 bit is set to 1 for read-only pages
->> and is set to 0 for RW pages. So we should use _PAGE_RO instead of _PAGE_RW
->>
->> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> Hi Christophe, been meaning to look over all you recent 8xx MMU/TLB patches
-> but got so little time :(
->
-> This is very cool (not sure if there will be a performance gain)  but ..
-I think every saved cycle is worth it.
-Before I did any modification:
-* ITLBMiss was 28 instructions.
-* DTLBMiss was 32 instructions.
-Now, (No MODULES, no CPU6, no CPU15):
-* ITLBMiss is 15 instructions
-* DTLBMiss is 24 instructions
->>
->>
->> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
->> index caf094a..b4e0c3b 100644
->> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
->> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
->> @@ -178,9 +178,10 @@ static inline unsigned long pte_update(pte_t *p,
->>          andc    %1,%0,%5\n\
->>          or      %1,%1,%6\n\
->>          /* 0x200 == Extended encoding, bit 22 */ \
->> -       /* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
->> +       /* Bit 22 has to be 1 when _PAGE_USER is unset and _PAGE_RO is set */ \
->>          rlwimi  %1,%1,32-2,0x200\n /* get _PAGE_USER */ \
->> -       rlwinm  %3,%1,32-1,0x200\n /* get _PAGE_RW */ \
->> +       rlwinm  %3,%1,32-1,0x200\n /* get _PAGE_RO */ \
->> +       xori    %3,%3,0x200\n \
->>          or      %1,%3,%1\n\
->>          xori    %1,%1,0x200\n"
->>   "      stwcx.  %1,0,%4\n\
-> ... here I expected to loose the existing xori insn instead of adding one?
->
->
-Well, I could have xored the PAGE_USER bit instead, but in that case, it 
-is not anymore an 'or' but an 'and' that has to be performed between the 
-bits, and then all other bits must be set to 1, or the result of the 
-'and' shall be inserted using 'rlwimi'. So it would be more 
-modifications than just adding an xori, and not less instructions.
+added to testing branch.
 
-Christophe
+Thanks
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
