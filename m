@@ -1,139 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312AbbAFNcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:32:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45243 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751286AbbAFNct (ORCPT
+	id S1755338AbbAFNde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:33:34 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39539 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344AbbAFNdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:32:49 -0500
-Date: Tue, 6 Jan 2015 13:32:47 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Zidan Wang <b50113@freescale.com>
-Cc: broonie@kernel.org, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        lars@metafoo.de, Li.Xiubo@freescale.com,
-        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel][PATCH 2/4] ASoC: wm8960: Let wm8960 driver
-	configure its bit clock and frame clock
-Message-ID: <20150106133247.GQ14516@opensource.wolfsonmicro.com>
-References: <1419997154-860-1-git-send-email-b50113@freescale.com> <1419997154-860-2-git-send-email-b50113@freescale.com>
+	Tue, 6 Jan 2015 08:33:33 -0500
+Date: Tue, 6 Jan 2015 14:33:27 +0100
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>, Piotr Kubus <p.t.kubus@gmail.com>,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
+Subject: Re: [PATCH] Staging: comedi: dmm32at: Fixed a code indent issue
+Message-ID: <20150106133327.GG25819@t400>
+References: <1420384955-27336-1-git-send-email-p.t.kubus@gmail.com>
+ <20150104223129.GF25819@t400>
+ <20150105192406.GA2686@PiotrekLap>
+ <20150106060226.GA4285@sudip-PC>
+ <54ABB425.1080207@mev.co.uk>
+ <20150106102730.GA26052@sudip-PC>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419997154-860-2-git-send-email-b50113@freescale.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20150106102730.GA26052@sudip-PC>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 31, 2014 at 11:39:12AM +0800, Zidan Wang wrote:
-> wm8960 codec driver missing configure its bit clock and frame clock, so add
-> support for it. It will calculate a appropriate frequency dividing ratio
-> according to the system clock, bit clock and frame clock, then set the
-> corresponding registers.
+On 01/06, Sudip Mukherjee wrote:
+> On Tue, Jan 06, 2015 at 10:08:37AM +0000, Ian Abbott wrote:
+> > On 06/01/15 06:02, Sudip Mukherjee wrote:
+> > >On Mon, Jan 05, 2015 at 08:24:06PM +0100, Piotr Kubus wrote:
+> > >>On Sun, Jan 04, 2015 at 11:31:29PM +0100, Konrad Zapalowicz wrote:
+> > >>>On 01/04, Piotr Kubus wrote:
+> > >>>>This is a patch to the dmm32at.c file that fixes up a code indent error found by the checkpatch.pl tool.
+> > >>>
+> > >>>Nice however improve your commit message. The rule is that the lines
+> > >>>should wrap at 72nd column except for quoted material such as compiler
+> > >>>output, etc...
+> > >>>
+> > >>>The 72-character columns are important for allowing quoting and they
+> > >>>play nicely with standard indentation from git log.
+> > >>
+> > >>Hey,
+> > >>
+> > >>I couldn't find that rule in Kernel documentation. Besides there were no
+> > >>complaints from checkpatch.pl tool.
+> > >
+> > >Please check SubmittingPatches in Documentation. It says:
+> > >'the "summary" must be no more than 70-75 characters'
+> > 
+> > In this case, it's not the "summary" that's at issue, it's the body
+> > of the commit message, as Konrad mentioned above.
 > 
-> Signed-off-by: Zidan Wang <b50113@freescale.com>
-> ---
->  sound/soc/codecs/wm8960.c | 108 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 108 insertions(+)
-> 
-> diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
-> index 1a5f47b..86a5489 100644
-> --- a/sound/soc/codecs/wm8960.c
-> +++ b/sound/soc/codecs/wm8960.c
-> @@ -127,6 +127,8 @@ struct wm8960_priv {
->  	struct snd_soc_dapm_widget *out3;
->  	bool deemph;
->  	int playback_fs;
-> +	int bclk;
-> +	int sysclk;
->  	struct wm8960_data pdata;
->  };
->  
-> @@ -563,6 +565,79 @@ static struct {
->  	{  8000, 5 },
->  };
->  
-> +/* Multiply 256 for internal 256 div */
-> +static const int dac_divs[] = { 256, 384, 512, 768, 1024, 1408, 1536 };
-> +
-> +/* Multiply 10 to eliminate decimials */
-> +static const int bclk_divs[] = {
-> +	10, 15, 20, 30, 40, 55, 60, 80, 110,
-> +	120, 160, 220, 240, 320, 320, 320
-> +};
-> +
-> +static void wm8960_configure_clocking(struct snd_soc_codec *codec,
-> +		int stream, int lrclk)
-> +{
-> +	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
-> +	u16 iface1 = snd_soc_read(codec, WM8960_IFACE1);
-> +	u16 iface2 = snd_soc_read(codec, WM8960_IFACE2);
-> +	int i, j;
-> +
-> +	if (!(iface1 & (1<<6))) {
-> +		dev_dbg(codec->dev,
-> +			"Codec is slave mode, no need to configure clock\n");
-> +		return;
-> +	}
-> +
-> +	if (!wm8960->sysclk) {
-> +		dev_dbg(codec->dev, "No SYSCLK configured\n");
-> +		return;
-> +	}
-> +
-> +	if (!wm8960->bclk || !lrclk) {
-> +		dev_dbg(codec->dev, "No audio clocks configured\n");
-> +		return;
-> +	}
-> +
-> +	for (i = 0; i < ARRAY_SIZE(dac_divs); ++i) {
-> +		if (wm8960->sysclk == lrclk * dac_divs[i]) {
-> +			for (j = 0; j < ARRAY_SIZE(bclk_divs); ++j) {
-> +				if (wm8960->sysclk ==  wm8960->bclk *
-> +						bclk_divs[j] / 10) {
-> +					/* configure frame clock */
-> +					if (iface2 & (1<<6))
-> +						/* If ADCLRC configure as GPIO
-> +						 * pin, DACLRC pin is used as
-> +						 * a frame clock for ADCs and
-> +						 * DACs */
-> +						snd_soc_update_bits(codec,
-> +								WM8960_CLOCK1,
-> +								0x7 << 3,
-> +								i << 3);
+> yes, i read the SubmittingPatches again. summary is the subject line. But then as Piotr Kubus has written that he could not find this rule in the documentaion, I also tried to find that in SubmittingPatches file and also in the Posting file of the development-process folder, but could not find it. Is it mentioned in some other file we missed ?
 
-The indentation is getting pretty horrific here can we do some
-things to ease that a little. You could flip the polarity of the
-two if statements and use continues instead for example that
-would help a lot.
+Then it is an 'unwritten rule' :) You can observe it just be browsing
+the git log commit messages - pick a few random and you will see.
 
-Thanks,
-Charles
+Moreover in the http://git-scm.com/book/ch5-2.html the 72-character
+columns are the example of the good commit message plus Linus says so:
 
-> +					else if (SNDRV_PCM_STREAM_PLAYBACK
-> +								== stream)
-> +						snd_soc_update_bits(codec,
-> +								WM8960_CLOCK1,
-> +								0x7 << 3,
-> +								i << 3);
-> +					else if (SNDRV_PCM_STREAM_CAPTURE
-> +								== stream)
-> +						snd_soc_update_bits(codec,
-> +								WM8960_CLOCK1,
-> +								0x7 << 6,
-> +								i << 6);
-> +
-> +					/* configure bit clock */
-> +					snd_soc_update_bits(codec,
-> +							WM8960_CLOCK2, 0xf, j);
-> +					return;
-> +				}
-> +			}
-> +		}
-> +	}
-> +
-> +	dev_err(codec->dev, "Unsupported sysclk %d\n", wm8960->sysclk);
-> +}
-> +
+	"we use 72-character columns for word-wrapping, except for quoted
+	material that has a specific line format."
+
+in one of his comments
+https://github.com/torvalds/linux/pull/17#issuecomment-5661185
+
+cheers,
+konrad
+
+> sudip
+> > 
+> > -- 
+> > -=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+> > -=(                          Web: http://www.mev.co.uk/  )=-
