@@ -1,154 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776AbbAFXyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 18:54:24 -0500
-Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:31232
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751573AbbAFXyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 18:54:22 -0500
-X-WSS-ID: 0NHS52C-08-27V-02
-X-M-MSG: 
-Message-ID: <54AC75A7.6050608@amd.com>
-Date: Tue, 6 Jan 2015 17:54:15 -0600
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: <tglx@linutronix.de>, <mingo@redhat.com>, <hpa@zytor.com>,
-        <tony.luck@intel.com>, <dougthompson@xmission.com>,
-        <mchehab@osg.samsung.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-edac@vger.kernel.org>,
-        <dave.hansen@linux.intel.com>, <mgorman@suse.de>, <bp@suse.de>,
-        <riel@redhat.com>, <jacob.w.shin@gmail.com>
-Subject: Re: [PATCH 0/3] Fix MCE handling for AMD multi-node processors
-References: <1419279012-4754-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <20141222201542.GB1942@pd.tnic> <5498858F.1030209@amd.com>
- <20141222231929.GC1942@pd.tnic> <5499C57B.5030900@amd.com>
-In-Reply-To: <5499C57B.5030900@amd.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	id S1754545AbbAFXzr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 18:55:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667AbbAFXzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 18:55:45 -0500
+Message-ID: <1420588530.3541.116.camel@redhat.com>
+Subject: Re: [PATCH v8 34/50] vhost/net: virtio 1.0 byte swap
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        cornelia.huck@de.ibm.com, rusty@au1.ibm.com, nab@linux-iscsi.org,
+        pbonzini@redhat.com, thuth@linux.vnet.ibm.com, dahi@linux.vnet.ibm.com,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org
+Date: Tue, 06 Jan 2015 16:55:30 -0700
+In-Reply-To: <1417449619-24896-35-git-send-email-mst@redhat.com>
+References: <1417449619-24896-1-git-send-email-mst@redhat.com>
+	 <1417449619-24896-35-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(51704005)(377454003)(164054003)(43544003)(24454002)(479174004)(189002)(59896002)(68736005)(23676002)(36756003)(77096005)(84676001)(93886004)(92566001)(83506001)(77156002)(62966003)(4396001)(64126003)(50466002)(65806001)(80316001)(31966008)(21056001)(2950100001)(20776003)(46102003)(47776003)(64706001)(87936001)(97736003)(33656002)(107046002)(87266999)(54356999)(76176999)(120886001)(120916001)(65816999)(50986999)(99396003)(106466001)(86362001)(110136001)(101416001)(105586002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB196;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BLUPR02MB196;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB196;
-X-Forefront-PRVS: 0448A97BF2
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB196;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 23:54:18.2196
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB196
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2014 1:41 PM, Aravind Gopalakrishnan wrote:
-> On 12/22/2014 5:19 PM, Borislav Petkov wrote:
->> On Mon, Dec 22, 2014 at 02:56:47PM -0600, Aravind Gopalakrishnan wrote:
->>> On 12/22/2014 2:15 PM, Borislav Petkov wrote:
->>>> On Mon, Dec 22, 2014 at 02:10:09PM -0600, Aravind Gopalakrishnan 
->>>> wrote:
->>>>> When a MCE happens that is to be logged onto bank 4 of AMD multi-node
->>>>> processors, they are reported only to corresponding node base core of
->>>>> the cpu on which the error occurred.
->>>>>
->>>>> Refer D18F3x44[NbMcaToMstCpuEn] on BKDGs of Fam10h and later for
->>>> Let me try to understand this correctly:
->>>>
->>>> Does that mean that we could fix this by simply doing:
->>>>
->>>> D18F3x44[NbMcaToMstCpuEn]=0b
->>>>
->>>> on each NB?
->>>>
->>> Not quite..
->>> When this field is 0, BKDG says the error may be reported to the 
->>> core that
->>> originated the request *if applicable and known*
->>> Looking at the error signatures table for MC4 (Part 2),
->>> we can see only some errors have 'ErrCoreId' column as valid
->>>
->>> Besides, if IO originated the request, then it is reported only to NBC.
->>>
->>> So, to take care of all these cases, I am just following one 
->>> approach here:
->>> and that is to look at NBC MSRs for any bank 4 errors.
->>> (It seems to be what the BKDG recommends anyway as BIOS by default 
->>> should
->>> set D18F3x44[NbMcaToMstCpuEn])
->> Then in that case you have to check the case where
->> D18F3x44[NbMcaToMstCpuEn] is 0 for whatever reason (some BIOS forgot to
->> set it or whatever) and to set it again.
->
+On Mon, 2014-12-01 at 18:05 +0200, Michael S. Tsirkin wrote:
+> I had to add an explicit tag to suppress compiler warning:
+> gcc isn't smart enough to notice that
+> len is always initialized since function is called with size > 0.
 
-Hi Boris,
-It seems my earlier understanding of hardware behavior was not 
-completely right.
-Here are some clarifications I have received after some internal discussion-
-When D18F3x44[NBMstToMstCpuEn] is set, the interrupt is also routed to 
-the NBC.
+I'm getting a panic inside a guest when this change is applied on the
+host.  I identified this patch via bisect and confirmed by reverting it
+from v3.19-rc2.  Guest is centos6.  Thanks,
 
-This was not immediately clear to me from the description for the field 
-in the BKDG.
-The BKDG states that errors are reported to the NBC and also that 
-status, addr, ctl
-MSRs for MC4 are only accessible from the NBC.
-I took this to understand that the error info is written to the NBC MSRs 
-while
-the #MC could be generated from the non-NBC.
+Alex
 
-Now, given that setting NBMstToMstCpuEn ensures #MC is generated only on 
-NBC for MC4 errors,
-we don't have a problem to solve in the #MC handler code.
-So, we can discard patch2 of the series,
+commit 8b38694a2dc8b18374310df50174f1e4376d6824
+Author: Michael S. Tsirkin <mst@redhat.com>
+Date:   Fri Oct 24 14:19:48 2014 +0300
 
-But we still need to change the error injection interfaces in mce_amd_inj:
-mce_amd_inj triggers a #MC on the cpu number that the user specifies on 
-debugfs.
-For any error other than MC4 errors, this is fine.
-But we should really be triggering #MC only on NBC for MC4 errors.
-and also make sure we use NBC to write to the status/addr MSRs as only 
-NBC has access to
-these MSRs.
+    vhost/net: virtio 1.0 byte swap
+    
+    I had to add an explicit tag to suppress compiler warning:
+    gcc isn't smart enough to notice that
+    len is always initialized since function is called with size > 0.
+    
+    Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+    Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-And for this, we will still need some the changes introduced in patch 1 
-and patch 3 entirely.
+XML chunk:
 
-And since calculating a corresponding NBC for a given core will be 
-needed only in mce_amd_inj,
-I can move those calculations to mce_amd_inj.
-(Or if you prefer it be in a common location then I can leave it as it 
-as too)
+    <interface type='direct'>
+      <mac address='52:54:00:64:f3:34'/>
+      <source dev='iscsinet0' mode='bridge'/>
+      <model type='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+    </interface>
 
+Panic log:
 
->>
->> Also, the math in amd_get_nbc_for_node() is too fragile and will break
->> the moment some BIOS renumbers cores to accomodate some other OS.
->>
->
-
-Could you please clarify this?
-
-For cores_per_node I am using c->x86_max_cores which is a value obtained 
-from cpuid_ecx(0x80000008);
-and NodesPerProcessor is obtained from cpuid_ecx(0x8000001e); (or 
-MSR_FAM10H_NODE_ID)
-
-These values should still be consistent for other OS too right?
-
-Also, these are the values that we have currently in amd_get_topology(). 
-I simply refactored the code..
-
-Thanks,
--Aravind.
+<1>BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+<1>IP: [<ffffffffa0079469>] virtnet_poll+0x4f9/0x910 [virtio_net]
+<4>PGD 1aa2f4067 PUD 1aa2f5067 PMD 0 
+<4>Oops: 0000 [#1] SMP 
+<4>last sysfs file: /sys/devices/pci0000:00/0000:00:03.0/virtio0/net/eth9/ifindex
+<4>CPU 0 
+<4>Modules linked in: 8021q garp stp llc ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 uinput microcode snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd soundcore snd_page_alloc igbvf nvidia(P)(U) i2c_core tg3 ptp pps_core virtio_balloon virtio_net virtio_console ext4 jbd2 mbcache virtio_blk virtio_pci virtio_ring virtio pata_acpi ata_generic ata_piix dm_mirror dm_region_hash dm_log dm_mod [last unloaded: speedstep_lib]
+<4>
+<4>Pid: 1374, comm: NetworkManager Tainted: P           ---------------    2.6.32-431.23.3.el6.centos.plus.x86_64 #1 QEMU Standard PC (i440FX + PIIX, 1996)
+<4>RIP: 0010:[<ffffffffa0079469>]  [<ffffffffa0079469>] virtnet_poll+0x4f9/0x910 [virtio_net]
+<4>RSP: 0018:ffff880028203e48  EFLAGS: 00010246
+<4>RAX: ffff8801a3383d00 RBX: ffff8801a6aaf480 RCX: ffff8801aa20b6e0
+<4>RDX: 00000000000000c0 RSI: ffff8801a3383c00 RDI: ffff8801a3383cc0
+<4>RBP: ffff880028203ed8 R08: 000000000000009e R09: ffff8801aa1d800c
+<4>R10: 0000000000000218 R11: 0000000000000000 R12: ffff8801aa20b6e0
+<4>R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+<4>FS:  00007febf114d800(0000) GS:ffff880028200000(0000) knlGS:0000000000000000
+<4>CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>CR2: 0000000000000010 CR3: 00000001aa793000 CR4: 00000000000006f0
+<4>DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<4>Process NetworkManager (pid: 1374, threadinfo ffff8801a74ba000, task ffff8801a8d56040)
+<4>Stack:
+<4> ffff8801aa1d8000 000000000000009e ffff8801aa20b6e0 ffff8801aa20b718
+<4><d> ffff8801aa20b780 ffff8801aa1d800c ffff8801a6aaf4b8 ffff8801aa20b020
+<4><d> 0000000000000080 ffff8801aa20b708 0000000000000001 00001f5981a830c8
+<4>Call Trace:
+<4> <IRQ> 
+<4> [<ffffffff8146ae33>] net_rx_action+0x103/0x2f0
+<4> [<ffffffff8107a5f1>] __do_softirq+0xc1/0x1e0
+<4> [<ffffffff8100c30c>] ? call_softirq+0x1c/0x30
+<4> [<ffffffff8100c30c>] call_softirq+0x1c/0x30
+<4> <EOI> 
+<4> [<ffffffff8100fa75>] ? do_softirq+0x65/0xa0
+<4> [<ffffffff8107b2ea>] local_bh_enable+0x9a/0xb0
+<4> [<ffffffffa007813a>] virtnet_napi_enable+0x4a/0x60 [virtio_net]
+<4> [<ffffffffa0078ebf>] virtnet_open+0x4f/0x60 [virtio_net]
+<4> [<ffffffff81467691>] dev_open+0xa1/0x100
+<4> [<ffffffff81466751>] dev_change_flags+0xa1/0x1d0
+<4> [<ffffffff81474a59>] do_setlink+0x169/0x8b0
+<4> [<ffffffff814770b6>] ? rtnl_fill_ifinfo+0x946/0xcb0
+<4> [<ffffffff812a3d24>] ? nla_parse+0x34/0x110
+<4> [<ffffffff8147659e>] rtnl_setlink+0xee/0x130
+<4> [<ffffffff81475b67>] rtnetlink_rcv_msg+0x2d7/0x340
+<4> [<ffffffff81231e14>] ? socket_has_perm+0x74/0x90
+<4> [<ffffffff81475890>] ? rtnetlink_rcv_msg+0x0/0x340
+<4> [<ffffffff814910a9>] netlink_rcv_skb+0xa9/0xd0
+<4> [<ffffffff81475875>] rtnetlink_rcv+0x25/0x40
+<4> [<ffffffff81490cdb>] netlink_unicast+0x2db/0x320
+<4> [<ffffffff81491750>] netlink_sendmsg+0x2c0/0x3d0
+<4> [<ffffffff814520c3>] sock_sendmsg+0x123/0x150
+<4> [<ffffffff81453d73>] ? sock_recvmsg+0x133/0x160
+<4> [<ffffffff8109afa0>] ? autoremove_wake_function+0x0/0x40
+<4> [<ffffffff81136941>] ? lru_cache_add_lru+0x21/0x40
+<4> [<ffffffff8115522d>] ? page_add_new_anon_rmap+0x9d/0xf0
+<4> [<ffffffff8114aeef>] ? handle_pte_fault+0x4af/0xb00
+<4> [<ffffffff81451f14>] ? move_addr_to_kernel+0x64/0x70
+<4> [<ffffffff814538b6>] __sys_sendmsg+0x406/0x420
+<4> [<ffffffff8104a98c>] ? __do_page_fault+0x1ec/0x480
+<4> [<ffffffff814523d9>] ? sys_sendto+0x139/0x190
+<4> [<ffffffff8103ea6c>] ? kvm_clock_read+0x1c/0x20
+<4> [<ffffffff81453ad9>] sys_sendmsg+0x49/0x90
+<4> [<ffffffff8100b072>] system_call_fastpath+0x16/0x1b
+<4>Code: 83 e0 00 00 00 00 10 00 00 48 03 93 d0 00 00 00 66 83 42 04 01 8b 93 cc 00 00 00 48 8b b3 d0 00 00 00 80 4c 16 10 20 44 2b 68 0c <4d> 8b 76 10 75 89 e9 d1 fd ff ff 0f 1f 40 00 a8 02 74 0d 0f b6 
+<1>RIP  [<ffffffffa0079469>] virtnet_poll+0x4f9/0x910 [virtio_net]
+<4> RSP <ffff880028203e48>
+<4>CR2: 0000000000000010
 
 
