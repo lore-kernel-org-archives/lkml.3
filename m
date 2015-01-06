@@ -1,48 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127AbbAFSlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:41:52 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:40067 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129AbbAFSlu (ORCPT
+	id S1756229AbbAFSmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:42:10 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:59299 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbbAFSmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:41:50 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 11/28] net: wireless: ath: ath5k: drop owner assignment from platform_drivers
-References: <1419196495-9626-1-git-send-email-wsa@the-dreams.de>
-	<1419196495-9626-12-git-send-email-wsa@the-dreams.de>
-Date: Tue, 06 Jan 2015 20:41:41 +0200
-In-Reply-To: <1419196495-9626-12-git-send-email-wsa@the-dreams.de> (Wolfram
-	Sang's message of "Sun, 21 Dec 2014 22:14:32 +0100")
-Message-ID: <87bnmbycnu.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 6 Jan 2015 13:42:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <54AC29B1.70004@linux.intel.com>
+References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>
+ <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
+ <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+ <20150106040428.GR2915@two.firstfloor.org> <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+ <54AC1FFB.7030504@linux.intel.com> <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
+ <54AC29B1.70004@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 6 Jan 2015 10:41:44 -0800
+Message-ID: <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API to arch_prctl
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        ilya.enkovich@intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfram Sang <wsa@the-dreams.de> writes:
-
-> This platform_driver does not need to set an owner, it will be populated by the
-> driver core.
+On Tue, Jan 6, 2015 at 10:30 AM, Dave Hansen
+<dave.hansen@linux.intel.com> wrote:
+> On 01/06/2015 10:06 AM, Andy Lutomirski wrote:
+>> On Tue, Jan 6, 2015 at 9:48 AM, Dave Hansen <dave.hansen@linux.intel.com> wrote:
+>>> On 01/05/2015 09:59 PM, Andy Lutomirski wrote:
+>>>> But I decided to check whether libmpx links against glibc, and I can't
+>>>> find sources for it at all.  Do they exist?  Is there any code with
+>>>> source available that invokes this prctl?
+>>>>
+>>>> If not, I personally have very little sympathy for the argument that a
+>>>> binary buried in the depths of the Intel SDE would need to change if
+>>>> we switched to using arch_prctl.  And I think that it should issue the
+>>>> syscall itself without using glibc, in which case the syscall wrapper
+>>>> issue is moot.
+>>>
+>>> Andy, as I mentioned previously, there is code in a GCC branch that uses
+>>> the existing prctl().  It's also been posted for review to one of the
+>>> GCC mailing lists.  I've been told that it will be in gcc 5.0.
+>>
+>> Can you point me to it?  I found the code generation stuff in the gcc
+>> branch, but I couldn't find the runtime.
 >
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
-> Generated with coccinelle. SmPL file is in the introductory msg. The big
-> cleanup was pulled in this merge window. This series catches the bits fallen
-> through. The patches shall go in via the subsystem trees.
+> cc'ing Ilya who is working on the gcc parts...
+>
+> Ilya, is the MPX runtime that uses the prctl() calls available somewhere
+> publicly that it can be grabbed?
+>
+> I couldn't find it in GCC SVN anywhere.
+>
+>>> The Intel SDE does not use the prctl() in any way that I know of.
+>>
+>> I found a couple references suggesting that libmpx lived in the SDE.
+>> For example:
+>>
+>> https://software.intel.com/en-us/articles/using-intel-mpx-with-the-intel-software-development-emulator
+>
+> Andy, I think you're mistaken.  The SDE allows you to run MPX code on a
+> system without MPX support in hardware.  It does not, itself, provide
+> MPX code.  The references you see there are to a runtime library that
+> you obtain separately from the SDE.  You run the library _under_ the SDE.
+>
 
-Thanks, applied to wireless-drivers-next.git. But I simplified the patch
-title:
+I misread this:
 
-c0c3163a7213 ath5k: drop owner assignment from platform_drivers
+There are two shared objects in the runtime kit available on the SDE page.
 
--- 
-Kalle Valo
+The runtime seems to be here:
+
+https://software.intel.com/protected-download/267266/144917
+
+but I'm not going to accept the EULA.
+
+--Andy
