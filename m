@@ -1,1062 +1,2373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbbAFNYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:24:01 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:55850 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268AbbAFNX5 (ORCPT
+	id S1755398AbbAFNZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:25:22 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:59565 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233AbbAFNZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:23:57 -0500
-Date: Tue, 6 Jan 2015 13:23:42 +0000
-From: Javi Merino <javi.merino@arm.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punit Agrawal <Punit.Agrawal@arm.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH v6 7/9] thermal: introduce the Power Allocator
- governor
-Message-ID: <20150106132341.GF2885@e104805>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
- <1417806260-9264-8-git-send-email-javi.merino@arm.com>
- <20150102154617.GB10683@developer>
+	Tue, 6 Jan 2015 08:25:19 -0500
+Date: Tue, 6 Jan 2015 09:24:23 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: linux-tegra@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] ARM: tegra: Move out nyan-generic parts out from the
+ nyan-big DT
+Message-ID: <20150106132420.GA16132@developer>
+References: <1420540653-14816-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1420540653-14816-3-git-send-email-tomeu.vizoso@collabora.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
 Content-Disposition: inline
-In-Reply-To: <20150102154617.GB10683@developer>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420540653-14816-3-git-send-email-tomeu.vizoso@collabora.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
 
-On Fri, Jan 02, 2015 at 03:46:24PM +0000, Eduardo Valentin wrote:
-> On Fri, Dec 05, 2014 at 07:04:18PM +0000, Javi Merino wrote:
-> > The power allocator governor is a thermal governor that controls system
-> > and device power allocation to control temperature.  Conceptually, the
-> > implementation divides the sustainable power of a thermal zone among
-> > all the heat sources in that zone.
-> > 
-> > This governor relies on "power actors", entities that represent heat
-> > sources.  They can report current and maximum power consumption and
-> > can set a given maximum power consumption, usually via a cooling
-> > device.
-> > 
-> > The governor uses a Proportional Integral Derivative (PID) controller
-> > driven by the temperature of the thermal zone.  The output of the
-> > controller is a power budget that is then allocated to each power
-> > actor that can have bearing on the temperature we are trying to
-> > control.  It decides how much power to give each cooling device based
-> > on the performance they are requesting.  The PID controller ensures
-> > that the total power budget does not exceed the control temperature.
-> > 
-> > Cc: Zhang Rui <rui.zhang@intel.com>
-> > Cc: Eduardo Valentin <edubezval@gmail.com>
-> > Signed-off-by: Punit Agrawal <punit.agrawal@arm.com>
-> > Signed-off-by: Javi Merino <javi.merino@arm.com>
-> > ---
-> >  Documentation/thermal/power_allocator.txt | 196 ++++++++++++
-> >  drivers/thermal/Kconfig                   |  15 +
-> >  drivers/thermal/Makefile                  |   1 +
-> >  drivers/thermal/power_allocator.c         | 511 ++++++++++++++++++++++++++++++
-> >  drivers/thermal/thermal_core.c            |   7 +-
-> >  drivers/thermal/thermal_core.h            |   8 +
-> >  include/linux/thermal.h                   |  40 ++-
-> >  7 files changed, 774 insertions(+), 4 deletions(-)
-> >  create mode 100644 drivers/thermal/power_allocator.c
-> > 
-> > diff --git a/Documentation/thermal/power_allocator.txt b/Documentation/thermal/power_allocator.txt
-> > index d3bb79050c27..23b684afdc75 100644
-> > --- a/Documentation/thermal/power_allocator.txt
-> > +++ b/Documentation/thermal/power_allocator.txt
-> > @@ -1,3 +1,172 @@
-> > +Power allocator governor tunables
-> > +=================================
-> > +
-> > +Trip points
-> > +-----------
-> > +
-> > +The governor requires the following two passive trip points:
-> > +
-> > +1.  "switch on" trip point: temperature above which the governor
-> > +    control loop starts operating.
-> > +2.  "desired temperature" trip point: it should be higher than the
-> > +    "switch on" trip point. It is the target temperature the governor
-> > +    is controlling for.
-> > +
-> > +PID Controller
-> > +--------------
-> > +
-> > +The power allocator governor implements a
-> > +Proportional-Integral-Derivative controller (PID controller) with
-> > +temperature as the control input and power as the controlled output:
-> > +
-> > +    P_max = k_p * e + k_i * err_integral + k_d * diff_err + sustainable_power
-> > +
-> > +where
-> > +    e = desired_temperature - current_temperature
-> > +    err_integral is the sum of previous errors
-> > +    diff_err = e - previous_error
-> > +
-> > +It is similar to the one depicted below:
-> > +
-> > +                                      k_d
-> > +                                       |
-> > +current_temp                           |
-> > +     |                                 v
-> > +     |                +----------+   +---+
-> > +     |         +----->| diff_err |-->| X |------+
-> > +     |         |      +----------+   +---+      |
-> > +     |         |                                |      tdp        actor
-> > +     |         |                      k_i       |       |    get_actual_power()
-> > +     |         |                       |        |       |        |     |
-> > +     |         |                       |        |       |        |     | ...
-> > +     v         |                       v        v       v        v     v
-> > +   +---+       |      +-------+      +---+    +---+   +---+   +----------+
-> > +   | S |-------+----->| sum e |----->| X |--->| S |-->| S |-->|power     |
-> > +   +---+       |      +-------+      +---+    +---+   +---+   |allocation|
-> > +     ^         |                                ^             +----------+
-> > +     |         |                                |                |     |
-> > +     |         |        +---+                   |                |     |
-> > +     |         +------->| X |-------------------+                v     v
-> > +     |                  +---+                               granted performance
-> > +desired_temperature       ^
-> > +                          |
-> > +                          |
-> > +                      k_po/k_pu
-> > +
-> > +Sustainable power
-> > +-----------------
-> > +
-> > +An estimate of the sustainable dissipatable power (in mW) should be
-> > +provided while registering the thermal zone.  This estimates the
-> > +sustained power that can be dissipated at the desired control
-> > +temperature.  This is the maximum sustained power for allocation at
-> > +the desired maximum temperature.  The actual sustained power can vary
-> > +for a number of reasons.  The closed loop controller will take care of
-> > +variations such as environmental conditions, and some factors related
-> > +to the speed-grade of the silicon.  `sustainable_power` is therefore
-> > +simply an estimate, and may be tuned to affect the aggressiveness of
-> > +the thermal ramp.  For reference, this is 2000mW - 4500mW depending on
-> > +screen size (4" phone - 10" tablet).
-> 
-> I would rephrase the example as:
-> 'For reference, the sustainable power of a 4" phone is typically 2000mW,
-> while on a 10" table is around 4500mW (may vary depending on screen
-> size).
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok
+On Tue, Jan 06, 2015 at 11:37:27AM +0100, Tomeu Vizoso wrote:
+> In preparation for adding the DT for the nyan-blaze board.
+>=20
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-> > +
-> > +If you are using device tree, do add it as a property of the
-> > +thermal-zone.  For example:
-> > +
-> > +	thermal-zones {
-> > +		soc_thermal {
-> > +			polling-delay = <1000>;
-> > +			polling-delay-passive = <100>;
-> > +			sustainable-power = <2500>;
-> > +			...
-> > +
-> > +If you use platform code to register your thermal zone instead, pass a
-> > +`thermal_zone_params` that has a `sustainable_power`.  If you weren't
-> > +passing any `thermal_zone_params`, then something like this will do:
-> > +
-> > +	static const struct thermal_zone_params tz_params = {
-> > +		.sustainable_power = 3500,
-> > +	};
-> > +
-> > +and then pass `tz_params` as the 5th parameter to
-> > +`thermal_zone_device_register()`
-> > +
-> > +k_po and k_pu
-> > +-------------
-> > +
-> > +The implementation of the PID controller in the power allocator
-> > +thermal governor allows the configuration of two proportional term
-> > +constants: `k_po` and `k_pu`.  `k_po` is the proportional term
-> > +constant during temperature overshoot periods (current temperature is
-> > +above "desired temperature" trip point).  Conversely, `k_pu` is the
-> > +proportional term constant during temperature undershoot periods
-> > +(current temperature below "desired temperature" trip point).
-> > +
-> > +These controls are intended as the primary mechanism for configuring
-> > +the permitted thermal "ramp" of the system.  For instance, a lower
-> > +`k_pu` value will provide a slower ramp, at the cost of capping
-> > +available capacity at a low temperature.  On the other hand, a high
-> > +value of `k_pu` will result in the governor granting very high power
-> > +whilst temperature is low, and may lead to temperature overshooting.
-> > +
-> > +The default value for `k_pu` is:
-> > +
-> > +    2 * sustainable_power / (desired_temperature - switch_on_temp)
-> > +
-> > +This means that at `switch_on_temp` the output of the controller's
-> > +proportional term will be 2 * `sustainable_power`.  The default value
-> > +for `k_po` is:
-> > +
-> > +    sustainable_power / (desired_temperature - switch_on_temp)
-> > +
-> > +Focusing on the proportional and feed forward values of the PID
-> > +controller equation we have:
-> > +
-> > +    P_max = k_p * e + sustainable_power
-> > +
-> > +The proportional term is proportional to the difference between the
-> > +desired temperature and the current one.  When the current temperature
-> > +is the desired one, then the proportional component is zero and
-> > +`P_max` = `sustainable_power`.  That is, the system should operate in
-> > +thermal equilibrium under constant load.  `sustainable_power` is only
-> > +an estimate, which is the reason for closed-loop control such as this.
-> > +
-> > +Expanding `k_pu` we get:
-> > +    P_max = 2 * sustainable_power * (T_set - T) / (T_set - T_on) +
-> > +        sustainable_power
-> > +
-> > +where
-> > +    T_set is the desired temperature
-> > +    T is the current temperature
-> > +    T_on is the switch on temperature
-> > +
-> > +When the current temperature is the switch_on temperature, the above
-> > +formula becomes:
-> > +
-> > +    P_max = 2 * sustainable_power * (T_set - T_on) / (T_set - T_on) +
-> > +        sustainable_power = 2 * sustainable_power + sustainable_power = 
-> > +        3 * sustainable_power
-> > +
-> > +Therefore, the proportional term alone linearly decreases power from
-> > +3 * `sustainable_power` to `sustainable_power` as the temperature
-> > +rises from the switch on temperature to the desired temperature.
-> > +
-> > +k_i and integral_cutoff
-> > +-----------------------
-> > +
-> > +`k_i` configures the PID loop's integral term constant.  This term
-> > +allows the PID controller to compensate for long term drift and for
-> > +the quantized nature of the output control: cooling devices can't set
-> > +the exact power that the governor requests.  When the temperature
-> > +error is below `integral_cutoff`, errors are accumulated in the
-> > +integral term.  This term is then multiplied by `k_i` and the result
-> > +added to the output of the controller.  Typically `k_i` is set low (1
-> > +or 2) and `integral_cutoff` is 0.
-> > +
-> > +k_d
-> > +---
-> 
-> k_d may be conflicted with Kd  (capacitance) of the cooling device power API.
-> 
-> Is it possible to change / rename either one of them?
+For the (small part of the) thermal sensor:
 
-You're right, I'll rename the one in the formula.
+Acked-by: Eduardo Valentin <edubezval@gmail.com>
 
-> > +
-> > +`k_d` configures the PID loop's derivative term constant.  It's
-> > +recommended to leave it as the default: 0.
-> > +
-> >  Cooling device power API
-> >  ========================
-> >  
-> > @@ -25,3 +194,30 @@ milliwatts.
-> >  
-> >  Calculate a cooling device state that would make the device consume at
-> >  most @power mW.
-> > +
-> > +Cooling device weights
-> > +----------------------
-> > +
-> > +Weights are a mechanism to bias the allocation between cooling
-> > +devices.  They express the relative power efficiency of different
-> > +cooling devices.  Higher weight can be used to express higher power
-> > +efficiency.  Weighting is relative such that if each cooling device
-> > +has a weight of one they are considered equal.  This is particularly
-> > +useful in heterogeneous systems where two cooling devices may perform
-> > +the same kind of compute, but with different efficiency.  For example,
-> > +a system with two different types of processors.
-> > +
-> > +Weights shall be passed as part of the thermal zone's
-> > +`thermal_bind_parameters`.
-> > +
-> > +Limitations of the power allocator governor
-> > +===========================================
-> > +
-> > +The power allocator governor's PID controller works best if there is a
-> > +periodic tick.  If you have a driver that calls
-> > +`thermal_zone_device_update()` (or anything that ends up calling the
-> > +governor's `throttle()` function) repetitively, the governor response
-> > +won't be very good.  Note that this is not particular to this
-> > +governor, step-wise will also misbehave if you call its throttle()
-> > +faster than the normal thermal framework tick (due to interrupts for
-> > +example) as it will overreact.
-> > diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> > index f554d25b4399..4496fa5e4a33 100644
-> > --- a/drivers/thermal/Kconfig
-> > +++ b/drivers/thermal/Kconfig
-> > @@ -71,6 +71,14 @@ config THERMAL_DEFAULT_GOV_USER_SPACE
-> >  	  Select this if you want to let the user space manage the
-> >  	  platform thermals.
-> >  
-> > +config THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
-> > +	bool "power_allocator"
-> > +	select THERMAL_GOV_POWER_ALLOCATOR
-> > +	help
-> > +	  Select this if you want to control temperature based on
-> > +	  system and device power allocation. This governor relies on
-> > +	  power actors to operate.
-> > +
-> >  endchoice
-> >  
-> >  config THERMAL_GOV_FAIR_SHARE
-> > @@ -99,6 +107,13 @@ config THERMAL_GOV_USER_SPACE
-> >  	help
-> >  	  Enable this to let the user space manage the platform thermals.
-> >  
-> > +config THERMAL_GOV_POWER_ALLOCATOR
-> > +	bool "Power allocator thermal governor"
-> > +	select THERMAL_POWER_ACTOR
-> > +	help
-> > +	  Enable this to manage platform thermals by dynamically
-> > +	  allocating and limiting power to devices.
-> 
-> I think the config entry deserves a better description, don't you
-> agree?
+> ---
+>  arch/arm/boot/dts/tegra124-nyan-big.dts | 1131 +------------------------=
+-----
+>  arch/arm/boot/dts/tegra124-nyan.dtsi    | 1133 +++++++++++++++++++++++++=
+++++++
+>  2 files changed, 1136 insertions(+), 1128 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/tegra124-nyan.dtsi
+>=20
+> diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts b/arch/arm/boot/dts/=
+tegra124-nyan-big.dts
+> index 4752572..2041077 100644
+> --- a/arch/arm/boot/dts/tegra124-nyan-big.dts
+> +++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
+> @@ -1,1137 +1,12 @@
+>  /dts-v1/;
+> =20
+> -#include <dt-bindings/input/input.h>
+> -#include "tegra124.dtsi"
+> +#include "tegra124-nyan.dtsi"
+> =20
+>  / {
+>  	model =3D "Acer Chromebook 13 CB5-311";
+> -	compatible =3D "google,nyan-big", "nvidia,tegra124";
+> -
+> -	aliases {
+> -		rtc0 =3D "/i2c@0,7000d000/pmic@40";
+> -		rtc1 =3D "/rtc@0,7000e000";
+> -		serial0 =3D &uarta;
+> -	};
+> -
+> -	memory {
+> -		reg =3D <0x0 0x80000000 0x0 0x80000000>;
+> -	};
+> -
+> -	host1x@0,50000000 {
+> -		hdmi@0,54280000 {
+> -			status =3D "okay";
+> -
+> -			vdd-supply =3D <&vdd_3v3_hdmi>;
+> -			pll-supply =3D <&vdd_hdmi_pll>;
+> -			hdmi-supply =3D <&vdd_5v0_hdmi>;
+> -
+> -			nvidia,ddc-i2c-bus =3D <&hdmi_ddc>;
+> -			nvidia,hpd-gpio =3D
+> -				<&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
+> -		};
+> -
+> -		sor@0,54540000 {
+> -			status =3D "okay";
+> -
+> -			nvidia,dpaux =3D <&dpaux>;
+> -			nvidia,panel =3D <&panel>;
+> -		};
+> -
+> -		dpaux@0,545c0000 {
+> -			vdd-supply =3D <&vdd_3v3_panel>;
+> -			status =3D "okay";
+> -		};
+> -	};
+> -
+> -	pinmux@0,70000868 {
+> -		pinctrl-names =3D "boot";
+> -		pinctrl-0 =3D <&pinmux_boot>;
+> -
+> -		pinmux_boot: common {
+> -			dap_mclk1_pw4 {
+> -				nvidia,pins =3D "dap_mclk1_pw4";
+> -				nvidia,function =3D "extperiph1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			dap2_din_pa4 {
+> -				nvidia,pins =3D "dap2_din_pa4";
+> -				nvidia,function =3D "i2s1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			dap2_dout_pa5 {
+> -				nvidia,pins =3D "dap2_dout_pa5",
+> -					      "dap2_fs_pa2",
+> -					      "dap2_sclk_pa3";
+> -				nvidia,function =3D "i2s1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			dvfs_pwm_px0 {
+> -				nvidia,pins =3D "dvfs_pwm_px0",
+> -					      "dvfs_clk_px2";
+> -				nvidia,function =3D "cldvfs";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			ulpi_clk_py0 {
+> -				nvidia,pins =3D "ulpi_clk_py0",
+> -					      "ulpi_nxt_py2",
+> -					      "ulpi_stp_py3";
+> -				nvidia,function =3D "spi1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			ulpi_dir_py1 {
+> -				nvidia,pins =3D "ulpi_dir_py1";
+> -				nvidia,function =3D "spi1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			cam_i2c_scl_pbb1 {
+> -				nvidia,pins =3D "cam_i2c_scl_pbb1",
+> -					      "cam_i2c_sda_pbb2";
+> -				nvidia,function =3D "i2c3";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			gen2_i2c_scl_pt5 {
+> -				nvidia,pins =3D "gen2_i2c_scl_pt5",
+> -					      "gen2_i2c_sda_pt6";
+> -				nvidia,function =3D "i2c2";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			pg4 {
+> -				nvidia,pins =3D "pg4",
+> -					      "pg5",
+> -					      "pg6",
+> -					      "pi3";
+> -				nvidia,function =3D "spi4";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			pg7 {
+> -				nvidia,pins =3D "pg7";
+> -				nvidia,function =3D "spi4";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			ph1 {
+> -				nvidia,pins =3D "ph1";
+> -				nvidia,function =3D "pwm1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			pk0 {
+> -				nvidia,pins =3D "pk0",
+> -					      "kb_row15_ps7",
+> -					      "clk_32k_out_pa0";
+> -				nvidia,function =3D "soc";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			sdmmc1_clk_pz0 {
+> -				nvidia,pins =3D "sdmmc1_clk_pz0";
+> -				nvidia,function =3D "sdmmc1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			sdmmc1_cmd_pz1 {
+> -				nvidia,pins =3D "sdmmc1_cmd_pz1",
+> -					      "sdmmc1_dat0_py7",
+> -					      "sdmmc1_dat1_py6",
+> -					      "sdmmc1_dat2_py5",
+> -					      "sdmmc1_dat3_py4";
+> -				nvidia,function =3D "sdmmc1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			sdmmc3_clk_pa6 {
+> -				nvidia,pins =3D "sdmmc3_clk_pa6";
+> -				nvidia,function =3D "sdmmc3";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			sdmmc3_cmd_pa7 {
+> -				nvidia,pins =3D "sdmmc3_cmd_pa7",
+> -					      "sdmmc3_dat0_pb7",
+> -					      "sdmmc3_dat1_pb6",
+> -					      "sdmmc3_dat2_pb5",
+> -					      "sdmmc3_dat3_pb4",
+> -					      "kb_col4_pq4",
+> -					      "sdmmc3_clk_lb_out_pee4",
+> -					      "sdmmc3_clk_lb_in_pee5",
+> -					      "sdmmc3_cd_n_pv2";
+> -				nvidia,function =3D "sdmmc3";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			sdmmc4_clk_pcc4 {
+> -				nvidia,pins =3D "sdmmc4_clk_pcc4";
+> -				nvidia,function =3D "sdmmc4";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			sdmmc4_cmd_pt7 {
+> -				nvidia,pins =3D "sdmmc4_cmd_pt7",
+> -					      "sdmmc4_dat0_paa0",
+> -					      "sdmmc4_dat1_paa1",
+> -					      "sdmmc4_dat2_paa2",
+> -					      "sdmmc4_dat3_paa3",
+> -					      "sdmmc4_dat4_paa4",
+> -					      "sdmmc4_dat5_paa5",
+> -					      "sdmmc4_dat6_paa6",
+> -					      "sdmmc4_dat7_paa7";
+> -				nvidia,function =3D "sdmmc4";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			pwr_i2c_scl_pz6 {
+> -				nvidia,pins =3D "pwr_i2c_scl_pz6",
+> -					      "pwr_i2c_sda_pz7";
+> -				nvidia,function =3D "i2cpwr";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			jtag_rtck {
+> -				nvidia,pins =3D "jtag_rtck";
+> -				nvidia,function =3D "rtck";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			clk_32k_in {
+> -				nvidia,pins =3D "clk_32k_in";
+> -				nvidia,function =3D "clk";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			core_pwr_req {
+> -				nvidia,pins =3D "core_pwr_req";
+> -				nvidia,function =3D "pwron";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			cpu_pwr_req {
+> -				nvidia,pins =3D "cpu_pwr_req";
+> -				nvidia,function =3D "cpu";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			pwr_int_n {
+> -				nvidia,pins =3D "pwr_int_n";
+> -				nvidia,function =3D "pmi";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			reset_out_n {
+> -				nvidia,pins =3D "reset_out_n";
+> -				nvidia,function =3D "reset_out_n";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			clk3_out_pee0 {
+> -				nvidia,pins =3D "clk3_out_pee0";
+> -				nvidia,function =3D "extperiph3";
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			gen1_i2c_sda_pc5 {
+> -				nvidia,pins =3D "gen1_i2c_sda_pc5",
+> -					      "gen1_i2c_scl_pc4";
+> -				nvidia,function =3D "i2c1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			hdmi_cec_pee3 {
+> -				nvidia,pins =3D "hdmi_cec_pee3";
+> -				nvidia,function =3D "cec";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,open-drain =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			hdmi_int_pn7 {
+> -				nvidia,pins =3D "hdmi_int_pn7";
+> -				nvidia,function =3D "rsvd1";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			ddc_scl_pv4 {
+> -				nvidia,pins =3D "ddc_scl_pv4",
+> -					      "ddc_sda_pv5";
+> -				nvidia,function =3D "i2c4";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,rcv-sel =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			kb_row10_ps2 {
+> -				nvidia,pins =3D "kb_row10_ps2";
+> -				nvidia,function =3D "uarta";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			kb_row9_ps1 {
+> -				nvidia,pins =3D "kb_row9_ps1";
+> -				nvidia,function =3D "uarta";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			usb_vbus_en0_pn4 {
+> -				nvidia,pins =3D "usb_vbus_en0_pn4",
+> -					      "usb_vbus_en1_pn5";
+> -				nvidia,function =3D "usb";
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			drive_sdio1 {
+> -				nvidia,pins =3D "drive_sdio1";
+> -				nvidia,high-speed-mode =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,schmitt =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull-down-strength =3D <36>;
+> -				nvidia,pull-up-strength =3D <20>;
+> -				nvidia,slew-rate-rising =3D <TEGRA_PIN_SLEW_RATE_SLOW>;
+> -				nvidia,slew-rate-falling =3D <TEGRA_PIN_SLEW_RATE_SLOW>;
+> -			};
+> -			drive_sdio3 {
+> -				nvidia,pins =3D "drive_sdio3";
+> -				nvidia,high-speed-mode =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,schmitt =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull-down-strength =3D <22>;
+> -				nvidia,pull-up-strength =3D <36>;
+> -				nvidia,slew-rate-rising =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> -				nvidia,slew-rate-falling =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> -			};
+> -			drive_gma {
+> -				nvidia,pins =3D "drive_gma";
+> -				nvidia,high-speed-mode =3D <TEGRA_PIN_ENABLE>;
+> -				nvidia,schmitt =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,pull-down-strength =3D <2>;
+> -				nvidia,pull-up-strength =3D <1>;
+> -				nvidia,slew-rate-rising =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> -				nvidia,slew-rate-falling =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> -				nvidia,drive-type =3D <1>;
+> -			};
+> -			codec_irq_l {
+> -				nvidia,pins =3D "ph4";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			lcd_bl_en {
+> -				nvidia,pins =3D "ph2";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			touch_irq_l {
+> -				nvidia,pins =3D "gpio_w3_aud_pw3";
+> -				nvidia,function =3D "spi6";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			tpm_davint_l {
+> -				nvidia,pins =3D "ph6";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			ts_irq_l {
+> -				nvidia,pins =3D "pk2";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			ts_reset_l {
+> -				nvidia,pins =3D "pk4";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			ts_shdn_l {
+> -				nvidia,pins =3D "pk1";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			ph7 {
+> -				nvidia,pins =3D "ph7";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			kb_col0_ap {
+> -				nvidia,pins =3D "kb_col0_pq0";
+> -				nvidia,function =3D "rsvd4";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			lid_open {
+> -				nvidia,pins =3D "kb_row4_pr4";
+> -				nvidia,function =3D "rsvd3";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			en_vdd_sd {
+> -				nvidia,pins =3D "kb_row0_pr0";
+> -				nvidia,function =3D "rsvd4";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			ac_ok {
+> -				nvidia,pins =3D "pj0";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			sensor_irq_l {
+> -				nvidia,pins =3D "pi6";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			wifi_en {
+> -				nvidia,pins =3D "gpio_x7_aud_px7";
+> -				nvidia,function =3D "rsvd4";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			en_vdd_bl {
+> -				nvidia,pins =3D "dap3_dout_pp2";
+> -				nvidia,function =3D "i2s2";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			en_vdd_hdmi {
+> -				nvidia,pins =3D "spdif_in_pk6";
+> -				nvidia,function =3D "spdif";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			soc_warm_reset_l {
+> -				nvidia,pins =3D "pi5";
+> -				nvidia,function =3D "gmi";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> -			};
+> -			hp_det_l {
+> -				nvidia,pins =3D "pi7";
+> -				nvidia,function =3D "rsvd1";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -			mic_det_l {
+> -				nvidia,pins =3D "kb_row7_pr7";
+> -				nvidia,function =3D "rsvd2";
+> -				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> -				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> -				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> -			};
+> -		};
+> -	};
+> -
+> -	serial@0,70006000 {
+> -		/* Debug connector on the bottom of the board near SD card. */
+> -		status =3D "okay";
+> -	};
+> -
+> -	pwm@0,7000a000 {
+> -		status =3D "okay";
+> -	};
+> -
+> -	i2c@0,7000c000 {
+> -		status =3D "okay";
+> -		clock-frequency =3D <100000>;
+> -
+> -		acodec: audio-codec@10 {
+> -			compatible =3D "maxim,max98090";
+> -			reg =3D <0x10>;
+> -			interrupt-parent =3D <&gpio>;
+> -			interrupts =3D <TEGRA_GPIO(H, 4) GPIO_ACTIVE_HIGH>;
+> -		};
+> -
+> -		temperature-sensor@4c {
+> -			compatible =3D "ti,tmp451";
+> -			reg =3D <0x4c>;
+> -			interrupt-parent =3D <&gpio>;
+> -			interrupts =3D <TEGRA_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
+> -
+> -			#thermal-sensor-cells =3D <1>;
+> -		};
+> -	};
+> -
+> -	i2c@0,7000c400 {
+> -		status =3D "okay";
+> -		clock-frequency =3D <100000>;
+> -	};
+> -
+> -	i2c@0,7000c500 {
+> -		status =3D "okay";
+> -		clock-frequency =3D <400000>;
+> -
+> -		tpm@20 {
+> -			compatible =3D "infineon,slb9645tt";
+> -			reg =3D <0x20>;
+> -		};
+> -	};
+> -
+> -	hdmi_ddc: i2c@0,7000c700 {
+> -		status =3D "okay";
+> -		clock-frequency =3D <100000>;
+> -	};
+> -
+> -	i2c@0,7000d000 {
+> -		status =3D "okay";
+> -		clock-frequency =3D <400000>;
+> -
+> -		pmic: pmic@40 {
+> -			compatible =3D "ams,as3722";
+> -			reg =3D <0x40>;
+> -			interrupts =3D <0 86 IRQ_TYPE_LEVEL_HIGH>;
+> -
+> -			ams,system-power-controller;
+> -
+> -			#interrupt-cells =3D <2>;
+> -			interrupt-controller;
+> -
+> -			gpio-controller;
+> -			#gpio-cells =3D <2>;
+> -
+> -			pinctrl-names =3D "default";
+> -			pinctrl-0 =3D <&as3722_default>;
+> -
+> -			as3722_default: pinmux {
+> -				gpio0 {
+> -					pins =3D "gpio0";
+> -					function =3D "gpio";
+> -					bias-pull-down;
+> -				};
+> -
+> -				gpio1 {
+> -					pins =3D "gpio1";
+> -					function =3D "gpio";
+> -					bias-pull-up;
+> -				};
+> -
+> -				gpio2_4_7 {
+> -					pins =3D "gpio2", "gpio4", "gpio7";
+> -					function =3D "gpio";
+> -					bias-pull-up;
+> -				};
+> -
+> -				gpio3_6 {
+> -					pins =3D "gpio3", "gpio6";
+> -					bias-high-impedance;
+> -				};
+> -
+> -				gpio5 {
+> -					pins =3D "gpio5";
+> -					function =3D "clk32k-out";
+> -					bias-pull-down;
+> -				};
+> -			};
+> -
+> -			regulators {
+> -				vsup-sd2-supply =3D <&vdd_5v0_sys>;
+> -				vsup-sd3-supply =3D <&vdd_5v0_sys>;
+> -				vsup-sd4-supply =3D <&vdd_5v0_sys>;
+> -				vsup-sd5-supply =3D <&vdd_5v0_sys>;
+> -				vin-ldo0-supply =3D <&vdd_1v35_lp0>;
+> -				vin-ldo1-6-supply =3D <&vdd_3v3_run>;
+> -				vin-ldo2-5-7-supply =3D <&vddio_1v8>;
+> -				vin-ldo3-4-supply =3D <&vdd_3v3_sys>;
+> -				vin-ldo9-10-supply =3D <&vdd_5v0_sys>;
+> -				vin-ldo11-supply =3D <&vdd_3v3_run>;
+> -
+> -				sd0 {
+> -					regulator-name =3D "+VDD_CPU_AP";
+> -					regulator-min-microvolt =3D <700000>;
+> -					regulator-max-microvolt =3D <1350000>;
+> -					regulator-min-microamp =3D <3500000>;
+> -					regulator-max-microamp =3D <3500000>;
+> -					regulator-always-on;
+> -					regulator-boot-on;
+> -					ams,ext-control =3D <2>;
+> -				};
+> -
+> -				sd1 {
+> -					regulator-name =3D "+VDD_CORE";
+> -					regulator-min-microvolt =3D <700000>;
+> -					regulator-max-microvolt =3D <1350000>;
+> -					regulator-min-microamp =3D <2500000>;
+> -					regulator-max-microamp =3D <4000000>;
+> -					regulator-always-on;
+> -					regulator-boot-on;
+> -					ams,ext-control =3D <1>;
+> -				};
+> -
+> -				vdd_1v35_lp0: sd2 {
+> -					regulator-name =3D "+1.35V_LP0(sd2)";
+> -					regulator-min-microvolt =3D <1350000>;
+> -					regulator-max-microvolt =3D <1350000>;
+> -					regulator-always-on;
+> -					regulator-boot-on;
+> -				};
+> -
+> -				sd3 {
+> -					regulator-name =3D "+1.35V_LP0(sd3)";
+> -					regulator-min-microvolt =3D <1350000>;
+> -					regulator-max-microvolt =3D <1350000>;
+> -					regulator-always-on;
+> -					regulator-boot-on;
+> -				};
+> -
+> -				vdd_1v05_run: sd4 {
+> -					regulator-name =3D "+1.05V_RUN";
+> -					regulator-min-microvolt =3D <1050000>;
+> -					regulator-max-microvolt =3D <1050000>;
+> -				};
+> -
+> -				vddio_1v8: sd5 {
+> -					regulator-name =3D "+1.8V_VDDIO";
+> -					regulator-min-microvolt =3D <1800000>;
+> -					regulator-max-microvolt =3D <1800000>;
+> -					regulator-boot-on;
+> -					regulator-always-on;
+> -				};
+> -
+> -				sd6 {
+> -					regulator-name =3D "+VDD_GPU_AP";
+> -					regulator-min-microvolt =3D <650000>;
+> -					regulator-max-microvolt =3D <1200000>;
+> -					regulator-min-microamp =3D <3500000>;
+> -					regulator-max-microamp =3D <3500000>;
+> -					regulator-boot-on;
+> -					regulator-always-on;
+> -				};
+> -
+> -				ldo0 {
+> -					regulator-name =3D "+1.05V_RUN_AVDD";
+> -					regulator-min-microvolt =3D <1050000>;
+> -					regulator-max-microvolt =3D <1050000>;
+> -					regulator-boot-on;
+> -					regulator-always-on;
+> -					ams,ext-control =3D <1>;
+> -				};
+> -
+> -				ldo1 {
+> -					regulator-name =3D "+1.8V_RUN_CAM";
+> -					regulator-min-microvolt =3D <1800000>;
+> -					regulator-max-microvolt =3D <1800000>;
+> -				};
+> -
+> -				ldo2 {
+> -					regulator-name =3D "+1.2V_GEN_AVDD";
+> -					regulator-min-microvolt =3D <1200000>;
+> -					regulator-max-microvolt =3D <1200000>;
+> -					regulator-boot-on;
+> -					regulator-always-on;
+> -				};
+> -
+> -				ldo3 {
+> -					regulator-name =3D "+1.00V_LP0_VDD_RTC";
+> -					regulator-min-microvolt =3D <1000000>;
+> -					regulator-max-microvolt =3D <1000000>;
+> -					regulator-boot-on;
+> -					regulator-always-on;
+> -					ams,enable-tracking;
+> -				};
+> -
+> -				vdd_run_cam: ldo4 {
+> -					regulator-name =3D "+3.3V_RUN_CAM";
+> -					regulator-min-microvolt =3D <2800000>;
+> -					regulator-max-microvolt =3D <2800000>;
+> -				};
+> -
+> -				ldo5 {
+> -					regulator-name =3D "+1.2V_RUN_CAM_FRONT";
+> -					regulator-min-microvolt =3D <1200000>;
+> -					regulator-max-microvolt =3D <1200000>;
+> -				};
+> -
+> -				vddio_sdmmc3: ldo6 {
+> -					regulator-name =3D "+VDDIO_SDMMC3";
+> -					regulator-min-microvolt =3D <1800000>;
+> -					regulator-max-microvolt =3D <3300000>;
+> -				};
+> -
+> -				ldo7 {
+> -					regulator-name =3D "+1.05V_RUN_CAM_REAR";
+> -					regulator-min-microvolt =3D <1050000>;
+> -					regulator-max-microvolt =3D <1050000>;
+> -				};
+> -
+> -				ldo9 {
+> -					regulator-name =3D "+2.8V_RUN_TOUCH";
+> -					regulator-min-microvolt =3D <2800000>;
+> -					regulator-max-microvolt =3D <2800000>;
+> -				};
+> -
+> -				ldo10 {
+> -					regulator-name =3D "+2.8V_RUN_CAM_AF";
+> -					regulator-min-microvolt =3D <2800000>;
+> -					regulator-max-microvolt =3D <2800000>;
+> -				};
+> -
+> -				ldo11 {
+> -					regulator-name =3D "+1.8V_RUN_VPP_FUSE";
+> -					regulator-min-microvolt =3D <1800000>;
+> -					regulator-max-microvolt =3D <1800000>;
+> -				};
+> -			};
+> -		};
+> -	};
+> -
+> -	spi@0,7000d400 {
+> -		status =3D "okay";
+> -
+> -		cros_ec: cros-ec@0 {
+> -			compatible =3D "google,cros-ec-spi";
+> -			spi-max-frequency =3D <3000000>;
+> -			interrupt-parent =3D <&gpio>;
+> -			interrupts =3D <TEGRA_GPIO(C, 7) IRQ_TYPE_LEVEL_LOW>;
+> -			reg =3D <0>;
+> -
+> -			google,cros-ec-spi-msg-delay =3D <2000>;
+> -
+> -			i2c-tunnel {
+> -				compatible =3D "google,cros-ec-i2c-tunnel";
+> -				#address-cells =3D <1>;
+> -				#size-cells =3D <0>;
+> -
+> -				google,remote-bus =3D <0>;
+> -
+> -				charger: bq24735@9 {
+> -					compatible =3D "ti,bq24735";
+> -					reg =3D <0x9>;
+> -					interrupt-parent =3D <&gpio>;
+> -					interrupts =3D <TEGRA_GPIO(J, 0)
+> -							GPIO_ACTIVE_HIGH>;
+> -					ti,ac-detect-gpios =3D <&gpio
+> -							TEGRA_GPIO(J, 0)
+> -							GPIO_ACTIVE_HIGH>;
+> -				};
+> -
+> -				battery: sbs-battery@b {
+> -					compatible =3D "sbs,sbs-battery";
+> -					reg =3D <0xb>;
+> -					sbs,i2c-retry-count =3D <2>;
+> -					sbs,poll-retry-count =3D <10>;
+> -					power-supplies =3D <&charger>;
+> -				};
+> -			};
+> -		};
+> -	};
+> -
+> -	spi@0,7000da00 {
+> -		status =3D "okay";
+> -		spi-max-frequency =3D <25000000>;
+> -
+> -		flash@0 {
+> -			compatible =3D "winbond,w25q32dw";
+> -			reg =3D <0>;
+> -		};
+> -	};
+> -
+> -	pmc@0,7000e400 {
+> -		nvidia,invert-interrupt;
+> -		nvidia,suspend-mode =3D <0>;
+> -		nvidia,cpu-pwr-good-time =3D <500>;
+> -		nvidia,cpu-pwr-off-time =3D <300>;
+> -		nvidia,core-pwr-good-time =3D <641 3845>;
+> -		nvidia,core-pwr-off-time =3D <61036>;
+> -		nvidia,core-power-req-active-high;
+> -		nvidia,sys-clock-req-active-high;
+> -	};
+> -
+> -	hda@0,70030000 {
+> -		status =3D "okay";
+> -	};
+> -
+> -	sdhci@0,700b0000 { /* WiFi/BT on this bus */
+> -		status =3D "okay";
+> -		power-gpios =3D <&gpio TEGRA_GPIO(X, 7) GPIO_ACTIVE_HIGH>;
+> -		bus-width =3D <4>;
+> -		no-1-8-v;
+> -		non-removable;
+> -	};
+> -
+> -	sdhci@0,700b0400 { /* SD Card on this bus */
+> -		status =3D "okay";
+> -		cd-gpios =3D <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_LOW>;
+> -		power-gpios =3D <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_HIGH>;
+> -		wp-gpios =3D <&gpio TEGRA_GPIO(Q, 4) GPIO_ACTIVE_LOW>;
+> -		bus-width =3D <4>;
+> -		no-1-8-v;
+> -		vqmmc-supply =3D <&vddio_sdmmc3>;
+> -	};
+> -
+> -	sdhci@0,700b0600 { /* eMMC on this bus */
+> -		status =3D "okay";
+> -		bus-width =3D <8>;
+> -		no-1-8-v;
+> -		non-removable;
+> -	};
+> -
+> -	ahub@0,70300000 {
+> -		i2s@0,70301100 {
+> -			status =3D "okay";
+> -		};
+> -	};
+> -
+> -	usb@0,7d000000 { /* Rear external USB port. */
+> -		status =3D "okay";
+> -	};
+> -
+> -	usb-phy@0,7d000000 {
+> -		status =3D "okay";
+> -		vbus-supply =3D <&vdd_usb1_vbus>;
+> -	};
+> -
+> -	usb@0,7d004000 { /* Internal webcam. */
+> -		status =3D "okay";
+> -	};
+> -
+> -	usb-phy@0,7d004000 {
+> -		status =3D "okay";
+> -		vbus-supply =3D <&vdd_run_cam>;
+> -	};
+> -
+> -	usb@0,7d008000 { /* Left external USB port. */
+> -		status =3D "okay";
+> -	};
+> -
+> -	usb-phy@0,7d008000 {
+> -		status =3D "okay";
+> -		vbus-supply =3D <&vdd_usb3_vbus>;
+> -	};
+> -
+> -	backlight: backlight {
+> -		compatible =3D "pwm-backlight";
+> -
+> -		enable-gpios =3D <&gpio TEGRA_GPIO(H, 2) GPIO_ACTIVE_HIGH>;
+> -		power-supply =3D <&vdd_led>;
+> -		pwms =3D <&pwm 1 1000000>;
+> -
+> -		default-brightness-level =3D <224>;
+> -		brightness-levels =3D
+> -			<  0   1   2   3   4   5   6   7
+> -			   8   9  10  11  12  13  14  15
+> -			  16  17  18  19  20  21  22  23
+> -			  24  25  26  27  28  29  30  31
+> -			  32  33  34  35  36  37  38  39
+> -			  40  41  42  43  44  45  46  47
+> -			  48  49  50  51  52  53  54  55
+> -			  56  57  58  59  60  61  62  63
+> -			  64  65  66  67  68  69  70  71
+> -			  72  73  74  75  76  77  78  79
+> -			  80  81  82  83  84  85  86  87
+> -			  88  89  90  91  92  93  94  95
+> -			  96  97  98  99 100 101 102 103
+> -			 104 105 106 107 108 109 110 111
+> -			 112 113 114 115 116 117 118 119
+> -			 120 121 122 123 124 125 126 127
+> -			 128 129 130 131 132 133 134 135
+> -			 136 137 138 139 140 141 142 143
+> -			 144 145 146 147 148 149 150 151
+> -			 152 153 154 155 156 157 158 159
+> -			 160 161 162 163 164 165 166 167
+> -			 168 169 170 171 172 173 174 175
+> -			 176 177 178 179 180 181 182 183
+> -			 184 185 186 187 188 189 190 191
+> -			 192 193 194 195 196 197 198 199
+> -			 200 201 202 203 204 205 206 207
+> -			 208 209 210 211 212 213 214 215
+> -			 216 217 218 219 220 221 222 223
+> -			 224 225 226 227 228 229 230 231
+> -			 232 233 234 235 236 237 238 239
+> -			 240 241 242 243 244 245 246 247
+> -			 248 249 250 251 252 253 254 255
+> -			 256>;
+> -	};
+> -
+> -	clocks {
+> -		compatible =3D "simple-bus";
+> -		#address-cells =3D <1>;
+> -		#size-cells =3D <0>;
+> -
+> -		clk32k_in: clock@0 {
+> -			compatible =3D "fixed-clock";
+> -			reg =3D <0>;
+> -			#clock-cells =3D <0>;
+> -			clock-frequency =3D <32768>;
+> -		};
+> -	};
+> -
+> -	gpio-keys {
+> -		compatible =3D "gpio-keys";
+> -
+> -		lid {
+> -			label =3D "Lid";
+> -			gpios =3D <&gpio TEGRA_GPIO(R, 4) GPIO_ACTIVE_LOW>;
+> -			linux,input-type =3D <5>;
+> -			linux,code =3D <KEY_RESERVED>;
+> -			debounce-interval =3D <1>;
+> -			gpio-key,wakeup;
+> -		};
+> -
+> -		power {
+> -			label =3D "Power";
+> -			gpios =3D <&gpio TEGRA_GPIO(Q, 0) GPIO_ACTIVE_LOW>;
+> -			linux,code =3D <KEY_POWER>;
+> -			debounce-interval =3D <30>;
+> -			gpio-key,wakeup;
+> -		};
+> -	};
+> -
+> -	panel: panel {
+> -		compatible =3D "auo,b133xtn01";
+> -
+> -		backlight =3D <&backlight>;
+> -		ddc-i2c-bus =3D <&dpaux>;
+> -	};
+> -
+> -	regulators {
+> -		compatible =3D "simple-bus";
+> -		#address-cells =3D <1>;
+> -		#size-cells =3D <0>;
+> -
+> -		vdd_mux: regulator@0 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <0>;
+> -			regulator-name =3D "+VDD_MUX";
+> -			regulator-min-microvolt =3D <12000000>;
+> -			regulator-max-microvolt =3D <12000000>;
+> -			regulator-always-on;
+> -			regulator-boot-on;
+> -		};
+> -
+> -		vdd_5v0_sys: regulator@1 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <1>;
+> -			regulator-name =3D "+5V_SYS";
+> -			regulator-min-microvolt =3D <5000000>;
+> -			regulator-max-microvolt =3D <5000000>;
+> -			regulator-always-on;
+> -			regulator-boot-on;
+> -			vin-supply =3D <&vdd_mux>;
+> -		};
+> -
+> -		vdd_3v3_sys: regulator@2 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <2>;
+> -			regulator-name =3D "+3.3V_SYS";
+> -			regulator-min-microvolt =3D <3300000>;
+> -			regulator-max-microvolt =3D <3300000>;
+> -			regulator-always-on;
+> -			regulator-boot-on;
+> -			vin-supply =3D <&vdd_mux>;
+> -		};
+> -
+> -		vdd_3v3_run: regulator@3 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <3>;
+> -			regulator-name =3D "+3.3V_RUN";
+> -			regulator-min-microvolt =3D <3300000>;
+> -			regulator-max-microvolt =3D <3300000>;
+> -			regulator-always-on;
+> -			regulator-boot-on;
+> -			gpio =3D <&pmic 1 GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			vin-supply =3D <&vdd_3v3_sys>;
+> -		};
+> -
+> -		vdd_3v3_hdmi: regulator@4 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <4>;
+> -			regulator-name =3D "+3.3V_AVDD_HDMI_AP_GATED";
+> -			regulator-min-microvolt =3D <3300000>;
+> -			regulator-max-microvolt =3D <3300000>;
+> -			vin-supply =3D <&vdd_3v3_run>;
+> -		};
+> -
+> -		vdd_led: regulator@5 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <5>;
+> -			regulator-name =3D "+VDD_LED";
+> -			gpio =3D <&gpio TEGRA_GPIO(P, 2) GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			vin-supply =3D <&vdd_mux>;
+> -		};
+> -
+> -		vdd_5v0_ts: regulator@6 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <6>;
+> -			regulator-name =3D "+5V_VDD_TS_SW";
+> -			regulator-min-microvolt =3D <5000000>;
+> -			regulator-max-microvolt =3D <5000000>;
+> -			regulator-boot-on;
+> -			gpio =3D <&gpio TEGRA_GPIO(K, 1) GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			vin-supply =3D <&vdd_5v0_sys>;
+> -		};
+> -
+> -		vdd_usb1_vbus: regulator@7 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <7>;
+> -			regulator-name =3D "+5V_USB_HS";
+> -			regulator-min-microvolt =3D <5000000>;
+> -			regulator-max-microvolt =3D <5000000>;
+> -			gpio =3D <&gpio TEGRA_GPIO(N, 4) GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			gpio-open-drain;
+> -			vin-supply =3D <&vdd_5v0_sys>;
+> -		};
+> -
+> -		vdd_usb3_vbus: regulator@8 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <8>;
+> -			regulator-name =3D "+5V_USB_SS";
+> -			regulator-min-microvolt =3D <5000000>;
+> -			regulator-max-microvolt =3D <5000000>;
+> -			gpio =3D <&gpio TEGRA_GPIO(N, 5) GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			gpio-open-drain;
+> -			vin-supply =3D <&vdd_5v0_sys>;
+> -		};
+> -
+> -		vdd_3v3_panel: regulator@9 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <9>;
+> -			regulator-name =3D "+3.3V_PANEL";
+> -			regulator-min-microvolt =3D <3300000>;
+> -			regulator-max-microvolt =3D <3300000>;
+> -			gpio =3D <&pmic 4 GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			vin-supply =3D <&vdd_3v3_run>;
+> -		};
+> -
+> -		vdd_3v3_lp0: regulator@10 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <10>;
+> -			regulator-name =3D "+3.3V_LP0";
+> -			regulator-min-microvolt =3D <3300000>;
+> -			regulator-max-microvolt =3D <3300000>;
+> -			/*
+> -			 * TODO: find a way to wire this up with the USB EHCI
+> -			 * controllers so that it can be enabled on demand.
+> -			 */
+> -			regulator-always-on;
+> -			gpio =3D <&pmic 2 GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			vin-supply =3D <&vdd_3v3_sys>;
+> -		};
+> -
+> -		vdd_hdmi_pll: regulator@11 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <11>;
+> -			regulator-name =3D "+1.05V_RUN_AVDD_HDMI_PLL";
+> -			regulator-min-microvolt =3D <1050000>;
+> -			regulator-max-microvolt =3D <1050000>;
+> -			gpio =3D <&gpio TEGRA_GPIO(H, 7) GPIO_ACTIVE_LOW>;
+> -			vin-supply =3D <&vdd_1v05_run>;
+> -		};
+> -
+> -		vdd_5v0_hdmi: regulator@12 {
+> -			compatible =3D "regulator-fixed";
+> -			reg =3D <12>;
+> -			regulator-name =3D "+5V_HDMI_CON";
+> -			regulator-min-microvolt =3D <5000000>;
+> -			regulator-max-microvolt =3D <5000000>;
+> -			gpio =3D <&gpio TEGRA_GPIO(K, 6) GPIO_ACTIVE_HIGH>;
+> -			enable-active-high;
+> -			vin-supply =3D <&vdd_5v0_sys>;
+> -		};
+> -	};
+> +	compatible =3D "google,nyan-big", "google,nyan", "nvidia,tegra124";
+> =20
+>  	sound {
+> -		compatible =3D "nvidia,tegra-audio-max98090-nyan-big",
+> -			     "nvidia,tegra-audio-max98090";
+> -		nvidia,model =3D "Acer Chromebook 13";
+> -
+> -		nvidia,audio-routing =3D
+> -			"Headphones", "HPR",
+> -			"Headphones", "HPL",
+> -			"Speakers", "SPKR",
+> -			"Speakers", "SPKL",
+> -			"Mic Jack", "MICBIAS",
+> -			"DMICL", "Int Mic",
+> -			"DMICR", "Int Mic",
+> -			"IN34", "Mic Jack";
+> -
+> -		nvidia,i2s-controller =3D <&tegra_i2s1>;
+> -		nvidia,audio-codec =3D <&acodec>;
+> -
+> -		clocks =3D <&tegra_car TEGRA124_CLK_PLL_A>,
+> -			 <&tegra_car TEGRA124_CLK_PLL_A_OUT0>,
+> -			 <&tegra_car TEGRA124_CLK_EXTERN1>;
+> -		clock-names =3D "pll_a", "pll_a_out0", "mclk";
+> -
+> -		nvidia,hp-det-gpios =3D <&gpio TEGRA_GPIO(I, 7) GPIO_ACTIVE_HIGH>;
+> +		nvidia,model =3D "Acer Chromebook 13 CB5-311";
+>  	};
+>  };
+> -
+> -#include "cros-ec-keyboard.dtsi"
+> diff --git a/arch/arm/boot/dts/tegra124-nyan.dtsi b/arch/arm/boot/dts/teg=
+ra124-nyan.dtsi
+> new file mode 100644
+> index 0000000..4c68658
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/tegra124-nyan.dtsi
+> @@ -0,0 +1,1133 @@
+> +#include <dt-bindings/input/input.h>
+> +#include "tegra124.dtsi"
+> +
+> +/ {
+> +	compatible =3D "google,nyan", "nvidia,tegra124";
+> +
+> +	aliases {
+> +		rtc0 =3D "/i2c@0,7000d000/pmic@40";
+> +		rtc1 =3D "/rtc@0,7000e000";
+> +		serial0 =3D &uarta;
+> +	};
+> +
+> +	memory {
+> +		reg =3D <0x0 0x80000000 0x0 0x80000000>;
+> +	};
+> +
+> +	host1x@0,50000000 {
+> +		hdmi@0,54280000 {
+> +			status =3D "okay";
+> +
+> +			vdd-supply =3D <&vdd_3v3_hdmi>;
+> +			pll-supply =3D <&vdd_hdmi_pll>;
+> +			hdmi-supply =3D <&vdd_5v0_hdmi>;
+> +
+> +			nvidia,ddc-i2c-bus =3D <&hdmi_ddc>;
+> +			nvidia,hpd-gpio =3D
+> +				<&gpio TEGRA_GPIO(N, 7) GPIO_ACTIVE_HIGH>;
+> +		};
+> +
+> +		sor@0,54540000 {
+> +			status =3D "okay";
+> +
+> +			nvidia,dpaux =3D <&dpaux>;
+> +			nvidia,panel =3D <&panel>;
+> +		};
+> +
+> +		dpaux@0,545c0000 {
+> +			vdd-supply =3D <&vdd_3v3_panel>;
+> +			status =3D "okay";
+> +		};
+> +	};
+> +
+> +	pinmux@0,70000868 {
+> +		pinctrl-names =3D "boot";
+> +		pinctrl-0 =3D <&pinmux_boot>;
+> +
+> +		pinmux_boot: common {
+> +			dap_mclk1_pw4 {
+> +				nvidia,pins =3D "dap_mclk1_pw4";
+> +				nvidia,function =3D "extperiph1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			dap2_din_pa4 {
+> +				nvidia,pins =3D "dap2_din_pa4";
+> +				nvidia,function =3D "i2s1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			dap2_dout_pa5 {
+> +				nvidia,pins =3D "dap2_dout_pa5",
+> +					      "dap2_fs_pa2",
+> +					      "dap2_sclk_pa3";
+> +				nvidia,function =3D "i2s1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			dvfs_pwm_px0 {
+> +				nvidia,pins =3D "dvfs_pwm_px0",
+> +					      "dvfs_clk_px2";
+> +				nvidia,function =3D "cldvfs";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			ulpi_clk_py0 {
+> +				nvidia,pins =3D "ulpi_clk_py0",
+> +					      "ulpi_nxt_py2",
+> +					      "ulpi_stp_py3";
+> +				nvidia,function =3D "spi1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			ulpi_dir_py1 {
+> +				nvidia,pins =3D "ulpi_dir_py1";
+> +				nvidia,function =3D "spi1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			cam_i2c_scl_pbb1 {
+> +				nvidia,pins =3D "cam_i2c_scl_pbb1",
+> +					      "cam_i2c_sda_pbb2";
+> +				nvidia,function =3D "i2c3";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			gen2_i2c_scl_pt5 {
+> +				nvidia,pins =3D "gen2_i2c_scl_pt5",
+> +					      "gen2_i2c_sda_pt6";
+> +				nvidia,function =3D "i2c2";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			pg4 {
+> +				nvidia,pins =3D "pg4",
+> +					      "pg5",
+> +					      "pg6",
+> +					      "pi3";
+> +				nvidia,function =3D "spi4";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			pg7 {
+> +				nvidia,pins =3D "pg7";
+> +				nvidia,function =3D "spi4";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			ph1 {
+> +				nvidia,pins =3D "ph1";
+> +				nvidia,function =3D "pwm1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			pk0 {
+> +				nvidia,pins =3D "pk0",
+> +					      "kb_row15_ps7",
+> +					      "clk_32k_out_pa0";
+> +				nvidia,function =3D "soc";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			sdmmc1_clk_pz0 {
+> +				nvidia,pins =3D "sdmmc1_clk_pz0";
+> +				nvidia,function =3D "sdmmc1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			sdmmc1_cmd_pz1 {
+> +				nvidia,pins =3D "sdmmc1_cmd_pz1",
+> +					      "sdmmc1_dat0_py7",
+> +					      "sdmmc1_dat1_py6",
+> +					      "sdmmc1_dat2_py5",
+> +					      "sdmmc1_dat3_py4";
+> +				nvidia,function =3D "sdmmc1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			sdmmc3_clk_pa6 {
+> +				nvidia,pins =3D "sdmmc3_clk_pa6";
+> +				nvidia,function =3D "sdmmc3";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			sdmmc3_cmd_pa7 {
+> +				nvidia,pins =3D "sdmmc3_cmd_pa7",
+> +					      "sdmmc3_dat0_pb7",
+> +					      "sdmmc3_dat1_pb6",
+> +					      "sdmmc3_dat2_pb5",
+> +					      "sdmmc3_dat3_pb4",
+> +					      "kb_col4_pq4",
+> +					      "sdmmc3_clk_lb_out_pee4",
+> +					      "sdmmc3_clk_lb_in_pee5",
+> +					      "sdmmc3_cd_n_pv2";
+> +				nvidia,function =3D "sdmmc3";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			sdmmc4_clk_pcc4 {
+> +				nvidia,pins =3D "sdmmc4_clk_pcc4";
+> +				nvidia,function =3D "sdmmc4";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			sdmmc4_cmd_pt7 {
+> +				nvidia,pins =3D "sdmmc4_cmd_pt7",
+> +					      "sdmmc4_dat0_paa0",
+> +					      "sdmmc4_dat1_paa1",
+> +					      "sdmmc4_dat2_paa2",
+> +					      "sdmmc4_dat3_paa3",
+> +					      "sdmmc4_dat4_paa4",
+> +					      "sdmmc4_dat5_paa5",
+> +					      "sdmmc4_dat6_paa6",
+> +					      "sdmmc4_dat7_paa7";
+> +				nvidia,function =3D "sdmmc4";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			pwr_i2c_scl_pz6 {
+> +				nvidia,pins =3D "pwr_i2c_scl_pz6",
+> +					      "pwr_i2c_sda_pz7";
+> +				nvidia,function =3D "i2cpwr";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			jtag_rtck {
+> +				nvidia,pins =3D "jtag_rtck";
+> +				nvidia,function =3D "rtck";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			clk_32k_in {
+> +				nvidia,pins =3D "clk_32k_in";
+> +				nvidia,function =3D "clk";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			core_pwr_req {
+> +				nvidia,pins =3D "core_pwr_req";
+> +				nvidia,function =3D "pwron";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			cpu_pwr_req {
+> +				nvidia,pins =3D "cpu_pwr_req";
+> +				nvidia,function =3D "cpu";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			pwr_int_n {
+> +				nvidia,pins =3D "pwr_int_n";
+> +				nvidia,function =3D "pmi";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			reset_out_n {
+> +				nvidia,pins =3D "reset_out_n";
+> +				nvidia,function =3D "reset_out_n";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			clk3_out_pee0 {
+> +				nvidia,pins =3D "clk3_out_pee0";
+> +				nvidia,function =3D "extperiph3";
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			gen1_i2c_sda_pc5 {
+> +				nvidia,pins =3D "gen1_i2c_sda_pc5",
+> +					      "gen1_i2c_scl_pc4";
+> +				nvidia,function =3D "i2c1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			hdmi_cec_pee3 {
+> +				nvidia,pins =3D "hdmi_cec_pee3";
+> +				nvidia,function =3D "cec";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,open-drain =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			hdmi_int_pn7 {
+> +				nvidia,pins =3D "hdmi_int_pn7";
+> +				nvidia,function =3D "rsvd1";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			ddc_scl_pv4 {
+> +				nvidia,pins =3D "ddc_scl_pv4",
+> +					      "ddc_sda_pv5";
+> +				nvidia,function =3D "i2c4";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,rcv-sel =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			kb_row10_ps2 {
+> +				nvidia,pins =3D "kb_row10_ps2";
+> +				nvidia,function =3D "uarta";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			kb_row9_ps1 {
+> +				nvidia,pins =3D "kb_row9_ps1";
+> +				nvidia,function =3D "uarta";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			usb_vbus_en0_pn4 {
+> +				nvidia,pins =3D "usb_vbus_en0_pn4",
+> +					      "usb_vbus_en1_pn5";
+> +				nvidia,function =3D "usb";
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,lock =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,open-drain =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			drive_sdio1 {
+> +				nvidia,pins =3D "drive_sdio1";
+> +				nvidia,high-speed-mode =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,schmitt =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull-down-strength =3D <36>;
+> +				nvidia,pull-up-strength =3D <20>;
+> +				nvidia,slew-rate-rising =3D <TEGRA_PIN_SLEW_RATE_SLOW>;
+> +				nvidia,slew-rate-falling =3D <TEGRA_PIN_SLEW_RATE_SLOW>;
+> +			};
+> +			drive_sdio3 {
+> +				nvidia,pins =3D "drive_sdio3";
+> +				nvidia,high-speed-mode =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,schmitt =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull-down-strength =3D <22>;
+> +				nvidia,pull-up-strength =3D <36>;
+> +				nvidia,slew-rate-rising =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> +				nvidia,slew-rate-falling =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> +			};
+> +			drive_gma {
+> +				nvidia,pins =3D "drive_gma";
+> +				nvidia,high-speed-mode =3D <TEGRA_PIN_ENABLE>;
+> +				nvidia,schmitt =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,pull-down-strength =3D <2>;
+> +				nvidia,pull-up-strength =3D <1>;
+> +				nvidia,slew-rate-rising =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> +				nvidia,slew-rate-falling =3D <TEGRA_PIN_SLEW_RATE_FASTEST>;
+> +				nvidia,drive-type =3D <1>;
+> +			};
+> +			codec_irq_l {
+> +				nvidia,pins =3D "ph4";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			lcd_bl_en {
+> +				nvidia,pins =3D "ph2";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			touch_irq_l {
+> +				nvidia,pins =3D "gpio_w3_aud_pw3";
+> +				nvidia,function =3D "spi6";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			tpm_davint_l {
+> +				nvidia,pins =3D "ph6";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			ts_irq_l {
+> +				nvidia,pins =3D "pk2";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			ts_reset_l {
+> +				nvidia,pins =3D "pk4";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			ts_shdn_l {
+> +				nvidia,pins =3D "pk1";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			ph7 {
+> +				nvidia,pins =3D "ph7";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			kb_col0_ap {
+> +				nvidia,pins =3D "kb_col0_pq0";
+> +				nvidia,function =3D "rsvd4";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			lid_open {
+> +				nvidia,pins =3D "kb_row4_pr4";
+> +				nvidia,function =3D "rsvd3";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			en_vdd_sd {
+> +				nvidia,pins =3D "kb_row0_pr0";
+> +				nvidia,function =3D "rsvd4";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			ac_ok {
+> +				nvidia,pins =3D "pj0";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			sensor_irq_l {
+> +				nvidia,pins =3D "pi6";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			wifi_en {
+> +				nvidia,pins =3D "gpio_x7_aud_px7";
+> +				nvidia,function =3D "rsvd4";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			en_vdd_bl {
+> +				nvidia,pins =3D "dap3_dout_pp2";
+> +				nvidia,function =3D "i2s2";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			en_vdd_hdmi {
+> +				nvidia,pins =3D "spdif_in_pk6";
+> +				nvidia,function =3D "spdif";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_DOWN>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			soc_warm_reset_l {
+> +				nvidia,pins =3D "pi5";
+> +				nvidia,function =3D "gmi";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_DISABLE>;
+> +			};
+> +			hp_det_l {
+> +				nvidia,pins =3D "pi7";
+> +				nvidia,function =3D "rsvd1";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_NONE>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +			mic_det_l {
+> +				nvidia,pins =3D "kb_row7_pr7";
+> +				nvidia,function =3D "rsvd2";
+> +				nvidia,pull =3D <TEGRA_PIN_PULL_UP>;
+> +				nvidia,tristate =3D <TEGRA_PIN_DISABLE>;
+> +				nvidia,enable-input =3D <TEGRA_PIN_ENABLE>;
+> +			};
+> +		};
+> +	};
+> +
+> +	serial@0,70006000 {
+> +		/* Debug connector on the bottom of the board near SD card. */
+> +		status =3D "okay";
+> +	};
+> +
+> +	pwm@0,7000a000 {
+> +		status =3D "okay";
+> +	};
+> +
+> +	i2c@0,7000c000 {
+> +		status =3D "okay";
+> +		clock-frequency =3D <100000>;
+> +
+> +		acodec: audio-codec@10 {
+> +			compatible =3D "maxim,max98090";
+> +			reg =3D <0x10>;
+> +			interrupt-parent =3D <&gpio>;
+> +			interrupts =3D <TEGRA_GPIO(H, 4) GPIO_ACTIVE_HIGH>;
+> +		};
+> +
+> +		temperature-sensor@4c {
+> +			compatible =3D "ti,tmp451";
+> +			reg =3D <0x4c>;
+> +			interrupt-parent =3D <&gpio>;
+> +			interrupts =3D <TEGRA_GPIO(I, 6) IRQ_TYPE_LEVEL_LOW>;
+> +
+> +			#thermal-sensor-cells =3D <1>;
+> +		};
+> +	};
+> +
+> +	i2c@0,7000c400 {
+> +		status =3D "okay";
+> +		clock-frequency =3D <100000>;
+> +	};
+> +
+> +	i2c@0,7000c500 {
+> +		status =3D "okay";
+> +		clock-frequency =3D <400000>;
+> +
+> +		tpm@20 {
+> +			compatible =3D "infineon,slb9645tt";
+> +			reg =3D <0x20>;
+> +		};
+> +	};
+> +
+> +	hdmi_ddc: i2c@0,7000c700 {
+> +		status =3D "okay";
+> +		clock-frequency =3D <100000>;
+> +	};
+> +
+> +	i2c@0,7000d000 {
+> +		status =3D "okay";
+> +		clock-frequency =3D <400000>;
+> +
+> +		pmic: pmic@40 {
+> +			compatible =3D "ams,as3722";
+> +			reg =3D <0x40>;
+> +			interrupts =3D <0 86 IRQ_TYPE_LEVEL_HIGH>;
+> +
+> +			ams,system-power-controller;
+> +
+> +			#interrupt-cells =3D <2>;
+> +			interrupt-controller;
+> +
+> +			gpio-controller;
+> +			#gpio-cells =3D <2>;
+> +
+> +			pinctrl-names =3D "default";
+> +			pinctrl-0 =3D <&as3722_default>;
+> +
+> +			as3722_default: pinmux {
+> +				gpio0 {
+> +					pins =3D "gpio0";
+> +					function =3D "gpio";
+> +					bias-pull-down;
+> +				};
+> +
+> +				gpio1 {
+> +					pins =3D "gpio1";
+> +					function =3D "gpio";
+> +					bias-pull-up;
+> +				};
+> +
+> +				gpio2_4_7 {
+> +					pins =3D "gpio2", "gpio4", "gpio7";
+> +					function =3D "gpio";
+> +					bias-pull-up;
+> +				};
+> +
+> +				gpio3_6 {
+> +					pins =3D "gpio3", "gpio6";
+> +					bias-high-impedance;
+> +				};
+> +
+> +				gpio5 {
+> +					pins =3D "gpio5";
+> +					function =3D "clk32k-out";
+> +					bias-pull-down;
+> +				};
+> +			};
+> +
+> +			regulators {
+> +				vsup-sd2-supply =3D <&vdd_5v0_sys>;
+> +				vsup-sd3-supply =3D <&vdd_5v0_sys>;
+> +				vsup-sd4-supply =3D <&vdd_5v0_sys>;
+> +				vsup-sd5-supply =3D <&vdd_5v0_sys>;
+> +				vin-ldo0-supply =3D <&vdd_1v35_lp0>;
+> +				vin-ldo1-6-supply =3D <&vdd_3v3_run>;
+> +				vin-ldo2-5-7-supply =3D <&vddio_1v8>;
+> +				vin-ldo3-4-supply =3D <&vdd_3v3_sys>;
+> +				vin-ldo9-10-supply =3D <&vdd_5v0_sys>;
+> +				vin-ldo11-supply =3D <&vdd_3v3_run>;
+> +
+> +				sd0 {
+> +					regulator-name =3D "+VDD_CPU_AP";
+> +					regulator-min-microvolt =3D <700000>;
+> +					regulator-max-microvolt =3D <1350000>;
+> +					regulator-min-microamp =3D <3500000>;
+> +					regulator-max-microamp =3D <3500000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +					ams,ext-control =3D <2>;
+> +				};
+> +
+> +				sd1 {
+> +					regulator-name =3D "+VDD_CORE";
+> +					regulator-min-microvolt =3D <700000>;
+> +					regulator-max-microvolt =3D <1350000>;
+> +					regulator-min-microamp =3D <2500000>;
+> +					regulator-max-microamp =3D <4000000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +					ams,ext-control =3D <1>;
+> +				};
+> +
+> +				vdd_1v35_lp0: sd2 {
+> +					regulator-name =3D "+1.35V_LP0(sd2)";
+> +					regulator-min-microvolt =3D <1350000>;
+> +					regulator-max-microvolt =3D <1350000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				sd3 {
+> +					regulator-name =3D "+1.35V_LP0(sd3)";
+> +					regulator-min-microvolt =3D <1350000>;
+> +					regulator-max-microvolt =3D <1350000>;
+> +					regulator-always-on;
+> +					regulator-boot-on;
+> +				};
+> +
+> +				vdd_1v05_run: sd4 {
+> +					regulator-name =3D "+1.05V_RUN";
+> +					regulator-min-microvolt =3D <1050000>;
+> +					regulator-max-microvolt =3D <1050000>;
+> +				};
+> +
+> +				vddio_1v8: sd5 {
+> +					regulator-name =3D "+1.8V_VDDIO";
+> +					regulator-min-microvolt =3D <1800000>;
+> +					regulator-max-microvolt =3D <1800000>;
+> +					regulator-boot-on;
+> +					regulator-always-on;
+> +				};
+> +
+> +				sd6 {
+> +					regulator-name =3D "+VDD_GPU_AP";
+> +					regulator-min-microvolt =3D <650000>;
+> +					regulator-max-microvolt =3D <1200000>;
+> +					regulator-min-microamp =3D <3500000>;
+> +					regulator-max-microamp =3D <3500000>;
+> +					regulator-boot-on;
+> +					regulator-always-on;
+> +				};
+> +
+> +				ldo0 {
+> +					regulator-name =3D "+1.05V_RUN_AVDD";
+> +					regulator-min-microvolt =3D <1050000>;
+> +					regulator-max-microvolt =3D <1050000>;
+> +					regulator-boot-on;
+> +					regulator-always-on;
+> +					ams,ext-control =3D <1>;
+> +				};
+> +
+> +				ldo1 {
+> +					regulator-name =3D "+1.8V_RUN_CAM";
+> +					regulator-min-microvolt =3D <1800000>;
+> +					regulator-max-microvolt =3D <1800000>;
+> +				};
+> +
+> +				ldo2 {
+> +					regulator-name =3D "+1.2V_GEN_AVDD";
+> +					regulator-min-microvolt =3D <1200000>;
+> +					regulator-max-microvolt =3D <1200000>;
+> +					regulator-boot-on;
+> +					regulator-always-on;
+> +				};
+> +
+> +				ldo3 {
+> +					regulator-name =3D "+1.00V_LP0_VDD_RTC";
+> +					regulator-min-microvolt =3D <1000000>;
+> +					regulator-max-microvolt =3D <1000000>;
+> +					regulator-boot-on;
+> +					regulator-always-on;
+> +					ams,enable-tracking;
+> +				};
+> +
+> +				vdd_run_cam: ldo4 {
+> +					regulator-name =3D "+3.3V_RUN_CAM";
+> +					regulator-min-microvolt =3D <2800000>;
+> +					regulator-max-microvolt =3D <2800000>;
+> +				};
+> +
+> +				ldo5 {
+> +					regulator-name =3D "+1.2V_RUN_CAM_FRONT";
+> +					regulator-min-microvolt =3D <1200000>;
+> +					regulator-max-microvolt =3D <1200000>;
+> +				};
+> +
+> +				vddio_sdmmc3: ldo6 {
+> +					regulator-name =3D "+VDDIO_SDMMC3";
+> +					regulator-min-microvolt =3D <1800000>;
+> +					regulator-max-microvolt =3D <3300000>;
+> +				};
+> +
+> +				ldo7 {
+> +					regulator-name =3D "+1.05V_RUN_CAM_REAR";
+> +					regulator-min-microvolt =3D <1050000>;
+> +					regulator-max-microvolt =3D <1050000>;
+> +				};
+> +
+> +				ldo9 {
+> +					regulator-name =3D "+2.8V_RUN_TOUCH";
+> +					regulator-min-microvolt =3D <2800000>;
+> +					regulator-max-microvolt =3D <2800000>;
+> +				};
+> +
+> +				ldo10 {
+> +					regulator-name =3D "+2.8V_RUN_CAM_AF";
+> +					regulator-min-microvolt =3D <2800000>;
+> +					regulator-max-microvolt =3D <2800000>;
+> +				};
+> +
+> +				ldo11 {
+> +					regulator-name =3D "+1.8V_RUN_VPP_FUSE";
+> +					regulator-min-microvolt =3D <1800000>;
+> +					regulator-max-microvolt =3D <1800000>;
+> +				};
+> +			};
+> +		};
+> +	};
+> +
+> +	spi@0,7000d400 {
+> +		status =3D "okay";
+> +
+> +		cros_ec: cros-ec@0 {
+> +			compatible =3D "google,cros-ec-spi";
+> +			spi-max-frequency =3D <3000000>;
+> +			interrupt-parent =3D <&gpio>;
+> +			interrupts =3D <TEGRA_GPIO(C, 7) IRQ_TYPE_LEVEL_LOW>;
+> +			reg =3D <0>;
+> +
+> +			google,cros-ec-spi-msg-delay =3D <2000>;
+> +
+> +			i2c-tunnel {
+> +				compatible =3D "google,cros-ec-i2c-tunnel";
+> +				#address-cells =3D <1>;
+> +				#size-cells =3D <0>;
+> +
+> +				google,remote-bus =3D <0>;
+> +
+> +				charger: bq24735@9 {
+> +					compatible =3D "ti,bq24735";
+> +					reg =3D <0x9>;
+> +					interrupt-parent =3D <&gpio>;
+> +					interrupts =3D <TEGRA_GPIO(J, 0)
+> +							GPIO_ACTIVE_HIGH>;
+> +					ti,ac-detect-gpios =3D <&gpio
+> +							TEGRA_GPIO(J, 0)
+> +							GPIO_ACTIVE_HIGH>;
+> +				};
+> +
+> +				battery: sbs-battery@b {
+> +					compatible =3D "sbs,sbs-battery";
+> +					reg =3D <0xb>;
+> +					sbs,i2c-retry-count =3D <2>;
+> +					sbs,poll-retry-count =3D <10>;
+> +					power-supplies =3D <&charger>;
+> +				};
+> +			};
+> +		};
+> +	};
+> +
+> +	spi@0,7000da00 {
+> +		status =3D "okay";
+> +		spi-max-frequency =3D <25000000>;
+> +
+> +		flash@0 {
+> +			compatible =3D "winbond,w25q32dw";
+> +			reg =3D <0>;
+> +		};
+> +	};
+> +
+> +	pmc@0,7000e400 {
+> +		nvidia,invert-interrupt;
+> +		nvidia,suspend-mode =3D <0>;
+> +		nvidia,cpu-pwr-good-time =3D <500>;
+> +		nvidia,cpu-pwr-off-time =3D <300>;
+> +		nvidia,core-pwr-good-time =3D <641 3845>;
+> +		nvidia,core-pwr-off-time =3D <61036>;
+> +		nvidia,core-power-req-active-high;
+> +		nvidia,sys-clock-req-active-high;
+> +	};
+> +
+> +	hda@0,70030000 {
+> +		status =3D "okay";
+> +	};
+> +
+> +	sdhci@0,700b0000 { /* WiFi/BT on this bus */
+> +		status =3D "okay";
+> +		power-gpios =3D <&gpio TEGRA_GPIO(X, 7) GPIO_ACTIVE_HIGH>;
+> +		bus-width =3D <4>;
+> +		no-1-8-v;
+> +		non-removable;
+> +	};
+> +
+> +	sdhci@0,700b0400 { /* SD Card on this bus */
+> +		status =3D "okay";
+> +		cd-gpios =3D <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_LOW>;
+> +		power-gpios =3D <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_HIGH>;
+> +		wp-gpios =3D <&gpio TEGRA_GPIO(Q, 4) GPIO_ACTIVE_LOW>;
+> +		bus-width =3D <4>;
+> +		no-1-8-v;
+> +		vqmmc-supply =3D <&vddio_sdmmc3>;
+> +	};
+> +
+> +	sdhci@0,700b0600 { /* eMMC on this bus */
+> +		status =3D "okay";
+> +		bus-width =3D <8>;
+> +		no-1-8-v;
+> +		non-removable;
+> +	};
+> +
+> +	ahub@0,70300000 {
+> +		i2s@0,70301100 {
+> +			status =3D "okay";
+> +		};
+> +	};
+> +
+> +	usb@0,7d000000 { /* Rear external USB port. */
+> +		status =3D "okay";
+> +	};
+> +
+> +	usb-phy@0,7d000000 {
+> +		status =3D "okay";
+> +		vbus-supply =3D <&vdd_usb1_vbus>;
+> +	};
+> +
+> +	usb@0,7d004000 { /* Internal webcam. */
+> +		status =3D "okay";
+> +	};
+> +
+> +	usb-phy@0,7d004000 {
+> +		status =3D "okay";
+> +		vbus-supply =3D <&vdd_run_cam>;
+> +	};
+> +
+> +	usb@0,7d008000 { /* Left external USB port. */
+> +		status =3D "okay";
+> +	};
+> +
+> +	usb-phy@0,7d008000 {
+> +		status =3D "okay";
+> +		vbus-supply =3D <&vdd_usb3_vbus>;
+> +	};
+> +
+> +	backlight: backlight {
+> +		compatible =3D "pwm-backlight";
+> +
+> +		enable-gpios =3D <&gpio TEGRA_GPIO(H, 2) GPIO_ACTIVE_HIGH>;
+> +		power-supply =3D <&vdd_led>;
+> +		pwms =3D <&pwm 1 1000000>;
+> +
+> +		default-brightness-level =3D <224>;
+> +		brightness-levels =3D
+> +			<  0   1   2   3   4   5   6   7
+> +			   8   9  10  11  12  13  14  15
+> +			  16  17  18  19  20  21  22  23
+> +			  24  25  26  27  28  29  30  31
+> +			  32  33  34  35  36  37  38  39
+> +			  40  41  42  43  44  45  46  47
+> +			  48  49  50  51  52  53  54  55
+> +			  56  57  58  59  60  61  62  63
+> +			  64  65  66  67  68  69  70  71
+> +			  72  73  74  75  76  77  78  79
+> +			  80  81  82  83  84  85  86  87
+> +			  88  89  90  91  92  93  94  95
+> +			  96  97  98  99 100 101 102 103
+> +			 104 105 106 107 108 109 110 111
+> +			 112 113 114 115 116 117 118 119
+> +			 120 121 122 123 124 125 126 127
+> +			 128 129 130 131 132 133 134 135
+> +			 136 137 138 139 140 141 142 143
+> +			 144 145 146 147 148 149 150 151
+> +			 152 153 154 155 156 157 158 159
+> +			 160 161 162 163 164 165 166 167
+> +			 168 169 170 171 172 173 174 175
+> +			 176 177 178 179 180 181 182 183
+> +			 184 185 186 187 188 189 190 191
+> +			 192 193 194 195 196 197 198 199
+> +			 200 201 202 203 204 205 206 207
+> +			 208 209 210 211 212 213 214 215
+> +			 216 217 218 219 220 221 222 223
+> +			 224 225 226 227 228 229 230 231
+> +			 232 233 234 235 236 237 238 239
+> +			 240 241 242 243 244 245 246 247
+> +			 248 249 250 251 252 253 254 255
+> +			 256>;
+> +	};
+> +
+> +	clocks {
+> +		compatible =3D "simple-bus";
+> +		#address-cells =3D <1>;
+> +		#size-cells =3D <0>;
+> +
+> +		clk32k_in: clock@0 {
+> +			compatible =3D "fixed-clock";
+> +			reg =3D <0>;
+> +			#clock-cells =3D <0>;
+> +			clock-frequency =3D <32768>;
+> +		};
+> +	};
+> +
+> +	gpio-keys {
+> +		compatible =3D "gpio-keys";
+> +
+> +		lid {
+> +			label =3D "Lid";
+> +			gpios =3D <&gpio TEGRA_GPIO(R, 4) GPIO_ACTIVE_LOW>;
+> +			linux,input-type =3D <5>;
+> +			linux,code =3D <KEY_RESERVED>;
+> +			debounce-interval =3D <1>;
+> +			gpio-key,wakeup;
+> +		};
+> +
+> +		power {
+> +			label =3D "Power";
+> +			gpios =3D <&gpio TEGRA_GPIO(Q, 0) GPIO_ACTIVE_LOW>;
+> +			linux,code =3D <KEY_POWER>;
+> +			debounce-interval =3D <30>;
+> +			gpio-key,wakeup;
+> +		};
+> +	};
+> +
+> +	panel: panel {
+> +		compatible =3D "auo,b133xtn01";
+> +
+> +		backlight =3D <&backlight>;
+> +		ddc-i2c-bus =3D <&dpaux>;
+> +	};
+> +
+> +	regulators {
+> +		compatible =3D "simple-bus";
+> +		#address-cells =3D <1>;
+> +		#size-cells =3D <0>;
+> +
+> +		vdd_mux: regulator@0 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <0>;
+> +			regulator-name =3D "+VDD_MUX";
+> +			regulator-min-microvolt =3D <12000000>;
+> +			regulator-max-microvolt =3D <12000000>;
+> +			regulator-always-on;
+> +			regulator-boot-on;
+> +		};
+> +
+> +		vdd_5v0_sys: regulator@1 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <1>;
+> +			regulator-name =3D "+5V_SYS";
+> +			regulator-min-microvolt =3D <5000000>;
+> +			regulator-max-microvolt =3D <5000000>;
+> +			regulator-always-on;
+> +			regulator-boot-on;
+> +			vin-supply =3D <&vdd_mux>;
+> +		};
+> +
+> +		vdd_3v3_sys: regulator@2 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <2>;
+> +			regulator-name =3D "+3.3V_SYS";
+> +			regulator-min-microvolt =3D <3300000>;
+> +			regulator-max-microvolt =3D <3300000>;
+> +			regulator-always-on;
+> +			regulator-boot-on;
+> +			vin-supply =3D <&vdd_mux>;
+> +		};
+> +
+> +		vdd_3v3_run: regulator@3 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <3>;
+> +			regulator-name =3D "+3.3V_RUN";
+> +			regulator-min-microvolt =3D <3300000>;
+> +			regulator-max-microvolt =3D <3300000>;
+> +			regulator-always-on;
+> +			regulator-boot-on;
+> +			gpio =3D <&pmic 1 GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			vin-supply =3D <&vdd_3v3_sys>;
+> +		};
+> +
+> +		vdd_3v3_hdmi: regulator@4 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <4>;
+> +			regulator-name =3D "+3.3V_AVDD_HDMI_AP_GATED";
+> +			regulator-min-microvolt =3D <3300000>;
+> +			regulator-max-microvolt =3D <3300000>;
+> +			vin-supply =3D <&vdd_3v3_run>;
+> +		};
+> +
+> +		vdd_led: regulator@5 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <5>;
+> +			regulator-name =3D "+VDD_LED";
+> +			gpio =3D <&gpio TEGRA_GPIO(P, 2) GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			vin-supply =3D <&vdd_mux>;
+> +		};
+> +
+> +		vdd_5v0_ts: regulator@6 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <6>;
+> +			regulator-name =3D "+5V_VDD_TS_SW";
+> +			regulator-min-microvolt =3D <5000000>;
+> +			regulator-max-microvolt =3D <5000000>;
+> +			regulator-boot-on;
+> +			gpio =3D <&gpio TEGRA_GPIO(K, 1) GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			vin-supply =3D <&vdd_5v0_sys>;
+> +		};
+> +
+> +		vdd_usb1_vbus: regulator@7 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <7>;
+> +			regulator-name =3D "+5V_USB_HS";
+> +			regulator-min-microvolt =3D <5000000>;
+> +			regulator-max-microvolt =3D <5000000>;
+> +			gpio =3D <&gpio TEGRA_GPIO(N, 4) GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			gpio-open-drain;
+> +			vin-supply =3D <&vdd_5v0_sys>;
+> +		};
+> +
+> +		vdd_usb3_vbus: regulator@8 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <8>;
+> +			regulator-name =3D "+5V_USB_SS";
+> +			regulator-min-microvolt =3D <5000000>;
+> +			regulator-max-microvolt =3D <5000000>;
+> +			gpio =3D <&gpio TEGRA_GPIO(N, 5) GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			gpio-open-drain;
+> +			vin-supply =3D <&vdd_5v0_sys>;
+> +		};
+> +
+> +		vdd_3v3_panel: regulator@9 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <9>;
+> +			regulator-name =3D "+3.3V_PANEL";
+> +			regulator-min-microvolt =3D <3300000>;
+> +			regulator-max-microvolt =3D <3300000>;
+> +			gpio =3D <&pmic 4 GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			vin-supply =3D <&vdd_3v3_run>;
+> +		};
+> +
+> +		vdd_3v3_lp0: regulator@10 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <10>;
+> +			regulator-name =3D "+3.3V_LP0";
+> +			regulator-min-microvolt =3D <3300000>;
+> +			regulator-max-microvolt =3D <3300000>;
+> +			/*
+> +			 * TODO: find a way to wire this up with the USB EHCI
+> +			 * controllers so that it can be enabled on demand.
+> +			 */
+> +			regulator-always-on;
+> +			gpio =3D <&pmic 2 GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			vin-supply =3D <&vdd_3v3_sys>;
+> +		};
+> +
+> +		vdd_hdmi_pll: regulator@11 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <11>;
+> +			regulator-name =3D "+1.05V_RUN_AVDD_HDMI_PLL";
+> +			regulator-min-microvolt =3D <1050000>;
+> +			regulator-max-microvolt =3D <1050000>;
+> +			gpio =3D <&gpio TEGRA_GPIO(H, 7) GPIO_ACTIVE_LOW>;
+> +			vin-supply =3D <&vdd_1v05_run>;
+> +		};
+> +
+> +		vdd_5v0_hdmi: regulator@12 {
+> +			compatible =3D "regulator-fixed";
+> +			reg =3D <12>;
+> +			regulator-name =3D "+5V_HDMI_CON";
+> +			regulator-min-microvolt =3D <5000000>;
+> +			regulator-max-microvolt =3D <5000000>;
+> +			gpio =3D <&gpio TEGRA_GPIO(K, 6) GPIO_ACTIVE_HIGH>;
+> +			enable-active-high;
+> +			vin-supply =3D <&vdd_5v0_sys>;
+> +		};
+> +	};
+> +
+> +	sound {
+> +		compatible =3D "nvidia,tegra-audio-max98090-nyan-big",
+> +			     "nvidia,tegra-audio-max98090";
+> +
+> +		nvidia,audio-routing =3D
+> +			"Headphones", "HPR",
+> +			"Headphones", "HPL",
+> +			"Speakers", "SPKR",
+> +			"Speakers", "SPKL",
+> +			"Mic Jack", "MICBIAS",
+> +			"DMICL", "Int Mic",
+> +			"DMICR", "Int Mic",
+> +			"IN34", "Mic Jack";
+> +
+> +		nvidia,i2s-controller =3D <&tegra_i2s1>;
+> +		nvidia,audio-codec =3D <&acodec>;
+> +
+> +		clocks =3D <&tegra_car TEGRA124_CLK_PLL_A>,
+> +			 <&tegra_car TEGRA124_CLK_PLL_A_OUT0>,
+> +			 <&tegra_car TEGRA124_CLK_EXTERN1>;
+> +		clock-names =3D "pll_a", "pll_a_out0", "mclk";
+> +
+> +		nvidia,hp-det-gpios =3D <&gpio TEGRA_GPIO(I, 7) GPIO_ACTIVE_HIGH>;
+> +	};
+> +};
+> +
+> +#include "cros-ec-keyboard.dtsi"
+> --=20
+> 1.9.3
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Given that the entry for fair-share is "Enable this to manage platform
-thermals using fair-share governor." and the entry for step wise is
-"Enable this to manage platform thermals using a simple linear
-governor." this is actually pretty good ;)  
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Instead of repeating in the config entry what is in the documentation,
-I think I'll put a pointer to
-Documentation/thermal/power_allocator.txt
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> > +
-> >  config CPU_THERMAL
-> >  	bool "generic cpu cooling support"
-> >  	depends on CPU_FREQ
-> > diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-> > index 39c4fe87da2f..c33904848c45 100644
-> > --- a/drivers/thermal/Makefile
-> > +++ b/drivers/thermal/Makefile
-> > @@ -14,6 +14,7 @@ thermal_sys-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
-> >  thermal_sys-$(CONFIG_THERMAL_GOV_BANG_BANG)	+= gov_bang_bang.o
-> >  thermal_sys-$(CONFIG_THERMAL_GOV_STEP_WISE)	+= step_wise.o
-> >  thermal_sys-$(CONFIG_THERMAL_GOV_USER_SPACE)	+= user_space.o
-> > +thermal_sys-$(CONFIG_THERMAL_GOV_POWER_ALLOCATOR)	+= power_allocator.o
-> >  
-> >  # cpufreq cooling
-> >  thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
-> > diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
-> > new file mode 100644
-> > index 000000000000..09e98991efbb
-> > --- /dev/null
-> > +++ b/drivers/thermal/power_allocator.c
-> > @@ -0,0 +1,511 @@
-> > +/*
-> > + * A power allocator to manage temperature
-> > + *
-> > + * Copyright (C) 2014 ARM Ltd.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-> > + * kind, whether express or implied; without even the implied warranty
-> > + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> > + * GNU General Public License for more details.
-> > + */
-> > +
-> > +#define pr_fmt(fmt) "Power allocator: " fmt
-> > +
-> > +#include <linux/rculist.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/thermal.h>
-> > +
-> > +#include "thermal_core.h"
-> > +
-> > +#define FRAC_BITS 10
-> > +#define int_to_frac(x) ((x) << FRAC_BITS)
-> > +#define frac_to_int(x) ((x) >> FRAC_BITS)
-> > +
-> > +/**
-> > + * mul_frac() - multiply two fixed-point numbers
-> > + * @x:	first multiplicand
-> > + * @y:	second multiplicand
-> > + *
-> 
-> If it is a kernel doc, needs a description.
+iQEcBAEBAgAGBQJUq+H9AAoJEMLUO4d9pOJWbUAH/0Abh34rWEpA8FQPKQFFrGNs
+9zYcarqsy0WnI22/R/yI+m7kM7ucMTCF2PFI/5qfyovt0NiWq1rP97fBiF6Hda1W
+XX5Ks3DrNGWaYXZWRkDczh9uZlw0QaUyThiroD0QUKMxC6SDGcFLL5psc+738BoA
+HFzCMh/PzLVt0sMNzhJyvxpHsXBYhy0K2JwdJymLrM4SgFMRPn7+Ykovsye3Dt6b
+eTPI0XoS5H4GzEYojYPVXewNZR3d6w25C4EpaTGCYE8EiFStEF7g7vXhbRGyMgNY
+m5plyjaS9Z4VQJ92YGtqBXR0I6eBDGe4Ks7RxS5LeSmx6hVv3/RM0FlPJijvdYU=
+=OEBL
+-----END PGP SIGNATURE-----
 
-Other parts of the kernel are more liberal in this regard,
-specially fro trivial functions like this.  Also, kernel-doc creates a
-documentation just fine:
-
-$ scripts/kernel-doc -function mul_frac drivers/thermal/power_allocator.c | nroff -man
-mul_frac(9)                 Kernel Hacker's Manual                 mul_frac(9)
-
-
-
-NAME
-       mul_frac - multiply two fixed-point numbers
-
-SYNOPSIS
-       s64 mul_frac (s64 x, s64 y);
-
-ARGUMENTS
-       x           first multiplicand
-
-       y           second multiplicand
-
-RETURN
-       the  result of multiplying two fixed-point numbers.  The result is also
-       a fixed-point number.
-
-
-
-January 2015                       mul_frac                        mul_frac(9)
-
-
-I'll add the long description if you want to, but this is not a
-warning.
-
-> > + * Return: the result of multiplying two fixed-point numbers.  The
-> > + * result is also a fixed-point number.
-> > + */
-> > +static inline s64 mul_frac(s64 x, s64 y)
-> > +{
-> > +	return (x * y) >> FRAC_BITS;
-> > +}
-> > +
-> > +enum power_allocator_trip_levels {
-> > +	TRIP_SWITCH_ON = 0,	/* Switch on PID controller */
-> > +	TRIP_MAX_DESIRED_TEMPERATURE, /* Temperature we are controlling for */
-> > +
-> > +	THERMAL_TRIP_NUM,
-> > +};
-> > +
-> > +/**
-> > + * struct power_allocator_params - parameters for the power allocator governor
-> > + * @k_po:	Proportional parameter of the PID controller when overshooting
-> > + *		(i.e., when temperature is below the target)
-> > + * @k_pu:	Proportional parameter of the PID controller when undershooting
-> > + * @k_i:	Integral parameter of the PID controller
-> > + * @k_d:	Derivative parameter of the PID controller
-> > + * @integral_cutoff:	threshold below which the error is no longer accumulated
-> > +			in the PID controller
-> > + * @err_integral:	accumulated error in the PID controller.
-> > + * @prev_err:	error in the previous iteration of the PID controller.
-> > + *		Used to calculate the derivative term.
-> > + */
-> > +struct power_allocator_params {
-> > +	s32 k_po;
-> > +	s32 k_pu;
-> > +	s32 k_i;
-> > +	s32 k_d;
-> > +	s32 integral_cutoff;
-> > +	s64 err_integral;
-> > +	s32 prev_err;
-> > +};
-> > +
-> > +/**
-> > + * get_actor_weight() - get the weight for the power actor
-> > + * @tz:		thermal zone we are operating in
-> > + * @actor:	the power actor
-> > + *
-> 
-> 
-> ditto
-> 
-> > + * Returns: The weight inside the thermal binding parameters of the
-> 
-> s/Returns:/Return:/g
-
-Yep.
-
-> Please run the kernel doc script on your patches and avoid adding
-> warnings / errors.
-
-Actually, kernel-doc doesn't complain about Returns vs Return and it
-doesn't really care if there is no description in a function as I said
-before.
-
-Is there a better way than running "scripts/kernel-doc -function
-$FUNCTION $FILE" ?  It would be great if scripts/check-patch.pl
-checked this as well.
-
-> > + * thermal zone.  If it could not be found, a default weight of 1 is
-> > + * assumed.  Weights are expressed as a FRAC_BITS (currently 10-bit)
-> > + * fixed point integer.
-> > + */
-> > +static int get_actor_weight(struct thermal_zone_device *tz,
-> > +			struct thermal_cooling_device *cdev)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; i < tz->tzp->num_tbps; i++)
-> > +		if (tz->tzp->tbp[i].cdev == cdev)
-> > +			return tz->tzp->tbp[i].weight;
-> > +
-> > +	return int_to_frac(1);
-> > +}
-> > +
-> > +/**
-> > + * pid_controller() - PID controller
-> > + * @tz:	thermal zone we are operating in
-> > + * @current_temp:	the current temperature in millicelsius
-> > + * @control_temp:	the target temperature in millicelsius
-> > + * @max_allocatable_power:	maximum allocatable power for this thermal zone
-> > + *
-> > + * This PID controller increases the available power budget so that the
-> > + * temperature of the thermal zone gets as close as possible to
-> > + * @control_temp and limits the power if it exceeds it.  k_po is the
-> > + * proportional term when we are overshooting, k_pu is the
-> > + * proportional term when we are undershooting.  integral_cutoff is a
-> > + * threshold below which we stop accumulating the error.  The
-> > + * accumulated error is only valid if the requested power will make
-> > + * the system warmer.  If the system is mostly idle, there's no point
-> > + * in accumulating positive error.
-> > + *
-> > + * Return: The power budget for the next period.
-> > + */
-> > +static u32 pid_controller(struct thermal_zone_device *tz,
-> > +			unsigned long current_temp, unsigned long control_temp,
-> > +			u32 max_allocatable_power)
-> > +{
-> > +	s64 p, i, d, power_range;
-> > +	s32 err, max_power_frac;
-> > +	struct power_allocator_params *params = tz->governor_data;
-> > +
-> > +	max_power_frac = int_to_frac(max_allocatable_power);
-> > +
-> > +	err = ((s32)control_temp - (s32)current_temp);
-> > +	err = int_to_frac(err);
-> > +
-> > +	/* Calculate the proportional term */
-> > +	p = mul_frac(err < 0 ? params->k_po : params->k_pu, err);
-> > +
-> > +	/*
-> > +	 * Calculate the integral term
-> > +	 *
-> > +	 * if the error is less than cut off allow integration (but
-> > +	 * the integral is limited to max power)
-> > +	 */
-> > +	i = mul_frac(params->k_i, params->err_integral);
-> > +
-> > +	if (err < int_to_frac(params->integral_cutoff)) {
-> > +		s64 i_next = i + mul_frac(params->k_i, err);
-> > +
-> > +		if (abs64(i_next) < max_power_frac) {
-> > +			i = i_next;
-> > +			params->err_integral += err;
-> > +		}
-> > +	}
-> > +
-> > +	/*
-> > +	 * Calculate the derivative term
-> > +	 *
-> > +	 * We do err - prev_err, so with a positive k_d, a decreasing
-> > +	 * error (i.e. driving closer to the line) results in less
-> > +	 * power being applied, slowing down the controller)
-> > +	 */
-> > +	d = mul_frac(params->k_d, err - params->prev_err);
-> > +	params->prev_err = err;
-> > +
-> > +	power_range = p + i + d;
-> > +
-> > +	/* feed-forward the known sustainable dissipatable power */
-> > +	power_range = tz->tzp->sustainable_power + frac_to_int(power_range);
-> > +
-> > +	return clamp(power_range, (s64)0, (s64)max_allocatable_power);
-> > +}
-> > +
-> > +/**
-> > + * divvy_up_power() - divvy the allocated power between the actors
-> > + * @req_power:	each actor's requested power
-> > + * @max_power:	each actor's maximum available power
-> > + * @num_actors:	size of the @req_power, @max_power and @granted_power's array
-> > + * @total_req_power: sum of @req_power
-> > + * @power_range:	total allocated power
-> > + * @granted_power:	output array: each actor's granted power
-> > + *
-> > + * This function divides the total allocated power (@power_range)
-> > + * fairly between the actors.  It first tries to give each actor a
-> > + * share of the @power_range according to how much power it requested
-> > + * compared to the rest of the actors.  For example, if only one actor
-> > + * requests power, then it receives all the @power_range.  If
-> > + * three actors each requests 1mW, each receives a third of the
-> > + * @power_range.
-> > + *
-> > + * If any actor received more than their maximum power, then that
-> > + * surplus is re-divvied among the actors based on how far they are
-> > + * from their respective maximums.
-> > + *
-> > + * Granted power for each actor is written to @granted_power, which
-> > + * should've been allocated by the calling function.
-> > + */
-> > +static void divvy_up_power(u32 *req_power, u32 *max_power, int num_actors,
-> > +			u32 total_req_power, u32 power_range,
-> > +			u32 *granted_power)
-> > +{
-> > +	u32 extra_power, capped_extra_power, extra_actor_power[num_actors];
-> > +	int i;
-> > +
-> > +	if (!total_req_power) {
-> > +		/*
-> > +		 * Nobody requested anything, so just give everybody
-> > +		 * the maximum power
-> > +		 */
-> > +		for (i = 0; i < num_actors; i++)
-> > +			granted_power[i] = max_power[i];
-> > +
-> > +		return;
-> > +	}
-> > +
-> > +	capped_extra_power = 0;
-> > +	extra_power = 0;
-> > +	for (i = 0; i < num_actors; i++) {
-> > +		u64 req_range = req_power[i] * power_range;
-> > +
-> > +		granted_power[i] = div_u64(req_range, total_req_power);
-> > +
-> > +		if (granted_power[i] > max_power[i]) {
-> > +			extra_power += granted_power[i] - max_power[i];
-> > +			granted_power[i] = max_power[i];
-> 
-> shouldn't we continue here?
-
-No, you would leave the extra_actor_power[i] uninitialized.
-
-> > +		}
-> > +
-> > +		extra_actor_power[i] = max_power[i] - granted_power[i];
-> 
-> Do we care when max_power[i] < granted_power[i]?
-
-That can't happen, the above "if" prevents it.
-
-> What happens to (overflowed) extra_actor_power[i]?
-
-extra_actor_power[i] can't overflow, it's a u32 and is asigned the
-result of substracting two u32s.  The code make sure that the minuend is
-bigger or equal than the sustraend.
-
-> > +		capped_extra_power += extra_actor_power[i];
-> > +	}
-> > +
-> > +	if (!extra_power)
-> > +		return;
-> > +
-> > +	/*
-> > +	 * Re-divvy the reclaimed extra among actors based on
-> > +	 * how far they are from the max
-> > +	 */
-> > +	extra_power = min(extra_power, capped_extra_power);
-> > +	if (capped_extra_power > 0)
-> > +		for (i = 0; i < num_actors; i++)
-> > +			granted_power[i] += (extra_actor_power[i] *
-> > +					extra_power) / capped_extra_power;
-> > +}
-> > +
-> > +static int allocate_power(struct thermal_zone_device *tz,
-> > +			unsigned long current_temp, unsigned long control_temp)
-> > +{
-> > +	struct thermal_instance *instance;
-> > +	u32 *req_power, *max_power, *granted_power;
-> > +	u32 total_req_power, max_allocatable_power;
-> > +	u32 power_range;
-> > +	int i, num_actors, ret = 0;
-> > +
-> > +	mutex_lock(&tz->lock);
-> > +
-> > +	num_actors = 0;
-> > +	list_for_each_entry(instance, &tz->thermal_instances, tz_node)
-> > +		if ((instance->trip == TRIP_MAX_DESIRED_TEMPERATURE) &&
-> > +			cdev_is_power_actor(instance->cdev))
-> > +			num_actors++;
-> > +
-> > +	req_power = devm_kcalloc(&tz->device, num_actors, sizeof(*req_power),
-> > +				GFP_KERNEL);
-> > +	if (!req_power) {
-> > +		ret = -ENOMEM;
-> > +		goto unlock;
-> > +	}
-> > +
-> > +	max_power = devm_kcalloc(&tz->device, num_actors, sizeof(*max_power),
-> > +				GFP_KERNEL);
-> > +	if (!max_power) {
-> > +		ret = -ENOMEM;
-> > +		goto free_req_power;
-> > +	}
-> > +
-> > +	granted_power = devm_kcalloc(&tz->device, num_actors,
-> > +				sizeof(*granted_power), GFP_KERNEL);
-> > +	if (!granted_power) {
-> > +		ret = -ENOMEM;
-> > +		goto free_max_power;
-> > +	}
-> > +
-> > +	i = 0;
-> > +	total_req_power = 0;
-> > +	max_allocatable_power = 0;
-> > +
-> > +	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
-> > +		int weight;
-> > +		struct thermal_cooling_device *cdev = instance->cdev;
-> > +
-> > +		if (instance->trip != TRIP_MAX_DESIRED_TEMPERATURE)
-> > +			continue;
-> > +
-> > +		if (!cdev_is_power_actor(cdev))
-> > +			continue;
-> > +
-> > +		req_power[i] = cdev->ops->get_actual_power(cdev);
-> 
-> Is this req_power (I read as 'requested power') or actual_power? I would
-> use the later naming to avoid confusions.
-
-We have had a lot of discussions internally about whether this should
-be the power that the device wants to consume or the power that is
-currently consuming.  The current implementation in the cpu cooling
-device uses the power that the cpu is currently drawing because it's
-very hard to get the frequency that cpufreq would assign if there were
-no limits.
-
-I understand that it's confusing as it is, but I think it's better to
-rename get_actual_power() to get_requested_power() and explain this
-limitation in the kerneldoc for cpufreq_get_requested_power()
-
-> > +		weight = get_actor_weight(tz, cdev);
-> > +		req_power[i] = frac_to_int(weight * req_power[i]);
-> > +		total_req_power += req_power[i];
-> 
-> ditto for total_req_power.
-> 
-> > +
-> > +		max_power[i] = power_actor_get_max_power(cdev);
-> > +		max_allocatable_power += max_power[i];
-> > +
-> > +		i++;
-> > +	}
-> > +
-> > +	power_range = pid_controller(tz, current_temp, control_temp,
-> > +				max_allocatable_power);
-> > +
-> > +	divvy_up_power(req_power, max_power, num_actors, total_req_power,
-> > +		power_range, granted_power);
-> > +
-> > +	i = 0;
-> > +	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
-> > +		if (instance->trip != TRIP_MAX_DESIRED_TEMPERATURE)
-> > +			continue;
-> > +
-> > +		if (!cdev_is_power_actor(instance->cdev))
-> > +			continue;
-> > +
-> > +		power_actor_set_power(instance->cdev, granted_power[i]);
-> > +
-> > +		i++;
-> > +	}
-> > +
-> > +	devm_kfree(&tz->device, granted_power);
-> > +free_max_power:
-> > +	devm_kfree(&tz->device, max_power);
-> > +free_req_power:
-> > +	devm_kfree(&tz->device, req_power);
-> > +unlock:
-> > +	mutex_unlock(&tz->lock);
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static int check_trips(struct thermal_zone_device *tz)
-> > +{
-> > +	int ret;
-> > +	enum thermal_trip_type type;
-> > +
-> > +	if (tz->trips < THERMAL_TRIP_NUM)
-> > +		return -EINVAL;
-> > +
-> > +	ret = tz->ops->get_trip_type(tz, TRIP_SWITCH_ON, &type);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	if (type != THERMAL_TRIP_PASSIVE)
-> > +		return -EINVAL;
-> > +
-> > +	ret = tz->ops->get_trip_type(tz, TRIP_MAX_DESIRED_TEMPERATURE, &type);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	if (type != THERMAL_TRIP_PASSIVE)
-> > +		return -EINVAL;
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static void reset_pid_controller(struct power_allocator_params *params)
-> > +{
-> > +	params->err_integral = 0;
-> > +	params->prev_err = 0;
-> > +}
-> > +
-> > +static void allow_maximum_power(struct thermal_zone_device *tz)
-> > +{
-> > +	struct thermal_instance *instance;
-> > +
-> > +	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
-> > +		u32 max_power;
-> > +
-> > +		if ((instance->trip != TRIP_MAX_DESIRED_TEMPERATURE) ||
-> > +			(!cdev_is_power_actor(instance->cdev)))
-> > +			continue;
-> > +
-> > +		max_power = power_actor_get_max_power(instance->cdev);
-> > +		power_actor_set_power(instance->cdev, max_power);
-> > +	}
-> > +}
-> > +
-> > +/**
-> > + * power_allocator_bind() - bind the power_allocator governor to a thermal zone
-> > + * @tz:	thermal zone to bind it to
-> > + *
-> > + * Check that the thermal zone is valid for this governor, that is, it
-> > + * has two thermal trips.  If so, initialize the PID controller
-> > + * parameters and bind it to the thermal zone.
-> > + *
-> > + * Return: 0 on success, -EINVAL if the trips were invalid or -ENOMEM
-> > + * if we ran out of memory.
-> > + */
-> > +static int power_allocator_bind(struct thermal_zone_device *tz)
-> > +{
-> > +	int ret;
-> > +	struct power_allocator_params *params;
-> > +	unsigned long switch_on_temp, control_temp;
-> > +	u32 temperature_threshold;
-> > +
-> > +	ret = check_trips(tz);
-> > +	if (ret) {
-> > +		dev_err(&tz->device,
-> > +			"thermal zone %s has the wrong number of trips for this governor\n",
-> 
-> I would be more specific:
-> +			"thermal zone %s has wrong trip setup for power allocator\n",
-> 
-> 
-> Besides, in 'check_trips' you check more than number of trips.
-
-Correct, I'll change the error message.
-
-> > +			tz->type);
-> > +		return ret;
-> > +	}
-> > +
-> > +	if (!tz->tzp || !tz->tzp->sustainable_power) {
-> > +		dev_err(&tz->device,
-> > +			"power_allocator: missing sustainable_power\n");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	params = devm_kzalloc(&tz->device, sizeof(*params), GFP_KERNEL);
-> > +	if (!params)
-> > +		return -ENOMEM;
-> > +
-> > +	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
-> > +	if (ret)
-> > +		goto free;
-> > +
-> > +	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
-> > +				&control_temp);
-> > +	if (ret)
-> > +		goto free;
-> > +
-> > +	temperature_threshold = control_temp - switch_on_temp;
-> > +
-> > +	params->k_po = tz->tzp->k_po ?:
-> > +		int_to_frac(tz->tzp->sustainable_power) / temperature_threshold;
-> > +	params->k_pu = tz->tzp->k_pu ?:
-> > +		int_to_frac(2 * tz->tzp->sustainable_power) /
-> > +		temperature_threshold;
-> > +	params->k_i = tz->tzp->k_i ?: int_to_frac(10) / 1000;
-> > +	params->k_d = tz->tzp->k_d ?: int_to_frac(0);
-> > +	params->integral_cutoff = tz->tzp->integral_cutoff ?: 0;
-> > +
-> > +	reset_pid_controller(params);
-> > +
-> > +	tz->governor_data = params;
-> > +
-> > +	return 0;
-> > +
-> > +free:
-> > +	devm_kfree(&tz->device, params);
-> > +	return ret;
-> > +}
-> > +
-> > +static void power_allocator_unbind(struct thermal_zone_device *tz)
-> > +{
-> > +	dev_dbg(&tz->device, "Unbinding from thermal zone %d\n", tz->id);
-> > +	devm_kfree(&tz->device, tz->governor_data);
-> > +	tz->governor_data = NULL;
-> > +}
-> > +
-> > +static int power_allocator_throttle(struct thermal_zone_device *tz, int trip)
-> > +{
-> > +	int ret;
-> > +	unsigned long switch_on_temp, control_temp, current_temp;
-> > +	struct power_allocator_params *params = tz->governor_data;
-> > +
-> > +	/*
-> > +	 * We get called for every trip point but we only need to do
-> > +	 * our calculations once
-> > +	 */
-> > +	if (trip != TRIP_MAX_DESIRED_TEMPERATURE)
-> > +		return 0;
-> > +
-> > +	ret = thermal_zone_get_temp(tz, &current_temp);
-> > +	if (ret) {
-> > +		dev_warn(&tz->device, "Failed to get temperature: %d\n", ret);
-> > +		return ret;
-> > +	}
-> > +
-> > +	ret = tz->ops->get_trip_temp(tz, TRIP_SWITCH_ON, &switch_on_temp);
-> > +	if (ret) {
-> > +		dev_warn(&tz->device,
-> > +			"Failed to get switch on temperature: %d\n", ret);
-> > +		return ret;
-> > +	}
-> > +
-> > +	if (current_temp < switch_on_temp) {
-> > +		tz->passive = 0;
-> > +		reset_pid_controller(params);
-> > +		allow_maximum_power(tz);
-> > +		return 0;
-> > +	}
-> > +
-> > +	tz->passive = 1;
-> > +
-> > +	ret = tz->ops->get_trip_temp(tz, TRIP_MAX_DESIRED_TEMPERATURE,
-> > +				&control_temp);
-> > +	if (ret) {
-> > +		dev_warn(&tz->device,
-> > +			"Failed to get the maximum desired temperature: %d\n",
-> > +			ret);
-> > +		return ret;
-> > +	}
-> > +
-> > +	return allocate_power(tz, current_temp, control_temp);
-> > +}
-> > +
-> > +static struct thermal_governor thermal_gov_power_allocator = {
-> > +	.name		= "power_allocator",
-> > +	.bind_to_tz	= power_allocator_bind,
-> > +	.unbind_from_tz	= power_allocator_unbind,
-> > +	.throttle	= power_allocator_throttle,
-> > +};
-> > +
-> > +int thermal_gov_power_allocator_register(void)
-> > +{
-> > +	return thermal_register_governor(&thermal_gov_power_allocator);
-> > +}
-> > +
-> > +void thermal_gov_power_allocator_unregister(void)
-> > +{
-> > +	thermal_unregister_governor(&thermal_gov_power_allocator);
-> > +}
-> > diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
-> > index c490f262ea7f..4921e084c20b 100644
-> > --- a/drivers/thermal/thermal_core.c
-> > +++ b/drivers/thermal/thermal_core.c
-> > @@ -1905,7 +1905,11 @@ static int __init thermal_register_governors(void)
-> >  	if (result)
-> >  		return result;
-> >  
-> > -	return thermal_gov_user_space_register();
-> > +	result = thermal_gov_user_space_register();
-> > +	if (result)
-> > +		return result;
-> > +
-> > +	return thermal_gov_power_allocator_register();
-> >  }
-> >  
-> >  static void thermal_unregister_governors(void)
-> > @@ -1914,6 +1918,7 @@ static void thermal_unregister_governors(void)
-> >  	thermal_gov_fair_share_unregister();
-> >  	thermal_gov_bang_bang_unregister();
-> >  	thermal_gov_user_space_unregister();
-> > +	thermal_gov_power_allocator_unregister();
-> >  }
-> >  
-> >  static int __init thermal_init(void)
-> > diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
-> > index d15d243de27a..b907be823527 100644
-> > --- a/drivers/thermal/thermal_core.h
-> > +++ b/drivers/thermal/thermal_core.h
-> > @@ -85,6 +85,14 @@ static inline int thermal_gov_user_space_register(void) { return 0; }
-> >  static inline void thermal_gov_user_space_unregister(void) {}
-> >  #endif /* CONFIG_THERMAL_GOV_USER_SPACE */
-> >  
-> > +#ifdef CONFIG_THERMAL_GOV_POWER_ALLOCATOR
-> > +int thermal_gov_power_allocator_register(void);
-> > +void thermal_gov_power_allocator_unregister(void);
-> > +#else
-> > +static inline int thermal_gov_power_allocator_register(void) { return 0; }
-> > +static inline void thermal_gov_power_allocator_unregister(void) {}
-> > +#endif /* CONFIG_THERMAL_GOV_POWER_ALLOCATOR */
-> > +
-> >  /* device tree support */
-> >  #ifdef CONFIG_THERMAL_OF
-> >  int of_parse_thermal_zones(void);
-> > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > index 1155457caf52..b23e019b1761 100644
-> > --- a/include/linux/thermal.h
-> > +++ b/include/linux/thermal.h
-> > @@ -61,6 +61,8 @@
-> >  #define DEFAULT_THERMAL_GOVERNOR       "fair_share"
-> >  #elif defined(CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE)
-> >  #define DEFAULT_THERMAL_GOVERNOR       "user_space"
-> > +#elif defined(CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR)
-> > +#define DEFAULT_THERMAL_GOVERNOR       "power_allocator"
-> >  #endif
-> >  
-> >  struct thermal_zone_device;
-> > @@ -255,9 +257,14 @@ struct thermal_bind_params {
-> >  
-> >  	/*
-> >  	 * This is a measure of 'how effectively these devices can
-> > -	 * cool 'this' thermal zone. The shall be determined by platform
-> > -	 * characterization. This is on a 'percentage' scale.
-> > -	 * See Documentation/thermal/sysfs-api.txt for more information.
-> > +	 * cool 'this' thermal zone. The shall be determined by
-> > +	 * platform characterization. For the fair-share governor,
-> > +	 * this is on a 'percentage' scale.  See
-> > +	 * Documentation/thermal/sysfs-api.txt for more
-> > +	 * information. For the power_allocator governor, they are
-> > +	 * relative to each other, see
-> > +	 * Documentation/thermal/power_allocator.txt for more
-> > +	 * information.
-> 
-> What happens if we register a thermal zone with relative weights, at
-> fist the user uses power allocator, but then wants to, for some reason,
-> use fair share? (or vice-versa).
-> 
-> Can't power allocator use percentages too?
-
-The problem with percentages is that they are hard to use as they
-depend on each other.  For example, you need to know how many cooling
-devices there are and that number needs to remain fixed.  You can't
-add a new cooling device without changing the weights of all the other
-existing cooling devices.  If the thermal zone is already created it's
-hard to change the weights so you really can't add or remove cooling
-devices.
-
-We were talking in another thread of ignoring a cooling device on some
-error.  How do you do that if the percentages must add to a hundred?
-
-I thought that we could reuse the "weight" parameter but if you think
-we are abusing by making it mean different things for different
-governors we can create a new one instead.
-
-Cheers,
-Javi
-
+--fdj2RfSjLxBAspz7--
