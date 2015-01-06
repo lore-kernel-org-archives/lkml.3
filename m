@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439AbbAFPZw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:25:52 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:62081 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbbAFPZu (ORCPT
+	id S1755684AbbAFP2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:28:31 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44946 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398AbbAFP23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:25:50 -0500
-Message-ID: <54ABFE7F.6090904@linaro.org>
-Date: Tue, 06 Jan 2015 15:25:51 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-CC: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [RFC v4] debug: prevent entering debug mode on panic/exception.
-References: <1419338309-16729-1-git-send-email-kiran.kumar@linaro.org> <20150105161412.44f53313e1d771dc9f968264@linux-foundation.org>
-In-Reply-To: <20150105161412.44f53313e1d771dc9f968264@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
+	Tue, 6 Jan 2015 10:28:29 -0500
+Message-ID: <1420558065.3719.10.camel@pengutronix.de>
+Subject: Re: [PATCH v18 0/12] dw-hdmi: convert imx hdmi to bridge/dw_hdmi
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Andy Yan <andy.yan@rock-chips.com>, airlied@linux.ie,
+        fabio.estevam@freescale.com, rmk+kernel@arm.linux.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
+        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
+        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
+        Zubair.Kakakhel@imgtec.com, djkurtz@google.com, ykk@rock-chips.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        linux-rockchip@lists.infradead.org, jay.xu@rock-chips.com,
+        Pawel Moll <pawel.moll@arm.com>, mark.yao@rock-chips.com,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
+Date: Tue, 06 Jan 2015 16:27:45 +0100
+In-Reply-To: <1956639.ADgYrPHa6L@phil>
+References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
+	 <1417787724.3227.10.camel@pengutronix.de> <5481DDF2.6010700@rock-chips.com>
+	 <1956639.ADgYrPHa6L@phil>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/15 00:14, Andrew Morton wrote:
-> On Tue, 23 Dec 2014 18:08:29 +0530 Kiran Raparthy <kiran.kumar@linaro.org> wrote:
+Hi Heiko,
+
+Am Dienstag, den 06.01.2015, 12:49 +0100 schrieb Heiko Stübner:
+> Hi Philipp,
 > 
->> From: Colin Cross <ccross@android.com>
->>
->> debug: prevent entering debug mode on panic/exception.
->>
->> On non-developer devices, kgdb prevents the device from rebooting
->> after a panic.
->>
->> Incase of panics and exceptions, to allow the device to reboot, prevent
->> entering debug mode to avoid getting stuck waiting for the user to interact
->> with debugger.
->>
->> To avoid entering the debugger on panic/exception without any extra
->> configuration, panic_timeout is being used which can be set via
->> /proc/sys/kernel/panic at run time and CONFIG_PANIC_TIMEOUT sets the default
->> value.
->>
->> ...
->>
+> Am Samstag, 6. Dezember 2014, 00:31:46 schrieb Andy Yan:
+> > > I am happy with the series so far. Pending Acks from the device tree
+> > > maintainers for the new binding documents, I'd like to apply either the
+> > > whole of it on top of
+> > > 
+> > >      git://git.pengutronix.de/git/pza/linux.git imx-drm/next
+> > > 
+> > > or take at least the i.MX specific patches (1-5) because of the
+> > > dependency on the imx-drm OF helper conversion.
 > 
-> hm.  Why overload the meaning of panic_timeout in this fashion?  If
-> someone is using kgdb and has panic_timeout set, they'll get quiet a
-> surprise.
+> do you still want to take this series?
+>
+> As for the devicetree ACK, there is this (unwritten) rule that if the
+> dt-maintainers do not respond after 3 weeks (and a ping mail to them)
+> it should be considered acked. As this version of the series is sitting
+> on the lists for a month now and nobody complained during the other
+> 17 versions as well, I think we should be on the safe side :-)
 
-Will they?
+Alright, let's assume silent approval.
 
-Setting panic_timeout means the user explicitly requested that the
-machine try to perform an unattended reboot after a panic. Wedging in
-kgdb during panic on such a system absolutely contradicts the user's
-request to have an automated reboot.
+> There is one slight catch. Patch 3 needs a little modification, as the
+> THIS_MODULE ower of the imx_hdmi got meanwhile cleaned up.
+> 
+> So the patch would need to be modified as shown by the diff at the
+> bottom. I'm not sure if you want Andy to repost the whole series again
+> but I'll just post my fixed variant as reply to the origin v18 of patch 3
+> for convenience.
 
-In this case it is not overloading the meaning... we are simply altering
-kgdb to properly honour the existing meaning.
+No need to post this again, I can apply the patches and fix up the
+remaining issues you and Russell pointed out in the process.
 
-Changing the behaviour for exceptions as well as for panics *might*
-maybe veer into overloading but even there, I think we are simply better
-reflecting user intent. It is hard to imagine a user that wants
-automatic-reboot-on-panic being happy for the kernel to get stuck
-overnight just because of an oops.
-
-
-> Would it be cleaner/clearer to add some new standalone control for
-> this?  One which is only present if CONFIG_KGDB.
-
-I don't think it is clearer (although given it was my review that lead
-us here that's probably to be expected).
-
-Separating them out simply means an additional gotcha a user must be
-aware of if they want automatic reboot *and* kgdb (i.e. two kernel
-cmdline arguments must be used that then just one).
-
-
-> We appear to have forgotten to document panic_timeout.  Sigh.
-
-On the subject of documentation it would be useful to update the kgdb
-docs to document the effect of panic_timeout on panic/exception behaviour.
+regards
+Philipp
 
