@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbbAFW7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:59:00 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52697 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbbAFW67 (ORCPT
+	id S1752109AbbAFW7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:59:43 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:34105 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbbAFW7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:58:59 -0500
-Date: Tue, 6 Jan 2015 23:58:56 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Felipe Balbi <balbi@ti.com>, pali.rohar@gmail.com, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        ivo.g.dimitrov.75@gmail.com
-Subject: Re: 3.19 on Nokia n900: audio quality awful
-Message-ID: <20150106225856.GB31990@amd>
-References: <20150106170433.GA5408@amd>
- <20150106172545.GK6502@saruman>
- <20150106175115.GA19487@amd>
- <20150106202857.GB32308@saruman>
- <20150106205000.GB13902@amd>
- <20150106205730.GA6071@fuloong-minipc.musicnaut.iki.fi>
- <20150106220805.GD13902@amd>
- <20150106222717.GC6071@fuloong-minipc.musicnaut.iki.fi>
+	Tue, 6 Jan 2015 17:59:41 -0500
+Date: Wed, 7 Jan 2015 09:59:32 +1100
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>,
+        "open list:COMMON INTERNET F..." <linux-cifs@vger.kernel.org>,
+        "moderated list:COMMON INTERNET F..." 
+	<samba-technical@lists.samba.org>
+Subject: Re: [PATCH RESEND] cifs: use memzero_explicit to clear stack buffer
+Message-ID: <20150106225931.GA23281@gondor.apana.org.au>
+References: <1420394744-20268-1-git-send-email-me@mortis.eu>
+ <1420580220-6276-1-git-send-email-me@mortis.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150106222717.GC6071@fuloong-minipc.musicnaut.iki.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420580220-6276-1-git-send-email-me@mortis.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2015-01-07 00:27:17, Aaro Koskinen wrote:
-> On Tue, Jan 06, 2015 at 11:08:05PM +0100, Pavel Machek wrote:
-> > On Tue 2015-01-06 22:57:30, Aaro Koskinen wrote:
-> > > Hi,
-> > > 
-> > > On Tue, Jan 06, 2015 at 09:50:00PM +0100, Pavel Machek wrote:
-> > > > PS: Unfortunately, N900 will not boot using nfsroot in 3.16+ at least,
-> > > > and boot from MMC card is broken and has been for quite some time.
-> > > 
-> > > USB networking works fine with 3.19-rc3 and also MMC card rootfs.
-> > 
-> > Does nfsroot work for you? USB networking works as a module but not
-> > build-in. [Patch is available for this one.]
-> > 
-> > u-SD card seems to have similar problem. If I try it after boot, I can
-> > access it ok, but using u-SD card for rootfs fails. If it works for
-> > you, it would be interesting to know.
+On Tue, Jan 06, 2015 at 10:37:00PM +0100, Giel van Schijndel wrote:
+> When leaving a function use memzero_explicit instead of memset(0) to
+> clear stack allocated buffers. memset(0) may be optimized away.
 > 
-> I haven't tried nfsroot, but I've been using USB networking for ssh
-> for a couple of years without issues. I have g_ether as module.
+> This particular buffer is highly likely to contain sensitive data which
+> we shouldn't leak (it's named 'passwd' after all).
 > 
-> Also I recently switched rootfs to u-SD card, and it (MMC) works fine
-> as builtin.
-> 
-> But I'm mounting it from userspace (using builtin initramfs inside
-> zImage), with a poll loop that waits for a device to appear. Maybe if you
-> do it from kernel you need to use root wait/delay etc. options?
+> Signed-off-by: Giel van Schijndel <me@mortis.eu>
+> Reported-at: http://www.viva64.com/en/b/0299/
+> Reported-by: Andrey Karpov
+> Reported-by: Svyatoslav Razmyslov
 
-Yes, it works if I mount it later. It fails when done directly using
-root=, even with rootwait etc. Hard to believe, yes, but try it. You
-can watch the results on console.
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-									Pavel
-
+Thanks,
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
