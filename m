@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389AbbAFR4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:56:36 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:43622 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756296AbbAFR4f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:56:35 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Stefano Brivio <stefano.brivio@polimi.it>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Kalle Valo <kvalo@adurom.com>, linux-wireless@vger.kernel.org,
-        b43-dev@lists.infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] b43legacy: Remove unused function
-Date: Tue,  6 Jan 2015 18:59:35 +0100
-Message-Id: <1420567175-17323-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S932340AbbAFSAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:00:13 -0500
+Received: from mga03.intel.com ([134.134.136.65]:44569 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932285AbbAFSAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 13:00:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,709,1413270000"; 
+   d="scan'208";a="647120848"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Borislav Petkov <bp@alien8.de>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Oleg Nesterov" <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?utf-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Subject: RE: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce
+ tricks
+Thread-Topic: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce
+ tricks
+Thread-Index: AQHQKUxotoHiYG/AiEO7foniceCOyZyzYk4w
+Date: Tue, 6 Jan 2015 18:00:08 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com>
+References: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
+ <54ab2ffa301102cd6e@agluck-desk.sc.intel.com>
+ <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
+In-Reply-To: <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t06I0Jce015075
 
-Remove the function b43legacy_radio_set_tx_iq() that is not used anywhere.
+> For the context-related bits:
+>
+> Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Thanks.
 
-This was partially found by using a static code analysis program called cppcheck.
+> Should I stick this in my -next branch so it can stew?
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/net/wireless/b43legacy/radio.c |   19 -------------------
- drivers/net/wireless/b43legacy/radio.h |    1 -
- 2 files changed, 20 deletions(-)
+That's fine with me.  Boris ... any comments?
 
-diff --git a/drivers/net/wireless/b43legacy/radio.c b/drivers/net/wireless/b43legacy/radio.c
-index 8961776..9501420 100644
---- a/drivers/net/wireless/b43legacy/radio.c
-+++ b/drivers/net/wireless/b43legacy/radio.c
-@@ -1743,25 +1743,6 @@ u16 freq_r3A_value(u16 frequency)
- 	return value;
- }
- 
--void b43legacy_radio_set_tx_iq(struct b43legacy_wldev *dev)
--{
--	static const u8 data_high[5] = { 0x00, 0x40, 0x80, 0x90, 0xD0 };
--	static const u8 data_low[5]  = { 0x00, 0x01, 0x05, 0x06, 0x0A };
--	u16 tmp = b43legacy_radio_read16(dev, 0x001E);
--	int i;
--	int j;
--
--	for (i = 0; i < 5; i++) {
--		for (j = 0; j < 5; j++) {
--			if (tmp == (data_high[i] | data_low[j])) {
--				b43legacy_phy_write(dev, 0x0069, (i - j) << 8 |
--						    0x00C0);
--				return;
--			}
--		}
--	}
--}
--
- int b43legacy_radio_selectchannel(struct b43legacy_wldev *dev,
- 				  u8 channel,
- 				  int synthetic_pu_workaround)
-diff --git a/drivers/net/wireless/b43legacy/radio.h b/drivers/net/wireless/b43legacy/radio.h
-index bccb3d7..dd2976d 100644
---- a/drivers/net/wireless/b43legacy/radio.h
-+++ b/drivers/net/wireless/b43legacy/radio.h
-@@ -92,7 +92,6 @@ void b43legacy_nrssi_hw_write(struct b43legacy_wldev *dev, u16 offset, s16 val);
- void b43legacy_nrssi_hw_update(struct b43legacy_wldev *dev, u16 val);
- void b43legacy_nrssi_mem_update(struct b43legacy_wldev *dev);
- 
--void b43legacy_radio_set_tx_iq(struct b43legacy_wldev *dev);
- u16 b43legacy_radio_calibrationvalue(struct b43legacy_wldev *dev);
- 
- #endif /* B43legacy_RADIO_H_ */
--- 
-1.7.10.4
-
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
