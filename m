@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379AbbAFNYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:24:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602AbbAFNYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:24:39 -0500
-Date: Tue, 6 Jan 2015 21:25:24 +0800
-From: Fam Zheng <famz@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Venkatesh Srinivas <venkateshs@google.com>
-Subject: Re: [PATCH v2] virtio-scsi: Fix the race condition in
- virtscsi_handle_event
-Message-ID: <20150106132524.GA21978@fam-t430.nay.redhat.com>
-References: <1420529616-2757-1-git-send-email-famz@redhat.com>
- <20150106093532.GA29800@redhat.com>
+	id S1755461AbbAFN0y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:26:54 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:34285 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486AbbAFN0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 08:26:51 -0500
+Date: Tue, 6 Jan 2015 09:25:48 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Anson Huang <b20788@freescale.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rui.zhang@intel.com, jangra.pankaj9@gmail.com
+Subject: Re: [PATCH V2] Thermal: imx: add clk disable/enable for
+ suspend/resume
+Message-ID: <20150106132546.GB16132@developer>
+References: <1420541422-27602-1-git-send-email-b20788@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0eh6TmSyL6TZE2Uz"
 Content-Disposition: inline
-In-Reply-To: <20150106093532.GA29800@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1420541422-27602-1-git-send-email-b20788@freescale.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01/06 11:35, Michael S. Tsirkin wrote:
-> On Tue, Jan 06, 2015 at 03:33:36PM +0800, Fam Zheng wrote:
-> > There is a race condition in virtscsi_handle_event, when many device
-> > hotplug/unplug events flush in quickly.
-> > 
-> > The scsi_remove_device in virtscsi_handle_transport_reset may trigger
-> > the BUG_ON in scsi_target_reap, because the state is altered behind it,
-> > probably by scsi_scan_host of another event. I'm able to reproduce it by
-> > repeatedly plugging and unplugging a scsi disk with the same lun number.
-> > 
-> > To make is safe, a single thread workqueue local to the module is added
-> > which runs the scan work. With this change, the panic goes away.
-> > 
-> > Signed-off-by: Fam Zheng <famz@redhat.com>
-> > ---
-> > 
-> > v2: Use a single threaded workqueue instead of mutex to serialize work
-> > (Venkatesh)
-> > ---
-> >  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
-> >  1 file changed, 13 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> > index c52bb5d..71b0091 100644
-> > --- a/drivers/scsi/virtio_scsi.c
-> > +++ b/drivers/scsi/virtio_scsi.c
-> > @@ -120,6 +120,8 @@ struct virtio_scsi {
-> >  
-> >  static struct kmem_cache *virtscsi_cmd_cache;
-> >  static mempool_t *virtscsi_cmd_pool;
-> > +static struct workqueue_struct *virtscsi_scan_wq;
-> > +
-> >  
-> 
-> Don't add two empty lines please.
-> 
-> >  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
-> >  {
-> > @@ -404,7 +406,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
-> >  	struct virtio_scsi_event_node *event_node = buf;
-> >  
-> >  	if (!vscsi->stop_events)
-> > -		queue_work(system_freezable_wq, &event_node->work);
-> > +		queue_work(virtscsi_scan_wq, &event_node->work);
-> >  }
-> >  
-> >  static void virtscsi_event_done(struct virtqueue *vq)
-> > @@ -1119,6 +1121,12 @@ static int __init init(void)
-> >  		pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
-> >  		goto error;
-> >  	}
-> > +	virtscsi_scan_wq = create_singlethread_workqueue("virtscsi-scan");
-> > +	if (!virtscsi_scan_wq) {
-> > +		pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
-> > +		goto error;
-> > +	}
-> > +
-> >  	ret = register_virtio_driver(&virtio_scsi_driver);
-> >  	if (ret < 0)
-> >  		goto error;
-> > @@ -1126,6 +1134,9 @@ static int __init init(void)
-> >  	return 0;
-> >  
-> >  error:
-> > +	if (virtscsi_scan_wq) {
-> > +		destroy_workqueue(virtscsi_scan_wq);
-> > +	}
-> >  	if (virtscsi_cmd_pool) {
-> >  		mempool_destroy(virtscsi_cmd_pool);
-> >  		virtscsi_cmd_pool = NULL;
-> > @@ -1142,6 +1153,7 @@ static void __exit fini(void)
-> >  	unregister_virtio_driver(&virtio_scsi_driver);
-> >  	mempool_destroy(virtscsi_cmd_pool);
-> >  	kmem_cache_destroy(virtscsi_cmd_cache);
-> > +	destroy_workqueue(virtscsi_scan_wq);
-> 
-> 
-> Please destroy in reverse order of initialization:
-> between unregister_virtio_driver and mempool_destroy.
 
-OK, will fix this. Thanks.
+--0eh6TmSyL6TZE2Uz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Fam
+On Tue, Jan 06, 2015 at 06:50:22PM +0800, Anson Huang wrote:
+> Thermal sensor's clk is from pll3_usb_otg, per hardware
+> design requirement, need to make sure pll3_usb_otg is disabled
+> before STOP mode is entered, otherwise, all PFDs under it may
+> enter incorrect state, this patch disables pll3_usb_otg before
+> suspend and enables it after resume.
+>=20
+> Signed-off-by: Anson Huang <b20788@freescale.com>
 
-> 
-> >  }
-> >  module_init(init);
-> >  module_exit(fini);
-> > -- 
-> > 1.9.3
+adding to my -fixes branch.
+
+> ---
+>  drivers/thermal/imx_thermal.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>=20
+> diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+> index 461bf3d..dc8bcd8 100644
+> --- a/drivers/thermal/imx_thermal.c
+> +++ b/drivers/thermal/imx_thermal.c
+> @@ -600,6 +600,7 @@ static int imx_thermal_suspend(struct device *dev)
+>  	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
+>  	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
+>  	data->mode =3D THERMAL_DEVICE_DISABLED;
+> +	clk_disable_unprepare(data->thermal_clk);
+> =20
+>  	return 0;
+>  }
+> @@ -609,6 +610,7 @@ static int imx_thermal_resume(struct device *dev)
+>  	struct imx_thermal_data *data =3D dev_get_drvdata(dev);
+>  	struct regmap *map =3D data->tempmon;
+> =20
+> +	clk_prepare_enable(data->thermal_clk);
+>  	/* Enabled thermal sensor after resume */
+>  	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
+>  	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
+> --=20
+> 1.9.1
+>=20
+
+--0eh6TmSyL6TZE2Uz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUq+IwAAoJEMLUO4d9pOJWwUIH/R3wYdyPBjN/nEcT2TmFBisC
+6NiXxvJWO4GcH8x7hWZFCxQG1yjWCeEEKTFJoRVSL4seVtlF72WUQfJ68CaIEnrj
+hVz91L/ruipMul2lnin740ecasrHHkQoX/9O+cwj6wZOPg/aXRYsYwq8GSgSMmjY
+MlkCGY5EORR0T6h2mSpO90hgIZXJUgQpLlWwfEUp6gLRFvjGOQ2OU1ZWCP2ukJyn
+H5Sy7ol62Ts9ODSVbbIV5Dndmkf1FfJmiEel+PSD/qHtboM62nEluOHDgRRLPkDm
+TQhqRun2E/kLC6Ti0XI7t+wP3yk6tLb23YnvD2fe88c5QLHOjNKhIU9F6WEJGcw=
+=U3xm
+-----END PGP SIGNATURE-----
+
+--0eh6TmSyL6TZE2Uz--
