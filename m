@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbbAFSFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:05:49 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47532 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755800AbbAFSFr (ORCPT
+	id S1756129AbbAFSGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:06:39 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:63353 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755843AbbAFSGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:05:47 -0500
-Date: Tue, 6 Jan 2015 18:05:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, Santosh Shilimkar <ssantosh@kernel.org>,
-        Peter =?iso-8859-1?Q?K=FCmmel?= <syntheticpp@gmx.net>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] irqchip: omap-intc: fix legacy DMA regression
-Message-ID: <20150106180532.GO11502@n2100.arm.linux.org.uk>
-References: <20150106123830.GD30544@fuloong-minipc.musicnaut.iki.fi>
- <1420563093-26026-1-git-send-email-balbi@ti.com>
+	Tue, 6 Jan 2015 13:06:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420563093-26026-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54AC1FFB.7030504@linux.intel.com>
+References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net>
+ <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com>
+ <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+ <20150106040428.GR2915@two.firstfloor.org> <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+ <54AC1FFB.7030504@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 6 Jan 2015 10:06:16 -0800
+Message-ID: <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API to arch_prctl
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 10:51:33AM -0600, Felipe Balbi wrote:
-> +	/*
-> +	 * FIXME legacy OMAP DMA driver sitting under arch/arm/plat-omap/dma.c
-> +	 * depends is still not ready for linear IRQ domains; because of that
-> +	 * we need to temporarily "blacklist" OMAP2 and OMAP3 devices from using
-> +	 * linear IRQ Domain until that driver is finally fixed.
+On Tue, Jan 6, 2015 at 9:48 AM, Dave Hansen <dave.hansen@linux.intel.com> wrote:
+> On 01/05/2015 09:59 PM, Andy Lutomirski wrote:
+>> But I decided to check whether libmpx links against glibc, and I can't
+>> find sources for it at all.  Do they exist?  Is there any code with
+>> source available that invokes this prctl?
+>>
+>> If not, I personally have very little sympathy for the argument that a
+>> binary buried in the depths of the Intel SDE would need to change if
+>> we switched to using arch_prctl.  And I think that it should issue the
+>> syscall itself without using glibc, in which case the syscall wrapper
+>> issue is moot.
+>
+> Andy, as I mentioned previously, there is code in a GCC branch that uses
+> the existing prctl().  It's also been posted for review to one of the
+> GCC mailing lists.  I've been told that it will be in gcc 5.0.
+>
 
-"finally fixed" or finally killed off like it really needs to be, once
-all users of it are killed.
+Can you point me to it?  I found the code generation stuff in the gcc
+branch, but I couldn't find the runtime.
 
-We've been trying to do this for, what, three years now... I finally
-pushed a WARN_ON() into that code to make it obvious to anyone who
-uses omap_request_dma() that they really need to update their code.
+> The Intel SDE does not use the prctl() in any way that I know of.
 
-Here's the list of references to that symbol which *still* need to be
-fixed so that we can kill the legacy DMA driver:
+I found a couple references suggesting that libmpx lived in the SDE.
+For example:
 
-drivers/media/platform/omap/omap_vout_vrfb.c:   ret = omap_request_dma(vout->vrfb_dma_tx.dev_id, "VRFB DMA TX",
-drivers/media/platform/omap3isp/isphist.c:              ret = omap_request_dma(OMAP24XX_DMA_NO_DEVICE, "DMA_ISP_HIST",
-drivers/media/platform/soc_camera/omap1_camera.c:       err = omap_request_dma(OMAP_DMA_CAMERA_IF_RX, DRIVER_NAME,
-drivers/mtd/onenand/omap2.c:            r = omap_request_dma(0, pdev->dev.driver->name,
-drivers/usb/gadget/udc/omap_udc.c:              status = omap_request_dma(dma_channel,
-drivers/usb/gadget/udc/omap_udc.c:              status = omap_request_dma(dma_channel,
-drivers/usb/musb/tusb6010_omap.c:               ret = omap_request_dma(chdat->sync_dev, dev_name,
-drivers/usb/musb/tusb6010_omap.c:               ret = omap_request_dma(tusb_dma->sync_dev, "TUSB shared",
+https://software.intel.com/en-us/articles/using-intel-mpx-with-the-intel-software-development-emulator
+
+--Andy
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Andy Lutomirski
+AMA Capital Management, LLC
