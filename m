@@ -1,113 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbbAFHQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 02:16:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383AbbAFHQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 02:16:01 -0500
-Date: Tue, 6 Jan 2015 09:15:49 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Venkatesh Srinivas <venkateshs@google.com>
-Cc: Fam Zheng <famz@redhat.com>, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] virtio-scsi: Fix the race condition in
- virtscsi_handle_event
-Message-ID: <20150106071549.GA29433@redhat.com>
-References: <1420437898-32419-1-git-send-email-famz@redhat.com>
- <CAHdzE-_QmNZVhmChHmy3FgRjJ692Apw2Va-SGoTz25s0fLjbvQ@mail.gmail.com>
- <20150105221059.GB23518@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150105221059.GB23518@redhat.com>
+	id S1754297AbbAFH0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 02:26:25 -0500
+Received: from smtprelay0182.hostedemail.com ([216.40.44.182]:59372 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750921AbbAFH0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 02:26:24 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3874:4321:5007:6261:8660:9036:10004:10400:10450:10455:10848:11026:11232:11657:11658:11914:12043:12517:12519:12740:13069:13148:13230:13311:13357:14096:14097:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: order89_1a7864cddb32a
+X-Filterd-Recvd-Size: 2069
+Message-ID: <1420529180.2652.31.camel@perches.com>
+Subject: Re: [PATCH] GMAC: fix simple_return.cocci warnings
+From: Joe Perches <joe@perches.com>
+To: Roger <roger.chen@rock-chips.com>
+Cc: David Miller <davem@davemloft.net>, fengguang.wu@intel.com,
+        kbuild-all@01.org, peppe.cavallaro@st.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 05 Jan 2015 23:26:20 -0800
+In-Reply-To: <54AB8B23.3080303@rock-chips.com>
+References: <201501030822.7cG5bXrm%fengguang.wu@intel.com>
+	 <20150103002526.GA15863@waimea.lkp.intel.com>
+	 <1420246005.23591.7.camel@perches.com>
+	 <20150104.222022.55122203599464788.davem@davemloft.net>
+	 <54AB8B23.3080303@rock-chips.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 12:10:59AM +0200, Michael S. Tsirkin wrote:
-> On Mon, Jan 05, 2015 at 11:48:47AM -0800, Venkatesh Srinivas wrote:
-> > On Sun, Jan 4, 2015 at 10:04 PM, Fam Zheng <famz@redhat.com> wrote:
-> > 
-> >     There is a race condition in virtscsi_handle_event, when many device
-> >     hotplug/unplug events flush in quickly.
-> > 
-> >     The scsi_remove_device in virtscsi_handle_transport_reset may trigger
-> >     the BUG_ON in scsi_target_reap, because the state is altered behind it,
-> >     probably by scsi_scan_host of another event. I'm able to reproduce it by
-> >     repeatedly plugging and unplugging a scsi disk with the same lun number.
-> > 
-> >     To make is safe, the mutex added in struct virtio_scsi is held in
-> >     virtscsi_handle_event, so that all the events are processed in a
-> >     synchronized way. With this lock, the panic goes away.
-> > 
-> >     Signed-off-by: Fam Zheng <famz@redhat.com>
-> >     ---
-> >      drivers/scsi/virtio_scsi.c | 6 ++++++
-> >      1 file changed, 6 insertions(+)
-> > 
-> >     diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> >     index c52bb5d..7f194d4 100644
-> >     --- a/drivers/scsi/virtio_scsi.c
-> >     +++ b/drivers/scsi/virtio_scsi.c
-> >     @@ -110,6 +110,9 @@ struct virtio_scsi {
-> >             /* CPU hotplug notifier */
-> >             struct notifier_block nb;
-> > 
-> >     +       /* Protect the hotplug/unplug event handling */
-> >     +       struct mutex scan_lock;
-> >     +
-> >             /* Protected by event_vq lock */
-> >             bool stop_events;
-> > 
-> >     @@ -377,6 +380,7 @@ static void virtscsi_handle_event(struct work_struct
-> >     *work)
-> >             struct virtio_scsi *vscsi = event_node->vscsi;
-> >             struct virtio_scsi_event *event = &event_node->event;
-> > 
-> >     +       mutex_lock(&vscsi->scan_lock);
-> >             if (event->event &
-> >                 cpu_to_virtio32(vscsi->vdev, VIRTIO_SCSI_T_EVENTS_MISSED)) {
-> >                     event->event &= ~cpu_to_virtio32(vscsi->vdev,
-> >     @@ -397,6 +401,7 @@ static void virtscsi_handle_event(struct work_struct
-> >     *work)
-> >                     pr_err("Unsupport virtio scsi event %x\n", event->event);
-> >             }
-> >             virtscsi_kick_event(vscsi, event_node);
-> >     +       mutex_unlock(&vscsi->scan_lock);
-> >      }
-> > 
-> >      static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
-> >     @@ -894,6 +899,7 @@ static int virtscsi_init(struct virtio_device *vdev,
-> >             const char **names;
-> >             struct virtqueue **vqs;
-> > 
-> >     +       mutex_init(&vscsi->scan_lock);
-> >             num_vqs = vscsi->num_queues + VIRTIO_SCSI_VQ_BASE;
-> >             vqs = kmalloc(num_vqs * sizeof(struct virtqueue *), GFP_KERNEL);
-> >             callbacks = kmalloc(num_vqs * sizeof(vq_callback_t *), GFP_KERNEL);
-> >     --
-> >     1.9.3
-> > 
-> > 
-> > Nice find.
-> > 
-> > This fix does have the effect of serializing all event handling via scan_lock;
-> > perhaps you want to instead create a singlethreaded workqueue in virtio_scsi
-> > and queue handle_event there, rather than waiting on scan_lock on the system
-> > workqueue?
-> 
-> Or use the system single-threaded wq.
+On Tue, 2015-01-06 at 15:13 +0800, Roger wrote:
+> What should I do now?
+
+I think it would be better to change
+"int gmac_clk_enable" to "void gmac_clk_enable"
+(it always returns 0)
+
+This function should simply call gmac_clk_enable
+and return 0;
+
+> >>> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+> >>> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+> >>> @@ -422,11 +422,7 @@ static int rk_gmac_init(struct platform_
+> >>>   	if (ret)
+> >>>   		return ret;
+> >>>   
+> >>> -	ret = gmac_clk_enable(bsp_priv, true);
+> >>> -	if (ret)
+> >>> -		return ret;
+> >>> -
+> >>> -	return 0;
+> >>> +	return gmac_clk_enable(bsp_priv, true);
+> >> I think this change is not particularly better.
+> >>
+> >> When the pattern is multiply repeated like:
+> >   ...
+> >> I think it's better to not change the last
+> >> test in the sequence just to minimize overall
+> >> line count.
+> > I think it's a wash and that both ways are about the same to me.
+> >
+> > I won't apply this, sorry.
 
 
-I was sure we have one, but apparently not :(
-
-Pls ignore the comment, sorry about the noise.
-
-> 
-> > Reviewed-by: Venkatesh Srinivas <venkateshs@google.com>
-> > 
-> > -- vs;
