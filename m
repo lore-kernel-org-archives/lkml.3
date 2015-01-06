@@ -1,62 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882AbbAFRCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:02:32 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:54164 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755337AbbAFRCb (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 6 Jan 2015 12:02:31 -0500
-Message-ID: <1420563737.24290.7.camel@stgolabs.net>
-Subject: Re: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing
- preemption on/off
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 06 Jan 2015 09:02:17 -0800
-In-Reply-To: <20150106080948.GA18346@js1304-P5Q-DELUXE>
-References: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1420513392.24290.2.camel@stgolabs.net>
-	 <20150106080948.GA18346@js1304-P5Q-DELUXE>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756070AbbAFRDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:03:00 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:62562 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344AbbAFRC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 12:02:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420562732-4353-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1420562732-4353-1-git-send-email-mathieu.poirier@linaro.org>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 6 Jan 2015 11:02:35 -0600
+Message-ID: <CAL_JsqJwauxNNojhAaYEr7oQTm6fwYwtByv_s6-tHiXYA214AQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: vexpress: bindings: Add generic PD awareness to the
+ spc controller
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-06 at 17:09 +0900, Joonsoo Kim wrote:
-> On Mon, Jan 05, 2015 at 07:03:12PM -0800, Davidlohr Bueso wrote:
-> > On Mon, 2015-01-05 at 10:36 +0900, Joonsoo Kim wrote:
-> > > -	preempt_disable();
-> > > -	c = this_cpu_ptr(s->cpu_slab);
-> > > +	do {
-> > > +		tid = this_cpu_read(s->cpu_slab->tid);
-> > > +		c = this_cpu_ptr(s->cpu_slab);
-> > > +	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
-> > > +	barrier();
-> > 
-> > I don't see the compiler reodering the object/page stores below, since c
-> > is updated in the loop anyway. Is this really necessary (same goes for
-> > slab_free)? The generated code by gcc 4.8 looks correct without it.
-> > Additionally, the implied barriers for preemption control aren't really
-> > the same semantics used here (if that is actually the reason why you are
-> > using them).
-> 
-> Hello,
-> 
-> I'd like to use tid as a pivot so it should be fetched before fetching
-> anything on c. Is it impossible even if !CONFIG_PREEMPT without
-> barrier()?
+On Tue, Jan 6, 2015 at 10:45 AM,  <mathieu.poirier@linaro.org> wrote:
+> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+>
+> Among other things, the serial power controller (SPC) controls power to
+> the A7 and A15 clusters.  Theses clusters also happen to contains the
+> coresight tracers used for HW assisted tracing.
+>
+> By modellling these to power domains in a way that is comprehensible to
+> the generic power domain sub-system and using the runtime PM API in the
+> coresight drivers, we can prevent power to the domains from being
+> turned off while tracing related operations are still pending.
+>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+>  .../bindings/arm/vexpress-power-controller.txt     | 54 ++++++++++++++++++++++
+>  1 file changed, 54 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+>
+> diff --git a/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+> new file mode 100644
+> index 000000000000..3af5624dc5cb
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+> @@ -0,0 +1,54 @@
+> +ARM Versatile Express Power Controller
+> +--------------------------------------
+> +
+> +This binding models the serial power controller (SPC) in a way that is
+> +intelligible to the generic power domain subsystem and in accordance
+> +with the guidelines from:
+> +
+> +Documentation/devicetree/bindings/power/power_domain.txt
+> +
+> +The binding doesn't have a '<reg>' property as the base address for HW
+> +access is provided by the vexpress-scc sub-system.
+> +
+> +Required node properties:
+> +- compatible value : = "arm,vexpress-power-controller";
+> +- #power-domain-cells : = Number of cells in a PM domain specifier, as
+> +  specified in "power_domain.txt" referenced above.
+> +
+> +Example:
+> +       A7_A15_cluster_pd: A7-A15-cluster-pd {
 
-You'd need a smp_wmb() in between tid and c in the loop then, which
-looks quite unpleasant. All in all disabling preemption isn't really
-that expensive, and you should redo your performance number if you go
-this way.
+This is more a description of the power domain than the power
+controller IP block.
 
+> +               compatible = "arm,vexpress-power-controller";
+> +               #power-domain-cells = <1>;
+
+You need to define what goes in the cell. That is specific to the
+power controller. It could be generic in that N corresponds to power
+domain N in the controller if the controller is generic in that way
+(i.e. all the register accesses are just indexed).
+
+> +        };
+> +
+> +       ....
+> +
+> +       ptm@0,2201d000 {
+
+Drop the comma.
+
+> +               compatible = "arm,coresight-etm3x", "arm,primecell";
+> +               reg = <0 0x2201d000 0 0x1000>;
+> +
+> +               cpu = <&cpu1>;
+> +               clocks = <&oscclk6a>;
+> +               clock-names = "apb_pclk";
+> +               power-domains = <&A7_A15_cluster_pd 0>;
+> +               port {
+> +                       ptm1_out_port: endpoint {
+> +                               remote-endpoint = <&funnel_in_port1>;
+> +                       };
+> +               };
+> +       };
+> +
+> +       etm@0,2203c000 {
+
+ditto
+
+> +               compatible = "arm,coresight-etm3x", "arm,primecell";
+> +               reg = <0 0x2203c000 0 0x1000>;
+> +
+> +               cpu = <&cpu2>;
+> +               clocks = <&oscclk6a>;
+> +               clock-names = "apb_pclk";
+> +               power-domains = <&A7_A15_cluster_pd 1>;
+> +               port {
+> +                       etm0_out_port: endpoint {
+> +                               remote-endpoint = <&funnel_in_port2>;
+> +                       };
+> +               };
+> +       };
+> --
+> 1.9.1
+>
