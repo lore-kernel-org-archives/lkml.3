@@ -1,120 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbbAFG3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 01:29:32 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:55388 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbbAFG3b (ORCPT
+	id S1753837AbbAFGa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 01:30:28 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33077 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbbAFGa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 01:29:31 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-11-54ab80c8a7f5
+	Tue, 6 Jan 2015 01:30:26 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-de-54ab8100e1de
 From: Chao Yu <chao2.yu@samsung.com>
 To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH 1/2] f2fs: get rid of kzalloc in
- __recover_inline_status
-Date: Tue, 06 Jan 2015 14:28:43 +0800
-Message-id: <009301d0297a$1fc55780$5f500680$@samsung.com>
+Subject: [f2fs-dev][PATCH 2/2] f2fs: enable recover_xattr_data to avoid cp when
+ fsync after operating xattr
+Date: Tue, 06 Jan 2015 14:29:40 +0800
+Message-id: <009401d0297a$41523580$c3f6a080$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdApd8pnKTFd1q9SQcOcO0p26hj14Q==
+Thread-index: AdApd5wSP9YuYnoFTEKhnB7yUeGHCg==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsVy+t9jAd0TDatDDK5+l7O4tq+RyeLJ+lnM
-	FpcWuVtc3jWHzYHFY9OqTjaP3Qs+M3n0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxuK1E5gL
-	DglV7J4+gaWBsZ2/i5GTQ0LARGJ721VWCFtM4sK99WxdjFwcQgKLGCVeH7/FDuH8YJR48u0O
-	I0gVm4CKxPKO/0wgtoiAl8Sk/SdYQGxmAQ+Jxo7vYJOEBUIkXv18xwZiswioSqx90QBm8wpY
-	SkyacIQZwhaU+DH5HlSvlsT6nceZIGx5ic1r3jJDXKQgsePsa0aIXXoS/55OZIWoEZfYeOQW
-	ywRGgVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREc1M+kdjCu
-	bLA4xCjAwajEw+txYmWIEGtiWXFl7iFGCQ5mJRHec7WrQ4R4UxIrq1KL8uOLSnNSiw8xSnOw
-	KInzKtm3hQgJpCeWpGanphakFsFkmTg4pYBh7h0o8vGUg9u3/+YT44ovNCdNtyws++oZIang
-	avOp/+W6wLcbG1nW7c6btp9n9rPba17Mkul/5+nSqh96u9X0FM+ukCVzpnzpZJo7M2hXuxrP
-	njK1+RkfLY/EPw2bsVBlr6e/9J8Nnrtm14u5n7m8WWSrHUflrDjFjRaCtyYc/dEcuFVmqpCH
-	EktxRqKhFnNRcSIAzjzjP2YCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jAV2GxtUhBi/n61lc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr494mtYJV
+	ehXP2xuYGxi/q3YxcnJICJhIXO7bzgxhi0lcuLeerYuRi0NIYBGjxL8r+1hBEkICPxglmq7b
+	gNhsAioSyzv+M4HYIgJeEpP2n2ABsZkFPCQaO76D1QsL5ErsW/ePHcRmEVCVmPZ/BlgNr4Cl
+	xPqL81khbEGJH5PvQfVqSazfeZwJwpaX2LzmLdRBChI7zr5mhNilJ7H5001miBpxiY1HbrFM
+	YBSYhWTULCSjZiEZNQtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwQH9TGoH48oG
+	i0OMAhyMSjy8HidWhgixJpYVV+YeYpTgYFYS4T1XuzpEiDclsbIqtSg/vqg0J7X4EKM0B4uS
+	OK+SfVuIkEB6YklqdmpqQWoRTJaJg1OqgVGgbf1kEeetf+s0rjl8/mFxPbd8xfQW0+D4Q+te
+	Tz1iPKdW6LLbe56AlSduTj+k/I51+pr+TY9Cpnq833impyDxX39g5fMVgW4PYi/0nLq6Z9cO
+	tgfsyZI9RrvXxqlsf35c6FPz/MWlIXKeS97Xakr90t5Vc39ewtqPHOf7X7A+Ofv9nO/525dn
+	KbEUZyQaajEXFScCAPe03EhkAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use kzalloc to allocate memory in __recover_inline_status, and use this
-all-zero memory to check the inline date content of inode page by comparing
-them. This is low effective and not needed, let's check inline date content
-directly.
+Now if we call fsync() after we update the xattr date belongs to the file, f2fs
+will do checkpoint to keep data.
+This can cause low performance because checkpoint block most operation and write
+lots of blocks. So we'd better to avoid doing checkpoint by writing modified
+xattr node page to warm node segment, and then it can be recovered when we mount
+this device later on.
 
 Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
- fs/f2fs/inode.c | 27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+ fs/f2fs/f2fs.h     |  3 +--
+ fs/f2fs/file.c     |  3 ---
+ fs/f2fs/node.c     | 28 ++++++++++++++++------------
+ fs/f2fs/node.h     |  2 +-
+ fs/f2fs/recovery.c |  4 +++-
+ fs/f2fs/xattr.c    |  3 ---
+ 6 files changed, 21 insertions(+), 22 deletions(-)
 
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index 3a8958d..8be0fd5 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -67,29 +67,25 @@ static void __set_inode_rdev(struct inode *inode, struct f2fs_inode *ri)
- 	}
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index c48847e..dfbdd64 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -301,7 +301,6 @@ struct f2fs_inode_info {
+ 	f2fs_hash_t chash;		/* hash value of given file name */
+ 	unsigned int clevel;		/* maximum level of given file name */
+ 	nid_t i_xattr_nid;		/* node id that contains xattrs */
+-	unsigned long long xattr_ver;	/* cp version of xattr modification */
+ 	struct extent_info ext;		/* in-memory extent cache entry */
+ 	struct inode_entry *dirty_dir;	/* the pointer of dirty dir */
+ 
+@@ -1391,7 +1390,7 @@ bool alloc_nid(struct f2fs_sb_info *, nid_t *);
+ void alloc_nid_done(struct f2fs_sb_info *, nid_t);
+ void alloc_nid_failed(struct f2fs_sb_info *, nid_t);
+ void recover_inline_xattr(struct inode *, struct page *);
+-void recover_xattr_data(struct inode *, struct page *, block_t);
++int recover_xattr_data(struct inode *, struct page *, block_t);
+ int recover_inode_page(struct f2fs_sb_info *, struct page *);
+ int restore_node_summary(struct f2fs_sb_info *, unsigned int,
+ 				struct f2fs_summary_block *);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index f172ddc4..fb26a43 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -129,8 +129,6 @@ static inline bool need_do_checkpoint(struct inode *inode)
+ 		need_cp = true;
+ 	else if (!is_checkpointed_node(sbi, F2FS_I(inode)->i_pino))
+ 		need_cp = true;
+-	else if (F2FS_I(inode)->xattr_ver == cur_cp_version(F2FS_CKPT(sbi)))
+-		need_cp = true;
+ 	else if (test_opt(sbi, FASTBOOT))
+ 		need_cp = true;
+ 	else if (sbi->active_logs == 2)
+@@ -156,7 +154,6 @@ static void try_to_fix_pino(struct inode *inode)
+ 	nid_t pino;
+ 
+ 	down_write(&fi->i_sem);
+-	fi->xattr_ver = 0;
+ 	if (file_wrong_pino(inode) && inode->i_nlink == 1 &&
+ 			get_parent_ino(inode, &pino)) {
+ 		fi->i_pino = pino;
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index a7cb0db..675fa65 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -863,9 +863,6 @@ int truncate_xattr_node(struct inode *inode, struct page *page)
+ 
+ 	F2FS_I(inode)->i_xattr_nid = 0;
+ 
+-	/* need to do checkpoint during fsync */
+-	F2FS_I(inode)->xattr_ver = cur_cp_version(F2FS_CKPT(sbi));
+-
+ 	set_new_dnode(&dn, inode, page, npage, nid);
+ 
+ 	if (page)
+@@ -1655,12 +1652,13 @@ update_inode:
+ 	f2fs_put_page(ipage, 1);
  }
  
--static int __recover_inline_status(struct inode *inode, struct page *ipage)
-+static void __recover_inline_status(struct inode *inode, struct page *ipage)
+-void recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
++int recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
  {
- 	void *inline_data = inline_data_addr(ipage);
-+	__le32 *start = inline_data;
-+	__le32 *end = start + MAX_INLINE_DATA / sizeof(__le32);
- 	struct f2fs_inode *ri;
--	void *zbuf;
+ 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+ 	nid_t prev_xnid = F2FS_I(inode)->i_xattr_nid;
+ 	nid_t new_xnid = nid_of_node(page);
+ 	struct node_info ni;
++	struct page *xpage;
+ 
+ 	/* 1: invalidate the previous xattr nid */
+ 	if (!prev_xnid)
+@@ -1674,21 +1672,27 @@ void recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
+ 	set_node_addr(sbi, &ni, NULL_ADDR, false);
+ 
+ recover_xnid:
+-	/* 2: allocate new xattr nid */
++	/* 2: update xattr nid in inode */
++	remove_free_nid(NM_I(sbi), new_xnid);
++	F2FS_I(inode)->i_xattr_nid = new_xnid;
+ 	if (unlikely(!inc_valid_node_count(sbi, inode)))
+ 		f2fs_bug_on(sbi, 1);
++	update_inode_page(inode);
++
++	/* 3: update and make xattr node page dirty */
++	xpage = grab_cache_page(NODE_MAPPING(sbi), new_xnid);
++	if (!xpage)
++		return -ENOMEM;
++
++	memcpy(F2FS_NODE(xpage), F2FS_NODE(page), PAGE_CACHE_SIZE);
+ 
+-	remove_free_nid(NM_I(sbi), new_xnid);
+ 	get_node_info(sbi, new_xnid, &ni);
+ 	ni.ino = inode->i_ino;
+ 	set_node_addr(sbi, &ni, NEW_ADDR, false);
+-	F2FS_I(inode)->i_xattr_nid = new_xnid;
++	set_page_dirty(xpage);
++	f2fs_put_page(xpage, 1);
+ 
+-	/* 3: update xattr blkaddr */
+-	refresh_sit_entry(sbi, NEW_ADDR, blkaddr);
+-	set_node_addr(sbi, &ni, blkaddr, false);
 -
--	zbuf = kzalloc(MAX_INLINE_DATA, GFP_NOFS);
--	if (!zbuf)
--		return -ENOMEM;
--
--	if (!memcmp(zbuf, inline_data, MAX_INLINE_DATA)) {
--		kfree(zbuf);
--		return 0;
--	}
--	kfree(zbuf);
- 
-+	while (start < end)
-+		if (*start++)
-+			goto recover;
-+	return;
-+recover:
- 	f2fs_wait_on_page_writeback(ipage, NODE);
- 	set_inode_flag(F2FS_I(inode), FI_DATA_EXIST);
- 
- 	ri = F2FS_INODE(ipage);
- 	set_raw_inline(F2FS_I(inode), ri);
- 	set_page_dirty(ipage);
--	return 0;
-+	return;
- }
- 
- static int do_read_inode(struct inode *inode)
-@@ -98,7 +94,6 @@ static int do_read_inode(struct inode *inode)
- 	struct f2fs_inode_info *fi = F2FS_I(inode);
- 	struct page *node_page;
- 	struct f2fs_inode *ri;
--	int err = 0;
- 
- 	/* Check if ino is within scope */
- 	if (check_nid_range(sbi, inode->i_ino)) {
-@@ -142,7 +137,7 @@ static int do_read_inode(struct inode *inode)
- 
- 	/* check data exist */
- 	if (f2fs_has_inline_data(inode) && !f2fs_exist_data(inode))
--		err = __recover_inline_status(inode, node_page);
-+		__recover_inline_status(inode, node_page);
- 
- 	/* get rdev by using inline_info */
- 	__get_inode_rdev(inode, ri);
-@@ -152,7 +147,7 @@ static int do_read_inode(struct inode *inode)
- 	stat_inc_inline_inode(inode);
- 	stat_inc_inline_dir(inode);
- 
--	return err;
+-	update_inode_page(inode);
 +	return 0;
  }
  
- struct inode *f2fs_iget(struct super_block *sb, unsigned long ino)
+ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
+index cac8a3d..55eb1e7 100644
+--- a/fs/f2fs/node.h
++++ b/fs/f2fs/node.h
+@@ -300,7 +300,7 @@ static inline bool IS_DNODE(struct page *node_page)
+ 	unsigned int ofs = ofs_of_node(node_page);
+ 
+ 	if (f2fs_has_xattr_block(ofs))
+-		return false;
++		return true;
+ 
+ 	if (ofs == 3 || ofs == 4 + NIDS_PER_BLOCK ||
+ 			ofs == 5 + 2 * NIDS_PER_BLOCK)
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 9160a37..4f2c197 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -346,7 +346,9 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+ 	if (IS_INODE(page)) {
+ 		recover_inline_xattr(inode, page);
+ 	} else if (f2fs_has_xattr_block(ofs_of_node(page))) {
+-		recover_xattr_data(inode, page, blkaddr);
++		err = recover_xattr_data(inode, page, blkaddr);
++		if (!err)
++			recovered++;
+ 		goto out;
+ 	}
+ 
+diff --git a/fs/f2fs/xattr.c b/fs/f2fs/xattr.c
+index 5072bf9..3d13ca2 100644
+--- a/fs/f2fs/xattr.c
++++ b/fs/f2fs/xattr.c
+@@ -391,9 +391,6 @@ static inline int write_all_xattrs(struct inode *inode, __u32 hsize,
+ 						sizeof(struct node_footer));
+ 	set_page_dirty(xpage);
+ 	f2fs_put_page(xpage, 1);
+-
+-	/* need to checkpoint during fsync */
+-	F2FS_I(inode)->xattr_ver = cur_cp_version(F2FS_CKPT(sbi));
+ 	return 0;
+ }
+ 
 -- 
 2.2.1
 
