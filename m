@@ -1,55 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899AbbAFQ3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:29:41 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:61988 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755845AbbAFQ3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:29:39 -0500
-From: Valentin Rothberg <valentinrothberg@gmail.com>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Valentin Rothberg <valentinrothberg@gmail.com>
-Subject: [PATCH] workqueue.h: remove loops of single statement macros
-Date: Tue,  6 Jan 2015 17:29:29 +0100
-Message-Id: <1420561769-28068-1-git-send-email-valentinrothberg@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S932150AbbAFQcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:32:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55903 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755329AbbAFQcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 11:32:31 -0500
+Date: Tue, 6 Jan 2015 11:32:20 -0500
+From: Brian Foster <bfoster@redhat.com>
+To: Namjae Jeon <namjae.jeon@samsung.com>
+Cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v7 1/11] fs: Add support FALLOC_FL_INSERT_RANGE for
+ fallocate
+Message-ID: <20150106163220.GE5874@bfoster.bfoster>
+References: <003f01d02670$27a5e300$76f1a900$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <003f01d02670$27a5e300$76f1a900$@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch.pl complained about two single statement macros in
-do while (0) loops.  The loops and the trailing semicolons are
-now removed, which makes checkpatch happy and the two macros
-consistent with the rest of the file.
+On Fri, Jan 02, 2015 at 06:40:33PM +0900, Namjae Jeon wrote:
+> FALLOC_FL_INSERT_RANGE command is the opposite command of
+> FALLOC_FL_COLLAPSE_RANGE that is needed for advertisers or someone who want to
+> add some data in the middle of file. FALLOC_FL_INSERT_RANGE will create space
+> for writing new data within a file after shifting extents to right as given
+> length. and this command also has same limitation as FALLOC_FL_COLLAPSE_RANGE,
+> that is block boundary and use ftruncate(2) for crosses EOF.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> ---
+>  fs/open.c                   |  8 +++++++-
+>  include/uapi/linux/falloc.h | 15 +++++++++++++++
+>  2 files changed, 22 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/open.c b/fs/open.c
+> index 36662d0..74ed498 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -232,7 +232,8 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>  
+>  	/* Return error if mode is not supported */
+>  	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
+> -		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE))
+> +		     FALLOC_FL_COLLAPSE_RANGE | FALLOC_FL_ZERO_RANGE |
+> +		     FALLOC_FL_INSERT_RANGE))
+>  		return -EOPNOTSUPP;
+>  
+>  	/* Punch hole and zero range are mutually exclusive */
+> @@ -250,6 +251,11 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>  	    (mode & ~FALLOC_FL_COLLAPSE_RANGE))
+>  		return -EINVAL;
+>  
+> +	/* Insert range should only be used exclusively. */
+> +	if ((mode & FALLOC_FL_INSERT_RANGE) &&
+> +	    (mode & ~FALLOC_FL_INSERT_RANGE))
+> +		return -EINVAL;
+> +
+>  	if (!(file->f_mode & FMODE_WRITE))
+>  		return -EBADF;
+>  
+> diff --git a/include/uapi/linux/falloc.h b/include/uapi/linux/falloc.h
+> index d1197ae..1f20723 100644
+> --- a/include/uapi/linux/falloc.h
+> +++ b/include/uapi/linux/falloc.h
+> @@ -41,4 +41,19 @@
+>   */
+>  #define FALLOC_FL_ZERO_RANGE		0x10
+>  
+> +/*
+> + * FALLOC_FL_INSERT_RANGE is use to insert space within the file size without
 
-Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
----
- include/linux/workqueue.h | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+				used
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index b996e6cd..74db135 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -220,14 +220,10 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
- #endif
- 
- #define INIT_WORK(_work, _func)						\
--	do {								\
--		__INIT_WORK((_work), (_func), 0);			\
--	} while (0)
-+	__INIT_WORK((_work), (_func), 0)
- 
- #define INIT_WORK_ONSTACK(_work, _func)					\
--	do {								\
--		__INIT_WORK((_work), (_func), 1);			\
--	} while (0)
-+	__INIT_WORK((_work), (_func), 1)
- 
- #define __INIT_DELAYED_WORK(_work, _func, _tflags)			\
- 	do {								\
--- 
-1.9.1
+> + * overwriting any existing data. The contents of the file beyond offset are
+> + * shifted towards right by len bytes to create a hole.  As such, this
+> + * operation will increase the size of the file by len bytes.
 
+I suppose we should split this comment up into a few paragraphs similar
+to the collapse range comment it is based on. That means we split
+here...
+
+> + * Different filesystems may implement different limitations on the granularity
+> + * of the operation. Most will limit operations to filesystem block size
+> + * boundaries, but this boundary may be larger or smaller depending on
+> + * the filesystem and/or the configuration of the filesystem or file.
+
+... and here.
+
+Otherwise this looks fine to me.
+
+Brian
+
+> + * Attempting to insert space using this flag at OR beyond the end of
+> + * the file is considered an illegal operation - just use ftruncate(2) or
+> + * fallocate(2) with mode 0 for such type of operations.
+> + */
+> +#define FALLOC_FL_INSERT_RANGE		0x20
+> +
+>  #endif /* _UAPI_FALLOC_H_ */
+> -- 
+> 1.7.11-rc0
+> 
