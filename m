@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbbAFIYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:24:10 -0500
-Received: from mail-lb0-f202.google.com ([209.85.217.202]:35043 "EHLO
-	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371AbbAFIYF (ORCPT
+	id S1754157AbbAFI1X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:27:23 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:35212 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbbAFI1W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:24:05 -0500
-X-Greylist: delayed 75430 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 03:24:05 EST
-From: David Drysdale <drysdale@google.com>
-To: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Andreas Schwab <schwab@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-m68k@vger.kernel.org,
-        linux-api@vger.kernel.org, David Drysdale <drysdale@google.com>
-Subject: [PATCHv2] selftests/exec: allow shell return code of 126
-Date: Tue,  6 Jan 2015 08:23:56 +0000
-Message-Id: <1420532636-7317-1-git-send-email-drysdale@google.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	Tue, 6 Jan 2015 03:27:22 -0500
+X-Original-SENDERIP: 10.177.222.153
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 6 Jan 2015 17:27:23 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hillf Danton <hillf.zj@alibaba-inc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "'Christoph Lameter'" <cl@linux.com>,
+        "'Pekka Enberg'" <penberg@kernel.org>,
+        "'David Rientjes'" <rientjes@google.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        "'Jesper Dangaard Brouer'" <brouer@redhat.com>
+Subject: Re: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing
+ preemption on/off
+Message-ID: <20150106082723.GC18346@js1304-P5Q-DELUXE>
+References: <023701d028c2$dba2cb30$92e86190$@alibaba-inc.com>
+ <20150106013247.GC17222@js1304-P5Q-DELUXE>
+ <20150105212502.1bdc4f67@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150105212502.1bdc4f67@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the shell fails to invoke a script because its path name
-is too long (ENAMETOOLONG), most shells return 127 to indicate
-command not found.  However, some systems report 126 (which POSIX
-suggests should indicate a non-executable file) for this case,
-so allow that too.
+On Mon, Jan 05, 2015 at 09:25:02PM -0500, Steven Rostedt wrote:
+> On Tue, 6 Jan 2015 10:32:47 +0900
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> 
+> 
+> > > > +++ b/mm/slub.c
+> > > > @@ -2398,13 +2398,15 @@ redo:
+> > > >  	 * reading from one cpu area. That does not matter as long
+> > > >  	 * as we end up on the original cpu again when doing the cmpxchg.
+> > > >  	 *
+> > > > -	 * Preemption is disabled for the retrieval of the tid because that
+> > > > -	 * must occur from the current processor. We cannot allow rescheduling
+> > > > -	 * on a different processor between the determination of the pointer
+> > > > -	 * and the retrieval of the tid.
+> > > > +	 * We should guarantee that tid and kmem_cache are retrieved on
+> > > > +	 * the same cpu. It could be different if CONFIG_PREEMPT so we need
+> > > > +	 * to check if it is matched or not.
+> > > >  	 */
+> > > > -	preempt_disable();
+> > > > -	c = this_cpu_ptr(s->cpu_slab);
+> > > > +	do {
+> > > > +		tid = this_cpu_read(s->cpu_slab->tid);
+> > > > +		c = this_cpu_ptr(s->cpu_slab);
+> > > > +	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
+> > > > +	barrier();
+> > > 
+> > > Help maintenance more if barrier is documented in commit message.
+> > 
+> > Hello,
+> > 
+> > Okay. Will add some information about this barrier in commit message.
+> 
+> A comment in the commit message is useless. Adding a small comment
+> above the barrier() call itself would be much more useful.
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: David Drysdale <drysdale@google.com>
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- tools/testing/selftests/exec/execveat.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+Okay. Will do.
 
-diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
-index d273624c93a6..e238c9559caf 100644
---- a/tools/testing/selftests/exec/execveat.c
-+++ b/tools/testing/selftests/exec/execveat.c
-@@ -62,7 +62,7 @@ static int _check_execveat_fail(int fd, const char *path, int flags,
- }
- 
- static int check_execveat_invoked_rc(int fd, const char *path, int flags,
--				     int expected_rc)
-+				     int expected_rc, int expected_rc2)
- {
- 	int status;
- 	int rc;
-@@ -98,9 +98,10 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
- 			child, status);
- 		return 1;
- 	}
--	if (WEXITSTATUS(status) != expected_rc) {
--		printf("[FAIL] (child %d exited with %d not %d)\n",
--			child, WEXITSTATUS(status), expected_rc);
-+	if ((WEXITSTATUS(status) != expected_rc) &&
-+	    (WEXITSTATUS(status) != expected_rc2)) {
-+		printf("[FAIL] (child %d exited with %d not %d nor %d)\n",
-+			child, WEXITSTATUS(status), expected_rc, expected_rc2);
- 		return 1;
- 	}
- 	printf("[OK]\n");
-@@ -109,7 +110,7 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
- 
- static int check_execveat(int fd, const char *path, int flags)
- {
--	return check_execveat_invoked_rc(fd, path, flags, 99);
-+	return check_execveat_invoked_rc(fd, path, flags, 99, 99);
- }
- 
- static char *concat(const char *left, const char *right)
-@@ -192,9 +193,15 @@ static int check_execveat_pathmax(int dot_dfd, const char *src, int is_script)
- 	 * Execute as a long pathname relative to ".".  If this is a script,
- 	 * the interpreter will launch but fail to open the script because its
- 	 * name ("/dev/fd/5/xxx....") is bigger than PATH_MAX.
-+	 *
-+	 * The failure code is usually 127 (POSIX: "If a command is not found,
-+	 * the exit status shall be 127."), but some systems give 126 (POSIX:
-+	 * "If the command name is found, but it is not an executable utility,
-+	 * the exit status shall be 126."), so allow either.
- 	 */
- 	if (is_script)
--		fail += check_execveat_invoked_rc(dot_dfd, longpath, 0, 127);
-+		fail += check_execveat_invoked_rc(dot_dfd, longpath, 0,
-+						  127, 126);
- 	else
- 		fail += check_execveat(dot_dfd, longpath, 0);
- 
--- 
-2.2.0.rc0.207.ga3a616c
+Thanks.
 
