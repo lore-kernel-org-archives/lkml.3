@@ -1,80 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336AbbAFONf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:13:35 -0500
-Received: from mail-db3on0079.outbound.protection.outlook.com ([157.55.234.79]:19904
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751867AbbAFONd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:13:33 -0500
-X-Greylist: delayed 953 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 09:13:33 EST
-Message-ID: <54ABE991.3040107@mellanox.com>
-Date: Tue, 6 Jan 2015 15:56:33 +0200
-From: Amir Vadai <amirv@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755443AbbAFN7c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:59:32 -0500
+Received: from smtprelay4.synopsys.com ([198.182.47.9]:40494 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754984AbbAFN7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 08:59:30 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <gregkh@linuxfoundation.org>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <robh@kernel.org>, Peter Hurley <peter@hurleysoftware.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>, Jiri Slaby <jslaby@suse.cz>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [Patch v4] ARC: Dynamically determine BASE_BAUD from DeviceTree
+Date: Tue, 6 Jan 2015 19:29:07 +0530
+Message-ID: <1420552747-27544-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <54ABD526.9020907@hurleysoftware.com>
+References: <54ABD526.9020907@hurleysoftware.com>
 MIME-Version: 1.0
-To: David Decotigny <ddecotig@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>
-CC: David Decotigny <decot@googlers.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ben Hutchings <ben@decadent.org.uk>,
-        "Masatake YAMATO" <yamato@redhat.com>, Xi Wang <xii@google.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
-        Tom Gundersen <teg@jklm.no>, Jiri Pirko <jiri@resnulli.us>,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Venkata Duvvuru <VenkatKumar.Duvvuru@Emulex.Com>,
-        Govindarajulu Varadarajan <_govind@gmx.com>
-Subject: Re: [PATCH net-next v2 0/8] net: extend ethtool link mode bitmaps
- to 48 bits
-References: <1420512850-24699-1-git-send-email-ddecotig@gmail.com>
-In-Reply-To: <1420512850-24699-1-git-send-email-ddecotig@gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.8.17.220]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 193.47.165.134)
- smtp.mailfrom=amirv@mellanox.com; 
-X-Forefront-Antispam-Report: CIP:193.47.165.134;CTRY:IL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(428002)(377454003)(24454002)(479174004)(199003)(189002)(87936001)(2501002)(62966003)(31966008)(76176999)(33656002)(77156002)(106466001)(2201001)(77096005)(68736005)(4396001)(36756003)(101416001)(50986999)(86362001)(97736003)(2950100001)(92566001)(65816999)(54356999)(107046002)(21056001)(99396003)(59896002)(120916001)(23746002)(46102003)(80316001)(105586002)(6806004)(84676001)(64126003)(50466002)(83506001)(47776003)(65806001)(20776003)(65956001)(64706001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:DB4PR05MB0943;H:mtlcas13.mtl.com;FPR:;SPF:None;MLV:sfv;PTR:ErrorRetry;A:1;MX:1;LANG:en;
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:DB4PR05MB0943;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DB4PR05MB0943;
-X-Forefront-PRVS: 0448A97BF2
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB4PR05MB0943;
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 13:57:34.5997
- (UTC)
-X-MS-Exchange-CrossTenant-Id: a652971c-7d2e-4d9b-a6a4-d149256f461b
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=a652971c-7d2e-4d9b-a6a4-d149256f461b;Ip=[193.47.165.134]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DB4PR05MB0943
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DB4PR05MB0863;
-X-OriginatorOrg: Mellanox.com
+Content-Type: text/plain
+X-Originating-IP: [10.12.196.223]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/6/2015 4:54 AM, David Decotigny wrote:
-> This patch series increases the width of the supported/advertising
-> ethtool masks from 32 bits to 48. This should allow to breathe for a
-> couple more years (or... months?).
-Hi,
+8250 earlycon is broken on multi-platform ARC because the UART clk
+value (BASE_BAUD) is fixed at build time.
 
-Nice work.
-What worries me is that it is going to be for weeks more than years or
-months...
+Instead, determine the appropriate UART clk at runtime; parse the
+devicetree early for platforms requiring alternate UART clk values
+(currently only the TB10X platform).
 
-Mellanox is about to release next month a driver for a new NIC, with 3
-new speeds * few link modes for each + new link modes for 10G.
-It seems that we will need to consume almost all the new bits.
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Rob Herring <robh@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+---
+ arch/arc/include/asm/serial.h | 23 +++++------------------
+ arch/arc/kernel/devtree.c     | 24 ++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+), 18 deletions(-)
 
-Amir
+diff --git a/arch/arc/include/asm/serial.h b/arch/arc/include/asm/serial.h
+index 602b0970a764..744a6ae15754 100644
+--- a/arch/arc/include/asm/serial.h
++++ b/arch/arc/include/asm/serial.h
+@@ -10,26 +10,13 @@
+ #define _ASM_ARC_SERIAL_H
+ 
+ /*
+- * early-8250 requires BASE_BAUD to be defined and includes this header.
+- * We put in a typical value:
+- * 	(core clk / 16) - i.e. UART samples 16 times per sec.
+- * Athough in multi-platform-image this might not work, specially if the
+- * clk driving the UART is different.
+- * We can't use DeviceTree as this is typically for early serial.
++ * early 8250 (now earlycon) requires BASE_BAUD to be defined in this header.
++ * However to still determine it dynamically (for multi-platform images)
++ * we do this in a helper by parsing the FDT early
+  */
+ 
+-#include <asm/clk.h>
++extern unsigned int __init arc_early_base_baud(void);
+ 
+-#define BASE_BAUD	(arc_get_core_freq() / 16)
+-
+-/*
+- * This is definitely going to break early 8250 consoles on multi-platform
+- * images but hey, it won't add any code complexity for a debug feature of
+- * one broken driver.
+- */
+-#ifdef CONFIG_ARC_PLAT_TB10X
+-#undef BASE_BAUD
+-#define BASE_BAUD	(arc_get_core_freq() / 16 / 3)
+-#endif
++#define BASE_BAUD	arc_early_base_baud()
+ 
+ #endif /* _ASM_ARC_SERIAL_H */
+diff --git a/arch/arc/kernel/devtree.c b/arch/arc/kernel/devtree.c
+index fffdb5e41b20..69a790cd9b6e 100644
+--- a/arch/arc/kernel/devtree.c
++++ b/arch/arc/kernel/devtree.c
+@@ -17,6 +17,28 @@
+ #include <asm/clk.h>
+ #include <asm/mach_desc.h>
+ 
++#ifdef CONFIG_SERIAL_8250_CONSOLE
++
++static unsigned int arc_base_baud;
++
++unsigned int __init arc_early_base_baud(void)
++{
++	return arc_base_baud/16;
++}
++
++static void __init arc_set_early_base_baud(unsigned long dt_root)
++{
++	unsigned int core_clk = arc_get_core_freq();
++
++	if (of_flat_dt_is_compatible(dt_root, "abilis,arc-tb10x"))
++		arc_base_baud = core_clk/3;
++	else
++		arc_base_baud = core_clk;
++}
++#else
++#define arc_set_early_base_baud(dt_root)
++#endif
++
+ static const void * __init arch_get_next_mach(const char *const **match)
+ {
+ 	static const struct machine_desc *mdesc = __arch_info_begin;
+@@ -56,5 +78,7 @@ const struct machine_desc * __init setup_machine_fdt(void *dt)
+ 	if (clk)
+ 		arc_set_core_freq(of_read_ulong(clk, len/4));
+ 
++	arc_set_early_base_baud(dt_root);
++
+ 	return mdesc;
+ }
+-- 
+1.9.1
+
