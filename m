@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbbAFIBc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:01:32 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:45208 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbbAFIBa (ORCPT
+	id S1753955AbbAFID5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:03:57 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48733 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbbAFIDz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:01:30 -0500
-Date: Tue, 6 Jan 2015 09:01:28 +0100
-From: Johan Hovold <johan@kernel.org>
-To: "Peterson, David" <David.Peterson@cel.com>
-Cc: "johan@kernel.org" <johan@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Added virtual com port VID/PID entries for CEL USB
- sticks and MeshWorks devices Signed-off-by: David Peterson
- <david.peterson@cel.com>
-Message-ID: <20150106080128.GA27633@localhost>
-References: <641A0889272F104D8B07278675C0C484010B1DC3@hq27>
+	Tue, 6 Jan 2015 03:03:55 -0500
+From: Kalle Valo <kvalo@codeaurora.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
+References: <1420297188.2397.3.camel@tiscali.nl>
+Date: Tue, 06 Jan 2015 10:03:44 +0200
+In-Reply-To: <1420297188.2397.3.camel@tiscali.nl> (Paul Bolle's message of
+	"Sat, 03 Jan 2015 15:59:48 +0100")
+Message-ID: <87d26s1gkf.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <641A0889272F104D8B07278675C0C484010B1DC3@hq27>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +CC: linux-usb]
+Paul Bolle <pebolle@tiscali.nl> writes:
 
-On Mon, Jan 05, 2015 at 08:46:52PM +0000, Peterson, David wrote:
-> From: David Peterson <david.peterson@cel.com>
+> This reverts commit dddd60220f41775e634258efd1b54c6fa81ce706.
+>
+> The raison d'être of commit dddd60220f41 ("ipw2200: select
+> CFG80211_WEXT") was reverted in commit 2d36e008739e ("Revert "cfg80211:
+> make WEXT compatibility unselectable""). So revert this commit too.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Almost there. Patch looks fine now, but the mail Subject (commit
-summary) is malformed (includes a sign-off tag).
+Based on the discussion I have dropped this patch from my queue.
 
-Care to resend with a subject like
-
-	"USB: cp210x: add ids for CEL USB sticks and MeshWorks devices"
-
-It doesn't hurt including a commit message (e.g. your current Subject)
-between From: and Signed-off-by: in the body.
-
-> Signed-off-by: David Peterson <david.peterson@cel.com>
-> ---
->  drivers/usb/serial/cp210x.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c index 6c4eb3c..a6db2fc 100644
-> --- a/drivers/usb/serial/cp210x.c
-> +++ b/drivers/usb/serial/cp210x.c
-> @@ -120,6 +120,9 @@ static const struct usb_device_id id_table[] = {
->  	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
->  	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
->  	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
-> +	{ USB_DEVICE(0x10C4, 0x8856) }, /* CEL EM357 ZigBee USB Stick - LR */
-> +	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL EM357 ZigBee USB Stick */
-> +	{ USB_DEVICE(0x10C4, 0x8977) }, /* CEL MeshWorks DevKit Device */
->  	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
-
-By the way, a recent patch changed this one to 0x8857. Is this indeed
-the same device as CEL EM357?
-
-	http://marc.info/?l=linux-usb&m=141966558701806&w=2
-
->  	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
->  	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
-
-Thanks,
-Johan
+-- 
+Kalle Valo
