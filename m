@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbbAFWiy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:38:54 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:33648 "EHLO
+	id S1751935AbbAFWj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:39:58 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:41500 "EHLO
 	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751531AbbAFWiw (ORCPT
+	with ESMTP id S1750784AbbAFWj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:38:52 -0500
+	Tue, 6 Jan 2015 17:39:56 -0500
 From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 To: mturquette@linaro.org, linux-kernel@vger.kernel.org, sboyd@codeaurora.org
 Cc: robh+dt@kernel.org, linux-sh@vger.kernel.org, pawel.moll@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
         devicetree@vger.kernel.org
-Subject: [PATCH v2] clk-rcar-gen2: ADSP clock support
-Date: Wed, 07 Jan 2015 01:38:47 +0300
-Message-ID: <9065678.vTTCEInOk7@wasted.cogentembedded.com>
+Subject: [PATCH v3 resend] clk-rcar-gen2: ADSP clock support
+Date: Wed, 07 Jan 2015 01:39:52 +0300
+Message-ID: <355163371.fkynKV0U5x@wasted.cogentembedded.com>
 Organization: Cogent Embedded Inc.
 User-Agent: KMail/4.14.3 (Linux/3.17.7-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
@@ -35,6 +35,8 @@ Based on the original patch by Konstantin Kozhevnikov
 Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
 ---
+Re-sending with the correct version tag...
+
 The patch is against the 'clk-next' branch of Mike Turquette's 'linux.git' repo
 plus the RCAN clock support patch reposted yesterday.
 
@@ -146,4 +148,3 @@ Index: linux/drivers/clk/shmobile/clk-rcar-gen2.c
  	} else {
  		return ERR_PTR(-EINVAL);
  	}
-
