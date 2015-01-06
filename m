@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211AbbAFPw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:52:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50804 "EHLO mx1.redhat.com"
+	id S1756226AbbAFPwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:52:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36116 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755771AbbAFPoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:44:30 -0500
-Date: Tue, 6 Jan 2015 17:44:10 +0200
+	id S1755733AbbAFPoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:44:22 -0500
+Date: Tue, 6 Jan 2015 17:44:14 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org
-Subject: [PATCH v2 12/40] parisc/uaccess: fix sparse errors
-Message-ID: <1420558883-10131-13-git-send-email-mst@redhat.com>
+        linux-sh@vger.kernel.org
+Subject: [PATCH v2 13/40] sh/uaccess: fix sparse errors
+Message-ID: <1420558883-10131-14-git-send-email-mst@redhat.com>
 References: <1420558883-10131-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,22 +30,30 @@ integer.
 Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Helge Deller <deller@gmx.de>
 ---
- arch/parisc/include/asm/uaccess.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sh/include/asm/uaccess.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/parisc/include/asm/uaccess.h b/arch/parisc/include/asm/uaccess.h
-index a5cb070..6c79311 100644
---- a/arch/parisc/include/asm/uaccess.h
-+++ b/arch/parisc/include/asm/uaccess.h
-@@ -104,7 +104,7 @@ struct exception_data {
- 	    }                                           \
- 	}                                               \
- 							\
--	(x) = (__typeof__(*(ptr))) __gu_val;            \
-+	(x) = (__force __typeof__(*(ptr))) __gu_val;	\
- 	__gu_err;                                       \
+diff --git a/arch/sh/include/asm/uaccess.h b/arch/sh/include/asm/uaccess.h
+index 9486376..a49635c 100644
+--- a/arch/sh/include/asm/uaccess.h
++++ b/arch/sh/include/asm/uaccess.h
+@@ -60,7 +60,7 @@ struct __large_struct { unsigned long buf[100]; };
+ 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+ 	__chk_user_ptr(ptr);					\
+ 	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+-	(x) = (__typeof__(*(ptr)))__gu_val;			\
++	(x) = (__force __typeof__(*(ptr)))__gu_val;		\
+ 	__gu_err;						\
+ })
+ 
+@@ -71,7 +71,7 @@ struct __large_struct { unsigned long buf[100]; };
+ 	const __typeof__(*(ptr)) *__gu_addr = (ptr);			\
+ 	if (likely(access_ok(VERIFY_READ, __gu_addr, (size))))		\
+ 		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+-	(x) = (__typeof__(*(ptr)))__gu_val;				\
++	(x) = (__force __typeof__(*(ptr)))__gu_val;			\
+ 	__gu_err;							\
  })
  
 -- 
