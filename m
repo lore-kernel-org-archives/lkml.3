@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341AbbAFU0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:26:35 -0500
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:48342 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754516AbbAFU0e convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:26:34 -0500
-X-Sasl-enc: 0PGN+UOPV+SRvV7AJQ1lv47V0pm8QEAI0hA6zoXu3TzX 1420575993
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: TCP connection issues against Amazon S3
-From: Erik Grinaker <erik@bengler.no>
-In-Reply-To: <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
-Date: Tue, 6 Jan 2015 20:26:31 +0000
-Cc: Yuchung Cheng <ycheng@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com> <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com> <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com> <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no> <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com> <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no> <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	id S932545AbbAFUaV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:30:21 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60390 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754448AbbAFUaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 15:30:19 -0500
+Date: Tue, 6 Jan 2015 14:28:57 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: Felipe Balbi <balbi@ti.com>, <pali.rohar@gmail.com>, <sre@debian.org>,
+        <sre@ring0.de>, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@kernel.org>,
+        <aaro.koskinen@iki.fi>, <ivo.g.dimitrov.75@gmail.com>
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+Message-ID: <20150106202857.GB32308@saruman>
+Reply-To: <balbi@ti.com>
+References: <20150106170433.GA5408@amd>
+ <20150106172545.GK6502@saruman>
+ <20150106175115.GA19487@amd>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9zSXsLTf0vkW971A"
+Content-Disposition: inline
+In-Reply-To: <20150106175115.GA19487@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--9zSXsLTf0vkW971A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 06 Jan 2015, at 20:13, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> 
-> On Tue, 2015-01-06 at 19:42 +0000, Erik Grinaker wrote:
-> 
->> The transfer on the functioning Netherlands server does indeed use SACKs, while the Norway servers do not.
->> 
->> For what it’s worth, I have made stripped down pcaps for a single failing transfer as well as a single functioning transfer in the Netherlands:
->> 
->> http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
->> http://abstrakt.bengler.no/tcp-issues-s3-success-netherlands.pcap.bz2
->> 
-> 
-> Although sender seems to be reluctant to retransmit, this 'failure' is
-> caused by receiver closing the connection too soon.
-> 
-> Are you sure you do not ask curl to setup a very small completion
-> timer ?
+On Tue, Jan 06, 2015 at 06:51:15PM +0100, Pavel Machek wrote:
+>=20
+> On Tue 2015-01-06 11:25:45, Felipe Balbi wrote:
+> > On Tue, Jan 06, 2015 at 06:04:33PM +0100, Pavel Machek wrote:
+> > > Hi!
+> > >=20
+> > > In 3.18, sound is nice and clear.
+> > >=20
+> > > In 3.19, sound is unusable. It produces nasty tone when it should be
+> > > quiet, and there's at least as much noise as is sound.
+> > >=20
+> > > Unfortunately, list of mixers also changed (and there's cca 120
+> > > settings), but a) it does not work with the old list and b) nothing I
+> > > could figure out did make the sound usable. Some setting resulted in
+> > > even more noise.
+> > >=20
+> > > Any idea what could have caused it?
+> >=20
+> > $ git bisect start
+> > $ git bisect good v3.18
+> > $ git bisect bad
+> >=20
+> > that'll help find what caused it.
+>=20
+> Telling someone to do hard and time consuming job that probably will
+> not succeed, instead of actually providing help. Very very funny.
 
-For testing, I am using Curl with a 30 second timeout. This may well be a bit short, but the point is that with the older kernel I could run thousands of requests without a single failure (generally the requests would finish within seconds), while with the newer kernel about 5% of requests will time out (the rest complete within seconds).
+you're getting code for free, you're getting help for free. Not many
+people have N900s lying around. Running a bisection is just politeness.
 
-> 12:41:00.738336 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 767221:768681, ack 154, win 127, length 1460
-> 12:41:00.738346 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 736561, win 1877, length 0
-> 12:41:05.227150 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 736561:738021, ack 154, win 127, length 1460
-> 12:41:05.227250 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1882, length 0
-> 12:41:05.278287 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 768681:770141, ack 154, win 127, length 1460
-> 12:41:05.278354 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1888, length 0
-> 12:41:05.278421 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 770141:771601, ack 154, win 127, length 1460
-> 12:41:05.278429 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1894, length 0
-> 12:41:14.257102 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 745321:746781, ack 154, win 127, length 1460
-> 12:41:14.257154 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1900, length 0
-> 12:41:14.308117 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 771601:773061, ack 154, win 127, length 1460
-> 12:41:14.308227 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1905, length 0
-> 12:41:14.308387 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 773061:774521, ack 154, win 127, length 1460
-> 12:41:14.308397 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1911, length 0
-> 
-> -> Here receiver sends a FIN, because application closed the socket (or died)
-> 12:41:23.237156 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [F.], seq 154, ack 746781, win 1911, length 0
-> 12:41:23.289805 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 746781:748241, ack 155, win 127, length 1460
-> 12:41:23.289882 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [R], seq 505782802, win 0, length 0
-> 
-> Anyway, getting decent speed without SACK is going to be hard.
+--=20
+balbi
 
-Yes, I am not sure why the sender (S3) disables SACK on my Norwegian servers (across ISPs), while it enables SACK on my server in the Netherlands. They run the same kernel and configuration. I will have to look into it more closely tomorrow.
+--9zSXsLTf0vkW971A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrEWJAAoJEIaOsuA1yqRE33EP/2i+SwBCnH92zuaXrHTSEMJS
+TwHOUN7CntSm7nrrYNLRr4wwp7zCtk5SRyXvEQpMEArzvdOJMNhLD7QriL032hIt
+hl1mU4YI4Df/WnJHx3535cKV5r+UeCfGvZgNs8qeGp3QdzeH4ASFN6ttI+MKxAN0
+ezgPdnqY2al50MyN+XH6haAsy6BA+BvWvM/I9vnvKgn7FiZ/1i2S49TDh3+jYk/s
+459wbEG1/gb61HlldaXyy3Pbc31635S2UBs2jILv5iIvRxP1GsDHzyckV6X/raAz
+stPty7OvD04CciXaQ7yOx6/EiRsKtD+L3Way+EEytsIJCB2msK1Lf02MX6E7w2K3
+QLSfHfXR2aKDrLs30rI4bctzug4Wd8+3eVJ/jUsAf3MN63yDu6k+/QH0tn+O5PSO
+bcVkckBfMMF+FCh15hFLw9TnOHymXh1ySJbGu2yCtQO/u/qb9pLmuwJ2kF6cghoZ
+vQ7xiE2grs7Z2hafNBi4iy9ZKgykyHpaTVlTjWC+BuwLwLlZuq5KUg15z9vOl6Au
+lrB0umD8iaIKpFeqot7o+3/8bp4z2RGhtkskhVNL7zk08Gin6nGTISsj25eSkbLA
+QMQ/MFRyE2Sc2nP+QqNXPEYEk8BA8Hg73TZFwSUZyg9vqEz4x6xElFGumshwBqzU
+5wnlFwU4xg0lXDXs2njU
+=oPkR
+-----END PGP SIGNATURE-----
+
+--9zSXsLTf0vkW971A--
