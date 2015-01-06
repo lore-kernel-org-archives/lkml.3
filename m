@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480AbbAFTQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:16:53 -0500
-Received: from one.firstfloor.org ([193.170.194.197]:57527 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932436AbbAFTQv (ORCPT
+	id S932524AbbAFTSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:18:09 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53131 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187AbbAFTSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:16:51 -0500
-Date: Tue, 6 Jan 2015 20:16:49 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        ilya.enkovich@intel.com
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
- to arch_prctl
-Message-ID: <20150106191649.GU2915@two.firstfloor.org>
-References: <87mw5x0xjz.fsf@tassilo.jf.intel.com>
- <54AAFFA3.6000901@linux.intel.com>
- <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
- <20150106040428.GR2915@two.firstfloor.org>
- <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
- <54AC1FFB.7030504@linux.intel.com>
- <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
- <54AC29B1.70004@linux.intel.com>
- <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
- <54AC2F62.40708@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54AC2F62.40708@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 6 Jan 2015 14:18:07 -0500
+Date: Tue, 06 Jan 2015 14:18:05 -0500 (EST)
+Message-Id: <20150106.141805.2295183028829066436.davem@davemloft.net>
+To: Ian.Campbell@citrix.com
+Cc: imrep.amz@gmail.com, xen-devel@lists.xenproject.org,
+        netdev@vger.kernel.org, wei.liu2@citrix.com,
+        linux-kernel@vger.kernel.org, imrep@amazon.de, aliguori@amazon.com
+Subject: Re: [PATCH] xen-netback: fixing the propagation of the transmit
+ shaper timeout
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1420559647.28863.174.camel@citrix.com>
+References: <1420559084-28370-1-git-send-email-imrep.amz@gmail.com>
+	<1420559647.28863.174.camel@citrix.com>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 Jan 2015 11:18:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 10:54:26AM -0800, Dave Hansen wrote:
-> On 01/06/2015 10:41 AM, Andy Lutomirski wrote:
-> > The runtime seems to be here:
-> > 
-> > https://software.intel.com/protected-download/267266/144917
-> > 
-> > but I'm not going to accept the EULA.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+Date: Tue, 6 Jan 2015 15:54:07 +0000
+
+> On Tue, 2015-01-06 at 16:44 +0100, Imre Palik wrote:
+>> From: "Palik, Imre" <imrep@amazon.de>
+>> 
+>> Since e9ce7cb6b107 ("xen-netback: Factor queue-specific data into queue struct"),
+>> the transimt shaper timeout is always set to 0.  The value the user sets via
+>> xenbus is never propagated to the transmit shaper.
+>> 
+>> This patch fixes the issue.
+>> 
+>> Cc: Anthony Liguori <aliguori@amazon.com>
+>> Signed-off-by: Imre Palik <imrep@amazon.de>
 > 
-> That is not the code I'm talking about here.
+> Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-The MPX run time patch is here (may not be the latest version)
-
-https://gcc.gnu.org/ml/gcc-patches/2014-11/msg01026.html
-
--Andi
+Applied and queued up for -stable, thanks.
