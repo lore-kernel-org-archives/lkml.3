@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565AbbAFIJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:09:50 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54714 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475AbbAFIJr (ORCPT
+	id S1754371AbbAFIdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:33:11 -0500
+Received: from oxalide-out.extra.cea.fr ([132.168.224.8]:49127 "EHLO
+	oxalide-out.extra.cea.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819AbbAFIdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:09:47 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 6 Jan 2015 17:09:48 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] mm/slub: optimize alloc/free fastpath by removing
- preemption on/off
-Message-ID: <20150106080948.GA18346@js1304-P5Q-DELUXE>
-References: <1420421765-3209-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1420513392.24290.2.camel@stgolabs.net>
+	Tue, 6 Jan 2015 03:33:07 -0500
+X-Greylist: delayed 1195 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 03:33:07 EST
+Date: Tue, 6 Jan 2015 09:12:53 +0100
+From: Dominique Martinet <dominique.martinet@cea.fr>
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        <kernel-janitors@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ron Minnich <rminnich@sandia.gov>,
+        <v9fs-developer@lists.sourceforge.net>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [V9fs-developer] [PATCH 1/8] fs/9p: Deletion of unnecessary
+ checks before the function call "p9_client_clunk"
+Message-ID: <20150106081253.GA22484@u-galfione>
+References: <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <54A01326.3050306@users.sourceforge.net>
+ <54A06AB9.4020505@users.sourceforge.net> <20150105112206.GC15033@mwanda>
+ <54AB02F3.5020308@users.sourceforge.net>
+ <alpine.DEB.2.02.1501052239290.2025@localhost6.localdomain6>
+ <54AB0844.5090405@users.sourceforge.net>
+ <alpine.DEB.2.02.1501052257270.2025@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1420513392.24290.2.camel@stgolabs.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1501052257270.2025@localhost6.localdomain6>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 07:03:12PM -0800, Davidlohr Bueso wrote:
-> On Mon, 2015-01-05 at 10:36 +0900, Joonsoo Kim wrote:
-> > -	preempt_disable();
-> > -	c = this_cpu_ptr(s->cpu_slab);
-> > +	do {
-> > +		tid = this_cpu_read(s->cpu_slab->tid);
-> > +		c = this_cpu_ptr(s->cpu_slab);
-> > +	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
-> > +	barrier();
+Hi,
+
+Julia Lawall wrote on Mon, Jan 05, 2015 at 11:01:55PM +0100:
+> > The error response is clear. Are any software developments efforts expected
+> > to clean-up the call stack for unwanted null pointers even more?
 > 
-> I don't see the compiler reodering the object/page stores below, since c
-> is updated in the loop anyway. Is this really necessary (same goes for
-> slab_free)? The generated code by gcc 4.8 looks correct without it.
-> Additionally, the implied barriers for preemption control aren't really
-> the same semantics used here (if that is actually the reason why you are
-> using them).
+> I found the original patch and looked at the call sites.  None of them 
+> calls dump_stack.  The behavior is thus not the same.  With your change, 
+> something that was previously treated in an orderly manner will be 
+> converted to something that looks like an oops.  I assume that the cost of 
+> the dump_stack will also be huge.
 
-Hello,
+I definitely agree there, this will create unwanted dump_stack messages.
 
-I'd like to use tid as a pivot so it should be fetched before fetching
-anything on c. Is it impossible even if !CONFIG_PREEMPT without
-barrier()?
+Simple example, without even looking at the multiple possible
+interactions with multiple clients hammering the server, can be taken
+from v9fs_create in fs/9p/vfs_inode.c
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/fs/9p/vfs_inode.c?id=d8282ea05ad119247122de23db7d48ad6098cfa2#n652
 
-Thanks.
+jumping to label error from a failure in p9_client_fcreate (e.g. EPERM
+or something perfectly valid) will, with your patch, call clunk with fid
+== NULL and thus generate a stack trace, while it is a perfectly normal
+code path that should only return to userspace with EPERM.
+
+
+(admitedly, the linux vfs will do checks first to ensure that the
+function is likely to succeed, but some servers can implement their own
+security model on top)
+
+
+Other patches in the set look good at first glance, but I'll need a bit
+to find time to look through implications they may have.
+-- 
+Dominique Martinet,
+CEA
