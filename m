@@ -1,210 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225AbbAFQAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:00:47 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:62442 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbbAFQAp (ORCPT
+	id S932264AbbAFQB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:01:56 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38653 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755535AbbAFQBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:00:45 -0500
+	Tue, 6 Jan 2015 11:01:54 -0500
+Date: Tue, 6 Jan 2015 16:01:23 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Bo Shen <voice.shen@atmel.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Message-ID: <20150106160123.GA2634@sirena.org.uk>
+References: <1420542872-10015-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <20150106120049.GX2634@sirena.org.uk>
+ <20150106122751.GO4194@piout.net>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXXw_GiaDrtwmBSExwyYQe2t2io5j3V0fCawAc64-tXrA@mail.gmail.com>
-References: <1420536979-31149-1-git-send-email-geert@linux-m68k.org>
-	<CAMuHMdXXw_GiaDrtwmBSExwyYQe2t2io5j3V0fCawAc64-tXrA@mail.gmail.com>
-Date: Tue, 6 Jan 2015 09:00:44 -0700
-Message-ID: <CANLsYkzmnFSEFH2xFmPe8oG0vCg5_Fis5-6Dak++nSUwa7jYBg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.19-rc3
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pratik Patel <pratikp@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BEfR2jmXRHrz4elx"
+Content-Disposition: inline
+In-Reply-To: <20150106122751.GO4194@piout.net>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: sam9g20_wm8731: drop machine_is_xxx
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 January 2015 at 02:39, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Tue, Jan 6, 2015 at 10:36 AM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> JFYI, when comparing v3.19-rc3[1] to v3.19-rc2[3], the summaries are:
->>   - build errors: +64/-9
->
->   + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: error:
-> 'VM_ARM_DMA_CONSISTENT' undeclared (first use in this function):  =>
-> 1200:4, 1281:29, 1410:4
->   + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: error:
-> 'atomic_pool' undeclared (first use in this function):  => 1264:31
->   + /home/kisskb/slave/src/arch/arm/mm/dma-mapping.c: error: implicit
-> declaration of function '__in_atomic_pool'
-> [-Werror=implicit-function-declaration]:  => 1274:2
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_BUFFERABLE' undeclared here (not in a function):  => 81:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_DEV_CACHED' undeclared here (not in a function):  => 117:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_DEV_NONSHARED' undeclared here (not in a function):  =>
-> 108:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_DEV_SHARED' undeclared here (not in a function):  => 103:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_DEV_WC' undeclared here (not in a function):  => 113:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_MT_MASK'
-> undeclared here (not in a function):  => 76:11
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_MINICACHE' undeclared here (not in a function):  => 94:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_UNCACHED' undeclared here (not in a function):  => 77:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_WRITEALLOC' undeclared here (not in a function):  => 99:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_WRITEBACK' undeclared here (not in a function):  => 89:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'L_PTE_MT_WRITETHROUGH' undeclared here (not in a function):  => 85:10
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_RDONLY'
-> undeclared here (not in a function):  => 61:11
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_SHARED'
-> undeclared here (not in a function):  => 71:11
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_USER'
-> undeclared here (not in a function):  => 56:11
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'L_PTE_XN'
-> undeclared here (not in a function):  => 66:11
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'PMD_SECT_AP_READ' undeclared here (not in a function):  => 153:13
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'PMD_SECT_AP_WRITE' undeclared here (not in a function):  => 153:32
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SECT_S'
-> undeclared here (not in a function):  => 175:11
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SECT_XN'
-> undeclared here (not in a function):  => 170:11
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PMD_SIZE'
-> undeclared (first use in this function):  => 279:22
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PTRS_PER_PGD'
-> undeclared (first use in this function):  => 319:23
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PTRS_PER_PMD'
-> undeclared (first use in this function):  => 278:18
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'PTRS_PER_PTE'
-> undeclared (first use in this function):  => 266:18
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: 'SECTION_SIZE'
-> undeclared (first use in this function):  => 285:7
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error:
-> 'USER_PGTABLES_CEILING' undeclared (first use in this function):  =>
-> 223:13, 311:23
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[0].mask'):  => 153:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[1].mask'):  => 157:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[1].val'):  => 158:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[2].mask'):  => 161:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[2].val'):  => 162:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[3].mask'):  => 165:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[3].val'):  => 166:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[4].mask'):  => 170:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[4].val'):  => 171:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[5].mask'):  => 175:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: (near
-> initialization for 'section_bits[5].val'):  => 176:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit
-> declaration of function 'pmd_large'
-> [-Werror=implicit-function-declaration]:  => 280:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit
-> declaration of function 'pmd_none'
-> [-Werror=implicit-function-declaration]:  => 280:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit
-> declaration of function 'pmd_present'
-> [-Werror=implicit-function-declaration]:  => 280:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: implicit
-> declaration of function 'pte_offset_kernel'
-> [-Werror=implicit-function-declaration]:  => 262:2
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: initializer
-> element is not constant:  => 158:3, 162:3, 176:3, 170:3, 157:3, 175:3,
-> 161:3, 153:3, 171:3, 165:3, 166:3
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: invalid operands
-> to binary * (have 'unsigned int' and 'const struct prot_bits *'):  =>
-> 279:20
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: invalid operands
-> to binary / (have 'const struct prot_bits *' and 'long unsigned int'):
->  => 311:45
->   + /home/kisskb/slave/src/arch/arm/mm/dump.c: error: invalid operands
-> to binary | (have 'const struct prot_bits *' and 'const struct
-> prot_bits *'):  => 165:30, 153:30, 166:30, 157:30, 161:30
->   + /home/kisskb/slave/src/arch/arm/mm/init.c: error: 'SECTION_SIZE'
-> undeclared (first use in this function):  => 733:2
->   + /home/kisskb/slave/src/arch/arm/mm/init.c: error: 'pmdval_t'
-> undeclared here (not in a function):  => 633:12
->   + /home/kisskb/slave/src/arch/arm/mm/init.c: error: expected
-> declaration specifiers or '...' before 'pmdval_t':  => 678:7, 677:55
->   + /home/kisskb/slave/src/arch/arm/mm/init.c: error: implicit
-> declaration of function 'section_update'
-> [-Werror=implicit-function-declaration]:  => 733:2
->   + /home/kisskb/slave/src/arch/arm/mm/init.c: error: unknown type
-> name 'pmdval_t':  => 625:2, 623:2, 624:2
->
-> arm-randconfig (CONFIG_ARM_PTDUMP is broken?)
->
->   + /home/kisskb/slave/src/drivers/coresight/coresight-etb10.c: error:
-> implicit declaration of function 'of_get_coresight_platform_data'
-> [-Werror=implicit-function-declaration]:  => 430:3
->   + /home/kisskb/slave/src/drivers/coresight/coresight-funnel.c:
-> error: implicit declaration of function
-> 'of_get_coresight_platform_data'
-> [-Werror=implicit-function-declaration]:  => 189:3
->   + /home/kisskb/slave/src/drivers/coresight/coresight-replicator.c:
-> error: implicit declaration of function
-> 'of_get_coresight_platform_data'
-> [-Werror=implicit-function-declaration]:  => 72:3
->   + /home/kisskb/slave/src/drivers/coresight/coresight-tmc.c: error:
-> implicit declaration of function 'of_get_coresight_platform_data'
-> [-Werror=implicit-function-declaration]:  => 625:3
->   + /home/kisskb/slave/src/drivers/coresight/coresight-tpiu.c: error:
-> implicit declaration of function 'of_get_coresight_platform_data'
-> [-Werror=implicit-function-declaration]:  => 131:3
 
-Thanks for pointing this out - I will investigate.
+--BEfR2jmXRHrz4elx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> arm-randconfig
->
->   + /home/kisskb/slave/src/arch/sh/mm/cache-sh4.c: error:
-> 'cached_to_uncached' undeclared (first use in this function):  =>
-> 99:17
->   + /home/kisskb/slave/src/arch/sh/mm/cache-sh4.c: error: implicit
-> declaration of function 'cpu_context'
-> [-Werror=implicit-function-declaration]:  => 192:2
->
-> sh-randconfig
->
->   + /home/kisskb/slave/src/kernel/bounds.c: error: -mcall-aixdesc must
-> be big endian:  => 1:0
->   + /home/kisskb/slave/src/scripts/mod/devicetable-offsets.c: error:
-> -mcall-aixdesc must be big endian:  => 1:0
->   + /home/kisskb/slave/src/scripts/mod/empty.c: error: -mcall-aixdesc
-> must be big endian:  => 1:0
->   + <stdin>: error: -mcall-aixdesc must be big endian:  => 1:0
->
-> powerpc-randconfig
->
->> [1] http://kisskb.ellerman.id.au/kisskb/head/8277/ (255 out of 262 configs)
->> [3] http://kisskb.ellerman.id.au/kisskb/head/8257/ (all 262 configs)
->
-> Gr{oetje,eeting}s,
->
->                         Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+On Tue, Jan 06, 2015 at 01:27:51PM +0100, Alexandre Belloni wrote:
+> On 06/01/2015 at 12:00:49 +0000, Mark Brown wrote :
+> > On Tue, Jan 06, 2015 at 12:14:32PM +0100, Alexandre Belloni wrote:
+
+> > > Atmel based boards can now only be used with device tree. Drop non DT
+> > > initialization.
+
+> > This doesn't apply against current code, please check and resend.
+
+> It should apply after "sound: soc: atmel sam9g20_wm8731: remove useless
+> include". I was based on 3.19-rc2.
+
+So, one reason you should use subject lines matching the style for the
+subsystem is that this is a big part of how people find patches to
+review...  I'm not 100% sure I still have the patch, the volume is
+rather high right now.
+
+--BEfR2jmXRHrz4elx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUrAbSAAoJECTWi3JdVIfQYLIH/iXGi3OfHhlaLFOtrwN7sCnZ
+QW4fUwjuCMJN+Cn3wkfrq+YpWnCyfycQXvyHV/t6R2XsEarS+DF87bxuffWlcNL4
+nZFwaOjxVcRuRCGQB+7HsyQL2N8kMBWfpRJPpng4FZHzS1NsaxWC7Ijs9AHaZgsN
+0Bh63FUw6HeO++Wnw7M3bbzSuJvP6je7ncsIK0e9yCrMDC8SeDnSvGf1TBtYCTdA
+nBFnXwqUhGCyBiLEbjkHKzo9oF4AfBy+vzWN0YeTvdxbeEwUucQB+Tgc/pRs2BXT
+Zd1+mQxe9cwCdgYyLlCYhj0cm+aEIWgWYDnIOGaT3W/MQKkSPKu0j8yPLKuLgjY=
+=xw0i
+-----END PGP SIGNATURE-----
+
+--BEfR2jmXRHrz4elx--
