@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708AbbAFWoX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:44:23 -0500
-Received: from mail.us.es ([193.147.175.20]:34739 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763AbbAFWoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:44:21 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus6 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.98.5/19888. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-103.2/7.5):. 
- Processed in 2.371739 secs); 06 Jan 2015 22:44:19 -0000
-X-Spam-ASN: AS12715 87.216.0.0/16
-X-Envelope-From: pneira@us.es
-Date: Tue, 6 Jan 2015 23:47:06 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Rahul Sharma <rsharma@arista.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hannes@stressinduktion.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT
- for valid non-first fragments
-Message-ID: <20150106224706.GA7416@salvia>
-References: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
+	id S1752043AbbAFWsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:48:18 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:49542 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbbAFWsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 17:48:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 7 Jan 2015 00:48:15 +0200
+Message-ID: <CANZNk80SoQZU994psVKuuGRGGHnGgO7bcFpPBQoGyg=CjW77xw@mail.gmail.com>
+Subject: lustre/lnet/lnet/lib-move.c: memcpy with (struct iovec*)->iov_base,
+ which is __user
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: oleg.drokin@intel.com, andreas.dilger@intel.com, HPDD-discuss@ml01.01.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        OSUOSL Drivers <devel@driverdev.osuosl.org>,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 03:03:20AM +0530, Rahul Sharma wrote:
-> ipv6_find_hdr() currently assumes that the next-header field in the
-> fragment header of the non-first fragment is the "protocol number of
-> the last header" (here last header excludes any extension header
-> protocol numbers ) which is incorrect as per RFC2460. The next-header
-> value is the first header of the fragmentable part of the original
-> packet (which can be extension header as well).
-> This can create reassembly problems. For example: Fragmented
-> authenticated OSPFv3 packets (where AH header is inserted before the
-> protocol header). For the second fragment, the next header value in
-> the fragment header will be NEXTHDR_AUTH which is correct but
-> ipv6_find_hdr will return ENOENT since AH is an extension header
-> resulting in second fragment getting dropped. This check for the
-> presence of non-extension header needs to be removed.
-> 
-> Signed-off-by: Rahul Sharma <rsharma@arista.com>
-> ---
-> --- linux-3.18.1/net/ipv6/exthdrs_core.c.orig   2015-01-06
-> 10:25:36.411419863 -0800
-> +++ linux-3.18.1/net/ipv6/exthdrs_core.c        2015-01-06
-> 10:51:45.819364986 -0800
-> @@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
->   * If the first fragment doesn't contain the final protocol header or
->   * NEXTHDR_NONE it is considered invalid.
->   *
-> - * Note that non-1st fragment is special case that "the protocol number
-> - * of last header" is "next header" field in Fragment header. In this case,
-> - * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
-> - * isn't NULL.
-> + * Note that non-1st fragment is special case that "the protocol number of the
-> + * first header of the fragmentable part of the original packet" is
-> + * "next header" field in the Fragment header. In this case, *offset is
-> + * meaningless and fragment offset is stored in *fragoff if fragoff isn't
-> + * NULL.
->   *
->   * if flags is not NULL and it's a fragment, then the frag flag
->   * IP6_FH_F_FRAG will be set. If it's an AH header, the
-> @@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *
-> 
->                         _frag_off = ntohs(*fp) & ~0x7;
->                         if (_frag_off) {
-> -                               if (target < 0 &&
-> -                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
+Dear maintainers of LustreFS and other experienced kernel developers!
 
-This check assumes that the following headers cannot show up in the
-fragmented part of the IPv6 packet:
+I am working on fixing some sparse warnings as a task of Eudyptula Challenge.
+There's a thing that look suspiciously to me (or I just don't
+understand it). This looks same both in upstream kernel code in
+drivers/staging/ and in https://github.com/Xyratex/lustre-stable.git
+(it doesn't fetch from http://git.whamcloud.com/fs/lustre-release.git,
+but I guess it is similar with Xyratex repo).
 
- 12 bool ipv6_ext_hdr(u8 nexthdr)
- 13 {
- 14         /*
- 15          * find out if nexthdr is an extension header or a protocol
- 16          */
- 17         return   (nexthdr == NEXTHDR_HOP)       ||
- 18                  (nexthdr == NEXTHDR_ROUTING)   ||
- 19                  (nexthdr == NEXTHDR_FRAGMENT)  ||
- 20                  (nexthdr == NEXTHDR_AUTH)      ||
- 21                  (nexthdr == NEXTHDR_NONE)      ||
- 22                  (nexthdr == NEXTHDR_DEST);
+In lnet/lnet/lib-move.c, in lnet_copy_iov2iov(), at line 209, there is
 
-> -                                    hp->nexthdr == NEXTHDR_NONE)) {
-> +                               if (target < 0) {
->                                         if (fragoff)
->                                                 *fragoff = _frag_off;
->                                         return hp->nexthdr;
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+                memcpy((char *)diov->iov_base + doffset,
+                        (char *)siov->iov_base + soffset, this_nob);
+
+diov and siov are struct iovec *, and iov_base in it is void __user *.
+Are diov and siov really used semantically correctly here, holding
+userspace addresses in iov_base?
+Is it semantically correct to use memcpy to copy bytes from one
+userspace address to another?
+
+How to treat the comment "/* NB diov, siov are READ-ONLY */" at line
+177 in the same procedure? Is it adequate?
+
+This above-mentioned memcpy operation causes sparse warnings "warning:
+cast removes address space of expression" for both first and second
+line. When i change it to
+
+                memcpy((void __user *)((char __user *)diov->iov_base + doffset),
+                        (void __user *)((char __user *)siov->iov_base
++ soffset), this_nob);
+
+It gives other sparse warnings:
+drivers/staging/lustre/lnet/lnet/lib-move.c:208:25: warning: incorrect
+type in argument 1 (different address spaces)
+drivers/staging/lustre/lnet/lnet/lib-move.c:208:25:    expected void *to
+drivers/staging/lustre/lnet/lnet/lib-move.c:208:25:    got void
+[noderef] <asn:1>*<noident>
+drivers/staging/lustre/lnet/lnet/lib-move.c:209:26: warning: incorrect
+type in argument 2 (different address spaces)
+drivers/staging/lustre/lnet/lnet/lib-move.c:209:26:    expected void const *from
+drivers/staging/lustre/lnet/lnet/lib-move.c:209:26:    got void
+[noderef] <asn:1>*<noident>
+
+What is supposed way to avoid warnings in this case?
+
+Thanks.
+
+-- 
+Andrey Utkin
