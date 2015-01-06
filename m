@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039AbbAFTxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:53:22 -0500
-Received: from resqmta-ch2-04v.sys.comcast.net ([69.252.207.36]:49464 "EHLO
-	resqmta-ch2-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932653AbbAFTn6 (ORCPT
+	id S933019AbbAFTw7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:52:59 -0500
+Received: from resqmta-ch2-11v.sys.comcast.net ([69.252.207.43]:50627 "EHLO
+	resqmta-ch2-11v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932703AbbAFTn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:43:58 -0500
+	Tue, 6 Jan 2015 14:43:59 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -18,9 +18,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v4 14/20] selftests/size: add install target to enable test install
-Date: Tue,  6 Jan 2015 12:43:28 -0700
-Message-Id: <5861e16e1b533cae37471a8cf18597d3e9e6b6f6.1420571615.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v4 15/20] selftests/sysctl: add install target to enable test install
+Date: Tue,  6 Jan 2015 12:43:29 -0700
+Message-Id: <cfcfa29c9030a6b8d2149b3fe834d65a9069717b.1420571615.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1420571615.git.shuahkh@osg.samsung.com>
 References: <cover.1420571615.git.shuahkh@osg.samsung.com>
@@ -37,37 +37,41 @@ only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
- tools/testing/selftests/size/Makefile | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ tools/testing/selftests/sysctl/Makefile | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/tools/testing/selftests/size/Makefile b/tools/testing/selftests/size/Makefile
-index 04dc25e..a1478fa 100644
---- a/tools/testing/selftests/size/Makefile
-+++ b/tools/testing/selftests/size/Makefile
-@@ -1,12 +1,22 @@
- CC = $(CROSS_COMPILE)gcc
+diff --git a/tools/testing/selftests/sysctl/Makefile b/tools/testing/selftests/sysctl/Makefile
+index 0a92ada..9119ef1 100644
+--- a/tools/testing/selftests/sysctl/Makefile
++++ b/tools/testing/selftests/sysctl/Makefile
+@@ -4,12 +4,25 @@
+ # No binaries, but make sure arg-less "make" doesn't trigger "run_tests".
+ all:
  
-+TEST_STR = ./get_size || echo 'get_size selftests: [FAIL]'
++INSTALL_PROGS = common_tests run_numerictests run_stringtests
++NUMERIC_TEST_STR = /bin/sh ./run_numerictests
++STRING_TEST_STR = /bin/sh ./run_stringtests
 +
- all: get_size
+ # Allow specific tests to be selected.
+ test_num:
+-	@/bin/sh ./run_numerictests
++	@$(NUMERIC_TEST_STR)
  
- get_size: get_size.c
- 	$(CC) -static -ffreestanding -nostartfiles -s $< -o $@
- 
-+install:
+ test_string:
+-	@/bin/sh ./run_stringtests
++	@$(STRING_TEST_STR)
++
++install: all
 +ifdef INSTALL_KSFT_PATH
-+	install ./get_size $(INSTALL_KSFT_PATH)
-+	@echo "$(TEST_STR)" >> $(KSELFTEST)
++	install $(INSTALL_PROGS) $(INSTALL_KSFT_PATH)
++	@echo "$(NUMERIC_TEST_STR)" >> $(KSELFTEST)
++	@echo "$(STRING_TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo "Run make kselftest_install in top level source directory"
 +endif
-+
- run_tests: all
--	./get_size
-+	@$(TEST_STR)
  
- clean:
- 	$(RM) get_size
+ run_tests: all test_num test_string
+ 
 -- 
 2.1.0
 
