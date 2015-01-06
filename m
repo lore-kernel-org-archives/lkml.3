@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702AbbAFKRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:17:08 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:62742 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313AbbAFKRE (ORCPT
+	id S1754793AbbAFKSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:18:09 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:49849 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764AbbAFKSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:17:04 -0500
-From: Piotr Kubus <p.t.kubus@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Piotr Kubus <p.t.kubus@gmail.com>
-Subject: [PATCH v2] Staging: comedi: dmm32at: Fix a code indent issue
-Date: Tue,  6 Jan 2015 11:16:16 +0100
-Message-Id: <1420539376-15323-1-git-send-email-p.t.kubus@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 6 Jan 2015 05:18:06 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20150106100621.GL29390@twins.programming.kicks-ass.net>
+References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
+	<20150106094039.GI29390@twins.programming.kicks-ass.net>
+	<CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
+	<CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
+	<20150106100621.GL29390@twins.programming.kicks-ass.net>
+Date: Tue, 6 Jan 2015 11:18:04 +0100
+Message-ID: <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
+Subject: Re: Linux 3.19-rc3
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kent Overstreet <kmo@daterainc.com>, Chris Mason <clm@fb.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a code indent error found by checkpatch.pl in dmm32at.c.
+On Tue, Jan 6, 2015 at 11:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jan 06, 2015 at 10:57:19AM +0100, Sedat Dilek wrote:
+>> [   88.028739]  [<ffffffff8124433f>] aio_read_events+0x4f/0x2d0
+>>
+>
+> Ah, that one. Chris Mason and Kent Overstreet were looking at that one.
+> I'm not touching the AIO code either ;-)
 
-Signed-off-by: Piotr Kubus <p.t.kubus@gmail.com>
----
-v2: make the commit message clearer and shorter
+I know, I was so excited when I see nearly the same output.
 
- drivers/staging/comedi/drivers/dmm32at.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can you tell me why people see "similiar" problems in different areas?
 
-diff --git a/drivers/staging/comedi/drivers/dmm32at.c b/drivers/staging/comedi/drivers/dmm32at.c
-index 6df298a..31919b8 100644
---- a/drivers/staging/comedi/drivers/dmm32at.c
-+++ b/drivers/staging/comedi/drivers/dmm32at.c
-@@ -365,7 +365,7 @@ static void dmm32at_setaitimer(struct comedi_device *dev, unsigned int nansec)
- 	/* enable the ai conversion interrupt and the clock to start scans */
- 	outb(DMM32AT_INTCLK_ADINT |
- 	     DMM32AT_INTCLK_CLKEN | DMM32AT_INTCLK_CLKSEL,
--             dev->iobase + DMM32AT_INTCLK_REG);
-+	     dev->iobase + DMM32AT_INTCLK_REG);
- }
- 
- static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
--- 
-1.9.1
+[  181.397024] WARNING: CPU: 0 PID: 2872 at kernel/sched/core.c:7303
+__might_sleep+0xbd/0xd0()
+[  181.397028] do not call blocking ops when !TASK_RUNNING; state=1
+set at [<ffffffff810b83bd>] prepare_to_wait_event+0x5d/0x110
 
+With similiar buzzwords... namely...
+
+mutex_lock_nested
+prepare_to_wait(_event)
+__might_sleep
+
+I am asking myself... Where is the real root cause - in sched/core?
+Fix one single place VS. fix the impact at several other places?
+
+- Sedat -
