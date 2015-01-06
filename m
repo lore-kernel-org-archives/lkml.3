@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874AbbAFQzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:55:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41818 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbbAFQzM (ORCPT
+	id S1755950AbbAFQ5E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:57:04 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:51398 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbbAFQ5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:55:12 -0500
-Message-ID: <1420563279.3719.15.camel@pengutronix.de>
-Subject: Re: [PATCH 2/2] misc: sram: switch to ioremap_wc from ioremap
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-rockchip@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "nicoleotsuka@gmail.com" <nicoleotsuka@gmail.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+	Tue, 6 Jan 2015 11:57:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <54ABCE85.6070004@redhat.com>
+References: <cover.1419295081.git.luto@amacapital.net> <8d09c16eb39cbe264417cc66c4aca730af10b70b.1419295081.git.luto@amacapital.net>
+ <20150105152511.GA9172@amt.cnet> <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
+ <20150105191756.GA31201@amt.cnet> <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
+ <20150105224858.GA6846@amt.cnet> <54AB9FFD.6070309@redhat.com> <54ABCE85.6070004@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 6 Jan 2015 08:56:40 -0800
+Message-ID: <CALCETrWKgB7nj19zW_cQaa4RWjDojbN92_3+-27bHXbB-EEOnA@mail.gmail.com>
+Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
+ pvclock reader
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "padma.v@samsung.com" <padma.v@samsung.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
-        "bcousson@baylibre.com" <bcousson@baylibre.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "kgene@kernel.org" <kgene@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>
-Date: Tue, 06 Jan 2015 17:54:39 +0100
-In-Reply-To: <CAM4voa=xoM4AuGxwk0TpLnGz9jbZ02awFOrY_KgWCSzROJR6cA@mail.gmail.com>
-References: <1418266726-12004-1-git-send-email-a.kesavan@samsung.com>
-	 <1418266726-12004-2-git-send-email-a.kesavan@samsung.com>
-	 <1418292513.3188.4.camel@pengutronix.de> <20141211103919.GA6067@arm.com>
-	 <1418298046.3188.10.camel@pengutronix.de>
-	 <20141211145849.GH31456@e104818-lin.cambridge.arm.com>
-	 <CAM4voakdfiTecW8YH0znnyB-dTnX_fsrRcH2McABwdk3T9drkQ@mail.gmail.com>
-	 <20150105181823.GG4081@atomide.com>
-	 <CAM4voa=xoM4AuGxwk0TpLnGz9jbZ02awFOrY_KgWCSzROJR6cA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+        kvm list <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Abhilash,
+On Jan 6, 2015 4:01 AM, "Paolo Bonzini" <pbonzini@redhat.com> wrote:
+>
+>
+>
+> On 06/01/2015 09:42, Paolo Bonzini wrote:
+> > > > Still confused.  So we can freeze all vCPUs in the host, then update
+> > > > pvti 1, then resume vCPU 1, then update pvti 0?  In that case, we have
+> > > > a problem, because vCPU 1 can observe pvti 0 mid-update, and KVM
+> > > > doesn't increment the version pre-update, and we can return completely
+> > > > bogus results.
+> > > Yes.
+> > But then the getcpu test would fail (1->0).  Even if you have an ABA
+> > situation (1->0->1), it's okay because the pvti that is fetched is the
+> > one returned by the first getcpu.
+>
+> ... this case of partial update of pvti, which is caught by the version
+> field, if of course different from the other (extremely unlikely) that
+> Andy pointed out.  That is when the getcpus are done on the same vCPU,
+> but the rdtsc is another.
+>
+> That one can be fixed by rdtscp, like
+>
+> do {
+>     // get a consistent (pvti, v, tsc) tuple
+>     do {
+>         cpu = get_cpu();
+>         pvti = get_pvti(cpu);
+>         v = pvti->version & ~1;
+>         // also acts as rmb();
+>         rdtsc_barrier();
+>         tsc = rdtscp(&cpu1);
 
-Am Dienstag, den 06.01.2015, 19:57 +0530 schrieb Abhilash Kesavan:
-> >> From the existing dts files, omap, imx, rockchip and exynos seem to be
-> >> the only users of the sram allocator code. I have tested this on
-> >> Exynos5420, Exynos5800 and Exynos7; there is no change in behavior
-> >> seen on these boards. Tested-by for other SoCs would be appreciated.
-> >
-> > Sorry for the delay, these seems to boot OK on omap4, so from that
-> > point of view:
-> >
-> > Tested-by: Tony Lindgren <tony@atomide.com>
-> 
-> Thanks a lot for testing this. If someone with imx and rockchip boards
-> could help test this out, then we could look to get this in.
+Off-topic note: rdtscp doesn't need a barrier at all.  AIUI AMD
+specified it that way and both AMD and Intel implement it correctly.
+(rdtsc, on the other hand, definitely needs the barrier beforehand.)
 
-This shouldn't be a problem on i.MX, the coda driver doesn't access SRAM
-from the CPU at all.
+>         // control dependency, no need for rdtsc_barrier?
+>     } while(cpu != cpu1);
+>
+>     // ... compute nanoseconds from pvti and tsc ...
+>     rmb();
+> }   while(v != pvti->version);
 
-regards
-Philipp
+Still no good.  We can migrate a bunch of times so we see the same CPU
+all three times and *still* don't get a consistent read, unless we
+play nasty games with lots of version checks (I have a patch for that,
+but I don't like it very much).  The patch is here:
 
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=a69754dc5ff33f5187162b5338854ad23dd7be8d
+
+but I don't like it.
+
+Thus far, I've been told unambiguously that a guest can't observe pvti
+while it's being written, and I think you're now telling me that this
+isn't true and that a guest *can* observe pvti while it's being
+written while the low bit of the version field is not set.  If so,
+this is rather strongly incompatible with the spec in the KVM docs.
+
+I don't suppose that you and Marcelo could agree on what the actual
+semantics that KVM provides are and could write it down in a way that
+people who haven't spent a long time staring at the request code
+understand?  And maybe you could even fix the implementation while
+you're at it if the implementation is, indeed, broken.  I have ugly
+patches to fix it here:
+
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=3b718a050cba52563d831febc2e1ca184c02bac0
+
+but I'm not thrilled with them.
+
+--Andy
