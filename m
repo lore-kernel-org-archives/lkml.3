@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789AbbAFTAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:00:46 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49993 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281AbbAFTAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:00:45 -0500
-Date: Tue, 6 Jan 2015 20:00:41 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1756306AbbAFTBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:01:33 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:40015 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755957AbbAFTBb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 14:01:31 -0500
+X-Sasl-enc: Mzr5yq3Vg8745GAoxc3srj31ZRd5C6gt+GXHJYlN5jHy 1420570890
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: TCP connection issues against Amazon S3
+From: Erik Grinaker <erik@bengler.no>
+In-Reply-To: <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+Date: Tue, 6 Jan 2015 19:01:29 +0000
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/3] x86_64,entry: Fix RCX for traced syscalls
-Message-ID: <20150106190041.GG32560@pd.tnic>
-References: <cover.1415403984.git.luto@amacapital.net>
- <20059f41189ac95da62cc8b23709c0eaba168186.1415403984.git.luto@amacapital.net>
- <20150105125943.GC19655@pd.tnic>
- <CALCETrVEnVV5gibE++gj=eudqEBFTckDasqcY2zZDC9Y+NMUrQ@mail.gmail.com>
- <20150106153429.GB32560@pd.tnic>
- <CALCETrXGmDOo-4aT3Zh2UzCHNK_Rkyw=y0sKMVBo=7Vjb9O1BA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALCETrXGmDOo-4aT3Zh2UzCHNK_Rkyw=y0sKMVBo=7Vjb9O1BA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        netdev <netdev@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com> <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com> <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+To: Yuchung Cheng <ycheng@google.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 10:43:57AM -0800, Andy Lutomirski wrote:
-> Sure, but the code would be simpler if we shoved that value in the
-> EFLAGS slot.
 
-There probably is some reason for that but it's not like we can change
-it :-)
-
-> Hmm.  I added and pushed a test for fork, but that didn't turn
-> anything up.  And I don't see any bugs in the code.
+> On 06 Jan 2015, at 18:33, Yuchung Cheng <ycheng@google.com> wrote:
 > 
-> I booted 3.18 plus this patch with context tracking forced on on my
-> laptop, and something seems to have gone wrong.
+> On Tue, Jan 6, 2015 at 10:17 AM, Erik Grinaker <erik@bengler.no> wrote:
+>> 
+>>> On 06 Jan 2015, at 17:20, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>> On Tue, 2015-01-06 at 16:11 +0000, Erik Grinaker wrote:
+>>>>> On 06 Jan 2015, at 16:04, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>>>> On Tue, 2015-01-06 at 15:14 +0000, Erik Grinaker wrote:
+>>>>>> (CCing Yuchung, as his name comes up in the relevant commits)
+>>>>>> 
+>>>>>> After upgrading from Ubuntu 12.04.5 to 14.04.1 we have begun seeing
+>>>>>> intermittent TCP connection hangs for HTTP image requests against
+>>>>>> Amazon S3. 3-5% of requests will suddenly stall in the middle of the
+>>>>>> transfer before timing out. We see this problem across a range of
+>>>>>> servers, in several data centres and networks, all located in Norway.
+>>>>>> 
+>>>>>> A packet dump [1] shows repeated ACK retransmits for some of the
+> TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
 
-Well, I ran it on -rc2 + tip/master and it did trigger sporadically
-yesterday but was unable to trigger something today.
+Ah, sorry, they are indeed DUPACKs; I thought they were the same thing.
 
-I'll redo the whole games tomorrow.
+> I am trying to understand the problem. Could you confirm that it's the
+> HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
+> from the receiver (your host)?
 
--- 
-Regards/Gruss,
-    Boris.
+Yes. We run HTTP GET requests against S3 for images (typically a few megs in size). Once in a while, the response transfer stalls about halfway through, until the client (Curl) times out. The packet dump shows loads of DUPACKs early on, then TCP retransmissions until the connection is closed.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> btw I suspect some middleboxes are stripping SACKOK options from your
+> SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
+
+That may be. I just tested this on a server in the Netherlands, and I can not reproduce the problem there, while I can reproduce it from multiple locations and ISPs in Norway. Would it be helpful to have a packet dump from the functioning Netherlands server as well?
+
+
+>>>>>> requests. Using Ubuntu mainline kernels, we found the problem to have
+>>>>>> been introduced between 3.11.10 and 3.12.0, possibly in
+>>>>>> 0f7cc9a3c2bd89b15720dbf358e9b9e62af27126. The problem is also present
+>>>>>> in 3.18.1. Disabling tcp_window_scaling seems to solve it, but has
+>>>>>> obvious drawbacks for transfer speeds. Other sysctls do not seem to
+>>>>>> affect it.
+>>>>>> 
+>>>>>> I am not sure if this is fundamentally a kernel bug or a network
+>>>>>> issue, but we did not see this problem with older kernels.
+>>>>>> 
+>>>>>> [1] http://abstrakt.bengler.no/tcp-issues-s3.pcap.bz2
+>>>>> 
+>>>>> 
+>>>>> CC netdev
+>>>>> 
+>>>>> This looks like the bug we fixed here :
+>>>>> 
+>>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=39bb5e62867de82b269b07df900165029b928359
+>>>> 
+>>>> Has that patch gone into a release? Because the problem persists with 3.18.1.
+>>> 
+>>> Patch is in 3.18.1 yes.
+>>> 
+>>> So thats a separate issue.
+>>> 
+>>> Can you confirm pcap was taken at receiver (195.159.221.106), not sender
+>>> (54.231.136.74) , and on which host is running the 'buggy kernel' ?
+>> 
+>> Yes, pcap was taken on receiver (195.159.221.106).
+>> 
+>>> If the sender is broken, changing the kernel on receiver wont help.
+>>> 
+>>> BTW not using sack (on 54.231.132.98) is terrible for performance in
+>>> lossy environments.
+>> 
+>> It may well be that the sender is broken; however, the sender is Amazon S3, so I do not have any control over it. And in any case, the problem goes away with 3.11.10 on receiver, but persists with 3.12.0 (or later) on receiver, so there must be some change in 3.12.0 which has caused this to trigger.
+>> 
+>> If you are confident that the problem is with Amazon, I can get in touch with their engineering department.
+
