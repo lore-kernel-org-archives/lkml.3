@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672AbbAFUuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:50:18 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:60687 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643AbbAFUuO convert rfc822-to-8bit (ORCPT
+	id S1756200AbbAFVF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:05:56 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:53458 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755888AbbAFVFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:50:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: liyi 00215672 <phoenix.liyi@huawei.com>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Charles.Garcia-Tobin@arm.com" <Charles.Garcia-Tobin@arm.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: =?UTF-8?B?562U5aSNOg==?= [PATCH v6 17/17] Documentation: ACPI for ARM64
-Date: Tue, 06 Jan 2015 21:49:21 +0100
-Message-ID: <9429675.LhiSR5rsOc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <D0F5605BA99F0B4594FB1EEC24E785CC654879C3@SZXEMA510-MBX.china.huawei.com>
-References: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org> <1420368918-5086-18-git-send-email-hanjun.guo@linaro.org> <D0F5605BA99F0B4594FB1EEC24E785CC654879C3@SZXEMA510-MBX.china.huawei.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V03:K0:8zuBfeOx7FSv+DTDwXsnLElOORJHdmSL0OUze1MciG6Xl8AsGaF
- TLEM98yrg10ehs+4yJiFDGzlb/pEU2Hrep5R/XDOzuSel2kFYkv6GuVxgLlFMmj/Ah0/BRh
- Zley7JeUBgdoEpkftJqMPoZEy0I2mqeoU6M8+8g/JZ3/lhuzclh3y4XTPxstf4ki7iRZB+N
- mJ+GgomVF1B3xqU0vO+NQ==
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 6 Jan 2015 16:05:54 -0500
+From: Toshi Kani <toshi.kani@hp.com>
+To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
+        yigal@plexistor.com, konrad.wilk@oracle.com, Elliott@hp.com
+Subject: [PATCH v7 0/7] Support Write-Through mapping on x86
+Date: Tue,  6 Jan 2015 13:49:45 -0700
+Message-Id: <1420577392-21235-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 06 January 2015 09:52:05 liyi 00215672 wrote:
-> In traditional telecom market, what confused us(Huawei) was our software
-> and hardware coupling together oftentimes. So if we change some hardware
-> then we MUST modify our software, which was not our customer’s
-> expectation. In x86 world, we have UEFI and ACPI technologies, they are
-> suitable to solve this problem very well, we just upgrade our hardware
-> and don’t need to upgrade their software, in the meantime ACPI provides
-> many methods on power management.
+This patchset adds support of Write-Through (WT) mapping on x86.
+The study below shows that using WT mapping may be useful for
+non-volatile memory.
 
-Can you give an example of how ACPI solves the problem of supporting a
-particular piece of new hardware?
+  http://www.hpl.hp.com/techreports/2012/HPL-2012-236.pdf
 
-I assume that for a completely new SoC, it won't help because you
-still need device drivers for all the major parts of the hardware
-that have changed, so this is about parts of the system that can
-be abstracted in AML but not fully described in DT without the need
-for new device drivers. Which are the main ones you are interested in
-here?
+All new/modified interfaces have been tested.
 
-	Arnd
+v7:
+ - Rebased to 3.19-rc3 as Juergen's patchset for the PAT management
+   has been accepted.
+
+v6:
+ - Dropped the patch moving [set|get]_page_memtype() to pat.c
+   since the tip branch already has this change.
+ - Fixed an issue when CONFIG_X86_PAT is not defined.
+
+v5:
+ - Clarified comment of why using slot 7. (Andy Lutomirski,
+   Thomas Gleixner)
+ - Moved [set|get]_page_memtype() to pat.c. (Thomas Gleixner)
+ - Removed BUG() from set_page_memtype(). (Thomas Gleixner)
+
+v4:
+ - Added set_memory_wt() by adding WT support of regular memory.
+
+v3:
+ - Dropped the set_memory_wt() patch. (Andy Lutomirski)
+ - Refactored the !pat_enabled handling. (H. Peter Anvin,
+   Andy Lutomirski)
+ - Added the picture of PTE encoding. (Konrad Rzeszutek Wilk)
+
+v2:
+ - Changed WT to use slot 7 of the PAT MSR. (H. Peter Anvin,
+   Andy Lutomirski)
+ - Changed to have conservative checks to exclude all Pentium 2, 3,
+   M, and 4 families. (Ingo Molnar, Henrique de Moraes Holschuh,
+   Andy Lutomirski)
+ - Updated documentation to cover WT interfaces and usages.
+   (Andy Lutomirski, Yigal Korman)
+
+---
+Toshi Kani (7):
+  1/7 x86, mm, pat: Set WT to PA7 slot of PAT MSR
+  2/7 x86, mm, pat: Change reserve_memtype() to handle WT
+  3/7 x86, mm, asm-gen: Add ioremap_wt() for WT
+  4/7 x86, mm, pat: Add pgprot_writethrough() for WT
+  5/7 x86, mm, pat: Refactor !pat_enable handling
+  6/7 x86, mm, asm: Add WT support to set_page_memtype()
+  7/7 x86, mm: Add set_memory_wt() for WT
+
+---
+ Documentation/x86/pat.txt            |  13 ++-
+ arch/x86/include/asm/cacheflush.h    |   6 +-
+ arch/x86/include/asm/io.h            |   2 +
+ arch/x86/include/asm/pgtable_types.h |   3 +
+ arch/x86/mm/init.c                   |   6 +-
+ arch/x86/mm/iomap_32.c               |  12 +--
+ arch/x86/mm/ioremap.c                |  26 ++++-
+ arch/x86/mm/pageattr.c               |  61 ++++++++++--
+ arch/x86/mm/pat.c                    | 184 ++++++++++++++++++++++++-----------
+ include/asm-generic/io.h             |   9 ++
+ include/asm-generic/iomap.h          |   4 +
+ include/asm-generic/pgtable.h        |   4 +
+ 12 files changed, 244 insertions(+), 86 deletions(-)
+
