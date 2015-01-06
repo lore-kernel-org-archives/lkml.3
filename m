@@ -1,123 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446AbbAFBml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 20:42:41 -0500
-Received: from regular1.263xmail.com ([211.150.99.131]:52378 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103AbbAFBmi (ORCPT
+	id S1754236AbbAFBln (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 20:41:43 -0500
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:36542 "HELO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754069AbbAFBli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 20:42:38 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: jwerner@chromium.org
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <45d6e314604830f019094251a755cf5b>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <54AB3D7D.4000707@rock-chips.com>
-Date: Tue, 06 Jan 2015 09:42:21 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Doug Anderson <dianders@chromium.org>
-CC: Felipe Balbi <balbi@ti.com>, Dinh Nguyen <dinguyen@opensource.altera.com>,
-        "romain.perier@gmail.com" <romain.perier@gmail.com>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        lyz <lyz@rock-chips.com>, wulf <wulf@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jwerner@chromium.org" <jwerner@chromium.org>
-Subject: Re: [PATCH v3] usb: dwc2: add bus suspend/resume for dwc2
-References: <1415624983-22413-1-git-send-email-kever.yang@rock-chips.com> <CAD=FV=V-D3qTtnwjme8k=boUkoGGPmfvcF=Jboq0qcRBzKrY6g@mail.gmail.com> <5463FE5E.906@rock-chips.com> <A2CA0424C0A6F04399FB9E1CD98E0304845059B3@US01WEMBX2.internal.synopsys.com>
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304845059B3@US01WEMBX2.internal.synopsys.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Jan 2015 20:41:38 -0500
+From: Feng Kan <fkan@apm.com>
+To: patches@apm.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH V2] net: eth: xgene: change APM X-Gene SoC platform ethernet to support ACPI
+Date: Mon,  5 Jan 2015 17:42:56 -0800
+Message-Id: <1420508576-10480-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+This adds support for APM X-Gene ethernet driver to use ACPI table to derive
+ethernet driver parameter.
 
-I think you need this patch to fix the problem:
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+V2:
+   - remove NO_MAC define
 
-usb: dwc2: resume root hub when device detect with suspend state
-https://patchwork.kernel.org/patch/5325111/
+ drivers/net/ethernet/apm/xgene/xgene_enet_hw.c   | 94 +++++++++++++++++------
+ drivers/net/ethernet/apm/xgene/xgene_enet_main.c | 95 +++++++++++++++++++-----
+ drivers/net/ethernet/apm/xgene/xgene_enet_main.h |  3 +
+ 3 files changed, 149 insertions(+), 43 deletions(-)
 
-Thanks,
-
-- Kever
-On 01/06/2015 09:23 AM, Paul Zimmerman wrote:
->> From: Kever Yang [mailto:kever.yang@rock-chips.com]
->> Sent: Wednesday, November 12, 2014 4:42 PM
->>
->> On 11/13/2014 07:22 AM, Doug Anderson wrote:
->>> Kever,
->>>
->>> On Mon, Nov 10, 2014 at 5:09 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
->>>> Hcd controller needs bus_suspend/resume, dwc2 controller make
->>>> root hub generate suspend/resume signal with hprt0 register
->>>> when work in host mode.
->>>> After the root hub enter suspend, we can make controller enter
->>>> low power state with PCGCTL register.
->>>>
->>>> We also update the lx_state for hsotg state.
->>>>
->>>> This patch has tested on rk3288 with suspend/resume.
->>>>
->>>> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->>>> Acked-by: Paul Zimmerman <paulz@synopsys.com>
->>>> ---
->>>>
->>>> Changes in v3:
->>>> - remove CONFIG_PM macro for bus_suspend/resume
->>>> - add PCGCTL operation for no device connect case
->>>>
->>>> Changes in v2:
->>>> - update commit message
->>>> - make dwc2 suspend/resume sourcecode work
->>>>
->>>>    drivers/usb/dwc2/hcd.c | 88 +++++++++++++++++++++++++++++++++++++++++++-------
->>>>    1 file changed, 77 insertions(+), 11 deletions(-)
->>> I would certainly appreciate confirmation, but my inclination is to
->>> NAK this change due to the fact that it regresses functionality.  I
->>> haven't done any serious review of it, but I've been testing it and it
->>> appears to break hotplug.
->>>
->>> Said another way, I did this:
->>>
->>> 1. Without this patch, I booted with a USB stick in.  It was detected.
->>> I unplugged it, waited 5 seconds, and then plugged it back in.  The
->>> USB stick was redetcted.
->>>
->>> 2. With this patch, I did the same thing.  The USB not redected after
->>> plugging it back in.
->> With this patch, the dwc2 hcd/root hub will be auto suspend after device
->> on port is disconnected, and it can't detect the device connect any more,
->> I think that's the problem.
->>
->> I will figure out how to make dwc2 detect the device connect after auto
->> suspend,
->> or disable the auto suspend feature for the dwc2 hcd.
-> Kever,
->
-> This patch has made it into Linus' kernel as commit 0cf884e819e0, and
-> it breaks disconnect/connect on at least the Altera SOCFPGA platform.
-> I haven't been able to test it on any other platforms.
->
-> You need to submit a patch to either fix this, or to only enable this
-> feature for the Rock-chip platform. Otherwise the patch has to be
-> reverted.
->
-
+diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c b/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
+index 7ba83ff..869d97f 100644
+--- a/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
++++ b/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
+@@ -593,10 +593,12 @@ static int xgene_enet_reset(struct xgene_enet_pdata *pdata)
+ 	if (!xgene_ring_mgr_init(pdata))
+ 		return -ENODEV;
+ 
+-	clk_prepare_enable(pdata->clk);
+-	clk_disable_unprepare(pdata->clk);
+-	clk_prepare_enable(pdata->clk);
+-	xgene_enet_ecc_init(pdata);
++	if (!efi_enabled(EFI_BOOT)) {
++		clk_prepare_enable(pdata->clk);
++		clk_disable_unprepare(pdata->clk);
++		clk_prepare_enable(pdata->clk);
++		xgene_enet_ecc_init(pdata);
++	}
+ 	xgene_enet_config_ring_if_assoc(pdata);
+ 
+ 	/* Enable auto-incr for scanning */
+@@ -663,15 +665,20 @@ static int xgene_enet_phy_connect(struct net_device *ndev)
+ 	struct phy_device *phy_dev;
+ 	struct device *dev = &pdata->pdev->dev;
+ 
+-	phy_np = of_parse_phandle(dev->of_node, "phy-handle", 0);
+-	if (!phy_np) {
+-		netdev_dbg(ndev, "No phy-handle found\n");
+-		return -ENODEV;
++	if (dev->of_node) {
++		phy_np = of_parse_phandle(dev->of_node, "phy-handle", 0);
++		if (!phy_np) {
++			netdev_dbg(ndev, "No phy-handle found in DT\n");
++			return -ENODEV;
++		}
++		pdata->phy_dev = of_phy_find_device(phy_np);
+ 	}
+ 
+-	phy_dev = of_phy_connect(ndev, phy_np, &xgene_enet_adjust_link,
+-				 0, pdata->phy_mode);
+-	if (!phy_dev) {
++	phy_dev = pdata->phy_dev;
++
++	if (!phy_dev ||
++	    phy_connect_direct(ndev, phy_dev, &xgene_enet_adjust_link,
++			       pdata->phy_mode)) {
+ 		netdev_err(ndev, "Could not connect to PHY\n");
+ 		return  -ENODEV;
+ 	}
+@@ -681,32 +688,71 @@ static int xgene_enet_phy_connect(struct net_device *ndev)
+ 			      ~SUPPORTED_100baseT_Half &
+ 			      ~SUPPORTED_1000baseT_Half;
+ 	phy_dev->advertising = phy_dev->supported;
+-	pdata->phy_dev = phy_dev;
+ 
+ 	return 0;
+ }
+ 
+-int xgene_enet_mdio_config(struct xgene_enet_pdata *pdata)
++static int xgene_mdiobus_register(struct xgene_enet_pdata *pdata,
++				  struct mii_bus *mdio)
+ {
+-	struct net_device *ndev = pdata->ndev;
+ 	struct device *dev = &pdata->pdev->dev;
++	struct net_device *ndev = pdata->ndev;
++	struct phy_device *phy;
+ 	struct device_node *child_np;
+ 	struct device_node *mdio_np = NULL;
+-	struct mii_bus *mdio_bus;
+ 	int ret;
++	u32 phy_id;
++
++	if (dev->of_node) {
++		for_each_child_of_node(dev->of_node, child_np) {
++			if (of_device_is_compatible(child_np,
++						    "apm,xgene-mdio")) {
++				mdio_np = child_np;
++				break;
++			}
++		}
+ 
+-	for_each_child_of_node(dev->of_node, child_np) {
+-		if (of_device_is_compatible(child_np, "apm,xgene-mdio")) {
+-			mdio_np = child_np;
+-			break;
++		if (!mdio_np) {
++			netdev_dbg(ndev, "No mdio node in the dts\n");
++			return -ENXIO;
+ 		}
+-	}
+ 
+-	if (!mdio_np) {
+-		netdev_dbg(ndev, "No mdio node in the dts\n");
+-		return -ENXIO;
++		return of_mdiobus_register(mdio, mdio_np);
+ 	}
+ 
++	/* Mask out all PHYs from auto probing. */
++	mdio->phy_mask = ~0;
++
++	/* Register the MDIO bus */
++	ret = mdiobus_register(mdio);
++	if (ret)
++		return ret;
++
++	ret = device_property_read_u32(dev, "phy-channel", &phy_id);
++	if (ret)
++		ret = device_property_read_u32(dev, "phy-addr", &phy_id);
++	if (ret)
++		return -EINVAL;
++
++	phy = get_phy_device(mdio, phy_id, true);
++	if (!phy || IS_ERR(phy))
++		return -EIO;
++
++	ret = phy_device_register(phy);
++	if (ret)
++		phy_device_free(phy);
++	else
++		pdata->phy_dev = phy;
++
++	return ret;
++}
++
++int xgene_enet_mdio_config(struct xgene_enet_pdata *pdata)
++{
++	struct net_device *ndev = pdata->ndev;
++	struct mii_bus *mdio_bus;
++	int ret;
++
+ 	mdio_bus = mdiobus_alloc();
+ 	if (!mdio_bus)
+ 		return -ENOMEM;
+@@ -720,7 +766,7 @@ int xgene_enet_mdio_config(struct xgene_enet_pdata *pdata)
+ 	mdio_bus->priv = pdata;
+ 	mdio_bus->parent = &ndev->dev;
+ 
+-	ret = of_mdiobus_register(mdio_bus, mdio_np);
++	ret = xgene_mdiobus_register(pdata, mdio_bus);
+ 	if (ret) {
+ 		netdev_err(ndev, "Failed to register MDIO bus\n");
+ 		mdiobus_free(mdio_bus);
+diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_main.c b/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
+index 83a5028..ba579c2 100644
+--- a/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
++++ b/drivers/net/ethernet/apm/xgene/xgene_enet_main.c
+@@ -24,6 +24,10 @@
+ #include "xgene_enet_sgmac.h"
+ #include "xgene_enet_xgmac.h"
+ 
++#define RES_ENET_CSR	0
++#define RES_RING_CSR	1
++#define RES_RING_CMD	2
++
+ static void xgene_enet_init_bufpool(struct xgene_enet_desc_ring *buf_pool)
+ {
+ 	struct xgene_enet_raw_desc16 *raw_desc;
+@@ -746,6 +750,41 @@ static const struct net_device_ops xgene_ndev_ops = {
+ 	.ndo_set_mac_address = xgene_enet_set_mac_address,
+ };
+ 
++static int xgene_get_mac_address(struct device *dev,
++				 unsigned char *addr)
++{
++	int ret;
++
++	ret = device_property_read_u8_array(dev, "local-mac-address", addr, 6);
++	if (ret)
++		ret = device_property_read_u8_array(dev, "mac-address",
++						    addr, 6);
++	if (ret)
++		return -ENODEV;
++
++	return ETH_ALEN;
++}
++
++static int xgene_get_phy_mode(struct device *dev)
++{
++	int i, ret;
++	char *modestr;
++
++	ret = device_property_read_string(dev, "phy-connection-type",
++					  (const char **)&modestr);
++	if (ret)
++		ret = device_property_read_string(dev, "phy-mode",
++						  (const char **)&modestr);
++	if (ret)
++		return -ENODEV;
++
++	for (i = 0; i < PHY_INTERFACE_MODE_MAX; i++) {
++		if (!strcasecmp(modestr, phy_modes(i)))
++			return i;
++	}
++	return -ENODEV;
++}
++
+ static int xgene_enet_get_resources(struct xgene_enet_pdata *pdata)
+ {
+ 	struct platform_device *pdev;
+@@ -753,29 +792,42 @@ static int xgene_enet_get_resources(struct xgene_enet_pdata *pdata)
+ 	struct device *dev;
+ 	struct resource *res;
+ 	void __iomem *base_addr;
+-	const char *mac;
+ 	int ret;
+ 
+ 	pdev = pdata->pdev;
+ 	dev = &pdev->dev;
+ 	ndev = pdata->ndev;
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "enet_csr");
+-	pdata->base_addr = devm_ioremap_resource(dev, res);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, RES_ENET_CSR);
++	if (!res) {
++		dev_err(dev, "Resource enet_csr not defined\n");
++		return -ENODEV;
++	}
++	pdata->base_addr = devm_ioremap(dev, res->start, resource_size(res));
+ 	if (IS_ERR(pdata->base_addr)) {
+ 		dev_err(dev, "Unable to retrieve ENET Port CSR region\n");
+ 		return PTR_ERR(pdata->base_addr);
+ 	}
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "ring_csr");
+-	pdata->ring_csr_addr = devm_ioremap_resource(dev, res);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, RES_RING_CSR);
++	if (!res) {
++		dev_err(dev, "Resource ring_csr not defined\n");
++		return -ENODEV;
++	}
++	pdata->ring_csr_addr = devm_ioremap(dev, res->start,
++							resource_size(res));
+ 	if (IS_ERR(pdata->ring_csr_addr)) {
+ 		dev_err(dev, "Unable to retrieve ENET Ring CSR region\n");
+ 		return PTR_ERR(pdata->ring_csr_addr);
+ 	}
+ 
+-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "ring_cmd");
+-	pdata->ring_cmd_addr = devm_ioremap_resource(dev, res);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, RES_RING_CMD);
++	if (!res) {
++		dev_err(dev, "Resource ring_cmd not defined\n");
++		return -ENODEV;
++	}
++	pdata->ring_cmd_addr = devm_ioremap(dev, res->start,
++							resource_size(res));
+ 	if (IS_ERR(pdata->ring_cmd_addr)) {
+ 		dev_err(dev, "Unable to retrieve ENET Ring command region\n");
+ 		return PTR_ERR(pdata->ring_cmd_addr);
+@@ -789,14 +841,12 @@ static int xgene_enet_get_resources(struct xgene_enet_pdata *pdata)
+ 	}
+ 	pdata->rx_irq = ret;
+ 
+-	mac = of_get_mac_address(dev->of_node);
+-	if (mac)
+-		memcpy(ndev->dev_addr, mac, ndev->addr_len);
+-	else
++	if (xgene_get_mac_address(dev, ndev->dev_addr) != ETH_ALEN)
+ 		eth_hw_addr_random(ndev);
++
+ 	memcpy(ndev->perm_addr, ndev->dev_addr, ndev->addr_len);
+ 
+-	pdata->phy_mode = of_get_phy_mode(pdev->dev.of_node);
++	pdata->phy_mode = xgene_get_phy_mode(dev);
+ 	if (pdata->phy_mode < 0) {
+ 		dev_err(dev, "Unable to get phy-connection-type\n");
+ 		return pdata->phy_mode;
+@@ -809,11 +859,9 @@ static int xgene_enet_get_resources(struct xgene_enet_pdata *pdata)
+ 	}
+ 
+ 	pdata->clk = devm_clk_get(&pdev->dev, NULL);
+-	ret = IS_ERR(pdata->clk);
+ 	if (IS_ERR(pdata->clk)) {
+-		dev_err(&pdev->dev, "can't get clock\n");
+-		ret = PTR_ERR(pdata->clk);
+-		return ret;
++		/* Firmware may have set up the clock already. */
++		pdata->clk = NULL;
+ 	}
+ 
+ 	base_addr = pdata->base_addr;
+@@ -924,7 +972,7 @@ static int xgene_enet_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
+-	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
++	ret = dma_coerce_mask_and_coherent(dev, DMA_BIT_MASK(64));
+ 	if (ret) {
+ 		netdev_err(ndev, "No usable DMA configuration\n");
+ 		goto err;
+@@ -972,7 +1020,15 @@ static int xgene_enet_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct of_device_id xgene_enet_match[] = {
++#ifdef CONFIG_ACPI
++static const struct acpi_device_id xgene_enet_acpi_match[] = {
++	{ "APMC0D05", },
++	{ }
++};
++MODULE_DEVICE_TABLE(acpi, xgene_enet_acpi_match);
++#endif
++
++static struct of_device_id xgene_enet_of_match[] = {
+ 	{.compatible = "apm,xgene-enet",},
+ 	{},
+ };
+@@ -982,7 +1038,8 @@ MODULE_DEVICE_TABLE(of, xgene_enet_match);
+ static struct platform_driver xgene_enet_driver = {
+ 	.driver = {
+ 		   .name = "xgene-enet",
+-		   .of_match_table = xgene_enet_match,
++		   .of_match_table = of_match_ptr(xgene_enet_of_match),
++		   .acpi_match_table = ACPI_PTR(xgene_enet_acpi_match),
+ 	},
+ 	.probe = xgene_enet_probe,
+ 	.remove = xgene_enet_remove,
+diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_main.h b/drivers/net/ethernet/apm/xgene/xgene_enet_main.h
+index f9958fa..c2d465c 100644
+--- a/drivers/net/ethernet/apm/xgene/xgene_enet_main.h
++++ b/drivers/net/ethernet/apm/xgene/xgene_enet_main.h
+@@ -22,7 +22,10 @@
+ #ifndef __XGENE_ENET_MAIN_H__
+ #define __XGENE_ENET_MAIN_H__
+ 
++#include <linux/acpi.h>
+ #include <linux/clk.h>
++#include <linux/efi.h>
++#include <linux/io.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_net.h>
+ #include <linux/of_mdio.h>
+-- 
+1.9.1
 
