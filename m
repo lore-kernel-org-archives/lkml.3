@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728AbbAFAVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 19:21:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53027 "EHLO mx1.redhat.com"
+	id S1754128AbbAFAaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 19:30:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:17574 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753359AbbAFAVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 19:21:46 -0500
-Date: Mon, 5 Jan 2015 19:21:35 -0500
-From: Rafael Aquini <aquini@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, jweiner@redhat.com,
-        dave.hansen@linux.intel.com, rientjes@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH v2] fs: proc: task_mmu: show page size in
- /proc/<pid>/numa_maps
-Message-ID: <20150106002134.GC28105@t510.redhat.com>
-References: <734bca19b3a8f4e191ccc9055ad4740744b5b2b6.1420464466.git.aquini@redhat.com>
- <20150105133500.e0ce4b090e6b378c3edc9c56@linux-foundation.org>
- <20150105225504.GC1795@t510.redhat.com>
- <20150105152037.5a33e34652db6b82fcfd46bf@linux-foundation.org>
+	id S1753060AbbAFAaK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 19:30:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,702,1413270000"; 
+   d="scan'208";a="657246848"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+Thread-Topic: [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+Thread-Index: AQHQKNIe6YwEecfkn02ZwABJi6oKXZyyPR8A
+Date: Tue, 6 Jan 2015 00:30:05 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026AB06A@SHSMSX101.ccr.corp.intel.com>
+References: <1418381488-25123-1-git-send-email-linux@rasmusvillemoes.dk>
+	<1418381488-25123-3-git-send-email-linux@rasmusvillemoes.dk>
+	<1AE640813FDE7649BE1B193DEA596E88026AACD9@SHSMSX101.ccr.corp.intel.com>
+ <87oaqdy13n.fsf@rasmusvillemoes.dk>
+In-Reply-To: <87oaqdy13n.fsf@rasmusvillemoes.dk>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150105152037.5a33e34652db6b82fcfd46bf@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 03:20:37PM -0800, Andrew Morton wrote:
-> On Mon, 5 Jan 2015 17:55:05 -0500 Rafael Aquini <aquini@redhat.com> wrote:
+Hi,
+
+> From: Rasmus Villemoes [mailto:linux@rasmusvillemoes.dk]
+> Sent: Monday, January 05, 2015 6:27 PM
 > 
-> > On Mon, Jan 05, 2015 at 01:35:00PM -0800, Andrew Morton wrote:
-> > > On Mon,  5 Jan 2015 12:44:31 -0500 Rafael Aquini <aquini@redhat.com> wrote:
-> > > 
-> > > > This patch introduces 'kernelpagesize_kB' line element to /proc/<pid>/numa_maps
-> > > > report file in order to help identifying the size of pages that are backing
-> > > > memory areas mapped by a given task. This is specially useful to
-> > > > help differentiating between HUGE and GIGANTIC page backed VMAs.
-> > > > 
-> > > > This patch is based on Dave Hansen's proposal and reviewer's follow-ups
-> > > > taken from the following dicussion threads:
-> > > >  * https://lkml.org/lkml/2011/9/21/454
-> > > 
-> > > Dave's changelog contains useful information which this one lacked.  I
-> > > stole some of it.
-> > > 
-> > > : The output of /proc/$pid/numa_maps is in terms of number of pages like
-> > > : anon=22 or dirty=54.  Here's some output:
-> > > : 
-> > > : 7f4680000000 default file=/hugetlb/bigfile anon=50 dirty=50 N0=50
-> > > : 7f7659600000 default file=/anon_hugepage\040(deleted) anon=50 dirty=50 N0=50
-> > > : 7fff8d425000 default stack anon=50 dirty=50 N0=50
-> > > : Looks like we have a stack and a couple of anonymous hugetlbfs
-> > > : areas page which both use the same amount of memory.  They don't.
-> > > : 
-> > > : The 'bigfile' uses 1GB pages and takes up ~50GB of space.  The
-> > > : anon_hugepage uses 2MB pages and takes up ~100MB of space while the stack
-> > > : uses normal 4k pages.  You can go over to smaps to figure out what the
-> > > : page size _really_ is with KernelPageSize or MMUPageSize.  But, I think
-> > > : this is a pretty nasty and counterintuitive interface as it stands.
-> > > : 
-> > > : This patch introduces 'kernelpagesize_kB' line element to
-> > > : /proc/<pid>/numa_maps report file in order to help identifying the size of
-> > > : pages that are backing memory areas mapped by a given task.  This is
-> > > : specially useful to help differentiating between HUGE and GIGANTIC page
-> > > : backed VMAs.
-> > > : 
-> > > : This patch is based on Dave Hansen's proposal and reviewer's follow-ups
-> > > : taken from the following dicussion threads:
-> > > :  * https://lkml.org/lkml/2011/9/21/454
-> > > :  * https://lkml.org/lkml/2014/12/20/66
-> > > 
-> > > 
-> > > > +	seq_printf(m, " kernelpagesize_kB=%lu", vma_kernel_pagesize(vma) >> 10);
-> > > 
-> > > This changes the format of the numa_maps file and can potentially break
-> > > existing parsers.  Please discuss.
+> On Mon, Jan 05 2015, "Zheng, Lv" <lv.zheng@intel.com> wrote:
 > 
-> ^^ ??
->
-Sorry I overlooked it.
+> > Hi,
+> >
+> >> From: Rasmus Villemoes [mailto:linux@rasmusvillemoes.dk]
+> >> Sent: Friday, December 12, 2014 6:51 PM
+> >> To: Zheng, Lv
+> >> Cc: Rasmus Villemoes; linux-acpi@vger.kernel.org; devel@acpica.org; linux-kernel@vger.kernel.org
+> >> Subject: [PATCH 3/3] ACPICA: Remove use of __DATE__ macro
+> >>
+> >> The macro __DATE__ and friends is not allowed in the kernel. Also,
+> >> including the build time in output doesn't seem to provide any value.
+> >>
+> >
+> > Could you confirm that it is not useful even for the user tools?
+> > Please perform the following commands in the kernel source tree
+> > 1. stay in tools folder
+> > 2. type "make acpi"
+> > 3. type "./power/acpi/acpidump -v"
+> >
+> 
+> Yeah, it's part of the output, but for what reason? What can userspace
+> possibly use that information for?
 
-Parsers indeed would have to be adjusted to cope with an extra line element
-(they already have to do so, similarly, for the conditional 'huge' hint).
-Despite I don't think of it as a showstopper (as is), I think we can consider
-moving it to EOL, if its actual printout position turns out to be an issue.
- 
+I also want to know.
 
-For instance, with this patch a numa_maps line would look like the following:
+> I can see some utility in printing a
+> version number, since that may tell something about the features
+> present or absent. The compilation date, on the other hand, seems
+> completely useless. Different distros may ship different versions which
+> happened to be compiled on the same day, or older versions compiled later.
 
- 7ff965200000 default file=/anon_hugepage\040(deleted) huge kernelpagesize_kB=2048 anon=5 dirty=5 N0=5
+If the deletion was done for this reason, IMO, it's acceptable.
+So let's wait to see others' feedback.
 
+Thanks and best regards
+-Lv
 
-or it could look like this, if we decide to switch kernelpagesize_kB position to EOL,
-for the sake of parsers:
-
- 7ff965200000 default file=/anon_hugepage\040(deleted) huge anon=5 dirty=5 N0=5 kernelpagesize_kB=2048
- 
-
-
-Cheers,
--- Rafael
+> Note that -Werror=date-time was added to the kernel's default build
+> flags in fe7c36c7bde12. It doesn't currently show because tools/ uses
+> its own flags, and the ACPI_COMMON_SIGNON macro is not used within the
+> kernel.
+> 
+> Rasmus
