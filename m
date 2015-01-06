@@ -1,321 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbbAFSNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:13:01 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:46524 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752047AbbAFSM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:12:59 -0500
-Message-ID: <54AC259A.4060102@free-electrons.com>
-Date: Tue, 06 Jan 2015 19:12:42 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S932359AbbAFSNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:13:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53389 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932306AbbAFSNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 13:13:07 -0500
+Date: Tue, 6 Jan 2015 13:12:55 -0500
+From: Brian Foster <bfoster@redhat.com>
+To: Namjae Jeon <namjae.jeon@samsung.com>
+Cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4 <linux-ext4@vger.kernel.org>, xfs@oss.sgi.com,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Subject: Re: [PATCH v7 4/11] xfsprogs: xfs_io: add finsert command for insert
+ range via fallocate
+Message-ID: <20150106181255.GG5874@bfoster.bfoster>
+References: <004201d02670$45154980$cf3fdc80$@samsung.com>
 MIME-Version: 1.0
-To: Hans de Goede <hdegoede@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?windows-1252?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 3/3] ata: libahci: Allow to use multiple regulators
-References: <1419676483-10346-1-git-send-email-gregory.clement@free-electrons.com> <1419676483-10346-4-git-send-email-gregory.clement@free-electrons.com> <549EAD01.9070608@redhat.com>
-In-Reply-To: <549EAD01.9070608@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <004201d02670$45154980$cf3fdc80$@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On 27/12/2014 13:58, Hans de Goede wrote:
-> Hi Gregory,
+On Fri, Jan 02, 2015 at 06:41:23PM +0900, Namjae Jeon wrote:
+> Add finsert command for fallocate FALLOC_FL_INSERT_RANGE flag.
 > 
-> Thanks for working on this. Overall the patch-set / concept looks good,
-> you can add "Acked-by: Hans de Goede <hdegoede@redhat.com>" to the first
-> 2 patches.
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> ---
 
-Thanks for your review. About the second patch as the change in the regulator
-framework didn't have been accepted, I had to change the binding. I will send
-a the new binding in the next version.
+Looks good...
 
-> 
-> I've some comments on this patch, see below.
-> 
-[...]
+Reviewed-by: Brian Foster <bfoster@redhat.com>
 
->> +int ahci_platform_enable_regulators(struct ahci_host_priv *hpriv)
->> +{
->> +	int rc, i;
->> +
->> +	for (i = 0; i < hpriv->nports; i++) {
->> +		if (!hpriv->target_pwrs[i])
->> +			continue;
->> +
->> +		rc = regulator_enable(hpriv->target_pwrs[i]);
->> +		if (rc)
->> +			goto disable_target_pwrs;
->> +	}
->> +
->> +	return 0;
->> +
->> +disable_target_pwrs:
->> +	while (--i >= 0)
->> +		if (!hpriv->target_pwrs[i])
+>  io/prealloc.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 38 insertions(+), 1 deletion(-)
 > 
-> I'm pretty sure you want:
+> diff --git a/io/prealloc.c b/io/prealloc.c
+> index aba6b44..11b1e12 100644
+> --- a/io/prealloc.c
+> +++ b/io/prealloc.c
+> @@ -37,6 +37,10 @@
+>  #define FALLOC_FL_ZERO_RANGE 0x10
+>  #endif
+>  
+> +#ifndef FALLOC_FL_INSERT_RANGE
+> +#define FALLOC_FL_INSERT_RANGE 0x20
+> +#endif
+> +
+>  static cmdinfo_t allocsp_cmd;
+>  static cmdinfo_t freesp_cmd;
+>  static cmdinfo_t resvsp_cmd;
+> @@ -46,6 +50,7 @@ static cmdinfo_t zero_cmd;
+>  static cmdinfo_t falloc_cmd;
+>  static cmdinfo_t fpunch_cmd;
+>  static cmdinfo_t fcollapse_cmd;
+> +static cmdinfo_t finsert_cmd;
+>  static cmdinfo_t fzero_cmd;
+>  #endif
+>  
+> @@ -169,11 +174,14 @@ fallocate_f(
+>  	int		mode = 0;
+>  	int		c;
+>  
+> -	while ((c = getopt(argc, argv, "ckp")) != EOF) {
+> +	while ((c = getopt(argc, argv, "cikp")) != EOF) {
+>  		switch (c) {
+>  		case 'c':
+>  			mode = FALLOC_FL_COLLAPSE_RANGE;
+>  			break;
+> +		case 'i':
+> +			mode = FALLOC_FL_INSERT_RANGE;
+> +			break;
+>  		case 'k':
+>  			mode = FALLOC_FL_KEEP_SIZE;
+>  			break;
+> @@ -237,6 +245,25 @@ fcollapse_f(
+>  }
+>  
+>  static int
+> +finsert_f(
+> +	int		argc,
+> +	char		**argv)
+> +{
+> +	xfs_flock64_t	segment;
+> +	int		mode = FALLOC_FL_INSERT_RANGE;
+> +
+> +	if (!offset_length(argv[1], argv[2], &segment))
+> +		return 0;
+> +
+> +	if (fallocate(file->fd, mode,
+> +			segment.l_start, segment.l_len)) {
+> +		perror("fallocate");
+> +		return 0;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int
+>  fzero_f(
+>  	int		argc,
+>  	char		**argv)
+> @@ -345,6 +372,16 @@ prealloc_init(void)
+>  	_("de-allocates space and eliminates the hole by shifting extents");
+>  	add_command(&fcollapse_cmd);
+>  
+> +	finsert_cmd.name = "finsert";
+> +	finsert_cmd.cfunc = finsert_f;
+> +	finsert_cmd.argmin = 2;
+> +	finsert_cmd.argmax = 2;
+> +	finsert_cmd.flags = CMD_NOMAP_OK | CMD_FOREIGN_OK;
+> +	finsert_cmd.args = _("off len");
+> +	finsert_cmd.oneline =
+> +	_("creates new space for writing within file by shifting extents");
+> +	add_command(&finsert_cmd);
+> +
+>  	fzero_cmd.name = "fzero";
+>  	fzero_cmd.cfunc = fzero_f;
+>  	fzero_cmd.argmin = 2;
+> -- 
+> 1.7.11-rc0
 > 
-> 		if (hpriv->target_pwrs[i])
-> 
-> here, so without the '!' .
-> 
->> +			regulator_disable(hpriv->target_pwrs[i]);
-
-yes you're right.
-
->> +
->> +	return rc;
->> +}
->> +EXPORT_SYMBOL_GPL(ahci_platform_enable_regulators);
->> +
->> +/**
->> + * ahci_platform_disable_regulators - Disable regulators
->> + * @hpriv: host private area to store config values
->> + *
->> + * This function disables all regulators found in hpriv->target_pwrs.
->> + */
->> +void ahci_platform_disable_regulators(struct ahci_host_priv *hpriv)
->> +{
->> +	int i;
->> +
->> +	for (i = 0; i < hpriv->nports; i++) {
->> +		if (!hpriv->target_pwrs[i])
->> +			continue;
->> +		regulator_disable(hpriv->target_pwrs[i]);
->> +	}
->> +}
->> +EXPORT_SYMBOL_GPL(ahci_platform_disable_regulators);
->> +/**
->>    * ahci_platform_enable_resources - Enable platform resources
->>    * @hpriv: host private area to store config values
->>    *
->> @@ -157,11 +210,9 @@ int ahci_platform_enable_resources(struct ahci_host_priv *hpriv)
->>   {
->>   	int rc;
->>
->> -	if (hpriv->target_pwr) {
->> -		rc = regulator_enable(hpriv->target_pwr);
->> -		if (rc)
->> -			return rc;
->> -	}
->> +	rc = ahci_platform_enable_regulators(hpriv);
->> +	if (rc)
->> +		return rc;
->>
->>   	rc = ahci_platform_enable_clks(hpriv);
->>   	if (rc)
->> @@ -177,8 +228,8 @@ disable_clks:
->>   	ahci_platform_disable_clks(hpriv);
->>
->>   disable_regulator:
->> -	if (hpriv->target_pwr)
->> -		regulator_disable(hpriv->target_pwr);
->> +	ahci_platform_disable_regulators(hpriv);
->> +
->>   	return rc;
->>   }
->>   EXPORT_SYMBOL_GPL(ahci_platform_enable_resources);
->> @@ -199,8 +250,7 @@ void ahci_platform_disable_resources(struct ahci_host_priv *hpriv)
->>
->>   	ahci_platform_disable_clks(hpriv);
->>
->> -	if (hpriv->target_pwr)
->> -		regulator_disable(hpriv->target_pwr);
->> +	ahci_platform_disable_regulators(hpriv);
->>   }
->>   EXPORT_SYMBOL_GPL(ahci_platform_disable_resources);
->>
->> @@ -218,6 +268,59 @@ static void ahci_platform_put_resources(struct device *dev, void *res)
->>   		clk_put(hpriv->clks[c]);
->>   }
->>
->> +static int ahci_platform_get_phy(struct ahci_host_priv *hpriv, u32 port,
->> +				struct device *dev, struct device_node *node)
->> +{
->> +	int rc;
->> +
->> +	hpriv->phys[port] = devm_of_phy_get(dev, node, NULL);
->> +
->> +	if (!IS_ERR(hpriv->phys[port]))
->> +		return 0;
->> +
->> +	rc = PTR_ERR(hpriv->phys[port]);
->> +	switch (rc) {
->> +	case -ENOSYS:
->> +		/* No PHY support. Check if PHY is required. */
->> +		if (of_find_property(node, "phys", NULL)) {
->> +			dev_err(dev,
->> +				"couldn't get PHY in node %s: ENOSYS\n",
->> +				node->name);
->> +			break;
->> +		}
->> +	case -ENODEV:
->> +		/* continue normally */
->> +		hpriv->phys[port] = NULL;
->> +		rc = 0;
->> +		break;
->> +
->> +	default:
->> +		dev_err(dev,
->> +			"couldn't get PHY in node %s: %d\n",
->> +			node->name, rc);
->> +
->> +		break;
->> +	}
->> +
->> +	return rc;
->> +}
->> +
->> +static int ahci_platform_get_regulator(struct ahci_host_priv *hpriv, u32 port,
->> +				struct device *dev, struct device_node *node)
->> +{
->> +	struct regulator *target_pwr;
->> +	int rc = 0;
->> +
->> +	target_pwr = devm_of_regulator_get_optional(dev, "target", node);
->> +
->> +	if (!IS_ERR(target_pwr))
->> +		hpriv->target_pwrs[port] = target_pwr;
->> +	else
->> +		rc = PTR_ERR(target_pwr);
->> +
->> +	return rc;
->> +}
->> +
->>   /**
->>    * ahci_platform_get_resources - Get platform resources
->>    * @pdev: platform device to get resources for
->> @@ -240,7 +343,7 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->>   	struct ahci_host_priv *hpriv;
->>   	struct clk *clk;
->>   	struct device_node *child;
->> -	int i, enabled_ports = 0, rc = -ENOMEM;
->> +	int i, sz, enabled_ports = 0, rc = -ENOMEM;
->>   	u32 mask_port_map = 0;
->>
->>   	if (!devres_open_group(dev, NULL, GFP_KERNEL))
->> @@ -261,14 +364,6 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->>   		goto err_out;
->>   	}
->>
->> -	hpriv->target_pwr = devm_regulator_get_optional(dev, "target");
->> -	if (IS_ERR(hpriv->target_pwr)) {
->> -		rc = PTR_ERR(hpriv->target_pwr);
->> -		if (rc == -EPROBE_DEFER)
->> -			goto err_out;
->> -		hpriv->target_pwr = NULL;
->> -	}
->> -
->>   	for (i = 0; i < AHCI_MAX_CLKS; i++) {
->>   		/*
->>   		 * For now we must use clk_get(dev, NULL) for the first clock,
->> @@ -292,15 +387,24 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->>
->>   	hpriv->nports = of_get_child_count(dev->of_node);
->>
->> -	if (hpriv->nports) {
->> -		hpriv->phys = devm_kzalloc(dev,
->> -					   hpriv->nports * sizeof(*hpriv->phys),
->> -					   GFP_KERNEL);
->> -		if (!hpriv->phys) {
->> -			rc = -ENOMEM;
->> -			goto err_out;
->> -		}
->> +	 /* If no sub-node was found, keep this for device tree compatibility */
->> +	if (!hpriv->nports)
->> +		hpriv->nports = 1;
-> 
-> So now nports is always >= 1.
-> 
->> +
->> +	sz = hpriv->nports * sizeof(*hpriv->phys);
->> +	hpriv->phys = devm_kzalloc(dev, sz, GFP_KERNEL);
->> +	if (!hpriv->phys) {
->> +		rc = -ENOMEM;
->> +		goto err_out;
->> +	}
->> +	sz = hpriv->nports * sizeof(*hpriv->target_pwrs);
->> +	hpriv->target_pwrs = devm_kzalloc(dev, sz, GFP_KERNEL);
->> +	if (!hpriv->target_pwrs) {
->> +		rc = -ENOMEM;
->> +		goto err_out;
->> +	}
->>
->> +	if (hpriv->nports) {
-> 
-> And this is always true,
-> 
->>   		for_each_child_of_node(dev->of_node, child) {
->>   			u32 port;
->>
->> @@ -319,14 +423,14 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->>
->>   			mask_port_map |= BIT(port);
->>
->> -			hpriv->phys[port] = devm_of_phy_get(dev, child, NULL);
->> -			if (IS_ERR(hpriv->phys[port])) {
->> -				rc = PTR_ERR(hpriv->phys[port]);
->> -				dev_err(dev,
->> -					"couldn't get PHY in node %s: %d\n",
->> -					child->name, rc);
->> +			rc = ahci_platform_get_regulator(hpriv, port,
->> +							 dev, child);
->> +			if (rc == -EPROBE_DEFER)
->> +				goto err_out;
->> +
->> +			rc = ahci_platform_get_phy(hpriv, port, dev, child);
->> +			if (rc)
->>   				goto err_out;
->> -			}
->>
->>   			enabled_ports++;
->>   		}
->> @@ -343,38 +447,14 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
->>   		 * If no sub-node was found, keep this for device tree
->>   		 * compatibility
->>   		 */
-> 
-> And thus the code below (which is in the else) never gets executed, and you've
-> broken the case where there are no subnodes.
-> 
-> I think it is best to fix this by keeping nports == 0 when there are no subnodes
-> (because we really do not know nports then, so advertising 1 is sorta wrong anyways),
-
-You are definitely right
-
-> and use something like this to calculate the array sizes:
-> 
-> sz = (nports ? nports : 1) * sizeof(*hpriv->phys);
-> ...
-> sz = (nports ? nports : 1) * sizeof(*hpriv->target_pwrs);
-
-I will do it.
-
-
-Thanks again for your review,
-
-Gregory
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
