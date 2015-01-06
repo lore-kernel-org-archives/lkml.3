@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241AbbAFVQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:16:12 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:60242 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbbAFVQJ (ORCPT
+	id S1756570AbbAFVQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:16:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42690 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218AbbAFVQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 16:16:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150105154834.GV11764@sirena.org.uk>
-References: <1420472564.803.9.camel@gmail.com> <20150105154834.GV11764@sirena.org.uk>
-From: Esben Haabendal <esben.haabendal@gmail.com>
-Date: Tue, 6 Jan 2015 22:15:47 +0100
-X-Google-Sender-Auth: XFmJdgi-hirCptlfMJqbOKS8dk4
-Message-ID: <CAOR3GqUBWyfUvNG-8JiPVkis6b_25Eq_REtcp=kLN3CUoqsG6g@mail.gmail.com>
-Subject: Re: Backport of spi-fsl-spi bugfix to 3.14.y
-To: Mark Brown <broonie@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        Stefan Roese <sr@denx.de>
-Content-Type: text/plain; charset=UTF-8
+Date: Tue, 6 Jan 2015 13:16:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Kiran Raparthy <kiran.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        Colin Cross <ccross@android.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: Re: [RFC v4] debug: prevent entering debug mode on panic/exception.
+Message-Id: <20150106131608.a756b9e8aaf8c496099a5736@linux-foundation.org>
+In-Reply-To: <54ABFFD3.2020305@linaro.org>
+References: <1419338309-16729-1-git-send-email-kiran.kumar@linaro.org>
+	<20150105161412.44f53313e1d771dc9f968264@linux-foundation.org>
+	<54ABFFD3.2020305@linaro.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 January 2015 at 16:48, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Jan 05, 2015 at 04:42:44PM +0100, Esben Haabendal wrote:
->
->> Please consider commit 4302a59629f7a0bd70fd1605d2b558597517372a
->> (spi: fsl: Fix problem with multi message transfers) for inclusion in
->> stable kernel 3.14.
->
->> It fixes a regression when using mmc_spi driver on top of spi-fsl-spi
->> driver (tested with powerpc mpc8313 based board).
->
-> Has this ever worked?
+On Tue, 06 Jan 2015 15:31:31 +0000 Daniel Thompson <daniel.thompson@linaro.org> wrote:
 
-Yes, I have used mmc_spi with spi-fsl-spi on the same board with success
-with in 2.6.33, 3.0 and 3.4.
+> On 06/01/15 00:14, Andrew Morton wrote:
+> > We appear to have forgotten to document panic_timeout.  Sigh.
+> 
+> I knew I'd seen it somewhere...
+> 
+> Once its been sysctlised it ends up called "panic":
+>   https://www.kernel.org/doc/Documentation/sysctl/kernel.txt
 
-I have no idea what has caused this to break.  Maybe mmc_spi driver was
-not doing multi message transfers earlier?
+Confused.  That file doesn't mention panic_timeout.  But it is the
+place where panic_timeout can be described.
 
-/Esben
