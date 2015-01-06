@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192AbbAFDTI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 22:19:08 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:40079 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312AbbAFDTE (ORCPT
+	id S1754156AbbAFDef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 22:34:35 -0500
+Received: from smtprelay05.ispgateway.de ([80.67.18.28]:50489 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbbAFDee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 22:19:04 -0500
-Message-ID: <54AB5425.3010609@hurleysoftware.com>
-Date: Mon, 05 Jan 2015 22:19:01 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Jeff Epler <jepler@unpythonic.net>, linux-kernel@vger.kernel.org
-Subject: Re: What are these weird line-noise signatures?
-References: <1415624983-22413-1-git-send-email-kever.yang@rock-chips.com> <CAD=FV=V-D3qTtnwjme8k=boUkoGGPmfvcF=Jboq0qcRBzKrY6g@mail.gmail.com> <5463FE5E.906@rock-chips.com> <A2CA0424C0A6F04399FB9E1CD98E0304845059B3@US01WEMBX2.internal.synopsys.com> <20150106025749.GA41958@unpythonic.net>
-In-Reply-To: <20150106025749.GA41958@unpythonic.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Mon, 5 Jan 2015 22:34:34 -0500
+From: Christoph Jaeger <cj@linux.com>
+To: jpoimboe@redhat.com, sjenning@redhat.com, jkosina@suse.cz, vojtech@suse.cz
+Cc: live-patching@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Jaeger <cj@linux.com>
+Subject: [PATCH linux-next] livepatch: kconfig: use bool instead of boolean
+Date: Mon,  5 Jan 2015 22:34:09 -0500
+Message-Id: <1420515249-4848-1-git-send-email-cj@linux.com>
+X-Mailer: git-send-email 2.1.0
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2015 10:12 PM, Jeff Epler wrote:
-> I have seen similar "signatures" that have the appearance of good old
-> fashioned line noise, such as in this recent message from Paul
-> Zimmerman (but not in all of his messages either!):
-> 
-> On Tue, Jan 06, 2015 at 01:23:30AM +0000, Paul Zimmerman wrote:
-> [real content snipped]
->> -- 
->> Paul
->>
->> N?????r??y????b?X??ǧv?^?){.n?+????{????zX??^W??ܨ}???Ơz?&j:+v???^G????zZ+??+zf???h???~????i???z?^^?w?????????&?)ߢ^[f??^jǫy?m??@A?a??^??^L0??h?^O??i^?
-> (some characters were control characters and are represented with carets
-> above, and my mailreader seems to have transcoded other non-ASCIIs as
-> reencoded by my mailreader, but it's hard to be sure)
-> 
-> I have seen them from senders at various domains, and they are not some
-> kind of artifact of my own mail system because they appear in the
-> archives e.g., at
-> 
-> http://article.gmane.org/gmane.linux.usb.general/120149
-> 
-> and similarly in a 2014 message from another poster at another domain:
-> [real content snipped again]
->>> Please read the FAQ at  http://www.tux.org/lkml/
->> N?????r??y????b?X??ǧv?^?) .n?+????{????zX??^W??ܨ}???Ơz?&j:+v???^G????zZ+??+zf???h???~????i???z?^^?w?????????&?)ߢ^[f??^jǫy?m??@A?a??^??^L0??h?^O??i^?
-> 
-> http://mid.gmane.org/CD2CABCB2C0A0D4682C5F8AD8401415409741D%40HKXPRD3002MB006.064d.mgd.msft.net
-> 
-> [not quite byte-for-byte identical, but very close!]
-> 
-> Does anyone know what the purpose of these footers is?  Highly
-> compressed legal disclaimer, I'm guessing.
+Keyword 'boolean' for type definition attributes is considered deprecated and
+should not be used anymore. No functional changes.
 
-Paul's message in base64-encoded.
+Reference: http://lkml.kernel.org/r/cover.1418003065.git.cj@linux.com
+Reference: http://lkml.kernel.org/r/1419108071-11607-1-git-send-email-cj@linux.com
+Signed-off-by: Christoph Jaeger <cj@linux.com>
+---
+ kernel/livepatch/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-The scramble you see at the end when the message is decoded
-is the majordomo signature added in plaintext, decoded as if
-it were base64.
+diff --git a/kernel/livepatch/Kconfig b/kernel/livepatch/Kconfig
+index 96da00f..66797aa 100644
+--- a/kernel/livepatch/Kconfig
++++ b/kernel/livepatch/Kconfig
+@@ -1,10 +1,10 @@
+ config ARCH_HAVE_LIVE_PATCHING
+-	boolean
++	bool
+ 	help
+ 	  Arch supports kernel live patching
+ 
+ config LIVE_PATCHING
+-	boolean "Kernel Live Patching"
++	bool "Kernel Live Patching"
+ 	depends on DYNAMIC_FTRACE_WITH_REGS
+ 	depends on MODULES
+ 	depends on SYSFS
+-- 
+2.1.0
 
-Regards,
-Peter Hurley
