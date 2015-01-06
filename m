@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933313AbbAFVkG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:40:06 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:59839 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932597AbbAFV0n (ORCPT
+	id S932635AbbAFV0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:26:47 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58794 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932611AbbAFV0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:26:43 -0500
+	Tue, 6 Jan 2015 16:26:44 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk
 Cc: linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
         lizefan@huawei.com, cgroups@vger.kernel.org, linux-mm@kvack.org,
         mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com,
         david@fromorbit.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/45] writeback: attribute stats to the matching per-cgroup bdi_writeback
-Date: Tue,  6 Jan 2015 16:25:44 -0500
-Message-Id: <1420579582-8516-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/45] writeback: let balance_dirty_pages() work on the matching cgroup bdi_writeback
+Date: Tue,  6 Jan 2015 16:25:45 -0500
+Message-Id: <1420579582-8516-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1420579582-8516-1-git-send-email-tj@kernel.org>
 References: <1420579582-8516-1-git-send-email-tj@kernel.org>
@@ -24,15 +24,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now, all WB_* stats were accounted against the root wb
-(bdi_writeback), now that multiple wb (bdi_writeback) support is in
-place, let's attributes the stats to the respective per-cgroup wb's.
+Currently, balance_dirty_pages() always work on bdi->wb.  This patch
+updates it to work on the cgwb (cgroup bdi_writeback) matching the
+blkcg of the current task as that's what the pages are being dirtied
+against.
 
-WB_RECLAIMABLE and WB_DIRTIED are attributed to the page's dirty cgwb
-(per-cgroup wb) and WB_WRITEBACK to writeback cgwb.
-__test_set_page_writeback() is updated so that dirty cgwb association
-takes place before WB_WRITEBACK increment so that the latter can make
-use of the association.
+balance_dirty_pages_ratelimited() now pins the current blkcg and looks
+up the matching cgwb and passes it to balance_dirty_pages().  The
+pinning is necessary to ensure that the cgwb stays alive while the
+function is executing as a cgwb's lifetime is determined by its bdi
+and blkcg.
 
 As no filesystem has FS_CGROUP_WRITEBACK yet, this doesn't lead to
 visible behavior differences.
@@ -41,94 +42,68 @@ Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Jan Kara <jack@suse.cz>
 ---
- mm/filemap.c        |  2 +-
- mm/page-writeback.c | 18 ++++++++++++------
- mm/truncate.c       |  3 +--
- 3 files changed, 14 insertions(+), 9 deletions(-)
+ mm/page-writeback.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 98a6675..faa577d 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -211,7 +211,7 @@ void __delete_from_page_cache(struct page *page, void *shadow)
- 	 */
- 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
- 		dec_zone_page_state(page, NR_FILE_DIRTY);
--		dec_wb_stat(&mapping->backing_dev_info->wb, WB_RECLAIMABLE);
-+		dec_wb_stat(page_cgwb_dirty(page), WB_RECLAIMABLE);
- 		page_blkcg_detach_dirty(page);
- 	}
- }
 diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 6475504..d1fea3a 100644
+index d1fea3a..b115a57 100644
 --- a/mm/page-writeback.c
 +++ b/mm/page-writeback.c
-@@ -2159,10 +2159,13 @@ EXPORT_SYMBOL(__set_page_dirty_nobuffers);
- void account_page_redirty(struct page *page)
+@@ -1335,6 +1335,7 @@ static inline void wb_dirty_limits(struct bdi_writeback *wb,
+  * perform some writeout.
+  */
+ static void balance_dirty_pages(struct address_space *mapping,
++				struct bdi_writeback *wb,
+ 				unsigned long pages_dirtied)
  {
- 	struct address_space *mapping = page->mapping;
+ 	unsigned long nr_reclaimable;	/* = file_dirty + unstable_nfs */
+@@ -1351,7 +1352,6 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 	unsigned long dirty_ratelimit;
+ 	unsigned long pos_ratio;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+-	struct bdi_writeback *wb = &bdi->wb;
+ 	bool strictlimit = bdi->capabilities & BDI_CAP_STRICTLIMIT;
+ 	unsigned long start_time = jiffies;
+ 
+@@ -1575,13 +1575,25 @@ DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
+ void balance_dirty_pages_ratelimited(struct address_space *mapping)
+ {
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+-	struct bdi_writeback *wb = &bdi->wb;
++	struct cgroup_subsys_state *blkcg_css = NULL;
++	struct bdi_writeback *wb = NULL;
+ 	int ratelimit;
+ 	int *p;
+ 
+ 	if (!bdi_cap_account_dirty(bdi))
+ 		return;
+ 
++	/*
++	 * Throttle against the cgwb of the current blkcg.  Make sure that
++	 * the cgwb stays alive by pinning the blkcg.
++	 */
++	if (mapping_cgwb_enabled(mapping)) {
++		blkcg_css = task_get_blkcg_css(current);
++		wb = cgwb_lookup(bdi, blkcg_css);
++	}
++	if (!wb)
++		wb = &bdi->wb;
 +
- 	if (mapping && mapping_cap_account_dirty(mapping)) {
-+		struct bdi_writeback *wb = page_cgwb_dirty(page);
+ 	ratelimit = current->nr_dirtied_pause;
+ 	if (wb->dirty_exceeded)
+ 		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
+@@ -1615,7 +1627,10 @@ void balance_dirty_pages_ratelimited(struct address_space *mapping)
+ 	preempt_enable();
+ 
+ 	if (unlikely(current->nr_dirtied >= ratelimit))
+-		balance_dirty_pages(mapping, current->nr_dirtied);
++		balance_dirty_pages(mapping, wb, current->nr_dirtied);
 +
- 		current->nr_dirtied--;
- 		dec_zone_page_state(page, NR_DIRTIED);
--		dec_wb_stat(&mapping->backing_dev_info->wb, WB_DIRTIED);
-+		dec_wb_stat(wb, WB_DIRTIED);
- 	}
++	if (blkcg_css)
++		css_put(blkcg_css);
  }
- EXPORT_SYMBOL(account_page_redirty);
-@@ -2300,9 +2303,10 @@ int clear_page_dirty_for_io(struct page *page)
- 		 * exclusion.
- 		 */
- 		if (TestClearPageDirty(page)) {
-+			struct bdi_writeback *wb = page_cgwb_dirty(page);
-+
- 			dec_zone_page_state(page, NR_FILE_DIRTY);
--			dec_wb_stat(&mapping->backing_dev_info->wb,
--				    WB_RECLAIMABLE);
-+			dec_wb_stat(wb, WB_RECLAIMABLE);
- 			page_blkcg_detach_dirty(page);
- 			return 1;
- 		}
-@@ -2330,9 +2334,11 @@ int test_clear_page_writeback(struct page *page)
- 						page_index(page),
- 						PAGECACHE_TAG_WRITEBACK);
- 			if (bdi_cap_account_writeback(bdi)) {
--				__dec_wb_stat(&bdi->wb, WB_WRITEBACK);
-+				struct bdi_writeback *wb = page_cgwb_wb(page);
-+
-+				__dec_wb_stat(wb, WB_WRITEBACK);
- 				page_blkcg_detach_wb(page);
--				__wb_writeout_inc(&bdi->wb);
-+				__wb_writeout_inc(wb);
- 			}
- 		}
- 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
-@@ -2366,8 +2372,8 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
- 						page_index(page),
- 						PAGECACHE_TAG_WRITEBACK);
- 			if (bdi_cap_account_writeback(bdi)) {
--				__inc_wb_stat(&bdi->wb, WB_WRITEBACK);
- 				page_blkcg_attach_wb(page);
-+				__inc_wb_stat(page_cgwb_wb(page), WB_WRITEBACK);
- 			}
- 		}
- 		if (!PageDirty(page))
-diff --git a/mm/truncate.c b/mm/truncate.c
-index caae624..1658e34 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -112,8 +112,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
- 		struct address_space *mapping = page->mapping;
- 		if (mapping && mapping_cap_account_dirty(mapping)) {
- 			dec_zone_page_state(page, NR_FILE_DIRTY);
--			dec_wb_stat(&mapping->backing_dev_info->wb,
--				    WB_RECLAIMABLE);
-+			dec_wb_stat(page_cgwb_dirty(page), WB_RECLAIMABLE);
- 			if (account_size)
- 				task_io_account_cancelled_write(account_size);
- 			page_blkcg_detach_dirty(page);
+ EXPORT_SYMBOL(balance_dirty_pages_ratelimited);
+ 
 -- 
 2.1.0
 
