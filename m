@@ -1,419 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303AbbAFRQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:16:10 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:44124 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940AbbAFRQF (ORCPT
+	id S1756000AbbAFRRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:17:31 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55556 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828AbbAFRR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:16:05 -0500
-From: Mark Salyzyn <salyzyn@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Salyzyn <salyzyn@android.com>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 3/3] pstore: add pmsg
-Date: Tue,  6 Jan 2015 09:15:54 -0800
-Message-Id: <1420564560-24638-1-git-send-email-salyzyn@android.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	Tue, 6 Jan 2015 12:17:29 -0500
+Date: Tue, 6 Jan 2015 18:17:12 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kanaka Juvva <kanaka.d.juvva@intel.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH v4 10/11] perf/x86/intel: Perform rotation on Intel CQM
+ RMIDs
+Message-ID: <20150106171712.GH3337@twins.programming.kicks-ass.net>
+References: <1415999712-5850-1-git-send-email-matt@console-pimps.org>
+ <1415999712-5850-11-git-send-email-matt@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1415999712-5850-11-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A secured user-space accessible pstore object. Writes
-to /dev/pmsg0 are appended to the buffer, on reboot
-the persistent contents are available in
-/sys/fs/pstore/pmsg-ramoops-[ID].
+On Fri, Nov 14, 2014 at 09:15:11PM +0000, Matt Fleming wrote:
+> +/*
+> + * intel_cqm_rmid_stabilize - move RMIDs from limbo to free list
+> + * @available: are there freeable RMIDs on the limbo list?
+> + *
+> + * Quiescent state; wait for all 'freed' RMIDs to become unused, i.e. no
+> + * cachelines are tagged with those RMIDs. After this we can reuse them
+> + * and know that the current set of active RMIDs is stable.
+> + *
+> + * Return %true or %false depending on whether we were able to stabilize
+> + * an RMID for intel_cqm_rotation_rmid.
+> + *
+> + * If we return %false then @available is updated to indicate the reason
+> + * we couldn't stabilize any RMIDs. @available is %false if no suitable
+> + * RMIDs were found on the limbo list to recycle, i.e. no RMIDs had been
+> + * on the list for the minimum queue time. If @available is %true then,
+> + * we found suitable RMIDs to recycle but none had an associated
+> + * occupancy value below __intel_cqm_threshold and the threshold should
+> + * be increased and stabilization reattempted.
+> + */
+> +static bool intel_cqm_rmid_stabilize(bool *available)
 
-One possible use is syslogd, or other daemon, can
-write messages, then on reboot provides a means to
-triage user-space activities leading up to a panic
-as a companion to the pstore dmesg or console logs.
+slightly excessive quoting, bear with me, see below:
 
-Signed-off-by: Mark Salyzyn <salyzyn@android.com>
----
- fs/pstore/Kconfig          |  10 +++++
- fs/pstore/Makefile         |   2 +
- fs/pstore/inode.c          |   3 ++
- fs/pstore/internal.h       |   6 +++
- fs/pstore/platform.c       |   1 +
- fs/pstore/pmsg.c           | 101 +++++++++++++++++++++++++++++++++++++++++++++
- fs/pstore/ram.c            |  46 ++++++++++++++++++---
- include/linux/pstore.h     |   1 +
- include/linux/pstore_ram.h |   1 +
- 9 files changed, 166 insertions(+), 5 deletions(-)
- create mode 100644 fs/pstore/pmsg.c
+> +/*
+> + * Attempt to rotate the groups and assign new RMIDs.
+> + *
+> + * Rotating RMIDs is complicated because the hardware doesn't give us
+> + * any clues.
+> + *
+> + * There's problems with the hardware interface; when you change the
+> + * task:RMID map cachelines retain their 'old' tags, giving a skewed
+> + * picture. In order to work around this, we must always keep one free
+> + * RMID - intel_cqm_rotation_rmid.
+> + *
+> + * Rotation works by taking away an RMID from a group (the old RMID),
+> + * and assigning the free RMID to another group (the new RMID). We must
+> + * then wait for the old RMID to not be used (no cachelines tagged).
+> + * This ensure that all cachelines are tagged with 'active' RMIDs. At
+> + * this point we can start reading values for the new RMID and treat the
+> + * old RMID as the free RMID for the next rotation.
+> + *
+> + * Return %true or %false depending on whether we did any rotating.
+> + */
+> +static bool __intel_cqm_rmid_rotate(void)
+> +{
+> +	struct perf_event *group, *rotor, *start = NULL;
+> +	unsigned int nr_needed = 0;
+> +	unsigned int rmid;
+> +	bool rotated = false;
+> +	bool available;
+> +
+> +	mutex_lock(&cache_mutex);
+> +
+> +again:
+> +	/*
+> +	 * Fast path through this function if there are no groups and no
+> +	 * RMIDs that need cleaning.
+> +	 */
+> +	if (list_empty(&cache_groups) && list_empty(&cqm_rmid_limbo_lru))
+> +		goto out;
+> +
+> +	list_for_each_entry(group, &cache_groups, hw.cqm_groups_entry) {
+> +		if (!__rmid_valid(group->hw.cqm_rmid)) {
+> +			if (!start)
+> +				start = group;
+> +			nr_needed++;
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * We have some event groups, but they all have RMIDs assigned
+> +	 * and no RMIDs need cleaning.
+> +	 */
+> +	if (!nr_needed && list_empty(&cqm_rmid_limbo_lru))
+> +		goto out;
+> +
+> +	if (!nr_needed)
+> +		goto stabilize;
+> +
+> +	/*
+> +	 * We have more event groups without RMIDs than available RMIDs.
+> +	 *
+> +	 * We force deallocate the rmid of the group at the head of
+> +	 * cache_groups. The first event group without an RMID then gets
+> +	 * assigned intel_cqm_rotation_rmid. This ensures we always make
+> +	 * forward progress.
+> +	 *
+> +	 * Rotate the cache_groups list so the previous head is now the
+> +	 * tail.
+> +	 */
+> +	rotor = __intel_cqm_pick_and_rotate();
+> +	rmid = intel_cqm_xchg_rmid(rotor, INVALID_RMID);
+> +
+> +	/*
+> +	 * The group at the front of the list should always have a valid
+> +	 * RMID. If it doesn't then no groups have RMIDs assigned.
+> +	 */
+> +	if (!__rmid_valid(rmid))
+> +		goto stabilize;
+> +
+> +	/*
+> +	 * If the rotation is going to succeed, reduce the threshold so
+> +	 * that we don't needlessly reuse dirty RMIDs.
+> +	 */
+> +	if (__rmid_valid(intel_cqm_rotation_rmid)) {
+> +		intel_cqm_xchg_rmid(start, intel_cqm_rotation_rmid);
+> +		intel_cqm_rotation_rmid = INVALID_RMID;
+> +
+> +		if (__intel_cqm_threshold)
+> +			__intel_cqm_threshold--;
+> +	}
+> +
+> +	__put_rmid(rmid);
+> +
+> +	rotated = true;
+> +
+> +stabilize:
+> +	/*
+> +	 * We now need to stablize the RMID we freed above (if any) to
+> +	 * ensure that the next time we rotate we have an RMID with zero
+> +	 * occupancy value.
+> +	 *
+> +	 * Alternatively, if we didn't need to perform any rotation,
+> +	 * we'll have a bunch of RMIDs in limbo that need stabilizing.
+> +	 */
+> +	if (!intel_cqm_rmid_stabilize(&available)) {
+> +		unsigned int limit;
+> +
+> +		limit = __intel_cqm_max_threshold / cqm_l3_scale;
+> +		if (available && __intel_cqm_threshold < limit) {
+> +			__intel_cqm_threshold++;
+> +			goto again;
 
-diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
-index 983d951..916b8e2 100644
---- a/fs/pstore/Kconfig
-+++ b/fs/pstore/Kconfig
-@@ -21,6 +21,16 @@ config PSTORE_CONSOLE
- 	  When the option is enabled, pstore will log all kernel
- 	  messages, even if no oops or panic happened.
- 
-+config PSTORE_PMSG
-+	bool "Log user space messages"
-+	depends on PSTORE
-+	help
-+	  When the option is enabled, pstore will export a character
-+	  interface /dev/pmsg0 to log user space messages. On reboot
-+	  data can be retrieved from /sys/fs/pstore/pmsg-ramoops-[ID].
-+
-+	  If unsure, say N.
-+
- config PSTORE_FTRACE
- 	bool "Persistent function tracer"
- 	depends on PSTORE
-diff --git a/fs/pstore/Makefile b/fs/pstore/Makefile
-index 4c9095c..e647d8e 100644
---- a/fs/pstore/Makefile
-+++ b/fs/pstore/Makefile
-@@ -7,5 +7,7 @@ obj-y += pstore.o
- pstore-objs += inode.o platform.o
- obj-$(CONFIG_PSTORE_FTRACE)	+= ftrace.o
- 
-+obj-$(CONFIG_PSTORE_PMSG)	+= pmsg.o
-+
- ramoops-objs += ram.o ram_core.o
- obj-$(CONFIG_PSTORE_RAM)	+= ramoops.o
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index a381e6c..1b64c85 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -360,6 +360,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 		snprintf(name, sizeof(name), "powerpc-common-%s-%lld",
- 			psname, id);
- 		break;
-+	case PSTORE_TYPE_PMSG:
-+		snprintf(name, sizeof(name), "pmsg-%s-%lld", psname, id);
-+		break;
- 	case PSTORE_TYPE_UNKNOWN:
- 		snprintf(name, sizeof(name), "unknown-%s-%lld", psname, id);
- 		break;
-diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
-index 3b3d305..c36ba2c 100644
---- a/fs/pstore/internal.h
-+++ b/fs/pstore/internal.h
-@@ -45,6 +45,12 @@ extern void pstore_register_ftrace(void);
- static inline void pstore_register_ftrace(void) {}
- #endif
- 
-+#ifdef CONFIG_PSTORE_PMSG
-+extern void pstore_register_pmsg(void);
-+#else
-+static inline void pstore_register_pmsg(void) {}
-+#endif
-+
- extern struct pstore_info *psinfo;
- 
- extern void	pstore_set_kmsg_bytes(int);
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 0a9b72c..15ee78c 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -447,6 +447,7 @@ int pstore_register(struct pstore_info *psi)
- 	if ((psi->flags & PSTORE_FLAGS_FRAGILE) == 0) {
- 		pstore_register_console();
- 		pstore_register_ftrace();
-+		pstore_register_pmsg();
- 	}
- 
- 	if (pstore_update_ms >= 0) {
-diff --git a/fs/pstore/pmsg.c b/fs/pstore/pmsg.c
-new file mode 100644
-index 0000000..c5f8a44
---- /dev/null
-+++ b/fs/pstore/pmsg.c
-@@ -0,0 +1,101 @@
-+/*
-+ * Copyright 2014  Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/cdev.h>
-+#include <linux/device.h>
-+#include <linux/fs.h>
-+#include <linux/uaccess.h>
-+#include "internal.h"
-+
-+static loff_t pmsg_lseek(struct file *file, loff_t offset, int orig)
-+{
-+	return file->f_pos = 0;
-+}
-+
-+static ssize_t write_pmsg(struct file *file, const char __user *buf,
-+			  size_t count, loff_t *ppos)
-+{
-+	size_t i;
-+
-+	if (!count)
-+		return 0;
-+
-+	if (!access_ok(VERIFY_READ, buf, count))
-+		return -EFAULT;
-+
-+	for (i = 0; i < count; ) {
-+		char buffer[512];
-+		size_t c = min(count - i, sizeof(buffer));
-+		u64 id;
-+		long ret;
-+
-+		ret = __copy_from_user(buffer, buf + i, c);
-+		if (ret != 0)
-+			return -EFAULT;
-+		psinfo->write_buf(PSTORE_TYPE_PMSG, 0, &id, 0, buffer, 0, c,
-+				  psinfo);
-+
-+		i += c;
-+	}
-+	return count;
-+}
-+
-+static const struct file_operations pmsg_fops = {
-+	.owner		= THIS_MODULE,
-+	.llseek		= pmsg_lseek,
-+	.write		= write_pmsg,
-+};
-+
-+static struct class *pmsg_class;
-+static int pmsg_major;
-+#define PMSG_NAME "pmsg"
-+
-+static char *pmsg_devnode(struct device *dev, umode_t *mode)
-+{
-+	if (mode)
-+		*mode = 0220;
-+	return NULL;
-+}
-+
-+void pstore_register_pmsg(void)
-+{
-+	struct device *pmsg_device;
-+
-+	pmsg_major = register_chrdev(0, PMSG_NAME, &pmsg_fops);
-+	if (pmsg_major < 0) {
-+		pr_err("register_chrdev failed for pmsg\n");
-+		goto err;
-+	}
-+
-+	pmsg_class = class_create(THIS_MODULE, PMSG_NAME);
-+	if (IS_ERR(pmsg_class)) {
-+		pr_err("pmsg: device class file already in use\n");
-+		goto err_class;
-+	}
-+	pmsg_class->devnode = pmsg_devnode;
-+
-+	pmsg_device = device_create(pmsg_class, NULL, MKDEV(pmsg_major, 0),
-+					NULL, "%s%d", PMSG_NAME, 0);
-+	if (IS_ERR(pmsg_device)) {
-+		pr_err("pmsg: failed to create device\n");
-+		goto err_device;
-+	}
-+	return;
-+
-+err_device:
-+	class_destroy(pmsg_class);
-+err_class:
-+	unregister_chrdev(pmsg_major, PMSG_NAME);
-+err:
-+	return;
-+}
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 34ed8f8..39d1373 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -51,6 +51,10 @@ static ulong ramoops_ftrace_size = MIN_MEM_SIZE;
- module_param_named(ftrace_size, ramoops_ftrace_size, ulong, 0400);
- MODULE_PARM_DESC(ftrace_size, "size of ftrace log");
- 
-+static ulong ramoops_pmsg_size = MIN_MEM_SIZE;
-+module_param_named(pmsg_size, ramoops_pmsg_size, ulong, 0400);
-+MODULE_PARM_DESC(pmsg_size, "size of user space message log");
-+
- static ulong mem_address;
- module_param(mem_address, ulong, 0400);
- MODULE_PARM_DESC(mem_address,
-@@ -82,12 +86,14 @@ struct ramoops_context {
- 	struct persistent_ram_zone **przs;
- 	struct persistent_ram_zone *cprz;
- 	struct persistent_ram_zone *fprz;
-+	struct persistent_ram_zone *mprz;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
- 	unsigned int memtype;
- 	size_t record_size;
- 	size_t console_size;
- 	size_t ftrace_size;
-+	size_t pmsg_size;
- 	int dump_oops;
- 	struct persistent_ram_ecc_info ecc_info;
- 	unsigned int max_dump_cnt;
-@@ -96,6 +102,7 @@ struct ramoops_context {
- 	unsigned int dump_read_cnt;
- 	unsigned int console_read_cnt;
- 	unsigned int ftrace_read_cnt;
-+	unsigned int pmsg_read_cnt;
- 	struct pstore_info pstore;
- };
- 
-@@ -109,6 +116,7 @@ static int ramoops_pstore_open(struct pstore_info *psi)
- 	cxt->dump_read_cnt = 0;
- 	cxt->console_read_cnt = 0;
- 	cxt->ftrace_read_cnt = 0;
-+	cxt->pmsg_read_cnt = 0;
- 	return 0;
- }
- 
-@@ -164,6 +172,12 @@ static int ramoops_read_kmsg_hdr(char *buffer, struct timespec *time,
- 	return header_length;
- }
- 
-+static bool prz_ok(struct persistent_ram_zone *prz)
-+{
-+	return !!prz && !!(persistent_ram_old_size(prz) +
-+			   persistent_ram_ecc_string(prz, NULL, 0));
-+}
-+
- static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 				   int *count, struct timespec *time,
- 				   char **buf, bool *compressed,
-@@ -178,13 +192,16 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	prz = ramoops_get_next_prz(cxt->przs, &cxt->dump_read_cnt,
- 				   cxt->max_dump_cnt, id, type,
- 				   PSTORE_TYPE_DMESG, 1);
--	if (!prz)
-+	if (!prz_ok(prz))
- 		prz = ramoops_get_next_prz(&cxt->cprz, &cxt->console_read_cnt,
- 					   1, id, type, PSTORE_TYPE_CONSOLE, 0);
--	if (!prz)
-+	if (!prz_ok(prz))
- 		prz = ramoops_get_next_prz(&cxt->fprz, &cxt->ftrace_read_cnt,
- 					   1, id, type, PSTORE_TYPE_FTRACE, 0);
--	if (!prz)
-+	if (!prz_ok(prz))
-+		prz = ramoops_get_next_prz(&cxt->mprz, &cxt->pmsg_read_cnt,
-+					   1, id, type, PSTORE_TYPE_PMSG, 0);
-+	if (!prz_ok(prz))
- 		return 0;
- 
- 	if (!persistent_ram_old(prz))
-@@ -252,6 +269,11 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
- 			return -ENOMEM;
- 		persistent_ram_write(cxt->fprz, buf, size);
- 		return 0;
-+	} else if (type == PSTORE_TYPE_PMSG) {
-+		if (!cxt->mprz)
-+			return -ENOMEM;
-+		persistent_ram_write(cxt->mprz, buf, size);
-+		return 0;
- 	}
- 
- 	if (type != PSTORE_TYPE_DMESG)
-@@ -309,6 +331,9 @@ static int ramoops_pstore_erase(enum pstore_type_id type, u64 id, int count,
- 	case PSTORE_TYPE_FTRACE:
- 		prz = cxt->fprz;
- 		break;
-+	case PSTORE_TYPE_PMSG:
-+		prz = cxt->mprz;
-+		break;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -435,7 +460,7 @@ static int ramoops_probe(struct platform_device *pdev)
- 		goto fail_out;
- 
- 	if (!pdata->mem_size || (!pdata->record_size && !pdata->console_size &&
--			!pdata->ftrace_size)) {
-+			!pdata->ftrace_size && !pdata->pmsg_size)) {
- 		pr_err("The memory size and the record/console size must be "
- 			"non-zero\n");
- 		goto fail_out;
-@@ -447,6 +472,8 @@ static int ramoops_probe(struct platform_device *pdev)
- 		pdata->console_size = rounddown_pow_of_two(pdata->console_size);
- 	if (pdata->ftrace_size && !is_power_of_2(pdata->ftrace_size))
- 		pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
-+	if (pdata->pmsg_size && !is_power_of_2(pdata->pmsg_size))
-+		pdata->pmsg_size = rounddown_pow_of_two(pdata->pmsg_size);
- 
- 	cxt->size = pdata->mem_size;
- 	cxt->phys_addr = pdata->mem_address;
-@@ -454,12 +481,14 @@ static int ramoops_probe(struct platform_device *pdev)
- 	cxt->record_size = pdata->record_size;
- 	cxt->console_size = pdata->console_size;
- 	cxt->ftrace_size = pdata->ftrace_size;
-+	cxt->pmsg_size = pdata->pmsg_size;
- 	cxt->dump_oops = pdata->dump_oops;
- 	cxt->ecc_info = pdata->ecc_info;
- 
- 	paddr = cxt->phys_addr;
- 
--	dump_mem_sz = cxt->size - cxt->console_size - cxt->ftrace_size;
-+	dump_mem_sz = cxt->size - cxt->console_size - cxt->ftrace_size
-+			- cxt->pmsg_size;
- 	err = ramoops_init_przs(dev, cxt, &paddr, dump_mem_sz);
- 	if (err)
- 		goto fail_out;
-@@ -474,6 +503,10 @@ static int ramoops_probe(struct platform_device *pdev)
- 	if (err)
- 		goto fail_init_fprz;
- 
-+	err = ramoops_init_prz(dev, cxt, &cxt->mprz, &paddr, cxt->pmsg_size, 0);
-+	if (err)
-+		goto fail_init_mprz;
-+
- 	cxt->pstore.data = cxt;
- 	/*
- 	 * Console can handle any buffer size, so prefer LOG_LINE_MAX. If we
-@@ -517,6 +550,8 @@ fail_buf:
- 	kfree(cxt->pstore.buf);
- fail_clear:
- 	cxt->pstore.bufsize = 0;
-+	kfree(cxt->mprz);
-+fail_init_mprz:
- 	kfree(cxt->fprz);
- fail_init_fprz:
- 	kfree(cxt->cprz);
-@@ -574,6 +609,7 @@ static void ramoops_register_dummy(void)
- 	dummy_data->record_size = record_size;
- 	dummy_data->console_size = ramoops_console_size;
- 	dummy_data->ftrace_size = ramoops_ftrace_size;
-+	dummy_data->pmsg_size = ramoops_pmsg_size;
- 	dummy_data->dump_oops = dump_oops;
- 	/*
- 	 * For backwards compatibility ramoops.ecc=1 means 16 bytes ECC
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index ece0c6b..8884f6e 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -39,6 +39,7 @@ enum pstore_type_id {
- 	PSTORE_TYPE_PPC_RTAS	= 4,
- 	PSTORE_TYPE_PPC_OF	= 5,
- 	PSTORE_TYPE_PPC_COMMON	= 6,
-+	PSTORE_TYPE_PMSG	= 7,
- 	PSTORE_TYPE_UNKNOWN	= 255
- };
- 
-diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
-index 4af3fdc..9c9d6c1 100644
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -81,6 +81,7 @@ struct ramoops_platform_data {
- 	unsigned long	record_size;
- 	unsigned long	console_size;
- 	unsigned long	ftrace_size;
-+	unsigned long	pmsg_size;
- 	int		dump_oops;
- 	struct persistent_ram_ecc_info ecc_info;
- };
--- 
-2.2.0.rc0.207.ga3a616c
+afaict the again label will try and steal yet another rmid, if rmids
+don't decay fast enough, we could end up with all rmids on the limbo
+list and none active. Or am I missing something here?
 
+> +		}
+> +	}
+> +
+> +out:
+> +	mutex_unlock(&cache_mutex);
+> +	return rotated;
+> +}
