@@ -1,147 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354AbbAFHyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 02:54:00 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:52206 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbbAFHx6 (ORCPT
+	id S1753034AbbAFIBc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:01:32 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:45208 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbbAFIBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 02:53:58 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: Ley Foon Tan <lftan@altera.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] m68k: Switch to asm-generic/futex.h
-Date: Tue,  6 Jan 2015 08:53:55 +0100
-Message-Id: <1420530835-8123-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Tue, 6 Jan 2015 03:01:30 -0500
+Date: Tue, 6 Jan 2015 09:01:28 +0100
+From: Johan Hovold <johan@kernel.org>
+To: "Peterson, David" <David.Peterson@cel.com>
+Cc: "johan@kernel.org" <johan@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Added virtual com port VID/PID entries for CEL USB
+ sticks and MeshWorks devices Signed-off-by: David Peterson
+ <david.peterson@cel.com>
+Message-ID: <20150106080128.GA27633@localhost>
+References: <641A0889272F104D8B07278675C0C484010B1DC3@hq27>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <641A0889272F104D8B07278675C0C484010B1DC3@hq27>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of commit 00f634bc522dedc8 ("asm-generic: add generic futex for
-!CONFIG_SMP") asm-generic follows the m68k futex implementation.
+[ +CC: linux-usb]
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/include/asm/Kbuild  |  1 +
- arch/m68k/include/asm/futex.h | 94 -------------------------------------------
- 2 files changed, 1 insertion(+), 94 deletions(-)
- delete mode 100644 arch/m68k/include/asm/futex.h
+On Mon, Jan 05, 2015 at 08:46:52PM +0000, Peterson, David wrote:
+> From: David Peterson <david.peterson@cel.com>
 
-diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
-index 9b6c691874bd5d4f..1517ed1c64711028 100644
---- a/arch/m68k/include/asm/Kbuild
-+++ b/arch/m68k/include/asm/Kbuild
-@@ -6,6 +6,7 @@ generic-y += device.h
- generic-y += emergency-restart.h
- generic-y += errno.h
- generic-y += exec.h
-+generic-y += futex.h
- generic-y += hw_irq.h
- generic-y += ioctl.h
- generic-y += ipcbuf.h
-diff --git a/arch/m68k/include/asm/futex.h b/arch/m68k/include/asm/futex.h
-deleted file mode 100644
-index bc868af10c965269..0000000000000000
---- a/arch/m68k/include/asm/futex.h
-+++ /dev/null
-@@ -1,94 +0,0 @@
--#ifndef _ASM_M68K_FUTEX_H
--#define _ASM_M68K_FUTEX_H
--
--#ifdef __KERNEL__
--#if !defined(CONFIG_MMU)
--#include <asm-generic/futex.h>
--#else	/* CONFIG_MMU */
--
--#include <linux/futex.h>
--#include <linux/uaccess.h>
--#include <asm/errno.h>
--
--static inline int
--futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
--			      u32 oldval, u32 newval)
--{
--	u32 val;
--
--	if (unlikely(get_user(val, uaddr) != 0))
--		return -EFAULT;
--
--	if (val == oldval && unlikely(put_user(newval, uaddr) != 0))
--		return -EFAULT;
--
--	*uval = val;
--
--	return 0;
--}
--
--static inline int
--futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
--{
--	int op = (encoded_op >> 28) & 7;
--	int cmp = (encoded_op >> 24) & 15;
--	int oparg = (encoded_op << 8) >> 20;
--	int cmparg = (encoded_op << 20) >> 20;
--	int oldval, ret;
--	u32 tmp;
--
--	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
--		oparg = 1 << oparg;
--
--	pagefault_disable();	/* implies preempt_disable() */
--
--	ret = -EFAULT;
--	if (unlikely(get_user(oldval, uaddr) != 0))
--		goto out_pagefault_enable;
--
--	ret = 0;
--	tmp = oldval;
--
--	switch (op) {
--	case FUTEX_OP_SET:
--		tmp = oparg;
--		break;
--	case FUTEX_OP_ADD:
--		tmp += oparg;
--		break;
--	case FUTEX_OP_OR:
--		tmp |= oparg;
--		break;
--	case FUTEX_OP_ANDN:
--		tmp &= ~oparg;
--		break;
--	case FUTEX_OP_XOR:
--		tmp ^= oparg;
--		break;
--	default:
--		ret = -ENOSYS;
--	}
--
--	if (ret == 0 && unlikely(put_user(tmp, uaddr) != 0))
--		ret = -EFAULT;
--
--out_pagefault_enable:
--	pagefault_enable();	/* subsumes preempt_enable() */
--
--	if (ret == 0) {
--		switch (cmp) {
--		case FUTEX_OP_CMP_EQ: ret = (oldval == cmparg); break;
--		case FUTEX_OP_CMP_NE: ret = (oldval != cmparg); break;
--		case FUTEX_OP_CMP_LT: ret = (oldval < cmparg); break;
--		case FUTEX_OP_CMP_GE: ret = (oldval >= cmparg); break;
--		case FUTEX_OP_CMP_LE: ret = (oldval <= cmparg); break;
--		case FUTEX_OP_CMP_GT: ret = (oldval > cmparg); break;
--		default: ret = -ENOSYS;
--		}
--	}
--	return ret;
--}
--
--#endif /* CONFIG_MMU */
--#endif /* __KERNEL__ */
--#endif /* _ASM_M68K_FUTEX_H */
--- 
-1.9.1
+Almost there. Patch looks fine now, but the mail Subject (commit
+summary) is malformed (includes a sign-off tag).
 
+Care to resend with a subject like
+
+	"USB: cp210x: add ids for CEL USB sticks and MeshWorks devices"
+
+It doesn't hurt including a commit message (e.g. your current Subject)
+between From: and Signed-off-by: in the body.
+
+> Signed-off-by: David Peterson <david.peterson@cel.com>
+> ---
+>  drivers/usb/serial/cp210x.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c index 6c4eb3c..a6db2fc 100644
+> --- a/drivers/usb/serial/cp210x.c
+> +++ b/drivers/usb/serial/cp210x.c
+> @@ -120,6 +120,9 @@ static const struct usb_device_id id_table[] = {
+>  	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+>  	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+>  	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+> +	{ USB_DEVICE(0x10C4, 0x8856) }, /* CEL EM357 ZigBee USB Stick - LR */
+> +	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL EM357 ZigBee USB Stick */
+> +	{ USB_DEVICE(0x10C4, 0x8977) }, /* CEL MeshWorks DevKit Device */
+>  	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
+
+By the way, a recent patch changed this one to 0x8857. Is this indeed
+the same device as CEL EM357?
+
+	http://marc.info/?l=linux-usb&m=141966558701806&w=2
+
+>  	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+>  	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+
+Thanks,
+Johan
