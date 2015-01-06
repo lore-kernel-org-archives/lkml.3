@@ -1,150 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbbAFRPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:15:12 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33461 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436AbbAFRPK (ORCPT
+	id S932237AbbAFRPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:15:34 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:51295 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbbAFRPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:15:10 -0500
-Message-ID: <54AC1800.1020406@ti.com>
-Date: Tue, 6 Jan 2015 11:14:40 -0600
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Lokesh Vutla <lokeshvutla@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <santosh.shilimkar@oracle.com>, <t-kristo@ti.com>,
-        <nm@ti.com>, <nsekhar@ti.com>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
- without sysc
-References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com> <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com> <54AB9983.1040703@ti.com>
-In-Reply-To: <54AB9983.1040703@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Jan 2015 12:15:32 -0500
+From: Mark Salyzyn <salyzyn@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Salyzyn <salyzyn@android.com>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 1/3] pstore: use snprintf
+Date: Tue,  6 Jan 2015 09:15:21 -0800
+Message-Id: <1420564526-24420-1-git-send-email-salyzyn@android.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+No guarantees that the names will not exceed the
+name buffer with future adjustments.
 
-On 01/06/2015 02:14 AM, Lokesh Vutla wrote:
-> Hi Paul,
-> On Tuesday 06 January 2015 07:34 AM, Paul Walmsley wrote:
->>
->> Roger, Lokesh, could you try this one instead?
-> Yep, the below patch works on AM437x.
-> Boot logs here: http://paste.ubuntu.com/9680938/
-> 
-> Thanks and regards,
-> Lokesh
->>
->> It passes all the basic tests here except it does not boot on the 4460 
->> VAR-SOM-OM - unclear why at this point - but it would be good to see if it 
->> works on your AM4372 boards, since I don't have that one.
->>
->> Test logs are here:
->>
->> http://www.pwsan.com/omap/testlogs/hwmod_skip_only_remap_v3.19-rc/20150105171744/
->>
->>
->> - Paul
->>
->>
->> From 4f2e13bd2181e0ebede3aabc484aa2339830748a Mon Sep 17 00:00:00 2001
->> From: Paul Walmsley <paul@pwsan.com>
->> Date: Mon, 5 Jan 2015 15:49:57 -0700
->> Subject: [PATCH] Only skip ioremap() if IP block does not have OCP header
->>  registers. Experimental.
->>
->> ---
->>  arch/arm/mach-omap2/omap_hwmod.c | 33 +++++++++++++++++++++------------
->>  1 file changed, 21 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
->> index cbb908dc5cf0..03df8833d399 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod.c
->> @@ -1938,6 +1938,8 @@ static int _reset(struct omap_hwmod *oh)
->>  	pr_debug("omap_hwmod: %s: resetting\n", oh->name);
->>  
->>  	if (oh->class->reset) {
->> +		WARN(!oh->_mpu_rt_va, "Attempt to call custom reset with no MPU register target ioremapped: %s",
->> +		     oh->name);
->>  		r = oh->class->reset(oh);
->>  	} else {
->>  		if (oh->rst_lines_cnt > 0) {
->> @@ -2358,15 +2360,19 @@ static int of_dev_hwmod_lookup(struct device_node *np,
->>  }
->>  
->>  /**
->> - * _init_mpu_rt_base - populate the virtual address for a hwmod
->> + * _init_mpu_rt_base - populate the MPU port and virtual address
->>   * @oh: struct omap_hwmod * to locate the virtual address
->>   * @data: (unused, caller should pass NULL)
->>   * @index: index of the reg entry iospace in device tree
->>   * @np: struct device_node * of the IP block's device node in the DT data
->>   *
->> - * Cache the virtual address used by the MPU to access this IP block's
->> - * registers.  This address is needed early so the OCP registers that
->> - * are part of the device's address space can be ioremapped properly.
->> + * Cache the interconnect target port and the virtual address used by
->> + * the MPU to access this IP block's registers.  The address is needed
->> + * early so the OCP registers that are part of the device's address
->> + * space can be ioremapped properly.  The presence or absence of the
->> + * interconnect target port also indicates whether the hwmod code
->> + * should wait for the IP block to indicate readiness after it is
->> + * enabled.
->>   *
->>   * Returns 0 on success, -EINVAL if an invalid hwmod is passed, and
->>   * -ENXIO on absent or invalid register target address space.
->> @@ -2385,6 +2391,13 @@ static int __init _init_mpu_rt_base(struct omap_hwmod *oh, void *data,
->>  	if (oh->_int_flags & _HWMOD_NO_MPU_PORT)
->>  		return -ENXIO;
->>  
->> +	/*
->> +	 * If there's no need for the hwmod code to read or write to
->> +	 * the IP block registers, bail out early before the ioremap()
->> +	 */
->> +	if (!oh->class->sysc)
->> +		return 0;
->> +
->>  	mem = _find_mpu_rt_addr_space(oh);
->>  	if (!mem) {
->>  		pr_debug("omap_hwmod: %s: no MPU register target found\n",
->> @@ -2451,14 +2464,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
->>  				oh->name, np->name);
->>  	}
->>  
->> -	if (oh->class->sysc) {
->> -		r = _init_mpu_rt_base(oh, NULL, index, np);
->> -		if (r < 0) {
->> -			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
->> -			     oh->name);
->> -			return 0;
->> -		}
->> -	}
->> +	r = _init_mpu_rt_base(oh, NULL, index, np);
->> +	if (r < 0)
->> +		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
->> +			 oh->name);
+Signed-off-by: Mark Salyzyn <salyzyn@android.com>
+---
+ fs/pstore/inode.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-You have removed the return from the above block on failure. If any DT
-entry doesn't have the reg property, this will hang the kernel boot.
-Just remove the "reg" entry from any of the existing DT, and you will
-run into the issue, this is what 6423d6df1440 ("ARM: OMAP2+: hwmod:
-check for module address space during init") fixed. Also, are you sure
-you want to turn the WARN into a pr_debug, it won't even show during the
-kernel boot log if the reg base is missing.
-
-regards
-Suman
-
->>  
->>  	r = _init_clocks(oh, NULL);
->>  	if (r < 0) {
->>
-> 
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 5041660..a381e6c 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -338,32 +338,34 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+-		sprintf(name, "dmesg-%s-%lld%s", psname, id,
++		snprintf(name, sizeof(name), "dmesg-%s-%lld%s", psname, id,
+ 						compressed ? ".enc.z" : "");
+ 		break;
+ 	case PSTORE_TYPE_CONSOLE:
+-		sprintf(name, "console-%s-%lld", psname, id);
++		snprintf(name, sizeof(name), "console-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_FTRACE:
+-		sprintf(name, "ftrace-%s-%lld", psname, id);
++		snprintf(name, sizeof(name), "ftrace-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_MCE:
+-		sprintf(name, "mce-%s-%lld", psname, id);
++		snprintf(name, sizeof(name), "mce-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_RTAS:
+-		sprintf(name, "rtas-%s-%lld", psname, id);
++		snprintf(name, sizeof(name), "rtas-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_OF:
+-		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
++		snprintf(name, sizeof(name), "powerpc-ofw-%s-%lld", psname, id);
+ 		break;
+ 	case PSTORE_TYPE_PPC_COMMON:
+-		sprintf(name, "powerpc-common-%s-%lld", psname, id);
++		snprintf(name, sizeof(name), "powerpc-common-%s-%lld",
++			psname, id);
+ 		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+-		sprintf(name, "unknown-%s-%lld", psname, id);
++		snprintf(name, sizeof(name), "unknown-%s-%lld", psname, id);
+ 		break;
+ 	default:
+-		sprintf(name, "type%d-%s-%lld", type, psname, id);
++		snprintf(name, sizeof(name), "type%d-%s-%lld", type,
++			 psname, id);
+ 		break;
+ 	}
+ 
+-- 
+2.2.0.rc0.207.ga3a616c
 
