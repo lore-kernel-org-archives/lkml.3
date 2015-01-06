@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbbAFMQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 07:16:24 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:52664 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881AbbAFMQX (ORCPT
+	id S1755235AbbAFMPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 07:15:35 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63290 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754558AbbAFMPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 07:16:23 -0500
-Date: Tue, 6 Jan 2015 13:16:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kent Overstreet <kmo@daterainc.com>
+	Tue, 6 Jan 2015 07:15:34 -0500
+Date: Tue, 6 Jan 2015 04:18:06 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: Sedat Dilek <sedat.dilek@gmail.com>, Dave Jones <davej@codemonkey.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
 Subject: Re: Linux 3.19-rc3
-Message-ID: <20150106121603.GV29390@twins.programming.kicks-ass.net>
+Message-ID: <20150106121806.GC26845@kmo-pixel>
 References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
  <20150106094039.GI29390@twins.programming.kicks-ass.net>
  <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
@@ -23,56 +23,58 @@ References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
  <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
  <20150106110112.GQ29390@twins.programming.kicks-ass.net>
  <20150106110730.GA25846@kmo-pixel>
- <20150106114215.GS29390@twins.programming.kicks-ass.net>
- <20150106115645.GA26845@kmo-pixel>
+ <20150106115822.GU29390@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150106115645.GA26845@kmo-pixel>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20150106115822.GU29390@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 03:56:45AM -0800, Kent Overstreet wrote:
-> I do want to make the point that it's not really the callers that are broken;
-> especially those that are using prepare_to_wait() via wait_event(). Using
-> wait_event() is exactly what people _should_ be doing, instead of open coding
-> this stuff and/or coming up with hacks to work around the fact that
-> prepare_to_wait() is implemented via messing with the task state.
+On Tue, Jan 06, 2015 at 12:58:22PM +0100, Peter Zijlstra wrote:
+> On Tue, Jan 06, 2015 at 03:07:30AM -0800, Kent Overstreet wrote:
+> > http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
+> 
+> Very terse changelogs there :/
 
-Yes and no.
+erg, I've been slacking on changelogs lately. that closure_sync() fix definitely
+merits explanation.
 
-So I agree that people should be using wait_event(), but I was also very
-much hoping people would not be nesting sleep primitives like this.
+> Also, I'm not sure I agree with that whole closure_wait_event*() stuff,
+> the closure interface as it exist before that makes sense, but now
+> you're just mixing up things.
+> 
+> Why would you want to retrofit a lot of the wait_event*() stuff on top
+> of this?
 
-Now that we have the debug check its at least obvious when you do.
+Actually it's not retrofitted, closure_wait_event() dates to the very original
+closure code, it was dropped for awhile because bcache happened not to be using
+it anymore and I just dug it out of the git history.
 
-But yes I'm somewhat saddened by the amount of stuff that has come up
-because of this.
+Think of it this way - closures wait on things: sometimes you want to wait
+asynchronously, sometimes synchronously, but you want the same primitives for
+both - something has to bridge the gap between the async and sync stuff.
 
-> Anyways, my point is either wait_event() should be fixed to not muck with the
-> task state, or since that's not really practical we should at least provide a
-> standard drop in replacement that doesn't.
+For example - here's the code in the bcache-dev branch that handles reading the
+journal from each device in the cache set in parallel:
 
-I had explicitly not done this because I had hoped this would be rare
-and feel/felt we should not encourage this pattern.
+http://evilpiepirate.org/git/linux-bcache.git/tree/drivers/md/bcache/journal.c?h=bcache-dev#n399
 
-> And the drop in replacement more or less exists, closure_wait_event() has the
-> same semantics as wait_event, similarly with the lower level primitives I just
-> listed the conversions for.
+It's using closure_call() to kick off the read for each device, then
+closure_sync() to wait on them all to finish.
 
-See my other email, I don't really agree with the whole
-closure_wait_event() thing, I think it dilutes what closures are. You've
-just used what you know to cobble together something that has the right
-semantics, but its not at all related to the concept of what closures
-were.
+So closure_sync() is completely necessary, and then once you've got that
+closure_wait_event() is just a trivial macro.
 
-I'm also not sure we want to change the existing wait_event() stuff to
-allow nested sleeps per default, there is some additional overhead
-involved -- although it could turn out to not be an issue, we'd have to
-look at that.
+Also, closures could be using wait_queue_head_t instead of closure waitlist,
+mainly I didn't want to nearly double the size of closures to stuff in a
+__wait_queue.
 
-But IF we want to create a drop in replacement it should be in the wait
-code, it shouldn't be too hard once we've decided we do indeed want to
-go do this.
+I'd argue that "closures the junk for writing weird pseudo continuation passing
+style asynchronous C" are not really the important parts of closures, the
+important part is the infrastructure for waiting on stuff and then doing
+something when that stuff completes. closure_get(), closure_put() and waitlists
+are the real primitives; both closure_sync() and all the fancy asynchronous
+stuff are built on top of that.
