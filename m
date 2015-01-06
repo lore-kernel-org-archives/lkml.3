@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128AbbAFPvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:51:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36283 "EHLO mx1.redhat.com"
+	id S1755907AbbAFPoz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:44:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36338 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755847AbbAFPoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:44:46 -0500
-Date: Tue, 6 Jan 2015 17:44:41 +0200
+	id S1755887AbbAFPox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:44:53 -0500
+Date: Tue, 6 Jan 2015 17:44:43 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-sh@vger.kernel.org
-Subject: [PATCH v2 21/40] sh: fix put_user sparse errors
-Message-ID: <1420558883-10131-22-git-send-email-mst@redhat.com>
+        Chris Metcalf <cmetcalf@ezchip.com>
+Subject: [PATCH v2 22/40] tile: fix put_user sparse errors
+Message-ID: <1420558883-10131-23-git-send-email-mst@redhat.com>
 References: <1420558883-10131-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,47 +33,43 @@ For example:
 	__le32 x;
 	put_user(x, p);
 
-is safe, but currently triggers a sparse warning.
+is safe, but currently triggers a sparse warning on tile.
 
-Fix that up using __force.
+The reason has to do with this code:
+	__typeof((x)-(x))
+which seems to be a way to force check for an integer type.
 
-Note: this does not suppress any useful sparse checks since caller
-assigns x to typeof(*p), which in turn forces all the necessary type
-checks.
+Since this is part of __put_user_8 which is only ever used
+for unsigned and signed char types, this seems unnecessary -
+I also note that no other architecture has such protections.
+
+Fix that up using __force u64 cast.
+
+Note: this does not suppress any useful sparse checks since
+the original merely casted x to typeof(x-x).
+
+Tile currently does not trigger sparse warnings when get_user
+causes an illegal assignment across bitwise types.
+This patch does not attempt to fix this.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/sh/include/asm/uaccess_64.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/tile/include/asm/uaccess.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sh/include/asm/uaccess_64.h b/arch/sh/include/asm/uaccess_64.h
-index 2e07e0f..c01376c 100644
---- a/arch/sh/include/asm/uaccess_64.h
-+++ b/arch/sh/include/asm/uaccess_64.h
-@@ -59,19 +59,19 @@ do {								\
- 	switch (size) {						\
- 	case 1:							\
- 		retval = __put_user_asm_b((void *)&x,		\
--					  (long)ptr);		\
-+					  (__force long)ptr);	\
- 		break;						\
- 	case 2:							\
- 		retval = __put_user_asm_w((void *)&x,		\
--					  (long)ptr);		\
-+					  (__force long)ptr);	\
- 		break;						\
- 	case 4:							\
- 		retval = __put_user_asm_l((void *)&x,		\
--					  (long)ptr);		\
-+					  (__force long)ptr);	\
- 		break;						\
- 	case 8:							\
- 		retval = __put_user_asm_q((void *)&x,		\
--					  (long)ptr);		\
-+					  (__force long)ptr);	\
- 		break;						\
- 	default:						\
- 		__put_user_unknown();				\
+diff --git a/arch/tile/include/asm/uaccess.h b/arch/tile/include/asm/uaccess.h
+index b6cde32..22cffa1 100644
+--- a/arch/tile/include/asm/uaccess.h
++++ b/arch/tile/include/asm/uaccess.h
+@@ -246,7 +246,7 @@ extern int __get_user_bad(void)
+ #define __put_user_4(x, ptr, ret) __put_user_asm(sw, x, ptr, ret)
+ #define __put_user_8(x, ptr, ret)					\
+ 	({								\
+-		u64 __x = (__typeof((x)-(x)))(x);			\
++		u64 __x = (__force u64)(x);				\
+ 		int __lo = (int) __x, __hi = (int) (__x >> 32);		\
+ 		asm volatile("1: { sw %1, %2; addi %0, %1, 4 }\n"	\
+ 			     "2: { sw %0, %3; movei %0, 0 }\n"		\
 -- 
 MST
 
