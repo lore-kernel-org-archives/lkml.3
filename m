@@ -1,117 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168AbbAFTTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:19:09 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:57127 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741AbbAFTTH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:19:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
- <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
- <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
- <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
-From: Yuchung Cheng <ycheng@google.com>
-Date: Tue, 6 Jan 2015 11:18:24 -0800
-Message-ID: <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
-Subject: Re: TCP connection issues against Amazon S3
-To: Erik Grinaker <erik@bengler.no>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756485AbbAFTUt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:20:49 -0500
+Received: from mail.kernel.org ([198.145.29.136]:43561 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753490AbbAFTUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 14:20:44 -0500
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 1/4] f2fs: clean up to remove parameter
+Date: Tue,  6 Jan 2015 11:20:31 -0800
+Message-Id: <1420572034-53758-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 11:01 AM, Erik Grinaker <erik@bengler.no> wrote:
->
->> On 06 Jan 2015, at 18:33, Yuchung Cheng <ycheng@google.com> wrote:
->>
->> On Tue, Jan 6, 2015 at 10:17 AM, Erik Grinaker <erik@bengler.no> wrote:
->>>
->>>> On 06 Jan 2015, at 17:20, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>>> On Tue, 2015-01-06 at 16:11 +0000, Erik Grinaker wrote:
->>>>>> On 06 Jan 2015, at 16:04, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>>>>> On Tue, 2015-01-06 at 15:14 +0000, Erik Grinaker wrote:
->>>>>>> (CCing Yuchung, as his name comes up in the relevant commits)
->>>>>>>
->>>>>>> After upgrading from Ubuntu 12.04.5 to 14.04.1 we have begun seeing
->>>>>>> intermittent TCP connection hangs for HTTP image requests against
->>>>>>> Amazon S3. 3-5% of requests will suddenly stall in the middle of the
->>>>>>> transfer before timing out. We see this problem across a range of
->>>>>>> servers, in several data centres and networks, all located in Norway.
->>>>>>>
->>>>>>> A packet dump [1] shows repeated ACK retransmits for some of the
->> TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
->
-> Ah, sorry, they are indeed DUPACKs; I thought they were the same thing.
->
->> I am trying to understand the problem. Could you confirm that it's the
->> HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
->> from the receiver (your host)?
->
-> Yes. We run HTTP GET requests against S3 for images (typically a few megs in size). Once in a while, the response transfer stalls about halfway through, until the client (Curl) times out. The packet dump shows loads of DUPACKs early on, then TCP retransmissions until the connection is closed.
+This patch uses dn->data_blkaddr as a parameter for the destination block
+address.
 
-Without SACK, the sender uses NewReno fast recovery and recovers one
-packet per RTT. In contrast, SACK-based fast recovery can potentially
-recover all lost packets in one RTT.
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+---
+ fs/f2fs/data.c     | 27 ++++++++++++++-------------
+ fs/f2fs/f2fs.h     |  2 +-
+ fs/f2fs/file.c     |  3 ++-
+ fs/f2fs/inline.c   |  2 +-
+ fs/f2fs/recovery.c |  3 ++-
+ fs/f2fs/segment.c  |  1 +
+ 6 files changed, 21 insertions(+), 17 deletions(-)
 
-I still can't explain the problem seen on newer kernel. But that got
-to be some receiver related changes, not
-0f7cc9a3c2bd89b15720dbf358e9b9e62af27126 b/c it's a sender side
-change.
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 6308435..2c0cb66 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -197,7 +197,7 @@ alloc_new:
+  *  ->node_page
+  *    update block addresses in the node page
+  */
+-static void __set_data_blkaddr(struct dnode_of_data *dn, block_t new_addr)
++static void __set_data_blkaddr(struct dnode_of_data *dn)
+ {
+ 	struct f2fs_node *rn;
+ 	__le32 *addr_array;
+@@ -210,7 +210,7 @@ static void __set_data_blkaddr(struct dnode_of_data *dn, block_t new_addr)
+ 
+ 	/* Get physical address of data block */
+ 	addr_array = blkaddr_in_node(rn);
+-	addr_array[ofs_in_node] = cpu_to_le32(new_addr);
++	addr_array[ofs_in_node] = cpu_to_le32(dn->data_blkaddr);
+ 	set_page_dirty(node_page);
+ }
+ 
+@@ -225,8 +225,8 @@ int reserve_new_block(struct dnode_of_data *dn)
+ 
+ 	trace_f2fs_reserve_new_block(dn->inode, dn->nid, dn->ofs_in_node);
+ 
+-	__set_data_blkaddr(dn, NEW_ADDR);
+ 	dn->data_blkaddr = NEW_ADDR;
++	__set_data_blkaddr(dn);
+ 	mark_inode_dirty(dn->inode);
+ 	sync_inode_page(dn);
+ 	return 0;
+@@ -291,19 +291,19 @@ static int check_extent_cache(struct inode *inode, pgoff_t pgofs,
+ 	return 0;
+ }
+ 
+-void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
++void update_extent_cache(struct dnode_of_data *dn)
+ {
+ 	struct f2fs_inode_info *fi = F2FS_I(dn->inode);
+ 	pgoff_t fofs, start_fofs, end_fofs;
+ 	block_t start_blkaddr, end_blkaddr;
+ 	int need_update = true;
+ 
+-	f2fs_bug_on(F2FS_I_SB(dn->inode), blk_addr == NEW_ADDR);
++	f2fs_bug_on(F2FS_I_SB(dn->inode), dn->data_blkaddr == NEW_ADDR);
+ 	fofs = start_bidx_of_node(ofs_of_node(dn->node_page), fi) +
+ 							dn->ofs_in_node;
+ 
+ 	/* Update the page address in the parent node */
+-	__set_data_blkaddr(dn, blk_addr);
++	__set_data_blkaddr(dn);
+ 
+ 	if (is_inode_flag_set(fi, FI_NO_EXTENT))
+ 		return;
+@@ -321,16 +321,16 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
+ 
+ 	/* Initial extent */
+ 	if (fi->ext.len == 0) {
+-		if (blk_addr != NULL_ADDR) {
++		if (dn->data_blkaddr != NULL_ADDR) {
+ 			fi->ext.fofs = fofs;
+-			fi->ext.blk_addr = blk_addr;
++			fi->ext.blk_addr = dn->data_blkaddr;
+ 			fi->ext.len = 1;
+ 		}
+ 		goto end_update;
+ 	}
+ 
+ 	/* Front merge */
+-	if (fofs == start_fofs - 1 && blk_addr == start_blkaddr - 1) {
++	if (fofs == start_fofs - 1 && dn->data_blkaddr == start_blkaddr - 1) {
+ 		fi->ext.fofs--;
+ 		fi->ext.blk_addr--;
+ 		fi->ext.len++;
+@@ -338,7 +338,7 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
+ 	}
+ 
+ 	/* Back merge */
+-	if (fofs == end_fofs + 1 && blk_addr == end_blkaddr + 1) {
++	if (fofs == end_fofs + 1 && dn->data_blkaddr == end_blkaddr + 1) {
+ 		fi->ext.len++;
+ 		goto end_update;
+ 	}
+@@ -572,8 +572,8 @@ static int __allocate_data_block(struct dnode_of_data *dn)
+ 	if (unlikely(!inc_valid_block_count(sbi, dn->inode, 1)))
+ 		return -ENOSPC;
+ 
+-	__set_data_blkaddr(dn, NEW_ADDR);
+ 	dn->data_blkaddr = NEW_ADDR;
++	__set_data_blkaddr(dn);
+ 
+ 	get_node_info(sbi, dn->nid, &ni);
+ 	set_summary(&sum, dn->nid, dn->ofs_in_node, ni.version);
+@@ -584,7 +584,8 @@ static int __allocate_data_block(struct dnode_of_data *dn)
+ 
+ 	/* direct IO doesn't use extent cache to maximize the performance */
+ 	set_inode_flag(F2FS_I(dn->inode), FI_NO_EXTENT);
+-	update_extent_cache(new_blkaddr, dn);
++	dn->data_blkaddr = new_blkaddr;
++	update_extent_cache(dn);
+ 	clear_inode_flag(F2FS_I(dn->inode), FI_NO_EXTENT);
+ 
+ 	/* update i_size */
+@@ -784,7 +785,7 @@ int do_write_data_page(struct page *page, struct f2fs_io_info *fio)
+ 		set_inode_flag(F2FS_I(inode), FI_UPDATE_WRITE);
+ 	} else {
+ 		write_data_page(page, &dn, fio);
+-		update_extent_cache(fio->blk_addr, &dn);
++		update_extent_cache(&dn);
+ 		set_inode_flag(F2FS_I(inode), FI_APPEND_WRITE);
+ 	}
+ out_writepage:
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index c48847e..37e935a 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1478,7 +1478,7 @@ void f2fs_submit_page_mbio(struct f2fs_sb_info *, struct page *,
+ 						struct f2fs_io_info *);
+ int reserve_new_block(struct dnode_of_data *);
+ int f2fs_reserve_block(struct dnode_of_data *, pgoff_t);
+-void update_extent_cache(block_t, struct dnode_of_data *);
++void update_extent_cache(struct dnode_of_data *);
+ struct page *find_data_page(struct inode *, pgoff_t, bool);
+ struct page *get_lock_data_page(struct inode *, pgoff_t);
+ struct page *get_new_data_page(struct inode *, struct page *, pgoff_t, bool);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index f172ddc4..5df3367 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -429,7 +429,8 @@ int truncate_data_blocks_range(struct dnode_of_data *dn, int count)
+ 		if (blkaddr == NULL_ADDR)
+ 			continue;
+ 
+-		update_extent_cache(NULL_ADDR, dn);
++		dn->data_blkaddr = NULL_ADDR;
++		update_extent_cache(dn);
+ 		invalidate_blocks(sbi, blkaddr);
+ 		nr_free++;
+ 	}
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index 0c3f3f9..fa2aa2f 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -116,7 +116,7 @@ no_update:
+ 	set_page_writeback(page);
+ 	fio.blk_addr = dn->data_blkaddr;
+ 	write_data_page(page, dn, &fio);
+-	update_extent_cache(fio.blk_addr, dn);
++	update_extent_cache(dn);
+ 	f2fs_wait_on_page_writeback(page, DATA);
+ 	if (dirty)
+ 		inode_dec_dirty_pages(dn->inode);
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 9160a37..c4211a5 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -396,7 +396,8 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+ 
+ 			/* write dummy data page */
+ 			recover_data_page(sbi, NULL, &sum, src, dest);
+-			update_extent_cache(dest, &dn);
++			dn.data_blkaddr = dest;
++			update_extent_cache(&dn);
+ 			recovered++;
+ 		}
+ 		dn.ofs_in_node++;
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index f995a85..8144a30 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1226,6 +1226,7 @@ void write_data_page(struct page *page, struct dnode_of_data *dn,
+ 	get_node_info(sbi, dn->nid, &ni);
+ 	set_summary(&sum, dn->nid, dn->ofs_in_node, ni.version);
+ 	do_write_page(sbi, page, &sum, fio);
++	dn->data_blkaddr = fio->blk_addr;
+ }
+ 
+ void rewrite_data_page(struct page *page, struct f2fs_io_info *fio)
+-- 
+2.1.1
 
->
->> btw I suspect some middleboxes are stripping SACKOK options from your
->> SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
->
-> That may be. I just tested this on a server in the Netherlands, and I can not reproduce the problem there, while I can reproduce it from multiple locations and ISPs in Norway. Would it be helpful to have a packet dump from the functioning Netherlands server as well?
-
-
-
->
->
->>>>>>> requests. Using Ubuntu mainline kernels, we found the problem to have
->>>>>>> been introduced between 3.11.10 and 3.12.0, possibly in
->>>>>>> 0f7cc9a3c2bd89b15720dbf358e9b9e62af27126. The problem is also present
->>>>>>> in 3.18.1. Disabling tcp_window_scaling seems to solve it, but has
->>>>>>> obvious drawbacks for transfer speeds. Other sysctls do not seem to
->>>>>>> affect it.
->>>>>>>
->>>>>>> I am not sure if this is fundamentally a kernel bug or a network
->>>>>>> issue, but we did not see this problem with older kernels.
->>>>>>>
->>>>>>> [1] http://abstrakt.bengler.no/tcp-issues-s3.pcap.bz2
->>>>>>
->>>>>>
->>>>>> CC netdev
->>>>>>
->>>>>> This looks like the bug we fixed here :
->>>>>>
->>>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=39bb5e62867de82b269b07df900165029b928359
->>>>>
->>>>> Has that patch gone into a release? Because the problem persists with 3.18.1.
->>>>
->>>> Patch is in 3.18.1 yes.
->>>>
->>>> So thats a separate issue.
->>>>
->>>> Can you confirm pcap was taken at receiver (195.159.221.106), not sender
->>>> (54.231.136.74) , and on which host is running the 'buggy kernel' ?
->>>
->>> Yes, pcap was taken on receiver (195.159.221.106).
->>>
->>>> If the sender is broken, changing the kernel on receiver wont help.
->>>>
->>>> BTW not using sack (on 54.231.132.98) is terrible for performance in
->>>> lossy environments.
->>>
->>> It may well be that the sender is broken; however, the sender is Amazon S3, so I do not have any control over it. And in any case, the problem goes away with 3.11.10 on receiver, but persists with 3.12.0 (or later) on receiver, so there must be some change in 3.12.0 which has caused this to trigger.
->>>
->>> If you are confident that the problem is with Amazon, I can get in touch with their engineering department.
->
