@@ -1,134 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678AbbAFOzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:55:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296AbbAFOy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:54:59 -0500
-Date: Tue, 6 Jan 2015 16:54:47 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Fam Zheng <famz@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Venkatesh Srinivas <venkateshs@google.com>
-Subject: Re: [PATCH v3] virtio-scsi: Fix the race condition in
- virtscsi_handle_event
-Message-ID: <20150106145447.GA7787@redhat.com>
-References: <1420550705-22162-1-git-send-email-famz@redhat.com>
+	id S1755377AbbAFO4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:56:31 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54698 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264AbbAFO4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 09:56:30 -0500
+Date: Tue, 6 Jan 2015 15:56:14 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/fair: Fix RCU stall upon ENOMEM
+ atsched_create_group().
+Message-ID: <20150106145614.GZ29390@twins.programming.kicks-ass.net>
+References: <201412252210.GCC30204.SOMVFFOtQJFLOH@I-love.SAKURA.ne.jp>
+ <20150106141012.GY29390@twins.programming.kicks-ass.net>
+ <201501062345.IGG21352.SQFHJOOOVtMFFL@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420550705-22162-1-git-send-email-famz@redhat.com>
+In-Reply-To: <201501062345.IGG21352.SQFHJOOOVtMFFL@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 09:25:05PM +0800, Fam Zheng wrote:
-> There is a race condition in virtscsi_handle_event, when many device
-> hotplug/unplug events flush in quickly.
-> 
-> The scsi_remove_device in virtscsi_handle_transport_reset may trigger
-> the BUG_ON in scsi_target_reap, because the state is altered behind it,
-> probably by scsi_scan_host of another event. I'm able to reproduce it by
-> repeatedly plugging and unplugging a scsi disk with the same lun number.
-> 
-> To fix this, a single thread workqueue (local to the module) is added,
-> which makes the scan work serialized.
+On Tue, Jan 06, 2015 at 11:45:29PM +0900, Tetsuo Handa wrote:
+> Peter Zijlstra wrote:
+> > On Thu, Dec 25, 2014 at 10:10:45PM +0900, Tetsuo Handa wrote:
+> > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > > index ef2b104..586ee15 100644
+> > > --- a/kernel/sched/fair.c
+> > > +++ b/kernel/sched/fair.c
+> > > @@ -7756,8 +7756,12 @@ static void task_move_group_fair(struct task_struct *p, int queued)
+> > >  void free_fair_sched_group(struct task_group *tg)
+> > >  {
+> > >  	int i;
+> > > +	struct cfs_bandwidth *cfs_b;
+> > >  
+> > > -	destroy_cfs_bandwidth(tg_cfs_bandwidth(tg));
+> > > +	/* Check whether init_cfs_bandwidth() was called. */
+> > > +	cfs_b = tg_cfs_bandwidth(tg);
+> > > +	if (cfs_b->throttled_cfs_rq.next)
+> > > +		destroy_cfs_bandwidth(cfs_b);
+> > >  
+> > >  	for_each_possible_cpu(i) {
+> > >  		if (tg->cfs_rq)
+> > 
+> > This doesn't actually compile for !CONFIG_CFS_BANDWIDTH, how about:
+> > 
+> > ---
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -4005,6 +4005,10 @@ void __start_cfs_bandwidth(struct cfs_ba
+> >  
+> >  static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+> >  {
+> > +	/* init_cfs_bandwidth() was not called */
+> > +	if (!cfs_b->throttled_cfs_rq.next)
+> > +		return;
+> > +
+> >  	hrtimer_cancel(&cfs_b->period_timer);
+> >  	hrtimer_cancel(&cfs_b->slack_timer);
+> >  }
+> > 
+> I posted "#ifdef CONFIG_CFS_BANDWIDTH" version 7 minutes ago.
+> But I'm fine with your patch. Thank you.
 
-All wqs are serialized:
-
-	Note that the flag WQ_NON_REENTRANT no longer exists as all workqueues
-	are now non-reentrant - any work item is guaranteed to be executed by
-	at most one worker system-wide at any given time.
-
-
-> With this change, the panic goes
-> away.
-
-I think the commit log is confusing.
-serialization can not be an issue.
-
-At a guess, what happens is two events are processed out of order,
-so unplug bypasses another event, causing use after free errors.
-
-With this in mind, your patch will indeed fix the issue, but
-a better fix would be to call alloc_ordered_workqueue.
-
-> Signed-off-by: Fam Zheng <famz@redhat.com>
-> ---
-> 
-> v3: Fix spacing and destroy order. (MST)
-> ---
->  drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index c52bb5d..144bb73 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -120,6 +120,7 @@ struct virtio_scsi {
->  
->  static struct kmem_cache *virtscsi_cmd_cache;
->  static mempool_t *virtscsi_cmd_pool;
-> +static struct workqueue_struct *virtscsi_scan_wq;
->  
->  static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
->  {
-> @@ -404,7 +405,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
->  	struct virtio_scsi_event_node *event_node = buf;
->  
->  	if (!vscsi->stop_events)
-> -		queue_work(system_freezable_wq, &event_node->work);
-> +		queue_work(virtscsi_scan_wq, &event_node->work);
-
-This means wq isn't freezable anymore.
-
->  }
->  
->  static void virtscsi_event_done(struct virtqueue *vq)
-> @@ -1119,6 +1120,13 @@ static int __init init(void)
->  		pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
->  		goto error;
->  	}
-> +
-> +	virtscsi_scan_wq = create_singlethread_workqueue("virtscsi-scan");
-> +	if (!virtscsi_scan_wq) {
-> +		pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
-> +		goto error;
-> +	}
-> +
-
-Documentation/workqueue.txt says:
-alloc_workqueue() allocates a wq.  The original create_*workqueue()
-functions are deprecated and scheduled for removal.  alloc_workqueue()
-takes three arguments - @name, @flags and @max_active.
-
-
->  	ret = register_virtio_driver(&virtio_scsi_driver);
->  	if (ret < 0)
->  		goto error;
-> @@ -1126,6 +1134,9 @@ static int __init init(void)
->  	return 0;
->  
->  error:
-> +	if (virtscsi_scan_wq) {
-> +		destroy_workqueue(virtscsi_scan_wq);
-> +	}
-
-Single line, shouldn't use {} here.
-
->  	if (virtscsi_cmd_pool) {
->  		mempool_destroy(virtscsi_cmd_pool);
->  		virtscsi_cmd_pool = NULL;
-> @@ -1140,6 +1151,7 @@ error:
->  static void __exit fini(void)
->  {
->  	unregister_virtio_driver(&virtio_scsi_driver);
-> +	destroy_workqueue(virtscsi_scan_wq);
->  	mempool_destroy(virtscsi_cmd_pool);
->  	kmem_cache_destroy(virtscsi_cmd_cache);
->  }
-> -- 
-> 1.9.3
+Yeah saw that, its what I did first too, then figured the ifdef was ugly
+;-)
