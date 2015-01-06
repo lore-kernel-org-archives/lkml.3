@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491AbbAFOcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:32:53 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:58839 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268AbbAFOcv (ORCPT
+	id S1755524AbbAFOdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:33:12 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:47105 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479AbbAFOdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:32:51 -0500
+	Tue, 6 Jan 2015 09:33:09 -0500
+Message-ID: <54ABF221.7000305@suse.cz>
+Date: Tue, 06 Jan 2015 15:33:05 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
-References: <1419782872-2991-1-git-send-email-aniroop.mathur@gmail.com>
-	<alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
-Date: Tue, 6 Jan 2015 20:02:50 +0530
-Message-ID: <CADYu308MmdGeajFTDt38zZSy7K2VKbDppuqmiJn=1ZwL5d1vmw@mail.gmail.com>
-Subject: Re: [PATCH] hid: Initialize battery_no to -1 & correct its format string
-From: Aniroop Mathur <aniroop.mathur@gmail.com>
-To: Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pingc@wacom.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, a.mathur@samsung.com
-Content-Type: text/plain; charset=UTF-8
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Francesco Ruggeri <fruggeri@aristanetworks.com>,
+        Francesco Ruggeri <fruggeri@arista.com>
+Subject: Re: [PATCH] Revert "tty: Fix pty master poll() after slave closes
+ v2"
+References: <1419941829-6536-1-git-send-email-peter@hurleysoftware.com> <54A29B0A.3060707@hurleysoftware.com>
+In-Reply-To: <54A29B0A.3060707@hurleysoftware.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mr. Jason and Mr. Ping,
+On 12/30/2014, 01:31 PM, Peter Hurley wrote:
+> On 12/30/2014 07:17 AM, Peter Hurley wrote:
+>> This reverts commit c4dc304677e8d566572c4738d95c48be150c6606.
+>> This fix is superseded by commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
+>> 'pty, n_tty: Simplify input processing on final close'.
+>>
+>> The final close now waits for input processing to complete before
+>> destroying the pty, so poll() does not need to special case this
+>> condition.
+> 
+> Greg,
+> 
+> As noted in this commit log, commit c4dc304677e8d566572c4738d95c48be150c6606,
+> 'tty: Fix pty master poll() after slave closes v2', is not required
+> after commit 52bce7f8d4fc633c9a9d0646eef58ba6ae9a3b73,
+> 'pty, n_tty: Simplify input processing on final close'
+> 
+> However, 'tty: Fix pty master poll() after slave closes v2' is appropriate
+> for stable back to v3.12.
 
-Please update about below patch.
-Except avoiding subtraction, there is also a need to avoid negative
-battery name which may come due to %ld, so need to change to %lu.
+Now applied to 3.12. A backport was needed due to the later change of
+the input_available_p 2nd parameter.
 
-Thanks,
-Aniroop
-
-On Mon, Dec 29, 2014 at 5:33 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Sun, 28 Dec 2014, Aniroop Mathur wrote:
->
->> From: Aniroop Mathur <a.mathur@samsung.com>
->>
->> This patch initializes battery_no to -1 to avoid extra subtraction
->> operation performed everytime wacom battery is initialized
->
-> This is so femto-optimization, that I don't really care deeply. Adding
-> Jason and Ping to CC. If they want this, I'll apply the patch.
->
->> and correct format string of unsigned long from %ld to %lu.
->>
->> Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
->> ---
->>  drivers/hid/wacom_sys.c | 8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
->> index 129fd33..4b5ff84 100644
->> --- a/drivers/hid/wacom_sys.c
->> +++ b/drivers/hid/wacom_sys.c
->> @@ -919,17 +919,17 @@ static int wacom_ac_get_property(struct power_supply *psy,
->>
->>  static int wacom_initialize_battery(struct wacom *wacom)
->>  {
->> -     static atomic_t battery_no = ATOMIC_INIT(0);
->> +     static atomic_t battery_no = ATOMIC_INIT(-1);
->>       int error;
->>       unsigned long n;
->>
->>       if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
->> -             n = atomic_inc_return(&battery_no) - 1;
->> +             n = atomic_inc_return(&battery_no);
->>
->>               wacom->battery.properties = wacom_battery_props;
->>               wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
->>               wacom->battery.get_property = wacom_battery_get_property;
->> -             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%ld", n);
->> +             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%lu", n);
->>               wacom->battery.name = wacom->wacom_wac.bat_name;
->>               wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
->>               wacom->battery.use_for_apm = 0;
->> @@ -937,7 +937,7 @@ static int wacom_initialize_battery(struct wacom *wacom)
->>               wacom->ac.properties = wacom_ac_props;
->>               wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
->>               wacom->ac.get_property = wacom_ac_get_property;
->> -             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
->> +             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%lu", n);
->>               wacom->ac.name = wacom->wacom_wac.ac_name;
->>               wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
->>               wacom->ac.use_for_apm = 0;
->> --
->> 1.9.1
->>
->
-> --
-> Jiri Kosina
-> SUSE Labs
+thanks,
+-- 
+js
+suse labs
