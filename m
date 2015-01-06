@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340AbbAFSAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:00:13 -0500
-Received: from mga03.intel.com ([134.134.136.65]:44569 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932285AbbAFSAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:00:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,709,1413270000"; 
-   d="scan'208";a="647120848"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Borislav Petkov <bp@alien8.de>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Oleg Nesterov" <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        =?utf-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Subject: RE: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce
- tricks
-Thread-Topic: [PATCH] x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce
- tricks
-Thread-Index: AQHQKUxotoHiYG/AiEO7foniceCOyZyzYk4w
-Date: Tue, 6 Jan 2015 18:00:08 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3299127A@ORSMSX114.amr.corp.intel.com>
-References: <CALCETrV6=aWoAckieQkPJ4BCr9VzU=9080EmLfeL4ZWm+Hr55g@mail.gmail.com>
- <54ab2ffa301102cd6e@agluck-desk.sc.intel.com>
- <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
-In-Reply-To: <CALCETrV+mchcQ5SgBO8+xLvw9rrHm4yvq+wZtQsD1EMMGzAMEw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S932383AbbAFSBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:01:43 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:36570 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755625AbbAFSBl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 13:01:41 -0500
 MIME-Version: 1.0
+In-Reply-To: <CACna6rxF1OKRZSpaL=+XzSV2kCpMH5LuB-B+eWV7zF8MJ-9tog@mail.gmail.com>
+References: <1420127170-28421-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<CACna6rznUcqGTK0t1k=kjn0NVLycq865780ozyB+VYu78d_BSg@mail.gmail.com>
+	<CACna6rxbGRdw7XSYvHAJGxJvMVwjVbAL4ynBM3m9rNggh7gCVQ@mail.gmail.com>
+	<CA+icZUWOXMEyobZkudW9BEfkaWFTXQL9XF26g7oJMCzt=4==6g@mail.gmail.com>
+	<CAKXHbyO70WdWekSYCY9spMbX2+_kdKTp3JoreDKpCdUBzFwYqw@mail.gmail.com>
+	<CACna6rxTYUWvxvu0rFydWxkjbYdHfhV=o+9A+ViCpbV-LFx7fw@mail.gmail.com>
+	<CAKXHbyMqTk=k7eieBNtAD+n6+4w3weL82twHBo-o8ebm_3+wvg@mail.gmail.com>
+	<CACna6rxF1OKRZSpaL=+XzSV2kCpMH5LuB-B+eWV7zF8MJ-9tog@mail.gmail.com>
+Date: Tue, 6 Jan 2015 19:01:39 +0100
+Message-ID: <CAKXHbyPPiiqN_e5kgOb36gLeTR+b==8ZXQbNUrnKGCbDzqxLaw@mail.gmail.com>
+Subject: Re: [PATCH] net: wireless: b43legacy: radio.c: Remove unused function
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Stefano Brivio <stefano.brivio@polimi.it>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        b43-dev <b43-dev@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t06I0Jce015075
 
-> For the context-related bits:
+2015-01-05 7:34 GMT+01:00 RafaÅ‚ MiÅ‚ecki <zajec5@gmail.com>:
+> On 3 January 2015 at 13:28, Rickard Strandqvist
+> <rickard_strandqvist@spectrumdigital.se> wrote:
+>> 2015-01-02 22:34 GMT+01:00 RafaÅ‚ MiÅ‚ecki <zajec5@gmail.com>:
+>>>
+>>> 1) I gave you Ack for the changes
+>>> 2) You could drop "net: wireless: " or better use something Sedat proposed
+>>
+>> Nice, yes I miss the Ack :)
+>>
+>> I just got one more complaining about my subject-line in "net: wireless: "
+>> I use some sed call for this, so it's easy to fix. I will now remove that
+>> part hereinafter.
 >
-> Reviewed-by: Andy Lutomirski <luto@amacapital.net>
-Thanks.
+> Will you re-send this patch with a proper subject then, please?
+>
+> --
+> RafaÅ‚
 
-> Should I stick this in my -next branch so it can stew?
 
-That's fine with me.  Boris ... any comments?
+Hi RafaÅ‚
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Ok, resent the patch.
+
+Just a thought about this naming.
+Now I have changed in radio.c and radio.h, what happens when I send
+another patch for other files in the same directory, the caption will
+then be identical.
+
+
+Kind regards
+Rickard Strandqvist
