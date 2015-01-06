@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932780AbbAFTsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:48:10 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:36770 "EHLO
+	id S932895AbbAFTqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:46:09 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:35480 "EHLO
 	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbbAFTpy (ORCPT
+	with ESMTP id S1754969AbbAFTpz (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 6 Jan 2015 14:45:54 -0500
+	Tue, 6 Jan 2015 14:45:55 -0500
 From: Davidlohr Bueso <dave@stgolabs.net>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Davidlohr Bueso <dave@stgolabs.net>, linux-kernel@vger.kernel.org,
         Davidlohr Bueso <dbueso@suse.de>
-Subject: [PATCH 1/6] locking/mutex: Checking the stamp is ww only
-Date: Tue,  6 Jan 2015 11:45:04 -0800
-Message-Id: <1420573509-24774-2-git-send-email-dave@stgolabs.net>
+Subject: [PATCH 2/6] locking/mutex: Move mcs related comments to proper location
+Date: Tue,  6 Jan 2015 11:45:05 -0800
+Message-Id: <1420573509-24774-3-git-send-email-dave@stgolabs.net>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1420573509-24774-1-git-send-email-dave@stgolabs.net>
 References: <1420573509-24774-1-git-send-email-dave@stgolabs.net>
@@ -22,35 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark it so by renaming __mutex_lock_check_stamp().
+It serves much better if right before the osq_lock() call.
+Also delete a useless comment.
 
 Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 ---
- kernel/locking/mutex.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/locking/mutex.c | 16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/locking/mutex.c b/kernel/locking/mutex.c
-index 4541951..b042ea5 100644
+index b042ea5..6db3d0d 100644
 --- a/kernel/locking/mutex.c
 +++ b/kernel/locking/mutex.c
-@@ -469,7 +469,7 @@ void __sched ww_mutex_unlock(struct ww_mutex *lock)
- EXPORT_SYMBOL(ww_mutex_unlock);
+@@ -193,17 +193,6 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
  
- static inline int __sched
--__mutex_lock_check_stamp(struct mutex *lock, struct ww_acquire_ctx *ctx)
-+__ww_mutex_lock_check_stamp(struct mutex *lock, struct ww_acquire_ctx *ctx)
+ 
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-/*
+- * In order to avoid a stampede of mutex spinners from acquiring the mutex
+- * more or less simultaneously, the spinners need to acquire a MCS lock
+- * first before spinning on the owner field.
+- *
+- */
+-
+-/*
+- * Mutex spinning code migrated from kernel/sched/core.c
+- */
+-
+ static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
  {
- 	struct ww_mutex *ww = container_of(lock, struct ww_mutex, base);
- 	struct ww_acquire_ctx *hold_ctx = ACCESS_ONCE(ww->ctx);
-@@ -557,7 +557,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		}
+ 	if (lock->owner != owner)
+@@ -307,6 +296,11 @@ static bool mutex_optimistic_spin(struct mutex *lock,
+ 	if (!mutex_can_spin_on_owner(lock))
+ 		goto done;
  
- 		if (use_ww_ctx && ww_ctx->acquired > 0) {
--			ret = __mutex_lock_check_stamp(lock, ww_ctx);
-+			ret = __ww_mutex_lock_check_stamp(lock, ww_ctx);
- 			if (ret)
- 				goto err;
- 		}
++	/*
++	 * In order to avoid a stampede of mutex spinners trying to
++	 * acquire the mutex all at once, the spinners need to take a
++	 * MCS (queued) lock first before spinning on the owner field.
++	 */
+ 	if (!osq_lock(&lock->osq))
+ 		goto done;
+ 
 -- 
 2.1.2
 
