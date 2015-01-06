@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612AbbAFITa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:19:30 -0500
-Received: from s3.sipsolutions.net ([5.9.151.49]:58062 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752231AbbAFIT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:19:28 -0500
-Message-ID: <1420532359.1966.0.camel@sipsolutions.net>
-Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Kalle Valo <kvalo@codeaurora.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Jan 2015 09:19:19 +0100
-In-Reply-To: <54AB0C75.1090204@broadcom.com>
-References: <1420297188.2397.3.camel@tiscali.nl>
-		 <CD467A59-F563-439B-BA82-954AB27AD9CC@holtmann.org>
-		 <CA+55aFzYSiUkntraMrHEhMzkt35Ft2p9E3cT7ejwQOBDwKvcOg@mail.gmail.com>
-		 <1420324124.9624.60.camel@x220> <54AA641C.7050307@broadcom.com>
-		 <1420479510.14308.23.camel@x220>
-		 (sfid-20150105_183907_807502_81C08416) <1420484224.9459.16.camel@sipsolutions.net>
-	 <1420495519.14308.29.camel@x220> <54AB0C75.1090204@broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754706AbbAFIYM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:24:12 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:37098 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300AbbAFIXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 03:23:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <54AAE00B.1020809@osg.samsung.com>
+References: <1420456786-5989-1-git-send-email-drysdale@google.com> <54AAE00B.1020809@osg.samsung.com>
+From: David Drysdale <drysdale@google.com>
+Date: Tue, 6 Jan 2015 08:23:25 +0000
+Message-ID: <CAHse=S-v3T1nA8HpZOzsOqD5WZr8QTpcEy_kV=yk8uVJBOTGnw@mail.gmail.com>
+Subject: Re: [PATCH] selftests/exec: allow shell return code of 126
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 23:13 +0100, Arend van Spriel wrote:
-> On 01/05/15 23:05, Paul Bolle wrote:
-> > On Mon, 2015-01-05 at 19:57 +0100, Johannes Berg wrote:
-> >> Multiple other groups of ioctls could be converted in similar patches,
-> >> until at the end you can completely remove ipw_wx_handlers and rely
-> >> entirely on cfg80211's wext compatibility.
-> >>
-> >> So far the theory - in practice nobody cared enough to start working on
-> >> any of these drivers, let alone actually has the hardware today.
-> >
-> > So my suggestion to make ipw2200 no longer use cfg80211_wext_giwname()
-> > would actually be backwards. What's actually needed, in theory, is to
-> > use more of what's provided under CFG80211_WEXT (and, I guess, less of
-> > what's provided under WIRELESS_EXT). Did I get that right?
-> 
-> Yes, but as Johannes indicated it needs consideration what to group in 
-> the patches.
+On Mon, Jan 5, 2015 at 7:03 PM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+> On 01/05/2015 04:19 AM, David Drysdale wrote:
+>> When the shell fails to invoke a script because its path name
+>> is too long (ENAMETOOLONG), most shells return 127 to indicate
+>> command not found.  However, some systems report 126 (which POSIX
+>> suggests should indicate a non-executable file) for this case,
+>> so allow that too.
+>>
+>> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Signed-off-by: David Drysdale <drysdale@google.com>
+>> ---
+>>  tools/testing/selftests/exec/execveat.c | 28 ++++++++++++++++++++++------
+>>  1 file changed, 22 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/tools/testing/selftests/exec/execveat.c b/tools/testing/selftests/exec/execveat.c
+>> index d273624c93a6..0d940c6e26bd 100644
+>> --- a/tools/testing/selftests/exec/execveat.c
+>> +++ b/tools/testing/selftests/exec/execveat.c
+>> @@ -62,7 +62,7 @@ static int _check_execveat_fail(int fd, const char *path, int flags,
+>>  }
+>>
+>>  static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+>> -                                  int expected_rc)
+>> +                                  int expected_rc, int expected_rc2)
+>
+> This logic doesn't scale well if there other expected return
+> values to account for. Please think about a re-write to handle
+> multiple expected return codes.
 
-Oh, that's not strictly necessary - that was just so it would actually
-work after each single patch. If you wanted to, you could do it all in a
-single huge patch as well :-) I was explaining though why we did the
-cfg80211-wext code the way it is - which enables making smaller changes
-that don't break the driver.
+I don't think it needs to scale -- even having a second possible return
+code was a bit of a surprise.
 
-johannes
+>>  {
+>>       int status;
+>>       int rc;
+>> @@ -99,9 +99,19 @@ static int check_execveat_invoked_rc(int fd, const char *path, int flags,
+>>               return 1;
+>>       }
+>>       if (WEXITSTATUS(status) != expected_rc) {
+>> -             printf("[FAIL] (child %d exited with %d not %d)\n",
+>> -                     child, WEXITSTATUS(status), expected_rc);
+>> -             return 1;
+>> +             if (expected_rc != expected_rc2) {
+>
+> Please collapse expected_rc and expected_rc2 checks. You can rephrase
+> the error message to work for both cases.
 
+OK, will do.
+
+> thanks,
+> -- Shuah
+>
+> --
+> Shuah Khan
+> Sr. Linux Kernel Developer
+> Open Source Innovation Group
+> Samsung Research America (Silicon Valley)
+> shuahkh@osg.samsung.com | (970) 217-8978
