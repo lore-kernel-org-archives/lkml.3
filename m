@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052AbbAFMv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 07:51:57 -0500
-Received: from smtp-out-106.synserver.de ([212.40.185.106]:1079 "EHLO
-	smtp-out-099.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751736AbbAFMv4 (ORCPT
+	id S1755214AbbAFMwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 07:52:00 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:38684 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbbAFMv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 07:51:56 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7690
-Message-ID: <54ABDA66.7040002@metafoo.de>
-Date: Tue, 06 Jan 2015 13:51:50 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Tue, 6 Jan 2015 07:51:58 -0500
 MIME-Version: 1.0
-To: =?windows-1252?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>, dmaengine@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-mmc@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH, RFC] MIPS: jz4740: use dma filter function
-References: <22569458.nE7JkNNnz3@wuerfel> <54ABBCE6.8060904@metafoo.de> <yw1xtx04f54r.fsf@unicorn.mansr.com>
-In-Reply-To: <yw1xtx04f54r.fsf@unicorn.mansr.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20150106114056.GB25846@kmo-pixel>
+References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
+	<20150106094039.GI29390@twins.programming.kicks-ass.net>
+	<CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
+	<CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
+	<20150106100621.GL29390@twins.programming.kicks-ass.net>
+	<CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
+	<20150106110112.GQ29390@twins.programming.kicks-ass.net>
+	<20150106110730.GA25846@kmo-pixel>
+	<CA+icZUWf=qGD2akxozWHp3VQQDPpLJuMMB-UuY+a+L-unV0QnQ@mail.gmail.com>
+	<20150106114056.GB25846@kmo-pixel>
+Date: Tue, 6 Jan 2015 13:51:57 +0100
+Message-ID: <CA+icZUXzRkeVDGM5kHYRLmmV_VE5QiEDHJ1P5+x4dTJ-ctpuQQ@mail.gmail.com>
+Subject: Re: Linux 3.19-rc3
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 01:47 PM, Måns Rullgård wrote:
-> Lars-Peter Clausen <lars@metafoo.de> writes:
+On Tue, Jan 6, 2015 at 12:40 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+> On Tue, Jan 06, 2015 at 12:25:39PM +0100, Sedat Dilek wrote:
+>> On Tue, Jan 6, 2015 at 12:07 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+>> > On Tue, Jan 06, 2015 at 12:01:12PM +0100, Peter Zijlstra wrote:
+>> >> On Tue, Jan 06, 2015 at 11:18:04AM +0100, Sedat Dilek wrote:
+>> >> > On Tue, Jan 6, 2015 at 11:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >> > > On Tue, Jan 06, 2015 at 10:57:19AM +0100, Sedat Dilek wrote:
+>> >> > >> [   88.028739]  [<ffffffff8124433f>] aio_read_events+0x4f/0x2d0
+>> >> > >>
+>> >> > >
+>> >> > > Ah, that one. Chris Mason and Kent Overstreet were looking at that one.
+>> >> > > I'm not touching the AIO code either ;-)
+>> >> >
+>> >> > I know, I was so excited when I see nearly the same output.
+>> >> >
+>> >> > Can you tell me why people see "similiar" problems in different areas?
+>> >>
+>> >> Because the debug check is new :-) It's a pattern that should not be
+>> >> used but mostly works most of the times.
+>> >>
+>> >> > [  181.397024] WARNING: CPU: 0 PID: 2872 at kernel/sched/core.c:7303
+>> >> > __might_sleep+0xbd/0xd0()
+>> >> > [  181.397028] do not call blocking ops when !TASK_RUNNING; state=1
+>> >> > set at [<ffffffff810b83bd>] prepare_to_wait_event+0x5d/0x110
+>> >> >
+>> >> > With similiar buzzwords... namely...
+>> >> >
+>> >> > mutex_lock_nested
+>> >> > prepare_to_wait(_event)
+>> >> > __might_sleep
+>> >> >
+>> >> > I am asking myself... Where is the real root cause - in sched/core?
+>> >> > Fix one single place VS. fix the impact at several other places?
+>> >>
+>> >> No, the root cause is nesting sleep primitives, this is not fixable in
+>> >> the one place, both prepare_to_wait and mutex_lock are using
+>> >> task_struct::state, they have to, no way around it.
+>> >
+>> > No, it's completely possible to construct a prepare_to_wait() that doesn't
+>> > require messing with the task state. Had it for years.
+>> >
+>> > http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
+>>
+>> I am just rebuilding a new kernel with "aio_ring_fix" included - I
+>> have tested this alread with loop-mq and it made the call-trace in aio
+>> go away.
+>>
+>>
+>> Jut curious...
+>> How would a patch look like a patch to fix the sched-fanotify issue
+>> with a conversion to "closure waitlist"?
 >
->> On 01/05/2015 11:39 PM, Arnd Bergmann wrote:
->>> As discussed on the topic of shmobile DMA today, jz4740 is the only
->>> user of the slave_id field in dma_slave_config besides shmobile. This
->>> use is really incompatible with the way that other drivers use the
->>> dmaengine API, so we should get rid of it.
->>
->> Do you have a link to that discussion?
->>
->>>
->>> This adds a trivial filter function that uses the filter param to
->>> pass the dma type, and uses that in both drivers.
->>
->> In my opinion that's just from bad to worse. Using filter functions
->> isn't that great in the first place. And using them to pass data from
->> the consumer to the DMA provider is just a horrible abuse of the API.
+> wait_queue_head_t       -> struct closure_waitlist
+> DEFINE_WAIT()           -> struct closure cl; closure_init_stack(&cl)
+> prepare_to_wait()       -> closure_wait(&waitlist, &cl)
+> schedule()              -> closure_sync()
+> finish_wait()           -> closure_wake_up(); closure_sync()
 >
-> It seems to me the only sane way to use the dmaengine API is in
-> conjunction with DT.
+> That's the standard conversion, I haven't looked at the fanotify code before
+> just now but from a cursory glance it appears that all should work here. Only
+> annoying thing is the waitqueue here is actually part of the poll interface (if
+> I'm reading this correctly), so I dunno what I'd do about that.
+>
+> Also FYI: closure waitlists are currently singly linked, thus there's no direct
+> equivalent to finish_wait(), the conversion I gave works but will lead to
+> spurious wakeups. I kinda figured I was going to have to switch to doubly linked
+> lists eventually though.
 
-At the moment yes. For non DT we need something like the gpiod lookup tables 
-that allow you to specify the assignment of the DMA channel in the machine 
-driver.
+I followed as far as I have understood the subsequent discussion.
+Let's see where this will lead to.
 
-- Lars
+I am also very curious about how that aio issue will be fixed.
 
+Thanks Peter and Ken for the vital and hopefully fruitful discussion.
 
+- Sedat -
