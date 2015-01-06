@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281AbbAFLyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:54:45 -0500
-Received: from exprod7og115.obsmtp.com ([64.18.2.217]:59442 "EHLO
-	exprod7og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054AbbAFLyn (ORCPT
+	id S1755244AbbAFLyO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 06:54:14 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:52502 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881AbbAFLyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:54:43 -0500
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-To: jejb@kernel.org, hch@infradead.org
-Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
-        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
-        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH 07/22] [SCSI] mpt2sas: Complete the SCSI command with DID_RESET status for log_info value 0x0x32010081
-Date: Tue,  6 Jan 2015 17:24:12 +0530
-Message-Id: <1420545252-35340-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-X-Mailer: git-send-email 2.0.2
+	Tue, 6 Jan 2015 06:54:13 -0500
+Date: Tue, 6 Jan 2015 03:56:45 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150106115645.GA26845@kmo-pixel>
+References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
+ <20150106094039.GI29390@twins.programming.kicks-ass.net>
+ <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
+ <CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
+ <20150106100621.GL29390@twins.programming.kicks-ass.net>
+ <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
+ <20150106110112.GQ29390@twins.programming.kicks-ass.net>
+ <20150106110730.GA25846@kmo-pixel>
+ <20150106114215.GS29390@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150106114215.GS29390@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For any SCSI command, if the driver receives IOC status = SCSI_IOC_TERMINATED and log info = 0x32010081
- then that command will be completed with DID_RESET host status.
+On Tue, Jan 06, 2015 at 12:42:15PM +0100, Peter Zijlstra wrote:
+> On Tue, Jan 06, 2015 at 03:07:30AM -0800, Kent Overstreet wrote:
+> > > No, the root cause is nesting sleep primitives, this is not fixable in
+> > > the one place, both prepare_to_wait and mutex_lock are using
+> > > task_struct::state, they have to, no way around it.
+> > 
+> > No, it's completely possible to construct a prepare_to_wait() that doesn't
+> > require messing with the task state. Had it for years.
+> > 
+> > http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
+> 
+> Your closures are cute but not the same. And sure you can do a wait
+> queue like interface -- my wait_woken thing is an example -- that
+> doesn't require task state.
+> 
+> The point remains that you then have to fix every instance to conform to
+> the new interface.
 
-The definition of this log info value is "Virtual IO has failed and has to be retried".
+Possibly I missed your point because I've been overly crotchety lately.
 
-Firmware will provide this log info value with IOC Status
-"SCSI_IOC_TERMINATED", whenever a drive (with is a part of a volume)
-is pulled and pushed back within some minimal delay.  With this log info
-value, firmware informs the driver to retry the failed IO command
-infinite times, so to provide some time for the firmware to discover
-the reinserted drive successfully instated of just retrying failed
-command for five times( doesn't giving enough time for firmware to
-complete the drive discovery) and failing the IO permanently even
-though drive came back successfully.
+I do want to make the point that it's not really the callers that are broken;
+especially those that are using prepare_to_wait() via wait_event(). Using
+wait_event() is exactly what people _should_ be doing, instead of open coding
+this stuff and/or coming up with hacks to work around the fact that
+prepare_to_wait() is implemented via messing with the task state.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
----
- drivers/scsi/mpt2sas/mpt2sas_scsih.c | 4 ++++
- 1 file changed, 4 insertions(+)
+This is a sore point for me because I've seen other experienced, _skilled_
+programmers screw this kind of code up too many times and I hate debugging lost
+wakeups. I can write this kind of code in my sleep because I've spent too much
+of time time implementing these kinds of primitives and I'm sure you can too,
+but most people can't.
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 38acb91..c6bb136 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -4574,6 +4574,10 @@ _scsih_io_done(struct MPT2SAS_ADAPTER *ioc, u16 smid, u8 msix_index, u32 reply)
- 			scmd->result = DID_TRANSPORT_DISRUPTED << 16;
- 			goto out;
- 		}
-+		if (log_info == 0x32010081) {
-+			scmd->result = DID_RESET << 16;
-+			break;
-+		}
- 		scmd->result = DID_SOFT_ERROR << 16;
- 		break;
- 	case MPI2_IOCSTATUS_SCSI_TASK_TERMINATED:
--- 
-2.0.2
+Anyways, my point is either wait_event() should be fixed to not muck with the
+task state, or since that's not really practical we should at least provide a
+standard drop in replacement that doesn't.
 
+And the drop in replacement more or less exists, closure_wait_event() has the
+same semantics as wait_event, similarly with the lower level primitives I just
+listed the conversions for.
+
+I don't even really care if it's closures, we could make something new that uses
+the existing wait_queue_head_t but IMO it's gonna look a lot like closures with
+an embedded refcount and closure_sync() instead of schedule().
