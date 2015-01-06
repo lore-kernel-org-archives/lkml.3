@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484AbbAFSd2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:33:28 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56172 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464AbbAFSdZ (ORCPT
+	id S932507AbbAFSeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:34:00 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:40101 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137AbbAFSd7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:33:25 -0500
-Date: Tue, 6 Jan 2015 18:33:14 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert 9fc2105aeaaf56b0cf75296a84702d0f9e64437b to fix
- pyaudio (and probably more)
-Message-ID: <20150106183252.GA32449@arm.com>
-References: <20150104190123.GA20153@amd>
- <alpine.LFD.2.11.1501041438130.18844@knanqh.ubzr>
- <20150104201026.GA23427@amd>
- <alpine.LFD.2.11.1501041512440.18844@knanqh.ubzr>
- <20150104203724.GA16372@amd>
+	Tue, 6 Jan 2015 13:33:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150104203724.GA16372@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
+ <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
+ <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no>
+From: Yuchung Cheng <ycheng@google.com>
+Date: Tue, 6 Jan 2015 10:33:17 -0800
+Message-ID: <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+Subject: Re: TCP connection issues against Amazon S3
+To: Erik Grinaker <erik@bengler.no>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 04, 2015 at 08:37:24PM +0000, Pavel Machek wrote:
-> On Sun 2015-01-04 15:25:02, Nicolas Pitre wrote:
-> > On Sun, 4 Jan 2015, Pavel Machek wrote:
-> > 
-> > > On Sun 2015-01-04 15:03:02, Nicolas Pitre wrote:
-> > > > If that is still unacceptable to you for whatever reason, then the least 
-> > > > wrong compromize should be:
-> > > > 
-> > > > 	seq_printf(m, "BogoMIPS\t: 1.00\n");
-> > > > 
-> > > > That'D allow for those broken applications to run while making clear 
-> > > > that the provided value is phony. I was about to suggest 0.00 but that 
-> > > > could trigger a divide by zero error somewhere I suppose.
-> > > 
-> > > I don't know what 1.00 will cause, and neither do you, so what about
-> > > simply reverting the bad patch?
-> > 
-> > Because the patch wasn't "bad".  It did solve a recurring support 
-> > problem where people did actually complain on the list because the value 
-> > was not what they would have liked.  Removing this meaningless value did 
-> > actually fix that support issue as no more complaints came through for 
-> > the last 1.3 year, and is actually the only way for user space to be 
-> > fixed too.
-> 
-> People complain on the list, so what? People complain about systemd,
-> too. We ignore them.
-> 
-> Alternatively, just don't touch the bogomips computation. It is not
-> that much of maintainance burden. You can probably also get away with
-> replacing bogomips with actual cpu frequency.
-> 
-> Replacing it with 1 is asking for trouble.
+On Tue, Jan 6, 2015 at 10:17 AM, Erik Grinaker <erik@bengler.no> wrote:
+>
+>> On 06 Jan 2015, at 17:20, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> On Tue, 2015-01-06 at 16:11 +0000, Erik Grinaker wrote:
+>>>> On 06 Jan 2015, at 16:04, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>>> On Tue, 2015-01-06 at 15:14 +0000, Erik Grinaker wrote:
+>>>>> (CCing Yuchung, as his name comes up in the relevant commits)
+>>>>>
+>>>>> After upgrading from Ubuntu 12.04.5 to 14.04.1 we have begun seeing
+>>>>> intermittent TCP connection hangs for HTTP image requests against
+>>>>> Amazon S3. 3-5% of requests will suddenly stall in the middle of the
+>>>>> transfer before timing out. We see this problem across a range of
+>>>>> servers, in several data centres and networks, all located in Norway.
+>>>>>
+>>>>> A packet dump [1] shows repeated ACK retransmits for some of the
+TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
 
-Peversely, I think that '1.00' would be the correct value for your libjack
-case!
+I am trying to understand the problem. Could you confirm that it's the
+HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
+from the receiver (your host)?
 
-I had a quick look at the code, and it seems to be used to construct a
-microsecond-precision timeline for things like:
+btw I suspect some middleboxes are stripping SACKOK options from your
+SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
 
-	ctl->signalled_at = jack_get_microseconds();
 
-Now, jack_get_microseconds() is:
 
-	static inline jack_time_t
-	jack_get_microseconds (void)
-	{
-	        return _jack_get_microseconds ();
-	}
-
-_jack_get_microseconds is a pointer that points to this guy:
-
-	jack_time_t
-	jack_get_microseconds_from_cycles (void) {
-	        return get_cycles() / __jack_cpu_mhz;
-	}
-
-where __jack_cpu_mhz is the bogomips read once from /proc/cpuinfo and
-get_cycles (on ARM) is this gem:
-
-	static inline cycles_t get_cycles(void)
-	{
-	       struct timeval tv;
-	       gettimeofday (&tv, NULL);
-
-	       return ((cycles_t) tv.tv_sec * 1000000) + tv.tv_usec;
-	}
-
-The return value from jack_get_microseconds gets used interchangeably with
-real usecond values to do things like find the audio frame at Nus into a
-stream, so I don't really see how any of this can work. In this case, we
-just need *a* bogomips value to stop the initialisation from failing, then
-hope that pyaudio decides not to use jack after all (it falls back to some
-alsa thing on my machine)
-
-Will
+>>>>> requests. Using Ubuntu mainline kernels, we found the problem to have
+>>>>> been introduced between 3.11.10 and 3.12.0, possibly in
+>>>>> 0f7cc9a3c2bd89b15720dbf358e9b9e62af27126. The problem is also present
+>>>>> in 3.18.1. Disabling tcp_window_scaling seems to solve it, but has
+>>>>> obvious drawbacks for transfer speeds. Other sysctls do not seem to
+>>>>> affect it.
+>>>>>
+>>>>> I am not sure if this is fundamentally a kernel bug or a network
+>>>>> issue, but we did not see this problem with older kernels.
+>>>>>
+>>>>> [1] http://abstrakt.bengler.no/tcp-issues-s3.pcap.bz2
+>>>>
+>>>>
+>>>> CC netdev
+>>>>
+>>>> This looks like the bug we fixed here :
+>>>>
+>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=39bb5e62867de82b269b07df900165029b928359
+>>>
+>>> Has that patch gone into a release? Because the problem persists with 3.18.1.
+>>
+>> Patch is in 3.18.1 yes.
+>>
+>> So thats a separate issue.
+>>
+>> Can you confirm pcap was taken at receiver (195.159.221.106), not sender
+>> (54.231.136.74) , and on which host is running the 'buggy kernel' ?
+>
+> Yes, pcap was taken on receiver (195.159.221.106).
+>
+>> If the sender is broken, changing the kernel on receiver wont help.
+>>
+>> BTW not using sack (on 54.231.132.98) is terrible for performance in
+>> lossy environments.
+>
+> It may well be that the sender is broken; however, the sender is Amazon S3, so I do not have any control over it. And in any case, the problem goes away with 3.11.10 on receiver, but persists with 3.12.0 (or later) on receiver, so there must be some change in 3.12.0 which has caused this to trigger.
+>
+> If you are confident that the problem is with Amazon, I can get in touch with their engineering department.
