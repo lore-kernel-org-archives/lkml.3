@@ -1,75 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371AbbAFIdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:33:11 -0500
-Received: from oxalide-out.extra.cea.fr ([132.168.224.8]:49127 "EHLO
-	oxalide-out.extra.cea.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819AbbAFIdH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:33:07 -0500
-X-Greylist: delayed 1195 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 03:33:07 EST
-Date: Tue, 6 Jan 2015 09:12:53 +0100
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: Julia Lawall <julia.lawall@lip6.fr>
-CC: SF Markus Elfring <elfring@users.sourceforge.net>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        <kernel-janitors@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ron Minnich <rminnich@sandia.gov>,
-        <v9fs-developer@lists.sourceforge.net>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [V9fs-developer] [PATCH 1/8] fs/9p: Deletion of unnecessary
- checks before the function call "p9_client_clunk"
-Message-ID: <20150106081253.GA22484@u-galfione>
-References: <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net> <54A01326.3050306@users.sourceforge.net>
- <54A06AB9.4020505@users.sourceforge.net> <20150105112206.GC15033@mwanda>
- <54AB02F3.5020308@users.sourceforge.net>
- <alpine.DEB.2.02.1501052239290.2025@localhost6.localdomain6>
- <54AB0844.5090405@users.sourceforge.net>
- <alpine.DEB.2.02.1501052257270.2025@localhost6.localdomain6>
+	id S1754441AbbAFIRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:17:07 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46037 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753229AbbAFIRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 03:17:06 -0500
+Message-ID: <54AB9983.1040703@ti.com>
+Date: Tue, 6 Jan 2015 13:44:59 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1501052257270.2025@localhost6.localdomain6>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Paul Walmsley <paul@pwsan.com>, Roger Quadros <rogerq@ti.com>
+CC: <tony@atomide.com>, <santosh.shilimkar@oracle.com>, <t-kristo@ti.com>,
+        <nm@ti.com>, <nsekhar@ti.com>, <bcousson@baylibre.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <s-anna@ti.com>
+Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
+ without sysc
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com> <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Julia Lawall wrote on Mon, Jan 05, 2015 at 11:01:55PM +0100:
-> > The error response is clear. Are any software developments efforts expected
-> > to clean-up the call stack for unwanted null pointers even more?
+Hi Paul,
+On Tuesday 06 January 2015 07:34 AM, Paul Walmsley wrote:
 > 
-> I found the original patch and looked at the call sites.  None of them 
-> calls dump_stack.  The behavior is thus not the same.  With your change, 
-> something that was previously treated in an orderly manner will be 
-> converted to something that looks like an oops.  I assume that the cost of 
-> the dump_stack will also be huge.
+> Roger, Lokesh, could you try this one instead?
+Yep, the below patch works on AM437x.
+Boot logs here: http://paste.ubuntu.com/9680938/
 
-I definitely agree there, this will create unwanted dump_stack messages.
+Thanks and regards,
+Lokesh
+> 
+> It passes all the basic tests here except it does not boot on the 4460 
+> VAR-SOM-OM - unclear why at this point - but it would be good to see if it 
+> works on your AM4372 boards, since I don't have that one.
+> 
+> Test logs are here:
+> 
+> http://www.pwsan.com/omap/testlogs/hwmod_skip_only_remap_v3.19-rc/20150105171744/
+> 
+> 
+> - Paul
+> 
+> 
+> From 4f2e13bd2181e0ebede3aabc484aa2339830748a Mon Sep 17 00:00:00 2001
+> From: Paul Walmsley <paul@pwsan.com>
+> Date: Mon, 5 Jan 2015 15:49:57 -0700
+> Subject: [PATCH] Only skip ioremap() if IP block does not have OCP header
+>  registers. Experimental.
+> 
+> ---
+>  arch/arm/mach-omap2/omap_hwmod.c | 33 +++++++++++++++++++++------------
+>  1 file changed, 21 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+> index cbb908dc5cf0..03df8833d399 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+> @@ -1938,6 +1938,8 @@ static int _reset(struct omap_hwmod *oh)
+>  	pr_debug("omap_hwmod: %s: resetting\n", oh->name);
+>  
+>  	if (oh->class->reset) {
+> +		WARN(!oh->_mpu_rt_va, "Attempt to call custom reset with no MPU register target ioremapped: %s",
+> +		     oh->name);
+>  		r = oh->class->reset(oh);
+>  	} else {
+>  		if (oh->rst_lines_cnt > 0) {
+> @@ -2358,15 +2360,19 @@ static int of_dev_hwmod_lookup(struct device_node *np,
+>  }
+>  
+>  /**
+> - * _init_mpu_rt_base - populate the virtual address for a hwmod
+> + * _init_mpu_rt_base - populate the MPU port and virtual address
+>   * @oh: struct omap_hwmod * to locate the virtual address
+>   * @data: (unused, caller should pass NULL)
+>   * @index: index of the reg entry iospace in device tree
+>   * @np: struct device_node * of the IP block's device node in the DT data
+>   *
+> - * Cache the virtual address used by the MPU to access this IP block's
+> - * registers.  This address is needed early so the OCP registers that
+> - * are part of the device's address space can be ioremapped properly.
+> + * Cache the interconnect target port and the virtual address used by
+> + * the MPU to access this IP block's registers.  The address is needed
+> + * early so the OCP registers that are part of the device's address
+> + * space can be ioremapped properly.  The presence or absence of the
+> + * interconnect target port also indicates whether the hwmod code
+> + * should wait for the IP block to indicate readiness after it is
+> + * enabled.
+>   *
+>   * Returns 0 on success, -EINVAL if an invalid hwmod is passed, and
+>   * -ENXIO on absent or invalid register target address space.
+> @@ -2385,6 +2391,13 @@ static int __init _init_mpu_rt_base(struct omap_hwmod *oh, void *data,
+>  	if (oh->_int_flags & _HWMOD_NO_MPU_PORT)
+>  		return -ENXIO;
+>  
+> +	/*
+> +	 * If there's no need for the hwmod code to read or write to
+> +	 * the IP block registers, bail out early before the ioremap()
+> +	 */
+> +	if (!oh->class->sysc)
+> +		return 0;
+> +
+>  	mem = _find_mpu_rt_addr_space(oh);
+>  	if (!mem) {
+>  		pr_debug("omap_hwmod: %s: no MPU register target found\n",
+> @@ -2451,14 +2464,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
+>  				oh->name, np->name);
+>  	}
+>  
+> -	if (oh->class->sysc) {
+> -		r = _init_mpu_rt_base(oh, NULL, index, np);
+> -		if (r < 0) {
+> -			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
+> -			     oh->name);
+> -			return 0;
+> -		}
+> -	}
+> +	r = _init_mpu_rt_base(oh, NULL, index, np);
+> +	if (r < 0)
+> +		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
+> +			 oh->name);
+>  
+>  	r = _init_clocks(oh, NULL);
+>  	if (r < 0) {
+> 
 
-Simple example, without even looking at the multiple possible
-interactions with multiple clients hammering the server, can be taken
-from v9fs_create in fs/9p/vfs_inode.c
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/fs/9p/vfs_inode.c?id=d8282ea05ad119247122de23db7d48ad6098cfa2#n652
-
-jumping to label error from a failure in p9_client_fcreate (e.g. EPERM
-or something perfectly valid) will, with your patch, call clunk with fid
-== NULL and thus generate a stack trace, while it is a perfectly normal
-code path that should only return to userspace with EPERM.
-
-
-(admitedly, the linux vfs will do checks first to ensure that the
-function is likely to succeed, but some servers can implement their own
-security model on top)
-
-
-Other patches in the set look good at first glance, but I'll need a bit
-to find time to look through implications they may have.
--- 
-Dominique Martinet,
-CEA
