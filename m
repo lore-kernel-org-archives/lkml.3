@@ -1,119 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575AbbAFWB3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:01:29 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59542 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756901AbbAFWBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:01:25 -0500
+	id S932633AbbAFWD5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:03:57 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35749 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755877AbbAFWDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 17:03:55 -0500
+Date: Tue, 6 Jan 2015 16:02:30 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Pavel Machek <pavel@ucw.cz>
+CC: Felipe Balbi <balbi@ti.com>, <pali.rohar@gmail.com>, <sre@debian.org>,
+        <sre@ring0.de>, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>, <khilman@kernel.org>,
+        <aaro.koskinen@iki.fi>, <ivo.g.dimitrov.75@gmail.com>
+Subject: Re: 3.19 on Nokia n900: audio quality awful
+Message-ID: <20150106220230.GG32308@saruman>
+Reply-To: <balbi@ti.com>
+References: <20150106170433.GA5408@amd>
+ <20150106172545.GK6502@saruman>
+ <20150106175115.GA19487@amd>
+ <20150106202857.GB32308@saruman>
+ <20150106205000.GB13902@amd>
+ <20150106205413.GF32308@saruman>
+ <20150106215744.GC13902@amd>
 MIME-Version: 1.0
-In-Reply-To: <CANLsYkz_tx0MAnssO1JmgGzeaj12oU64FJjiKKyEOyXuUKk8jQ@mail.gmail.com>
-References: <1420562732-4353-1-git-send-email-mathieu.poirier@linaro.org>
- <CAL_JsqJwauxNNojhAaYEr7oQTm6fwYwtByv_s6-tHiXYA214AQ@mail.gmail.com> <CANLsYkz_tx0MAnssO1JmgGzeaj12oU64FJjiKKyEOyXuUKk8jQ@mail.gmail.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 6 Jan 2015 16:01:03 -0600
-Message-ID: <CAL_JsqLv8Q4eS_bwuLbEOBSxjU7uff4__KcSi3qwAvgmjhQKHw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: vexpress: bindings: Add generic PD awareness to the
- spc controller
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HB4mHL4PVvkpZAgW"
+Content-Disposition: inline
+In-Reply-To: <20150106215744.GC13902@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 12:36 PM, Mathieu Poirier
-<mathieu.poirier@linaro.org> wrote:
-> On 6 January 2015 at 10:02, Rob Herring <robherring2@gmail.com> wrote:
->> On Tue, Jan 6, 2015 at 10:45 AM,  <mathieu.poirier@linaro.org> wrote:
->>> From: Mathieu Poirier <mathieu.poirier@linaro.org>
->>>
->>> Among other things, the serial power controller (SPC) controls power to
->>> the A7 and A15 clusters.  Theses clusters also happen to contains the
->>> coresight tracers used for HW assisted tracing.
->>>
->>> By modellling these to power domains in a way that is comprehensible to
->>> the generic power domain sub-system and using the runtime PM API in the
->>> coresight drivers, we can prevent power to the domains from being
->>> turned off while tracing related operations are still pending.
->>>
->>> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
->>> ---
->>>  .../bindings/arm/vexpress-power-controller.txt     | 54 ++++++++++++++++++++++
->>>  1 file changed, 54 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
->>> new file mode 100644
->>> index 000000000000..3af5624dc5cb
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
->>> @@ -0,0 +1,54 @@
->>> +ARM Versatile Express Power Controller
->>> +--------------------------------------
->>> +
->>> +This binding models the serial power controller (SPC) in a way that is
->>> +intelligible to the generic power domain subsystem and in accordance
->>> +with the guidelines from:
->>> +
->>> +Documentation/devicetree/bindings/power/power_domain.txt
->>> +
->>> +The binding doesn't have a '<reg>' property as the base address for HW
->>> +access is provided by the vexpress-scc sub-system.
->>> +
->>> +Required node properties:
->>> +- compatible value : = "arm,vexpress-power-controller";
->>> +- #power-domain-cells : = Number of cells in a PM domain specifier, as
->>> +  specified in "power_domain.txt" referenced above.
->>> +
->>> +Example:
->>> +       A7_A15_cluster_pd: A7-A15-cluster-pd {
->>
->> This is more a description of the power domain than the power
->> controller IP block.
->
-> This one is a little tricky - the controller itself (SPC) is accessed
-> via registers mapped by another driver (SCC) and have two completely
-> separate files.  The SPC driver itself is not DT'ed, simply because it
-> doesn't have too,  hence writing things the way I did.
->
-> I will ask the vexpress maintainers where they want to see this code
-> going.  Would you accept this binding as part of the existing
-> "arm,vexpress-sysreg" [1] or even "arm,vexpress-scc" [2]?
->
-> [1]. Documentation/devicetree/bindings/arm/vexpress-sysreg.txt
-> [2]. Documentation/devicetree/bindings/arm/vexpress-scc.txt
+--HB4mHL4PVvkpZAgW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, that makes sense. I think either you could have sub node for the
-SPC or just use the sysreg node phandle directly. Given the
-simplicity, I'd probably go for the latter, but I haven't looked
-closely at these drivers and will defer to VExpress maintainers.
+Hi,
 
->
->>
->>> +               compatible = "arm,vexpress-power-controller";
->>> +               #power-domain-cells = <1>;
->>
->> You need to define what goes in the cell. That is specific to the
->> power controller. It could be generic in that N corresponds to power
->> domain N in the controller if the controller is generic in that way
->> (i.e. all the register accesses are just indexed).
->
-> That is exactly how things are - one controller and two power domains.
-> Based on what the generic power domain code does #power-domain-cells
-> is the argument indicating what domain a device should be added to.
-> From what I read this is also how things are (sparsely) explained in
-> "power_domain.txt".  As such I'm not exactly sure of what you'd like
-> to see modified - enlightenment would be appreciated.
+On Tue, Jan 06, 2015 at 10:57:44PM +0100, Pavel Machek wrote:
+> > > > > > > In 3.18, sound is nice and clear.
+> > > > > > >=20
+> > > > > > > In 3.19, sound is unusable. It produces nasty tone when it sh=
+ould be
+> > > > > > > quiet, and there's at least as much noise as is sound.
+> > > > > > >=20
+> > > > > > > Unfortunately, list of mixers also changed (and there's cca 1=
+20
+> > > > > > > settings), but a) it does not work with the old list and b) n=
+othing I
+> > > > > > > could figure out did make the sound usable. Some setting resu=
+lted in
+> > > > > > > even more noise.
+> > > > > > >=20
+> > > > > > > Any idea what could have caused it?
+> > > > > >=20
+> > > > > > $ git bisect start
+> > > > > > $ git bisect good v3.18
+> > > > > > $ git bisect bad
+> > > > > >=20
+> > > > > > that'll help find what caused it.
+> > > > >=20
+> > > > > Telling someone to do hard and time consuming job that probably w=
+ill
+> > > > > not succeed, instead of actually providing help. Very very funny.
+> > > >=20
+> > > > you're getting code for free, you're getting help for free. Not many
+> > > > people have N900s lying around. Running a bisection is just
+> > > > politeness.
+> > >=20
+> > > Now you are speaking for yourself or for TI?
+> >=20
+> > why bring my employer into the discussion ?
+>=20
+> Because you are speaking of getting help for free, and I don't
 
-I wasn't sure if there are more domains you didn't add. If what 0 and
-1 correspond to varies by board, then it's probably fine as it. If
-they are always cluster 0 and cluster 1, then just say that.
+are you not getting help for free ?
 
-Rob
+> remember getting any useful help from you; so I'd like to know who do
+
+how come ? I gave you a very helpful list of commands which will direct
+you at finding the root of the issue you found.
+
+> you speak for.
+
+for myself.
+
+> > > Thanks for your very valuable help. I know how to do a bisection,
+> > > thank you.
+> >=20
+> > then please do it.
+>=20
+> No, sorry, I don't think that would be reasonable use of my time at
+> this point. First steps are "confirm it happens on other N900 boards,
+> too", ruling out config issues at my part, and "try to get
+> verification from other development boards if they have same
+> problems", because most other boards are easier to work with.
+
+you don't want to do due diligence with a bug *you* found, then there's
+no way people can help you out. Sorry.
+
+Good luck
+
+--=20
+balbi
+
+--HB4mHL4PVvkpZAgW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUrFt2AAoJEIaOsuA1yqREqjMP/3Gl4GjT2v6ztCq4HXCmn9q2
+9eajVrkNHmM6mYi0jwdJRCY5R0qR/HZdDLvG7S25QxiOxOT1ed4TO5z4BwTrC0Az
+QEbYTaXDErV213SD4AkB9zU52g2De6jp2T3429sA96Vwcoi1Yjt01XsTUZ6z9VsR
+Se7SwaZGlhHzgAaPBVywGnl9eXTPV14DlXWoyJAvUmgHgH5xd+tFRINJ9PbcrAtv
+zn+bQaL1kfbRCChD0laDSDbXj/dAW1oTmP5Ne7us/bOYQA+YZR4nT74TuYlmitDG
+TeSN9YRQ7jbs/c8JpekEi42m00xxyhaUDQPg0oacYCbgX7K5wBans5y829jJWTCF
+U59fipHAc6S+ZcDRFRkpNIG+fWwervWxb8oAlSYqiAh7eIOEjCtf9Tde1V5GyT5e
+XH5zFFVz8uUM3Y2mgkbmbDOuvP7Uj21CM12u2WOp/0B4OYulcB3ys5p5ql/kOggC
+4TQe2qZnH5072pwIjrlWho4CCYUMRpRB9Lvp6g08Z1obDweC3ZxeSQt9U+C9z+g9
+O0orIS7JSCs3Pf/TC0ROMU2uEUgNbSluaMz70D6lXVbjHaT6sh7wtMQUYgkLPY2m
+FzBwNoW4CeACle318PKLPC5RtDG0WOJWaDEjd7NeHMaonJaGlOFSZlbpM2ZVX2IT
+Ld5R9Ec6I+bNh+w/fVfq
+=xxZw
+-----END PGP SIGNATURE-----
+
+--HB4mHL4PVvkpZAgW--
