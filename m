@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646AbbAFT4D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:56:03 -0500
-Received: from resqmta-ch2-12v.sys.comcast.net ([69.252.207.44]:39621 "EHLO
-	resqmta-ch2-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932642AbbAFTnt (ORCPT
+	id S932687AbbAFTnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:43:55 -0500
+Received: from resqmta-ch2-08v.sys.comcast.net ([69.252.207.40]:60985 "EHLO
+	resqmta-ch2-08v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932653AbbAFTnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:43:49 -0500
+	Tue, 6 Jan 2015 14:43:50 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
         rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
@@ -18,9 +18,9 @@ To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v4 04/20] selftests/firmware: add install target to enable test install
-Date: Tue,  6 Jan 2015 12:43:18 -0700
-Message-Id: <84932e435fdf85cbbec62b35210d33178321a2a4.1420571615.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v4 05/20] selftests/ftrace: add install target to enable test install
+Date: Tue,  6 Jan 2015 12:43:19 -0700
+Message-Id: <20a71af8dcebf0369890391e8587afc5ca1a8035.1420571615.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <cover.1420571615.git.shuahkh@osg.samsung.com>
 References: <cover.1420571615.git.shuahkh@osg.samsung.com>
@@ -36,66 +36,36 @@ kselftest script to run the test. Install target can be run
 only from top level kernel source directory.
 
 Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- tools/testing/selftests/firmware/Makefile | 43 +++++++++++++++++++------------
- 1 file changed, 26 insertions(+), 17 deletions(-)
+ tools/testing/selftests/ftrace/Makefile | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/tools/testing/selftests/firmware/Makefile b/tools/testing/selftests/firmware/Makefile
-index e23cce0..0bdc25b 100644
---- a/tools/testing/selftests/firmware/Makefile
-+++ b/tools/testing/selftests/firmware/Makefile
-@@ -1,25 +1,34 @@
- # Makefile for firmware loading selftests
- 
- # No binaries, but make sure arg-less "make" doesn't trigger "run_tests"
-+
-+__fw_filesystem:
-+fw_filesystem  = if /bin/sh ./fw_filesystem.sh ; then
-+fw_filesystem += echo 'fw_filesystem: ok';
-+fw_filesystem += else echo 'fw_filesystem: [FAIL]';
-+fw_filesystem += fi
-+
-+__fw_userhelper:
-+fw_userhelper  = if /bin/sh ./fw_userhelper.sh ; then
-+fw_userhelper += echo 'fw_userhelper: ok';
-+fw_userhelper += else
-+fw_userhelper += echo 'fw_userhelper: [FAIL]';
-+fw_userhelper += fi
+diff --git a/tools/testing/selftests/ftrace/Makefile b/tools/testing/selftests/ftrace/Makefile
+index 76cc9f1..c5c77584 100644
+--- a/tools/testing/selftests/ftrace/Makefile
++++ b/tools/testing/selftests/ftrace/Makefile
+@@ -1,7 +1,18 @@
++TEST_STR = /bin/sh ./ftracetest || echo 'ftrace selftests: [FAIL]'
 +
  all:
  
--fw_filesystem:
--	@if /bin/sh ./fw_filesystem.sh ; then \
--                echo "fw_filesystem: ok"; \
--        else \
--                echo "fw_filesystem: [FAIL]"; \
--                exit 1; \
--        fi
--
--fw_userhelper:
--	@if /bin/sh ./fw_userhelper.sh ; then \
--                echo "fw_userhelper: ok"; \
--        else \
--                echo "fw_userhelper: [FAIL]"; \
--                exit 1; \
--        fi
--
--run_tests: all fw_filesystem fw_userhelper
 +install:
 +ifdef INSTALL_KSFT_PATH
-+	install ./fw_filesystem.sh ./fw_userhelper.sh $(INSTALL_KSFT_PATH)
-+	@echo "$(fw_filesystem)" >> $(KSELFTEST)
-+	@echo "$(fw_userhelper)" >> $(KSELFTEST)
++	install ./ftracetest $(INSTALL_KSFT_PATH)
++	@cp -r test.d $(INSTALL_KSFT_PATH)
++	echo "$(TEST_STR)" >> $(KSELFTEST)
 +else
 +	@echo "Run make kselftest_install in top level source directory"
 +endif
 +
-+run_tests:
-+	@$(fw_filesystem)
-+	@$(fw_userhelper)
+ run_tests:
+-	@/bin/sh ./ftracetest || echo "ftrace selftests: [FAIL]"
++	@$(TEST_STR)
  
- # Nothing to clean up.
  clean:
+ 	rm -rf logs/*
 -- 
 2.1.0
 
