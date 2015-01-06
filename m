@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197AbbAFCnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 21:43:55 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:33850 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbbAFCnx (ORCPT
+	id S932235AbbAFCoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 21:44:17 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62669 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067AbbAFCoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 21:43:53 -0500
-Message-ID: <1420512220.2910.39.camel@cyril>
-Subject: Re: [PATCH 0/2] Quieten softlockup detector on virtualised kernels
+	Mon, 5 Jan 2015 21:44:14 -0500
+Message-ID: <1420512241.2910.41.camel@cyril>
+Subject: Re: [PATCH 2/2] powerpc: add running_clock for powerpc to prevent
+ spurious softlockup warnings
 From: Cyril Bur <cyrilbur@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, mpe@ellerman.id.au, drjones@redhat.com,
         dzickus@redhat.com, mingo@kernel.org, uobergfe@redhat.com,
         chaiw.fnst@cn.fujitsu.com, cl@linu.com, fabf@skynet.be,
-        atomlin@redhat.com, benzh@chromium.org
-Date: Tue, 06 Jan 2015 13:43:40 +1100
-In-Reply-To: <20150105140950.9ef64425359c62475b48733d@linux-foundation.org>
+        atomlin@redhat.com, benzh@chromium.org, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com
+Date: Tue, 06 Jan 2015 13:44:01 +1100
+In-Reply-To: <20150105141013.946b5d15c5d003de8238951c@linux-foundation.org>
 References: <1419224764-11384-1-git-send-email-cyrilbur@gmail.com>
-	 <20150105140950.9ef64425359c62475b48733d@linux-foundation.org>
+	 <1419224764-11384-3-git-send-email-cyrilbur@gmail.com>
+	 <20150105141013.946b5d15c5d003de8238951c@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
@@ -27,35 +30,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 14:09 -0800, Andrew Morton wrote:
-> On Mon, 22 Dec 2014 16:06:02 +1100 Cyril Bur <cyrilbur@gmail.com> wrote:
+cc'd Martin Schwidefsky and Heiko Carstens.
+
+On Mon, 2015-01-05 at 14:10 -0800, Andrew Morton wrote:
+> On Mon, 22 Dec 2014 16:06:04 +1100 Cyril Bur <cyrilbur@gmail.com> wrote:
 > 
-> > When the hypervisor pauses a virtualised kernel the kernel will observe a jump
-> > in timebase, this can cause spurious messages from the softlockup detector.
+> > On POWER8 virtualised kernels the VTB register can be read to have a view of
+> > time that only increases while the guest is running. This will prevent guests
+> > from seeing time jump if a guest is paused for significant amounts of time.
 > > 
-> > Whilst these messages are harmless, they are accompanied with a stack trace
-> > which causes undue concern and more problematically the stack trace in the
-> > guest has nothing to do with the observed problem and can only be misleading.
+> > On POWER7 and below virtualised kernels stolen time is subtracted from
+> > sched_clock as a best effort approximation. This will not eliminate spurious
+> > warnings in the case of a suspended guest but may reduce the occurance in the
+> > case of softlockups due to host over commit.
 > > 
-> > Futhermore, on POWER8 this is completely avoidable with the introduction of
-> > the Virtual Time Base (VTB) register.
+> > Bare metal kernels should avoid reading the VTB as KVM does not restore sane
+> > values when not executing. sched_clock is returned in this case.
+> > 
+> > --- a/arch/powerpc/kernel/time.c
+> > +++ b/arch/powerpc/kernel/time.c
+> > @@ -621,6 +621,30 @@ unsigned long long sched_clock(void)
+> >  	return mulhdu(get_tb() - boot_tb, tb_to_ns_scale) << tb_to_ns_shift;
+> >  }
+> >  
+> > +unsigned long long running_clock(void)
 > 
-> Does this problem apply to other KVM implementations and to Xen?  If
-> so, what would implementations of running_clock() for those look like? 
-> If not, why not?
-Yes the problem should appear on other KVM implementations, not really
-sure about Xen but I don't see why the problem wouldn't crop up.
-
-x86 do have a method for dealing with it in the softlockup detector,
-they've added a check in the softlockup using a paravirtualised clock
-where the guest can discover if it had been paused, Xen could be using
-too.
-It doesn't appear s390 do anything.
-
-Thanks,
-
-Cyril
+> Non-kvm kernels don't need this code.  Is there some appropriate
+> "#ifdef CONFIG_foo" we can wrap this in?
+CONFIG_PSERIES would work, having said that typical compilation for a
+powernv kernel almost always includes CONFIG_PSERIES (although it
+doesn't need to)... still, your point is valid, will add in v2.
 > 
+> 
+> > +{
+> > +	/*
+> > +	 * Don't read the VTB as a host since KVM does not switch in host timebase
+> > +	 * into the VTB when it takes a guest off the CPU, reading the VTB would
+> > +	 * result in reading 'last switched out' guest VTB.
+> > +	 */
+> > +
+> > +	if (firmware_has_feature(FW_FEATURE_LPAR)) {
+> > +		if (cpu_has_feature(CPU_FTR_ARCH_207S))
+> > +			return mulhdu(get_vtb() - boot_tb, tb_to_ns_scale) << tb_to_ns_shift;
+> > +
+> > +		/* This is a next best approximation without a VTB. */
+> > +		return sched_clock() - cputime_to_nsecs(kcpustat_this_cpu->cpustat[CPUTIME_STEAL]);
+> 
+> Why is this result dependent on FW_FEATURE_LPAR?  It's all generic code.
+Good point, the reason it ended up there is because I wanted to avoid
+behaviour changes.
+> 
+> In fact the kernel/sched/clock.c default implementation of
+> running_clock() could use this expression.  Would that be good or bad? :)
+For power I'm almost certain it would be fine, on platforms which don't
+do stolen time cpustat[CPUTIME_STEAL] should always be zero and if not
+then the value should always be sane (although as mentioned in the
+comment, not as accurate as using the VTB).
+
+Putting it in the default implementation could cause behavioural changes
+for x86 and s390, I would want their views on doing that.
+> 
+> > +	}
+> > +
+> > +	/*
+> > +	 * On a host which doesn't do any virtualisation TB *should* equal VTB so
+> > +	 * it makes no difference anyway.
+> > +	 */
+> > +
+> > +	return sched_clock();
+> > +}
 > 
 
 
