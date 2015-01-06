@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506AbbAFTPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:15:34 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:53062 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405AbbAFTPd (ORCPT
+	id S932424AbbAFTQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:16:31 -0500
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:58164 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbbAFTQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:15:33 -0500
-Date: Tue, 06 Jan 2015 14:15:31 -0500 (EST)
-Message-Id: <20150106.141531.1937050067918707190.davem@davemloft.net>
-To: skhare@vmware.com
-Cc: sbhatewara@vmware.com, pv-drivers@vmware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bollar@vmware.com
-Subject: Re: [PATCH net-next] Driver: Vmxnet3: Make Rx ring 2 size
- configurable
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1420564815-32101-1-git-send-email-skhare@vmware.com>
-References: <1420564815-32101-1-git-send-email-skhare@vmware.com>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 6 Jan 2015 14:16:29 -0500
+Message-ID: <54AC348B.4030900@hp.com>
+Date: Tue, 06 Jan 2015 11:16:27 -0800
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Yuchung Cheng <ycheng@google.com>, Erik Grinaker <erik@bengler.no>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: TCP connection issues against Amazon S3
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com> <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com> <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+In-Reply-To: <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 06 Jan 2015 11:15:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shrikrishna Khare <skhare@vmware.com>
-Date: Tue,  6 Jan 2015 09:20:15 -0800
+>>>>>> A packet dump [1] shows repeated ACK retransmits for some of the
+> TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
+>
+> I am trying to understand the problem. Could you confirm that it's the
+> HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
+> from the receiver (your host)?
+>
+> btw I suspect some middleboxes are stripping SACKOK options from your
+> SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
 
-> Rx ring 2 size can be configured by adjusting rx-jumbo parameter
-> of ethtool -G.
-> 
-> Signed-off-by: Ramya Bolla <bollar@vmware.com>
-> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
-> Signed-off-by: Shrikrishna Khare <skhare@vmware.com>
+The TCP Timestamp option too it seems.
 
-Applied, thanks.
+Speaking of middleboxes...  It is probably a fish that is red, but a 
+while back I stepped in a middle box (a load balancer) which decided 
+that if it saw "too many" retransmissions in a given TCP window that 
+something was seriously wrong and it would toast the connection.  I 
+thought though that was an active reset on the part of the middlebox. 
+(And the client was the active sender not the back-end server)
+
+I'm assuming one incident starts at XX:41:24.748265 in the trace?  That 
+does look like it is slowly slogging its way through a bunch of lost 
+traffic, which was I think part of the problem I was seeing with the 
+middlebox I stepped in, but I don't think I see the reset where I would 
+have expected it.  Still, it looks like the sender has an increasing TCP 
+RTO as it is going through the slog (as it likely must since there are 
+no TCP timestamps?), to the point it gets larger than I'm guessing curl 
+was willing to wait, so the FIN at XX:41:53.269534 after a ten second or 
+so gap.
+
+rick jones
