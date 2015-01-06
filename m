@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274AbbAFUVT (ORCPT <rfc822;w@1wt.eu>);
+	id S1756423AbbAFUVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:21:21 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:52631 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756005AbbAFUVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Jan 2015 15:21:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40877 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567AbbAFUVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:21:17 -0500
-Date: Tue, 6 Jan 2015 18:20:54 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>
-Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
- pvclock reader
-Message-ID: <20150106202054.GA1564@amt.cnet>
-References: <20150105191756.GA31201@amt.cnet>
- <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
- <20150105224858.GA6846@amt.cnet>
- <54AB9FFD.6070309@redhat.com>
- <54ABCE85.6070004@redhat.com>
- <CALCETrWKgB7nj19zW_cQaa4RWjDojbN92_3+-27bHXbB-EEOnA@mail.gmail.com>
- <20150106181331.GA24590@amt.cnet>
- <CALCETrXzJkxbUsVgPbKNpBdp32yf=0M=RfseX=u7Mg2Mmsz2VQ@mail.gmail.com>
- <20150106184512.GA31263@amt.cnet>
- <CALCETrVTVESPYCsoj719Y9UJMkkcJBV0mrA3TtLVjs2DYmYoVw@mail.gmail.com>
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Ray Jui <rjui@broadcom.com>, Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Matt Porter <mporter@linaro.org>,
+        Alex Elder <elder@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        Scott Branden <sbranden@broadcom.com>, linux-kernel@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com
+Subject: Re: [PATCH v2 4/5] clk: cygnus: add clock support for Broadcom Cygnus
+Date: Tue, 06 Jan 2015 21:21:02 +0100
+Message-ID: <2048376.BFrtW5tszK@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420500076-18302-5-git-send-email-rjui@broadcom.com>
+References: <1420500076-18302-5-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVTVESPYCsoj719Y9UJMkkcJBV0mrA3TtLVjs2DYmYoVw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:1r7Twpm2aAFD0Sco6u8JZ0NsmSaZFkLQVNlyNa4YKFg/uycS6qt
+ GRxwlryR3POcX91tp4zgxPe8T80MNh70wUoojzh6Tyrg8HAJ2xGEvgjoQdb4oFmwsr8UBAa
+ n7O7aUTFwyiKaOlADnXBF8hJotNQHzXfI50/FC/BlxXyC//1JCkBck7XA4YRI+EmKHk4X3x
+ 9Y49UZM4J6dn/7qouqzMQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 11:49:09AM -0800, Andy Lutomirski wrote:
-> > What is the point with the new flags bit though?
-> 
-> To try to work around the problem on old hosts.  I'm not at all
-> convinced that this is worthwhile or that it helps, though.
+On Monday 05 January 2015 15:21:15 Ray Jui wrote:
+> +static const struct iproc_clk_ctrl mipipll_clk[BCM_CYGNUS_NUM_MIPIPLL_CLKS] = {
+> +	[BCM_CYGNUS_MIPIPLL_CH0_UNUSED] = {
+> +		.channel = BCM_CYGNUS_MIPIPLL_CH0_UNUSED,
+> +		.enable = enable_val(0x4, 12, 6, 18),
+> +		.mdiv = reg_val(0x20, 0, 8),
+> +	},
+> +	[BCM_CYGNUS_MIPIPLL_CH1_LCD] = {
+> +		.channel = BCM_CYGNUS_MIPIPLL_CH1_LCD,
+> +		.enable = enable_val(0x4, 13, 7, 19),
+> +		.mdiv = reg_val(0x20, 10, 8),
+> +	},
+> +	[BCM_CYGNUS_MIPIPLL_CH2_UNUSED] = {
+> +		.channel = BCM_CYGNUS_MIPIPLL_CH2_UNUSED,
+> +		.enable = enable_val(0x4, 14, 8, 20),
+> +		.mdiv = reg_val(0x20, 20, 8),
+> +	},
+> +	[BCM_CYGNUS_MIPIPLL_CH3_UNUSED] = {
+> +		.channel = BCM_CYGNUS_MIPIPLL_CH3_UNUSED,
+> +		.enable = enable_val(0x4, 15, 9, 21),
+> +		.mdiv = reg_val(0x24, 0, 8),
+> +	},
+> +	[BCM_CYGNUS_MIPIPLL_CH4_UNUSED] = {
+> +		.channel = BCM_CYGNUS_MIPIPLL_CH4_UNUSED,
+> +		.enable = enable_val(0x4, 16, 10, 22),
+> +		.mdiv = reg_val(0x24, 10, 8),
+> +	},
+> +	[BCM_CYGNUS_MIPIPLL_CH5_UNUSED] = {
+> +		.channel = BCM_CYGNUS_MIPIPLL_CH5_UNUSED,
+> +		.enable = enable_val(0x4, 17, 11, 23),
+> +		.mdiv = reg_val(0x24, 20, 8),
+> +	},
+> +};
 
-Don't think so. Just fix the host bug.
+The tables look fairly regular. Is it possible that it's common
+to all iproc variants with a standard way to derive all other
+values from the channel index?
 
-> >> Also, if you do this, can you also make setting and clearing
-> >> STABLE_BIT properly atomic across all vCPUs?  Or at least do something
-> >> like setting it last and clearing it first on vPCU 0?
-> >
-> > If the version "seqlock" works properly across vCPUs, why do you need
-> > STABLE_BIT "properly atomic" ?
-> >
-> > Please define what you mean by "properly atomic".
-> >
-> 
-> I'd like to be able to rely using vCPU 0's pvti even from other vCPUs
-> in the vdso if the stable bit is set.  That means that the host should
-> avoid doing things like migrating the guest, clearing the stable bit
-> for vCPU 1, resuming vCPU 1, and waiting long enough to clear the
-> stable bit for vCPU 0 that vCPU 1's vdso code could see invalid data
-> and return a bad timestamp.
-> 
-> Maybe this scenario is impossible, but getting rid of any getcpu-like
-> operation in the vdso has really nice benefits. 
+> +static const struct iproc_asiu_gate asiu_gate[BCM_CYGNUS_NUM_ASIU_CLKS] = {
+> +	[BCM_CYGNUS_ASIU_KEYPAD_CLK] =
+> +		asiu_gate_val(0x0, 7),
+> +	[BCM_CYGNUS_ASIU_ADC_CLK] =
+> +		asiu_gate_val(0x0, 9),
+> +	[BCM_CYGNUS_ASIU_PWM_CLK] =
+> +		asiu_gate_val(IPROC_CLK_INVALID_OFFSET, 0),
+> +};
 
-You can park every vCPU in host while updating vCPU-0's timestamp.
+Here I think a better binding would be to pass the gate value in the
+clock specifier, rather than an artificial index. That would let
+you get rid of the BCM_CYGNUS_ASIU_KEYPAD_CLK/BCM_CYGNUS_ASIU_ADC_CLK
+macros.
 
-See kvm_gen_update_masterclock:
+> +static void __init cygnus_armpll_init(struct device_node *node)
+> +{
+> +	iproc_armpll_setup(node);
+> +}
+> +CLK_OF_DECLARE(cygnus_armpll, "brcm,cygnus-armpll", cygnus_armpll_init);
 
-+	/* no guest entries from this point */
-+	pvclock_update_vm_gtod_copy(kvm);
+How about moving all of these directly next to the tables, to keep
+each clock controller?
 
-	- touch guest memory
+> +static void __init cygnus_genpll_clk_init(struct device_node *node)
+> +{
+> +	iproc_clk_setup(node, genpll_clk, BCM_CYGNUS_NUM_GENPLL_CLKS);
+> +}
 
-+	/* guest entries allowed */
-+	kvm_for_each_vcpu(i, vcpu, kvm)
-+		clear_bit(KVM_REQ_MCLOCK_INPROGRESS, &vcpu->requests);
+If you use ARRAY_SIZE here, you can remove the BCM_CYGNUS_NUM_GENPLL_CLKS
+macro that is not useful to the DT binding.
 
->  It's faster and it
-> lets us guarantee that the vdso's pvti data fits in a single page.
-> The latter means that we can easily make it work like the hpet
-> mapping, which gets us 32-bit support and will *finally* let us turn
-> off user access to the fixmap if vsyscall=none.
-> 
-> (We can, of course, still do this if the pvti data needs to be an
-> array, but it's messier.)
-> 
-> --Andy
+	Arnd
