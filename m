@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbbAFMm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 07:42:57 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:42613 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbbAFMmz (ORCPT
+	id S1755318AbbAFMrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 07:47:06 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:43922 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755054AbbAFMrE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 07:42:55 -0500
-Date: Tue, 6 Jan 2015 04:45:28 -0800
-From: Kent Overstreet <kmo@daterainc.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150106124528.GE26845@kmo-pixel>
-References: <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
- <CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
- <20150106100621.GL29390@twins.programming.kicks-ass.net>
- <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
- <20150106110112.GQ29390@twins.programming.kicks-ass.net>
- <20150106110730.GA25846@kmo-pixel>
- <20150106114215.GS29390@twins.programming.kicks-ass.net>
- <20150106114842.GP10476@twins.programming.kicks-ass.net>
- <20150106120121.GB26845@kmo-pixel>
- <20150106122006.GW29390@twins.programming.kicks-ass.net>
+	Tue, 6 Jan 2015 07:47:04 -0500
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, dmaengine@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-mmc@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH, RFC] MIPS: jz4740: use dma filter function
+References: <22569458.nE7JkNNnz3@wuerfel> <54ABBCE6.8060904@metafoo.de>
+Date: Tue, 06 Jan 2015 12:47:00 +0000
+In-Reply-To: <54ABBCE6.8060904@metafoo.de> (Lars-Peter Clausen's message of
+	"Tue, 06 Jan 2015 11:45:58 +0100")
+Message-ID: <yw1xtx04f54r.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150106122006.GW29390@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 01:20:06PM +0100, Peter Zijlstra wrote:
-> We (probably me) should probably audit all the atomic_xchg()
-> implementations and documentation and fix that. I was very much under
-> the impression it should imply a full barrier (and it certainly does on
-> x86), the documentation should state the rule that any atomic_ function
-> that returns a result is fully serializing, therefore, because
-> atomic_xchg() has a return value, it should too.
+Lars-Peter Clausen <lars@metafoo.de> writes:
 
-I think that the documentation was changed awhile ago - I'd have to check and I
-should sleep, though. It was probably 4-5 years ago that I saw that old weird
-"atomic_xchg() doesn't imply barriers" thing.
+> On 01/05/2015 11:39 PM, Arnd Bergmann wrote:
+>> As discussed on the topic of shmobile DMA today, jz4740 is the only
+>> user of the slave_id field in dma_slave_config besides shmobile. This
+>> use is really incompatible with the way that other drivers use the
+>> dmaengine API, so we should get rid of it.
+>
+> Do you have a link to that discussion?
+>
+>>
+>> This adds a trivial filter function that uses the filter param to
+>> pass the dma type, and uses that in both drivers.
+>
+> In my opinion that's just from bad to worse. Using filter functions
+> isn't that great in the first place. And using them to pass data from
+> the consumer to the DMA provider is just a horrible abuse of the API.
+
+It seems to me the only sane way to use the dmaengine API is in
+conjunction with DT.
+
+-- 
+Måns Rullgård
+mans@mansr.com
