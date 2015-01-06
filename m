@@ -1,186 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449AbbAFNrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:47:14 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:43742 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755294AbbAFNrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:47:10 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 5/5] usb: gadget: atmel_usba: Cache INT_ENB register value
-Date: Tue,  6 Jan 2015 14:47:02 +0100
-Message-Id: <1420552022-8422-6-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420552022-8422-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1420552022-8422-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1755487AbbAFNsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:48:52 -0500
+Received: from mail-am1on0137.outbound.protection.outlook.com ([157.56.112.137]:24773
+	"EHLO emea01-am1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755294AbbAFNsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 08:48:16 -0500
+X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 08:48:15 EST
+From: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <b45643@freescale.com>, <LW@KARO-electronics.de>, <Frank.Li@freescale.com>,
+        <B38611@freescale.com>, <davem@davemloft.net>, <stefan@agner.ch>,
+        Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
+Subject: [PATCH] net: fec: Fix dual ethernet issue in VFxx
+Date: Tue, 6 Jan 2015 19:17:32 +0530
+Message-ID: <1420552052-4697-1-git-send-email-bhuvanchandra.dv@toradex.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [122.166.214.162]
+X-ClientProxiedBy: HKNPR06CA0042.apcprd06.prod.outlook.com (10.141.16.32) To
+ DB4PR05MB270.eurprd05.prod.outlook.com (10.242.158.24)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=bhuvanchandra.dv@toradex.com; 
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:DB4PR05MB270;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DB4PR05MB270;
+X-Forefront-PRVS: 0448A97BF2
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(46102003)(50986999)(101416001)(77156002)(68736005)(31966008)(77096005)(66066001)(64706001)(47776003)(62966003)(89996001)(20776003)(87976001)(53416004)(229853001)(2351001)(107046002)(4396001)(42186005)(50226001)(105586002)(81156004)(33646002)(50466002)(106356001)(36756003)(120916001)(110136001)(92566001)(21056001)(48376002)(86362001)(19580395003)(97736003)(40100003)(99396003)(69596002)(122386002)(19580405001)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:DB4PR05MB270;H:trdx.toradex.int;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DB4PR05MB270;
+X-OriginatorOrg: toradex.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 13:48:00.2064 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DB4PR05MB270
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cache INT_ENB register value in order to avoid uncached iomem access, and
-thus improve access time to INT_ENB value.
+On i.MX28, the MDIO bus is shared between the
+two RMII interfaces. However, in newer designs,
+such as Vybrid, this is not the case. This patch
+adds a quirk for the single MDIO case. This allows
+to use both FEC interfaces working independently
+on Vybird.
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Bhuvanchandra DV <bhuvanchandra.dv@toradex.com>
 ---
- drivers/usb/gadget/udc/atmel_usba_udc.c | 52 ++++++++++++++++++---------------
- drivers/usb/gadget/udc/atmel_usba_udc.h |  2 ++
- 2 files changed, 30 insertions(+), 24 deletions(-)
+ drivers/net/ethernet/freescale/fec.h      |    3 +++
+ drivers/net/ethernet/freescale/fec_main.c |    7 ++++---
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
-index bc3a532..6dfe17b 100644
---- a/drivers/usb/gadget/udc/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
-@@ -316,6 +316,17 @@ static inline void usba_cleanup_debugfs(struct usba_udc *udc)
- }
- #endif
+diff --git a/drivers/net/ethernet/freescale/fec.h b/drivers/net/ethernet/freescale/fec.h
+index 469691a..c9515bc 100644
+--- a/drivers/net/ethernet/freescale/fec.h
++++ b/drivers/net/ethernet/freescale/fec.h
+@@ -425,6 +425,9 @@ struct bufdesc_ex {
+  */
+ #define FEC_QUIRK_BUG_CAPTURE		(1 << 10)
  
-+static inline u32 usba_int_enb_get(struct usba_udc *udc)
-+{
-+	return udc->int_enb_cache;
-+}
++/* Controller has only one MDIO bus for interfacing external PHY's */
++#define FEC_QUIRK_SINGLE_MDIO		(1 << 11)
 +
-+static inline void usba_int_enb_set(struct usba_udc *udc, u32 val)
-+{
-+	usba_writel(udc, INT_ENB, val);
-+	udc->int_enb_cache = val;
-+}
-+
- static int vbus_is_present(struct usba_udc *udc)
- {
- 	if (gpio_is_valid(udc->vbus_pin))
-@@ -597,16 +608,14 @@ usba_ep_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 	if (ep->can_dma) {
- 		u32 ctrl;
+ struct fec_enet_priv_tx_q {
+ 	int index;
+ 	unsigned char *tx_bounce[TX_RING_SIZE];
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index 5ebdf8d..22b7748 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -91,7 +91,8 @@ static struct platform_device_id fec_devtype[] = {
+ 		.driver_data = 0,
+ 	}, {
+ 		.name = "imx28-fec",
+-		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_SWAP_FRAME,
++		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_SWAP_FRAME |
++				FEC_QUIRK_SINGLE_MDIO,
+ 	}, {
+ 		.name = "imx6q-fec",
+ 		.driver_data = FEC_QUIRK_ENET_MAC | FEC_QUIRK_HAS_GBIT |
+@@ -1952,7 +1953,7 @@ static int fec_enet_mii_init(struct platform_device *pdev)
+ 	 * mdio interface in board design, and need to be configured by
+ 	 * fec0 mii_bus.
+ 	 */
+-	if ((fep->quirks & FEC_QUIRK_ENET_MAC) && fep->dev_id > 0) {
++	if ((fep->quirks & FEC_QUIRK_SINGLE_MDIO) && fep->dev_id > 0) {
+ 		/* fec1 uses fec0 mii_bus */
+ 		if (mii_cnt && fec0_mii_bus) {
+ 			fep->mii_bus = fec0_mii_bus;
+@@ -2015,7 +2016,7 @@ static int fec_enet_mii_init(struct platform_device *pdev)
+ 	mii_cnt++;
  
--		usba_writel(udc, INT_ENB,
--				(usba_readl(udc, INT_ENB)
--					| USBA_BF(EPT_INT, 1 << ep->index)
--					| USBA_BF(DMA_INT, 1 << ep->index)));
-+		usba_int_enb_set(udc, usba_int_enb_get(udc) |
-+				      USBA_BF(EPT_INT, 1 << ep->index) |
-+				      USBA_BF(DMA_INT, 1 << ep->index));
- 		ctrl = USBA_AUTO_VALID | USBA_INTDIS_DMA;
- 		usba_ep_writel(ep, CTL_ENB, ctrl);
- 	} else {
--		usba_writel(udc, INT_ENB,
--				(usba_readl(udc, INT_ENB)
--					| USBA_BF(EPT_INT, 1 << ep->index)));
-+		usba_int_enb_set(udc, usba_int_enb_get(udc) |
-+				      USBA_BF(EPT_INT, 1 << ep->index));
- 	}
- 
- 	spin_unlock_irqrestore(&udc->lock, flags);
-@@ -614,7 +623,7 @@ usba_ep_enable(struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
- 	DBG(DBG_HW, "EPT_CFG%d after init: %#08lx\n", ep->index,
- 			(unsigned long)usba_ep_readl(ep, CFG));
- 	DBG(DBG_HW, "INT_ENB after init: %#08lx\n",
--			(unsigned long)usba_readl(udc, INT_ENB));
-+			(unsigned long)usba_int_enb_get(udc));
+ 	/* save fec0 mii_bus */
+-	if (fep->quirks & FEC_QUIRK_ENET_MAC)
++	if (fep->quirks & FEC_QUIRK_SINGLE_MDIO)
+ 		fec0_mii_bus = fep->mii_bus;
  
  	return 0;
- }
-@@ -650,9 +659,8 @@ static int usba_ep_disable(struct usb_ep *_ep)
- 		usba_dma_readl(ep, STATUS);
- 	}
- 	usba_ep_writel(ep, CTL_DIS, USBA_EPT_ENABLE);
--	usba_writel(udc, INT_ENB,
--			usba_readl(udc, INT_ENB)
--			& ~USBA_BF(EPT_INT, 1 << ep->index));
-+	usba_int_enb_set(udc, usba_int_enb_get(udc) &
-+			      ~USBA_BF(EPT_INT, 1 << ep->index));
- 
- 	request_complete_list(ep, &req_list, -ESHUTDOWN);
- 
-@@ -1606,20 +1614,20 @@ static void usba_dma_irq(struct usba_udc *udc, struct usba_ep *ep)
- static irqreturn_t usba_udc_irq(int irq, void *devid)
- {
- 	struct usba_udc *udc = devid;
--	u32 status;
-+	u32 status, int_enb;
- 	u32 dma_status;
- 	u32 ep_status;
- 
- 	spin_lock(&udc->lock);
- 
--	status = usba_readl(udc, INT_STA) & usba_readl(udc, INT_ENB);
-+	int_enb = usba_int_enb_get(udc);
-+	status = usba_readl(udc, INT_STA) & int_enb;
- 	DBG(DBG_INT, "irq, status=%#08x\n", status);
- 
- 	if (status & USBA_DET_SUSPEND) {
- 		toggle_bias(udc, 0);
- 		usba_writel(udc, INT_CLR, USBA_DET_SUSPEND);
--		usba_writel(udc, INT_ENB,
--			    usba_readl(udc, INT_ENB) | USBA_WAKE_UP);
-+		usba_int_enb_set(udc, int_enb | USBA_WAKE_UP);
- 		udc->bias_pulse_needed = true;
- 		DBG(DBG_BUS, "Suspend detected\n");
- 		if (udc->gadget.speed != USB_SPEED_UNKNOWN
-@@ -1633,8 +1641,7 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
- 	if (status & USBA_WAKE_UP) {
- 		toggle_bias(udc, 1);
- 		usba_writel(udc, INT_CLR, USBA_WAKE_UP);
--		usba_writel(udc, INT_ENB,
--			    usba_readl(udc, INT_ENB) & ~USBA_WAKE_UP);
-+		usba_int_enb_set(udc, int_enb & ~USBA_WAKE_UP);
- 		DBG(DBG_BUS, "Wake Up CPU detected\n");
- 	}
- 
-@@ -1702,11 +1709,8 @@ static irqreturn_t usba_udc_irq(int irq, void *devid)
- 				| USBA_BF(BK_NUMBER, USBA_BK_NUMBER_ONE)));
- 		usba_ep_writel(ep0, CTL_ENB,
- 				USBA_EPT_ENABLE | USBA_RX_SETUP);
--		usba_writel(udc, INT_ENB,
--				(usba_readl(udc, INT_ENB)
--				| USBA_BF(EPT_INT, 1)
--				| USBA_DET_SUSPEND
--				| USBA_END_OF_RESUME));
-+		usba_int_enb_set(udc, int_enb | USBA_BF(EPT_INT, 1) |
-+				      USBA_DET_SUSPEND | USBA_END_OF_RESUME);
- 
- 		/*
- 		 * Unclear why we hit this irregularly, e.g. in usbtest,
-@@ -1741,7 +1745,7 @@ static irqreturn_t usba_vbus_irq(int irq, void *devid)
- 		if (vbus) {
- 			toggle_bias(udc, 1);
- 			usba_writel(udc, CTRL, USBA_ENABLE_MASK);
--			usba_writel(udc, INT_ENB, USBA_END_OF_RESET);
-+			usba_int_enb_set(udc, USBA_END_OF_RESET);
- 		} else {
- 			udc->gadget.speed = USB_SPEED_UNKNOWN;
- 			reset_all_endpoints(udc);
-@@ -1793,7 +1797,7 @@ static int atmel_usba_start(struct usb_gadget *gadget,
- 	if (vbus_is_present(udc) && udc->vbus_prev == 0) {
- 		toggle_bias(udc, 1);
- 		usba_writel(udc, CTRL, USBA_ENABLE_MASK);
--		usba_writel(udc, INT_ENB, USBA_END_OF_RESET);
-+		usba_int_enb_set(udc, USBA_END_OF_RESET);
- 	}
- 	spin_unlock_irqrestore(&udc->lock, flags);
- 
-diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.h b/drivers/usb/gadget/udc/atmel_usba_udc.h
-index 72b3537..497cd18 100644
---- a/drivers/usb/gadget/udc/atmel_usba_udc.h
-+++ b/drivers/usb/gadget/udc/atmel_usba_udc.h
-@@ -334,6 +334,8 @@ struct usba_udc {
- 	u16 test_mode;
- 	int vbus_prev;
- 
-+	u32 int_enb_cache;
-+
- #ifdef CONFIG_USB_GADGET_DEBUG_FS
- 	struct dentry *debugfs_root;
- 	struct dentry *debugfs_regs;
 -- 
-1.9.1
+1.7.9.5
 
