@@ -1,153 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664AbbAFNxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:53:22 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:40438 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404AbbAFNxS (ORCPT
+	id S1755708AbbAFNyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:54:47 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:54005 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665AbbAFNyp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:53:18 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <acme@redhat.com>, <peterz@infradead.org>
-CC: <jolsa@kernel.org>, <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-perf-users@vger.kernel.org>, <bp@suse.de>,
-        <linux-arch@vger.kernel.org>, <Alexey.Brodkin@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH 5/5] perf tools: [uclibc] provide stub for pthread_attr_setaffinity_np
-Date: Tue, 6 Jan 2015 19:22:15 +0530
-Message-ID: <1420552335-26886-6-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
-References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
+	Tue, 6 Jan 2015 08:54:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.196.223]
+In-Reply-To: <54ABE82E.30308@linaro.org>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+	<1413553034-20956-19-git-send-email-hanjun.guo@linaro.org>
+	<20141224171815.GD13399@e104818-lin.cambridge.arm.com>
+	<54A90A4C.60908@linaro.org>
+	<20150105110533.GA14967@e104818-lin.cambridge.arm.com>
+	<54ABC2CB.6@linaro.org>
+	<20150106112929.GB8829@e104818-lin.cambridge.arm.com>
+	<54ABE82E.30308@linaro.org>
+Date: Tue, 6 Jan 2015 13:54:43 +0000
+Message-ID: <CAGCh1+neCkwYDc5jA=g1=RWrGc28EqBoYtY23E0dXSvmPXm0GA@mail.gmail.com>
+Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
+From: G Gregory <graeme.gregory@linaro.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uClibc Linuxthreads.old doesnt support pthread_attr_setaffinity_np()
-call
+On 6 January 2015 at 13:50, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> On 2015年01月06日 19:29, Catalin Marinas wrote:
+>>
+>> On Tue, Jan 06, 2015 at 11:11:07AM +0000, Hanjun Guo wrote:
+>>>
+>>> On 2015年01月05日 19:05, Catalin Marinas wrote:
+>>>>
+>>>> On Sun, Jan 04, 2015 at 09:39:24AM +0000, Hanjun Guo wrote:
+>>>>>
+>>>>> On 2014年12月25日 01:18, Catalin Marinas wrote:
+>>>>> [...]
+>>>>>>
+>>>>>>
+>>>>>> In addition to the above and _DSD requirements/banning, I would also
+>>>>>> add
+>>>>>> some clear statements around:
+>>>>>>
+>>>>>> _OSC: only global/published capabilities are allowed. For
+>>>>>> device-specific _OSC we need a process or maybe we can ban them
+>>>>>> entirely
+>>>>>> and rely on _DSD once we clarify the process.
+>>>>>>
+>>>>>> _OSI: firmware must not check for certain _OSI strings. Here I'm not
+>>>>>> sure what we would have to do for ARM Linux. Reporting "Windows" does
+>>>>>> not make any sense but not reporting anything can, as Matthew Garrett
+>>>>>> pointed out, can be interpreted by firmware as "Linux". In addition to
+>>>>>> any statements in this document, I suggest you patch
+>>>>>> drivers/acpi/acpica/utosi.c accordingly, maybe report "Linux" for ARM
+>>>>>> and print a kernel warning so that we notice earlier.
+>>>>>>
+>>>>>> ACPI_OS_NAME: this is globally defined as "Microsoft Windows NT". It
+>>>>>> doesn't make much sense in the ARM context. Could we change it to
+>>>>>> "Linux" when CONFIG_ARM64?
+>>>
+>>>
+>>> I think we can introduce a Kconfig such as CONFIG_ACPI_OS_NAME_LINUX,
+>>> selected by ARM64 and change ACPI_OS_NAME to "Linux" when
+>>> CONFIG_ACPI_OS_NAME_LINUX defined. (we can not add CONFIG_ARM64 in
+>>> ACPICA code directly since it will be used by windows too)
+>>>
+>>> some code like below:
+>>
+>>
+>> This looks fine for me (with some minor comments below) but I'm not an
+>> ACPI expert to say there wouldn't be any issues.
+>>
+>>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>>> index b1f9a20..de567a3 100644
+>>> --- a/arch/arm64/Kconfig
+>>> +++ b/arch/arm64/Kconfig
+>>> @@ -1,5 +1,6 @@
+>>>    config ARM64
+>>>           def_bool y
+>>> +       select ACPI_OS_NAME_LINUX if ACPI
+>>>           select ARCH_BINFMT_ELF_RANDOMIZE_PIE
+>>>           select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+>>>           select ARCH_HAS_GCOV_PROFILE_ALL
+>>> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+>>> index 8951cef..11a10ac 100644
+>>> --- a/drivers/acpi/Kconfig
+>>> +++ b/drivers/acpi/Kconfig
+>>> @@ -369,6 +369,10 @@ config ACPI_REDUCED_HARDWARE_ONLY
+>>>
+>>>             If you are unsure what to do, do not enable this option.
+>>>
+>>> +config ACPI_OS_NAME_LINUX
+>>> +       bool "Using Linux for _OS method" if EXPERT
+>>> +       def_bool n
+>>
+>>
+>> No need for a default n, it is off by default. Alternatively you could
+>> say:
+>>
+>>         default y if ARM64
+>
+>
+> ok.
+>
+>>
+>>> +
+>>>    source "drivers/acpi/apei/Kconfig"
+>>>
+>>>    config ACPI_EXTLOG
+>>> diff --git a/include/acpi/acconfig.h b/include/acpi/acconfig.h
+>>> index 5a0a3e5..db5e13e 100644
+>>> --- a/include/acpi/acconfig.h
+>>> +++ b/include/acpi/acconfig.h
+>>> @@ -69,7 +69,11 @@
+>>>     * code that will not execute the _OSI method unless _OS matches the
+>>> string
+>>>     * below.  Therefore, change this string at your own risk.
+>>>     */
+>>> +#ifndef ACPI_OS_NAME_USING_LINUX
+>>>    #define ACPI_OS_NAME                    "Microsoft Windows NT"
+>>> +#else
+>>> +#define ACPI_OS_NAME                    "Linux"
+>>> +#endif
+>>
+>>
+>> Can you not use CONFIG_ACPI_OS_NAME_LINUX directly here without
+>> introducing another macro?
+>
+>
+> acconfig.h is part of ACPICA core and will be shared by windows and
+> other OS, so use CONFIG from Linux in this file is not allowed I think.
+>
 
------------------>8-----------------------
-  CC       bench/futex-hash.o
-  CC       bench/futex-wake.o
-bench/futex-hash.c: In function 'bench_futex_hash':
-bench/futex-hash.c:161:3: error: implicit declaration of function
-'pthread_attr_setaffinity_np' [-Werror=implicit-function-declaration]
-   ret = pthread_attr_setaffinity_np(&thread_attr, sizeof(cpu_set_t),
-&cpu);
-   ^
-bench/futex-hash.c:161:3: error: nested extern declaration of
-'pthread_attr_setaffinity_np' [-Werror=nested-externs]
------------------>8-----------------------
+We could just propse
+#ifndef ACPI_OS_NAME
+#define ACPI_OS_NAME "Microsoft Windows NT"
+#endif
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- tools/perf/bench/futex.h                    | 13 +++++++++++++
- tools/perf/config/Makefile                  |  6 ++++++
- tools/perf/config/feature-checks/Makefile   |  4 ++++
- tools/perf/config/feature-checks/test-all.c |  5 +++++
- 4 files changed, 28 insertions(+)
+to acpica maintainers. This will not alter Windows or other software usage
+but we can then override it in Linux when/if we want to.
 
-diff --git a/tools/perf/bench/futex.h b/tools/perf/bench/futex.h
-index 71f2844cf97f..7ed22ff1e1ac 100644
---- a/tools/perf/bench/futex.h
-+++ b/tools/perf/bench/futex.h
-@@ -68,4 +68,17 @@ futex_cmp_requeue(u_int32_t *uaddr, u_int32_t val, u_int32_t *uaddr2, int nr_wak
- 		 val, opflags);
- }
- 
-+#ifndef HAVE_PTHREAD_ATTR_SETAFFINITY_NP
-+#include <pthread.h>
-+static inline int pthread_attr_setaffinity_np(pthread_attr_t *attr,
-+					      size_t cpusetsize,
-+					      cpu_set_t *cpuset)
-+{
-+	attr = attr;
-+	cpusetsize = cpusetsize;
-+	cpuset = cpuset;
-+	return 0;
-+}
-+#endif
-+
- #endif /* _FUTEX_H */
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 5d4b039fe1ed..6b59662136fa 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -198,6 +198,7 @@ CORE_FEATURE_TESTS =			\
- 	libpython-version		\
- 	libslang			\
- 	libunwind			\
-+	pthread-attr-setaffinity-np	\
- 	stackprotector-all		\
- 	timerfd				\
- 	libdw-dwarf-unwind		\
-@@ -226,6 +227,7 @@ VF_FEATURE_TESTS =			\
- 	libelf-getphdrnum		\
- 	libelf-mmap			\
- 	libpython-version		\
-+	pthread-attr-setaffinity-np	\
- 	stackprotector-all		\
- 	timerfd				\
- 	libunwind-debug-frame		\
-@@ -301,6 +303,10 @@ ifeq ($(feature-sync-compare-and-swap), 1)
-   CFLAGS += -DHAVE_SYNC_COMPARE_AND_SWAP_SUPPORT
- endif
- 
-+ifeq ($(feature-pthread-attr-setaffinity-np), 1)
-+  CFLAGS += -DHAVE_PTHREAD_ATTR_SETAFFINITY_NP
-+endif
-+
- ifndef NO_BIONIC
-   $(call feature_check,bionic)
-   ifeq ($(feature-bionic), 1)
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 53f19b5dbc37..e9b99bb29348 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -25,6 +25,7 @@ FILES=					\
- 	test-libslang.bin		\
- 	test-libunwind.bin		\
- 	test-libunwind-debug-frame.bin	\
-+	test-pthread-attr-setaffinity-np.bin	\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
- 	test-libdw-dwarf-unwind.bin	\
-@@ -47,6 +48,9 @@ test-all.bin:
- test-hello.bin:
- 	$(BUILD)
- 
-+test-pthread-attr-setaffinity-np.bin:
-+	$(BUILD) -Werror
-+
- test-stackprotector-all.bin:
- 	$(BUILD) -Werror -fstack-protector-all
- 
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 652e0098eba6..6d4d09323922 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -97,6 +97,10 @@
- # include "test-zlib.c"
- #undef main
- 
-+#define main main_test_pthread_attr_setaffinity_np
-+# include "test-pthread_attr_setaffinity_np.c"
-+#undef main
-+
- int main(int argc, char *argv[])
- {
- 	main_test_libpython();
-@@ -121,6 +125,7 @@ int main(int argc, char *argv[])
- 	main_test_libdw_dwarf_unwind();
- 	main_test_sync_compare_and_swap(argc, argv);
- 	main_test_zlib();
-+	main_test_pthread_attr_setaffinity_np();
- 
- 	return 0;
- }
--- 
-1.9.1
-
+Graeme
