@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571AbbAFTSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:18:34 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:40389 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426AbbAFTSc (ORCPT
+	id S1755168AbbAFTTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:19:09 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:57127 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741AbbAFTTH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:18:32 -0500
-From: Mark Salyzyn <salyzyn@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Salyzyn <salyzyn@android.com>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH v3 1/3] pstore: use scnprintf
-Date: Tue,  6 Jan 2015 11:18:24 -0800
-Message-Id: <1420571907-13162-1-git-send-email-salyzyn@android.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	Tue, 6 Jan 2015 14:19:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
+ <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
+ <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+ <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no>
+From: Yuchung Cheng <ycheng@google.com>
+Date: Tue, 6 Jan 2015 11:18:24 -0800
+Message-ID: <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
+Subject: Re: TCP connection issues against Amazon S3
+To: Erik Grinaker <erik@bengler.no>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No guarantees that the names will not exceed the
-name buffer with future adjustments.
+On Tue, Jan 6, 2015 at 11:01 AM, Erik Grinaker <erik@bengler.no> wrote:
+>
+>> On 06 Jan 2015, at 18:33, Yuchung Cheng <ycheng@google.com> wrote:
+>>
+>> On Tue, Jan 6, 2015 at 10:17 AM, Erik Grinaker <erik@bengler.no> wrote:
+>>>
+>>>> On 06 Jan 2015, at 17:20, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>>> On Tue, 2015-01-06 at 16:11 +0000, Erik Grinaker wrote:
+>>>>>> On 06 Jan 2015, at 16:04, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>>>>> On Tue, 2015-01-06 at 15:14 +0000, Erik Grinaker wrote:
+>>>>>>> (CCing Yuchung, as his name comes up in the relevant commits)
+>>>>>>>
+>>>>>>> After upgrading from Ubuntu 12.04.5 to 14.04.1 we have begun seeing
+>>>>>>> intermittent TCP connection hangs for HTTP image requests against
+>>>>>>> Amazon S3. 3-5% of requests will suddenly stall in the middle of the
+>>>>>>> transfer before timing out. We see this problem across a range of
+>>>>>>> servers, in several data centres and networks, all located in Norway.
+>>>>>>>
+>>>>>>> A packet dump [1] shows repeated ACK retransmits for some of the
+>> TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
+>
+> Ah, sorry, they are indeed DUPACKs; I thought they were the same thing.
+>
+>> I am trying to understand the problem. Could you confirm that it's the
+>> HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
+>> from the receiver (your host)?
+>
+> Yes. We run HTTP GET requests against S3 for images (typically a few megs in size). Once in a while, the response transfer stalls about halfway through, until the client (Curl) times out. The packet dump shows loads of DUPACKs early on, then TCP retransmissions until the connection is closed.
 
-Signed-off-by: Mark Salyzyn <salyzyn@android.com>
----
- fs/pstore/inode.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+Without SACK, the sender uses NewReno fast recovery and recovers one
+packet per RTT. In contrast, SACK-based fast recovery can potentially
+recover all lost packets in one RTT.
 
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 5041660..d69586f 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -338,32 +338,35 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 
- 	switch (type) {
- 	case PSTORE_TYPE_DMESG:
--		sprintf(name, "dmesg-%s-%lld%s", psname, id,
--						compressed ? ".enc.z" : "");
-+		scnprintf(name, sizeof(name), "dmesg-%s-%lld%s",
-+			  psname, id, compressed ? ".enc.z" : "");
- 		break;
- 	case PSTORE_TYPE_CONSOLE:
--		sprintf(name, "console-%s-%lld", psname, id);
-+		scnprintf(name, sizeof(name), "console-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_FTRACE:
--		sprintf(name, "ftrace-%s-%lld", psname, id);
-+		scnprintf(name, sizeof(name), "ftrace-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_MCE:
--		sprintf(name, "mce-%s-%lld", psname, id);
-+		scnprintf(name, sizeof(name), "mce-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_PPC_RTAS:
--		sprintf(name, "rtas-%s-%lld", psname, id);
-+		scnprintf(name, sizeof(name), "rtas-%s-%lld", psname, id);
- 		break;
- 	case PSTORE_TYPE_PPC_OF:
--		sprintf(name, "powerpc-ofw-%s-%lld", psname, id);
-+		scnprintf(name, sizeof(name), "powerpc-ofw-%s-%lld",
-+			  psname, id);
- 		break;
- 	case PSTORE_TYPE_PPC_COMMON:
--		sprintf(name, "powerpc-common-%s-%lld", psname, id);
-+		scnprintf(name, sizeof(name), "powerpc-common-%s-%lld",
-+			  psname, id);
- 		break;
- 	case PSTORE_TYPE_UNKNOWN:
--		sprintf(name, "unknown-%s-%lld", psname, id);
-+		scnprintf(name, sizeof(name), "unknown-%s-%lld", psname, id);
- 		break;
- 	default:
--		sprintf(name, "type%d-%s-%lld", type, psname, id);
-+		scnprintf(name, sizeof(name), "type%d-%s-%lld",
-+			  type, psname, id);
- 		break;
- 	}
- 
--- 
-2.2.0.rc0.207.ga3a616c
+I still can't explain the problem seen on newer kernel. But that got
+to be some receiver related changes, not
+0f7cc9a3c2bd89b15720dbf358e9b9e62af27126 b/c it's a sender side
+change.
 
+>
+>> btw I suspect some middleboxes are stripping SACKOK options from your
+>> SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
+>
+> That may be. I just tested this on a server in the Netherlands, and I can not reproduce the problem there, while I can reproduce it from multiple locations and ISPs in Norway. Would it be helpful to have a packet dump from the functioning Netherlands server as well?
+
+
+
+>
+>
+>>>>>>> requests. Using Ubuntu mainline kernels, we found the problem to have
+>>>>>>> been introduced between 3.11.10 and 3.12.0, possibly in
+>>>>>>> 0f7cc9a3c2bd89b15720dbf358e9b9e62af27126. The problem is also present
+>>>>>>> in 3.18.1. Disabling tcp_window_scaling seems to solve it, but has
+>>>>>>> obvious drawbacks for transfer speeds. Other sysctls do not seem to
+>>>>>>> affect it.
+>>>>>>>
+>>>>>>> I am not sure if this is fundamentally a kernel bug or a network
+>>>>>>> issue, but we did not see this problem with older kernels.
+>>>>>>>
+>>>>>>> [1] http://abstrakt.bengler.no/tcp-issues-s3.pcap.bz2
+>>>>>>
+>>>>>>
+>>>>>> CC netdev
+>>>>>>
+>>>>>> This looks like the bug we fixed here :
+>>>>>>
+>>>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=39bb5e62867de82b269b07df900165029b928359
+>>>>>
+>>>>> Has that patch gone into a release? Because the problem persists with 3.18.1.
+>>>>
+>>>> Patch is in 3.18.1 yes.
+>>>>
+>>>> So thats a separate issue.
+>>>>
+>>>> Can you confirm pcap was taken at receiver (195.159.221.106), not sender
+>>>> (54.231.136.74) , and on which host is running the 'buggy kernel' ?
+>>>
+>>> Yes, pcap was taken on receiver (195.159.221.106).
+>>>
+>>>> If the sender is broken, changing the kernel on receiver wont help.
+>>>>
+>>>> BTW not using sack (on 54.231.132.98) is terrible for performance in
+>>>> lossy environments.
+>>>
+>>> It may well be that the sender is broken; however, the sender is Amazon S3, so I do not have any control over it. And in any case, the problem goes away with 3.11.10 on receiver, but persists with 3.12.0 (or later) on receiver, so there must be some change in 3.12.0 which has caused this to trigger.
+>>>
+>>> If you are confident that the problem is with Amazon, I can get in touch with their engineering department.
+>
