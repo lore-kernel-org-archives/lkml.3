@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbbAFK5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 05:57:33 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:48483 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755009AbbAFK5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 05:57:31 -0500
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
-        alex.williamson@redhat.com
-Cc: will.deacon@arm.com, tech@virtualopensystems.com,
-        christoffer.dall@linaro.org, eric.auger@linaro.org,
-        kim.phillips@freescale.com, marc.zyngier@arm.com,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvm@vger.kernel.org (open list:VFIO DRIVER),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v11 20/20] vfio/platform: implement IRQ masking/unmasking via an eventfd
-Date: Tue,  6 Jan 2015 11:48:55 +0100
-Message-Id: <1420541335-17190-21-git-send-email-a.motakis@virtualopensystems.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1420541335-17190-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1420541335-17190-1-git-send-email-a.motakis@virtualopensystems.com>
+	id S932346AbbAFCzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 21:55:31 -0500
+Received: from mail-bl2on0124.outbound.protection.outlook.com ([65.55.169.124]:28456
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932298AbbAFCzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Jan 2015 21:55:06 -0500
+From: Anson Huang <b20788@freescale.com>
+To: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <edubezval@gmail.com>, <rui.zhang@intel.com>, <jangra.pankaj9@gmail.com>
+Subject: [PATCH V2] Thermal: imx: add clk disable/enable for suspend/resume
+Date: Tue, 6 Jan 2015 18:50:22 +0800
+Message-ID: <1420541422-27602-1-git-send-email-b20788@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Anson.Huang@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(31966008)(85426001)(36756003)(104016003)(62966003)(87936001)(4396001)(50226001)(89996001)(68736005)(77096005)(77156002)(21056001)(92566001)(50986999)(97736003)(106466001)(229853001)(107046002)(99396003)(120916001)(46102003)(84676001)(6806004)(19580405001)(33646002)(48376002)(19580395003)(50466002)(105606002)(47776003)(20776003)(64706001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0625;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DmarcAction: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR0301MB0625;
+X-Forefront-PRVS: 0448A97BF2
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 02:55:03.4753
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0625
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch the VFIO user will be able to set an eventfd that can be
-used in order to mask and unmask IRQs of platform devices.
+Thermal sensor's clk is from pll3_usb_otg, per hardware
+design requirement, need to make sure pll3_usb_otg is disabled
+before STOP mode is entered, otherwise, all PFDs under it may
+enter incorrect state, this patch disables pll3_usb_otg before
+suspend and enables it after resume.
 
-Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+Signed-off-by: Anson Huang <b20788@freescale.com>
 ---
- drivers/vfio/platform/vfio_platform_irq.c     | 47 ++++++++++++++++++++++++---
- drivers/vfio/platform/vfio_platform_private.h |  2 ++
- 2 files changed, 45 insertions(+), 4 deletions(-)
+ drivers/thermal/imx_thermal.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-index b3602cb..6ade36b 100644
---- a/drivers/vfio/platform/vfio_platform_irq.c
-+++ b/drivers/vfio/platform/vfio_platform_irq.c
-@@ -37,6 +37,15 @@ static void vfio_platform_mask(struct vfio_platform_irq *irq_ctx)
- 	spin_unlock_irqrestore(&irq_ctx->lock, flags);
+diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
+index 461bf3d..dc8bcd8 100644
+--- a/drivers/thermal/imx_thermal.c
++++ b/drivers/thermal/imx_thermal.c
+@@ -600,6 +600,7 @@ static int imx_thermal_suspend(struct device *dev)
+ 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
+ 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
+ 	data->mode = THERMAL_DEVICE_DISABLED;
++	clk_disable_unprepare(data->thermal_clk);
+ 
+ 	return 0;
  }
+@@ -609,6 +610,7 @@ static int imx_thermal_resume(struct device *dev)
+ 	struct imx_thermal_data *data = dev_get_drvdata(dev);
+ 	struct regmap *map = data->tempmon;
  
-+static int vfio_platform_mask_handler(void *opaque, void *unused)
-+{
-+	struct vfio_platform_irq *irq_ctx = opaque;
-+
-+	vfio_platform_mask(irq_ctx);
-+
-+	return 0;
-+}
-+
- static int vfio_platform_set_irq_mask(struct vfio_platform_device *vdev,
- 				      unsigned index, unsigned start,
- 				      unsigned count, uint32_t flags,
-@@ -48,8 +57,18 @@ static int vfio_platform_set_irq_mask(struct vfio_platform_device *vdev,
- 	if (!(vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE))
- 		return -EINVAL;
- 
--	if (flags & VFIO_IRQ_SET_DATA_EVENTFD)
--		return -EINVAL; /* not implemented yet */
-+	if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
-+		int32_t fd = *(int32_t *)data;
-+
-+		if (fd >= 0)
-+			return vfio_virqfd_enable((void *) &vdev->irqs[index],
-+						  vfio_platform_mask_handler,
-+						  NULL, NULL,
-+						  &vdev->irqs[index].mask, fd);
-+
-+		vfio_virqfd_disable(&vdev->irqs[index].mask);
-+		return 0;
-+	}
- 
- 	if (flags & VFIO_IRQ_SET_DATA_NONE) {
- 		vfio_platform_mask(&vdev->irqs[index]);
-@@ -78,6 +97,15 @@ static void vfio_platform_unmask(struct vfio_platform_irq *irq_ctx)
- 	spin_unlock_irqrestore(&irq_ctx->lock, flags);
- }
- 
-+static int vfio_platform_unmask_handler(void *opaque, void *unused)
-+{
-+	struct vfio_platform_irq *irq_ctx = opaque;
-+
-+	vfio_platform_unmask(irq_ctx);
-+
-+	return 0;
-+}
-+
- static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
- 					unsigned index, unsigned start,
- 					unsigned count, uint32_t flags,
-@@ -89,8 +117,19 @@ static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
- 	if (!(vdev->irqs[index].flags & VFIO_IRQ_INFO_MASKABLE))
- 		return -EINVAL;
- 
--	if (flags & VFIO_IRQ_SET_DATA_EVENTFD)
--		return -EINVAL; /* not implemented yet */
-+	if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
-+		int32_t fd = *(int32_t *)data;
-+
-+		if (fd >= 0)
-+			return vfio_virqfd_enable((void *) &vdev->irqs[index],
-+						  vfio_platform_unmask_handler,
-+						  NULL, NULL,
-+						  &vdev->irqs[index].unmask,
-+						  fd);
-+
-+		vfio_virqfd_disable(&vdev->irqs[index].unmask);
-+		return 0;
-+	}
- 
- 	if (flags & VFIO_IRQ_SET_DATA_NONE) {
- 		vfio_platform_unmask(&vdev->irqs[index]);
-diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
-index eef6d1b..c3d5b4b 100644
---- a/drivers/vfio/platform/vfio_platform_private.h
-+++ b/drivers/vfio/platform/vfio_platform_private.h
-@@ -32,6 +32,8 @@ struct vfio_platform_irq {
- 	struct eventfd_ctx	*trigger;
- 	bool			masked;
- 	spinlock_t		lock;
-+	struct virqfd		*unmask;
-+	struct virqfd		*mask;
- };
- 
- struct vfio_platform_region {
++	clk_prepare_enable(data->thermal_clk);
+ 	/* Enabled thermal sensor after resume */
+ 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
+ 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
 -- 
-2.1.4
+1.9.1
 
