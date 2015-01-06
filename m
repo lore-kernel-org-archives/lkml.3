@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189AbbAFL6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 06:58:38 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53740 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549AbbAFL6h (ORCPT
+	id S1755216AbbAFMAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 07:00:38 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38014 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752881AbbAFMAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 06:58:37 -0500
-Date: Tue, 6 Jan 2015 12:58:22 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>, Dave Jones <davej@codemonkey.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
-Subject: Re: Linux 3.19-rc3
-Message-ID: <20150106115822.GU29390@twins.programming.kicks-ass.net>
-References: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
- <20150106094039.GI29390@twins.programming.kicks-ass.net>
- <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
- <CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
- <20150106100621.GL29390@twins.programming.kicks-ass.net>
- <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
- <20150106110112.GQ29390@twins.programming.kicks-ass.net>
- <20150106110730.GA25846@kmo-pixel>
+	Tue, 6 Jan 2015 07:00:34 -0500
+Date: Tue, 6 Jan 2015 12:00:12 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, linux-ide@vger.kernel.org
+Message-ID: <20150106120012.GW2634@sirena.org.uk>
+References: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com>
+ <1419614799-5770-2-git-send-email-gregory.clement@free-electrons.com>
+ <20141229154030.GJ17800@sirena.org.uk>
+ <54ABC8A2.7090905@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4dbYIUm7Fhfg+fSv"
 Content-Disposition: inline
-In-Reply-To: <20150106110730.GA25846@kmo-pixel>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54ABC8A2.7090905@free-electrons.com>
+X-Cookie: What's so funny?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: core: Add a sanity check on the
+ regulator_ enable/disable functions
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 03:07:30AM -0800, Kent Overstreet wrote:
-> http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
 
-Very terse changelogs there :/
+--4dbYIUm7Fhfg+fSv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also, I'm not sure I agree with that whole closure_wait_event*() stuff,
-the closure interface as it exist before that makes sense, but now
-you're just mixing up things.
+On Tue, Jan 06, 2015 at 12:36:02PM +0100, Gregory CLEMENT wrote:
+> Hi Mark,
+>=20
+> On 29/12/2014 16:40, Mark Brown wrote:
+> > On Fri, Dec 26, 2014 at 06:26:38PM +0100, Gregory CLEMENT wrote:
 
-Why would you want to retrofit a lot of the wait_event*() stuff on top
-of this?
+> > No, especially in the case of regulator_enable() this is deliberate -
+> > we're trying to ensure that if people are using regulators they're being
+> > careful about it, checking error codes and so on.  I'd really want to
+
+> OK so at least we should check that the pointer is not NULL before using =
+it
+> and inform the user of it by using a WARNING() or even a BUG() instead of
+> just let the kernel crash latter.
+
+Just crashing on the NULL is just about as good in terms of
+discoverabilty and any consumer that is assuming NULL is not a valid
+regulator is buggy in any case, any non-error pointer could be a valid
+regulator as far as users are concerned. =20
+
+> > see some persuasive use case for this.  What you're saying here sounds
+> > like the consumer shouldn't be treating the regulator as optional at
+> > all but should instead be using a normal regulator.
+
+> Being able to deal with NULL pointer in the disable function is convenient
+> and is done in other similar subsystems such as phy or clk for example. I=
+nstead
+> of having a check on the NULL pointer in each driver, it seems more logic=
+al to
+> do it directly in the disable function.
+
+This really only applies if it's likely that some thing that always gets
+used if it's there might be missing which isn't the case for regulators,
+it's not at all common to have power supplies that might be missing and
+if they are missing NULL isn't a good way to track them.
+
+If you're having problems with this and need workarounds in the core to
+make your driver code look OK that sounds like things are working since
+it sounds like the driver code is probably abusing the API here.
+
+--4dbYIUm7Fhfg+fSv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUq85LAAoJECTWi3JdVIfQKSIH/A2d6R/AVXY8G1pTOSV/ME6T
+5X1RmfNFO9B5CLRM/IXbXEd1gvKK6Dep6p5hX877p5M3oirfCIKecBhueoUycUs9
+N/2q2HQQbUmtOBjLFv6yzowcmXmn38+iaqiwjakNaFHlg1BTn5nmnjcWO4rovuDG
+GAzRc1MMDwZGt0oC57lUsqbCIZ7J80wKQQYLaV556KRVQxvM83iE4EwNvzzWYzIe
+rVnqKdkp8lMe92fUp1tK++s1Xh91Vr60DT65wXrKTnmWaHb93IbfWlJ6F+zPccG+
+Gwdw6FqgLREN4Re/fpLNF2NCEH6jCIrae6iD52p6nvBMFIMpBMUYyjqVUcuQTH0=
+=1jYK
+-----END PGP SIGNATURE-----
+
+--4dbYIUm7Fhfg+fSv--
