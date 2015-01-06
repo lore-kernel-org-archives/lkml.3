@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224AbbAFO6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:58:12 -0500
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:37843 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbbAFO6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:58:10 -0500
+	id S932266AbbAFPBD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:01:03 -0500
+Received: from nbfkord-smmo04.seg.att.com ([209.65.160.86]:32054 "EHLO
+	nbfkord-smmo04.seg.att.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753644AbbAFPBB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:01:01 -0500
+X-MXL-Hash: 54abf8ac7e17da6a-20ec97665f3c9642d5c4a4029a12b82ce6de01a6
+X-MXL-Hash: 54abf8a7266a345f-bbee812db9c26a45d13393a1a568a68ce644919f
+From: "Peterson, David" <David.Peterson@cel.com>
+To: "johan@kernel.org" <johan@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] USB: cp210x: add IDs for CEL USB sticks and MeshWorks
+ devices
+Thread-Topic: [PATCH] USB: cp210x: add IDs for CEL USB sticks and MeshWorks
+ devices
+Thread-Index: AQHQKcGQpsvHsTQSzEWrsql9iZvfbw==
+Date: Tue, 6 Jan 2015 15:00:52 +0000
+Message-ID: <641A0889272F104D8B07278675C0C484010BF621@hq27>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.27.72.70]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20150106141701.GC3484@arm.com>
-References: <CAHkaATSM=V+BNZvAXC+VG6NDjOK9m0ZP3Q=SUaoxtgDw4SKZog@mail.gmail.com>
-	<20150106141701.GC3484@arm.com>
-Date: Tue, 6 Jan 2015 22:58:09 +0800
-Message-ID: <CAHkaATQEkGXgMEKkc2Lcd0z60oeB7Rx2Q=BmwQjmHJ9HuKsjew@mail.gmail.com>
-Subject: Re: [PATCH] arm64: add ioremap physical address information
-From: Min-Hua Chen <orca.chen@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-AnalysisOut: [v=2.0 cv=HrvB7TvS c=1 sm=1 a=y9+QFOo4fg1+r3pHMCm0Pg==:17 a]
+X-AnalysisOut: [=W4m72nRF2goA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=ofO]
+X-AnalysisOut: [VIf7FAAAA:8 a=YNv0rlydsVwA:10 a=3Ul4oGXcMAlspX2yJhwA:9 a=C]
+X-AnalysisOut: [juIK1q_8ugA:10]
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2014051901)]
+X-MAIL-FROM: <david.peterson@cel.com>
+X-SOURCE-IP: [12.199.204.43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 10:17 PM, Will Deacon <will.deacon@arm.com> wrote:
-> On Fri, Dec 26, 2014 at 04:52:10PM +0000, Min-Hua Chen wrote:
->> In /proc/vmallocinfo, it's good to show the physical address
->> of each ioremap in vmallocinfo. Add physical address information
->> in arm64 ioremap.
->>
->> 0xffffc900047f2000-0xffffc900047f4000    8192 _nv013519rm+0x57/0xa0
->> [nvidia] phys=f8100000 ioremap
->> 0xffffc900047f4000-0xffffc900047f6000    8192 _nv013519rm+0x57/0xa0
->> [nvidia] phys=f8008000 ioremap
->> 0xffffc90004800000-0xffffc90004821000  135168 e1000_probe+0x22c/0xb95
->> [e1000e] phys=f4300000 ioremap
->> 0xffffc900049c0000-0xffffc900049e1000  135168 _nv013521rm+0x4d/0xd0
->> [nvidia] phys=e0140000 ioremap
->>
->> Signed-off-by: Min-Hua Chen <orca.chen@gmail.com>
->> ---
->
-> Thanks, this looks useful for debugging.
->
->   Acked-by: Will Deacon <will.deacon@arm.com>
->
-> I assume this can wait for 3.20?
+From: David Peterson <david.peterson@cel.com>
 
-Sure, thanks.
+Added virtual com port VID/PID entries for CEL USB sticks and MeshWorks devices
 
-Min-Hua
+Signed-off-by: David Peterson <david.peterson@cel.com>
+---
+ drivers/usb/serial/cp210x.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
->
-> Will
->
->
->>  arch/arm64/mm/ioremap.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/arch/arm64/mm/ioremap.c b/arch/arm64/mm/ioremap.c
->> index cbb99c8..01e88c8 100644
->> --- a/arch/arm64/mm/ioremap.c
->> +++ b/arch/arm64/mm/ioremap.c
->> @@ -62,6 +62,7 @@ static void __iomem *__ioremap_caller(phys_addr_t
->> phys_addr, size_t size,
->>      if (!area)
->>          return NULL;
->>      addr = (unsigned long)area->addr;
->> +    area->phys_addr = phys_addr;
->>
->>      err = ioremap_page_range(addr, addr + size, phys_addr, prot);
->>      if (err) {
->> --
->> 1.7.10.4
->>
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c index 6c4eb3c..a6db2fc 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -120,6 +120,9 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
++	{ USB_DEVICE(0x10C4, 0x8856) }, /* CEL EM357 ZigBee USB Stick - LR */
++	{ USB_DEVICE(0x10C4, 0x8857) }, /* CEL EM357 ZigBee USB Stick */
++	{ USB_DEVICE(0x10C4, 0x8977) }, /* CEL MeshWorks DevKit Device */
+ 	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+--
+2.1.0
+
