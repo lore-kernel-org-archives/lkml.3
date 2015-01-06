@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933259AbbAFVhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:37:19 -0500
-Received: from khitomer.mortis.eu ([185.27.175.75]:29899 "EHLO
-	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932931AbbAFVhQ (ORCPT
+	id S933300AbbAFVjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:39:10 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48064 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932611AbbAFVjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:37:16 -0500
-From: Giel van Schijndel <me@mortis.eu>
-To: linux-kernel@vger.kernel.org
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        Giel van Schijndel <me@mortis.eu>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org (open list:COMMON INTERNET F...),
-        samba-technical@lists.samba.org (moderated list:COMMON INTERNET F...)
-Subject: [PATCH RESEND] cifs: use memzero_explicit to clear stack buffer
-Date: Tue,  6 Jan 2015 22:37:00 +0100
-Message-Id: <1420580220-6276-1-git-send-email-me@mortis.eu>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1420394744-20268-1-git-send-email-me@mortis.eu>
-References: <1420394744-20268-1-git-send-email-me@mortis.eu>
+	Tue, 6 Jan 2015 16:39:07 -0500
+Message-ID: <54AC557D.1080605@free-electrons.com>
+Date: Tue, 06 Jan 2015 18:37:01 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Ken Wilson <ken.wilson@opengear.com>, robh+dt@kernel.org
+CC: pawel.moll@arm.com, mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk, broonie@kernel.org,
+        gerg@uclinux.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-spi@vger.kernel.org
+Subject: Re: [PATCH] spi: orion: Add multiple chip select support for Armada
+ 370 and 375
+References: <1420579846-31962-1-git-send-email-ken.wilson@opengear.com>
+In-Reply-To: <1420579846-31962-1-git-send-email-ken.wilson@opengear.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When leaving a function use memzero_explicit instead of memset(0) to
-clear stack allocated buffers. memset(0) may be optimized away.
+On 01/06/2015 06:30 PM, Ken Wilson wrote:
+> Create a new dt binding for the Armada 375 that supports up to
+> 3 chip selects but uses the same prescaler values and algorithm
+> as the basic orion binding.
+> 
+> Update the Armada 370 so that it supports up to 4 chip selects.
+> 
+> This has been tested on the Armada 375 with multiple SPI-NOR chips.
+> 
+> Signed-off-by: Ken Wilson <ken.wilson@opengear.com>
+> ---
+>  .../devicetree/bindings/spi/spi-orion.txt          |  3 ++-
+>  arch/arm/boot/dts/armada-375.dtsi                  |  4 +--
+>  drivers/spi/spi-orion.c                            | 29 +++++++++++++++++++---
 
-This particular buffer is highly likely to contain sensitive data which
-we shouldn't leak (it's named 'passwd' after all).
+You will have to split this changeset in three patches, given these
+three files carry different kind of changes:
 
-Signed-off-by: Giel van Schijndel <me@mortis.eu>
-Reported-at: http://www.viva64.com/en/b/0299/
-Reported-by: Andrey Karpov
-Reported-by: Svyatoslav Razmyslov
----
- fs/cifs/smbencrypt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+1. The driver change itself
+2. The devicetree binding documentation change
+3. The devicetree dtsi change
 
-diff --git a/fs/cifs/smbencrypt.c b/fs/cifs/smbencrypt.c
-index 6c15663..a4232ec 100644
---- a/fs/cifs/smbencrypt.c
-+++ b/fs/cifs/smbencrypt.c
-@@ -221,7 +221,7 @@ E_md4hash(const unsigned char *passwd, unsigned char *p16,
- 	}
- 
- 	rc = mdfour(p16, (unsigned char *) wpwd, len * sizeof(__le16));
--	memset(wpwd, 0, 129 * sizeof(__le16));
-+	memzero_explicit(wpwd, sizeof(wpwd));
- 
- 	return rc;
- }
+Regards,
 -- 
-2.1.4
-
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
