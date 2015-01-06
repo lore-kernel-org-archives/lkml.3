@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300AbbAFMpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 07:45:21 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:33768 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713AbbAFMpT (ORCPT
+	id S1755234AbbAFMm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 07:42:57 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:42613 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbbAFMmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 07:45:19 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        linux-geode@lists.infradead.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fbdev: geocode: remove unneeded NULL check
-Date: Tue,  6 Jan 2015 18:15:02 +0530
-Message-Id: <1420548302-11489-2-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1420548302-11489-1-git-send-email-sudipm.mukherjee@gmail.com>
-References: <1420548302-11489-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Tue, 6 Jan 2015 07:42:55 -0500
+Date: Tue, 6 Jan 2015 04:45:28 -0800
+From: Kent Overstreet <kmo@daterainc.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150106124528.GE26845@kmo-pixel>
+References: <CA+icZUUcgP=nUPCOfEJrbO9OAAPLgQd8RWO-BJe+W0wi3fWiOw@mail.gmail.com>
+ <CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com>
+ <20150106100621.GL29390@twins.programming.kicks-ass.net>
+ <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com>
+ <20150106110112.GQ29390@twins.programming.kicks-ass.net>
+ <20150106110730.GA25846@kmo-pixel>
+ <20150106114215.GS29390@twins.programming.kicks-ass.net>
+ <20150106114842.GP10476@twins.programming.kicks-ass.net>
+ <20150106120121.GB26845@kmo-pixel>
+ <20150106122006.GW29390@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150106122006.GW29390@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the check for info is not required as we are checking it immediately
-after gxfb_init_fbinfo() and lxfb_init_fbinfo() and returnig -ENOMEM
-if it is NULL.
+On Tue, Jan 06, 2015 at 01:20:06PM +0100, Peter Zijlstra wrote:
+> We (probably me) should probably audit all the atomic_xchg()
+> implementations and documentation and fix that. I was very much under
+> the impression it should imply a full barrier (and it certainly does on
+> x86), the documentation should state the rule that any atomic_ function
+> that returns a result is fully serializing, therefore, because
+> atomic_xchg() has a return value, it should too.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
-Hi Tomi,
-This patch is similar to my last patch which you have already queued
-for 3.20. if you can revert that then i can send you a single patch
-with all these three changes together.
-
- drivers/video/fbdev/geode/gxfb_core.c | 6 ++----
- drivers/video/fbdev/geode/lxfb_core.c | 6 ++----
- 2 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/video/fbdev/geode/gxfb_core.c b/drivers/video/fbdev/geode/gxfb_core.c
-index 1790f14..124d7c7 100644
---- a/drivers/video/fbdev/geode/gxfb_core.c
-+++ b/drivers/video/fbdev/geode/gxfb_core.c
-@@ -444,10 +444,8 @@ static int gxfb_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		pci_release_region(pdev, 1);
- 	}
- 
--	if (info) {
--		fb_dealloc_cmap(&info->cmap);
--		framebuffer_release(info);
--	}
-+	fb_dealloc_cmap(&info->cmap);
-+	framebuffer_release(info);
- 	return ret;
- }
- 
-diff --git a/drivers/video/fbdev/geode/lxfb_core.c b/drivers/video/fbdev/geode/lxfb_core.c
-index 9e1d19d..138da6c 100644
---- a/drivers/video/fbdev/geode/lxfb_core.c
-+++ b/drivers/video/fbdev/geode/lxfb_core.c
-@@ -577,10 +577,8 @@ err:
- 		pci_release_region(pdev, 3);
- 	}
- 
--	if (info) {
--		fb_dealloc_cmap(&info->cmap);
--		framebuffer_release(info);
--	}
-+	fb_dealloc_cmap(&info->cmap);
-+	framebuffer_release(info);
- 
- 	return ret;
- }
--- 
-1.8.1.2
-
+I think that the documentation was changed awhile ago - I'd have to check and I
+should sleep, though. It was probably 4-5 years ago that I saw that old weird
+"atomic_xchg() doesn't imply barriers" thing.
