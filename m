@@ -1,352 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271AbbAFQv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:51:59 -0500
-Received: from mail-bl2on0095.outbound.protection.outlook.com ([65.55.169.95]:29952
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932101AbbAFQv4 convert rfc822-to-8bit (ORCPT
+	id S1756028AbbAFQh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:37:56 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47987 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004AbbAFQhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:51:56 -0500
-X-Greylist: delayed 881 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 11:51:55 EST
-From: "Kumar, Vijaya" <Vijaya.Kumar@caviumnetworks.com>
-To: Yong Zhao <yong.zhao@amd.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-CC: "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: kgdb: fix single stepping
-Thread-Topic: [PATCH] arm64: kgdb: fix single stepping
-Thread-Index: AQHP7O0fW6V5QE3cNU2CyQLcNibWppyyq4kAgAEUaYCAAALyPw==
-Date: Tue, 6 Jan 2015 16:37:09 +0000
-Message-ID: <1420562228169.84880@caviumnetworks.com>
-References: <1413868050-6173-1-git-send-email-takahiro.akashi@linaro.org>
- <54AB23CA.2020502@linaro.org>,<54AC0BA9.3070100@amd.com>
-In-Reply-To: <54AC0BA9.3070100@amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [103.227.96.144]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=Vijaya.Kumar@caviumnetworks.com; 
-x-dmarcaction: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY1PR0701MB1109;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0701MB1109;
-x-forefront-prvs: 0448A97BF2
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(164054003)(51704005)(377454003)(45074003)(24454002)(377424004)(479174004)(36756003)(2501002)(66066001)(20776003)(87936001)(106116001)(31966008)(105586002)(107046002)(99286002)(106356001)(46102003)(86362001)(575784001)(19580405001)(92566001)(19580395003)(64706001)(54356999)(21056001)(50986999)(76176999)(2656002)(102836002)(2900100001)(122556002)(68736005)(15975445007)(2950100001)(99396003)(120916001)(4396001)(77156002)(40100003)(62966003)(117636001)(97736003)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0701MB1109;H:BY1PR0701MB1109.namprd07.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-MS-Exchange-CrossTenant-originalarrivaltime: 06 Jan 2015 16:37:09.8390
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 711e4ccf-2e9b-4bcf-a551-4094005b6194
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0701MB1109
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0701MB1333;
-X-OriginatorOrg: caviumnetworks.com
+	Tue, 6 Jan 2015 11:37:53 -0500
+From: mathieu.poirier@linaro.org
+To: liviu.dudau@arm.com, sudeep.holla@arm.com, lorenzo.pieralisi@arm.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org, patches@linaro.org
+Subject: [PATCH 6/9] coresight-etm3x: Fixing suspend/wake modes
+Date: Tue,  6 Jan 2015 09:37:10 -0700
+Message-Id: <1420562233-2015-7-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1420562233-2015-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1420562233-2015-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-  I could not reproduce this issue on my simulator.
- For now if this is validated on any platform, it should be ok.
+This patch makes sure power is managed properly during power state
+transitions.  Checks are introduced to make sure HW access functions
+aren't called uselessly to avoid wasting power and accessing
+blocks that may be powered down.
 
-Regards
-Vijay
+Lastly the CPU_ONLINE state has been removed from the cpu callback
+as it wasn't useful anymore.
 
-________________________________________
-From: Yong Zhao <yong.zhao@amd.com>
-Sent: Tuesday, January 6, 2015 9:52 PM
-To: AKASHI Takahiro; catalin.marinas@arm.com; will.deacon@arm.com
-Cc: dsaxena@linaro.org; Kumar, Vijaya; linux-arm-kernel@lists.infradead.org; linaro-kernel@lists.linaro.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm64: kgdb: fix single stepping
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/coresight/coresight-etm.h   |  4 ++--
+ drivers/coresight/coresight-etm3x.c | 48 ++++++++++++++++++++-----------------
+ 2 files changed, 28 insertions(+), 24 deletions(-)
 
-Hi Will,
-
-I have used Takahiro's patch to fix the single stepping problem of KGDB
-on arm64. We had real hardware called AMD Seattle. The problem I had is
-exactly the same as the description of Takahiro. We are working on
-kernel 3.14, but we did port back many patches related to arm64 from
-higher kernel versions. The patches that we ported are:
-
-1d70460 arm64: kgdb: fix single stepping
-5f31df7 arm64: debug: don't re-enable debug exceptions on return from
-el1_dbg
-All the arm64 KGDB patches from 3.16
-
-The first one is Takahiro's patch.
-
-Best,
-Yong
-On 15-01-05 06:52 PM, AKASHI Takahiro wrote:
-> Hi Will,
->
-> What's the current status of this patch?
-> I'm pretty sure that the bug is reproducable and can be fixed
-> with my patch since I've got a report from another guy
-> who had the same problem and tried my patch.
->
-> Thanks,
-> -Takahiro AKASHI
->
-> On 10/21/2014 02:07 PM, AKASHI Takahiro wrote:
->> I tried to verify kgdb in vanilla kernel on fast model, but it seems
->> that
->> the single stepping with kgdb doesn't work correctly since its first
->> appearance at v3.15.
->>
->> On v3.15, 'stepi' command after breaking the kernel at some breakpoint
->> steps forward to the next instruction, but the succeeding 'stepi' never
->> goes beyond that.
->> On v3.16, 'stepi' moves forward and stops at the next instruction just
->> after enable_dbg in el1_dbg, and never goes beyond that. This
->> variance of
->> behavior seems to come in with the following patch in v3.16:
->>
->>      commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on
->> fault
->>      paths where possible")
->>
->> This patch
->> (1) moves kgdb_disable_single_step() from 'c' command handling to single
->>      step handler.
->>      This makes sure that single stepping gets effective at every 's'
->> command.
->>      Please note that, under the current implementation, single step
->> bit in
->>      spsr, which is cleared by the first single stepping, will not be
->> set
->>      again for the consecutive 's' commands because single step bit
->> in mdscr
->>      is still kept on (that is, kernel_active_single_step() in
->>      kgdb_arch_handle_exception() is true).
->> (2) re-implements kgdb_roundup_cpus() because the current implementation
->>      enabled interrupts naively. See below.
->> (3) removes 'enable_dbg' in el1_dbg.
->>      Single step bit in mdscr is turned on in do_handle_exception()->
->>      kgdb_handle_expection() before returning to debugged context,
->> and if
->>      debug exception is enabled in el1_dbg, we will see unexpected
->> single-
->>      stepping in el1_dbg.
->>      Since v3.18, the following patch does the same:
->>        commit 1059c6bf8534 ("arm64: debug: don't re-enable debug
->> exceptions
->>        on return from el1_dbg)
->> (4) masks interrupts while single-stepping one instruction.
->>      If an interrupt is caught during processing a single-stepping,
->> debug
->>      exception is unintentionally enabled by el1_irq's 'enable_dbg'
->> before
->>      returning to debugged context.
->>      Thus, like in (2), we will see unexpected single-stepping in
->> el1_irq.
->>
->> Basically (1) and (2) are for v3.15, (3) and (4) for v3.1[67].
->>
->> * issue fixed by (2):
->> Without (2), we would see another problem if a breakpoint is set at
->> interrupt-sensible places, like gic_handle_irq():
->>
->>      KGDB: re-enter error: breakpoint removed ffffffc000081258
->>      ------------[ cut here ]------------
->>      WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
->>                     kgdb_handle_exception+0x1dc/0x1f4()
->>      Modules linked in:
->>      CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
->>      Call trace:
->>      [<ffffffc000087fac>] dump_backtrace+0x0/0x130
->>      [<ffffffc0000880ec>] show_stack+0x10/0x1c
->>      [<ffffffc0004d683c>] dump_stack+0x74/0xb8
->>      [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
->>      [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
->>      [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
->>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
->>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
->>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
->>      Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
->>      ...
->>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
->>      [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
->>      [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
->>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
->>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
->>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
->>      Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
->>      ...
->>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
->>      [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
->>      [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
->>      [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
->>      [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
->>      [<ffffffc0001939b0>] SyS_write+0x40/0xa0
->>
->> Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers
->> kgdb.
->> Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
->> Current kgdb_roundup_cpus() unmasks interrupts temporarily to
->> use smp_call_function().
->> This eventually allows another interrupt to occur and likely results in
->> hitting a breakpoint at gic_handle_irq() again since debug exception is
->> always enabled in el1_irq.
->>
->> We can avoid this issue by specifying "nokgdbroundup" in kernel
->> parameter,
->> but this will also leave other cpus be in unknown state in terms of
->> kgdb,
->> and may result in interfering with kgdb activity.
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/kernel/kgdb.c |   60
->> +++++++++++++++++++++++++++++++++++-----------
->>   1 file changed, 46 insertions(+), 14 deletions(-)
->>
->> diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
->> index a0d10c5..81b5910 100644
->> --- a/arch/arm64/kernel/kgdb.c
->> +++ b/arch/arm64/kernel/kgdb.c
->> @@ -19,9 +19,13 @@
->>    * along with this program.  If not, see
->> <http://www.gnu.org/licenses/>.
->>    */
->>
->> +#include <linux/cpumask.h>
->>   #include <linux/irq.h>
->> +#include <linux/irq_work.h>
->>   #include <linux/kdebug.h>
->>   #include <linux/kgdb.h>
->> +#include <linux/percpu.h>
->> +#include <asm/ptrace.h>
->>   #include <asm/traps.h>
->>
->>   struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
->> @@ -95,6 +99,9 @@ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
->>       { "fpcr", 4, -1 },
->>   };
->>
->> +static DEFINE_PER_CPU(unsigned int, kgdb_pstate);
->> +static DEFINE_PER_CPU(struct irq_work, kgdb_irq_work);
->> +
->>   char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
->>   {
->>       if (regno >= DBG_MAX_REG_NUM || regno < 0)
->> @@ -176,18 +183,14 @@ int kgdb_arch_handle_exception(int
->> exception_vector, int signo,
->>            * over and over again.
->>            */
->>           kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
->> -        atomic_set(&kgdb_cpu_doing_single_step, -1);
->> -        kgdb_single_step =  0;
->> -
->> -        /*
->> -         * Received continue command, disable single step
->> -         */
->> -        if (kernel_active_single_step())
->> -            kernel_disable_single_step();
->>
->>           err = 0;
->>           break;
->>       case 's':
->> +        /* mask interrupts while single stepping */
->> +        __this_cpu_write(kgdb_pstate, linux_regs->pstate);
->> +        linux_regs->pstate |= PSR_I_BIT;
->> +
->>           /*
->>            * Update step address value with address passed
->>            * with step packet.
->> @@ -198,8 +201,6 @@ int kgdb_arch_handle_exception(int
->> exception_vector, int signo,
->>            */
->>           kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
->>           atomic_set(&kgdb_cpu_doing_single_step,
->> raw_smp_processor_id());
->> -        kgdb_single_step =  1;
->> -
->>           /*
->>            * Enable single step handling
->>            */
->> @@ -229,6 +230,18 @@ static int kgdb_compiled_brk_fn(struct pt_regs
->> *regs, unsigned int esr)
->>
->>   static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
->>   {
->> +    unsigned int pstate;
->> +
->> +    kernel_disable_single_step();
->> +    atomic_set(&kgdb_cpu_doing_single_step, -1);
->> +
->> +    /* restore interrupt mask status */
->> +    pstate = __this_cpu_read(kgdb_pstate);
->> +    if (pstate & PSR_I_BIT)
->> +        regs->pstate |= PSR_I_BIT;
->> +    else
->> +        regs->pstate &= ~PSR_I_BIT;
->> +
->>       kgdb_handle_exception(1, SIGTRAP, 0, regs);
->>       return 0;
->>   }
->> @@ -249,16 +262,27 @@ static struct step_hook kgdb_step_hook = {
->>       .fn        = kgdb_step_brk_fn
->>   };
->>
->> -static void kgdb_call_nmi_hook(void *ignored)
->> +static void kgdb_roundup_hook(struct irq_work *work)
->>   {
->>       kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
->>   }
->>
->>   void kgdb_roundup_cpus(unsigned long flags)
->>   {
->> -    local_irq_enable();
->> -    smp_call_function(kgdb_call_nmi_hook, NULL, 0);
->> -    local_irq_disable();
->> +    int cpu;
->> +    struct cpumask mask;
->> +    struct irq_work *work;
->> +
->> +    mask = *cpu_online_mask;
->> +    cpumask_clear_cpu(smp_processor_id(), &mask);
->> +    cpu = cpumask_first(&mask);
->> +    if (cpu >= nr_cpu_ids)
->> +        return;
->> +
->> +    for_each_cpu(cpu, &mask) {
->> +        work = per_cpu_ptr(&kgdb_irq_work, cpu);
->> +        irq_work_queue_on(work, cpu);
->> +    }
->>   }
->>
->>   static int __kgdb_notify(struct die_args *args, unsigned long cmd)
->> @@ -299,6 +323,8 @@ static struct notifier_block kgdb_notifier = {
->>   int kgdb_arch_init(void)
->>   {
->>       int ret = register_die_notifier(&kgdb_notifier);
->> +    int cpu;
->> +    struct irq_work *work;
->>
->>       if (ret != 0)
->>           return ret;
->> @@ -306,6 +332,12 @@ int kgdb_arch_init(void)
->>       register_break_hook(&kgdb_brkpt_hook);
->>       register_break_hook(&kgdb_compiled_brkpt_hook);
->>       register_step_hook(&kgdb_step_hook);
->> +
->> +    for_each_possible_cpu(cpu) {
->> +        work = per_cpu_ptr(&kgdb_irq_work, cpu);
->> +        init_irq_work(work, kgdb_roundup_hook);
->> +    }
->> +
->>       return 0;
->>   }
->>
->>
+diff --git a/drivers/coresight/coresight-etm.h b/drivers/coresight/coresight-etm.h
+index 501c5fac8a45..a0e30ca2e32d 100644
+--- a/drivers/coresight/coresight-etm.h
++++ b/drivers/coresight/coresight-etm.h
+@@ -148,7 +148,7 @@
+  * @arch:	ETM/PTM version number.
+  * @use_cpu14:	true if management registers need to be accessed via CP14.
+  * @enable:	is this ETM/PTM currently tracing.
+- * @sticky_enable: true if ETM base configuration has been done.
++ * @suspended:	is the CPU associated to the ETM/PTM suspended?
+  * @boot_enable:true if we should start tracing at boot time.
+  * @os_unlock:	true if access to management registers is allowed.
+  * @nr_addr_cmp:Number of pairs of address comparators as found in ETMCCR.
+@@ -200,7 +200,7 @@ struct etm_drvdata {
+ 	u8				arch;
+ 	bool				use_cp14;
+ 	bool				enable;
+-	bool				sticky_enable;
++	bool				suspended;
+ 	bool				boot_enable;
+ 	bool				os_unlock;
+ 	u8				nr_addr_cmp;
+diff --git a/drivers/coresight/coresight-etm3x.c b/drivers/coresight/coresight-etm3x.c
+index 7df9ffc51501..e09c3ef76d16 100644
+--- a/drivers/coresight/coresight-etm3x.c
++++ b/drivers/coresight/coresight-etm3x.c
+@@ -254,6 +254,12 @@ static void etm_enable_hw(void *info)
+ 	u32 etmcr;
+ 	struct etm_drvdata *drvdata = info;
+ 
++	if (clk_prepare_enable(drvdata->clk)) {
++		dev_dbg(drvdata->dev, "cpu: %d can't enable hw\n",
++			drvdata->cpu);
++		return;
++	}
++
+ 	pm_runtime_get_sync(drvdata->dev);
+ 	CS_UNLOCK(drvdata->base);
+ 
+@@ -314,6 +320,8 @@ static void etm_enable_hw(void *info)
+ 	etm_clr_prog(drvdata);
+ 	CS_LOCK(drvdata->base);
+ 
++	drvdata->suspended = false;
++
+ 	dev_dbg(drvdata->dev, "cpu: %d enable smp call done\n", drvdata->cpu);
+ }
+ 
+@@ -355,14 +363,12 @@ out:
+ static int etm_enable(struct coresight_device *csdev)
+ {
+ 	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
+-	int ret;
+-
+-	ret = clk_prepare_enable(drvdata->clk);
+-	if (ret)
+-		goto err_clk;
++	int ret = 0;
+ 
+ 	spin_lock(&drvdata->spinlock);
+ 
++	if (drvdata->enable)
++		goto out;
+ 	/*
+ 	 * Configure the ETM only if the CPU is online.  If it isn't online
+ 	 * hw configuration will take place when 'CPU_STARTING' is received
+@@ -372,20 +378,17 @@ static int etm_enable(struct coresight_device *csdev)
+ 		ret = smp_call_function_single(drvdata->cpu,
+ 					       etm_enable_hw, drvdata, 1);
+ 		if (ret)
+-			goto err;
++			goto out;
+ 	}
+ 
+ 	drvdata->enable = true;
+-	drvdata->sticky_enable = true;
+-
+ 	spin_unlock(&drvdata->spinlock);
+ 
+ 	dev_info(drvdata->dev, "ETM tracing enabled\n");
+ 	return 0;
+-err:
++out:
+ 	spin_unlock(&drvdata->spinlock);
+ 	clk_disable_unprepare(drvdata->clk);
+-err_clk:
+ 	return ret;
+ }
+ 
+@@ -397,6 +400,9 @@ static void etm_disable_hw(void *info)
+ 	CS_UNLOCK(drvdata->base);
+ 	etm_set_prog(drvdata);
+ 
++	if (!drvdata->enable)
++		return;
++
+ 	/* Program trace enable to low by using always false event */
+ 	etm_writel(drvdata, ETM_HARD_WIRE_RES_A | ETM_EVENT_NOT_A, ETMTEEVR);
+ 
+@@ -409,6 +415,9 @@ static void etm_disable_hw(void *info)
+ 	etm_set_pwrdwn(drvdata);
+ 	CS_LOCK(drvdata->base);
+ 	pm_runtime_put_sync(drvdata->dev);
++	clk_disable_unprepare(drvdata->clk);
++
++	drvdata->suspended = true;
+ 
+ 	dev_dbg(drvdata->dev, "cpu: %d disable smp call done\n", drvdata->cpu);
+ }
+@@ -426,18 +435,20 @@ static void etm_disable(struct coresight_device *csdev)
+ 	get_online_cpus();
+ 	spin_lock(&drvdata->spinlock);
+ 
++	if (!drvdata->enable)
++		goto out;
+ 	/*
+ 	 * Executing etm_disable_hw on the cpu whose ETM is being disabled
+ 	 * ensures that register writes occur when cpu is powered.
+ 	 */
+-	smp_call_function_single(drvdata->cpu, etm_disable_hw, drvdata, 1);
++	if (!drvdata->suspended)
++		smp_call_function_single(drvdata->cpu,
++					 etm_disable_hw, drvdata, 1);
+ 	drvdata->enable = false;
+-
++out:
+ 	spin_unlock(&drvdata->spinlock);
+ 	put_online_cpus();
+ 
+-	clk_disable_unprepare(drvdata->clk);
+-
+ 	dev_info(drvdata->dev, "ETM tracing disabled\n");
+ }
+ 
+@@ -1674,14 +1685,7 @@ static int etm_cpu_callback(struct notifier_block *nfb, unsigned long action,
+ 			etm_enable_hw(etmdrvdata[cpu]);
+ 		spin_unlock(&etmdrvdata[cpu]->spinlock);
+ 		break;
+-
+-	case CPU_ONLINE:
+-		if (etmdrvdata[cpu]->boot_enable &&
+-		    !etmdrvdata[cpu]->sticky_enable)
+-			coresight_enable(etmdrvdata[cpu]->csdev);
+-		break;
+-
+-	case CPU_DYING:
++	case CPU_DEAD:
+ 		spin_lock(&etmdrvdata[cpu]->spinlock);
+ 		if (etmdrvdata[cpu]->enable)
+ 			etm_disable_hw(etmdrvdata[cpu]);
+-- 
+1.9.1
 
