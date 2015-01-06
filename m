@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955AbbAFID5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:03:57 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:48733 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbbAFIDz convert rfc822-to-8bit (ORCPT
+	id S1754328AbbAFIFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 03:05:03 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:35646 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165AbbAFIFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:03:55 -0500
-From: Kalle Valo <kvalo@codeaurora.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Revert "ipw2200: select CFG80211_WEXT"
-References: <1420297188.2397.3.camel@tiscali.nl>
-Date: Tue, 06 Jan 2015 10:03:44 +0200
-In-Reply-To: <1420297188.2397.3.camel@tiscali.nl> (Paul Bolle's message of
-	"Sat, 03 Jan 2015 15:59:48 +0100")
-Message-ID: <87d26s1gkf.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 6 Jan 2015 03:05:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Date: Tue, 6 Jan 2015 16:05:01 +0800
+Message-ID: <CADkvYHE9qhgwaN3KFXwHp+STCM6XuxE-zti_hXj9QTSgmAJMPQ@mail.gmail.com>
+Subject: ZRAM: scheduling while atomic 3.10.62
+From: Yingchun Li <sword.l.dragon@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Bolle <pebolle@tiscali.nl> writes:
+I encountered a BUG when use zram on my board, following is the message:
 
-> This reverts commit dddd60220f41775e634258efd1b54c6fa81ce706.
->
-> The raison d'être of commit dddd60220f41 ("ipw2200: select
-> CFG80211_WEXT") was reverted in commit 2d36e008739e ("Revert "cfg80211:
-> make WEXT compatibility unselectable""). So revert this commit too.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+[  120.351196] BUG: scheduling while atomic: Binder_3/230/0x00000003
+[  120.351806] Modules linked in: rdawfmac rda_cam_sensor(O) rda_ls(O)
+rda_gs(O) rda_ts(O) voc(O) vpu(O) galcore(O) rda_headset(O)
+[  120.353210] CPU: 0 PID: 230 Comm: Binder_3 Tainted: G        W  O
+3.10.62-01224-gcfffb36 #1
+[  120.354248] [<c001047d>] (unwind_backtrace+0x1/0x98) from
+[<c000ee93>] (show_stack+0xb/0xc)
+[  120.355285] [<c000ee93>] (show_stack+0xb/0xc) from [<c036c275>]
+(__schedule_bug+0x31/0x48)
+[  120.356323] [<c036c275>] (__schedule_bug+0x31/0x48) from
+[<c036f9c9>] (__schedule+0x275/0x2c8)
+[  120.357360] [<c036f9c9>] (__schedule+0x275/0x2c8) from [<c037044d>]
+(__down_write_nested+0x51/0xa4)
+[  120.358459] [<c037044d>] (__down_write_nested+0x51/0xa4) from
+[<c025ed2f>] (zram_slot_free_notify+0x13/0x2c)
+[  120.359680] [<c025ed2f>] (zram_slot_free_notify+0x13/0x2c) from
+[<c007a06d>] (swap_entry_free+0xd9/0x124)
+[  120.360900] [<c007a06d>] (swap_entry_free+0xd9/0x124) from
+[<c007ac5f>] (free_swap_and_cache+0x1f/0xc8)
+[  120.362060] [<c007ac5f>] (free_swap_and_cache+0x1f/0xc8) from
+[<c006ebe9>] (unmap_single_vma+0x1fd/0x45c)
+[  120.363220] [<c006ebe9>] (unmap_single_vma+0x1fd/0x45c) from
+[<c006f4e3>] (unmap_vmas+0x33/0x40)
+[  120.364318] [<c006f4e3>] (unmap_vmas+0x33/0x40) from [<c00716c7>]
+(unmap_region+0x73/0xfc)
+[  120.365356] [<c00716c7>] (unmap_region+0x73/0xfc) from [<c00728e7>]
+(do_munmap+0x177/0x244)
+[  120.366394] [<c00728e7>] (do_munmap+0x177/0x244) from [<c00729df>]
+(vm_munmap+0x2b/0x38)
+[  120.367370] [<c00729df>] (vm_munmap+0x2b/0x38) from [<c000cc41>]
+(ret_fast_syscall+0x1/0x46)
 
-Based on the discussion I have dropped this patch from my queue.
+And I notice there is a similar post here:
 
--- 
-Kalle Valo
+https://lkml.org/lkml/2013/8/17/27
+
+And it has been fixed by mainline(by Commit a0c516cbfc74),and there is some
+other patches to optimize the patch(Commit f614a9f48ded).
+
+I just want to know is there any plan to back port the patchs to 3.10.y?
