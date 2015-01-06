@@ -1,336 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196AbbAFOuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:50:54 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56003 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbbAFOux (ORCPT
+	id S1755394AbbAFOvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:51:06 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:44153 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262AbbAFOvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:50:53 -0500
-Date: Tue, 6 Jan 2015 14:50:43 +0000
-From: Javi Merino <javi.merino@arm.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Punit Agrawal <Punit.Agrawal@arm.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [RFC PATCH v6 7/9] thermal: introduce the Power Allocator
- governor
-Message-ID: <20150106145043.GI2885@e104805>
-References: <1417806260-9264-1-git-send-email-javi.merino@arm.com>
- <1417806260-9264-8-git-send-email-javi.merino@arm.com>
- <20150102154617.GB10683@developer>
- <20150106132341.GF2885@e104805>
- <20150106141830.GA6107@developer>
+	Tue, 6 Jan 2015 09:51:01 -0500
+Date: Tue, 6 Jan 2015 15:50:56 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: Vince Hsu <vinceh@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Emil Velikov <emil.l.velikov@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Roy Spliet <seven@nimrod-online.com>
+Subject: Re: [Nouveau] [PATCH nouveau 09/11] drm: export some variable and
+ functions to resue the PM functions
+Message-ID: <20150106145054.GO31830@ulmo.nvidia.com>
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
+ <1419331204-26679-10-git-send-email-vinceh@nvidia.com>
+ <54A20F4D.4040100@gmail.com>
+ <54A2198A.4000707@nvidia.com>
+ <20150105153252.GI12010@ulmo.nvidia.com>
+ <CAAVeFuK-SgUbtHADX4-pXN5_ayzvEd+1KxJOBcRe2tmDfHaLEA@mail.gmail.com>
+ <20150106114953.GD31830@ulmo.nvidia.com>
+ <54ABD49A.6080501@nvidia.com>
+ <20150106143729.GN31830@ulmo.nvidia.com>
+ <CAKb7UvgomyQkiwfGTdyuU-muE-_pPxOSmeXh9uQ6-ri0HHxLrQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0lsrIB+s628ok5gC"
 Content-Disposition: inline
-In-Reply-To: <20150106141830.GA6107@developer>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKb7UvgomyQkiwfGTdyuU-muE-_pPxOSmeXh9uQ6-ri0HHxLrQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
 
-On Tue, Jan 06, 2015 at 02:18:36PM +0000, Eduardo Valentin wrote:
-> On Tue, Jan 06, 2015 at 01:23:42PM +0000, Javi Merino wrote:
-> > On Fri, Jan 02, 2015 at 03:46:24PM +0000, Eduardo Valentin wrote:
-> > > On Fri, Dec 05, 2014 at 07:04:18PM +0000, Javi Merino wrote:
-> > > > diff --git a/drivers/thermal/power_allocator.c b/drivers/thermal/power_allocator.c
-> > > > new file mode 100644
-> > > > index 000000000000..09e98991efbb
-> > > > --- /dev/null
-> > > > +++ b/drivers/thermal/power_allocator.c
-> > > > @@ -0,0 +1,511 @@
-> > > > +/*
-> > > > + * A power allocator to manage temperature
-> > > > + *
-> > > > + * Copyright (C) 2014 ARM Ltd.
-> > > > + *
-> > > > + * This program is free software; you can redistribute it and/or modify
-> > > > + * it under the terms of the GNU General Public License version 2 as
-> > > > + * published by the Free Software Foundation.
-> > > > + *
-> > > > + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-> > > > + * kind, whether express or implied; without even the implied warranty
-> > > > + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> > > > + * GNU General Public License for more details.
-> > > > + */
-> > > > +
-> > > > +#define pr_fmt(fmt) "Power allocator: " fmt
-> > > > +
-> > > > +#include <linux/rculist.h>
-> > > > +#include <linux/slab.h>
-> > > > +#include <linux/thermal.h>
-> > > > +
-> > > > +#include "thermal_core.h"
-> > > > +
-> > > > +#define FRAC_BITS 10
-> > > > +#define int_to_frac(x) ((x) << FRAC_BITS)
-> > > > +#define frac_to_int(x) ((x) >> FRAC_BITS)
-> > > > +
-> > > > +/**
-> > > > + * mul_frac() - multiply two fixed-point numbers
-> > > > + * @x:	first multiplicand
-> > > > + * @y:	second multiplicand
-> > > > + *
-> > > 
-> > > If it is a kernel doc, needs a description.
-> > 
-> > Other parts of the kernel are more liberal in this regard,
-> > specially fro trivial functions like this.  Also, kernel-doc creates a
-> > documentation just fine:
-> > 
-> > $ scripts/kernel-doc -function mul_frac drivers/thermal/power_allocator.c | nroff -man
-> > mul_frac(9)                 Kernel Hacker's Manual                 mul_frac(9)
-> > 
-> > 
-> > 
-> > NAME
-> >        mul_frac - multiply two fixed-point numbers
-> > 
-> > SYNOPSIS
-> >        s64 mul_frac (s64 x, s64 y);
-> > 
-> > ARGUMENTS
-> >        x           first multiplicand
-> > 
-> >        y           second multiplicand
-> > 
-> > RETURN
-> >        the  result of multiplying two fixed-point numbers.  The result is also
-> >        a fixed-point number.
-> > 
-> > 
-> > 
-> > January 2015                       mul_frac                        mul_frac(9)
-> > 
-> > 
-> > I'll add the long description if you want to, but this is not a
-> > warning.
-> > 
-> 
-> 
-> As long as there is no kerneldoc warning/errors, I am fine taking it. I
-> must confess I haven't run kerneldoc script in your patch as I got it
-> with encoding scrambled, so I was just pointing the missing entries.
+--0lsrIB+s628ok5gC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I'll make sure kernel-doc doesn't scream.
+On Tue, Jan 06, 2015 at 09:44:01AM -0500, Ilia Mirkin wrote:
+> On Tue, Jan 6, 2015 at 9:37 AM, Thierry Reding <thierry.reding@gmail.com>=
+ wrote:
+> > On Tue, Jan 06, 2015 at 08:27:06PM +0800, Vince Hsu wrote:
+> >>
+> >> On 01/06/2015 07:49 PM, Thierry Reding wrote:
+> >> >* PGP Signed by an unknown key
+> >> >
+> >> >On Mon, Jan 05, 2015 at 08:50:18PM +0100, Alexandre Courbot wrote:
+> >> >>On Mon, Jan 5, 2015 at 4:32 PM, Thierry Reding <thierry.reding@gmail=
+=2Ecom> wrote:
+> >> >>>On Tue, Dec 30, 2014 at 11:18:34AM +0800, Vince Hsu wrote:
+> >> >>>>Hi Emil,
+> >> >>>>
+> >> >>>>On 12/30/2014 10:34 AM, Emil Velikov wrote:
+> >> >>>>>On 23/12/14 10:40, Vince Hsu wrote:
+> >> >>>>>>This patch adds some checks in the suspend/resume functions to d=
+istinguish
+> >> >>>>>>the dGPU and mobile GPU and exports some variables/functions so =
+that the
+> >> >>>>>>nouveau platform device can reuse them.
+> >> >>>>>>
+> >> >>>>>Hi Vince,
+> >> >>>>>
+> >> >>>>>Afaiu one needs to export a symbol as it's used by another module=
+ or
+> >> >>>>>subsystem. With the follow up two patches you are not doing eithe=
+r one,
+> >> >>>>>so I'd assume that you can just omit the EXPORT_* changes.
+> >> >>>>The nouveau platform device driver is built as another module -
+> >> >>>>nouveau_platform.ko. :)
+> >> >>>I'd like to hear the opinion of the nouveau people and Alex, but I'd
+> >> >>>very much prefer if nouveau_platform.o was simply linked into the
+> >> >>>nouveau.ko module. I don't see any good reason to keep it separate.
+> >> >>Yep, I agree. The decision to host platform support in a separate
+> >> >>module looks misleaded if it results in additional exports that we
+> >> >>would otherwise avoid. IIUC I did this to be able to use the module
+> >> >>convenience macros to register the platform driver.
+> >> >>
+> >> >>>Something like the attached patch (untested) ought to do it.
+> >> >>This patch alone won't be enough for the reason I mentioned above.
+> >> >>However, if Vince doesn't mind handling the platform driver
+> >> >>registration manually in nouveau_drm_init/nouveau_drm_exit, I agree
+> >> >>this would be the way to go.
+> >> >If we do the conversion to generic power domains, the only Tegra-
+> >> >specific API remaining will be the access to the fuse registers for t=
+he
+> >> >speedo value. At that point we wouldn't need the ARCH_TEGRA dependency
+> >> >any longer and could always build the platform driver along with the =
+PCI
+> >> >driver.
+> >> Do we really want the platform driver always built with the PCI driver=
+ even
+> >> there is no dependency between them. Actually I have some patches to
+> >> build the platform driver with !CONFIG_PCI and would like to post them=
+ maybe
+> >> later.
+> >
+> > I do see some advantage in making Nouveau build with !CONFIG_PCI because
+> > it allows building the driver for an SoC without PCI. But I think always
+> > compiling whatever is available won't hurt. Nouveau itself is rather big
+> > (~1 MiB of text and ~120 KiB of data) whereas the platform code weighs
+> > in at around 1.5 KiB of text and 108 B of data. I suspect that the PCI
+> > glue is equally negligible.
+>=20
+> The much bigger reductions in size would be from getting rid of all
+> the stuff that's not used at all on a GK20A, like all the firmware,
+> and a whole bunch of logic. I had a series that split things up into
+> nv04/nv50/nvc0 categories. I believe it was considered undesirable due
+> to increased build complexity. (It wasn't a nice modularized
+> separation but rather just a compile-time setting.) Shouldn't be too
+> hard to regenerate though.
 
-> > > > + * Return: the result of multiplying two fixed-point numbers.  The
-> > > > + * result is also a fixed-point number.
-> > > > + */
-> > > > +static inline s64 mul_frac(s64 x, s64 y)
-> > > > +{
-> > > > +	return (x * y) >> FRAC_BITS;
-> > > > +}
-> > > > +
-> > > > +enum power_allocator_trip_levels {
-> > > > +	TRIP_SWITCH_ON = 0,	/* Switch on PID controller */
-> > > > +	TRIP_MAX_DESIRED_TEMPERATURE, /* Temperature we are controlling for */
-> > > > +
-> > > > +	THERMAL_TRIP_NUM,
-> > > > +};
-> > > > +
-> > > > +/**
-> > > > + * struct power_allocator_params - parameters for the power allocator governor
-> > > > + * @k_po:	Proportional parameter of the PID controller when overshooting
-> > > > + *		(i.e., when temperature is below the target)
-> > > > + * @k_pu:	Proportional parameter of the PID controller when undershooting
-> > > > + * @k_i:	Integral parameter of the PID controller
-> > > > + * @k_d:	Derivative parameter of the PID controller
-> > > > + * @integral_cutoff:	threshold below which the error is no longer accumulated
-> > > > +			in the PID controller
-> > > > + * @err_integral:	accumulated error in the PID controller.
-> > > > + * @prev_err:	error in the previous iteration of the PID controller.
-> > > > + *		Used to calculate the derivative term.
-> > > > + */
-> > > > +struct power_allocator_params {
-> > > > +	s32 k_po;
-> > > > +	s32 k_pu;
-> > > > +	s32 k_i;
-> > > > +	s32 k_d;
-> > > > +	s32 integral_cutoff;
-> > > > +	s64 err_integral;
-> > > > +	s32 prev_err;
-> > > > +};
-> > > > +
-> > > > +/**
-> > > > + * get_actor_weight() - get the weight for the power actor
-> > > > + * @tz:		thermal zone we are operating in
-> > > > + * @actor:	the power actor
-> > > > + *
-> > > 
-> > > 
-> > > ditto
-> > > 
-> > > > + * Returns: The weight inside the thermal binding parameters of the
-> > > 
-> > > s/Returns:/Return:/g
-> > 
-> > Yep.
-> > 
-> > > Please run the kernel doc script on your patches and avoid adding
-> > > warnings / errors.
-> > 
-> > Actually, kernel-doc doesn't complain about Returns vs Return and it
-> > doesn't really care if there is no description in a function as I said
-> > before.
-> > 
-> > Is there a better way than running "scripts/kernel-doc -function
-> > $FUNCTION $FILE" ?  It would be great if scripts/check-patch.pl
-> > checked this as well.
-> 
-> I usually run 
-> $ ./scripts/kernel-doc -text -v drivers/thermal/thermal_core.c > /dev/null
-> 
-> to see what it complain.
+Would you happen to remember the amount of savings for enabling only
+nvc0? I'm not overly concerned with the module being 1 MiB on Tegra,
+though. Most boards tend to have 2 GiB+ of memory these days and the
+kernel footprint is pretty big without Nouveau anyway.
 
-I'll do that from now on.
+Thierry
 
-> as for checkpatch.pl, well, I agree. But as it is not there, I have its
-> execution in my own internal scripts that I run on top of patches I
-> receive.
-> 
-> > 
-[...]
-> > > > +/**
-> > > > + * divvy_up_power() - divvy the allocated power between the actors
-> > > > + * @req_power:	each actor's requested power
-> > > > + * @max_power:	each actor's maximum available power
-> > > > + * @num_actors:	size of the @req_power, @max_power and @granted_power's array
-> > > > + * @total_req_power: sum of @req_power
-> > > > + * @power_range:	total allocated power
-> > > > + * @granted_power:	output array: each actor's granted power
-> > > > + *
-> > > > + * This function divides the total allocated power (@power_range)
-> > > > + * fairly between the actors.  It first tries to give each actor a
-> > > > + * share of the @power_range according to how much power it requested
-> > > > + * compared to the rest of the actors.  For example, if only one actor
-> > > > + * requests power, then it receives all the @power_range.  If
-> > > > + * three actors each requests 1mW, each receives a third of the
-> > > > + * @power_range.
-> > > > + *
-> > > > + * If any actor received more than their maximum power, then that
-> > > > + * surplus is re-divvied among the actors based on how far they are
-> > > > + * from their respective maximums.
-> > > > + *
-> > > > + * Granted power for each actor is written to @granted_power, which
-> > > > + * should've been allocated by the calling function.
-> > > > + */
-> > > > +static void divvy_up_power(u32 *req_power, u32 *max_power, int num_actors,
-> > > > +			u32 total_req_power, u32 power_range,
-> > > > +			u32 *granted_power)
-> > > > +{
-> > > > +	u32 extra_power, capped_extra_power, extra_actor_power[num_actors];
-> > > > +	int i;
-> > > > +
-> > > > +	if (!total_req_power) {
-> > > > +		/*
-> > > > +		 * Nobody requested anything, so just give everybody
-> > > > +		 * the maximum power
-> > > > +		 */
-> > > > +		for (i = 0; i < num_actors; i++)
-> > > > +			granted_power[i] = max_power[i];
-> > > > +
-> > > > +		return;
-> > > > +	}
-> > > > +
-> > > > +	capped_extra_power = 0;
-> > > > +	extra_power = 0;
-> > > > +	for (i = 0; i < num_actors; i++) {
-> > > > +		u64 req_range = req_power[i] * power_range;
-> > > > +
-> > > > +		granted_power[i] = div_u64(req_range, total_req_power);
-> > > > +
-> > > > +		if (granted_power[i] > max_power[i]) {
-> > > > +			extra_power += granted_power[i] - max_power[i];
-> > > > +			granted_power[i] = max_power[i];
-> > > 
-> > > shouldn't we continue here?
-> > 
-> > No, you would leave the extra_actor_power[i] uninitialized.
-> > 
-> > > > +		}
-> > > > +
-> > > > +		extra_actor_power[i] = max_power[i] - granted_power[i];
-> > > 
-> > > Do we care when max_power[i] < granted_power[i]?
-> > 
-> > That can't happen, the above "if" prevents it.
-> > 
-> > > What happens to (overflowed) extra_actor_power[i]?
-> > 
-> > extra_actor_power[i] can't overflow, it's a u32 and is asigned the
-> > result of substracting two u32s.  The code make sure that the minuend is
-> > bigger or equal than the sustraend.
-> > 
-> 
-> I see now. Maybe I need extra coffee :-)
+--0lsrIB+s628ok5gC
+Content-Type: application/pgp-signature
 
-:)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-[...]
-> > > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > > > index 1155457caf52..b23e019b1761 100644
-> > > > --- a/include/linux/thermal.h
-> > > > +++ b/include/linux/thermal.h
-> > > > @@ -61,6 +61,8 @@
-> > > >  #define DEFAULT_THERMAL_GOVERNOR       "fair_share"
-> > > >  #elif defined(CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE)
-> > > >  #define DEFAULT_THERMAL_GOVERNOR       "user_space"
-> > > > +#elif defined(CONFIG_THERMAL_DEFAULT_GOV_POWER_ALLOCATOR)
-> > > > +#define DEFAULT_THERMAL_GOVERNOR       "power_allocator"
-> > > >  #endif
-> > > >  
-> > > >  struct thermal_zone_device;
-> > > > @@ -255,9 +257,14 @@ struct thermal_bind_params {
-> > > >  
-> > > >  	/*
-> > > >  	 * This is a measure of 'how effectively these devices can
-> > > > -	 * cool 'this' thermal zone. The shall be determined by platform
-> > > > -	 * characterization. This is on a 'percentage' scale.
-> > > > -	 * See Documentation/thermal/sysfs-api.txt for more information.
-> > > > +	 * cool 'this' thermal zone. The shall be determined by
-> > > > +	 * platform characterization. For the fair-share governor,
-> > > > +	 * this is on a 'percentage' scale.  See
-> > > > +	 * Documentation/thermal/sysfs-api.txt for more
-> > > > +	 * information. For the power_allocator governor, they are
-> > > > +	 * relative to each other, see
-> > > > +	 * Documentation/thermal/power_allocator.txt for more
-> > > > +	 * information.
-> > > 
-> > > What happens if we register a thermal zone with relative weights, at
-> > > fist the user uses power allocator, but then wants to, for some reason,
-> > > use fair share? (or vice-versa).
-> > > 
-> > > Can't power allocator use percentages too?
-> > 
-> > The problem with percentages is that they are hard to use as they
-> > depend on each other.  For example, you need to know how many cooling
-> > devices there are and that number needs to remain fixed.  You can't
-> > add a new cooling device without changing the weights of all the other
-> > existing cooling devices.  If the thermal zone is already created it's
-> > hard to change the weights so you really can't add or remove cooling
-> > devices.
-> > 
-> > We were talking in another thread of ignoring a cooling device on some
-> > error.  How do you do that if the percentages must add to a hundred?
-> > 
-> > I thought that we could reuse the "weight" parameter but if you think
-> > we are abusing by making it mean different things for different
-> > governors we can create a new one instead.
-> > 
-> 
-> yeah, I am concerned about the inconsistence. If you can make both
-> governor to use the data standardized with same unit (percentage or
-> relative values), then I am fine with that. Either way: (a) make power
-> allocator to use percentage; or (b) make fair share to use relative
-> values.
+iQIcBAEBAgAGBQJUq/ZOAAoJEN0jrNd/PrOhQ+QP/RNh9oR33Pi4bmMAOv/Jm72y
+gJJp2cBTmH8YX0mgSe7kmZYQm/VL0I30gUroYkSKtI0fPkCif1D77EMYEunJmmYX
+X7XqvZYG0L3ghM6HJRcoEw6yXPQ34CFer1Y9kq6MyLPQ0TPdCacXKwHbQxQQHRof
+GDmBuDJHp14/hWyz2VrhBdVGuwk7vmM4Duh6Qn/bdZtOJ9hI5UfSevJGojhPhDcE
+Fwk/p88O/YCl6ujTK4zYDwrpFvxdWG0/MCNVO8QDqvS4S/DDZdDSbutPwg6VB1DL
+I+k/N27XMBhZIcUmMMNtE2A+/ZVYAbtP6nW2N9yY8Ev9e3HETXEhLdZE3NzIyu4L
+14KHzzk2JvWwlVQLlvgr6QCNgFNXhvygJXsrXXxhEy/UKDPyrTo1+3nq8Q1MH6Pp
+WpNOuBPv92kppcoP7H+/N8d0eR3FkK3xYkJIRhox0qKn2O6+vdH6BaBEkgSYIS99
+ILktwj1g/YJoxfDMWTKori2fdcwXCyLcs6AUX2AuhUbNPoItwkewNVCxhgHm0Oxo
+7Mj1ECKaoD7GAxgUWrJxEuKgSVAXignvlCKWGAaC86AAwgOAj9MiPyZ8c0+0VeU4
+lOLrwh3TQJLLSU/MsJl1PTkrhj0bdKqo+aqZYLAl0crrVMDsnE6x7bkvbY/nxotd
+6uBfvOK8XQnYZ5Kz2K/z
+=IszO
+-----END PGP SIGNATURE-----
 
-Ok, I'll send a path for (b) then.
-
-Cheers,
-Javi
+--0lsrIB+s628ok5gC--
