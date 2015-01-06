@@ -1,53 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353AbbAFR4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 12:56:09 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:41795 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755544AbbAFR4G convert rfc822-to-8bit (ORCPT
+	id S932218AbbAFR6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:58:41 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:60962 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513AbbAFR6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 12:56:06 -0500
+	Tue, 6 Jan 2015 12:58:40 -0500
+Message-ID: <54AC224C.4030903@hurleysoftware.com>
+Date: Tue, 06 Jan 2015 12:58:36 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <201412242106.09959@pali>
-References: <201412242106.09959@pali>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 6 Jan 2015 09:55:41 -0800
-Message-ID: <CAK5ve-Ky=8JHs=d3FtYjk46O9uVUGKsfZ3cLwX-h3FckEpmT_g@mail.gmail.com>
-Subject: Re: LED: inform userspace about brightness change
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Darren Hart <dvhart@infradead.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: paulmck@linux.vnet.ibm.com
+CC: Peter Zijlstra <peterz@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
+Subject: Re: Linux 3.19-rc3
+References: <CA+icZUUThdtXkRztRxk+zEqvMwUmEQeSoR3WD3qqXW9QspBoVw@mail.gmail.com> <20150106100621.GL29390@twins.programming.kicks-ass.net> <CA+icZUVy2rG3PwKhPTQojLEH2O8FD-0myO2sN8hQV4_+r9YNQQ@mail.gmail.com> <20150106110112.GQ29390@twins.programming.kicks-ass.net> <20150106110730.GA25846@kmo-pixel> <20150106114215.GS29390@twins.programming.kicks-ass.net> <20150106114842.GP10476@twins.programming.kicks-ass.net> <20150106120121.GB26845@kmo-pixel> <20150106122006.GW29390@twins.programming.kicks-ass.net> <54ABDB4B.7070008@hurleysoftware.com> <20150106173808.GB5280@linux.vnet.ibm.com>
+In-Reply-To: <20150106173808.GB5280@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 12:06 PM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> Hello!
->
-> What is preferred way from kernel driver to inform userspace
-> about LED device brightness change? In /sys/class/leds/<device>/
-> is file brightness which can be used to read current brightness
-> or set write new value. But sometimes also firmware (or device)
-> can change value on its own and thus userspace software which
-> provides slider for setting brightness will be incorrect.
->
-> For example on Dell laptops there is driver which support setting
-> and reading keyboard backlight (via leds kernel interface). But
-> firmware/BIOS can change brightness (when something happen) and
-> it can inform running system about this change via ACPI/WMI event
-> interface. But how to use kernel led interface to inform userpace
-> about this change? It is possible?
->
+On 01/06/2015 12:38 PM, Paul E. McKenney wrote:
+> On Tue, Jan 06, 2015 at 07:55:39AM -0500, Peter Hurley wrote:
+>> [ +cc Paul McKenney ]
+>>
+>> On 01/06/2015 07:20 AM, Peter Zijlstra wrote:
+>>> On Tue, Jan 06, 2015 at 04:01:21AM -0800, Kent Overstreet wrote:
+>>>> On Tue, Jan 06, 2015 at 12:48:42PM +0100, Peter Zijlstra wrote:
+>>>>>
+>>>>>
+>>>>> Looking at that closure stuff, why is there an smp_mb() in
+>>>>> closure_wake_up() ? Typically wakeup only needs to imply a wmb.
+>>>>>
+>>>>> Also note that __closure_wake_up() starts with a fully serializing
+>>>>> instruction (xchg) and thereby already implies the full barrier.
+>>>>
+>>>> Probably no good reason, that code is pretty old :)
+>>>>
+>>>> If I was to hazard a guess, I had my own lockless linked lists before llist.h
+>>>> existed and perhaps I did it with atomic_xchg() - which was at least documented
+>>>> to not imply a barrier. I suppose it should just be dropped.
+>>>
+>>> We (probably me) should probably audit all the atomic_xchg()
+>>> implementations and documentation and fix that. I was very much under
+>>> the impression it should imply a full barrier (and it certainly does on
+>>> x86), the documentation should state the rule that any atomic_ function
+>>> that returns a result is fully serializing, therefore, because
+>>> atomic_xchg() has a return value, it should too.
+>>
+>> memory-barriers.txt and atomic_ops.txt appear to contradict each other here,
+>> but I think that's because atomic_ops.txt has drifted toward an
+>> arch-implementer's POV:
+>>
+>> 260:atomic_xchg requires explicit memory barriers around the operation.
+>>
+>> All the serializing atomic operations have descriptions like this.
+> 
+> I am not seeing the contradiction.
+> 
+> You posted the relevant line from atomic_ops.txt.  The relevant passage
+> from memory-barriers.txt is as follows:
+> 
+> 	Any atomic operation that modifies some state in memory and
+> 	returns information about the state (old or new) implies an
+> 	SMP-conditional general memory barrier (smp_mb()) on each side
+> 	of the actual operation (with the exception of explicit lock
+> 	operations, described later).  These include:
+> 
+> 		xchg();
+> 		...
+> 		atomic_xchg();			atomic_long_xchg();
+> 
+> So it appears to me that both documents require full barriers before and
+> after any atomic exchange operation in SMP builds.  Therefore, any
+> SMP-capable architecture that omits these barriers is buggy.
 
-Sorry for the delay, actually I don't find any possible existing way
-to send brightness change event from LED subsystem to user space.
+Sure, I understand that, but I think the atomic_ops.txt is easy to
+misinterpret.
 
-I think we can add an udev event in set_brightness API, then when we
-change the brightness, it will send out udev event to user space.
+> So, what am I missing here?
 
-Thanks,
--Bryan
+Well, it's a matter of the intended audience. There is a significant
+difference between:
+
+static inline int atomic_xchg(atomic_t *v, int new)
+{
+	/* this arch doesn't have serializing xchg() */
+	smp_mb();
+	/* arch xchg */
+	smp_mb();
+}
+
+and
+
+	smp_mb();
+	atomic_xchg(&v, 1);
+	smp_mb();
+
+but both have "explicit memory barriers around the operation."
+
+Regards,
+Peter Hurley
