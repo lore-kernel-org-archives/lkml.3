@@ -1,95 +1,921 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbbAFJ1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 04:27:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50040 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609AbbAFJ1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 04:27:44 -0500
-Date: Tue, 6 Jan 2015 17:25:42 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Waiman Long <waiman.long@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] locking/rwlocks: clean up of qrwlock
-Message-ID: <20150106092542.GB2726@dhcp-16-105.nay.redhat.com>
-References: <1418709640-5625-1-git-send-email-bhe@redhat.com>
- <20141216090128.GU3337@twins.programming.kicks-ass.net>
- <20141216153650.GA1758@dhcp-17-102.nay.redhat.com>
- <5491F2AC.7000103@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5491F2AC.7000103@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754082AbbAFJ0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 04:26:30 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:52739 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbbAFJ0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 04:26:25 -0500
+From: "jeffrey.lin" <yajohn@gmail.com>
+X-Google-Original-From: "jeffrey.lin" <jeffrey.lin@rad-ic.com>
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se, shc_work@mail.ru,
+        charliemooney@chromium.org, bleung@chromium.org, lee.jones@linaro.org
+Cc: jeffrey.lin@rad-ic.com, roger.yang@rad-ic.com, KP.li@rad-ic.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH] driver: input :touchscreen : add Raydium I2C touch driver
+Date: Tue,  6 Jan 2015 17:25:50 +0800
+Message-Id: <1420536350-5916-1-git-send-email-jeffrey.lin@rad-ic.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: "jeffrey.lin" <jeffrey.lin@rad-ic.com>
 
-Thanks for reviewing. 
+This patch is porting Raydium I2C touch driver. Developer can enable
+ raydium touch driver by modifying define "CONFIG_TOUCHSCREEN_RM_TS".
 
-Do you have any other concerns about this small change?
+Signed-off-by: jeffrey.lin@rad-ic.com
+---
+ drivers/input/touchscreen/Kconfig      |  12 +
+ drivers/input/touchscreen/Makefile     |   1 +
+ drivers/input/touchscreen/rm31100_ts.c | 846 +++++++++++++++++++++++++++++++++
+ 3 files changed, 859 insertions(+)
+ create mode 100644 drivers/input/touchscreen/rm31100_ts.c
 
-Thanks
-Baoquan
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 3ce9181..d0324d2 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -955,4 +955,16 @@ config TOUCHSCREEN_ZFORCE
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called zforce_ts.
+ 
++config TOUCHSCREEN_RM_TS
++	tristate "Raydium I2C Touchscreen"
++	depends on I2C
++	help
++	  Say Y here if you have Raydium series I2C touchscreen,
++	  such as RM31100 , connected to your system.
++
++	  If unsure, say N.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called rm31100_ts.
++
+ endif
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 687d5a7..3220f66 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -78,3 +78,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
+ obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
+ obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
++obj-$(CONFIG_TOUCHSCREEN_RM_TS)		+= rm31100_ts.o
+diff --git a/drivers/input/touchscreen/rm31100_ts.c b/drivers/input/touchscreen/rm31100_ts.c
+new file mode 100644
+index 0000000..997dc0c
+--- /dev/null
++++ b/drivers/input/touchscreen/rm31100_ts.c
+@@ -0,0 +1,846 @@
++/*
++ * Raydium RM31100_ts touchscreen driver.
++ *
++ * Copyright (C) 2012-2014, Raydium Semiconductor Corporation.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2, and only version 2, as published by the
++ * Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Raydium reserves the right to make changes without further notice
++ * to the materials described herein. Raydium does not assume any
++ * liability arising out of the application described herein.
++ *
++ * Contact Raydium Semiconductor Corporation at www.rad-ic.com
++ *
++ * History:
++ *			(C) 2012 Raydium - Update for GPL distribution
++ *			(C) 2009 Enea - Original prototype
++ *
++ */
++#include <linux/async.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/input.h>
++#include <linux/slab.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/gpio.h>
++#include <linux/mutex.h>
++#include <linux/delay.h>
++#include <linux/pm.h>
++#include <linux/pm_runtime.h>
++#ifdef CONFIG_MISC_DEV
++#include <linux/miscdevice.h>
++#endif
++#include <linux/uaccess.h>
++#include <asm/unaligned.h>
++#include <linux/input/mt.h>
++
++#define rm31100	0x0
++#define rm3110x	0x1
++
++#define INVALID_DATA	0xff
++#define MAX_REPORT_TOUCHED_POINTS	10
++
++#define I2C_CLIENT_ADDR         0x39
++#define I2C_DMA_CLIENT_ADDR     0x5A
++
++struct rm31100_ts_data {
++	u8 x_index;
++	u8 y_index;
++	u8 z_index;
++	u8 id_index;
++	u8 touch_index;
++	u8 data_reg;
++	u8 status_reg;
++	u8 data_size;
++	u8 touch_bytes;
++	u8 update_data;
++	u8 touch_meta_data;
++	u8 finger_size;
++};
++
++struct rm3110x_ts_platform_data {
++	int (*power_on)(int on);
++	int (*dev_setup)(bool on);
++	const char *ts_name;
++	u32 dis_min_x; /* display resoltion ABS min*/
++	u32 dis_max_x;/* display resoltion ABS max*/
++	u32 dis_min_y;
++	u32 dis_max_y;
++	u32 min_touch; /* no.of touches supported */
++	u32 max_touch;
++	u32 min_tid; /* track id */
++	u32 max_tid;
++	u32 min_width;/* size of the finger */
++	u32 max_width;
++	u32 res_x; /* TS resolution unit*/
++	u32 res_y;
++	u32 swap_xy;
++	u8 nfingers;
++	u32 irq_gpio;
++	int resout_gpio;
++	bool wakeup;
++	u32 irq_cfg;
++};
++
++static struct rm31100_ts_data devices[] = {
++	[0] = {
++		.x_index = 2,
++		.y_index = 4,
++		.z_index = 6,
++		.id_index = 1,
++		.data_reg = 0x1,
++		.status_reg = 0,
++		.update_data = 0x0,
++		.touch_bytes = 6,
++		.touch_meta_data = 1,
++		.finger_size = 70,
++	},
++};
++
++struct rm31100_ts {
++	struct i2c_client *client;
++	struct input_dev *input;
++	struct rm3110x_ts_platform_data *pdata;
++	struct rm31100_ts_data *dd;
++	u8 *touch_data;
++	u8 device_id;
++	u8 prev_touches;
++	bool is_suspended;
++	bool int_pending;
++	struct mutex access_lock;
++	u32 pen_irq;
++};
++
++struct rm31100_ts *pts;
++/*
++static inline u16 join_bytes(u8 a, u8 b)
++{
++	u16 ab = 0;
++	ab = ab | a;
++	ab = ab << 8 | b;
++	return ab;
++}
++*/
++static s32 rm31100_ts_write_reg_u8(struct i2c_client *client, u8 reg, u8 val)
++{
++	s32 data;
++
++	data = i2c_smbus_write_byte_data(client, reg, val);
++	if (data < 0)
++		dev_err(&client->dev, "error %d in writing reg 0x%x\n",
++						 data, reg);
++
++	return data;
++}
++
++static s32 rm31100_ts_read_reg_u8(struct i2c_client *client, u8 reg)
++{
++	s32 data;
++
++	data = i2c_smbus_read_byte_data(client, reg);
++	if (data < 0)
++		dev_err(&client->dev, "error %d in reading reg 0x%x\n",
++						 data, reg);
++
++	return data;
++}
++
++static int rm31100_ts_read(struct i2c_client *client, u8 reg, u8 *buf, int num)
++{
++	struct i2c_msg xfer_msg[2];
++
++	xfer_msg[0].addr = client->addr;
++	xfer_msg[0].len = 1;
++	xfer_msg[0].flags = 0;
++	xfer_msg[0].buf = &reg;
++
++	xfer_msg[1].addr = client->addr;
++	xfer_msg[1].len = num;
++	xfer_msg[1].flags = I2C_M_RD;
++	xfer_msg[1].buf = buf;
++
++	return i2c_transfer(client->adapter, xfer_msg, 2);
++}
++
++static int rm31100_ts_write_client_dma(struct i2c_client *client, u8 *buf, int num)
++{
++	struct i2c_msg xfer_msg[1];
++
++	xfer_msg[0].addr = I2C_DMA_CLIENT_ADDR;
++	xfer_msg[0].len = num;
++	xfer_msg[0].flags = 0;
++	xfer_msg[0].buf = buf;
++
++	return i2c_transfer(client->adapter, xfer_msg, 1);
++}
++
++static int rm31100_ts_write(struct i2c_client *client, u8 *buf, int num)
++{
++	struct i2c_msg xfer_msg[1];
++
++	xfer_msg[0].addr = client->addr;
++	xfer_msg[0].len = num;
++	xfer_msg[0].flags = 0;
++	xfer_msg[0].buf = buf;
++
++	return i2c_transfer(client->adapter, xfer_msg, 1);
++}
++#ifdef CONFIG_MISC_DEV
++static int dev_open(struct inode *inode, struct file *filp)
++{
++	mutex_lock(&pts->access_lock);
++	return 0;
++}
++
++static int dev_release(struct inode *inode, struct file *filp)
++{
++	mutex_unlock(&pts->access_lock);
++	return 0;
++}
++static ssize_t
++dev_read(struct file *filp, char __user *buf, size_t count, loff_t *pos)
++{
++	u8 *kbuf;
++	struct i2c_msg xfer_msg;
++	/*static char out[] = "1234567890";*/
++	/*static int idx;*//*= 0; remove by checkpatch*/
++	int i;
++
++	kbuf = kmalloc(count, GFP_KERNEL);
++	if (kbuf == NULL)
++		return -ENOMEM;
++
++	/*xfer_msg.addr = pts->client->addr;*/
++	xfer_msg.addr = I2C_CLIENT_ADDR;
++	xfer_msg.len = count;
++	xfer_msg.flags = I2C_M_RD;
++	xfer_msg.buf = kbuf;
++
++	i2c_transfer(pts->client->adapter, &xfer_msg, 1);
++
++	if (copy_to_user(buf, kbuf, count) == 0)
++		return count;
++	else
++		return -EFAULT;
++}
++
++static ssize_t
++dev_write(struct file *filp, const char __user *buf, size_t count, loff_t *pos)
++{
++	u8 *kbuf;
++	ssize_t status = 0;
++	int i;
++
++	kbuf = kmalloc(count, GFP_KERNEL);
++	if (kbuf == NULL) {
++		dev_err("kmalloc() fail\n");
++		return -ENOMEM;
++	}
++
++	if (copy_from_user(kbuf, buf, count) == 0) {
++		pts->client->addr = I2C_CLIENT_ADDR;
++		if (rm31100_ts_write(pts->client, kbuf, count) < 0)
++			status = -EFAULT;
++		else
++			status = count;
++	} else {
++		dev_err("copy_from_user() fail\n");
++		status = -EFAULT;
++	}
++
++	kfree(kbuf);
++	return status;
++}
++
++static struct file_operations dev_fops = {
++	.owner = THIS_MODULE,
++	.open = dev_open,
++	.release = dev_release,
++	.read = dev_read,
++	.write = dev_write,
++	/*.unlocked_ioctl = dev_ioctl,*/
++};
++
++static struct miscdevice raydium_ts_miscdev = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = "raydium_ts",
++	.fops = &dev_fops,
++};
++#endif
++
++
++ssize_t show(struct device_driver *drv, char *buff)
++{
++	struct i2c_msg xfer_msg;
++	int num = 10;
++	char buf[100];
++	/*int i;*/
++
++	xfer_msg.addr = pts->client->addr;
++	xfer_msg.len = num;
++	xfer_msg.flags = I2C_M_RD;
++	xfer_msg.buf = buf;
++	pts->client->addr = I2C_CLIENT_ADDR;
++	i2c_transfer(pts->client->adapter, &xfer_msg, 1);
++
++	return 0;
++}
++
++ssize_t store(struct device_driver *drv, const char *buf, size_t count)
++{
++	/*unsigned char pkt[] = { 0xF2, 5, 1, 1 };*/
++	unsigned char pkt[] = { 0xF1, 5, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
++
++	pts->client->addr = I2C_CLIENT_ADDR;
++	rm31100_ts_write(pts->client, pkt, sizeof(pkt));
++
++	return sizeof(pkt);
++}
++
++DRIVER_ATTR(myAttr, 0x777, show, store);
++
++static void report_data(struct rm31100_ts *dev, u16 x, u16 y,
++	u8 pressure, u8 id)
++{
++	struct input_dev *input_dev = dev->input;
++	if (dev->pdata->swap_xy)
++		swap(x, y);
++
++	input_mt_slot(input_dev, id);
++	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, true);
++	input_report_abs(input_dev, ABS_MT_POSITION_X, x);
++	input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
++	input_report_abs(input_dev, ABS_MT_PRESSURE, pressure);
++	input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, dev->dd->finger_size);
++/*
++	dev_dbg("%s(): id =%2hhd, x =%4hd, y =%4hd, pressure = %hhd\n",
++		__func__, id, x, y, pressure);
++*/
++}
++
++static void process_rm31100_data(struct rm31100_ts *ts)
++{
++	u8 id, pressure, touches, i;
++	u16 x, y;
++
++	touches = ts->touch_data[ts->dd->touch_index];
++
++	if (touches > 0) {
++		for (i = 0; i < touches; i++) {
++			id = ts->touch_data[i * ts->dd->touch_bytes +
++				ts->dd->id_index];
++			pressure = ts->touch_data[i * ts->dd->touch_bytes +
++				ts->dd->z_index];
++			x = get_unaligned_le16(&(ts->touch_data[i *
++				ts->dd->touch_bytes + ts->dd->x_index]));
++			y = get_unaligned_le16(&(ts->touch_data[i *
++				ts->dd->touch_bytes + ts->dd->y_index]));
++			report_data(ts, x, y, pressure, id);
++		}
++	} else
++		input_mt_sync(ts->input);
++
++	ts->prev_touches = touches;
++	/*input_report_key(ts->input, BTN_TOUCH, 1);*/
++	input_mt_report_pointer_emulation(ts->input, true);
++	input_sync(ts->input);
++}
++
++/*static void rm31100_ts_xy_worker(struct work_struct *work) JL remove*/
++static void rm31100_ts_xy_worker(struct rm31100_ts *work)
++{
++	int rc;
++	u8 client_dma_package[4] = {0x0f, 0x00, 0x20, 0x81};
++	struct rm31100_ts *ts = work;
++
++	if (ts->is_suspended == true) {
++		dev_dbg(&ts->client->dev, "TS is supended\n");
++		ts->int_pending = true;
++		return;
++	}
++
++	mutex_lock(&ts->access_lock);
++	/* read data from DATA_REG */
++	/*RM31100 DMA Mode*/
++	rc = rm31100_ts_write_client_dma(ts->client, client_dma_package, 0x04);
++	if (rc < 0) {
++		dev_err(&ts->client->dev, "write client dma failed\n");
++		goto schedule;
++	}
++	rc = rm31100_ts_read(ts->client, ts->dd->data_reg, ts->touch_data,
++	ts->dd->data_size);
++
++	if (rc < 0) {
++		dev_err(&ts->client->dev, "read failed\n");
++		goto schedule;
++	}
++
++	if (ts->touch_data[ts->dd->touch_index] == INVALID_DATA)
++		goto schedule;
++
++	/* write to STATUS_REG to release lock */
++	rc = rm31100_ts_write_reg_u8(ts->client,
++		ts->dd->status_reg, ts->dd->update_data);
++	if (rc < 0) {
++		dev_err(&ts->client->dev, "write failed, try once more\n");
++
++		rc = rm31100_ts_write_reg_u8(ts->client,
++			ts->dd->status_reg, ts->dd->update_data);
++		if (rc < 0)
++			dev_err(&ts->client->dev, "write failed, exiting\n");
++	}
++
++	process_rm31100_data(ts);
++schedule:
++	mutex_unlock(&ts->access_lock);
++}
++
++static irqreturn_t rm31100_ts_irq(int irq, void *dev_id)
++{
++	struct rm31100_ts *ts = dev_id;
++
++	rm31100_ts_xy_worker(ts);
++	return IRQ_HANDLED;
++}
++
++static int rm31100_ts_init_ts(struct i2c_client *client, struct rm31100_ts *ts)
++{
++	/*struct input_dev *input_device;*/
++	/*int rc = 0;*/
++
++	ts->dd = &devices[ts->device_id];
++
++	if (!ts->pdata->nfingers) {
++		dev_err(&client->dev, "Touches information not specified\n");
++		return -EINVAL;
++	}
++
++	if (ts->device_id == rm3110x) {
++		if (ts->pdata->nfingers > 2) {
++			dev_err(&client->dev, "Touches >=1 & <= 2\n");
++			return -EINVAL;
++		}
++		ts->dd->data_size = ts->dd->touch_bytes;
++		ts->dd->touch_index = 0x0;
++	} else if (ts->device_id == rm31100) {
++		if (ts->pdata->nfingers > 10) {
++			dev_err(&client->dev, "Touches >=1 & <= 10\n");
++			return -EINVAL;
++		}
++		ts->dd->data_size = ts->pdata->nfingers * ts->dd->touch_bytes +
++						ts->dd->touch_meta_data;
++		ts->dd->touch_index = 0x0;
++	}
++	/* w001 */
++	else {
++		ts->dd->data_size = ts->pdata->nfingers * ts->dd->touch_bytes +
++		ts->dd->touch_meta_data;
++		ts->dd->touch_index = 0x0;
++	}
++
++	ts->touch_data = kzalloc(ts->dd->data_size, GFP_KERNEL);
++	if (!ts->touch_data) {
++		pr_err("%s: Unable to allocate memory\n", __func__);
++		return -ENOMEM;
++	}
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int rm31100_ts_suspend(struct device *dev)
++{
++	struct rm31100_ts *ts = dev_get_drvdata(dev);
++	int rc = 0;
++
++	if (device_may_wakeup(dev)) {
++		/* mark suspend flag */
++		ts->is_suspended = true;
++		enable_irq_wake(ts->pen_irq);
++	}
++
++	disable_irq(ts->pen_irq);
++
++	gpio_free(ts->pdata->irq_gpio);
++
++	if (ts->pdata->power_on) {
++		rc = ts->pdata->power_on(0);
++		if (rc) {
++			dev_err(dev, "unable to goto suspend\n");
++			return rc;
++		}
++	}
++	return 0;
++}
++
++static int rm31100_ts_resume(struct device *dev)
++{
++	struct rm31100_ts *ts = dev_get_drvdata(dev);
++
++	int rc = 0;
++
++	if (device_may_wakeup(dev)) {
++		disable_irq_wake(ts->pen_irq);
++
++		ts->is_suspended = false;
++
++		if (ts->int_pending == true)
++			ts->int_pending = false;
++	} else {
++		if (ts->pdata->power_on) {
++			rc = ts->pdata->power_on(1);
++			if (rc) {
++				dev_err(dev, "unable to resume\n");
++				return rc;
++			}
++		}
++
++		enable_irq(ts->pen_irq);
++
++		/* Clear the status register of the TS controller */
++		rc = rm31100_ts_write_reg_u8(ts->client,
++			ts->dd->status_reg, ts->dd->update_data);
++		if (rc < 0) {
++			dev_err(&ts->client->dev,
++				"write failed, try once more\n");
++
++			rc = rm31100_ts_write_reg_u8(ts->client,
++				ts->dd->status_reg,
++				ts->dd->update_data);
++			if (rc < 0)
++				dev_err(&ts->client->dev,
++					"write failed, exiting\n");
++		}
++	}
++
++	return 0;
++}
++
++static struct dev_pm_ops rm31100_ts_pm_ops = {
++	.suspend = rm31100_ts_suspend,
++	.resume = rm31100_ts_resume,
++};
++#endif
++
++static int rm_input_dev_create(struct rm31100_ts *ts)
++{
++	struct input_dev *input_device;
++	int rc = 0;
++	ts->prev_touches = 0;
++
++	input_device = input_allocate_device();
++	if (!input_device) {
++		rc = -ENOMEM;
++		goto error_alloc_dev;
++	}
++	ts->input = input_device;
++
++	input_device->name = "raydium_ts";
++	input_device->id.bustype = BUS_I2C;
++	input_device->dev.parent = &ts->client->dev;
++	input_set_drvdata(input_device, ts);
++
++	__set_bit(EV_ABS, input_device->evbit);
++	__set_bit(INPUT_PROP_DIRECT, input_device->propbit);
++	__set_bit(BTN_TOUCH, input_device->keybit);
++
++
++	if (ts->device_id == rm31100) {
++		/* set up virtual key */
++		__set_bit(EV_KEY, input_device->evbit);
++	}
++	input_mt_init_slots(input_device,
++		MAX_REPORT_TOUCHED_POINTS, 0);
++	input_set_abs_params(input_device, ABS_MT_POSITION_X,
++		ts->pdata->dis_min_x, ts->pdata->dis_max_x, 0, 0);
++	input_set_abs_params(input_device, ABS_MT_POSITION_Y,
++		ts->pdata->dis_min_y, ts->pdata->dis_max_y, 0, 0);
++	input_set_abs_params(input_device, ABS_MT_PRESSURE,
++		0, 0xFF, 0, 0);
++	input_set_abs_params(input_device, ABS_MT_TOUCH_MAJOR,
++		0, 0xFF, 0, 0);
++	rc = input_register_device(input_device);
++	if (rc)
++		goto error_unreg_device;
++
++	return 0;
++
++error_unreg_device:
++	input_free_device(input_device);
++error_alloc_dev:
++	ts->input = NULL;
++	return rc;
++}
++
++static int rm31100_initialize(struct i2c_client *client)
++{
++	struct rm31100_ts *ts = i2c_get_clientdata(client);
++	int rc = 0, /*retry_cnt = 0,*/ temp_reg;
++	/* power on the device */
++	if (ts->pdata->power_on) {
++		rc = ts->pdata->power_on(1);
++		if (rc) {
++			pr_err("%s: Unable to power on the device\n", __func__);
++			goto error_dev_setup;
++		}
++	}
++
++	/* read one byte to make sure i2c device exists */
++	if (ts->device_id == rm3110x)
++		temp_reg = 0x01;
++	else if (ts->device_id == rm31100)
++		temp_reg = 0x00;
++	else
++		temp_reg = 0x05;
++
++	rc = rm31100_ts_read_reg_u8(client, temp_reg);
++	if (rc < 0) {
++		dev_err(&client->dev, "i2c sanity check failed\n");
++		goto error_power_on;
++	}
++
++	rc = rm31100_ts_init_ts(client, ts);
++	if (rc < 0) {
++		dev_err(&client->dev, "rm31100_ts init failed\n");
++		goto error_mutex_destroy;
++	}
++
++	/* configure touchscreen reset out gpio */
++	rc = gpio_request(ts->pdata->resout_gpio, "rm31100_resout_gpio");
++	if (rc) {
++		pr_err("%s: unable to request gpio %d\n",
++			__func__, ts->pdata->resout_gpio);
++		goto error_uninit_ts;
++	}
++
++	rc = gpio_direction_output(ts->pdata->resout_gpio, 0);
++	if (rc) {
++		pr_err("%s: unable to set direction for gpio %d\n",
++			__func__, ts->pdata->resout_gpio);
++		goto error_resout_gpio_dir;
++	}
++	/* reset gpio stabilization time */
++	msleep(20);
++
++	return 0;
++error_resout_gpio_dir:
++	if (ts->pdata->resout_gpio >= 0)
++		gpio_free(ts->pdata->resout_gpio);
++error_uninit_ts:
++	input_unregister_device(ts->input);
++	kfree(ts->touch_data);
++error_mutex_destroy:
++	mutex_destroy(&ts->access_lock);
++error_power_on:
++	if (ts->pdata->power_on)
++		ts->pdata->power_on(0);
++error_dev_setup:
++	if (ts->pdata->dev_setup)
++		ts->pdata->dev_setup(0);
++	return rc;
++}
++
++static void rm_initialize_async(void *data, async_cookie_t cookie)
++{
++	struct rm31100_ts *ts = data;
++	struct i2c_client *client = ts->client;
++	unsigned long irqflags;
++	int err = 0;
++
++	mutex_lock(&ts->access_lock);
++
++	err = rm31100_initialize(client);
++	if (err < 0) {
++		dev_err(&client->dev, "probe failed! unbind device.\n");
++		goto error_free_mem;
++	}
++
++	err = rm_input_dev_create(ts);
++	if (err) {
++		dev_err(&client->dev, "%s crated failed, %d\n", __func__, err);
++		goto error_goio_release;
++	}
++
++	irqflags = client->dev.of_node ? 0 : IRQF_TRIGGER_FALLING;
++
++	err = request_threaded_irq(ts->pen_irq, NULL,
++				   rm31100_ts_irq,
++				   irqflags | IRQF_ONESHOT,
++				   ts->client->dev.driver->name, ts);
++	if (err) {
++		dev_err(&client->dev, "Failed to register interrupt\n");
++		goto error_dev_release;
++	}
++
++	mutex_unlock(&ts->access_lock);
++
++	return;
++
++error_dev_release:
++	input_free_device(ts->input);
++error_goio_release:
++	if (ts->pdata->resout_gpio >= 0)
++		gpio_free(ts->pdata->resout_gpio);
++error_free_mem:
++	mutex_unlock(&ts->access_lock);
++	kfree(ts);
++	return;
++}
++
++
++/*static int __devinit rm31100_ts_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)*/
++static int rm31100_ts_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	struct rm31100_ts *ts;
++	struct rm3110x_ts_platform_data *pdata = client->dev.platform_data;
++	int rc/*, temp_reg*/;
++	union i2c_smbus_data dummy;
++
++	if (!pdata) {
++		dev_err(&client->dev, "platform data is required!\n");
++		return -EINVAL;
++	}
++
++	if (!i2c_check_functionality(client->adapter,
++		I2C_FUNC_SMBUS_READ_WORD_DATA)) {
++		dev_err(&client->dev, "I2C functionality not supported\n");
++		return -EIO;
++	}
++	/* Make sure there is something at this address */
++	if (i2c_smbus_xfer(client->adapter, client->addr, 0,
++		I2C_SMBUS_READ, 0, I2C_SMBUS_BYTE, &dummy) < 0)
++		return -ENODEV;
++
++	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
++	if (!ts)
++		return -ENOMEM;
++	pts = ts;
++
++	/* Enable runtime PM ops, start in ACTIVE mode */
++	rc = pm_runtime_set_active(&client->dev);
++	if (rc < 0)
++		dev_warn(&client->dev, "unable to set runtime pm state\n");
++	pm_runtime_enable(&client->dev);
++
++	ts->client = client;
++	ts->pdata = pdata;
++	i2c_set_clientdata(client, ts);
++	ts->device_id = id->driver_data;
++
++	if (ts->pdata->dev_setup) {
++		rc = ts->pdata->dev_setup(1);
++		if (rc < 0) {
++			dev_err(&client->dev, "dev setup failed\n");
++			goto error_touch_data_alloc;
++		}
++	}
++
++
++	ts->is_suspended = false;
++	ts->int_pending = false;
++	/*mutex_init(&ts->sus_lock); JL remove*/
++	mutex_init(&ts->access_lock);
++
++	async_schedule(rm_initialize_async, ts);
++
++	device_init_wakeup(&client->dev, ts->pdata->wakeup);
++	return 0;
++
++error_touch_data_alloc:
++	pm_runtime_set_suspended(&client->dev);
++	pm_runtime_disable(&client->dev);
++	kfree(ts);
++	return rc;
++}
++
++/*static int __devexit RM31100_ts_remove(struct i2c_client *client)*/
++static int rm31100_ts_remove(struct i2c_client *client)
++{
++	struct rm31100_ts *ts = i2c_get_clientdata(client);
++
++	pm_runtime_set_suspended(&client->dev);
++	pm_runtime_disable(&client->dev);
++
++	device_init_wakeup(&client->dev, 0);
++	free_irq(ts->pen_irq, ts);
++
++	gpio_free(ts->pdata->irq_gpio);
++
++	if (ts->pdata->resout_gpio >= 0)
++		gpio_free(ts->pdata->resout_gpio);
++	input_unregister_device(ts->input);
++
++	/*mutex_destroy(&ts->sus_lock); JL remove*/
++	mutex_destroy(&ts->access_lock);
++
++	if (ts->pdata->power_on)
++		ts->pdata->power_on(0);
++
++	if (ts->pdata->dev_setup)
++		ts->pdata->dev_setup(0);
++
++	kfree(ts->touch_data);
++	kfree(ts);
++
++	return 0;
++}
++
++static const struct i2c_device_id rm31100_ts_id[] = {
++	{"RM31100", rm31100},
++	{"RM3110x", rm3110x},
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, rm31100_ts_id);
++
++
++static struct i2c_driver rm31100_ts_driver = {
++	.driver = {
++		.name = "raydium_ts",
++		.owner = THIS_MODULE,
++#ifdef CONFIG_PM
++		.pm = &rm31100_ts_pm_ops,
++#endif
++	},
++	.probe = rm31100_ts_probe,
++	.remove = rm31100_ts_remove,
++	.id_table = rm31100_ts_id,
++};
++
++static int __init rm31100_ts_init(void)
++{
++	int rc;
++	int rc2;
++
++	rc = i2c_add_driver(&rm31100_ts_driver);
++
++	rc2 = driver_create_file(&rm31100_ts_driver.driver,
++		&driver_attr_myAttr);
++
++	return rc;
++}
++/* Making this as late init to avoid power fluctuations
++ * during LCD initialization.
++ */
++module_init(rm31100_ts_init);
++
++static void __exit rm31100_ts_exit(void)
++{
++	i2c_del_driver(&rm31100_ts_driver);
++}
++module_exit(rm31100_ts_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("rm31100-rm3110x touchscreen controller driver");
++MODULE_AUTHOR("Raydium");
++MODULE_ALIAS("platform:rm31100_ts");
+-- 
+2.1.2
 
-
-On 12/17/14 at 04:16pm, Waiman Long wrote:
-> On 12/16/2014 10:36 AM, Baoquan He wrote:
-> >On 12/16/14 at 10:01am, Peter Zijlstra wrote:
-> >>On Tue, Dec 16, 2014 at 02:00:40PM +0800, Baoquan He wrote:
-> >>>In queue_read_lock_slowpath, when writer count becomes 0, we need
-> >>>increment the read count and get the lock. Then need call
-> >>>rspin_until_writer_unlock to check again if an incoming writer
-> >>>steals the lock in the gap. But in rspin_until_writer_unlock
-> >>>it only checks the writer count, namely low 8 bit of lock->cnts,
-> >>>no need to subtract the reader count unit specifically. So remove
-> >>>that subtraction to make it clearer, rspin_until_writer_unlock
-> >>>just takes the actual lock->cnts as the 2nd argument.
-> >>>
-> >>>And also change the code comment in queue_write_lock_slowpath to
-> >>>make it more exact and explicit.
-> >>>
-> >>>Signed-off-by: Baoquan He<bhe@redhat.com>
-> >>>---
-> >>>  kernel/locking/qrwlock.c | 8 ++++----
-> >>>  1 file changed, 4 insertions(+), 4 deletions(-)
-> >>>
-> >>>diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
-> >>>index f956ede..ae66c10 100644
-> >>>--- a/kernel/locking/qrwlock.c
-> >>>+++ b/kernel/locking/qrwlock.c
-> >>>@@ -76,7 +76,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
-> >>>  	while (atomic_read(&lock->cnts)&  _QW_WMASK)
-> >>>  		cpu_relax_lowlatency();
-> >>>
-> >>>-	cnts = atomic_add_return(_QR_BIAS,&lock->cnts) - _QR_BIAS;
-> >>>+	cnts = atomic_add_return(_QR_BIAS,&lock->cnts);
-> >>>  	rspin_until_writer_unlock(lock, cnts);
-> >>Did you actually look at the ASM generated? I suspect your change makes
-> >>it bigger.
-> >
-> >It does make it bigger. But it doesn't matter. Because in
-> >rspin_until_writer_unlock it only compqre (cnts&  _QW_WMASK)
-> >with _QW_LOCKED. So using incremented reader count doesn't impact
-> >the result. Anyway it will get the actual lock->cnts in
-> >rspin_until_writer_unlock in next loop. I can't see why we need
-> >subtract that reader count increment specifically.
-> >
-> >When I read this code, thought there's some special usage. Finally I
-> >realized it doesn't have special usage, and doesn't have to do that.
-> 
-> The "- _QR_BIAS" expression was added to simulate xadd() which is
-> present in x86, but not in some other architectures. There is no
-> equivalent functionality in the set of atomic helper functions.
-> Anyway, I have no objection to the change as it is in the slowpath.
-> 
-> Acked-by: Waiman Long <Waiman.Long@hp.com>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
