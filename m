@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbbAFTut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:50:49 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56237 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756498AbbAFTuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:50:44 -0500
-Date: Tue, 6 Jan 2015 19:50:33 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1756585AbbAFTvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:51:11 -0500
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:33271 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756436AbbAFTun convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 14:50:43 -0500
+X-Sasl-enc: Z0f6JfeoXHkg4n0N/KwjRTT3RGdAFdJ6bdmjF72lcPmO 1420573843
+Content-Type: text/plain; charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: TCP connection issues against Amazon S3
+From: Erik Grinaker <erik@bengler.no>
+In-Reply-To: <54AC348B.4030900@hp.com>
+Date: Tue, 6 Jan 2015 19:50:41 +0000
+Cc: Yuchung Cheng <ycheng@google.com>, Eric Dumazet <eric.dumazet@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] of/pci: add of_pci_dma_configure() update dma
- configuration
-Message-ID: <20150106195033.GH32449@arm.com>
-References: <1419459099-6667-1-git-send-email-m-karicheri2@ti.com>
- <1419459099-6667-2-git-send-email-m-karicheri2@ti.com>
- <CAL_JsqJtVnP_5zAiUvMwL00JQV0mjw-R_hEkxiv13ZuNrQ8nAA@mail.gmail.com>
- <54A6D375.6050604@ti.com>
- <CAL_Jsq+krOUA3BPvMCdaOBhALoi+pzWbw3YndXqR8x52OJogZg@mail.gmail.com>
- <54A71CD1.4070107@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54A71CD1.4070107@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        netdev <netdev@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FB6A6CF4-0E3F-4BA7-90B1-5DC5FDE12DDE@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com> <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com> <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com> <54AC348B.4030900@hp.com>
+To: Rick Jones <rick.jones2@hp.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 02, 2015 at 10:33:53PM +0000, Murali Karicheri wrote:
-> On 01/02/2015 03:45 PM, Rob Herring wrote:
-> > On Fri, Jan 2, 2015 at 11:20 AM, Murali Karicheri<m-karicheri2@ti.com>  wrote:
-> >> On 12/26/2014 02:33 PM, Rob Herring wrote:
-> >>> On Wed, Dec 24, 2014 at 4:11 PM, Murali Karicheri<m-karicheri2@ti.com>
-> >>>> +               coherent = of_dma_is_coherent(parent_np);
-> >>>> +               dev_dbg(dev, "device is%sdma coherent\n",
-> >>>> +                       coherent ? " " : " not ");
-> >>>> +
-> >>>> +               arch_setup_dma_ops(dev, dma_addr, size, NULL, coherent);
-> >>>
-> >>>
-> >>> This is the same code as of_dma_configure. The only difference I see
-> >>> is which node ptr is passed to of_dma_get_range. You need to make that
-> >>> a function param of of_dma_configure.
-> >>>
-> >>> of_dma_configure also has iommu handling now. You will probably need
-> >>> something similar for PCI in that you setup an iommu based on the root
-> >>> bus DT properties.
-> >>>
-> >> Initially I had the same idea to re-use the existing function
-> >> of_dma_configure() for this. I wanted to defer this until we have an
-> >> agreement on the changes required for the subject functionality. My quick
-> >> review of the code suggestio this would require additional API changes as
-> >> below. I did a quick test of the changes and it works for Keystone, but need
-> >> to be reviewed by everyone as I touch the IOMMU functionality here and I
-> >> don't have a platform with IOMMU. Need test by someone to make sure I don't
-> >> break anything.
-> >
-> > The IOMMU changes look trivial. We may want to address the comment in
-> > of_iommu_configure about parent nodes. We should be sure these changes
-> > work with how we would do searching parent nodes.
+On 06 Jan 2015, at 19:16, Rick Jones <rick.jones2@hp.com> wrote:
 > 
-> I have no experience with IOMMU and may not offer much help here as I 
-> originally wrote above. Will Deacon has added this API and probably able 
-> to offer some help in this discussion.
+>>>>>>> A packet dump [1] shows repeated ACK retransmits for some of the
+>> TCP does not retransmit ACK ... do you mean DUPACKs sent by the receiver?
+>> 
+>> I am trying to understand the problem. Could you confirm that it's the
+>> HTTP responses sent from Amazon S3 got stalled, or HTTP requests sent
+>> from the receiver (your host)?
+>> 
+>> btw I suspect some middleboxes are stripping SACKOK options from your
+>> SYNs (or Amazon SYN-ACKs) assuming Amazon supports SACK.
 > 
-> Will Deacon,
+> The TCP Timestamp option too it seems.
 > 
-> Any comment?
+> Speaking of middleboxes...  It is probably a fish that is red, but a while back I stepped in a middle box (a load balancer) which decided that if it saw "too many" retransmissions in a given TCP window that something was seriously wrong and it would toast the connection.  I thought though that was an active reset on the part of the middlebox. (And the client was the active sender not the back-end server)
 
-Sorry for the delay; I'm still catching up on email after the Christmas
-break, but I *will* get around to looking at this. If you have a new version
-to post based on the comments from Rob and Arnd, feel free to send that and
-I'll look at that instead.
+It’s looking increasingly probable that it’s something like that, since the sender (S3) appears to disable SACKs on the failing clients, while it enables SACKs on other functioning clients.
 
-Will
+> I'm assuming one incident starts at XX:41:24.748265 in the trace?  That does look like it is slowly slogging its way through a bunch of lost traffic, which was I think part of the problem I was seeing with the middlebox I stepped in, but I don't think I see the reset where I would have expected it.  Still, it looks like the sender has an increasing TCP RTO as it is going through the slog (as it likely must since there are no TCP timestamps?), to the point it gets larger than I'm guessing curl was willing to wait, so the FIN at XX:41:53.269534 after a ten second or so gap.
+
+Yes, there is one incident starting at XX:41:23. All the RSTs are sent at the end though, at the 30s Curl timeout. I’ve put up a stripped down pcap of a single request here:
+
+http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
+
+
