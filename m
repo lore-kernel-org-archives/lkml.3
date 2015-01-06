@@ -1,144 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbbAFPnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:43:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43533 "EHLO mx1.redhat.com"
+	id S1755430AbbAFPnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:43:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50382 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831AbbAFPnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:43:39 -0500
-Date: Tue, 6 Jan 2015 17:43:28 +0200
+	id S1755218AbbAFPnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:43:47 -0500
+Date: Tue, 6 Jan 2015 17:43:30 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
-Subject: [PATCH v2 00/40] uaccess: fix sparse warning on get/put_user for
- bitwise types
-Message-ID: <1420558883-10131-1-git-send-email-mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH v2 01/40] x86/uaccess: fix sparse errors
+Message-ID: <1420558883-10131-2-git-send-email-mst@redhat.com>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1420558883-10131-1-git-send-email-mst@redhat.com>
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-changes from v1:
-
-- xtensa and powerpc patches have been merged by maintainers, drop them
-- added patches to fix put_user on a bunch of architectures
-- add acks received since v1
-- a bunch of whitespace tweaks
-
-
-At the moment, if p and x are both tagged as bitwise types,
-some of get_user(x, p), put_user(x, p), __get_user(x, p), __put_user(x, p)
-produce a sparse warning on many architectures.
-This is a false positive: *p on these architectures is loaded into long
-(typically using asm), then cast back to typeof(*p).
-
-When typeof(*p) is a bitwise type (which is uncommon), such a cast needs
-__force, otherwise sparse produces a warning.
-
-Some architectures already have the __force tag, add it
-where it's missing.
-
-I verified that adding these __force casts does not supress any useful warnings.
-
-Specifically, vhost wants to read/write bitwise types in userspace memory
-using get_user/put_user.
-At the moment this triggers sparse errors, since the value is passed through an
+virtio wants to read bitwise types from userspace using get_user.  At the
+moment this triggers sparse errors, since the value is passed through an
 integer.
 
-For example:
-    __le32 __user *p;
-    __u32 x;
+Fix that up using __force.
 
-both
-    put_user(x, p);
-and
-    get_user(x, p);
-should be safe, but produce warnings on some architectures.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/x86/include/asm/uaccess.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-While there, I noticed that a bunch of architectures violated
-coding style rules within uaccess macros.
-Added patches to fix them up.
-
-
-I tested this on x86 only. Since it's just adding __force, should be
-trivially safe everywhere?
-
-
-Arnd, did you merge v1 already? If yes, can you please replace with
-this version?
-
-Michael S. Tsirkin (40):
-  x86/uaccess: fix sparse errors
-  alpha/uaccess: fix sparse errors
-  arm64/uaccess: fix sparse errors
-  avr32/uaccess: fix sparse errors
-  blackfin/uaccess: fix sparse errors
-  cris/uaccess: fix sparse errors
-  ia64/uaccess: fix sparse errors
-  m32r/uaccess: fix sparse errors
-  metag/uaccess: fix sparse errors
-  microblaze/uaccess: fix sparse errors
-  openrisc/uaccess: fix sparse errors
-  parisc/uaccess: fix sparse errors
-  sh/uaccess: fix sparse errors
-  sparc32/uaccess: fix sparse errors
-  sparc64/uaccess: fix sparse errors
-  m68k/uaccess: fix sparse errors
-  arm: fix put_user sparse errors
-  blackfin: fix put_user sparse errors
-  ia64: fix put_user sparse errors
-  metag: fix put_user sparse errors
-  sh: fix put_user sparse errors
-  tile: fix put_user sparse errors
-  tile: enable sparse checks for get/put_user
-  avr32: whitespace fix
-  arch/sparc: uaccess_32 macro whitespace fixes
-  arch/sparc: uaccess_64 macro whitespace fixes
-  blackfin: macro whitespace fixes
-  microblaze: whitespace fix
-  alpha: macro whitespace fixes
-  arm: macro whitespace fixes
-  arm64: macro whitespace fixes
-  avr32: macro whitespace fixes
-  cris: macro whitespace fixes
-  frv: macro whitespace fixes
-  m32r: macro whitespace fixes
-  m68k: macro whitespace fixes
-  parisc: macro whitespace fixes
-  s390: macro whitespace fixes
-  sh: macro whitespace fixes
-  xtensa: macro whitespace fixes
-
- arch/alpha/include/asm/uaccess.h      |  86 ++++----
- arch/arm/include/asm/uaccess.h        |  96 ++++-----
- arch/arm64/include/asm/uaccess.h      |   4 +-
- arch/avr32/include/asm/uaccess.h      |  24 +--
- arch/blackfin/include/asm/uaccess.h   |  32 +--
- arch/cris/include/asm/uaccess.h       | 117 +++++------
- arch/frv/include/asm/segment.h        |   2 +-
- arch/ia64/include/asm/uaccess.h       |  11 +-
- arch/m32r/include/asm/uaccess.h       |  88 ++++----
- arch/m68k/include/asm/segment.h       |   2 +-
- arch/m68k/include/asm/uaccess_mm.h    |  40 ++--
- arch/metag/include/asm/uaccess.h      |  25 ++-
- arch/microblaze/include/asm/uaccess.h |   6 +-
- arch/openrisc/include/asm/uaccess.h   |   4 +-
- arch/parisc/include/asm/uaccess.h     | 116 +++++------
- arch/s390/include/asm/uaccess.h       |   4 +-
- arch/sh/include/asm/segment.h         |   2 +-
- arch/sh/include/asm/uaccess.h         |   4 +-
- arch/sh/include/asm/uaccess_64.h      |   8 +-
- arch/sparc/include/asm/uaccess_32.h   | 364 +++++++++++++++++++++-------------
- arch/sparc/include/asm/uaccess_64.h   | 246 +++++++++++++----------
- arch/tile/include/asm/uaccess.h       |   6 +-
- arch/x86/include/asm/uaccess.h        |   2 +-
- arch/xtensa/include/asm/uaccess.h     |  90 ++++-----
- 24 files changed, 759 insertions(+), 620 deletions(-)
-
+diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
+index 0d592e0..ace9dec 100644
+--- a/arch/x86/include/asm/uaccess.h
++++ b/arch/x86/include/asm/uaccess.h
+@@ -179,7 +179,7 @@ __typeof__(__builtin_choose_expr(sizeof(x) > sizeof(0UL), 0ULL, 0UL))
+ 	asm volatile("call __get_user_%P3"				\
+ 		     : "=a" (__ret_gu), "=r" (__val_gu)			\
+ 		     : "0" (ptr), "i" (sizeof(*(ptr))));		\
+-	(x) = (__typeof__(*(ptr))) __val_gu;				\
++	(x) = (__force __typeof__(*(ptr))) __val_gu;			\
+ 	__ret_gu;							\
+ })
+ 
 -- 
 MST
 
