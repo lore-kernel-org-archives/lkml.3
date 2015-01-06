@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990AbbAFVoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:44:21 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:50514 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536AbbAFVoU (ORCPT
+	id S933374AbbAFVoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:44:34 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:48061 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932536AbbAFVoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:44:20 -0500
-Date: Tue, 6 Jan 2015 22:44:16 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH V4 1/4] mm: set page->pfmemalloc in prep_new_page()
-Message-ID: <20150106214416.GA8391@dhcp22.suse.cz>
-References: <1420478263-25207-1-git-send-email-vbabka@suse.cz>
- <1420478263-25207-2-git-send-email-vbabka@suse.cz>
- <20150106143008.GA20860@dhcp22.suse.cz>
- <54AC4F5F.90306@suse.cz>
+	Tue, 6 Jan 2015 16:44:30 -0500
+Date: Tue, 6 Jan 2015 16:44:26 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
+        hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org, vgoyal@redhat.com,
+        lizefan@huawei.com, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com,
+        david@fromorbit.com
+Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
+Message-ID: <20150106214426.GA24106@htj.dyndns.org>
+References: <1420579582-8516-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54AC4F5F.90306@suse.cz>
+In-Reply-To: <1420579582-8516-1-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06-01-15 22:10:55, Vlastimil Babka wrote:
-> On 01/06/2015 03:30 PM, Michal Hocko wrote:
-[...]
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 1bb65e6f48dd..1682d766cb8e 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -2175,10 +2175,11 @@ zonelist_scan:
-> >  		}
-> >  
-> >  try_this_zone:
-> > -		page = buffered_rmqueue(preferred_zone, zone, order,
-> > +		do {
-> > +			page = buffered_rmqueue(preferred_zone, zone, order,
-> >  						gfp_mask, migratetype);
-> > -		if (page)
-> > -			break;
-> > +		} while (page && prep_new_page(page, order, gfp_mask,
-> > +					       alloc_flags));
-> 
-> Hm but here we wouldn't return page on success.
+Hello, again.  A bit of addition.
 
-Right.
+On Tue, Jan 06, 2015 at 04:25:37PM -0500, Tejun Heo wrote:
+...
+> Overall design
+> --------------
 
-> I wonder if you overlooked the return, hence your "not breaking out of
-> the loop" remark?
+What's going on in this patchset is fairly straight forward.  The main
+thing which is happening is that a bdi is being split into multiple
+per-cgroup pieces.  Each split bdi, represented by bdi_writeback,
+behaves mostly identically with how bdi behaved before.
 
-This was merely to show the intention. Sorry for not being clear enough.
+Complications mostly arise from filesystems and inodes having to deal
+with multiple split bdi's instead of one, but those are mostly
+straight-forward 1:N mapping issues.  It does get tedious here and
+there but doesn't complicate the overall picture.  This
+straight-forwardness pays off when dealing with interaction issues
+which would have been extremely hairy otherwise.  More on this while
+discussing balance_dirty_pages.
+
+...
+> Missing pieces
+> --------------
+...
+> * balance_dirty_pages currently doesn't consider the task's memcg when
+>   calculating the number of dirtyable pages.  This means that tasks in
+>   memcg won't have the benefit of smooth background writeback and will
+>   bump into direct reclaim all the time.  This has always been like
+>   this but with cgroup writeback support, this is also finally
+>   fixable.  I'll work on this as the earlier part gets settled.
+
+This has always been a really thorny issue but now that each wb
+behaves as an independent writeback domain, this can be solved nicely.
+Each cgroup can carry the fraction of writebandwidth against the whole
+system and each task can carry its fraction against its memcg.
+balance_dirty_pages can now stagger these two ratios and then apply it
+against the memory which *may* be dirtyable to the task's memcg and
+then throttle the dirtier accordingly.  This works out exactly as a
+straight-forward extension of the global logic which is proven to
+work.  This really is pieces falling into places.
+
+Thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
+tejun
