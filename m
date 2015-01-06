@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbbAFEtP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 23:49:15 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:39968 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933AbbAFEtN (ORCPT
+	id S1754305AbbAFE5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Jan 2015 23:57:51 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:36068 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933AbbAFE5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 23:49:13 -0500
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 6 Jan 2015 05:49:11 +0100
-Message-ID: <CA+icZUU4ALYvEq7SkUewnZytf62R0d9x+MVPvMrR0zzFf+-f3Q@mail.gmail.com>
-Subject: Re: Linux 3.19-rc3
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Dave Jones <davej@codemonkey.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 Jan 2015 23:57:49 -0500
+X-AuditID: cbfee68d-f79296d000004278-ee-54ab6b4bc868
+Message-id: <54AB6B4A.2010802@samsung.com>
+Date: Tue, 06 Jan 2015 13:57:46 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: max77693: Constify struct regmap_config
+References: <1420448247-8097-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1420448247-8097-1-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsWyRsSkQNc7e3WIwYIr7BavXxhaXN41h83i
+	duMKNgdmj74tqxg9Pm+SC2CK4rJJSc3JLEst0rdL4Mp4s6+bvWASe0XrlJfsDYxfWLsYOTkk
+	BEwkPu9vgbLFJC7cW88GYgsJLGWUWDjDAqam43YXcxcjF1B8EaNE84UdbBDOa0aJ7V/eAzkc
+	HLwCWhJrLkSANLAIqEpMv3KWBcRmAwrvf3EDbKioQJjEyulXwOK8AoISPybfA7NFBAwlDu7e
+	zgRiMwt4SvTNaAerFxZwkXi0dB0zyHghATeJRZviQMKcAu4SL9beYIUo15HY3zqNDcKWl9i8
+	5i0zxM3T2SX6v2RDnCMg8W3yIRaQMRICshKbDkCVSEocXHGDZQKj2CwkB81CMnUWkqkLGJlX
+	MYqmFiQXFCelFxnqFSfmFpfmpesl5+duYgRGyul/z3p3MN4+YH2IUYCDUYmH1+PEyhAh1sSy
+	4srcQ4ymQFdMZJYSTc4HxmNeSbyhsZmRhamJqbGRuaWZkjivotTPYCGB9MSS1OzU1ILUovii
+	0pzU4kOMTBycUg2MlzUPtiWzG7z69OrB+qx7FdbHv5za9fPL90dbli8/OmVO3Z2dMSlW21t3
+	r6iZUb5t1obnQdWRG/Z7/+7JNguWPPTtQFgz35t809vc0ruydSyd5kmar/s5KWpZ5dLL+W7c
+	Z967bF0sXdZt/f/YtGhv31Un9ysx7p2pKcN+ylvL7G+74793k+52XlBiKc5INNRiLipOBAA0
+	JccbjwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t9jAV3v7NUhBgvrLF6/MLS4vGsOm8Xt
+	xhVsDswefVtWMXp83iQXwBTVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQ
+	l5ibaqvk4hOg65aZA7RCSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jx
+	Zl83e8Ek9orWKS/ZGxi/sHYxcnJICJhIdNzuYoawxSQu3FvP1sXIxSEksIhRovnCDijnNaPE
+	9i/vgRwODl4BLYk1FyJAGlgEVCWmXznLAmKzAYX3v7jBBmKLCoRJrJx+BSzOKyAo8WPyPTBb
+	RMBQ4uDu7UwgNrOAp0TfjHawemEBF4lHS9cxg4wXEnCTWLQpDiTMKeAu8WLtDVaIch2J/a3T
+	2CBseYnNa94yT2AUmIVkwywkZbOQlC1gZF7FKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERyJ
+	z6R3MK5qsDjEKMDBqMTD63FiZYgQa2JZcWXuIUYJDmYlEd4dn1eFCPGmJFZWpRblxxeV5qQW
+	H2I0BQbARGYp0eR8YJLIK4k3NDYxM7I0Mje0MDI2VxLnVbJvCxESSE8sSc1OTS1ILYLpY+Lg
+	lGpgnKd6fKnQv7grvmcNrR8flm1K/rZf++3s2avNrmT/sU7k3PjTmDPm+fqXN/sXZrlvXvs+
+	KM/ht4LKtDtCR/ytbWYY7xbdc2RZ35rHzar6v//rxrStm+R7Uv3JwTZ9Zs9F+bsathmIm838
+	GsSumNR2NG75G1HRxAkbmviLVx8unVhQffPTvY9P9ymxFGckGmoxFxUnAgDMtp432gIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Please CC me I am not subscribed to LKML ]
+On 01/05/2015 05:57 PM, Krzysztof Kozlowski wrote:
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/extcon/extcon-max77693.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+> index 740a14d35072..af165fd0c6f5 100644
+> --- a/drivers/extcon/extcon-max77693.c
+> +++ b/drivers/extcon/extcon-max77693.c
+> @@ -1033,7 +1033,7 @@ static irqreturn_t max77693_muic_irq_handler(int irq, void *data)
+>  	return IRQ_HANDLED;
+>  }
+>  
+> -static struct regmap_config max77693_muic_regmap_config = {
+> +static const struct regmap_config max77693_muic_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  };
+> 
 
-[ QUOTE ]
+Applied.
 
-On Mon, Jan 05, 2015 at 05:46:15PM -0800, Linus Torvalds wrote:
- > It's a day delayed - not because of any particular development issues,
- > but simply because I was tiling a bathroom yesterday. But rc3 is out
- > there now, and things have stayed reasonably calm. I really hope that
- > implies that 3.19 is looking good, but it's equally likely that it's
- > just that people are still recovering from the holiday season.
- >
- > A bit over three quarters of the changes here are drivers - mostly
- > networking, thermal, input layer, sound, power management. The rest is
- > misc - filesystems, core networking, some arch fixes, etc. But all of
- > it is pretty small.
- >
- > So go out and test,
-
-This has been there since just before rc1. Is there a fix for this
-stalled in someones git tree maybe ?
-
-[    7.952588] WARNING: CPU: 0 PID: 299 at kernel/sched/core.c:7303
-__might_sleep+0x8d/0xa0()
-[    7.952592] do not call blocking ops when !TASK_RUNNING; state=1
-set at [<ffffffff910a0f7a>] prepare_to_wait+0x2a/0x90
-[    7.952595] CPU: 0 PID: 299 Comm: systemd-readahe Not tainted
-3.19.0-rc3+ #100
-[    7.952597]  0000000000001c87 00000000720a2c76 ffff8800b2513c88
-ffffffff915b47c7
-[    7.952598]  ffffffff910a3648 ffff8800b2513ce0 ffff8800b2513cc8
-ffffffff91062c30
-[    7.952599]  0000000000000000 ffffffff91796fb2 000000000000026d
-0000000000000000
-[    7.952600] Call Trace:
-[    7.952603]  [<ffffffff915b47c7>] dump_stack+0x4c/0x65
-[    7.952604]  [<ffffffff910a3648>] ? down_trylock+0x28/0x40
-[    7.952606]  [<ffffffff91062c30>] warn_slowpath_common+0x80/0xc0
-[    7.952607]  [<ffffffff91062cc0>] warn_slowpath_fmt+0x50/0x70
-[    7.952608]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
-[    7.952610]  [<ffffffff910a0f7a>] ? prepare_to_wait+0x2a/0x90
-[    7.952611]  [<ffffffff910867ed>] __might_sleep+0x8d/0xa0
-[    7.952614]  [<ffffffff915b8ea9>] mutex_lock_nested+0x39/0x3e0
-[    7.952616]  [<ffffffff910a77ad>] ? trace_hardirqs_on+0xd/0x10
-[    7.952617]  [<ffffffff910a0fac>] ? prepare_to_wait+0x5c/0x90
-[    7.952620]  [<ffffffff911a63e0>] fanotify_read+0xe0/0x5b0
-[    7.952622]  [<ffffffff91090801>] ? sched_clock_cpu+0xc1/0xd0
-[    7.952624]  [<ffffffff91242459>] ? selinux_file_permission+0xb9/0x130
-[    7.952626]  [<ffffffff910a14d0>] ? prepare_to_wait_event+0xf0/0xf0
-[    7.952628]  [<ffffffff91162513>] __vfs_read+0x13/0x50
-[    7.952629]  [<ffffffff911625d8>] vfs_read+0x88/0x140
-[    7.952631]  [<ffffffff911626e7>] SyS_read+0x57/0xd0
-[    7.952633]  [<ffffffff915bd952>] system_call_fastpath+0x12/0x17
-
-[ /QUOTE ]
-
-I am seeing a similiar call-trace/warning.
-It is reproducible when running fio (latest: v2.2.4) while my loop-mq
-tests (see block.git#for-next)
-
-Some people tend to say it's coming from the linux-aio area [1], but I
-am not sure.
-1st I thought this is a Linux-next problem but I am seeing it also
-with my rc-kernels.
-For parts of aio there is a patch discussed in [2].
-The experimental patchset of Ken from [3] made the "aio" call-trace go
-away here.
-
-I tried also a patch pending in peterz/queue.git#sched/core from Eric Sandeen.
-It's "check for stack overflow in ___might_sleep".
-Unfortunately, it did not help in case of my loop-mq tests.
-( BTW, this is touching ___might_sleep() (note: triple-underscore VS.
-affected __might_sleep() <--- double-underscrore). )
-
-Let me hear your feedback.
-
-Have more fun!
-
-- Sedat -
-
-[1] http://marc.info/?l=linux-aio&m=142033318411355&w=2
-[2] http://marc.info/?l=linux-aio&m=142035799514685&w=2
-[3] http://evilpiepirate.org/git/linux-bcache.git/log/?h=aio_ring_fix
-[4] http://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git/patch/?id=48e615e4c3ebed488fecb6bfb40b372151f62db2
+Thanks,
+Chanwoo Choi
