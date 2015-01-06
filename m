@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565AbbAFUj4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 15:39:56 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:63412 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932470AbbAFUjy (ORCPT
+	id S1755971AbbAFUqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 15:46:16 -0500
+Received: from asavdk3.altibox.net ([109.247.116.14]:44254 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884AbbAFUqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 15:39:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robh@kernel.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH] pci: introduce common pci config space accessors
-Date: Tue, 06 Jan 2015 21:39:49 +0100
-Message-ID: <29617227.2s0RYsxxN0@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqLOJSjE6MUgFe8Biz+MhdGUiZD+kAOWYTvnF1G5saa2wA@mail.gmail.com>
-References: <1420424374-32412-1-git-send-email-robh@kernel.org> <1758416.ZHsvLP471N@wuerfel> <CAL_JsqLOJSjE6MUgFe8Biz+MhdGUiZD+kAOWYTvnF1G5saa2wA@mail.gmail.com>
+	Tue, 6 Jan 2015 15:46:13 -0500
+Date: Tue, 6 Jan 2015 21:46:07 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v2 26/40] arch/sparc: uaccess_64 macro whitespace fixes
+Message-ID: <20150106204607.GA22468@ravnborg.org>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+ <1420558883-10131-27-git-send-email-mst@redhat.com>
+ <20150106165339.GA11270@ravnborg.org>
+ <20150106171902.GA11577@redhat.com>
+ <20150106182749.GA19490@ravnborg.org>
+ <20150106202342.GB12455@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:4ILVJn9+3bXbLntb0IuZRiDL0s7g1S1LVjPahHTxQg8zAMs6MnC
- xJ679TSSxpNc6L9nJFcG/5b+Ld9V/2Fep8VgkgNQkaHI0iprPPeCXX9UIVZZpyDa6WnxYwk
- yMkX7B1ikHk2aFJUG30vBXy8DalFkXYveP72P4mR9H9kyEnDcJa8NdIkTx/A7MWJ2/YywXw
- /s/JIGJkxeMnyG974sZvA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150106202342.GB12455@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 January 2015 16:28:48 Rob Herring wrote:
-> On Mon, Jan 5, 2015 at 2:01 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Monday 05 January 2015 08:46:09 Rob Herring wrote:
-> >> Right, this is what I had in mind for CAM/ECAM. I didn't go this far
-> >> because a lot of the map_bus functions do various checks to prevent
-> >> certain accesses. Of what I've found, I think only generic host and
-> >> Xilinx drivers could be converted to a generic ECAM map_bus. Others
-> >> check bus number and/or device number or link-up status or have a
-> >> fixup for certain registers, for example. I'm not sure how much of it
-> >> is unnecessary or could be common.
-> >
-> > How do you want to deal with the overrides? I don't see a way to
-> > do that in map_bus (with the current definition) if the idea is that
-> > for certain registers we return hardcoded values instead of accessing
-> > mmio registers.
+> > sparc64: fix coding style in uaccess_64.h
 > 
-> It is not done in map_bus unless you want all FFs by returning NULL,
-> but by simply by wrapping the generic call with a host specific read
-> or write function. Here's one example that modifies one field in a
-> register. This means you can do any pre or post processing you need.
-> Even the crazy stuff Integrator PCI does.
-> 
-> static int cns3xxx_pci_read_config(struct pci_bus *bus, unsigned int devfn,
->                                    int where, int size, u32 *val)
-> {
->         u32 mask = (0x1ull << (size * 8)) - 1;
->         int shift = (where % 4) * 8;
-> 
->         ret = pci_generic_config_read32(bus, devfn, where, size, val);
-> 
->         if (ret == PCIBIOS_SUCCESSFUL && bus->number == 0 && devfn == 0 &&
->             (where & 0xffc) == PCI_CLASS_REVISION)
->                 /*
->                  * RC's class is 0xb, but Linux PCI driver needs 0x604
->                  * for a PCIe bridge. So we must fixup the class code
->                  * to 0x604 here.
->                  */
->                 *val = ((*val << shift) & 0xff) | (0x604 << 16)) >>
-> shift) & mask;
-> 
->         return ret;
-> }
+> OK.
+> I see David reviewed and sent acks, so I won't bother
+> reposting, but I'll tweak this in my tree.
+OK.
 
-Ah, I see. Yes this should work fine. 
+> > > I get it you like it that 
+> > > 	case 1: __get_user_asm(__gu_val,ub,addr,__gu_ret); break;
+> > > has the whole case on the same line?
+> > > Is that the issue?
+> > Exactly - much easier to read this way.
+> > That the "\" was not aligned in these parts of the code did not help either.
+> > 
+> > 	Sam
+> 
+> I see David acked this already - I'll do a patch on top to tweak just
+> these two places to your liking?
 
-I had no idea about the Integrator craziness. Does that actually work? ;-)
-If I were to write a driver for this hardware, I'd probably give up and
-either not support prefetchable memory space, or not support PIO.
+Thanks.
+When you have done so please wait for David's ack before you
+sent then upstream. That I like it does not make it universally accepted.
 
-	Arnd
+	Sam
