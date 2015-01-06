@@ -1,90 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625AbbAFWBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 17:01:31 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:60221 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886AbbAFWBN convert rfc822-to-8bit (ORCPT
+	id S1756899AbbAFWBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:01:15 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48216 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755038AbbAFWBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 17:01:13 -0500
+	Tue, 6 Jan 2015 17:01:11 -0500
+Message-ID: <54AC5B16.9020206@free-electrons.com>
+Date: Tue, 06 Jan 2015 23:00:54 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
-References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
- <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
- <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
- <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
- <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no> <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
- <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no> <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
- <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no> <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
-From: Yuchung Cheng <ycheng@google.com>
-Date: Tue, 6 Jan 2015 14:00:32 -0800
-Message-ID: <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com>
-Subject: Re: TCP connection issues against Amazon S3
-To: Erik Grinaker <erik@bengler.no>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Ken Wilson <ken.wilson@opengear.com>
+CC: robh+dt@kernel.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, gerg@uclinux.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
+        broonie@kernel.org, ezequiel.garcia@free-electrons.com,
+        galak@codeaurora.org, linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH] spi: orion: Add multiple chip select support for Armada
+ 370 and 375
+References: <1420579846-31962-1-git-send-email-ken.wilson@opengear.com>
+In-Reply-To: <1420579846-31962-1-git-send-email-ken.wilson@opengear.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 1:04 PM, Erik Grinaker <erik@bengler.no> wrote:
->
->> On 06 Jan 2015, at 20:26, Erik Grinaker <erik@bengler.no> wrote:
->>
->>>
->>> On 06 Jan 2015, at 20:13, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>>
->>> On Tue, 2015-01-06 at 19:42 +0000, Erik Grinaker wrote:
->>>
->>>> The transfer on the functioning Netherlands server does indeed use SACKs, while the Norway servers do not.
->>>>
->>>> For what it’s worth, I have made stripped down pcaps for a single failing transfer as well as a single functioning transfer in the Netherlands:
->>>>
->>>> http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
->>>> http://abstrakt.bengler.no/tcp-issues-s3-success-netherlands.pcap.bz2
->>>>
->>>
->>> Although sender seems to be reluctant to retransmit, this 'failure' is
->>> caused by receiver closing the connection too soon.
->>>
->>> Are you sure you do not ask curl to setup a very small completion
->>> timer ?
->>
->> For testing, I am using Curl with a 30 second timeout. This may well be a bit short, but the point is that with the older kernel I could run thousands of requests without a single failure (generally the requests would finish within seconds), while with the newer kernel about 5% of requests will time out (the rest complete within seconds).
->>
->>> 12:41:00.738336 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 767221:768681, ack 154, win 127, length 1460
->>> 12:41:00.738346 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 736561, win 1877, length 0
->>> 12:41:05.227150 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 736561:738021, ack 154, win 127, length 1460
->>> 12:41:05.227250 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1882, length 0
->>> 12:41:05.278287 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 768681:770141, ack 154, win 127, length 1460
->>> 12:41:05.278354 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1888, length 0
->>> 12:41:05.278421 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 770141:771601, ack 154, win 127, length 1460
->>> 12:41:05.278429 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1894, length 0
->>> 12:41:14.257102 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 745321:746781, ack 154, win 127, length 1460
->>> 12:41:14.257154 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1900, length 0
->>> 12:41:14.308117 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 771601:773061, ack 154, win 127, length 1460
->>> 12:41:14.308227 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1905, length 0
->>> 12:41:14.308387 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 773061:774521, ack 154, win 127, length 1460
->>> 12:41:14.308397 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1911, length 0
->>>
->>> -> Here receiver sends a FIN, because application closed the socket (or died)
->>> 12:41:23.237156 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [F.], seq 154, ack 746781, win 1911, length 0
->>> 12:41:23.289805 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 746781:748241, ack 155, win 127, length 1460
->>> 12:41:23.289882 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [R], seq 505782802, win 0, length 0
->>>
->>> Anyway, getting decent speed without SACK is going to be hard.
->>
->> Yes, I am not sure why the sender (S3) disables SACK on my Norwegian servers (across ISPs), while it enables SACK on my server in the Netherlands. They run the same kernel and configuration. I will have to look into it more closely tomorrow.
->
-> It turns out the Norway and Netherlands servers were resolving different loadbalancers. The ones I reached in Norway did not support SACKs, while the ones in the Netherlands did. Going directly to a SACK-enabled IP fixes the problem.
->
-> This still doesn’t explain why it works with older kernels, but not newer ones. I’m thinking it’s
-probably some minor change, which gets amplified by the lack of SACKs
-on the loadbalancer. Anyway, I’ll bring it up with Amazon.
-can you post traces with the older kernels?
+Hi Ken,
 
->
-> Many thanks for your help, everyone.
+On 06/01/2015 22:30, Ken Wilson wrote:
+> Create a new dt binding for the Armada 375 that supports up to
+> 3 chip selects but uses the same prescaler values and algorithm
+> as the basic orion binding.
+
+There was already a patch that have been sent for this:
+http://thread.gmane.org/gmane.linux.kernel.spi.devel/17808/focus=17809
+
+but in the end it has not been merged. The last email on the thread was
+about doing the manipulation in set_cs and not in setup_transfer(). And I
+didn't find a newer version.
+
+Maybe it just fell through the cracks.
+Thomas did you remember of it?
+
+Gregory
+
+> 
+> Update the Armada 370 so that it supports up to 4 chip selects.
+> 
+> This has been tested on the Armada 375 with multiple SPI-NOR chips.
+> 
+> Signed-off-by: Ken Wilson <ken.wilson@opengear.com>
+> ---
+>  .../devicetree/bindings/spi/spi-orion.txt          |  3 ++-
+>  arch/arm/boot/dts/armada-375.dtsi                  |  4 +--
+>  drivers/spi/spi-orion.c                            | 29 +++++++++++++++++++---
+>  3 files changed, 29 insertions(+), 7 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/spi/spi-orion.txt b/Documentation/devicetree/bindings/spi/spi-orion.txt
+> index 50c3a3d..2aeeb85 100644
+> --- a/Documentation/devicetree/bindings/spi/spi-orion.txt
+> +++ b/Documentation/devicetree/bindings/spi/spi-orion.txt
+> @@ -1,7 +1,8 @@
+>  Marvell Orion SPI device
+>  
+>  Required properties:
+> -- compatible : should be "marvell,orion-spi" or "marvell,armada-370-spi".
+> +- compatible : should be "marvell,orion-spi", "marvell,armada-370-spi",
+> +	or "marvell,armada-375-spi".
+>  - reg : offset and length of the register set for the device
+>  - cell-index : Which of multiple SPI controllers is this.
+>  Optional properties:
+> diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
+> index de65714..f7a5ce2 100644
+> --- a/arch/arm/boot/dts/armada-375.dtsi
+> +++ b/arch/arm/boot/dts/armada-375.dtsi
+> @@ -192,7 +192,7 @@
+>  			};
+>  
+>  			spi0: spi@10600 {
+> -				compatible = "marvell,orion-spi";
+> +				compatible = "marvell,armada-375-spi", "marvell,orion-spi";
+>  				reg = <0x10600 0x50>;
+>  				#address-cells = <1>;
+>  				#size-cells = <0>;
+> @@ -203,7 +203,7 @@
+>  			};
+>  
+>  			spi1: spi@10680 {
+> -				compatible = "marvell,orion-spi";
+> +				compatible = "marvell,armada-375-spi", "marvell,orion-spi";
+>  				reg = <0x10680 0x50>;
+>  				#address-cells = <1>;
+>  				#size-cells = <0>;
+> diff --git a/drivers/spi/spi-orion.c b/drivers/spi/spi-orion.c
+> index c76b7d7..4129c37 100644
+> --- a/drivers/spi/spi-orion.c
+> +++ b/drivers/spi/spi-orion.c
+> @@ -28,7 +28,6 @@
+>  /* Runtime PM autosuspend timeout: PM is fairly light on this driver */
+>  #define SPI_AUTOSUSPEND_TIMEOUT		200
+>  
+> -#define ORION_NUM_CHIPSELECTS		1 /* only one slave is supported*/
+>  #define ORION_SPI_WAIT_RDY_MAX_LOOP	2000 /* in usec */
+>  
+>  #define ORION_SPI_IF_CTRL_REG		0x00
+> @@ -44,6 +43,7 @@
+>  #define ARMADA_SPI_CLK_PRESCALE_MASK	0xDF
+>  #define ORION_SPI_MODE_MASK		(ORION_SPI_MODE_CPOL | \
+>  					 ORION_SPI_MODE_CPHA)
+> +#define ORION_SPI_CS_MASK	0x1C
+>  
+>  enum orion_spi_type {
+>  	ORION_SPI,
+> @@ -55,6 +55,7 @@ struct orion_spi_dev {
+>  	unsigned int		min_divisor;
+>  	unsigned int		max_divisor;
+>  	u32			prescale_mask;
+> +	u8			num_cs;
+>  };
+>  
+>  struct orion_spi {
+> @@ -201,6 +202,13 @@ orion_spi_setup_transfer(struct spi_device *spi, struct spi_transfer *t)
+>  
+>  	orion_spi_mode_set(spi);
+>  
+> +	if (orion_spi->master->num_chipselect > 1) {
+> +		orion_spi_clrbits(orion_spi, ORION_SPI_IF_CTRL_REG,
+> +				ORION_SPI_CS_MASK);
+> +		orion_spi_setbits(orion_spi, ORION_SPI_IF_CTRL_REG,
+> +				(spi->chip_select) << 2);
+> +	}
+> +
+>  	rc = orion_spi_baudrate_set(spi, speed);
+>  	if (rc)
+>  		return rc;
+> @@ -398,18 +406,31 @@ static const struct orion_spi_dev orion_spi_dev_data = {
+>  	.min_divisor = 4,
+>  	.max_divisor = 30,
+>  	.prescale_mask = ORION_SPI_CLK_PRESCALE_MASK,
+> +	.num_cs = 1,
+>  };
+>  
+> -static const struct orion_spi_dev armada_spi_dev_data = {
+> +static const struct orion_spi_dev armada_370_spi_dev_data = {
+>  	.typ = ARMADA_SPI,
+>  	.min_divisor = 1,
+>  	.max_divisor = 1920,
+>  	.prescale_mask = ARMADA_SPI_CLK_PRESCALE_MASK,
+> +	.num_cs = 4,
+> +};
+> +
+> +static const struct orion_spi_dev armada_375_spi_dev_data = {
+> +	.typ = ORION_SPI,
+> +	.min_divisor = 4,
+> +	.max_divisor = 30,
+> +	.prescale_mask = ORION_SPI_CLK_PRESCALE_MASK,
+> +	.num_cs = 3,
+>  };
+>  
+>  static const struct of_device_id orion_spi_of_match_table[] = {
+>  	{ .compatible = "marvell,orion-spi", .data = &orion_spi_dev_data, },
+> -	{ .compatible = "marvell,armada-370-spi", .data = &armada_spi_dev_data, },
+> +	{ .compatible = "marvell,armada-370-spi",
+> +		.data = &armada_370_spi_dev_data, },
+> +	{ .compatible = "marvell,armada-375-spi",
+> +		.data = &armada_375_spi_dev_data, },
+>  	{}
+>  };
+>  MODULE_DEVICE_TABLE(of, orion_spi_of_match_table);
+> @@ -444,7 +465,6 @@ static int orion_spi_probe(struct platform_device *pdev)
+>  	master->mode_bits = SPI_CPHA | SPI_CPOL;
+>  
+>  	master->transfer_one_message = orion_spi_transfer_one_message;
+> -	master->num_chipselect = ORION_NUM_CHIPSELECTS;
+>  	master->bits_per_word_mask = SPI_BPW_MASK(8) | SPI_BPW_MASK(16);
+>  	master->auto_runtime_pm = true;
+>  
+> @@ -470,6 +490,7 @@ static int orion_spi_probe(struct platform_device *pdev)
+>  	tclk_hz = clk_get_rate(spi->clk);
+>  	master->max_speed_hz = DIV_ROUND_UP(tclk_hz, devdata->min_divisor);
+>  	master->min_speed_hz = DIV_ROUND_UP(tclk_hz, devdata->max_divisor);
+> +	master->num_chipselect = devdata->num_cs;
+>  
+>  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	spi->base = devm_ioremap_resource(&pdev->dev, r);
+> 
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
