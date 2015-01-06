@@ -1,129 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbbAFN3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:29:39 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60620 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938AbbAFN3h (ORCPT
+	id S1755312AbbAFNcv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:32:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45243 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751286AbbAFNct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:29:37 -0500
-Date: Tue, 6 Jan 2015 14:29:32 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Vince Hsu <vinceh@nvidia.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
-        swarren@wwwdotorg.org, gnurou@gmail.com, bskeggs@redhat.com,
-        martin.peres@free.fr, seven@nimrod-online.com,
-        samuel.pitoiset@gmail.com, nouveau@lists.freedesktop.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
- clamp
-Message-ID: <20150106132930.GH31830@ulmo.nvidia.com>
-References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
- <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
- <1419426990.2179.7.camel@lynxeye.de>
- <549B7638.2010405@nvidia.com>
- <20150105150932.GG12010@ulmo.nvidia.com>
- <54AB445D.7010303@nvidia.com>
- <20150106111538.GB31830@ulmo.nvidia.com>
- <54ABCEF7.5080909@nvidia.com>
+	Tue, 6 Jan 2015 08:32:49 -0500
+Date: Tue, 6 Jan 2015 13:32:47 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Zidan Wang <b50113@freescale.com>
+Cc: broonie@kernel.org, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        lars@metafoo.de, Li.Xiubo@freescale.com,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel][PATCH 2/4] ASoC: wm8960: Let wm8960 driver
+	configure its bit clock and frame clock
+Message-ID: <20150106133247.GQ14516@opensource.wolfsonmicro.com>
+References: <1419997154-860-1-git-send-email-b50113@freescale.com> <1419997154-860-2-git-send-email-b50113@freescale.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EemXnrF2ob+xzFeB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54ABCEF7.5080909@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1419997154-860-2-git-send-email-b50113@freescale.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 31, 2014 at 11:39:12AM +0800, Zidan Wang wrote:
+> wm8960 codec driver missing configure its bit clock and frame clock, so add
+> support for it. It will calculate a appropriate frequency dividing ratio
+> according to the system clock, bit clock and frame clock, then set the
+> corresponding registers.
+> 
+> Signed-off-by: Zidan Wang <b50113@freescale.com>
+> ---
+>  sound/soc/codecs/wm8960.c | 108 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 108 insertions(+)
+> 
+> diff --git a/sound/soc/codecs/wm8960.c b/sound/soc/codecs/wm8960.c
+> index 1a5f47b..86a5489 100644
+> --- a/sound/soc/codecs/wm8960.c
+> +++ b/sound/soc/codecs/wm8960.c
+> @@ -127,6 +127,8 @@ struct wm8960_priv {
+>  	struct snd_soc_dapm_widget *out3;
+>  	bool deemph;
+>  	int playback_fs;
+> +	int bclk;
+> +	int sysclk;
+>  	struct wm8960_data pdata;
+>  };
+>  
+> @@ -563,6 +565,79 @@ static struct {
+>  	{  8000, 5 },
+>  };
+>  
+> +/* Multiply 256 for internal 256 div */
+> +static const int dac_divs[] = { 256, 384, 512, 768, 1024, 1408, 1536 };
+> +
+> +/* Multiply 10 to eliminate decimials */
+> +static const int bclk_divs[] = {
+> +	10, 15, 20, 30, 40, 55, 60, 80, 110,
+> +	120, 160, 220, 240, 320, 320, 320
+> +};
+> +
+> +static void wm8960_configure_clocking(struct snd_soc_codec *codec,
+> +		int stream, int lrclk)
+> +{
+> +	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
+> +	u16 iface1 = snd_soc_read(codec, WM8960_IFACE1);
+> +	u16 iface2 = snd_soc_read(codec, WM8960_IFACE2);
+> +	int i, j;
+> +
+> +	if (!(iface1 & (1<<6))) {
+> +		dev_dbg(codec->dev,
+> +			"Codec is slave mode, no need to configure clock\n");
+> +		return;
+> +	}
+> +
+> +	if (!wm8960->sysclk) {
+> +		dev_dbg(codec->dev, "No SYSCLK configured\n");
+> +		return;
+> +	}
+> +
+> +	if (!wm8960->bclk || !lrclk) {
+> +		dev_dbg(codec->dev, "No audio clocks configured\n");
+> +		return;
+> +	}
+> +
+> +	for (i = 0; i < ARRAY_SIZE(dac_divs); ++i) {
+> +		if (wm8960->sysclk == lrclk * dac_divs[i]) {
+> +			for (j = 0; j < ARRAY_SIZE(bclk_divs); ++j) {
+> +				if (wm8960->sysclk ==  wm8960->bclk *
+> +						bclk_divs[j] / 10) {
+> +					/* configure frame clock */
+> +					if (iface2 & (1<<6))
+> +						/* If ADCLRC configure as GPIO
+> +						 * pin, DACLRC pin is used as
+> +						 * a frame clock for ADCs and
+> +						 * DACs */
+> +						snd_soc_update_bits(codec,
+> +								WM8960_CLOCK1,
+> +								0x7 << 3,
+> +								i << 3);
 
---EemXnrF2ob+xzFeB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The indentation is getting pretty horrific here can we do some
+things to ease that a little. You could flip the polarity of the
+two if statements and use continues instead for example that
+would help a lot.
 
-On Tue, Jan 06, 2015 at 08:03:03PM +0800, Vince Hsu wrote:
-> On 01/06/2015 07:15 PM, Thierry Reding wrote:
-> >* PGP Signed by an unknown key
-> >
-> >On Tue, Jan 06, 2015 at 10:11:41AM +0800, Vince Hsu wrote:
-> >>On 01/05/2015 11:09 PM, Thierry Reding wrote:
-> >>>>Old Signed by an unknown key
-> >>>On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
-> >>>>On 12/24/2014 09:16 PM, Lucas Stach wrote:
-> >>>>>Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
-> >>>>>>The Tegra124 and later Tegra SoCs have a sepatate rail gating register
-> >>>>>>to enable/disable the clamp. The original function
-> >>>>>>tegra_powergate_remove_clamping() is not sufficient for the enable
-> >>>>>>function. So add a new function which is dedicated to the GPU rail
-> >>>>>>gating. Also don't refer to the powergate ID since the GPU ID makes no
-> >>>>>>sense here.
-> >>>>>>
-> >>>>>>Signed-off-by: Vince Hsu <vinceh@nvidia.com>
-> >>>>>To be honest I don't see the point of this patch.
-> >>>>>You are bloating the PMC interface by introducing another exported
-> >>>>>function that does nothing different than what the current function
-> >>>>>already does.
-> >>>>>
-> >>>>>If you need a way to assert the clamp I would have expected you to
-> >>>>>introduce a common function to do this for all power partitions.
-> >>>>I thought about adding an tegra_powergate_assert_clamping(), but that
-> >>>>doesn't make sense to all the power partitions except GPU. Note the
-> >>>>difference in TRM. Any suggestion for the common function?
-> >>>I don't think extending the powergate API is useful at this point. We've
-> >>>long had an open TODO item to replace this with a generic API. I did
-> >>>some prototyping a while ago to use generic power domains for this, that
-> >>>way all the details and dependencies between the partitions could be
-> >>>properly modeled.
-> >>>
-> >>>Can you take a look at my staging/powergate branch here:
-> >>>
-> >>>	https://github.com/thierryreding/linux/commits/staging/powergate
-> >>>
-> >>>and see if you can use that instead? The idea is to completely hide the
-> >>>details of power partitions from drivers and use runtime PM instead.
-> >>You generic power domains work is exactly what we want for powergate
-> >>eventually. :) I recall we used your prototyping in somewhere internal tree.
-> >>We have to add more to complete it though, e.g. power domain dependency, mc
-> >>flush, and clamping register difference like this patch does.
-> >>
-> >>But I have a question here. Since the GK20A is not powered on/off by the PMC
-> >>except the clamping control, and GK20A has its own power rail, do we really
-> >>want to hide the power sequence in the generic powergate code? We still have
-> >>to control the voltage level in the GK20A driver through the regulator
-> >>framework. It seems weird to me if we put the regulator_{enable|disable}
-> >>somewhere other than the GK20A driver.
-> >I think we want both. The power domain to control the power partition
-> >and the regulator in the gk20a driver for the voltage control.
-> Do you mean excluding the power sequence of GK20A from the generic power
-> domain?
+Thanks,
+Charles
 
-No, what I mean is move the power gating into the PMC driver as part of
-the generic power domain implementation. At the same time, keep the
-control of the regulator within the gk20a driver. That way we can use
-runtime PM to control the powergating but we can still control the GPU
-voltage within Nouveau.
-
-Thierry
-
---EemXnrF2ob+xzFeB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUq+M6AAoJEN0jrNd/PrOhm7AQAJ5MnHuzkk861QJ7FjpQ7jw9
-BMJhdgtzHBkBA0D6jHubWU1O6G7XHOFlp99D2t+XuKiHwW9c6qslIjNQeK5c4+/r
-gDXgEdkI++MA2kE8HgwhqnUadxvDA8kaOtwxO6+gskfYopnh0V+AxODcdRa3vBAH
-ugF0briydpi5vYUuceQw2WZRXWBoIrNkf3R15txtNBHwskbXyFlKvPeKDfJ9LljT
-9tLhn1+mrDj36S/9HCBQBMrc4yMUoiwrdvBd40XUPVpNnEisirCeeNaoEX7Lv5NO
-0U/QdXtRHzPURSeCNcdbVlzSsC1Vesu5uCdQCWpgXot3bkvCAvzuN72TTI34w/vG
-pF4xt2YwVzMsC5z+b7lI4ESrMAqolvYFraagbxMy/dQeAXRmF0TCqPbfJ7p7i/fB
-z4XPptksUjjtt48nW92krCL5pD/i7T7qBDsHO9MOg7iuXOS2+kUxuTSVBgJjeAEZ
-819OL9gQFhSDcvgOb4113lkCOCYe/3DWeHAbuwe6PbN2mJjNzwNInrkYdt1Z8rFd
-C6sEZc+W+BiPwy0BENxQ58WScCiHVq8Inmrr+GuXiB6vxpbekHh9m2FLLFgyoQYS
-vMSGtywC8LLMozsSBnYzuV2amy7GPU25LcJlqlXVNqgaBwHAN6eDfgod2YWPaCJ+
-FsLu+shNq3/psWfQQUzC
-=BicE
------END PGP SIGNATURE-----
-
---EemXnrF2ob+xzFeB--
+> +					else if (SNDRV_PCM_STREAM_PLAYBACK
+> +								== stream)
+> +						snd_soc_update_bits(codec,
+> +								WM8960_CLOCK1,
+> +								0x7 << 3,
+> +								i << 3);
+> +					else if (SNDRV_PCM_STREAM_CAPTURE
+> +								== stream)
+> +						snd_soc_update_bits(codec,
+> +								WM8960_CLOCK1,
+> +								0x7 << 6,
+> +								i << 6);
+> +
+> +					/* configure bit clock */
+> +					snd_soc_update_bits(codec,
+> +							WM8960_CLOCK2, 0xf, j);
+> +					return;
+> +				}
+> +			}
+> +		}
+> +	}
+> +
+> +	dev_err(codec->dev, "Unsupported sysclk %d\n", wm8960->sysclk);
+> +}
+> +
