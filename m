@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571AbbAFNwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:52:04 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47029 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754602AbbAFNwB (ORCPT
+	id S1755580AbbAFNwo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:52:44 -0500
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:52837 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752885AbbAFNwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:52:01 -0500
-Date: Tue, 6 Jan 2015 13:51:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Andy Yan <andy.yan@rock-chips.com>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, David Airlie <airlied@linux.ie>,
-        Philipp Zabel <p.zabel@pengutronix.de>, fabio.estevam@freescale.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, Sean Paul <seanpaul@chromium.org>,
-        Inki Dae <inki.dae@samsung.com>, Dave Airlie <airlied@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, Lucas Stach <l.stach@pengutronix.de>,
-        Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>,
-        Yakir Yang <ykk@rock-chips.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        devel@driverdev.osuosl.org,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Xu Jianqun <jay.xu@rock-chips.com>, Pawel Moll <pawel.moll@arm.com>,
-        "mark.yao@rock-chips.com" <mark.yao@rock-chips.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, vladimir_zapolskiy@mentor.com
-Subject: Re: [PATCH v18 12/12] drm: bridge/dw_hdmi: add rockchip rk3288
- support
-Message-ID: <20150106135129.GG12302@n2100.arm.linux.org.uk>
-References: <1417760564-16858-1-git-send-email-andy.yan@rock-chips.com>
- <1417761259-17429-1-git-send-email-andy.yan@rock-chips.com>
- <CAGS+omA1Gf8yqrd4Bu=Pm1OBdsJBHg0gt+TP_6vi88Zz+O3jHA@mail.gmail.com>
- <6479148.dVz0vTNYfK@phil>
+	Tue, 6 Jan 2015 08:52:41 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <acme@redhat.com>, <peterz@infradead.org>
+CC: <jolsa@kernel.org>, <mingo@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-perf-users@vger.kernel.org>, <bp@suse.de>,
+        <linux-arch@vger.kernel.org>, <Alexey.Brodkin@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH 0/5] Perf fixes for ARC + uClibc
+Date: Tue, 6 Jan 2015 19:22:10 +0530
+Message-ID: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6479148.dVz0vTNYfK@phil>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.12.196.223]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 12:24:15PM +0100, Heiko Stübner wrote:
-> Past practices suggest that having the dw in the name is a sane solution too, 
-> like in dw_mmc-foo (mmc/host), dwmac-foo (net/ethernet/stmicro/stmmac).
-> 
-> And personally I'd keep to this already established naming scheme ... i.e. not 
-> hiding the dw heritage.
-> 
-> And also it looks like other involved parties like Philipp and Russell seemed 
-> to be ok with the naming through the revisions till now.
+Hi,
 
-I don't have much of a preference when it comes to this.  I was disappointed
-that the original imx-hdmi driver did not use "dw" in its filename, as the
-documentation clearly stated in several places that it was a designware
-part, and as we all know, they're a company which sells IP, so their
-designs are going to crop up in different places.
+This series based off linux-next of 20150105 allows us to build/use perf
+for ARC with uClibc based userland.
 
-So I welcome this patch set - and I've also tested it on a SolidRun
-Hummingboard i2ex along with all my CEC and audio patches, where it
-seems to be fine.  So for the set:
+* 1/5 is really a resend of old patch posted by Alexey a while back
+* 2/5 is uClibc build spew seen on ARM as well
+* 3/5 likewise
+* 4/5 is uClibc config specific
+* 5/5 is uClibc pthread library flavour specific
+  It adds a stub for pthread_attr_setaffinity_np
+  I can rework it to disable the futex tests altogether if people think that is
+  cleaner
 
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Please review and consider applying.
+W/o these perf doesn't build and/or work for ARC.
 
-Apart from the two minor items I've pointed out in separate replies:
+Thx,
+-Vineet
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Alexey Brodkin (1):
+  perf tools: [uclibc] fix statfs.f_type data type mismatch build error
 
-Thanks.
+Vineet Gupta (4):
+  perf tools: [uclibc] Elide strlcpy warning
+  perf tools: [uclibc] Avoid build splat for syscall numbers
+  perf tools: [uclibc] don't rely on glibc malloc working for sz 0
+  perf tools: [uclibc] provide stub for pthread_attr_setaffinity_np
+
+ tools/lib/api/fs/debugfs.c                  |  2 +-
+ tools/lib/api/fs/fs.c                       |  2 +-
+ tools/perf/bench/futex.h                    | 13 +++++++++++++
+ tools/perf/bench/sched-pipe.c               |  1 -
+ tools/perf/builtin-top.c                    |  1 -
+ tools/perf/config/Makefile                  |  6 ++++++
+ tools/perf/config/feature-checks/Makefile   |  4 ++++
+ tools/perf/config/feature-checks/test-all.c |  5 +++++
+ tools/perf/perf-sys.h                       |  1 -
+ tools/perf/util/cache.h                     |  2 ++
+ tools/perf/util/header.c                    |  2 +-
+ 11 files changed, 33 insertions(+), 6 deletions(-)
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
