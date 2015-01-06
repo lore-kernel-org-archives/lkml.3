@@ -1,47 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312AbbAFPyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:54:15 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:57573 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291AbbAFPyM (ORCPT
+	id S1756380AbbAFPy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:54:59 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42616 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756341AbbAFPys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:54:12 -0500
-X-IronPort-AV: E=Sophos;i="5.07,708,1413244800"; 
-   d="scan'208";a="211919572"
-Message-ID: <1420559647.28863.174.camel@citrix.com>
-Subject: Re: [PATCH] xen-netback: fixing the propagation of the transmit
- shaper timeout
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Imre Palik <imrep.amz@gmail.com>
-CC: <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        Wei Liu <wei.liu2@citrix.com>, <linux-kernel@vger.kernel.org>,
-        "Palik, Imre" <imrep@amazon.de>, Anthony Liguori <aliguori@amazon.com>
-Date: Tue, 6 Jan 2015 15:54:07 +0000
-In-Reply-To: <1420559084-28370-1-git-send-email-imrep.amz@gmail.com>
-References: <1420559084-28370-1-git-send-email-imrep.amz@gmail.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+	Tue, 6 Jan 2015 10:54:48 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Flora Fu <flora.fu@mediatek.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v3] mfd: syscon: add child device support
+Date: Tue,  6 Jan 2015 16:54:34 +0100
+Message-Id: <1420559674-9772-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.1.4
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-06 at 16:44 +0100, Imre Palik wrote:
-> From: "Palik, Imre" <imrep@amazon.de>
-> 
-> Since e9ce7cb6b107 ("xen-netback: Factor queue-specific data into queue struct"),
-> the transimt shaper timeout is always set to 0.  The value the user sets via
-> xenbus is never propagated to the transmit shaper.
-> 
-> This patch fixes the issue.
-> 
-> Cc: Anthony Liguori <aliguori@amazon.com>
-> Signed-off-by: Imre Palik <imrep@amazon.de>
+For devices which have a complete register for themselves, it is possible to
+place them next to the syscon device with overlapping reg ranges. The same is
+not possible for devices which only occupy bitfields in registers shared with
+other users.
+For devices that are completely controlled by bitfields in the syscon address
+range, such as multiplexers or voltage regulators, allow to put child devices
+into the syscon device node.
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Tested-by: Flora Fu <flora.fu@mediatek.com>
+---
+Changes since v2:
+ - Added Tested-by: Flora Fu
+---
+ Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
+ drivers/mfd/syscon.c                             |  3 +++
+ 2 files changed, 16 insertions(+)
 
+diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
+index fe8150b..0c6b497 100644
+--- a/Documentation/devicetree/bindings/mfd/syscon.txt
++++ b/Documentation/devicetree/bindings/mfd/syscon.txt
+@@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
+ OS driver) to determine the location of the registers, and access the
+ registers directly.
+ 
++Optionally, devices that are controlled exclusively through syscon registers,
++or even bitfields in shared syscon registers, can also be added as child nodes
++to the syscon device node. These devices can implicitly assume their parent
++node is a syscon provider without referencing it explicitly via phandle.
++In this case, the syscon node should have #address-cells = <1> and
++#size-cells = <0> or <1> and no ranges property.
++
+ Required properties:
+ - compatible: Should contain "syscon".
+ - reg: the register region can be accessed from syscon
+ 
++Optional properties:
++- #address-cells: Should be 1.
++- #size-cells: Should be 0 or 1.
++
+ Examples:
+ gpr: iomuxc-gpr@020e0000 {
++	#address-cells = <1>;
++	#size-cells = <0>;
+ 	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+ 	reg = <0x020e0000 0x38>;
+ };
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index 176bf0f..d2280d6 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -208,6 +208,9 @@ static int syscon_probe(struct platform_device *pdev)
+ 
+ 	dev_dbg(dev, "regmap %pR registered\n", res);
+ 
++	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
++		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
++
+ 	return 0;
+ }
+ 
+-- 
+2.1.4
 
