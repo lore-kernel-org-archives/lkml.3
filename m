@@ -1,107 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbbAFQxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:53:04 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60691 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755830AbbAFQxC (ORCPT
+	id S1756147AbbAFRDY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 12:03:24 -0500
+Received: from asavdk4.altibox.net ([109.247.116.15]:45444 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107AbbAFRDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 11:53:02 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?UTF-8?q?Peter=20K=C3=BCmmel?= <syntheticpp@gmx.net>,
-        Pavel Machek <pavel@ucw.cz>, Santosh Shilimkar <ssantosh@kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] irqchip: omap-intc: fix legacy DMA regression
-Date: Tue, 6 Jan 2015 10:51:33 -0600
-Message-ID: <1420563093-26026-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 2.2.0
-In-Reply-To: <20150106123830.GD30544@fuloong-minipc.musicnaut.iki.fi>
-References: <20150106123830.GD30544@fuloong-minipc.musicnaut.iki.fi>
+	Tue, 6 Jan 2015 12:03:20 -0500
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 12:03:19 EST
+Date: Tue, 6 Jan 2015 17:53:39 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v2 26/40] arch/sparc: uaccess_64 macro whitespace fixes
+Message-ID: <20150106165339.GA11270@ravnborg.org>
+References: <1420558883-10131-1-git-send-email-mst@redhat.com>
+ <1420558883-10131-27-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420558883-10131-27-git-send-email-mst@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 55601c9f2467 (arm: omap: intc: switch over
-to linear irq domain) introduced a regression with
-SDMA legacy driver because that driver strictly depends
-on INTC's IRQs starting at NR_IRQs. Aparently
-irq_domain_add_linear() won't guarantee that, since we see
-a 7 IRQs difference when booting with and without the
-commit cited above.
+On Tue, Jan 06, 2015 at 05:44:56PM +0200, Michael S. Tsirkin wrote:
+> Macros within arch/sparc/include/asm/uaccess_64.h are made harder to
+> read because they violate a bunch of coding style rules.
+> 
+> Fix it up.
+As per Davem's earlier mail please prefix using sparc32/sparc64.
 
-Until arch/arm/plat-omap/dma.c is properly fixed, we
-must maintain OMAP2/3 using irq_domain_add_legacy().
+> -#define __put_user_nocheck(data,addr,size) ({ \
+> -register int __pu_ret; \
+> -switch (size) { \
+> -case 1: __put_user_asm(data,b,addr,__pu_ret); break; \
+> -case 2: __put_user_asm(data,h,addr,__pu_ret); break; \
+> -case 4: __put_user_asm(data,w,addr,__pu_ret); break; \
+> -case 8: __put_user_asm(data,x,addr,__pu_ret); break; \
+> -default: __pu_ret = __put_user_bad(); break; \
+> -} __pu_ret; })
+> -
+> -#define __put_user_asm(x,size,addr,ret)					\
+> +#define __put_user_nocheck(data, addr, size) ({ \
+> +	register int __pu_ret; \
+> +	switch (size) { \
+> +	case 1: \
+> +		__put_user_asm(data, b, addr, __pu_ret); \
+> +		break; \
+> +	case 2: \
+> +		__put_user_asm(data, h, addr, __pu_ret); \
+> +		break; \
+> +	case 4: \
+> +		__put_user_asm(data, w, addr, __pu_ret); \
+> +		break; \
+> +	case 8: \
+> +		__put_user_asm(data, x, addr, __pu_ret); \
+> +		break; \
+> +	default: \
+> +		__pu_ret = __put_user_bad(); \
+> +		break; \
+> +	} \
+> +	__pu_ret; \
+> +})
 
-A FIXME note was added so people know to delete that
-code once that legacy DMA driver is fixed up.
+No matter what coding style says - the above is much less readable than the
+original version.
 
-Fixes: 55601c9f2467 (arm: omap: intc: switch over to linear irq domain)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- drivers/irqchip/irq-omap-intc.c | 26 +++++++++++++++++++++-----
- 1 file changed, 21 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/irqchip/irq-omap-intc.c b/drivers/irqchip/irq-omap-intc.c
-index 3c970259c0eb..6ef88f56cf8d 100644
---- a/drivers/irqchip/irq-omap-intc.c
-+++ b/drivers/irqchip/irq-omap-intc.c
-@@ -263,7 +263,7 @@ static int __init omap_init_irq_of(struct device_node *node)
- 	return ret;
- }
- 
--static int __init omap_init_irq_legacy(u32 base)
-+static int __init omap_init_irq_legacy(u32 base, struct device_node *node)
- {
- 	int j, irq_base;
- 
-@@ -277,7 +277,7 @@ static int __init omap_init_irq_legacy(u32 base)
- 		irq_base = 0;
- 	}
- 
--	domain = irq_domain_add_legacy(NULL, omap_nr_irqs, irq_base, 0,
-+	domain = irq_domain_add_legacy(node, omap_nr_irqs, irq_base, 0,
- 			&irq_domain_simple_ops, NULL);
- 
- 	omap_irq_soft_reset();
-@@ -301,10 +301,26 @@ static int __init omap_init_irq(u32 base, struct device_node *node)
- {
- 	int ret;
- 
--	if (node)
-+	/*
-+	 * FIXME legacy OMAP DMA driver sitting under arch/arm/plat-omap/dma.c
-+	 * depends is still not ready for linear IRQ domains; because of that
-+	 * we need to temporarily "blacklist" OMAP2 and OMAP3 devices from using
-+	 * linear IRQ Domain until that driver is finally fixed.
-+	 */
-+	if (of_device_is_compatible(node, "ti,omap2-intc") ||
-+			of_device_is_compatible(node, "ti,omap3-intc")) {
-+		struct resource res;
-+
-+		if (of_address_to_resource(node, 0, &res))
-+			return -ENOMEM;
-+
-+		base = res.start;
-+		ret = omap_init_irq_legacy(base, node);
-+	} else if (node) {
- 		ret = omap_init_irq_of(node);
--	else
--		ret = omap_init_irq_legacy(base);
-+	} else {
-+		ret = omap_init_irq_legacy(base, NULL);
-+	}
- 
- 	if (ret == 0)
- 		omap_irq_enable_protection();
--- 
-2.2.0
+
+> -#define __get_user_nocheck(data,addr,size,type) ({ \
+> -register int __gu_ret; \
+> -register unsigned long __gu_val; \
+> -switch (size) { \
+> -case 1: __get_user_asm(__gu_val,ub,addr,__gu_ret); break; \
+> -case 2: __get_user_asm(__gu_val,uh,addr,__gu_ret); break; \
+> -case 4: __get_user_asm(__gu_val,uw,addr,__gu_ret); break; \
+> -case 8: __get_user_asm(__gu_val,x,addr,__gu_ret); break; \
+> -default: __gu_val = 0; __gu_ret = __get_user_bad(); break; \
+> -} data = (__force type) __gu_val; __gu_ret; })
+> -
+> -#define __get_user_nocheck_ret(data,addr,size,type,retval) ({ \
+> -register unsigned long __gu_val __asm__ ("l1"); \
+> -switch (size) { \
+> -case 1: __get_user_asm_ret(__gu_val,ub,addr,retval); break; \
+> -case 2: __get_user_asm_ret(__gu_val,uh,addr,retval); break; \
+> -case 4: __get_user_asm_ret(__gu_val,uw,addr,retval); break; \
+> -case 8: __get_user_asm_ret(__gu_val,x,addr,retval); break; \
+> -default: if (__get_user_bad()) return retval; \
+> -} data = (__force type) __gu_val; })
+> -
+> -#define __get_user_asm(x,size,addr,ret)					\
+> +#define __get_user_nocheck(data, addr, size, type) ({ \
+> +	register int __gu_ret; \
+> +	register unsigned long __gu_val; \
+> +	switch (size) { \
+> +		case 1: \
+> +			__get_user_asm(__gu_val, ub, addr, __gu_ret); \
+> +			break; \
+> +		case 2: \
+> +			__get_user_asm(__gu_val, uh, addr, __gu_ret); \
+> +			break; \
+> +		case 4: \
+> +			__get_user_asm(__gu_val, uw, addr, __gu_ret); \
+> +			break; \
+> +		case 8: \
+> +			__get_user_asm(__gu_val, x, addr, __gu_ret); \
+> +			break; \
+> +		default: \
+> +			__gu_val = 0; \
+> +			__gu_ret = __get_user_bad(); \
+> +			break; \
+> +	} data = (__force type) __gu_val; __gu_ret; \
+> +})
+> +
+> +#define __get_user_nocheck_ret(data, addr, size, type, retval) ({ \
+> +	register unsigned long __gu_val __asm__ ("l1"); \
+> +	switch (size) { \
+> +	case 1: \
+> +		__get_user_asm_ret(__gu_val, ub, addr, retval); \
+> +		break; \
+> +	case 2: \
+> +		__get_user_asm_ret(__gu_val, uh, addr, retval); \
+> +		break; \
+> +	case 4: \
+> +		__get_user_asm_ret(__gu_val, uw, addr, retval); \
+> +		break; \
+> +	case 8: \
+> +		__get_user_asm_ret(__gu_val, x, addr, retval); \
+> +		break; \
+> +	default: \
+> +		if (__get_user_bad()) \
+> +			return retval; \
+> +	} \
+> +	data = (__force type) __gu_val; \
+> +})
+> +
+
+Same comment for this code chunk.
+
+	Sam
 
