@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014AbbAFOcI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 09:32:08 -0500
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:46780 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148AbbAFOcF (ORCPT
+	id S1755491AbbAFOcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 09:32:53 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:58839 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268AbbAFOcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 09:32:05 -0500
-Message-ID: <54ABF1E2.1010905@hurleysoftware.com>
-Date: Tue, 06 Jan 2015 09:32:02 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 6 Jan 2015 09:32:51 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
-References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com> <9492211.AECobr3jIN@wuerfel>
-In-Reply-To: <9492211.AECobr3jIN@wuerfel>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
+References: <1419782872-2991-1-git-send-email-aniroop.mathur@gmail.com>
+	<alpine.LNX.2.00.1412291302470.1680@pobox.suse.cz>
+Date: Tue, 6 Jan 2015 20:02:50 +0530
+Message-ID: <CADYu308MmdGeajFTDt38zZSy7K2VKbDppuqmiJn=1ZwL5d1vmw@mail.gmail.com>
+Subject: Re: [PATCH] hid: Initialize battery_no to -1 & correct its format string
+From: Aniroop Mathur <aniroop.mathur@gmail.com>
+To: Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, a.mathur@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 08:13 AM, Arnd Bergmann wrote:
-> On Monday 05 January 2015 22:09:45 Peter Hurley wrote:
->> Some arches have no need to create unprobed 8250 ports; these phantom
->> ports are primarily required for ISA ports which have no probe
->> mechanism or to provide non-operational ports for userspace to
->> configure (via TIOCSSERIAL and TIOCSERCONFIG ioctls).
+Dear Mr. Jason and Mr. Ping,
+
+Please update about below patch.
+Except avoiding subtraction, there is also a need to avoid negative
+battery name which may come due to %ld, so need to change to %lu.
+
+Thanks,
+Aniroop
+
+On Mon, Dec 29, 2014 at 5:33 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Sun, 28 Dec 2014, Aniroop Mathur wrote:
+>
+>> From: Aniroop Mathur <a.mathur@samsung.com>
 >>
->> Provide CONFIG_SERIAL_8250_PHANTOM_UARTS knob to disable phantom port
->> registration; ie., CONFIG_SERIAL_8250_PHANTOM_UARTS=N only registers
->> probed ports (ACPI/PNP, "serial8250" platform devices, PCI, etc).
+>> This patch initializes battery_no to -1 to avoid extra subtraction
+>> operation performed everytime wacom battery is initialized
+>
+> This is so femto-optimization, that I don't really care deeply. Adding
+> Jason and Ping to CC. If they want this, I'll apply the patch.
+>
+>> and correct format string of unsigned long from %ld to %lu.
 >>
->> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> Cc: Tony Lindgren <tony@atomide.com>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> 
-> The intent is definitely right, but I think a better approach is
-> possible.
-> 
-> I haven't tried it here, but how about moving the serial8250_init
-> function into a separate module, along with all the other parts
-> that are only used for ISA devices, but leaving the actual core
-> (all exported symbols) in this file?
-
-Unfortunately, I don't see a way to remove the stacked initialization
-without risking tons of breakage.
-
-Since later probes can "find" an already-existing port and
-re-initialize it, the probe order is crucial. For example, a PCI
-probe can "find" an existing "serial8250" platform device port,
-resulting in only one device node.
-
-And the configuration knob will be required on all arches anyway because
-that's how user-configurable device nodes are created.
-
-> At the same time, the serial8250_pnp_init/serial8250_pnp_exit calls
-> can be removed from the serial8250_init function and become
-> standalone initcalls.
-
-PNP probe must occur before the phantom ports are registered.
-See commit 835d844d1a28efba81d5aca7385e24c29d3a6db2
-("8250_pnp: do pnp probe before legacy probe").
-
-Regards,
-Peter Hurley
+>> Signed-off-by: Aniroop Mathur <a.mathur@samsung.com>
+>> ---
+>>  drivers/hid/wacom_sys.c | 8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+>> index 129fd33..4b5ff84 100644
+>> --- a/drivers/hid/wacom_sys.c
+>> +++ b/drivers/hid/wacom_sys.c
+>> @@ -919,17 +919,17 @@ static int wacom_ac_get_property(struct power_supply *psy,
+>>
+>>  static int wacom_initialize_battery(struct wacom *wacom)
+>>  {
+>> -     static atomic_t battery_no = ATOMIC_INIT(0);
+>> +     static atomic_t battery_no = ATOMIC_INIT(-1);
+>>       int error;
+>>       unsigned long n;
+>>
+>>       if (wacom->wacom_wac.features.quirks & WACOM_QUIRK_BATTERY) {
+>> -             n = atomic_inc_return(&battery_no) - 1;
+>> +             n = atomic_inc_return(&battery_no);
+>>
+>>               wacom->battery.properties = wacom_battery_props;
+>>               wacom->battery.num_properties = ARRAY_SIZE(wacom_battery_props);
+>>               wacom->battery.get_property = wacom_battery_get_property;
+>> -             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%ld", n);
+>> +             sprintf(wacom->wacom_wac.bat_name, "wacom_battery_%lu", n);
+>>               wacom->battery.name = wacom->wacom_wac.bat_name;
+>>               wacom->battery.type = POWER_SUPPLY_TYPE_BATTERY;
+>>               wacom->battery.use_for_apm = 0;
+>> @@ -937,7 +937,7 @@ static int wacom_initialize_battery(struct wacom *wacom)
+>>               wacom->ac.properties = wacom_ac_props;
+>>               wacom->ac.num_properties = ARRAY_SIZE(wacom_ac_props);
+>>               wacom->ac.get_property = wacom_ac_get_property;
+>> -             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%ld", n);
+>> +             sprintf(wacom->wacom_wac.ac_name, "wacom_ac_%lu", n);
+>>               wacom->ac.name = wacom->wacom_wac.ac_name;
+>>               wacom->ac.type = POWER_SUPPLY_TYPE_MAINS;
+>>               wacom->ac.use_for_apm = 0;
+>> --
+>> 1.9.1
+>>
+>
+> --
+> Jiri Kosina
+> SUSE Labs
