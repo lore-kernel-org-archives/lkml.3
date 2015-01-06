@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346AbbAFCzb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Jan 2015 21:55:31 -0500
-Received: from mail-bl2on0124.outbound.protection.outlook.com ([65.55.169.124]:28456
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932298AbbAFCzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Jan 2015 21:55:06 -0500
-From: Anson Huang <b20788@freescale.com>
-To: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <edubezval@gmail.com>, <rui.zhang@intel.com>, <jangra.pankaj9@gmail.com>
-Subject: [PATCH V2] Thermal: imx: add clk disable/enable for suspend/resume
-Date: Tue, 6 Jan 2015 18:50:22 +0800
-Message-ID: <1420541422-27602-1-git-send-email-b20788@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Anson.Huang@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(189002)(199003)(31966008)(85426001)(36756003)(104016003)(62966003)(87936001)(4396001)(50226001)(89996001)(68736005)(77096005)(77156002)(21056001)(92566001)(50986999)(97736003)(106466001)(229853001)(107046002)(99396003)(120916001)(46102003)(84676001)(6806004)(19580405001)(33646002)(48376002)(19580395003)(50466002)(105606002)(47776003)(20776003)(64706001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0625;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DmarcAction: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN1PR0301MB0625;
-X-Forefront-PRVS: 0448A97BF2
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Jan 2015 02:55:03.4753
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR0301MB0625
+	id S932253AbbAFKye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 05:54:34 -0500
+Received: from mail.kapsi.fi ([217.30.184.167]:57593 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755182AbbAFKyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 05:54:11 -0500
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, wni@nvidia.com,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Subject: [PATCH v5 REPOST 0/3] Thermal reset support in PMC
+Date: Tue,  6 Jan 2015 12:52:55 +0200
+Message-Id: <1420541578-27968-1-git-send-email-mikko.perttunen@kapsi.fi>
+X-Mailer: git-send-email 2.2.1
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thermal sensor's clk is from pll3_usb_otg, per hardware
-design requirement, need to make sure pll3_usb_otg is disabled
-before STOP mode is entered, otherwise, all PFDs under it may
-enter incorrect state, this patch disables pll3_usb_otg before
-suspend and enables it after resume.
+Hi,
 
-Signed-off-by: Anson Huang <b20788@freescale.com>
----
- drivers/thermal/imx_thermal.c | 2 ++
- 1 file changed, 2 insertions(+)
+this series adds support for hardware-triggered thermal reset to the PMC
+driver. Namely, it adds device tree properties for specifying the I2C
+command to be sent when thermtrip is triggered.
 
-diff --git a/drivers/thermal/imx_thermal.c b/drivers/thermal/imx_thermal.c
-index 461bf3d..dc8bcd8 100644
---- a/drivers/thermal/imx_thermal.c
-+++ b/drivers/thermal/imx_thermal.c
-@@ -600,6 +600,7 @@ static int imx_thermal_suspend(struct device *dev)
- 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_MEASURE_TEMP);
- 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_POWER_DOWN);
- 	data->mode = THERMAL_DEVICE_DISABLED;
-+	clk_disable_unprepare(data->thermal_clk);
- 
- 	return 0;
- }
-@@ -609,6 +610,7 @@ static int imx_thermal_resume(struct device *dev)
- 	struct imx_thermal_data *data = dev_get_drvdata(dev);
- 	struct regmap *map = data->tempmon;
- 
-+	clk_prepare_enable(data->thermal_clk);
- 	/* Enabled thermal sensor after resume */
- 	regmap_write(map, TEMPSENSE0 + REG_CLR, TEMPSENSE0_POWER_DOWN);
- 	regmap_write(map, TEMPSENSE0 + REG_SET, TEMPSENSE0_MEASURE_TEMP);
+The soctherm driver has now been acked and will be taken into 3.19, so we
+can move forward with this. Note that there are no compile time dependencies
+between the two series; it's just that this series is no-op without the
+soctherm driver being present.
+
+The series is also available at
+  git://github.com/cyndis/linux pmc-thermtrip-v5
+
+Changes in v5:
+- Dropped id property for I2C controllers
+- Use integer field instead of phandle for thermtrip i2c controller id
+- Rearrange pmc.c using a forward declaration to prevent huge patch
+
+Mikko Perttunen (3):
+  of: Add descriptions of thermtrip properties to Tegra PMC bindings
+  ARM: tegra: Add PMC thermtrip programming to Jetson TK1 device tree
+  ARM: tegra: Add thermal reset (thermtrip) support to PMC
+
+ .../bindings/arm/tegra/nvidia,tegra20-pmc.txt      |  26 +++++
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   7 ++
+ drivers/soc/tegra/pmc.c                            | 107 +++++++++++++++++++++
+ 3 files changed, 140 insertions(+)
+
 -- 
-1.9.1
+2.1.3
 
