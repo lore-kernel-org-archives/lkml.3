@@ -1,40 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbbAFQnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 11:43:40 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:58586 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826AbbAFQnj (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Tue, 6 Jan 2015 11:43:39 -0500
-Message-ID: <1420562614.24290.5.camel@stgolabs.net>
-Subject: Re: [PATCH] mutex: Always clear owner field upon mutex_unlock()
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Date: Tue, 06 Jan 2015 08:43:34 -0800
-In-Reply-To: <1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk>
-References: <1420540175-30204-1-git-send-email-chris@chris-wilson.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755555AbbAFQpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 11:45:47 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:62073 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873AbbAFQpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 11:45:45 -0500
+From: mathieu.poirier@linaro.org
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH] ARM: vexpress: bindings: Add generic PD awareness to the spc controller
+Date: Tue,  6 Jan 2015 09:45:32 -0700
+Message-Id: <1420562732-4353-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-06 at 10:29 +0000, Chris Wilson wrote:
-> Currently if DEBUG_MUTEXES is enabled, the mutex->owner field is only
-> cleared iff debug_locks is active. This exposes a race to other users of
-> the field where the mutex->owner may be still set to a stale value,
-> potentially upsetting mutex_spin_on_owner() among others.
-> 
-> References: https://bugs.freedesktop.org/show_bug.cgi?id=87955
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Acked-by: Davidlohr Bueso <dave@stgolabs.net>
+Among other things, the serial power controller (SPC) controls power to
+the A7 and A15 clusters.  Theses clusters also happen to contains the
+coresight tracers used for HW assisted tracing.
+
+By modellling these to power domains in a way that is comprehensible to
+the generic power domain sub-system and using the runtime PM API in the
+coresight drivers, we can prevent power to the domains from being
+turned off while tracing related operations are still pending.
+
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ .../bindings/arm/vexpress-power-controller.txt     | 54 ++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+
+diff --git a/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+new file mode 100644
+index 000000000000..3af5624dc5cb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/vexpress-power-controller.txt
+@@ -0,0 +1,54 @@
++ARM Versatile Express Power Controller
++--------------------------------------
++
++This binding models the serial power controller (SPC) in a way that is
++intelligible to the generic power domain subsystem and in accordance
++with the guidelines from:
++
++Documentation/devicetree/bindings/power/power_domain.txt
++
++The binding doesn't have a '<reg>' property as the base address for HW
++access is provided by the vexpress-scc sub-system.
++
++Required node properties:
++- compatible value : = "arm,vexpress-power-controller";
++- #power-domain-cells : = Number of cells in a PM domain specifier, as
++  specified in "power_domain.txt" referenced above.
++
++Example:
++	A7_A15_cluster_pd: A7-A15-cluster-pd {
++		compatible = "arm,vexpress-power-controller";
++		#power-domain-cells = <1>;
++        };
++
++	....
++
++	ptm@0,2201d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201d000 0 0x1000>;
++
++		cpu = <&cpu1>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		power-domains = <&A7_A15_cluster_pd 0>;
++		port {
++			ptm1_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port1>;
++			};
++		};
++	};
++
++	etm@0,2203c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2203c000 0 0x1000>;
++
++		cpu = <&cpu2>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		power-domains = <&A7_A15_cluster_pd 1>;
++		port {
++			etm0_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port2>;
++			};
++		};
++	};
+-- 
+1.9.1
 
