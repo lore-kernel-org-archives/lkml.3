@@ -1,141 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320AbbAFSpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:45:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51527 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbbAFSpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:45:33 -0500
-Date: Tue, 6 Jan 2015 16:45:12 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Gleb Natapov <gleb@kernel.org>
-Subject: Re: [RFC 2/2] x86, vdso, pvclock: Simplify and speed up the vdso
- pvclock reader
-Message-ID: <20150106184512.GA31263@amt.cnet>
-References: <20150105152511.GA9172@amt.cnet>
- <CALCETrXRs4NmhMvp+7kydrfyGCiNymkTe_sP6HFVvhMCC2Ei0Q@mail.gmail.com>
- <20150105191756.GA31201@amt.cnet>
- <CALCETrVWmbcv1w5a3N1VzyWEobP0qW+RQkhWO9yOkxzdKdJgeg@mail.gmail.com>
- <20150105224858.GA6846@amt.cnet>
- <54AB9FFD.6070309@redhat.com>
- <54ABCE85.6070004@redhat.com>
- <CALCETrWKgB7nj19zW_cQaa4RWjDojbN92_3+-27bHXbB-EEOnA@mail.gmail.com>
- <20150106181331.GA24590@amt.cnet>
- <CALCETrXzJkxbUsVgPbKNpBdp32yf=0M=RfseX=u7Mg2Mmsz2VQ@mail.gmail.com>
+	id S1755609AbbAFSyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:54:22 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:56289 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbbAFSyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 13:54:21 -0500
+Message-ID: <54AC2F5D.9050405@linaro.org>
+Date: Tue, 06 Jan 2015 18:54:21 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXzJkxbUsVgPbKNpBdp32yf=0M=RfseX=u7Mg2Mmsz2VQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Wessel <jason.wessel@windriver.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>, Joe Perches <joe@perches.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: kgdb-next not pushed to Linus for 3.19
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 06, 2015 at 10:26:22AM -0800, Andy Lutomirski wrote:
-> On Tue, Jan 6, 2015 at 10:13 AM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> > On Tue, Jan 06, 2015 at 08:56:40AM -0800, Andy Lutomirski wrote:
-> >> On Jan 6, 2015 4:01 AM, "Paolo Bonzini" <pbonzini@redhat.com> wrote:
-> >> >
-> >> >
-> >> >
-> >> > On 06/01/2015 09:42, Paolo Bonzini wrote:
-> >> > > > > Still confused.  So we can freeze all vCPUs in the host, then update
-> >> > > > > pvti 1, then resume vCPU 1, then update pvti 0?  In that case, we have
-> >> > > > > a problem, because vCPU 1 can observe pvti 0 mid-update, and KVM
-> >> > > > > doesn't increment the version pre-update, and we can return completely
-> >> > > > > bogus results.
-> >> > > > Yes.
-> >> > > But then the getcpu test would fail (1->0).  Even if you have an ABA
-> >> > > situation (1->0->1), it's okay because the pvti that is fetched is the
-> >> > > one returned by the first getcpu.
-> >> >
-> >> > ... this case of partial update of pvti, which is caught by the version
-> >> > field, if of course different from the other (extremely unlikely) that
-> >> > Andy pointed out.  That is when the getcpus are done on the same vCPU,
-> >> > but the rdtsc is another.
-> >> >
-> >> > That one can be fixed by rdtscp, like
-> >> >
-> >> > do {
-> >> >     // get a consistent (pvti, v, tsc) tuple
-> >> >     do {
-> >> >         cpu = get_cpu();
-> >> >         pvti = get_pvti(cpu);
-> >> >         v = pvti->version & ~1;
-> >> >         // also acts as rmb();
-> >> >         rdtsc_barrier();
-> >> >         tsc = rdtscp(&cpu1);
-> >>
-> >> Off-topic note: rdtscp doesn't need a barrier at all.  AIUI AMD
-> >> specified it that way and both AMD and Intel implement it correctly.
-> >> (rdtsc, on the other hand, definitely needs the barrier beforehand.)
-> >>
-> >> >         // control dependency, no need for rdtsc_barrier?
-> >> >     } while(cpu != cpu1);
-> >> >
-> >> >     // ... compute nanoseconds from pvti and tsc ...
-> >> >     rmb();
-> >> > }   while(v != pvti->version);
-> >>
-> >> Still no good.  We can migrate a bunch of times so we see the same CPU
-> >> all three times and *still* don't get a consistent read, unless we
-> >> play nasty games with lots of version checks (I have a patch for that,
-> >> but I don't like it very much).  The patch is here:
-> >>
-> >> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=a69754dc5ff33f5187162b5338854ad23dd7be8d
-> >>
-> >> but I don't like it.
-> >>
-> >> Thus far, I've been told unambiguously that a guest can't observe pvti
-> >> while it's being written, and I think you're now telling me that this
-> >> isn't true and that a guest *can* observe pvti while it's being
-> >> written while the low bit of the version field is not set.  If so,
-> >> this is rather strongly incompatible with the spec in the KVM docs.
-> >>
-> >> I don't suppose that you and Marcelo could agree on what the actual
-> >> semantics that KVM provides are and could write it down in a way that
-> >> people who haven't spent a long time staring at the request code
-> >> understand?  And maybe you could even fix the implementation while
-> >> you're at it if the implementation is, indeed, broken.  I have ugly
-> >> patches to fix it here:
-> >>
-> >> https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/vdso_paranoia&id=3b718a050cba52563d831febc2e1ca184c02bac0
-> >>
-> >> but I'm not thrilled with them.
-> >>
-> >> --Andy
-> >
-> > I suppose that separating the version write from the rest of the pvclock
-> > structure is sufficient, as that would guarantee the writes are not
-> > reordered even with fast string REP MOVS.
-> >
-> > Thanks for catching this Andy!
-> >
-> 
-> Don't you stil need:
-> 
-> version++;
-> write the rest;
-> version++;
-> 
-> with possible smp_wmb() in there to keep the compiler from messing around?
+Hi Jason
 
-Correct. Could just as well follow the protocol and use odd/even, which 
-is what your patch does.
+I'm trying to figure out what to do with my long-outstanding kgdb/kdb
+patches in preparation for the 3.20 merge window.
 
-What is the point with the new flags bit though?
+As of now I have five pending patch sets some of which are well over six
+months old (and none have nay outstanding review comments).
 
-> Also, if you do this, can you also make setting and clearing
-> STABLE_BIT properly atomic across all vCPUs?  Or at least do something
-> like setting it last and clearing it first on vPCU 0?
+When I raised this with you a couple of months ago, two of the patch
+sets did land in your kgdb-next tree. However nothing seems to have
+happened since then and I couldn't find any messages from you during the
+3.19 merge window.
 
-If the version "seqlock" works properly across vCPUs, why do you need
-STABLE_BIT "properly atomic" ?
+I'm afraid I don't know what else I need to do to progress things.
 
-Please define what you mean by "properly atomic".
+I do plan to do routine rebasing and resending of my patchsets but,
+based on the past experience, that seems unlikely to be enough to get
+the code delivered in 3.20.
 
+Do you think I would be better sending these patches via someone else?
+In any case, advice would be very welcome.
+
+
+Daniel.
 
