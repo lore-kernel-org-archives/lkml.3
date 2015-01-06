@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbbAFM1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 07:27:00 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:43212 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753340AbbAFM0z (ORCPT
+	id S1755022AbbAFM0y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 07:26:54 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:33561 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340AbbAFM0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 07:26:55 -0500
-Message-ID: <54ABD474.6060403@free-electrons.com>
-Date: Tue, 06 Jan 2015 13:26:28 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 6 Jan 2015 07:26:51 -0500
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: core: Add a sanity check on the regulator_
- enable/disable functions
-References: <1419614799-5770-1-git-send-email-gregory.clement@free-electrons.com> <1419614799-5770-2-git-send-email-gregory.clement@free-electrons.com> <20141229154030.GJ17800@sirena.org.uk> <54ABC8A2.7090905@free-electrons.com> <20150106120012.GW2634@sirena.org.uk>
-In-Reply-To: <20150106120012.GW2634@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Date: Tue, 6 Jan 2015 13:26:49 +0100
+Message-ID: <CADN1jKAVAp5DRw2sWLrkn1V=dE=Cd7kB1kNjD9MAUFsm+mH_Og@mail.gmail.com>
+Subject: Unmounted block device is still used - can't open it using O_EXCL
+From: Adam Papai <wooh@wooh.hu>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hey!
 
-On 06/01/2015 13:00, Mark Brown wrote:
-> On Tue, Jan 06, 2015 at 12:36:02PM +0100, Gregory CLEMENT wrote:
->> Hi Mark,
->>
->> On 29/12/2014 16:40, Mark Brown wrote:
->>> On Fri, Dec 26, 2014 at 06:26:38PM +0100, Gregory CLEMENT wrote:
-> 
->>> No, especially in the case of regulator_enable() this is deliberate -
->>> we're trying to ensure that if people are using regulators they're being
->>> careful about it, checking error codes and so on.  I'd really want to
-> 
->> OK so at least we should check that the pointer is not NULL before using it
->> and inform the user of it by using a WARNING() or even a BUG() instead of
->> just let the kernel crash latter.
-> 
-> Just crashing on the NULL is just about as good in terms of
-> discoverabilty and any consumer that is assuming NULL is not a valid
-> regulator is buggy in any case, any non-error pointer could be a valid
-> regulator as far as users are concerned.  
-> 
->>> see some persuasive use case for this.  What you're saying here sounds
->>> like the consumer shouldn't be treating the regulator as optional at
->>> all but should instead be using a normal regulator.
-> 
->> Being able to deal with NULL pointer in the disable function is convenient
->> and is done in other similar subsystems such as phy or clk for example. Instead
->> of having a check on the NULL pointer in each driver, it seems more logical to
->> do it directly in the disable function.
-> 
-> This really only applies if it's likely that some thing that always gets
-> used if it's there might be missing which isn't the case for regulators,
-> it's not at all common to have power supplies that might be missing and
+Sorry for posting this question here, but I have no better idea where to ask.
 
-Well the pattern the following pattern is very common in the drivers using
-the regulator:
+We're using EC2 instances with EBS volumes attached.
 
-if (!IS_ERR(regulator_pointer)
-	regulator_disable(regulator_pointer);
+Sometimes when I unmount a device and than detach it from the server
+this kernel message pops up in the dmesg:
 
+50469541.116761] vbd vbd-2193: 16 Device in use; refusing to close
+[50469728.730101] INFO: task kworker/1:0:27515 blocked for more than
+120 seconds.
+[50469728.730116]       Not tainted 3.16.4-1-ARCH #1
+[50469728.730120] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[50469728.730127] kworker/1:0     D 0000000000000000     0 27515
+2 0x00000000
+[50469728.730154] Workqueue: xfs-log/xvdj1 xfs_log_worker [xfs]
+[50469728.730157]  ffff88015e213d00 0000000000000246 ffff88004af165e0
+0000000000014580
+[50469728.730166]  ffff88015e213fd8 0000000000014580 ffff88004af165e0
+00000000403291ac
+[50469728.730169]  ffff8801d20a4c00 ffff8801d20a4c00 ffff8801d20a4c00
+ffffffffa029edeb
+[50469728.730172] Call Trace:
+[50469728.730187]  [<ffffffffa029edeb>] ? xlog_bdstrat+0x2b/0x60 [xfs]
+[50469728.730195]  [<ffffffffa023f896>] ? xfs_buf_iorequest+0x66/0xd0 [xfs]
+[50469728.730206]  [<ffffffffa029edeb>] ? xlog_bdstrat+0x2b/0x60 [xfs]
+[50469728.730217]  [<ffffffffa02a0c3c>] ? xlog_sync+0x27c/0x420 [xfs]
+[50469728.730224]  [<ffffffff8152e239>] schedule+0x29/0x70
+[50469728.730235]  [<ffffffffa02a2234>] _xfs_log_force_lsn+0x2c4/0x300 [xfs]
+[50469728.730239]  [<ffffffff810a2d10>] ? wake_up_process+0x50/0x50
+[50469728.730250]  [<ffffffffa0258ac3>] xfs_trans_commit+0x213/0x250 [xfs]
+[50469728.730259]  [<ffffffffa02470f7>] xfs_fs_log_dummy+0x57/0x80 [xfs]
+[50469728.730270]  [<ffffffffa02a1f68>] xfs_log_worker+0x48/0x50 [xfs]
+[50469728.730274]  [<ffffffff8108afd8>] process_one_work+0x168/0x450
+[50469728.730277]  [<ffffffff8108b60b>] worker_thread+0x6b/0x550
+[50469728.730280]  [<ffffffff8108b5a0>] ? init_pwq.part.22+0x10/0x10
+[50469728.730283]  [<ffffffff81091d1a>] kthread+0xea/0x100
+[50469728.730287]  [<ffffffff81530000>] ? __mutex_lock_slowpath+0xc0/0x230
+[50469728.730290]  [<ffffffff81091c30>] ? kthread_create_on_node+0x1b0/0x1b0
+[50469728.730293]  [<ffffffff8153203c>] ret_from_fork+0x7c/0xb0
+[50469728.730295]  [<ffffffff81091c30>] ? kthread_create_on_node+0x1b0/0x1b0
 
-So for me it was a good hint that we can factorize it.
+fuser/lsof does not show anything, so I wrote a little script in
+python, and try to open the device itself in O_EXCL mode. It fails to
+open it in O_EXCL, so I'm sure it is used in a deeper level (kernel,
+kernel module?)
 
-> if they are missing NULL isn't a good way to track them.
-> 
-> If you're having problems with this and need workarounds in the core to
-> make your driver code look OK that sounds like things are working since
-> it sounds like the driver code is probably abusing the API here.
+I can however re-mount it, write/read, and unmount without any
+problem, but it seems something is still referencing/using this
+device. But when I detach it, the device refuses to close, it remains
+in /proc/particions and will generate I/O wait: iostat -xdk 5 will
+show 100% utilisation.
 
-I don't _need_ it at all. It was just an improvement but if you don't want it,
-I am fine with it.
+Is there any way to release this block device so I can detach it from
+a linux box? Or at least check what is using it? I think the lxc
+bind-mount is very suspicious, but I assume the unmount won't work if
+it's still used by a leftover lxc process.
 
+We have this issue with 3.15/3.16 kernel as well. Haven't tried with
+the never ones, but I guess it won't make a difference.
 
-Thanks,
+I tried blockdev --flushbufs, but the same error.
 
-Gregory
+Any advice would help!
 
-
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Thanks!
