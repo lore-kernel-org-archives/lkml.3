@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134AbbAFSyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 13:54:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:20338 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755717AbbAFSyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 13:54:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,709,1413270000"; 
-   d="scan'208";a="633328332"
-Message-ID: <54AC2F62.40708@linux.intel.com>
-Date: Tue, 06 Jan 2015 10:54:26 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        ilya.enkovich@intel.com
-Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API
- to arch_prctl
-References: <cover.1419900414.git.luto@amacapital.net> <d5efe02b133f6d9fb4cb9d03e0f0b9e17211c06f.1419900414.git.luto@amacapital.net> <54A64E6D.1020304@linux.intel.com> <87mw5x0xjz.fsf@tassilo.jf.intel.com> <54AAFFA3.6000901@linux.intel.com> <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com> <20150106040428.GR2915@two.firstfloor.org> <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com> <54AC1FFB.7030504@linux.intel.com> <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com> <54AC29B1.70004@linux.intel.com> <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
-In-Reply-To: <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+	id S1756268AbbAFS5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 13:57:47 -0500
+Received: from smtprelay0176.hostedemail.com ([216.40.44.176]:40073 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751159AbbAFS5q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 13:57:46 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2737:2828:2911:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3873:3874:4321:4425:5007:6117:6119:6261:7903:7974:10004:10400:10848:11232:11658:11914:12050:12517:12519:12663:12740:13069:13137:13150:13230:13231:13311:13357:13618:13868:14039:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pin03_6097c08b9d84b
+X-Filterd-Recvd-Size: 2114
+Message-ID: <1420570662.2652.36.camel@perches.com>
+Subject: Re: kgdb-next not pushed to Linus for 3.19
+From: Joe Perches <joe@perches.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "kgdb-bugreport@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Tue, 06 Jan 2015 10:57:42 -0800
+In-Reply-To: <54AC2F5D.9050405@linaro.org>
+References: <54AC2F5D.9050405@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2015 10:41 AM, Andy Lutomirski wrote:
-> The runtime seems to be here:
+On Tue, 2015-01-06 at 18:54 +0000, Daniel Thompson wrote:
+> Hi Jason
 > 
-> https://software.intel.com/protected-download/267266/144917
+> I'm trying to figure out what to do with my long-outstanding kgdb/kdb
+> patches in preparation for the 3.20 merge window.
 > 
-> but I'm not going to accept the EULA.
+> As of now I have five pending patch sets some of which are well over six
+> months old (and none have nay outstanding review comments).
+> 
+> When I raised this with you a couple of months ago, two of the patch
+> sets did land in your kgdb-next tree. However nothing seems to have
+> happened since then and I couldn't find any messages from you during the
+> 3.19 merge window.
+> 
+> I'm afraid I don't know what else I need to do to progress things.
+> 
+> I do plan to do routine rebasing and resending of my patchsets but,
+> based on the past experience, that seems unlikely to be enough to get
+> the code delivered in 3.20.
+> 
+> Do you think I would be better sending these patches via someone else?
+> In any case, advice would be very welcome.
 
-That is not the code I'm talking about here.
+Andrew?
 
-The SDE doesn't use the prctl()s.  The runtime you're pointing to here
-does not use the prctls() (it predates them).  It's not the same as the
-code being pushed in to gcc.
+I think Daniel's kgdb patches are bug fixes.
 
+Can you please pick them up?
 
 
