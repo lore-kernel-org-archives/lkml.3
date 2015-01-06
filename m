@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435AbbAFPNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:13:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623AbbAFPNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:13:34 -0500
-Date: Tue, 6 Jan 2015 13:13:29 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: peterz@infradead.org, jolsa@kernel.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        bp@suse.de, linux-arch@vger.kernel.org, Alexey.Brodkin@synopsys.com
-Subject: Re: [PATCH 0/5] Perf fixes for ARC + uClibc
-Message-ID: <20150106151329.GD2517@redhat.com>
-References: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
+	id S1755547AbbAFPOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:14:35 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:55237 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027AbbAFPOd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:14:33 -0500
+Date: Tue, 6 Jan 2015 16:14:28 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: swarren@wwwdotorg.org, gnurou@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        wni@nvidia.com, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: Re: [PATCH v5 3/3] ARM: tegra: Add thermal reset (thermtrip) support
+ to PMC
+Message-ID: <20150106151427.GQ31830@ulmo.nvidia.com>
+References: <1420541578-27968-1-git-send-email-mikko.perttunen@kapsi.fi>
+ <1420541578-27968-4-git-send-email-mikko.perttunen@kapsi.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O7Os1+MGCLLi8F5z"
 Content-Disposition: inline
-In-Reply-To: <1420552335-26886-1-git-send-email-vgupta@synopsys.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1420541578-27968-4-git-send-email-mikko.perttunen@kapsi.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jan 06, 2015 at 07:22:10PM +0530, Vineet Gupta escreveu:
-> Hi,
-> 
-> This series based off linux-next of 20150105 allows us to build/use perf
-> for ARC with uClibc based userland.
 
-Do you have some ready made ARC VM image with devel tools I could use with qemu?
+--O7Os1+MGCLLi8F5z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-- Arnaldo
- 
-> * 1/5 is really a resend of old patch posted by Alexey a while back
-> * 2/5 is uClibc build spew seen on ARM as well
-> * 3/5 likewise
-> * 4/5 is uClibc config specific
-> * 5/5 is uClibc pthread library flavour specific
->   It adds a stub for pthread_attr_setaffinity_np
->   I can rework it to disable the futex tests altogether if people think that is
->   cleaner
-> 
-> Please review and consider applying.
-> W/o these perf doesn't build and/or work for ARC.
-> 
-> Thx,
-> -Vineet
-> 
-> Alexey Brodkin (1):
->   perf tools: [uclibc] fix statfs.f_type data type mismatch build error
-> 
-> Vineet Gupta (4):
->   perf tools: [uclibc] Elide strlcpy warning
->   perf tools: [uclibc] Avoid build splat for syscall numbers
->   perf tools: [uclibc] don't rely on glibc malloc working for sz 0
->   perf tools: [uclibc] provide stub for pthread_attr_setaffinity_np
-> 
->  tools/lib/api/fs/debugfs.c                  |  2 +-
->  tools/lib/api/fs/fs.c                       |  2 +-
->  tools/perf/bench/futex.h                    | 13 +++++++++++++
->  tools/perf/bench/sched-pipe.c               |  1 -
->  tools/perf/builtin-top.c                    |  1 -
->  tools/perf/config/Makefile                  |  6 ++++++
->  tools/perf/config/feature-checks/Makefile   |  4 ++++
->  tools/perf/config/feature-checks/test-all.c |  5 +++++
->  tools/perf/perf-sys.h                       |  1 -
->  tools/perf/util/cache.h                     |  2 ++
->  tools/perf/util/header.c                    |  2 +-
->  11 files changed, 33 insertions(+), 6 deletions(-)
-> 
-> -- 
-> 1.9.1
+On Tue, Jan 06, 2015 at 12:52:58PM +0200, Mikko Perttunen wrote:
+> From: Mikko Perttunen <mperttunen@nvidia.com>
+>=20
+> This adds a device tree controlled option to enable PMC-based
+> thermal reset in overheating situations. Thermtrip is supported on
+> Tegra30, Tegra114 and Tegra124. The thermal reset only works when
+> the thermal sensors are calibrated, so a soctherm driver is also
+> required.
+>=20
+> The thermtrip event is triggered by the soctherm block, and all
+> soctherm sensors default to showing a temperature of zero Celsius
+> before they are initialized. Because of this, it is safe to initialize
+> thermtrip and soctherm in any order.
+>=20
+> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+> ---
+>  drivers/soc/tegra/pmc.c | 107 ++++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  1 file changed, 107 insertions(+)
+
+This looks good to me. I'm not sure if I asked before, but can this be
+tested? Can we somehow trick thermtrip into reporting a temperature that
+would trigger this?
+
+Thierry
+
+--O7Os1+MGCLLi8F5z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUq/vTAAoJEN0jrNd/PrOhCekP/ityls7/zPFaKyJNcB4SYdgS
+VSutT7c7lFgRiXSoZD6er5+lOXTwyrcZ/qf5a6imko7ytFJ1y6/re80esOkmvauJ
+qnNG3RQL2bQiztbtt382/EmPbxvXntRxohKrhChwi8hwGrA4Zy1S+2QVzQkSEBiy
+TCnbwOOA0D2eqK9U6zwWucZsrN9mOBjmASJK7ebql7IhSOBrVkQnLe8dj5EmD04F
+Y8QbZdy9huZ0EbuWfR579GGEN9M7+qcd8QTv43fb4b59sYxlW3C69twhF2t9PWVC
+naParFUHUfYBFhCrsJxCKGVGG9op03pMm7qVjuKYS7QzuKmPk2yuNA5uoHc8hpXm
+/nf+wgvue3XedodThOF9hwFaTXzRwhJu3BvPoufn8zrKzq+P2a35L42FNPi5yUb9
+Jd/W+WM4S86nhAQxhC8sxy+Q3lJ5l7OZgMZP49TMKsmJhsmDG8VpqGskSU1Y58vT
+wR9VoVh43GIKQ2/U8cXRZgeJWNqQchjFpNCyjq93h6S8xOnDl3O73EpcD4nCSGiY
+XTzAyVDeZ7fnz/MM4I0KHOb0u3Cf5xupK6NF+fZHPHtHf3Dld3QlGa+T0eQVjgC3
+U/793BsY/4OsV0Z0Uw98FX2M6KoCURaJdWRqfjasc0H0FK5WOnwcQWJFv7keQuS3
+9PUZjdYm0zzEjHFkUt60
+=ZXZ3
+-----END PGP SIGNATURE-----
+
+--O7Os1+MGCLLi8F5z--
