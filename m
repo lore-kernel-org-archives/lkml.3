@@ -1,32 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbbAFIMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 03:12:31 -0500
-Received: from 200-90-17-86.genericrev.cantv.net ([200.90.17.86]:49898 "EHLO
-	correo.inavi.gob.ve" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbbAFIM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 03:12:29 -0500
-X-Greylist: delayed 1675 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Jan 2015 03:12:29 EST
-Date: Tue, 6 Jan 2015 03:03:09 -0430 (VET)
-From: Finance Department <comedor@inavi.gob.ve>
-Reply-To: Finance Department <defnce@qq.com>
-Message-ID: <1400231061.1012925.1420529589624.JavaMail.zimbra@inavi.gob.ve>
-Subject: Payment
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.190.88.102]
-X-Mailer: Zimbra 8.0.4_GA_5737 (zclient/8.0.4_GA_5737)
-Thread-Topic: Payment
-Thread-Index: tYQi/w9mNkXwaIeq/QD9/tnSzqKEUg==
-To: unlisted-recipients:; (no To-header on input)
+	id S1754158AbbAFHdC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 02:33:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55752 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414AbbAFHc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 02:32:59 -0500
+From: Fam Zheng <famz@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Venkatesh Srinivas <venkateshs@google.com>
+Subject: [PATCH v2] virtio-scsi: Fix the race condition in virtscsi_handle_event
+Date: Tue,  6 Jan 2015 15:33:36 +0800
+Message-Id: <1420529616-2757-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Recipient,
+There is a race condition in virtscsi_handle_event, when many device
+hotplug/unplug events flush in quickly.
 
-You have been awarded the sum of  8,000,000.00 (Eight Million Pounds sterling) with reference number 77100146 by office of the ministry of finance UK.Send us your personal details to deliver your funds.
+The scsi_remove_device in virtscsi_handle_transport_reset may trigger
+the BUG_ON in scsi_target_reap, because the state is altered behind it,
+probably by scsi_scan_host of another event. I'm able to reproduce it by
+repeatedly plugging and unplugging a scsi disk with the same lun number.
 
-Gloria Peter
+To make is safe, a single thread workqueue local to the module is added
+which runs the scan work. With this change, the panic goes away.
+
+Signed-off-by: Fam Zheng <famz@redhat.com>
+
+---
+
+v2: Use a single threaded workqueue instead of mutex to serialize work
+(Venkatesh)
+---
+ drivers/scsi/virtio_scsi.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index c52bb5d..71b0091 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -120,6 +120,8 @@ struct virtio_scsi {
+ 
+ static struct kmem_cache *virtscsi_cmd_cache;
+ static mempool_t *virtscsi_cmd_pool;
++static struct workqueue_struct *virtscsi_scan_wq;
++
+ 
+ static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
+ {
+@@ -404,7 +406,7 @@ static void virtscsi_complete_event(struct virtio_scsi *vscsi, void *buf)
+ 	struct virtio_scsi_event_node *event_node = buf;
+ 
+ 	if (!vscsi->stop_events)
+-		queue_work(system_freezable_wq, &event_node->work);
++		queue_work(virtscsi_scan_wq, &event_node->work);
+ }
+ 
+ static void virtscsi_event_done(struct virtqueue *vq)
+@@ -1119,6 +1121,12 @@ static int __init init(void)
+ 		pr_err("mempool_create() for virtscsi_cmd_pool failed\n");
+ 		goto error;
+ 	}
++	virtscsi_scan_wq = create_singlethread_workqueue("virtscsi-scan");
++	if (!virtscsi_scan_wq) {
++		pr_err("create_singlethread_workqueue() for virtscsi_scan_wq failed\n");
++		goto error;
++	}
++
+ 	ret = register_virtio_driver(&virtio_scsi_driver);
+ 	if (ret < 0)
+ 		goto error;
+@@ -1126,6 +1134,9 @@ static int __init init(void)
+ 	return 0;
+ 
+ error:
++	if (virtscsi_scan_wq) {
++		destroy_workqueue(virtscsi_scan_wq);
++	}
+ 	if (virtscsi_cmd_pool) {
+ 		mempool_destroy(virtscsi_cmd_pool);
+ 		virtscsi_cmd_pool = NULL;
+@@ -1142,6 +1153,7 @@ static void __exit fini(void)
+ 	unregister_virtio_driver(&virtio_scsi_driver);
+ 	mempool_destroy(virtscsi_cmd_pool);
+ 	kmem_cache_destroy(virtscsi_cmd_cache);
++	destroy_workqueue(virtscsi_scan_wq);
+ }
+ module_init(init);
+ module_exit(fini);
+-- 
+1.9.3
+
