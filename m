@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbbAFV5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:57:50 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44759 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336AbbAFV5t (ORCPT
+	id S932625AbbAFWBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 17:01:31 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:60221 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756886AbbAFWBN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:57:49 -0500
-Date: Tue, 6 Jan 2015 22:57:44 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Felipe Balbi <balbi@ti.com>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com
-Subject: Re: 3.19 on Nokia n900: audio quality awful
-Message-ID: <20150106215744.GC13902@amd>
-References: <20150106170433.GA5408@amd>
- <20150106172545.GK6502@saruman>
- <20150106175115.GA19487@amd>
- <20150106202857.GB32308@saruman>
- <20150106205000.GB13902@amd>
- <20150106205413.GF32308@saruman>
+	Tue, 6 Jan 2015 17:01:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150106205413.GF32308@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no>
+ <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com>
+ <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com>
+ <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com>
+ <03FC652E-AA01-42C7-BD52-019B6D922A9C@bengler.no> <CAK6E8=cP0BFUob5MVj9M0hC0efgRnUY=JMUPKee+v-4TLvHBgg@mail.gmail.com>
+ <76DC89D1-CFCE-44B7-994E-4349FEEDEFA6@bengler.no> <1420575216.5947.12.camel@edumazet-glaptop2.roam.corp.google.com>
+ <4DA8529D-4EEC-42DA-89B0-DC7746DB2B10@bengler.no> <3F608393-E5F1-4647-81BF-C6C740100934@bengler.no>
+From: Yuchung Cheng <ycheng@google.com>
+Date: Tue, 6 Jan 2015 14:00:32 -0800
+Message-ID: <CAK6E8=cf7cROQ0SON0BihkbOsBB+-sLAbexxgt4_xD+Auqev3Q@mail.gmail.com>
+Subject: Re: TCP connection issues against Amazon S3
+To: Erik Grinaker <erik@bengler.no>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2015-01-06 14:54:13, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Jan 06, 2015 at 09:50:00PM +0100, Pavel Machek wrote:
-> > On Tue 2015-01-06 14:28:57, Felipe Balbi wrote:
-> > > On Tue, Jan 06, 2015 at 06:51:15PM +0100, Pavel Machek wrote:
-> > > > 
-> > > > On Tue 2015-01-06 11:25:45, Felipe Balbi wrote:
-> > > > > On Tue, Jan 06, 2015 at 06:04:33PM +0100, Pavel Machek wrote:
-> > > > > > Hi!
-> > > > > > 
-> > > > > > In 3.18, sound is nice and clear.
-> > > > > > 
-> > > > > > In 3.19, sound is unusable. It produces nasty tone when it should be
-> > > > > > quiet, and there's at least as much noise as is sound.
-> > > > > > 
-> > > > > > Unfortunately, list of mixers also changed (and there's cca 120
-> > > > > > settings), but a) it does not work with the old list and b) nothing I
-> > > > > > could figure out did make the sound usable. Some setting resulted in
-> > > > > > even more noise.
-> > > > > > 
-> > > > > > Any idea what could have caused it?
-> > > > > 
-> > > > > $ git bisect start
-> > > > > $ git bisect good v3.18
-> > > > > $ git bisect bad
-> > > > > 
-> > > > > that'll help find what caused it.
-> > > > 
-> > > > Telling someone to do hard and time consuming job that probably will
-> > > > not succeed, instead of actually providing help. Very very funny.
-> > > 
-> > > you're getting code for free, you're getting help for free. Not many
-> > > people have N900s lying around. Running a bisection is just
-> > > politeness.
-> > 
-> > Now you are speaking for yourself or for TI?
-> 
-> why bring my employer into the discussion ?
+On Tue, Jan 6, 2015 at 1:04 PM, Erik Grinaker <erik@bengler.no> wrote:
+>
+>> On 06 Jan 2015, at 20:26, Erik Grinaker <erik@bengler.no> wrote:
+>>
+>>>
+>>> On 06 Jan 2015, at 20:13, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>>
+>>> On Tue, 2015-01-06 at 19:42 +0000, Erik Grinaker wrote:
+>>>
+>>>> The transfer on the functioning Netherlands server does indeed use SACKs, while the Norway servers do not.
+>>>>
+>>>> For what it’s worth, I have made stripped down pcaps for a single failing transfer as well as a single functioning transfer in the Netherlands:
+>>>>
+>>>> http://abstrakt.bengler.no/tcp-issues-s3-failure.pcap.bz2
+>>>> http://abstrakt.bengler.no/tcp-issues-s3-success-netherlands.pcap.bz2
+>>>>
+>>>
+>>> Although sender seems to be reluctant to retransmit, this 'failure' is
+>>> caused by receiver closing the connection too soon.
+>>>
+>>> Are you sure you do not ask curl to setup a very small completion
+>>> timer ?
+>>
+>> For testing, I am using Curl with a 30 second timeout. This may well be a bit short, but the point is that with the older kernel I could run thousands of requests without a single failure (generally the requests would finish within seconds), while with the newer kernel about 5% of requests will time out (the rest complete within seconds).
+>>
+>>> 12:41:00.738336 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 767221:768681, ack 154, win 127, length 1460
+>>> 12:41:00.738346 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 736561, win 1877, length 0
+>>> 12:41:05.227150 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 736561:738021, ack 154, win 127, length 1460
+>>> 12:41:05.227250 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1882, length 0
+>>> 12:41:05.278287 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 768681:770141, ack 154, win 127, length 1460
+>>> 12:41:05.278354 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1888, length 0
+>>> 12:41:05.278421 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 770141:771601, ack 154, win 127, length 1460
+>>> 12:41:05.278429 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 745321, win 1894, length 0
+>>> 12:41:14.257102 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 745321:746781, ack 154, win 127, length 1460
+>>> 12:41:14.257154 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1900, length 0
+>>> 12:41:14.308117 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 771601:773061, ack 154, win 127, length 1460
+>>> 12:41:14.308227 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1905, length 0
+>>> 12:41:14.308387 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 773061:774521, ack 154, win 127, length 1460
+>>> 12:41:14.308397 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [.], ack 746781, win 1911, length 0
+>>>
+>>> -> Here receiver sends a FIN, because application closed the socket (or died)
+>>> 12:41:23.237156 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [F.], seq 154, ack 746781, win 1911, length 0
+>>> 12:41:23.289805 IP 54.231.132.98.80 > 195.159.221.106.48837: Flags [.], seq 746781:748241, ack 155, win 127, length 1460
+>>> 12:41:23.289882 IP 195.159.221.106.48837 > 54.231.132.98.80: Flags [R], seq 505782802, win 0, length 0
+>>>
+>>> Anyway, getting decent speed without SACK is going to be hard.
+>>
+>> Yes, I am not sure why the sender (S3) disables SACK on my Norwegian servers (across ISPs), while it enables SACK on my server in the Netherlands. They run the same kernel and configuration. I will have to look into it more closely tomorrow.
+>
+> It turns out the Norway and Netherlands servers were resolving different loadbalancers. The ones I reached in Norway did not support SACKs, while the ones in the Netherlands did. Going directly to a SACK-enabled IP fixes the problem.
+>
+> This still doesn’t explain why it works with older kernels, but not newer ones. I’m thinking it’s
+probably some minor change, which gets amplified by the lack of SACKs
+on the loadbalancer. Anyway, I’ll bring it up with Amazon.
+can you post traces with the older kernels?
 
-Because you are speaking of getting help for free, and I don't
-remember getting any useful help from you; so I'd like to know who do
-you speak for.
-
-> > Thanks for your very valuable help. I know how to do a bisection,
-> > thank you.
-> 
-> then please do it.
-
-No, sorry, I don't think that would be reasonable use of my time at
-this point. First steps are "confirm it happens on other N900 boards,
-too", ruling out config issues at my part, and "try to get
-verification from other development boards if they have same
-problems", because most other boards are easier to work with.
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>
+> Many thanks for your help, everyone.
