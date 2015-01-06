@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933350AbbAFVl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:41:29 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:50984 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449AbbAFVl2 (ORCPT
+	id S933231AbbAFVfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:35:23 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:47210 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932720AbbAFVfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:41:28 -0500
+	Tue, 6 Jan 2015 16:35:18 -0500
 MIME-Version: 1.0
-Date: Wed, 7 Jan 2015 03:03:20 +0530
-Message-ID: <CAFB3abzYNYqtzd_n+Ym0Lo=DYbV0HPU=Tqw=stALNnu188hMKQ@mail.gmail.com>
-Subject: [PATCH net] ipv6: Prevent ipv6_find_hdr() from returning ENOENT for
- valid non-first fragments
-From: Rahul Sharma <rsharma@arista.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, hannes@stressinduktion.org
+In-Reply-To: <20150106212255.GV2915@two.firstfloor.org>
+References: <CALCETrUeMS7zwjXfSMN-6A8-gpLc68n7U5Y6SPdzgw6hSbYGNg@mail.gmail.com>
+ <20150106040428.GR2915@two.firstfloor.org> <CALCETrU3oHO5Rjqp_DmJaOkEBOtZpQ+f99xXiY5=84JfJphZCA@mail.gmail.com>
+ <54AC1FFB.7030504@linux.intel.com> <CALCETrVJyBR7NoZvC=A4htRtm-fLe5NUEGUdvJRL28adU4MhUg@mail.gmail.com>
+ <54AC29B1.70004@linux.intel.com> <CALCETrUE+kZeC+vx1OnpYsuL-b0u3fFJe3QfjeZQ=hCiQRPrHg@mail.gmail.com>
+ <54AC2F62.40708@linux.intel.com> <20150106191649.GU2915@two.firstfloor.org>
+ <CALCETrUNpi1Gc-Qpmu1bJ0BVcSH2xquaY_X+YYhLjbPaQcf0_w@mail.gmail.com> <20150106212255.GV2915@two.firstfloor.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 6 Jan 2015 13:34:56 -0800
+Message-ID: <CALCETrUpR6ZCBSXdbY232inK=LaXLK0LAssqUt+r8DAn9=xjJg@mail.gmail.com>
+Subject: Re: [PATCH 3.19 3/3] x86, mpx: Change the MPX enable/disable API to arch_prctl
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        ilya.enkovich@intel.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ipv6_find_hdr() currently assumes that the next-header field in the
-fragment header of the non-first fragment is the "protocol number of
-the last header" (here last header excludes any extension header
-protocol numbers ) which is incorrect as per RFC2460. The next-header
-value is the first header of the fragmentable part of the original
-packet (which can be extension header as well).
-This can create reassembly problems. For example: Fragmented
-authenticated OSPFv3 packets (where AH header is inserted before the
-protocol header). For the second fragment, the next header value in
-the fragment header will be NEXTHDR_AUTH which is correct but
-ipv6_find_hdr will return ENOENT since AH is an extension header
-resulting in second fragment getting dropped. This check for the
-presence of non-extension header needs to be removed.
+On Tue, Jan 6, 2015 at 1:22 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>> Given that it doesn't seen to have been committed yet, I'm not too
+>> worried about compatibility.  And "prctl (43)" doesn't actually seem a
+>> whole lot better than "syscall(SYS_arch_prctl, ARCH_ENABLE_MPX, 0)"
+>
+> This would actually fail with the EINVAL change you requested.
+>
 
-Signed-off-by: Rahul Sharma <rsharma@arista.com>
----
---- linux-3.18.1/net/ipv6/exthdrs_core.c.orig   2015-01-06
-10:25:36.411419863 -0800
-+++ linux-3.18.1/net/ipv6/exthdrs_core.c        2015-01-06
-10:51:45.819364986 -0800
-@@ -171,10 +171,11 @@ EXPORT_SYMBOL_GPL(ipv6_find_tlv);
-  * If the first fragment doesn't contain the final protocol header or
-  * NEXTHDR_NONE it is considered invalid.
-  *
-- * Note that non-1st fragment is special case that "the protocol number
-- * of last header" is "next header" field in Fragment header. In this case,
-- * *offset is meaningless and fragment offset is stored in *fragoff if fragoff
-- * isn't NULL.
-+ * Note that non-1st fragment is special case that "the protocol number of the
-+ * first header of the fragmentable part of the original packet" is
-+ * "next header" field in the Fragment header. In this case, *offset is
-+ * meaningless and fragment offset is stored in *fragoff if fragoff isn't
-+ * NULL.
-  *
-  * if flags is not NULL and it's a fragment, then the frag flag
-  * IP6_FH_F_FRAG will be set. If it's an AH header, the
-@@ -250,9 +251,7 @@ int ipv6_find_hdr(const struct sk_buff *
+So the libmpx code needs to change anyway, then, right?  I really
+don't think we should accept garbage in the extra prctl slots just
+because uncommitted code somewhere fails to initialize them.
 
-                        _frag_off = ntohs(*fp) & ~0x7;
-                        if (_frag_off) {
--                               if (target < 0 &&
--                                   ((!ipv6_ext_hdr(hp->nexthdr)) ||
--                                    hp->nexthdr == NEXTHDR_NONE)) {
-+                               if (target < 0) {
-                                        if (fragoff)
-                                                *fragoff = _frag_off;
-                                        return hp->nexthdr;
+--Andy
+
+>> (preprocessor macros ftw!).  But I don't feel that strongly about this
+>> point.
+>
+> -Andi
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
