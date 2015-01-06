@@ -1,168 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518AbbAFNvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 08:51:07 -0500
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:62551 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754501AbbAFNvF (ORCPT
+	id S1755556AbbAFNvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 08:51:39 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5519 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501AbbAFNvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 08:51:05 -0500
-Message-ID: <54ABE82E.30308@linaro.org>
-Date: Tue, 06 Jan 2015 21:50:38 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 6 Jan 2015 08:51:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 06 Jan 2015 05:44:26 -0800
+Date: Tue, 6 Jan 2015 21:51:11 +0800
+From: Vince Hsu <vinceh@nvidia.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>, Lucas Stach <dev@lynxeye.de>,
+        <swarren@wwwdotorg.org>, <gnurou@gmail.com>, <bskeggs@redhat.com>,
+        <martin.peres@free.fr>, <seven@nimrod-online.com>,
+        <samuel.pitoiset@gmail.com>, <nouveau@lists.freedesktop.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/11] ARM: tegra: add function to control the GPU rail
+ clamp
+Message-ID: <20150106135110.GA18076@nvidia.com>
+References: <1419331204-26679-1-git-send-email-vinceh@nvidia.com>
+ <1419331204-26679-2-git-send-email-vinceh@nvidia.com>
+ <1419426990.2179.7.camel@lynxeye.de> <549B7638.2010405@nvidia.com>
+ <20150105150932.GG12010@ulmo.nvidia.com> <54AB445D.7010303@nvidia.com>
+ <20150106111538.GB31830@ulmo.nvidia.com> <54ABCEF7.5080909@nvidia.com>
+ <20150106132930.GH31830@ulmo.nvidia.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v5 18/18] Documentation: ACPI for ARM64
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <1413553034-20956-19-git-send-email-hanjun.guo@linaro.org> <20141224171815.GD13399@e104818-lin.cambridge.arm.com> <54A90A4C.60908@linaro.org> <20150105110533.GA14967@e104818-lin.cambridge.arm.com> <54ABC2CB.6@linaro.org> <20150106112929.GB8829@e104818-lin.cambridge.arm.com>
-In-Reply-To: <20150106112929.GB8829@e104818-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150106132930.GH31830@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015年01月06日 19:29, Catalin Marinas wrote:
-> On Tue, Jan 06, 2015 at 11:11:07AM +0000, Hanjun Guo wrote:
->> On 2015年01月05日 19:05, Catalin Marinas wrote:
->>> On Sun, Jan 04, 2015 at 09:39:24AM +0000, Hanjun Guo wrote:
->>>> On 2014年12月25日 01:18, Catalin Marinas wrote:
->>>> [...]
->>>>>
->>>>> In addition to the above and _DSD requirements/banning, I would also add
->>>>> some clear statements around:
->>>>>
->>>>> _OSC: only global/published capabilities are allowed. For
->>>>> device-specific _OSC we need a process or maybe we can ban them entirely
->>>>> and rely on _DSD once we clarify the process.
->>>>>
->>>>> _OSI: firmware must not check for certain _OSI strings. Here I'm not
->>>>> sure what we would have to do for ARM Linux. Reporting "Windows" does
->>>>> not make any sense but not reporting anything can, as Matthew Garrett
->>>>> pointed out, can be interpreted by firmware as "Linux". In addition to
->>>>> any statements in this document, I suggest you patch
->>>>> drivers/acpi/acpica/utosi.c accordingly, maybe report "Linux" for ARM
->>>>> and print a kernel warning so that we notice earlier.
->>>>>
->>>>> ACPI_OS_NAME: this is globally defined as "Microsoft Windows NT". It
->>>>> doesn't make much sense in the ARM context. Could we change it to
->>>>> "Linux" when CONFIG_ARM64?
->>
->> I think we can introduce a Kconfig such as CONFIG_ACPI_OS_NAME_LINUX,
->> selected by ARM64 and change ACPI_OS_NAME to "Linux" when
->> CONFIG_ACPI_OS_NAME_LINUX defined. (we can not add CONFIG_ARM64 in
->> ACPICA code directly since it will be used by windows too)
->>
->> some code like below:
->
-> This looks fine for me (with some minor comments below) but I'm not an
-> ACPI expert to say there wouldn't be any issues.
->
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index b1f9a20..de567a3 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -1,5 +1,6 @@
->>    config ARM64
->>           def_bool y
->> +       select ACPI_OS_NAME_LINUX if ACPI
->>           select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->>           select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
->>           select ARCH_HAS_GCOV_PROFILE_ALL
->> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
->> index 8951cef..11a10ac 100644
->> --- a/drivers/acpi/Kconfig
->> +++ b/drivers/acpi/Kconfig
->> @@ -369,6 +369,10 @@ config ACPI_REDUCED_HARDWARE_ONLY
->>
->>             If you are unsure what to do, do not enable this option.
->>
->> +config ACPI_OS_NAME_LINUX
->> +       bool "Using Linux for _OS method" if EXPERT
->> +       def_bool n
->
-> No need for a default n, it is off by default. Alternatively you could
-> say:
->
-> 	default y if ARM64
+On 02:29:32PM Jan 06, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+> 
+> On Tue, Jan 06, 2015 at 08:03:03PM +0800, Vince Hsu wrote:
+> > On 01/06/2015 07:15 PM, Thierry Reding wrote:
+> > >> Old Signed by an unknown key
+> > >
+> > >On Tue, Jan 06, 2015 at 10:11:41AM +0800, Vince Hsu wrote:
+> > >>On 01/05/2015 11:09 PM, Thierry Reding wrote:
+> > >>>>Old Signed by an unknown key
+> > >>>On Thu, Dec 25, 2014 at 10:28:08AM +0800, Vince Hsu wrote:
+> > >>>>On 12/24/2014 09:16 PM, Lucas Stach wrote:
+> > >>>>>Am Dienstag, den 23.12.2014, 18:39 +0800 schrieb Vince Hsu:
+> > >>>>>>The Tegra124 and later Tegra SoCs have a sepatate rail gating register
+> > >>>>>>to enable/disable the clamp. The original function
+> > >>>>>>tegra_powergate_remove_clamping() is not sufficient for the enable
+> > >>>>>>function. So add a new function which is dedicated to the GPU rail
+> > >>>>>>gating. Also don't refer to the powergate ID since the GPU ID makes no
+> > >>>>>>sense here.
+> > >>>>>>
+> > >>>>>>Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+> > >>>>>To be honest I don't see the point of this patch.
+> > >>>>>You are bloating the PMC interface by introducing another exported
+> > >>>>>function that does nothing different than what the current function
+> > >>>>>already does.
+> > >>>>>
+> > >>>>>If you need a way to assert the clamp I would have expected you to
+> > >>>>>introduce a common function to do this for all power partitions.
+> > >>>>I thought about adding an tegra_powergate_assert_clamping(), but that
+> > >>>>doesn't make sense to all the power partitions except GPU. Note the
+> > >>>>difference in TRM. Any suggestion for the common function?
+> > >>>I don't think extending the powergate API is useful at this point. We've
+> > >>>long had an open TODO item to replace this with a generic API. I did
+> > >>>some prototyping a while ago to use generic power domains for this, that
+> > >>>way all the details and dependencies between the partitions could be
+> > >>>properly modeled.
+> > >>>
+> > >>>Can you take a look at my staging/powergate branch here:
+> > >>>
+> > >>>	https://github.com/thierryreding/linux/commits/staging/powergate
+> > >>>
+> > >>>and see if you can use that instead? The idea is to completely hide the
+> > >>>details of power partitions from drivers and use runtime PM instead.
+> > >>You generic power domains work is exactly what we want for powergate
+> > >>eventually. :) I recall we used your prototyping in somewhere internal tree.
+> > >>We have to add more to complete it though, e.g. power domain dependency, mc
+> > >>flush, and clamping register difference like this patch does.
+> > >>
+> > >>But I have a question here. Since the GK20A is not powered on/off by the PMC
+> > >>except the clamping control, and GK20A has its own power rail, do we really
+> > >>want to hide the power sequence in the generic powergate code? We still have
+> > >>to control the voltage level in the GK20A driver through the regulator
+> > >>framework. It seems weird to me if we put the regulator_{enable|disable}
+> > >>somewhere other than the GK20A driver.
+> > >I think we want both. The power domain to control the power partition
+> > >and the regulator in the gk20a driver for the voltage control.
+> > Do you mean excluding the power sequence of GK20A from the generic power
+> > domain?
+> 
+> No, what I mean is move the power gating into the PMC driver as part of
+> the generic power domain implementation. At the same time, keep the
+> control of the regulator within the gk20a driver. That way we can use
+> runtime PM to control the powergating but we can still control the GPU
+> voltage within Nouveau.
+Okay. Do you insist to introduce the generic power domain at this moment?
+If so, I can try to continue your previous work and rebase this series on
+that. That might take some time though.
 
-ok.
+Thanks,
+Vince
 
->
->> +
->>    source "drivers/acpi/apei/Kconfig"
->>
->>    config ACPI_EXTLOG
->> diff --git a/include/acpi/acconfig.h b/include/acpi/acconfig.h
->> index 5a0a3e5..db5e13e 100644
->> --- a/include/acpi/acconfig.h
->> +++ b/include/acpi/acconfig.h
->> @@ -69,7 +69,11 @@
->>     * code that will not execute the _OSI method unless _OS matches the
->> string
->>     * below.  Therefore, change this string at your own risk.
->>     */
->> +#ifndef ACPI_OS_NAME_USING_LINUX
->>    #define ACPI_OS_NAME                    "Microsoft Windows NT"
->> +#else
->> +#define ACPI_OS_NAME                    "Linux"
->> +#endif
->
-> Can you not use CONFIG_ACPI_OS_NAME_LINUX directly here without
-> introducing another macro?
-
-acconfig.h is part of ACPICA core and will be shared by windows and
-other OS, so use CONFIG from Linux in this file is not allowed I think.
-
->
->>>> We will work on this both on ASWG and linux ACPI driver side, as Dong
->>>> and Charles pointed out, _OSI things can be solved in ACPI spec, when
->>>> that is done, we can modify the kernel driver to fix the problems above.
->>>
->>> Which driver?
->>
->> the ACPICA core driver as you suggested, sorry for the confusion.
->>
->>> What about ACPI_OS_NAME? Would you suggest it is fine to report
->>> "Microsoft Windows NT" on an ARM system? That _OS_ not _OSI.
->>
->> No, not at all. I prefer "Linux"
->> In include/acpi/acconfig.h, when ACPI_OS_NAME defined, it says:
->> "OS name, used for the _OS object.  The _OS object is essentially
->> obsolete,..."
->> for some legacy reasons, we needed  "Microsoft Windows NT", but ACPI
->> for ARM64 on linux is totally new, I think we can change it to
->> "Linux" when CONFIG_ARM64 as you suggested.
->
-> We could ignore this change for now if we don't expect the _OS object to
-> be used at all. But do we have any other way to check the AML code for
-> this? Would FWTS catch such obsolete cases?
-
-I'm not sure, I will check it and get back when I have the answer.
-
-Thanks
-Hanjun
