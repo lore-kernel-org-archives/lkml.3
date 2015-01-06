@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933374AbbAFVoe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 16:44:34 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:48061 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536AbbAFVoa (ORCPT
+	id S1756622AbbAFVsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 16:48:00 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:50937 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbbAFVr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 16:44:30 -0500
-Date: Tue, 6 Jan 2015 16:44:26 -0500
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
-        hannes@cmpxchg.org, linux-fsdevel@vger.kernel.org, vgoyal@redhat.com,
-        lizefan@huawei.com, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        mhocko@suse.cz, clm@fb.com, fengguang.wu@intel.com,
-        david@fromorbit.com
-Subject: Re: [PATCHSET RFC block/for-next] writeback: cgroup writeback support
-Message-ID: <20150106214426.GA24106@htj.dyndns.org>
-References: <1420579582-8516-1-git-send-email-tj@kernel.org>
+	Tue, 6 Jan 2015 16:47:58 -0500
+Message-ID: <54AC580B.2050809@hurleysoftware.com>
+Date: Tue, 06 Jan 2015 16:47:55 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420579582-8516-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] serial: 8250: Make ISA ports optional
+References: <1420513785-23660-1-git-send-email-peter@hurleysoftware.com> <9492211.AECobr3jIN@wuerfel> <54ABF1E2.1010905@hurleysoftware.com> <6786513.g26uGMFKLE@wuerfel>
+In-Reply-To: <6786513.g26uGMFKLE@wuerfel>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.  A bit of addition.
+On 01/06/2015 02:43 PM, Arnd Bergmann wrote:
+> On Tuesday 06 January 2015 09:32:02 Peter Hurley wrote:
+>> On 01/06/2015 08:13 AM, Arnd Bergmann wrote:
+>>> On Monday 05 January 2015 22:09:45 Peter Hurley wrote:
+>>>> Some arches have no need to create unprobed 8250 ports; these phantom
+>>>> ports are primarily required for ISA ports which have no probe
+>>>> mechanism or to provide non-operational ports for userspace to
+>>>> configure (via TIOCSSERIAL and TIOCSERCONFIG ioctls).
+>>>>
+>>>> Provide CONFIG_SERIAL_8250_PHANTOM_UARTS knob to disable phantom port
+>>>> registration; ie., CONFIG_SERIAL_8250_PHANTOM_UARTS=N only registers
+>>>> probed ports (ACPI/PNP, "serial8250" platform devices, PCI, etc).
+>>>>
+>>>> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>>>> Cc: Tony Lindgren <tony@atomide.com>
+>>>> Cc: Grant Likely <grant.likely@linaro.org>
+>>>> Cc: Arnd Bergmann <arnd@arndb.de>
+>>>> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+>>>
+>>> The intent is definitely right, but I think a better approach is
+>>> possible.
+>>>
+>>> I haven't tried it here, but how about moving the serial8250_init
+>>> function into a separate module, along with all the other parts
+>>> that are only used for ISA devices, but leaving the actual core
+>>> (all exported symbols) in this file?
+>>
+>> Unfortunately, I don't see a way to remove the stacked initialization
+>> without risking tons of breakage.
+>>
+>> Since later probes can "find" an already-existing port and
+>> re-initialize it, the probe order is crucial. For example, a PCI
+>> probe can "find" an existing "serial8250" platform device port,
+>> resulting in only one device node.
+> 
+> I'm probably missing something important, by why would that
+> be any different if the PCI driver gets loaded first and the
+> ISA driver second?
 
-On Tue, Jan 06, 2015 at 04:25:37PM -0500, Tejun Heo wrote:
-...
-> Overall design
-> --------------
+Well, the PCI driver would have the proper irq, for one. So, if the
+the platform driver re-initialized the port to the wrong irq...
 
-What's going on in this patchset is fairly straight forward.  The main
-thing which is happening is that a bdi is being split into multiple
-per-cgroup pieces.  Each split bdi, represented by bdi_writeback,
-behaves mostly identically with how bdi behaved before.
+>> And the configuration knob will be required on all arches anyway because
+>> that's how user-configurable device nodes are created.
+> 
+> I think that's fine: The user-configurable ports are the same as
+> the "ISA" or "phantom" ports we were talking about above, right?
 
-Complications mostly arise from filesystems and inodes having to deal
-with multiple split bdi's instead of one, but those are mostly
-straight-forward 1:N mapping issues.  It does get tedious here and
-there but doesn't complicate the overall picture.  This
-straight-forwardness pays off when dealing with interaction issues
-which would have been extremely hairy otherwise.  More on this while
-discussing balance_dirty_pages.
+Yes.
 
-...
-> Missing pieces
-> --------------
-...
-> * balance_dirty_pages currently doesn't consider the task's memcg when
->   calculating the number of dirtyable pages.  This means that tasks in
->   memcg won't have the benefit of smooth background writeback and will
->   bump into direct reclaim all the time.  This has always been like
->   this but with cgroup writeback support, this is also finally
->   fixable.  I'll work on this as the earlier part gets settled.
+> If those are part of a separate (possibly loadable) module, having
+> a configuration knob is the obvious way to do it. A lot of architectures
+> can just turn it off because they know exactly which ports are present
+> and there is no need for user-configurability. The ones that don't know
+> can load the module.
 
-This has always been a really thorny issue but now that each wb
-behaves as an independent writeback domain, this can be solved nicely.
-Each cgroup can carry the fraction of writebandwidth against the whole
-system and each task can carry its fraction against its memcg.
-balance_dirty_pages can now stagger these two ratios and then apply it
-against the memory which *may* be dirtyable to the task's memcg and
-then throttle the dirtier accordingly.  This works out exactly as a
-straight-forward extension of the global logic which is proven to
-work.  This really is pieces falling into places.
+Let me give this some more thought.
 
-Thanks.
+Regards,
+Peter Hurley
 
--- 
-tejun
+
