@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889AbbAFPox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:44:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50935 "EHLO mx1.redhat.com"
+	id S1756128AbbAFPvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:51:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36283 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755871AbbAFPot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:44:49 -0500
-Date: Tue, 6 Jan 2015 17:44:38 +0200
+	id S1755847AbbAFPoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:44:46 -0500
+Date: Tue, 6 Jan 2015 17:44:41 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
-Subject: [PATCH v2 20/40] metag: fix put_user sparse errors
-Message-ID: <1420558883-10131-21-git-send-email-mst@redhat.com>
+        linux-sh@vger.kernel.org
+Subject: [PATCH v2 21/40] sh: fix put_user sparse errors
+Message-ID: <1420558883-10131-22-git-send-email-mst@redhat.com>
 References: <1420558883-10131-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -37,55 +37,43 @@ is safe, but currently triggers a sparse warning.
 
 Fix that up using __force.
 
-This also fixes warnings due to writing a pointer out to
-userland.
+Note: this does not suppress any useful sparse checks since caller
+assigns x to typeof(*p), which in turn forces all the necessary type
+checks.
 
-Note: this does not suppress any useful sparse checks since callers
-do a cast (__typeof__(*(ptr))) (x) which in turn forces all the
-necessary type checks.
-
-Suggested-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/metag/include/asm/uaccess.h | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ arch/sh/include/asm/uaccess_64.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
-index c314b45..9627c19 100644
---- a/arch/metag/include/asm/uaccess.h
-+++ b/arch/metag/include/asm/uaccess.h
-@@ -107,18 +107,23 @@ extern long __put_user_asm_w(unsigned int x, void __user *addr);
- extern long __put_user_asm_d(unsigned int x, void __user *addr);
- extern long __put_user_asm_l(unsigned long long x, void __user *addr);
- 
--#define __put_user_size(x, ptr, size, retval)			\
--do {                                                            \
--	retval = 0;                                             \
--	switch (size) {                                         \
-+#define __put_user_size(x, ptr, size, retval)				\
-+do {                                                            	\
-+	retval = 0;                                             	\
-+	switch (size) {                                         	\
- 	case 1:								\
--		retval = __put_user_asm_b((unsigned int)x, ptr); break;	\
-+		retval = __put_user_asm_b((__force unsigned int)x, ptr);\
-+		break;							\
- 	case 2:								\
--		retval = __put_user_asm_w((unsigned int)x, ptr); break;	\
-+		retval = __put_user_asm_w((__force unsigned int)x, ptr);\
-+		break;							\
- 	case 4:								\
--		retval = __put_user_asm_d((unsigned int)x, ptr); break;	\
-+		retval = __put_user_asm_d((__force unsigned int)x, ptr);\
-+		break;							\
- 	case 8:								\
--		retval = __put_user_asm_l((unsigned long long)x, ptr); break; \
-+		retval = __put_user_asm_l((__force unsigned long long)x,\
-+					  ptr);				\
-+		break;							\
- 	default:							\
- 		__put_user_bad();					\
- 	}								\
+diff --git a/arch/sh/include/asm/uaccess_64.h b/arch/sh/include/asm/uaccess_64.h
+index 2e07e0f..c01376c 100644
+--- a/arch/sh/include/asm/uaccess_64.h
++++ b/arch/sh/include/asm/uaccess_64.h
+@@ -59,19 +59,19 @@ do {								\
+ 	switch (size) {						\
+ 	case 1:							\
+ 		retval = __put_user_asm_b((void *)&x,		\
+-					  (long)ptr);		\
++					  (__force long)ptr);	\
+ 		break;						\
+ 	case 2:							\
+ 		retval = __put_user_asm_w((void *)&x,		\
+-					  (long)ptr);		\
++					  (__force long)ptr);	\
+ 		break;						\
+ 	case 4:							\
+ 		retval = __put_user_asm_l((void *)&x,		\
+-					  (long)ptr);		\
++					  (__force long)ptr);	\
+ 		break;						\
+ 	case 8:							\
+ 		retval = __put_user_asm_q((void *)&x,		\
+-					  (long)ptr);		\
++					  (__force long)ptr);	\
+ 		break;						\
+ 	default:						\
+ 		__put_user_unknown();				\
 -- 
 MST
 
