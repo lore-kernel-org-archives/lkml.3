@@ -1,135 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbbAFPiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 10:38:08 -0500
-Received: from mga01.intel.com ([192.55.52.88]:64913 "EHLO mga01.intel.com"
+	id S1754670AbbAFPnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 10:43:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43533 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623AbbAFPiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 10:38:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="437104870"
-From: "Jiang, Dave" <dave.jiang@intel.com>
-To: "der.herr@hofr.at" <der.herr@hofr.at>
-CC: "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rashika.kheria@gmail.com" <rashika.kheria@gmail.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: Re: [PATCH] ioat: fail self-test if wait_for_completion times out
-Thread-Topic: [PATCH] ioat: fail self-test if wait_for_completion times out
-Thread-Index: AQHQIorOSaVKzf9bt063KEMfjRC+jpyyUNSAgACDkwCAAPoiAA==
-Date: Tue, 6 Jan 2015 15:38:02 +0000
-Message-ID: <1420558682.62574.2.camel@djiang5-desk2.amr.corp.intel.com>
-References: <1419763047-15414-1-git-send-email-der.herr@hofr.at>
-	 <1420476711.7745.2.camel@djiang5-desk2.amr.corp.intel.com>
-	 <20150106004246.GA31803@opentech.at>
-In-Reply-To: <20150106004246.GA31803@opentech.at>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.2.105.66]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <B9C1BB508A66264F9F6026021A5FF4C3@intel.com>
+	id S1751831AbbAFPnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Jan 2015 10:43:39 -0500
+Date: Tue, 6 Jan 2015 17:43:28 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
+Subject: [PATCH v2 00/40] uaccess: fix sparse warning on get/put_user for
+ bitwise types
+Message-ID: <1420558883-10131-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t06FcDG9013648
+
+changes from v1:
+
+- xtensa and powerpc patches have been merged by maintainers, drop them
+- added patches to fix put_user on a bunch of architectures
+- add acks received since v1
+- a bunch of whitespace tweaks
 
 
+At the moment, if p and x are both tagged as bitwise types,
+some of get_user(x, p), put_user(x, p), __get_user(x, p), __put_user(x, p)
+produce a sparse warning on many architectures.
+This is a false positive: *p on these architectures is loaded into long
+(typically using asm), then cast back to typeof(*p).
+
+When typeof(*p) is a bitwise type (which is uncommon), such a cast needs
+__force, otherwise sparse produces a warning.
+
+Some architectures already have the __force tag, add it
+where it's missing.
+
+I verified that adding these __force casts does not supress any useful warnings.
+
+Specifically, vhost wants to read/write bitwise types in userspace memory
+using get_user/put_user.
+At the moment this triggers sparse errors, since the value is passed through an
+integer.
+
+For example:
+    __le32 __user *p;
+    __u32 x;
+
+both
+    put_user(x, p);
+and
+    get_user(x, p);
+should be safe, but produce warnings on some architectures.
 
 
-On Tue, 2015-01-06 at 00:42 +0000, Nicholas Mc Guire wrote:
-> On Mon, 05 Jan 2015, Jiang, Dave wrote:
-> 
-> > 
-> > 
-> > 
-> > On Sun, 2014-12-28 at 10:37 +0000, Nicholas Mc Guire wrote:
-> > > wait_for_completion_timeout reaching timeout was being ignored,
-> > > fail the self-test if timeout condition occurs.
-> > > 
-> > > Not sure about the indentations used (CodingStyle:Chapter 2)
-> > > 
-> > > this was only compile tested with
-> > > x86_64_defconfig + CONFIG_DMA_ENGINE=y + CONFIG_INTEL_IOATDMA=y
-> > > 
-> > > patch is against linux-next 3.19.0-rc1 -next-20141226
-> > > 
-> > > Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> > > ---
-> > >  drivers/dma/ioat/dma_v3.c |    9 ++++++---
-> > >  1 file changed, 6 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-> > > index be307182..0659215 100644
-> > > --- a/drivers/dma/ioat/dma_v3.c
-> > > +++ b/drivers/dma/ioat/dma_v3.c
-> > > @@ -1311,7 +1311,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
-> > > 
-> > >  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
-> > > 
-> > > -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> > > +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
-> > > +			!= DMA_COMPLETE) {
-> > >  		dev_err(dev, "Self-test xor timed out\n");
-> > >  		err = -ENODEV;
-> > >  		goto dma_unmap;
-> > > @@ -1377,7 +1378,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
-> > > 
-> > >  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
-> > > 
-> > > -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> > > +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
-> > > +			!= DMA_COMPLETE) {
-> > 
-> > Can you please do: 
-> > +	if (tmo == 0 ||
-> > +	    dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> 
-> Documentation/CodingStyle:Chapter 2
-> 
-> "Statements longer than 80 columns will be broken into sensible chunks, unless
-> exceeding 80 columns significantly increases readability and does not hide
-> information. Descendants are always substantially shorter than the parent and
-> are placed substantially to the right. The same applies to function headers..."
-> 
-> am I misreading the CodingStyle here ?
+While there, I noticed that a bunch of architectures violated
+coding style rules within uaccess macros.
+Added patches to fix them up.
 
-I'm not sure what the issue is here.... What I proposed is still the
-same length as the original code. And what I suggested complies with the
-existing coding style that's already there.
 
-> 
-> > 
-> > Otherwise it looks good. Although I've never hit that error condition either. 
-> > 
-> > >  		dev_err(dev, "Self-test validate timed out\n");
-> > >  		err = -ENODEV;
-> > >  		goto dma_unmap;
-> > > @@ -1429,7 +1431,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
-> > > 
-> > >  	tmo = wait_for_completion_timeout(&cmp, msecs_to_jiffies(3000));
-> > > 
-> > > -	if (dma->device_tx_status(dma_chan, cookie, NULL) != DMA_COMPLETE) {
-> > > +	if (tmo == 0 || dma->device_tx_status(dma_chan, cookie, NULL)
-> > > +			!= DMA_COMPLETE) {
-> > >  		dev_err(dev, "Self-test 2nd validate timed out\n");
-> > >  		err = -ENODEV;
-> > >  		goto dma_unmap;
-> > > --
-> > > 1.7.10.4
-> > > 
-> 
-> thx!
-> hofrat
-> --
-> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+I tested this on x86 only. Since it's just adding __force, should be
+trivially safe everywhere?
+
+
+Arnd, did you merge v1 already? If yes, can you please replace with
+this version?
+
+Michael S. Tsirkin (40):
+  x86/uaccess: fix sparse errors
+  alpha/uaccess: fix sparse errors
+  arm64/uaccess: fix sparse errors
+  avr32/uaccess: fix sparse errors
+  blackfin/uaccess: fix sparse errors
+  cris/uaccess: fix sparse errors
+  ia64/uaccess: fix sparse errors
+  m32r/uaccess: fix sparse errors
+  metag/uaccess: fix sparse errors
+  microblaze/uaccess: fix sparse errors
+  openrisc/uaccess: fix sparse errors
+  parisc/uaccess: fix sparse errors
+  sh/uaccess: fix sparse errors
+  sparc32/uaccess: fix sparse errors
+  sparc64/uaccess: fix sparse errors
+  m68k/uaccess: fix sparse errors
+  arm: fix put_user sparse errors
+  blackfin: fix put_user sparse errors
+  ia64: fix put_user sparse errors
+  metag: fix put_user sparse errors
+  sh: fix put_user sparse errors
+  tile: fix put_user sparse errors
+  tile: enable sparse checks for get/put_user
+  avr32: whitespace fix
+  arch/sparc: uaccess_32 macro whitespace fixes
+  arch/sparc: uaccess_64 macro whitespace fixes
+  blackfin: macro whitespace fixes
+  microblaze: whitespace fix
+  alpha: macro whitespace fixes
+  arm: macro whitespace fixes
+  arm64: macro whitespace fixes
+  avr32: macro whitespace fixes
+  cris: macro whitespace fixes
+  frv: macro whitespace fixes
+  m32r: macro whitespace fixes
+  m68k: macro whitespace fixes
+  parisc: macro whitespace fixes
+  s390: macro whitespace fixes
+  sh: macro whitespace fixes
+  xtensa: macro whitespace fixes
+
+ arch/alpha/include/asm/uaccess.h      |  86 ++++----
+ arch/arm/include/asm/uaccess.h        |  96 ++++-----
+ arch/arm64/include/asm/uaccess.h      |   4 +-
+ arch/avr32/include/asm/uaccess.h      |  24 +--
+ arch/blackfin/include/asm/uaccess.h   |  32 +--
+ arch/cris/include/asm/uaccess.h       | 117 +++++------
+ arch/frv/include/asm/segment.h        |   2 +-
+ arch/ia64/include/asm/uaccess.h       |  11 +-
+ arch/m32r/include/asm/uaccess.h       |  88 ++++----
+ arch/m68k/include/asm/segment.h       |   2 +-
+ arch/m68k/include/asm/uaccess_mm.h    |  40 ++--
+ arch/metag/include/asm/uaccess.h      |  25 ++-
+ arch/microblaze/include/asm/uaccess.h |   6 +-
+ arch/openrisc/include/asm/uaccess.h   |   4 +-
+ arch/parisc/include/asm/uaccess.h     | 116 +++++------
+ arch/s390/include/asm/uaccess.h       |   4 +-
+ arch/sh/include/asm/segment.h         |   2 +-
+ arch/sh/include/asm/uaccess.h         |   4 +-
+ arch/sh/include/asm/uaccess_64.h      |   8 +-
+ arch/sparc/include/asm/uaccess_32.h   | 364 +++++++++++++++++++++-------------
+ arch/sparc/include/asm/uaccess_64.h   | 246 +++++++++++++----------
+ arch/tile/include/asm/uaccess.h       |   6 +-
+ arch/x86/include/asm/uaccess.h        |   2 +-
+ arch/xtensa/include/asm/uaccess.h     |  90 ++++-----
+ 24 files changed, 759 insertions(+), 620 deletions(-)
+
+-- 
+MST
+
