@@ -1,95 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606AbbAFTmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:42:33 -0500
-Received: from khitomer.mortis.eu ([185.27.175.75]:24066 "EHLO
-	khitomer.mortis.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112AbbAFTm3 (ORCPT
+	id S932632AbbAFTns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:43:48 -0500
+Received: from resqmta-ch2-04v.sys.comcast.net ([69.252.207.36]:49383 "EHLO
+	resqmta-ch2-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932617AbbAFTnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:42:29 -0500
-Date: Tue, 6 Jan 2015 20:42:26 +0100
-From: Giel van Schijndel <me@mortis.eu>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "maintainer:X86 ARCHITECTURE..." <x86@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steve French <sfrench@samba.org>,
-        Rahul Bedarkar <rahulbedarkar89@gmail.com>,
-        Thomas Pugliese <thomas.pugliese@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        "open list:CRYPTO API" <linux-crypto@vger.kernel.org>,
-        "open list:CERTIFIED WIRELES..." <linux-usb@vger.kernel.org>,
-        "open list:COMMON INTERNET F..." <linux-cifs@vger.kernel.org>,
-        "moderated list:COMMON INTERNET F..." 
-	<samba-technical@lists.samba.org>,
-        Daniel Borkmann <dborkman@redhat.com>
-Subject: Re: [PATCH] Use memzero_explicit to clear local buffers
-Message-ID: <20150106194226.GM4806@salidar.dom.custoft.eu>
-References: <1420394744-20268-1-git-send-email-me@mortis.eu>
- <20150104213538.GA19906@gondor.apana.org.au>
- <20150104224909.GB4806@salidar.dom.custoft.eu>
- <20150104233637.GA20757@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="c8JyeaiReRNoiMDS"
-Content-Disposition: inline
-In-Reply-To: <20150104233637.GA20757@gondor.apana.org.au>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 6 Jan 2015 14:43:46 -0500
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
+        keescook@chromium.org, tranmanphong@gmail.com, mpe@ellerman.id.au,
+        cov@codeaurora.org, dh.herrmann@gmail.com, hughd@google.com,
+        bobby.prani@gmail.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
+        masami.hiramatsu.pt@hitachi.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH v4 00/20] kselftest install target feature
+Date: Tue,  6 Jan 2015 12:43:14 -0700
+Message-Id: <cover.1420571615.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series adds a new kselftest_install make target
+to enable selftest install. When make kselftest_install is
+run, selftests are installed on the system. A new install
+target is added to selftests Makefile which will install
+targets for the tests that are specified in INSTALL_TARGETS.
+During install, a script is generated to run tests that are
+installed. This script will be installed in the selftest install
+directory. Individual test Makefiles are changed to add to the
+script. This will allow new tests to add install and run test
+commands to the generated kselftest script. kselftest target
+now depends on kselftest_install and runs the generated kselftest
+script to reduce duplicate work and for common look and feel when
+running tests.
 
---c8JyeaiReRNoiMDS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This approach leverages and extends the existing framework that
+uses makefile targets to implement run_tests and adds install
+target. This will scale well as new tests get added and makes
+it easier for test writers to add install target at the same
+time new test gets added.
 
-On Mon, Jan 05, 2015 at 10:36:37 +1100, Herbert Xu wrote:
-> On Sun, Jan 04, 2015 at 11:49:09PM +0100, Giel van Schijndel wrote:
->>
->>> sctx does not point to stack memory so this is bogus.
->>>=20
->>> Only stack memory cleared just before it goes out of scope needs
->>> memzero_explicit.
->>=20
->> Is that because the compiler can't safely optimize memset(0) away for a
->> variable with greater-than-local scope?
->=20
-> Exactly.  memzero_explicit is not a marker for sensitive data.
-> Its only purpose is to prevent the compiler from optimising away
-> zeroing that occurs at the end of a scope.
+This series is uploaded to the following experimental branch
+for anybody that is interested in playing with it:
+git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest.git devel
 
-Question: are you sure the compiler won't optimize the call to memset(0)
-way if it's immediately followed by kfree()?
+Some benchmark numbers: no relation to this patch series,
+I just happened to get some timing numbers, this is nice
+and low.
+kselftest full run from install dir using kselftest.sh
+9.41user 3.55system 0:24.86elapsed
 
-Because one of my changes concerns that situation.
+This v4 series fixes echo strings to add quotes around them.
+There is no change to the 00/20 kbuild patch in this series.
+Other patches in the sries are updated to fix the echo strings.
 
-Another actually does change a stack-allocated buffer, I'll split that
-one off right away.
+v3 series: reduced duplicate code to generate script
+in indiviual test Makefiles and consolidates support in
+selftests main Makefile. In the main Makefile, it does
+minimal work to set and export install path.
 
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
---
-"When all you have is a hammer, everything starts to look like a nail."
-  -- Abraham Maslow
+v2 series: addressed the duplicate code in install and
+run_tests targets in individual test Makefiles.
+Reference: https://lkml.org/lkml/2014/11/4/707
 
---c8JyeaiReRNoiMDS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Shuah Khan (20):
+  selftests/breakpoints: add install target to enable test install
+  selftests/cpu-hotplug: add install target to enable test install
+  selftests/efivarfs: add install target to enable test install
+  selftests/firmware: add install target to enable test install
+  selftests/ftrace: add install target to enable test install
+  selftests/ipc: add install target to enable test install
+  selftests/kcmp: add install target to enable test install
+  selftests/memfd: add install target to enable test install
+  selftests/memory-hotplug: add install target to enable test install
+  selftests/mount: add install target to enable test install
+  selftests/mqueue: add install target to enable test install
+  selftests/net: add install target to enable test install
+  selftests/ptrace: add install target to enable test install
+  selftests/size: add install target to enable test install
+  selftests/sysctl: add install target to enable test install
+  selftests/timers: add install target to enable test install
+  selftests/user: add install target to enable test install
+  selftests/vm: add install target to enable test install
+  selftests: add install target to enable test install
+  kbuild: add a new kselftest_install make target to install selftests
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+ Makefile                                           | 14 +++++-
+ tools/testing/selftests/Makefile                   | 54 +++++++++++++++++++++-
+ tools/testing/selftests/breakpoints/Makefile       | 19 +++++++-
+ tools/testing/selftests/cpu-hotplug/Makefile       | 14 +++++-
+ .../{on-off-test.sh => cpu-on-off-test.sh}         |  0
+ tools/testing/selftests/efivarfs/Makefile          | 16 ++++++-
+ tools/testing/selftests/firmware/Makefile          | 43 ++++++++++-------
+ tools/testing/selftests/ftrace/Makefile            | 13 +++++-
+ tools/testing/selftests/ipc/Makefile               | 19 +++++++-
+ tools/testing/selftests/kcmp/Makefile              | 13 +++++-
+ tools/testing/selftests/memfd/Makefile             | 17 +++++--
+ tools/testing/selftests/memory-hotplug/Makefile    | 14 +++++-
+ .../{on-off-test.sh => mem-on-off-test.sh}         |  0
+ tools/testing/selftests/mount/Makefile             | 12 ++++-
+ tools/testing/selftests/mqueue/Makefile            | 18 ++++++--
+ tools/testing/selftests/net/Makefile               | 20 ++++++--
+ tools/testing/selftests/ptrace/Makefile            | 16 +++++--
+ tools/testing/selftests/size/Makefile              | 12 ++++-
+ tools/testing/selftests/sysctl/Makefile            | 17 ++++++-
+ tools/testing/selftests/timers/Makefile            | 12 ++++-
+ tools/testing/selftests/user/Makefile              | 12 ++++-
+ tools/testing/selftests/vm/Makefile                | 11 ++++-
+ 22 files changed, 317 insertions(+), 49 deletions(-)
+ rename tools/testing/selftests/cpu-hotplug/{on-off-test.sh => cpu-on-off-test.sh} (100%)
+ rename tools/testing/selftests/memory-hotplug/{on-off-test.sh => mem-on-off-test.sh} (100%)
 
-iEYEARECAAYFAlSsOqAACgkQZBYm/87l50L6PwCfbRC+ZfKuH+/OgfI/jHZ5AJjv
-68MAn38Cc4ILwBfpaOu+tSVaN3OGhHX5
-=TXqV
------END PGP SIGNATURE-----
+-- 
+2.1.0
 
---c8JyeaiReRNoiMDS--
