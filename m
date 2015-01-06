@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751AbbAFTq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Jan 2015 14:46:59 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:56225 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112AbbAFTq5 (ORCPT
+	id S1754969AbbAFTs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Jan 2015 14:48:28 -0500
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:34168 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932896AbbAFTsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Jan 2015 14:46:57 -0500
-Date: Tue, 6 Jan 2015 19:46:46 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [PATCH v2 1/2] arm: perf: Prevent wraparound during overflow
-Message-ID: <20150106194646.GG32449@arm.com>
-References: <1416412346-8759-1-git-send-email-daniel.thompson@linaro.org>
- <1416587067-3220-1-git-send-email-daniel.thompson@linaro.org>
- <1416587067-3220-2-git-send-email-daniel.thompson@linaro.org>
- <20150105145739.GU30905@twins.programming.kicks-ass.net>
- <20150105193120.GA9167@sundance.lan>
+	Tue, 6 Jan 2015 14:48:25 -0500
+Message-ID: <54AC3C05.1050704@hp.com>
+Date: Tue, 06 Jan 2015 11:48:21 -0800
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150105193120.GA9167@sundance.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Yuchung Cheng <ycheng@google.com>, Erik Grinaker <erik@bengler.no>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: TCP connection issues against Amazon S3
+References: <5DCDADEF-FF9C-4844-8A2C-62E2D3B3B8CE@bengler.no> <1420560253.32621.20.camel@edumazet-glaptop2.roam.corp.google.com> <D5C36777-4461-4B8D-B6C4-38B4276F42DC@bengler.no> <1420564837.32621.30.camel@edumazet-glaptop2.roam.corp.google.com> <8C4F7938-DCA1-46F5-A3C9-7DF62511DEE7@bengler.no> <CAK6E8=d5Z0W5sSAdeEcecKbqjj_UwGw4949=a20fetFpLVKwwA@mail.gmail.com> <54AC348B.4030900@hp.com>
+In-Reply-To: <54AC348B.4030900@hp.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 05, 2015 at 07:31:20PM +0000, Daniel Thompson wrote:
-> On Mon, Jan 05, 2015 at 03:57:39PM +0100, Peter Zijlstra wrote:
-> > On Fri, Nov 21, 2014 at 04:24:26PM +0000, Daniel Thompson wrote:
-> > > diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> > > index 266cba46db3e..ab68833c1e31 100644
-> > > --- a/arch/arm/kernel/perf_event.c
-> > > +++ b/arch/arm/kernel/perf_event.c
-> > > @@ -115,8 +115,14 @@ int armpmu_event_set_period(struct perf_event *event)
-> > >  		ret = 1;
-> > >  	}
-> > >  
-> > > -	if (left > (s64)armpmu->max_period)
-> > > -		left = armpmu->max_period;
-> > > +	/*
-> > > +	 * Limit the maximum period to prevent the counter value
-> > > +	 * from overtaking the one we are about to program. In
-> > > +	 * effect we are reducing max_period to account for
-> > > +	 * interrupt latency (and we are being very conservative).
-> > > +	 */
-> > > +	if (left > (armpmu->max_period >> 1))
-> > > +		left = armpmu->max_period >> 1;
-> > 
-> > On x86 we simply half max_period, why did you choose to do differently?
-> 
-> In truth because I didn't look at the x86 code... there is an existing
-> halving of max_period in the arm code and that was enough to satisfy me
-> that halving max_period was reasonable.
-> 
-> Predividing max_period looks to me like it would work for ARM too although I
-> don't think we could blame hardware insanity for doing so ;-).
-> 
-> Will: Do you want me to update this?
+On 01/06/2015 11:16 AM, Rick Jones wrote:
+> I'm assuming one incident starts at XX:41:24.748265 in the trace?  That
+> does look like it is slowly slogging its way through a bunch of lost
+> traffic, which was I think part of the problem I was seeing with the
+> middlebox I stepped in, but I don't think I see the reset where I would
+> have expected it.  Still, it looks like the sender has an increasing TCP
+> RTO as it is going through the slog (as it likely must since there are
+> no TCP timestamps?), to the point it gets larger than I'm guessing curl
+> was willing to wait, so the FIN at XX:41:53.269534 after a ten second or
+> so gap.
 
-Whichever you prefer. The ARM perf code used to be used by some drivers
-and so we tried to keep the implementation details hidden from them, but
-that didn't work out so well and it's now only used by the CPU PMUs.
+Should the receiver's autotuning be advertising an ever larger window 
+the way it is while going through the slog of lost traffic?
 
-Will
+rick
